@@ -24,6 +24,7 @@ DATA Binding
         srcVersionMinor         : String
         srcVersionQuality       : String
         srcVersionSvn           : String
+        compileFlags            : String
         hash                    : Integer
     | Export
         exports                 : ModEntRel
@@ -33,6 +34,8 @@ DATA Binding
         fixity                  : Fixity
     | Ids
         idOccs                  : {[(IdOcc,IdOcc)]}
+    | Arities
+        idArities               : {AssocL HsName Int}
     | Val
         nm                      : HsName
         ty                      : Ty

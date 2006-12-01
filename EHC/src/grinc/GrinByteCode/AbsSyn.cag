@@ -42,7 +42,8 @@ DATA Instr
   				locSrc			: InsOp_LocE
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
-  | LdGlobal	link			: Link
+  | LdGlobal	locDst			: InsOp_LocB
+                link			: Link
   | Link		link			: Link
   | AllocStore  locSrc			: InsOp_LocB
   | Fetch       locSrc			: InsOp_LocB

@@ -27,7 +27,7 @@ the machinery.
 %format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
 %format icall(rs)         = "\mathsf{call}\langle{" rs "}\rangle"
 %format itailcall(rs)(n)(m)(r)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m ^^ r
-%format ildg(m)(t)(o)         = "\mathsf{ldg}" ^^ m ^^ t ^^ o
+%format ildg(rd)(a)         = "\mathsf{ldg}\langle{" rd "}\rangle" ^^ a
 %format iretcall(n)(m)(r)         = "\mathsf{retcall}" ^^ n ^^ m ^^ r
 %format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
 %format icasecall         = "\mathsf{casecall}"
@@ -61,7 +61,7 @@ the machinery.
 %format ldl         = "\mathsf{ldl}"
 %format ldc         = "\mathsf{ldc}"
 %format ldi         = "\mathsf{ldi}"
-%format ldg         = "\mathsf{ldg}"
+%format ldgt        = "\mathsf{ldgt}"
 %format l1tt        = "\mathsf{l1tt}"
 %format l0ti        = "\mathsf{l0ti}"
 %format l0tt        = "\mathsf{l0tt}"
@@ -585,8 +585,8 @@ Those without comment are not yet used.
 100         ^^  0x04 << 5   ^^  0x80        -- storing
 101         ^^  0x05 << 5   ^^  0x82        -- arithmetic
 1100  0     ^^  0x18 << 3   ^^  0xC0        -- calling, case
-1100  0111
-1100  1     
+1100  0111  ^^
+1100  1     ^^  0x19 << 3   ^^  0xC8        -- load global
 1101
 1110  0     ^^  0x1C << 3   ^^  0xE0        -- eval/apply
 1110  1     ^^  0x1D << 3   ^^  0xE8        -- heap: node alloc/fetch
@@ -739,17 +739,15 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
 
 \emph{This section is left here for later rewrite, |ldg| depends on additional linking tables}
 
-\begin{GrinEncoding}{|ildg(m)(t)(o)|}
+\begin{GrinEncoding}{|ildg(rd)(a)|}
  &
-|1111 ^^ 1100| &
- &
- &
+|1100 ^^ 100 ^ ixx1(rd)(0)| &
+a &
+... &
 \\
 \end{GrinEncoding}
 
-Load from module |m| (16 bits), table |t| (16 bits), offset |o| (32 bits).
-This info is stored in a separate link entry table, and patched during runtime initialization
-with the proper location.
+|a| is a word sized address, patched by linking during initialisation.
 
 \subsubsection{Storing}
 

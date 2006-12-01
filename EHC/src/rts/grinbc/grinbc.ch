@@ -222,8 +222,10 @@ extern void gb_listForceEval( GB_NodePtr n, int sz ) ;
 #define GB_LinkTbl_EntryKind_Const			0			/* constant */
 #define GB_LinkTbl_EntryKind_ConstPtr		1			/* ptr to constant */
 #define GB_LinkTbl_EntryKind_CodeEntry		2			/* code entry */
+%%[[12
+#define GB_LinkTbl_EntryKind_ImpEntry		3			/* import entry */
+%%]]
 %%]
-#define GB_LinkTbl_EntryKind_FixOffset		2			/* fix offsets */
 
 Link commands for global references
 
@@ -377,6 +379,7 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Ins_PreSt							GB_Ins_Prefix(0x4,5)
 #define GB_Ins_PreArith							GB_Ins_Prefix(0x5,5)
 #define GB_Ins_PreCall							GB_Ins_Prefix(0x18,3)
+#define GB_Ins_PreLdg							GB_Ins_Prefix(0x19,3)
 #define GB_Ins_PreHeap							GB_Ins_Prefix(0x1D,3)
 #define GB_Ins_PreEvAp							GB_Ins_Prefix(0x1C,3)
 %%]
@@ -393,6 +396,7 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Ins_RetCase							(GB_Ins_PreCall | ((0x2) << 1) | 0x1)
 #define GB_Ins_CaseCall 						(GB_Ins_PreCall | ((0x3) << 1))
 #define GB_Ins_CallC	 						(GB_Ins_PreCall | ((0x3) << 1) | 0x1)
+#define GB_Ins_Ldg(locB)	 					(GB_Ins_PreLdg  | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_AllocStore(locB)					(GB_Ins_PreHeap | ((0x2) << 1) | ((locB) << 0))
 #define GB_Ins_Fetch(locB)						(GB_Ins_PreHeap | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
@@ -403,11 +407,11 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Ins_FetchUpdate						0xF9
 #define GB_Ins_EvalApplyCont					0xFA
 #define GB_Ins_PApplyCont						0xFB
-#define GB_Ins_Ldg								0xFC
 #define GB_Ins_EvalUpdCont						0xFD
 #define GB_Ins_Ext								0xFE
 #define GB_Ins_NOP								0xFF
 %%]
+#define GB_Ins_Ldg								0xFC
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Extended instruction opcodes

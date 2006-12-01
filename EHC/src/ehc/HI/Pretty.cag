@@ -31,7 +31,7 @@ SEM Binding
         lhs         .   pp          =   let ps :: Show a => a -> PP_Doc
                                             ps = pp . show
                                             pc :: PP a => a -> PP_Doc
-                                            pc = ("--" >#<)
+                                            pc = const empty -- ("--" >#<)
                                         in  hiNV "stamp" hsnUnknown
                                               [ ps @srcTimestamp        >#< pc "time of compiler build"
                                               , ps @srcSig              >#< pc "cryptographic hash of compiler sources"
@@ -39,6 +39,7 @@ SEM Binding
                                               , ps @srcVersionMinor     >#< pc "version minor"
                                               , ps @srcVersionQuality   >#< pc "build stability"
                                               , ps @srcVersionSvn       >#< pc "svn of compiler build"
+                                              , ps @compileFlags        >#< pc "compile flags of which difference implies recompile"
                                               , ps @hash                >#< pc "hash for faster equality check of this info, not yet used"
                                               ]
     | Fixity
@@ -47,6 +48,8 @@ SEM Binding
         lhs         .   pp          =   hiNV' "export" hsnUnknown (ppModEntRel' ppHINm @exports)
     | Ids
         lhs         .   pp          =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppIdOcc ppHINm o,ppIdOcc ppHINm d]) @idOccs)
+    | Arities
+        lhs         .   pp          =   hiNV "arity" hsnUnknown (map (\(n,a) -> ppCurlysSemisBlock [ppHINm n,pp a]) @idArities)
     | Val
         lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
     | DataCon

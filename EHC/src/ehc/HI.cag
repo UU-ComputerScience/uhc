@@ -10,13 +10,10 @@
 %%[12 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
 %%]
 
-%%[12 hs import(qualified Data.Map as Map,{%{EH}Module})
+%%[12 hs import(qualified Data.Map as Map,EH.Util.FastSeq,{%{EH}Module})
 %%]
 
-%%[12 export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
-%%]
-
-%%[12 export(hiFromAllGams)
+%%[12 hs export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
 %%]
 
 %%[12 import({HI/AbsSyn})
@@ -30,12 +27,12 @@
 %%% Building
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs
-hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> Bindings
-hiFromGam mk g = [ mk n v | (n,v) <- gamToAssocL g ]
+%%[12 hs export(hiFromAllGams)
+hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> FastSeq Binding
+hiFromGam mk g = FSeqL [ mk n v | (n,v) <- gamToAssocL g ]
 
-hiFromTGam :: (HsName -> v -> Binding) -> PrfCtxtId -> TreeGam PrfCtxtId HsName v -> Bindings
-hiFromTGam mk cx g = [ mk n v | (n,v) <- tgamToAssocL cx g ]
+hiFromTGam :: (HsName -> v -> Binding) -> PrfCtxtId -> TreeGam PrfCtxtId HsName v -> FastSeq Binding
+hiFromTGam mk cx g = FSeqL [ mk n v | (n,v) <- tgamToAssocL cx g ]
 
 hiFromAllGams 
   :: ModEntRel
@@ -46,16 +43,18 @@ hiFromAllGams
      -> DataGam
      -> Pr.PrIntroGam
      -> Pr.PrElimTGam
-     -> Bindings
-hiFromAllGams exps fg idg vg tg dg ig eg
-  = [Binding_Export exps]
-    ++ [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
-    ++ hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
-    ++ hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
-    ++ hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg
-    ++ hiFromGam  (\n dgi  -> Binding_DataCon n (Map.toList $ Map.map (\i -> (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)) $ dgiConstrTagMp dgi) (dgiIsNewtype dgi)) dg
-    ++ hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
-    ++ hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) basePrfCtxtId eg
+     -> CLamInfoMp
+     -> FastSeq Binding
+hiFromAllGams exps fg idg vg tg dg ig eg lamMp
+  = FSeqL [Binding_Export exps]
+    :++: FSeqL [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
+    :++: FSeqL [Binding_Arities $ Map.toList lamMp]
+    :++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
+    :++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
+    :++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg
+    :++: hiFromGam  (\n dgi  -> Binding_DataCon n (Map.toList $ Map.map (\i -> (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)) $ dgiConstrTagMp dgi) (dgiIsNewtype dgi)) dg
+    :++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
+    :++: hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) basePrfCtxtId eg
   where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) (Pr.rulMkEvidHow r) ((Pr.rulId r) {poiCxId = basePrfCtxtId}) (Pr.rulCost r) []
 %%]
 

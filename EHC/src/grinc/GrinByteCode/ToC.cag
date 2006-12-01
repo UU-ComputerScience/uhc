@@ -451,7 +451,7 @@ SEM Instr
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
-  | LdGlobal    lhs         .   mn          =   pp "ldg"
+  | LdGlobal    lhs         .   mn          =   "ldg" 			>|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
 
@@ -522,15 +522,18 @@ SEM Instr
   | RetCase     loc         .   enc         =   0xC5
   | CaseCall    loc         .   enc         =   0xC6
   | CallC       loc         .   enc         =   0xC7
+  | LdGlobal    loc         .   enc         =   0xC8 .|. (@locDst.enc)
   | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
   | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
   | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
   | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
   | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
   | FetchUpdate loc         .   enc         =   0xF9
-  | LdGlobal    loc         .   enc         =   0xFC
   | Halt        loc         .   enc         =   0xFE
+%%]
+  | LdGlobal    loc         .   enc         =   0xFC
 
+%%[8
 SEM Instr
   | TailCall RetCall
                 loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 4) .|. (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)

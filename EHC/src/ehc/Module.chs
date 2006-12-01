@@ -24,6 +24,9 @@
 %%[12 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
 %%]
 
+%%[12 import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
+%%]
+
 %%[12 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
 %%]
 
@@ -37,9 +40,9 @@
 %%[12
 data ModEnt
   = ModEnt
-      { mentKind 	:: IdOccKind
-      , mentIdOcc 	:: IdOcc
-      , mentOwns 	:: Set.Set ModEnt
+      { mentKind    :: IdOccKind
+      , mentIdOcc   :: IdOcc
+      , mentOwns    :: Set.Set ModEnt
       }
   deriving (Show)
 
@@ -118,8 +121,8 @@ emptyModImp = ModImp False hsnUnknown hsnUnknown True []
 modImpBuiltin :: ModImp
 modImpBuiltin
   = emptyModImp
-      { mimpSource		= hsnModBuiltin
-      , mimpAs			= hsnModBuiltin
+      { mimpSource      = hsnModBuiltin
+      , mimpAs          = hsnModBuiltin
       }
 %%]
 
@@ -127,8 +130,8 @@ modImpBuiltin
 modImpPrelude :: ModImp
 modImpPrelude
   = emptyModImp
-      { mimpSource		= hsnModPrelude
-      , mimpAs			= hsnModPrelude
+      { mimpSource      = hsnModPrelude
+      , mimpAs          = hsnModPrelude
       }
 %%]
 
@@ -160,7 +163,7 @@ data Mod
       , modExpL         :: Maybe [ModExp]
       , modImpL         :: [ModImp]
       , modDefs         :: ModEntRel
-      , modInstNmL		:: [HsName]
+      , modInstNmL      :: [HsName]
       }
   deriving (Show)
 
@@ -168,8 +171,8 @@ emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty []
 
 modBuiltin
   = emptyMod
-      { modName			= hsnModBuiltin
-      , modDefs			= defs
+      { modName         = hsnModBuiltin
+      , modDefs         = defs
       }
   where defs
           = Rel.fromList [ (n,ModEnt IdOcc_Type (IdOcc n IdOcc_Type) Set.empty) | (n,_) <- gamToAssocL initTyGam ]
@@ -393,12 +396,12 @@ checkImp exps imp
 %%% 7 Top level (The semantics of a Haskell program)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(ModMpInfo(..),ModMp,emptyModMpInfo)
+%%[12 export(ModMpInfo(..),ModMp,emptyModMpInfo,mkModMpInfo)
 data ModMpInfo
   = ModMpInfo
       { mmiInscps   :: ModEntRel
       , mmiExps     :: ModEntRel
-      , mmiExpsHI   :: ModEntRel
+      , mmiNmOffMp  :: HsName2OffsetMp
       }
 
 instance Show ModMpInfo where
@@ -409,7 +412,15 @@ instance PP ModMpInfo where
        >-< "Exps  :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
 
 emptyModMpInfo :: ModMpInfo
-emptyModMpInfo = ModMpInfo Rel.empty Rel.empty Rel.empty
+emptyModMpInfo = mkModMpInfo Rel.empty Rel.empty
+
+mkModMpInfo :: ModEntRel -> ModEntRel -> ModMpInfo
+mkModMpInfo i e
+  = ModMpInfo
+      { mmiInscps   = i
+      , mmiExps     = e
+      , mmiNmOffMp  = expsNmOffMp e
+      }
 
 type ModMp = Map.Map HsName ModMpInfo
 
@@ -419,9 +430,14 @@ ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 
 The exported names of the module
 
-%%[12 export(mmiExpsNmS)
-mmiExpsNmS :: ModMpInfo -> HsNameS
-mmiExpsNmS = Set.map (ioccNm . mentIdOcc) . Rel.rng . mmiExps
+%%[12
+expsNmOffMp :: ModEntRel -> HsName2OffsetMp
+expsNmOffMp exps
+  = Map.fromList
+    $ flip zip [0..]
+    $ sortByOn rowLabCmp hsnQualified
+    $ nub
+    $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val || mentKind e == IdOcc_Inst ]
 %%]
 
 %%[12 export(modMpCombine)
@@ -431,8 +447,7 @@ modMpCombine ms mp
   where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
         rels            = modInsOuts (expsOf mp) ms
         (inscps,exps)   = unzip rels
-        newMp           = (Map.fromList $ zipWith3 (\n i o -> (n,mk i o)) (map modName ms) inscps exps)
+        newMp           = (Map.fromList $ zipWith3 (\n i o -> (n,mkModMpInfo i o)) (map modName ms) inscps exps)
                            `Map.union` mp
-                        where mk i o = emptyModMpInfo {mmiInscps = i, mmiExps = o}
         errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
 %%]
