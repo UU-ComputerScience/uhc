@@ -34,42 +34,46 @@ inlineEA hptMap unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf 
 
 
 buildAlternative
- :: GrTag                                                                ->      -- t
-    [AbstractValue]                                                      ->      -- av
+ :: GrTag                                                                ->      -- tag
+    [AbstractValue]                                                      ->      -- avs
     Int                                                                  ->      -- arity
     EvApTagElt                                                           ->      -- rhsElem
     Int                                                                  ->      -- unique
     (Int -> [HsName]           -> (Int, [(Int,AbstractValue)], GrExpr))  ->      -- uf
     (Int -> [HsName] -> HsName -> (Int, [(Int,AbstractValue)], GrExpr))  ->      -- vf
     (Int -> [HsName] -> GrTag  -> (Int, [(Int,AbstractValue)], GrExpr))  ->      -- tf
-    ( Int                                -- newU
-    , [(Int, AbstractValue)]             -- newHPT
-    , GrAlt                              -- alt
+    ( Int                                -- new unique number
+    , [(Int, AbstractValue)]             -- entries for HPT
+    , GrAlt                              -- code
     )
 
-buildAlternative t av arity rhsElem unique uf vf tf =
+buildAlternative tag avs arity rhsElem unique uf vf tf =
     let args            = if grinStoreArity
-                           then tail av  -- first element is the arity information (is always a basic abstract value)
-                           else av
-        elems           = zip [unique..] args
-        patNames        = map (\(i,_) -> HNPos i) elems
-        unique'         = unique + arity
-        (newU, h, rhs)  = case rhsElem of
-                              EvApTagThrow -> (unique', [], GrExpr_Throw (head patNames))
-                              EvApTagUnit  -> uf unique' patNames
-                              EvApTagVar f -> vf unique' patNames f
-                              EvApTagTag t -> tf unique' patNames t
-        alt             = GrAlt_Alt (GrPat_Node t $ (if grinStoreArity then (wildcardNr:) else id) patNames) rhs
-        newHPT          = h ++ elems
-    in (newU, newHPT, alt)
+                           then tail avs  -- first element is the arity information (is always a basic abstract value)
+                           else avs
+                           
+        patNames        = map (HNPos . fst) entrHead
 
+        uniqHead        = unique + arity
+        entrHead        = zip [unique..] args
+        codeHead        = GrAlt_Alt (GrPat_Node tag $ (if grinStoreArity then (wildcardNr:) else id) patNames)
+        
+        (uniqBody,
+         entrBody,
+         codeBody )     = case rhsElem of
+                              EvApTagThrow -> (uniqHead, [], GrExpr_Throw (head patNames))
+                              EvApTagUnit  -> uf uniqHead patNames
+                              EvApTagVar f -> vf uniqHead patNames f
+                              EvApTagTag t -> tf uniqHead patNames t
+
+    in (uniqBody, entrHead++entrBody, codeHead codeBody)
 
 
 
 buildEvalAlt
- :: HsName                       ->      -- l
-    HsName                       ->      -- s
-    GrTag                        ->      -- t
+ :: HsName                       ->      -- locatVar
+    HsName                       ->      -- fetchVar
+    GrTag                        ->      -- tag
     [AbstractValue]              ->      -- av
     [(GrTag, (Int, EvApTagElt))] ->      -- evalMap
     HptMap                       ->      -- hptMap
@@ -79,43 +83,60 @@ buildEvalAlt
     , GrAlt                   -- code
     )
 
-buildEvalAlt l s t av evalMap hptMap u
- = buildAlternative t av arity rhs u uf vf tf
+buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
+ = buildAlternative tag avs arity rhs u uf vf tf
     where
-    (arity, rhs) = fromJust' ("tag not found: " ++ show t ++ " in " ++ show (map fst evalMap)) (lookup t evalMap)
+    (arity, rhs) = fromJust' ("tag not found: " ++ show tag ++ " in " ++ show (map fst evalMap)) (lookup tag evalMap)
     tf u args t  = error "no tag at the right hand side of eval map expected"
-    uf u args    = (u, [], GrExpr_Unit $ GrVal_Var s)
-    vf u args v  = let var      = HNPos u
-                       val      = GrVal_Var var
-                       absVal   = getEnvVar hptMap (getNr v)
-                       callExp  = GrExpr_Seq (GrExpr_Call v $ map GrVal_Var args)
-                                             (GrPat_Var var)
-                                             (GrExpr_Seq (GrExpr_Update l val Nothing)
-                                                         (GrPat_Empty)
-                                                         (GrExpr_Unit val)
-                                             )
-                       eVar     = HNPos $ u+1
-                       eArity   = if grinStoreArity
-                                   then [GrVal_LitInt 1]
-                                   else []
-                       eNode    = GrVal_Node throwTag (eArity ++ [GrVal_Var eVar])
-                       eCode    = GrExpr_Catch callExp eVar (GrExpr_Seq (GrExpr_Update l eNode Nothing)
-                                                                        (GrPat_Empty)
-                                                                        (GrExpr_Throw eVar)
-                                                            )
-                       eAbsVal  = getEnvVar hptMap (getNr v + 1)
-                       hasE     = case eAbsVal of
-                                      AV_Nothing      -> False
-                                      AV_Locations l  -> not (Set.null l)
-                                      otherwise       -> error $ "wrong content of exception variable of binding " ++ show v
-                       code     = if hasE
-                                  then GrExpr_Seq eCode
-                                                  (GrPat_Var (HNPos $ u+2))
-                                                  (GrExpr_Unit $ GrVal_Var (HNPos $ u+2))
-                                  else callExp
-                       newU     = if hasE then u+3 else u+1
-                       maps     = (u, absVal) : if hasE then [(u+1, eAbsVal), (u+2, absVal)] else []
-                   in (newU, maps, code)
+    uf u args    = (u, [], GrExpr_Unit $ GrVal_Var fetchVar)
+    vf u args functVar  
+                 = -- process an evalMap entry which represents a function call
+                   let 
+                       -- create new name from unique number
+                       boundVar   = HNPos u
+                       -- wrap the newly created names for use in Grin-values and -patterns
+                       boundVal   = GrVal_Var boundVar
+                       boundPat   = GrPat_Var boundVar
+                       emptyPat   = GrPat_Empty
+                       -- get the abstract value for the function-result and exception-result of the called function
+                       functAbsVal= getEnvVar hptMap (getNr functVar)
+                       excepAbsVal= getEnvVar hptMap (getNr functVar + 1)
+                       -- create an HPT entry for the new variable
+                       boundEntry = (getNr boundVar, functAbsVal)
+                       -- generate code for the call          
+                       callExpr   = GrExpr_Seq (GrExpr_Call functVar $ map GrVal_Var args) boundPat  $
+                                    GrExpr_Seq (GrExpr_Update locatVar boundVal Nothing)   emptyPat  $
+                                    GrExpr_Unit boundVal
+                   in  if  not (isEmptyAbsVal excepAbsVal)
+                       -- do we need to handle exceptions?  
+                        then let
+                                 -- create some more new names
+                                 throwVar   = HNPos $ u+1
+                                 catchVar   = HNPos $ u+2
+                                 -- and wrap them for use in Grin
+                                 throwVal   = GrVal_Var throwVar
+                                 catchVal   = GrVal_Var catchVar
+                                 catchPat   = GrPat_Var catchVar
+                                 -- create HPT entries for the new variables
+                                 throwEntry = (getNr throwVar, excepAbsVal)
+                                 catchEntry = (getNr catchVar, functAbsVal)
+                                 -- create a node for the exception
+                                 eArity     = if grinStoreArity  then (GrVal_LitInt 1 : ) else id
+                                 eNode      = GrVal_Node throwTag (eArity [throwVal])
+                                 -- generate code for handling the exception
+                                 eCode      = GrExpr_Catch callExpr throwVar                              $
+                                              GrExpr_Seq (GrExpr_Update locatVar eNode Nothing) emptyPat  $
+                                              GrExpr_Throw throwVar
+                                 handleExpr = GrExpr_Seq eCode catchPat $
+                                              GrExpr_Unit catchVal
+                             in  (u+3, [ boundEntry, throwEntry, catchEntry ], handleExpr )
+                        else     (u+1, [ boundEntry ]                        , callExpr   )
+
+
+
+isEmptyAbsVal AV_Nothing        = True
+isEmptyAbsVal (AV_Locations xs) = Set.null xs
+isEmptyAbsVal v                 = error $ "wrong content of exception variable of binding " ++ show v
 
 
 
@@ -123,30 +144,43 @@ evalCode
  :: Int                          ->      -- unique
     [(GrTag, (Int, EvApTagElt))] ->      -- evalMap
     HptMap                       ->      -- hptMap
-    HsName                       ->      -- loc
-    ( Int                                -- unique3
-    , HptMap                             -- ...
-    , GrExpr                             -- ...
-    , (Int, [Int])                       -- ...
+    HsName                       ->      -- locat
+    ( Int                                -- uniqueFinal
+    , HptMap                             -- updated hptMap
+    , GrExpr                             -- generated code
+    , (Int, [Int])                       -- rename map
     )
 
-evalCode unique evalMap hptMap loc
- = let unique'                    = unique+1
-       fetchVar                   = HNPos unique
-       fetchAbsVal                = absFetch hptMap loc
-       nodes                      = getNodes fetchAbsVal
-       makeAlt  (t, av) (u, h, l) = let (u', h', alt) = buildEvalAlt loc fetchVar t av evalMap hptMap u
-                                    in (u', h' ++ h, alt:l)
-       (unique'', hptDelta, alts) = foldr makeAlt (unique', [(unique, fetchAbsVal)], []) nodes
-       code                       = GrExpr_Seq (GrExpr_Fetch loc Nothing Nothing)
-                                               (GrPat_Var fetchVar)
-                                               (GrExpr_Case (GrVal_Var fetchVar) alts)
-   in ( unique''
-      , addEnvVars hptMap hptDelta
+evalCode unique evalMap hptMap locatVar
+ = let -- create new name from unique number
+       fetchVar      = HNPos unique
+       -- wrap the newly created names for use in Grin-values and -patterns
+       fetchVal      = GrVal_Var fetchVar
+       fetchPat      = GrPat_Var fetchVar
+       -- get the abstract value for the original location
+       locatAbsVal   = absFetch hptMap locatVar
+       -- create an HPT entry for the new variable
+       fetchEntry    = (getNr fetchVar, locatAbsVal)
+       -- we must generate code for all possible cases, as found in the abstract value
+       cases         = getNodes locatAbsVal
+       -- each case can update the unique, generate new HPT entries, and generate code for the alternatives
+       -- we start with these:
+       uniqStart = unique + 1
+       entrStart = [fetchEntry]
+       altsStart = []
+       -- the results of all cases are accumulated:
+       (uniqFinal, entrFinal, altsFinal)  = foldr makeAlt (uniqStart,entrStart,altsStart) cases
+       -- where each case is processed by:
+       makeAlt (tag, av) (uniqPrev, entrPrev, altsPrev) 
+                   = let (uniqNext, entrNext, altNext) = buildEvalAlt locatVar fetchVar tag av evalMap hptMap uniqPrev
+                     in  (uniqNext, entrNext++entrPrev, altNext:altsPrev)
+
+       code        = GrExpr_Seq (GrExpr_Fetch locatVar Nothing Nothing) fetchPat $
+                     GrExpr_Case fetchVal altsFinal
+   in ( uniqFinal
+      , addEnvVars hptMap entrFinal
       , code
-      , ( getNr loc
-        , [unique .. unique''-1]
-        )
+      , ( getNr locatVar , [unique .. uniqFinal-1] )
       )
 
 
