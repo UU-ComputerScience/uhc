@@ -38,9 +38,11 @@ error2 s = AbstractEnvElement
            }
 
 
-heapPointsToAnalysis :: (Int,Int) -> GrModule -> IO HPTResult
-heapPointsToAnalysis (low,high) grmod = stToIO $ do
-    { let applyArg = low - 1 ;
+heapPointsToAnalysis :: Int -> GrModule -> IO HPTResult
+heapPointsToAnalysis unique grmod = stToIO $ do
+    { let low      = 3
+          high     = unique-1
+          applyArg = low - 1 ;
     ; absEnv <- (newArray_ (applyArg,high) ) :: EnvAction
     ; foldM_ (\_ v -> writeArray absEnv v (error2 $ "no equation for variable " ++ show v )) () [applyArg..high]
     ; let setEnvVar v shared eq = writeArray absEnv v (AbstractEnvElement
@@ -102,7 +104,7 @@ ATTR AllGrTag [ | | self: SELF ]
 ATTR AllNT [ tag2resultVar: {AssocL GrTag Int} | | ]
 ATTR GrModule [ | | tag2resultVar: {AssocL GrTag Int} ]
 SEM GrModule
-  | Mod     loc . tag2resultVar = [ (t, f) | ((t,_), EvApTagVar (HNPos f)) <- @evalTagMp ]
+  | Mod     loc . tag2resultVar = [ (t, f) | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
 
 SEM GrAGItf
   | AGItf   module . tag2resultVar = []
@@ -520,8 +522,8 @@ SEM GrExpr
 %%[8.applyMap
 ATTR GrModule GrAGItf [ | | applyMap : {AssocL GrTag (Either GrTag Int)} ]
 SEM GrModule
-  | Mod     loc . applyMap = let rewrite (EvApTagVar (HNPos f)) = Right f
-                                 rewrite (EvApTagTag t        ) = Left  t
+  | Mod     loc . applyMap = let rewrite (EvApTagVar (HNmNr f _)) = Right f
+                                 rewrite (EvApTagTag t          ) = Left  t
                              in [ (t, rewrite v) | ((t,_), v) <- @applyTagMp ]
 %%]
 

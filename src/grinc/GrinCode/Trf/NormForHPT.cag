@@ -34,7 +34,7 @@ normForHPT unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod
                           in (unique_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
 
 newVar :: Int -> (HsName, Int)
-newVar u = (HNPos u, u+1)
+newVar u = (HNmNr u Nothing, u+1)
 
 newVar' :: Bool -> Int -> (HsName, Int)
 newVar' b u = if b then newVar u else (undefined, u)
@@ -154,7 +154,7 @@ This is actually something for the code generator, but it is easier to prepare t
 
 %%[8.catch
 SEM GrExpr
-  | Catch   loc  .  var         =  HNPos @handler.unique
+  | Catch   loc  .  var         =  HNmNr @handler.unique Nothing
                  .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit $ GrVal_Var @var)
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
                  .  unique      =  if @lhs.hasNext then @handler.unique else @handler.unique + 1

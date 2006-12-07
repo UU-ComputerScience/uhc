@@ -17,10 +17,12 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(dropUnusedExpr)
-dropUnusedExpr :: HptMap -> GrModule -> GrModule
-dropUnusedExpr hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                   (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap })
-                              in grTrf_Syn_GrAGItf t
+dropUnusedExpr :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+dropUnusedExpr (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, unique, hptMap)
+
 %%]
 
 %%[8

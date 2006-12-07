@@ -14,13 +14,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.ReturningCatch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(returnCatch)
-returnCatch :: HptMap -> Int -> GrModule -> (Int, GrModule)
-returnCatch hptMap uniq grmod  =  let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                       (Inh_GrAGItf { uniq_Inh_GrAGItf    =  uniq
-                                                                    , hptMap_Inh_GrAGItf  =  hptMap
-                                                                    }
-                                                       )
-                                  in (uniq_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+
+returnCatch :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+returnCatch (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, uniq_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap)
+
 %%]
 
 %%[8
@@ -35,13 +35,11 @@ SEM GrBind
   | Bind    loc  .  size = foldl (\len (tag,fields) -> (length fields) `max` len) 0 $ getNodes (getEnvVar @lhs.hptMap (getNr @nm))
 
 SEM GrExpr
-  | Catch   loc  .  tag         =  GrTag_Var (HNPos @handler.uniq)
-                 .  vars        =  take @lhs.size (map HNPos [@handler.uniq+1 ..])
+  | Catch   loc  .  tag         =  GrTag_Var (HNmNr @handler.uniq Nothing)
+                 .  vars        =  take @lhs.size (map (\n->HNmNr n Nothing) [@handler.uniq+1 ..])
                  .  pattern     =  GrPat_Node @tag @vars
                  .  value       =  GrVal_Node @tag (map GrVal_Var @vars)
                  .  appendUnit  =  GrExpr_Seq @grTrf @pattern (GrExpr_Unit @value)
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
                  .  uniq        =  if @lhs.hasNext then @handler.uniq else @handler.uniq + 1 + @lhs.size
 %%]
-
-% vim:ts=4:et:ai:

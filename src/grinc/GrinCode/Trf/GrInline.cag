@@ -13,17 +13,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.GrInline} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, {%{GRIN}HeapPointsToFixpoint}, Data.List) export(inlineEA)
-inlineEA :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
-inlineEA hptMap unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                    (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap
-                                                                 , unique_Inh_GrAGItf = unique
-                                                                 }
-                                                    )
-                                   hptMap'    = hptMap_Syn_GrAGItf t
-                                   unique'    = unique_Syn_GrAGItf t
-                                   renameMap  = renameMap_Syn_GrAGItf t
-                                   grmod'     = grTrf_Syn_GrAGItf t
-                               in (hptMap', unique', renameMap, grmod')
+
+inlineEA :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+inlineEA (code,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, unique_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,7 +48,7 @@ buildAlternative tag avs arity rhsElem unique uf vf tf =
                            then tail avs  -- first element is the arity information (is always a basic abstract value)
                            else avs
                            
-        patNames        = map (HNPos . fst) entrHead
+        patNames        = map (\e -> HNmNr (fst e) Nothing) entrHead
 
         uniqHead        = unique + arity
         entrHead        = zip [unique..] args
@@ -93,7 +89,7 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                  = -- process an evalMap entry which represents a function call
                    let 
                        -- create new name from unique number
-                       boundVar   = HNPos u
+                       boundVar   = HNmNr u Nothing
                        -- wrap the newly created names for use in Grin-values and -patterns
                        boundVal   = GrVal_Var boundVar
                        boundPat   = GrPat_Var boundVar
@@ -111,8 +107,8 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                        -- do we need to handle exceptions?  
                         then let
                                  -- create some more new names
-                                 throwVar   = HNPos $ u+1
-                                 catchVar   = HNPos $ u+2
+                                 throwVar   = HNmNr (u+1) Nothing
+                                 catchVar   = HNmNr (u+2) Nothing
                                  -- and wrap them for use in Grin
                                  throwVal   = GrVal_Var throwVar
                                  catchVal   = GrVal_Var catchVar
@@ -148,12 +144,11 @@ evalCode
     ( Int                                -- uniqueFinal
     , HptMap                             -- updated hptMap
     , GrExpr                             -- generated code
-    , (Int, [Int])                       -- rename map
     )
 
 evalCode unique evalMap hptMap locatVar
  = let -- create new name from unique number
-       fetchVar      = HNPos unique
+       fetchVar      = HNmNr unique Nothing
        -- wrap the newly created names for use in Grin-values and -patterns
        fetchVal      = GrVal_Var fetchVar
        fetchPat      = GrPat_Var fetchVar
@@ -180,7 +175,6 @@ evalCode unique evalMap hptMap locatVar
    in ( uniqFinal
       , addEnvVars hptMap entrFinal
       , code
-      , ( getNr locatVar , [unique .. uniqFinal-1] )
       )
 
 
@@ -200,7 +194,7 @@ P-nodes for the other elements. Strip of the number of used arguments and
 restart. Otherwise continue until all arguments in an apply call are used and
 create a case to build the resulting P-node.
 
-The analysis result of P-nodes 'in between' is not availible. We must generate
+The analysis result of P-nodes 'in between' is not available. We must generate
 this from the availible information. To that end we must create a new abstract
 value which returns the union of the abstract value of each case alternative.
 
@@ -272,7 +266,6 @@ buildApplyCase
     , [(Int, AbstractValue)]             -- hptDelta
     , GrExpr
     , AbstractValue                      -- unionAV
-    , (Int,[Int])
     )
 
 buildApplyCase unique hptMap funVar appArgs nodeList
@@ -285,9 +278,6 @@ buildApplyCase unique hptMap funVar appArgs nodeList
        , hptDelta
        , GrExpr_Case (GrVal_Var funVar) alts
        , unionAV
-       , ( getNr funVar
-         , [unique .. unique2 - 1]
-         )
        )
 
 applyCodePart
@@ -300,7 +290,6 @@ applyCodePart
     ( Int                                -- unique3
     , HptMap                             -- ...
     , GrExpr                             -- ...
-    , [(Int,[Int])]                      -- ...
     )
 
 applyCodePart unique applyMap hptMap nodes appVar appArgs
@@ -336,32 +325,23 @@ applyCodePart unique applyMap hptMap nodes appVar appArgs
                  then (zip fromInfo elems, usedArgsF2 [], availArgs)
                  else getElements (map (fromJust' "no tag?") mbTags) availArgs usedArgsF2
 
-        (origTags, avs)  = unzip nodes
-
-        arities          = map ((\(x,y,z) -> y) . getNewTag . fst) nodes
-
-        fromInfo         = zip3 origTags arities avs
-
-        (elems, usedArgs, restArgs)                  = getElements origTags appArgs id
-
-        (unique2, hptDelta, code, resultAV, newMap)  = buildApplyCase unique hptMap appVar usedArgs elems
-
-        hptMap2                                      = addEnvVars hptMap hptDelta
-
-        newVar  = HNPos unique2
+        (origTags, avs)                      = unzip nodes
+        arities                              = map ((\(x,y,z) -> y) . getNewTag . fst) nodes
+        fromInfo                             = zip3 origTags arities avs
+        (elems, usedArgs, restArgs)          = getElements origTags appArgs id
+        (unique2, hptDelta, code, resultAV)  = buildApplyCase unique hptMap appVar usedArgs elems
+        hptMap2                              = addEnvVars hptMap hptDelta
+        newVar                               = HNmNr unique2 Nothing
 
     in if null restArgs
-       then (unique2, hptMap2, code, [newMap])
-       else let (unique3, hptMap3, code2, newMaps) = applyCodePart (unique2 + 1)
-                                                                   applyMap
-                                                                   (addEnvVar hptMap2 unique2 resultAV)
-                                                                   (filter isPartialApplication $ getNodes resultAV)
-                                                                   newVar
-                                                                   restArgs
-            in (unique3, hptMap3, GrExpr_Seq code (GrPat_Var newVar) code2, newMaps)
-
-
-
+       then (unique2, hptMap2, code)
+       else let (unique3, hptMap3, code2) = applyCodePart (unique2 + 1)
+                                                          applyMap
+                                                          (addEnvVar hptMap2 unique2 resultAV)
+                                                          (filter isPartialApplication $ getNodes resultAV)
+                                                          newVar
+                                                          restArgs
+            in (unique3, hptMap3, GrExpr_Seq code (GrPat_Var newVar) code2)
 
 
 
@@ -374,13 +354,10 @@ applyCode
     ( Int                                -- unique3
     , HptMap                             -- ...
     , GrExpr                             -- ...
-    , [(Int,[Int])]                      -- ...
     )
 
 applyCode unique applyMap hptMap funVar appArgs
- =  let nodes
-          = (getNodes (getEnvVar hptMap (getNr funVar)))
-
+ =  let nodes = (getNodes (getEnvVar hptMap (getNr funVar)))
     in applyCodePart unique applyMap hptMap nodes funVar appArgs
 
 
@@ -396,11 +373,9 @@ fromJust' _ (Just e) = e
 
 %%[8
 ATTR GrAGItf AllNT [ | unique: Int  hptMap: HptMap | ]
-ATTR GrAGItf [ | | grTrf: GrModule renameMap: RenameMap ]
-ATTR AllNT [ | renameMap: RenameMap | grTrf: SELF ]
+ATTR GrAGItf       [ | | grTrf: GrModule ]
+ATTR AllNT         [ | | grTrf: SELF ]
 
-SEM GrAGItf
-  | AGItf  module . renameMap = []
 %%]
 
 %%[8.applyMap
@@ -413,8 +388,6 @@ SEM GrModule
 
 %%[8.inlineEval
 SEM GrExpr
-  | Eval  loc  .  (unique, hptMap, grTrf, newMap )  = evalCode   @lhs.unique @lhs.evalMap   @lhs.hptMap @nm
-               .  renameMap                         = @newMap : @lhs.renameMap
-  | App   loc  .  (unique, hptMap, grTrf, newMaps)  = applyCode  @lhs.unique @lhs.applyMap  @lhs.hptMap @nm @argL.grTrf
-               .  renameMap                         = @newMaps ++ @lhs.renameMap
+  | Eval  loc  .  (unique, hptMap, grTrf)  = evalCode   @lhs.unique @lhs.evalMap   @lhs.hptMap @nm
+  | App   loc  .  (unique, hptMap, grTrf)  = applyCode  @lhs.unique @lhs.applyMap  @lhs.hptMap @nm @argL.grTrf
 %%]

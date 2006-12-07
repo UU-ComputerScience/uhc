@@ -9,23 +9,28 @@
 
 %%[8 module {%{GRIN}GRINCCommon}
 %%]
-%%[8 import( {%{EH}Base.Common}, qualified Data.Map as Map, qualified Data.Set as Set, Char(isDigit))
+%%[8 import( {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified Data.Map as Map, qualified Data.Set as Set, Char(isDigit))
 %%]
 
-%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, isSpecialBind, getNr, throwTag, blackholeTag)
+%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag, blackholeTag)
 
 wildcardNm = HNm "_"
-wildcardNr = HNPos (0)
+wildcardNr = HNmNr 0 (Just wildcardNm)
 evalNm     = HNm "!eval"
-evalNr     = HNPos 1
+evalNr     = HNmNr 1 (Just evalNm)
 applyNm    = HNm "!apply"
-applyNr    = HNPos 2
+applyNr    = HNmNr 2 (Just applyNm)
 
-isSpecialBind f = f == evalNm || f == applyNm
+mainNr     = HNmNr 3 (Just (hsnPrefix "fun_" hsnMain))
+--mainNr     = HNmNr 3 (Just (hsnMain))
+
+
+isSpecialBind f = f == evalNm || f == applyNm || f==hsnMain
 
 getNr :: HsName -> Int
-getNr (HNPos i) = i
-getNr a         = error $ "not a numbered name: " ++ show a
+getNr (HNmNr i _) = i
+getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
+getNr a           = error $ "getNr tried on " ++ show a
 
 --note: this is copied to HeapPointsToFixpoint.chs
 blackholeTag  =  GrTag_Lit GrTagHole  0 (HNm "blackhole")
@@ -35,7 +40,7 @@ throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%[8 import({%{EH}GrinCode})
 %%]
 
-%%[8 export(IdentNameMap, IdentOneToMany, RenameMap, mergeRenameMap, getName, getName')
+%%[8 export(IdentNameMap, IdentOneToMany, RenameMap, mergeRenameMap, getName')
 
 type IdentNameMap   = (Array Int HsName, Map.Map Int Int)
 type IdentOneToMany = (Int,  [Int])
@@ -46,11 +51,18 @@ mergeRenameMap (a,m) rm = (a,foldl addToMap m rm)
     where
     addToMap m (orig,vars) = foldl (\m v -> Map.insert v orig m) m vars
 
-getName :: IdentNameMap -> Int -> String
-getName m i = show $ getName' m (HNPos i)
+--getName :: IdentNameMap -> Int -> String
+--getName m i = show $ getName' m (HNmNr i Nothing)
 
 getName' :: IdentNameMap -> HsName -> HsName
-getName' (names, m) nm@(HNPos i)
+getName' (names, m) nm@(HNmNr i Nothing    ) = nm
+getName' (names, m) nm@(HNmNr i (Just orig)) = orig
+getName' (names, m) nm@(HNPos p) = nm
+--getName' (names, m) nm@(HNPos p) = error $ "findNewVar: position: " ++ show p
+getName' (names, m) nm@(HNm s) = error $ "findNewVar: name: " ++ s
+
+{-
+getName' (names, m) nm@(HNmNr i _)
   = if wildcardNr == nm
     then wildcardNm
     else if applyNr == nm
@@ -66,6 +78,7 @@ getName' (names, m) nm@(HNPos i)
     findNewVar' v suffix = if v `inBetween` bounds names
                            then hsnSuffix (names ! v) suffix
                            else maybe (hsnSuffix (HNPos v) suffix) id (Map.lookup v m >>= return . flip findNewVar' ("_" ++ show v ++ suffix))
+-}
 getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
 
 %%]
@@ -85,7 +98,7 @@ getHeapLoc :: HptMap -> Int -> AbstractValue
 getHeapLoc ((_, ha),_) i = ahBaseSet (ha ! i)
 
 absFetch :: HptMap -> HsName -> AbstractValue
-absFetch a (HNPos i) = case getEnvVar a i of
+absFetch a (HNmNr i _) = case getEnvVar a i of
                              AV_Locations l -> mconcat $ map (getHeapLoc a) (Set.toList l)
                              AV_Nothing     -> AV_Nodes Map.empty
                              AV_Error s     -> error $ "analysis error: " ++ s
