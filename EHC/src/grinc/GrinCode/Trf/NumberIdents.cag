@@ -22,17 +22,15 @@ Note: after each binding we skip one number (binding needs two number in the HPT
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
+%%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
 
-numberIdents :: Int -> HsName -> GrModule -> (Int, HsName, GrModule, IdentNameMap, Int)
-numberIdents u entry grmod = let t          = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                           (Inh_GrAGItf { unique_Inh_GrAGItf = u, entry_Inh_GrAGItf = entry })
-                                 nrOfBinds  = nrOfBinds_Syn_GrAGItf t
-                                 newU       = unique_Syn_GrAGItf t
-                                 newGrMod   = grTrf_Syn_GrAGItf  t
-                                 varMap     = varMap_Syn_GrAGItf t
-                                 newEntry   = entry_Syn_GrAGItf  t
-                             in (newU, newEntry, newGrMod, varMap, newU - u - nrOfBinds)
+numberIdents :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+numberIdents (code,unique,hptMap)
+  = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn, hptMap)
+
+
 %%]
 
 %%[8.lookup hs
@@ -40,16 +38,20 @@ type LookupList = Map.Map HsName HsName
 
 findNewVar fm e = Map.findWithDefault (error $ "undeclared variable " ++ show e) e fm
 
+
+addMaybe :: Int -> LookupList -> Maybe HsName -> (LookupList, Int)
 addMaybe u fm = maybe (fm, u) addName
     where
-    addName e | e == wildcardNm  = (fm                       , u  )
-              | otherwise        = (Map.insert e (HNPos u) fm, u+1)
+    addName e | e == wildcardNm  = (fm                                , u  )
+              | otherwise        = (Map.insert e (HNmNr u (Just e)) fm, u+1)
 
+addList :: Int -> LookupList -> [HsName] -> (LookupList, [HsName], Int)
 addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
     where
     onFst f (a, b, c)                       = (f a          , b             , c  )
     addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
-                         | otherwise        = ((e,HNPos u):l, ((HNPos u):l2), u+1)
+                         | otherwise        = let newname = HNmNr u (Just e)
+                                              in ((e,newname):l, (newname:l2), u+1)
 %%]
 
 %%[8.grTrf
@@ -66,46 +68,16 @@ SEM GrAGItf
                    .  high        = @module.unique
 %%]
 
-%%[8.translateEntry
-ATTR GrAGItf [ | entry: HsName | ]
-SEM GrAGItf
-  | AGItf  lhs . entry = case Map.lookup @lhs.entry @bind2id of
-                              Just x -> x
-                              Nothing -> error ("cannot find " ++ show @lhs.entry ++ " in " ++ show @bind2id)
-                           
-%%]
-  | AGItf  lhs . entry = fromJust $ Map.lookup @lhs.entry @bind2id
 
 %%[8.maps
-ATTR GrAGItf          [ | | varMap:  IdentNameMap ]
 ATTR AllNT          [ bind2id: LookupList  | var2id: LookupList | ]
 ATTR GrModule AllBind [ | bind2idFrag: LookupList | ]
-ATTR GrModule         [ | | globalVars: LookupList ]
 
 SEM GrAGItf
   | AGItf  module  .  bind2idFrag  = Map.empty
                    .  var2id       = Map.empty
            loc     .  bind2id      = @module.bind2idFrag
-                   .  bind2idList  = Map.toList @module.bind2idFrag
-                   .  var2idList   = Map.toList @module.var2id
-                   .  bindMapping  = concat [ [ (i, n2)
-                                              , (i+1, n2)
-                                              ]
-                                            | (n, HNPos i) <- @bind2idList
-                                            , not (n `elem` [applyNm, evalNm])
-                                            , let n2 = hsnPrefix "fun_" n
-                                            ] -- ugly
-                   .  varMapping   = let changeCaf n
-                                           = if    Map.member n @module.globalVars
-                                              then hsnPrefix rtsGlobalVarPrefix n
-                                              else n
-                                     in  [ (i, changeCaf n)
-                                         | (n, HNPos i) <- @var2idList
-                                         ]
-                   .  varMap       = (array (@low, @high-1) (@bindMapping ++ @varMapping), Map.empty)
 
-SEM GrModule
-  | Mod  lhs  .  globalVars  =  @globalL.var2id
 %%]
 
 retrieving names and their mapping
@@ -122,10 +94,12 @@ addMbToMap fm mbk mbv = maybe fm id mbMap
 %%[8.bindings
 SEM GrBind
   | Bind  loc  .  (bindName, unique')  =  if @nm == applyNm
-                                          then (applyNr          , @lhs.unique  )
+                                          then (applyNr              , @lhs.unique  )
                                           else if @nm == evalNm
-                                          then (evalNr           , @lhs.unique  )
-                                          else (HNPos @lhs.unique, @lhs.unique+2)
+                                          then (evalNr               , @lhs.unique  )
+                                          else if @nm == hsnMain
+                                          then (mainNr               , @lhs.unique  )
+                                          else (HNmNr @lhs.unique (Just (hsnPrefix "fun_" @nm)), @lhs.unique+2)
                .  bind2idFrag          = if isSpecialBind @nm
                                          then @lhs.bind2idFrag
                                          else Map.insert @nm @bindName @lhs.bind2idFrag
@@ -138,8 +112,9 @@ SEM GrTag [ | | varName: {Maybe HsName} ]
 %%]
 
 %%[8.GetDefinedNames
+
 SEM GrGlobal
-  | Global    loc   .  newName  = HNPos @lhs.unique
+  | Global    loc   .  newName  = HNmNr @lhs.unique (Just (hsnPrefix rtsGlobalVarPrefix @nm))
               lhs   .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
 
@@ -149,14 +124,14 @@ SEM GrPat
                     .  unique'  = @unique'
   | Var        lhs  .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
-               loc  .  newName  = HNPos @lhs.unique
+               loc  .  newName  = HNmNr @lhs.unique (Just @nm)
   | Node Tag   loc  .  (var2id , unique )  = addMaybe @unique' @var2id' @tag.varName
                loc  .  newTag              = maybe @tag.grTrf GrTag_Var @tag.varName
 
 SEM GrExpr
   | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
                         .  unique   = @body.unique + 1
-               loc      .  newName  = HNPos @body.unique
+               loc      .  newName  = HNmNr @body.unique (Just @arg)
 
 SEM GrBind
   | Bind      loc   .  (var2id', newNames, unique'')  =  addList @unique' @lhs.var2id @argNmL
@@ -206,17 +181,13 @@ SEM GrModule
               . newAppTagMp   = map (newMap @lhs.bind2id) @applyTagMp
 %%]
 
-%%[8.countBindings
-ATTR GrAGItf GrModule AllBind [ | | nrOfBinds USE {+} {1}: {Int} ]
-SEM GrBindL
-  | Nil  lhs  .  nrOfBinds  =  0
-%%]
-
 %%[8 hs
 newMap mp (k, EvApTagVar nm)  =  let newNm = if applyNm == nm
                                              then applyNr
                                              else if evalNm == nm
                                              then evalNr
+                                             else if hsnMain == nm
+                                             then mainNr
                                              else findNewVar mp nm
                                  in (k, EvApTagVar newNm)
 newMap mp x                   =  x

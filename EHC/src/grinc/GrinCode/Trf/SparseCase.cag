@@ -13,10 +13,11 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.SparseCase} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(sparseCase)
-sparseCase :: HptMap -> GrModule -> GrModule
-sparseCase hptMap grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                               (Inh_GrAGItf { hptMap_Inh_GrAGItf = hptMap })
-                          in grTrf_Syn_GrAGItf t
+sparseCase :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+sparseCase (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, unique, hptMap)
 %%]
 
 %%[8
@@ -61,5 +62,3 @@ SEM GrTag
   | Var          lhs  .  varId  =  getNr @nm
   | * - Var      lhs  .  varId  =  error "not a tag variable as scrutinizer"
 %%]
-
-% vim:ts=4:et:ai:

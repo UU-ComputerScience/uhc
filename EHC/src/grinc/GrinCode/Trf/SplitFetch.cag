@@ -1,7 +1,7 @@
 Split fetch operation and right hoist the fetch operation until it does not
 load an undefined value.
 
-TODO: Rename map for identifiers can be much more efficient.
+TODO: Rename map is obsolete: remove it
 
 %%[0
 %include lhs2TeX.fmt
@@ -16,17 +16,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(splitFetch)
-splitFetch :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
-splitFetch hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                    (Inh_GrAGItf { hptMap_Inh_GrAGItf  =  hptMap
-                                                                 , uniq_Inh_GrAGItf    =  uniq
-                                                                 }
-                                                    )
-                                   hptMap'    = hptMap_Syn_GrAGItf t
-                                   uniq'      = uniq_Syn_GrAGItf t
-                                   renameMap  = renameMap_Syn_GrAGItf t
-                                   grmod'     = grTrf_Syn_GrAGItf t
-                               in (hptMap', uniq', renameMap, grmod')
+
+splitFetch :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+splitFetch (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, uniq_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+
 %%]
 
 %%[8
@@ -157,7 +153,7 @@ SEM GrExpr
                 .  size        =  nodeSize @knownTag @lhs.nodeSizes
                 .  fetches     =  let buildFetchInfo o  =  Just (GrExpr_Fetch @nm (Just o) (@mbKnownTag), o+1)
                                   in take @size $ unfoldr buildFetchInfo 1
-                .  names       =  map HNPos [@lhs.uniq .. @uniq  - 1]
+                .  names       =  map (\n->HNmNr n Nothing) [@lhs.uniq .. @uniq  - 1]
                 .  uniq        =  if @isLastExpr then @lhs.uniq + @size else @lhs.uniq
                 .  node        =  GrVal_Node @knownTag (map GrVal_Var @names)
            lhs  .  grTrf       =  if @isLastExpr
@@ -170,11 +166,11 @@ TODO: must create some nice substitution applying AG snip (with Data.Map, scopin
 %%[8.applySubst
 SEM GrVal
   | Var      loc . maybeVars   = lookup (getNr @nm) @lhs.renameMap
-             lhs . grTrf       = maybe @grTrf (GrVal_Var . HNPos . head) @maybeVars
+             lhs . grTrf       = maybe @grTrf (GrVal_Var . (\n->HNmNr n Nothing) . head) @maybeVars
 
 SEM GrExpr
   | Fetch Update Eval Throw  loc . maybeVars  = lookup (getNr @nm) @lhs.renameMap
-                                 . newName    = maybe @nm (HNPos . head) @maybeVars
+                                 . newName    = maybe @nm ((\n->HNmNr n Nothing) . head) @maybeVars
   | Fetch    loc  .  grTrf  = GrExpr_Fetch @newName @mbOffset @mbTag
   | Update   loc  .  grTrf  = GrExpr_Update @newName @val.grTrf @mbTag
   | Eval     loc  .  grTrf  = GrExpr_Eval  @newName
@@ -217,7 +213,7 @@ singleton _   = False
 
 specializeFetch' :: GrTag -> (HsName, GrExpr) -> (Int, RenameMap, [(HsName, GrExpr)]) -> (Int, RenameMap, [(HsName, GrExpr)])
 specializeFetch' tag (var, fetch) (u, nm, fetchesL) =
-    let var'      = (HNPos u)
+    let var'      = HNmNr u Nothing
         u'        = u+1
         nm'       = (getNr var, [u]) : nm
         fetchesL' = (var', specializeFetch tag fetch) : fetchesL

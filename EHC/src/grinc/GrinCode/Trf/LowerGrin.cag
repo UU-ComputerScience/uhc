@@ -15,17 +15,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, {%{EH}GrinCode}) export(lowerGrin)
-lowerGrin :: HptMap -> Int -> GrModule -> (HptMap, Int, RenameMap, GrModule)
-lowerGrin hptMap uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                          (Inh_GrAGItf { hptMap_Inh_GrAGItf  = hptMap
-                                                                       , uniq_Inh_GrAGItf    = uniq
-                                                                       }
-                                                          )
-                                  mapping =  nameMapping_Syn_GrAGItf t
-                                  grmod'  =  grTrf_Syn_GrAGItf t 
-                                  uniq'   =  uniq_Syn_GrAGItf t
-                                  hptMap' = foldl addHptInfo hptMap mapping
-                              in (hptMap', uniq', mapping, grmod')
+
+lowerGrin :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+lowerGrin (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, uniq_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+
 
 addHptInfo hptMap (orig, newNames) = let (tags,fields) = unzip . getNodes $ getEnvVar hptMap orig
                                          padding = AV_Nothing
@@ -35,12 +31,14 @@ addHptInfo hptMap (orig, newNames) = let (tags,fields) = unzip . getNodes $ getE
 %%]
 
 %%[8
-ATTR GrAGItf [ | | grTrf: GrModule  nameMapping: RenameMap ]
+ATTR GrAGItf [ | | grTrf: GrModule  hptMap: HptMap ]
 ATTR AllNT [ | nameMapping: RenameMap | grTrf: SELF ]
 ATTR GrAGItf AllNT [ hptMap: HptMap | uniq: Int  | ]
 
 SEM GrAGItf
   | AGItf module . nameMapping = []
+          lhs    . hptMap      = foldl addHptInfo @lhs.hptMap @module.nameMapping
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%
@@ -49,11 +47,11 @@ SEM GrAGItf
 
 %%[8 hs
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], IdentOneToMany)
-newNames hptMap uniq (HNPos v) = case getEnvVar hptMap v of
+newNames hptMap uniq (HNmNr v _) = case getEnvVar hptMap v of
                                      AV_Locations _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
                                      AV_Nodes nl    -> let count    = maxNodeSize nl
                                                            newVars  = [uniq .. uniq + count - 1]
-                                                       in (uniq + count, map HNPos newVars, (v, newVars))
+                                                       in (uniq + count, map (\n->HNmNr n Nothing) newVars, (v, newVars))
 
 -- TODO: use arity information in the eval map!
 maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
@@ -65,17 +63,6 @@ isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
                              AV_Nodes     _  -> False
                              -- AV_Nothing      -> error $ "dead variable " ++ show name ++ " node or pointer?"
                              AV_Error     e  -> error $ "analysis errror: " ++ e
-                             
-fromJust :: String -> Maybe a -> a
-fromJust s m = case m of
-  Just a  -> a
-  Nothing -> error $ "fromJust: " ++ s
-
-isJust :: Maybe a -> Bool
-isJust m = case m of
-  Just _  -> True
-  Nothing -> False
-  
 %%]
 
 Vectorisation is not done on all places. Location variables are pointers and
@@ -222,4 +209,3 @@ SEM GrAlt
                                        in addVectorMap $ @lhs.grNodeSubst `Map.union` mappings
 %%]
 
-% vim:ts=4:et:ai:

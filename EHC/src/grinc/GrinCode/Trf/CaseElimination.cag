@@ -18,9 +18,9 @@ specialize the fetch statements which preceeded an evaluated case.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CaseElimination} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(eliminateCases)
-eliminateCases :: GrModule -> GrModule
-eliminateCases grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+%%[8 hs module {%{GRIN}GrinCode.Trf.CaseElimination} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(caseElimination)
+caseElimination :: GrModule -> GrModule
+caseElimination grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                             (Inh_GrAGItf)
                        in grTrf_Syn_GrAGItf t
 %%]
@@ -93,5 +93,3 @@ SEM GrAlt
 SEM GrExpr
   | Case  loc  .  evaluatedCase = if @altL.isEvaluated then GrExpr_Unit @val.grTrf else @evaluatedCaseFails
 %%]
-
-% vim:ts=4:et:ai:

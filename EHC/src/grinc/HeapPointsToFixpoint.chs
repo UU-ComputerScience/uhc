@@ -284,7 +284,7 @@ envChangeSet am env heap applyMap = case am of
                                     getNewNode tag args       = let newArgs = args ++ [arg]
                                                                     partialF tag' = return $ AV_Nodes (Map.singleton tag' newArgs)
                                                                     saturatedF var =
-                                                                        do { appendApplyArg env (AV_Nodes (Map.singleton (GrTag_Var (HNPos var))
+                                                                        do { appendApplyArg env (AV_Nodes (Map.singleton (GrTag_Var (HNmNr var Nothing))
                                                                                                                          newArgs
                                                                                                           )
                                                                                                 )

@@ -27,17 +27,18 @@ type NodeInfoF = [NodeInfo] -> [NodeInfo]
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(dropUnusedBindings)
-dropUnusedBindings :: HsName -> IdentNameMap -> GrModule -> (GrModule, String)
-dropUnusedBindings e m grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                    (Inh_GrAGItf { entry_Inh_GrAGItf = e, nameMap_Inh_GrAGItf = m })
-                               in (grTrf_Syn_GrAGItf t, dot_Syn_GrAGItf t)
+dropUnusedBindings :: GrModule -> (GrModule, String)
+dropUnusedBindings grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                                (Inh_GrAGItf {})
+                           in (grTrf_Syn_GrAGItf t, dot_Syn_GrAGItf t)
 %%]
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 
-ATTR GrAGItf GrModule [ entry: HsName nameMap: IdentNameMap | | dot: String ]
+ATTR GrAGItf GrModule [ | | dot: String ]
+
 %%]
 
 %%[8.graphInfo import({GrinCode/LastExpr})
@@ -72,7 +73,8 @@ SEM GrModule
 ATTR AllBind [ lifeBindings: {Set.Set Int} | | ]
 
 SEM GrModule
-  | Mod  loc    .  lifeBindings  =  Set.fromList $ reachable @graph (getNr @lhs.entry)
+  | Mod  loc   . entry         =  mainNr
+               . lifeBindings  =  Set.fromList $ reachable @graph (getNr @loc.entry)
          
 SEM GrBind [ | | dropBinding: Bool ]
   | Bind  lhs  . dropBinding  =  not (@bindNr `Set.member` @lhs.lifeBindings)
@@ -89,9 +91,9 @@ SEM GrBindL [ | | count: Int ]
 
 %%[8.dot
 SEM GrModule
-  | Mod   loc  .  dot        = unlines (mkDot @lhs.entry
+  | Mod   loc  .  dot        = unlines (mkDot @loc.entry
                                               (show @moduleNm) 
-                                              (foldl (mkNodeEdges @lhs.nameMap @lifeBindings)
+                                              (foldl (mkNodeEdges @lifeBindings)
                                                      id
                                                      @nodes
                                               )
@@ -106,11 +108,11 @@ mkDot e n nodeEdges = let header     = (  (("digraph \"" ++ n ++ "\" {") :)
                           footer     = ( "}" :)
                       in (header . entryNode . nodeEdges . footer) []
 
-mkNodeEdges nm lns sf (n,es) = 
+mkNodeEdges lns sf (n,es) = 
     let  style  =  if n `Set.member` lns
                    then ""
                    else "color = gray, fontcolor = gray"
-         node   =  ( (show n ++ " [ label = \"" ++ getName nm n ++ "\"" ++ style ++ "];") :)
+         node   =  ( (show n ++ " [ label = \"" ++ show n ++ "\"" ++ style ++ "];") :)
     in Map.foldWithKey (mkEdge n) (sf . node) es
 
 mkEdge from to callType sf = sf . ( (show from ++ " -> " ++ show to ++ style) :)

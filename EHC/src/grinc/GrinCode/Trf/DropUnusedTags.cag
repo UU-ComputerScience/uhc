@@ -29,7 +29,7 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 %%]
 
-TODO: which basic Tags should be availible
+TODO: which basic Tags should be available
 
 %%[8.retrieveUsedTags
 ATTR AllBind AllGlobal AllExpr [ | usedTags: {Set.Set GrTag} | ]
@@ -64,9 +64,7 @@ SEM GrModule
                                               @ctagsMp'
                                               @evalTagMp'
                                               @applyTagMp'
-         loc  .  ctagsMp'     =  @ctagsMp   -- keep ordening info in tact
+         loc  .  ctagsMp'     =  @ctagsMp   -- keep ordening info intact
               .  evalTagMp'   =  filter (\ ((t,_),_) -> Set.member t @usedTags) @evalTagMp 
               .  applyTagMp'  =  filter (\ ((t,_),_) -> Set.member t @usedTags) @applyTagMp
 %%]
-
-% vim:ts=4:et:ai:

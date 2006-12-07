@@ -3,20 +3,62 @@
 %include afp.fmt
 %%]
 
-%%[1 module {%{GRIN}CompilerDriver} import(System.IO) export( doCompileGrin )
+%%[1 module {%{GRIN}CompilerDriver} export( doCompileGrin )
 %%]
 
-%%[8 import(Control.Monad.Error,Control.Monad.State, Control.Exception, Data.Maybe, EH.Util.FPath)
+%%[8 import( System.IO, System.CPUTime, Numeric)
 %%]
-%%[8 import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Scanner.Common(grinScanOpts)}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner})
+%%[8 import( Control.Monad.Error, Control.Monad.State, Control.Exception )
 %%]
-%%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun )
+%%[8 import( Data.Maybe, Data.Array.IArray, qualified Data.Map as Map )
+%%]
+%%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun, EH.Util.FPath )
+%%]
+%%[8 import( EH.Util.CompileRun, EH.Util.FPath )
+%%]
+%%[8 import( {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)} )
+%%]
+%%[8 import({%{EH}GrinCode.Pretty})
+%%]
+%%[8 import({%{GRIN}GRINCCommon}, {%{GRIN}HeapPointsToFixpoint} )
 %%]
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Packaging as CompileRun actions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8 import({%{GRIN}GrinCode.Trf.GrInline})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.ReturningCatch})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.SparseCase})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedTags})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.CaseElimination})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.CleanupPass})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.NumberIdents})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.RightSkew})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedBindings})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.NormForHPT})
+%%]
+%%[8 import({%{GRIN}GrinCode.PointsToAnalysis})
+%%]
+%%[8 import({%{GRIN}GrinCode.GenSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
+%%]
+%%[8 import({%{GRIN}Silly.PrettyC(prettyC)},{%{GRIN}Silly.PrettyLLVM(prettyLL)})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver entry point
@@ -28,11 +70,11 @@ doCompileGrin
   =  putStrLn "grinc: not available for this version (of ehc). Code generation is added in version 8."
 %%]
 
-%%[8 -1.doCompileGrin import(qualified Data.Map as Map, {%{GRIN}HeapPointsToFixpoint})
+%%[8 -1.doCompileGrin
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
-doCompileGrin inp opts
-  = drive state putErrs
-      ( do { load               -- from phd boquist (fig 4.1)
+doCompileGrin input opts
+  = drive (initialState opts input) putErrs
+      ( do { caLoad (isLeft input) -- from phd boquist (fig 4.1)
            ; caAnalyse
            ; caKnownCalls       -- part I
            ; caOptimizePartly   -- optimisations (small subset)
@@ -42,353 +84,36 @@ doCompileGrin inp opts
            ; caOutput
            }
       )
-  where (state,load)
-          = case inp of
-              Left fn
-                -> (initState {gcsPath = mkTopLevelFPath "grin" fn},caLoad True)
-              Right (fp,grmod)
-                -> (initState {gcsPath = fp, gcsMbCode = Just grmod},caLoad False)
-        initState = GRINCompileState
-            { gcsUnique     = 3                 -- 0,1,2 are reserved for wildcard, eval and apply respectively
-            , gcsMbCode     = Nothing
-            , gcsEntry      = HNm "main"
-            , gcsMbOrigNms  = Nothing
-            , gcsMbHptMap   = Nothing
-            , gcsPath       = emptyFPath
-            , gcsOpts       = opts
-            , gcsMsgInfo    = initMsgInfo
-            }
-        putErrs (CompileError e) = putStrLn e >> return ()
+      
+isLeft = either (const True) (const False)
+      
+initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
+initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsCode=grmod}
+
+initState opts
+  = GRINCompileState { gcsUnique     = 5          -- 0,1,2,3,4 are reserved for wildcard, eval, apply, main, mainexcept
+                     , gcsCode       = undefined
+                     , gcsHptMap     = undefined
+                     , gcsPath       = emptyFPath
+                     , gcsOpts       = opts
+                     , gcsMsgInfo    = initMsgInfo
+                     }
+putErrs (CompileError e) = putStrLn e >> return ()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compilerdriver for GRINC (will become obsolete once included as part of EHC)
+%%% High level compiler actions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8.parse import({%{EH}GrinCode.Parser})
-parseGrin :: FPath -> EHCOpts -> IO (String, GrModule)
-parseGrin fp opts = do
-    (fn,fh) <- openFPath fp ReadMode
-    tokens  <- scanHandle grinScanOpts fn fh
-    gr      <- parseIO (pModule) tokens
-    return (fn, gr)
-
-caParseGrin :: CompileAction ()
-caParseGrin = do
-    putMsg VerboseALot "Parsing" Nothing
-    path <- gets gcsPath
-    opts <- gets gcsOpts
-    (fn, code) <- liftIO $ parseGrin path opts
-    modify (gcsUpdateGrinCode code)
-%%]
-
-%%[8.cleanup import({%{GRIN}GrinCode.Trf.CleanupPass})
-caCleanupPass :: CompileAction ()
-caCleanupPass = do
-    putMsg VerboseALot "Cleanup pass" Nothing
-    code <- gets gcsGrinCode
-    code <- return $ cleanupPass code
-    modify (gcsUpdateGrinCode code)
-%%]
-
-%%[8.dropUnusedBindings import({%{GRIN}GrinCode.Trf.DropUnusedBindings})
-caDropUnusedBindings :: CompileAction ()
-caDropUnusedBindings = do
-    { putMsg VerboseALot "Remove unused function bindings" Nothing
-    ; code  <- gets gcsGrinCode
-    ; entry <- gets gcsEntry
-    ; vm    <- gets gcsOrigNms
-    ; (code, dot) <- return $ dropUnusedBindings entry vm code
-    ; modify (gcsUpdateGrinCode code)
-    ; outputCallGraph <- gets (ehcOptDumpCallGraph . gcsOpts)
-    ; when outputCallGraph
-        (do { input <- gets gcsPath
-            ; let output = fpathSetSuff "dot" input
-            ; putMsg VerboseALot ("Writing call graph to " ++ fpathToStr output) Nothing
-            ; liftIO $ writeToFile dot output
-            }
-        )
-    }
-%%]
-
-%%[8.dropUnusedExpr import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
-caDropUnusedExpr :: CompileAction ()
-caDropUnusedExpr = do
-    { putMsg VerboseALot "Remove unused expressions" Nothing
-    ; code    <- gets gcsGrinCode
-    ; hptMap  <- gets gcsHptMap
-    ; code <- return $ dropUnusedExpr hptMap code
-    ; modify (gcsUpdateGrinCode code)
-    }
-%%]
-
-%%[8.dropUnusedTags import({%{GRIN}GrinCode.Trf.DropUnusedTags})
-caDropUnusedTags :: CompileAction ()
-caDropUnusedTags = do
-    putMsg VerboseALot "Remove unused tags" Nothing
-    code <- gets gcsGrinCode
-    code <- return $ dropUnusedTags code
-    modify (gcsUpdateGrinCode code)
-%%]
-
-%%[8.addLazyApply import({%{GRIN}GrinCode.Trf.BuildAppBindings})
-caAddLazyApplySupport :: CompileAction ()
-caAddLazyApplySupport = do
-    putMsg VerboseALot "Renaming lazy apply tags" Nothing
-    code   <- gets gcsGrinCode
-    unique <- gets gcsUnique
-    (unique, code) <- return $ buildAppBindings unique code
-    modify (gcsUpdateGrinCode code)
-    modify (gcsUpdateUnique unique)
-%%]
-
-%%[8.returningCatch import({%{GRIN}GrinCode.Trf.ReturningCatch})
-caReturningCatch :: CompileAction ()
-caReturningCatch = do
-    { putMsg VerboseALot "Ensure code exists after catch statement" Nothing
-    ; code   <- gets gcsGrinCode
-    ; hptMap  <- gets gcsHptMap
-    ; unique <- gets gcsUnique
-    ; (unique, code) <- return $ returnCatch hptMap unique code
-    ; modify (gcsUpdateGrinCode code)
-    ; modify (gcsUpdateUnique unique)
-    }
-%%]
-
-%%[8.numberIdentifiers import({%{GRIN}GrinCode.Trf.NumberIdents}, Data.Array.IArray)
-caNumberIdents :: CompileAction ()
-caNumberIdents = task VerboseALot "Numbering identifiers"
-    ( do { code   <- gets gcsGrinCode
-         ; unique <- gets gcsUnique
-         ; entry <- gets gcsEntry
-         ; (unique, entry, code, varMap, idents) <- return $ numberIdents unique entry code
-         ; modify (\s -> s { gcsMbOrigNms = Just varMap
-                           , gcsMbCode = Just code
-                           , gcsEntry = entry
-                           , gcsUnique = unique
-                           }
-                  )
-         ; return idents
-         }
-    ) (\i -> Just $ show i ++ " identifiers")
-%%]
-
-%%[8.nameIdents import({%{GRIN}GrinCode.Trf.NameIdents}, Data.Maybe)
-caNameIdents :: CompileAction ()
-caNameIdents = do
-    putMsg VerboseALot "Naming identifiers" Nothing
-    code  <- gets gcsGrinCode
-    vm    <- gets gcsOrigNms
-    code  <- return $ nameIdents vm code
-    modify (\s -> s { gcsEntry     = fst vm ! getNr (gcsEntry s)
-                    , gcsMbCode    = Just code
-                    }
-           )
-%%]
-
-%%[8.normForHPT import({%{GRIN}GrinCode.Trf.NormForHPT})
-caNormForHPT :: CompileAction ()
-caNormForHPT = task VerboseALot "Normalizing"
-    ( do { code   <- gets gcsGrinCode
-         ; unique <- gets gcsUnique
-         ; (unique', code) <- return $ normForHPT unique code
-         ; modify (gcsUpdateGrinCode code)
-         ; modify (gcsUpdateUnique unique')
-         ; return (unique' - unique)
-         }
-    ) (\i -> Just $ show i ++ " variable(s) introduced")
-%%]
-
-%%[8.rightSkew import({%{GRIN}GrinCode.Trf.RightSkew})
-caRightSkew1 :: CompileAction Bool
-caRightSkew1 = do
-    code <- gets gcsGrinCode
-    (code, changed) <- return $ rightSkew code
-    modify (gcsUpdateGrinCode code)
-    putDebugMsg (if changed then "Changes" else "No change")
-    return changed
-
-caRightSkew :: CompileAction ()
-caRightSkew = task VerboseALot "Unskewing" (caFix caRightSkew1) (\i -> Just $ show i ++ " iteration(s)")
-%%]
-
-%%[8.heapPointsTo import({%{GRIN}GrinCode.PointsToAnalysis}, {%{GRIN}GrinCode.AbsEval})
-caHeapPointsTo :: (Int, Int) -> CompileAction ()
-caHeapPointsTo bounds = task VerboseALot "Heap-points-to analysis"
-    ( do { code    <- gets gcsGrinCode
-         ; (c,e,h) <- liftIO $ heapPointsToAnalysis bounds code
-         ; modify (\s -> s { gcsMbHptMap = Just ((e,h), Map.empty) })
---       ; let n = abstractEvaluation code
-         ; return c
-         }
-     ) (\i -> Just $ show i ++ " iteration(s)")
-
-%%]
-
-%%[8.inline import({%{GRIN}GrinCode.Trf.GrInline})
-caInlineEA :: CompileAction Int
-caInlineEA = do
-    putMsg VerboseALot "Inlining Eval and Apply calls" Nothing
-    code   <- gets gcsGrinCode
-    hptMap <- gets gcsHptMap
-    unique <- gets gcsUnique
-    varMap <- gets gcsOrigNms
-    (hptMap, unique', renMap, code)   <- return $ inlineEA hptMap unique code
-    modify (\s -> s { gcsMbOrigNms  = Just $ mergeRenameMap varMap renMap
-                    , gcsUnique     = unique'
-                    , gcsMbHptMap   = Just hptMap
-                    , gcsMbCode     = Just code
-                    }
-           )
-    return $ unique' - unique
-%%]
-
-%%[8.sparseCase import({%{GRIN}GrinCode.Trf.SparseCase})
-caSparseCase :: CompileAction ()
-caSparseCase = do
-    putMsg VerboseALot "Removing impossible case alternatives" Nothing
-    code <- gets gcsGrinCode
-    hptMap <- gets gcsHptMap
-    code <- return $ sparseCase hptMap code
-    modify (gcsUpdateGrinCode code)
-%%]
-
-%%[8.eliminateCase import({%{GRIN}GrinCode.Trf.CaseElimination})
-caEliminateCases :: CompileAction ()
-caEliminateCases = do
-    putMsg VerboseALot "Removing evaluated and trivial cases" Nothing
-    code <- gets gcsGrinCode
-    code <- return $ eliminateCases code
-    modify (gcsUpdateGrinCode code)
-%%]
-
-%%[8.propagate import({%{GRIN}GrinCode.Trf.CopyPropagation})
-caCopyPropagation1 :: CompileAction Bool
-caCopyPropagation1 = do
-    code <- gets gcsGrinCode
-    (changed, code) <- return $ propagate code
-    putDebugMsg (if changed then "Changes" else "No change")
-    modify (gcsUpdateGrinCode code)
-    return changed
-
-caCopyPropagation :: CompileAction ()
-caCopyPropagation = task VerboseALot "Copy propagation" (caFix caCopyPropagation1) (\i -> Just $ show i ++ " iteration(s)")
-%%]
-
-%%[8.lowering import({%{GRIN}GrinCode.Trf.LowerGrin})
-caLowerGrin :: CompileAction ()
-caLowerGrin = do
-    putMsg VerboseALot "Lowering GRIN" Nothing
-    code   <- gets gcsGrinCode
-    hptMap <- gets gcsHptMap
-    unique <- gets gcsUnique
-    varMap <- gets gcsOrigNms
-    (hptMap, unique, renMap, code) <- return $ lowerGrin hptMap unique code
-    modify (\s -> s { gcsMbOrigNms  = Just $ mergeRenameMap varMap renMap
-                    , gcsUnique     = unique
-                    , gcsMbHptMap   = Just hptMap
-                    , gcsMbCode     = Just code
-                    }
-           )
-%%]
-
-%%[8.splittingFetch import({%{GRIN}GrinCode.Trf.SplitFetch})
-caSplitFetch :: CompileAction ()
-caSplitFetch = do
-    { putMsg VerboseALot "Splitting and specializing fetch operations" Nothing
-    ; code   <- gets gcsGrinCode
-    ; hptMap <- gets gcsHptMap
-    ; varMap <- gets gcsOrigNms
-    ; unique <- gets gcsUnique
-    ; (hptMap, unique', renMap, code)   <- return $ splitFetch hptMap unique code
-    ; modify (\s -> s { gcsMbOrigNms  = Just $ mergeRenameMap varMap renMap
-                      , gcsUnique     = unique'
-                      , gcsMbHptMap   = Just hptMap
-                      , gcsMbCode     = Just code
-                      }
-             )
-    }
-%%]
-
-
-%%[8 import({%{GRIN}GrinCode.GenSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
-
-caGrin2Silly :: CompileAction SilModule
-caGrin2Silly = do
-    { code <- gets gcsGrinCode
-    ; hptMap  <- gets gcsHptMap
-    ; optJump <- gets (ehcOptGenTailCall  . gcsOpts)
-    ; optPar  <- gets (ehcOptGenOwnParams . gcsOpts)
-    ; optLoc  <- gets (ehcOptGenOwnLocals . gcsOpts)
-    ; return (grin2silly hptMap code optJump optPar optLoc)
-    }
-%%]
-
-
-%%[8 import({%{GRIN}Silly.PrettyC(prettyC)},{%{GRIN}Silly.PrettyLLVM(prettyLL)})
-
-caWriteFinalCode :: String -> (Bool -> Bool -> SilModule -> PP_Doc) -> CompileAction ()
-caWriteFinalCode suffix ppFun =
-  do input <- gets gcsPath
-     do { let output = fpathSetSuff suffix input
-        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-        ; silly <- caGrin2Silly
-        ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
-        ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
-        ; liftIO $ writePP (ppFun optTrace optCaseDef) silly output
-        }
-
-caWriteLlc :: CompileAction ()
-caWriteLlc = do
-    {
-     options <- gets gcsOpts
-    ; when (ehcOptEmitLlc options)
-           (caWriteFinalCode "c" prettyC)
-    }
-
-{-
-caWriteLlc :: CompileAction ()
-caWriteLlc = do
-    { input <- gets gcsPath
-    ; let output = fpathSetSuff "c" input
-    ; options <- gets gcsOpts
-    ; when (ehcOptEmitLlc options)
-           (do { putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-               ; silly <- caGrin2Silly
-               ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
-               ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
-               ; liftIO $ writePP (prettyC optTrace optCaseDef) silly output
-               })
-    }
--}
-%%]
-
-
-%%[8.writeGrin import({%{EH}GrinCode.Pretty})
-caWriteGrin :: Bool -> String -> CompileAction ()
-caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
-    { when debug (gets (ehcOptDebug . gcsOpts) >>= guard)
-    ; input <- gets gcsPath
-    ; let prefix     = if debug then "debug-" else ""
-          fileName   = prefix ++ fpathBase input ++ if null fn then "-out" else fn
-          output     = fpathSetSuff "grin" (fpathSetBase fileName input)
-          message    = "Writing " ++ fpathToStr output
-    ; if debug then putDebugMsg message else putMsg VerboseALot message Nothing
-    ; code <- gets gcsGrinCode
-    ; options <- gets gcsOpts
-    ; liftIO $ writePP ppGrModule code output
-    }
-%%]
 
 %%[8
 -- create initial GRIN
 caLoad doParse = task_ VerboseNormal "Loading"
     ( do { when doParse caParseGrin
-         ; caWriteGrin True "0-parsed"
-         ; caCleanupPass
-         ; caNumberIdents
-         ; caAddLazyApplySupport
-         ; caWriteGrin True "1-loaded"
+         ; caWriteGrin     True             "0-parsed"
+         ; transformCode   cleanupPass      "Cleanup pass"
+         ; transformTriple numberIdents     "Numbering identifiers"
+         ; transformTriple buildAppBindings "Renaming lazy apply tags"
+         ; caWriteGrin     True             "1-loaded"
          }
     )
 
@@ -396,12 +121,10 @@ caLoad doParse = task_ VerboseNormal "Loading"
 caAnalyse = task_ VerboseNormal "Analyzing"
     ( do { caNormForHPT
          ; caRightSkew
-         ; high <- gets gcsUnique
-         ; caHeapPointsTo (3,high-1)
+         ; caHeapPointsTo
          ; debugging <- gets (ehcOptDebug . gcsOpts)
          ; when debugging (do { ((env, heap),_) <- gets gcsHptMap
-                              ; vm    <- gets gcsOrigNms
-                              ; let newVar i = show (i, getName vm i)
+                              ; let newVar i = show i
                               ; putDebugMsg "*** Equations ***"
                               ; printArray "env:"  newVar aeMod env
                               ; printArray "heap:" show ahMod heap
@@ -416,23 +139,23 @@ caAnalyse = task_ VerboseNormal "Analyzing"
 
 -- simplification part I
 caKnownCalls = task_ VerboseNormal "Removing unknown calls"
-    ( do { caInlineEA
+    ( do { transformTriple inlineEA "Inlining Eval and Apply calls" 
          ; caRightSkew
          ; caWriteGrin True "3-knownCalls"
          }
     )
 -- optionsations part I
 caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
-    ( do { caSparseCase
-         ; caEliminateCases
-         ; caDropUnusedExpr
+    ( do { transformTriple sparseCase "Removing impossible case alternatives"
+         ; transformCode   caseElimination "Removing evaluated and trivial cases"
+         ; transformTriple dropUnusedExpr "Remove unused expressions"
          ; caDropUnusedBindings
          ; caWriteGrin True "4-partlyOptimized"
          }
     )
 -- simplification part II
 caNormalize = task_ VerboseNormal "Normalizing"
-    ( do { caLowerGrin
+    ( do { transformTriple lowerGrin "Lowering Grin"
          ; caWriteGrin True "5-normalized"
          }
     )
@@ -441,19 +164,17 @@ caNormalize = task_ VerboseNormal "Normalizing"
 caOptimize = task_ VerboseNormal "Optimizing (full)"
     ( do { caCopyPropagation
          ; caWriteGrin True "6-after-cp"
-         ; caDropUnusedExpr
+         ; transformTriple dropUnusedExpr "Remove unused expressions"
          ; caWriteGrin True "7-optimized"
          }
     )
 
 -- simplification part III
 caFinalize = task_ VerboseNormal "Finalizing"
-    ( do { caSplitFetch
-         ; caDropUnusedExpr
-         ; caDropUnusedTags
-         ; caReturningCatch
-         -- renaming numbered variables back to names wpuld make it impossible to use hptMap in ToSilly
-         ; caNameIdents
+    ( do { transformTriple splitFetch "Splitting and specializing fetch operations"
+         ; transformTriple dropUnusedExpr "Remove unused expressions"
+         ; transformCode   dropUnusedTags "Remove unused tags"
+         ; transformTriple returnCatch "Ensure code exists after catch statement"
          ; caWriteGrin True "8-final"
          }
     )
@@ -462,7 +183,6 @@ caFinalize = task_ VerboseNormal "Finalizing"
 caOutput = task_ VerboseNormal "Writing code"
     ( do { outputGrin <- gets (ehcOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
-         --; caWriteLlc
          ; options <- gets gcsOpts
          ; when (ehcOptEmitLLVM options)
            (caWriteFinalCode "ll" prettyLL)
@@ -470,14 +190,140 @@ caOutput = task_ VerboseNormal "Writing code"
            (caWriteFinalCode "c" prettyC)
          }
     )
+%%]
 
-printArray s f g a = harden_ $ do
-    { isDebugging <- gets (ehcOptDebug . gcsOpts)
-    ; guard isDebugging
-    ; putDebugMsg s
-    ; mapM_ (\(k, v) -> putDebugMsg ("  " ++ f k ++ " = " ++ show (g v))) (assocs a)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Low level compiler actions: input
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+parseGrin :: FPath -> IO GrModule
+parseGrin path
+  = do{ (fn,fh) <- openFPath path ReadMode
+      ; tokens  <- scanHandle grinScanOpts fn fh
+      ; code    <- parseIO (pModule) tokens
+      ; return code
+      }
+
+caParseGrin :: CompileAction ()
+caParseGrin 
+  = do{ putMsg VerboseALot "Parsing" Nothing
+      ; path <- gets gcsPath
+      ; code <- liftIO $ parseGrin path
+      ; modify (gcsUpdateGrinCode code)
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Low level compiler actions: processing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+caDropUnusedBindings :: CompileAction ()
+caDropUnusedBindings = do
+    { putMsg VerboseALot "Remove unused function bindings" Nothing
+    ; code  <- gets gcsCode
+    ; (code, dot) <- return $ dropUnusedBindings code
+    ; modify (gcsUpdateGrinCode code)
+    ; outputCallGraph <- gets (ehcOptDumpCallGraph . gcsOpts)
+    ; when outputCallGraph
+        (do { input <- gets gcsPath
+            ; let output = fpathSetSuff "dot" input
+            ; putMsg VerboseALot ("Writing call graph to " ++ fpathToStr output) Nothing
+            ; liftIO $ writeToFile dot output
+            }
+        )
+    }
+
+caNormForHPT :: CompileAction ()
+caNormForHPT = task VerboseALot "Normalizing"
+    ( do { code   <- gets gcsCode
+         ; unique <- gets gcsUnique
+         ; (unique', code) <- return $ normForHPT unique code
+         ; modify (gcsUpdateGrinCode code)
+         ; modify (gcsUpdateUnique unique')
+         ; return (unique' - unique)
+         }
+    ) (\i -> Just $ show i ++ " variable(s) introduced")
+
+caHeapPointsTo :: CompileAction ()
+caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
+    ( do { code    <- gets gcsCode
+         ; unique  <- gets gcsUnique
+         ; (c,e,h) <- liftIO $ heapPointsToAnalysis unique code
+         ; modify (\s -> s { gcsHptMap = ((e,h), Map.empty) })
+--       ; let n = abstractEvaluation code
+         ; return c
+         }
+     ) (\i -> Just $ show i ++ " iteration(s)")
+
+
+caCopyPropagation1 :: CompileAction Bool
+caCopyPropagation1 = do
+    code <- gets gcsCode
+    (changed, code) <- return $ propagate code
+    putDebugMsg (if changed then "Changes" else "No change")
+    modify (gcsUpdateGrinCode code)
+    return changed
+
+caRightSkew1 :: CompileAction Bool
+caRightSkew1 = do
+    code <- gets gcsCode
+    (code, changed) <- return $ rightSkew code
+    modify (gcsUpdateGrinCode code)
+    putDebugMsg (if changed then "Changes" else "No change")
+    return changed
+
+caCopyPropagation, caRightSkew :: CompileAction ()
+caCopyPropagation = task VerboseALot "Copy propagation" (caFix caCopyPropagation1) (\i -> Just $ show i ++ " iteration(s)")
+caRightSkew       = task VerboseALot "Unskewing"        (caFix caRightSkew1)       (\i -> Just $ show i ++ " iteration(s)")
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Low level compiler actions: output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+caGrin2Silly :: CompileAction SilModule
+caGrin2Silly = do
+    { code <- gets gcsCode
+    ; hptMap  <- gets gcsHptMap
+    ; optJump <- gets (ehcOptGenTailCall  . gcsOpts)
+    ; optPar  <- gets (ehcOptGenOwnParams . gcsOpts)
+    ; optLoc  <- gets (ehcOptGenOwnLocals . gcsOpts)
+    ; return (grin2silly hptMap code optJump optPar optLoc)
+    }
+
+
+caWriteFinalCode :: String -> (Bool -> Bool -> SilModule -> PP_Doc) -> CompileAction ()
+caWriteFinalCode suffix ppFun =
+  do input <- gets gcsPath
+     do { let output = fpathSetSuff suffix input
+        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+        ; silly <- caGrin2Silly
+        ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
+        ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
+        ; liftIO $ writePP (ppFun optTrace optCaseDef) silly output
+        }
+
+caWriteGrin :: Bool -> String -> CompileAction ()
+caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
+    { when debug (gets (ehcOptDebug . gcsOpts) >>= guard)
+    ; input <- gets gcsPath
+    ; let prefix     = if debug then "debug-" else ""
+          fileName   = prefix ++ fpathBase input ++ if null fn then "-out" else fn
+          output     = fpathSetSuff "grin" (fpathSetBase fileName input)
+          message    = "Writing " ++ fpathToStr output
+    ; if debug then putDebugMsg message else putMsg VerboseALot message Nothing
+    ; code <- gets gcsCode
+    ; options <- gets gcsOpts
+    ; liftIO $ writePP ppGrModule code output
     }
 %%]
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver utilities
@@ -486,23 +332,60 @@ printArray s f g a = harden_ $ do
 %%[8.State
 data GRINCompileState = GRINCompileState
     { gcsUnique    :: Int
-    , gcsMbCode    :: Maybe GrModule
-    , gcsEntry     :: !HsName
-    , gcsMbOrigNms :: Maybe IdentNameMap
-    , gcsMbHptMap  :: Maybe HptMap
+    , gcsCode      :: GrModule
+    , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
     , gcsMsgInfo   :: (Int, Bool)
     }
 
-gcsGrinCode           = fromJust . gcsMbCode
-gcsOrigNms            = fromJust . gcsMbOrigNms
-gcsHptMap             = fromJust . gcsMbHptMap
-gcsIsParsed           = isJust   . gcsMbCode
-gcsUpdateGrinCode c s = s { gcsMbCode = Just c }
+gcsUpdateGrinCode c s = s { gcsCode   = c }
 gcsUpdateUnique   u s = s { gcsUnique = u }
-gcsUpdateHptMap   m s = s { gcsMbHptMap = Just m }
+gcsUpdateHptMap   m s = s { gcsHptMap = m }
+
+gcsGetTriple
+  = do{ code   <- gets gcsCode
+      ; unique <- gets gcsUnique
+      ; hptMap <- gets gcsHptMap
+      ; return (code,unique,hptMap)
+      }
+
+gcsPutTriple (code,unique,hptMap)
+  = modify (\s -> s { gcsCode     = code
+                    , gcsUnique   = unique
+                    , gcsHptMap   = hptMap
+                    }
+           )
+
+transformTriple :: ((GrModule,Int,HptMap) -> (GrModule,Int,HptMap)) -> String -> CompileAction ()
+transformTriple process message = do
+    putMsg VerboseALot message Nothing
+    trip <- gcsGetTriple
+    gcsPutTriple (process trip)
+
+transformCode :: (GrModule->GrModule) -> String -> CompileAction ()
+transformCode process message = do
+    putMsg VerboseALot message Nothing
+    code <- gets gcsCode
+    modify (gcsUpdateGrinCode (process code))
+
+
+caFix :: CompileAction Bool -> CompileAction Int
+caFix step = caFixCount 1
+    where
+    caFixCount n = do
+        changes <- step
+        if changes then (caFixCount $ n+1) else return n
+
+printArray s f g a = harden_ $ do
+    { isDebugging <- gets (ehcOptDebug . gcsOpts)
+    ; guard isDebugging
+    ; putDebugMsg s
+    ; mapM_ (\(k, v) -> putDebugMsg ("  " ++ f k ++ " = " ++ show (g v))) (assocs a)
+    }
+
 %%]
+
 
 %%[8.Errors
 newtype CompileError = CompileError String
@@ -512,6 +395,10 @@ instance Error CompileError where
     noMsg    = CompileError "internal error"
     strMsg s = CompileError s
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compilerdriver abstractions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.CompilerDriver
 type CompileAction a = ErrorT CompileError (StateT GRINCompileState IO) a
@@ -545,7 +432,7 @@ force :: a -> CompileAction a
 force = liftIO . evaluate
 %%]
 
-%%[8.messages import(System.CPUTime, Numeric)
+%%[8
 initMsgInfo :: (Int, Bool) -- indent, FirstMessageInLevel, CPUTime
 initMsgInfo = (0, False)
 
@@ -636,8 +523,6 @@ cpuUsageInfo = (\(a, b) -> (10^a, b)) closest
     closest  =  head $ dropWhile (\a -> fst a > prec) table
     prec     =  floor (log (fromInteger cpuTimePrecision) / log 10)
     table    =  [ (12, "seconds")
---                , (11, "deci seconds")
---                , (10, "centi seconds")
                 , (9, "milli seconds")
                 , (6, "micro seconds")
                 , (3, "nano seconds")
@@ -645,11 +530,3 @@ cpuUsageInfo = (\(a, b) -> (10^a, b)) closest
                 ]
 %%]
 
-%%[8.fixpoint
-caFix :: CompileAction Bool -> CompileAction Int
-caFix step = caFixCount 1
-    where
-    caFixCount n = do
-        changes <- step
-        if changes then (caFixCount $ n+1) else return n
-%%]

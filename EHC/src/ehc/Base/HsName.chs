@@ -52,6 +52,9 @@ data HsName
   =   HNm String
   |   HNPos Int
 %%]
+%%[8
+  |   HNmNr Int (Maybe HsName)
+%%]
 %%[12
   |   HNmQ [HsName]
 %%]
@@ -63,6 +66,9 @@ data HsName
 hsnShow :: String -> HsName -> String
 hsnShow _   (HNm s    )  = s
 hsnShow _   (HNPos p  )  = show p
+%%[[8
+hsnShow _ (HNmNr n _)  = "x_" ++ show n
+%%]]
 %%[[12
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
 %%]]
@@ -147,10 +153,17 @@ charAlphanumeric  c  | isDigit c = [c]
                      | otherwise = error ("no alphanumeric representation for " ++ show c)
 
 %%[8
+
+dontStartWithDigit :: String -> String
+dontStartWithDigit xs | isDigit(head xs) = "y"++xs
+                      | otherwise        = xs
+
 hsnAlphanumeric :: HsName -> HsName
-hsnAlphanumeric (HNm s) = HNm (stringAlphanumeric s)
-hsnAlphanumeric n@(HNPos p) = HNm ("x"++show p)
--- hsnAlphanumeric n@(HNPos p) = n
+hsnAlphanumeric (HNm s) = HNm (dontStartWithDigit(stringAlphanumeric s))
+hsnAlphanumeric (HNPos p) = HNm ("y"++show p)
+--hsnAlphanumeric (HNmNr n mbOrig) = HNm ("x"++show n)
+hsnAlphanumeric (HNmNr n Nothing) = HNm ("x"++show n)
+hsnAlphanumeric (HNmNr n (Just orig)) = hsnAlphanumeric orig
 %%]
 %%[12
 hsnAlphanumeric (HNmQ ns) = HNm $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)

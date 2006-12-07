@@ -20,10 +20,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
-buildAppBindings :: Int -> GrModule -> (Int, GrModule)
-buildAppBindings uniq grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                                   (Inh_GrAGItf { unique_Inh_GrAGItf = uniq })
-                         in (unique_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+
+buildAppBindings :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+buildAppBindings (code,unique,hptMap)
+  = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn, hptMap)
+
 %%]
 
 %%[8
@@ -87,10 +90,10 @@ buildAppBinding unique size = let funcNr  = unique
                                   minArg  = funcNr + 2
                                   maxArg  = minArg + size
                                   unique' = maxArg + 2
-                                  funcName                  = HNPos funcNr
+                                  funcName                  = HNmNr funcNr (Just origFuncName)
                                   origFuncName              = HNm $ "app" ++ show size
-                                  args@(partialApp:appArgs) = map HNPos [minArg .. maxArg]
-                                  evalPartialApp            = HNPos (maxArg + 1)
+                                  args@(partialApp:appArgs) = map (\n->HNmNr n Nothing) [minArg .. maxArg]
+                                  evalPartialApp            = HNmNr (maxArg + 1) Nothing
                                   code = GrBind_Bind funcName args body
                                   body = GrExpr_Seq (GrExpr_Eval partialApp)
                                                     (GrPat_Var evalPartialApp)
