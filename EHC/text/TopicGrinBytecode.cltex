@@ -10,20 +10,32 @@ the machinery.
 
 %%[defs
 %format CSBase      = "C"
+%format CSDep       = "d"
+%format CSDep'
+%format CSDep''
 %format CSGetFld    = "F"
 %format CSEnv       = Gamma
 %format <<          = "{\llbracket}"
 %format >>          = "{\rrbracket}"
+%format CSOne(x)(off)(offo)(env)    = G<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSSeq(x)(off)(offo)(env)    = S<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSPat(x)(off)(offo)(env)    = P<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSVar(x)(off)(offo)(env)    = V<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
+%format CSAlt(x)(off)(offo)(env)    = A<< x >> ^^ "{\downarrow}" off ^^ "{\uparrow}" offo ^^ env
 
 %format angle(x)     = "\langle{" x "}\rangle"
 
 %format unit        = "\mathbf{unit}"
 %format store        = "\mathbf{store}"
+%format apply        = "\mathbf{apply}"
 %format eval        = "\mathbf{eval}"
+%format ffi        = "\mathbf{ffi}"
 %format ild(i)(rd)(rs)(x)        = "\mathsf{l}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format ist(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format ist2(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format icp(i)(rs)(x)         = "\mathsf{cp}\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
 %format iop(ot)(dt)(i)(rd)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
+%format iop2(ot)(dt)(od)(i)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" od "}\rangle\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
 %format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
 %format icall(rs)         = "\mathsf{call}\langle{" rs "}\rangle"
 %format itailcall(rs)(n)(m)(r)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m ^^ r
@@ -36,6 +48,8 @@ the machinery.
 %format iapply(rs)       = "\mathsf{apply}\langle{" rs "}\rangle"
 %format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
 %format iallocstore(rs)         = "\mathsf{allocstore}\langle{" rs "}\rangle"
+%format isplit(rs)(n)       = "\mathsf{split}\langle{" rs "}\rangle" ^^ n
+%format iadapt(rs)(n)       = "\mathsf{adapt}\langle{" rs "}\rangle" ^^ n
 %format istore(rs)         = "\mathsf{store}\langle{" rs "}\rangle"
 %format ifetch(rs)         = "\mathsf{fetch}\langle{" rs "}\rangle"
 %format icallc(n)         = "\mathsf{callc}" ^^ n
@@ -57,6 +71,8 @@ the machinery.
 %format casecall         = "\mathsf{casecall}"
 %format evalt         = "\mathsf{eval}"
 %format applyt        = "\mathsf{apply}"
+%format adaptt        = "\mathsf{adapt}"
+%format splitt        = "\mathsf{split}"
 %format nop         = "\mathsf{nop}"
 %format ldl         = "\mathsf{ldl}"
 %format ldc         = "\mathsf{ldc}"
@@ -74,6 +90,7 @@ the machinery.
 %format sv          = "s_v"
 %format an          = "a_n"
 %format cn          = "c_n"
+%format wn          = "w_n"
 %format bm          = "b_m"
 %format fm          = "f_m"
 %format bk          = "b_k"
@@ -94,7 +111,7 @@ the machinery.
 %format (pow2(p))   = "2^{" p "}"
 
 \newenvironment{GrinCS}{%
-\begin{tabular}{p{.35\linewidth}@@{\hspace{.5ex}=\hspace{.5ex}}p{.45\linewidth}}
+\begin{tabular}{p{.40\linewidth}cp{.55\linewidth}}
 }{%
 \end{tabular}
 }
@@ -258,31 +275,169 @@ Also note that int's are treated in unboxed for, thereby avoiding the need to al
 
 
 %%[grin2GrinB
-\emph{This section is left here for later rewrite.}
+\subsection{Invariants and assumptions}
+
+\begin{Itemize}
+\item
+  Stack grows from high to low addresses.
+\item
+  The size of all values pushed on the stack is known. No framepointer is required.
+  All access can be done relative to the top of the stack.
+\item
+  No scoping mechanism is required, all values are either local or global.
+  Global values are either functions (their start address) and CAF's.
+  All access is done using absolute addresses, which are computed it initialisation time.
+\end{Itemize}
+
+\subsection{Compilation schemes}
+
+Compilation for a construct |x| is expressed by:
+
+%%[[wrap=code
+CSOne(x)(CSDep)(CSDep')(CSEnv)                  -- one grin expression
+CSPat(\w -> e)(CSDep)(CSDep')(CSEnv)            -- binding
+CSSeq(x ; \w -> e)(CSDep)(CSDep')(CSEnv)        -- sequence special cases
+CSVar(v)(CSDep)(CSDep')(CSEnv)                  -- single identifier reference
+%%]]
+
+where |CSDep| is the current depth of the stack, and |CSEnv| an environment mapping identifiers to their stack depth.
+
+\subsubsection{Sequencing}
 
 \begin{GrinCS}
-|CSBase<< unit v ; \w -> e >> CSEnv|
-&
-|CSBase<< e >> ^^ CSEnv ^ [w :-> CSEnv v]| 
+|CSOne(e ; \w -> e')(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSSeq(e ; \w -> e')(CSDep)(CSDep')(CSEnv)|
 \end{GrinCS}
 
 \begin{GrinCS}
-|CSBase<< unit v ; \(C ^^ Vec(w)) -> e >> CSEnv|
-&
-|Vec(ldl v : lda o) : CSBase<< e >> ^^ CSEnv ^ Vec([w :-> gstack])| 
+|CSSeq(e ; \w -> e')(CSDep)(CSDep'')(CSEnv)|
+&=&
+|CSOne(e)(CSDep)(CSDep')(CSEnv) : CSPat(\w -> e')(CSDep')(CSDep'')(CSEnv)|
+\end{GrinCS}
+
+\subsubsection{Value construction}
+
+Variable use:
+
+\begin{GrinCS}
+|CSOne(unit v)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSVar(v)(CSDep)(CSDep')(CSEnv)|
 \end{GrinCS}
 
 \begin{GrinCS}
-|CSBase<< unit (C ^^ Vec(v)) ; \(C ^^ Vec(w)) -> e >> CSEnv|
-&
-|CSBase<< e >> ^^ CSEnv ^ Vec([w :-> CSEnv v])| 
+|CSVar(v)(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|ldl (CSDep - CSEnv v)|
+\end{GrinCS}
+
+Node construction:
+
+\begin{GrinCS}
+|CSOne(unit (C ^^ Sub(v)(1..n)))(Sub(CSDep)(1))(Sub(CSDep)(n+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(v)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc C : ldc n : allocstore|
+\end{GrinCS}
+
+Note:
+\begin{Itemize}
+\item
+  For simplicity we omit the handling of constants in node construction.
+\item
+  |store| and |unit| are treated in the same way.
+\end{Itemize}
+
+Calling:
+
+\begin{GrinCS}
+|CSOne(f ^^ Sub(a)(1..n))(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(a)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldg f : call |
+\end{GrinCS}
+
+Calling a primitive, foreign function:
+
+\begin{GrinCS}
+|CSOne(ffi f ^^ Sub(a)(1..n))(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(a)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : push (f (pop n)) |
+\end{GrinCS}
+
+
+\subsubsection{Eval and apply}
+
+\begin{GrinCS}
+|CSOne(eval v)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSVar(v)(CSDep)(CSDep')(CSEnv) : evalt|
 \end{GrinCS}
 
 \begin{GrinCS}
-|CSBase<< store (C ^^ Vec(v)) ; \w -> e >> CSEnv|
-&
-|alloc ||Vec(v)|| : CSBase<< e >> ^^ CSEnv ^ [w :-> gstack]| 
+|CSOne(apply f ^^ Sub(a)(1..n))(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|Vecr(CSVar(Sub(a)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc n : |
+\\&&
+|CSVar(f)((Sub(CSDep)(n+1)+1))(CSDep')(CSEnv) : applyt|
 \end{GrinCS}
+
+\subsubsection{Binding}
+
+One variable:
+
+\begin{GrinCS}
+|CSPat(\w -> e)(CSDep)(CSDep)(CSEnv)|
+&=&
+|CSOne(e)(CSDep)(CSDep)(CSEnv ^ [w :-> CSDep])|
+\end{GrinCS}
+
+Node:
+
+\begin{GrinCS}
+|CSPat(\(C ^^ Sub(w)(1..n)) -> e)(CSDep)(CSDep')(CSEnv)|
+&=&
+|fetcht : CSOne(e)((CSDep + n - 1))(CSDep')(CSEnv ^ Vec([Sub(w)(i) :-> CSDep + n - i]))|
+\end{GrinCS}
+
+\subsubsection{Case}
+
+\begin{GrinCS}
+|CSOne(case v ^^ {Vec(Sub(p)(i) -> Sub(e)(i))})(CSDep)((CSDep+1))(CSEnv)|
+&=&
+|CSVar(v)(CSDep)(CSDep')(CSEnv) : casecall :|
+\\&&
+|Vec(CSAlt(Sub(p)(i) -> Sub(e)(i))(CSDep')(CSDep'')(CSEnv))|
+\end{GrinCS}
+
+\begin{GrinCS}
+|CSAlt(p -> e)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSPat(\p -> e)(CSDep)(CSDep')(CSEnv) |
+\end{GrinCS}
+
+\subsubsection{Returning}
+
+Sequence continuation
+
+Normal return from function
+
+Tailcall
+
+Case return
+
+\subsubsection{Optimisations}
+
+Alias need not be stored (saves 3\%).
+
+\begin{GrinCS}
+|CSSeq(unit v ; \w -> e)(CSDep)(CSDep')(CSEnv)|
+&=&
+|CSOne(e)(CSDep)(CSDep')(CSEnv ^ [w :-> CSEnv v])|
+\end{GrinCS}
+
+|Int| can be treated unboxed in tagged pointer model.
+
+Avoid building closures which are evaluated anyway, and then don't evaluate these.
 
 %%]
 
@@ -469,12 +624,12 @@ With each individual instruction the implemented and used variants are listed.
 %%[[wrap=code
 angle(rd), angle(rs)  =  i  -- immediate constant
                       |  p  -- program counter relative
-                      |  t  -- top of stack relative
+                      |  s  -- top of stack relative
                       |  r  -- scratch register relative
 %%]]
 
 %%[[wrap=code
-t  =  00
+s  =  00
 r  =  01
 i  =  10
 p  =  11
@@ -494,18 +649,31 @@ r  =  1
 %%]]
 
 \subsubsection{Operator destination: operand variant}
+
 %%[[wrap=code
-angle(od)  =  t  -- top of stack, with push/pop side effect
+angle(od)  =  t  -- top of stack, update in place
            |  r  -- scratch register
-           |  s  -- stack pointer register
-           |  p  -- program counter register
 %%]]
 
 %%[[wrap=code
-t  =  00
+t  =  0
+r  =  1
+%%]]
+
+\subsubsection{Operator source: operand variant}
+
+%%[[wrap=code
+angle(os)  =  s  -- top of stack relative
+           |  r  -- scratch register
+           |  i  -- immediate constant
+           |  t  -- top of stack, with push/pop side effect
+%%]]
+
+%%[[wrap=code
+s  =  00
 r  =  01
-s  =  10
-p  =  11
+i  =  10
+t  =  11
 %%]]
 
 \subsubsection{Operator type}
@@ -513,7 +681,7 @@ p  =  11
 angle(ot)  =  a  -- add
            |  s  -- subtract
            |  m  -- multiply
-           |  d  -- divide+modulo
+           |  d  -- divide
 %%]]
 
 %%[[wrap=code
@@ -524,22 +692,17 @@ d  =  11
 %%]]
 
 \subsubsection{Data type}
+
 %%[[wrap=code
-angle(dt)  =  i1  -- 32bits int
-           |  i2  -- 64bits int
-           |  f1  -- 32bits float
-           |  f2  -- 64bits float
-           |  iw  -- word
-           |  ii  -- unlimited integer precision
+angle(dt)  =  iw  -- int word
+           |  ii  -- multiple precision int
+           |  fw  -- float word
 %%]]
 
 %%[[wrap=code
-i1  =  000
-i2  =  001
-f1  =  010
-f2  =  011
-iw  =  100
-ii  =  101
+iw  =  00
+ii  =  01
+fw  =  10
 %%]]
 
 \subsubsection{Immediate signed int constant size}
@@ -565,9 +728,38 @@ angle(i)  =  0      -- as is, use itself (don't follow as address)
           |  3, i   -- use as int, that is yield tagged int representation
 %%]]
 
-Level 0 is only used for a source, in that case encoding equals the encoding for |i - 1|.
+Level 0 is only used for a source.
+When a level is used for a destination, level 0 is not allowed, only 1 and 2.
+In that case encoding equals the encoding for |i - 1|.
 
 A level 3 represents a variation on level 0 with an implicit conversion to int encoding |Enc(x)|.
+It is not used with destinations.
+
+\subsubsection{Node adapt kind}
+%%[[wrap=code
+angle(na)  =  u      -- update
+           |  e      -- extend
+           |  d      -- delete
+%%]]
+
+%%[[wrap=code
+u  =  00
+e  =  01
+d  =  10
+%%]]
+
+\subsubsection{Node adapt/split offset src}
+%%[[wrap=code
+angle(no)  =  i      -- immediate
+           |  t      -- top of stack, with implicit pop side effect, see relevant instruction
+%%]]
+
+Similar to |angle(rs), angle(rd)|
+
+%%[[wrap=code
+i  =  0
+t  =  1
+%%]]
 
 \subsubsection{Instruction prefixes/categories}
 
@@ -582,17 +774,13 @@ Those without comment are not yet used.
 %{
 %format <<  = "{\ll}"
 %%[[wrap=code
-0           ^^  0x00        ^^  0x00        -- loading
-100         ^^  0x04 << 5   ^^  0x80        -- storing
-101         ^^  0x05 << 5   ^^  0x82        -- arithmetic
-1100  0     ^^  0x18 << 3   ^^  0xC0        -- calling, case
-1100  0111  ^^
-1100  1     ^^  0x19 << 3   ^^  0xC8        -- load global
-1101
-1110  0     ^^  0x1C << 3   ^^  0xE0        -- eval/apply
-1110  1     ^^  0x1D << 3   ^^  0xE8        -- heap: node alloc/fetch
-1111  0     ^^  
-1111  1     ^^              ^^  0xF8        -- 'standalone': extend prefix, nop, ...
+0           ^^  x00        ^^  x00        -- loading
+10          ^^  x02 << 6   ^^  x80        -- storing
+110         ^^  x06 << 5   ^^  xC0        -- arithmetic
+1110  0     ^^  x1C << 3   ^^  xE0        -- (tail)eval/apply/ldg
+1110  1     ^^  x1D << 3   ^^  xE8        -- heap: node alloc/fetch, extensible rec
+1111  0     ^^  x1E << 3   ^^  xF0        -- calling, case
+1111  1     ^^  x1F << 3   ^^  xF8        -- no arg instrs, extension, other
 %%]]
 %}
 
@@ -742,7 +930,7 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
 
 \begin{GrinEncoding}{|ildg(rd)(v)|}
  &
-|1100 ^^ 100 ^ ixx1(rd)(0)| &
+|1110 ^^ 100 ^ ixx1(rd)(0)| &
 v &
 ... &
 \\
@@ -767,8 +955,8 @@ v &
 %%[[wrap=code
 ist(i)(rd)(rs)(x)
   =  case angle(i) of
-       0  ->  *d         :=  s
-       1  ->  *d'        :=  s
+       1  ->  *d         :=  s
+       2  ->  *d'        :=  s
   where  (d,d')  <-  case ^^ angle(rd) of
                        t  -> (gstack + x,*gstack+x)
                        r  -> (greg + x,*greg+x)
@@ -787,30 +975,43 @@ Offset |x| in bytes.
 sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
 %%]]
 
+Alternative form:
+
+\begin{GrinEncoding}{|ist2(i)(rd)(rs)(x)|}
+ &
+|10 ^^ ixx1(i)(0) ^ ixxjuxt(rd)(1)(0) ^ ixx1(rs)(0) ^ ixxjuxt(x)(1)(0)| &
+... &
+ &
+\\
+\end{GrinEncoding}
+
+%%[[wrap=code
+ist(i)(rd)(rs)(x)
+  =  case angle(i) of
+       1  ->  *d         :=  s
+       2  ->  *d'        :=  s
+  where  (d,d')  <-  case ^^ angle(rd) of
+                       t  -> (gstack + x,*gstack+x)
+                       r  -> (greg + x,*greg+x)
+                       p  -> (gpc + x,*gpc+x)        -- after instruction fetch
+                       i  -> (x,*x)
+         s  <-  ...
+%%]]
+
+
+
 %%]
 
 %%[grinBArithmetic
-
-\subsubsection{Immediate constant addition}
-
-\emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
-
-\begin{GrinEncoding}{|iaddi(od)(x)|}
- &
-|1010 ^ ixxjuxt(od)(1)(0) ^ ixxjuxt(x)(1)(0)| &
-... &
-&
-\\
-\end{GrinEncoding}
 
 \subsubsection{General operators}
 
 \emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
 
-\begin{GrinEncoding}{|iop(ot)(dt)(i)(od)(rs)(x)|}
+\begin{GrinEncoding}{|iop2(ot)(dt)(od)(i)(os)(x)|}
  &
-|1011 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(od)(1)(0)| &
-|ixx(dt)(2)(0) ^ ixx1(i)(0) ^ ixxjuxt(rs)(1)(0) ^ ixxjuxt(x)(1)(0)| &
+|101 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(dt)(1)(0) ^ ixx1(od)(0)| &
+|00 ^ ixxjuxt(i)(1)(0) ^^ ixxjuxt(os)(1)(0) ^ ixxjuxt(x)(1)(0)| &
 ... &
 \\
 \end{GrinEncoding}
@@ -822,7 +1023,7 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 
 \begin{GrinEncoding}{|icall(rs)|}
  &
-|1100 ^^ 000 ^ ixx1(rs)(0)| &
+|1111 ^^ 000 ^ ixx1(rs)(0)| &
 ... &
  &
 \\
@@ -857,7 +1058,7 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 
 \begin{GrinEncoding}{|itailcall(rs)(n)(m)(r)|}
  &
-|1100 ^^ 001 ^ ixx1(rs)(0)| &
+|1111 ^^ 001 ^ ixx1(rs)(0)| &
 |00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)| &
 ... &
 \\
@@ -894,7 +1095,7 @@ where |n, m, r :: angle(is)|
 
 \begin{GrinEncoding}{|iretcall(n)(m)(r)|}
  &
-|1100 ^^ 0100| &
+|1111 ^^ 0100| &
 |00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)| &
 ... &
 \\
@@ -931,7 +1132,7 @@ where |n, m, r :: angle(is)|
 
 \begin{GrinEncoding}{|iretcase(n)(r)(c)|}
  &
-|1100 ^^ 0101| &
+|1111 ^^ 0101| &
 |00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(r)(1)(0)| &
 |n|, |r|, code location |c| &
 ... \\
@@ -968,7 +1169,7 @@ where |n, r:: angle(is)|
 
 \begin{GrinEncoding}{|icasecall|}
  &
-|1100 ^^ 0110| &
+|1111 ^^ 0110| &
 |n| locations &
 ... &
 \\
@@ -1007,7 +1208,7 @@ Return is handled by |retcase|.
 
 \begin{GrinEncoding}{|icallc(n)|}
  &
-|1100 ^^ 0111| &
+|1111 ^^ 0111| &
 |0000 ^^ 00 ^ ixxjuxt(n)(1)(0)| &
 ... &
 \\
@@ -1425,11 +1626,9 @@ The saved return address of the apply and result are shuffled to be ready for th
 %%]
 
 %%[grinBStorage
-\subsubsection{Alloc}
+\subsubsection{Split node}
 
-\emph{No individual |alloc| is required; handled by |allocstore|.}
-
-\begin{GrinEncoding}{|ialloc(rs)|}
+\begin{GrinEncoding}{|isplit(rs)(n)|}
  &
 |1110 ^^ 100 ^ ixx1(rs)(0)| &
  &
@@ -1437,17 +1636,42 @@ The saved return address of the apply and result are shuffled to be ready for th
 \\
 \end{GrinEncoding}
 
-\subsubsection{Store}
+\subsubsection{Adapt node}
 
-\emph{No individual |store| is required; handled by |allocstore|.}
-
-\begin{GrinEncoding}{|istore(rs)|}
+\begin{GrinEncoding}{|iadapt(rs)(n)|}
  &
 |1110 ^^ 101 ^ ixx1(rs)(0)| &
  &
  &
 \\
 \end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |adaptt n' : Sub(na)(1) .. Sub(na)(n') : Subp(no)(1)(i) .. Subp(no)(k)(i) : gcode|
+ }{%
+  |p : Subp(no)(1)(t) .. Subp(no)(m)(t) : v1 .. Sub(v)(n') : gstack|
+ }{%
+  |[ p :-> (t : f1 : .. : Sub(f)(n)) ] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack[ p :-> (t : f1 : .. : Sub(f)(n')) ]|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+where |n' = m+k|.
+
 
 \subsubsection{Alloc + Store}
 
@@ -1512,7 +1736,7 @@ Size in bytes, including tag.
  }{%
   |gcode|
  }{%
-  |(t,s) : f1 : .. : Sub(f)(s-1) : gstack|
+  |f1 : .. : Sub(f)(s-1) : gstack|
  }{%
   |gheap|
  }{

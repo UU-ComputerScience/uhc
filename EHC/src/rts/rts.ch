@@ -7,6 +7,21 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "config.h"
+%%]
+
+Internal config
+
+%%[8
+#define TRACE 					1
+
+#if TRACE
+#define GB_COUNT_STEPS			1
+#else
+#define GB_COUNT_STEPS			0
+#endif
+%%]
+
+%%[8
 #include "utils.h"
 #include "bits.h"
 #include "grinbc/grinbc.h"
@@ -113,7 +128,6 @@ extern int main_GB_Exit(int argc, char** argv) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define TRACE 			1
 #define TRACE_LEV_DFLT 	3
 
 #if TRACE
@@ -123,4 +137,7 @@ extern int traceLevel ;
 #  define	IF_TR_ON(l,x)
 #endif
 
+%%]
+
+%%[8
 %%]

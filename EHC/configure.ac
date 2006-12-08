@@ -201,7 +201,7 @@ AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
 ### general configuration
 
 # Use Boehm's GC
-AC_DEFINE([USE_BOEHM_GC],[0])
+AC_DEFINE([USE_BOEHM_GC],[1])
 
 # Prefix used for global values, assumed to be present by RTS
 AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"])

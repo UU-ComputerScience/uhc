@@ -7,12 +7,17 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Register usage (adapted from lvm evaluator.c)
+%%% Internal config
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #define USE_REGS_FOR_PC_SP 		1
+
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Register usage (adapted from lvm evaluator.c)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #if defined(__GNUC__) && !defined(DEBUG)
@@ -276,10 +281,12 @@ int gb_Opt_TraceSteps = True ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#if GB_COUNT_STEPS
+unsigned int gb_StepCounter ;
+#endif
+
 #if TRACE || DUMP_INTERNALS
 extern char* gb_lookupMnem( GB_Byte c ) ;
-
-unsigned int gb_StepCounter ;
 
 void gb_prWord( GB_Word x )
 {
@@ -342,23 +349,29 @@ void gb_prState( char* msg, int maxStkSz )
 {
 	int i ;
 	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
-#if USE_64_BITS
-	printf( "[%d]PC 0x%lx: 0x%0.2x '%s'"
-#else
-	printf( "[%d]PC 0x%x: 0x%0.2x '%s'"
-#endif
-	      , gb_StepCounter, pc, *pc, gb_lookupMnem(*pc)) ;
+#	if USE_64_BITS
+		printf( "[%d]PC 0x%lx: 0x%0.2x '%s'"
+#	else
+		printf( "[%d]PC 0x%x: 0x%0.2x '%s'"
+#	endif
+#	if GB_COUNT_STEPS
+	      , gb_StepCounter
+#	else
+		  , 0
+#	endif
+	      , pc, *pc, gb_lookupMnem(*pc)) ;
 	for ( i = 0 ; i < 8 ; i++ )
 		printf(" %0.2x", pc[1+i]) ;
-#if USE_64_BITS
-	printf( ", SP 0x%lx: 0x%0.16lx, RR 0x%lx"
-#else
-	printf( ", SP 0x%x: 0x%0.8x, RR 0x%x"
-#endif
+#	if USE_64_BITS
+		printf( ", SP 0x%lx: 0x%0.16lx, RR 0x%lx"
+#	else
+		printf( ", SP 0x%x: 0x%0.8x, RR 0x%x"
+#	endif
 	      , sp, *sp, rr ) ;
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
+
 #endif
 %%]
 
@@ -458,25 +471,25 @@ void gb_interpretLoop()
 
 			/* load TOS relative content on stack */
 			/* l1tt08 */
-			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_08) :
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08) :
 				GB_PCImmIn(int8_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l1tt16 */
-			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_16) :
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16) :
 				GB_PCImmIn(int16_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l1tt32 */
-			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_32) :
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32) :
 				GB_PCImmIn(int32_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
 			/* l1tt64 */
-			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_64) :
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64) :
 				GB_PCImmIn(int64_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
@@ -545,7 +558,7 @@ gb_interpreter_InsCallEntry:
 			/* callr */
 
 			/* tailcallt */
-#define GB_RetTailCallCode(getDst,jumpDst,getPrevRet,restorePrevRet)		/* share between tailcall & retcall */							\
+#define GB_RetTailCall_Code(getDst,jumpDst,getPrevRet,restorePrevRet)		/* share between tailcall & retcall */							\
 				spSave = sp ;																												\
 				GB_PCExtIn(x) ;																												\
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,4,5),x3) ; 			/* nArgMine  , in bytes				*/							\
@@ -563,7 +576,7 @@ gb_interpreter_InsCallEntry:
 				jumpDst ;													/* jump to dst						*/
 
 			case GB_Ins_TailCall(GB_InsOp_LocB_TOS) :
-				GB_RetTailCallCode
+				GB_RetTailCall_Code
 					( GB_PopCastedIn(GB_BytePtr,dst)
 					, pc = dst
 					, retSave = GB_Deref(GB_RegByteRel(GB_Word,spSave,x5))
@@ -575,7 +588,7 @@ gb_interpreter_InsCallEntry:
 			
 			/* retcall */
 			case GB_Ins_RetCall :
-				GB_RetTailCallCode
+				GB_RetTailCall_Code
 					( dst = Cast(GB_BytePtr,GB_RegByteRelx(spSave,x5))
 					, pc = dst
 					, ;
@@ -595,7 +608,7 @@ gb_interpreter_InsCallEntry:
 				pc = dst ;													/* jump 											*/
 				break ;
 
-#define GB_CallCCode(f,nargs,args,res) \
+#define GB_CallC_Code(f,nargs,args,res) \
 				switch ( nargs )																																								\
 				{																																												\
 					case 0 : res = Cast(GB_CFun*,f)(  ) ; break ;																																\
@@ -615,7 +628,7 @@ gb_interpreter_InsCallEntry:
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args										*/
 				GB_PopIn(x) ;												/* function											*/
-				GB_CallCCode(x,x2,sp,x) ;
+				GB_CallC_Code(x,x2,sp,x) ;
 				sp = GB_SPRel(x2) ;
 				GB_Push(x) ;
 				break ;
@@ -669,7 +682,7 @@ gb_interpreter_InsEvalEntry:
 									p = &(n->fields[1]) ;											/* 1st arg 							*/
 									x2 = x ;                                                        /* remember val + pc 				*/
 									retSave = Cast(GB_Word,pc) ;
-									GB_CallCCode(n->fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+									GB_CallC_Code(n->fields[0],GB_NH_NrFlds(h)-1,p,x) ;
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 									break ;
 								case GB_NodeTagCat_App :
@@ -772,10 +785,6 @@ gb_interpreter_InsApplyEntry:
 							p2 = n->fields ;											/* copy old fields prep										*/
 							p3 = Cast(GB_Ptr,&((n)->fields[GB_NH_NrFlds(h)])) ;
 							h = GB_MkHeader(GB_NH_Fld_Size(h)+x,GB_NH_Fld_NdEv(h),GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h)-x) ;
-							/*
-							h.tag -= x ;
-							h.size += x ;
-							*/
 							p = GB_HeapAlloc_Words( GB_NH_Fld_Size(h) ) ;				/* fresh node												*/
 							x2 = Cast(GB_Word,p) ;										/* remember, to push later on								*/
 							Cast(GB_NodePtr,p)->header = h ;							/* set header												*/
@@ -850,32 +859,85 @@ gb_interpreter_InsApplyEntry:
 				break ;
 
 			/* operators */
-			/* add to TOS */
-			case GB_Ins_Op(GB_InsOp_TyOp_Add,GB_InsOp_LocO_TOS) :
+#define GB_Op_TOSDst_ImmInt_Code(ty,x,opres)												\
+						GB_PCImmIn(ty,x) ;						/* load immediate opnd 	*/	\
+						x = GB_Int2GBInt( x ) ;					/* make int of it	 	*/	\
+						GB_SetTOS( opres ) ;					/* update top of stack 	*/	
+
+#define GB_Op_TOSDst_SPRelImm_Code(ty,x,opres)												\
+						GB_PCImmIn(ty,x) ;						/* load immediate opnd 	*/	\
+						GB_SetTOS( opres ) ;					/* update top of stack 	*/	
+
+#define GB_Op_TOSDst_TOSSrc_Code(ty,x,opres)												\
+						GB_PopIn( x ) ;							/* pop opnd 			*/	\
+						GB_SetTOS( opres ) ;					/* update top of stack 	*/	
+
+#define GB_Op_TOSDst_Case1_Code(deref,locSrc,how,x,op,src1,src2)				\
+					case GB_Ins_OpExt(deref,locSrc,GB_InsOp_ImmSz_08) :			\
+						how(int8_t,x,op( src1, src2 )) ;						\
+						break ;													\
+					case GB_Ins_OpExt(deref,locSrc,GB_InsOp_ImmSz_16) :			\
+						how(int16_t,x,op( src1, src2 )) ;						\
+						break ;													\
+					case GB_Ins_OpExt(deref,locSrc,GB_InsOp_ImmSz_32) :			\
+						how(int32_t,x,op( src1, src2 )) ;						\
+						break ;													\
+					case GB_Ins_OpExt(deref,locSrc,GB_InsOp_ImmSz_64) :			\
+						how(int64_t,x,op( src1, src2 )) ;						\
+						break ;																			
+
+#define GB_Op_TOSDst_Case_Code(op)																				\
+					GB_Op_TOSDst_Case1_Code( GB_InsOp_DerefInt,GB_InsOp_LocOSrc_Imm, GB_Op_TOSDst_ImmInt_Code 	\
+					                       , x, op, GB_TOS, x 													\
+					                       )																	\
+					GB_Op_TOSDst_Case1_Code( GB_InsOp_Deref1,GB_InsOp_LocOSrc_SP, GB_Op_TOSDst_SPRelImm_Code 	\
+					                       , x, op, GB_TOS, GB_SPByteRelx( x ) 									\
+					                       )																	\
+					GB_Op_TOSDst_Case1_Code( GB_InsOp_Deref1,GB_InsOp_LocOSrc_TOS, GB_Op_TOSDst_TOSSrc_Code	 	\
+					                       , x, op, GB_TOS, x				 									\
+					                       )
+
+			/* int add/sub/mul/div to TOS from XXX */
+			case GB_Ins_Op(GB_InsOp_TyOp_Add,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
 				switch( *(pc++) )
 				{
-					case GB_Ins_OpExt(GB_InsOp_DataOp_IW,GB_InsOp_Deref1,GB_InsOp_LocE_TOS,GB_InsOp_ImmSz_08) :
-						GB_PCImmIn(int8_t,x) ;
-						GB_SetTOS( GB_Int_Add( GB_TOS, GB_SPByteRelx( x ) ) ) ;
-						break ;
-
-					case GB_Ins_OpExt(GB_InsOp_DataOp_IW,GB_InsOp_Deref1,GB_InsOp_LocE_TOS,GB_InsOp_ImmSz_16) :
-						GB_PCImmIn(int16_t,x) ;
-						GB_SetTOS( GB_Int_Add( GB_TOS, GB_SPByteRelx( x ) ) ) ;
-						break ;
-
-					case GB_Ins_OpExt(GB_InsOp_DataOp_IW,GB_InsOp_Deref1,GB_InsOp_LocE_TOS,GB_InsOp_ImmSz_32) :
-						GB_PCImmIn(int32_t,x) ;
-						GB_SetTOS( GB_Int_Add( GB_TOS, GB_SPByteRelx( x ) ) ) ;
-						break ;
-
-					case GB_Ins_OpExt(GB_InsOp_DataOp_IW,GB_InsOp_Deref1,GB_InsOp_LocE_TOS,GB_InsOp_ImmSz_64) :
-						GB_PCImmIn(int64_t,x) ;
-						GB_SetTOS( GB_Int_Add( GB_TOS, GB_SPByteRelx( x ) ) ) ;
-						break ;
+					GB_Op_TOSDst_Case_Code( GB_Int_Add )
 
 					default:
-						rts_panic1_1( "oatXXX instruction not implemented", *(pc-1) ) ;
+						rts_panic1_1( "oaiwt<XXX> instruction not implemented", *(pc-1) ) ;
+						break ;
+				}
+				break ;
+
+			case GB_Ins_Op(GB_InsOp_TyOp_Sub,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
+				switch( *(pc++) )
+				{
+					GB_Op_TOSDst_Case_Code( GB_Int_Sub )
+
+					default:
+						rts_panic1_1( "osiwt<XXX> instruction not implemented", *(pc-1) ) ;
+						break ;
+				}
+				break ;
+
+			case GB_Ins_Op(GB_InsOp_TyOp_Mul,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
+				switch( *(pc++) )
+				{
+					GB_Op_TOSDst_Case_Code( GB_Int_Mul )
+
+					default:
+						rts_panic1_1( "omiwt<XXX> instruction not implemented", *(pc-1) ) ;
+						break ;
+				}
+				break ;
+
+			case GB_Ins_Op(GB_InsOp_TyOp_Div,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
+				switch( *(pc++) )
+				{
+					GB_Op_TOSDst_Case_Code( GB_Int_Div )
+
+					default:
+						rts_panic1_1( "odiwt<XXX> instruction not implemented", *(pc-1) ) ;
 						break ;
 				}
 				break ;
@@ -886,7 +948,9 @@ gb_interpreter_InsApplyEntry:
 
 		}
 		
-		IF_TR_ON(0,gb_StepCounter++) ;
+#		if GB_COUNT_STEPS
+		gb_StepCounter++ ;
+#		endif
 
 	}
 	
@@ -1080,17 +1144,17 @@ static GB_Mnem gb_mnemTable[] =
 , { GB_Ins_Ld(GB_InsOp_DerefInt, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_64)
   , "liti64"
   }
-, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_08)
-  , "l1tt08"
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08)
+  , "l1ts08"
   }
-, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_16)
-  , "l1tt16"
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16)
+  , "l1ts16"
   }
-, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_32)
-  , "l1tt32"
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32)
+  , "l1ts32"
   }
-, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_TOS, GB_InsOp_ImmSz_64)
-  , "l1tt64"
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64)
+  , "l1ts64"
   }
 , { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_08)
   , "l1tr08"
@@ -1104,8 +1168,17 @@ static GB_Mnem gb_mnemTable[] =
 , { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_64)
   , "l1tr64"
   }
-, { GB_Ins_Op(GB_InsOp_TyOp_Add,GB_InsOp_LocO_TOS)
-  , "oat XXX"
+, { GB_Ins_Op(GB_InsOp_TyOp_Add,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
+  , "oaiwt XXX"
+  }
+, { GB_Ins_Op(GB_InsOp_TyOp_Sub,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
+  , "osiwt XXX"
+  }
+, { GB_Ins_Op(GB_InsOp_TyOp_Mul,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
+  , "omiwt XXX"
+  }
+, { GB_Ins_Op(GB_InsOp_TyOp_Div,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
+  , "odiwt XXX"
   }
 , { GB_Ins_Ldg(GB_InsOp_LocB_TOS)				, "ldgt" 			}
 , { GB_Ins_Ldg(GB_InsOp_LocB_Reg)				, "ldgr" 			}

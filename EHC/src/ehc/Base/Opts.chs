@@ -93,6 +93,7 @@ data EHCOpts
       ,  ehcOptGenTailCall    ::  Bool
       ,  ehcOptGenOwnParams   ::  Bool
       ,  ehcOptGenOwnLocals   ::  Bool
+      ,  ehcOptGenCmt         ::  Bool
 
       ,  ehcOptShowGrin       ::  Bool
       ,  ehcOptEmitHS         ::  Bool
@@ -108,6 +109,7 @@ data EHCOpts
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
+      ,  ehcOptOptimise		  ::  Optimise
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
 %%]]
@@ -167,6 +169,7 @@ defaultEHCOpts
       ,  ehcOptEmitGrin       =   False
       ,  ehcOptSearchPath     =   []
       ,  ehcOptVerbosity      =   VerboseNormal
+      ,  ehcOptOptimise       =   OptimiseNormal
       ,  ehcOptTrf            =   []
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
       ,  ehcOptEmitLLVM       =   False
@@ -176,10 +179,12 @@ defaultEHCOpts
       ,  ehcOptEmitLlc        =   False
       ,  ehcOptEmitExec       =   False
       ,  ehcOptEmitExecBC     =   False
+      ,  ehcOptGenCmt         =   True
 %%][99
       ,  ehcOptEmitLlc        =   True
       ,  ehcOptEmitExec       =   True
       ,  ehcOptEmitExecBC     =   True
+      ,  ehcOptGenCmt         =   False
 %%]]
 %%[[9
       ,  ehcOptPrfCutOffAt    =   20
@@ -218,13 +223,15 @@ ehcCmdLineOpts
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["dump-call-graph"]  (NoArg oDumpCallGraph)               "output grin call graph as dot file"
      ,  Option ""   ["dump-trf-grin"]    (OptArg oDumpTrfGrin "basename")     "dump intermediate grin code after transformation"
-     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")            "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
+     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
+     ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
 
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
      ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no, broken!)"
+     ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
 %%]]
 %%[[12
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
@@ -302,7 +309,13 @@ ehcCmdLineOpts
                                 Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
                                 Just "2"    -> o { ehcOptVerbosity     = VerboseALot        }
                                 Just "3"    -> o { ehcOptVerbosity     = VerboseDebug       }
-                                Nothing     -> o { ehcOptVerbosity     = VerboseNormal      }
+                                Nothing     -> o { ehcOptVerbosity     = VerboseALot        }
+                                _           -> o
+         oOptimise   ms  o =  case ms of
+                                Just "0"    -> o { ehcOptOptimise      = OptimiseNone       }
+                                Just "1"    -> o { ehcOptOptimise      = OptimiseNormal     }
+                                Just "2"    -> o { ehcOptOptimise      = OptimiseALot       }
+                                Nothing     -> o { ehcOptOptimise      = OptimiseALot       }
                                 _           -> o
 %%]]
 %%[[12
@@ -322,6 +335,7 @@ optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenTailCall    o b = o { ehcOptGenTailCall    = b }
 optSetGenOwnParams   o b = o { ehcOptGenOwnParams   = b }
 optSetGenOwnLocals   o b = o { ehcOptGenOwnLocals   = b }
+optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 
 optBoolean tr ms o
  = case ms of
@@ -351,6 +365,7 @@ optsDiscrRecompileRepr opts
       , o "exec"            (ehcOptEmitExec     opts)
       , o "fullproggrin"    (ehcFullProgGRIN    opts)
       , o "bexec"           (ehcOptEmitExecBC   opts)
+      , show (ehcOptOptimise opts)
       ]
   where o m v = if v then m else ""
 %%]

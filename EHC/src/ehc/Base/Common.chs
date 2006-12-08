@@ -88,7 +88,7 @@
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
 %%]
 
-%%[8 export(Verbosity(..),putCompileMsg, openFPath,writeToFile, writePP)
+%%[8 export(putCompileMsg, openFPath,writeToFile, writePP)
 %%]
 
 %%[8 import(qualified Data.Set as Set) export(ppHsnNonAlpha)
@@ -826,10 +826,20 @@ thd (a,b,c) = c
 %%% Verbosity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(Verbosity(..))
 data Verbosity
   = VerboseQuiet | VerboseNormal | VerboseALot | VerboseDebug
   deriving (Eq,Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Optimisation level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(Optimise(..))
+data Optimise
+  = OptimiseNone | OptimiseNormal | OptimiseALot
+  deriving (Eq,Ord,Show)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

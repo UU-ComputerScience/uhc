@@ -987,7 +987,7 @@ cpTranslateGrin2ByteCode modNm
                  modNmLL= crCompileOrder cr
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpTranslateGrin2ByteCode" mbGrin
-                 bc     = grinMod2ByteCodeMod
+                 bc     = grinMod2ByteCodeMod opts
 %%[[12
                             (if ecuIsTopMod ecu then concat modNmLL else [])
                             (Map.fromList [ (m,(o,crsiExpsNmOffMp m crsi)) | (m,o) <- zip (nub $ ecuImpNmL ecu) [0..] ])
