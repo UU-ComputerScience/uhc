@@ -29,5 +29,5 @@ import ViewSel
 import RulerAdmin( BldRename(..) )
 }
 
-INCLUDE "RulerAbsSyn1AG.ag"
-INCLUDE "RulerAbsSynCommonAG.ag"
+INCLUDE "AbsSyn/1AG.cag"
+INCLUDE "AbsSyn/CommonAG.cag"

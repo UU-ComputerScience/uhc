@@ -21,14 +21,14 @@ import ECnstrGam
 import RulerConfig( cfgStrSel )
 }
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ARuleAbsSynAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "ARule/AbsSynAG.cag"
 
-INCLUDE "ExprPrettyPrintAG.ag"
-INCLUDE "ARulePrettyPrintAG.ag"
+INCLUDE "Expr/PrettyPrintAG.cag"
+INCLUDE "ARule/PrettyPrintAG.cag"
 
-INCLUDE "ExprSelfAG.ag"
-INCLUDE "ARuleSelfAG.ag"
+INCLUDE "Expr/SelfAG.cag"
+INCLUDE "ARule/SelfAG.cag"
 
 WRAPPER AGARuleItf AGExprItf
 

@@ -26,8 +26,8 @@ import ARule
 -- import RwExprGam
 }
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ARuleAbsSynAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "ARule/AbsSynAG.cag"
 
 -- INCLUDE "ExprSelfAG.ag"
 

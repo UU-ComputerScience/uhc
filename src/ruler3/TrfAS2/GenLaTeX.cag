@@ -36,17 +36,17 @@ import EH.Util.PPUtils
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "RulerAbsSyn2AG.ag"
-INCLUDE "RulerAbsSynCommonAG.ag"
-INCLUDE "RulerAS2Opts.ag"
+INCLUDE "AbsSyn/2AG.cag"
+INCLUDE "AbsSyn/CommonAG.cag"
+INCLUDE "AS2/Opts.cag"
 
-INCLUDE "TrfAS2CommonAG.ag"
+INCLUDE "TrfAS2/CommonAG.cag"
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ExprSelfAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "Expr/SelfAG.cag"
 
-INCLUDE "ARuleAbsSynAG.ag"
-INCLUDE "ARuleSelfAG.ag"
+INCLUDE "ARule/AbsSynAG.cag"
+INCLUDE "ARule/SelfAG.cag"
 
 -------------------------------------------------------------------------
 -- Interfacing to AST

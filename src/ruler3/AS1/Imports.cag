@@ -19,9 +19,9 @@ import RulerAbsSyn1
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "RulerAbsSyn1AG.ag"
-INCLUDE "RulerAbsSynCommonAG.ag"
-INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "AbsSyn/1AG.cag"
+INCLUDE "AbsSyn/CommonAG.cag"
+INCLUDE "Expr/AbsSynAG.cag"
 
 -------------------------------------------------------------------------
 -- Interfacing to AST

@@ -12,8 +12,8 @@ import Common
 import Expr
 }
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ExprIsRwAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "Expr/IsRwAG.cag"
 
 WRAPPER AGExprItf
 

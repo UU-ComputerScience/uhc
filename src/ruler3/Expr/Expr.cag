@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 import Common
 }
 
-INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
 
 DERIVING AllExpr: Eq,Ord
 

@@ -1,5 +1,5 @@
-module RulerScanner
- ( module RulerScannerMachine
+module Scanner
+ ( module ScannerMachine
  , module UU.Scanner.Token
  , module UU.Scanner.TokenParser
  , module UU.Scanner.Position
@@ -12,7 +12,7 @@ module RulerScanner
  where
 
 import IO
-import RulerScannerMachine
+import ScannerMachine
 import UU.Scanner.Token
 import UU.Scanner.TokenParser
 import UU.Scanner.Position

@@ -14,7 +14,7 @@ module Err
 import UU.Pretty
 import EH.Util.PPUtils
 import EH.Util.Utils
-import RulerScanner( SPos, emptySPos )
+import Scanner( SPos, emptySPos )
 import EH.Util.ParseErrPrettyPrint
 import EH.Util.Nm
 import EH.Util.Utils( maybeHd )

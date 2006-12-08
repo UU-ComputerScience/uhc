@@ -15,7 +15,7 @@ import EH.Util.Nm
 import ViewSel
 }
 
-INCLUDE "ViewSelAbsSynAG.ag"
+INCLUDE "ViewSel/AbsSynAG.cag"
 
 WRAPPER AGViewSelItf AGViewSelsItf
 

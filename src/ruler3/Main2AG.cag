@@ -32,21 +32,21 @@ import RulerAbsSyn2
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "RulerAbsSyn2AG.ag"
-INCLUDE "RulerAbsSynCommonAG.ag"
-INCLUDE "RulerFmGamAG.ag"
-INCLUDE "RulerAS2Opts.ag"
-INCLUDE "RulerAS2Pretty.ag"
+INCLUDE "AbsSyn/2AG.cag"
+INCLUDE "AbsSyn/CommonAG.cag"
+INCLUDE "FmGamAG.cag"
+INCLUDE "AS2/Opts.cag"
+INCLUDE "AS2/Pretty.cag"
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ExprPrettyPrintAG.ag"
-INCLUDE "ExprSelfAG.ag"
-INCLUDE "ExprFmGamAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "Expr/PrettyPrintAG.cag"
+INCLUDE "Expr/SelfAG.cag"
+INCLUDE "Expr/FmGamAG.cag"
 
-INCLUDE "ARuleAbsSynAG.ag"
-INCLUDE "ARulePrettyPrintAG.ag"
-INCLUDE "ARuleSelfAG.ag"
-INCLUDE "ARuleFmGamAG.ag"
+INCLUDE "ARule/AbsSynAG.cag"
+INCLUDE "ARule/PrettyPrintAG.cag"
+INCLUDE "ARule/SelfAG.cag"
+INCLUDE "ARule/FmGamAG.cag"
 
 -------------------------------------------------------------------------
 -- Interfacing to AST

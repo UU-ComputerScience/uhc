@@ -27,7 +27,7 @@ import RulerAS1Imports
 import TrfAS2GenARule
 import TrfAS2GenLaTeX
 import KeywParser
-import RulerParser
+import Parser
 import Expr
 import FmGam
 
