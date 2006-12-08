@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[8 hs module {%{GRIN}Silly.PrettyLLVM} import(Char, Data.Maybe, Data.List, UU.Pretty, EH.Util.PPUtils,{%{GRIN}GRINCCommon},{%{GRIN}Silly}, {%{GRIN}Config}) export(prettyLL)
+%%[8 hs module {%{GRIN}Silly.PrettyLLVM} import(Char, Data.Maybe, Data.List, UU.Pretty, EH.Util.PPUtils,{%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}Config}) export(prettyLL)
 %%]
 
 %%[8 import({Silly/AbsSyn})

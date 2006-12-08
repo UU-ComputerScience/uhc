@@ -12,7 +12,7 @@
 %%[8 import( {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified Data.Map as Map, qualified Data.Set as Set, Char(isDigit))
 %%]
 
-%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag, blackholeTag)
+%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (Just wildcardNm)
@@ -33,67 +33,157 @@ getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
 getNr a           = error $ "getNr tried on " ++ show a
 
 --note: this is copied to HeapPointsToFixpoint.chs
-blackholeTag  =  GrTag_Lit GrTagHole  0 (HNm "blackhole")
 throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%]
 
 %%[8 import({%{EH}GrinCode})
 %%]
 
-%%[8 export(IdentNameMap, IdentOneToMany, RenameMap, mergeRenameMap, getName')
+%%[8 export(RenameMap)
 
-type IdentNameMap   = (Array Int HsName, Map.Map Int Int)
-type IdentOneToMany = (Int,  [Int])
 type RenameMap      = [(Int,  [Int])]
 
-mergeRenameMap :: IdentNameMap -> RenameMap -> IdentNameMap
-mergeRenameMap (a,m) rm = (a,foldl addToMap m rm)
-    where
-    addToMap m (orig,vars) = foldl (\m v -> Map.insert v orig m) m vars
-
---getName :: IdentNameMap -> Int -> String
---getName m i = show $ getName' m (HNmNr i Nothing)
-
-getName' :: IdentNameMap -> HsName -> HsName
-getName' (names, m) nm@(HNmNr i Nothing    ) = nm
-getName' (names, m) nm@(HNmNr i (Just orig)) = orig
-getName' (names, m) nm@(HNPos p) = nm
---getName' (names, m) nm@(HNPos p) = error $ "findNewVar: position: " ++ show p
-getName' (names, m) nm@(HNm s) = error $ "findNewVar: name: " ++ s
-
-{-
-getName' (names, m) nm@(HNmNr i _)
-  = if wildcardNr == nm
-    then wildcardNm
-    else if applyNr == nm
-    then applyNm
-    else if evalNr == nm
-    then evalNm
-    else let newNm = findNewVar' i ""
-         in if   isDigit (head (show newNm))
-            then HNm ('x':'_':show i)
-            else newNm
-    where
-    inBetween n (l, h) = n >= l && n <= h
-    findNewVar' v suffix = if v `inBetween` bounds names
-                           then hsnSuffix (names ! v) suffix
-                           else maybe (hsnSuffix (HNPos v) suffix) id (Map.lookup v m >>= return . flip findNewVar' ("_" ++ show v ++ suffix))
--}
-getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
-
 %%]
+
+
+
+
+%%[8 export(AbstractValue(..), AbstractNode )
+%%]
+%%[8 export(Location, Variable, EvalMap, ApplyMap)
+%%]
+
+%%[8.AbstractValue
+data AbstractValue
+  = AV_Nothing
+  | AV_Basic
+  | AV_Locations (Set.Set Location)
+  | AV_Nodes (Map.Map GrTag [AbstractValue])
+  | AV_Tags  (Set.Set GrTag)
+  | AV_Error !String
+    deriving (Eq, Ord)
+
+type AbstractNode = (GrTag, [AbstractValue]) -- an AV_Nodes can not occur inside an AbstractNode
+
+type Location = Int
+type Variable = Int
+type EvalMap     = AssocL GrTag Int
+type ApplyMap    = AssocL GrTag (Either GrTag Int)
+
+instance Show AbstractValue where
+    show av = case av of
+                  AV_Nothing      -> "bot"
+                  AV_Basic        -> "bas"
+                  AV_Locations ls -> "{" ++ show ls ++ "}"
+                  AV_Nodes     ns -> "{" ++ show ns ++ "}"
+                  AV_Tags      ts -> "{" ++ show ts ++ "}"
+                  AV_Error     s  -> "E: " ++ s
+
+instance Monoid AbstractValue where
+    mempty  = AV_Nothing
+    mappend a          AV_Nothing = a
+    mappend AV_Nothing b          = b
+    mappend a          b          = case (a,b) of
+                                      (AV_Basic       , AV_Basic       ) -> AV_Basic
+                                      (AV_Locations al, AV_Locations bl) -> AV_Locations (Set.union al bl)
+                                      (AV_Nodes     an, AV_Nodes     bn) -> AV_Nodes (an `mergeNodes` bn)
+                                      (AV_Tags      at, AV_Tags      bt) -> AV_Tags (Set.union at bt)
+                                      (AV_Error     _ , _              ) -> a
+                                      (_              , AV_Error     _ ) -> b
+                                      (AV_Basic       , _              ) -> b   -- works, but is it correct? --JF
+                                      (_              , AV_Basic       ) -> a   -- works, but is it correct? --JF
+                                      otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
+
+mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
+%%]
+
+%%[8 export(AbstractHeapElement(..), AbstractEnvElement(..) )
+%%]
+%%[8 export(AbstractHeapModifier, AbstractNodeModifier, AbstractEnvModifier(..) )
+%%]
+
+%%[8
+
+data AbstractHeapElement = AbstractHeapElement
+    { ahBaseSet    ::  !AbstractValue
+    , ahSharedSet  ::  !(Maybe AbstractValue)
+    , ahMod        ::  !AbstractHeapModifier
+    }
+    deriving (Eq)
+
+-- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
+-- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
+
+instance Show AbstractHeapElement where
+    show (AbstractHeapElement b s m) =    "unique = "       ++ show b
+                                       ++ ";\tshared = "  ++ show s
+                                       ++ ";\tmod = "     ++ show m
+
+
+data AbstractEnvElement = AbstractEnvElement
+    { aeBaseSet   :: !AbstractValue
+    , aeIsShared  :: !Bool
+    , aeMod       :: !AbstractEnvModifier
+    }
+    deriving (Eq)
+
+instance Show AbstractEnvElement where
+    show (AbstractEnvElement b s m) =  "base = " ++ show b
+                                       ++ ";\tshared = " ++ show s
+                                       ++ ";\tmod = " ++ show m
+
+type AbstractHeapModifier = (AbstractNodeModifier, Maybe Variable)
+type AbstractNodeModifier = (GrTag, [Maybe Variable]) --(tag, [fields])
+
+data AbstractEnvModifier
+  = EnvSetAV !AbstractValue
+  | EnvUnion ![Variable] (Maybe AbstractEnvModifier) -- The Maybe contains only EnvSelect which is used for the apply function calls
+  | EnvEval Variable Variable
+  | EnvApp Variable [ApplyArg] Variable
+  | EnvSelect Variable GrTag Int
+  | EnvTag GrTag [Maybe Variable] (Maybe Variable)
+    deriving (Show, Eq)
+
+type ApplyArg = Either Variable AbstractEnvModifier -- only contains the EnvTag here
+%%]
+
+%%[8.OrdTag
+instance Ord GrTag where
+    compare t1 t2 = case t1 of
+                        GrTag_Any         -> case t2 of
+                                                 GrTag_Any         -> EQ
+                                                 otherwise         -> LT
+                        GrTag_Unboxed     -> case t2 of
+                                                 GrTag_Any         -> GT
+                                                 GrTag_Unboxed     -> EQ
+                                                 otherwise         -> LT
+                        GrTag_Lit c1 _ n1 -> case t2 of
+                                                 GrTag_Any         -> GT
+                                                 GrTag_Unboxed     -> GT
+                                                 GrTag_Lit c2 _ n2 -> case compare c1 c2 of
+                                                                          EQ -> compare n1 n2
+                                                                          a  -> a
+                                                 GrTag_Var _       -> LT
+                        GrTag_Var n1      -> case t2 of
+                                                 GrTag_Var n2      -> compare n1 n2
+                                                 otherwise         -> GT
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Heap Points To Analysis Result %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.analysis import( {%{GRIN}HeapPointsToFixpoint},Data.Array, Data.Monoid) export(HptMap, getEnvVar, getHeapLoc, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, AbstractValue(..), listInsert)
+%%[8.analysis import( Data.Array, Data.Monoid) export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom)
 
 
 type HptMap        = ((Array Int AbstractEnvElement, Array Int AbstractHeapElement), Map.Map Int AbstractValue)
+
+
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar ((ea, _),m) i  | snd (bounds ea) >= i = aeBaseSet (ea ! i)
                          | otherwise            = Map.findWithDefault (AV_Error $ "variable "++ show i ++ " not found") i m
+                         
 getHeapLoc :: HptMap -> Int -> AbstractValue
 getHeapLoc ((_, ha),_) i = ahBaseSet (ha ! i)
 
@@ -129,5 +219,4 @@ addEnvVar (a,fm) i v = (a, Map.insert i v fm)
 addEnvVars :: HptMap -> [(Int, AbstractValue)] -> HptMap
 addEnvVars (a,fm) l = (a, foldl (flip $ uncurry Map.insert) fm l)
 
-listInsert l fm = foldl (flip $ uncurry Map.insert) fm l
 %%]

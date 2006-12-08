@@ -52,6 +52,8 @@ addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
     addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
                          | otherwise        = let newname = HNmNr u (Just e)
                                               in ((e,newname):l, (newname:l2), u+1)
+                                              
+listInsert l fm = foldl (flip $ uncurry Map.insert) fm l                                              
 %%]
 
 %%[8.grTrf
