@@ -325,7 +325,7 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 
 %%[8
 /* Location variant: load source, store destination, extensive variant */
-#define GB_InsOp_LocE_TOS			0x0
+#define GB_InsOp_LocE_SP			0x0
 #define GB_InsOp_LocE_Reg			0x1
 #define GB_InsOp_LocE_Imm			0x2
 #define GB_InsOp_LocE_PC			0x3
@@ -335,10 +335,14 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_InsOp_LocB_Reg			0x1
 
 /* Location variant: operator destination */
-#define GB_InsOp_LocO_TOS			0x0
-#define GB_InsOp_LocO_Reg			0x1
-#define GB_InsOp_LocO_SP			0x2
-#define GB_InsOp_LocO_PC			0x3
+#define GB_InsOp_LocODst_TOS		0x0
+#define GB_InsOp_LocODst_Reg		0x1
+
+/* Location variant: operator source */
+#define GB_InsOp_LocOSrc_SP			0x0
+#define GB_InsOp_LocOSrc_Reg		0x1
+#define GB_InsOp_LocOSrc_Imm		0x2
+#define GB_InsOp_LocOSrc_TOS		0x3
 
 /* Operator kind/type */
 #define GB_InsOp_TyOp_Add			0x0
@@ -347,12 +351,9 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_InsOp_TyOp_Div			0x3
 
 /* Operator data kind/type */
-#define GB_InsOp_DataOp_I1			0x0
-#define GB_InsOp_DataOp_I2			0x1
-#define GB_InsOp_DataOp_F1			0x2
-#define GB_InsOp_DataOp_F2			0x3
-#define GB_InsOp_DataOp_IW			0x4
-#define GB_InsOp_DataOp_II			0x5
+#define GB_InsOp_DataOp_IW			0x0
+#define GB_InsOp_DataOp_II			0x1
+#define GB_InsOp_DataOp_FW			0x2
 
 /* Immediate constant size */
 #define GB_InsOp_ImmSz_08			0x0
@@ -376,12 +377,12 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Ins_Prefix(pre,sh)					(Cast(GB_Byte,pre) << (sh))
 
 #define GB_Ins_PreLd							GB_Ins_Prefix(0x0,7)
-#define GB_Ins_PreSt							GB_Ins_Prefix(0x4,5)
-#define GB_Ins_PreArith							GB_Ins_Prefix(0x5,5)
-#define GB_Ins_PreCall							GB_Ins_Prefix(0x18,3)
-#define GB_Ins_PreLdg							GB_Ins_Prefix(0x19,3)
-#define GB_Ins_PreHeap							GB_Ins_Prefix(0x1D,3)
+#define GB_Ins_PreSt							GB_Ins_Prefix(0x2,6)
+#define GB_Ins_PreArith							GB_Ins_Prefix(0x6,5)
 #define GB_Ins_PreEvAp							GB_Ins_Prefix(0x1C,3)
+#define GB_Ins_PreHeap							GB_Ins_Prefix(0x1D,3)
+#define GB_Ins_PreCall							GB_Ins_Prefix(0x1E,3)
+#define GB_Ins_PreOther							GB_Ins_Prefix(0x1F,3)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -392,26 +393,27 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Ins_Ld(indLev,locB,locE,immSz)		(GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
 #define GB_Ins_Call(locB)						(GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_TailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
-#define GB_Ins_RetCall							(GB_Ins_PreCall | ((0x2) << 1))
+#define GB_Ins_RetCall							(GB_Ins_PreCall | ((0x2) << 1) | 0x0)
 #define GB_Ins_RetCase							(GB_Ins_PreCall | ((0x2) << 1) | 0x1)
-#define GB_Ins_CaseCall 						(GB_Ins_PreCall | ((0x3) << 1))
+#define GB_Ins_CaseCall 						(GB_Ins_PreCall | ((0x3) << 1) | 0x0)
 #define GB_Ins_CallC	 						(GB_Ins_PreCall | ((0x3) << 1) | 0x1)
-#define GB_Ins_Ldg(locB)	 					(GB_Ins_PreLdg  | ((0x0) << 1) | ((locB) << 0))
+#define GB_Ins_Split(locB)						(GB_Ins_PreHeap | ((0x0) << 1) | ((locB) << 0))
+#define GB_Ins_Adapt(locB)						(GB_Ins_PreHeap | ((0x1) << 1) | ((locB) << 0))
 #define GB_Ins_AllocStore(locB)					(GB_Ins_PreHeap | ((0x2) << 1) | ((locB) << 0))
 #define GB_Ins_Fetch(locB)						(GB_Ins_PreHeap | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_Apply(locB)						(GB_Ins_PreEvAp | ((0x1) << 1) | ((locB) << 0))
 #define GB_Ins_TailEval(locB)					(GB_Ins_PreEvAp | ((0x2) << 1) | ((locB) << 0))
-#define GB_Ins_Op(opTy,locO)					(GB_Ins_PreArith | ((0x1) << 4) | ((opTy) << 2) | ((locO) << 0))
-#define GB_Ins_OpExt(dtTy,indLev,locE,immSz)	(((dtTy) << 5) | ((indLev) << 4) | ((locE) << 2) | ((immSz) << 0))
-#define GB_Ins_FetchUpdate						0xF9
-#define GB_Ins_EvalApplyCont					0xFA
-#define GB_Ins_PApplyCont						0xFB
-#define GB_Ins_EvalUpdCont						0xFD
-#define GB_Ins_Ext								0xFE
-#define GB_Ins_NOP								0xFF
+#define GB_Ins_Ldg(locB)						(GB_Ins_PreEvAp | ((0x3) << 1) | ((locB) << 0))
+#define GB_Ins_Op(opTy,dtTy,locO)				(GB_Ins_PreArith | ((opTy) << 3) | ((dtTy) << 1) | ((locO) << 0))
+#define GB_Ins_OpExt(indLev,locE,immSz)			(((indLev) << 4) | ((locE) << 2) | ((immSz) << 0))
+#define GB_Ins_FetchUpdate						(GB_Ins_PreOther | 0x1)
+#define GB_Ins_EvalApplyCont					(GB_Ins_PreOther | 0x2)
+#define GB_Ins_PApplyCont						(GB_Ins_PreOther | 0x3)
+#define GB_Ins_EvalUpdCont						(GB_Ins_PreOther | 0x5)
+#define GB_Ins_Ext								(GB_Ins_PreOther | 0x6)
+#define GB_Ins_NOP								(GB_Ins_PreOther | 0x7)
 %%]
-#define GB_Ins_Ldg								0xFC
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Extended instruction opcodes
@@ -431,7 +433,9 @@ extern GB_Byte gb_code_Eval[] ;
 extern void gb_push( GB_Word x ) ;
 extern GB_Word gb_eval( GB_Word x ) ;
 
+#if GB_COUNT_STEPS
 extern unsigned int gb_StepCounter ;
+#endif
 
 extern void gb_interpretLoop( ) ;
 extern void gb_interpretLoopWith( GB_BytePtr initPC ) ;

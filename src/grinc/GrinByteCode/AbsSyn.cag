@@ -78,10 +78,10 @@ DATA Instr
   				retOffSurr		: Imm
   | Apply       locSrc			: InsOp_LocB
   | Op			op				: InsOp_TyOp
-  				locDst			: InsOp_LocO
   				opndTy			: InsOp_DataOp
+  				locDst			: InsOp_LocODst
   				ind             : InsOp_Deref
-  				locSrc			: InsOp_LocE
+  				locSrc			: InsOp_LocOSrc
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
   | Ann			ann				: PP_Doc
@@ -108,7 +108,7 @@ SET AllInstr = Instr Instrs Meta
 /* Location variant: load source, store destination, extensive variant */
 %%[8
 DATA InsOp_LocE
-  | TOS
+  | SP
   | Reg
   | Imm
   | PC
@@ -123,11 +123,18 @@ DATA InsOp_LocB
 
 /* Location variant: operator destination */
 %%[8
-DATA InsOp_LocO
+DATA InsOp_LocODst
   | TOS
   | Reg
+%%]
+
+/* Location variant: operator source */
+%%[8
+DATA InsOp_LocOSrc
   | SP
-  | PC
+  | Reg
+  | Imm
+  | TOS
 %%]
 
 /* Operator kind/type */
@@ -142,12 +149,9 @@ DATA InsOp_TyOp
 /* Operator data kind/type */
 %%[8
 DATA InsOp_DataOp
-  | Int1
-  | Int2
-  | Float1
-  | Float2
   | IntWord
   | IntInf
+  | FloatWord
 %%]
 
 /* Immediate constant size */
@@ -169,7 +173,7 @@ DATA InsOp_Deref
 %%]
 
 %%[8
-SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocO InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref
+SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocODst InsOp_LocOSrc InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

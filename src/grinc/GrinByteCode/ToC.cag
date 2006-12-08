@@ -44,7 +44,7 @@ WRAPPER AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AGItf Module [ opts: EHCOpts | | ]
+ATTR AGItf Module AllInstr [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,8 +52,9 @@ ATTR AGItf Module [ opts: EHCOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-ppCmtC :: PP a => a -> PP_Doc
-ppCmtC x = "/*" >#< pp x >#< "*/"
+ppCmtC :: PP a => EHCOpts -> a -> PP_Doc
+ppCmtC opts x | ehcOptGenCmt opts = "/*" >#< pp x >#< "*/"
+              | otherwise         = empty
 
 ppHex :: Integral a => Int -> a -> PP_Doc
 ppHex prec x = head $ ppHex' Nothing prec x
@@ -232,8 +233,8 @@ SEM Module
 %%][12
                 lhs         .   (pp,ppMain)
 %%]]
-                                            =   let top     = ppLine $ ppCmtC ("bytecode in C encoding for module" >#< @moduleNm) >-< "#include \"rts.h\""
-                                                    strNmL  = [ (@ppNmAString >|< i,ppStringAsHex s >#< ppCmtC (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
+                                            =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm) >-< "#include \"rts.h\""
+                                                    strNmL  = [ (@ppNmAString >|< i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
                                                     strings = vlist [ "static char" >#< n >|< "[] =" >#< s >#< ";" | (n,s) <- strNmL ]
                                                               >-< ppTbl "char*" @ppNmStringTbl [ n | (n,_) <- strNmL ]
                                                     consts  = ppTbl "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmStringTbl) @constL)
@@ -258,7 +259,7 @@ SEM Module
                                                     fixOffL = [ (fromJust c,sz) | (FixOffset l sz) <- @fixOffsetL, let c = Map.lookup l @labelMp, isJust c ]
                                                     fixoffs = ppTbl "GB_FixOffset" @ppNmFixOffsetsTbl
                                                                 [ ppCurlysCommasBlock [ppCast "GB_Offset*" $ ppAddrArrAt @ppNmByteCodeTbl c,pp sz] | (c,sz) <- fixOffL ]
-                                                    initf   = ppLine $ ppCmtC "Initialization"
+                                                    initf   = ppLine $ ppCmtC @lhs.opts "Initialization"
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
 %%[[8
                                                                                   "()"
@@ -281,7 +282,7 @@ SEM Module
                                                                          ]
                                                     maincaf = ppLine $ "static GB_BytePtr*" >#< @ppNmMainCAFEntry >#< "="
                                                                        >#< ppAddrArrAt @ppNmGlobEntriesTbl @mainCafEntry >#< ";"
-                                                    mainf   = ppLine $ ppCmtC "Main entry point"
+                                                    mainf   = ppLine $ ppCmtC @lhs.opts "Main entry point"
                                                                        >-< ppFun "int main(int argc, char** argv)"
                                                                                  (    "int nRtsOpts = 0 ;"
                                                                                   >-< "main_GB_Init1( argc, argv, &nRtsOpts ) ;"
@@ -297,16 +298,16 @@ SEM Module
                                                                                  )
                                                     etc     = if ehcOptEmitLlc @lhs.opts
                                                               then empty
-                                                              else ppLine $ ppCmtC "Dummy defs for Silly"
+                                                              else ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
                                                                    >-< "void fun_main(void){}" >-< "void initialize(void){}"
 %%[[12
                                                     impnd   = ppLine $ "static GB_Node" >#< @ppNmImpNode >#< "="
                                                                        >-< ppArr [ "GB_MkConHeader(" >|< length @impModNmL >|<  ",0)"
-                                                                                 , ppCurlysCommasBlock $ map (\(n,m) -> "Cast(GB_Word,\"" >|< m >|< "\")" >#< ppCmtC n) $ @impModNmL
+                                                                                 , ppCurlysCommasBlock $ map (\(n,m) -> "Cast(GB_Word,\"" >|< m >|< "\")" >#< ppCmtC @lhs.opts n) $ @impModNmL
                                                                                  ]
                                                     expnd   = ppLine $ "GB_Node" >#< @ppNmExpNode >#< "="
                                                                        >-< ppArr [ "GB_MkConHeader(" >|< length @expEntryL >|<  ",0)"
-                                                                                 , ppCurlysCommasBlock $ map (\(n,o) -> o >#< ppCmtC n) $ @expEntryL
+                                                                                 , ppCurlysCommasBlock $ map (\(n,o) -> o >#< ppCmtC @lhs.opts n) $ @expEntryL
                                                                                  ]
                                                     externs = ppLine $ vlist
                                                                      $ map (\(_,m) -> "extern void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*)" >#< ";"
@@ -366,7 +367,7 @@ SEM Instr
   | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp]
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp,ppLink Cfg.gbLabelOffsetSize @refOff]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
-  | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @ann
+  | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @lhs.opts @ann
   | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
   | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkInx @link]
   | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
@@ -389,7 +390,7 @@ ATTR Instrs [ | | ppL : {[PP_Doc]} ]
 SEM Instrs
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   if @hd.hasCode
-                                                then (ppCmtC (@lhs.cLoc >|< ":" >#< @hd.mn) >|< @lhs.ppExtra >-< indent 3 @hd.pp) : @tl.ppL
+                                                then (ppCmtC @lhs.opts (@lhs.cLoc >|< ":" >#< @hd.mn) >|< @lhs.ppExtra >-< indent 3 @hd.pp) : @tl.ppL
                                                 else @tl.ppL
 %%]
 
@@ -415,10 +416,10 @@ ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: PP_Doc ]
 ATTR Instrs [ ppExtra: PP_Doc | | ]
 
 SEM Meta
-  | CmtHeader   lhs         .   ppExtra     =   indent 40 (ppCmtC ("[" >#< @ann >#< "]"))
+  | CmtHeader   lhs         .   ppExtra     =   indent 40 (ppCmtC @lhs.opts ("[" >#< @ann >#< "]"))
 
 SEM Instr
-  | Label       lhs         .   ppExtra     =   ppCmtC ("[ .lbl" >#< lrefId @locRef >#< "]")
+  | Label       lhs         .   ppExtra     =   ppCmtC @lhs.opts ("[ .lbl" >#< lrefId @locRef >#< "]")
 
 SEM Instrs
   | Cons        tl          .   ppExtra     =   @hd.ppExtra
@@ -463,7 +464,7 @@ SEM Imm
                                                   InsOp_ImmSz_Bits64 -> ppHex 16 @int
 
 SEM InsOp_LocE
-  | TOS         lhs         .   mn          =   pp "t"
+  | SP          lhs         .   mn          =   pp "s"
   | Reg         lhs         .   mn          =   pp "r"
   | Imm         lhs         .   mn          =   pp "i"
   | PC          lhs         .   mn          =   pp "p"
@@ -472,11 +473,15 @@ SEM InsOp_LocB
   | TOS         lhs         .   mn          =   pp "t"
   | Reg         lhs         .   mn          =   pp "r"
 
-SEM InsOp_LocO
+SEM InsOp_LocODst
   | TOS         lhs         .   mn          =   pp "t"
   | Reg         lhs         .   mn          =   pp "r"
+
+SEM InsOp_LocOSrc
   | SP          lhs         .   mn          =   pp "s"
-  | PC          lhs         .   mn          =   pp "p"
+  | Reg         lhs         .   mn          =   pp "r"
+  | Imm         lhs         .   mn          =   pp "i"
+  | TOS         lhs         .   mn          =   pp "t"
 
 SEM InsOp_TyOp
   | Add         lhs         .   mn          =   pp "a"
@@ -485,12 +490,9 @@ SEM InsOp_TyOp
   | Div         lhs         .   mn          =   pp "d"
 
 SEM InsOp_DataOp
-  | Int1        lhs         .   mn          =   pp "i1"
-  | Int2        lhs         .   mn          =   pp "i2"
-  | Float1      lhs         .   mn          =   pp "f1"
-  | Float2      lhs         .   mn          =   pp "f2"
   | IntWord     lhs         .   mn          =   pp "iw"
   | IntInf      lhs         .   mn          =   pp "ii"
+  | FloatWord   lhs         .   mn          =   pp "fw"
 
 SEM InsOp_ImmSz
   | Bits08      lhs         .   mn          =   pp "08"
@@ -514,24 +516,29 @@ SEM InsOp_Deref
 ATTR AllInsOp Meta [ | | enc: Int ]
 
 SEM Instr
+  -- load group
   | Ld          loc         .   enc         =   0x00 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
-  | Op          loc         .   enc         =   0xB0 .|. (@op.enc `shiftL` 2) .|. (@locDst.enc)
-  | Call        loc         .   enc         =   0xC0 .|. (@locSrc.enc)
-  | TailCall    loc         .   enc         =   0xC2 .|. (@locSrc.enc)
-  | RetCall     loc         .   enc         =   0xC4
-  | RetCase     loc         .   enc         =   0xC5
-  | CaseCall    loc         .   enc         =   0xC6
-  | CallC       loc         .   enc         =   0xC7
-  | LdGlobal    loc         .   enc         =   0xC8 .|. (@locDst.enc)
+  -- arithmetic group
+  | Op          loc         .   enc         =   0xC0 .|. (@op.enc `shiftL` 3) .|. (@opndTy.enc `shiftL` 1) .|. (@locDst.enc)
+  -- eval/ldg group
   | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
-  | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
   | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
+  | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
+  | LdGlobal    loc         .   enc         =   0xE6 .|. (@locDst.enc)
+  -- call/control group
+  | Call        loc         .   enc         =   0xF0 .|. (@locSrc.enc)
+  | TailCall    loc         .   enc         =   0xF2 .|. (@locSrc.enc)
+  | RetCall     loc         .   enc         =   0xF4
+  | RetCase     loc         .   enc         =   0xF5
+  | CaseCall    loc         .   enc         =   0xF6
+  | CallC       loc         .   enc         =   0xF7
+  -- alloc group
   | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
   | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
+  -- others
   | FetchUpdate loc         .   enc         =   0xF9
   | Halt        loc         .   enc         =   0xFE
 %%]
-  | LdGlobal    loc         .   enc         =   0xFC
 
 %%[8
 SEM Instr
@@ -540,14 +547,14 @@ SEM Instr
   | CallC       loc         .   enc2        =   (@nArgSz.enc)
   | TailEval    loc         .   enc2        =   (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
   | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
-  | Op          loc         .   enc2        =   (@opndTy.enc `shiftL` 5) .|. (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+  | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   | Halt        loc         .   enc2        =   0xFF
 
 SEM Meta
   | CmtHeader   loc         .   enc         =   0xFF
 
 SEM InsOp_LocE
-  | TOS         lhs         .   enc         =   0
+  | SP          lhs         .   enc         =   0
   | Reg         lhs         .   enc         =   1
   | Imm         lhs         .   enc         =   2
   | PC          lhs         .   enc         =   3
@@ -556,11 +563,15 @@ SEM InsOp_LocB
   | TOS         lhs         .   enc         =   0
   | Reg         lhs         .   enc         =   1
 
-SEM InsOp_LocO
+SEM InsOp_LocODst
   | TOS         lhs         .   enc         =   0
   | Reg         lhs         .   enc         =   1
-  | SP          lhs         .   enc         =   2
-  | PC          lhs         .   enc         =   3
+
+SEM InsOp_LocOSrc
+  | SP          lhs         .   enc         =   0
+  | Reg         lhs         .   enc         =   1
+  | Imm         lhs         .   enc         =   2
+  | TOS         lhs         .   enc         =   3
 
 SEM InsOp_TyOp
   | Add         lhs         .   enc         =   0
@@ -569,12 +580,9 @@ SEM InsOp_TyOp
   | Div         lhs         .   enc         =   3
 
 SEM InsOp_DataOp
-  | Int1        lhs         .   enc         =   0
-  | Int2        lhs         .   enc         =   1
-  | Float1      lhs         .   enc         =   2
-  | Float2      lhs         .   enc         =   3
-  | IntWord     lhs         .   enc         =   4
-  | IntInf      lhs         .   enc         =   5
+  | IntWord     lhs         .   enc         =   0
+  | IntInf      lhs         .   enc         =   1
+  | FloatWord   lhs         .   enc         =   2
 
 SEM InsOp_ImmSz
   | Bits08      lhs         .   enc         =   0

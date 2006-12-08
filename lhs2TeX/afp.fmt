@@ -61,6 +61,7 @@
 
 %format (Overl(x))    	= "\overline{" x "}"
 %format (Vec(x))    	= "\overline{" x "}"
+%format (Vecr(x))    	= "\overline{" x "}^{\leftarrow}"
 %format (VecI(x)(i))    = x "^{\{" i "\}}"
 
 %format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
@@ -68,6 +69,8 @@
 %format (Annot(x)(y)) = "{{" x "}^{\delta_{" y "}}}"
 %format (Sup(x)(y)) = "{{" x "}^{" y "}}"
 %format (Sub(x)(y)) = "{{" x "}_{" y "}}"
+%format (Supb(x)(y)(z)) = "{{" x "}^{" y "}_{" z "}}"
+%format (Subp(x)(y)(z)) = "{{" x "}_{" y "}^{" z "}}"
 %format (Card(x)(y)) = "{{" x "} \bowtie {" y "}}"
 %format (SCard(x)(z)(y)) = "{{" x "} \bowtie^{" z "} {" y "}}"
 

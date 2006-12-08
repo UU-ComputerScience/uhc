@@ -3903,7 +3903,7 @@ esac
 
 # Use Boehm's GC
 cat >>confdefs.h <<\_ACEOF
-#define USE_BOEHM_GC 0
+#define USE_BOEHM_GC 1
 _ACEOF
 
 
