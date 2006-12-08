@@ -1,0 +1,65 @@
+-------------------------------------------------------------------------
+-- PP for ARule/Expr
+-------------------------------------------------------------------------
+
+{
+module ARulePrettyPrint
+  ( ppARule, ppExpr
+  , ppECGam
+  )
+  where
+
+import qualified Data.Map as Map
+import EH.Util.Utils
+import UU.Pretty
+import EH.Util.PPUtils
+import Common
+import LaTeXFmtUtils
+import Expr
+import ARule
+import ECnstrGam
+import RulerConfig( cfgStrSel )
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
+
+INCLUDE "ExprPrettyPrintAG.ag"
+INCLUDE "ARulePrettyPrintAG.ag"
+
+INCLUDE "ExprSelfAG.ag"
+INCLUDE "ARuleSelfAG.ag"
+
+WRAPPER AGARuleItf AGExprItf
+
+{
+ppARule :: ARule -> PP_Doc
+ppARule r
+  = pp_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf r)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf)
+
+ppExpr :: Expr -> PP_Doc
+ppExpr e
+  = pp_Syn_AGExprItf r2
+  where r1 = sem_AGExprItf (AGExprItf_AGItf e)
+        r2 = wrap_AGExprItf r1
+                (Inh_AGExprItf)
+
+ppECGam :: ECnstrGam -> PP_Doc
+ppECGam g = vlist [ pp (Expr_Cnstr n v) | (n,v) <- gamAssocs g]
+
+instance Show ARule where
+  show _ = "ARule"
+
+instance PP ARule where
+  pp = ppARule
+
+instance Show Expr where
+  show _ = "Expr"
+
+instance PP Expr where
+  pp = ppExpr
+}
+

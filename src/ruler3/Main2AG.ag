@@ -1,0 +1,65 @@
+-------------------------------------------------------------------------
+-- Main for AG, pass 2
+-------------------------------------------------------------------------
+
+{
+module Main2AG
+  where
+
+import Data.Maybe
+import Data.Char
+import Data.List
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import UU.Pretty
+import EH.Util.Utils
+import Opts
+import Common
+import EH.Util.PPUtils
+import LaTeXFmtUtils
+import ExprUtils
+import TyUtils
+import ARuleUtils
+import ViewSelUtils
+import RulerConfig( cfgStrSel )
+import FmGam
+import RwExprGam
+import ECnstrGam
+import RulerAbsSyn2
+}
+
+-------------------------------------------------------------------------
+-- Inclusion of split off parts
+-------------------------------------------------------------------------
+
+INCLUDE "RulerAbsSyn2AG.ag"
+INCLUDE "RulerAbsSynCommonAG.ag"
+INCLUDE "RulerFmGamAG.ag"
+INCLUDE "RulerAS2Opts.ag"
+INCLUDE "RulerAS2Pretty.ag"
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ExprPrettyPrintAG.ag"
+INCLUDE "ExprSelfAG.ag"
+INCLUDE "ExprFmGamAG.ag"
+
+INCLUDE "ARuleAbsSynAG.ag"
+INCLUDE "ARulePrettyPrintAG.ag"
+INCLUDE "ARuleSelfAG.ag"
+INCLUDE "ARuleFmGamAG.ag"
+
+-------------------------------------------------------------------------
+-- Interfacing to AST
+-------------------------------------------------------------------------
+
+WRAPPER AGItf 
+
+{
+ppAS2 :: Opts -> FmGam Expr -> Decls -> PP_Doc
+ppAS2 o g r
+  = pp_Syn_AGItf r2
+  where r1 = sem_AGItf (AGItf_AGItf r)
+        r2 = wrap_AGItf r1
+                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = g})
+}
+

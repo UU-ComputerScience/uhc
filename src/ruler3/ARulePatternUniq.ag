@@ -1,0 +1,112 @@
+-------------------------------------------------------------------------
+-- Interfacing to ARule: 
+-------------------------------------------------------------------------
+
+{
+module ARulePatternUniq
+  ( arlUniq
+  )
+  where
+
+import qualified Data.Set as Set
+import Common
+import Opts
+import ARule
+import Expr
+import FmGam
+import ARuleRwSubst
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
+
+INCLUDE "ExprOptsAG.ag"
+INCLUDE "ARuleOptsAG.ag"
+
+INCLUDE "ExprFmGamAG.ag"
+INCLUDE "ARuleFmGamAG.ag"
+
+INCLUDE "ARuleCopyRuleNmAG.ag"
+
+WRAPPER AGARuleItf
+
+{
+arlUniq :: FmGam Expr -> [Nm] -> ARule -> ARule
+arlUniq fg co rl
+  = replUniq_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf {opts_Inh_AGARuleItf = defaultOpts
+                                ,croNmL_Inh_AGARuleItf = co
+                                ,fmGam_Inh_AGARuleItf = fg
+                                })
+}
+
+-------------------------------------------------------------------------
+-- Uniq sequence nr
+-------------------------------------------------------------------------
+
+ATTR AllARuleButARule AllExpr [ | uniqSeqNr: Int | ]
+
+SEM ARule
+  | Rule            eqns    .   uniqSeqNr   =   0
+
+SEM Expr
+  | Uniq            loc     .   uniqSeqNr   =   @lhs.uniqSeqNr + 1
+                    lhs     .   uniqSeqNr   =   @uniqSeqNr
+
+SEM AGExprItf
+  | AGItf           loc     .   uniqSeqNr   =   0
+
+-------------------------------------------------------------------------
+-- Uniq name
+-------------------------------------------------------------------------
+
+SEM Expr
+  | Uniq            loc     .   nm          =   fmNmUniq @lhs.opts @lhs.fmGam @uniqSeqNr
+
+-------------------------------------------------------------------------
+-- Node to which uniq thread must be passed
+-------------------------------------------------------------------------
+
+ATTR AllARuleRule [ uniqThrDst: ANm | | ]
+
+SEM AGARuleItf
+  | AGItf           rule    .   uniqThrDst  =   case @lhs.croNmL of
+                                                  (_:[d]) -> ANm_Lhs (fmNmUniq @lhs.opts @lhs.fmGam 0) []
+                                                  (_:d:_) -> ANm_Node d (fmNmUniq @lhs.opts @lhs.fmGam 0)
+
+-------------------------------------------------------------------------
+-- Construction of AEqn for uniq's
+-------------------------------------------------------------------------
+
+SEM ARule
+  | Rule            loc     .   mkUniqEqnL  =   if @eqns.uniqSeqNr > 0
+                                                then [AEqn_Eqn
+                                                        (AEqnDest_Many
+                                                          (map AEqnDest_One
+                                                               (@lhs.uniqThrDst : [ ANm_Loc (fmNmUniq @lhs.opts @lhs.fmGam u) [] | u <- [1 .. @eqns.uniqSeqNr] ])
+                                                          )
+                                                        )
+                                                        (AExpr_Expr
+                                                          (mkExprApp (exprSubst (@lhs.opts {optGenFM = FmFmtCmd}) @lhs.fmGam . Expr_Var . nmFunMkUniq $ @eqns.uniqSeqNr)
+                                                                     [mkALhs (fmNmUniq @lhs.opts @lhs.fmGam 0)]
+                                                          )
+                                                        )
+                                                     ]
+                                                else []
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+ATTR AllARule AllExpr [ | | replUniq: SELF ]
+ATTR AGARuleItf [ | | replUniq: ARule ]
+
+SEM ARule
+  | Rule            lhs     .   replUniq    =   ARule_Rule @ndNmL @rlNm @info (@mkUniqEqnL ++ @eqns.replUniq)
+
+SEM Expr
+  | Uniq            lhs     .   replUniq    =   mkALoc @nm
+
+
