@@ -1,0 +1,30 @@
+-------------------------------------------------------------------------
+-- Is Expr a rewrite expr? (i.e, not a format)
+-------------------------------------------------------------------------
+
+{
+module ExprIsRw
+  ( exprIsRw
+  )
+  where
+
+import Common
+import Expr
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ExprIsRwAG.ag"
+
+WRAPPER AGExprItf
+
+{
+wrapExpr' :: Expr -> Syn_AGExprItf
+wrapExpr' e
+  = let r1 = sem_AGExprItf (AGExprItf_AGItf e)
+    in  wrap_AGExprItf r1
+            (Inh_AGExprItf)
+
+exprIsRw :: Expr -> ExprIsRw
+exprIsRw = exprIsRw_Syn_AGExprItf . wrapExpr'
+}
+

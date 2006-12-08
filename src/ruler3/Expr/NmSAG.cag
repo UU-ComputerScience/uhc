@@ -1,0 +1,13 @@
+-------------------------------------------------------------------------
+-- Expr name occurrences
+-------------------------------------------------------------------------
+
+ATTR AllExpr AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM Expr
+  | Var             lhs     .   nmS         =   Set.singleton @nm
+  | Op              lhs     .   nmS         =   (@nm `Set.delete` @nmExpr.nmS) `Set.union` @lExpr.nmS `Set.union` @rExpr.nmS
+
+SEM ANm
+  | Loc             lhs     .   nmS         =   Set.singleton @nm
+

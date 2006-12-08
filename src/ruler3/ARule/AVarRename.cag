@@ -1,0 +1,110 @@
+-------------------------------------------------------------------------
+-- Optimisation: ARule/Expr rename of AVar
+-------------------------------------------------------------------------
+
+{
+module ARuleAVarRename
+  ( arlElimAlphaRename
+  )
+  where
+
+import qualified Data.Map as Map
+import Common
+import Expr
+import ARule
+import FmGam
+}
+
+INCLUDE "ExprAbsSynAG.ag"
+INCLUDE "ARuleAbsSynAG.ag"
+
+INCLUDE "ExprSelfAG.ag"
+INCLUDE "ARuleSelfAG.ag"
+
+INCLUDE "ARuleEqnDest1NmAG.ag"
+INCLUDE "ARuleInCompDestAG.ag"
+
+WRAPPER AGExprItf AGARuleItf
+
+{
+exprASubst :: RnMp -> Expr -> Expr
+exprASubst rnm e
+  = self_Syn_AGExprItf r2
+  where r1 = sem_AGExprItf (AGExprItf_AGItf e)
+        r2 = wrap_AGExprItf r1
+                (Inh_AGExprItf { rnMp_Inh_AGExprItf = rnm
+                               })
+
+arlElimAlphaRename :: ARule -> ARule
+arlElimAlphaRename r
+  = self_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf r)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf)
+}
+
+
+-------------------------------------------------------------------------
+-- Part I: Elimination of alpha renaming
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Rename map gather
+-------------------------------------------------------------------------
+
+{
+rnRepl :: RnMp -> RnSrc -> RnSrc
+rnRepl m e
+  = case e of
+      RnExpr (Expr_AVar (ANm_Loc n _)) -> r n
+      RnNm   (ANm_Loc n _)             -> r n
+      _                                -> e
+  where r n = maybe e (RnExpr . exprASubst (Map.delete n m) . rnSrc2Expr . snd) (Map.lookup n m)
+}
+
+ATTR AEqns AEqn ANm AllExpr AExpr [ | | gathRnMp USE {`rnMpUnion`} {Map.empty}: RnMp ]
+ATTR AllARuleButARule AllExpr AGExprItf [ rnMp: RnMp | | ]
+
+SEM AEqn
+  | Eqn             loc     .   gathRnMp    =   let m = case @dest.mbSingleANm of
+                                                            Just (ANm_Loc dn p) | AtRetain `notElem` p
+                                                              -> Map.singleton dn (0,v)
+                                                              where v = case (@val.mbSingleANm,@val.self) of
+                                                                          (Just sn,_           ) -> RnNm sn
+                                                                          (_      ,AExpr_Expr e) -> RnExpr e
+                                                            _ -> Map.empty
+                                                in  m `rnMpUnion` @val.gathRnMp
+
+SEM ANm
+  | Loc             lhs     .   gathRnMp    =   Map.singleton @nm (1,RnNone)
+
+SEM ARule
+  | Rule            eqns    .   rnMp        =   Map.filter (\(c,v)
+                                                             -> case v of 
+                                                                  RnNone           -> False
+                                                                  RnExpr _ | c > 1 -> False
+                                                                  _                -> True
+                                                           )
+                                                           @eqns.gathRnMp
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+ATTR AEqns AEqn [ | | replRnEqns USE {++} {[]}: {[AEqn]} ]
+
+SEM Expr
+  | AVar            lhs     .   self        =   rnSrc2Expr (rnRepl @lhs.rnMp (RnExpr @self))
+
+SEM AEqn
+  | Eqn             lhs     .   replRnEqns  =   case @dest.mbSingleANm of
+                                                    Just (ANm_Loc n _)
+                                                      -> case Map.lookup n @lhs.rnMp of
+                                                           Just _ -> []
+                                                           _      -> [@self]
+                                                    _ -> [@self]
+  | * - Eqn         lhs     .   replRnEqns  =   [@self]
+
+SEM ARule
+  | Rule            lhs     .   self        =   ARule_Rule @ndNmL @rlNm @info @eqns.replRnEqns
+
