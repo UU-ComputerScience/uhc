@@ -1,7 +1,7 @@
 Split fetch operation and right hoist the fetch operation until it does not
 load an undefined value.
 
-TODO: Rename map is obsolete: remove it
+TODO: Rename map is obsolete: remove it, but add new variables to HptMap
 
 %%[0
 %include lhs2TeX.fmt
@@ -21,16 +21,15 @@ splitFetch :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
 splitFetch (input,unique,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, uniq_Inh_GrAGItf=unique}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap)  -- _Syn_GrAGItf syn)
 
 %%]
 
 %%[8
-ATTR GrAGItf [ | hptMap: HptMap uniq: Int | grTrf: GrModule ]
-ATTR AllNT [ | hptMap: HptMap uniq: Int | grTrf: SELF ]
+ATTR GrAGItf [  hptMap: HptMap | uniq: Int | grTrf: GrModule ]
+ATTR AllNT [  hptMap: HptMap | uniq: Int | grTrf: SELF ]
 
-ATTR AllNT [ | renameMap: RenameMap | ]
-ATTR GrAGItf [ | | renameMap: RenameMap ]
+ATTR AllNT [ renameMap: RenameMap  | | ]
 
 SEM GrAGItf
   | AGItf  module  .  renameMap = []

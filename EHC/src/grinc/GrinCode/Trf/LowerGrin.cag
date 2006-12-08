@@ -46,6 +46,8 @@ SEM GrAGItf
 %%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+type IdentOneToMany = (Int,  [Int])
+
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], IdentOneToMany)
 newNames hptMap uniq (HNmNr v _) = case getEnvVar hptMap v of
                                      AV_Locations _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")

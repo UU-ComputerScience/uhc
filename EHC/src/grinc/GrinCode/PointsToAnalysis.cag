@@ -26,47 +26,60 @@ WRAPPER GrAGItf
 type Action          = ST RealWorld ()
 type EnvAction       = ST RealWorld (AbstractEnv RealWorld)
 type HeapAction      = ST RealWorld (AbstractHeap RealWorld)
-type HPTResult       = (Int, Array Int AbstractEnvElement, Array Int AbstractHeapElement)
 type SetEnv          = Variable -> Bool -> AbstractEnvModifier -> Action
 type GetEnv          = Variable -> ST RealWorld AbstractEnvElement
 
+absEnvEltNoEquat v
+   =  AbstractEnvElement { aeBaseSet    =  AV_Nothing
+                         , aeIsShared   =  False
+                         , aeMod        =  EnvSetAV (AV_Error ("no equation for variable " ++ show v))
+                         }
+                         
+absEnvElt23 sh mod
+   =  AbstractEnvElement { aeBaseSet    =  AV_Nothing
+                         , aeIsShared   =  sh
+                         , aeMod        =  mod
+                         }
 
-error2 s = AbstractEnvElement
-           { aeBaseSet    =  AV_Nothing
-           , aeIsShared   =  False
-           , aeMod        =  EnvSetAV (AV_Error s)
-           }
 
-
-heapPointsToAnalysis :: Int -> GrModule -> IO HPTResult
+heapPointsToAnalysis :: Int -> GrModule -> IO (Int,HptMap)
 heapPointsToAnalysis unique grmod = stToIO $ do
     { let low      = 3
           high     = unique-1
           applyArg = low - 1 ;
+          
+    -- create an empty environment          
     ; absEnv <- (newArray_ (applyArg,high) ) :: EnvAction
-    ; foldM_ (\_ v -> writeArray absEnv v (error2 $ "no equation for variable " ++ show v )) () [applyArg..high]
-    ; let setEnvVar v shared eq = writeArray absEnv v (AbstractEnvElement
-                                                           { aeBaseSet    =  AV_Nothing
-                                                           , aeIsShared   =  shared
-                                                           , aeMod        =  eq
-                                                           }
-                                                      )
-    ; let getEnvVar v            = readArray absEnv v
-          t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                        (Inh_GrAGItf
-                                            { setEnvVar_Inh_GrAGItf  = setEnvVar
-                                            , getEnvVar_Inh_GrAGItf  = getEnvVar
-                                            , tmpVar_Inh_GrAGItf     = applyArg
-                                            }
-                                        )
-    ; fillEnv_Syn_GrAGItf t
-    ; absHeap <- makeHeap_Syn_GrAGItf t
+    ; foldM_ (\_ v -> writeArray absEnv v (absEnvEltNoEquat v)) () [applyArg..high]
+
+    -- functions that can update the environment, w.r.t. its 2nd and 3rd component
+    --       and that can read the environment (all components, but the 1st is always AV_Nothing)
+    ; let setEnvVar v shared eq = writeArray absEnv v (absEnvElt23 shared eq)
+    ; let getEnvVar v           = readArray  absEnv v
+    
+    -- traverse the program, allowing updates to the environment using the functions above
+    ; let inh = Inh_GrAGItf { setEnvVar_Inh_GrAGItf  = setEnvVar
+                            , getEnvVar_Inh_GrAGItf  = getEnvVar
+                            , tmpVar_Inh_GrAGItf     = applyArg
+                            }
+    ; let syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
+
+    -- we get three synthesized attributes
+    -- execute the first to actually update the environment
+    ;                 fillEnv_Syn_GrAGItf syn
+    -- execute the first to create an abstract heap
+    ; absHeap     <- makeHeap_Syn_GrAGItf syn
+    -- use the third to retrieve the applyMap for later use
+    ; let applyMap = applyMap_Syn_GrAGItf syn
+
+    -- reset the value of the temporary variable in the environment
     ; setEnvVar applyArg True (EnvSetAV AV_Nothing)
-    ; let applyMap = applyMap_Syn_GrAGItf t
-    ; count   <- heapPointsTo absEnv absHeap applyMap
+
+    -- now solve the equations
+    ; count   <- solveEquations absEnv absHeap applyMap
     ; absHeap <- unsafeFreeze absHeap
     ; absEnv  <- unsafeFreeze absEnv
-    ; return (count, absEnv, absHeap)
+    ; return (count, ((absEnv, absHeap), Map.empty))
     }
 %%]
 
@@ -96,24 +109,30 @@ SEM GrBind
 ATTR AllGrTag [ | | self: SELF ]
 %%]
 
-%%%%%%%%%%%%%%%%%%%
-%% Tag2ResultVar %%
-%%%%%%%%%%%%%%%%%%%
-
-%%[8.tag2resultVar
-ATTR AllNT [ tag2resultVar: {AssocL GrTag Int} | | ]
-ATTR GrModule [ | | tag2resultVar: {AssocL GrTag Int} ]
-SEM GrModule
-  | Mod     loc . tag2resultVar = [ (t, f) | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
-
-SEM GrAGItf
-  | AGItf   module . tag2resultVar = []
-%%]
-
 %%[8.valueCopy
 ATTR GrVal GrValL GrTag [ | | copy                : SELF     ]
 SEM GrVal
   | NodeAdapt loc . copy = error "No Node adapt"
+%%]
+
+%%%%%%%%%%%%%%%%%%%
+%% evalMap       %%
+%%%%%%%%%%%%%%%%%%%
+
+%%[8.evalMap
+ATTR AllNT - GrModule [ evalMap: {EvalMap} | | ]
+
+SEM GrModule
+  | Mod     loc . evalMap = [ (t, f) | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
+
+%%]
+
+%%[8.applyMap
+ATTR GrModule GrAGItf [ | | applyMap : {ApplyMap} ]
+SEM GrModule
+  | Mod     loc . applyMap = let rewrite (EvApTagVar (HNmNr f _)) = Right f
+                                 rewrite (EvApTagTag t          ) = Left  t
+                             in [ (t, rewrite v) | ((t,_), v) <- @applyTagMp ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -259,7 +278,7 @@ note: The resultVar will always be Nothing.
 %%[8.unit
 SEM GrExpr
   | Unit   loc . fVar2Var   = \s t         -> @lhs.setEnvVar t True (EnvUnion [s] Nothing)
-               . fNode2Var  = \tag names t -> let resultVar = lookup tag @lhs.tag2resultVar
+               . fNode2Var  = \tag names t -> let resultVar = lookup tag @lhs.evalMap
                                                   env       = @lhs.setEnvVar t True
                                                                           (EnvTag tag names Nothing)
                                               in env
@@ -295,7 +314,7 @@ store (Tag e1 .. en); -> \n              => n:
 %%[8.store
 SEM GrExpr
   | Store  loc . (heapPointer, fillEnv, heapElem) = makeStore @lhs.setEnvVar
-                                                              (flip lookup @lhs.tag2resultVar)
+                                                              @lhs.evalMap
                                                               @lhs.heapPointer
                                                               @val.valInfo
                                                               @lhs.targetInfo
@@ -303,8 +322,8 @@ SEM GrExpr
 %%]
 
 %%[8.store hs
-makeStore setEnvVar ftag2resultVar heapPointer valInfo targetInfo
-    = let fNode2Var  tag names t = let resultVar   = ftag2resultVar tag
+makeStore setEnvVar evalMap heapPointer valInfo targetInfo
+    = let fNode2Var  tag names t = let resultVar   = lookup tag evalMap
                                        av          = AV_Locations (Set.singleton heapPointer)
                                        env         = setEnvVar t True envMod
                                        heap        = makeHeapElem heapPointer
@@ -519,13 +538,6 @@ SEM GrExpr
 
 %%]
 
-%%[8.applyMap
-ATTR GrModule GrAGItf [ | | applyMap : {AssocL GrTag (Either GrTag Int)} ]
-SEM GrModule
-  | Mod     loc . applyMap = let rewrite (EvApTagVar (HNmNr f _)) = Right f
-                                 rewrite (EvApTagTag t          ) = Left  t
-                             in [ (t, rewrite v) | ((t,_), v) <- @applyTagMp ]
-%%]
 
 %%%%%%%%%%%
 %% Fetch %%
@@ -628,7 +640,7 @@ SEM GrExpr
   | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = if grinStoreArity
                                                                       then tail mns -- first element is the size of the rest of the node
                                                                       else      mns
-                                                         resultVar = lookup tag @lhs.tag2resultVar
+                                                         resultVar = lookup tag @lhs.evalMap
                                                          actuals r = ((r, args) :)
                                                      in maybe id actuals resultVar
                 loc  .  actualsEnv   = case (@val.valInfo, @lhs.targetInfo) of
@@ -670,11 +682,7 @@ store (Tag f1 fn); \bla ->
 
 %%[8.global
 SEM GrGlobal
-  | Global  loc  .  (heapPointer, fillEnv, heapElem)  =  makeStore @lhs.setEnvVar
-                                                                (flip lookup @lhs.tag2resultVar)
-                                                                @lhs.heapPointer
-                                                                @val.valInfo
-                                                                (Left $ getNr @nm)
+  | Global  loc  .  (heapPointer, fillEnv, heapElem)  =  makeStore @lhs.setEnvVar @lhs.evalMap @lhs.heapPointer @val.valInfo (Left $ getNr @nm)
             lhs  .  heapList                          =  @heapElem : @lhs.heapList
 %%]
 

@@ -7,7 +7,7 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils,{%{GRIN}GRINCCommon},{%{GRIN}Silly}, {%{GRIN}Config}) export(prettyC)
+%%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils,{%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}Config}) export(prettyC)
 %%]
 
 %%[8 import({Silly/AbsSyn})

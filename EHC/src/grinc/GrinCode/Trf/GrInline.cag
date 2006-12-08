@@ -12,8 +12,16 @@ We will inline apply and eval functions (based on flow analysis)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.GrInline} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, {%{GRIN}HeapPointsToFixpoint}, Data.List) export(inlineEA)
+%%[8 hs module {%{GRIN}GrinCode.Trf.GrInline} export(inlineEA)
+%%]
+%%[8 hs import(Data.List, Data.Maybe, Data.Monoid(mconcat), qualified Data.Set as Set, qualified Data.Map as Map )
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%]
+%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getNr, applyNr, wildcardNr, absFetch, getEnvVar, getNodes, addEnvVar, addEnvVars, throwTag, AbstractValue(..))})
+%%]
 
+%%[8 hs
 inlineEA :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
 inlineEA (code,unique,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, unique_Inh_GrAGItf=unique}
@@ -26,7 +34,7 @@ inlineEA (code,unique,hptMap)
 %%% Eval code generation %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.evalCode hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[8.evalCode hs
 
 
 buildAlternative

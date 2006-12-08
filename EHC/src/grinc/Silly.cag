@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[8 hs module {%{GRIN}Silly} import ({%{GRIN}GRINCCommon})
+%%[8 hs module {%{GRIN}Silly} import ({%{GRIN}GRINCCommon} hiding (Variable(..)))
 %%]
 
 %%[8 hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Variables, Values )

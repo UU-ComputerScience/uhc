@@ -6,7 +6,7 @@
 %%[8 hs module {%{GRIN}GrinCode.GenSilly} import({%{GRIN}Silly}) export(grin2silly)
 %%]
 
-%%[8 hs import(UU.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config})
+%%[8 hs import(UU.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config})
 %%]
 %%[8 hs import({%{GRIN}Silly})
 %%]

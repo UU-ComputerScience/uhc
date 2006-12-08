@@ -18,9 +18,9 @@
 %%]
 %%[8 import( {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)} )
 %%]
-%%[8 import({%{EH}GrinCode.Pretty})
+%%[8 import( {%{EH}GrinCode.Pretty})
 %%]
-%%[8 import({%{GRIN}GRINCCommon}, {%{GRIN}HeapPointsToFixpoint} )
+%%[8 import( {%{GRIN}GRINCCommon} )
 %%]
 
 %%[8 import({%{GRIN}GrinCode.Trf.GrInline})
@@ -123,7 +123,7 @@ caAnalyse = task_ VerboseNormal "Analyzing"
          ; caRightSkew
          ; caHeapPointsTo
          ; debugging <- gets (ehcOptDebug . gcsOpts)
-         ; when debugging (do { ((env, heap),_) <- gets gcsHptMap
+         ; when debugging (do { {- ((env, heap),_) <- gets gcsHptMap
                               ; let newVar i = show i
                               ; putDebugMsg "*** Equations ***"
                               ; printArray "env:"  newVar aeMod env
@@ -131,7 +131,7 @@ caAnalyse = task_ VerboseNormal "Analyzing"
                               ; putDebugMsg "*** Abstract Values ***"
                               ; printArray "env:"  newVar aeBaseSet env
                               ; printArray "heap:" show ahBaseSet heap
-                              ; caWriteGrin True "2-analyzed"
+                              ; -} caWriteGrin True "2-analyzed"
                               }
                           )
          }
@@ -250,8 +250,8 @@ caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsCode
          ; unique  <- gets gcsUnique
-         ; (c,e,h) <- liftIO $ heapPointsToAnalysis unique code
-         ; modify (\s -> s { gcsHptMap = ((e,h), Map.empty) })
+         ; (c,h)   <- liftIO $ heapPointsToAnalysis unique code
+         ; modify (gcsUpdateHptMap h)
 --       ; let n = abstractEvaluation code
          ; return c
          }

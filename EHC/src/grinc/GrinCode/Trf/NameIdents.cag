@@ -67,4 +67,48 @@ SEM GrModule
 %%[8 hs
 newMap map (k, EvApTagVar nm) = (k, EvApTagVar $ getName' map nm)
 newMap map x                  = x
+
+--getName :: IdentNameMap -> Int -> String
+--getName m i = show $ getName' m (HNmNr i Nothing)
+
+getName' :: IdentNameMap -> HsName -> HsName
+getName' (names, m) nm@(HNmNr i Nothing    ) = nm
+getName' (names, m) nm@(HNmNr i (Just orig)) = orig
+getName' (names, m) nm@(HNPos p) = nm
+--getName' (names, m) nm@(HNPos p) = error $ "findNewVar: position: " ++ show p
+getName' (names, m) nm@(HNm s) = error $ "findNewVar: name: " ++ s
+
+{-
+getName' (names, m) nm@(HNmNr i _)
+  = if wildcardNr == nm
+    then wildcardNm
+    else if applyNr == nm
+    then applyNm
+    else if evalNr == nm
+    then evalNm
+    else let newNm = findNewVar' i ""
+         in if   isDigit (head (show newNm))
+            then HNm ('x':'_':show i)
+            else newNm
+    where
+    inBetween n (l, h) = n >= l && n <= h
+    findNewVar' v suffix = if v `inBetween` bounds names
+                           then hsnSuffix (names ! v) suffix
+                           else maybe (hsnSuffix (HNPos v) suffix) id (Map.lookup v m >>= return . flip findNewVar' ("_" ++ show v ++ suffix))
+-}
+getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
+
+
+type IdentNameMap   = (Array Int HsName, Map.Map Int Int)
+
+mergeRenameMap :: IdentNameMap -> RenameMap -> IdentNameMap
+mergeRenameMap (a,m) rm = (a,foldl addToMap m rm)
+    where
+    addToMap m (orig,vars) = foldl (\m v -> Map.insert v orig m) m vars
+
+
+
+
+
+
 %%]
