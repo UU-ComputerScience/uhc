@@ -17,16 +17,16 @@ import FmGam
 import ARuleRwSubst
 }
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ARuleAbsSynAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "ARule/AbsSynAG.cag"
 
-INCLUDE "ExprOptsAG.ag"
-INCLUDE "ARuleOptsAG.ag"
+INCLUDE "Expr/OptsAG.cag"
+INCLUDE "ARule/OptsAG.cag"
 
-INCLUDE "ExprFmGamAG.ag"
-INCLUDE "ARuleFmGamAG.ag"
+INCLUDE "Expr/FmGamAG.cag"
+INCLUDE "ARule/FmGamAG.cag"
 
-INCLUDE "ARuleCopyRuleNmAG.ag"
+INCLUDE "ARule/CopyRuleNmAG.cag"
 
 WRAPPER AGARuleItf
 

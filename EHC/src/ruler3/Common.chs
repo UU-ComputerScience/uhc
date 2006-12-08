@@ -32,7 +32,7 @@ import Data.Char
 import IO
 import UU.Pretty
 -- import UU.Scanner.Position( noPos, Pos, Position(..) )
-import RulerScanner( SPos, emptySPos )
+import Scanner( SPos, emptySPos )
 import EH.Util.FPath
 import EH.Util.PPUtils
 import EH.Util.ParseErrPrettyPrint

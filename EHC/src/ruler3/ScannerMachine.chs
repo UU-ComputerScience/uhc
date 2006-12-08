@@ -1,4 +1,4 @@
-module RulerScannerMachine
+module ScannerMachine
   ( scan
   )
   where

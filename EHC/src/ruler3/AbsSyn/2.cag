@@ -34,8 +34,8 @@ import ARule
 import ViewSel
 }
 
-INCLUDE "RulerAbsSyn2AG.ag"
-INCLUDE "RulerAbsSynCommonAG.ag"
+INCLUDE "AbsSyn/2AG.cag"
+INCLUDE "AbsSyn/CommonAG.cag"
 
 -------------------------------------------------------------------------
 -- Optional wrap in chunk

@@ -16,9 +16,9 @@ import EH.Util.DependencyGraph
 import ViewSel
 }
 
-INCLUDE "ViewSelAbsSynAG.ag"
-INCLUDE "ViewSelDpdGrAG.ag"
-INCLUDE "ViewSelNmSAG.ag"
+INCLUDE "ViewSel/AbsSynAG.cag"
+INCLUDE "ViewSel/DpdGrAG.cag"
+INCLUDE "ViewSel/NmSAG.cag"
 
 WRAPPER AGRlSelItf
 

@@ -15,7 +15,7 @@ module Ty
 import Common
 }
 
-INCLUDE "TyAbsSynAG.ag"
+INCLUDE "Ty/AbsSynAG.cag"
 
 DERIVING AllTy: Eq,Ord,Show
 

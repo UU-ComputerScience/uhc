@@ -23,16 +23,16 @@ import ARule
 import Gam
 }
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ARuleAbsSynAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "ARule/AbsSynAG.cag"
 
-INCLUDE "ExprSelfAG.ag"
-INCLUDE "ARuleSelfAG.ag"
+INCLUDE "Expr/SelfAG.cag"
+INCLUDE "ARule/SelfAG.cag"
 
-INCLUDE "ARuleCopyRuleNmAG.ag"
+INCLUDE "ARule/CopyRuleNmAG.cag"
 
-INCLUDE "ARuleEqnDest1NmAG.ag"
-INCLUDE "ARuleInCompDestAG.ag"
+INCLUDE "ARule/EqnDest1NmAG.cag"
+INCLUDE "ARule/InCompDestAG.cag"
 
 WRAPPER  AGARuleItf
 

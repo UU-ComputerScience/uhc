@@ -9,7 +9,7 @@ module ViewSel
 import EH.Util.Nm
 }
 
-INCLUDE "ViewSelAbsSynAG.ag"
+INCLUDE "ViewSel/AbsSynAG.cag"
 
 DERIVING AllViewSel AllRlSel AllNmSel: Show
 

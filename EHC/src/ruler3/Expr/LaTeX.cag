@@ -21,11 +21,11 @@ import FmGam
 import WrKindGam
 }
 
-INCLUDE "ExprAbsSynAG.ag"
-INCLUDE "ExprOptsAG.ag"
-INCLUDE "ExprFmGamAG.ag"
+INCLUDE "Expr/AbsSynAG.cag"
+INCLUDE "Expr/OptsAG.cag"
+INCLUDE "Expr/FmGamAG.cag"
 
-INCLUDE "ExprLaTeXAG.ag"
+INCLUDE "Expr/LaTeXAG.cag"
 
 WRAPPER AGExprItf
 

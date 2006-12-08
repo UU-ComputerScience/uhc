@@ -13,9 +13,9 @@ import Common
 import Ty
 }
 
-INCLUDE "TyAbsSynAG.ag"
+INCLUDE "Ty/AbsSynAG.cag"
 
-INCLUDE "TyPrettyPrintAG.ag"
+INCLUDE "Ty/PrettyPrintAG.cag"
 
 WRAPPER AGTyItf
 
