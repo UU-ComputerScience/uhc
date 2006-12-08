@@ -1,0 +1,5 @@
+-------------------------------------------------------------------------
+-- View dpd graph
+-------------------------------------------------------------------------
+
+ATTR AGViewSelItf AGViewSelsItf AGRlSelItf AllViewSel AllRlSel [ vwDpdGr: {DpdGr Nm} | | ]
