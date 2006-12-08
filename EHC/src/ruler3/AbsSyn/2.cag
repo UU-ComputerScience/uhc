@@ -1,0 +1,50 @@
+-------------------------------------------------------------------------
+-- Haskell interface to Ruler AST pass 2
+-------------------------------------------------------------------------
+
+{
+module RulerAbsSyn2
+  ( module Expr
+  , module Ty
+  , module ARule
+  , module ViewSel
+
+  , AGItf(..)
+  , Decl(..), Decls
+  , RsVwDecl(..), RsVwDecls
+  , AttrAGDecl(..)
+  , DataAGDecl(..)
+  , DataAGAlt(..), DataAGAlts
+  , DataAGFld(..), DataAGFlds
+  , VwDecl(..), VwDecls
+  , RlDecl(..), RlDecls
+  , Jd(..), Jds
+  , JdAt(..), JdAts
+  
+  , wrapInChunk
+  )
+  where
+
+import qualified Data.Set as Set
+import Opts
+import Common
+import Expr
+import Ty
+import ARule
+import ViewSel
+}
+
+INCLUDE "RulerAbsSyn2AG.ag"
+INCLUDE "RulerAbsSynCommonAG.ag"
+
+-------------------------------------------------------------------------
+-- Optional wrap in chunk
+-------------------------------------------------------------------------
+
+{
+wrapInChunk :: (Nm -> a->a) -> Opts -> Nm -> a -> a
+wrapInChunk mk opts n
+  = if optFragWrap opts
+    then mk n
+    else id
+}

@@ -1,0 +1,15 @@
+-------------------------------------------------------------------------
+-- Haskell interface to ARule AST
+-------------------------------------------------------------------------
+
+{
+module ARule
+  where
+
+import Common
+import Expr
+}
+
+INCLUDE "ARuleAbsSynAG.ag"
+
+

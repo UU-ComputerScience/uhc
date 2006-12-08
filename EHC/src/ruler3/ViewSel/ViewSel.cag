@@ -1,0 +1,15 @@
+-------------------------------------------------------------------------
+-- Haskell interface to ViewSel AST
+-------------------------------------------------------------------------
+
+{
+module ViewSel
+  where
+
+import EH.Util.Nm
+}
+
+INCLUDE "ViewSelAbsSynAG.ag"
+
+DERIVING AllViewSel AllRlSel AllNmSel: Show
+
