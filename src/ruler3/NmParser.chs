@@ -13,7 +13,7 @@ module NmParser
   where
 
 import UU.Parsing
-import RulerScanner
+import Scanner
 import EH.Util.ParseUtils
 import EH.Util.Nm
 import SelParser

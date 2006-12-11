@@ -2,7 +2,7 @@
 -- Ruler parser
 -------------------------------------------------------------------------
 
-module RulerParser
+module Parser
   ( pAGItf
   )
   where
@@ -14,16 +14,16 @@ import UU.Parsing
 import UU.Parsing.Offside
 import UU.Scanner.Position( initPos, Pos, Position(..) )
 import UU.Scanner.GenToken
-import RulerScanner
+import Scanner
 import EH.Util.ParseUtils
 import EH.Util.ScanUtils
 import NmParser
 import SelParser
 import KeywParser
-import ViewSel
-import ViewSelParser
+import ViewSel.ViewSel
+import ViewSel.Parser
 import Common
-import RulerAbsSyn1
+import AbsSyn.AbsSyn1
 
 -------------------------------------------------------------------------
 -- Parser

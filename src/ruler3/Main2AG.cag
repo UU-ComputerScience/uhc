@@ -17,22 +17,22 @@ import Opts
 import Common
 import EH.Util.PPUtils
 import LaTeXFmtUtils
-import ExprUtils
-import TyUtils
-import ARuleUtils
-import ViewSelUtils
-import RulerConfig( cfgStrSel )
+import Expr.Utils
+import Ty.Utils
+import ARule.Utils
+import ViewSel.Utils
+import Config( cfgStrSel )
 import FmGam
 import RwExprGam
 import ECnstrGam
-import RulerAbsSyn2
+import AbsSyn.AbsSyn2
 }
 
 -------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "AbsSyn/2AG.cag"
+INCLUDE "AbsSyn/AbsSyn2AG.cag"
 INCLUDE "AbsSyn/CommonAG.cag"
 INCLUDE "FmGamAG.cag"
 INCLUDE "AS2/Opts.cag"

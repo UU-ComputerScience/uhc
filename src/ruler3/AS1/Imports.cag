@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module RulerAS1Imports
+module AS1.Imports
   ( ImpModMp
   , as1Imports
   , as1JoinAGItfs
@@ -12,14 +12,14 @@ module RulerAS1Imports
 
 import qualified Data.Map as Map
 import Common
-import RulerAbsSyn1
+import AbsSyn.AbsSyn1
 }
 
 -------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "AbsSyn/1AG.cag"
+INCLUDE "AbsSyn/AbsSyn1AG.cag"
 INCLUDE "AbsSyn/CommonAG.cag"
 INCLUDE "Expr/AbsSynAG.cag"
 

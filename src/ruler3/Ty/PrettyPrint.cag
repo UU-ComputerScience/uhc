@@ -3,14 +3,14 @@
 -------------------------------------------------------------------------
 
 {
-module TyPrettyPrint
+module Ty.PrettyPrint
   ( ppTy
   )
   where
 
 import UU.Pretty
 import Common
-import Ty
+import Ty.Ty
 }
 
 INCLUDE "Ty/AbsSynAG.cag"

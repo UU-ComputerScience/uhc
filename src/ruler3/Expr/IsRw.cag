@@ -3,13 +3,13 @@
 -------------------------------------------------------------------------
 
 {
-module ExprIsRw
+module Expr.IsRw
   ( exprIsRw
   )
   where
 
 import Common
-import Expr
+import Expr.Expr
 }
 
 INCLUDE "Expr/AbsSynAG.cag"

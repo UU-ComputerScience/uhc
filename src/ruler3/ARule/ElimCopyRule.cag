@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ARuleElimCopyRule
+module ARule.ElimCopyRule
   ( module Gam
 
   , AtDefdGam
@@ -18,8 +18,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import UU.Pretty
 import Common
-import Expr
-import ARule
+import Expr.Expr
+import ARule.ARule
 import Gam
 }
 

@@ -3,14 +3,14 @@
 -------------------------------------------------------------------------
 
 {
-module ExprNmS
+module Expr.NmS
   ( exprNmS
   )
   where
 
 import qualified Data.Set as Set
 import Common
-import Expr
+import Expr.Expr
 }
 
 INCLUDE "Expr/AbsSynAG.cag"

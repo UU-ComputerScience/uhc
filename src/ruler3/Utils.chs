@@ -1,6 +1,6 @@
 -- $Id: EHTyFitsIn.chs 214 2005-05-28 17:52:29Z atze $
 
-module RulerUtils
+module Utils
   ( jdGamFmExpr
   , rlLtxGamTranspose
   , gamTranspose
@@ -13,10 +13,10 @@ module RulerUtils
 
 import qualified Data.Map as Map
 import Common
-import Expr
+import Expr.Expr
 import FmGam
 import JdShpGam
-import RulerAdmin
+import Admin
 
 -------------------------------------------------------------------------
 -- Misc

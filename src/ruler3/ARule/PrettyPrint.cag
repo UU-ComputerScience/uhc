@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ARulePrettyPrint
+module ARule.PrettyPrint
   ( ppARule, ppExpr
   , ppECGam
   )
@@ -15,10 +15,10 @@ import UU.Pretty
 import EH.Util.PPUtils
 import Common
 import LaTeXFmtUtils
-import Expr
-import ARule
+import Expr.Expr
+import ARule.ARule
 import ECnstrGam
-import RulerConfig( cfgStrSel )
+import Config( cfgStrSel )
 }
 
 INCLUDE "Expr/AbsSynAG.cag"

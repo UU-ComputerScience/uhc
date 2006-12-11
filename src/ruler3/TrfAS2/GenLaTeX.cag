@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module TrfAS2GenLaTeX
+module TrfAS2.GenLaTeX
   ( as2LaTeX
   )
   where
@@ -18,14 +18,14 @@ import Opts
 import Err
 import Common
 import KeywParser( propsSynInhMp )
-import ExprUtils
-import ARuleUtils
+import Expr.Utils
+import ARule.Utils
 import FmGam
 import RwExprGam
 import ECnstrGam
-import RulerAbsSyn2
-import RulerAdmin
-import RulerUtils
+import AbsSyn.AbsSyn2
+import Admin
+import Utils
 
 -- for ppDbg
 import UU.Pretty
@@ -36,7 +36,7 @@ import EH.Util.PPUtils
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "AbsSyn/2AG.cag"
+INCLUDE "AbsSyn/AbsSyn2AG.cag"
 INCLUDE "AbsSyn/CommonAG.cag"
 INCLUDE "AS2/Opts.cag"
 

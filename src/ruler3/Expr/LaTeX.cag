@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ExprLaTeX
+module Expr.LaTeX
   ( exprFmtTeX
   )
   where
@@ -15,8 +15,8 @@ import EH.Util.PPUtils
 import Common
 import Opts
 import LaTeXFmtUtils
-import Expr
-import ARuleRwSubst( fmNmFmtCmd )
+import Expr.Expr
+import ARule.RwSubst( fmNmFmtCmd )
 import FmGam
 import WrKindGam
 }

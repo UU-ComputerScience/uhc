@@ -2,22 +2,19 @@
 -- Interface to all Expr transformations and other utilities
 -------------------------------------------------------------------------
 
-module ExprUtils
-  ( module Expr
-  , module ExprToAEqn
-  , module ExprIsRw
-  , module ExprNmS
-  , module ExprCoGam
-  , module ExprLaTeX
-  -- , module ExprReGamExprFmGam
+module Expr.Utils
+  ( module Expr.Expr
+  , module Expr.ToAEqn
+  , module Expr.IsRw
+  , module Expr.NmS
+  , module Expr.CoGam
+  , module Expr.LaTeX
   )
   where
 
-import Expr
-import ExprToAEqn
-import ExprIsRw
-import ExprNmS
-import ExprCoGam
-import ExprLaTeX
--- import ExprReGamExprFmGam
-
+import Expr.Expr
+import Expr.ToAEqn
+import Expr.IsRw
+import Expr.NmS
+import Expr.CoGam
+import Expr.LaTeX

@@ -3,11 +3,11 @@
 -------------------------------------------------------------------------
 
 {
-module RulerAbsSyn1
-  ( module Expr
-  , module Ty
-  , module ViewSel
-  , module RulerAdmin
+module AbsSyn.AbsSyn1
+  ( module Expr.Expr
+  , module Ty.Ty
+  , module ViewSel.ViewSel
+  , module Admin
   
   , AGItf(..)
   , Decl(..), Decls
@@ -23,11 +23,11 @@ module RulerAbsSyn1
   where
 
 import Common
-import Expr
-import Ty
-import ViewSel
-import RulerAdmin( BldRename(..) )
+import Expr.Expr
+import Ty.Ty
+import ViewSel.ViewSel
+import Admin( BldRename(..) )
 }
 
-INCLUDE "AbsSyn/1AG.cag"
+INCLUDE "AbsSyn/AbsSyn1AG.cag"
 INCLUDE "AbsSyn/CommonAG.cag"

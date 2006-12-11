@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ARulePatternUniq
+module ARule.PatternUniq
   ( arlUniq
   )
   where
@@ -11,10 +11,10 @@ module ARulePatternUniq
 import qualified Data.Set as Set
 import Common
 import Opts
-import ARule
-import Expr
+import ARule.ARule
+import Expr.Expr
 import FmGam
-import ARuleRwSubst
+import ARule.RwSubst
 }
 
 INCLUDE "Expr/AbsSynAG.cag"

@@ -4,7 +4,7 @@
 -- Supporting functions for admin building
 -------------------------------------------------------------------------
 
-module RulerMkAdmin
+module MkAdmin
   ( bldDtInfo
   , bldScInfo
   , bldRsInfo
@@ -22,12 +22,12 @@ import KeywParser( propsSynInhMp )
 import Opts
 import Err
 import Common
-import ExprUtils
-import ARuleUtils( exprSubst )
-import ViewSelUtils
+import Expr.Utils
+import ARule.Utils( exprSubst )
+import ViewSel.Utils
 import FmGam
-import RulerUtils
-import RulerAdmin
+import Utils
+import Admin
 
 -------------------------------------------------------------------------
 -- Misc

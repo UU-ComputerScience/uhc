@@ -2,7 +2,7 @@
 -- ViewSel parser
 -------------------------------------------------------------------------
 
-module ViewSelParser
+module ViewSel.Parser
   ( module KeywParser
   , module NmParser
   , pViewSel, pViewSels
@@ -13,12 +13,12 @@ module ViewSelParser
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import UU.Parsing
-import RulerScanner
+import Scanner
 import EH.Util.ParseUtils
 import EH.Util.Nm
 import KeywParser
 import NmParser
-import ViewSel
+import ViewSel.ViewSel
 
 -------------------------------------------------------------------------
 -- Parser

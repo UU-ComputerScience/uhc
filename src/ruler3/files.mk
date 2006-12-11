@@ -32,7 +32,7 @@ RULER3_CHS_UTIL_DRV_HS					:= $(patsubst $(SRC_RULER3_PREFIX)%.chs,$(RULER3_BLD_
 
 RULER3_AGMAIN1_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,Main1AG)
 RULER3_AGMAIN1_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag, \
-											AbsSyn/CommonAG AbsSyn/1 AS1/Misc AS1/Pretty AS1/RlSel FmGamAG \
+											AbsSyn/CommonAG AbsSyn/AbsSyn1 AS1/Misc AS1/Pretty AS1/RlSel FmGamAG \
 											AS1/SchemeDpd AS1/ViewDpd \
 											AS1/GenAS2 \
 											Expr/AbsSynAG Expr/IsRwAG Expr/NmSAG Expr/FmGamAG Expr/PrettyPrintAG Expr/SelfAG \
@@ -43,7 +43,7 @@ $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_AGMAIN1_M
 
 RULER3_AS1IMPS_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AS1/Imports)
 RULER3_AS1IMPS_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag, \
-											AbsSyn/1AG AbsSyn/CommonAG \
+											AbsSyn/AbsSyn1AG AbsSyn/CommonAG \
 											Expr/AbsSynAG \
 											Ty/AbsSynAG \
 											)
@@ -52,7 +52,7 @@ $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_AS1IMPS_M
 
 RULER3_AGMAIN2_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,Main2AG)
 RULER3_AGMAIN2_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag, \
-											AbsSyn/CommonAG AbsSyn/2AG AS2/Opts AS2/Pretty FmGamAG \
+											AbsSyn/CommonAG AbsSyn/AbsSyn2AG AS2/Opts AS2/Pretty FmGamAG \
 											Expr/AbsSynAG Expr/SelfAG Expr/PrettyPrintAG Expr/FmGamAG \
 											ARule/AbsSynAG ARule/SelfAG ARule/PrettyPrintAG \
 											)
@@ -61,7 +61,7 @@ $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_AGMAIN2_M
 
 RULER3_TRF2ARULE_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,TrfAS2/GenARule)
 RULER3_TRF2ARULE_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag, \
-											AbsSyn/CommonAG AbsSyn/2AG AS2/Opts \
+											AbsSyn/CommonAG AbsSyn/AbsSyn2AG AS2/Opts \
 											TrfAS2/CommonAG \
 											Expr/AbsSynAG Expr/SelfAG \
 											ARule/AbsSynAG ARule/SelfAG \
@@ -71,7 +71,7 @@ $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_TRF2ARULE
 
 RULER3_TRF2LATEX_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,TrfAS2/GenLaTeX)
 RULER3_TRF2LATEX_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag, \
-											AbsSyn/CommonAG AbsSyn/2AG AS2/Opts \
+											AbsSyn/CommonAG AbsSyn/AbsSyn2AG AS2/Opts \
 											TrfAS2/CommonAG \
 											Expr/AbsSynAG Expr/SelfAG \
 											ARule/AbsSynAG ARule/SelfAG \
@@ -79,13 +79,13 @@ RULER3_TRF2LATEX_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag, \
 $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_TRF2LATEX_MAIN_SRC_AG)) \
 										: $(RULER3_TRF2LATEX_DPDS_SRC_AG)
 
-RULER3_AGRLAST1_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/1)
-RULER3_AGRLAST1_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/1AG AbsSyn/CommonAG)
+RULER3_AGRLAST1_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/AbsSyn1)
+RULER3_AGRLAST1_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/AbsSyn1AG AbsSyn/CommonAG)
 $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_AGRLAST1_MAIN_SRC_AG)) \
 										: $(RULER3_AGRLAST1_DPDS_SRC_AG)
 
-RULER3_AGRLAST2_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/2)
-RULER3_AGRLAST2_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/2AG AbsSyn/CommonAG)
+RULER3_AGRLAST2_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/AbsSyn2)
+RULER3_AGRLAST2_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER3_PREFIX)%.cag,AbsSyn/AbsSyn2AG AbsSyn/CommonAG)
 $(patsubst $(SRC_RULER3_PREFIX)%.cag,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_AGRLAST2_MAIN_SRC_AG)) \
 										: $(RULER3_AGRLAST2_DPDS_SRC_AG)
 

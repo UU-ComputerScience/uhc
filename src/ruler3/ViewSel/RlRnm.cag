@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ViewSelRlRnm
+module ViewSel.RlRnm
   ( rlSelRnmM
   , rsSelMapVwNm
   )
@@ -12,7 +12,7 @@ module ViewSelRlRnm
 import qualified Data.Map as Map
 import EH.Util.Nm
 -- import EH.Util.DependencyGraph
-import ViewSel
+import ViewSel.ViewSel
 }
 
 INCLUDE "ViewSel/AbsSynAG.cag"

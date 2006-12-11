@@ -3,11 +3,11 @@
 -------------------------------------------------------------------------
 
 {
-module RulerAbsSyn2
-  ( module Expr
-  , module Ty
-  , module ARule
-  , module ViewSel
+module AbsSyn.AbsSyn2
+  ( module Expr.Expr
+  , module Ty.Ty
+  , module ARule.ARule
+  , module ViewSel.ViewSel
 
   , AGItf(..)
   , Decl(..), Decls
@@ -28,13 +28,13 @@ module RulerAbsSyn2
 import qualified Data.Set as Set
 import Opts
 import Common
-import Expr
-import Ty
-import ARule
-import ViewSel
+import Expr.Expr
+import Ty.Ty
+import ARule.ARule
+import ViewSel.ViewSel
 }
 
-INCLUDE "AbsSyn/2AG.cag"
+INCLUDE "AbsSyn/AbsSyn2AG.cag"
 INCLUDE "AbsSyn/CommonAG.cag"
 
 -------------------------------------------------------------------------

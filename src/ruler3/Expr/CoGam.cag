@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ExprCoGam
+module Expr.CoGam
   ( module Gam
   , ChOrdGam
   , exprCoGam
@@ -14,7 +14,7 @@ module ExprCoGam
 import Data.List
 import qualified Data.Map as Map
 import Common
-import Expr
+import Expr.Expr
 import Gam
 }
 

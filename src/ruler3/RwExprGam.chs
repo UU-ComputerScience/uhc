@@ -11,7 +11,7 @@ module RwExprGam
 
 import Common
 import FmGam
-import Expr
+import Expr.Expr
 
 -------------------------------------------------------------------------
 -- Gam

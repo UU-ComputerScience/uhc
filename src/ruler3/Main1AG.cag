@@ -19,26 +19,26 @@ import Common
 import Opts
 import EH.Util.PPUtils
 import LaTeXFmtUtils
-import ExprUtils
-import ARuleUtils
-import ViewSelUtils
-import RulerConfig( cfgStrSel, cfgFmFmtCmdAsc )
+import Expr.Utils
+import ARule.Utils
+import ViewSel.Utils
+import Config( cfgStrSel, cfgFmFmtCmdAsc )
 import FmGam
 import RwExprGam
 import ECnstrGam
-import RulerAbsSyn1
-import qualified RulerAbsSyn2 as AS2
+import AbsSyn.AbsSyn1
+import qualified AbsSyn.AbsSyn2 as AS2
 import qualified Main2AG as M2 -- for now
-import RulerUtils
-import RulerAdmin
-import RulerMkAdmin
+import Utils
+import Admin
+import MkAdmin
 }
 
 -------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "AbsSyn/1AG.cag"
+INCLUDE "AbsSyn/AbsSyn1AG.cag"
 INCLUDE "AbsSyn/CommonAG.cag"
 INCLUDE "FmGamAG.cag"
 INCLUDE "AS1/Misc.cag"
