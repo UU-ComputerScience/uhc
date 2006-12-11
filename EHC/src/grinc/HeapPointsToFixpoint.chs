@@ -47,16 +47,16 @@ TODO: Shared set and Unique set instead base and shared part
 
 %%[8.updateEnvHeap
 
-type AbstractEnv s  = STArray s Variable AbstractEnvElement
+type AbstractEnv s  = STArray s Variable AbstractValue
 type AbstractHeap s = STArray s Location AbstractHeapElement
 
 -- The equations of the element are fed to envChangeSet
 -- and the output is merged to the baseset
-updateEnvElement :: AbstractEnvElement -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractEnvElement
-updateEnvElement ee env heap applyMap = do
-    { newChangeSet <- envChangeSet (aeMod ee) env heap applyMap
-    ; let newBaseSet = newChangeSet `mappend` aeBaseSet ee
-    ; return (ee { aeBaseSet = newBaseSet })
+updateEnvElement :: AbstractEnvModifier -> AbstractValue -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
+updateEnvElement em ev env heap applyMap = do
+    { newChangeSet <- envChangeSet em env heap applyMap
+    ; let newBaseSet = newChangeSet `mappend` ev
+    ; return newBaseSet
     }
 
 -- The equations of the element are fed to heapChangeSet
@@ -89,8 +89,8 @@ updateHeapElement he env = do
 addSharingInfo :: AbstractEnv s -> AbstractHeap s -> ST s ()
 addSharingInfo env heap = getElems env >>= mapM_ (setSharingInfo heap)
 
-setSharingInfo heap v = case aeBaseSet v of
-                           AV_Locations ls  ->  when (aeIsShared v) (mapM_ (setShared heap) (Set.toList ls))
+setSharingInfo heap v = case v of
+                           AV_Locations ls  ->  when (True) (mapM_ (setShared heap) (Set.toList ls))
                            otherwise        ->  return ()
 
 setShared heap l = do
@@ -121,28 +121,42 @@ heapChangeSet ((tag, deps), resultDep) env = do
     ; return (uniqueAV, sharedAV)
     }
     where
-    getBaseSet    =  maybe (return AV_Nothing) (\v -> lookupEnv env v >>= return . aeBaseSet)
+    getBaseSet    =  maybe (return AV_Nothing) (\v -> lookupEnv env v >>= return )
 %%]
 
 %%[8.envChangeSet
 
 envChangeSet :: AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
 envChangeSet am env heap applyMap = case am of
-                                        EnvSetAV    av     -> return av
-                                        EnvUnion    vs mbS -> let addApplyArgument s av = envChangeSet s env heap applyMap >>= return . flip mappend av
-                                                              in mapM valAbsEnv vs >>= return . mconcat >>= maybe return addApplyArgument mbS
-                                        EnvEval     v ev     -> valAbsEnv v >>= evalChangeSet ev
-                                        EnvApp      f a ev   -> do { pnodes  <- valAbsEnv f
-                                                                   ; argsVal <- mapM (\(Left v) -> valAbsEnv v) a
-                                                                   ; applyChangeSet pnodes argsVal ev
-                                                                   }
-                                        EnvSelect   v n i  -> valAbsEnv v >>= return . selectChangeSet n i
-                                        EnvTag      t f r  -> tagChangeSet t f r
+                                        EnvSetAV    av       -> return av
+                                        EnvUnion1   vs       -> do
+                                                                {  rs <- mapM valAbsEnv vs
+                                                                ;  return (mconcat rs)
+                                                                }
+                                        EnvUnion2   vs v n i -> do
+                                                                {  rs <- mapM valAbsEnv vs
+                                                                ;  p <- valAbsEnv v
+                                                                ;  return (mappend (selectChangeSet n i p) (mconcat rs))
+                                                                }
+                                        EnvEval     v ev     -> do
+                                                                {  p <- valAbsEnv v
+                                                                ;  evalChangeSet ev p
+                                                                }
+                                        EnvApp      f a ev   -> do 
+                                                                { pnodes  <- valAbsEnv f
+                                                                ; argsVal <- mapM (\(Left v) -> valAbsEnv v) a
+                                                                ; applyChangeSet pnodes argsVal ev
+                                                                }
+                                        EnvSelect   v n i    -> do
+                                                                {  p <- valAbsEnv v
+                                                                ;  return (selectChangeSet n i p)
+                                                                }
+                                        EnvTag      t f r    -> tagChangeSet t f r
     where
     --valAbsEnv :: Variable -> ST s AbstractValue
     valAbsEnv v = do
         { elem <- lookupEnv env v
-        ; return (aeBaseSet elem)
+        ; return elem
         }
     --valAbsHeap :: Location -> ST s (AbstractValue, AbstractValue)
     valAbsHeap l = do
@@ -230,7 +244,7 @@ abstractIndices = return . indices
 fromJust' s Nothing  = error $ "fromJust' Maybe:" ++ s
 fromJust' _ (Just a) = a
 
-lookupEnv :: AbstractEnv s -> Variable -> ST s AbstractEnvElement
+lookupEnv :: AbstractEnv s -> Variable -> ST s AbstractValue
 lookupEnv env idx = readArray env idx
 
 lookupHeap :: AbstractHeap s -> Location -> ST s AbstractHeapElement
@@ -238,17 +252,13 @@ lookupHeap heap idx = readArray heap idx
 
 appendApplyArg :: AbstractEnv s -> AbstractValue -> ST s ()
 appendApplyArg env av = do { (applyArgIdx,_) <- abstractBounds env
-                           ; elem <- readArray env applyArgIdx
-                           ; let applyArg = aeBaseSet elem
-                                 newElem  = elem { aeBaseSet = av `mappend` applyArg }
-                           ; writeArray env applyArgIdx newElem
+                           ; applyArg <- readArray env applyArgIdx
+                           ; writeArray env applyArgIdx (av `mappend` applyArg)
                            }
 
 appendExceptions :: AbstractEnv s -> Variable -> AbstractValue -> ST s ()
-appendExceptions env handlerVar av = do { elem <- readArray env handlerVar
-                                        ; let exceptions = aeBaseSet elem
-                                              newElem  = elem { aeBaseSet = av `mappend` exceptions }
-                                        ; writeArray env handlerVar newElem
+appendExceptions env handlerVar av = do { exceptions <- readArray env handlerVar
+                                        ; writeArray env handlerVar (av `mappend` exceptions)
                                         }
 %%]
 
@@ -268,14 +278,14 @@ fixpoint indEnv indHeap procEnv procHeap = countFixpoint 1
 %%]
 
 %%[8
-solveEquations :: AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s Int
-solveEquations env heap applyMap =
+solveEquations :: Array Int AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s Int
+solveEquations mods env heap applyMap =
     do { indHeap <- abstractIndices heap
-       ; indEnv  <- abstractIndices env
-       ; let { procEnv i = do
+       ; let indEnv = assocs mods
+       ; let { procEnv (i,em) = do
                  { e  <- lookupEnv env i
-                 ; e2 <- updateEnvElement e env heap applyMap
-                 ; let changed =  aeBaseSet e /= aeBaseSet e2
+                 ; e2 <- updateEnvElement em e env heap applyMap
+                 ; let changed =   e /= e2
                  ; when changed (writeArray env i e2)
                  ; return changed
                  }

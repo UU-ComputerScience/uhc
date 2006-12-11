@@ -20,42 +20,50 @@ WRAPPER GrAGItf
 
 %%[8 hs import(Debug.Trace)
 %%]
+%%[8 hs import(System.IO.Unsafe(unsafePerformIO))
+%%]
 
 %%[8 hs import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode},{%{GRIN}HeapPointsToFixpoint}) export(heapPointsToAnalysis)
 
+fromJust' _ (Just a ) = a
+fromJust' m (Nothing) = error $ "fromJust: " ++ m
+
+-- a grin node is either a single variable or a complete node (with a known tag)
+type NodeInfo a = Either Int (GrTag, [a])
+
 type Action          = ST RealWorld ()
 type EnvAction       = ST RealWorld (AbstractEnv RealWorld)
+type EnvAction2      = ST RealWorld (STArray RealWorld Variable AbstractEnvModifier)
 type HeapAction      = ST RealWorld (AbstractHeap RealWorld)
-type SetEnv          = Variable -> Bool -> AbstractEnvModifier -> Action
-type GetEnv          = Variable -> ST RealWorld AbstractEnvElement
+type SetEnv          = Variable -> AbstractEnvModifier -> Action
+type GetEnv          = Variable -> ST RealWorld AbstractEnvModifier
 
 absEnvEltNoEquat v
-   =  AbstractEnvElement { aeBaseSet    =  AV_Nothing
-                         , aeIsShared   =  False
-                         , aeMod        =  EnvSetAV (AV_Error ("no equation for variable " ++ show v))
-                         }
+   =  EnvSetAV (AV_Error ("no equation for variable " ++ show v))
                          
-absEnvElt23 sh mod
-   =  AbstractEnvElement { aeBaseSet    =  AV_Nothing
-                         , aeIsShared   =  sh
-                         , aeMod        =  mod
-                         }
+makeHeapElem l eq =  (l, AbstractHeapElement  {  ahBaseSet = AV_Nothing
+                                              ,  ahSharedSet = Just AV_Nothing
+                                              ,  ahMod = eq
+                                              }
+                     )
 
 
-heapPointsToAnalysis :: Int -> GrModule -> IO (Int,HptMap)
-heapPointsToAnalysis unique grmod = stToIO $ do
+heapPointsToAnalysis :: Int -> GrModule -> (Int,HptMap)
+heapPointsToAnalysis unique grmod 
+    = unsafePerformIO $ stToIO $ 
+    do
     { let low      = 3
           high     = unique-1
           applyArg = low - 1 ;
           
     -- create an empty environment          
-    ; absEnv <- (newArray_ (applyArg,high) ) :: EnvAction
-    ; foldM_ (\_ v -> writeArray absEnv v (absEnvEltNoEquat v)) () [applyArg..high]
+    ; envMods <- (newArray_ (applyArg,high) )  :: EnvAction2
+    ; foldM_ (\_ v -> writeArray envMods v (absEnvEltNoEquat v)) () [applyArg..high]
 
     -- functions that can update the environment, w.r.t. its 2nd and 3rd component
     --       and that can read the environment (all components, but the 1st is always AV_Nothing)
-    ; let setEnvVar v shared eq = writeArray absEnv v (absEnvElt23 shared eq)
-    ; let getEnvVar v           = readArray  absEnv v
+    ; let setEnvVar v  eq = writeArray envMods v eq
+    ; let getEnvVar v     = readArray  envMods v
     
     -- traverse the program, allowing updates to the environment using the functions above
     ; let inh = Inh_GrAGItf { setEnvVar_Inh_GrAGItf  = setEnvVar
@@ -73,10 +81,14 @@ heapPointsToAnalysis unique grmod = stToIO $ do
     ; let applyMap = applyMap_Syn_GrAGItf syn
 
     -- reset the value of the temporary variable in the environment
-    ; setEnvVar applyArg True (EnvSetAV AV_Nothing)
+    ; setEnvVar applyArg (EnvSetAV AV_Nothing)
+
+
+    ; absEnv  <- (newArray (applyArg,high) AV_Nothing)    :: EnvAction
+    ; envMods <- unsafeFreeze envMods
 
     -- now solve the equations
-    ; count   <- solveEquations absEnv absHeap applyMap
+    ; count   <- solveEquations envMods absEnv absHeap applyMap
     ; absHeap <- unsafeFreeze absHeap
     ; absEnv  <- unsafeFreeze absEnv
     ; return (count, ((absEnv, absHeap), Map.empty))
@@ -84,9 +96,9 @@ heapPointsToAnalysis unique grmod = stToIO $ do
 %%]
 
 %%[8.toplevelCombining
-ATTR GrAGItf AllNT [ getEnvVar: GetEnv  setEnvVar: SetEnv tmpVar: Variable | | fillEnv USE {>>} {return ()}: {Action} ]
-ATTR AllNT [ | heapList: {[(Location, AbstractHeapElement)]} | ]
-ATTR GrAGItf [ | | makeHeap: HeapAction ]
+ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [ getEnvVar: {GetEnv}  setEnvVar: {SetEnv} tmpVar: Variable | | fillEnv USE {>>} {return ()}: {Action} ]
+ATTR         GrModule AllGlobal AllBind AllGrExpr [ | heapList: {[(Location, AbstractHeapElement)]} | ]
+ATTR GrAGItf                                      [ | | makeHeap: HeapAction ]
 
 SEM GrAGItf
   | AGItf  lhs     .  makeHeap  =  do { arr <- newArray_ (0, @module.heapPointer - 1)
@@ -101,36 +113,18 @@ SEM GrBind
                .  fillEnv   = if @prune then (return ()) else @fillEnvBind >> @exceptEq >> @expr.fillEnv
 %%]
 
-%%%%%%%%%%%%%%%%%%%
-%% Self replica  %%
-%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%
+%% evalMap/applyMap %%
+%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllGrTag [ | | self: SELF ]
-%%]
-
-%%[8.valueCopy
-ATTR GrVal GrValL GrTag [ | | copy                : SELF     ]
-SEM GrVal
-  | NodeAdapt loc . copy = error "No Node adapt"
-%%]
-
-%%%%%%%%%%%%%%%%%%%
-%% evalMap       %%
-%%%%%%%%%%%%%%%%%%%
-
-%%[8.evalMap
-ATTR AllNT - GrModule [ evalMap: {EvalMap} | | ]
+ATTR AllGlobal AllBind AllGrExpr [ evalMap: {EvalMap} | | ]
+ATTR GrModule GrAGItf [ | | applyMap : {ApplyMap} ]
 
 SEM GrModule
   | Mod     loc . evalMap = [ (t, f) | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
-
-%%]
-
-%%[8.applyMap
-ATTR GrModule GrAGItf [ | | applyMap : {ApplyMap} ]
-SEM GrModule
-  | Mod     loc . applyMap = let rewrite (EvApTagVar (HNmNr f _)) = Right f
+            loc . applyMap = let rewrite (EvApTagVar (HNmNr f _)) = Right f
                                  rewrite (EvApTagTag t          ) = Left  t
                              in [ (t, rewrite v) | ((t,_), v) <- @applyTagMp ]
 %%]
@@ -139,8 +133,8 @@ SEM GrModule
 %% Unique Pointers %%
 %%%%%%%%%%%%%%%%%%%%%
 
-%%[8.heapPointerfillEnv
-ATTR AllNT [ | heapPointer: Int | ]
+%%[8
+ATTR GrModule AllBind AllGlobal AllGrExpr [ | heapPointer: Int | ]
 SEM GrAGItf
   | AGItf  module . heapPointer = 0
 %%]
@@ -157,12 +151,6 @@ SEM GrTag [ | | tagName: SELF ]
   | Var     lhs . tagName = error "Tag variables are not allowed in GRIN Points-To Analysis"
 %%]
 
-
-A grin node is either a single variable or a complete node (with a known tag)
-
-%%[8.nodeInfo hs
-type NodeInfo a = Either Int (GrTag, [a])
-%%]
 
 %%%%%%%%%%%%%%%%
 %% value Info %%
@@ -277,16 +265,15 @@ note: The resultVar will always be Nothing.
 
 %%[8.unit
 SEM GrExpr
-  | Unit   loc . fVar2Var   = \s t         -> @lhs.setEnvVar t True (EnvUnion [s] Nothing)
+  | Unit   loc . fVar2Var   = \s t         -> @lhs.setEnvVar t (EnvUnion1 [s])
                . fNode2Var  = \tag names t -> let resultVar = lookup tag @lhs.evalMap
-                                                  env       = @lhs.setEnvVar t True
-                                                                          (EnvTag tag names Nothing)
+                                                  env       = @lhs.setEnvVar t (EnvTag tag names Nothing)
                                               in env
                . fVar2Node  = buildSelectElems @lhs.setEnvVar
-               . fNode2Node = \st snms tt tnms -> let sn2mod = maybe (EnvSetAV AV_Basic) (\x -> EnvUnion [x] Nothing)
+               . fNode2Node = \st snms tt tnms -> let sn2mod = maybe (EnvSetAV AV_Basic) (\x -> EnvUnion1 [x])
                                                       toEnvElem sn tn = if tn == getNr wildcardNr
                                                                         then return ()
-                                                                        else @lhs.setEnvVar tn True (sn2mod sn)
+                                                                        else @lhs.setEnvVar tn (sn2mod sn)
                                                   in zipWithM_ toEnvElem snms tnms -- note: st == tt
                . fillEnv    = genInfo @val.valInfo @lhs.targetInfo @fVar2Var @fVar2Node @fNode2Var @fNode2Node
 %%]
@@ -294,7 +281,7 @@ SEM GrExpr
 %%[8.selectVar hs
 buildSelectElems :: SetEnv -> Variable -> GrTag -> [Variable] -> Action
 buildSelectElems setEnvVar selectVar tag nms
-  = let step (i, f) v     = (i+1, if v == getNr wildcardNr then f else f >> setEnvVar v True (EnvSelect selectVar tag i))
+  = let step (i, f) v     = (i+1, if v == getNr wildcardNr then f else f >> setEnvVar v (EnvSelect selectVar tag i))
         (count, envElems) = foldl step (0, return ()) nms
     in envElems
 %%]
@@ -325,7 +312,7 @@ SEM GrExpr
 makeStore setEnvVar evalMap heapPointer valInfo targetInfo
     = let fNode2Var  tag names t = let resultVar   = lookup tag evalMap
                                        av          = AV_Locations (Set.singleton heapPointer)
-                                       env         = setEnvVar t True envMod
+                                       env         = setEnvVar t envMod
                                        heap        = makeHeapElem heapPointer
                                                                  ((tag, names), resultVar)
                                        envMod      = EnvSetAV av
@@ -359,7 +346,7 @@ eval(l); -> \(Tag e1 .. en) => @eval@l:
 %%[8.eval
 SEM GrExpr
   | Eval   loc . fillEnv = case @lhs.targetInfo of
-                             Left  n           -> @lhs.setEnvVar n True (EnvEval (getNr @nm) @lhs.exceptVar)
+                             Left  n           -> @lhs.setEnvVar n (EnvEval (getNr @nm) @lhs.exceptVar)
                              Right (tag,names) -> error "NormForHPT not executed"
 %%]
 
@@ -381,7 +368,7 @@ foo a1 ..an; -> \(Tag e1 .. en) => e1:
 SEM GrExpr
   | Call  loc  .  resultVar   =  getNr @nm
                .  fillEnv     =  case @lhs.targetInfo of
-                                     Left  n           -> @lhs.setEnvVar n True (EnvUnion [@resultVar] Nothing)
+                                     Left  n           -> @lhs.setEnvVar n (EnvUnion1 [@resultVar])
                                      Right (tag,names) -> buildSelectElems @lhs.setEnvVar @resultVar tag names
                .  exceptions  =  @resultVar + 1 : @lhs.exceptions
 %%]
@@ -433,32 +420,32 @@ partial collections are filtered afterwards.
 SEM GrAltL
   | Cons  lhs   .   fillEnv    =  do { @hd.fillEnv
                                      ; elem <- @lhs.getEnvVar @lhs.tmpVar
-                                     ; let (EnvUnion hdn _) = aeMod elem
+                                     ; let (EnvUnion1 hdn) = elem
                                      ; @tl.fillEnv
                                      ; elem <- @lhs.getEnvVar @lhs.tmpVar
-                                     ; let (EnvUnion tln _) = aeMod elem
-                                     ; @lhs.setEnvVar @lhs.tmpVar True (EnvUnion (tln ++ hdn) Nothing)
+                                     ; let (EnvUnion1 tln) = elem
+                                     ; @lhs.setEnvVar @lhs.tmpVar (EnvUnion1 (tln ++ hdn))
                                      }
-  | Nil   lhs   .   fillEnv    =  @lhs.setEnvVar @lhs.tmpVar True (EnvUnion [] Nothing)
+  | Nil   lhs   .   fillEnv    =  @lhs.setEnvVar @lhs.tmpVar (EnvUnion1 [])
 SEM GrAlt
   | Alt  expr   .  targetInfo   =  Left @lhs.tmpVar
 
 SEM GrExpr
   | Case   loc   .  fillEnv     =  case @lhs.targetInfo of
                                      Left resVar     -> do { elem <- @lhs.getEnvVar @lhs.tmpVar
-                                                           ; @lhs.setEnvVar resVar True (aeMod elem)
+                                                           ; @lhs.setEnvVar resVar elem
                                                            }
                                      Right (tag,nms) -> error "No node expected after a case expression!"
            lhs   .  fillEnv     =  @altL.fillEnv >> @fillEnv
   | Catch  loc   .  targetInfo  =  Left @lhs.tmpVar
            lhs   .  fillEnv     =  do { @body.fillEnv
                                       ; elem <- @lhs.getEnvVar @lhs.tmpVar
-                                      ; let (EnvUnion bn _) = aeMod elem
+                                      ; let (EnvUnion1 bn) = elem
                                       ; @handler.fillEnv
                                       ; elem <- @lhs.getEnvVar @lhs.tmpVar
-                                      ; let (EnvUnion hn _) = aeMod elem
+                                      ; let (EnvUnion1 hn) = elem
                                       ;  case @lhs.targetInfo of
-                                           Left resVar     -> @lhs.setEnvVar resVar True (EnvUnion (bn ++ hn) Nothing)
+                                           Left resVar     -> @lhs.setEnvVar resVar (EnvUnion1 (bn ++ hn))
                                            Right (tag,nms) -> error "No node expected after a Catch expression!"
                                       ; @exceptEq
                                       }
@@ -482,20 +469,23 @@ ffi "foo"; \(Tag e1 e2)      => note: (Tag == Unboxed)
                                 en: Basic
 
 %%[8.ffi
+
+ATTR AllGrTag [ | | self: SELF ]
+
 SEM GrExpr
   | FFI  loc . primAbsVal = let l = case @resTagL.self of
                                       (GrTag_Unboxed : _) -> [(GrTag_Unboxed,[AV_Basic])]
                                       ts                  -> map (\t -> (t,avForArity)) ts
                             in  AV_Nodes (Map.fromList l)
              . prim       = case @lhs.targetInfo of
-                              Left nm          -> @lhs.setEnvVar nm True (EnvSetAV @primAbsVal)
+                              Left nm          -> @lhs.setEnvVar nm (EnvSetAV @primAbsVal)
                               Right (tag, nms) -> let (AV_Nodes nodes) = @primAbsVal
                                                       tagElementsAV    = fromJust' "PointsToAnalysis.GrExpr.FFI" $ Map.lookup tag nodes
-                                                      makeAV teAV nm   = @lhs.setEnvVar nm True (EnvSetAV teAV)
+                                                      makeAV teAV nm   = @lhs.setEnvVar nm (EnvSetAV teAV)
                                                   in zipWithM_ makeAV tagElementsAV nms
              . ffi        = case @lhs.targetInfo of
                               Left  nm         -> error "FFI should be followed by an unboxed node pattern"
-                              Right (tag, nms) -> mapM_ (\e -> @lhs.setEnvVar e True (EnvSetAV AV_Basic)) nms
+                              Right (tag, nms) -> mapM_ (\e -> @lhs.setEnvVar e (EnvSetAV AV_Basic)) nms
              . fillEnv    = if isPrim @nm then @prim else @ffi
 %%]
   | FFI  loc . primAbsVal = primAV @nm
@@ -534,7 +524,7 @@ SEM GrExpr
                                                       mkAppInfo l = case l of
                                                                         Left  v  -> Left v
                                                                         Right n  -> error $ "Node in apply argument not implemented: " ++ show n
-                                                  in @lhs.setEnvVar nm True (EnvApp (getNr @nm) (makeAppArgInfo @argL.valsInfo) @lhs.exceptVar)
+                                                  in @lhs.setEnvVar nm (EnvApp (getNr @nm) (makeAppArgInfo @argL.valsInfo) @lhs.exceptVar)
 
 %%]
 
@@ -547,7 +537,7 @@ SEM GrExpr
 SEM GrExpr
   | Fetch  loc . fillEnv  =  case @lhs.targetInfo of
                                   Left resVar     -> do { elem <- @lhs.getEnvVar (getNr @nm)
-                                                        ; @lhs.setEnvVar resVar True (aeMod elem)
+                                                        ; @lhs.setEnvVar resVar elem
                                                         }
                                   Right (tag,nms) -> error "HPT expects variable after fetch, not a node"
 
@@ -568,7 +558,7 @@ SEM GrVal
 
 
 SEM GrExpr
-  | Update  loc . fillEnv  =  @lhs.setEnvVar (getNr @nm) True (EnvUnion [getNr @nm, getNr @val.getName] Nothing)
+  | Update  loc . fillEnv  =  @lhs.setEnvVar (getNr @nm) (EnvUnion1 [getNr @nm, getNr @val.getName])
                                  
 %%]
 
@@ -580,7 +570,7 @@ SEM GrExpr
 %%[8
 
 SEM GrExpr
-  | FetchUpdate  loc . fillEnv  =  @lhs.setEnvVar (getNr @dst) True (EnvUnion [getNr @dst, getNr @src] Nothing)
+  | FetchUpdate  loc . fillEnv  =  @lhs.setEnvVar (getNr @dst) (EnvUnion1 [getNr @dst, getNr @src])
                                  
 %%]
 
@@ -595,7 +585,7 @@ TODO: targetInfo should allow empty patterns to be expressed
 SEM GrExpr
   | Throw  loc  .  exceptions  =  getNr @nm : @lhs.exceptions
                 .  fillEnv     =  case @lhs.targetInfo of
-                                      Left  n | n /= getNr wildcardNr -> @lhs.setEnvVar n True (EnvSetAV AV_Nothing)
+                                      Left  n | n /= getNr wildcardNr -> @lhs.setEnvVar n (EnvSetAV AV_Nothing)
                                       otherwise                       -> return ()
 %%]
 
@@ -609,7 +599,7 @@ SEM GrExpr
                    . exceptVar   =  @handlerVar
            handler . exceptions  =  @lhs.exceptions
            lhs     . exceptions  =  @handler.exceptions
-           loc     . exceptEq    =  @lhs.setEnvVar @handlerVar True (EnvUnion @body.exceptions Nothing)
+           loc     . exceptEq    =  @lhs.setEnvVar @handlerVar (EnvUnion1 @body.exceptions)
                    . handlerVar  =  getNr @arg
 %%]
 
@@ -624,7 +614,7 @@ ATTR AllGrExpr [ exceptVar: Variable | | ]
 SEM GrBind
   | Bind  expr    . exceptions  =  []
           loc     . exceptVar   = @resultVar + 1
-          loc     . exceptEq    =  @lhs.setEnvVar @exceptVar True (EnvUnion @expr.exceptions Nothing)
+          loc     . exceptEq    =  @lhs.setEnvVar @exceptVar (EnvUnion1 @expr.exceptions)
 %%]
 
 
@@ -658,10 +648,7 @@ SEM GrBind
                                                  ]
                      .  fillEnvBind  = let envElem (formal, i) actuals
                                             = @lhs.setEnvVar (getNr formal)
-                                                             True
-                                                             (EnvUnion [ actual | Just actual <- actuals]
-                                                                       (Just . @applySelect $ i)
-                                                             )
+                                                             (EnvUnion2 [ actual | Just actual <- actuals] @lhs.tmpVar (GrTag_Var @nm) i)
                                        in zipWithM_ envElem
                                                     (zip @argNmL [(if grinStoreArity then 1 else 0)..])
                                                     ( if    null @bindActuals
@@ -684,24 +671,4 @@ store (Tag f1 fn); \bla ->
 SEM GrGlobal
   | Global  loc  .  (heapPointer, fillEnv, heapElem)  =  makeStore @lhs.setEnvVar @lhs.evalMap @lhs.heapPointer @val.valInfo (Left $ getNr @nm)
             lhs  .  heapList                          =  @heapElem : @lhs.heapList
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
---revLookup :: (Eq b) => [(a,b)] -> b -> Maybe a
-revLookup l e = lookup e (map swap l)
-    where swap = uncurry (flip (,))
-
-getCafVar m k = getNr . fromJust' ("cafVar not found " ++ show k) $ Map.lookup k m
-
-fromJust' _ (Just a ) = a
-fromJust' m (Nothing) = error $ "fromJust: " ++ m
-
-makeHeapElem l eq =  (l, AbstractHeapElement  {  ahBaseSet = AV_Nothing
-                                              ,  ahSharedSet = Just AV_Nothing
-                                              ,  ahMod = eq
-                                              }
-                     )
 %%]
