@@ -250,7 +250,8 @@ caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsCode
          ; unique  <- gets gcsUnique
-         ; (c,h)   <- liftIO $ heapPointsToAnalysis unique code
+--         ; (c,h)   <- liftIO $ heapPointsToAnalysis unique code
+         ; let (c,h) = heapPointsToAnalysis unique code
          ; modify (gcsUpdateHptMap h)
 --       ; let n = abstractEvaluation code
          ; return c

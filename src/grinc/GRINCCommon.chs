@@ -97,7 +97,9 @@ instance Monoid AbstractValue where
 mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
 %%]
 
-%%[8 export(AbstractHeapElement(..), AbstractEnvElement(..) )
+%% export(AbstractEnvElement(..) )
+%%
+%%[8 export(AbstractHeapElement(..))
 %%]
 %%[8 export(AbstractHeapModifier, AbstractNodeModifier, AbstractEnvModifier(..) )
 %%]
@@ -120,24 +122,25 @@ instance Show AbstractHeapElement where
                                        ++ ";\tmod = "     ++ show m
 
 
+{-
 data AbstractEnvElement = AbstractEnvElement
     { aeBaseSet   :: !AbstractValue
-    , aeIsShared  :: !Bool
     , aeMod       :: !AbstractEnvModifier
     }
     deriving (Eq)
 
 instance Show AbstractEnvElement where
-    show (AbstractEnvElement b s m) =  "base = " ++ show b
-                                       ++ ";\tshared = " ++ show s
-                                       ++ ";\tmod = " ++ show m
+    show (AbstractEnvElement b m) =  "base = " ++ show b ++ ";\tmod = " ++ show m
+-}
+
 
 type AbstractHeapModifier = (AbstractNodeModifier, Maybe Variable)
 type AbstractNodeModifier = (GrTag, [Maybe Variable]) --(tag, [fields])
 
 data AbstractEnvModifier
   = EnvSetAV !AbstractValue
-  | EnvUnion ![Variable] (Maybe AbstractEnvModifier) -- The Maybe contains only EnvSelect which is used for the apply function calls
+  | EnvUnion1 ![Variable]
+  | EnvUnion2 ![Variable] Variable GrTag Int -- Embedded EnvSelect
   | EnvEval Variable Variable
   | EnvApp Variable [ApplyArg] Variable
   | EnvSelect Variable GrTag Int
@@ -177,11 +180,11 @@ instance Ord GrTag where
 %%[8.analysis import( Data.Array, Data.Monoid) export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom)
 
 
-type HptMap        = ((Array Int AbstractEnvElement, Array Int AbstractHeapElement), Map.Map Int AbstractValue)
+type HptMap        = ((Array Int AbstractValue, Array Int AbstractHeapElement), Map.Map Int AbstractValue)
 
 
 getEnvVar :: HptMap -> Int -> AbstractValue
-getEnvVar ((ea, _),m) i  | snd (bounds ea) >= i = aeBaseSet (ea ! i)
+getEnvVar ((ea, _),m) i  | snd (bounds ea) >= i = (ea ! i)
                          | otherwise            = Map.findWithDefault (AV_Error $ "variable "++ show i ++ " not found") i m
                          
 getHeapLoc :: HptMap -> Int -> AbstractValue
