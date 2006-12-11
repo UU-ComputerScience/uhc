@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ViewSelSelf
+module ViewSel.Self
   ( viewSelsSelfT
   , rlSelSelfT
   )
@@ -11,7 +11,7 @@ module ViewSelSelf
 
 import EH.Util.Nm
 import EH.Util.DependencyGraph
-import ViewSel
+import ViewSel.ViewSel
 }
 
 INCLUDE "ViewSel/AbsSynAG.cag"

@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ViewSelPrettyPrint
+module ViewSel.PrettyPrint
   ( ppViewSel, ppViewSels
   )
   where
@@ -12,7 +12,7 @@ module ViewSelPrettyPrint
 import UU.Pretty
 import EH.Util.Nm
 -- import EH.Util.DependencyGraph
-import ViewSel
+import ViewSel.ViewSel
 }
 
 INCLUDE "ViewSel/AbsSynAG.cag"

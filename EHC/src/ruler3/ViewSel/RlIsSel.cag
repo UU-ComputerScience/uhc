@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ViewSelRlIsSel
+module ViewSel.RlIsSel
   ( rlSelIsSel
   , RlSelIsSel
   )
@@ -13,7 +13,7 @@ import qualified Data.Set as Set
 import EH.Util.Nm
 import Common
 import EH.Util.DependencyGraph
-import ViewSel
+import ViewSel.ViewSel
 }
 
 INCLUDE "ViewSel/AbsSynAG.cag"

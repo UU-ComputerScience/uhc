@@ -18,7 +18,7 @@ import EH.Util.Utils
 import UU.Pretty
 import EH.Util.PPUtils
 import Common
-import Expr
+import Expr.Expr
 
 -------------------------------------------------------------------------
 -- Formatting for destination names in AG rules

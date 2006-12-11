@@ -10,9 +10,9 @@ module Opts
 import System.Console.GetOpt
 import EH.Util.ParseUtils
 import Common
-import ViewSel
-import ViewSelSelf
-import ViewSelParser
+import ViewSel.ViewSel
+import ViewSel.Self
+import ViewSel.Parser
 
 -------------------------------------------------------------------------
 -- Options

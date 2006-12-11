@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module Expr
+module Expr.Expr
   where
 
 import qualified Data.Map as Map

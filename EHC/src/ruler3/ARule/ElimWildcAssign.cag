@@ -5,36 +5,19 @@
 -------------------------------------------------------------------------
 
 {
-module ARuleElimWildcAssign
+module ARule.ElimWildcAssign
   ( arlElimWild
   )
   where
 
--- import Data.List
--- import qualified Data.Set as Set
 import qualified Data.Map as Map
--- import EH.Util.Utils
 import Common
-import Expr
--- import ExprIsRw
--- import ExprToAEqn
-import ARule
--- import ARulePrettyPrint
--- import Gam
--- import FmGam
--- import ECnstrGam
--- import RwExprGam
+import Expr.Expr
+import ARule.ARule
 }
 
 INCLUDE "Expr/AbsSynAG.cag"
 INCLUDE "ARule/AbsSynAG.cag"
-
--- INCLUDE "ExprSelfAG.ag"
-
--- INCLUDE "ARuleCopyRuleNmAG.ag"
-
--- INCLUDE "ARuleEqnDest1NmAG.ag"
--- INCLUDE "ARuleInCompDestAG.ag"
 
 WRAPPER  AGARuleItf
 

@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------
 -- (A)Eqn as Expr
 -------------------------------------------------------------------------
-module ExprToAEqn
+module Expr.ToAEqn
   ( exprMbAEqnRest
   , mkExprEqn
   , exprCheckAEqnForm
@@ -11,9 +11,9 @@ module ExprToAEqn
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Common
-import Expr
-import ExprNmS
-import ARule
+import Expr.Expr
+import Expr.NmS
+import ARule.ARule
 import Gam
 import FmGam
 

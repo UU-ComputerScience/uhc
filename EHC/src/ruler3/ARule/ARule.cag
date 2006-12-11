@@ -3,11 +3,11 @@
 -------------------------------------------------------------------------
 
 {
-module ARule
+module ARule.ARule
   where
 
 import Common
-import Expr
+import Expr.Expr
 }
 
 INCLUDE "ARule/AbsSynAG.cag"

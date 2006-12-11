@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 {
-module ARuleRwSubst
+module ARule.RwSubst
   ( exprSubst, exprElimCnstr
   , exprRewrite', exprRewrite
   , arlSubst
@@ -21,11 +21,11 @@ import UU.Pretty
 import EH.Util.Utils
 import Common
 import Opts
-import Expr
-import ExprIsRw
-import ExprToAEqn
-import ARule
-import ARulePrettyPrint
+import Expr.Expr
+import Expr.IsRw
+import Expr.ToAEqn
+import ARule.ARule
+import ARule.PrettyPrint
 import FmGam
 import ECnstrGam
 import RwExprGam

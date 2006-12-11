@@ -2,12 +2,12 @@
 -- Interface to all Ty transformations and other utilities
 -------------------------------------------------------------------------
 
-module TyUtils
-  ( module Ty
-  , module TyPrettyPrint
+module Ty.Utils
+  ( module Ty.Ty
+  , module Ty.PrettyPrint
   )
   where
 
-import Ty
-import TyPrettyPrint
+import Ty.Ty
+import Ty.PrettyPrint
 

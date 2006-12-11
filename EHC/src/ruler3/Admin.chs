@@ -1,4 +1,4 @@
-module RulerAdmin
+module Admin
   ( module FmGam
   , module JdShpGam
   
@@ -104,8 +104,8 @@ import Common
 import Gam
 import FmGam
 import JdShpGam
-import ExprUtils
-import TyUtils
+import Expr.Utils
+import Ty.Utils
 
 -------------------------------------------------------------------------
 -- Data/AST: field

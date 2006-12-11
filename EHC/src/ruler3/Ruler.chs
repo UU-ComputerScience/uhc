@@ -20,15 +20,15 @@ import Err
 import Gam( emptyGam )
 import Common
 import Opts
-import qualified RulerAbsSyn1 as AS1
+import qualified AbsSyn.AbsSyn1 as AS1
 import qualified Main1AG as M1
 import qualified Main2AG as M2
-import RulerAS1Imports
-import TrfAS2GenARule
-import TrfAS2GenLaTeX
+import AS1.Imports
+import TrfAS2.GenARule
+import TrfAS2.GenLaTeX
 import KeywParser
 import Parser
-import Expr
+import Expr.Expr
 import FmGam
 
 -------------------------------------------------------------------------

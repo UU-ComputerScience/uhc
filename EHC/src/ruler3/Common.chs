@@ -10,7 +10,7 @@ module Common
   , module EH.Util.FPath
   , module EH.Util.PPUtils
   , module AttrProps
-  , module RulerScanner
+  , module Scanner
   
   , rulesCmdPre
   , ExprIsRw(..)

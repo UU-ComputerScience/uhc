@@ -15,7 +15,7 @@ module ECnstrGam
 import qualified Data.Map as Map
 import Common
 import Gam
-import Expr
+import Expr.Expr
 
 -------------------------------------------------------------------------
 -- Gam
