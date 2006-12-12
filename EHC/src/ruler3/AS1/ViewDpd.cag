@@ -2,6 +2,8 @@
 -- All used views
 -------------------------------------------------------------------------
 
+%%[1 ag
+
 ATTR AllDecl [ | | allVwNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Decl
@@ -31,3 +33,4 @@ SEM AGItf
 SEM Decl
   | SchemeDeriv     loc     .   firstVwNm   =   last (dgTopSort @lhs.vwDpdGr)
 
+%%]

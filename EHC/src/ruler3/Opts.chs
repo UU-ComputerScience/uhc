@@ -2,17 +2,16 @@
 -- Options
 -------------------------------------------------------------------------
 
-module Opts
-  ( Opts(..), defaultOpts, cmdLineOpts
-  )
-  where
+%%[1 hs module (Opts)
+%%]
 
-import System.Console.GetOpt
-import EH.Util.ParseUtils
-import Common
-import ViewSel.ViewSel
-import ViewSel.Self
-import ViewSel.Parser
+%%[1 hs export (Opts(..), defaultOpts, cmdLineOpts)
+%%]
+
+%%[1 hs import (System.Console.GetOpt, EH.Util.ParseUtils, Common, ViewSel.ViewSel, ViewSel.Self, ViewSel.Parser)
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Options
@@ -152,3 +151,4 @@ cmdLineOpts
                                 Just "no"   -> updO False o
                                 _           -> o
 
+%%]

@@ -2,41 +2,26 @@
 -- Optimisation: ARule copy rule elimination
 -------------------------------------------------------------------------
 
-{
-module ARule.ElimCopyRule
-  ( module Gam
+%%[1 hs module (ARule.ElimCopyRule)
+%%]
 
-  , AtDefdGam
-  , AtDefdGam', adGamUnion, ppADGam
-  , CrOrdGam
-  
-  , arlElimCopyRule
-  )
-  where
+%%[1 hs export (module Gam, AtDefdGam, AtDefdGam', adGamUnion, ppADGam, CrOrdGam, arlElimCopyRule)
+%%]
 
-import qualified Data.Map as Map
-import qualified Data.Set as Set
-import UU.Pretty
-import Common
-import Expr.Expr
-import ARule.ARule
-import Gam
-}
+%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, UU.Pretty, Common, Expr.Expr, ARule.ARule, Gam)
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "ARule/AbsSynAG.cag"
+%%[1 ag import ({Expr/AbsSynAG}, {ARule/AbsSynAG}, {Expr/SelfAG}, {ARule/SelfAG})
+%%]
 
-INCLUDE "Expr/SelfAG.cag"
-INCLUDE "ARule/SelfAG.cag"
+%%[1 ag import ({ARule/CopyRuleNmAG}, {ARule/EqnDest1NmAG}, {ARule/InCompDestAG})
+%%]
 
-INCLUDE "ARule/CopyRuleNmAG.cag"
-
-INCLUDE "ARule/EqnDest1NmAG.cag"
-INCLUDE "ARule/InCompDestAG.cag"
-
+%%[1 ag
 WRAPPER  AGARuleItf
+%%]
 
-{
+%%[1 hs
 arlElimCopyRule :: [Nm] -> AtDefdGam -> AtDefdGam' -> ARule -> ARule
 arlElimCopyRule co ag ag2 rl
   = self_Syn_AGARuleItf r2
@@ -46,21 +31,21 @@ arlElimCopyRule co ag ag2 rl
                                 ,adGam_Inh_AGARuleItf = ag
                                 ,ad2Gam_Inh_AGARuleItf = ag2
                                 })
-}
+%%]
 
 -------------------------------------------------------------------------
 -- Copy rule order, ref to previous node
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 type CrOrdGam = Gam Nm Nm
-}
+%%]
 
 -------------------------------------------------------------------------
 -- Non local attr's defined, threaded?
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 type AtDefdGam = Gam Nm Bool
 type AtDefdGam' = Gam Nm (Set.Set Nm)
 
@@ -85,23 +70,26 @@ adGamIsThr ag1 ag2 cg
                 | otherwise
                   -> False
                 where isComingOut = maybe False (nNd1' `Set.member`) $ gamLookup nAt ag2
-}
+%%]
 
 -------------------------------------------------------------------------
 -- Context
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllARuleRule AllARuleEqn AGARuleItf [ adGam: AtDefdGam | | ]
 ATTR AllARuleRule AllARuleEqn AGARuleItf [ ad2Gam: {AtDefdGam'} | | ]
 ATTR AllARuleRule AllARuleEqn [ croGam: CrOrdGam | | ]
 
 SEM AGARuleItf
   | AGItf           rule    .   croGam      =   fst . foldl (\(g,pn) n -> (gamInsert n pn g,n)) (emptyGam,head @lhs.croNmL) $ tail @lhs.croNmL
+%%]
 
 -------------------------------------------------------------------------
 -- Replica
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AEqns AEqn [ | | replCrEqns USE {++} {[]}: {[AEqn]} ]
 
 SEM AEqn
@@ -126,4 +114,4 @@ SEM AEqn
 SEM ARule
   | Rule            lhs     .   self        =   ARule_Rule @ndNmL @rlNm @info @eqns.replCrEqns
 
-
+%%]

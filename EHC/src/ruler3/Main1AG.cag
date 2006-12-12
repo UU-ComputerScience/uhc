@@ -2,69 +2,44 @@
 -- Main for AG, pass 1
 -------------------------------------------------------------------------
 
-{
-module Main1AG
-  where
+%%[1 hs module (Main1AG)
+%%]
 
-import Data.Maybe
-import Data.Char
-import Data.List
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import UU.Pretty
-import EH.Util.FPath
-import EH.Util.Utils
-import Err
-import Common
-import Opts
-import EH.Util.PPUtils
-import LaTeXFmtUtils
-import Expr.Utils
-import ARule.Utils
-import ViewSel.Utils
-import Config( cfgStrSel, cfgFmFmtCmdAsc )
-import FmGam
-import RwExprGam
-import ECnstrGam
-import AbsSyn.AbsSyn1
-import qualified AbsSyn.AbsSyn2 as AS2
-import qualified Main2AG as M2 -- for now
-import Utils
-import Admin
-import MkAdmin
-}
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, UU.Pretty)
+%%]
+
+%%[1 hs import (EH.Util.FPath, EH.Util.Utils, Err, Common, Opts, EH.Util.PPUtils, LaTeXFmtUtils, Expr.Utils)
+%%]
+
+%%[1 hs import (ARule.Utils, ViewSel.Utils, Config( cfgStrSel, cfgFmFmtCmdAsc ), FmGam, RwExprGam, ECnstrGam)
+%%]
+
+%%[1 hs import (AbsSyn.AbsSyn1, qualified AbsSyn.AbsSyn2 as AS2, qualified Main2AG as M2)
+%%]
+
+%%[1 hs import (Utils, Admin, MkAdmin)
+%%]
 
 -------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "AbsSyn/AbsSyn1AG.cag"
-INCLUDE "AbsSyn/CommonAG.cag"
-INCLUDE "FmGamAG.cag"
-INCLUDE "AS1/Misc.cag"
-INCLUDE "AS1/ViewDpd.cag"
-INCLUDE "AS1/SchemeDpd.cag"
-INCLUDE "AS1/Pretty.cag"
--- INCLUDE "RulerAS1Gen.ag"
-INCLUDE "AS1/RlSel.cag"
+%%[1 ag import ({AbsSyn/AbsSyn1AG}, {AbsSyn/CommonAG}, {FmGamAG}, {AS1/Misc}, {AS1/ViewDpd}, {AS1/SchemeDpd}, {AS1/Pretty}, {AS1/RlSel})
+%%]
 
-INCLUDE "AS1/GenAS2.cag"
+%%[1 ag import ({AS1/GenAS2})
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "Expr/IsRwAG.cag"
-INCLUDE "Expr/NmSAG.cag"
-INCLUDE "Expr/FmGamAG.cag"
-INCLUDE "Expr/PrettyPrintAG.cag"
-INCLUDE "Expr/SelfAG.cag"
+%%[1 ag import ({Expr/AbsSynAG}, {Expr/IsRwAG}, {Expr/NmSAG}, {Expr/FmGamAG}, {Expr/PrettyPrintAG}, {Expr/SelfAG}, {Ty/AbsSynAG}, {Ty/SelfAG})
+%%]
 
-INCLUDE "Ty/AbsSynAG.cag"
-INCLUDE "Ty/SelfAG.cag"
+%%[1 ag
 
 -------------------------------------------------------------------------
 -- Interfacing to AST
 -------------------------------------------------------------------------
 
-WRAPPER AGItf 
+WRAPPER AGItf
 
 -------------------------------------------------------------------------
 -- Error
@@ -189,17 +164,21 @@ SEM Decl
                                                 in  [] -- if null nms then [] else [Err_UndefNm @pos @cxStr "hole" nms]
   | ShpDel          lhs     .   vwJdShpGam  =   gamFromAssocs [ (k,JdShpDel) | k <- @fmKinds ]
 
+%%]
+
 -------------------------------------------------------------------------
 -- Scheme, derived ones are expresses in terms of non-derived ones
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 type MkDerivScInfo = (ScInfo Expr -> ScInfo Expr,ScGam Expr -> RsInfo Expr)
 type DrvGam = Gam Nm [MkDerivScInfo]
 
 drvGamUnion :: DrvGam -> DrvGam -> DrvGam
 drvGamUnion = gamUnionWith (++)
-}
+%%]
+
+%%[1 ag
 
 ATTR AllDecl [ drvGam: DrvGam | | gathDrvGam USE {`drvGamUnion`} {emptyGam}: DrvGam ]
 
@@ -502,3 +481,5 @@ SEM Decl
   | Fmt ShpJudge Explain
                     expr    .   wrKindStk   =   [WrNone]
 -}
+
+%%]

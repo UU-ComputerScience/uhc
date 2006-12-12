@@ -1,3 +1,5 @@
+%%[1 ag
+
 -------------------------------------------------------------------------
 -- Pretty printing, LaTeX, Expr
 -------------------------------------------------------------------------
@@ -65,14 +67,18 @@ SEM Expr
 
 SEM AGExprItf
   | AGItf           loc         .   needToParen =   True
+
+%%]
   
 -------------------------------------------------------------------------
 -- Empty expr?
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 data ExprKind = EKEmp | EKNm Nm | EKOther deriving Eq
-}
+%%]
+
+%%[1 ag
 
 ATTR Expr [ | | exprKind: ExprKind ]
 
@@ -103,3 +109,5 @@ SEM Expr
   | Var             lhs     .   txt         =   @nm
   | StrText StrAsIs lhs     .   txt         =   Nm @str
   | App SelTop Op   lhs     .   txt         =   nmNone
+
+%%]

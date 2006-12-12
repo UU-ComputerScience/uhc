@@ -2,6 +2,7 @@
 -- Pretty printing of ruler AST2
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllAS2 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Decls
@@ -9,12 +10,13 @@ SEM Decls
 
 SEM RlDecls
   | Cons            lhs     .   pp          =   @hd.pp >-< "" >-< @tl.pp
+%%]
 
 -------------------------------------------------------------------------
 -- Configuration
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 data PPCfg
   = PPCfg
       { pcDef       ::  Nm
@@ -32,27 +34,32 @@ mkPPCfg o g
       , pcRule      =   c "rulerRuleCmd"
       }
   where c = fmNmFmtCmd o g . Nm
-}
+%%]
 
+%%[1 ag
 ATTR AllAS2 [ ppCfg: PPCfg | | ]
 
 SEM AGItf
   | AGItf           decls   .   ppCfg       =   mkPPCfg @lhs.opts @lhs.fmGam
+%%]
 
 -------------------------------------------------------------------------
 -- Chunks
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM RlDecl
   | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @rl.pp
 
 SEM Decl
   | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @decl.pp
+%%]
 
 -------------------------------------------------------------------------
 -- General: ruleset
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM RlDecl
   | Rl              lhs     .   pp          =   @nm >#< ppBracketsCommas [pp @pos,pp @agStr]
                                                 >-< indent 2 (@preJds.pp >-< "---" >-< @postJds.pp)
@@ -62,20 +69,24 @@ SEM Jd
 
 SEM JdAt
   | At              lhs     .   pp          =   @nm >#< "=" >#< @expr.pp
+%%]
 
 -------------------------------------------------------------------------
 -- AG specific: ATTR decls
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM AttrAGDecl
   | Attr            lhs     .   pp          =   let mka g = ppListSep "" "" "  " [ n >|< ":" >#< t | (n,t) <- g ]
                                                 in  "ATTR" >#< @ndNm
                                                     >#< pp_brackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
+%%]
 
 -------------------------------------------------------------------------
 -- AG/HS specific: DATA decls
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM DataAGDecl
   | Data            lhs     .   pp          =   case optGenFM @lhs.opts of
                                                   FmAG -> "DATA" >#< @nmStr >-< indent 2 @alts.pp
@@ -118,11 +129,13 @@ SEM DataAGAlt
   | Alt             loc     .   mkFldStr    =   case optGenFM @lhs.opts of
                                                   FmAG -> id
                                                   FmHS -> \n -> n ++ "_" ++ @nmStr
+%%]
 
 -------------------------------------------------------------------------
 -- HS specific: DATA decls, building on AG info
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM DataAGAlt
   | Alt             lhs     .   ppHS        =   (if @lhs.isFirstAlt then "=" else "|") >#< strPad @nmStr @lhs.mxAltWd >|< (@flds.ppHS >-< "}")
 
@@ -144,11 +157,13 @@ SEM DataAGAlt
 
 SEM DataAGFlds
   | Cons            tl      .   isFirstFld  =   False
+%%]
 
 -------------------------------------------------------------------------
 -- LaTeX specific: ruleset
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM RlDecl
   | LTX             lhs     .   pp          =   let r = "\\" >|< (pcRule @lhs.ppCfg) >|< ppCurly @rlNm >|< ppCurly @vwNm
                                                         >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
@@ -172,19 +187,23 @@ ATTR Jds [ | | ppL: {[PP_Doc]} ]
 SEM Jds
   | Nil             lhs     .   ppL         =   []
   | Cons            lhs     .   ppL         =   @hd.pp : @tl.ppL
+%%]
 
 -------------------------------------------------------------------------
 -- Preamble
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM Decl
   | Preamble        lhs     .   pp          =   pp @preamble
+%%]
 
 -------------------------------------------------------------------------
 -- Explain
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM Decl
   | ScVwExplain     lhs     .   pp          =   exprFmtTeX @lhs.opts @lhs.fmGam @exExpr
   | ScVwAtExplain   lhs     .   pp          =   vlist $ map (\(n,e) -> exprFmtTeX @lhs.opts @lhs.fmGam n >#< "&" >#< exprFmtTeX @lhs.opts @lhs.fmGam e >#< "\\\\") $ @atExprs
-
+%%]

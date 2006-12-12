@@ -1,24 +1,19 @@
-module LaTeXFmtUtils
-  ( ppDest
-  , atDstFillLen, atLhs2texDist
-  , NeedParCtxt(..), exprNeedPar
-  , ppExprMbEmpty
-  
-  , strLhs2TeXSafe, nmLhs2TeXSafe
-  , mkMBox
-  , mkInLhs2Tex, ensureTeXMath
-  , switchLaTeXLhs, switchLaTeXLhs'
-  , mkCmdNmDef, mkCmdNmUse
-  , ppNmLaTeX, ppSelLaTeX
-  , ppWrapShuffle
-  )
-  where
+%%[1 hs module (LaTeXFmtUtils)
+%%]
 
-import EH.Util.Utils
-import UU.Pretty
-import EH.Util.PPUtils
-import Common
-import Expr.Expr
+%%[1 hs export (ppDest, atDstFillLen, atLhs2texDist, NeedParCtxt(..), exprNeedPar, ppExprMbEmpty)
+%%]
+
+%%[1 hs export (strLhs2TeXSafe, nmLhs2TeXSafe, mkMBox, mkInLhs2Tex, ensureTeXMath, switchLaTeXLhs, switchLaTeXLhs')
+%%]
+
+%%[1 hs export (mkCmdNmDef, mkCmdNmUse, ppNmLaTeX, ppSelLaTeX, ppWrapShuffle)
+%%]
+
+%%[1 hs import (EH.Util.Utils, UU.Pretty, EH.Util.PPUtils, Common, Expr.Expr)
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Formatting for destination names in AG rules
@@ -165,4 +160,4 @@ ppWrapShuffle :: Nm -> PP_Doc -> PP_Doc
 ppWrapShuffle n x
   = "%%[" >|< n >-< x >-< "%%]"
 
-
+%%]

@@ -2,24 +2,20 @@
 -- Judgment Gamma
 -------------------------------------------------------------------------
 
-module JdShpGam
-  ( JdShpInfo(..), JdShpGam
-  , jdshpgUnionShadow
-  )
-  where
+%%[1 hs module (JdShpGam)
+%%]
 
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import UU.Pretty
-import EH.Util.PPUtils
-import Common
-import Gam
-import FmGam
+%%[1 hs export (JdShpInfo(..), JdShpGam, jdshpgUnionShadow)
+%%]
+
+%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, UU.Pretty, EH.Util.PPUtils, Common, Gam, FmGam)
+%%]
 
 -------------------------------------------------------------------------
 -- Judgement formats
 -------------------------------------------------------------------------
 
+%%[1 hs
 data JdShpInfo e
   = JdShpInfo
       { jdshExpr  :: e
@@ -45,3 +41,4 @@ jdshpgUnionShadow gn g
       )
       g gn
 
+%%]

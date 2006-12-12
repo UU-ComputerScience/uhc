@@ -1,65 +1,44 @@
 -------------------------------------------------------------------------
 -- Main for AG, pass 2
 -------------------------------------------------------------------------
+%%[1 hs module (Main2AG)
+%%]
 
-{
-module Main2AG
-  where
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, UU.Pretty)
+%%]
 
-import Data.Maybe
-import Data.Char
-import Data.List
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import UU.Pretty
-import EH.Util.Utils
-import Opts
-import Common
-import EH.Util.PPUtils
-import LaTeXFmtUtils
-import Expr.Utils
-import Ty.Utils
-import ARule.Utils
-import ViewSel.Utils
-import Config( cfgStrSel )
-import FmGam
-import RwExprGam
-import ECnstrGam
-import AbsSyn.AbsSyn2
-}
+%%[1 hs import (EH.Util.Utils, Opts, Common, EH.Util.PPUtils, LaTeXFmtUtils, Expr.Utils, Ty.Utils, ARule.Utils, ViewSel.Utils)
+%%]
+
+%%[1 hs import (Config( cfgStrSel ), FmGam, RwExprGam, ECnstrGam, AbsSyn.AbsSyn2)
+%%]
 
 -------------------------------------------------------------------------
 -- Inclusion of split off parts
 -------------------------------------------------------------------------
 
-INCLUDE "AbsSyn/AbsSyn2AG.cag"
-INCLUDE "AbsSyn/CommonAG.cag"
-INCLUDE "FmGamAG.cag"
-INCLUDE "AS2/Opts.cag"
-INCLUDE "AS2/Pretty.cag"
+%%[1 ag import ({AbsSyn/AbsSyn2AG}, {AbsSyn/CommonAG}, {FmGamAG}, {AS2/Opts}, {AS2/Pretty})
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "Expr/PrettyPrintAG.cag"
-INCLUDE "Expr/SelfAG.cag"
-INCLUDE "Expr/FmGamAG.cag"
+%%[1 ag import ({Expr/AbsSynAG}, {Expr/PrettyPrintAG}, {Expr/SelfAG}, {Expr/FmGamAG})
+%%]
 
-INCLUDE "ARule/AbsSynAG.cag"
-INCLUDE "ARule/PrettyPrintAG.cag"
-INCLUDE "ARule/SelfAG.cag"
-INCLUDE "ARule/FmGamAG.cag"
+%%[1 ag import ({ARule/AbsSynAG}, {ARule/PrettyPrintAG}, {ARule/SelfAG}, {ARule/FmGamAG})
+%%]
 
 -------------------------------------------------------------------------
 -- Interfacing to AST
 -------------------------------------------------------------------------
 
-WRAPPER AGItf 
+%%[1 ag
+WRAPPER AGItf
+%%]
 
-{
+%%[1 hs
 ppAS2 :: Opts -> FmGam Expr -> Decls -> PP_Doc
 ppAS2 o g r
   = pp_Syn_AGItf r2
   where r1 = sem_AGItf (AGItf_AGItf r)
         r2 = wrap_AGItf r1
                 (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = g})
-}
-
+%%]

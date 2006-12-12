@@ -1,15 +1,28 @@
-module ScannerMachine
-  ( scan
-  )
-  where
+%%[1 hs module (ScannerMachine)
+%%]
 
-import Char(isLower, isUpper, isSpace, isAlphaNum, isDigit, chr, ord)
-import List(sort)
-import Maybe(isJust)
-import UU.Util.BinaryTrees(tab2tree,btLocateIn)
-import UU.Scanner.Token(Token, EnumValToken(..), valueToken, reserved, errToken)
-import UU.Scanner.Position(Pos, initPos, advc, adv)
-import EH.Util.ScanUtils
+%%[1 hs export(scan)
+%%]
+
+%%[1 hs import (Char(isLower, isUpper, isSpace, isAlphaNum, isDigit, chr, ord))
+%%]
+
+%%[1 hs import (List(sort), Maybe(isJust))
+%%]
+
+%%[1 hs import (UU.Util.BinaryTrees(tab2tree,btLocateIn))
+%%]
+
+%%[1 hs import (UU.Scanner.Token(Token, EnumValToken(..), valueToken, reserved, errToken))
+%%]
+
+%%[1 hs import (UU.Scanner.Position(Pos, initPos, advc, adv))
+%%]
+
+%%[1 hs import (EH.Util.ScanUtils)
+%%]
+
+%%[1 hs
 
 {- A parametrisable scanner
  -
@@ -245,3 +258,5 @@ value :: Char -> Int
 value c | isDigit c = ord c - ord '0'
         | isUpper c = ord c - ord 'A' + 10
         | isLower c = ord c - ord 'a' + 10
+
+%%]

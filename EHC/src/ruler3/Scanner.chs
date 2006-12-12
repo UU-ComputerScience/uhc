@@ -1,29 +1,60 @@
-module Scanner
- ( module ScannerMachine
- , module UU.Scanner.Token
- , module UU.Scanner.TokenParser
- , module UU.Scanner.Position
- 
- , SPos, emptySPos
+%%[1 hs module (Scanner)
+%%]
 
- , scanFile, scanHandle
- , offsideScanHandle
- )
- where
+%%[1 hs export (module ScannerMachine)
+%%]
 
-import IO
-import ScannerMachine
-import UU.Scanner.Token
-import UU.Scanner.TokenParser
-import UU.Scanner.Position
-import EH.Util.ScanUtils
--- import UUTest.Parsing.Offside
-import UU.Parsing.Offside
+%%[1 hs export (module UU.Scanner.Token)
+%%]
+
+%%[1 hs export (module UU.Scanner.TokenParser)
+%%]
+
+%%[1 hs export (module UU.Scanner.Position)
+%%]
+
+%%[1 hs export (SPos, emptySPos)
+%%]
+
+%%[1 hs export (scanFile, scanHandle)
+%%]
+
+%%[1 hs export (offsideScanHandle)
+%%]
+
+%%[1 hs import (IO)
+%%]
+
+%%[1 hs import (ScannerMachine)
+%%]
+
+%%[1 hs import (UU.Scanner.Token)
+%%]
+
+%%[1 hs import (UU.Scanner.TokenParser)
+%%]
+
+%%[1 hs import (UU.Scanner.Position)
+%%]
+
+%%[1 hs import (EH.Util.ScanUtils)
+%%]
+
+%%[1 hs import (UU.Parsing.Offside)
+%%]
 
 -- instances
-import UU.Scanner.TokenShow()
-import UU.Scanner.GenTokenOrd()
-import UU.Scanner.GenTokenSymbol()
+%%[1 hs import (UU.Scanner.TokenShow())
+%%]
+
+%%[1 hs import (UU.Scanner.GenTokenOrd())
+%%]
+
+%%[1 hs import (UU.Scanner.GenTokenSymbol())
+%%]
+
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Symbol position
@@ -57,3 +88,5 @@ offsideScanHandle opts fn fh
           oBrace    = reserved (scoOffsideOpen opts) noPos
           cBrace    = reserved (scoOffsideClose opts) noPos
           triggers  = [ reserved x noPos | x <- scoOffsideTrigs opts ]
+
+%%]

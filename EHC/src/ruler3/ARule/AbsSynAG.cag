@@ -1,3 +1,5 @@
+%%[1 ag
+
 -------------------------------------------------------------------------
 -- Interfacing
 -------------------------------------------------------------------------
@@ -41,3 +43,4 @@ SET AllARuleButARule = AllARuleEqn AExpr AEqnDest AEqnDests
 
 SET AllARule = AllARuleRule AllARuleButARule
 
+%%]

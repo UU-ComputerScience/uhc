@@ -1,33 +1,33 @@
 -------------------------------------------------------------------------
 -- (A)Eqn as Expr
 -------------------------------------------------------------------------
-module Expr.ToAEqn
-  ( exprMbAEqnRest
-  , mkExprEqn
-  , exprCheckAEqnForm
-  )
-  where
 
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Common
-import Expr.Expr
-import Expr.NmS
-import ARule.ARule
-import Gam
-import FmGam
+%%[1 hs module (Expr.ToAEqn)
+%%]
+
+%%[1 hs export (exprMbAEqnRest, mkExprEqn, exprCheckAEqnForm)
+%%]
+
+%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, Common, Expr.Expr)
+%%]
+
+%%[1 hs import (Expr.NmS, ARule.ARule, Gam, FmGam)
+%%]
 
 -------------------------------------------------------------------------
 -- Construct Expr of the form later to be dissected into AEqn
 -------------------------------------------------------------------------
 
+%%[1 hs
 mkExprEqn :: Expr -> Expr -> Expr
 mkExprEqn l r = Expr_AppTop (Expr_Op (nmEql) (Expr_Var (nmEql)) l r)
+%%]
 
 -------------------------------------------------------------------------
 -- Expr dissected as AEqn (as constructed by mkExprEqn)
 -------------------------------------------------------------------------
 
+%%[1 hs
 exprCheckAEqnForm :: Expr -> Maybe (Map.Map Expr Expr)
 exprCheckAEqnForm e
   = eqn (exprStrip StripBasic e)
@@ -40,11 +40,13 @@ exprCheckAEqnForm e
         lr  l r                                  = Map.fromList $ concat $ [ [(l,r),(r,l)] | l <- ls, r <- rs ]
                                                  where (_,_,ls) = exprStrip' StripBasic l
                                                        (_,_,rs) = exprStrip' StripBasic r
+%%]
 
 -------------------------------------------------------------------------
 -- Expr as AEqn
 -------------------------------------------------------------------------
 
+%%[1 hs
 exprMbAEqnRest :: Expr -> Maybe (AEqn,[Expr],FmGam Expr)
 exprMbAEqnRest expr
   = eE (exprStrip StripBasic expr)
@@ -104,4 +106,4 @@ exprMbAEqnRest expr
         gu = fmGamUnion
         gs n e = fmGamFromList' FmAG [(n,e)]
 
-
+%%]

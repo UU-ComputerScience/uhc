@@ -2,19 +2,19 @@
 -- RwExpr Gamma
 -------------------------------------------------------------------------
 
-module RwExprGam
-  ( module FmGam
-  
-  , RwExprGam
-  )
-  where
+%%[1 hs module (RwExprGam)
+%%]
 
-import Common
-import FmGam
-import Expr.Expr
+%%[1 hs export (module FmGam, RwExprGam)
+%%]
+
+%%[1 hs import (Common, FmGam, Expr.Expr)
+%%]
 
 -------------------------------------------------------------------------
 -- Gam
 -------------------------------------------------------------------------
 
+%%[1 hs
 type RwExprGam = RwGam (Expr,Expr)
+%%]

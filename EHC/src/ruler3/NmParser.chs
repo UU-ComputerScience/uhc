@@ -2,27 +2,20 @@
 -- Nm parser
 -------------------------------------------------------------------------
 
-module NmParser
-  ( NmSPos
-  , pNmDotSym
-  , pNmSym
-  , pNmDotted, pNmDottedSPos
-  , pNmVw, pNmVwSPos
-  , pNm, pNmSPos
-  )
-  where
+%%[1 hs module (NmParser)
+%%]
 
-import UU.Parsing
-import Scanner
-import EH.Util.ParseUtils
-import EH.Util.Nm
-import SelParser
-import KeywParser
+%%[1 hs export (NmSPos, pNmDotSym, pNmSym, pNmDotted, pNmDottedSPos, pNmVw, pNmVwSPos, pNm, pNmSPos)
+%%]
+
+%%[1 hs import (UU.Parsing, Scanner, EH.Util.ParseUtils, EH.Util.Nm, SelParser, KeywParser)
+%%]
 
 -------------------------------------------------------------------------
 -- Parser
 -------------------------------------------------------------------------
 
+%%[1 hs
 type NmSPos = (Nm,SPos)
 
 pNmDotSymSPos :: (IsParser p Token) => p String -> p (NmSPos -> NmSPos)
@@ -58,3 +51,4 @@ pNmSPos = pNmBaseSelSPos (pNmStrSPos,pSymStr)
 
 pNm :: (IsParser p Token) => p Nm
 pNm = fst <$> pNmSPos
+%%]

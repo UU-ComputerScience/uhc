@@ -2,6 +2,8 @@
 -- Expr name occurrences
 -------------------------------------------------------------------------
 
+%%[1 ag
+
 ATTR AllExpr AGExprItf [ | | nmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM Expr
@@ -11,3 +13,4 @@ SEM Expr
 SEM ANm
   | Loc             lhs     .   nmS         =   Set.singleton @nm
 
+%%]

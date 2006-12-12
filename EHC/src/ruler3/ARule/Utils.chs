@@ -2,32 +2,30 @@
 -- Interface to all ARule transformations and other utilities
 -------------------------------------------------------------------------
 
-module ARule.Utils
-  ( module ARule.ARule
-  , module ARule.PatternUniq
-  , module ARule.RwSubst
-  , module ARule.AVarRename
-  , module ARule.ElimCopyRule
-  , module ARule.ElimWildcAssign
-  , module ARule.PrettyPrint
+%%[1 hs module (ARule.Utils)
+%%]
 
-  , exprFmtTeXSubst
-  )
-  where
+%%[1 hs export (module ARule.ARule, module ARule.PatternUniq, module ARule.RwSubst, module ARule.AVarRename)
+%%]
 
-import UU.Pretty
-import Common
-import Opts
-import FmGam
-import Expr.Expr
-import Expr.LaTeX
-import ARule.ARule
-import ARule.PatternUniq
-import ARule.RwSubst
-import ARule.AVarRename
-import ARule.ElimCopyRule
-import ARule.ElimWildcAssign
-import ARule.PrettyPrint
+%%[1 hs export (module ARule.ElimCopyRule, module ARule.ElimWildcAssign, module ARule.PrettyPrint)
+%%]
+
+%%[1 hs export (exprFmtTeXSubst)
+%%]
+
+%%[1 hs import (UU.Pretty, Common, Opts, FmGam, Expr.Expr, Expr.LaTeX)
+%%]
+
+%%[1 hs import (ARule.ARule, ARule.PatternUniq, ARule.RwSubst, ARule.AVarRename)
+%%]
+
+%%[1 hs import (ARule.ElimCopyRule, ARule.ElimWildcAssign, ARule.PrettyPrint)
+%%]
+
+%%[1 hs
 
 exprFmtTeXSubst :: Opts -> FmGam Expr -> Expr -> PP_Doc
 exprFmtTeXSubst o fmg = exprFmtTeX o fmg . exprSubst o fmg
+
+%%]

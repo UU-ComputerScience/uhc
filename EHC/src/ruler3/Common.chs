@@ -2,44 +2,64 @@
 -- Common stuff
 -------------------------------------------------------------------------
 
-module Common
-  ( module Data.Maybe
-  , module Data.Char
-  , module EH.Util.Nm
-  , module EH.Util.DependencyGraph
-  , module EH.Util.FPath
-  , module EH.Util.PPUtils
-  , module AttrProps
-  , module Scanner
-  
-  , rulesCmdPre
-  , ExprIsRw(..)
-  , WrKind(..)
-  , strOverl, strOverVec, strUnd, strLhs, strLoc
-  , nmOverl, nmOverVec, nmUnk, nmApp, nmWild, nmNone, nmList
-  , nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1
-  , nmUniq
-  , nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame
-  , nmFunMkUniq
-  , nmIsOver
-  , FmKind(..), fmAS2Fm
-  , ScKind(..), ScDeriv(..)
-  )
-  where
+%%[1 hs module (Common)
+%%]
 
-import Data.Maybe
-import Data.Char
-import IO
-import UU.Pretty
--- import UU.Scanner.Position( noPos, Pos, Position(..) )
-import Scanner( SPos, emptySPos )
-import EH.Util.FPath
-import EH.Util.PPUtils
-import EH.Util.ParseErrPrettyPrint
-import EH.Util.ScanUtils
-import EH.Util.Nm
-import EH.Util.DependencyGraph
-import AttrProps
+%%[1 hs export (module Data.Maybe)
+%%]
+
+%%[1 hs export (module Data.Char)
+%%]
+
+%%[1 hs export (module EH.Util.Nm)
+%%]
+
+%%[1 hs export (module EH.Util.DependencyGraph)
+%%]
+
+%%[1 hs export (module EH.Util.FPath)
+%%]
+
+%%[1 hs export (module EH.Util.PPUtils)
+%%]
+
+%%[1 hs export (module AttrProps)
+%%]
+
+%%[1 hs export (module Scanner)
+%%]
+
+%%[1 hs export (rulesCmdPre, ExprIsRw(..), WrKind(..))
+%%]
+
+%%[1 hs export (strOverl, strOverVec, strUnd, strLhs, strLoc)
+%%]
+
+%%[1 hs export (nmOverl, nmOverVec, nmUnk, nmApp, nmWild, nmNone, nmList)
+%%]
+
+%%[1 hs export (nmEql, nmComma, nmOParen, nmCParen, nmLhs, nmAny, nmSp1)
+%%]
+
+%%[1 hs export (nmUniq, nmCmdBegChng, nmCmdEndChng, nmCmdBegSame, nmCmdEndSame)
+%%]
+
+%%[1 hs export (nmFunMkUniq, nmIsOver, FmKind(..), fmAS2Fm, ScKind(..), ScDeriv(..))
+%%]
+
+%%[1 hs import (Data.Maybe, Data.Char, IO, UU.Pretty)
+%%]
+
+%%[1 hs import (Scanner( SPos, emptySPos ), EH.Util.FPath, EH.Util.PPUtils)
+%%]
+
+%%[1 hs import (EH.Util.ParseErrPrettyPrint, EH.Util.ScanUtils, EH.Util.Nm)
+%%]
+
+%%[1 hs import (EH.Util.DependencyGraph, AttrProps)
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Defaults
@@ -156,3 +176,4 @@ data ScDeriv
 instance PP ScDeriv where
   pp (ScList n) = pp_brackets (pp n)
 
+%%]

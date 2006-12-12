@@ -2,31 +2,26 @@
 -- Optimisation: ARule/Expr rename of AVar
 -------------------------------------------------------------------------
 
-{
-module ARule.AVarRename
-  ( arlElimAlphaRename
-  )
-  where
+%%[1 hs module (ARule.AVarRename)
+%%]
 
-import qualified Data.Map as Map
-import Common
-import Expr.Expr
-import ARule.ARule
-import FmGam
-}
+%%[1 hs export (arlElimAlphaRename)
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "ARule/AbsSynAG.cag"
+%%[1 hs import (qualified Data.Map as Map, Common, Expr.Expr, ARule.ARule, FmGam)
+%%]
 
-INCLUDE "Expr/SelfAG.cag"
-INCLUDE "ARule/SelfAG.cag"
+%%[1 ag import({Expr/AbsSynAG}, {ARule/AbsSynAG}, {Expr/SelfAG}, {ARule/SelfAG})
+%%]
 
-INCLUDE "ARule/EqnDest1NmAG.cag"
-INCLUDE "ARule/InCompDestAG.cag"
+%%[1 ag import({ARule/EqnDest1NmAG}, {ARule/InCompDestAG})
+%%]
 
+%%[1 ag
 WRAPPER AGExprItf AGARuleItf
+%%]
 
-{
+%%[1 hs
 exprASubst :: RnMp -> Expr -> Expr
 exprASubst rnm e
   = self_Syn_AGExprItf r2
@@ -41,7 +36,7 @@ arlElimAlphaRename r
   where r1 = sem_AGARuleItf (AGARuleItf_AGItf r)
         r2 = wrap_AGARuleItf r1
                 (Inh_AGARuleItf)
-}
+%%]
 
 
 -------------------------------------------------------------------------
@@ -52,7 +47,7 @@ arlElimAlphaRename r
 -- Rename map gather
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 rnRepl :: RnMp -> RnSrc -> RnSrc
 rnRepl m e
   = case e of
@@ -60,8 +55,9 @@ rnRepl m e
       RnNm   (ANm_Loc n _)             -> r n
       _                                -> e
   where r n = maybe e (RnExpr . exprASubst (Map.delete n m) . rnSrc2Expr . snd) (Map.lookup n m)
-}
+%%]
 
+%%[1 ag
 ATTR AEqns AEqn ANm AllExpr AExpr [ | | gathRnMp USE {`rnMpUnion`} {Map.empty}: RnMp ]
 ATTR AllARuleButARule AllExpr AGExprItf [ rnMp: RnMp | | ]
 
@@ -86,11 +82,13 @@ SEM ARule
                                                                   _                -> True
                                                            )
                                                            @eqns.gathRnMp
+%%]
 
 -------------------------------------------------------------------------
 -- Replica
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AEqns AEqn [ | | replRnEqns USE {++} {[]}: {[AEqn]} ]
 
 SEM Expr
@@ -108,3 +106,4 @@ SEM AEqn
 SEM ARule
   | Rule            lhs     .   self        =   ARule_Rule @ndNmL @rlNm @info @eqns.replRnEqns
 
+%%]

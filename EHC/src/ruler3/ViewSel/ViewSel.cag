@@ -2,14 +2,15 @@
 -- Haskell interface to ViewSel AST
 -------------------------------------------------------------------------
 
-{
-module ViewSel.ViewSel
-  where
+%%[1 hs module (ViewSel.ViewSel)
+%%]
 
-import EH.Util.Nm
-}
+%%[1 hs import (EH.Util.Nm)
+%%]
 
-INCLUDE "ViewSel/AbsSynAG.cag"
+%%[1 ag import ({ViewSel/AbsSynAG})
+%%]
 
+%%[1 ag
 DERIVING AllViewSel AllRlSel AllNmSel: Show
-
+%%]

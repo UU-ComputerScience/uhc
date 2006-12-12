@@ -2,6 +2,8 @@
 -- Common to other optimisations: is in composite dest?
 -------------------------------------------------------------------------
 
+%%[1 ag
+
 ATTR AEqnDest AEqnDests [ isInComposite: Bool | | ]
 
 SEM AEqn
@@ -12,3 +14,4 @@ SEM AEqnDest
   | Many            dests   .   isInComposite
                                             =   True
 
+%%]
