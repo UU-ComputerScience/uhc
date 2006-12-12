@@ -2,14 +2,19 @@
 -- Common stuff w.r.t. attr
 -------------------------------------------------------------------------
 
-module AttrProps
-  ( AtDir {- (..) -}, AtProp(..)
-  , propsDir
-  )
-  where
+%%[1 hs module (AttrProps)
+%%]
 
-import Data.Set
-import UU.Pretty
+%%[1 hs export(AtDir, AtProp(..), propsDir)
+%%]
+
+%%[1 hs import (Data.Set)
+%%]
+
+%%[1 hs import (UU.Pretty)
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Attr props/dir/info
@@ -38,3 +43,4 @@ instance PP AtDir where
 instance PP AtProp where
   pp = text . show
 
+%%]

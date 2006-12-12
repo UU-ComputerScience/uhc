@@ -4,43 +4,36 @@
 -- Supporting functions for admin building
 -------------------------------------------------------------------------
 
-module MkAdmin
-  ( bldDtInfo
-  , bldScInfo
-  , bldRsInfo
-  )
-  where
+%%[1 hs module (MkAdmin)
+%%]
 
-import Maybe
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import Data.List
-import EH.Util.Nm
-import EH.Util.Utils
+%%[1 hs export (bldDtInfo, bldScInfo, bldRsInfo)
+%%]
 
-import KeywParser( propsSynInhMp )
-import Opts
-import Err
-import Common
-import Expr.Utils
-import ARule.Utils( exprSubst )
-import ViewSel.Utils
-import FmGam
-import Utils
-import Admin
+%%[1 hs import (Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, EH.Util.Nm, EH.Util.Utils)
+%%]
+
+%%[1 hs import (KeywParser( propsSynInhMp ), Opts, Err, Common, Expr.Utils, ARule.Utils( exprSubst ), ViewSel.Utils)
+%%]
+
+%%[1 hs import (FmGam, Utils, Admin)
+%%]
 
 -------------------------------------------------------------------------
 -- Misc
 -------------------------------------------------------------------------
 
+%%[1 hs
 prevWRTDpd :: Nm -> DpdGr Nm -> Map.Map Nm v -> v -> v
 prevWRTDpd n g m v
   = maybeHd v (\n -> maybe v id . Map.lookup n $ m) (dgDpdsOn g n)
+%%]
 
 -------------------------------------------------------------------------
 -- Data/AST
 -------------------------------------------------------------------------
 
+%%[1 hs
 data BldDtState
   = BldDtState
       { bdDtAltGam     	:: DtAltGam
@@ -72,11 +65,13 @@ bldDtInfo vwDpdGr dtInfo
               )
               (dtVwGam dtInfo,Map.empty,[])
               (dgTopSort vwDpdGr)
+%%]
 
 -------------------------------------------------------------------------
 -- Scheme
 -------------------------------------------------------------------------
 
+%%[1 hs
 type ScmAtBldGam = Gam Nm [(Nm, AtInfo)]
 
 data BldScmState
@@ -191,11 +186,13 @@ bldScInfo vwDpdGr scGam si@(ScInfo pos nm mbAGNm scKind vwScGam)
               )
               (vwScGam,Map.empty,[])
               (dgTopSort vwDpdGr)
+%%]
 
 -------------------------------------------------------------------------
 -- Rule set building, util functions
 -------------------------------------------------------------------------
 
+%%[1 hs
 -- attr directions for names in gam
 gamAtDirMp :: VwScInfo e -> Gam Nm v -> Map.Map Nm [AtDir]
 gamAtDirMp vi g = gamToMap $ gamMapWithKey (\n _ -> maybe [] atDirs . gamLookup n . vwscFullAtGam $ vi) $ g
@@ -236,11 +233,13 @@ reGamUpdInOut nVw scGam pg
                _ -> i
        )
        pg
+%%]
 
 -------------------------------------------------------------------------
 -- Judgements building, based on scheme description
 -------------------------------------------------------------------------
 
+%%[1 hs
 type JdBldInfo = (REInfo Expr,Maybe ([ScAtBldRename],Nm,Nm,VwScInfo Expr,VwScInfo Expr))
 type ScRnmMp = Map.Map Nm Nm
 type RlJdBldInfo = (RlJdBld Expr,Maybe (VwRlInfo Expr,ScAtBld,Gam Nm JdBldInfo,Gam Nm JdBldInfo))
@@ -346,12 +345,14 @@ bldDfltForJds vwNm scGam (preg,postg)
   = (mkjg True preg, mkjg False postg)
   where mkag isPre sn = jaGamDflt isPre Expr_Var sn vwNm scGam
         mkjg isPre = gamMap (\i -> i {reJAGam = mkag isPre (reScNm i)}) . reGamFilterOutDel
+%%]
 
 -------------------------------------------------------------------------
 -- Rule set building, top function
 -- build views of a rule by extending each view along view order dependency
 -------------------------------------------------------------------------
 
+%%[1 hs
 data BldRlsState
   = BldRlsState
       { brPreGam        :: REGam Expr
@@ -503,3 +504,4 @@ bldRsInfo vwDpdGr extNmS opts dtInvGam scGam rsGam rsInfo@(RsInfo nm pos schemeN
         cx = "ruleset '" ++ show (rsNm rsInfo) ++ "'"
         mutErrs = dgCheckSCCMutuals (Err_MutDpds pos cx "rule") rlDpdGr
 
+%%]

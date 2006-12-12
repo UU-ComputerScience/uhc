@@ -4,37 +4,37 @@
 -- Optimisation: Elimination of assignments to wildcard
 -------------------------------------------------------------------------
 
-{
-module ARule.ElimWildcAssign
-  ( arlElimWild
-  )
-  where
+%%[1 hs module (ARule.ElimWildcAssign)
+%%]
 
-import qualified Data.Map as Map
-import Common
-import Expr.Expr
-import ARule.ARule
-}
+%%[1 hs export (arlElimWild)
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "ARule/AbsSynAG.cag"
+%%[1 hs import (qualified Data.Map as Map, Common, Expr.Expr, ARule.ARule)
+%%]
 
+%%[1 ag import ({Expr/AbsSynAG}, {ARule/AbsSynAG})
+%%]
+
+%%[1 ag
 WRAPPER  AGARuleItf
+%%]
 
-{
+%%[1 hs
+
 arlElimWild :: ARule -> ARule
 arlElimWild rl
   = replEw_Syn_AGARuleItf r2
   where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
         r2 = wrap_AGARuleItf r1
                 (Inh_AGARuleItf)
-
-}
+%%]
 
 -------------------------------------------------------------------------
 -- Replica
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllARule AllExpr [ | | replEw: SELF ]
 ATTR AGARuleItf [ | | replEw: ARule ]
 ATTR AEqns AEqn [ | | replEwEqns USE {++} {[]}: {[AEqn]} ]
@@ -48,4 +48,4 @@ SEM AEqn
 SEM ARule
   | Rule            lhs     .   replEw      =   ARule_Rule @ndNmL @rlNm @info @eqns.replEwEqns
 
-
+%%]

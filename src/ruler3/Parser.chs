@@ -2,28 +2,28 @@
 -- Ruler parser
 -------------------------------------------------------------------------
 
-module Parser
-  ( pAGItf
-  )
-  where
+%%[1 hs module (Parser)
+%%]
 
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import UU.Parsing
--- import UUTest.Parsing.Offside
-import UU.Parsing.Offside
-import UU.Scanner.Position( initPos, Pos, Position(..) )
-import UU.Scanner.GenToken
-import Scanner
-import EH.Util.ParseUtils
-import EH.Util.ScanUtils
-import NmParser
-import SelParser
-import KeywParser
-import ViewSel.ViewSel
-import ViewSel.Parser
-import Common
-import AbsSyn.AbsSyn1
+%%[1 hs export (pAGItf)
+%%]
+
+%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, UU.Parsing)
+%%]
+
+%%[1 hs import (UU.Parsing.Offside, UU.Scanner.Position( initPos, Pos, Position(..) ))
+%%]
+
+%%[1 hs import (UU.Scanner.GenToken, Scanner, EH.Util.ParseUtils, EH.Util.ScanUtils)
+%%]
+
+%%[1 hs import (NmParser, SelParser, KeywParser, ViewSel.ViewSel, ViewSel.Parser)
+%%]
+
+%%[1 hs import (Common, AbsSyn.AbsSyn1)
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Parser
@@ -262,4 +262,4 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         kIsBar              =   pKey "=" <|> pKey "|"
      in (pAGItf)
 
-
+%%]

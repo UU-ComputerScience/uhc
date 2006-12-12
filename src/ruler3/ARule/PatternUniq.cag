@@ -2,35 +2,23 @@
 -- Interfacing to ARule: 
 -------------------------------------------------------------------------
 
-{
-module ARule.PatternUniq
-  ( arlUniq
-  )
-  where
+%%[1 hs module (ARule.PatternUniq)
+%%]
 
-import qualified Data.Set as Set
-import Common
-import Opts
-import ARule.ARule
-import Expr.Expr
-import FmGam
-import ARule.RwSubst
-}
+%%[1 hs export (arlUniq)
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "ARule/AbsSynAG.cag"
+%%[1 hs import (qualified Data.Set as Set, Common, Opts, ARule.ARule, Expr.Expr, FmGam, ARule.RwSubst)
+%%]
 
-INCLUDE "Expr/OptsAG.cag"
-INCLUDE "ARule/OptsAG.cag"
+%%[1 ag import ({Expr/AbsSynAG}, {ARule/AbsSynAG}, {Expr/OptsAG}, {ARule/OptsAG}, {Expr/FmGamAG}, {ARule/FmGamAG}, {ARule/CopyRuleNmAG})
+%%]
 
-INCLUDE "Expr/FmGamAG.cag"
-INCLUDE "ARule/FmGamAG.cag"
-
-INCLUDE "ARule/CopyRuleNmAG.cag"
-
+%%[1 ag
 WRAPPER AGARuleItf
+%%]
 
-{
+%%[1 hs
 arlUniq :: FmGam Expr -> [Nm] -> ARule -> ARule
 arlUniq fg co rl
   = replUniq_Syn_AGARuleItf r2
@@ -40,12 +28,13 @@ arlUniq fg co rl
                                 ,croNmL_Inh_AGARuleItf = co
                                 ,fmGam_Inh_AGARuleItf = fg
                                 })
-}
+%%]
 
 -------------------------------------------------------------------------
 -- Uniq sequence nr
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllARuleButARule AllExpr [ | uniqSeqNr: Int | ]
 
 SEM ARule
@@ -57,29 +46,35 @@ SEM Expr
 
 SEM AGExprItf
   | AGItf           loc     .   uniqSeqNr   =   0
+%%]
 
 -------------------------------------------------------------------------
 -- Uniq name
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM Expr
   | Uniq            loc     .   nm          =   fmNmUniq @lhs.opts @lhs.fmGam @uniqSeqNr
+%%]
 
 -------------------------------------------------------------------------
 -- Node to which uniq thread must be passed
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllARuleRule [ uniqThrDst: ANm | | ]
 
 SEM AGARuleItf
   | AGItf           rule    .   uniqThrDst  =   case @lhs.croNmL of
                                                   (_:[d]) -> ANm_Lhs (fmNmUniq @lhs.opts @lhs.fmGam 0) []
                                                   (_:d:_) -> ANm_Node d (fmNmUniq @lhs.opts @lhs.fmGam 0)
+%%]
 
 -------------------------------------------------------------------------
 -- Construction of AEqn for uniq's
 -------------------------------------------------------------------------
 
+%%[1 ag
 SEM ARule
   | Rule            loc     .   mkUniqEqnL  =   if @eqns.uniqSeqNr > 0
                                                 then [AEqn_Eqn
@@ -95,11 +90,13 @@ SEM ARule
                                                         )
                                                      ]
                                                 else []
+%%]
 
 -------------------------------------------------------------------------
 -- Replica
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllARule AllExpr [ | | replUniq: SELF ]
 ATTR AGARuleItf [ | | replUniq: ARule ]
 
@@ -109,4 +106,4 @@ SEM ARule
 SEM Expr
   | Uniq            lhs     .   replUniq    =   mkALoc @nm
 
-
+%%]

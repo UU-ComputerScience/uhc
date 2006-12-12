@@ -2,6 +2,8 @@
 -- Scheme dpds
 -------------------------------------------------------------------------
 
+%%[1 ag
+
 ATTR AllDecl AllAttrIntroDecl [ | | gathScDpds USE {++} {[]}: {[(Nm,Nm)]} ]
 
 SEM AttrIntroDecl
@@ -29,4 +31,4 @@ SEM AGItf
 SEM AGItf
   | AGItf           loc     .   errMutSc    =   dgCheckSCCMutuals (Err_MutDpds emptySPos "toplevel" "scheme") @scDpdGr
 
-
+%%]

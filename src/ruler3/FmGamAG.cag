@@ -2,6 +2,7 @@
 -- FmGam
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllDecl [ fmGam: {FmGam Expr} | | ]
 ATTR AGItf [ fmGam: {FmGam Expr} | | ]
-
+%%]

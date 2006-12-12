@@ -2,24 +2,23 @@
 -- Interfacing to ViewSel: RlSel renaming
 -------------------------------------------------------------------------
 
-{
-module ViewSel.RlRnm
-  ( rlSelRnmM
-  , rsSelMapVwNm
-  )
-  where
+%%[1 hs module (ViewSel.RlRnm)
+%%]
 
-import qualified Data.Map as Map
-import EH.Util.Nm
--- import EH.Util.DependencyGraph
-import ViewSel.ViewSel
-}
+%%[1 hs export (rlSelRnmM, rsSelMapVwNm)
+%%]
 
-INCLUDE "ViewSel/AbsSynAG.cag"
+%%[1 hs import (qualified Data.Map as Map, EH.Util.Nm, ViewSel.ViewSel)
+%%]
 
+%%[1 ag import ({ViewSel/AbsSynAG})
+%%]
+
+%%[1 ag
 WRAPPER AGRlSelItf
+%%]
 
-{
+%%[1 hs
 wrapRlSel :: RlSel -> Syn_AGRlSelItf
 wrapRlSel  vs
   = let r1 = sem_AGRlSelItf (AGRlSelItf_AGItf vs)
@@ -30,23 +29,24 @@ rlSelRnmM :: RlSel -> Map.Map Nm Nm
 rlSelRnmM rs
   = vwRnmM_Syn_AGRlSelItf r
   where r = wrapRlSel rs
-}
+%%]
 
 -------------------------------------------------------------------------
 -- Mapping of Ruler view name to other
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 rsSelMapVwNm :: Maybe RlSel -> Nm -> Nm
 rsSelMapVwNm mbRlSel vNm = maybe vNm (maybe vNm id . Map.lookup vNm . rlSelRnmM) mbRlSel
-}
+%%]
 
 -------------------------------------------------------------------------
 -- View renaming
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AGRlSelItf AllViewSel AllRlSel [ | | vwRnmM USE {`Map.union`} {Map.empty}: {Map.Map Nm Nm} ]
 
 SEM ViewSel
   | Renamed         lhs     .   vwRnmM      =   Map.singleton @nm @nmNew
-
+%%]

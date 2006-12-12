@@ -1,111 +1,56 @@
-module Admin
-  ( module FmGam
-  , module JdShpGam
-  
-  , DtFldInfo(..), DtFldGam
-  , emptyDtFldInfo
-  
-  , DtAltInfo(..), DtAltGam
-  , emptyDtAltInfo
-  
-  , DtVwInfo(..), DtVwGam
-  , emptyDtVwInfo
-  
-  , DtInfo(..), DtGam
-  , emptyDtInfo
-  , dtGamInv
-  , dtVwGamLookup
-  
-  , DtAltInvInfo(..), DtAltInvGam
-  , emptyDtAltInvInfo
-  
-  , DtVwInvInfo(..), DtVwInvGam
-  
-  , DtInvInfo(..), DtInvGam
-  , dtVwRlInvGamLookup
-  , dtInvGamRlMbOn
-  , dtInvGamRlVwS
+%%[1 hs module (Admin)
+%%]
 
-  , AtInfo(..), AtGam
-  , emptyAtInfo
-  , atGamNode, atMbSynInh
-  , atHasDir, atFilterProps, atHasProp, atHasProps
-  , atIsExternUndef
+%%[1 hs export (module FmGam, module JdShpGam)
+%%]
 
-  , AtDefUse(..)
-  , atDefUse
-  
-  , BldRename(..)
-  
-  , ScAtBld(..)
-  , emptyScAtBld
-  , sabFilterScheme
+%%[1 hs export (DtFldInfo(..), DtFldGam, emptyDtFldInfo, DtAltInfo(..), DtAltGam, emptyDtAltInfo, DtVwInfo(..), DtVwGam, emptyDtVwInfo)
+%%]
 
-  , ScAtBldRename(..)
-  , sabrGamRename
-  
-  , ExplInfo(..), ExplGam
-  
-  , VwScInfo(..), VwScGam
-  , emptyVwScInfo
-  , vwscAtGam
-  
-  , ScInfo(..), ScGam
-  , emptyScInfo
-  , scVwGamLookup, scVwGamNodeAt
-  
-  , JAInfo(..), JAGam
-  , mkJAInfo
-  , jaGamToFmGam, fmGamToJaGam
-  
-  , REInfo(..), REGam
-  , reMbJAGam
-  , reMbJd
-  , reUpdJAGam
-  , reGamUnionShadow
-  , reGamFilterOutDel
-  , reGamJAGamDifference, reGamJAGamDifferenceOnExpr
-  
-  , RlChInfo(..), RlChGam
-  , rcGamUnionShadow
-  
-  , RlJdBld(..)
-  
-  , VwRlInfo(..), VwRlGam
-  , emptyVwRlInfo
-  , mkVwRlInfo
-  , vwrlPreGam, vwrlPostGam
-  , vwrlExtNmS
-  , vwrlDelEmptyJd, vrwlIsEmpty, vwrlScc, vwrlUndefs
-  
-  , RlInfo(..), RlGam
-  , emptyRlInfo
-  , rlVwGamLookup
-  , rlVwRlOnL
-  
-  , RsInfo(..), RsGam
-  , emptyRsInfo
-  , rsInfoIsPlain, rsInfoIsGroup
-  , rsRlVwGamLookup
-  , rsRlOrder, rsInfoMbRlGam
-  )
-  where
+%%[1 hs export (DtInfo(..), DtGam, emptyDtInfo, dtGamInv, dtVwGamLookup, DtAltInvInfo(..), DtAltInvGam, emptyDtAltInvInfo, DtVwInvInfo(..), DtVwInvGam)
+%%]
 
-import Data.Maybe
-import Data.Char
-import Data.List
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import EH.Util.Utils
-import EH.Util.PPUtils
-import UU.Pretty
-import qualified UU.DData.Scc as Scc
-import Common
-import Gam
-import FmGam
-import JdShpGam
-import Expr.Utils
-import Ty.Utils
+%%[1 hs export (DtInvInfo(..), DtInvGam, dtVwRlInvGamLookup, dtInvGamRlMbOn, dtInvGamRlVwS, AtInfo(..), AtGam, emptyAtInfo, atGamNode)
+%%]
+
+%%[1 hs export (atMbSynInh, atHasDir, atFilterProps, atHasProp, atHasProps, atIsExternUndef, AtDefUse(..), atDefUse, BldRename(..))
+%%]
+
+%%[1 hs export (ScAtBld(..), emptyScAtBld, sabFilterScheme, ScAtBldRename(..), sabrGamRename, ExplInfo(..), ExplGam)
+%%]
+
+%%[1 hs export (VwScInfo(..), VwScGam, emptyVwScInfo, vwscAtGam, ScInfo(..), ScGam, emptyScInfo, scVwGamLookup, scVwGamNodeAt)
+%%]
+
+%%[1 hs export (JAInfo(..), JAGam, mkJAInfo, jaGamToFmGam, fmGamToJaGam)
+%%]
+
+%%[1 hs export (REInfo(..), REGam, reMbJAGam, reMbJd, reUpdJAGam, reGamUnionShadow, reGamFilterOutDel, reGamJAGamDifference, reGamJAGamDifferenceOnExpr)
+%%]
+
+%%[1 hs export (RlChInfo(..), RlChGam, rcGamUnionShadow, RlJdBld(..), VwRlInfo(..), VwRlGam, emptyVwRlInfo, mkVwRlInfo)
+%%]
+
+%%[1 hs export (vwrlPreGam, vwrlPostGam, vwrlExtNmS, vwrlDelEmptyJd, vrwlIsEmpty, vwrlScc, vwrlUndefs)
+%%]
+
+%%[1 hs export (RlInfo(..), RlGam, emptyRlInfo, rlVwGamLookup, rlVwRlOnL)
+%%]
+
+%%[1 hs export (RsInfo(..), RsGam, emptyRsInfo, rsInfoIsPlain, rsInfoIsGroup, rsRlVwGamLookup, rsRlOrder, rsInfoMbRlGam)
+%%]
+
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
+%%]
+
+%%[1 hs import (EH.Util.Utils, EH.Util.PPUtils, UU.Pretty, qualified UU.DData.Scc as Scc, Common, Gam, FmGam, JdShpGam)
+%%]
+
+%%[1 hs import (Expr.Utils, Ty.Utils)
+%%]
+
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Data/AST: field
@@ -875,3 +820,4 @@ rsInfoMbRlGam _                    = Nothing
 rsRlVwGamLookup :: Nm -> Nm -> Nm -> RsGam e -> Maybe (RsInfo e,RlInfo e,VwRlInfo e)
 rsRlVwGamLookup = tripleGamLookup rsRlGam rlVwGam
 
+%%]

@@ -2,4 +2,6 @@
 -- RwExprGam
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AllExprButANm AGExprItf [ rwGam: RwExprGam | | ]
+%%]

@@ -2,6 +2,8 @@
 -- Pretty printing of ruler AST1
 -------------------------------------------------------------------------
 
+%%[1 ag
+
 ATTR AllAS1 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
@@ -46,3 +48,4 @@ SEM AttrEqn
 SEM AttrIntroDecl
   | Attrs           lhs     .   pp          =   "inh" >#< @inhs.pp >-< "i+s" >#< @inhsyns.pp >-< "syn" >#< @syns.pp
 
+%%]

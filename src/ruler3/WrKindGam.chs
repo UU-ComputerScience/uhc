@@ -2,22 +2,20 @@
 -- WrKind Gamma
 -------------------------------------------------------------------------
 
-module WrKindGam
-  ( module Gam
-  
-  , WrKindInfo(..), WrKindGam
-  , wrKindGam
-  )
-  where
+%%[1 hs module (WrKindGam)
+%%]
 
-import qualified Data.Map as Map
-import UU.Pretty
-import Common
-import Gam
+%%[1 hs export (module Gam, WrKindInfo(..), WrKindGam, wrKindGam)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map, UU.Pretty, Common, Gam)
+%%]
 
 -------------------------------------------------------------------------
 -- WrKind
 -------------------------------------------------------------------------
+
+%%[1 hs
 
 data WrKindInfo
   = WrKindInfo
@@ -40,4 +38,4 @@ wrKindGam
       , (WrIsSame   ,WrKindInfo nmCmdBegSame nmCmdEndSame)
       ]
 
-
+%%]

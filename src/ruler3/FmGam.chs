@@ -2,32 +2,65 @@
 -- Format Gamma
 -------------------------------------------------------------------------
 
-module FmGam
-  ( module Gam
-  
-  , FmInfo(fmKdGam), FmGam, FmGam'
-  , fmSingleton, fmNull
-  , fmGamFromList, fmGamFromList'
-  , fmGamToList'
-  , fmGamUnion, fmGamUnions
-  , fmGamLookup, fmGamMap
-  
-  , FmKdGam, fkGamLookup
-  
-  , FmDrGam, fdGamLookup
-  
-  , RwGam, rwGamLookup, rwSingleton, rwGamUnion
-  , ppRwGam
-  )
-  where
+%%[1 hs module(FmGam)
+%%]
 
-import Data.Maybe
-import qualified Data.Set as Set
-import qualified Data.Map as Map
-import EH.Util.PPUtils
-import UU.Pretty
-import Common
-import Gam
+%%[1 hs export(module Gam)
+%%]
+
+%%[1 hs export(FmInfo(fmKdGam), FmGam, FmGam')
+%%]
+
+%%[1 hs export(fmSingleton, fmNull)
+%%]
+
+%%[1 hs export(fmGamFromList, fmGamFromList')
+%%]
+
+%%[1 hs export(fmGamToList')
+%%]
+
+%%[1 hs export(fmGamUnion, fmGamUnions)
+%%]
+
+%%[1 hs export(fmGamLookup, fmGamMap)
+%%]
+
+%%[1 hs export(FmKdGam, fkGamLookup)
+%%]
+
+%%[1 hs export(FmDrGam, fdGamLookup)
+%%]
+
+%%[1 hs export(RwGam, rwGamLookup, rwSingleton, rwGamUnion)
+%%]
+
+%%[1 hs export(ppRwGam)
+%%]
+
+%%[1 hs import (Data.Maybe)
+%%]
+
+%%[1 hs import (qualified Data.Set as Set)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map)
+%%]
+
+%%[1 hs import (EH.Util.PPUtils)
+%%]
+
+%%[1 hs import (UU.Pretty)
+%%]
+
+%%[1 hs import (Common)
+%%]
+
+%%[1 hs import (Gam)
+%%]
+
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Formats
@@ -124,3 +157,4 @@ rwGamUnion = gamUnionWith (\i1 i2 -> i1 {fmKdGam = gamUnionWith (gamUnionWith (+
 ppRwGam :: PP e => RwGam e -> PP_Doc
 ppRwGam = ppGam' . gamMap (\i -> fmNm i >#< ppGam (fmKdGam i))
 
+%%]

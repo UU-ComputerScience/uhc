@@ -2,42 +2,92 @@
 -- Gamma
 -------------------------------------------------------------------------
 
-module Gam
-  ( Gam, emptyGam, gamIsEmpty, gamSingleton, gamMember
-  
-  , gamTryLookups, gamTryLookupsWithDefault
-  , gamLookup, gamLookupMaybe, gamLookupJust, gamFindWithDefault
-  , gamUnions, gamUnionsShadow, gamUnion, gamUnionShadow, gamUnionWith
-  , gamDelete
-  , gamInsert, gamInsertShadow
-  , gamDifference, gamIntersection
-  , gamToMap
-  , gamAssocs, gamAssocsShadow, gamFromAssocs, gamFromAssocsWith
-  , gamElems, gamElemsShadow
-  , gamKeys
-  , gamMap, gamMapKeys, gamMapWithKey
-  , gamFilterWithKey, gamFilter
-  , gamPartition
-  , gamMapAccumWithKey
-  , gamFold, gamFoldWithKey
-  
-  , gamCheckDups
-  
-  , ppGam, ppGam'
-  
-  , dblGamLookup, tripleGamLookup
-  
-  , GamMerge(..)
-  )
-  where
+%%[1 hs module(Gam)
+%%]
 
-import Data.Maybe
-import qualified Data.Map as Map
-import UU.Pretty
-import EH.Util.PPUtils
-import EH.Util.Utils
-import Err
-import Common
+%%[1 hs export ( Gam, emptyGam, gamIsEmpty, gamSingleton, gamMember)
+%%]
+  
+%%[1 hs export (gamTryLookups, gamTryLookupsWithDefault)
+%%]
+
+%%[1 hs export (gamLookup, gamLookupMaybe, gamLookupJust, gamFindWithDefault)
+%%]
+
+%%[1 hs export (gamUnions, gamUnionsShadow, gamUnion, gamUnionShadow, gamUnionWith)
+%%]
+
+%%[1 hs export (gamDelete)
+%%]
+
+%%[1 hs export (gamInsert, gamInsertShadow)
+%%]
+
+%%[1 hs export (gamDifference, gamIntersection)
+%%]
+
+%%[1 hs export (gamToMap)
+%%]
+
+%%[1 hs export (gamAssocs, gamAssocsShadow, gamFromAssocs, gamFromAssocsWith)
+%%]
+
+%%[1 hs export (gamElems, gamElemsShadow)
+%%]
+
+%%[1 hs export (gamKeys)
+%%]
+
+%%[1 hs export (gamMap, gamMapKeys, gamMapWithKey)
+%%]
+
+%%[1 hs export (gamFilterWithKey, gamFilter)
+%%]
+
+%%[1 hs export (gamPartition)
+%%]
+
+%%[1 hs export (gamMapAccumWithKey)
+%%]
+
+%%[1 hs export (gamFold, gamFoldWithKey)
+%%]
+
+%%[1 hs export (gamCheckDups)
+%%]
+
+%%[1 hs export (ppGam, ppGam')
+%%]
+
+%%[1 hs export (dblGamLookup, tripleGamLookup)
+%%]
+
+%%[1 hs export (GamMerge(..))
+%%]
+
+%%[1 hs import (Data.Maybe)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map)
+%%]
+
+%%[1 hs import (UU.Pretty)
+%%]
+
+%%[1 hs import (EH.Util.PPUtils)
+%%]
+
+%%[1 hs import (EH.Util.Utils)
+%%]
+
+%%[1 hs import (Err)
+%%]
+
+%%[1 hs import (Common)
+%%]
+
+
+%%[1
 
 -------------------------------------------------------------------------
 -- Gam
@@ -276,3 +326,4 @@ gamTryLookupsWithDefault :: Ord k => k -> v -> (e -> v) -> [k] -> Gam k e -> v
 gamTryLookupsWithDefault dfltKey dflt extr keys g
   = gamTryLookups dflt extr (keys ++ [dfltKey]) g
 
+%%]

@@ -2,14 +2,15 @@
 -- Haskell interface to ARule AST
 -------------------------------------------------------------------------
 
-{
-module ARule.ARule
-  where
+%%[1 hs module (ARule.ARule)
+%%]
 
-import Common
-import Expr.Expr
-}
+%%[1 hs import(Common, Expr.Expr)
+%%]
 
-INCLUDE "ARule/AbsSynAG.cag"
+%%[1 ag import({ARule/AbsSynAG})
+%%]
 
+%%[1 hs
 
+%%]

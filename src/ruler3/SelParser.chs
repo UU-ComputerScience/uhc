@@ -2,22 +2,20 @@
 -- Sel parser
 -------------------------------------------------------------------------
 
-module SelParser
-  ( pSel1
-  , pSel
-  
-  -- , module KeywParser
-  )
-  where
+%%[1 hs module (SelParser)
+%%]
 
-import UU.Parsing
-import Scanner
-import EH.Util.ParseUtils
-import Config( cfgStrSel )
+%%[1 hs export (pSel1, pSel)
+%%]
+
+%%[1 hs import (UU.Parsing, Scanner, EH.Util.ParseUtils, Config( cfgStrSel ))
+%%]
 
 -------------------------------------------------------------------------
 -- Parser
 -------------------------------------------------------------------------
+
+%%[1 hs
 
 pSel1 :: (IsParser p Token) => (a1 -> t, a1 -> a -> a1, a2 -> a) -> (p a2, p a) -> p (a1 -> t)
 pSel1 (top,sel,jst) (pE,pMbE)
@@ -27,3 +25,4 @@ pSel1 (top,sel,jst) (pE,pMbE)
 
 pSel alg ps = pSel1 alg ps <|> pSucceed id
 
+%%]

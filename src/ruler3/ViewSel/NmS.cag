@@ -2,25 +2,23 @@
 -- Interfacing to ViewSel: names
 -------------------------------------------------------------------------
 
-{
-module ViewSel.NmS
-  ( viewSelsNmS, viewSelNmS
-  )
-  where
+%%[1 hs module (ViewSel.NmS)
+%%]
 
-import qualified Data.Set as Set
-import EH.Util.Nm
-import EH.Util.DependencyGraph
-import ViewSel.ViewSel
-}
+%%[1 hs export (viewSelsNmS, viewSelNmS)
+%%]
 
-INCLUDE "ViewSel/AbsSynAG.cag"
-INCLUDE "ViewSel/DpdGrAG.cag"
-INCLUDE "ViewSel/NmSAG.cag"
+%%[1 hs import (qualified Data.Set as Set, EH.Util.Nm, EH.Util.DependencyGraph, ViewSel.ViewSel)
+%%]
 
+%%[1 ag import ({ViewSel/AbsSynAG}, {ViewSel/DpdGrAG}, {ViewSel/NmSAG})
+%%]
+
+%%[1 ag
 WRAPPER AGViewSelItf AGViewSelsItf
+%%]
 
-{
+%%[1 hs
 viewSelNmS :: DpdGr Nm -> ViewSel -> Set.Set Nm
 viewSelNmS vwDpdGr vs
   = vwSelNmS_Syn_AGViewSelItf r2
@@ -36,5 +34,4 @@ viewSelsNmS vwDpdGr vs
         r2 = wrap_AGViewSelsItf r1
                 (Inh_AGViewSelsItf {vwDpdGr_Inh_AGViewSelsItf = vwDpdGr
                                    })
-}
-
+%%]

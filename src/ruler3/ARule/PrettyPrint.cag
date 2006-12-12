@@ -2,37 +2,26 @@
 -- PP for ARule/Expr
 -------------------------------------------------------------------------
 
-{
-module ARule.PrettyPrint
-  ( ppARule, ppExpr
-  , ppECGam
-  )
-  where
+%%[1 hs module (ARule.PrettyPrint)
+%%]
 
-import qualified Data.Map as Map
-import EH.Util.Utils
-import UU.Pretty
-import EH.Util.PPUtils
-import Common
-import LaTeXFmtUtils
-import Expr.Expr
-import ARule.ARule
-import ECnstrGam
-import Config( cfgStrSel )
-}
+%%[1 hs export (ppARule, ppExpr, ppECGam)
+%%]
 
-INCLUDE "Expr/AbsSynAG.cag"
-INCLUDE "ARule/AbsSynAG.cag"
+%%[1 hs import (qualified Data.Map as Map, EH.Util.Utils, UU.Pretty, EH.Util.PPUtils, Common, LaTeXFmtUtils)
+%%]
 
-INCLUDE "Expr/PrettyPrintAG.cag"
-INCLUDE "ARule/PrettyPrintAG.cag"
+%%[1 hs import (Expr.Expr, ARule.ARule, ECnstrGam, Config( cfgStrSel ))
+%%]
 
-INCLUDE "Expr/SelfAG.cag"
-INCLUDE "ARule/SelfAG.cag"
+%%[1 ag import({Expr/AbsSynAG}, {ARule/AbsSynAG}, {Expr/PrettyPrintAG}, {ARule/PrettyPrintAG}, {Expr/SelfAG}, {ARule/SelfAG})
+%%]
 
+%%[1 ag
 WRAPPER AGARuleItf AGExprItf
+%%]
 
-{
+%%[1 hs
 ppARule :: ARule -> PP_Doc
 ppARule r
   = pp_Syn_AGARuleItf r2
@@ -61,5 +50,5 @@ instance Show Expr where
 
 instance PP Expr where
   pp = ppExpr
-}
 
+%%]

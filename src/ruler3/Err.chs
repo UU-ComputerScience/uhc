@@ -2,22 +2,25 @@
 -- Error
 -------------------------------------------------------------------------
 
-module Err
-  ( Err(..), mkPPErr, ppErrPPL
-  , errLIsFatal
-  , errFirst
-  
-  , mkTr
-  )
-  where
+%%[1 hs module (Err)
+%%]
 
-import UU.Pretty
-import EH.Util.PPUtils
-import EH.Util.Utils
-import Scanner( SPos, emptySPos )
-import EH.Util.ParseErrPrettyPrint
-import EH.Util.Nm
-import EH.Util.Utils( maybeHd )
+%%[1 hs export (Err(..), mkPPErr, ppErrPPL, errLIsFatal, errFirst, mkTr)
+%%]
+
+%%[1 hs import (UU.Pretty, EH.Util.PPUtils, EH.Util.Utils)
+%%]
+
+%%[1 hs import (Scanner( SPos, emptySPos ))
+%%]
+
+%%[1 hs import (EH.Util.ParseErrPrettyPrint)
+%%]
+
+%%[1 hs import (EH.Util.Nm, EH.Util.Utils( maybeHd ))
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Errors
@@ -101,3 +104,5 @@ errLIsFatal es = not (null es) && any errIsFatal es
 
 errFirst :: [[Err]] -> [Err]
 errFirst = firstNotEmpty
+
+%%]

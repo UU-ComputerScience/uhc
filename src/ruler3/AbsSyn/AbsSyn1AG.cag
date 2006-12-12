@@ -1,3 +1,5 @@
+%%[1 ag
+
 -------------------------------------------------------------------------
 -- Ruler AST, pass 1
 -------------------------------------------------------------------------
@@ -176,3 +178,5 @@ SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
 -------------------------------------------------------------------------
 
 SET AllAS1 = AllRExpr AllAttrEqn AllAttrIntroDecl AllRuleJudgeIntroDecl AllFldIntro AllDecl
+
+%%]

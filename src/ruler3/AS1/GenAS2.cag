@@ -2,7 +2,7 @@
 -- Utils
 -------------------------------------------------------------------------
 
-{
+%%[1 hs
 rsSelect :: RlSelIsSel -> RsGam Expr -> [(Nm,RsInfo Expr)]
 rsSelect rlSelIsSel rsGam
   = rs
@@ -67,7 +67,9 @@ atIsChanged vwRlInfo
   = case vwrlMbChGam vwRlInfo of
       Just g  -> \j a -> maybe (Just False) (const (Just True)) $ dblGamLookup id j a g
       Nothing -> \_ _ -> Nothing
-}
+%%]
+
+%%[1 ag
 
 -------------------------------------------------------------------------
 -- Selection
@@ -232,4 +234,4 @@ SEM AGItf
                                                 then fkGamLookup [] (\p -> [AS2.Decl_Preamble p]) [@fmAS2] @decls.paGam
                                                 else []
 
-
+%%]

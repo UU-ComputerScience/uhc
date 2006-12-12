@@ -2,37 +2,29 @@
 -- Keyw/sym parser
 -------------------------------------------------------------------------
 
-module KeywParser
-  ( specialChars, opChars
-  , propsSynInhMp, propsDirMp, propsMp
-  
-  , keywordsTextDir
-  , keywordsTextProps, keywordsTextEscapable, keywordsText
-  , keywordsOpsEsc, keywordsOpsExplainEsc, keywordsOpsParenEsc
-  , keywordsOps
-  
-  , mkScan, mkHScan, mkOffScan
-  
-  , pKeySPos
-  , pNmStr, pNmStrSPos
-  , pNmStrI, pNmStrISPos
-  , pSymEscStr, pSymEscStrSPos
-  , pSymStr, pSymStrSPos
-  
-  )
-  where
+%%[1 hs module (KeywParser)
+%%]
 
-import qualified Data.Map as Map
-import IO
-import UU.Parsing
--- import UUTest.Parsing.Offside
-import UU.Parsing.Offside
-import Scanner
-import Config
-import EH.Util.ParseUtils
-import AttrProps
-import EH.Util.ScanUtils
+%%[1 hs export (specialChars, opChars, propsSynInhMp, propsDirMp, propsMp)
+%%]
 
+%%[1 hs export (keywordsTextDir, keywordsTextProps, keywordsTextEscapable, keywordsText, keywordsOpsEsc)
+%%]
+
+%%[1 hs export (keywordsOpsExplainEsc, keywordsOpsParenEsc, keywordsOps)
+%%]
+
+%%[1 hs export (mkScan, mkHScan, mkOffScan)
+%%]
+
+%%[1 hs export (pKeySPos, pNmStr, pNmStrSPos, pNmStrI, pNmStrISPos, pSymEscStr, pSymEscStrSPos, pSymStr, pSymStrSPos)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map, IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, EH.Util.ParseUtils, AttrProps, EH.Util.ScanUtils)
+%%]
+
+
+%%[1 hs
 -------------------------------------------------------------------------
 -------------------------------------------------------------------------
 -- Scanning
@@ -143,3 +135,4 @@ pSymStrSPos = pSymEscStrSPos (keywordsOpsEsc,keywordsOpsParenEsc)
 pSymStr :: (IsParser p Token) => p String
 pSymStr = pSymEscStr (keywordsOpsEsc,keywordsOpsParenEsc)
 
+%%]

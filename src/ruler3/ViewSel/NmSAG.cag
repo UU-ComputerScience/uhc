@@ -2,6 +2,7 @@
 -- View selection
 -------------------------------------------------------------------------
 
+%%[1 ag
 ATTR AGViewSelsItf AGViewSelItf AllViewSel [ | | vwSelNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
 
 SEM ViewSel
@@ -10,4 +11,4 @@ SEM ViewSel
   | Range           lhs     .   vwSelNmS    =   let toS = Set.fold (\n r -> dgReachableFrom @lhs.vwDpdGr n `Set.union` r) Set.empty @vwTo.vwSelNmS
                                                     frSL = [ dgReachableTo @lhs.vwDpdGr n | n <- Set.toList @vwFr.vwSelNmS ]
                                                 in  Set.filter (\n -> any (\s -> n `Set.member` s) frSL) toS
-
+%%]

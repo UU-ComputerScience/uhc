@@ -2,19 +2,15 @@
 -- Interface to all Expr transformations and other utilities
 -------------------------------------------------------------------------
 
-module Expr.Utils
-  ( module Expr.Expr
-  , module Expr.ToAEqn
-  , module Expr.IsRw
-  , module Expr.NmS
-  , module Expr.CoGam
-  , module Expr.LaTeX
-  )
-  where
+%%[1 hs module (Expr.Utils)
+%%]
 
-import Expr.Expr
-import Expr.ToAEqn
-import Expr.IsRw
-import Expr.NmS
-import Expr.CoGam
-import Expr.LaTeX
+%%[1 hs export(module Expr.Expr, module Expr.ToAEqn, module Expr.IsRw, module Expr.NmS, module Expr.CoGam, module Expr.LaTeX)
+%%]
+
+%%[1 hs import(Expr.Expr, Expr.ToAEqn, Expr.IsRw, Expr.NmS, Expr.CoGam, Expr.LaTeX)
+%%]
+
+%%[1 hs
+
+%%]

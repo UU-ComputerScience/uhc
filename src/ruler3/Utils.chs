@@ -1,22 +1,15 @@
 -- $Id: EHTyFitsIn.chs 214 2005-05-28 17:52:29Z atze $
 
-module Utils
-  ( jdGamFmExpr
-  , rlLtxGamTranspose
-  , gamTranspose
-  
-  , sc2DATA
-  , rl2SEM
-  
-  )
-  where
+%%[1 hs module (Utils)
+%%]
 
-import qualified Data.Map as Map
-import Common
-import Expr.Expr
-import FmGam
-import JdShpGam
-import Admin
+%%[1 hs export (jdGamFmExpr, rlLtxGamTranspose, gamTranspose, sc2DATA, rl2SEM)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map, Common, Expr.Expr, FmGam, JdShpGam, Admin)
+%%]
+
+%%[1 hs
 
 -------------------------------------------------------------------------
 -- Misc
@@ -60,5 +53,4 @@ rl2SEM rlInfo dg scNm rlNm vwNm
                    Just (_,_,i) -> daiAGNm i
                    Nothing      -> rlNm
 
-
-
+%%]
