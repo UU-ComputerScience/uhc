@@ -261,7 +261,7 @@ $(RULER3_BLD_EXEC): $(RULER3_AG_ALL_MAIN_DRV_HS) $(RULER3_HS_ALL_DRV_HS) $(RULER
 	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER3_BLD_PREFIX) $(RULER3_BLD_PREFIX)$(RULER3_MAIN).hs -o $@
 	$(STRIP) $@
 
-$(RULER3_BLD_PREFIX)%.ag: $(SRC_RULER3_PREFIX)%.cag
+$(RULER3_BLD_PREFIX)%.ag: $(SRC_RULER3_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D); \
 	$(SHUFFLE) --gen=1 --base=$(*F) --ag --preamble=no --lhs2tex=no --order="1" $< > $@
 
