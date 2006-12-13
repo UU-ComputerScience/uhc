@@ -50,7 +50,7 @@ type RenameMap      = [(Int,  [Int])]
 
 %%[8 export(AbstractValue(..), AbstractNode )
 %%]
-%%[8 export(Location, Variable, EvalMap, ApplyMap)
+%%[8 export(Location, Variable, EvalMap, ApplyMap, Equation, Equations, HeapEquation, HeapEquations)
 %%]
 
 %%[8.AbstractValue
@@ -70,14 +70,20 @@ type Variable = Int
 type EvalMap     = AssocL GrTag Int
 type ApplyMap    = AssocL GrTag (Either GrTag Int)
 
+type Equation  = (Int, AbstractEnvModifier)
+type Equations = [Equation]
+type HeapEquation  = (Int, AbstractHeapModifier)
+type HeapEquations = [HeapEquation]
+
+
 instance Show AbstractValue where
     show av = case av of
-                  AV_Nothing      -> "bot"
-                  AV_Basic        -> "bas"
-                  AV_Locations ls -> "{" ++ show ls ++ "}"
-                  AV_Nodes     ns -> "{" ++ show ns ++ "}"
-                  AV_Tags      ts -> "{" ++ show ts ++ "}"
-                  AV_Error     s  -> "E: " ++ s
+                  AV_Nothing      -> "BOT"
+                  AV_Basic        -> "BAS"
+                  AV_Locations ls -> "LOCS" ++ show (Set.elems ls)
+                  AV_Nodes     ns -> "NODS" ++ show (Map.assocs ns)
+                  AV_Tags      ts -> "TAGS" ++ show (Set.elems ts)
+                  AV_Error     s  -> "ERR: " ++ s
 
 instance Monoid AbstractValue where
     mempty  = AV_Nothing
@@ -97,19 +103,14 @@ instance Monoid AbstractValue where
 mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
 %%]
 
-%% export(AbstractEnvElement(..) )
-%%
-%%[8 export(AbstractHeapElement(..))
-%%]
 %%[8 export(AbstractHeapModifier, AbstractNodeModifier, AbstractEnvModifier(..) )
 %%]
 
 %%[8
-
+{-
 data AbstractHeapElement = AbstractHeapElement
     { ahBaseSet    ::  !AbstractValue
     , ahSharedSet  ::  !(Maybe AbstractValue)
-    , ahMod        ::  !AbstractHeapModifier
     }
     deriving (Eq)
 
@@ -117,21 +118,13 @@ data AbstractHeapElement = AbstractHeapElement
 -- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
 
 instance Show AbstractHeapElement where
-    show (AbstractHeapElement b s m) =    "unique = "       ++ show b
+    show (AbstractHeapElement b s) =  "unique = "       ++ show b
                                        ++ ";\tshared = "  ++ show s
-                                       ++ ";\tmod = "     ++ show m
-
-
-{-
-data AbstractEnvElement = AbstractEnvElement
-    { aeBaseSet   :: !AbstractValue
-    , aeMod       :: !AbstractEnvModifier
-    }
-    deriving (Eq)
-
-instance Show AbstractEnvElement where
-    show (AbstractEnvElement b m) =  "base = " ++ show b ++ ";\tmod = " ++ show m
 -}
+%%]
+
+
+%%[8
 
 
 type AbstractHeapModifier = (AbstractNodeModifier, Maybe Variable)
@@ -139,8 +132,7 @@ type AbstractNodeModifier = (GrTag, [Maybe Variable]) --(tag, [fields])
 
 data AbstractEnvModifier
   = EnvSetAV !AbstractValue
-  | EnvUnion1 ![Variable]
-  | EnvUnion2 ![Variable] Variable GrTag Int -- Embedded EnvSelect
+  | EnvUnion ![Variable]
   | EnvEval Variable Variable
   | EnvApp Variable [ApplyArg] Variable
   | EnvSelect Variable GrTag Int
@@ -180,15 +172,15 @@ instance Ord GrTag where
 %%[8.analysis import( Data.Array, Data.Monoid) export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom)
 
 
-type HptMap        = ((Array Int AbstractValue, Array Int AbstractHeapElement), Map.Map Int AbstractValue)
+type HptMap        = (Array Int AbstractValue, Array Int AbstractValue, Map.Map Int AbstractValue)
 
 
 getEnvVar :: HptMap -> Int -> AbstractValue
-getEnvVar ((ea, _),m) i  | snd (bounds ea) >= i = (ea ! i)
-                         | otherwise            = Map.findWithDefault (AV_Error $ "variable "++ show i ++ " not found") i m
+getEnvVar (ea,_,m) i  | snd (bounds ea) >= i = (ea ! i)
+                      | otherwise            = Map.findWithDefault (AV_Error $ "variable "++ show i ++ " not found") i m
                          
 getHeapLoc :: HptMap -> Int -> AbstractValue
-getHeapLoc ((_, ha),_) i = ahBaseSet (ha ! i)
+getHeapLoc (_,ha,_) i = ha ! i  -- ahBaseSet (ha ! i)
 
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
@@ -217,9 +209,9 @@ isBottom av = case av of
                   otherwise       ->  False
 
 addEnvVar :: HptMap -> Int -> AbstractValue -> HptMap
-addEnvVar (a,fm) i v = (a, Map.insert i v fm)
+addEnvVar (e,h,fm) i v = (e,h, Map.insert i v fm)
 
 addEnvVars :: HptMap -> [(Int, AbstractValue)] -> HptMap
-addEnvVars (a,fm) l = (a, foldl (flip $ uncurry Map.insert) fm l)
+addEnvVars (e,h,fm) l = (e,h, foldl (flip $ uncurry Map.insert) fm l)
 
 %%]

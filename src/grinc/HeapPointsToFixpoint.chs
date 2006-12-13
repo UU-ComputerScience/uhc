@@ -30,17 +30,17 @@ TODO: Shared set and Unique set instead base and shared part
 
 %%[8 module {%{GRIN}HeapPointsToFixpoint}
 %%]
-%%[8 export(AbstractHeap, AbstractEnv)
-%%]
 %%[8 export(solveEquations)
 %%]
 %%[8 import(Data.Maybe, Data.Either, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad)
 %%]
-%%[8 import({%{EH}Base.Common}, {%{EH}GrinCode})
-%%]
 %%[8 import(qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
+%%[8 import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%]
 %%[8 import({%{GRIN}GRINCCommon})
+%%]
+%%[8 import(Debug.Trace)
 %%]
 
 
@@ -48,35 +48,43 @@ TODO: Shared set and Unique set instead base and shared part
 %%[8.updateEnvHeap
 
 type AbstractEnv s  = STArray s Variable AbstractValue
-type AbstractHeap s = STArray s Location AbstractHeapElement
+type AbstractHeap s = STArray s Location AbstractValue
 
 -- The equations of the element are fed to envChangeSet
 -- and the output is merged to the baseset
 updateEnvElement :: AbstractEnvModifier -> AbstractValue -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
 updateEnvElement em ev env heap applyMap = do
     { newChangeSet <- envChangeSet em env heap applyMap
-    ; let newBaseSet = newChangeSet `mappend` ev
-    ; return newBaseSet
+    ; return (ev `mappend` newChangeSet)
     }
 
--- The equations of the element are fed to heapChangeSet
--- the first part of the output is merged to the baseset
--- the other part of the output is merged to the sharedset if it already exists, otherwise to the baseset
-updateHeapElement :: AbstractHeapElement -> AbstractEnv s -> ST s AbstractHeapElement
-updateHeapElement he env = do
-    { (baseChange, sharedChange) <- heapChangeSet (ahMod he) env
-    ; let  baseOld      = ahBaseSet   he
-           mbShareOld   = ahSharedSet he
+updateHeapElement :: AbstractHeapModifier -> AbstractValue -> AbstractEnv s -> ST s AbstractValue
+updateHeapElement hm hv env 
+  = do
+    {  -- The equations of the element are fed to heapChangeSet
+       (baseChange, sharedChange) <- heapChangeSet hm env
+       -- ignore the difference between basepart and sharedpart, just merge everything
+    ; return (hv `mappend` baseChange `mappend` sharedChange)
+{-
+      -- the first part of the output is merged to the baseset
+      -- the other part of the output is merged to the sharedset if it already exists, otherwise to the baseset
+    ; let  baseOld      = ahBaseSet   hv
+           mbShareOld   = ahSharedSet hv
            (baseNew, sharedNew) = case mbShareOld of
-                                    Nothing       -> (baseOld `mappend` baseChange `mappend` sharedChange, Nothing                               )
+                                    Nothing       -> (baseOld `mappend` baseChange `mappend` sharedChange, Nothing                                )
                                     Just shareOld -> (baseOld `mappend` baseChange                       , Just (shareOld `mappend` sharedChange) )
     ; return (he { ahBaseSet = baseNew, ahSharedSet = sharedNew })
+-}
     }
 
 %%]
 
 %%[8.sharingAnalysis
 
+addSharingInfo :: AbstractEnv s -> AbstractHeap s -> ST s ()
+addSharingInfo env heap = return ()
+
+{-
 -- For all elements of the environment
 --   if the sharing flag is up,
 --     for all heap-locations it contains (if any),
@@ -86,7 +94,6 @@ updateHeapElement he env = do
 -- The sharedset is merged to the baseset for those heap-locations
 -- which occur in the AV_Locations of an environmentElement with its sharing flag set
 
-addSharingInfo :: AbstractEnv s -> AbstractHeap s -> ST s ()
 addSharingInfo env heap = getElems env >>= mapM_ (setSharingInfo heap)
 
 setSharingInfo heap v = case v of
@@ -104,6 +111,8 @@ setShared heap l = do
                          )
                          (ahSharedSet he)
     }
+-}
+
 %%]
 
 %%[8.heapChangeSet
@@ -129,14 +138,9 @@ heapChangeSet ((tag, deps), resultDep) env = do
 envChangeSet :: AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
 envChangeSet am env heap applyMap = case am of
                                         EnvSetAV    av       -> return av
-                                        EnvUnion1   vs       -> do
+                                        EnvUnion    vs       -> do
                                                                 {  rs <- mapM valAbsEnv vs
                                                                 ;  return (mconcat rs)
-                                                                }
-                                        EnvUnion2   vs v n i -> do
-                                                                {  rs <- mapM valAbsEnv vs
-                                                                ;  p <- valAbsEnv v
-                                                                ;  return (mappend (selectChangeSet n i p) (mconcat rs))
                                                                 }
                                         EnvEval     v ev     -> do
                                                                 {  p <- valAbsEnv v
@@ -161,9 +165,10 @@ envChangeSet am env heap applyMap = case am of
     --valAbsHeap :: Location -> ST s (AbstractValue, AbstractValue)
     valAbsHeap l = do
         { elem <- lookupHeap heap l
-        ; let resultVar = snd (ahMod elem)
-        ; exceptions <- maybe (return Nothing) (\v -> valAbsEnv (v+1) >>= return . Just) resultVar
-        ; return (ahBaseSet elem `mappend` maybe AV_Nothing id (ahSharedSet elem), exceptions)
+        ; return (elem, Nothing)
+        --; let resultVar = snd (ahMod elem)
+        --; exceptions <- maybe (return Nothing) (\v -> valAbsEnv (v+1) >>= return . Just) resultVar
+        --; return (ahBaseSet elem `mappend` maybe AV_Nothing id (ahSharedSet elem), exceptions)
         }
     evalFilter (AV_Nodes nodes) = let isValueTag t = case t of
                                                          GrTag_Any          -> True
@@ -226,18 +231,18 @@ envChangeSet am env heap applyMap = case am of
 %%]
 
 %%[8 ghc (6.6,_)
-abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
-abstractBounds = getBounds
+--abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
+--abstractBounds = getBounds
 
-abstractIndices :: Ix i => STArray s i a -> ST s [i]
-abstractIndices a = getBounds a >>= return . range
+--abstractIndices :: Ix i => STArray s i a -> ST s [i]
+--abstractIndices a = getBounds a >>= return . range
 %%]
 %%[8 ghc (_,6.4.2)
-abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
-abstractBounds = return . bounds
+--abstractBounds :: Ix i => STArray s i a -> ST s (i, i)
+--abstractBounds = return . bounds
 
-abstractIndices :: Ix i => STArray s i a -> ST s [i]
-abstractIndices = return . indices
+--abstractIndices :: Ix i => STArray s i a -> ST s [i]
+--abstractIndices = return . indices
 %%]
 
 %%[8
@@ -247,11 +252,11 @@ fromJust' _ (Just a) = a
 lookupEnv :: AbstractEnv s -> Variable -> ST s AbstractValue
 lookupEnv env idx = readArray env idx
 
-lookupHeap :: AbstractHeap s -> Location -> ST s AbstractHeapElement
+lookupHeap :: AbstractHeap s -> Location -> ST s AbstractValue
 lookupHeap heap idx = readArray heap idx
 
 appendApplyArg :: AbstractEnv s -> AbstractValue -> ST s ()
-appendApplyArg env av = do { (applyArgIdx,_) <- abstractBounds env
+appendApplyArg env av = do { let applyArgIdx = getNr applyNr
                            ; applyArg <- readArray env applyArgIdx
                            ; writeArray env applyArgIdx (av `mappend` applyArg)
                            }
@@ -264,13 +269,14 @@ appendExceptions env handlerVar av = do { exceptions <- readArray env handlerVar
 
 %%[8.fixpoint
 
-fixpoint indEnv indHeap procEnv procHeap = countFixpoint 1
+fixpoint equations heapEqs procEnv procHeap 
+  = countFixpoint 1
     where
     countFixpoint count = do
         { let doStepEnv  b i = procEnv  i >>= return . (b||)
         ; let doStepHeap b i = procHeap i >>= return . (b||)
-        ; changesEnv  <- foldM doStepEnv  False indEnv
-        ; changesHeap <- foldM doStepHeap False indHeap
+        ; changesEnv  <- foldM doStepEnv  False equations
+        ; changesHeap <- foldM doStepHeap False heapEqs
         ; if changesEnv || changesHeap
           then countFixpoint (count+1)
           else return count
@@ -278,28 +284,43 @@ fixpoint indEnv indHeap procEnv procHeap = countFixpoint 1
 %%]
 
 %%[8
-solveEquations :: Array Int AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s Int
-solveEquations mods env heap applyMap =
-    do { indHeap <- abstractIndices heap
-       ; let indEnv = assocs mods
-       ; let { procEnv (i,em) = do
-                 { e  <- lookupEnv env i
-                 ; e2 <- updateEnvElement em e env heap applyMap
-                 ; let changed =   e /= e2
-                 ; when changed (writeArray env i e2)
-                 ; return changed
-                 }
-             ; procHeap i = do
-                { e  <- lookupHeap heap i
-                ; e2 <- updateHeapElement e env
-                ; let changed = ahBaseSet e /= ahBaseSet e2 || ahSharedSet e /= ahSharedSet e2
-                ; when changed (writeArray heap i e2)
-                ; return changed
-                }
-             }
-       ; count <- fixpoint indEnv indHeap procEnv procHeap
+solveEquations :: Int -> Int -> Equations -> HeapEquations -> ApplyMap -> (Int,HptMap)
+solveEquations maxEnv maxHeap equations heapEqs applyMap =
+    runST (
+    do { 
+   	    -- create arrays
+       ; env     <- newArray (0, maxEnv ) AV_Nothing
+       ; heap    <- newArray (0, maxHeap) AV_Nothing  -- AbstractHeapElement {ahBaseSet = AV_Nothing,  ahSharedSet = Just AV_Nothing}
+
+       ; let procEnv (i,em) 
+                = do
+                  { e  <- lookupEnv env i
+                  ; e2 <- updateEnvElement em e env heap applyMap
+                  ; let changed =  e /= e2
+                  ; when changed (writeArray env i e2)
+                  ; return changed
+                  }
+             procHeap (i,hm) 
+                = do
+                  { e  <- lookupHeap heap i
+                  ; e2 <- updateHeapElement hm e env
+                  ; let changed =  e /= e2   -- ahBaseSet e /= ahBaseSet e2 || ahSharedSet e /= ahSharedSet e2
+                  ; when changed (writeArray heap i e2)
+                  ; return changed
+                  }
+       ; count <- fixpoint equations heapEqs procEnv procHeap
        ; addSharingInfo env heap
-       ; return count
+       
+       ; absHeap <- unsafeFreeze heap
+       ; absEnv  <- unsafeFreeze env
+    
+       --; trace (unlines ("EQUATIONS"     : map show equations))        $ return ()
+       --; trace (unlines ("SOLUTION"      : map show (assocs absEnv)))  $ return ()
+       --; trace (unlines ("HEAPEQUATIONS" : map show heapEqs))          $ return ()
+       --; trace (unlines ("HEAPSOLUTION"  : map show (assocs absHeap))) $ return ()
+       
+       ; return (count, (absEnv, absHeap, Map.empty))
        }
+       )
 
 %%]
