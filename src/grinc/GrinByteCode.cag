@@ -11,13 +11,31 @@
 %%[8 hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
 %%]
 
-%%[8 hs export(InsOp_LocE(..), InsOp_LocB(..), InsOp_LocODst(..), InsOp_LocOSrc(..), InsOp_TyOp(..), InsOp_DataOp(..), InsOp_ImmSz(..), InsOp_Deref(..), Imm(..))
+%%[8 hs export(InsOp_LocE(..), InsOp_LocB(..), InsOp_LocODst(..), InsOp_LocOSrc(..), InsOp_TyOp(..), InsOp_DataOp(..), InsOp_ImmSz(..), InsOp_Deref(..), InsOp_DerefB(..), Imm(..))
 %%]
 
 %%[8 import({GrinByteCode/AbsSyn})
 %%]
 
 %%[12 hs import({%{EH}Core(HsName2OffsetMpMp)})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuration like constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Nr of words occupied by header in node
+
+%%[8 hs  export(nrNodeHdrWords)
+nrNodeHdrWords :: Int
+nrNodeHdrWords = 1
+%%]
+
+Nr of words required for call return info
+
+%%[8 hs  export(nrCallRetWords)
+nrCallRetWords :: Int
+nrCallRetWords = 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,25 +111,23 @@ type StackDepth = Int
 %%[8 hs export(OptimCtxt(..),defaultOptimCtxt)
 data OptimCtxt
   = OptimCtxt
-      { ocxWillEval       	:: Bool
-      , ocxOmitTOSLd		:: Bool
+      { ocxOmitTOSLd        :: Bool
       }
 
 defaultOptimCtxt :: OptimCtxt
-defaultOptimCtxt = OptimCtxt False False
+defaultOptimCtxt = OptimCtxt False
 %%]
 
-%%[8 hs export(OptimEffect(..),defaultOptimEffect,oefIsEval)
+%%[8 hs export(OptimEffect(..),defaultOptimEffect)
 data OptimEffect
   = OptimEffect
+{- -- moved to separate transformation to eliminate redundant eval's
       { oefIsEvaluated         :: Bool
       }
+-}
 
 defaultOptimEffect :: OptimEffect
-defaultOptimEffect = OptimEffect False
-
-oefIsEval :: OptimEffect
-oefIsEval = defaultOptimEffect {oefIsEvaluated = True}
+defaultOptimEffect = OptimEffect {- False -}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,11 +137,11 @@ oefIsEval = defaultOptimEffect {oefIsEvaluated = True}
 %%[8 hs export(ValAccess(..),ValAccessGam)
 data ValAccess
   = Val_LocalOffset     StackDepth
+  | Val_Int             Integer
   | Val_GlobEntry       { vaEntryInx :: Int }
 %%[[12
   | Val_ImpEntry        { vaModOff, vaEntryOff :: Int }
 %%]]
---  | Val_GlobConst       HsName 
   deriving Show
 
 instance PP ValAccess where
@@ -173,10 +189,10 @@ nmEnvLookup nm env
 %%[8 hs export(LoadSrc(..))
 data LoadSrc
   = LoadSrc_TOS
-  | LoadSrc_Imm			{ ldsrcImm		:: Integer 		}
-  | LoadSrc_Imm_Int		{ ldsrcImm		:: Integer  	}
-  | LoadSrc_TOS_Rel		{ ldsrcOff		:: StackDepth 	}
-  | LoadSrc_Reg_Rel		{ ldsrcOff		:: StackDepth 	}
+  | LoadSrc_Imm         { ldsrcImm      :: Integer      }
+  | LoadSrc_Imm_Int     { ldsrcImm      :: Integer      }
+  | LoadSrc_TOS_Rel     { ldsrcOff      :: StackDepth   }
+  | LoadSrc_Reg_Rel     { ldsrcOff      :: StackDepth   }
   deriving (Show)
 
 ldsrc2ins' :: (Instr -> Instr) -> LoadSrc -> (InsSeq,StackDepth)
@@ -195,10 +211,10 @@ ldsrc2ins = ldsrc2ins' id
 %%[8 hs export(Load(..))
 data Load
   = Load
-  	  { ldPreIns		:: InsSeq
-  	  , ldPreStackInc	:: StackDepth
-  	  , ldPreLoc		:: LoadSrc
-  	  }
+      { ldPreIns        :: InsSeq
+      , ldPreStackInc   :: StackDepth
+      , ldPreLoc        :: LoadSrc
+      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -214,6 +230,8 @@ nmLd' optim env modNmConstInx stkDepth nm
              Val_LocalOffset o
                -> (mva,Load FSeqNil 0 (if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off))
                where off = stkDepth - o
+             Val_Int i
+               -> (mva,Load FSeqNil 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
                -> (mva,Load (FSeq $ ann nm $ ldg InsOp_LocB_TOS (Link modNmConstInx LinkTbl_CodeEntry o)) 1 LoadSrc_TOS)
 %%[[12
@@ -255,42 +273,40 @@ data GrValIntro
   | GrValIntro_None
 
 data GrValIntroAlt
-  = GrValIntroAlt_One    	InsSeq StackDepth OptimEffect
-  | GrValIntroAlt_Delay    	InsSeq StackDepth OptimEffect (Maybe ValAccess) Load
+  = GrValIntroAlt_OnTOS     InsSeq StackDepth OptimEffect
+  | GrValIntroAlt_Delay     InsSeq StackDepth OptimEffect (Maybe ValAccess) Load
 %%]
 
 %%[8 hs export(gviLd,gviLd',gviLdFold)
 gviLdFold' :: GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
 gviLdFold' dflt optim env modNmConstInx stkDepth introL
   = foldl ld dflt $ reverse $ introL
-  where ld (GrValIntroAlt_One ins dep _) intro
-          = GrValIntroAlt_One (ins :++: ins') (dep+dep') defaultOptimEffect
-          where (GrValIntroAlt_One ins' dep' _) = gviLd optim env modNmConstInx (stkDepth+dep) intro
+  where ld (GrValIntroAlt_OnTOS ins dep _) intro
+          = GrValIntroAlt_OnTOS (ins :++: ins') (dep+dep') defaultOptimEffect
+          where (GrValIntroAlt_OnTOS ins' dep' _) = gviLd optim env modNmConstInx (stkDepth+dep) intro
 
 gviLdFold :: OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-gviLdFold = gviLdFold' (GrValIntroAlt_One FSeqNil 0 defaultOptimEffect)
+gviLdFold = gviLdFold' (GrValIntroAlt_OnTOS FSeqNil 0 defaultOptimEffect)
 
 gviLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd' optim env modNmConstInx stkDepth intro
-  = ld optim (GrValIntroAlt_One FSeqNil 0 defaultOptimEffect) intro
-  where ld optim dflt@(GrValIntroAlt_One ins dfltInc _) intro
+  = ld optim (GrValIntroAlt_OnTOS FSeqNil 0 defaultOptimEffect) intro
+  where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _) intro
           = case intro of
               GrValIntro_Nm nm
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
                 where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Str s l
-                -> GrValIntroAlt_One (ins ::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+1) defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins ::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+1) defaultOptimEffect
               GrValIntro_Int i
-                -> GrValIntroAlt_Delay ins dfltInc oefIsEval Nothing (Load FSeqNil 0 $ LoadSrc_Imm_Int i)
+                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (Load FSeqNil 0 $ LoadSrc_Imm_Int i)
+{-
               GrValIntro_Grp gtag [i] | tagIsUnboxed gtag
                 -> ld optim dflt i
-              GrValIntro_Grp (GrTag_Lit GrTagFun _ nm) is | ocxWillEval optim
-                -> GrValIntroAlt_One ins' (dfltInc+inc') oefIsEval
-                where (GrValIntroAlt_One ins inc _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
-                      (ins',inc') = gvCall env modNmConstInx ins inc (dep'+inc) nm
+-}
               GrValIntro_Grp gtag is
-                -> GrValIntroAlt_One (ins :++: FSeqL [meta (ppGrTag gtag)] :++: tins :++: sins) sinc (defaultOptimEffect {oefIsEvaluated = isEvaluated})
-                where i@(GrValIntroAlt_One ins inc _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
+                -> GrValIntroAlt_OnTOS (ins :++: FSeqL [meta (ppGrTag gtag)] :++: tins :++: sins) sinc defaultOptimEffect
+                where i@(GrValIntroAlt_OnTOS ins inc _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
                       (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
                       (sins,sinc) = ndStore (allocInc + inc + tinc)
               _ -> dflt
@@ -300,7 +316,7 @@ gviLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd optim env modNmConstInx stkDepth intro
   = case gviLd' optim env modNmConstInx stkDepth intro of
       GrValIntroAlt_Delay ins inc optimEffect mbva l
-        -> GrValIntroAlt_One (ins :++: sins) (inc + sinc) optimEffect
+        -> GrValIntroAlt_OnTOS (ins :++: sins) (inc + sinc) optimEffect
         where (sins,sinc) = vaAndLd2Ins optim hsnUnknown (mbva,l)
       a -> a
 %%]
@@ -399,7 +415,7 @@ imm c
 %%% Constructing: loading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(ldc,ldl,ldg,ldi,l1tr)
+%%[8 hs export(ldc,ldl,ldg,ldi,l1tr,l2ts)
 ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
 ld ind locB locE c
   = Instr_Ld ind locB locE s i
@@ -417,8 +433,24 @@ ldl c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_SP (nrWord2Byte c)
 l1tr :: Integral c => c -> Instr
 l1tr c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_Reg (nrWord2Byte c)
 
+l2ts :: Integral c => c -> Instr
+l2ts c = ld InsOp_Deref_Two InsOp_LocB_TOS InsOp_LocE_SP (nrWord2Byte c)
+
 ldg :: InsOp_LocB -> Link -> Instr
 ldg locB l = Instr_LdGlobal locB l
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: storing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- not implemented yet
+
+%%[8 hs export()
+st :: Integral c => InsOp_DerefB -> InsOp_LocE -> InsOp_LocB -> c -> Instr
+st ind locE locB c
+  = Instr_St ind locE locB s i
+  where (s,i) = imm c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -499,9 +531,9 @@ callc nArg
   = Instr_CallC s1 i1
   where (s1,i1) = imm nArg
 
-retcase :: Integral c => c -> c -> LocRef -> Instr
-retcase nRes retOffSurr l
-  = Instr_RetCase s1 s2 i1 i2 l
+retcase :: Integral c => c -> c -> Instr
+retcase nRes retOffSurr
+  = Instr_RetCase s1 s2 i1 i2
   where (s1,i1) = imm $ nrWord2Byte nRes
         (s2,i2) = imm $ nrWord2Byte retOffSurr
 %%]

@@ -7,7 +7,16 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},UU.Pretty) export(GrAGItf(..), GrModule(..), GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
+%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},UU.Pretty)
+%%]
+
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[8 hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
+%%]
+
+%%[8 hs export(GrAGItf(..), GrModule(..))
 %%]
 
 %%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..), GrTagL, GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL)
@@ -76,6 +85,97 @@ instance PP GrTagCateg where
 type EvApTagKey   = (GrTag,Int)
 data EvApTagElt   = EvApTagTag GrTag | EvApTagVar HsName | EvApTagUnit | EvApTagThrow deriving (Eq,Show)
 type EvApTagMp    = AssocL EvApTagKey EvApTagElt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var info used for (e.g.) inlining for GrinByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(FvInfo(..),FvUse(..),FvInfoMp)
+data FvUse
+  = FvUse_Call | FvUse_Val | FvUse_Other
+  deriving (Eq,Ord,Show)
+
+data FvInfo
+  = FvInfo
+      { fviUseCount		:: Int
+      , fviUseAs 		:: Set.Set FvUse
+      }
+  deriving (Show)
+
+type FvInfoMp = Map.Map HsName FvInfo
+%%]
+
+%%[8 hs export(fviMpUnion,fviMpSingleton,fviMpSingleton',fviMpUnions,fviMpFromList,fviMpFromList',fviMpDifference)
+fviMpDifference :: FvInfoMp -> FvInfoMp -> FvInfoMp
+fviMpDifference = Map.difference
+
+fviMpUnion :: FvInfoMp -> FvInfoMp -> FvInfoMp
+fviMpUnion = Map.unionWith (\i1 i2 -> i1 {fviUseCount = fviUseCount i1 + fviUseCount i2, fviUseAs = Set.unions [fviUseAs i1,fviUseAs i2]})
+
+fviMpUnions :: [FvInfoMp] -> FvInfoMp
+fviMpUnions = foldr fviMpUnion Map.empty
+
+fviMpSingleton' :: FvUse -> HsName -> FvInfoMp
+fviMpSingleton' u n = Map.singleton n (FvInfo 1 (Set.singleton u))
+
+fviMpSingleton :: HsName -> FvInfoMp
+fviMpSingleton = fviMpSingleton' FvUse_Other
+
+fviMpFromList' :: FvUse -> [HsName] -> FvInfoMp
+fviMpFromList' u = fviMpUnions . map (fviMpSingleton' u)
+
+fviMpFromList :: [HsName] -> FvInfoMp
+fviMpFromList = fviMpFromList' FvUse_Other
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name alias info used for alias removal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(NmAlias(..),NmAliasMp)
+data NmAlias
+ = NmAlias_Nm		HsName													-- name to name
+ | NmAlias_Const	{naliNm :: HsName, naliVal  :: GrVal        }			-- name to single constant (other than name)
+ | NmAlias_Grp  	{naliNm :: HsName, naliAlis :: [NmAlias]	}			-- name to group of values, i.e. node constituents
+ | NmAlias_None
+
+type NmAliasMp = Map.Map HsName NmAlias
+%%]
+
+Assume only mappings to NmAlias_Nm, others are not replaced.
+
+%%[8 hs export(nmAliasRepl,nmAliasRepl')
+nmAliasRepl' :: NmAliasMp -> HsName -> NmAlias
+nmAliasRepl' m n
+  = case Map.lookup n m of
+      Just a -> a
+      _      -> NmAlias_Nm n
+
+nmAliasRepl :: NmAliasMp -> HsName -> HsName
+nmAliasRepl m n
+  = case Map.lookup n m of
+      Just (NmAlias_Nm    n'  ) -> n'
+      Just (NmAlias_Grp   n' _) -> n'
+      Just (NmAlias_Const n' _) -> n'
+      _                         -> n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inline optimisation map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(GrInl(..),GrInlMp)
+data GrInl
+  = GrInl_Call
+      { inlArgNmL   :: [HsName]
+      , inlGrExpr   :: GrExpr
+      }
+  | GrInl_CAF
+      { inlGrExpr   :: GrExpr
+      }
+
+type GrInlMp = Map.Map HsName GrInl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

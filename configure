@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GHC_EHC_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -848,6 +848,9 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>
+                          Additional options to pass to GCC when compiling
+                          with EHC.
   --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
                           Additional options to pass to GHC when compiling
                           EHC.
@@ -1574,7 +1577,17 @@ echo "$as_me: error:
 AR_CMD=$arCmd
 
 
-### 'with' option for ghc
+### 'with' option for gcc options
+
+# Check whether --with-gcc-ehc-options or --without-gcc-ehc-options was given.
+if test "${with_gcc_ehc_options+set}" = set; then
+  withval="$with_gcc_ehc_options"
+   gccEhcOptions="$withval"
+fi;
+GCC_EHC_OPTIONS="$gccEhcOptions"
+
+
+### 'with' option for ghc options
 
 # Check whether --with-ghc-ehc-options or --without-ghc-ehc-options was given.
 if test "${with_ghc_ehc_options+set}" = set; then
@@ -4691,6 +4704,7 @@ s,@ranlibCmd@,$ranlibCmd,;t t
 s,@RANLIB_CMD@,$RANLIB_CMD,;t t
 s,@arCmd@,$arCmd,;t t
 s,@AR_CMD@,$AR_CMD,;t t
+s,@GCC_EHC_OPTIONS@,$GCC_EHC_OPTIONS,;t t
 s,@GHC_EHC_OPTIONS@,$GHC_EHC_OPTIONS,;t t
 s,@ghcCmd@,$ghcCmd,;t t
 s,@GHC_CMD@,$GHC_CMD,;t t

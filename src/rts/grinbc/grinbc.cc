@@ -244,7 +244,9 @@ void gb_listForceEval( GB_NodePtr n, int sz )
 {
 	while ( sz-- && ! GB_List_IsNull( n = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,n) )) ) )
 	{
+  		IF_GB_TR_ON(3,printf("gb_listForceEval1 sz %d, n %x\n", sz, n ););
 		n = GB_List_Tail(n) ;
+  		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %x\n", n ););
 	}
 }
 %%]
@@ -297,12 +299,14 @@ void gb_prWord( GB_Word x )
 	printf( "Wd 0x%0.8x: "
 #endif
 	      , x ) ;
-	if ( GB_Word_IsInt(x)
+	if ( ( GB_Word_IsInt(x)
 #if USE_BOEHM_GC
-	     || x < Cast(GB_Word,StackEnd)
+	       || x < Cast(GB_Word,StackEnd)
 #else
-	     || x < Cast(GB_Word,Heap)
+	       || x < Cast(GB_Word,Heap)
 #endif
+         )
+         && n != &gb_Nil
 	)
 	{
 #if USE_64_BITS
@@ -464,40 +468,60 @@ void gb_interpretLoop()
 				GB_Push( GB_Int2GBInt( x ) ) ;
 				break ;
 
-			/* l0tt08 */
-			/* l0tt16 */
-			/* l0tt32 */
-			/* l0tt64 */
+			/* l0ts08 */
+			/* l0ts16 */
+			/* l0ts32 */
+			/* l0ts64 */
 
 			/* load TOS relative content on stack */
-			/* l1tt08 */
+			/* l1ts08 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08) :
 				GB_PCImmIn(int8_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
-			/* l1tt16 */
+			/* l1ts16 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16) :
 				GB_PCImmIn(int16_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
-			/* l1tt32 */
+			/* l1ts32 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32) :
 				GB_PCImmIn(int32_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
-			/* l1tt64 */
+			/* l1ts64 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64) :
 				GB_PCImmIn(int64_t,x) ;
 				GB_Push2( GB_SPByteRelx( x ) ) ;
 				break ;
 
-			/* l2tt08 */
-			/* l2tt16 */
-			/* l2tt32 */
-			/* l2tt64 */
+			/* l2ts08 */
+			case GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08) :
+				GB_PCImmIn(int8_t,x) ;
+				GB_Push2( GB_RegByteRelx( GB_TOS, x ) ) ;
+				break ;
+
+			/* l2ts16 */
+			case GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16) :
+				GB_PCImmIn(int16_t,x) ;
+				GB_Push2( GB_RegByteRelx( GB_TOS, x ) ) ;
+				break ;
+
+			/* l2ts32 */
+			case GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32) :
+				GB_PCImmIn(int32_t,x) ;
+				GB_Push2( GB_RegByteRelx( GB_TOS, x ) ) ;
+				break ;
+
+			/* l2ts64 */
+			case GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64) :
+				GB_PCImmIn(int64_t,x) ;
+				GB_Push2( GB_RegByteRelx( GB_TOS, x ) ) ;
+				break ;
+
 			
 			/* l0tr08 */
 			/* l0tr16 */
@@ -609,6 +633,7 @@ gb_interpreter_InsCallEntry:
 				break ;
 
 #define GB_CallC_Code(f,nargs,args,res) \
+				IF_GB_TR_ON(3,printf("GB_CallC_Code1 f %x nargs %d\n", f, nargs );); \
 				switch ( nargs )																																								\
 				{																																												\
 					case 0 : res = Cast(GB_CFun*,f)(  ) ; break ;																																\
@@ -619,9 +644,10 @@ gb_interpreter_InsCallEntry:
 					case 5 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1), GB_RegRelx(args,2), GB_RegRelx(args,3), GB_RegRelx(args,4) ) ; break ;								\
 					case 6 : res = Cast(GB_CFun*,f)( GB_RegRelx(args,0), GB_RegRelx(args,1), GB_RegRelx(args,2), GB_RegRelx(args,3), GB_RegRelx(args,4), GB_RegRelx(args,5) ) ; break ;			\
 					default :																																									\
-						rts_panic1_1( "no call C for nr of args", nargs ) ;																															\
+						rts_panic1_1( "no call C for nr of args", nargs ) ;																														\
 						break ;																																									\
-				}
+				} \
+				IF_GB_TR_ON(3,printf("GB_CallC_Code2 f %x res %x\n", f, res ););
 
 			/* callc */
 			case GB_Ins_CallC :
@@ -1155,6 +1181,18 @@ static GB_Mnem gb_mnemTable[] =
   }
 , { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64)
   , "l1ts64"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08)
+  , "l2ts08"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16)
+  , "l2ts16"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32)
+  , "l2ts32"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64)
+  , "l2ts64"
   }
 , { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_08)
   , "l1tr08"

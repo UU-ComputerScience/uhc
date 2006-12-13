@@ -241,12 +241,13 @@ grinScanOpts
 hiScanOpts :: ScanOpts
 hiScanOpts
   =  hsScanOpts
-        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity"
+        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     , "True", "False"
                                     ]
                                     ++ scoKeywordsTxt hsScanOpts
                                     ++ scoKeywordsTxt tyScanOpts
+                                    ++ scoKeywordsTxt grinScanOpts
         ,   scoOpChars          =   scoOpChars coreScanOpts
         ,   scoDollarIdent      =   True
         ,   scoSpecChars        =   scoSpecChars coreScanOpts

@@ -36,6 +36,8 @@ DATA Binding
         idOccs                  : {[(IdOcc,IdOcc)]}
     | Arities
         idArities               : {AssocL HsName Int}
+    | GrInlines
+        inlMp                   : {AssocL HsName ([HsName],GrExpr)}
     | Val
         nm                      : HsName
         ty                      : Ty

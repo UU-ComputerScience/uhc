@@ -247,29 +247,6 @@ int main_GB_Exit(int argc, char** argv)
 }
 %%]
 
-     bflag = 0;
-     while ((ch = getopt_long(argc, argv, "bf:", longopts, NULL)) != -1)
-             switch (ch) {
-             case 'b':
-                     bflag = 1;
-                     break;
-             case 'f':
-                     if ((fd = open(optarg, O_RDONLY, 0)) == -1)
-                             err(1, "unable to open %s", optarg);
-                     break;
-             case 0:
-                     if (daggerset) {
-                             fprintf(stderr,"Buffy will use her dagger to "
-                                 "apply fluoride to dracula's teeth\n");
-                     }
-                     break;
-             default:
-                     usage();
-     }
-     argc -= optind;
-     argv += optind;
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tracing, misc info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

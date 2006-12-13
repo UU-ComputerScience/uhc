@@ -87,13 +87,12 @@ SEM Instr
   | LdGlobal    loc         .   linkCLoc    =   @lhs.cLoc + 1
   | Label       loc         .   labelCLoc   =   @lhs.cLoc
   | LabelRef    loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
-  | RetCase     loc         .   labelCLocAft=   @retOffSurr.cLoc + Cfg.gbLabelOffsetSize
 
 SEM Instr
-  | Ld          imm         .   cLoc        =   @lhs.cLoc + 1
+  | Ld St       imm         .   cLoc        =   @lhs.cLoc + 1
   | Op          imm         .   cLoc        =   @lhs.cLoc + 2
   | LdGlobal    lhs         .   cLoc        =   @linkCLoc + fromInteger Cfg.sizeofGrWord
-  | LabelRef RetCase
+  | LabelRef
                 lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
                 nArgMine    .   cLoc        =   @lhs.cLoc + 2
@@ -139,9 +138,7 @@ SEM Module
 
 %%[8
 SEM Instr
-  | RetCase     loc         .   locRef      =   @contLocRef
-  | LabelRef RetCase
-                loc         .   refOff      =   (panicJust "Instr.{LabelRef,RetCase}.refOff"
+  | LabelRef    loc         .   refOff      =   (panicJust "Instr.{LabelRef}.refOff"
                                                  $ Map.lookup (lrefId @locRef) @lhs.labelMp) - @labelCLocAft
 %%]
 
@@ -356,7 +353,7 @@ ppLink sz = ppHexL . ppHex' (Just 2) (sz * 2)
 
 %%[8
 SEM Instr
-  | Ld          lhs         .   pp          =   ppCommas [ppHex 2 @enc,@imm.pp]
+  | Ld St       lhs         .   pp          =   ppCommas [ppHex 2 @enc,@imm.pp]
   | AllocStore Fetch Call Eval Apply
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | TailCall RetCall
@@ -365,7 +362,7 @@ SEM Instr
   | CaseCall FetchUpdate
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp]
-  | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp,ppLink Cfg.gbLabelOffsetSize @refOff]
+  | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @lhs.opts @ann
   | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
@@ -439,6 +436,7 @@ ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: PP_Doc ]
 %%[8
 SEM Instr
   | Ld          lhs         .   mn          =   "l"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
+  | St          lhs         .   mn          =   "s"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | AllocStore  lhs         .   mn          =   "allocstore"    >|< @locSrc.mn
   | Fetch       lhs         .   mn          =   "fetch"         >|< @locSrc.mn
   | Call        lhs         .   mn          =   "call"          >|< @locSrc.mn
@@ -448,7 +446,7 @@ SEM Instr
   | FetchUpdate lhs         .   mn          =   pp "fetchupd"
   | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
   | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
-  | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nResSz.mn >#< @retOffSurr.mn >#< lrefId @locRef
+  | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
@@ -518,6 +516,8 @@ ATTR AllInsOp Meta [ | | enc: Int ]
 SEM Instr
   -- load group
   | Ld          loc         .   enc         =   0x00 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+  -- store group
+  | St          loc         .   enc         =   0x80 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 3) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   -- arithmetic group
   | Op          loc         .   enc         =   0xC0 .|. (@op.enc `shiftL` 3) .|. (@opndTy.enc `shiftL` 1) .|. (@locDst.enc)
   -- eval/ldg group
@@ -595,8 +595,11 @@ SEM InsOp_Deref
   | One         lhs         .   enc         =   1
   | Two         lhs         .   enc         =   2
   | Int         lhs         .   enc         =   3
+
+SEM InsOp_DerefB
+  | One         lhs         .   enc         =   0
+  | Two         lhs         .   enc         =   1
 %%]
-  | CaseCall    loc         .   enc2        =   (@nCasesSz.enc)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to pp, context
@@ -606,7 +609,7 @@ SEM InsOp_Deref
 ATTR Imm [ immSz: InsOp_ImmSz | | ]
 
 SEM Instr
-  | Ld          imm         .   immSz       =   @immSz.self
+  | Ld St       imm         .   immSz       =   @immSz.self
   | Op          imm         .   immSz       =   @immSz.self
   | TailCall RetCall
                 nArgMine    .   immSz       =   @nArgMineSz.self

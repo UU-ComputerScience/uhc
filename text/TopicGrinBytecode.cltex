@@ -832,7 +832,7 @@ ild(i)(rd)(rs)(x)
        2  ->  d  :=  *s'
        i  ->  d  :=  Enc(s)
   where  (s,s')  <-  case ^^ angle(rs) of
-                       t  -> (gstack + x,*gstack+x)
+                       s  -> (gstack + x,*gstack+x)
                        r  -> (greg + x,*greg+x)
                        p  -> (gpc + x,*gpc+x)        -- after instruction fetch
                        i  -> (x,*x)
@@ -952,31 +952,6 @@ v &
 
 \textbf{Semantics}\\
 
-%%[[wrap=code
-ist(i)(rd)(rs)(x)
-  =  case angle(i) of
-       1  ->  *d         :=  s
-       2  ->  *d'        :=  s
-  where  (d,d')  <-  case ^^ angle(rd) of
-                       t  -> (gstack + x,*gstack+x)
-                       r  -> (greg + x,*greg+x)
-         s  <-  case ^^ angle(rs) of
-                  t  ->  s = gstack
-                         gstack := [gstack]+1
-                         *s
-                  r  ->  greg
-%%]]
-
-Offset |x| in bytes.
-
-\textbf{Abbreviations}\\
-
-%%[[wrap=code
-sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
-%%]]
-
-Alternative form:
-
 \begin{GrinEncoding}{|ist2(i)(rd)(rs)(x)|}
  &
 |10 ^^ ixx1(i)(0) ^ ixxjuxt(rd)(1)(0) ^ ixx1(rs)(0) ^ ixxjuxt(x)(1)(0)| &
@@ -996,6 +971,12 @@ ist(i)(rd)(rs)(x)
                        p  -> (gpc + x,*gpc+x)        -- after instruction fetch
                        i  -> (x,*x)
          s  <-  ...
+%%]]
+
+\textbf{Abbreviations}\\
+
+%%[[wrap=code
+sts d       =   s1tt   d            -- pop tos content into displacement d relative to tos on stack
 %%]]
 
 

@@ -7,7 +7,7 @@
 %%% Haskell importable interface to HI/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
+%%[12 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}GrinCode},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
 %%]
 
 %%[12 hs import(qualified Data.Map as Map,EH.Util.FastSeq,{%{EH}Module})
@@ -44,11 +44,13 @@ hiFromAllGams
      -> Pr.PrIntroGam
      -> Pr.PrElimTGam
      -> CLamInfoMp
+     -> GrInlMp
      -> FastSeq Binding
-hiFromAllGams exps fg idg vg tg dg ig eg lamMp
+hiFromAllGams exps fg idg vg tg dg ig eg lamMp inlMp
   = FSeqL [Binding_Export exps]
     :++: FSeqL [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     :++: FSeqL [Binding_Arities $ Map.toList lamMp]
+    :++: FSeqL [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
     :++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
     :++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     :++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg

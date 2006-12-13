@@ -50,6 +50,8 @@ SEM Binding
         lhs         .   pp          =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppIdOcc ppHINm o,ppIdOcc ppHINm d]) @idOccs)
     | Arities
         lhs         .   pp          =   hiNV "arity" hsnUnknown (map (\(n,a) -> ppCurlysSemisBlock [ppHINm n,pp a]) @idArities)
+    | GrInlines
+        lhs         .   pp          =   hiNV "grInline" hsnUnknown (map (\(n,(a,g)) -> ppCurlysSemisBlock [ppHINm n,ppCurlysSemisBlock $ map ppHINm a,ppGrExpr' ppHINm g]) @inlMp)
     | Val
         lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
     | DataCon

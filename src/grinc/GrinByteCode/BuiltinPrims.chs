@@ -31,11 +31,11 @@ gbPrims
       ]
   where mkOp opTy opndTy optim env modNmConstInx stkDepth [a1,a2]
           = case gviLd' optim env modNmConstInx (stkDepth+inc1) a2 of
-              GrValIntroAlt_One ins2 inc2 optimEffect
-                -> GrValIntroAlt_One (ins1 :++: ins2 :++: oins) 1 (optimEffect {oefIsEvaluated = True})
+              GrValIntroAlt_OnTOS ins2 inc2 optimEffect
+                -> GrValIntroAlt_OnTOS (ins1 :++: ins2 :++: oins) 1 optimEffect
                 where oins = FSeqL [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
               GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc)
-                -> GrValIntroAlt_One (ins1 :++: pins :++: oins) 1 (optimEffect {oefIsEvaluated = True})
+                -> GrValIntroAlt_OnTOS (ins1 :++: pins :++: oins) 1 optimEffect
                 where oins = FSeqL [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                            where (deref,src,imm)
                                    = case ldsrc of
@@ -44,6 +44,6 @@ gbPrims
                                        LoadSrc_Reg_Rel o -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
                                        LoadSrc_Imm     c -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
                                        LoadSrc_Imm_Int c -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
-          where g@(GrValIntroAlt_One ins1 inc1 _) = gviLd optim env modNmConstInx stkDepth a1
+          where g@(GrValIntroAlt_OnTOS ins1 inc1 _) = gviLd optim env modNmConstInx stkDepth a1
 %%]
 

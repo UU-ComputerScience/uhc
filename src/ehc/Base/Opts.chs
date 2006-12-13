@@ -208,8 +208,14 @@ defaultEHCOpts
 
 %%[1
 ehcCmdLineOpts
-  =  [  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|grin|ast|-")  "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
-     ,  Option "d"  ["debug"]            (NoArg oDebug)                       "show extra debug information"
+  =  [  Option "d"  ["debug"]            (NoArg oDebug)                       "show extra debug information"
+     ,  Option "p"  ["pretty"]
+%%[[1
+                    (OptArg oPretty "hs|eh|ast|-")
+%%][8
+                    (OptArg oPretty "hs|eh|grin|ast|-")
+%%]]
+                    "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
@@ -217,7 +223,7 @@ ehcCmdLineOpts
      ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exec|llvm|bc|bexec|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -284,7 +290,8 @@ ehcCmdLineOpts
                                                   , ehcFullProgGRIN    = True
 %%]]
                                                   }
-                                Just "bexec" -> o { ehcOptEmitExecBC   = True, ehcOptEmitGrinBC = True }
+                                Just m | m `elem` ["bexe","bexec"]
+                                             -> o { ehcOptEmitExecBC   = True, ehcOptEmitGrinBC = True }
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True

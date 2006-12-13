@@ -11,7 +11,7 @@
 %%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
+%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}GrinCode},{%{EH}GrinCode.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,6 +52,7 @@ ATTR
       prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
       prElimTGam    USE {`prElimTGamUnion`} {Pr.emptyPrElimTGam}: {Pr.PrElimTGam}
       lamMp         USE {`Map.union`}       {Map.empty}         : CLamInfoMp
+      inlMp         USE {`Map.union`}       {Map.empty}         : GrInlMp
    ]
 
 SEM Binding
@@ -61,6 +62,8 @@ SEM Binding
         lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
     | Arities
         lhs             .   lamMp       =   Map.fromList @idArities
+    | GrInlines
+        lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g) | (n,(a,g)) <- @inlMp ]
     | Fixity
         lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
     | Val
