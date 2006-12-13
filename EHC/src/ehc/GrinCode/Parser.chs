@@ -7,30 +7,11 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt)) export(pModule)
+%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Scanner
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
+%%[8 export(pModule,pExpr)
 %%]
-scanOpts, grinScanOpts :: ScanOpts
-scanOpts
-  =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ "eval", "apply"
-                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi"
-                                    , "throw", "try", "catch", "ctags", "applymap", "evalmap"
-                                    , "C", "F", "P", "A", "R", "H", "U", "W"
-                                    ]
-        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-" ]
-        ,   scoSpecChars        =   "();{}#/\\|,"
-        ,   scoOpChars          =   "<->:=+"
-        ,   scoDollarIdent      =   True
-        }
-
-grinScanOpts = scanOpts
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser

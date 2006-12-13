@@ -72,7 +72,14 @@ AC_SUBST(RANLIB_CMD,$ranlibCmd)
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 AC_SUBST(AR_CMD,$arCmd)
 
-### 'with' option for ghc
+### 'with' option for gcc options
+AC_ARG_WITH(gcc-ehc-options,
+[AC_HELP_STRING([--with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>],
+                [Additional options to pass to GCC when compiling with EHC.])],
+[ gccEhcOptions="$withval" ],)
+AC_SUBST(GCC_EHC_OPTIONS, "$gccEhcOptions")
+
+### 'with' option for ghc options
 AC_ARG_WITH(ghc-ehc-options,
 [AC_HELP_STRING([--with-ghc-ehc-options=<haskell compiler options for compiling ehc>],
                 [Additional options to pass to GHC when compiling EHC.])],

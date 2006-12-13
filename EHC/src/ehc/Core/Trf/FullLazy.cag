@@ -90,8 +90,11 @@ SEM CBind
 
 SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)
-                                            =   levBindSplit @lev @expr.levBindSq
+                                            =   (@expr.levBindSq,emptySeq)
 %%]
+SEM CAlt
+  | Alt         (loc.hereBindSq,lhs.levBindSq)
+                                            =   levBindSplit @lev @expr.levBindSq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Allow trf?

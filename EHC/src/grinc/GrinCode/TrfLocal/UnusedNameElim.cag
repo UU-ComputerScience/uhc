@@ -1,0 +1,71 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate dead/unused name introductions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+20061211
+Not finished yet.
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.TrfLocal.UnusedNameElim}
+%%]
+
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG}, {GrinCode/TrfLocal/CommonFreeVar})
+%%]
+
+%%[8 hs export(grUnusedNameElim)
+grUnusedNameElim :: GrModule -> GrModule
+grUnusedNameElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrExpr [ | | fviSeqBodyMp: FvInfoMp ]
+
+SEM GrExpr
+  | * - Seq     lhs         .   fviSeqBodyMp    =   @gathFviMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: remove 'unit n1 : \n2 -> ...' combi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[8
+SEM GrExpr
+  | Seq         lhs         .   (trf,fviSeqBodyMp)
+                                                =   case (@pat.nmAlias, @trf, @body.trf) of
+                                                      (NmAlias_Nm n1,GrExpr_Seq (GrExpr_Unit _) (GrPat_Var p) e,_) | p `Map.notMember` @body.gathFviMp
+                                                        -> (e, @body.fviSeqBodyMp)
+                                                      (NmAlias_Nm n1,GrExpr_Seq (GrExpr_Store _) (GrPat_Var p) e,_) | p `Map.notMember` @body.gathFviMp
+                                                        -> (e, @body.fviSeqBodyMp)
+                                                      _ -> (@trf, @body.gathFviMp)
+%%]
+                                                      (NmAlias_Nm n1,_,GrExpr_Seq (GrExpr_Unit (GrVal_Var n2)) p e) | n1 == n2 && n1 `Map.notMember` @body.fviSeqBodyMp
+                                                        -> (GrExpr_Seq @expr.trf p e, @body.fviSeqBodyMp)
+

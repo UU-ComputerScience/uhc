@@ -42,6 +42,11 @@ DATA Instr
   				locSrc			: InsOp_LocE
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
+  | St          ind             : InsOp_DerefB
+  				locDst			: InsOp_LocE
+  				locSrc			: InsOp_LocB
+  				immSz			: InsOp_ImmSz
+  				imm 			: Imm
   | LdGlobal	locDst			: InsOp_LocB
                 link			: Link
   | Link		link			: Link
@@ -59,7 +64,6 @@ DATA Instr
   				retOffSurrSz	: InsOp_ImmSz
   				nRes			: Imm
   				retOffSurr		: Imm
-  				contLocRef		: LocRef
   | TailCall    locSrc			: InsOp_LocB
   				nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz
@@ -172,8 +176,15 @@ DATA InsOp_Deref
   | Int
 %%]
 
+/* Indirection level, deref times, brief variant */
 %%[8
-SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocODst InsOp_LocOSrc InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref
+DATA InsOp_DerefB
+  | One
+  | Two
+%%]
+
+%%[8
+SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocODst InsOp_LocOSrc InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref InsOp_DerefB
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

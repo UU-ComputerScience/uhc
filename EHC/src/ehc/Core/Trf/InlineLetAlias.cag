@@ -29,9 +29,7 @@ cmodTrfInlineLetAlias cmod
 %%]
 
 %%[12 -8.cmodTrfInlineLetAlias hs
-type GlobNmS = HsNameS
-
-cmodTrfInlineLetAlias :: GlobNmS -> CModule -> CModule
+cmodTrfInlineLetAlias :: HsNameS -> CModule -> CModule
 cmodTrfInlineLetAlias globNmS cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                              (Inh_CodeAGItf {globNmS_Inh_CodeAGItf = globNmS})
@@ -43,7 +41,7 @@ cmodTrfInlineLetAlias globNmS cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
-ATTR CodeAGItf CExpr CModule AllBind [ globNmS: GlobNmS | | ]
+ATTR CodeAGItf CExpr CModule AllBind [ globNmS: HsNameS | | ]
 
 SEM CAlt
   | Alt         loc         .   globNmS     =   Set.empty

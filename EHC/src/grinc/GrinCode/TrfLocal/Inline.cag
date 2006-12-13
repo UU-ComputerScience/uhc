@@ -1,0 +1,265 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inline
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Inlining replaces references to global values with their actual code, performing symbolic beta reduction.
+Use of the following are inlined:
+- 1 time used functions and values, if not exported
+- wrappers for primitives (to allow their inline replacement with operators)
+- wrappers for constructors
+- small enough functions (not yet done)
+
+Implementation:
+Free vars are gathered and passed topdown via 'fviMp', bound to a count
+and type of usage. Based on this inline candidates are selected, passed
+in 'inlMp'. Inlined names are returned in 'gathInlNmS' and passed in
+'inlNmS' which determines whether a binding can be removed, together
+with other criteria (not exported).
+
+Tricky:
+Recursive inlining is accomplished by letting 'inlMp' holding
+transformed code. A bit of cycle, so only non mutual recursive values
+are allowed to participate. Inlining mutual recursive values would lead
+to a loop.
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.TrfLocal.Inline}
+%%]
+
+%%[8 hs import(EH.Util.FastSeq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[12 hs import({%{GRIN}GrinCode.FreeVars})
+%%]
+
+%%[8 hs import({%{EH}Core}(FvS))
+%%]
+
+-- for debugging:
+%%[8 hs import(UU.Pretty,EH.Util.Utils)
+%%]
+
+%%[8 hs import({%{GRIN}GrinCode.TrfLocal.AliasRename})
+%%]
+
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG}, {GrinCode/TrfLocal/CommonFreeVar})
+%%]
+
+%%[8.grInline hs export(grInline)
+grInline :: GrModule -> GrModule
+grInline grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%[12 -8.grInline hs export(grInline)
+grInline :: HsNameS -> GrInlMp -> GrModule -> (GrModule,GrInlMp)
+grInline expNmS inlMp grmod
+  = (trf_Syn_GrAGItf t,gathInlMp_Syn_GrAGItf t)
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+            	{ expNmS_Inh_GrAGItf = expNmS
+            	, inlMp_Inh_GrAGItf = inlMp
+            	}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globally used vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR GrAGItf GrModule AllBind [ expNmS: HsNameS | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduced global names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[12
+ATTR AllBind [ | | introNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+
+SEM GrBind
+  | Bind		lhs			.	introNmS        =   Set.singleton @nm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var, usage info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind [ fviMp: FvInfoMp | | ]
+
+SEM GrModule
+  | Mod         bindL       .   fviMp           =   @bindL.gathFviMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inlineable functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind [ | | gathInlMp USE {`Map.union`} {Map.empty}: GrInlMp ]
+ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
+
+SEM GrBind
+  | Bind        (lhs.gathInlMp,loc.omitBind)    =   case Map.lookup @nm @lhs.fviMp of
+                                                      -- a once used function can be inlined and its binding removed
+                                                      Just (FvInfo 1 use)
+                                                        | not (null @argNmL)
+                                                          && FvUse_Call `Set.member` use
+%%[[12
+                                                          && @nm `Set.notMember` @lhs.expNmS		-- only inline if not exported as global value
+%%]]
+                                                          -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
+                                                      Just (FvInfo 1 use)							-- a once used value can be inlined and its binding removed
+                                                        | null @argNmL
+                                                          && FvUse_Val `Set.member` use
+%%[[12
+                                                          && @nm `Set.notMember` @lhs.expNmS		-- only inline if not exported as global value
+%%]]
+                                                          -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
+                                                      _ | not (null @argNmL)
+                                                          && (  @expr.isFFIWrapper					-- wrappers are inlined
+                                                             || @expr.isConWrapper
+                                                             || @expr.inlineCost <= 3
+                                                             )
+                                                          -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)
+                                                        | otherwise
+                                                          -> (Map.empty, False)
+  | Rec         lhs         .   gathInlMp       =   Map.empty
+%%]
+
+%%[8
+ATTR GrExpr [ | | isFFIWrapper USE {||} {False}: Bool ]
+
+SEM GrExpr
+  | FFI         lhs         .   isFFIWrapper    =   True
+%%]
+
+%%[8
+ATTR GrExpr [ | | isConWrapper: Bool ]
+
+SEM GrExpr
+  | Unit         lhs        .   isConWrapper    =   True
+  | * - Unit     lhs        .   isConWrapper    =   False
+%%]
+
+%%[8
+ATTR GrExpr [ | | inlineCost USE {+} {1}: Int ]
+%%]
+
+%%[8.inlMp.init
+SEM GrModule
+  | Mod         bindL       .   inlMp           =   @bindL.gathInlMp
+%%]
+
+%%[12 hs
+inlMayExport :: HsNameS -> HsNameS -> HsName -> GrInl -> Bool
+inlMayExport thisModNmS expNmS n inl
+  = case inl of
+      GrInl_Call _ e
+        -> n `Set.member` expNmS
+      _ -> False
+%%]
+
+grFreeVars e
+
+%%[12 -8.inlMp.init
+ATTR GrAGItf GrModule [ inlMp: GrInlMp | | gathInlMp: GrInlMp ]
+
+SEM GrModule
+  | Mod         bindL       .   inlMp           =   @bindL.gathInlMp `Map.union` @lhs.inlMp
+  				lhs			.	gathInlMp		=	Map.filterWithKey (inlMayExport @bindL.introNmS @lhs.expNmS) @bindL.gathInlMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Which names are inlined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrExpr AllBind [ | | gathInlNmS USE {`Set.union`} {Set.empty}: FvS ]
+ATTR AllBind [ inlNmS: FvS | | ]
+
+SEM GrModule
+  | Mod         loc         .   inlNmS          =   @bindL.gathInlNmS
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GrVal as name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrVal [ | | asNmL USE {++} {[]}: {[Maybe HsName]} ]
+
+SEM GrVal
+  | Var         lhs         .   asNmL           =   [Just @nm]
+  | * - Var     lhs         .   asNmL           =   [Nothing]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: inline
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[8 hs
+inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS)
+inlGrVar inlMp nmL
+  = (foldr (.) id mks,Set.unions inls)
+  where inl nm = case Map.lookup nm inlMp of
+                   Just (GrInl_CAF e) -> (GrExpr_Seq e (GrPat_Var nm),Set.singleton nm)
+                   _ -> (id,Set.empty)
+        (mks,inls) = unzip $ map inl nmL
+%%]
+
+%%[8
+SEM GrExpr
+  | Call        loc         .   (grVarTrf,grVarInlNmS)
+                                                =   inlGrVar @lhs.inlMp (Map.keys @argL.gathFviMp)
+%%]
+
+%%[8
+SEM GrExpr
+  | Call        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
+                                                      Just (GrInl_Call as e) | and $ map isJust @argL.asNmL
+                                                        -> ( @grVarTrf $ grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust @argL.asNmL)) e
+                                                           , Set.insert @nm @grVarInlNmS
+                                                           )
+                                                      _ -> (@grVarTrf @trf, @grVarInlNmS)
+  | Eval        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
+                                                      Just (GrInl_CAF e)
+                                                        -> (e, Set.singleton @nm)
+                                                      _ -> (@trf, Set.empty)
+%%]
+
+%%[8
+ATTR AllBind [ | | trfSq USE {:++:} {FSeqNil}: {FastSeq GrBind} ]
+
+SEM GrModule
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (toList @bindL.trfSq) @ctagsMp @evalTagMp @applyTagMp
+
+SEM GrBind
+  | Bind        lhs         .   trfSq           =   if @omitBind && @nm `Set.member` @lhs.inlNmS
+                                                    then FSeqNil
+                                                    else FSeq @trf
+  | Rec         lhs         .   trfSq           =   FSeq $ GrBind_Rec $ toList @bindL.trfSq
+%%]
+
+

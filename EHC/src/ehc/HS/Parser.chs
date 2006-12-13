@@ -800,24 +800,29 @@ pExpressionOpPrefix pLeftOpndE
 %%[1
 pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
 pExpression' pPreE
+  = pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  where pE :: HSParser Expression
+        pE  =   pExpressionOpPrefix pExpressionLayout <*> pE
+            <|> pPreE <*> pE
+            <|> pExpressionLayout
+%%]
+pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
+pExpression' pPreE
   = pE1 <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
   where pE1, pE2 :: HSParser Expression
         pE1  = pExpressionOpPrefix pExpressionLayout <*> pE2 <|> pE2
         pE2  = pPre1 <*> pExpressionLayout <|> pExpressionLayout
         pPre1 :: HSParser (Expression -> Expression)
         pPre1 = foldr (.) id <$> pList1 pPreE
-%%]
 
 %%[1
 pExpression :: HSParser Expression
-pExpression
-  = pExpression' pExpressionPrefix
+pExpression = pExpression' pExpressionPrefix
 %%]
 
 %%[1
 pExpressionNoLet :: HSParser Expression
-pExpressionNoLet
-  = pExpression' pExpressionNoLetPrefix
+pExpressionNoLet = pExpression' pExpressionNoLetPrefix
 %%]
 
 %%[1.pExpressionLetPrefix

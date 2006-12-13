@@ -22,7 +22,13 @@
 %%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
 %%]
 
-%%[8 import ({%{EH}GrinCode.Pretty}, {%{GRIN}GrinByteCode.ToC}, qualified {%{GRIN}GrinByteCode} as GrinBC, {%{GRIN}GrinCode.ToGrinByteCode})
+%%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
+%%]
+
+%%[8 import({%{GRIN}GrinCode.TrfLocal.UnusedMetaInfoElim},{%{GRIN}GrinCode.TrfLocal.UnusedNameElim},{%{GRIN}GrinCode.TrfLocal.AliasElim},{%{GRIN}GrinCode.TrfLocal.Unbox},{%{GRIN}GrinCode.TrfLocal.FlattenSeq},{%{GRIN}GrinCode.TrfLocal.EvalElim},{%{GRIN}GrinCode.TrfLocal.Inline})
+%%]
+
+%%[8 import ({%{GRIN}GrinByteCode.ToC}, qualified {%{GRIN}GrinByteCode} as GrinBC)
 %%]
 
 %%[8 import (qualified {%{GRIN}CompilerDriver} as GRINC, qualified {%{GRIN}GRINCCommon} as GRINCCommon)
@@ -36,13 +42,9 @@
 %%]
 %%[8 import (qualified {%{EH}Core} as Core)
 %%]
-%%[8 import (qualified {%{EH}GrinCode} as Grin)
-%%]
 %%[8 import (Control.Monad.State)
 %%]
 %%[8 import (qualified EH.Util.ScanUtils as ScanUtils)
-%%]
-%%[8 import(qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
 %%[12 import (qualified EH.Util.Rel as Rel, qualified EH.Util.FastSeq as Seq, qualified Data.Set as Set)
@@ -127,6 +129,24 @@ emptyECG
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inter module optimisation info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Intermodule optimisation info.
+Currently only for Grin meant to be compiled to GrinByteCode.
+Absence of this info should not prevent correct compilation.
+
+%%[12
+data Optim
+  = Optim
+      { optimGrInlMp          :: Grin.GrInlMp        -- inlining map, from name to GrExpr (grin expressions)
+      }
+
+defaultOptim :: Optim
+defaultOptim = Optim Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -148,6 +168,8 @@ data EHState
   deriving (Show,Eq)
 %%]
 
+This state is not (yet?) used:
+
 %%[12
 data HIState
   = HIStart
@@ -165,7 +187,9 @@ data EHCompileUnitState
 %%]
   | ECUSGrin | ECUSFail
   deriving (Show,Eq)
+%%]
 
+%%[8
 data EHCompileUnit
   = EHCompileUnit
       { ecuFilePath          :: FPath
@@ -191,6 +215,7 @@ data EHCompileUnit
       -- , ecuMbPrevCore        :: Maybe Core.CModule
       , ecuMbPrevHISem       :: (Maybe HISem.Syn_AGItf)
       , ecuMbPrevHI          :: (Maybe HI.AGItf)
+      , ecuMbOptim           :: (Maybe Optim)
 %%]
       }
 
@@ -223,6 +248,7 @@ emptyECU
       -- , ecuMbPrevCore        = Nothing
       , ecuMbPrevHISem       = Nothing
       , ecuMbPrevHI          = Nothing
+      , ecuMbOptim           = Nothing
 %%]
       }
 %%]
@@ -342,6 +368,9 @@ ecuStorePrevHI x ecu = ecu { ecuMbPrevHI = Just x }
 
 ecuStorePrevHISem :: EcuUpdater HISem.Syn_AGItf
 ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
+
+ecuStoreOptim :: EcuUpdater Optim
+ecuStoreOptim x ecu = ecu { ecuMbOptim = Just x }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -362,13 +391,14 @@ data EHCompileRunStateInfo
       , crsiHSModInh    :: HSSemMod.Inh_AGItf                   -- current inh attrs for HS module analysis sem
       , crsiModMp       :: ModMp                                -- import/export info for modules
       , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
+      , crsiOptim       :: Optim                                -- inter module optimisation info
 %%]
       }
 %%]
 
 %%[12
-crsiExpsNmOffMp :: HsName -> EHCompileRunStateInfo -> Core.HsName2OffsetMp
-crsiExpsNmOffMp modNm crsi = mmiNmOffMp $ panicJust "crsiExpsNmOffMp" $ Map.lookup modNm $ crsiModMp crsi
+crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> Core.HsName2OffsetMp
+crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust "crsiExpNmOffMp" $ Map.lookup modNm $ crsiModMp crsi
 %%]
 
 %%[12
@@ -772,8 +802,28 @@ cpFlowHISem modNm
                  coreInh' = coreInh
                               { Core2GrSem.lamMp_Inh_CodeAGItf   = HISem.lamMp_Syn_AGItf hiSem `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
                               }
+                 optim    = crsiOptim crsi
+                 optim'   = optim
+                              { optimGrInlMp   = HISem.inlMp_Syn_AGItf hiSem `Map.union` optimGrInlMp optim
+                              }
          ;  when (isJust (ecuMbPrevHISem ecu))
-                 (do { put (cr {crStateInfo = crsi {crsiEHInh = ehInh', crsiHSInh = hsInh', crsiCoreInh = coreInh'}})
+                 (do { put (cr {crStateInfo = crsi {crsiEHInh = ehInh', crsiHSInh = hsInh', crsiCoreInh = coreInh', crsiOptim = optim'}})
+                     })
+         }
+%%]
+
+%%[12
+cpFlowOptim :: HsName -> EHCompilePhase ()
+cpFlowOptim modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+                 optim  = crsiOptim crsi
+                 moptim = panicJust "cpFlowOptim" $ ecuMbOptim ecu
+                 optim' = optim
+                            { optimGrInlMp = optimGrInlMp moptim `Map.union` optimGrInlMp optim
+                            }
+         ;  when (isJust (ecuMbOptim ecu))
+                 (do { put (cr {crStateInfo = crsi {crsiOptim = optim'}})
                      })
          }
 %%]
@@ -987,15 +1037,46 @@ cpTranslateGrin2ByteCode modNm
                  modNmLL= crCompileOrder cr
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpTranslateGrin2ByteCode" mbGrin
+%%[[12
+                 expNmOffMp
+                        = crsiExpNmOffMp modNm crsi
+                 optim  = crsiOptim crsi
+%%]]
+%%[[8
+                 grin'  = if ehcOptOptimise opts >= OptimiseNormal then trfOptim grin else trfNoOptim grin
+%%][12
+                 (grin',gathInlMp)
+                        = if ehcOptOptimise opts >= OptimiseNormal then trfOptim grin else (trfNoOptim grin,Map.empty)
+%%]]
+                        where trfNoOptim g
+                                = grFlattenSeq $ grUnbox GrinBC.tagIsUnboxed $ grUnusedMetaInfoElim $ g
+                              trfOptim g
+%%[[8
+                                = g3
+                                where g2 = grInline g1
+%%][12
+                                = (g3,gathInlMp)
+                                where (g2,gathInlMp) = grInline (Map.keysSet expNmOffMp) (optimGrInlMp optim) g1
+%%]]
+                                      g1 = evel $ grUnbox GrinBC.tagIsUnboxed $ grUnusedMetaInfoElim $ g
+                                      g3 = grUnusedNameElim $ evel $ g2
+                                      evel = grAliasElim . grEvalElim . grAliasElim . grFlattenSeq
                  bc     = grinMod2ByteCodeMod opts
 %%[[12
                             (if ecuIsTopMod ecu then concat modNmLL else [])
-                            (Map.fromList [ (m,(o,crsiExpsNmOffMp m crsi)) | (m,o) <- zip (nub $ ecuImpNmL ecu) [0..] ])
-                            (crsiExpsNmOffMp modNm crsi)
+                            (Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip (nub $ ecuImpNmL ecu) [0..] ])
+                            expNmOffMp
 %%]]
-                            grin
+                            $ grin'
          ;  when (isJust mbGrin && (ehcOptEmitGrinBC opts))
-                 (cpUpdCU modNm (ecuStoreGrinBC bc))
+                 (do { cpUpdCU modNm
+%%[[8
+                         (ecuStoreGrinBC bc)
+%%][12
+                         (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}). ecuStoreGrinBC bc)
+%%]]
+                     ; lift $ putPPFile (fpathToStr $ fpathSetSuff "grin-bc" $ fp) (ppGrModule grin') 400
+                     })
          }
 %%]
 
@@ -1030,12 +1111,12 @@ cpCompileWithGCC how othModNmL modNm
                  (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt)
                         = case how of
                             GCC_CompileExec -> ( fpExec
-                                               , [ "-o", fpathToStr fpExec ]
+                                               , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
                                                , map ("-l" ++) Cfg.libnamesGcc
                                                , [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
-                            GCC_CompileOnly -> (o, [ "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
+                            GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
                                             where o = fpO fp
          ;  when (ehcOptEmitExec opts || ehcOptEmitExecBC opts)
                  (do { let compileC
@@ -1083,7 +1164,7 @@ cpCore1Trf modNm trfNm
                               "CLU"     -> cmodTrfLetUnrec
                               "CILA"    -> cmodTrfInlineLetAlias
 %%[[12
-                                             (Map.keysSet $ crsiExpsNmOffMp modNm crsi)
+                                             (Map.keysSet $ crsiExpNmOffMp modNm crsi)
 %%]]
                               "CFL"     -> cmodTrfFullLazy u1
                               "CLL"     -> cmodTrfLamLift
@@ -1240,6 +1321,7 @@ cpOutputHI suff modNm
                  hsSem  = panicJust "cpOutputHI.hsSem" $ ecuMbHSSem ecu
                  ehSem  = panicJust "cpOutputHI.ehSem" $ ecuMbEHSem ecu
                  coreSem= panicJust "cpOutputHI.coreSem" $ ecuMbCoreSem ecu
+                 optim  = maybe defaultOptim id $ ecuMbOptim ecu
                  binds  = Seq.toList
                           $ HI.hiFromAllGams
                               (mmiExps $ panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi)
@@ -1254,6 +1336,7 @@ cpOutputHI suff modNm
                                then Map.empty
                                else Core2GrSem.gathLamMp_Syn_CodeAGItf   coreSem
                               )
+                              (optimGrInlMp                         optim)
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
@@ -1406,7 +1489,7 @@ cpCompileOrderedCUs
         flow m
           = do { cr <- get
                ; case ecuState $ crCU m cr of
-                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m]
+                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m,cpFlowOptim m]
                    ECUSHaskell HSAllSemHI -> cpFlowHISem m
                }
         core mL
@@ -1566,7 +1649,7 @@ doCompileRun fn opts
                                 topModNm
                                 (EHCompileRunStateInfo opts2 hsInh ehInh coreInh uidStart uidStart
 %%[[12
-                                 hiInh hsModInh Map.empty Map.empty
+                                 hiInh hsModInh Map.empty Map.empty defaultOptim
 %%]
                                 )
 %%[[8

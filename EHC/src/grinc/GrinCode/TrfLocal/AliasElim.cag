@@ -1,0 +1,95 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate name aliases, to avoid unnecessary variable introductions, hence runtime loads
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Remove bindings of names to names.
+When directly executed absence of this transformation would lead to additional loads.
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.TrfLocal.AliasElim}
+%%]
+
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG},{GrinCode/TrfLocal/CommonRenameAG})
+%%]
+
+%%[8 hs export(grAliasElim)
+grAliasElim :: GrModule -> GrModule
+grAliasElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM GrExpr
+  | Seq         body        .   nmAliasMp       =   @newNmAliasMp `Map.union` @lhs.nmAliasMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: remove 'unit n1 : \n2 -> ...' combi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf [ | | trf: GrModule ]
+%%]
+
+%%[8 hs
+nmAliasOne :: NmAliasMp -> NmAlias -> NmAlias -> (GrExpr->GrExpr,NmAliasMp)
+nmAliasOne mpGlob e p
+  = case (e,p) of
+      (NmAlias_Nm ne, NmAlias_Nm np)
+        -> (id,Map.singleton np $ nmAliasRepl' mpGlob ne)
+      (NmAlias_Const _ c, NmAlias_Nm np)
+        -> (GrExpr_Seq (GrExpr_Unit c) (GrPat_Var np),Map.empty)
+      _ -> (id,Map.empty)
+
+nmAliasGrp :: NmAliasMp -> [NmAlias] -> [NmAlias] -> (GrExpr->GrExpr,NmAliasMp)
+nmAliasGrp mpGlob eAliL pAliL
+  = (foldr (.) id mkel, Map.unions mpl)
+  where (mkel,mpl) = unzip $ zipWith (nmAliasOne mpGlob) eAliL pAliL
+%%]
+
+%%[8
+SEM GrExpr
+  | Seq         loc         .   (seqTrf,mkExtraSeq,newNmAliasMp)
+                                                =   case (@expr.nmAlias,@pat.nmAlias,@body.nmAlias) of
+                                                      (_,NmAlias_Nm p,NmAlias_Nm b) | p == b
+                                                        -> (@expr.trf,id,Map.empty)
+                                                      (e@(NmAlias_Nm _),p@(NmAlias_Nm _),_)
+                                                        -> (@body.trf,mke,mp)
+                                                        where (mke,mp) = nmAliasOne @lhs.nmAliasMp e p
+                                                      (NmAlias_Grp _ es,NmAlias_Grp _ ps,_)
+                                                        -> (@body.trf,mke,mp)
+                                                        where (mke,mp) = nmAliasGrp @lhs.nmAliasMp es ps
+                                                      (e@(NmAlias_Grp _ _),NmAlias_Nm p,_)
+                                                        -> (@trf,id,Map.singleton p (e {naliNm = p}))
+                                                      (NmAlias_Nm e,NmAlias_Grp _ ps,_) | isJust mbAli
+                                                        -> case mbAli of
+                                                             Just (NmAlias_Grp _ es)
+                                                               -> (@body.trf,mke,mp)
+                                                               where (mke,mp) = nmAliasGrp @lhs.nmAliasMp es ps
+                                                             _ -> (@trf,id,Map.empty)
+                                                        where mbAli = Map.lookup e @lhs.nmAliasMp
+                                                      _ -> (@trf,id,Map.empty)
+                lhs         .   trf             =   @mkExtraSeq @seqTrf
+%%]

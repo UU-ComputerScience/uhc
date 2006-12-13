@@ -78,12 +78,15 @@ GHC_OPTS			:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib
 GHC_OPTS_OPTIM		:= -O2
 GHC_OPTS_WHEN_EHC	:= @GHC_EHC_OPTIONS@
 
+# GCC options
+GCC_OPTS_WHEN_EHC	:= @GCC_EHC_OPTIONS@
+
 # cabal options
 CABAL_SETUP_OPTS	:= --ghc --with-compiler=$(GHC)
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES := @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
 
 # C compiler options, some are also extended by sub makefiles
-EHC_GCC_CC_OPTS			:= -I$(INSABS_INC_PREFIX)
+EHC_GCC_CC_OPTS			:= -I$(INSABS_INC_PREFIX) $(GCC_OPTS_WHEN_EHC)
 EHC_GCC_LD_OPTS			:= -L$(INSABS_LIB_PREFIX)
 RTS_GCC_CC_OPTS_OPTIM	:= -O3
 

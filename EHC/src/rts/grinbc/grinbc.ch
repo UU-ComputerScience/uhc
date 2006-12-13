@@ -367,6 +367,10 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_InsOp_Deref2				0x2
 #define GB_InsOp_DerefInt			0x3
 
+/* Indirection level, deref times, brief variant */
+#define GB_InsOp_DerefB1			0x0
+#define GB_InsOp_DerefB2			0x1
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -391,6 +395,7 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 
 %%[8
 #define GB_Ins_Ld(indLev,locB,locE,immSz)		(GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
+#define GB_Ins_St(indLev,locE,locB,immSz)		(GB_Ins_PreSt | ((indLev) << 5) | ((locE) << 3) | ((locB) << 2) | ((immSz) << 0))
 #define GB_Ins_Call(locB)						(GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_TailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
 #define GB_Ins_RetCall							(GB_Ins_PreCall | ((0x2) << 1) | 0x0)

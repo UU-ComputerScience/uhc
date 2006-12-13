@@ -93,13 +93,14 @@ GB_NodePtr gb_primCString2String1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
   	GB_NodePtr n, n2 ;
-  	IF_GB_TR_ON(3,printf("gb_primCString2String1Char %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
+  	IF_GB_TR_ON(3,printf("gb_primCString2String1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
 		GB_MkCFunNode2(n2,&gb_primCString2String1Char,s,GB_Int_Add(goff,GB_Int1)) ;
-		GB_MkListCons(n,c,n2) ;
+		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;
 	}
+  	IF_GB_TR_ON(3,printf("gb_primCString2String1Char2 n %x\n", n ););
   	return n ;
 }
 
@@ -107,18 +108,38 @@ PRIM GB_NodePtr gb_primCString2String( char* s )
 {
   	return gb_primCString2String1Char( s, GB_Int0 ) ;
 }
+%%]
 
+In the following function GB_List_Iterate causes a Bus error when:
+  - compiled on MacIntel, gcc 4.01
+  - with -O3
+  - without additional trace statements.
+  Sigh...
+
+%%[8
 PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 {
 	char buf[100] ;
 	int bufInx = 0 ;
 	int sz = 99 ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
 	gb_listForceEval( n, sz ) ;
-	GB_List_Iterate(n,sz,buf[bufInx++] = GB_List_Head(n)) ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
+	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
 	buf[bufInx] = 0 ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 `%s'\n", buf ););
 	rts_error( buf ) ;
 	return n ;
 }
 %%]
+
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
+	gb_listForceEval( n, sz ) ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
+	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););}) ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 n %x\n", n ););
+	buf[bufInx] = 0 ;
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit5 `%s'\n", buf ););
 
 

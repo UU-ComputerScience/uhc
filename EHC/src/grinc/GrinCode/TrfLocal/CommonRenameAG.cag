@@ -1,0 +1,45 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common stuff related to name substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrExpr AllGrVal AllAdapt AllSplit AllGrPat [ nmAliasMp: NmAliasMp | | ]
+
+SEM GrBind
+  | Bind        expr        .   nmAliasMp       =   Map.empty
+
+SEM GrGlobal
+  | Global      val         .   nmAliasMp       =   Map.empty
+
+SEM GrAlt
+  | Alt         expr        .   nmAliasMp       =   @lhs.nmAliasMp `Map.difference` Map.fromList [(n,n) | n <- @pat.introNmL]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: renaming
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[8
+SEM GrExpr
+  | Call        lhs         .   trf             =   GrExpr_Call (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
+  | App         lhs         .   trf             =   GrExpr_App (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
+  | FFI         lhs         .   trf             =   GrExpr_FFI @nm (map (nmAliasRepl @lhs.nmAliasMp) @argL) @resTagL.trf
+  | Eval        lhs         .   trf             =   GrExpr_Eval $ nmAliasRepl @lhs.nmAliasMp @nm
+  | Fetch       lhs         .   trf             =   GrExpr_Fetch (nmAliasRepl @lhs.nmAliasMp @nm) @mbOffset @mbTag
+  | Update      lhs         .   trf             =   GrExpr_Update (nmAliasRepl @lhs.nmAliasMp @nm) @val.trf @mbTag
+  | FetchUpdate lhs         .   trf             =   GrExpr_FetchUpdate (nmAliasRepl @lhs.nmAliasMp @src) (nmAliasRepl @lhs.nmAliasMp @dst)
+  | Throw       lhs         .   trf             =   GrExpr_Throw (nmAliasRepl @lhs.nmAliasMp @nm)
+  | Catch       lhs         .   trf             =   GrExpr_Catch @body.trf (nmAliasRepl @lhs.nmAliasMp @arg) @handler.trf
+
+SEM GrVal
+  | Var         lhs         .   trf             =   GrVal_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+  | NodeAdapt   lhs         .   trf             =   GrVal_NodeAdapt (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
+%%]

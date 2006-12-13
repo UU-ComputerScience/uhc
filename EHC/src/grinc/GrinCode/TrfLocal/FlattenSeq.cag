@@ -1,0 +1,65 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GrExpr_Seq allow tree structure, flatten this to right skewed list (in terms of Seq)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.TrfLocal.FlattenSeq}
+%%]
+
+%%[8 hs import(EH.Util.FastSeq)
+%%]
+
+%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 hs export(grFlattenSeq)
+grFlattenSeq :: GrModule -> GrModule
+grFlattenSeq grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Get Seq list + last expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrExpr [ | | trfL: {FastSeq (GrExpr,GrPat)}  trfLast: GrExpr ]
+
+SEM GrExpr
+  | Seq         lhs         .   trfL            =   (@expr.trf,@pat.trf) :+:: @body.trfL
+  | * - Seq     lhs         .   trfL            =   FSeqNil
+
+SEM GrExpr
+  | Seq         lhs         .   trfLast         =   @body.trfLast
+  | * - Seq     lhs         .   trfLast         =   @trf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: remove 'unit n1 : \n2 -> ...' combi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[8
+SEM GrExpr
+  | Seq         lhs         .   trf             =   foldr
+                                                      (\(e,p) b -> GrExpr_Seq e p b)
+                                                      (GrExpr_Seq @expr.trfLast @pat.trf @body.trf)
+                                                      (toList @expr.trfL)
+%%]
+

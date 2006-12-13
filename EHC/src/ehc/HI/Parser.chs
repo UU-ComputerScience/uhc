@@ -13,7 +13,7 @@
 %%[12 import(qualified {%{EH}Pred} as Pr, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty}, {%{EH}HI})
 %%]
 
-%%[12 import({%{EH}HS.Parser}(pFixity),{%{EH}Core.Parser}(pCExpr),{%{EH}Ty.Parser})
+%%[12 import({%{EH}HS.Parser}(pFixity),{%{EH}Core.Parser}(pCExpr),{%{EH}GrinCode.Parser}(pExpr),{%{EH}Ty.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,27 +36,28 @@ pModule
 
 pBinding :: HIParser Binding
 pBinding
-  =   Binding_Fixity    <$> pNmIs "fixity" <* pOCURLY <*> pInt    <* pSEMI <*> pFixity  <* pCCURLY
-  <|> Binding_Ids       <$  pNmIs "iddef"  <* pOCURLY
-                                           <*> pListSep pSEMI ((,) <$ pOCURLY <*> pIdOcc <* pSEMI <*> pIdOcc <* pCCURLY)
-                                           <* pCCURLY
-  <|> Binding_Arities   <$  pNmIs "arity"  <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
-  <|> Binding_Val       <$> pNmIs "value"  <* pOCURLY <*> pTy                           <* pCCURLY
-  <|> Binding_Stamp     <$  pNmIs "stamp"  <* pOCURLY <*> pString <* pSEMI <*> pString
-                                           <* pSEMI   <*> pString <* pSEMI <*> pString
-                                           <* pSEMI   <*> pString <* pSEMI <*> pString
-                                           <* pSEMI   <*> pString
-                                           <* pSEMI   <*> (read <$> pInteger)
-                                           <* pCCURLY
-  <|> Binding_Export    <$  pNmIs "export"            <*> pModEntRel
-  <|> Binding_Ty        <$> pNmIs "type"   <* pOCURLY <*> pTy      <* pSEMI <*> pTy     <* pCCURLY
+  =   Binding_Fixity    <$> pNmIs "fixity"   <* pOCURLY <*> pInt    <* pSEMI <*> pFixity  <* pCCURLY
+  <|> Binding_Ids       <$  pNmIs "iddef"    <* pOCURLY
+                                             <*> pListSep pSEMI ((,) <$ pOCURLY <*> pIdOcc <* pSEMI <*> pIdOcc <* pCCURLY)
+                                             <* pCCURLY
+  <|> Binding_Arities   <$  pNmIs "arity"    <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
+  <|> Binding_GrInlines <$  pNmIs "grInline" <*> pCurlySemiBlock ((\n a g -> (n,(a,g))) <$ pOCURLY <*> pDollNm <* pSEMI <*> pCurlySemiBlock pDollNm <* pSEMI <*> pExpr <* pCCURLY)
+  <|> Binding_Val       <$> pNmIs "value"    <* pOCURLY <*> pTy <* pCCURLY
+  <|> Binding_Stamp     <$  pNmIs "stamp"    <* pOCURLY <*> pString <* pSEMI <*> pString
+                                             <* pSEMI   <*> pString <* pSEMI <*> pString
+                                             <* pSEMI   <*> pString <* pSEMI <*> pString
+                                             <* pSEMI   <*> pString
+                                             <* pSEMI   <*> (read <$> pInteger)
+                                             <* pCCURLY
+  <|> Binding_Export    <$  pNmIs "export"              <*> pModEntRel
+  <|> Binding_Ty        <$> pNmIs "type"     <* pOCURLY <*> pTy      <* pSEMI <*> pTy     <* pCCURLY
   <|> (\tn cs -> Binding_DataCon tn (map (\f -> f tn) cs))
       <$> pNmIs "data" <*  pOCURLY
                        <*> pCurlySemiBlock
                              ((\n t a fm tn -> (n,(CTag tn n t a,fm)))
-                              <$> pDollNm <*  pEQUAL
-                              <*  pOCURLY <*> pInt <* pCOMMA <*> pInt
-                                          <*> pList ((,) <$ pSEMI <*> pDollNm <* pEQUAL <*> pInt)
+                              <$> pDollNm   <*  pEQUAL
+                              <*  pOCURLY   <*> pInt <* pCOMMA <*> pInt
+                                            <*> pList ((,) <$ pSEMI <*> pDollNm <* pEQUAL <*> pInt)
                               <*  pCCURLY
                              )
                        <*  pSEMI <*> pBool

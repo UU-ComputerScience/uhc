@@ -1,0 +1,145 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate unnecessary evaluations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.TrfLocal.EvalElim}
+%%]
+
+%%[8 hs import(qualified Data.Set as Set)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG})
+%%]
+
+%%[8 hs export(grEvalElim)
+grEvalElim :: GrModule -> GrModule
+grEvalElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is name evaluated later on? Then (e.g.) building of closures can be avoided.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrExpr [ | | willEvalNmS: {Set.Set HsName} ]
+
+SEM GrExpr
+  | Eval        lhs         .   willEvalNmS     =   Set.singleton @nm
+  | Seq         expr        .   willEval        =   case @pat.nmAlias of
+                                                      NmAlias_Nm nmp
+                                                        -> nmp `Set.member` @body.willEvalNmS
+                                                      _ -> False
+                lhs         .   willEvalNmS     =   @expr.willEvalNmS `Set.union` @body.willEvalNmS
+  | * - Eval Seq
+                lhs         .   willEvalNmS     =   Set.empty
+%%]
+
+%%[8
+ATTR GrExpr GrVal [ willEval: Bool | | ]
+
+SEM GrAlt
+  | Alt         expr        .   willEval        =   False
+
+SEM GrGlobal
+  | Global      loc         .   willEval        =   False
+
+SEM GrBind
+  | Bind        expr        .   willEval        =   False
+
+SEM GrAdapt
+  | *           loc         .   willEval        =   False
+
+SEM GrSplit
+  | *           loc         .   willEval        =   False
+
+SEM GrValL
+  | Cons        hd          .   willEval        =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is name evaluated already evaluated? Then eval can be avoided.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrExpr [ isEvaluatedNmS: {Set.Set HsName} | | ]
+
+SEM GrExpr
+  | Seq         body        .   isEvaluatedNmS  =   case @pat.nmAlias of
+                                                      NmAlias_Nm nmp | @expr.isEvaluated
+                                                        -> Set.insert nmp @lhs.isEvaluatedNmS
+                                                      _ -> @lhs.isEvaluatedNmS
+
+SEM GrBind
+  | Bind        expr        .   isEvaluatedNmS  =   Set.empty
+
+SEM GrAlt
+  | Alt         expr        .   isEvaluatedNmS  =   @lhs.isEvaluatedNmS `Set.difference` Set.fromList @pat.introNmL
+%%]
+
+%%[8
+ATTR GrExpr GrVal [ | | isEvaluated: Bool ]
+
+SEM GrExpr
+  | FFI Call Eval App
+                lhs         .   isEvaluated     =   True
+  | * - Store FFI Unit Call Eval App
+                lhs         .   isEvaluated     =   False
+
+SEM GrVal
+  | LitInt      lhs         .   isEvaluated     =   True
+  | * - Node LitInt
+                lhs         .   isEvaluated     =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[8
+ATTR GrVal [ | | mbGrExpr: {Maybe GrExpr} ]
+
+SEM GrVal
+  | Node        (lhs.mbGrExpr,lhs.isEvaluated)  =   case (@tag.trf,@fldL.trf) of
+                                                      (GrTag_Lit GrTagFun _ nm,_) | @lhs.willEval
+                                                        -> (Just $ GrExpr_Call nm @fldL.trf,True)
+                                                      (GrTag_Lit GrTagApp _ _,(GrVal_Var f:fs)) | @lhs.willEval
+                                                        -> (Just $ GrExpr_App f fs,True)
+                                                      (GrTag_Lit GrTagCon _ _,_)
+                                                        -> (Nothing,True)
+                                                      (GrTag_Lit GrTagRec _ _,_)
+                                                        -> (Nothing,True)
+                                                      (GrTag_Lit (GrTagPApp _) _ _,_)
+                                                        -> (Nothing,True)
+                                                      (t,_)
+                                                        -> (Nothing,False)
+  | * - Node    lhs         .   mbGrExpr        =   Nothing
+%%]
+
+%%[8
+SEM GrExpr
+  | Store       lhs         .   trf             =   maybe @trf id @val.mbGrExpr
+  | Eval        lhs         .   trf             =   if @nm `Set.member` @lhs.isEvaluatedNmS then GrExpr_Unit (GrVal_Var @nm) else @trf
+%%]
+

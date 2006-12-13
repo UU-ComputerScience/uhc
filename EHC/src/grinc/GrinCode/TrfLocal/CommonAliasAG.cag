@@ -1,0 +1,64 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common stuff related to name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Name info is stored in a NmAlias, a representation of what a name stands for.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Val/Pat just one name?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrPat [ | | nmAlias: NmAlias ]
+
+SEM GrPat
+  | Var         lhs         .   nmAlias         =   NmAlias_Nm @nm
+  | Node        lhs         .   nmAlias         =   NmAlias_Grp hsnUnknown $ map NmAlias_Nm @fldL
+  | * - Var Node
+                lhs         .   nmAlias         =   NmAlias_None
+%%]
+
+%%[8
+ATTR GrExpr GrVal [ | | nmAlias: NmAlias ]
+
+SEM GrVal
+  | Var         lhs         .   nmAlias         =   NmAlias_Nm @nm
+  | Node        lhs         .   nmAlias         =   case @tag.trf of -- assuming attr 'trf'
+                                                      GrTag_Lit GrTagCon _ _
+                                                        -> NmAlias_Grp hsnUnknown @fldL.nmAliasL
+                                                      _ -> NmAlias_None
+  | LitInt      lhs         .   nmAlias         =   NmAlias_Const hsnUnknown (GrVal_LitInt @int)
+  | LitStr      lhs         .   nmAlias         =   NmAlias_Const hsnUnknown (GrVal_LitStr @str)
+  | * - Var Node LitInt LitStr
+                lhs         .   nmAlias         =   NmAlias_None
+
+SEM GrExpr
+  | Seq         lhs         .   nmAlias         =   @body.nmAlias
+  | * - Unit Seq Store
+                lhs         .   nmAlias         =   NmAlias_None
+%%]
+
+%%[8
+ATTR GrValL [ | | nmAliasL: {[NmAlias]} ]
+
+SEM GrValL
+  | Cons        lhs         .   nmAliasL        =   @hd.nmAlias : @tl.nmAliasL
+  | Nil         lhs         .   nmAliasL        =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduced names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrPat AllSplit [ | | introNmL USE {++} {[]}: {[HsName]} ]
+
+SEM GrPat
+  | Var         lhs         .   introNmL        =   [@nm]
+  | Node        lhs         .   introNmL        =   @fldL
+  | NodeSplit   lhs         .   introNmL        =   @nm : @fldL.introNmL
+
+SEM GrSplit
+  | Sel         lhs         .   introNmL        =   [@nm]
+%%]
+

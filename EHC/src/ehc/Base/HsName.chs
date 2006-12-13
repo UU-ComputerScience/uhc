@@ -14,7 +14,7 @@
 %%[8 export(hsnShowAlphanumeric)
 %%]
 
-%%[8 import(EH.Util.FPath,Char,Data.Maybe)
+%%[8 import(EH.Util.FPath,Char,Data.Maybe,qualified Data.Map as Map)
 %%]
 
 %%[8 export(hsnInitLast)
@@ -190,18 +190,22 @@ hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
+-- qualified part of a name
 hsnQualified :: HsName -> HsName
 hsnQualified = snd . hsnInitLast
 
+-- qualifier (i.e. module name) of name
 hsnQualifier :: HsName -> Maybe HsName
 hsnQualifier n
   = case hsnInitLast n of
       ([],_) -> Nothing
       (ns,_) -> Just (mkHNm ns)
 
+-- prefix/qualify with module name, on top of possible previous qualifier
 hsnPrefixQual :: HsName -> HsName -> HsName
 hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
 
+-- replace/set qualifier
 hsnSetQual :: HsName -> HsName -> HsName
 hsnSetQual m = hsnPrefixQual m . hsnQualified
 
@@ -211,6 +215,7 @@ hsnMapQual f qn
       ([],n) -> n
       (ns,n) -> hsnSetQual (f (mkHNm ns)) n
 
+-- is qualified?
 hsnIsQual :: HsName -> Bool
 hsnIsQual = isJust . hsnQualifier
 
@@ -337,3 +342,16 @@ instance PP IdOcc where
 %%[3 export(HsNameS)
 type HsNameS = Set.Set HsName
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Map of  names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(HsNameMp,hsnRepl)
+type HsNameMp = Map.Map HsName HsName
+
+hsnRepl :: HsNameMp -> HsName -> HsName
+hsnRepl m n = Map.findWithDefault n n m
+%%]
+
+
