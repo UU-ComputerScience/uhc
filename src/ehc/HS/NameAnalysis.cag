@@ -139,7 +139,8 @@ SEM Declaration
 %%[5
     | Data Newtype
         loc             .   idOccDefGamType
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? or from constrs itself, so implicit exists is allowed
+                                        =   -- tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? or from constrs itself, so implicit exists is allowed
+                                            tvarS2IdDefOccGam @nmLev @simpletype.range @constructors.freeTvarS
                         .   idOccDefGamConstrs
                                         =   mkDefGam @lhs.nmLev @simpletype.range IdAsp_Val_Con @idOccDefsCon
 %%[[7

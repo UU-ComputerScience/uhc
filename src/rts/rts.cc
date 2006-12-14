@@ -224,6 +224,9 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 		gb_StepCounter = 0 ;
 #	endif
     gb_interpretLoopWith( initPC ) ;
+#	if TIMING
+		clockStop = clock() ;
+#	endif
 #	if DUMP_INTERNALS
 		gb_prState( "exit state", 1 ) ;
 #	endif
@@ -236,7 +239,6 @@ int main_GB_Exit(int argc, char** argv)
 {	
 #if TIMING
 	double speed = 0 ;
-	clockStop = clock() ;
 	double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
 #	if GB_COUNT_STEPS
 		speed = gb_StepCounter / clockDiff ;
