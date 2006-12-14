@@ -3944,6 +3944,10 @@ case $HostPlatform in
   x86_64-* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
+  i386-apple-* )
+        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
+        mach_dep_c_for_tailcall_leave2="asm(\\\"movl -8(%esp), %ebx\\\") ;"
+        ;;
   *)
         mach_dep_c_for_tailcall_leave1=""
         mach_dep_c_for_tailcall_leave2=""

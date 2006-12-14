@@ -221,10 +221,31 @@ getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                                          then (Just (chr val),len, rest)
                                          else (Nothing,1,rest)
                     | otherwise = case x `lookup` cntrChars of
-                                 Nothing -> (Nothing,0,s)
-                                 Just c  -> (Just c,1,xs)
+                                    Just c  -> (Just c,1,xs)
+%%[[5
+                                    Nothing -> (Nothing,0,s)
+%%][99
+                                    Nothing
+                                      -> case filter (flip isPrefixOf s . fst) cntrStrs of
+                                           [] -> (Nothing,0,s)
+                                           ((m,mr):_)
+                                              -> (Just mr,ml,drop ml s)
+                                              where ml = length m
+%%]]
   where cntrChars = [('a','\a'),('b','\b'),('f','\f'),('n','\n'),('r','\r'),('t','\t')
                     ,('v','\v'),('\\','\\'),('\"','\"'),('\'','\'')]
+%%[[99
+        cntrStrs  = [ ("NUL",'\NUL'), ("SOH",'\SOH'), ("STX",'\STX'), ("ETX",'\ETX')
+                    , ("ENQ",'\ENQ'), ("ACK",'\ACK'), ("BEL",'\BEL'), ("BS" ,'\BS' )
+                    , ("HT" ,'\HT' ), ("LF" ,'\LF' ), ("VT" ,'\VT' ), ("FF" ,'\FF' )
+                    , ("CR" ,'\CR' ), ("SO" ,'\SO' ), ("SI" ,'\SI' ), ("DLE",'\DLE')
+                    , ("DC1",'\DC1'), ("DC2",'\DC2'), ("DC3",'\DC3'), ("DC4",'\DC4')
+                    , ("NAK",'\NAK'), ("SYN",'\SYN'), ("ETB",'\ETB'), ("CAN",'\CAN')
+                    , ("EM" ,'\EM' ), ("SUB",'\SUB'), ("ESC",'\ESC'), ("FS" ,'\FS' )
+                    , ("GS" ,'\GS' ), ("RS" ,'\RS' ), ("US" ,'\US' ), ("SP" ,'\SP' )
+                    , ("DEL",'\DEL')
+                    ]
+%%]]
 
 readn :: Int -> [Char] -> Int
 readn base n = foldl (\r x  -> value x + base * r) 0 n

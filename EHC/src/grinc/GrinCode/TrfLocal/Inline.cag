@@ -64,9 +64,9 @@ grInline expNmS inlMp grmod
   = (trf_Syn_GrAGItf t,gathInlMp_Syn_GrAGItf t)
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
-            	{ expNmS_Inh_GrAGItf = expNmS
-            	, inlMp_Inh_GrAGItf = inlMp
-            	}
+                { expNmS_Inh_GrAGItf = expNmS
+                , inlMp_Inh_GrAGItf = inlMp
+                }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,7 +93,7 @@ ATTR GrAGItf GrModule AllBind [ expNmS: HsNameS | | ]
 ATTR AllBind [ | | introNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 
 SEM GrBind
-  | Bind		lhs			.	introNmS        =   Set.singleton @nm
+  | Bind        lhs         .   introNmS        =   Set.singleton @nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,18 +122,18 @@ SEM GrBind
                                                         | not (null @argNmL)
                                                           && FvUse_Call `Set.member` use
 %%[[12
-                                                          && @nm `Set.notMember` @lhs.expNmS		-- only inline if not exported as global value
+                                                          && @nm `Set.notMember` @lhs.expNmS        -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
-                                                      Just (FvInfo 1 use)							-- a once used value can be inlined and its binding removed
+                                                      Just (FvInfo 1 use)                           -- a once used value can be inlined and its binding removed
                                                         | null @argNmL
                                                           && FvUse_Val `Set.member` use
 %%[[12
-                                                          && @nm `Set.notMember` @lhs.expNmS		-- only inline if not exported as global value
+                                                          && @nm `Set.notMember` @lhs.expNmS        -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
                                                       _ | not (null @argNmL)
-                                                          && (  @expr.isFFIWrapper					-- wrappers are inlined
+                                                          && (  @expr.isFFIWrapper                  -- wrappers are inlined
                                                              || @expr.isConWrapper
                                                              || @expr.inlineCost <= 3
                                                              )
@@ -169,21 +169,21 @@ SEM GrModule
 
 %%[12 hs
 inlMayExport :: HsNameS -> HsNameS -> HsName -> GrInl -> Bool
-inlMayExport thisModNmS expNmS n inl
+inlMayExport onlyInThisModule expNmS n inl
   = case inl of
       GrInl_Call _ e
         -> n `Set.member` expNmS
+           && Set.null (onlyInThisModule `Set.intersection` Map.keysSet (grFreeVars e))
       _ -> False
 %%]
-
-grFreeVars e
 
 %%[12 -8.inlMp.init
 ATTR GrAGItf GrModule [ inlMp: GrInlMp | | gathInlMp: GrInlMp ]
 
 SEM GrModule
   | Mod         bindL       .   inlMp           =   @bindL.gathInlMp `Map.union` @lhs.inlMp
-  				lhs			.	gathInlMp		=	Map.filterWithKey (inlMayExport @bindL.introNmS @lhs.expNmS) @bindL.gathInlMp
+                lhs         .   gathInlMp       =   let onlyInThisModule = @bindL.introNmS `Set.difference` @lhs.expNmS
+                                                    in  Map.filterWithKey (inlMayExport onlyInThisModule @lhs.expNmS) @bindL.gathInlMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
