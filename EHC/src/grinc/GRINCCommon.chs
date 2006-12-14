@@ -2,17 +2,22 @@
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Grinc Common
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%[8 module {%{GRIN}GRINCCommon}
 %%]
-%%[8 import( {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified Data.Map as Map, qualified Data.Set as Set, Char(isDigit))
+%%[8 import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
+%%]
+%%[8 import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
+%%]
+%%[8 import( {%{EH}GrinCode} )
 %%]
 
-%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Special names                  %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(RenameMap, wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag)
+
+type RenameMap      = [(Int,  [Int])]
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (Just wildcardNm)
@@ -24,7 +29,6 @@ applyNr    = HNmNr 2 (Just applyNm)
 mainNr     = HNmNr 3 (Just (hsnPrefix "fun_" hsnMain))
 --mainNr     = HNmNr 3 (Just (hsnMain))
 
-
 isSpecialBind f = f == evalNm || f == applyNm || f==hsnMain
 
 getNr :: HsName -> Int
@@ -32,28 +36,23 @@ getNr (HNmNr i _) = i
 getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
 getNr a           = error $ "getNr tried on " ++ show a
 
---note: this is copied to HeapPointsToFixpoint.chs
 throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %%]
 
-%%[8 import({%{EH}GrinCode})
-%%]
 
-%%[8 export(RenameMap)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Abstract interpretation domain %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type RenameMap      = [(Int,  [Int])]
-
-%%]
-
-
-
-
-%%[8 export(AbstractValue(..), AbstractNode )
-%%]
-%%[8 export(Location, Variable, EvalMap, ApplyMap, Equation, Equations, HeapEquation, HeapEquations)
+%%[8 export(Location, Variable, AbstractValue(..), AbstractNode)
 %%]
 
 %%[8.AbstractValue
+
+type Location = Int
+type Variable = Int
+
+
 data AbstractValue
   = AV_Nothing
   | AV_Basic
@@ -64,17 +63,6 @@ data AbstractValue
     deriving (Eq, Ord)
 
 type AbstractNode = (GrTag, [AbstractValue]) -- an AV_Nodes can not occur inside an AbstractNode
-
-type Location = Int
-type Variable = Int
-type EvalMap     = AssocL GrTag Int
-type ApplyMap    = AssocL GrTag (Either GrTag Int)
-
-type Equation  = (Int, AbstractEnvModifier)
-type Equations = [Equation]
-type HeapEquation  = (Int, AbstractHeapModifier)
-type HeapEquations = [HeapEquation]
-
 
 instance Show AbstractValue where
     show av = case av of
@@ -101,48 +89,8 @@ instance Monoid AbstractValue where
                                       otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
 
 mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
-%%]
 
-%%[8 export(AbstractHeapModifier, AbstractNodeModifier, AbstractEnvModifier(..) )
-%%]
-
-%%[8
-{-
-data AbstractHeapElement = AbstractHeapElement
-    { ahBaseSet    ::  !AbstractValue
-    , ahSharedSet  ::  !(Maybe AbstractValue)
-    }
-    deriving (Eq)
-
--- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
--- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
-
-instance Show AbstractHeapElement where
-    show (AbstractHeapElement b s) =  "unique = "       ++ show b
-                                       ++ ";\tshared = "  ++ show s
--}
-%%]
-
-
-%%[8
-
-
-type AbstractHeapModifier = (AbstractNodeModifier, Maybe Variable)
-type AbstractNodeModifier = (GrTag, [Maybe Variable]) --(tag, [fields])
-
-data AbstractEnvModifier
-  = EnvSetAV !AbstractValue
-  | EnvUnion ![Variable]
-  | EnvEval Variable Variable
-  | EnvApp Variable [ApplyArg] Variable
-  | EnvSelect Variable GrTag Int
-  | EnvTag GrTag [Maybe Variable] (Maybe Variable)
-    deriving (Show, Eq)
-
-type ApplyArg = Either Variable AbstractEnvModifier -- only contains the EnvTag here
-%%]
-
-%%[8.OrdTag
+-- (Ord GrTag) is needed for (Ord AbstractValue) which is needed for Map.unionWith in mergeNodes
 instance Ord GrTag where
     compare t1 t2 = case t1 of
                         GrTag_Any         -> case t2 of
@@ -162,15 +110,59 @@ instance Ord GrTag where
                         GrTag_Var n1      -> case t2 of
                                                  GrTag_Var n2      -> compare n1 n2
                                                  otherwise         -> GT
+
+{-
+-- obsolete abstract domain for Locations
+data AbstractHeapElement = AbstractHeapElement
+    { ahBaseSet    ::  !AbstractValue
+    , ahSharedSet  ::  !(Maybe AbstractValue)
+    }
+    deriving (Eq)
+
+-- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
+-- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
+
+instance Show AbstractHeapElement where
+    show (AbstractHeapElement b s) =  "unique = "       ++ show b
+                                       ++ ";\tshared = "  ++ show s
+-}
+
 %%]
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Heap Points To Analysis Result %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Abstract interpretation constraints     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.analysis import( Data.Array, Data.Monoid) export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom)
+%%[8 export(Equation, Equations, EquationRhs(..), HeapEquation, HeapEquations, HeapEquationRhs, EvalMap, ApplyMap )
 
+type Equation      = (Variable, EquationRhs)
+type HeapEquation  = (Location, HeapEquationRhs)
+type Equations     = [Equation]
+type HeapEquations = [HeapEquation]
+
+type HeapEquationRhs = ((GrTag, [Maybe Variable]), Maybe Variable)
+data EquationRhs
+  = EquationKnownToBe !AbstractValue
+  | EquationShouldBe  ![Variable]
+  | EquationEval      Variable Variable
+  | EquationApply     Variable [ApplyArg] Variable
+  | EquationSelect    Variable GrTag Int
+  | EquationTag       GrTag [Maybe Variable] (Maybe Variable)
+    deriving (Show, Eq)
+
+type ApplyArg = Either Variable EquationRhs -- only contains the EquationTag here
+
+type EvalMap     = AssocL GrTag Int
+type ApplyMap    = AssocL GrTag (Either GrTag Int)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Abstract interpretation result          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom)
 
 type HptMap        = (Array Int AbstractValue, Array Int AbstractValue, Map.Map Int AbstractValue)
 
