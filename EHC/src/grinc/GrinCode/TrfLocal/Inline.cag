@@ -122,14 +122,14 @@ SEM GrBind
                                                         | not (null @argNmL)
                                                           && FvUse_Call `Set.member` use
 %%[[12
-                                                          && @nm `Set.notMember` @lhs.expNmS        -- only inline if not exported as global value
+                                                          && not (@nm `Set.member` @lhs.expNmS)        -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
                                                       Just (FvInfo 1 use)                           -- a once used value can be inlined and its binding removed
                                                         | null @argNmL
                                                           && FvUse_Val `Set.member` use
 %%[[12
-                                                          && @nm `Set.notMember` @lhs.expNmS        -- only inline if not exported as global value
+                                                          && not (@nm `Set.member` @lhs.expNmS)        -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
                                                       _ | not (null @argNmL)

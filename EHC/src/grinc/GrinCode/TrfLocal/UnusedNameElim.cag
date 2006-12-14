@@ -60,12 +60,12 @@ ATTR AllNT [ | | trf: SELF ]
 SEM GrExpr
   | Seq         lhs         .   (trf,fviSeqBodyMp)
                                                 =   case (@pat.nmAlias, @trf, @body.trf) of
-                                                      (NmAlias_Nm n1,GrExpr_Seq (GrExpr_Unit _) (GrPat_Var p) e,_) | p `Map.notMember` @body.gathFviMp
+                                                      (NmAlias_Nm n1,GrExpr_Seq (GrExpr_Unit _) (GrPat_Var p) e,_) | not (p `Map.member` @body.gathFviMp)
                                                         -> (e, @body.fviSeqBodyMp)
-                                                      (NmAlias_Nm n1,GrExpr_Seq (GrExpr_Store _) (GrPat_Var p) e,_) | p `Map.notMember` @body.gathFviMp
+                                                      (NmAlias_Nm n1,GrExpr_Seq (GrExpr_Store _) (GrPat_Var p) e,_) | not (p `Map.member` @body.gathFviMp)
                                                         -> (e, @body.fviSeqBodyMp)
                                                       _ -> (@trf, @body.gathFviMp)
 %%]
-                                                      (NmAlias_Nm n1,_,GrExpr_Seq (GrExpr_Unit (GrVal_Var n2)) p e) | n1 == n2 && n1 `Map.notMember` @body.fviSeqBodyMp
+                                                      (NmAlias_Nm n1,_,GrExpr_Seq (GrExpr_Unit (GrVal_Var n2)) p e) | n1 == n2 && not (n1 `Map.member` @body.fviSeqBodyMp)
                                                         -> (GrExpr_Seq @expr.trf p e, @body.fviSeqBodyMp)
 
