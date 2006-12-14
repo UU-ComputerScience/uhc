@@ -52,13 +52,13 @@ type AbstractHeap s = STArray s Location AbstractValue
 
 -- The equations of the element are fed to envChangeSet
 -- and the output is merged to the baseset
-updateEnvElement :: AbstractEnvModifier -> AbstractValue -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
+updateEnvElement :: EquationRhs -> AbstractValue -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
 updateEnvElement em ev env heap applyMap = do
     { newChangeSet <- envChangeSet em env heap applyMap
     ; return (ev `mappend` newChangeSet)
     }
 
-updateHeapElement :: AbstractHeapModifier -> AbstractValue -> AbstractEnv s -> ST s AbstractValue
+updateHeapElement :: HeapEquationRhs -> AbstractValue -> AbstractEnv s -> ST s AbstractValue
 updateHeapElement hm hv env 
   = do
     {  -- The equations of the element are fed to heapChangeSet
@@ -116,7 +116,7 @@ setShared heap l = do
 %%]
 
 %%[8.heapChangeSet
-heapChangeSet :: AbstractHeapModifier -> AbstractEnv s -> ST s (AbstractValue, AbstractValue)
+heapChangeSet :: HeapEquationRhs -> AbstractEnv s -> ST s (AbstractValue, AbstractValue)
 heapChangeSet ((tag, deps), resultDep) env = do
     { locs        <- mapM getBaseSet deps
     ; resCS       <- getBaseSet resultDep
@@ -135,27 +135,28 @@ heapChangeSet ((tag, deps), resultDep) env = do
 
 %%[8.envChangeSet
 
-envChangeSet :: AbstractEnvModifier -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
-envChangeSet am env heap applyMap = case am of
-                                        EnvSetAV    av       -> return av
-                                        EnvUnion    vs       -> do
-                                                                {  rs <- mapM valAbsEnv vs
-                                                                ;  return (mconcat rs)
-                                                                }
-                                        EnvEval     v ev     -> do
-                                                                {  p <- valAbsEnv v
-                                                                ;  evalChangeSet ev p
-                                                                }
-                                        EnvApp      f a ev   -> do 
-                                                                { pnodes  <- valAbsEnv f
-                                                                ; argsVal <- mapM (\(Left v) -> valAbsEnv v) a
-                                                                ; applyChangeSet pnodes argsVal ev
-                                                                }
-                                        EnvSelect   v n i    -> do
-                                                                {  p <- valAbsEnv v
-                                                                ;  return (selectChangeSet n i p)
-                                                                }
-                                        EnvTag      t f r    -> tagChangeSet t f r
+envChangeSet :: EquationRhs -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s AbstractValue
+envChangeSet am env heap applyMap 
+  = case am of
+      EquationKnownToBe av     -> return av
+      EquationShouldBe  vs     -> do
+                                  {  rs <- mapM valAbsEnv vs
+                                  ;  return (mconcat rs)
+                                  }
+      EquationEval      v ev   -> do
+                                  {  p <- valAbsEnv v
+                                  ;  evalChangeSet ev p
+                                  }
+      EquationApply     f a ev -> do 
+                                  { pnodes  <- valAbsEnv f
+                                  ; argsVal <- mapM (\(Left v) -> valAbsEnv v) a
+                                  ; applyChangeSet pnodes argsVal ev
+                                  }
+      EquationSelect    v n i  -> do
+                                  {  p <- valAbsEnv v
+                                  ;  return (selectChangeSet n i p)
+                                  }
+      EquationTag       t f r  -> tagChangeSet t f r
     where
     --valAbsEnv :: Variable -> ST s AbstractValue
     valAbsEnv v = do
