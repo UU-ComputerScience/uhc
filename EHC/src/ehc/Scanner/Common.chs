@@ -45,6 +45,9 @@ ehScanOpts
 %%[5
                 ++ tokKeywStrsEH5
 %%]
+%%[6
+                ++ tokKeywStrsEH6
+%%]
 %%[8
                 ++ tokKeywStrsEH8
 %%]
@@ -141,6 +144,9 @@ hsScanOpts
 %%]
 %%[5
                 ++ tokKeywStrsHS5
+%%]
+%%[6
+                ++ tokKeywStrsHS6
 %%]
 %%[8
                 ++ tokKeywStrsHS8
@@ -245,6 +251,9 @@ hiScanOpts
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     , "True", "False"
                                     ]
+%%[[12
+                                    ++ tokKeywStrsHI6
+%%]]
                                     ++ scoKeywordsTxt hsScanOpts
                                     ++ scoKeywordsTxt tyScanOpts
                                     ++ scoKeywordsTxt grinScanOpts
@@ -553,6 +562,18 @@ tokOpStrsHS5   = [ "<-", ".." ]
 %%]
 
 %%[6
+pFFORALL      ,
+    pEEXISTS  
+  :: IsParser p Token => p Token
+%%]
+
+%%[6
+pFFORALL         = pKeyTk "Forall"
+pEEXISTS         = pKeyTk "Exists"
+
+tokKeywStrsEH6 = [  ]
+tokKeywStrsHS6 = [  ]
+tokKeywStrsHI6 = [ "Forall", "Exists" ]
 tokOpStrsEH6   = [ "*" ]
 tokOpStrsHS6   = [  ]
 %%]
