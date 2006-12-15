@@ -7,4 +7,3 @@ data Bool = False | True
 concatMap :: (a->b) -> [[a]] -> [b]
 (==) :: a->a->Bool
 
-error :: a -> b

@@ -7,7 +7,8 @@ ATTR AllNTNoMod [ | | gathFviMp USE {`fviMpUnion`} {Map.empty}: FvInfoMp ]
 
 SEM GrTag
   | Lit         lhs         .   gathFviMp       =   case @categ of
-                                                      GrTagFun -> fviMpSingleton' FvUse_Val @nm
+                                                      GrTagFun    -> fviMpSingleton' FvUse_Val @nm
+                                                      GrTagPApp _ -> fviMpSingleton' FvUse_Val @nm
                                                       _ -> Map.empty
 
 SEM GrVal
@@ -15,7 +16,8 @@ SEM GrVal
   | NodeAdapt   lhs         .   gathFviMp       =   fviMpUnions [fviMpSingleton @nm, @fldL.gathFviMp]
 
 SEM GrExpr
-  | Seq         loc         .   gathFviMp       =   fviMpUnions [@expr.gathFviMp, @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL]
+  | Seq         loc         .   gathBodyFviMp   =   @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
+                            .   gathFviMp       =   fviMpUnions [@expr.gathFviMp, @gathBodyFviMp]
   | Call App    loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton' FvUse_Call @nm, @argL.gathFviMp]
   | FFI         loc         .   gathFviMp       =   fviMpFromList @argL
   | Eval Fetch Throw

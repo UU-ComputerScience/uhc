@@ -34,7 +34,8 @@ SEM GrVal
 
 SEM GrExpr
   | Seq         lhs         .   nmAlias         =   @body.nmAlias
-  | * - Unit Seq Store
+  | Eval        lhs         .   nmAlias         =   NmAlias_Eval @nm
+  | * - Unit Seq Store Eval
                 lhs         .   nmAlias         =   NmAlias_None
 %%]
 

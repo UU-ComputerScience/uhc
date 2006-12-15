@@ -84,6 +84,7 @@ SEM Imm
   | Int         lhs         .   cLoc        =   @lhs.cLoc + @sz
 
 SEM Instr
+  | Link        loc         .   linkCLoc    =   @lhs.cLoc
   | LdGlobal    loc         .   linkCLoc    =   @lhs.cLoc + 1
   | Label       loc         .   labelCLoc   =   @lhs.cLoc
   | LabelRef    loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
@@ -150,7 +151,8 @@ SEM Instr
 ATTR AllInstr [ | | links USE {:++:} {FSeqNil}: {FastSeq (Link,Int)} ]
 
 SEM Instr
-  | LdGlobal    lhs         .   links       =   FSeq (@link,@linkCLoc)
+  | LdGlobal Link
+                lhs         .   links       =   FSeq (@link,@linkCLoc)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,6 +170,12 @@ ppArr l = indent 2 (ppCurlysCommasBlock l >#< ";")
 
 ppCast :: String -> PP_Doc -> PP_Doc
 ppCast t v = ppParens $ ppParens t >|< ppParens v
+
+ppNodeFlds :: PP n => n -> PP_Doc
+ppNodeFlds n = n >|< ".fields"
+
+ppNodeFld :: (PP n,PP o) => n -> o -> PP_Doc
+ppNodeFld n o = ppArrAt (ppNodeFlds n) o
 
 ppCnst :: PP_Doc -> Const -> PP_Doc
 ppCnst st (Const_Str       i) = ppCast "GB_Word" $ ppAddrArrAt st i
@@ -208,13 +216,14 @@ SEM Module
   | Mod         loc         .   moduleNmPre             =   mkPre @moduleNm
                             .   ppNm                    =   \n -> @moduleNmPre >|< n
                             .   ppNmAString             =   @ppNm "string"
+                            .   ppNmACAF                =   @ppNm "caf"
                             .   ppNmStringTbl           =   @ppNm "strings"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
                             .   ppNmConstTbl            =   @ppNm "constants"
                             .   ppNmLinkEntriesTbl      =   @ppNm "linkEntries"
                             .   ppNmGlobEntriesTbl      =   @ppNm "globalEntries"
                             .   ppNmCafEntriesTbl       =   @ppNm "cafEntries"
-                            .   ppNmFixOffsetsTbl       =   @ppNm "fixOffsets"
+                            .   ppNmCafTbl              =   @ppNm "cafs"
                             .   strNmInitF              =   "initModule"
                             .   ppNmInitF               =   @ppNm @strNmInitF
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
@@ -239,23 +248,28 @@ SEM Module
                                                     linkL   = toList @instrs.links
                                                     links   = ppTbl "GB_LinkEntry" @ppNmLinkEntriesTbl
                                                                 (map (\(l,c)
-                                                                       -> ppCurlysCommasBlock
-                                                                            [ pp $ fromEnum $ linkTbl l, pp $ linkInx l
-%%[[12
-                                                                            , pp $ linkMod l
-%%]]
-                                                                            , ppCast "GB_Ptr" $ ppAddrArrAt @ppNmByteCodeTbl c
-                                                                            ]
+                                                                       -> let (kind,val,loc) = kv l c
+                                                                          in  ppCurlysCommasBlock [ pp $ fromEnum $ kind, ppCast "GB_Ptr" loc, ppCast "GB_Word" val ]
                                                                      )
                                                                  $ linkL
                                                                 )
-                                                    centries= ppTbl "GB_BytePtr" @ppNmGlobEntriesTbl
-                                                                [ ppAddrArrAt @ppNmByteCodeTbl c | (LocRef_CodeEntry _,c) <- sortOn fst $ toList @instrs.locRefs ]
-                                                    cafs    = ppTbl "GB_BytePtr*" @ppNmCafEntriesTbl
-                                                                [ ppAddrArrAt @ppNmGlobEntriesTbl i | i <- @cafEntryL ]
-                                                    fixOffL = [ (fromJust c,sz) | (FixOffset l sz) <- @fixOffsetL, let c = Map.lookup l @labelMp, isJust c ]
-                                                    fixoffs = ppTbl "GB_FixOffset" @ppNmFixOffsetsTbl
-                                                                [ ppCurlysCommasBlock [ppCast "GB_Offset*" $ ppAddrArrAt @ppNmByteCodeTbl c,pp sz] | (c,sz) <- fixOffL ]
+                                                            where kv l c = case linkTbl l of
+                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref1,ppAddrArrAt @ppNmConstTbl $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+                                                                             LinkTbl_ConstPtr  -> (LinkTbl_PatchCode_Deref2,ppAddrArrAt @ppNmConstTbl $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref1,ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+%%[[12
+                                                                             LinkTbl_ImpEntry  -> (LinkTbl_PatchCode_Deref1,ppAddrOf $ ppNodeFld @ppNmImpNode $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+%%]]
+                                                                             k                 -> (k, pp $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+                                                    glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- toList @instrs.locRefs ]
+                                                    glEntries= ppTbl "GB_BytePtr" @ppNmGlobEntriesTbl [ e i c | (i,c) <- Map.assocs glEntryMp ]
+                                                             where e i c = case Map.lookup i cafMp of
+                                                                             Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n
+                                                                             Nothing -> ppAddrArrAt @ppNmByteCodeTbl c
+                                                    cafL    = zipWith3 (\b nr i -> (i,b >|< nr,ppArr [pp "GB_MkCAFHeader", ppCurlysCommasBlock $ (:[]) $ ppCast "GB_Word" $ ppAddrArrAt @ppNmByteCodeTbl $ panicJust "GrinByteCode.ToC.cafs" $ Map.lookup i glEntryMp]))
+                                                                       (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
+                                                    cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
+                                                    cafs    = vlist [ "static GB_Node" >#< n >#< "=" >#< c | (_,n,c) <- cafL ]
                                                     initf   = ppLine $ ppCmtC @lhs.opts "Initialization"
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
 %%[[8
@@ -268,8 +282,6 @@ SEM Module
                                                             where args = [ pp @instrs.cLoc, @ppNmByteCodeTbl
                                                                          , pp (length linkL), @ppNmLinkEntriesTbl
                                                                          , @ppNmGlobEntriesTbl
-                                                                         , pp (length @cafEntryL), @ppNmCafEntriesTbl
-                                                                         , pp (length fixOffL), @ppNmFixOffsetsTbl
                                                                          , @ppNmConstTbl
 %%[[12
                                                                          , ppAddrOf @ppNmImpNode
@@ -320,14 +332,13 @@ SEM Module
                                                       >-< bcode
                                                       >-< strings
                                                       >-< consts
-                                                      >-< centries
                                                       >-< cafs
+                                                      >-< glEntries
 %%[[12
                                                       >-< impnd
                                                       >-< expnd
 %%]]
                                                       >-< links
-                                                      >-< fixoffs
                                                       >-< initf
 %%[[8
                                                       >-< maincaf
@@ -366,7 +377,7 @@ SEM Instr
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @lhs.opts @ann
   | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
-  | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkInx @link]
+  | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
   | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
 %%]
   | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
@@ -399,8 +410,9 @@ SEM Instrs
 ATTR Instr [ | | hasCode: Bool ]
 
 SEM Instr
-  | Meta Label  lhs         .   hasCode     =   False
-  | * - Meta Label
+  | Meta Label Link
+                lhs         .   hasCode     =   False
+  | * - Meta Label Link
                 lhs         .   hasCode     =   True
 %%]
 
@@ -450,7 +462,7 @@ SEM Instr
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
-  | LdGlobal    lhs         .   mn          =   "ldg" 			>|< @locDst.mn
+  | LdGlobal    lhs         .   mn          =   "ldg"           >|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
 

@@ -482,8 +482,8 @@ ehGenerator r p mkRes fail e
            ) )
         ])
       (mkRes (rngLift r EH.Expr_Var ok))
-  where ok = mkHNm "ok"
-        x  = mkHNm "x"
+  where ok = mkHNmHidden "ok"
+        x  = mkHNmHidden "x"
 %%]
 
 %%[9

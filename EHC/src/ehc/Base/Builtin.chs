@@ -80,20 +80,21 @@ hsnIsProd       _                   =   False
 hsnProdArity    (HNm (_:ar))        =   read ar
 %%]
 
-%%[3.strUn
-strUn                               =   "un"
+%%[3.strHiddenPrefix export(hsnStrHiddenPrefix)
+hsnStrHiddenPrefix                  =   "$"
 %%]
 
-%%[99.strUn -3.strUn
-strUn                               =   "-"
+%%[5 export(mkHNmHidden)
+mkHNmHidden :: HSNM x => x -> HsName
+mkHNmHidden = mkHNmPrefix hsnStrHiddenPrefix
+%%]
+
+%%[3.strUn
+strUn                               =   hsnStrHiddenPrefix ++ "un"
 %%]
 
 %%[7.strFldUpd
-strFldUpd                           =   "upd_"
-%%]
-
-%%[99 -7.strFldUpd
-strFldUpd                           =   strUn
+strFldUpd                           =   hsnStrHiddenPrefix ++ "upd_"
 %%]
 
 %%[3.hsnUn

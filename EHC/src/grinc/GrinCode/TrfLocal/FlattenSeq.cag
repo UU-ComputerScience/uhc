@@ -38,7 +38,7 @@ WRAPPER GrAGItf
 ATTR GrExpr [ | | trfL: {FastSeq (GrExpr,GrPat)}  trfLast: GrExpr ]
 
 SEM GrExpr
-  | Seq         lhs         .   trfL            =   (@expr.trf,@pat.trf) :+:: @body.trfL
+  | Seq         lhs         .   trfL            =   @expr.trfL :++: FSeq (@expr.trfLast,@pat.trf) :++: @body.trfL
   | * - Seq     lhs         .   trfL            =   FSeqNil
 
 SEM GrExpr

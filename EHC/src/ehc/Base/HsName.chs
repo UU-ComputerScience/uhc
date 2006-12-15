@@ -17,10 +17,7 @@
 %%[8 import(EH.Util.FPath,Char,Data.Maybe,qualified Data.Map as Map)
 %%]
 
-%%[8 export(hsnInitLast)
-%%]
-
-%%[8 export(hsnPrefix,hsnSuffix,stringAlphanumeric,  hsnAlphanumeric)
+%%[8 export(stringAlphanumeric,  hsnAlphanumeric)
 %%]
 
 %%[10 export(hsnConcat)
@@ -84,7 +81,7 @@ instance Show HsName where
   show = hsnShow "."
 %%]
 
-%%[8
+%%[5 export(hsnInitLast)
 hsnToList :: HsName -> [HsName]
 %%[[12
 hsnToList (HNmQ ns) = ns
@@ -95,7 +92,7 @@ hsnInitLast :: HsName -> ([HsName],HsName)
 hsnInitLast = maybe (panic "hsnInitLast") id . initlast . hsnToList
 %%]
 
-%%[8
+%%[5 export(hsnPrefix,hsnSuffix,mkHNmPrefix)
 hsnPrefix                           ::  String -> HsName -> HsName
 hsnPrefix   p   hsn
   = case hsnInitLast hsn of
@@ -105,6 +102,9 @@ hsnSuffix                           ::  HsName -> String -> HsName
 hsnSuffix       hsn   p
   = case hsnInitLast hsn of
       (ns,n) -> mkHNm (ns,HNm (show n ++ p))
+
+mkHNmPrefix :: HSNM x => String -> x -> HsName
+mkHNmPrefix p = hsnPrefix p . mkHNm
 %%]
 
 %%[8
@@ -255,7 +255,7 @@ instance HSNM String where
                   _               -> ws
 %%]
 
-%%[8
+%%[5
 instance HSNM ([HsName],HsName) where
   mkHNm (l,n) = mkHNm (l ++ [n])
 

@@ -11,10 +11,14 @@
 %%[8 hs import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
+-- for debugging:
+%%[8 hs import(UU.Pretty,EH.Util.Utils)
+%%]
+
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonAliasAG})
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG},{GrinCode/TrfLocal/CommonFreeVar})
 %%]
 
 %%[8 hs export(grEvalElim)
@@ -80,11 +84,23 @@ SEM GrValL
 %%[8 hs
 data IsEval
   = IsEval_Eval
-  | IsEval_Apply
+  | IsEval_Apply    HsName GrValL
   | IsEval_None
   deriving Eq
 
+isEvalEvaluated :: IsEval -> Bool
+isEvalEvaluated IsEval_None = False
+isEvalEvaluated _           = True
+
 type IsEvalMp = Map.Map HsName IsEval
+%%]
+
+For debugging
+%%[8 hs
+instance Show IsEval where
+  show IsEval_Eval = "IsEval_Eval"
+  show IsEval_None = "IsEval_None"
+  show (IsEval_Apply f _) = "IsEval_Apply " ++ show f
 %%]
 
 %%[8
@@ -92,9 +108,9 @@ ATTR AllGrExpr [ isEvalMp: IsEvalMp | | ]
 
 SEM GrExpr
   | Seq         body        .   isEvalMp        =   case @pat.nmAlias of
-                                                      NmAlias_Nm nmp | @expr.isEval /= IsEval_None
+                                                      NmAlias_Nm nmp | isEvalEvaluated @expr.isEval
                                                         -> Map.insert nmp @expr.isEval @lhs.isEvalMp
-                                                      _ -> @lhs.isEvalMp
+                                                      _ -> @lhs.isEvalMp `Map.difference` Map.fromList (zip @pat.introNmL @pat.introNmL)
 
 SEM GrBind
   | Bind        expr        .   isEvalMp        =   Map.empty
@@ -107,8 +123,10 @@ SEM GrAlt
 ATTR GrExpr GrVal [ | | isEval: IsEval ]
 
 SEM GrExpr
-  | FFI Call Eval App
+  | FFI Call Eval
                 lhs         .   isEval          =   IsEval_Eval
+  | App         lhs         .   isEval          =   case @appTrf of
+                                                      GrExpr_App f as -> IsEval_Apply f as
   | * - Store FFI Unit Call Eval App
                 lhs         .   isEval          =   IsEval_None
 
@@ -116,6 +134,23 @@ SEM GrVal
   | LitInt      lhs         .   isEval          =   IsEval_Eval
   | * - Node LitInt
                 lhs         .   isEval          =   IsEval_None
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrExpr [ fviMp: FvInfoMp | | ]
+
+SEM GrExpr
+  | Seq         expr        .   fviMp           =   @gathBodyFviMp
+
+SEM GrAlt
+  | Alt         expr        .   fviMp           =   @expr.gathFviMp
+
+SEM GrBind
+  | Bind        expr        .   fviMp           =   @expr.gathFviMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,15 +167,15 @@ ATTR GrVal [ | | mbGrExpr: {Maybe GrExpr} ]
 
 SEM GrVal
   | Node        (lhs.mbGrExpr,lhs.isEval)       =   case (@tag.trf,@fldL.trf) of
-                                                      (GrTag_Lit GrTagFun _ nm,_) | @lhs.willEval
+                                                      (GrTag_Lit GrTagFun _ nm,_) | @lhs.willEval					-- a to be evaluated saturated call closure -> immediate call
                                                         -> (Just $ GrExpr_Call nm @fldL.trf,IsEval_Eval)
-                                                      (GrTag_Lit GrTagApp _ _,(GrVal_Var f:fs)) | @lhs.willEval
-                                                        -> (Just $ GrExpr_App f fs,IsEval_Eval)
-                                                      (GrTag_Lit GrTagCon _ _,_)
+                                                      (GrTag_Lit GrTagApp _ _,(GrVal_Var f:fs)) | @lhs.willEval		-- a to be evaluated apply closure -> immediate apply
+                                                        -> (Just $ GrExpr_App f fs,IsEval_Apply f fs)
+                                                      (GrTag_Lit GrTagCon _ _,_)									-- constructor node is evaluated
                                                         -> (Nothing,IsEval_Eval)
-                                                      (GrTag_Lit GrTagRec _ _,_)
+                                                      (GrTag_Lit GrTagRec _ _,_)									-- record as well
                                                         -> (Nothing,IsEval_Eval)
-                                                      (GrTag_Lit (GrTagPApp _) _ _,_)
+                                                      (GrTag_Lit (GrTagPApp _) _ _,_)								-- partial app also, cannot be evaluated further
                                                         -> (Nothing,IsEval_Eval)
                                                       (t,_)
                                                         -> (Nothing,IsEval_None)
@@ -149,9 +184,15 @@ SEM GrVal
 
 %%[8
 SEM GrExpr
-  | Store       lhs         .   trf             =   maybe @trf id @val.mbGrExpr
+  | Store Unit  lhs         .   trf             =   maybe @trf id @val.mbGrExpr
   | Eval        lhs         .   trf             =   case Map.lookup @nm @lhs.isEvalMp of
-                                                      Just IsEval_Eval -> GrExpr_Unit (GrVal_Var @nm)
+                                                      Just e | isEvalEvaluated e
+                                                        -> GrExpr_Unit (GrVal_Var @nm)
                                                       _ -> @trf
+  | App         loc         .   appTrf          =   case Map.lookup @nm @lhs.isEvalMp of
+                                                      Just (IsEval_Apply f as) | not $ @nm `Map.member` @lhs.fviMp
+                                                        -> GrExpr_App f (as ++ @argL.trf)
+                                                      _ -> @trf
+                lhs         .   trf             =   @appTrf
 %%]
 

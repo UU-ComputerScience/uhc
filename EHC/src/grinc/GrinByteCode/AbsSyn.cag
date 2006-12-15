@@ -30,7 +30,6 @@ DATA Module
                 constL			: {[Const]}
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
-                fixOffsetL		: {[FixOffset]}
 
 SET AllModule = Module
 %%]
