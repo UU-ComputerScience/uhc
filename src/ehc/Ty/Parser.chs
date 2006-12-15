@@ -57,7 +57,11 @@ pTyApp
 pTy :: P Ty
 pTy
   =   pTyApp
-  <|> (Ty_Quant TyQu_Forall <$ pFORALL <|> Ty_Quant TyQu_Exists <$ pEXISTS)
+  <|> (    Ty_Quant TyQu_Forall <$ pFORALL
+       <|> Ty_Quant TyQu_Exists <$ pEXISTS
+       <|> Ty_Quant TyQu_KiForall <$ pFFORALL
+       <|> Ty_Quant TyQu_KiExists <$ pEEXISTS
+      )
       <*> pUIDHI <* pDOT <*> pTy
   <|> Ty_Lam <$ pLAM <*> pUIDHI <* pRARROW <*> pTy
 %%]
