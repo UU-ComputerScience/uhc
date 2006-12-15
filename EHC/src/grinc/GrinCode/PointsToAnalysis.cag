@@ -444,19 +444,17 @@ SEM GrBind
                                                  | (resVar, actuals) <- @lhs.allActuals
                                                  , resVar == @resultVar
                                                  ]
-                     .  actualsEnv   = if @loc.prune then id else @expr.actualsEnv
-                     
-              lhs    .  equations    = let envElem formal actuals = (getNr formal, EquationShouldBe [ actual | Just actual <- actuals])
-                                       in zipWith envElem
-                                                  @argNmL
-                                                  ( if    null @bindActuals
-                                                     then replicate (length @argNmL) []
-                                                     else @bindActuals
-                                                  )
-                                       ++ [ @loc.exceptEq ]
+              loc    .  prune        = (@nm == evalNr) || (@nm == applyNr)
+              loc    .  actualsEnv   = if @loc.prune then id else @expr.actualsEnv
+              lhs    .  equations    = @loc.exceptEq                                                  
+                                       :  [ (getNr formal, EquationShouldBe [ actual | Just actual <- actuals])
+                                          | (formal, actuals) <- zip @argNmL ( if    null @bindActuals
+                                                                                then replicate (length @argNmL) []
+                                                                                else @bindActuals
+                                                                             )
+                                          ]
                                        ++ @expr.equations
 
-              loc    .  prune        = (@nm == evalNr) || (@nm == applyNr)
               lhs    .  heapList     = if @prune 
                                         then [] 
                                         else @expr.heapList
