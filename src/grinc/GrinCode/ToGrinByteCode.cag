@@ -367,7 +367,7 @@ ATTR GrValL [ | | grvalIntroL: {[GB.GrValIntro]} ]
 SEM GrVal
   | Var         lhs         .   grvalIntro      =   GB.GrValIntro_Nm @nm
   | LitInt      lhs         .   grvalIntro      =   GB.GrValIntro_Int (toInteger @int)
-  | LitStr      lhs         .   grvalIntro      =   GB.GrValIntro_Str @str (GB.Link @lhs.modNmConstInx GB.LinkTbl_ConstPtr @constInx)
+  | LitStr      lhs         .   grvalIntro      =   GB.GrValIntro_Str @str (GB.linkConstPtr @constInx)
   | Node        lhs         .   grvalIntro      =   GB.GrValIntro_Grp @tag.self @fldL.grvalIntroL
   | * - Var LitStr Node LitInt
                 lhs         .   grvalIntro      =   GB.GrValIntro_None
@@ -473,7 +473,7 @@ SEM GrExpr
                                                       _ -> case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
                                                                -> (ins :++: fins :++: FSeqL [GB.callc inc], 1, False)
-                                                               where fins = FSeqL [GB.ldg GB.InsOp_LocB_TOS $ GB.Link @lhs.modNmConstInx GB.LinkTbl_Const @constInx]
+                                                               where fins = FSeqL [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of
                                                       GB.GrValIntroAlt_OnTOS ins inc _
@@ -499,7 +499,7 @@ SEM GrExpr
                                                           -> (ins :++: @altL.i,1,True,inc)
                                                         | otherwise
                                                           -> (ins :++: ins',1,True,inc)
-                                                          where ins' = FSeqL [GB.casecall,GB.label (GB.LocRef_Label @at1stOffLabel)]
+                                                          where ins' = FSeqL [GB.casecall,GB.label (GB.LocRef_Label @at1stOffLabel),GB.link $ GB.linkOffsets @nrOfAlts]
                                                                         :++: FSeqL [ GB.labelref l | l <- @altL.altLocRefs ]
                                                                         :++: @altL.i
                                                                         :++: FSeqL [GB.label @aftCaseLocRef]
@@ -532,25 +532,28 @@ mkRetLabel returnCtxt l
         -> GB.newLabelId l
       _ -> (l,l)
 
-mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackDepth -> GB.StackDepth -> (GB.InsSeq,FixOffsets)
+mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackDepth -> GB.StackDepth -> GB.InsSeq
 mkRet returnCtxt retLocLbl stkDepth inc
   = case returnCtxt of
       ReturnCtxt_Returns nrArgsOuter
-        -> (FSeqL [GB.retcall 1 nrArgsOuter retOffSurr],FSeqNil)
+        -> FSeqL [GB.retcall 1 nrArgsOuter retOffSurr]
         where retOffSurr  = stkDepth + inc
       ReturnCtxt_CaseReturns labelId dep
-        -> (FSeqL [GB.retcase 1 (stkDepth + inc - dep), GB.label $ GB.LocRef_Label retLocLbl, GB.labelref $ GB.LocRef_Label labelId], FSeqL [GB.FixOffset retLocLbl 1])
+        -> FSeqL [ GB.retcase 1 (stkDepth + inc - dep)
+                 , GB.label $ GB.LocRef_Label retLocLbl
+                 , GB.link $ GB.linkOffsets 1
+                 , GB.labelref $ GB.LocRef_Label labelId
+                 ]
       ReturnCtxt_CaseFallThrough
-        -> (FSeqNil,FSeqNil)
-      _ -> (FSeqNil,FSeqNil)
+        -> FSeqNil
+      _ -> FSeqNil
 %%]
 
 %%[8
 SEM GrExpr
   | Unit Store Call Eval App FFI
-                loc         .   (retIns,retFixOffs)
-                                                =   if @retIsDone
-                                                    then (FSeqNil,FSeqNil)
+                loc         .   retIns          =   if @retIsDone
+                                                    then FSeqNil
                                                     else mkRet @lhs.returnCtxt @retLocLabel @lhs.stkDepth @valStkInc
   | * - Unit Store Call Eval App FFI
                 loc         .   retIns          =   FSeqNil
@@ -594,7 +597,6 @@ SEM GrModule
                                                       [ c | (c,_) <- sortOn snd $ Map.toList @bindL.constMp ]
                                                       [ i | (i,True) <- zip [0..] @isCafL ]
                                                       @mainEntry
-                                                      (toList @bindL.fixOffsets)
 %%]
                                                       [ e | e@(n,_) <- tyRowCanonOrder $ Map.toList @entryNmMp, n `Set.member` @lhs.expNmS ]
 
@@ -615,24 +617,6 @@ SEM GrAlt
                                                                   AltFetch_One _ o -> FSeqL [GB.l2ts (o + GB.nrNodeHdrWords)]
                                                                   AltFetch_Zero    -> FSeqNil
                                                     in  FSeqL [GB.label @altLocRef] :++: fetch :++: @expr.i
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fixing offsets, constructing FixOffset entries
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-type FixOffsets = FastSeq GB.FixOffset
-%%]
-
-%%[8
-ATTR AllBind AllGrExpr [ | | fixOffsets USE {:++:} {FSeqNil}: FixOffsets ]
-
-SEM GrExpr
-  | Case        lhs         .   fixOffsets      =   FSeqL [GB.FixOffset @at1stOffLabel @nrOfAlts] :++: @retFixOffs :++: @altL.fixOffsets
-  | Catch       lhs         .   fixOffsets      =   @body.fixOffsets :++: @retFixOffs :++: @handler.fixOffsets      -- for now only
-  | * - Case Catch Seq
-                lhs         .   fixOffsets      =   @retFixOffs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

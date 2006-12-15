@@ -219,11 +219,15 @@ extern void gb_listForceEval( GB_NodePtr n, int sz ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_LinkTbl_EntryKind_Const			0			/* constant */
-#define GB_LinkTbl_EntryKind_ConstPtr		1			/* ptr to constant */
-#define GB_LinkTbl_EntryKind_CodeEntry		2			/* code entry */
+#define GB_LinkTbl_EntryKind_Const					0			/* obsolete (now via PatchCode_Deref1): constant */
+#define GB_LinkTbl_EntryKind_ConstPtr				1			/* obsolete (now via PatchCode_Deref2): ptr to constant */
+#define GB_LinkTbl_EntryKind_CodeEntry				2			/* code entry */
+#define GB_LinkTbl_EntryKind_PatchCode				3			/* patch code with value */
+#define GB_LinkTbl_EntryKind_PatchCode_Deref1		4			/* patch code with *value */
+#define GB_LinkTbl_EntryKind_PatchCode_Deref2		5			/* patch code with **value */
+#define GB_LinkTbl_EntryKind_PatchOffsets			6			/* patch code containing offsets with abolute address */
 %%[[12
-#define GB_LinkTbl_EntryKind_ImpEntry		3			/* import entry */
+#define GB_LinkTbl_EntryKind_ImpEntry				7			/* obsolete (now via PatchCode_Deref1): import entry */
 %%]]
 %%]
 
@@ -232,23 +236,9 @@ Link commands for global references
 %%[8
 typedef struct GB_LinkEntry {
   uint16_t		tblKind ;
-  uint32_t		inx     ;
-%%[[12
-  uint16_t		inxMod  ;
-%%]]
-  GB_Ptr		infoLoc ;
+  GB_Ptr		linkLoc ;
+  GB_Word		linkVal ;
 } GB_LinkEntry ;
-%%]
-
-Fixing offsets, replacing offsets with actual address
-
-%%[8
-#define GB_Offset 	GB_Word 
-
-typedef struct GB_FixOffset {
-    GB_Ptr		codeLoc ;
-    uint16_t    nrOfLocs ;
-} GB_FixOffset ;
 %%]
 
 Module info
@@ -459,10 +449,6 @@ extern void gb_InitTables
 	, int linkEntriesSz
 	, GB_LinkEntry* linkEntries
 	, GB_BytePtr* globalEntries
-	, int cafEntriesSz
-	, GB_BytePtr** cafEntries
-	, int fixOffsetsSz
-	, GB_FixOffset* fixOffsets
 	, GB_Word* consts
 %%[[12
 	, GB_NodePtr impNode

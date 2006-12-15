@@ -942,16 +942,6 @@ v &
 
 \emph{No store instructions are required; storing is handled by node related instructions.}
 
-\begin{GrinEncoding}{|ist(i)(rd)(rs)(x)|}
- &
-|100 ^ ixx1(i)(0) ^ ixx1(rd)(0) ^ ixx1(rs)(0) ^ ixxjuxt(x)(1)(0)| &
-... &
-&
-\\
-\end{GrinEncoding}
-
-\textbf{Semantics}\\
-
 \begin{GrinEncoding}{|ist2(i)(rd)(rs)(x)|}
  &
 |10 ^^ ixx1(i)(0) ^ ixxjuxt(rd)(1)(0) ^ ixx1(rs)(0) ^ ixxjuxt(x)(1)(0)| &
@@ -959,6 +949,8 @@ v &
  &
 \\
 \end{GrinEncoding}
+
+\textbf{Semantics}\\
 
 %%[[wrap=code
 ist(i)(rd)(rs)(x)
@@ -987,7 +979,7 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 
 \subsubsection{General operators}
 
-\emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
+%\emph{No arithmetic instructions are required; arithmetic is currently handled by primitives.}
 
 \begin{GrinEncoding}{|iop2(ot)(dt)(od)(i)(os)(x)|}
  &
@@ -1609,6 +1601,8 @@ The saved return address of the apply and result are shuffled to be ready for th
 %%[grinBStorage
 \subsubsection{Split node}
 
+\emph{Under construction}
+
 \begin{GrinEncoding}{|isplit(rs)(n)|}
  &
 |1110 ^^ 100 ^ ixx1(rs)(0)| &
@@ -1618,6 +1612,8 @@ The saved return address of the apply and result are shuffled to be ready for th
 \end{GrinEncoding}
 
 \subsubsection{Adapt node}
+
+\emph{Under construction}
 
 \begin{GrinEncoding}{|iadapt(rs)(n)|}
  &

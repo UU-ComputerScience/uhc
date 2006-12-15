@@ -1005,10 +1005,6 @@ void gb_InitTables
 	, int linkEntriesSz
 	, GB_LinkEntry* linkEntries
 	, GB_BytePtr* globalEntries
-	, int cafEntriesSz
-	, GB_BytePtr** cafEntries
-	, int fixOffsetsSz
-	, GB_FixOffset* fixOffsets
 	, GB_Word* consts
 %%[[12
 	, GB_NodePtr impNode
@@ -1017,14 +1013,16 @@ void gb_InitTables
 %%]]
 	)
 {
-	int i ;
+	int i, j ;
 	GB_Ptr p ;
 
+/*
 	for ( i = 0 ; i < cafEntriesSz ; i++ )
 	{
 		*(cafEntries[i]) = Cast(GB_BytePtr,gb_MkCAF( *(cafEntries[i]) )) ;
 	}
-	
+*/
+
 %%[[12
 	for ( i = 0 ; i < GB_Node_NrFlds(impNode) ; i++ )
 	{
@@ -1035,36 +1033,32 @@ void gb_InitTables
 
 	for ( i = 0 ; i < linkEntriesSz ; i++ )
 	{
-		p = Cast(GB_Ptr,linkEntries[i].infoLoc) ;
+		p = Cast(GB_Ptr,linkEntries[i].linkLoc) ;
 		switch ( linkEntries[i].tblKind )
 		{
-			case GB_LinkTbl_EntryKind_Const :
-				*p = consts[ linkEntries[i].inx ] ;
-				break ;
-
-			case GB_LinkTbl_EntryKind_ConstPtr :
-				*p = GB_Deref(Cast(GB_Ptr,consts[ linkEntries[i].inx ])) ;
-				break ;
-
 			case GB_LinkTbl_EntryKind_CodeEntry :
-				*p = Cast(GB_Word,globalEntries[ linkEntries[i].inx ]) ;
+				*p = Cast(GB_Word,globalEntries[ linkEntries[i].linkVal ]) ;
 				break ;
 
-%%[[12
-			case GB_LinkTbl_EntryKind_ImpEntry :
-				*p = impNode->fields[ linkEntries[i].inxMod ] ;
+			case GB_LinkTbl_EntryKind_PatchCode :
+				*p = linkEntries[i].linkVal ;
 				break ;
-%%]]
-		}
-	}
-	
-	for ( i = 0 ; i < fixOffsetsSz ; i++ )
-	{
-		int j ;
-		p = fixOffsets[i].codeLoc ;
-		for ( j = 0 ; j < fixOffsets[i].nrOfLocs ; j++ )
-		{
-			p[j] = Cast(GB_Word,&p[j+1]) + p[j] ;
+
+			case GB_LinkTbl_EntryKind_PatchCode_Deref1 :
+				*p = GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)) ;
+				break ;
+
+			case GB_LinkTbl_EntryKind_PatchCode_Deref2 :
+				*p = GB_Deref(Cast(GB_Ptr,GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)))) ;
+				break ;
+
+			case GB_LinkTbl_EntryKind_PatchOffsets :
+				for ( j = 0 ; j < linkEntries[i].linkVal ; j++ )
+				{
+					p[j] = Cast(GB_Word,&p[j+1]) + p[j] ;
+				}
+				break ;
+
 		}
 	}
 	

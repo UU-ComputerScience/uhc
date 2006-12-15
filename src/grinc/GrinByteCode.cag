@@ -65,15 +65,43 @@ Link items, to be resolved at runtime initialization.
 
 %%[8 hs export(Link(..),LinkTbl(..))
 data LinkTbl
-  = LinkTbl_Const | LinkTbl_ConstPtr | LinkTbl_CodeEntry
+  = LinkTbl_Const
+  | LinkTbl_ConstPtr
+  | LinkTbl_CodeEntry
+  | LinkTbl_PatchCode				-- patch with linkVal
+  | LinkTbl_PatchCode_Deref1		-- patch with *linkVal
+  | LinkTbl_PatchCode_Deref2		-- patch with **linkVal
+  | LinkTbl_PatchOffsets			-- patch offsets to absolute address
 %%[[12
   | LinkTbl_ImpEntry
 %%]]
   deriving (Show,Eq,Ord,Enum)
 
 data Link
-  = Link { linkMod :: Int, linkTbl :: LinkTbl, linkInx :: Int }
+  = Link
+      { linkTbl :: LinkTbl
+      , linkVal :: Int
+      }
   deriving Show
+%%]
+
+%%[8 hs export(linkCode,linkConst,linkConstPtr,linkOffsets)
+linkConst :: Int -> Link
+linkConst x = Link LinkTbl_Const x
+
+linkConstPtr :: Int -> Link
+linkConstPtr x = Link LinkTbl_ConstPtr x
+
+linkCode :: Int -> Link
+linkCode x = Link LinkTbl_CodeEntry x
+
+linkOffsets :: Int -> Link
+linkOffsets x = Link LinkTbl_PatchOffsets x
+%%]
+
+%%[12 hs export(linkImpEntry)
+linkImpEntry :: Int -> Link
+linkImpEntry m = Link LinkTbl_ImpEntry m
 %%]
 
 Reference to defining location in code
@@ -92,12 +120,6 @@ data LocRef
   = LocRef_CodeEntry    Int                         -- resolved at initialization runtime, translates to
   | LocRef_Label        { lrefId :: LabelId }       -- resolved before runtime, translates to offsets
   deriving (Eq,Ord)
-%%]
-
-%%[8 hs export(FixOffset(..))
-data FixOffset
-  = FixOffset   LabelId Int
-  deriving Show
 %%]
 
 %%[8 hs export(StackDepth)
@@ -233,10 +255,10 @@ nmLd' optim env modNmConstInx stkDepth nm
              Val_Int i
                -> (mva,Load FSeqNil 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
-               -> (mva,Load (FSeq $ ann nm $ ldg InsOp_LocB_TOS (Link modNmConstInx LinkTbl_CodeEntry o)) 1 LoadSrc_TOS)
+               -> (mva,Load (FSeq $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) 1 LoadSrc_TOS)
 %%[[12
              Val_ImpEntry mo eo
-               -> (mva,Load (FSeqL [ann nm $ ldg InsOp_LocB_Reg (Link mo LinkTbl_ImpEntry eo)]) 0 (LoadSrc_Reg_Rel $ eo+1))
+               -> (mva,Load (FSeqL [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+1))
 %%]]
       _ -> (Nothing,Load (FSeq $ ann ("dummy ld for" >#< nm) $ ldl stkDepth) 1 LoadSrc_TOS)
 %%]
@@ -438,6 +460,15 @@ l2ts c = ld InsOp_Deref_Two InsOp_LocB_TOS InsOp_LocE_SP (nrWord2Byte c)
 
 ldg :: InsOp_LocB -> Link -> Instr
 ldg locB l = Instr_LdGlobal locB l
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: link
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(link)
+link :: Link -> Instr
+link = Instr_Link
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
