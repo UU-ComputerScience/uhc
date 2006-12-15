@@ -62,15 +62,6 @@ ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%% Tying together gam's, combining with imported info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.initFixityGam
-SEM Body
-    | Body
-        declarations    .   fixityGam   =   @declarations.gathFixityGam
-%%]
-
-%%[12 -1.initFixityGam
-%%]
-
 %%[12
 ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
 %%]
