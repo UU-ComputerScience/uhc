@@ -39,6 +39,18 @@ SEM Declaration
                                             in  assocLToGam $ map mk $ @oprefnames
 %%]
 
+%%[1.initFixityGam
+SEM Body
+    | Body
+        declarations    .   fixityGam   =   @declarations.gathFixityGam
+%%]
+
+%%[12 -1.initFixityGam
+SEM Body
+    | Body
+        declarations    .   fixityGam   =   @declarations.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
 %%[1
 SEM Expression
 	| Let
@@ -75,7 +87,7 @@ ATTR Expression [ | | operatorName: MaybeName ]
 
 SEM Expression
     | Variable Constructor
-        lhs         .   operatorName    =   Just @name
+        lhs         .   operatorName    =   Just @refname
     | * - Variable Constructor
         lhs         .   operatorName    =   Nothing
 
