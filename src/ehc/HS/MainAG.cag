@@ -26,6 +26,9 @@
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
 %%]
 
+%%[9 hs import({%{EH}Pred}) export(pigiGam2IdDefOccGam)
+%%]
+
 %%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
@@ -97,7 +100,12 @@ SEM Expression
 %%]
 
 %%[3
-ATTR AllType [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
+ATTR
+  AllType
+%%[[9
+  AllContextedPattern AllContextItem
+%%]]
+    [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
 
 SEM Type
     | Variable NamedWildcard
@@ -144,31 +152,31 @@ SEM Type
 %%]
 
 %%[9
-ATTR Types Type AllRowTypeUpdate [ inPrArgLevel: Int | | ]
+ATTR Types Type AllRowTypeUpdate [ isAsPred: Bool | | ]
 
 SEM Type
     | InfixApplication
-        leftType    .   inPrArgLevel=   if @operator.isPrArrow then 1 else 0
+        leftType    .   isAsPred    =   @operator.isPrArrow
 
 SEM AnnotatedType
     | *
-        loc         .   inPrArgLevel=   0
+        loc         .   isAsPred    =   False
 
 SEM Declaration
     | *
-        loc         .   inPrArgLevel=   0
+        loc         .   isAsPred    =   False
 
 SEM Pattern
     | *
-        loc         .   inPrArgLevel=   0
+        loc         .   isAsPred    =   False
 
 SEM Expression
     | *
-        loc         .   inPrArgLevel=   0
+        loc         .   isAsPred    =   False
 
 SEM ContextItem
     | Class
-        loc         .   inPrArgLevel=   0
+        loc         .   isAsPred    =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

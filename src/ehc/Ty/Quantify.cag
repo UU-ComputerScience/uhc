@@ -348,7 +348,7 @@ SEM Ty
 
 %%[9
 SEM Ty
-  | Pred        loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+  | Pred        loc         .   isQuLoc     =   @lhs.coco == CoVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -390,11 +390,16 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free tvs which should be quantified deeper but cannot because of isQuLoc
+%%% Free tvs which should be quantified deeper but cannot because of isQuLoc == False
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
-ATTR Ty [ | | qOrphanTvL: TyVarIdL ]
+ATTR
+  Ty
+%%[[9
+  Pred Impls
+%%]]
+    [ | | qOrphanTvL: TyVarIdL ]
 %%]
 
 %%[4
@@ -413,7 +418,16 @@ SEM Ty
 %%[[7
     Ext
 %%]]
+%%[[9
+    Pred Impls
+%%]]
                 lhs         .   qOrphanTvL      =   []
+%%]
+
+%%[9
+SEM Impls
+  | Cons		lhs			.	qOrphanTvL      =   @pr.qOrphanTvL ++ @tl.qOrphanTvL
+  | * - Cons	lhs			.	qOrphanTvL      =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -714,8 +728,8 @@ SEM Ty
   | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvL @qBndExTvL . mkTyImpls (map poPr @insPrL) $ Ty_Var @tv @categ.quTy
   | App         loc         .   quTy            :=  let  (rwYTvL,rwNTvL) = partition (`elem` @frRowTvL) @qBndTvL
                                                     in   mkTyQuForRank @isQuRank @hereQu rwNTvL @qBndExTvL
-                                                         .  mkTyQuForRank @isQuRank @lhs.baseQu rwYTvL []
-                                                         .  mkTyImpls (map poPr @insPrL)
+                                                         $  mkTyQuForRank @isQuRank @lhs.baseQu rwYTvL []
+                                                         $  mkTyImpls (map poPr @insPrL)
                                                          $  (if tqoptLeaveImpls @lhs.opts
                                                              then Ty_App @func.quTy @arg.quTy
                                                              else maybe (Ty_App @func.quTy @arg.quTy) (const @arg.quTy) @func.mbImpls

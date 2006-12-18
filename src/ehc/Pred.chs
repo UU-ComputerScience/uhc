@@ -671,6 +671,13 @@ instance Substitutable TyVarId (CnstrInfo Ty) PrIntroGamInfo where
   ftv   pigi        =   ftv (pigiKi pigi)
 %%]
 
+%%[9 export(initPIGIGam)
+initPIGIGam
+  = assocLToGam
+      [ (hsnPrArrow,    emptyPIGI)
+      ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Info for Gamma for elim rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

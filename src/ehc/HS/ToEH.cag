@@ -169,8 +169,19 @@ ATTR Type [ | | eh: {EH.TyExpr} ]
 SEM Type
     | NormalApplication
         lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
+%%[[1
     | InfixApplication
         loc         .   eh          =   mkRngApp @range [@operator.eh,@leftType.eh,@rightType.eh]
+%%][9
+    | InfixApplication
+        loc         .   (eh,ctxtFormErrs)
+                                    =   if @operator.isPrArrow && not @lhs.isAsPred
+                                        then let t = foldr mk1Arrow @rightType.eh [ EH.TyExpr_Pred pr | (Just pr) <- @leftType.ehMbAsPrL ]
+                                             in  if all isJust @leftType.ehMbAsPrL
+                                                 then (t, [])
+                                                 else (t, [Err_MalformedPred @leftType.pp])
+                                        else (mkRngApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
+%%]
     | Constructor
         lhs         .   eh          =   rngLift @range EH.TyExpr_Con @refname
     | Parenthesized
@@ -191,11 +202,6 @@ SEM Type
         lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant TyQu_Forall) @type.eh @typevariables
     | Exists
         lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant TyQu_Exists) @type.eh @typevariables
-%%]
-%%[77
-    | Rowtype
-        lhs         .   eh          =   rngLift @range XX
-        rowtype                  : RowType
 %%]
 %%[7
     | RowUpdate
@@ -305,29 +311,36 @@ SEM AnnotatedType
 %%]
 
 %%[9
-%%]
 ATTR Type [ | | ehMbAsPr: {Maybe EH.PrExpr} ]
-ATTR AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
 
 SEM Type
     | NormalApplication
-        lhs         .   ehMbAsPr    =   case @function.mbRefConNm of
+        loc         .   ehMbAsPr    =   case @function.mbRefConNm of
                                           Just conNm
                                             -> Just $ rngLift @range EH.PrExpr_Class conNm @arguments.eh
                                           _ -> Nothing
     | Forall
-        lhs         .   ehMbAsPr    =   foldr (\tv pr -> fmap (rngLift @range EH.PrExpr_Forall tv) pr) @type.ehMbAsPr @typevariables
+        loc         .   ehMbAsPr    =   foldr (\tv pr -> fmap (rngLift @range EH.PrExpr_Forall tv) pr) @type.ehMbAsPr @typevariables
     | InfixApplication
-        lhs         .   ehMbAsPr    =   case (@operator.mbRefConNm,@leftType.ehMbAsPr,@rightType.ehMbAsPr) of
-                                          (Just conNm,Just l,Just r) | hsnIsArrow conNm
+        loc         .   ehMbAsPr    =   case (@leftType.ehMbAsPr,@rightType.ehMbAsPr) of
+                                          (Just l,Just r) | @operator.isPrArrow && @lhs.isAsPred
                                             -> Just $ rngLift @range EH.PrExpr_Arrow l r
                                           _ -> Nothing
     | * - NormalApplication Forall InfixApplication
-        lhs         .   ehMbAsPr    =   Nothing
+        loc         .   ehMbAsPr    =   Nothing
+
+ATTR Type AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
+
+SEM Type
+    | RowRecUpdate
+        lhs         .   ehMbAsPrL   =   @rowTypeUpdates.ehMbAsPrL
+    | * - RowRecUpdate Parenthesized
+        lhs         .   ehMbAsPrL   =   [@ehMbAsPr]
 
 SEM RowTypeUpdate
     | Extends
         lhs         .   ehMbAsPrL   =   [@type.ehMbAsPr]
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expressions     

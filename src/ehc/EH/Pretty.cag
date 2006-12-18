@@ -294,9 +294,9 @@ SEM TyExpr
 %%]
 
 %%[12
-%%]
 SEM AGItf
   | AGItf       loc     .   ppExtra :=  ppCmt (ppGam @lhs.valGam)
+%%]
 
 %%[99
 SEM Expr

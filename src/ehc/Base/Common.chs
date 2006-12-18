@@ -409,7 +409,11 @@ mkArrow = flip (foldr mk1Arrow)
 %%[1.PP.ppAppTop
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) args dflt
-  =  if       hsnIsArrow conNm  then  ppListSep "" "" (" " >|< con >|< " ") args
+  =  if       hsnIsArrow conNm
+%%[[9
+              || hsnIsPrArrow conNm
+%%]]
+                                then  ppListSep "" "" (" " >|< con >|< " ") args
      else if  hsnIsProd  conNm  then  ppParensCommas args
 %%]
 %%[5

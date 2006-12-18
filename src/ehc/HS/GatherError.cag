@@ -89,6 +89,10 @@ SEM Type
       Variable NamedWildcard
 %%]]
         loc         .   errL        =   @errIdUse
+%%[[9
+    | InfixApplication
+        loc         .   errL        =   @ctxtFormErrs ++ @leftType.errL ++ @operator.errL ++ @rightType.errL
+%%]]
 %%]
 
 %%[5

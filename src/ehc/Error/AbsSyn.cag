@@ -124,6 +124,7 @@ DATA Err
   | DeclsNotAllowed     inside     : String
                         decls      : {AssocL IdOccKind [HsName]}
   | ValWithoutSig       nmL        : {[HsName]}
+  | MalformedPred       pp         : {PP_Doc}
 %%]
 
 %%[12

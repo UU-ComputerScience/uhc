@@ -21,12 +21,17 @@ mkBuiltinIdDefOcc n k
   where o = IdOcc n k
 
 tyGam2IdDefOccGam :: TyGam -> IdDefOccGam
-tyGam2IdDefOccGam = gamMap (\(n,tgi) -> mkBuiltinIdDefOcc n IdOcc_Type)
+tyGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Type)
 
 %%[[6
 kiGam2IdDefOccGam :: KiGam -> IdDefOccGam
-kiGam2IdDefOccGam = gamMap (\(n,kgi) -> mkBuiltinIdDefOcc n IdOcc_Kind)
-%%]
+kiGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Kind)
+%%]]
+
+%%[[9
+pigiGam2IdDefOccGam :: PrIntroGam -> IdDefOccGam
+pigiGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Class)
+%%]]
 %%]
 
 %%[1 hs
@@ -213,7 +218,7 @@ SEM Pattern
     | Typed
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
-%%]
+%%]]
 %%]
 
 %%[7
@@ -227,6 +232,11 @@ SEM Expression
     | Typed
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
+%%[[9
+    | ImplicitLambda
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @patterns.freeTvarS
+%%]]
 %%]
 
 %%[4
@@ -275,7 +285,11 @@ SEM AGItf
 %%[[6
                                             `gamUnion`
                                             kiGam2IdDefOccGam initKiGam
-%%]
+%%]]
+%%[[9
+                                            `gamUnion`
+                                            pigiGam2IdDefOccGam initPIGIGam
+%%]]
 %%]
 
 %%[8 -1.AGItf.idGam
@@ -318,12 +332,17 @@ SEM Expression
 %%[[3
     | Typed
         type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
-%%]
+%%]]
 %%[[5
     | Comprehension
         expression      .   idGam       =   @qualifiers.idGam
         qualifiers      .   idGam       =   @lhs.idGam
-%%]
+%%]]
+%%[[9
+    | ImplicitLambda
+        loc             .   idGam       =   gamUnions [@idOccDefGamType, @lhs.idGam]
+        expression      .   idGam       =   gamUnions [@patterns.idOccDefGam, @idGam]
+%%]]
 %%]
 
 %%[4
@@ -599,16 +618,25 @@ SEM Pattern
 SEM Type
     | Constructor
         loc             .   idAsp       =   IdAsp_Type_Con
+                        .   idOccKind   =   IdOcc_Type
 %%[[3
     | Variable NamedWildcard
         loc             .   idAsp       =   IdAsp_Type_Var
+                        .   idOccKind   =   IdOcc_Type
 %%]
     | Constructor
 %%[[3
       Variable NamedWildcard
 %%]
         loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Type @idAsp @range
+                                        =   mkUseOccGam @lhs.idGam [@name] @idOccKind @idAsp @range
+%%]
+
+%%[9
+SEM Type
+    | Constructor
+        loc             .   (idOccKind,idAsp)
+                                        :=  if @lhs.isAsPred then (IdOcc_Class,IdAsp_Class_Class) else (IdOcc_Type,IdAsp_Type_Con)
 %%]
 
 %%[7
