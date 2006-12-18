@@ -101,9 +101,13 @@ SEM FunctionalDependency
 
 %%[1
 SEM Type
-    | Application
+    | NormalApplication
         loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
                                                   @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
+    | InfixApplication
+        loc         .   pp          =   let args = [@leftType.pp,@rightType.pp]
+        								in	ppAppTop  (@operator.conNm,@operator.pp)
+                                                  	  args (@operator.pp >#< ppSpaces args)
     | Constructor
         loc         .   pp          =   ppCon @name
     | Parenthesized

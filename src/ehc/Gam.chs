@@ -1013,6 +1013,9 @@ initTyGam
 %%[[8
       , (hsnFloat  ,    mkTGI tyFloat   kiStar)
 %%]
+%%[[9
+      , (hsnPrArrow,    mkTGI (Ty_Con hsnPrArrow) ([kiStar,kiStar] `mkArrow` kiStar))
+%%]
 %%[[99
       , (hsnInteger,    mkTGI tyInteger kiStar)
       , (hsnDouble ,    mkTGI tyDouble  kiStar)

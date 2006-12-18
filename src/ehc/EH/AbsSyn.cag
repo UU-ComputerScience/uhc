@@ -157,6 +157,95 @@ SET AllTyExpr       = TyExpr TyExprs RowTyExpr PrExpr PrExprs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data based record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+DATA DataFieldExpr
+  | Upd             dataFieldExpr   : DataFieldExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Con             nm              : {HsName}
+  | Expr            expr            : Expr
+%%]
+
+%%[7
+DATA DataFieldPatExpr
+  | Ext             dataFieldPatExpr: DataFieldPatExpr
+                    nm              : {HsName}
+                    patExpr         : PatExpr
+  | Con             nm              : {HsName}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records, rows
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+DATA RecExpr
+  | Empty
+  | Ext             recExpr         : RecExpr
+                    mbNm            : {Maybe HsName}
+                    expr            : Expr
+  | Upd             recExpr         : RecExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Expr            expr            : Expr
+%%]
+
+%%[7
+DATA RecPatExpr
+  | Empty
+  | Ext             recPatExpr      : RecPatExpr
+                    mbNm            : {Maybe HsName}
+                    patExpr         : PatExpr
+  | Expr            patExpr         : PatExpr
+%%]
+
+%%[7
+DATA RowTyExpr
+  | Empty
+  | Ext             rowTyExpr       : RowTyExpr
+                    mbNm            : {Maybe HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[9
+DATA RowTyExpr
+  | Var             nm              : {HsName}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA PrExpr
+  | Class           nm              : {HsName}
+                    tyExprs         : TyExprs
+  | Arrow           arg             : PrExpr
+                    res             : PrExpr
+  | Forall          tyVar           : {HsName}
+                    prExpr          : PrExpr
+
+TYPE PrExprs        = [PrExpr]
+%%]
+  | Impls
+  | NoImpls
+
+%%[10
+DATA PrExpr
+  | Lacks           rowTyExpr       : RowTyExpr
+                    nm              : {HsName}
+  | DynVar          nm              : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[9
+SET AllPrExpr       = PrExpr PrExprs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -382,95 +471,6 @@ SET AllDataConstrEq = DataConstrEq DataConstrEqs
 SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr AllDataConstrEq
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Data based record
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-DATA DataFieldExpr
-  | Upd             dataFieldExpr   : DataFieldExpr
-                    nm              : {HsName}
-                    expr            : Expr
-  | Con             nm              : {HsName}
-  | Expr            expr            : Expr
-%%]
-
-%%[7
-DATA DataFieldPatExpr
-  | Ext             dataFieldPatExpr: DataFieldPatExpr
-                    nm              : {HsName}
-                    patExpr         : PatExpr
-  | Con             nm              : {HsName}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records, rows
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-DATA RecExpr
-  | Empty
-  | Ext             recExpr         : RecExpr
-                    mbNm            : {Maybe HsName}
-                    expr            : Expr
-  | Upd             recExpr         : RecExpr
-                    nm              : {HsName}
-                    expr            : Expr
-  | Expr            expr            : Expr
-%%]
-
-%%[7
-DATA RecPatExpr
-  | Empty
-  | Ext             recPatExpr      : RecPatExpr
-                    mbNm            : {Maybe HsName}
-                    patExpr         : PatExpr
-  | Expr            patExpr         : PatExpr
-%%]
-
-%%[7
-DATA RowTyExpr
-  | Empty
-  | Ext             rowTyExpr       : RowTyExpr
-                    mbNm            : {Maybe HsName}
-                    tyExpr          : TyExpr
-%%]
-
-%%[9
-DATA RowTyExpr
-  | Var             nm              : {HsName}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicates
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-DATA PrExpr
-  | Class           nm              : {HsName}
-                    tyExprs         : TyExprs
-  | Arrow           arg             : PrExpr
-                    res             : PrExpr
-  | Forall          tyVar           : {HsName}
-                    prExpr          : PrExpr
-
-TYPE PrExprs        = [PrExpr]
-%%]
-  | Impls
-  | NoImpls
-
-%%[10
-DATA PrExpr
-  | Lacks           rowTyExpr       : RowTyExpr
-                    nm              : {HsName}
-  | DynVar          nm              : {HsName}
-                    tyExpr          : TyExpr
-%%]
-
-%%[9
-SET AllPrExpr       = PrExpr PrExprs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

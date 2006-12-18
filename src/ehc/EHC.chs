@@ -1374,6 +1374,20 @@ cpStepUID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: stop at phase
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+cpStopAt :: CompilePoint -> EHCompilePhase ()
+cpStopAt atPhase
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; unless (atPhase < ehcStopAtPoint opts)
+                cpSetStopSeq
+       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: compilation of module(s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1407,9 +1421,13 @@ cpCompileCU targHSState modNm
            (ECUSHaskell HSOnlyImports,Just HSAllSem)
              -> do { msg "Compiling Haskell"
                    ; cpSeq [ cpParseHs modNm
+                           , cpStopAt CompilePoint_Parse
                            , cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm, cpCheckMods [modNm], cpProcessHs modNm
+                           , cpStopAt CompilePoint_AnalHS
                            , cpStepUID, cpProcessEH modNm
+                           , cpStopAt CompilePoint_AnalEH
                            , cpStepUID, cpProcessCore1 modNm
+                           , cpStopAt CompilePoint_Core
                            , cpSeq (if not (ehcFullProgGRIN opts)
                                     then [cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm]
                                          ++ (if ecuIsTopMod ecu then [] else [cpCompileWithGCC GCC_CompileOnly [] modNm])
@@ -1427,9 +1445,12 @@ cpCompileCU targHSState modNm
 %%[8
            (ECUSHaskell HSStart,_)
              -> do { msg "Compiling Haskell"
-                   ; cpSeq [ cpSetupMod modNm, cpParseHs modNm, cpStepUID
-                           , cpProcessHs modNm
+                   ; cpSeq [ cpSetupMod modNm, cpParseHs modNm
+                           , cpStopAt CompilePoint_Parse
+                           , cpStepUID, cpProcessHs modNm
+                           , cpStopAt CompilePoint_AnalHS
                            , cpStepUID, cpProcessEH modNm
+                           , cpStopAt CompilePoint_AnalEH
                            , cpStepUID, cpProcessCore1 modNm, cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm, cpProcessGrin3 modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
                            ]
@@ -1441,8 +1462,13 @@ cpCompileCU targHSState modNm
 %%]
            (ECUSEh EHStart,_)
              -> do { msg "Compiling EH"
-                   ; cpSeq [ cpParseEH modNm, cpStepUID, cpProcessEH modNm
-                           , cpStepUID, cpProcessCore1 modNm, cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm, cpProcessGrin3 modNm
+                   ; cpSeq [ cpParseEH modNm
+                           , cpStopAt CompilePoint_Parse
+                           , cpStepUID, cpProcessEH modNm
+                           , cpStopAt CompilePoint_AnalEH
+                           , cpStepUID, cpProcessCore1 modNm
+                           , cpStopAt CompilePoint_Core
+                           , cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm, cpProcessGrin3 modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
@@ -1535,33 +1561,46 @@ doCompileRun filename opts
                                   ;  return (filename,h)
                                   }
          ;  let isHS = isSuffixOf ".hs" fn
-         ;  tokens <- offsideScanHandle (if isHS then hsScanOpts else ehScanOpts) fn fh
-         ;  resd <-
-              if isHS
-              then do { let steps = parseOffside (HSPrs.pAGItf) tokens
-                      ; (resd,_) <- evalStepsIO show steps
-                      ; let res   = HSSem.sem_AGItf resd
-                            wrRes = HSSem.wrap_AGItf res
-                                      (HSSem.Inh_AGItf
-                                        { HSSem.opts_Inh_AGItf = opts
-                                        })
-                      ; putStrLn (disp (ppErrL $ HSSem.errL_Syn_AGItf $ wrRes) 1000 "")
-                      ; when (ehcOptShowHS opts)
-                             (putStrLn (disp (HSSem.pp_Syn_AGItf wrRes) 1000 ""))
-                      ; return (HSSem.eh_Syn_AGItf wrRes)
-                      }
-              else do { let steps = parseOffside (EHPrs.pAGItf) tokens
-                      ; (resd,_) <- evalStepsIO show steps
-                      ; return resd
-                      }
-         ;  let res   = EHSem.sem_AGItf resd
-                wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
-         ;  when (ehcOptShowEH opts)
-                 (putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 ""))
-         ;  when (ehcOptShowAst opts)
-                 (putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 ""))
-         ;  when (ehcOptShowTopTyPP opts)
-                 (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
+         ;  when
+              (ehcStopAtPoint opts >= CompilePoint_Parse)
+              (do { tokens <- offsideScanHandle (if isHS then hsScanOpts else ehScanOpts) fn fh
+                  ; resd <-
+                      if isHS
+                      then do { let steps = parseOffside (HSPrs.pAGItf) tokens
+                              ; (resd,_) <- evalStepsIO show steps
+                              ; if ehcStopAtPoint opts >= CompilePoint_AnalHS
+                                then do { let res   = HSSem.sem_AGItf resd
+                                              wrRes = HSSem.wrap_AGItf res
+                                                        (HSSem.Inh_AGItf
+                                                          { HSSem.opts_Inh_AGItf = opts
+                                                          })
+                                        ; putStrLn (disp (ppErrL $ HSSem.errL_Syn_AGItf $ wrRes) 1000 "")
+                                        ; when (ehcOptShowHS opts)
+                                               (putStrLn (disp (HSSem.pp_Syn_AGItf wrRes) 1000 ""))
+                                        ; return (HSSem.eh_Syn_AGItf wrRes)
+                                        }
+                                else return undefined
+                              }
+                      else do { let steps = parseOffside (EHPrs.pAGItf) tokens
+                              ; (resd,_) <- evalStepsIO show steps
+                              ; return resd
+                              }
+                  ; when
+                      (ehcStopAtPoint opts >= CompilePoint_AnalEH)
+                      (do { let res   = EHSem.sem_AGItf resd
+                                wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
+                          ; when (ehcOptShowEH opts)
+                                 (putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 ""))
+                          ; when (ehcOptShowAst opts)
+                                 (putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 ""))
+                          ; when (ehcOptShowTopTyPP opts)
+                                 (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
+%%[[7_2
+                          ; when (not (null filename) && ehcoptUniqueness opts)
+                                 (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))
+%%]]
+                          })
+                  })
          }
 %%]
 

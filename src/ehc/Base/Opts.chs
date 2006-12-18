@@ -73,13 +73,14 @@ trfOptOverrides opts trf
 %%[1.EHCOpts
 data EHCOpts
   = EHCOpts
-      {  ehcOptShowHS         ::  Bool
-      ,  ehcOptShowEH         ::  Bool
-      ,  ehcOptShowAst        ::  Bool
-      ,  ehcOptShowTopTyPP    ::  Bool
-      ,  ehcOptHelp           ::  Bool
-      ,  ehcOptVersion        ::  Bool
-      ,  ehcOptDebug          ::  Bool
+      {  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
+      ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+      ,  ehcOptShowAst        ::  Bool              -- show decorated EH AST on stdout
+      ,  ehcOptShowTopTyPP    ::  Bool              -- show EH type of expression
+      ,  ehcOptHelp           ::  Bool              -- print help
+      ,  ehcOptVersion        ::  Bool              -- print version info
+      ,  ehcOptDebug          ::  Bool              -- debug info
+      ,  ehcStopAtPoint       ::  CompilePoint      -- stop at (after) compile phase
 %%[[7_2
       ,  ehcoptUniqueness     ::  Bool
 %%]]
@@ -95,7 +96,7 @@ data EHCOpts
       ,  ehcOptGenOwnLocals   ::  Bool
       ,  ehcOptGenCmt         ::  Bool
 
-      ,  ehcOptShowGrin       ::  Bool
+      ,  ehcOptShowGrin       ::  Bool              -- show Grin pretty print on stdout
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
       ,  ehcOptEmitCore       ::  Bool
@@ -109,7 +110,7 @@ data EHCOpts
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity
       ,  ehcOptTrf            ::  [TrfOpt]
-      ,  ehcOptOptimise		  ::  Optimise
+      ,  ehcOptOptimise       ::  Optimise
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
 %%]]
@@ -147,6 +148,7 @@ defaultEHCOpts
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
       ,  ehcOptDebug          =   False
+      ,  ehcStopAtPoint       =   CompilePoint_All
 %%[[7_2
       ,  ehcoptUniqueness     =   True
 %%]]
@@ -219,6 +221,12 @@ ehcCmdLineOpts
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
+     ,  Option ""   ["stopat"]
+%%[[1
+                                         (ReqArg oStopAt "0|1|2|3")           "stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh"
+%%][8
+                                         (ReqArg oStopAt "0|1|2|3|4")         "stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh, 4=core"
+%%]]
 %%[[7_2
      ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
@@ -268,6 +276,17 @@ ehcCmdLineOpts
          oVersion        o =  o { ehcOptVersion       = True    }
          oDebug          o =  o { ehcOptDebug         = True
                                 , ehcOptShowAst       = True
+                                }
+         oStopAt       s o =  o { ehcStopAtPoint       =
+                                    case s of
+                                      "0" -> CompilePoint_Imports
+                                      "1" -> CompilePoint_Parse
+                                      "2" -> CompilePoint_AnalHS
+                                      "3" -> CompilePoint_AnalEH
+%%[[8
+                                      "4" -> CompilePoint_Core
+%%]]
+                                      _   -> CompilePoint_All
                                 }
 %%[[7_2
          oUnique         o =  o { ehcoptUniqueness    = False   }
