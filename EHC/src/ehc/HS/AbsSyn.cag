@@ -314,11 +314,6 @@ DATA Type                                         {- *** -}
         typevariables            : Names
         type                     : Type
 %%]
-%%[77
-    | Rowtype
-        range                    : Range
-        rowtype                  : RowType
-%%]
 %%[7
     | RowUpdate
         range                    : Range
@@ -426,12 +421,15 @@ DATA ContextItem
         range                    : Range
     | NoImplicits
         range                    : Range
-%%]
-%%[10
+%%[[10
 	| RowLacksLabel
         range                    : Range
         rowvariable              : Name
         name                     : Name
+%%]]
+
+SET AllContextItem
+  = ContextItem ContextItems
 %%]
 
 %%[5
@@ -503,7 +501,7 @@ SET AllType
     RowExtension RowExtensions RowType
 %%]
 %%[9
-    ContextItem ContextItems
+    AllContextItem
 %%]
 
 -- ------------------------------------------------------------------------
@@ -1036,6 +1034,9 @@ DATA ContextedPattern
         range                    : Range
         pattern                  : Pattern
         context                  : ContextItem
+
+SET AllContextedPattern
+  = ContextedPattern ContextedPatterns
 %%]
 
 %%[1
@@ -1047,7 +1048,7 @@ SET AllPattern
     AllRecordPatternBinding
 %%]
 %%[9
-    ContextedPattern ContextedPatterns
+    AllContextedPattern
 %%]
 
 -- ------------------------------------------------------------------------

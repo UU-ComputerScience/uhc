@@ -47,6 +47,9 @@
 %%[8 import (qualified EH.Util.ScanUtils as ScanUtils)
 %%]
 
+%%[9 import ({%{EH}Pred})
+%%]
+
 %%[12 import (qualified EH.Util.Rel as Rel, qualified EH.Util.FastSeq as Seq, qualified Data.Set as Set)
 %%]
 
@@ -1645,6 +1648,9 @@ doCompileRun fn opts
              hsInh          = HSSem.Inh_AGItf { HSSem.opts_Inh_AGItf            = opts2
                                               , HSSem.idGam_Inh_AGItf           = HSSem.tyGam2IdDefOccGam initTyGam
                                                                                     `gamUnion` HSSem.kiGam2IdDefOccGam initKiGam
+%%[[9
+                                                                                    `gamUnion` HSSem.pigiGam2IdDefOccGam initPIGIGam
+%%]]
                                               , HSSem.gUniq_Inh_AGItf           = uidStart
 %%[[12
                                               , HSSem.isTopMod_Inh_AGItf        = False
@@ -1664,7 +1670,7 @@ doCompileRun fn opts
                                               , EHSem.dataGam_Inh_AGItf         = emptyGam
                                               , EHSem.tyGam_Inh_AGItf           = initTyGam
                                               , EHSem.kiGam_Inh_AGItf           = initKiGam
-                                              , EHSem.prIntroGam_Inh_AGItf      = emptyGam
+                                              , EHSem.prIntroGam_Inh_AGItf      = initPIGIGam
                                               , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
                                               , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
                                               , EHSem.idQualGam_Inh_AGItf       = emptyGam

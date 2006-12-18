@@ -129,9 +129,18 @@ cfgPPTyPred
       }
 %%]
 
-%%[8 hs
+%%[8.ppHINm hs
 ppHINm :: HsName -> PP_Doc
 ppHINm = ppHsnNonAlpha hiScanOpts
+%%]
+
+%%[12 -8.ppHINm hs
+ppHINm :: HsName -> PP_Doc
+ppHINm n
+  = case n of
+      HNPos i
+        -> pp i
+      _ -> ppHsnNonAlpha hiScanOpts n
 %%]
 
 %%[8 hs

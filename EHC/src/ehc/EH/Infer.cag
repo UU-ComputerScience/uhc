@@ -796,7 +796,7 @@ ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ prIntroGam: PrIntroGam | | ]
 
 %%[9.initPrIntroGam
 SEM AGItf
-  | AGItf       loc         .   prIntroGam          =   emptyGam
+  | AGItf       loc         .   prIntroGam          =   initPIGIGam
 %%]
 
 %%[12 -9.initPrIntroGam

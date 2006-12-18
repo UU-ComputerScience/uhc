@@ -509,10 +509,10 @@ pType
   =   pTypePrefix <*> pType
   <|> pTypeOpPrefix <*> pType
 %%[[9
-  <|> Type_Qualified emptyRange <$> pContextItemsPrefix2 <*> pType
 %%]]
   <|> pTypeApp
 %%]
+  <|> Type_Qualified emptyRange <$> pContextItemsPrefix2 <*> pType
 
 %%[4.pTypePrefix
 pTypePrefix :: HSParser (Type -> Type)
@@ -528,7 +528,7 @@ pTypeOpPrefix
 %%[[9
   <|> (\c -> Type_Qualified emptyRange [c]) <$> pContextItemImpl <* pRARROW
 %%]]
-  where pTypeOp = mkRngNm' Type_Constructor <$> pRARROW
+  where pTypeOp = mkRngNm' Type_Constructor <$> (pRARROW <|> pDARROW)
 %%]
 
 %%[1.pTypeApp
