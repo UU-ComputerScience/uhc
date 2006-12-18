@@ -118,6 +118,59 @@ SEM ContextItem
 %%]
 %%]
 
+%%[9
+ATTR Type [ | | mbRefConNm: {Maybe Name} ]
+
+SEM Type
+    | Constructor
+        lhs         .   mbRefConNm  =   Just @refname
+    | * - Constructor
+        lhs         .   mbRefConNm  =   Nothing
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Info required to determine whether type application is actually a type context prefix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR Type [ | | isPrArrow: Bool ]
+
+SEM Type
+    | Constructor
+        lhs         .   isPrArrow   =   hsnIsPrArrow @name
+    | * - Constructor
+        lhs         .   isPrArrow   =   False
+%%]
+
+%%[9
+ATTR Types Type AllRowTypeUpdate [ inPrArgLevel: Int | | ]
+
+SEM Type
+    | InfixApplication
+        leftType    .   inPrArgLevel=   if @operator.isPrArrow then 1 else 0
+
+SEM AnnotatedType
+    | *
+        loc         .   inPrArgLevel=   0
+
+SEM Declaration
+    | *
+        loc         .   inPrArgLevel=   0
+
+SEM Pattern
+    | *
+        loc         .   inPrArgLevel=   0
+
+SEM Expression
+    | *
+        loc         .   inPrArgLevel=   0
+
+SEM ContextItem
+    | Class
+        loc         .   inPrArgLevel=   0
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data decl has fields?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

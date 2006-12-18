@@ -97,11 +97,11 @@ instance Show Range where
 
 %%[1 hs
 instance SemApp Type where
-  semApp       = \e1 e2 -> Type_Application emptyRange False e1 [e2]
+  semApp       = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
   semAppTop    = id
   semCon       = mkRngNm Type_Constructor
   semParens    = Type_Parenthesized emptyRange
-  mkApp (a:as) = if null as then a else Type_Application emptyRange False a as
+  mkApp (a:as) = if null as then a else Type_NormalApplication emptyRange a as
   mkRngCon r n = Type_Constructor r (mkHNm n)
 %%]
 %%[1.mkRngVar hs

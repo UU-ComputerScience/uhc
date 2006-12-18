@@ -18,7 +18,7 @@ module EH.Util.CompileRun
   , ppCR
   
   , cpUpdCU
-  , cpSetFail, cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
+  , cpSetFail, cpSetStop, cpSetStopSeq, cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
   , cpSeq
   , cpFindFileForFPath
   , cpImportGather
@@ -75,10 +75,12 @@ class CompileRunStateInfo i n p where
 -------------------------------------------------------------------------
 
 data CompileRunState err
-  = CRSOk
-  | CRSFail
-  | CRSFailErrL String [err] (Maybe Int)
-  | CRSErrInfoL String Bool [err]
+  = CRSOk									-- continue
+  | CRSFail									-- fail and stop
+  | CRSStopSeq								-- stop current cpSeq
+  | CRSStop									-- stop completely
+  | CRSFailErrL String [err] (Maybe Int)	-- fail with errors and stop
+  | CRSErrInfoL String Bool [err]			-- just errors, continue
 
 data CompileRun nm unit info err
   = CompileRun
@@ -149,6 +151,12 @@ crCU modNm = panicJust ("crCU: " ++ show modNm) . crMbCU modNm
 
 crSetFail :: CompileRun n u i e -> CompileRun n u i e
 crSetFail cr = cr {crState = CRSFail}
+
+crSetStop :: CompileRun n u i e -> CompileRun n u i e
+crSetStop cr = cr {crState = CRSStop}
+
+crSetStopSeq :: CompileRun n u i e -> CompileRun n u i e
+crSetStopSeq cr = cr {crState = CRSStopSeq}
 
 crSetErrs' :: Maybe Int -> String -> [e] -> CompileRun n u i e -> CompileRun n u i e
 crSetErrs' limit about es cr
@@ -243,6 +251,14 @@ cpSetFail :: CompilePhase n u i e ()
 cpSetFail
  = modify crSetFail
 
+cpSetStop :: CompilePhase n u i e ()
+cpSetStop
+ = modify crSetStop
+
+cpSetStopSeq :: CompilePhase n u i e ()
+cpSetStopSeq
+ = modify crSetStopSeq
+
 cpSetOk :: CompilePhase n u i e ()
 cpSetOk
  = modify (\cr -> (cr {crState = CRSOk}))
@@ -314,8 +330,12 @@ cpHandle1 rest first
              where e = empty -- if doPrint then crePPErrL is else empty
            CRSFail
              -> do { lift exitFailure
-                   ; cpSetFail
                    }
+           CRSStop
+             -> do { lift $ exitWith ExitSuccess
+                   }
+           CRSStopSeq
+             -> cpSetOk
            CRSOk
              -> rest
        }

@@ -167,8 +167,10 @@ ATTR Types [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
 ATTR Type [ | | eh: {EH.TyExpr} ]
 
 SEM Type
-    | Application
+    | NormalApplication
         lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
+    | InfixApplication
+        loc         .   eh          =   mkRngApp @range [@operator.eh,@leftType.eh,@rightType.eh]
     | Constructor
         lhs         .   eh          =   rngLift @range EH.TyExpr_Con @refname
     | Parenthesized
@@ -301,6 +303,31 @@ SEM AnnotatedType
     | Type -- ToDo: or _Type?
         lhs         .   eh          =   @type.eh
 %%]
+
+%%[9
+%%]
+ATTR Type [ | | ehMbAsPr: {Maybe EH.PrExpr} ]
+ATTR AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
+
+SEM Type
+    | NormalApplication
+        lhs         .   ehMbAsPr    =   case @function.mbRefConNm of
+                                          Just conNm
+                                            -> Just $ rngLift @range EH.PrExpr_Class conNm @arguments.eh
+                                          _ -> Nothing
+    | Forall
+        lhs         .   ehMbAsPr    =   foldr (\tv pr -> fmap (rngLift @range EH.PrExpr_Forall tv) pr) @type.ehMbAsPr @typevariables
+    | InfixApplication
+        lhs         .   ehMbAsPr    =   case (@operator.mbRefConNm,@leftType.ehMbAsPr,@rightType.ehMbAsPr) of
+                                          (Just conNm,Just l,Just r) | hsnIsArrow conNm
+                                            -> Just $ rngLift @range EH.PrExpr_Arrow l r
+                                          _ -> Nothing
+    | * - NormalApplication Forall InfixApplication
+        lhs         .   ehMbAsPr    =   Nothing
+
+SEM RowTypeUpdate
+    | Extends
+        lhs         .   ehMbAsPrL   =   [@type.ehMbAsPr]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expressions     

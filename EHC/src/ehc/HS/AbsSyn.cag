@@ -276,11 +276,15 @@ SET AllDeclaration
 TYPE Types                       = [ Type ]
 
 DATA Type                                         {- *** -}
-    | Application                            {- *** -}
+    | NormalApplication                            {- *** -}
         range                    : Range
-        prefix                   : Bool
         function                 : Type
         arguments                : Types
+    | InfixApplication                            {- *** -}
+        range                    : Range
+        leftType                 : Type
+        operator                 : Type
+        rightType                : Type
     | Constructor                            {- *** -}
         range                    : Range
         name                     : Name
@@ -477,6 +481,9 @@ DATA AnnotatedType
         range                    : Range
         strict                   : Bool
         type                     : Type
+
+SET AllAnnotatedType
+  = AnnotatedType AnnotatedTypes
 %%]
 
 %%[1
@@ -486,11 +493,11 @@ SET AllType
 %%[5
     SimpleType
     AllConstructor
-    AnnotatedType AnnotatedTypes
+    AllAnnotatedType
 %%]
 %%[7
     AllFieldDeclaration
-    RowTypeUpdate RowTypeUpdates
+    AllRowTypeUpdate
 %%]
 %%[77
     RowExtension RowExtensions RowType
@@ -860,6 +867,9 @@ DATA RowTypeUpdate
         range                    : Range
         name                     : MaybeName
         type                     : Type
+
+SET AllRowTypeUpdate
+  = RowTypeUpdate RowTypeUpdates
 %%]
 
 %%[7

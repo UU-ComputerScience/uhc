@@ -558,7 +558,7 @@ pDOTDOT          = pKeyTk ".."
 tokKeywStrsEH5 = [ "data", "case", "if", "then", "else", "of" ]
 tokKeywStrsHS5 = [ "newtype" ]
 tokOpStrsEH5   = [ "|" ]
-tokOpStrsHS5   = [ "<-", ".." ]
+tokOpStrsHS5   = [ "<-", "..", ":" ]
 %%]
 
 %%[6
