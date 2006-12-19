@@ -205,28 +205,30 @@ pDeclaration
   =   pDeclarationValue
   <|> pDeclarationSignature
   <|> pDeclarationFixity
-%%]
-%%[5
+%%[[5
   <|> pDeclarationData
-%%]
-%%[9
+%%]]
+%%[[9
   <|> pDeclarationClass
   <|> pDeclarationInstance
-%%]
-%%[11
+%%]]
+%%[[11
   <|> pDeclarationType
+%%]]
+  <?> "pDeclaration"
 %%]
 
 %%[1
 pTopDeclaration :: HSParser Declaration
 pTopDeclaration
   =   pDeclaration
-%%]
-%%[8
+%%[[8
   <|> pDeclarationForeign
-%%]
-%%[9
+%%]]
+%%[[9
   <|> pDeclarationDefault
+%%]]
+  <?> "pTopDeclaration"
 %%]
 
 %%[1
@@ -280,18 +282,38 @@ pDeclarationSignature :: HSParser Declaration
 pDeclarationSignature
   =   (\(v:vs) t -> Declaration_TypeSignature (mkRange1 v) (tokMkQNames (v:vs)) t)
       <$> pList1Sep pCOMMA var <* pDCOLON <*> pType
+  <?> "pDeclarationSignature"
 
+pDeclarationValue :: HSParser Declaration
+pDeclarationValue
+  =   (\lhs rhs -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange lhs rhs])
+      <$> pLhs <*> rhs
+  <|> pPatternOp
+      <**> (   (\rhs p -> Declaration_PatternBinding emptyRange p rhs)
+               <$> rhs
+           <|> (\o r rhs l -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange (LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r) rhs])
+               <$> varop <*> pPatternOp <*> rhs
+           )
+  <?> "pDeclarationValue"
+  where rhs      =   pRhs pEQUAL
+        pLhsTail ::  HSParser [Pattern]
+        pLhsTail =   pList1 pPatternBaseCon
+        pLhs     ::  HSParser LeftHandSide
+        pLhs     =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
+                 <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
+%%]
 pDeclarationValue :: HSParser Declaration
 pDeclarationValue
   =   (\l r -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange l r]) <$> pLhs <*> rhs
   <|> Declaration_PatternBinding emptyRange <$> pPatternOp <*> rhs
+  <?> "pDeclarationValue"
   where rhs = pRhs pEQUAL
-%%]
 
 %%[8
 pDeclarationSimpleValue :: HSParser Declaration
 pDeclarationSimpleValue
   =   Declaration_PatternBinding emptyRange <$> lhs <*> rhs
+  <?> "pDeclarationSimpleValue"
   where lhs = mkRngNm Pattern_Variable <$> var
         rhs = (\t e -> RightHandSide_Expression (mkRange1 t) e Nothing) <$> pEQUAL <*> pExpression
 %%]
@@ -300,21 +322,23 @@ pDeclarationSimpleValue
 pRhs :: HSParser Token -> HSParser RightHandSide
 pRhs pSep
   =   (RightHandSide_Expression . mkRange1) <$> pSep <*> pExpression <*> pWhere
-%%]
-%%[5
+%%[[5
   <|> RightHandSide_Guarded emptyRange
       <$> pList1 ((GuardedExpression_GuardedExpression . mkRange1) <$> pVBAR <*> pExpression <* pSep <*> pExpression)
       <*> pWhere
+%%]]
+  <?> "pRhs"
 %%]
 
 %%[1
+%%]
 pLhs :: HSParser LeftHandSide
 pLhs
   =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
   <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
   <|> (\l o r -> LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r) <$> pPatternOp <*> varop <*> pPatternOp
+  <?> "pLhs"
   where pLhsTail = pList1 pPatternBaseCon
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data definitions
@@ -325,6 +349,7 @@ pDeclarationData :: HSParser Declaration
 pDeclarationData
   =   pD pDATA    (Declaration_Data    . mkRange1) (pEQUAL *> pListSep pVBAR pConstructor <|> pSucceed [])
   <|> pD pNEWTYPE (Declaration_Newtype . mkRange1) (pEQUAL *> pConstructor)
+  <?> "pDeclarationData"
   where pD pK sem pC
           = sem <$> pK
 %%[[9
@@ -528,7 +553,13 @@ pTypeOpPrefix
 %%[[9
   <|> (\c -> Type_Qualified emptyRange [c]) <$> pContextItemImpl <* pRARROW
 %%]]
-  where pTypeOp = mkRngNm' Type_Constructor <$> (pRARROW <|> pDARROW)
+  where pTypeOp
+          = mkRngNm' Type_Constructor
+            <$> (   pRARROW
+%%[[9
+                <|> pDARROW
+%%]]
+                )
 %%]
 
 %%[1.pTypeApp
@@ -656,17 +687,19 @@ pContextItemBase
 pLiteralNumber :: HSParser Literal
 pLiteralNumber
   =   mkRngStr Literal_Int  <$> pIntegerTk
+  <?> "pLiteralNumber"
 
 pLiteral :: HSParser Literal
 pLiteral
   =   pLiteralNumber
   <|> mkRngStr Literal_Char <$> pCharTk
-%%]
-%%[5
+%%[[5
   <|> mkRngStr Literal_String <$> pStringTk
-%%]
-%%[8
+%%]]
+%%[[8
   <|> mkRngStr Literal_Float  <$> pFractionTk
+%%]]
+  <?> "pLiteral"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -682,6 +715,7 @@ pExpressionBase
   <|> pExpressionList
 %%]]
   <|> pParens' pInParens
+  <?> "pExpressionBase"
   where pInParens :: HSParser (Range -> Expression)
         pInParens
           =   (pExpression
@@ -696,7 +730,7 @@ pExpressionBase
                         <$>  pList1 (pComma *> pExpression)
 %%]]
               )     )
-          <|> (\t _ -> mkRngNm Expression_Constructor t) <$> commas		-- TODO: !!!! with variant 7, this does not work anymore, needs separate AST alternative to map to \x1 ... -> (x1,...)
+          <|> (\t _ -> mkRngNm Expression_Constructor t) <$> commas     -- TODO: !!!! with variant 7, this does not work anymore, needs separate AST alternative to map to \x1 ... -> (x1,...)
           <|> (pOpm
                <**> (   (\e (o,_) r -> Expression_SectionApplication r Nothing o (Just e)) <$> pExpression
                     -- <|> pSucceed (\(o,_) r -> Expression_SectionApplication r Nothing o Nothing)
@@ -748,6 +782,7 @@ pExpressionList
             )
       `opt` zero
       )
+  <?> "pExpressionList"
   where zero r   = Expression_List r []
         one  r h = Expression_List r [h]
         pQualifier :: HSParser Qualifier
@@ -767,7 +802,8 @@ pExpressionList
 %%[9
 pExpressionDo :: HSParser Expression
 pExpressionDo
-  = (Expression_Do . mkRange1) <$> pDO <*> pBlock1 pOCURLY pSEMI pCCURLY pStatement
+  =   (Expression_Do . mkRange1) <$> pDO <*> pBlock1 pOCURLY pSEMI pCCURLY pStatement
+  <?> "pExpressionDo"
   where pStatement :: HSParser Statement
         pStatement
           =   Statement_Expression emptyRange <$> pExpressionNoLet
@@ -787,6 +823,9 @@ pExpressionConUpd
   <|> pExpressionBase
 %%[[7
       <**> ((\u e -> foldr ($) e u) <$> pList pU)
+%%]]
+  <?> "pExpressionConUpd"
+%%[[7
   where pU =   pCurlys' ((\bs r e -> Expression_RecordUpdate r e bs) <$> pList1Sep pCOMMA pRecordExpressionBinding)
            <|> pRowRecordSelectionSuffix
 %%]]
@@ -795,13 +834,15 @@ pExpressionConUpd
 %%[7
 pRecordExpressionBinding :: HSParser RecordExpressionBinding
 pRecordExpressionBinding
-  = mkRngNm RecordExpressionBinding_Binding <$> qvar <* pEQUAL <*> pExpression
+  =   mkRngNm RecordExpressionBinding_Binding <$> qvar <* pEQUAL <*> pExpression
+  <?> "pRecordExpressionBinding"
 %%]
 
 %%[1.pExpressionApp
 pExpressionApp :: HSParser Expression
 pExpressionApp
-  = pE <**> ((\as e -> foldl (flip ($)) e as) <$> pList pA)
+  =   pE <**> ((\as e -> foldl (flip ($)) e as) <$> pList pA)
+  <?> "pExpressionApp"
   where pE =   pExpressionConUpd
         pA =   (\es e -> Expression_NormalApplication emptyRange e es) <$> pList1 pE
 %%[[4
@@ -824,6 +865,7 @@ pExpressionLayout
 %%[[9
   <|> pExpressionDo
 %%]]
+  <?> "pExpressionLayout"
 %%]
 
 %%[1
@@ -831,27 +873,37 @@ pOp, pOpm :: HSParser (Expression,Range)
 pOp  = mkRngNm' Expression_Variable <$> qvarop  <|> mkRngNm' Expression_Constructor <$> qconop
 pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Constructor <$> qconop
 %%]
-pVARSYM
 
 %%[1
 pExpressionOpPrefix :: HSParser Expression -> HSParser (Expression -> Expression)
 pExpressionOpPrefix pLeftOpndE
-  = (\l e -> Expression_InfixApplicationChainTop emptyRange
-             $ foldr (\(l,(op,rng)) r -> Expression_InfixApplication rng l op r) e l
-    )
-    <$> pList1_ng ((,) <$> pLeftOpndE <*> pOp)
+  =   (\l e -> Expression_InfixApplicationChainTop emptyRange
+               $ foldr (\(l,(op,rng)) r -> Expression_InfixApplication rng l op r) e l
+      )
+      <$> pList1_ng ((,) <$> pLeftOpndE <*> pOp)
+  <?> "pExpressionOpPrefix"
 %%]
 
 %%[1
 pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
 pExpression' pPreE
-  = pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  =   (mkE <$> pE) <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  <?> "pExpression'"
+  where pE  ::  HSParser (Expression,Int)
+        pE  =   pExpressionLayout
+                <**> (   pSucceed (\e -> (e,1))
+                     <|> (\(op,rng) (r,opCnt) l -> (Expression_InfixApplication rng l op r,opCnt+1)) <$> pOp <*> pE
+                     )
+            <|> (\p e -> (p $ mkE $ e,1)) <$> pPreE <*> pE
+        mkE (e,1) = e
+        mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
+%%]
   where pE, pE1 :: HSParser Expression
         pE  =   pExpressionOpPrefix pExpressionLayout <*> pE1
             <|> pE1
         pE1 =   pPreE <*> pE
             <|> pExpressionLayout
-%%]
+
 pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
 pExpression' pPreE
   = pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
@@ -870,12 +922,16 @@ pExpression' pPreE
 
 %%[1
 pExpression :: HSParser Expression
-pExpression = pExpression' pExpressionPrefix
+pExpression
+  =   pExpression' pExpressionPrefix
+  <?> "pExpression"
 %%]
 
 %%[1
 pExpressionNoLet :: HSParser Expression
-pExpressionNoLet = pExpression' pExpressionNoLetPrefix
+pExpressionNoLet
+  =   pExpression' pExpressionNoLetPrefix
+  <?> "pExpressionNoLet"
 %%]
 
 %%[1.pExpressionLetPrefix
@@ -891,6 +947,7 @@ pExpressionLetPrefix
           <|> (,,) True  <$> pLETSTRICT <*> pDeclarations' pDeclarationSimpleValue <* pIN
           )
 %%]]
+  <?> "pExpressionLetPrefix"
 %%]
 
 %%[1.pExpressionNoLetPrefix
@@ -901,6 +958,7 @@ pExpressionNoLetPrefix
   <|> (Expression_If . mkRange1) <$> pIF <*> pExpression <* pTHEN <*> pExpression <* pELSE
 %%]]
   <|> pLAM <**> pLamArgs
+  <?> "pExpressionNoLetPrefix"
   where pLamArgs
           =   (\a1 a2 t e -> a1 t (a2 t e))
               <$> (   (\ps t e -> Expression_Lambda (mkRange1 t) ps e) <$> pList1 pPatternBaseCon
@@ -921,6 +979,7 @@ pExpressionPrefix :: HSParser (Expression -> Expression)
 pExpressionPrefix
   =   pExpressionLetPrefix
   <|> pExpressionNoLetPrefix
+  <?> "pExpressionPrefix"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -948,6 +1007,7 @@ pPatternConSuffix
 %%[[7
   <|> pCurlys' ((\bs _ c -> mkRngNm Pattern_Record c bs) <$> pListSep pCOMMA pRecordPatternBinding)
 %%]]
+  <?> "pPatternConSuffix"
 %%]
 
 %%[1.pPatternBase
@@ -966,6 +1026,7 @@ pPatternBase
   <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBaseCon
 %%]]
   <|> pParens' pInParens
+  <?> "pPatternBase"
   where pInParens :: HSParser (Range -> Pattern)
         pInParens
           =   (pPattern
@@ -1012,15 +1073,17 @@ pPatternBaseCon :: HSParser Pattern
 pPatternBaseCon
   =   pPatternBase
   <|> qconid <**> pPatternConSuffix
+  <?> "pPatternBaseCon"
 %%]
 
 %%[7
 pRecordPatternBinding :: HSParser RecordPatternBinding
 pRecordPatternBinding
-  = qvar
-    <**> (   pSucceed (\v -> mkRngNm RecordPatternBinding_Pun v)
-         <|> (\p v -> mkRngNm RecordPatternBinding_Binding v p) <$ pEQUAL <*> pPattern
-         )
+  =   qvar
+      <**> (   pSucceed (\v -> mkRngNm RecordPatternBinding_Pun v)
+           <|> (\p v -> mkRngNm RecordPatternBinding_Binding v p) <$ pEQUAL <*> pPattern
+           )
+  <?> "pRecordPatternBinding"
 %%]
 
 %%[1
@@ -1031,6 +1094,7 @@ pPatternApp
       <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBase
            <|> pPatternConSuffix
            )
+  <?> "pPatternApp"
 %%]
 
 %%[1
@@ -1039,15 +1103,17 @@ pPatternOp
   =   pChainr_ng
         ((\o l r -> mkRngNm Pattern_Constructor o [l,r]) <$> qconop)
         pPatternApp
+  <?> "pPatternOp"
 %%]
 
 %%[1.pPattern
 pPattern :: HSParser Pattern
 pPattern
   =   pPatternOp
-%%]
-%%[4.patExpr
+%%[[4
       <??> ((\c t p -> Pattern_Typed (mkRange1 c) p t) <$> pDCOLON <*> pType)
+%%]]
+  <?> "pPattern"
 %%]
 
 %%[7
@@ -1074,57 +1140,79 @@ commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr1 (tokConcat,tokEmp
 
 %%[1
 modid :: HSParser Token
-modid =   pCONID
-%%]
-%%[12
-      <|> pQCONID
+modid
+  =   pCONID
+%%[[12
+  <|> pQCONID
+%%]]
+  <?> "modid"
 %%]
 
 %%[12
 qcnames :: HSParser [Token] 
-qcnames =  pListSep pCOMMA qcname
+qcnames
+  =   pListSep pCOMMA qcname
+  <?> "qcnames"
 
 qcname  :: HSParser Token   -- Variable or data constructor
-qcname  =  qvar <|> gcon                    
+qcname
+  =   qvar
+  <|> gcon                    
+  <?> "qcname"
 %%]
 
 %%[1
 identifier :: HSParser Token 
-identifier =  qvar      
-          <|> gcon  
-          <|> qop       
+identifier
+  =   qvar      
+  <|> gcon  
+  <|> qop       
+  <?> "identifier"
 
 depreclist :: HSParser [Token] 
-depreclist = pList1Sep pCOMMA deprec_var
+depreclist
+  = pList1Sep pCOMMA deprec_var
 
 deprec_var :: HSParser Token
-deprec_var = var <|> tycon          
+deprec_var
+  =   var
+  <|> tycon          
+  <?> "deprec_var"
 
 gcon    :: HSParser Token   -- Data constructor namespace
-gcon    =  sysdcon      
-       <|> qcon         
+gcon
+  =   sysdcon      
+  <|> qcon         
 -- the case of '[:' ':]' is part of the production `parr'
+  <?> "gcon"
 
 sysdcon :: HSParser Token   -- Wired in data constructors
-sysdcon =  pParens commas 
-       <|> tokConcat <$> pOBRACK <*> pCBRACK
+sysdcon
+  =   pParens commas 
+  <|> tokConcat <$> pOBRACK <*> pCBRACK
+  <?> "sysdcon"
 
 var     :: HSParser Token
-var =  varid            
-   <|> pParens varsym 
+var
+  =   varid            
+  <|> pParens varsym 
+  <?> "var"
 
 qvar    :: HSParser Token
-qvar =  qvarid      
-    <|> pParens qvarsym_forpar
+qvar
+  =   qvarid      
+  <|> pParens qvarsym_forpar
+  <?> "qvar"
 %%]
 
 %%[1
 qvarsym_forpar :: HSParser Token
 qvarsym_forpar
   =   varsym
-%%]
-%%[12
+%%[[12
   <|> qvarsym1
+%%]]
+  <?> "qvarsym_forpar"
 %%]
 
 {-
@@ -1135,29 +1223,40 @@ ipvar =  liftM (Dupable . mkUnqual varName) <$> pDUPIPVARID
 
 %%[1
 qcon    :: HSParser Token
-qcon    = qconid <|> pParens qconsym
-
+qcon
+  =   qconid
+  <|> pParens qconsym
+  <?> "qcon"
 
 varop   :: HSParser Token
-varop   =  varsym 
-       <|> pBACKQUOTE *> varid <* pBACKQUOTE
+varop
+  =   varsym 
+  <|> pBACKQUOTE *> varid <* pBACKQUOTE
+  <?> "varop"
        
 qvarop :: HSParser Token
-qvarop = qvarsym    
-       <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
+qvarop
+  =   qvarsym    
+  <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
+  <?> "qvarop"
 
 qvaropm :: HSParser Token
-qvaropm =  qvarsym_no_minus 
-       <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
+qvaropm
+  =   qvarsym_no_minus 
+  <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
+  <?> "qvaropm"
 
 conop :: HSParser Token
-conop =  consym     
-       <|> pBACKQUOTE *> conid <* pBACKQUOTE
+conop
+  =   consym     
+  <|> pBACKQUOTE *> conid <* pBACKQUOTE
+  <?> "conop"
 
 qconop :: HSParser Token
-qconop =  qconsym       
-      <|> pBACKQUOTE *> qconid <* pBACKQUOTE
-
+qconop
+  =   qconsym       
+  <|> pBACKQUOTE *> qconid <* pBACKQUOTE
+  <?> "qconop"
 %%]
 
 %%[1
@@ -1165,73 +1264,95 @@ qconop =  qconsym
 -- Variables 
 
 qvarsym :: HSParser Token 
-qvarsym =  varsym
-%%]
-%%[12
-       <|> qvarsym1
+qvarsym
+  =   varsym
+%%[[12
+  <|> qvarsym1
+%%]]
+  <?> "qvarsym"
 %%]
 
 %%[1
 qvarsym_no_minus :: HSParser Token
-qvarsym_no_minus =  varsym_no_minus
-%%]
-%%[12
-                <|> qvarsym1
+qvarsym_no_minus
+  =   varsym_no_minus
+%%[[12
+  <|> qvarsym1
+%%]]
+  <?> "qvarsym_no_minus"
 %%]
 
 %%[12
 qvarsym1 :: HSParser Token
-qvarsym1 = pQVARSYM 
+qvarsym1
+  =   pQVARSYM 
+  <?> "qvarsym1"
 %%]
 
 %%[1
 varsym :: HSParser Token 
-varsym  =  varsym_no_minus  
-       <|> pMINUS       
+varsym
+  =   varsym_no_minus  
+  <|> pMINUS       
+  <?> "varsym"
 
 
 varsym_no_minus :: HSParser Token  -- varsym not including '-'
-varsym_no_minus = pVARSYM <|> special_sym
+varsym_no_minus
+  =   pVARSYM
+  <|> special_sym
+  <?> "varsym_no_minus"
 
 -- See comments with special_id
 special_sym :: HSParser Token
 special_sym 
-        =  pBANG    
-       <|> pDOT     
-       <|> pSTAR
-       <|> pPERCENT
+  =   pBANG    
+  <|> pDOT     
+  <|> pSTAR
+  <|> pPERCENT
+  <?> "special_sym"
 
 -----------------------------------------------------------------------------
 -- Data constructors
 
 qconid :: HSParser Token    -- Qualified or unqualifiedb
-qconid =  conid
-%%]
-%%[12
-      <|> pQCONID
+qconid
+  =   conid
+%%[[12
+  <|> pQCONID
+%%]]
+  <?> "qconid"
 %%]
 
 %%[1
 conid   :: HSParser Token
-conid   =  pCONID           
+conid
+  =   pCONID           
+  <?> "conid"
 
 qconsym :: HSParser Token   -- Qualified or unqualified
-qconsym = consym
-%%]
-%%[12
-       <|> pQCONSYM
+qconsym
+  =   consym
+%%[[12
+  <|> pQCONSYM
+%%]]
+  <?> "qconsym"
 %%]
 
 %%[1
 consym :: HSParser Token
-consym =  pCONSYM       
-      <|> pCOLON
-    -- ':' means only list cons
+consym
+  =   pCONSYM       
+  <|> pCOLON -- ':' means only list cons
+  <?> "consym"
 %%]
 
 %%[1
 con :: HSParser Token
-con = conid <|> pParens consym
+con
+  =   conid
+  <|> pParens consym
+  <?> "con"
 %%]
 
 %%[1
@@ -1239,22 +1360,33 @@ con = conid <|> pParens consym
 -- Any operator
 
 op  :: HSParser Token   -- used in infix decls
-op  = varop <|> conop
+op
+  =   varop
+  <|> conop
+  <?> "op"
 
 qop :: HSParser Token   -- used in sections
-qop = qvarop <|> qconop
+qop
+  =   qvarop
+  <|> qconop
+  <?> "qop"
 
 qopm    :: HSParser  Token    -- used in sections
-qopm    = qvaropm <|> qconop
+qopm
+  =   qvaropm
+  <|> qconop
+  <?> "qopm"
 
 -----------------------------------------------------------------------------
 -- VarIds
 
 qvarid :: HSParser Token
-qvarid = varid
-%%]
-%%[12
-     <|> pQVARID
+qvarid
+  =   varid
+%%[[12
+  <|> pQVARID
+%%]]
+  <?> "qvarid"
 %%]
 
 %%[8
@@ -1263,50 +1395,58 @@ safety
   =   pUNSAFE        
   <|> pSAFE      
   <|> pTHREADSAFE 
+  <?> "safety"
 
 callconv :: HSParser Token
 callconv
   =   pSTDCALL 
   <|> pCCALL    
   <|> pJAZY 
+  <?> "callconv"
 %%]
 
 %%[1
 varid :: HSParser Token
-varid = varid_no_unsafe
-%%]
-%%[8
-     <|> safety
+varid
+  =   varid_no_unsafe
+%%[[8
+  <|> safety
+%%]]
+  <?> "varid"
 %%]
 
 %%[1
 varid_no_unsafe :: HSParser Token
 varid_no_unsafe
   =   varid_no_foreign
-%%]
-%%[8
+%%[[8
   <|> callconv
+%%]]
+  <?> "varid_no_unsafe"
 %%]
 
 %%[1
 varid_no_foreign :: HSParser Token
 varid_no_foreign
   =   pVARID
-%%]
-%%[4
+%%[[4
   <|> pFORALL
-%%]
-%%[8
+%%]]
+%%[[8
   <|> special_id_no_callconv
+%%]]
+  <?> "varid_no_foreign"
 %%]
 
 %%[1
 tyvar   :: HSParser Token
-tyvar   =  pVARID
-%%]
-%%[8
-       <|> special_id       
-       <|> safety   
+tyvar
+  =   pVARID
+%%[[8
+  <|> special_id       
+  <|> safety   
+%%]]
+  <?> "tyvar"
 %%]
 
 %%[8
@@ -1322,12 +1462,14 @@ special_id_no_callconv
   <|> pAS      
   <|> pQUALIFIED   
   <|> pHIDING
-%%]
+%%]]
+  <?> "special_id_no_callconv"
 
 special_id :: HSParser Token 
 special_id
   =   special_id_no_callconv
   <|> callconv
+  <?> "special_id"
 %%]
 
 %%[1
@@ -1338,55 +1480,71 @@ gtycon_no_delims
         (   commas
         <|> pRARROW
         )
+  <?> "gtycon_no_delims"
 
 gtycon :: HSParser Token   -- A "general" qualified tycon
 gtycon
   =   gtycon_no_delims
-%%]
-%%[5
+%%[[5
   <|> tokConcat <$> pOBRACK <*> pCBRACK
-%%]
-%%[90
+%%]]
+%%[[90
   <|> tokConcat <$> pOPABRACK <*> pCPABRACK
+%%]]
+  <?> "gtycon"
 %%]
 
 %%[1
 tycon   :: HSParser Token   -- Unqualified
-tycon   = pCONID                
+tycon
+  =   pCONID                
+  <?> "tycon"
 
 oqtycon :: HSParser Token   -- An "ordinary" qualified tycon
-oqtycon =  qtycon
-       <|> pParens qtyconsym  
+oqtycon
+  =   qtycon
+  <|> pParens qtyconsym  
+  <?> "oqtycon"
 
 qtycon :: HSParser Token    -- Qualified or unqualified
-qtycon =  tycon
-%%]
-%%[12
-      <|> pQCONID
+qtycon
+  =   tycon
+%%[[12
+  <|> pQCONID
+%%]]
+  <?> "qtycon"
 %%]
 
 %%[1      
 qtyconsym :: HSParser Token
-qtyconsym =  tyconsym
-%%]
-%%[12
-         <|> pQCONSYM
+qtyconsym
+  =   tyconsym
+%%[[12
+  <|> pQCONSYM
+%%]]
+  <?> "qtyconsym"
 %%]
 
 %%[1
 tyconsym :: HSParser Token
-tyconsym = pCONSYM          
+tyconsym
+  =   pCONSYM          
+  <?> "tyconsym"
 %%]
 
 %%[12
 qtyconop :: HSParser Token  -- Qualified or unqualified
-qtyconop = qtyconsym
-       <|> pBACKQUOTE *> qtycon <* pBACKQUOTE
+qtyconop
+  =   qtyconsym
+  <|> pBACKQUOTE *> qtycon <* pBACKQUOTE
+  <?> "qtyconop"
 %%]
 
 %%[8
 tyconop :: HSParser Token   -- Unqualified
-tyconop = tyconsym  
-       <|> pBACKQUOTE *> tycon <* pBACKQUOTE
+tyconop
+  =   tyconsym  
+  <|> pBACKQUOTE *> tycon <* pBACKQUOTE
+  <?> "tyconop"
 %%]
 
