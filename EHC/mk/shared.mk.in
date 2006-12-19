@@ -74,7 +74,8 @@ BIBTEX				:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_CO
 MAKEINDEX			:= makeindex
 
 # GHC options
-GHC_OPTS			:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib
+GHC_EHC_PKG_UULIB	:= uulib
+GHC_OPTS			:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package $(GHC_EHC_PKG_UULIB)
 GHC_OPTS_OPTIM		:= -O2
 GHC_OPTS_WHEN_EHC	:= @GHC_EHC_OPTIONS@
 
@@ -142,7 +143,7 @@ GEN_CABAL			= \
 					echo   "Author:				Atze Dijkstra" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/Ehc/WebHome" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip base haskell98 mtl fgl uulib $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip base haskell98 mtl fgl $(GHC_EHC_PKG_UULIB) $(3)))" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
