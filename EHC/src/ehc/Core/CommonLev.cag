@@ -15,7 +15,7 @@
 ATTR AllCodeNT [ lev: Int | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   lev         =   cLevOuter
+  | AGItf       module      .   lev         =   cLevModule
 
 SEM CExpr
   | Lam         loc         .   lev         =   @lhs.lev + 1

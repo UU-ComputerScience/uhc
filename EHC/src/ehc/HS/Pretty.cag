@@ -427,9 +427,9 @@ SEM Pattern
         loc         .   pp          =   @name >|< "@" >|< @pattern.pp
     | Wildcard
         loc         .   pp          =   pp hsnWild
+%%]
     | Negate
         loc         .   pp          =   "-" >#< @literal.pp
-%%]
 %%[4
     | Typed
         loc         .   pp          =   @pattern.pp >#< "::" >#< @type.pp

@@ -100,8 +100,14 @@ pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(pCurlySemiBlock)
+%%[12 export(pCurlySemiBlock,pCurlys,pSemiBlock)
+pSemiBlock :: P p -> P [p]
+pSemiBlock p = pListSep pSEMI p
+
+pCurlys :: P p -> P p
+pCurlys p = pOCURLY *> p <* pCCURLY
+
 pCurlySemiBlock :: P p -> P [p]
-pCurlySemiBlock p = pOCURLY *> pListSep pSEMI p <* pCCURLY
+pCurlySemiBlock p = pCurlys (pListSep pSEMI p)
 %%]
 

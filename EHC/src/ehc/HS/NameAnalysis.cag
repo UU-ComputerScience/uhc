@@ -536,13 +536,13 @@ SEM Pattern
                                         =   mkUseOccGam @lhs.idGam [hsnEq] IdOcc_Val IdAsp_Val_Var @range
                         .   litnames    =   case @literal.eh of
 %%[[5
-                                              Literal_String r s -> [hsnListCons,hsnListNil]
+                                              Literal_String r s   -> [hsnListCons,hsnListNil]
 %%]]
 %%[[99
-                                              Literal_Int    r s -> [hsnFromInteger]
-                                              Literal_Float  r s -> [hsnMkRatio,hsnFromRational]
+                                              Literal_Int    _ _ _ -> [hsnFromInteger]
+                                              Literal_Float  r s   -> [hsnMkRatio,hsnFromRational]
 %%]]
-                                              _                  -> []
+                                              _                    -> []
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam @litnames IdOcc_Val IdAsp_Val_Var @range
 %%[[9

@@ -295,15 +295,18 @@ mkRV m = hsnSetQual m . HNm
       , "String"
       , "=="
 %%[[99
-	  , "Ordering", "EQ", "LT", "GT"
+      , "Ordering", "EQ", "LT", "GT"
 %%]]
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnFromPackedString,hsnPackedString,hsnId)
+%%[8 export(hsnUndefined,hsnPackedString2String,hsnPackedString,hsnId)
 [hsnUndefined
- , hsnPackedString, hsnFromPackedString
+ , hsnPackedString, hsnPackedString2String
  , hsnId
+%%[[99
+ , hsnPackedString2Integer
+%%]]
  ]
   = map
 %%[[8
@@ -312,8 +315,11 @@ mkRV m = hsnSetQual m . HNm
       (mkRV hsnModBase)
 %%]]
       [ "undefined"
-      , "PackedString", "fromPackedString"
+      , "PackedString", "packedString2String"
       , "id"
+%%[[99
+      , "packedString2Integer"
+%%]]
       ]
 %%]
 
@@ -396,25 +402,31 @@ hsnClass2Dict = hsnPrefix "Dict-"
 %%[8 export(EHBuiltinNames(..),mkEHBuiltinNames)
 data EHBuiltinNames
   = EHBuiltinNames
-  	  { ehbnId					:: HsName
-  	  , ehbnUndefined			:: HsName
-  	  , ehbnError				:: HsName
-  	  , ehbnFromPackedString	:: HsName
+      { ehbnId                      :: HsName
+      , ehbnUndefined               :: HsName
+      , ehbnError                   :: HsName
+      , ehbnPackedString2String     :: HsName
 %%[[11
-  	  , ehbnString				:: HsName
+      , ehbnString                  :: HsName
 %%]]
-  	  }
+%%[[99
+      , ehbnPackedString2Integer    :: HsName
+%%]]
+      }
 
 mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
 mkEHBuiltinNames f
   = EHBuiltinNames
-  	  { ehbnId					= f IdOcc_Val  hsnId
-  	  , ehbnUndefined			= f IdOcc_Val  hsnUndefined
-  	  , ehbnError				= f IdOcc_Val  hsnError
-  	  , ehbnFromPackedString	= f IdOcc_Val  hsnFromPackedString
+      { ehbnId                      = f IdOcc_Val  hsnId
+      , ehbnUndefined               = f IdOcc_Val  hsnUndefined
+      , ehbnError                   = f IdOcc_Val  hsnError
+      , ehbnPackedString2String     = f IdOcc_Val  hsnPackedString2String
 %%[[11
-  	  , ehbnString				= f IdOcc_Type hsnString
+      , ehbnString                  = f IdOcc_Type hsnString
 %%]]
-  	  }
+%%[[99
+      , ehbnPackedString2Integer    = f IdOcc_Val  hsnPackedString2Integer
+%%]]
+      }
 %%]
 

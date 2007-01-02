@@ -65,7 +65,7 @@ SEM CodeAGItf
   | AGItf       module      .   nmMp        =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   allowTrf    =   @categ /= CBindStrict && @categ /= CBindFFI -- && @lhs.lev > cLevOuter
+  | Let         loc         .   allowTrf    =   @categ /= CBindStrict && @categ /= CBindFFI -- && @lhs.lev > cLevModule
                             .   nmMpNew     =   if @allowTrf
                                                 then  Map.foldWithKey
                                                         (\n r m

@@ -59,16 +59,19 @@ SEM ImportDeclaration
 
 %%[12.Module.modImpL
 SEM Module
-	| Module
-		loc				.	modImpL		=	@body.modImpL
+    | Module
+        loc             .   modImpL     =   @body.modImpL
 %%]
 
 %%[99 -12.Module.modImpL
 SEM Module
-	| Module
-		loc				.	modImpL		=	if hsnModPrelude `elem` map mimpSource @body.modImpL || @lhs.moduleNm == hsnModPrelude || hsnIsInPrelude @lhs.moduleNm
-											then @body.modImpL
-											else modImpPrelude : @body.modImpL
+    | Module
+        loc             .   modImpL     =   if hsnModPrelude `elem` map mimpSource @body.modImpL
+                                               || @lhs.moduleNm == hsnModPrelude
+                                               || hsnIsInPrelude @lhs.moduleNm
+                                               || not (ehcOptUseAssumePrelude @lhs.opts)
+                                            then @body.modImpL
+                                            else modImpPrelude : @body.modImpL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

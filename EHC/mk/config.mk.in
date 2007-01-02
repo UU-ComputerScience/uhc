@@ -40,3 +40,4 @@ RULER2_OPTS_VERSION	:=
 ### names of packages assumed by the compiler driver
 RTS_PKG_NAME				:= @RTS_PKG_NAME@
 EXTLIBS_BGC_PKG_NAME		:= @EXTLIBS_BGC_PKG_NAME@
+EXTLIBS_GMP_PKG_NAME		:= @EXTLIBS_GMP_PKG_NAME@

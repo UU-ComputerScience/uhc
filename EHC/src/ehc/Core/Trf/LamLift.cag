@@ -10,7 +10,8 @@
 %%[8 hs module {%{EH}Core.Trf.LamLift} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty},EH.Util.Utils(sortOn)) export(cmodTrfLamLift)
 %%]
 
-%%[8 hs import({%{EH}Base.Debug})
+-- for debug
+%%[8 hs import({%{EH}Base.Debug},UU.Pretty)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
@@ -91,12 +92,19 @@ startFvSLamMp bLamS lamS varS fvm bFvm
           fvlam  s =  lamS `Set.intersection` s
           fvvar  s =  varS `Set.intersection` s
           fv     s =  fvvar s `Set.union`
-                        (Set.unions . map (\n -> Map.findWithDefault Set.empty n fvm) . Set.toList . fvlam $ s)
+                        (Set.unions $ map (\n -> Map.findWithDefault Set.empty n fvm) $ Set.toList $ fvlam $ s)
      in   (Map.map fv bFvm2,Map.map (`Set.intersection` bLamS) bFvm2)
 
 iterFvSLamMp :: FvSMp -> FvSMp -> FvSMp
 iterFvSLamMp frLamMp frVarMp
-  =  let  frVarMp2 = Map.mapWithKey (\n s -> s `Set.union` (Set.unions . map (\n -> panicJust "iterFvSLamMp.1" . Map.lookup n $ frVarMp) . Set.toList . panicJust "iterFvSLamMp.2" . Map.lookup n $ frLamMp)) frVarMp
+  =  let  frVarMp2 = Map.mapWithKey
+                       (\n s -> s `Set.union` (Set.unions
+                                               $ map (\n -> panicJust "iterFvSLamMp.1" $ Map.lookup n $ frVarMp)
+                                               $ Set.toList
+                                               $ panicJust "iterFvSLamMp.2"
+                                               $ Map.lookup n frLamMp
+                       )                      )
+                       frVarMp
           sz = sum . map Set.size . Map.elems
      in   if sz frVarMp2 > sz frVarMp
           then iterFvSLamMp frLamMp frVarMp2
@@ -110,12 +118,12 @@ SEM CodeAGItf
   | AGItf       module      .   fvSLamMp    =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   fvSLamMp    =   (let  start varS = startFvSLamMp @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
+  | Let         loc         .   fvSLamMp    =   (let  start varS = startFvSLamMp @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp $ @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindRec  ->  let  (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
-                                                                      in   iterFvSLamMp lm m
-                                                        _         ->  let  (m,_)   = start @lhs.varS
-                                                                      in   m
+                                                        CBindRec  ->  iterFvSLamMp lm m
+                                                                  where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                        _         ->  m
+                                                                  where (m,_)   = start @lhs.varS
                                                 )
                                                 `Map.union` @lhs.fvSLamMp
 %%]
@@ -205,8 +213,8 @@ type LamBindSq = Seq (CBindCateg,CBindL)
 
 fvLAsArg :: LevMp -> FvS -> AssocL HsName Int
 fvLAsArg levMp fvS
-  =  sortOn snd . filter (\(_,l) -> l > cLevOuter)
-     . map (\n -> (n,fvLev levMp n)) . Set.toList $ fvS
+  =  sortOn snd . filter (\(_,l) -> l > cLevModule)
+     $ map (\n -> (n,fvLev levMp n)) $ Set.toList $ fvS
 
 mkFvNm :: Int -> HsName -> HsName
 mkFvNm i n = hsnSuffix n ("~" ++ show i)
@@ -218,7 +226,7 @@ fvLArgRepl uniq argLevL
      in   (argOL,argNL,Map.fromList (zip argOL argNL))
 
 varRepl :: Map.Map HsName HsName -> HsName -> CExpr
-varRepl nMp n = maybe (CExpr_Var n) CExpr_Var . Map.lookup n $ nMp
+varRepl nMp n = maybe (CExpr_Var n) CExpr_Var $ Map.lookup n nMp
 %%]
 
 %%[8
@@ -231,11 +239,14 @@ ATTR AllBind [ | | bindLamBindL, bindCAFBindL, bindVarBindL USE {++} {[]}: CBind
 SEM CBind
   | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindCAFBindL,loc.bindVarBindL,loc.bindLamArgMp)
                                             =   if @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.levMp . panicJust "CBind.Bind.argLevL" . Map.lookup @nm $ @lhs.fvSLamMp
-                                                           (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq argLevL
-                                                      in   (@lhs.gUniq + length argOL,argONMp
-                                                           ,[CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)],[],[]
-                                                           ,@nm `Map.singleton` argOL
+                                                then  let  argLevL = fvLAsArg @lhs.levMp $ panicJust "CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+                                                           (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
+                                                      in   ( @lhs.gUniq + length argOL
+                                                           , argONMp
+                                                           , [CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)]
+                                                           , []
+                                                           , []
+                                                           , @nm `Map.singleton` argOL
                                                            )
                                                 else  if @expr.isLet
                                                 then  let  argLevL = fvLAsArg (@lhs.mutRecMp `Map.union` @lhs.levMp) @expr.fvS
@@ -250,7 +261,7 @@ SEM CBind
                                                                  , [CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map (varRepl @lhs.argSubst) argOL))]
                                                                  , Map.empty
                                                                  )
-                                                else  (@lhs.gUniq,Map.empty,[],[],[@cTrf],Map.empty)
+                                                else  ( @lhs.gUniq, Map.empty, [], [], [@cTrf], Map.empty )
   | FFI         loc         .   bindVarBindL=   [@cTrf]
 
 SEM CExpr
@@ -266,7 +277,7 @@ SEM CExpr
                                                      b12lcv  = unitSeq (@categ,(concat . map snd . seqToList $ b1)
                                                                                 ++ @binds.bindLamBindL ++ @binds.bindCAFBindL ++ @binds.bindVarBindL)
                                                      b3      = @body.lamBindSq
-                                                in   if @lhs.lev == cLevOuter
+                                                in   if @lhs.lev == cLevModule
                                                      then  (b12lcv <+> b3,emptySeq)
                                                      else if @categ == CBindStrict
                                                      then  (b2c <+> b2v,b1 <+> b2l <+> b3)

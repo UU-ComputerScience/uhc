@@ -172,7 +172,7 @@ ppCast :: String -> PP_Doc -> PP_Doc
 ppCast t v = ppParens $ ppParens t >|< ppParens v
 
 ppNodeFlds :: PP n => n -> PP_Doc
-ppNodeFlds n = n >|< ".fields"
+ppNodeFlds n = n >|< ".content.fields"
 
 ppNodeFld :: (PP n,PP o) => n -> o -> PP_Doc
 ppNodeFld n o = ppArrAt (ppNodeFlds n) o
@@ -228,10 +228,15 @@ SEM Module
                             .   ppNmInitF               =   @ppNm @strNmInitF
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
 %%[[12
+                            .   strNmImpNode            =   "impNode"
                             .   strNmExpNode            =   "expNode"
+                            .   strNmExpNodeSz          =   @strNmExpNode ++ "_size"
                             .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
-                            .   ppNmImpNode             =   @ppNm "impNode"
+                            .   ppNmImpNode             =   @ppNm @strNmImpNode
+                            .   ppNmImpNodeNms          =   @ppNm (@strNmImpNode ++ "_nms")
                             .   ppNmExpNode             =   @ppNm @strNmExpNode
+                            .   ppNmExpNodeOffs         =   @ppNm (@strNmExpNode ++ "_offs")
+                            .   ppNmExpNodeSz           =   @ppNm @strNmExpNodeSz
 %%]]
 
 %%[[8
@@ -258,7 +263,7 @@ SEM Module
                                                                              LinkTbl_ConstPtr  -> (LinkTbl_PatchCode_Deref2,ppAddrArrAt @ppNmConstTbl $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
                                                                              LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref1,ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
 %%[[12
-                                                                             LinkTbl_ImpEntry  -> (LinkTbl_PatchCode_Deref1,ppAddrOf $ ppNodeFld @ppNmImpNode $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+                                                                             -- LinkTbl_ImpEntry  -> (LinkTbl_PatchCode_Deref1,ppAddrOf $ ppNodeFld @ppNmImpNode $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
 %%]]
                                                                              k                 -> (k, pp $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
                                                     glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- toList @instrs.locRefs ]
@@ -266,7 +271,17 @@ SEM Module
                                                              where e i c = case Map.lookup i cafMp of
                                                                              Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n
                                                                              Nothing -> ppAddrArrAt @ppNmByteCodeTbl c
-                                                    cafL    = zipWith3 (\b nr i -> (i,b >|< nr,ppArr [pp "GB_MkCAFHeader", ppCurlysCommasBlock $ (:[]) $ ppCast "GB_Word" $ ppAddrArrAt @ppNmByteCodeTbl $ panicJust "GrinByteCode.ToC.cafs" $ Map.lookup i glEntryMp]))
+                                                    cafL    = zipWith3 (\b nr i -> ( i
+                                                                                   , b >|< nr
+                                                                                   , ppArr [ pp "GB_MkCAFHeader"
+                                                                                           , ppCurlysCommasBlock
+                                                                                             $ (:[])
+                                                                                             $ ppCast "GB_Word"
+                                                                                             $ ppAddrArrAt @ppNmByteCodeTbl
+                                                                                             $ panicJust "GrinByteCode.ToC.cafs"
+                                                                                             $ Map.lookup i glEntryMp
+                                                                                           ]
+                                                                       )           )
                                                                        (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
                                                     cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
                                                     cafs    = vlist [ "static GB_Node" >#< n >#< "=" >#< c | (_,n,c) <- cafL ]
@@ -284,8 +299,10 @@ SEM Module
                                                                          , @ppNmGlobEntriesTbl
                                                                          , @ppNmConstTbl
 %%[[12
-                                                                         , ppAddrOf @ppNmImpNode
-                                                                         , ppAddrOf @ppNmExpNode
+                                                                         -- , ppAddrOf @ppNmImpNode
+                                                                         -- , pp (length @impModNmL), @ppNmImpNodeNms
+                                                                         , @ppNmExpNode
+                                                                         , @ppNmExpNodeSz, @ppNmExpNodeOffs
                                                                          , pp "modTbl"
 %%]]
                                                                          ]
@@ -300,7 +317,12 @@ SEM Module
 %%[[8
                                                                                   >-< @ppNmInitF >|< "()" >#< ";"
 %%][12
-                                                                                  >-< (vlist $ map (\(_,m) -> mkPre m >|< @strNmInitF >|< ppParens @ppNmModEntriesTbl >#< ";") $ @allImpModNmL)
+                                                                                  >-< (vlist [ "GB_MkFixConNodeN(" >#< mkPre m >|< @strNmExpNode >|< "," >#< mkPre m >|< @strNmExpNodeSz >|<  ", 0 ) ;"
+                                                                                             | (_,m) <- @allImpModNmL
+                                                                                             ])
+                                                                                  >-< (vlist [ mkPre m >|< @strNmInitF >|< ppParens @ppNmModEntriesTbl >#< ";"
+                                                                                             | (_,m) <- @allImpModNmL
+                                                                                             ])
 %%]]
                                                                                   >-< "main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
                                                                                   >-< "return main_GB_Exit( argc, argv) ;"
@@ -310,17 +332,19 @@ SEM Module
                                                               else ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
                                                                    >-< "void fun_main(void){}" >-< "void initialize(void){}"
 %%[[12
-                                                    impnd   = ppLine $ "static GB_Node" >#< @ppNmImpNode >#< "="
-                                                                       >-< ppArr [ "GB_MkConHeader(" >|< length @impModNmL >|<  ",0)"
-                                                                                 , ppCurlysCommasBlock $ map (\(n,m) -> "Cast(GB_Word,\"" >|< m >|< "\")" >#< ppCmtC @lhs.opts n) $ @impModNmL
-                                                                                 ]
-                                                    expnd   = ppLine $ "GB_Node" >#< @ppNmExpNode >#< "="
-                                                                       >-< ppArr [ "GB_MkConHeader(" >|< length @expEntryL >|<  ",0)"
-                                                                                 , ppCurlysCommasBlock $ map (\(n,o) -> o >#< ppCmtC @lhs.opts n) $ @expEntryL
-                                                                                 ]
+                                                    {-
+                                                    impnd   = ppLine $ "static GB_NodePtr" >#< @ppNmImpNode >#< ";"
+                                                                       >-< "static char*" >#< @ppNmImpNodeNms >|< "[] ="
+                                                                       >-< ppArr [ "\"" >|< m >|< "\"" >#< ppCmtC @lhs.opts n | (n,m) <- @impModNmL ]
+                                                    -}
+                                                    expnd   = ppLine $ "GB_NodePtr" >#< @ppNmExpNode >#< ";"
+                                                                       >-< "static int" >#< @ppNmExpNodeOffs >|< "[] ="
+                                                                       >-< ppArr [ o >#< ppCmtC @lhs.opts n | (n,o) <- @expEntryL ]
+                                                                       >-< "int" >#< @ppNmExpNodeSz >#< "=" >#< length @expEntryL >#< ";"
                                                     externs = ppLine $ vlist
                                                                      $ map (\(_,m) -> "extern void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*)" >#< ";"
-                                                                                      >-< "extern GB_Node" >#< mkPre m >|< @strNmExpNode >#< ";"
+                                                                                      >-< "extern GB_NodePtr" >#< mkPre m >|< @strNmExpNode >#< ";"
+                                                                                      >-< "extern int" >#< mkPre m >|< @strNmExpNodeSz >#< ";"
                                                                            )
                                                                      $ @allImpModNmL
                                                     mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
@@ -335,7 +359,7 @@ SEM Module
                                                       >-< cafs
                                                       >-< glEntries
 %%[[12
-                                                      >-< impnd
+                                                      -- >-< impnd
                                                       >-< expnd
 %%]]
                                                       >-< links

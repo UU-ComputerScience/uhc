@@ -4,9 +4,16 @@
 
 %%[8
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
 #include "config.h"
+%%]
+
+%%[99
+#if USE_GMP
+#include "gmp.h"
+#endif
 %%]
 
 Internal config

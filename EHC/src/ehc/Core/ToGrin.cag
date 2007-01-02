@@ -412,7 +412,7 @@ ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL,binds.isStrict)
-                                            =   if @lhs.lev == cLevOuter
+                                            =   if @lhs.lev == cLevModule
                                                 then  (emptyGrExpr
                                                       ,let
                                                        in   case @categ of

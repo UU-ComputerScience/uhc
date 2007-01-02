@@ -156,11 +156,15 @@ defaultOptim = Optim Map.empty
 %%[8
 data HSState
   = HSStart
+%%[[99
+  | LHSStart
+  | LHSOnlyImports
+%%]]
   | HSAllSem
 %%[[12
   | HSAllSemHI
   | HSOnlyImports
-%%]
+%%]]
   deriving (Show,Eq)
 %%]
 
@@ -171,24 +175,13 @@ data EHState
   deriving (Show,Eq)
 %%]
 
-This state is not (yet?) used:
-
-%%[12
-data HIState
-  = HIStart
-  | HIAllSem
-  deriving (Show,Eq)
-%%]
-
 %%[8
 data EHCompileUnitState
   = ECUSUnknown
   | ECUSHaskell HSState
   | ECUSEh      EHState
-%%[[12
-  | ECUSHi      HIState
-%%]
-  | ECUSGrin | ECUSFail
+  | ECUSGrin
+  | ECUSFail
   deriving (Show,Eq)
 %%]
 
@@ -267,10 +260,13 @@ instance CompileUnitState EHCompileUnitState where
 %%]
 %%[12 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
-                      ECUSHaskell HSOnlyImports -> True
-                      ECUSHaskell HSAllSem      -> True
-                      ECUSHaskell HSAllSemHI    -> True
-                      _                         -> False
+                      ECUSHaskell HSOnlyImports  -> True
+%%[[99
+                      ECUSHaskell LHSOnlyImports -> True
+%%]]
+                      ECUSHaskell HSAllSem       -> True
+                      ECUSHaskell HSAllSemHI     -> True
+                      _                          -> False
 %%]
 
 %%[8
@@ -279,8 +275,8 @@ instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
   cuFPath           = ecuFilePath
   cuKey             = ecuModNm
   cuState           = ecuState
-  cuUpdFPath fp u   = u {ecuFilePath = fp}
-  cuUpdState st u   = u {ecuState = st}
+  cuUpdFPath        = ecuStoreFilePath
+  cuUpdState        = ecuStoreState
   cuUpdKey   nm u   = u {ecuModNm = nm}
   cuImports         = ecuImpNmL
 
@@ -310,6 +306,9 @@ instance PP EHCompileUnit where
 
 %%[8
 type EcuUpdater a = a -> EHCompileUnit -> EHCompileUnit
+
+ecuStoreFilePath :: EcuUpdater FPath
+ecuStoreFilePath x ecu = ecu { ecuFilePath = x }
 
 ecuStoreState :: EcuUpdater EHCompileUnitState
 ecuStoreState x ecu = ecu { ecuState = x }
@@ -395,6 +394,7 @@ data EHCompileRunStateInfo
       , crsiModMp       :: ModMp                                -- import/export info for modules
       , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
       , crsiOptim       :: Optim                                -- inter module optimisation info
+      , crsiModOffMp    :: Core.HsName2OffsetMpMp               -- mapping of all modules + exp entries to offsets in module + exp tables
 %%]
       }
 %%]
@@ -430,10 +430,10 @@ type FileSuffMp = [(String,EHCompileUnitState)]
 fileSuffMpHs :: FileSuffMp
 fileSuffMpHs
   = [ ( "hs"  , ECUSHaskell HSStart )
+%%[[99
+    , ( "lhs" , ECUSHaskell LHSStart )
+%%]]
     , ( "eh"  , ECUSEh EHStart )
-%%[[12
-    , ( "hi"  , ECUSHi HIStart )
-%%]
     , ( "grin", ECUSGrin )
     ]
 %%]
@@ -472,17 +472,27 @@ cpParsePlain parser scanOpts store description fp modNm
       ; cpSetLimitErrsWhen 5 description errs
       }
 
-cpParseHs :: HsName -> EHCompilePhase ()
-cpParseHs = cpParseOffside HSPrs.pAGItf hsScanOpts ecuStoreHS "Parse (Haskell syntax) of module"
-
 cpParseEH :: HsName -> EHCompilePhase ()
-cpParseEH = cpParseOffside EHPrs.pAGItf ehScanOpts ecuStoreEH "Parse (EH syntax) of module"
+cpParseEH
+  = cpParseOffside EHPrs.pAGItf ehScanOpts ecuStoreEH "Parse (EH syntax) of module"
 
 cpParseGrin :: HsName -> EHCompilePhase ()
 cpParseGrin modNm
   = do { cr <- get
        ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
        }
+%%]
+
+%%[8.cpParseHs
+cpParseHs :: HsName -> EHCompilePhase ()
+cpParseHs = cpParseOffside HSPrs.pAGItf hsScanOpts ecuStoreHS "Parse (Haskell syntax) of module"
+%%]
+
+%%[99 -8.cpParseHs
+cpParseHs :: Bool -> HsName -> EHCompilePhase ()
+cpParseHs litmode
+  = cpParseOffside HSPrs.pAGItf (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
+                   ("Parse (" ++ (if litmode then "Literate " else "") ++ "Haskell syntax) of module")
 %%]
 
 %%[12
@@ -494,9 +504,16 @@ cpParseOffsideStopAtErr parser scanOpts store modNm
       ; let (res,_) = parseOffsideToResMsgsStopAtErr parser tokens
       ; cpUpdCU modNm (store res)
       }
+%%]
 
+%%[12.cpParseHsImport
 cpParseHsImport :: HsName -> EHCompilePhase ()
 cpParseHsImport = cpParseOffsideStopAtErr HSPrs.pAGItfImport hsScanOpts ecuStoreHS
+%%]
+
+%%[99 -12.cpParseHsImport
+cpParseHsImport :: Bool -> HsName -> EHCompilePhase ()
+cpParseHsImport litmode = cpParseOffsideStopAtErr HSPrs.pAGItfImport (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
 %%]
 
 %%[12
@@ -690,7 +707,7 @@ cpFlowHsSem1 modNm
 %%[[12
                         where mk = idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh')
 %%][99
-                        where mk = if ehcBuiltinFromPrelude opts
+                        where mk = if ehcOptUseAssumePrelude opts
                                    then \_ n -> n
                                    else \k n -> idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh') k (hsnQualified n)
 %%]]
@@ -974,6 +991,15 @@ cpCheckMods modNmL
        ; cpCheckMods' modL
        }
   where addBuiltin m = m { modImpL = modImpBuiltin : modImpL m }
+
+cpUpdateModOffMp :: [HsName] -> EHCompilePhase ()
+cpUpdateModOffMp modNmL
+  = do { cr <- get
+       ; let crsi   = crStateInfo cr
+             offMp  = crsiModOffMp crsi
+             offMp' = Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip modNmL [Map.size offMp ..] ] `Map.union` offMp
+       ; put (cr {crStateInfo = crsi {crsiModOffMp = offMp'}})
+       }
 %%]
 
 %%[8
@@ -1066,8 +1092,10 @@ cpTranslateGrin2ByteCode modNm
                                       evel = grAliasElim . grEvalElim . grAliasElim . grFlattenSeq
                  bc     = grinMod2ByteCodeMod opts
 %%[[12
-                            (if ecuIsTopMod ecu then concat modNmLL else [])
-                            (Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip (nub $ ecuImpNmL ecu) [0..] ])
+                            -- (if ecuIsTopMod ecu then concat modNmLL else [])
+                            (if ecuIsTopMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
+                            -- (Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip (nub $ ecuImpNmL ecu) [0..] ])
+                            (crsiModOffMp crsi)
                             expNmOffMp
 %%]]
                             $ grin'
@@ -1098,6 +1126,16 @@ cpTranslateGrin modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: C compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+cpSystem :: String -> EHCompilePhase ()
+cpSystem cmd
+  = do { exitCode <- lift $ system cmd
+       ; case exitCode of
+           ExitSuccess -> return ()
+           _           -> cpSetFail
+       }
+%%]
 
 %%[8
 data GCC_CompileHow
@@ -1140,12 +1178,32 @@ cpCompileWithGCC how othModNmL modNm
                             (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "GCC" Nothing modNm fpTarg
                                 ; lift $ putStrLn compileC
                                 })
-                     ; exitCode <- lift $ system compileC
-                     ; case exitCode of
-                         ExitSuccess -> return ()
-                         _           -> cpSetFail
+                     ; cpSystem compileC
                      })
          }
+%%]
+
+%%[99
+cpPreprocessWithCPP :: HsName -> EHCompilePhase ()
+cpPreprocessWithCPP modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+              fpCPP = fpathSetSuff (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
+       ; when (ehcOptCPP opts)
+              (do { let preCPP
+                          = concat $ intersperse " "
+                            $ (  [ Cfg.shellCmdCpp ]
+                              ++ [ "-traditional-cpp", "-fno-show-column", "-P", "-D__EHC__" ]
+                              ++ [ fpathToStr fp, fpathToStr fpCPP ]
+                              )
+                  ; when (ehcOptVerbosity opts >= VerboseALot)
+                         (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "CPP" Nothing modNm fp
+                             ; lift $ putStrLn preCPP
+                             })
+                  ; cpSystem preCPP
+                  ; cpUpdCU modNm (ecuStoreFilePath fpCPP)
+                  })
+       }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1267,7 +1325,7 @@ cpOutputCore suff modNm
          --         (lift (putPPFile (fpathToStr (fpathSetSuff "java" fpJ)) jPP 100))
 
 %%[[12
-%%]
+%%]]
          }
 %%]
          -- part 2: previous .core
@@ -1416,39 +1474,59 @@ cpCompileCU targHSState modNm
 %%[12
            (ECUSHaskell HSStart,Just HSOnlyImports)
              -> do { msg "Imports of Haskell"
-                   ; cpSeq [ cpSetupMod modNm, cpParseHsImport modNm, cpStepUID, cpFoldHsMod modNm, cpGetHsImports modNm ]
+%%[[12
+                   ; cuImportHS modNm
+%%][99
+                   ; cuImportHS False modNm
+%%]]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSOnlyImports))
                    }
+%%[[99
+           (ECUSHaskell LHSStart,Just HSOnlyImports)
+             -> do { msg "Imports of Literate Haskell"
+                   ; cuImportHS True modNm
+                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell LHSOnlyImports))
+                   }
+%%]]
            (ECUSHaskell HSOnlyImports,Just HSOnlyImports)
              -> return ()
+%%[[99
+           (ECUSHaskell LHSOnlyImports,Just HSOnlyImports)
+             -> return ()
+%%]]
            (ECUSHaskell HSOnlyImports,Just HSAllSem)
              -> do { msg "Compiling Haskell"
-                   ; cpSeq [ cpParseHs modNm
-                           , cpStopAt CompilePoint_Parse
-                           , cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm, cpCheckMods [modNm], cpProcessHs modNm
-                           , cpStopAt CompilePoint_AnalHS
-                           , cpStepUID, cpProcessEH modNm
-                           , cpStopAt CompilePoint_AnalEH
-                           , cpStepUID, cpProcessCore1 modNm
-                           , cpStopAt CompilePoint_Core
-                           , cpSeq (if not (ehcFullProgGRIN opts)
-                                    then [cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm]
-                                         ++ (if ecuIsTopMod ecu then [] else [cpCompileWithGCC GCC_CompileOnly [] modNm])
-                                    else []
-                                   )
-                           , cpOutputHI "hi" modNm
-                           ]
+%%[[12
+                   ; cuCompileHSAfterImport ecu opts modNm
+%%][99
+                   ; cuCompileHSAfterImport ecu opts False modNm
+%%]]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
            (ECUSHaskell HSOnlyImports,Just HSAllSemHI)
              -> do { msg "Reading HI"
+                   ; cpUpdateModOffMp [modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSemHI))
                    }
+%%]]
+%%[[99
+           (ECUSHaskell LHSOnlyImports,Just HSAllSem)
+             -> do { msg "Compiling Literate Haskell"
+                   ; cuCompileHSAfterImport ecu opts True modNm
+                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
+                   }
+%%]]
 %%]
 %%[8
            (ECUSHaskell HSStart,_)
              -> do { msg "Compiling Haskell"
-                   ; cpSeq [ cpSetupMod modNm, cpParseHs modNm
+                   ; cpSeq [ cpSetupMod modNm
+%%[[8
+                           , cpParseHs modNm
+%%][99
+                           , cpPreprocessWithCPP modNm
+                           , cpParseHs False modNm
+%%]]
                            , cpStopAt CompilePoint_Parse
                            , cpStepUID, cpProcessHs modNm
                            , cpStopAt CompilePoint_AnalHS
@@ -1462,7 +1540,7 @@ cpCompileCU targHSState modNm
 %%[[12
            (_,Just HSOnlyImports)
              -> return ()
-%%]
+%%]]
            (ECUSEh EHStart,_)
              -> do { msg "Compiling EH"
                    ; cpSeq [ cpParseEH modNm
@@ -1482,6 +1560,50 @@ cpCompileCU targHSState modNm
                    }
            _ -> return ()
        }
+%%]
+%%[12
+  where 
+%%[[12
+        cuImportHS modNm
+%%][99
+        cuImportHS litmode modNm
+%%]]
+          = cpSeq [ cpSetupMod modNm
+%%[[12
+                  , cpParseHsImport modNm
+%%][99
+                  , cpPreprocessWithCPP modNm
+                  , cpParseHsImport litmode modNm
+%%]]
+                  , cpStepUID
+                  , cpFoldHsMod modNm
+                  , cpGetHsImports modNm
+                  ]
+%%[[12
+        cuCompileHSAfterImport ecu opts modNm
+%%][99
+        cuCompileHSAfterImport ecu opts litmode modNm
+%%]]
+          = cpSeq [ 
+%%[[12
+                    cpParseHs modNm
+%%][99
+                    cpParseHs litmode modNm
+%%]]
+                  , cpStopAt CompilePoint_Parse
+                  , cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm, cpCheckMods [modNm], cpUpdateModOffMp [modNm], cpProcessHs modNm
+                  , cpStopAt CompilePoint_AnalHS
+                  , cpStepUID, cpProcessEH modNm
+                  , cpStopAt CompilePoint_AnalEH
+                  , cpStepUID, cpProcessCore1 modNm
+                  , cpStopAt CompilePoint_Core
+                  , cpSeq (if not (ehcFullProgGRIN opts)
+                           then [cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm]
+                                ++ (if ecuIsTopMod ecu then [] else [cpCompileWithGCC GCC_CompileOnly [] modNm])
+                           else []
+                          )
+                  , cpOutputHI "hi" modNm
+                  ]
 %%]
 
 %%[8
@@ -1599,7 +1721,7 @@ doCompileRun filename opts
                           ; when (ehcOptShowTopTyPP opts)
                                  (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
 %%[[7_2
-                          ; when (not (null filename) && ehcoptUniqueness opts)
+                          ; when (not (null filename) && ehcOptUniqueness opts)
                                  (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))
 %%]]
                           })
@@ -1607,7 +1729,8 @@ doCompileRun filename opts
          }
 %%]
 
-%%[7_2.doCompile -1.doCompile
+%%[7_2.doCompile
+%%]
 doCompileRun :: String -> EHCOpts -> IO ()
 doCompileRun filename opts
   =  do  {  (fn,fh) <-  if null filename
@@ -1633,10 +1756,9 @@ doCompileRun filename opts
                 wrRes = EHSem.wrap_AGItf res (EHSem.Inh_AGItf {EHSem.opts_Inh_AGItf = opts})
          ;  when (ehcOptShowTopTyPP opts)
                  (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
-         ; when (not (null filename) && ehcoptUniqueness opts)
-                (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))
+         ;  when (not (null filename) && ehcOptUniqueness opts)
+                 (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))
          }
-%%]
 
 %%[8.doCompile -1.doCompile
 doCompileRun :: String -> EHCOpts -> IO ()
@@ -1686,6 +1808,7 @@ doCompileRun fn opts
 %%[[12
              hsModInh       = HSSemMod.Inh_AGItf { HSSemMod.gUniq_Inh_AGItf       = uidStart
                                                  , HSSemMod.moduleNm_Inh_AGItf    = hsnUnknown
+                                                 , HSSemMod.opts_Inh_AGItf        = opts2
                                                  }
              hiInh          = HISem.Inh_AGItf { HISem.opts_Inh_AGItf            = opts2
                                               }
@@ -1694,7 +1817,7 @@ doCompileRun fn opts
                                 topModNm
                                 (EHCompileRunStateInfo opts2 hsInh ehInh coreInh uidStart uidStart
 %%[[12
-                                 hiInh hsModInh Map.empty Map.empty defaultOptim
+                                 hiInh hsModInh Map.empty Map.empty defaultOptim Map.empty
 %%]
                                 )
 %%[[8
@@ -1709,9 +1832,7 @@ doCompileRun fn opts
                     ; when (isJust mbFp)
                            (cpUpdCU nm (ecuSetIsTopMod True))
                     ; when (isJust mbFoundFp)
-                           (cpCompileCU
-                              (Just HSOnlyImports)
-                              nm)
+                           (cpCompileCU (Just HSOnlyImports) nm)
                     }
 %%]]
 %%[[8

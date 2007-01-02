@@ -1,6 +1,6 @@
 module EH.Util.ScanUtils
   ( ScanOpts(..), defaultScanOpts
-  , isNoPos
+  , isNoPos, posIs1stColumn
   , genTokVal, genTokTp, genTokMap
   )
   where
@@ -35,6 +35,9 @@ genTokMap f (Reserved   k p) = Reserved   (f k) p
 
 isNoPos :: Pos -> Bool
 isNoPos (Pos l c f) = l < 0 || c < 0
+
+posIs1stColumn :: Pos -> Bool
+posIs1stColumn p = column p == 1
 
 -------------------------------------------------------------------------
 -- PP of parse errors
@@ -80,6 +83,7 @@ data ScanOpts
         ,   scoOffsideModule    ::  String
         ,   scoOffsideOpen      ::  String
         ,   scoOffsideClose     ::  String
+        ,   scoLitmode          ::  Bool
         }
 
 defaultScanOpts :: ScanOpts
@@ -95,5 +99,6 @@ defaultScanOpts
         ,   scoOffsideModule    =   ""
         ,   scoOffsideOpen      =   ""
         ,   scoOffsideClose     =   ""
+        ,   scoLitmode          =   False
         }
 

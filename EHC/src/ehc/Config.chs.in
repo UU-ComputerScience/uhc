@@ -14,7 +14,7 @@
 %%[8 export(fileprefixInplaceInstall)
 %%]
 
-%%[8 export(libnamesGcc, shellCmdGcc, mbSuffixExec)
+%%[8 export(libnamesGcc, mbSuffixExec)
 %%]
 
 %%[99 export(fileprefixInstall)
@@ -86,9 +86,14 @@ fileprefixInstall = "@INSTALL_PREFIX@/"
 %%% Cmds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(shellCmdGcc)
 shellCmdGcc :: String
 shellCmdGcc = "@GCC_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdCpp)
+shellCmdCpp :: String
+shellCmdCpp = "@CPP_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,6 +111,12 @@ libnamesGcc
         then [ "@EXTLIBS_BGC_PKG_NAME@" ]
         else []
        )
+%%[[99
+    ++ (if useGMP
+        then [ "@EXTLIBS_GMP_PKG_NAME@" ]
+        else []
+       )
+%%]]
 %%]
 
 %%[8 export(ehcGccOptsStatic)

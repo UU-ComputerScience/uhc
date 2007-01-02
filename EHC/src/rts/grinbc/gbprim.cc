@@ -29,6 +29,17 @@ PRIM GB_Node gb_LT
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GB_Word gb_primUnsafeId( GB_Word x )
+{
+	return x ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Int
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -73,6 +84,13 @@ PRIM GB_Word gb_primGtInt( GB_Int x, GB_Int y )
   	return Cast(GB_Word,&gb_False) ;
 }
 
+PRIM GB_Word gb_primLtInt( GB_Int x, GB_Int y )
+{
+	if ( x < y )
+		return Cast(GB_Word,&gb_True) ;
+  	return Cast(GB_Word,&gb_False) ;
+}
+
 PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 {
 	if ( x < y )
@@ -82,6 +100,72 @@ PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
   	return Cast(GB_Word,&gb_GT) ;
 }
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Integer, via GMP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+#if USE_GMP
+PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	if ( GB_Integer_Cmp(x,y) == 0 )
+		return Cast(GB_Word,&gb_True) ;
+  	return Cast(GB_Word,&gb_False) ;
+}
+
+PRIM GB_Word gb_primCmpInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	int c = GB_Integer_Cmp(x,y) ;
+	if ( c < 0 )
+		return Cast(GB_Word,&gb_LT) ;
+	else if ( c == 0 )
+		return Cast(GB_Word,&gb_EQ) ;
+  	return Cast(GB_Word,&gb_GT) ;
+}
+
+PRIM GB_NodePtr gb_primAddInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Add_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primSubInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Sub_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primMulInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Mul_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDivInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Div_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primCString2Integer( char* s )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_set_str( n->content.mpz, s, 10 ) ;
+	return n ;
+}
+
+PRIM GB_Word gb_primInteger2Int( GB_NodePtr n )
+{
+	return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
+}
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

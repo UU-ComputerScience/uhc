@@ -104,7 +104,7 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM CodeAGItf
   | AGItf       module      .   aRenMp      =   Map.empty
-                            .   lev         =   cLevOuter
+                            .   lev         =   cLevModule
 
 SEM CBind
   | Bind        lhs         .   nmL         =   [@nm]
@@ -121,7 +121,7 @@ SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CExpr
-  | Let         loc         .   aRenMp      =   if @lhs.lev == cLevOuter
+  | Let         loc         .   aRenMp      =   if @lhs.lev == cLevModule
                                                 then @lhs.aRenMp
                                                 else aRenAdd @binds.nmL @lUniq @lhs.aRenMp
                 binds       .   lev         =   @lhs.lev + 1
@@ -135,7 +135,7 @@ SEM CAlt
 
 %%[12
 SEM CExpr
-  | Let         loc         .   aRenMp      :=  if @lhs.lev == cLevOuter
+  | Let         loc         .   aRenMp      :=  if @lhs.lev == cLevModule
                                                 then @lhs.aRenMp
                                                 else aRenAdd @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
   | Lam         loc         .   aRenMp      :=  aRenAdd @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp

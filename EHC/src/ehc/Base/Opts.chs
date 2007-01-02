@@ -82,7 +82,7 @@ data EHCOpts
       ,  ehcOptDebug          ::  Bool              -- debug info
       ,  ehcStopAtPoint       ::  CompilePoint      -- stop at (after) compile phase
 %%[[7_2
-      ,  ehcoptUniqueness     ::  Bool
+      ,  ehcOptUniqueness     ::  Bool
 %%]]
 %%[[8
       ,  ehcOptDumpCallGraph  ::  Bool
@@ -129,7 +129,8 @@ data EHCOpts
 %%[[99
       ,  ehcProgName          ::  String
       ,  ehcOptShowNumVersion ::  Bool
-      ,  ehcBuiltinFromPrelude::  Bool
+      ,  ehcOptCPP            ::  Bool
+      ,  ehcOptUseAssumePrelude  ::  Bool
 %%]]
       }
 %%]
@@ -150,7 +151,7 @@ defaultEHCOpts
       ,  ehcOptDebug          =   False
       ,  ehcStopAtPoint       =   CompilePoint_All
 %%[[7_2
-      ,  ehcoptUniqueness     =   True
+      ,  ehcOptUniqueness     =   True
 %%]]
 %%[[8
       ,  ehcOptDumpCallGraph  =   False
@@ -175,17 +176,18 @@ defaultEHCOpts
       ,  ehcOptTrf            =   []
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
       ,  ehcOptEmitLLVM       =   False
-      ,  ehcOptEmitGrinBC     =   False
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
       ,  ehcOptEmitExec       =   False
       ,  ehcOptEmitExecBC     =   False
+      ,  ehcOptEmitGrinBC     =   False
       ,  ehcOptGenCmt         =   True
 %%][99
-      ,  ehcOptEmitLlc        =   True
-      ,  ehcOptEmitExec       =   True
+      ,  ehcOptEmitLlc        =   False -- True
+      ,  ehcOptEmitExec       =   False -- True
       ,  ehcOptEmitExecBC     =   True
+      ,  ehcOptEmitGrinBC     =   True
       ,  ehcOptGenCmt         =   False
 %%]]
 %%[[9
@@ -203,7 +205,8 @@ defaultEHCOpts
 %%[[99
       ,  ehcProgName          =   ""
       ,  ehcOptShowNumVersion =   False
-      ,  ehcBuiltinFromPrelude=   True
+      ,  ehcOptCPP            =   False
+      ,  ehcOptUseAssumePrelude  =   True
 %%]]
       }
 %%]
@@ -253,6 +256,8 @@ ehcCmdLineOpts
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
      ,  Option "P"  ["search-path"]      (ReqArg oSearchPath "path")          "search path for all files, path separators=';', appended to previous"
+     ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
+     ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
 %%]]
      ]
 %%]
@@ -289,7 +294,7 @@ ehcCmdLineOpts
                                       _   -> CompilePoint_All
                                 }
 %%[[7_2
-         oUnique         o =  o { ehcoptUniqueness    = False   }
+         oUnique         o =  o { ehcOptUniqueness    = False   }
 %%]]
 %%[[8
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
@@ -350,6 +355,8 @@ ehcCmdLineOpts
 %%[[99
          oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
          oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
+         oNoPrelude      o =  o { ehcOptUseAssumePrelude        = False   }
+         oCPP            o =  o { ehcOptCPP                     = True    }
 %%]]
 %%]
 

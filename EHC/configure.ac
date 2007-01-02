@@ -180,6 +180,28 @@ else
 fi
 AC_SUBST(GCC_CMD,$gccCmd)
 
+# cpp
+AC_ARG_WITH(cpp,
+[AC_HELP_STRING([--with-cpp=<cpp preprocessor>],
+                [Use a command different from 'cpp' to compile with CPP.])],
+[ cppCmd="$withval" ],
+[ 
+  if test "$CPP" = ""; then
+    AC_PATH_PROG(cppCmd,cpp)
+  else
+    cppCmd=$CPP
+  fi
+]
+)
+if test "$cppCmd" = "no"; then
+  cppCmd=""
+  cppExists="no"
+else
+  cppExists="yes"
+  cppVersion=`$cppCmd --version`
+fi
+AC_SUBST(CPP_CMD,$cppCmd)
+
 
 ### Checks for libraries.
 
@@ -209,6 +231,9 @@ AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
 
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[1])
+
+# Use GMP
+AC_DEFINE([USE_GMP],[1])
 
 # Prefix used for global values, assumed to be present by RTS
 AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"])
@@ -336,6 +361,7 @@ AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
 ### package names assumed by compiler driver
 AC_SUBST(RTS_PKG_NAME, "EH-RTS")
 AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
+AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in extlibs/gmp
 
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])

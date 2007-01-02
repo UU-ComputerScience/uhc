@@ -19,3 +19,7 @@
 
 %%]
 
+%%[8
+#define EntierUpDivBy(x,m)				(((x)-1)/(m)+1)
+#define EntierUpBy(x,m)					(EntierUpDivBy(x,m)*(m))
+%%]
