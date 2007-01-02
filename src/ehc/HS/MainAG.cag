@@ -32,7 +32,7 @@
 %%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
-%%[99 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom)},{%{EH}Scanner.Scanner(getRational)})
+%%[99 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

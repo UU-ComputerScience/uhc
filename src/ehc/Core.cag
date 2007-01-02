@@ -22,7 +22,7 @@
 %%[8 hs export(mkCExprStrictIn)
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp,cLevOuter,LevMp,fvLev,fvsLev,levMpAdd)
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp,LevMp,fvLev,fvsLev)
 %%]
 
 %%[8 hs export(mkCExprAddInt)
@@ -314,7 +314,12 @@ cexprTupFld _                        = CExpr_Var hsnUnknown
 
 %%[8 hs export(cstring)
 cstring :: EHCOpts -> String -> CExpr
-cstring opts m = CExpr_Var (ehbnFromPackedString $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
+cstring opts m = CExpr_Var (ehbnPackedString2String $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
+%%]
+
+%%[99 hs export(cinteger)
+cinteger :: EHCOpts -> Integer -> CExpr
+cinteger opts i = CExpr_Var (ehbnPackedString2Integer $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String $ show $ i]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -352,22 +357,25 @@ type FvS = HsNameS
 type FvSMp = Map.Map HsName FvS
 %%]
 
-%%[8 hs
-cLevOuter = 0
+%%[8 hs export(cLevModule,cLevExtern,cLevIntern)
+cLevModule, cLevExtern, cLevIntern :: Int
+cLevIntern = 1
+cLevModule = 0
+cLevExtern = 0
 %%]
 
 %%[8 hs
 type LevMp = Map.Map HsName Int
 
 fvLev :: LevMp -> HsName -> Int
-fvLev lm n = Map.findWithDefault cLevOuter n lm
+fvLev lm n = Map.findWithDefault cLevExtern n lm
 
-fvsLev :: LevMp -> FvS -> Int
-fvsLev lm fvs = foldr (\n l -> fvLev lm n `max` l) cLevOuter . Set.toList $ fvs
+fvsLev :: LevMp -> Int -> FvS -> Int
+fvsLev lm lDflt fvs = foldr (\n l -> fvLev lm n `max` l) lDflt $ Set.toList $ fvs
 
+%%]
 levMpAdd :: LevMp -> FvSMp -> LevMp
 levMpAdd lm fvm = Map.map (fvsLev lm) fvm `Map.union` lm
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known function arity

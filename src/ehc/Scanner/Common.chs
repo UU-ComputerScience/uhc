@@ -3,6 +3,8 @@
 %include afp.fmt
 %%]
 
+Note: everything is exported.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -322,6 +324,9 @@ floatDenot2NomDenom denot
         (mn,md) = case m of
                     Just m -> (read m,10 ^ length m)
                     _      -> (1,1)
+
+intDenot2Integer :: Int -> String -> Integer
+intDenot2Integer b s = getBaseNumber (toInteger b) s
 %%]
 
 

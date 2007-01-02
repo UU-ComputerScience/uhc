@@ -31,6 +31,8 @@ typedef uint8_t  GB_Byte ;
 %%% Node structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Node header layout
+
 %%[8
 #if USE_64_BITS
 #define GB_NodeHeader_Size_BitSz		32
@@ -45,19 +47,34 @@ typedef uint8_t  GB_Byte ;
 #define GB_NodeHeader_GC_BitSz			2
 #define GB_NodeHeader_Tag_BitSz			10
 #endif
+%%]
 
+Evaluation need: Yes, No, or blackhole (no evaluation, but when requested indicates a loop)
+
+%%[8
 #define GB_NodeNdEv_BlH					2			/* black hole */
 #define GB_NodeNdEv_Yes					1
 #define GB_NodeNdEv_No					0
+%%]
 
+Node categories. Two groups, the first require evaluation, the second not.
+
+%%[8
 #define GB_NodeTagCat_Fun				0			/* saturated function call closure 		*/
 #define GB_NodeTagCat_App				1			/* general purpose application 			*/
 #define GB_NodeTagCat_Ind				2			/* indirection 							*/
 #define GB_NodeTagCat_CFun				3			/* saturated C function call closure 	*/
 
-#define GB_NodeTagCat_Con				0			/* data, constructor 								*/
-#define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 		*/
+#define GB_NodeTagCat_Con				0			/* data, constructor 											*/
+#define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 					*/
+%%[[99
+#define GB_NodeTagCat_Intl				3			/* other internal structures, further described by tag 			*/
+%%]]
+%%]
 
+Node header.
+
+%%[8
 #if NODEHEADER_VIA_STRUCT
 typedef struct GB_NodeHeader {
   unsigned 	size 		: GB_NodeHeader_Size_BitSz 		;			/* size, incl header, in words 					*/
@@ -118,11 +135,24 @@ typedef GB_Word GB_NodeHeader ;
 
 %%]
 
+%%[99
+#if USE_GMP
+#define GB_NodeTag_GMP_mpz				0			/* A GMP mpz_t 						*/
+#define GB_NodeTag_GMP_intl				1			/* GMP internal allocated 			*/
+#endif
+%%]
 
 %%[8
 typedef struct GB_Node {
   GB_NodeHeader	header ;
-  GB_Word 		fields[] ;
+  union {
+    GB_Word 		fields[1] ;			/* size 1 is ok for a CAF, but not for other static node initializers */
+%%[[99
+#if USE_GMP
+    mpz_t			mpz ;				/* when GB_NodeTag_GMP_mpz */
+#endif
+%%]]
+  } content ;
 } GB_Node, *GB_NodePtr ;
 
 #if NODEHEADER_VIA_STRUCT
@@ -152,28 +182,40 @@ typedef struct GB_Node {
 
 #define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
 
-#define GB_FillNodeFlds1(n,x1)				{(n)->fields[0] = Cast(GB_Word,x1);}
-#define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1   );(n)->fields[1] = Cast(GB_Word,x2);}
-#define GB_FillNodeFlds3(n,x1,x2,x3)		{GB_FillNodeFlds2(n,x1,x2);(n)->fields[2] = Cast(GB_Word,x3);}
+#define GB_FillNodeFlds1(n,x1)				{(n)->content.fields[0] = Cast(GB_Word,x1);}
+#define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1   );(n)->content.fields[1] = Cast(GB_Word,x2);}
+#define GB_FillNodeFlds3(n,x1,x2,x3)		{GB_FillNodeFlds2(n,x1,x2);(n)->content.fields[2] = Cast(GB_Word,x3);}
 
 #define GB_FillNodeHdr(h,n)					{(n)->header = h;}
 #define GB_FillConNode0(n,tg)				{GB_NodeHeader _h = GB_MkConHeader(0,tg); GB_FillNodeHdr(_h,n);}
 #define GB_FillConNode1(n,tg,x1)			{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds1(n,x1);}
 #define GB_FillConNode2(n,tg,x1,x2)			{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds2(n,x1,x2);}
 
-#define GB_MkConNode0(n,tg)					{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(1)); GB_FillConNode0(n,tg); }
-#define GB_MkConNode1(n,tg,x1)				{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(2)); GB_FillConNode1(n,tg,x1); }
-#define GB_MkConNode2(n,tg,x1,x2)			{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(3)); GB_FillConNode2(n,tg,x1,x2); }
+#define GB_MkConNodeN(n,sz,tg)				{GB_NodeAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
+#define GB_MkFixConNodeN(n,sz,tg)			{GB_NodeFixAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNode0(n,tg)					{GB_NodeAlloc_In(1,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNode1(n,tg,x1)				{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
+#define GB_MkConNode2(n,tg,x1,x2)			{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
 
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
 #define GB_FillCFunNode2(n,f,x1,x2)			{GB_NodeHeader _h = GB_MkCFunHeader(2); GB_FillNodeHdr(_h,n);GB_FillNodeFlds3(n,f,x1,x2);}
 
-#define GB_MkCFunNode0(n,f)					{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(2)); GB_FillCFunNode0(n,f); }
-#define GB_MkCFunNode1(n,f,x1)				{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(3)); GB_FillCFunNode1(n,f,x1); }
-#define GB_MkCFunNode2(n,f,x1,x2)			{n = Cast(GB_NodePtr,GB_HeapAlloc_Words(4)); GB_FillCFunNode2(n,f,x1,x2); }
+#define GB_MkCFunNode0(n,f)					{GB_NodeAlloc_In(2,n); GB_FillCFunNode0(n,f); }
+#define GB_MkCFunNode1(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillCFunNode1(n,f,x1); }
+#define GB_MkCFunNode2(n,f,x1,x2)			{GB_NodeAlloc_In(4,n); GB_FillCFunNode2(n,f,x1,x2); }
 
 extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
+%%]
+
+%%[99
+#if USE_GMP
+#define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(GB_Word)) + 1)
+#define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(GB_Word)) + 1)
+
+#define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_GMP_mpz)
+#define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_GMP_intl)
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -188,8 +230,8 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_MkListCons(n,x1,x2)				GB_MkConNode2(n,GB_Tag_List_Cons,x1,x2)
 
 #define GB_List_IsNull(n)					(GB_NH_Fld_Tag((n)->header) == GB_Tag_List_Nil)
-#define GB_List_Head(n)						((n)->fields[0])
-#define GB_List_Tail(n)						Cast( GB_NodePtr,(n)->fields[1] )
+#define GB_List_Head(n)						((n)->content.fields[0])
+#define GB_List_Tail(n)						Cast( GB_NodePtr,(n)->content.fields[1] )
 
 #define GB_List_Iterate(n,sz,body)			while ( sz-- && ! GB_List_IsNull( n ) ) { \
 												body ; \
@@ -227,7 +269,7 @@ extern void gb_listForceEval( GB_NodePtr n, int sz ) ;
 #define GB_LinkTbl_EntryKind_PatchCode_Deref2		5			/* patch code with **value */
 #define GB_LinkTbl_EntryKind_PatchOffsets			6			/* patch code containing offsets with abolute address */
 %%[[12
-#define GB_LinkTbl_EntryKind_ImpEntry				7			/* obsolete (now via PatchCode_Deref1): import entry */
+#define GB_LinkTbl_EntryKind_ImpEntry				7			/* import entry */
 %%]]
 %%]
 
@@ -246,7 +288,7 @@ Module info
 %%[12
 typedef struct GB_ModEntry {
   char*			name ;
-  GB_NodePtr	expNode ;
+  GB_NodePtr	*expNode ;
 } GB_ModEntry ;
 
 extern GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
@@ -263,11 +305,30 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 
 %%[8
 #if USE_BOEHM_GC
-#define GB_HeapAlloc_Words(nWords)	GB_HeapAlloc_Bytes(nWords * sizeof(GB_Word))
-#define GB_HeapAlloc_Bytes(nBytes)	Cast(GB_Ptr,GC_MALLOC(nBytes))
+#define GB_HeapAlloc_Words(nWords)		GB_HeapAlloc_Bytes(nWords * sizeof(GB_Word))
+#define GB_HeapFixAlloc_Words(nWords)	GB_HeapFixAlloc_Bytes(nWords * sizeof(GB_Word))
+#define GB_HeapAlloc_Bytes(nBytes)		Cast(GB_Ptr,GC_MALLOC(nBytes))
+#define GB_HeapFixAlloc_Bytes(nBytes)	Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
 #else
-#define GB_HeapAlloc_Words(nWords)	Cast(GB_Ptr,heapalloc(nWords))
-#define GB_HeapAlloc_Bytes(nBytes)	GB_HeapAlloc_Words(nBytes / sizeof(GB_Word))
+#define GB_HeapAlloc_Words(nWords)		Cast(GB_Ptr,heapalloc(nWords))
+#define GB_HeapFixAlloc_Words(nWords)	GB_HeapAlloc_Words(nWords)
+#define GB_HeapAlloc_Bytes(nBytes)		GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
+#define GB_HeapFixAlloc_Bytes(nBytes)	GB_HeapAlloc_Bytes(nBytes)	
+#endif
+
+#define GB_NodeAlloc_In(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
+#define GB_NodeFixAlloc_In(nWords,n)		{ (n) = Cast(GB_NodePtr,GB_HeapFixAlloc_Words(nWords)) ; }
+#define GB_NodeAlloc_Hdr_In(nWords,h,n)		{ GB_NodeAlloc_In(nWords,n) ; (n)->header = (h) ; }
+%%]
+
+%%[99
+#if USE_GMP
+#define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init((n)->content.mpz) ; }
+#define GB_NodeAlloc_GMP_In(nBytes,n)		{ int sz = GB_NodeGMPSize(nBytes) ; GB_NodeAlloc_Hdr_In(sz,GB_MkGMPHeader(sz),n) ; }
+
+extern void* gb_Alloc_GMP( size_t nBytes ) ;
+extern void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes ) ;
+extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #endif
 %%]
 
@@ -307,7 +368,29 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_Int_Neg(x)				GB_Int_Sub(GB_Int0,x)
 
 %%]
-#define GB_Int_Div(x,y)				(((x)-GB_Word_TagInt) / ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Integer via GMP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mpz_t is defined as an array, this makes casting problematic (compiler complains),
+so a pointer based definition is used. However, __mpz_struct is an internal type which may
+undergo name changes as GMP versions progress.
+
+%%[99
+#if USE_GMP
+typedef __mpz_struct*  GB_mpz ;
+
+#define GB_Integer_Op_In(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y->content.mpz ) ; }
+#define GB_Integer_Add_In(z,x,y)		GB_Integer_Op_In(mpz_add,z,x,y)
+#define GB_Integer_Sub_In(z,x,y)		GB_Integer_Op_In(mpz_sub,z,x,y)
+#define GB_Integer_Mul_In(z,x,y)		GB_Integer_Op_In(mpz_mul,z,x,y)
+#define GB_Integer_Div_In(z,x,y)		GB_Integer_Op_In(mpz_cdiv_q,z,x,y)
+
+#define GB_Integer_Cmp(x,y)				mpz_cmp(x->content.mpz, y->content.mpz)
+
+#endif
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instruction opcode inline operands
@@ -451,8 +534,10 @@ extern void gb_InitTables
 	, GB_BytePtr* globalEntries
 	, GB_Word* consts
 %%[[12
-	, GB_NodePtr impNode
+	// , GB_NodePtr *impNode
+	// , int impNodeSz, char** impNodeNms
 	, GB_NodePtr expNode
+	, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
 	) ;

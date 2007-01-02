@@ -173,6 +173,11 @@ static struct option gb_longopts2[] =
 int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 {
 	memorySetup() ;
+%%[[99
+#	if USE_GPM
+		mp_set_memory_functions( gb_Alloc_GMP, gb_ReAlloc_GMP, gb_Free_GMP ) ;
+#	endif
+%%]]
 	gb_checkInterpreterAssumptions() ;
 	gb_Initialize() ;
 	

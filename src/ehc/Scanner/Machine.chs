@@ -12,6 +12,9 @@
 %%[8 export(getRational)
 %%]
 
+%%[99 export(getBaseNumber)
+%%]
+
 %%[5.scanHandle -1.scanHandle
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
@@ -28,7 +31,13 @@ scanFile opts fn =
 
 scan :: ScanOpts -> Pos -> String -> [Token]
 scan opts pos input
+%%[[5
   = doScan pos input
+%%][99
+  = if scoLitmode opts
+    then scanLitText pos input
+    else doScan pos input
+%%]]
 
  where
    locatein :: Ord a => [a] -> a -> Bool
@@ -60,6 +69,16 @@ scan opts pos input
                                   in  (c:str,w+1,s')
 %%]
 
+%%[99
+   scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
+     | posIs1stColumn p
+         = doScan (advc 12 p) s
+   scanLitText p (c:s)
+         = scanLitText (adv p c) s
+   scanLitText p []
+         = []
+%%]
+
 %%[5
    doScan p [] = []
    doScan p (c:s)        | isSpace c = let (sp,next) = span isSpace s
@@ -83,6 +102,12 @@ scan opts pos input
                      else valueToken TkVarid ident p
 %%]
 
+%%[99
+   doScan p ('\\':'e':'n':'d':'{':'c':'o':'d':'e':'}':s)
+     | scoLitmode opts && posIs1stColumn p
+         = scanLitText (advc 10 p) s
+%%]
+
 %%[5
    -- this is experimental, for now, not foolproof, only to be used for the Prelude
    doScan p ('\'':'\'':ss)
@@ -104,7 +129,7 @@ scan opts pos input
          where sym = [c,c2]
    doScan p cs@(c:s)
      | isSymbol c = reserved [c] p
-                  : doScan(advc 1 p) s
+                  : doScan (advc 1 p) s
 %%]
 %%[5.id
      | isIdStart c || isUpper c
@@ -214,11 +239,11 @@ getEscChar :: [Char] -> (Maybe Char,Int,[Char])
 getEscChar [] = (Nothing,0,[])
 getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                                       val = case tp of
-                                              TkInteger8  -> readn 8  n
-                                              TkInteger16 -> readn 16 n
-                                              TkInteger10 -> readn 10 n
+                                              TkInteger8  -> getBaseNumber 8  n
+                                              TkInteger16 -> getBaseNumber 16 n
+                                              TkInteger10 -> getBaseNumber 10 n
                                   in  if val >= 0 && val <= 255
-                                         then (Just (chr val),len, rest)
+                                         then (Just (chr $ fromInteger val),len, rest)
                                          else (Nothing,1,rest)
                     | otherwise = case x `lookup` cntrChars of
                                     Just c  -> (Just c,1,xs)
@@ -247,8 +272,8 @@ getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                     ]
 %%]]
 
-readn :: Int -> [Char] -> Int
-readn base n = foldl (\r x  -> value x + base * r) 0 n
+getBaseNumber :: Integer -> [Char] -> Integer
+getBaseNumber base n = foldl (\r x  -> toInteger (value x) + base * r) 0 n
 
 getNumber :: [Char] -> (EnumValToken,[Char],Int,[Char])
 getNumber cs@(c:s)

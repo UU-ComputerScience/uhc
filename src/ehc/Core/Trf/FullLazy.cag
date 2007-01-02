@@ -86,7 +86,7 @@ SEM CExpr
 
 SEM CBind
   | Bind        lhs         .   bindL       =   [(@expr.levOf,@cTrf)]
-  | FFI         lhs         .   bindL       =   [(cLevOuter,@cTrf)]
+  | FFI         lhs         .   bindL       =   [(cLevModule,@cTrf)]
 
 SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)

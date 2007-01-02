@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD cppCmd CPP_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME EXTLIBS_GMP_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -863,6 +863,9 @@ Optional Packages:
   --with-gcc=<gcc compiler>
                           Use a command different from 'gcc' to compile with
                           GCC.
+  --with-cpp=<cpp preprocessor>
+                          Use a command different from 'cpp' to compile with
+                          CPP.
 
 Some influential environment variables:
   CC          C compiler command
@@ -1818,6 +1821,70 @@ else
   gccVersion=`$gccCmd --version`
 fi
 GCC_CMD=$gccCmd
+
+
+# cpp
+
+# Check whether --with-cpp or --without-cpp was given.
+if test "${with_cpp+set}" = set; then
+  withval="$with_cpp"
+   cppCmd="$withval"
+else
+
+  if test "$CPP" = ""; then
+    # Extract the first word of "cpp", so it can be a program name with args.
+set dummy cpp; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_cppCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $cppCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_cppCmd="$cppCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_cppCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+
+  ;;
+esac
+fi
+cppCmd=$ac_cv_path_cppCmd
+
+if test -n "$cppCmd"; then
+  echo "$as_me:$LINENO: result: $cppCmd" >&5
+echo "${ECHO_T}$cppCmd" >&6
+else
+  echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+fi
+
+  else
+    cppCmd=$CPP
+  fi
+
+
+fi;
+if test "$cppCmd" = "no"; then
+  cppCmd=""
+  cppExists="no"
+else
+  cppExists="yes"
+  cppVersion=`$cppCmd --version`
+fi
+CPP_CMD=$cppCmd
 
 
 
@@ -3920,6 +3987,12 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+# Use GMP
+cat >>confdefs.h <<\_ACEOF
+#define USE_GMP 1
+_ACEOF
+
+
 # Prefix used for global values, assumed to be present by RTS
 cat >>confdefs.h <<\_ACEOF
 #define RTS_GLOBAL_VAR_PREFIX "global_"
@@ -4067,6 +4140,8 @@ RTS_PKG_NAME="EH-RTS"
 
 EXTLIBS_BGC_PKG_NAME="gc"
  # should coincide with installed lib in extlibs/bgc
+EXTLIBS_GMP_PKG_NAME="gmp"
+ # should coincide with installed lib in extlibs/gmp
 
 ### file generation
                     ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
@@ -4719,6 +4794,8 @@ s,@uuagcCmd@,$uuagcCmd,;t t
 s,@UUAGC_CMD@,$UUAGC_CMD,;t t
 s,@gccCmd@,$gccCmd,;t t
 s,@GCC_CMD@,$GCC_CMD,;t t
+s,@cppCmd@,$cppCmd,;t t
+s,@CPP_CMD@,$CPP_CMD,;t t
 s,@CC@,$CC,;t t
 s,@CFLAGS@,$CFLAGS,;t t
 s,@LDFLAGS@,$LDFLAGS,;t t
@@ -4746,6 +4823,7 @@ s,@INPLACE_PREFIX@,$INPLACE_PREFIX,;t t
 s,@INPLACE_INSTALL_DIR@,$INPLACE_INSTALL_DIR,;t t
 s,@RTS_PKG_NAME@,$RTS_PKG_NAME,;t t
 s,@EXTLIBS_BGC_PKG_NAME@,$EXTLIBS_BGC_PKG_NAME,;t t
+s,@EXTLIBS_GMP_PKG_NAME@,$EXTLIBS_GMP_PKG_NAME,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF

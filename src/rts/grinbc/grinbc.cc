@@ -142,8 +142,8 @@ typedef GB_Word GB_CFun();
 #define GB_SPByteRelx(o)		GB_Deref(GB_SPByteRel(GB_Word,o))
 
 #define GB_PushNodeArgs(nd,hdr,pfr,pto)	/* push args of `fun + args' node fields */ 				\
-								pfr = Cast(GB_Ptr,&((nd)->fields[GB_NH_NrFlds(hdr)])) ;	\
-								pto = Cast(GB_Ptr,&((nd)->fields[1])) ;								\
+								pfr = Cast(GB_Ptr,&((nd)->content.fields[GB_NH_NrFlds(hdr)])) ;	\
+								pto = Cast(GB_Ptr,&((nd)->content.fields[1])) ;								\
 								IF_GB_TR_ON(3,printf("pfr %x pto %x sp %x\n",pfr,pto,sp);) ;			\
 								MemCopyBackward(pfr,pto,sp) ;
 
@@ -206,7 +206,38 @@ See gbprim
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Node construction
+%%% GMP memory allocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+#if USE_GMP
+void* gb_Alloc_GMP( size_t nBytes )
+{
+  GB_Node* n ;
+  GB_NodeAlloc_GMP_In(nBytes,n) ;
+  return n->content.fields ;		/* return ptr to usable area */
+}
+
+void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
+{
+  if ( nBytes > nBytesOld )
+  {
+	  GB_Node* nNew ;
+	  GB_NodeAlloc_GMP_In(nBytes,nNew) ;
+	  memcpy( nNew->content.fields, n, nBytesOld ) ;
+	  return nNew->content.fields ;
+  }
+  return n ;
+}
+
+void gb_Free_GMP( void *n, size_t nBytesOld )
+{
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Node allocation/construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -215,7 +246,7 @@ GB_Node* gb_MkCAF( GB_BytePtr pc )
   GB_NodeHeader h = GB_MkCAFHeader ;
   GB_Node* n = Cast(GB_Node*,GB_HeapAlloc_Words(2)) ;
   n->header = h ;
-  n->fields[0] = Cast(GB_Word,pc) ;
+  n->content.fields[0] = Cast(GB_Word,pc) ;
   return n ;
 }
 %%]
@@ -326,7 +357,7 @@ void gb_prWord( GB_Word x )
 #else
 			printf( " 0x%0.8x"
 #endif
-			      , n->fields[i] ) ;
+			      , n->content.fields[i] ) ;
 		}
 	}
 	/* printf( "\n" ) ; */
@@ -697,28 +728,28 @@ gb_interpreter_InsEvalEntry:
 							switch( GB_NH_Fld_TagCat(h) ) {
 								case GB_NodeTagCat_Fun :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
-									p = &(n->fields[1]) ;											/* 1st arg 							*/
-									p2 = &(n->fields[GB_NH_NrFlds(h)]) ;							/* after last arg 					*/
+									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
+									p2 = &(n->content.fields[GB_NH_NrFlds(h)]) ;					/* after last arg 					*/
 									MemCopyBackward(p2,p,sp) ;										/* push args on stack 				*/
-									pc = Cast(GB_BytePtr,n->fields[0]) ;							/* jump to function 				*/
+									pc = Cast(GB_BytePtr,n->content.fields[0]) ;					/* jump to function 				*/
 									GB_Push(gb_code_AfterEvalCall) ;								/* ret addr is to update 			*/
 									GB_NH_SetFld_NdEv(n->header,GB_NodeNdEv_BlH) ;					/* may not be eval'd when eval'd	*/
 									break ;
 								case GB_NodeTagCat_CFun :
-									p = &(n->fields[1]) ;											/* 1st arg 							*/
+									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
 									x2 = x ;                                                        /* remember val + pc 				*/
 									retSave = Cast(GB_Word,pc) ;
-									GB_CallC_Code(n->fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+									GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 									break ;
 								case GB_NodeTagCat_App :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
-									GB_Push(x = n->fields[0]) ;										/* push function to eval 			*/
+									GB_Push(x = n->content.fields[0]) ;								/* push function to eval 			*/
 									pc = gb_code_AfterEvalApplyFunCall ;
 									goto gb_interpreter_InsEvalEntry ;								/* evaluate							*/
 									break ;
 								case GB_NodeTagCat_Ind :
-									GB_SetTOS( x = n->fields[0] ) ;									/* just follow the indirection		*/
+									GB_SetTOS( x = n->content.fields[0] ) ;							/* just follow the indirection		*/
 									goto gb_interpreter_InsEvalEntry ;								/* evaluate							*/
 									break ;
 							}
@@ -744,7 +775,7 @@ gb_interpreter_InsEvalUpdContEntry:
 				   && (GB_NH_Fld_Size((n = Cast(GB_NodePtr,x))->header) <= GB_NH_Fld_Size(nOld->header))
 				   )
 				{
-					p = Cast(GB_Ptr,&(n->fields[GB_Node_NrFlds(n)])) ;			/* overwrite content of old with new 		*/
+					p = Cast(GB_Ptr,&(n->content.fields[GB_Node_NrFlds(n)])) ;	/* overwrite content of old with new 		*/
 					p2 = Cast(GB_Ptr,nOld) ;
 					p3 = Cast(GB_Ptr,n) ;
 					MemCopyForward(p3,p,p2) ;	
@@ -753,7 +784,7 @@ gb_interpreter_InsEvalUpdContEntry:
 					h = nOld->header ;											/* turn into indirection node				*/
 					h = GB_MkHeader(GB_NH_Fld_Size(h),GB_NodeNdEv_Yes,GB_NodeTagCat_Ind,0) ;
 					nOld->header = h ;
-					nOld->fields[0] = x ;										/* assumption !!: memory is available !! 	*/
+					nOld->content.fields[0] = x ;								/* assumption !!: memory is available !! 	*/
 					GB_SetTOS( x ) ;
 				}
 				pc = Cast(GB_BytePtr,retSave) ;									/* jump to saved ret address				*/
@@ -799,17 +830,17 @@ gb_interpreter_InsApplyEntry:
 							GB_SPRelx(nMiss) = Cast(GB_Word,pc) ;						/* prepare for applycont, save pc, push nr remaining args	*/
 							GB_SPRelx(nMiss+1) = nLeftOver ;
 							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
-							pc = Cast(GB_BytePtr,n->fields[0]) ;								/* call function									*/
+							pc = Cast(GB_BytePtr,n->content.fields[0]) ;						/* call function									*/
 							GB_Push( Cast(GB_Word,gb_code_AfterCallInApplyWithTooManyArgs) ) ;  /* with continuation set to another apply			*/
 						} else if ( nLeftOver == 0 ) {
 							sp = Cast(GB_Ptr,GB_SPRel(2)) ;								/* remove node+size from stack 								*/
 							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
-							x = n->fields[0] ;											/* call function											*/
+							x = n->content.fields[0] ;									/* call function											*/
 							GB_Push(x) ;
 							goto gb_interpreter_InsCallEntry ;
 						} else { /* ( nLeftOver < 0 ) */
-							p2 = n->fields ;											/* copy old fields prep										*/
-							p3 = Cast(GB_Ptr,&((n)->fields[GB_NH_NrFlds(h)])) ;
+							p2 = n->content.fields ;									/* copy old fields prep										*/
+							p3 = Cast(GB_Ptr,&((n)->content.fields[GB_NH_NrFlds(h)])) ;
 							h = GB_MkHeader(GB_NH_Fld_Size(h)+x,GB_NH_Fld_NdEv(h),GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h)-x) ;
 							p = GB_HeapAlloc_Words( GB_NH_Fld_Size(h) ) ;				/* fresh node												*/
 							x2 = Cast(GB_Word,p) ;										/* remember, to push later on								*/
@@ -848,8 +879,8 @@ gb_interpreter_InsApplyEntry:
 			/* fetcht */
 			case GB_Ins_Fetch(GB_InsOp_LocB_TOS) :
 				GB_PopCastedIn(GB_NodePtr,n) ;
-				p = Cast(GB_Ptr,&(n->fields[GB_Node_NrFlds(n)])) ;
-				p2 = n->fields ;
+				p = Cast(GB_Ptr,&(n->content.fields[GB_Node_NrFlds(n)])) ;
+				p2 = n->content.fields ;
 				MemCopyBackward(p,p2,sp) ;
 				break ;
 
@@ -859,7 +890,7 @@ gb_interpreter_InsApplyEntry:
 			case GB_Ins_FetchUpdate :
 				GB_PopIn(x) ;
 				GB_PopCastedIn(GB_NodePtr,n) ;
-				n->fields[0] = x ;
+				n->content.fields[0] = x ;
 				h = n->header ;
 				h = GB_MkHeader(GB_NH_Fld_Size(h),GB_NodeNdEv_Yes,GB_NodeTagCat_Ind,GB_NH_Fld_Tag(h)) ;
 				n->header = h ;
@@ -1007,8 +1038,10 @@ void gb_InitTables
 	, GB_BytePtr* globalEntries
 	, GB_Word* consts
 %%[[12
-	, GB_NodePtr impNode
+	// , GB_NodePtr *impNode
+	// , int impNodeSz, char** impNodeNms
 	, GB_NodePtr expNode
+	, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
 	)
@@ -1024,11 +1057,14 @@ void gb_InitTables
 */
 
 %%[[12
-	for ( i = 0 ; i < GB_Node_NrFlds(impNode) ; i++ )
+/*
+	GB_MkConNodeN(*impNode,impNodeSz,0) ;
+	for ( i = 0 ; i < impNodeSz ; i++ )
 	{
-		GB_ModEntry* mod = gb_lookupModEntry( Cast(char*,impNode->fields[i]), modTbl ) ;
-		impNode->fields[i] = Cast(GB_Word,mod->expNode) ;
+		GB_ModEntry* mod = gb_lookupModEntry( impNodeNms[i], modTbl ) ;
+		(*impNode)->content.fields[i] = Cast(GB_Word,*(mod->expNode)) ;
 	}
+*/
 %%]]
 
 	for ( i = 0 ; i < linkEntriesSz ; i++ )
@@ -1059,13 +1095,20 @@ void gb_InitTables
 				}
 				break ;
 
+%%[[12
+			case GB_LinkTbl_EntryKind_ImpEntry :
+				// *p = (*impNode)->content.fields[ linkEntries[i].linkVal ] ;
+				*p = Cast(GB_Word,*(modTbl[ linkEntries[i].linkVal ].expNode)) ;
+				break ;
+%%]]
+
 		}
 	}
 	
 %%[[12
-	for ( i = 0 ; i < GB_Node_NrFlds(expNode) ; i++ )
+	for ( i = 0 ; i < expNodeSz ; i++ )
 	{
-		expNode->fields[i] = Cast(GB_Word,globalEntries[ expNode->fields[i] ]) ;
+		expNode->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
 	}
 %%]]
 	

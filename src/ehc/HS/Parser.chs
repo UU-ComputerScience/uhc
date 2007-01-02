@@ -686,9 +686,21 @@ pContextItemBase
 %%[1
 pLiteralNumber :: HSParser Literal
 pLiteralNumber
-  =   mkRngStr Literal_Int  <$> pIntegerTk
+%%[[1
+  =   mkRngStr Literal_Int <$> pIntegerTk
+%%][99
+  =   mk  8 <$> pInteger8Tk
+  <|> mk 10 <$> pInteger10Tk
+  <|> mk 16 <$> pInteger16Tk
+%%]]
   <?> "pLiteralNumber"
+%%[[99
+  where mk b t = Literal_Int (mkRange1 t) b (tokMkStr t)
+%%]]
+%%]
 
+ast (mkRange1 t) (tokMkStr t)
+%%[1
 pLiteral :: HSParser Literal
 pLiteral
   =   pLiteralNumber
@@ -1017,8 +1029,8 @@ pPatternBase
       <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBaseCon
            <|> pSucceed (mkRngNm Pattern_Variable)
            )
-  <|> Pattern_Literal emptyRange <$> pLiteral
-  <|> (Pattern_Negate . mkRange1) <$> pMINUS <*> pLiteralNumber
+  <|> Pattern_Literal emptyRange 1 <$> pLiteral
+  <|> (\m n -> Pattern_Literal (mkRange1 m) (-1) n) <$> pMINUS <*> pLiteralNumber
 %%[[5
   <|> pBracks' (flip Pattern_List <$> pListSep pCOMMA pPattern)
 %%]]
@@ -1091,7 +1103,7 @@ pPatternApp :: HSParser Pattern
 pPatternApp
   =   pPatternBase
   <|> qconid
-      <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBase
+      <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBaseCon
            <|> pPatternConSuffix
            )
   <?> "pPatternApp"

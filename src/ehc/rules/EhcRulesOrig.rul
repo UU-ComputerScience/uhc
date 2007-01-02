@@ -305,7 +305,7 @@ format ag  translFloat = CExpr_Float
 format tex translDouble = Transl
 format ag  translDouble = CExpr_Double
 format tex translInteger = Transl
-format ag  translInteger = CExpr_Integer
+format ag  translInteger = "cinteger @lhs.opts"
 format tex translVar = Transl
 format ag  translVar = CExpr_Var
 

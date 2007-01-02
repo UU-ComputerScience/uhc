@@ -18,6 +18,11 @@
 
 %%]
 
+%%[99
+/* use GMP */
+#undef USE_GMP
+%%]
+
 %%[8
 #if SIZEOF_UINTPTR_T == 8
 #define USE_64_BITS 1

@@ -221,8 +221,8 @@ SEM GrAlt
                             .   stkDepth        =   @lhs.stkDepth + @fetchDepth
                 lhs         .   stkDepth        =   case @lhs.returnCtxt of
                                                       ReturnCtxt_CaseFallThrough
-                                                        -> @expr.stkDepth			-- scrutinee remains on stack
-                                                      _ -> @lhs.stkDepth			-- scrutinee is replaced with value of same size
+                                                        -> @expr.stkDepth           -- scrutinee remains on stack
+                                                      _ -> @lhs.stkDepth            -- scrutinee is replaced with value of same size
 
 %%]
 
@@ -466,7 +466,7 @@ SEM GrExpr
                                                                where (ins',inc') = GB.gvCall @nmEnv @lhs.modNmConstInx ins inc @lhs.stkDepth @nm
   | FFI         loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case @mbGbPrim of
-                                                      Just gbPrim | ehcOptOptimise @lhs.opts >= OptimiseNormal
+                                                      Just gbPrim | gbprimNrArgs gbPrim == length @argL && ehcOptOptimise @lhs.opts >= OptimiseNormal
                                                         -> case gbprimMk gbPrim GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
                                                                -> (ins, inc, False)
@@ -570,12 +570,24 @@ ATTR AllBind [ | | entryNms USE {:++:} {FSeqNil}: {FastSeq (HsName,Bool)} ]
 SEM GrBind
   | Bind        lhs         .   entryNms        =   FSeq (@nm,null @argNmL)
                 loc         .   entryInx        =   GB.vaEntryInx $ panicJust "GrBind.Bind.entryInx" $ GB.nmEnvLookup @nm @nmEnv
+%%]
 
+%%[8.entryNmMp
 SEM GrModule
   | Mod         loc         .   (entryNmMp,isCafL)
                                                 =   let (nL,cafL) = unzip $ toList @bindL.entryNms
-                                                    in  (Map.fromList $ zip nL [0..],cafL)
-                            .   mainEntry       =   maybe 0 GB.vaEntryInx $ GB.nmEnvLookup hsnMain @nmEnv
+                                                        mpMod = Map.fromList $ zip nL [0..]
+%%[[12
+                                                        mpReExp = Map.fromList $ zip [ n | n <- Map.keys @lhs.expNmOffMp, not (n `Map.member` mpMod) ] [Map.size mpMod ..]
+%%]]
+                                                    in  ( mpMod
+                                                        , cafL
+                                                        )
+%%]
+
+%%[8
+SEM GrModule
+  | Mod         loc         .   mainEntry       =   maybe 0 GB.vaEntryInx $ GB.nmEnvLookup hsnMain @nmEnv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -590,9 +602,9 @@ SEM GrModule
 %%[[12
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
                                                       [ (n,hsnShowAlphanumeric n) | (n,_) <- sortOn (fst.snd) $ Map.toList @lhs.impNmOffMpMp ]
-                                                      [ (n,panicJust ("GrModule.Mod.entryNmMp:" ++ show n) $ Map.lookup n @entryNmMp) | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp ]
+                                                      [ (n,m) | (n,Just m) <- map (\(n,_) -> (n,Map.lookup n @entryNmMp)) $ sortOn snd $ Map.toList @lhs.expNmOffMp ]
 %%]]
-                                                      (toList $ @bindL.i :++: FSeqL [GB.halt])
+                                                      (toList $ @bindL.i)
                                                       [ s | (s,_) <- sortOn (GB.constInx . snd) $ Map.toList @bindL.strMp ]
                                                       [ c | (c,_) <- sortOn snd $ Map.toList @bindL.constMp ]
                                                       [ i | (i,True) <- zip [0..] @isCafL ]

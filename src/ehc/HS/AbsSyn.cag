@@ -956,6 +956,7 @@ TYPE Patterns                    = [ Pattern ]
 DATA Pattern
     | Literal
         range                    : Range
+        sign                     : Int
         literal                  : Literal
     | Variable
         range                    : Range          
@@ -976,10 +977,10 @@ DATA Pattern
     | Tuple
         range                    : Range
         patterns                 : Patterns
-    | Negate
+%%]
+    | Negate					-- see Literal
         range                    : Range
         literal                  : Literal -- only numbers allowed here
-%%]
 %%[4
     | Typed
         range                    : Range
@@ -1059,6 +1060,9 @@ SET AllPattern
 DATA Literal                                      {- *** -}
     | Int                                 {- *** -}
         range                    : Range
+%%[[99
+        base                     : Int
+%%]]
         value                    : String
     | Char                                {- *** -}
         range                    : Range
