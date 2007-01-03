@@ -105,6 +105,7 @@ data Opts
       , optIndex        :: Bool
       , optCompiler     :: [Int]
       , optHelp         :: Bool
+      , optGenDeps      :: Bool
       , optChDest       :: (ChDest,String)
       , optGenVersion   :: Version
       , optBaseName     :: Maybe String
@@ -112,8 +113,13 @@ data Opts
       , optWrapLhs2tex  :: ChWrap
       , optMbXRefExcept :: Maybe String
       , optVerOrder     :: VersionOrder
-      , optDefs			:: KVMap
-      }
+      , optDefs         :: KVMap
+      , optDepNamePrefix :: String
+      , optDepSrcVar     :: String
+      , optDepDstVar     :: String
+      , optDepMainVar    :: String
+      , optDepDpdsVar    :: String
+      } deriving (Show)
 
 defaultOpts
   = Opts
@@ -126,6 +132,7 @@ defaultOpts
       , optIndex        =  False
       , optCompiler     = []
       , optHelp         =  False
+      , optGenDeps      =  False
       , optChDest       =  (ChHere,"")
       , optGenVersion   =  VNone
       , optBaseName     =  Nothing
@@ -134,6 +141,11 @@ defaultOpts
       , optMbXRefExcept =  Nothing
       , optVerOrder     =  [[]]
       , optDefs			=  Map.empty
+      , optDepNamePrefix = error "optDepNamePrefix not set"
+      , optDepSrcVar     = error "optDepSrcVar not set"
+      , optDepDstVar     = error "optDepDstVar not set"
+      , optDepMainVar    = error "optDepMainVar not set"
+      , optDepDpdsVar    = error "optDepDpdsVar not set"
       }
 
 optsHasNoVerOrder :: Opts -> Bool

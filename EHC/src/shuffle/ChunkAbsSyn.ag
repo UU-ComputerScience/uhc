@@ -91,4 +91,3 @@ SET AllWord     = Word Words Inline
 
 -- Sets
 SET AllNT       = AllWord AllLine AllGroup AllChunk AllStrExpr
-
