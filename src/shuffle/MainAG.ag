@@ -590,6 +590,17 @@ SEM Chunk
                 lhs         .   verChInfoL  =   if @isAllowed then [@chInfo] else []
 
 -------------------------------------------------------------------------
+-- Collect dependencies of AG chunks
+-------------------------------------------------------------------------
+
+ATTR AGItf AllChunk [ | | deps USE {++} {[]} : {[String]} ]
+
+SEM Chunk
+  | Ver         lhs         .   deps = if @chOptions.chKind == ChAG
+                                       then @imports.strL
+                                       else []
+
+-------------------------------------------------------------------------
 -- Line context, in chunks
 -------------------------------------------------------------------------
 

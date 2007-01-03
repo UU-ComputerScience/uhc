@@ -16,6 +16,7 @@ import MainAG
 import ChunkParser
 import CDoc
 import CDocSubst
+import Data.Char
 -- import Data.List
 
 -------------------------------------------------------------------------
@@ -33,7 +34,9 @@ main
          then putStrLn (usageInfo "Usage shuffle [options] [file ([alias=]file)*|-]\n\noptions:" cmdLineOpts)
          else if null errs
               then  let (f,frest) = if null n then (emptyFPath,[]) else if head n == "-" then (emptyFPath,tail n) else (mkFPath (head n),tail n)
-                    in  doCompile (Nothing,f) (map mkFPathAlias frest) opts
+                    in  if optGenDeps opts
+                        then genDeps f opts
+                        else doCompile (Nothing,f) (map mkFPathAlias frest) opts
               else  putStr (head errs)
        }
   where mkFPathAlias s
@@ -58,6 +61,12 @@ readShFile (a,fp) opts
          else do { mapM_ (hPutStrLn stderr . show) perrs
                  ; exitFailure
                  }
+       }
+
+doCompile' :: FPath -> Opts -> IO Syn_AGItf
+doCompile' f opts
+  = do { ((_, fp), pres) <- readShFile (Nothing,f) opts
+       ; return (wrapAG_T opts fp Set.empty Map.empty pres)
        }
 
 doCompile :: FPathWithAlias -> [FPathWithAlias] -> Opts -> IO ()
@@ -123,6 +132,56 @@ doCompile fpa fpaRest opts
                              (bMpL,hdLL) = unzip [ (bldNmChMp b,[ (mkN n,h) | (n,h) <- bldHideCD b]) | b <- selBld opts r ]
                        ]
 
+genDeps :: FPath -> Opts -> IO ()
+genDeps f opts
+  = do filenames <- do c <- readFile (fpathToStr f)
+                       return $ filter (not . null) (lines c)
+       depL <- mapM getDeps filenames
+       genDepsMakefile (zip filenames depL) opts
+  where
+    getDeps fname
+      = do res <- doCompile' (mkFPath fname) opts
+           return (deps_Syn_AGItf res)
+
+genDepsMakefile :: [(String, [String])] -> Opts -> IO ()
+genDepsMakefile deps opts
+  = do mapM_ (putStrLn . mkDep) deps
+       putStrLn ""
+       putStrLn mkDepList
+       putStrLn ""
+       putStrLn mkMainList
+  where
+    namePrefix = optDepNamePrefix opts
+    srcPrefix = optDepSrcVar opts
+    dstPrefix = optDepDstVar opts
+    depListVar = optDepDpdsVar opts
+    mainListVar = optDepMainVar opts
+
+    mkDep (file, deps)
+      = let name = encode file
+            fileWithoutExt = stripExt file
+         in unlines
+             [ name ++ "_MAIN_SRC_AG := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ fileWithoutExt ++ ")"
+             , name ++ "_DPDS_SRC_AG := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag, " ++ unwords deps ++ ")"
+             , "$(patsubst $(" ++ srcPrefix ++ ")%.ag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ "_MAIN_SRC_AG)) : $(" ++ name ++ "_DPDS_SRC_AG)"
+             ]
+
+    mkDepList
+      = depListVar ++ " := $(sort " ++ unwords (map ((\n -> "$(" ++ n ++ "_DPDS_SRC_AG)") . encode . fst) deps) ++ ")"
+
+    mkMainList
+      = mainListVar ++ " := " ++ unwords (map ((\n -> "$(" ++ n ++ "_MAIN_SRC_AG)") . encode . fst) deps)
+
+    encode n = namePrefix ++ map (toUnder . toUpper) (stripExt n)
+
+    stripExt n
+      | '.' `elem` n = reverse $ tail $ dropWhile (/= '.') $ reverse n
+      | otherwise    = n
+    
+    toUnder c
+      | isAlphaNum c = c
+      | otherwise    = '_'
+
 -------------------------------------------------------------------------
 -- Cmdline opts
 -------------------------------------------------------------------------
@@ -156,6 +215,18 @@ cmdLineOpts
           "file with list of strings not to be cross ref'd"
      ,  Option ""   ["help"]            (NoArg oHelp)
           "output this help"
+     ,  Option ""   ["dep"]             (NoArg oDep)
+          "output dependencies"
+     ,  Option ""   ["depnameprefix"]   (OptArg oDepNamePrefix "<name>")
+          "Prefix of generated makefile vars."
+     ,  Option ""   ["depsrcvar"]       (OptArg oDepSrcVar "<name>")
+          "Source base-directory"
+     ,  Option ""   ["depdstvar"]       (OptArg oDepDstVar "<name>")
+          "Destination base-directory"
+     ,  Option ""   ["depmainvar"]      (OptArg oDepMainVar "<name>")
+          "Varname for the list of main files"
+     ,  Option ""   ["depdpdsvar"]      (OptArg oDepDpdsVar "<name>")
+          "Varname for the list of dependencies"
      ,  Option ""   ["lhs2tex"]         (OptArg oLhs2tex "yes|no")
           "wrap chunks in lhs2tex's code environment, default=yes"
      ,  Option ""   ["def"]             (ReqArg oDef "key:value")
@@ -182,6 +253,12 @@ cmdLineOpts
                                 ('a':'p':'p':'x':'=':f) -> o {optChDest = (ChHide,f)}
                                 _                       -> o
          oHelp           o =  o {optHelp = True}
+         oDep            o =  o {optGenDeps = True}
+         oDepNamePrefix ms o = o { optDepNamePrefix = maybe "FILE_" id ms }
+         oDepSrcVar     ms o = o { optDepSrcVar = maybe "SRC_VAR" id ms }
+         oDepDstVar     ms o = o { optDepDstVar = maybe "DST_VAR" id ms }
+         oDepMainVar    ms o = o { optDepMainVar = maybe "FILES" id ms }
+         oDepDpdsVar    ms o = o { optDepDpdsVar = maybe "DPDS" id ms }
          oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
                                 (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
                                 _         -> o
