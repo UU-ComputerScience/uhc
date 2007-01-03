@@ -30,6 +30,14 @@ RULER3_HS_DPDS_DRV_HS					:= $(patsubst $(SRC_RULER3_PREFIX)%.chs,$(RULER3_BLD_P
 RULER3_CHS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_RULER3_PREFIX)%.chs,Config)
 RULER3_CHS_UTIL_DRV_HS					:= $(patsubst $(SRC_RULER3_PREFIX)%.chs,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_CHS_UTIL_SRC_CHS))
 
+
+# generate included dependency-makefile if the list of dependencies changes
+$(SRC_PREFIX)ruler3/files-ag-s-dep.mk : $(SRC_PREFIX)ruler3/files-ag-s.dep $(SHUFFLE)
+	cd $(SRC_PREFIX)ruler3/; ../../$(SHUFFLE) files-ag-s.dep --dep --depnameprefix=RULER3_ --depsrcvar=SRC_RULER3_PREFIX --depdstvar=RULER3_BLD_PREFIX --depmainvar=RULER3_AG_S_MAIN_SRC_AG --depdpdsvar=RULER3_AG_S_DPDS_SRC_AG > files-ag-s-dep.mk
+
+$(SRC_PREFIX)ruler3/files-ag-d-dep.mk : $(SRC_PREFIX)ruler3/files-ag-d.dep $(SHUFFLE)
+	cd $(SRC_PREFIX)ruler3/; ../../$(SHUFFLE) files-ag-d.dep --dep --depnameprefix=RULER3_ --depsrcvar=SRC_RULER3_PREFIX --depdstvar=RULER3_BLD_PREFIX --depmainvar=RULER3_AG_D_MAIN_SRC_AG --depdpdsvar=RULER3_AG_D_DPDS_SRC_AG > files-ag-d-dep.mk
+
 include $(SRC_PREFIX)ruler3/files-ag-d-dep.mk
 include $(SRC_PREFIX)ruler3/files-ag-s-dep.mk
 
@@ -186,5 +194,4 @@ $(RULER3_DEMO_DRV_HS_MAIN): $(RULER3_DEMO_DRV_AG_MAIN) $(RULER3_DEMO_DRV_AG)
 $(RULER3_DEMO_EXEC): $(RULER3_DEMO_DRV_HS_MAIN) $(RULER3_DEMO_DRV_HS_UTILS) $(LIB_EH_UTIL_INS_FLAG)
 	mkdir -p $(@D)
 	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER3_DEMO_PREFIX) $(RULER3_DEMO_DRV_HS_MAIN) -o $@
-
 
