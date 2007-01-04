@@ -9,7 +9,7 @@ let id :: a -> a
     v4 :: (a::a,f::a->Int)
     v4 = (a=3,f=id)
     v4fa = v4#f v4#a
-    v5 :: Rec {|c::Int|}
+    v5 :: _Rec {|c::Int|}
     v6 :: {<c::Int>}
     v6c = v6 # c
     vs = v#c v#a

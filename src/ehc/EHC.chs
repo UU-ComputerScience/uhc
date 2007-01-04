@@ -1503,7 +1503,11 @@ cpCompileCU targHSState modNm
 %%]]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
-           (ECUSHaskell HSOnlyImports,Just HSAllSemHI)
+           (ECUSHaskell st,Just HSAllSemHI)
+             |    st == HSOnlyImports
+%%[[99
+               || st == LHSOnlyImports
+%%]]
              -> do { msg "Reading HI"
                    ; cpUpdateModOffMp [modNm]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSemHI))
@@ -1639,10 +1643,11 @@ cpCompileOrderedCUs
                }
         flow m
           = do { cr <- get
-               ; case ecuState $ crCU m cr of
-                   ECUSHaskell HSAllSem   -> cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m,cpFlowOptim m]
+               ; case {- (\v -> trp "XX" (m >#< show v) v) $ -} ecuState $ crCU m cr of
+                   ECUSHaskell HSAllSem   -> flowSem
                    ECUSHaskell HSAllSemHI -> cpFlowHISem m
                }
+          where flowSem = cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m,cpFlowOptim m]
         core mL
           = cpSeq [cpGetPrevCore m | m <- mL]
         biggrin opts mL (mImpL,mMain)

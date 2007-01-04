@@ -130,9 +130,6 @@
 %%[9 export(snd3,thd)
 %%]
 
-%%[9 export(InstVariant(..))
-%%]
-
 %%[9 export(basePrfCtxtId)
 %%]
 
@@ -926,7 +923,8 @@ instance Show Range where
   show Range_Builtin     = "builtin"
 
 instance PP Range where
-  pp = pp . show
+  pp (Range_Range p _) = pp p
+  pp r                 = pp $ show r
 %%]
 
 %%[1
@@ -952,9 +950,12 @@ rngLift :: Range -> (Range -> v) -> v
 %%% Instance variant
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[9 export(InstVariant(..))
 data InstVariant
-  = InstNormal | InstDefault | InstDeriving
+  = InstNormal | InstDefault
+%%[[95
+  | InstDeriving
+%%]]
   deriving (Eq,Ord,Show)
 %%]
 

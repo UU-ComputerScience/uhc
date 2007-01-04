@@ -96,7 +96,9 @@ getName' (names, m) nm@(HNmNr i _)
                            then hsnSuffix (names ! v) suffix
                            else maybe (hsnSuffix (HNPos v) suffix) id (Map.lookup v m >>= return . flip findNewVar' ("_" ++ show v ++ suffix))
 -}
+{- AD 20070103: gives overlapping pattern warning
 getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
+-}
 
 
 type IdentNameMap   = (Array Int HsName, Map.Map Int Int)

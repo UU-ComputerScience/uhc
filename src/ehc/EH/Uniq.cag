@@ -182,6 +182,9 @@ SEM RecPatExpr
   | Empty           (lhs.gUniq,loc.lUniq)                           =   mkNewLevUID     @lhs.gUniq
   | Ext             (recPatExpr.gUniq,loc.lUniq,loc.lUniq2)         =   mkNewLevUID2    @lhs.gUniq
 
+SEM RowTyExpr
+  | Ext             (rowTyExpr.gUniq,loc.lUniq)                     =    mkNewLevUID    @lhs.gUniq
+
 SEM DataFieldPatExpr
   | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                =   mkNewLevUID2    @lhs.gUniq
   | Ext             (dataFieldPatExpr.gUniq,loc.lUniq,loc.lUniq2)   =   mkNewLevUID2    @lhs.gUniq

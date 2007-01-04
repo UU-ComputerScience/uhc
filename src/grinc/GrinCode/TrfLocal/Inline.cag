@@ -119,23 +119,23 @@ SEM GrBind
   | Bind        (lhs.gathInlMp,loc.omitBind)    =   case Map.lookup @nm @lhs.fviMp of
                                                       -- a once used function can be inlined and its binding removed
                                                       Just (FvInfo 1 use)
-                                                        | not (null @argNmL)
+                                                        | not @isCAF
                                                           && FvUse_Call `Set.member` use
 %%[[12
-                                                          && not (@nm `Set.member` @lhs.expNmS)        -- only inline if not exported as global value
+                                                          && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
-                                                      Just (FvInfo 1 use)                           -- a once used value can be inlined and its binding removed
-                                                        | null @argNmL
+                                                      Just (FvInfo 1 use)                               -- a once used value can be inlined and its binding removed
+                                                        | @isCAF
                                                           && FvUse_Val `Set.member` use
 %%[[12
-                                                          && not (@nm `Set.member` @lhs.expNmS)        -- only inline if not exported as global value
+                                                          && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
-                                                      _ | not (null @argNmL)
+                                                      _ | not @isCAF
                                                           && (  @expr.isFFIWrapper                  -- wrappers are inlined
                                                              || @expr.isConWrapper
-                                                             || @expr.inlineCost <= 3
+                                                             || @expr.inlineCost <= 3               -- and low cost values as well
                                                              )
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)
                                                         | otherwise
@@ -211,6 +211,17 @@ SEM GrVal
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inside a CAF?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrExpr [ isCAF: Bool | | ]
+
+SEM GrBind
+  | Bind        loc         .   isCAF           =   null @argNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation: inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -227,24 +238,37 @@ inlGrVar inlMp nmL
                    Just (GrInl_CAF e) -> (GrExpr_Seq e (GrPat_Var nm),Set.singleton nm)
                    _ -> (id,Set.empty)
         (mks,inls) = unzip $ map inl nmL
+
+inlNmsAreInlineable :: [Maybe HsName] -> Bool
+inlNmsAreInlineable = and . map isJust
+
+inlRename :: [Maybe HsName] -> [HsName] -> GrExpr -> GrExpr
+inlRename asFrom as e
+  = grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust asFrom)) e
 %%]
 
 %%[8
 SEM GrExpr
   | Call        loc         .   (grVarTrf,grVarInlNmS)
-                                                =   inlGrVar @lhs.inlMp (Map.keys @argL.gathFviMp)
+                                                =   if @lhs.isCAF
+                                                    then inlGrVar @lhs.inlMp (Map.keys @argL.gathFviMp)
+                                                    else (id,Set.empty)
 %%]
 
 %%[8
 SEM GrExpr
   | Call        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
-                                                      Just (GrInl_Call as e) | and $ map isJust @argL.asNmL
-                                                        -> ( @grVarTrf $ grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust @argL.asNmL)) e
+                                                      Just (GrInl_Call as e) | inlNmsAreInlineable @argL.asNmL
+                                                        -> ( @grVarTrf $ inlRename @argL.asNmL as e
                                                            , Set.insert @nm @grVarInlNmS
                                                            )
                                                       _ -> (@grVarTrf @trf, @grVarInlNmS)
+  | App         (lhs.trf,loc.gathInlNmS)        =   if @lhs.isCAF
+                                                    then let (grVarTrf,grVarInlNmS) = inlGrVar @lhs.inlMp (@nm : Map.keys @argL.gathFviMp)
+                                                         in  (grVarTrf @trf, grVarInlNmS)
+                                                    else (@trf, Set.empty)
   | Eval        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
-                                                      Just (GrInl_CAF e)
+                                                      Just (GrInl_CAF e) | @lhs.isCAF
                                                         -> (e, Set.singleton @nm)
                                                       _ -> (@trf, Set.empty)
 %%]

@@ -104,7 +104,10 @@ SEM Declaration
 %%]]
                                         ++ @simpletype.errL ++ @constructors.errL
 %%[[9
-                                        ++ @context.errL ++ @derivings.errL
+                                        ++ @context.errL
+%%]]
+%%[[95
+                                        ++ @derivings.errL
 %%]]
 %%]
 
@@ -145,7 +148,10 @@ SEM Declaration
     | Data
         loc         .   errL        =   @errIdUseVal ++ @simpletype.errL ++ @constructors.errL
 %%[[9
-                                        ++ @context.errL ++ @derivings.errL
+                                        ++ @context.errL
+%%]]
+%%[[95
+                                        ++ @derivings.errL
 %%]]
 %%]
 
@@ -169,7 +175,9 @@ SEM Declaration
         loc         .   errL        =   firstNotEmpty [@errIdUse ++ @context.errL ++ @types.errL ++ @where.errL, @errReorder]
     | InstanceUseImplicitly
         loc         .   errL        =   @errIdUse ++ @expression.errL ++ @types.errL
+%%]
 
+%%[95
 SEM Deriving
     | Deriving
         loc         .   errL        =   @errIdUse

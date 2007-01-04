@@ -1,7 +1,14 @@
+###########################################################################################
+# Shared makefile stuff
+###########################################################################################
+
 .SUFFIXES:
 .SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
 
-# all ehc variants
+###########################################################################################
+# EHC variants. 90-99 are reserved for very Haskell specific functionality (like deriving)
+###########################################################################################
+
 # 1 : explicitly typed lambda calculus
 # 2 : + type inference (implicit typing)
 # 3 : + polymorphism
@@ -14,20 +21,32 @@
 # 10: + extensible records (lack predicates)
 # 11: + type synonyms
 # 12: + module system
+# 95: + deriving construct
 # 99: + the rest to make uhc
 
 # 50: + GADT experiment
 # 4_2: + 2 pass type inference, quantifier propagation experiment
+
+###########################################################################################
+# EHC variant partitioning into public/non-public (experimental, ...) + code/noncode variants
+###########################################################################################
+
 EHC_UHC_VARIANT							:= 99
-EHC_NOCODE_VARIANTS						:= 1 2 3 4 5 6 7
+EHC_PUB_NOCODE_VARIANTS					:= 1 2 3 4 5 6 7
 EHC_PUB_CODE_VARIANTS					:= 8 9 10 11 12
-EHC_PUB_VARIANTS						:= $(EHC_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
-EHC_OTHER_VARIANTS						:= 50 $(EHC_UHC_VARIANT) 4_2 6_4 7_2
-EHC_CODE_VARIANTS						:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_VARIANTS)
+EHC_PUB_VARIANTS						:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
+EHC_OTHER_NOCODE_VARIANTS				:= 4_2 6_4 7_2
+EHC_OTHER_CODE_VARIANTS					:= 50 95 $(EHC_UHC_VARIANT)
+EHC_OTHER_VARIANTS						:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
+EHC_CODE_VARIANTS						:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
 EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
 
 GRIN_PUB_VARIANTS						:= 8 9 10 11 12
 GRIN_VARIANTS							:= $(GRIN_PUB_VARIANTS) $(EHC_UHC_VARIANT)
+
+###########################################################################################
+# Locations in source, build and install
+###########################################################################################
 
 # location for binaries
 BIN_PREFIX			:= $(TOP_PREFIX)bin/
@@ -52,6 +71,10 @@ BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
 
+###########################################################################################
+# Commands
+###########################################################################################
+
 # compilers and tools used
 AGC					:= @UUAGC_CMD@
 GHC					:= @GHC_CMD@
@@ -72,6 +95,10 @@ LATEX_ENV			:= $(TEXINPUTS)
 PDFLATEX			:= TEXINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_EHC_SUBDIRS)$(LATEX_ENV)" pdflatex
 BIBTEX				:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(LATEX_ENV)" bibtex
 MAKEINDEX			:= makeindex
+
+###########################################################################################
+# Options to commands
+###########################################################################################
 
 # GHC options
 GHC_EHC_PKG_UULIB	:= uulib
@@ -104,9 +131,17 @@ LHS2TEX_OPTS_NEWC	:= $(LHS2TEX_OPTS_DFLT) --newcode
 RULER2_OPTS_DFLT	:= $(RULER2_OPTS_VERSION)
 RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
 
+###########################################################################################
+# Shuffle order for EHC variants
+###########################################################################################
+
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < $(EHC_UHC_VARIANT), 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 95 < $(EHC_UHC_VARIANT), 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50
+
+###########################################################################################
+# Misc
+###########################################################################################
 
 # target suffix for core
 CORE_TARG_SUFFIX	:= grin2

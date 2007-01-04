@@ -163,7 +163,7 @@ DATA Declaration                                  {- *** -}
 %%]]
         simpletype               : SimpleType
         constructors             : Constructors
-%%[[9
+%%[[95
         derivings                : Derivings
 %%]]
 %%]
@@ -175,7 +175,7 @@ DATA Declaration                                  {- *** -}
 %%]]
         simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
-%%[[9
+%%[[95
         derivings                : Derivings
 %%]]
 %%]
@@ -244,7 +244,9 @@ DATA FunctionalDependency
         range                    : Range
         fromtypevariables        : Names
         totypevariables          : Names
+%%]
 
+%%[95
 TYPE Derivings      			 = [ Deriving ]
 
 DATA Deriving
@@ -261,11 +263,13 @@ SET AllDeclaration
   = AllDeclarationPlain
 %%[[9
     FunctionalDependency FunctionalDependencies
+%%]]
+%%[[95
     Deriving Derivings
-%%]
+%%]]
 %%[[90
     Fixity
-%%]
+%%]]
 %%]
 
 -- ------------------------------------------------------------------------
