@@ -61,9 +61,17 @@ SEM Declaration
 %%]
 %%[5
     | Data
-        loc         .   pp          =   "data" >#< @simpletype.pp >#< "=" >#< @constructors.pp
+        loc         .   pp          =   "data" >#< @simpletype.pp
+                                               >#< "=" >#< @constructors.pp
+%%[[95
+                                               >-< ppParensCommas @derivings.ppL
+%%]]
     | Newtype
-        loc         .   pp          =   "newtype" >#< @simpletype.pp >#< "=" >#< @constructors.pp
+        loc         .   pp          =   "newtype" >#< @simpletype.pp
+                                                  >#< "=" >#< @constructors.pp
+%%[[95
+                                                  >-< ppParensCommas @derivings.ppL
+%%]]
 %%]
 %%[8
     | ForeignImport
@@ -93,6 +101,12 @@ SEM Declaration
 SEM FunctionalDependency
     | Dependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        loc         .   pp          =   pp @name
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -615,6 +629,18 @@ SEM ContextedPatterns
     | Nil
         lhs         .   ppL         =   []
 
+%%]
+
+%%[95
+ATTR
+  Derivings
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM Derivings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

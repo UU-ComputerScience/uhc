@@ -539,8 +539,12 @@ SEM Pattern
                                               Literal_String r s   -> [hsnListCons,hsnListNil]
 %%]]
 %%[[99
-                                              Literal_Int    _ _ _ -> [hsnFromInteger]
-                                              Literal_Float  r s   -> [hsnMkRatio,hsnFromRational]
+                                              Literal_Int    _ _ _
+                                                | @sign < 0        -> [hsnFromInteger,hsnNegate]
+                                                | otherwise        -> [hsnFromInteger]
+                                              Literal_Float  _ _
+                                                | @sign < 0        -> [hsnMkRatio,hsnFromRational,hsnNegate]
+                                                | otherwise        -> [hsnMkRatio,hsnFromRational]
 %%]]
                                               _                    -> []
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
@@ -663,14 +667,16 @@ SEM ContextItem
                                         =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@types.idUseOccGam]
 
-SEM Deriving
-    | Deriving
-        loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
-
 SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        loc             .   (refname,_,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
 %%]
 
@@ -772,7 +778,10 @@ SEM Declaration
                                                     , @idUseOccGamVal
 %%]]
 %%[[9
-                                                    , @context.idUseOccGam, @derivings.idUseOccGam
+                                                    , @context.idUseOccGam
+%%]]
+%%[[95
+                                                    , @derivings.idUseOccGam
 %%]]
                                                     ]
                                                 )
@@ -982,6 +991,7 @@ mergeFunDefL ds
 %%]
 
 %%[9 hs
+%%]
 splitOffClsInst :: [IdDefOcc] -> [[IdDefOcc]]
 splitOffClsInst
   = foldr (\df dfs -> zipWith (++) (s df) dfs) [[],[],[]]
@@ -989,7 +999,6 @@ splitOffClsInst
                 (IdAsp_Class_Def _ _) -> [[d],[],[]]
                 (IdAsp_Inst_Def  _ _) -> [[],[d],[]]
                 _                     -> [[],[],[d]]
-%%]
 
 %%[1.splitOff hs
 splitOff :: [IdDefOcc] -> [[IdDefOcc]]

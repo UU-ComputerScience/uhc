@@ -139,7 +139,7 @@ scan opts pos input
                                     then reserved name p
                                     else if null name' && isSymbol c
                                     then reserved [c] p
-                                    else valueToken (if isUpper c then TkConid else TkVarid) name p
+                                    else valueToken (varKind cs) name p
            in tok :  doScan p' s'
 %%]
 %%[12 -5.id
@@ -167,7 +167,7 @@ scan opts pos input
                                                  extract' (ValToken tp val _:toks)
                                                    | tokTpIsId tp                             = Just (tp,val,toks)
                                                  extract' _                                   = Nothing
-                                           _ -> (valueToken (if isIdStart c then TkVarid else TkConid) name p,toksDflt)
+                                           _ -> (valueToken (varKind cs) name p,toksDflt)
            in tok : toks''
 %%]
 %%[5
@@ -192,6 +192,12 @@ scan opts pos input
 %%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
                  : doScan (adv p c) s
+
+varKind :: String -> EnumValToken
+varKind ('_':s)             = varKind s
+varKind (c  :s) | isUpper c = TkConid
+                | otherwise = TkVarid
+varKind []                  = TkVarid
 
 lexNest :: (Pos -> String -> [Token]) 
         -> Pos 

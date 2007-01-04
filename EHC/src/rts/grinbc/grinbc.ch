@@ -339,6 +339,7 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 %%[8
 #define GB_Word_TagSize 			1
 #define GB_Word_TagMask 			1
+#define GB_Word_IntMask 			(~ GB_Word_TagMask)
 #define GB_Word_TagInt 				1
 #define GB_Word_TagPtr 				0
 
@@ -353,7 +354,7 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_GBInt2CastedInt(ty,x)	((ty)((x) / GB_Int_ShiftPow2))
+#define GB_GBInt2CastedInt(ty,x)	(Cast(ty,(x)&GB_Word_IntMask) / GB_Int_ShiftPow2)
 #define GB_GBInt2Int(x)				GB_GBInt2CastedInt(int,x)
 #define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_TagSize | GB_Word_TagInt)
 

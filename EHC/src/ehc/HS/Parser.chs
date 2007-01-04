@@ -356,12 +356,12 @@ pDeclarationData
             <*> pContextItemsPrefixOpt
 %%]]
             <*> pSimpleType <*> pC
-%%[[9
+%%[[95
             <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
 %%]]
 %%]
 
-%%[9
+%%[95
 pDeriving :: HSParser Deriving
 pDeriving
   = mkRngNm Deriving_Deriving <$> qconid

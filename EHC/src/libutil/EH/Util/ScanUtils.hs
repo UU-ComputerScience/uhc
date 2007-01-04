@@ -65,7 +65,7 @@ instance Position (GenToken k t v) where
   file   = file   . position
 
 instance PP Pos where
-  pp (Pos l c f) = (if null f then empty else pp f >|< ":" ) >|< l >|< ":" >|< c
+  pp (Pos l c f) = ppParens $ (if null f then empty else pp f >|< ":" ) >|< l >|< "," >|< c
 
 -------------------------------------------------------------------------
 -- ScanOpts

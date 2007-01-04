@@ -84,6 +84,10 @@ hsnProdArity    (HNm (_:ar))        =   read ar
 hsnStrHiddenPrefix                  =   "$"
 %%]
 
+%%[7
+hsnStrSpecialPrefix                 =   "_"
+%%]
+
 %%[5 export(mkHNmHidden)
 mkHNmHidden :: HSNM x => x -> HsName
 mkHNmHidden = mkHNmPrefix hsnStrHiddenPrefix
@@ -161,9 +165,9 @@ hsnCSum                             =   HNm ">}"
 hsnORec                             =   HNm "("
 hsnCRec                             =   HNm ")"
 
-hsnRow                              =   HNm "Row"
-hsnRec                              =   HNm "Rec"
-hsnSum                              =   HNm "Var"
+hsnRow                              =   HNm (hsnStrSpecialPrefix ++ "Row")
+hsnRec                              =   HNm (hsnStrSpecialPrefix ++ "Rec")
+hsnSum                              =   HNm (hsnStrSpecialPrefix ++ "Var")
 hsnRowEmpty                         =   HNm (show hsnORow ++ show hsnCRow)
 
 hsnIsRec, hsnIsSum, hsnIsRow        ::  HsName -> Bool

@@ -62,6 +62,9 @@ ehScanOpts
 %%[12
                 ++ tokKeywStrsEH12
 %%]
+%%[95
+                ++ tokKeywStrsEH95
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 tokOpStrsEH1
@@ -652,7 +655,6 @@ pDARROW         ,
     pCIMPL      ,
     pCLASS      ,
     pINSTANCE   ,
-    pDERIVING   ,
     pDEFAULT    ,
     pDO         
   :: IsParser p Token => p Token
@@ -665,12 +667,11 @@ pOIMPL           = pKeyTk (show hsnOImpl)
 pCIMPL           = pKeyTk (show hsnCImpl)
 pCLASS           = pKeyTk "class"
 pINSTANCE        = pKeyTk "instance"
-pDERIVING        = pKeyTk "deriving"
 pDEFAULT         = pKeyTk "default"
 pDO              = pKeyTk "do"
 
 tokKeywStrsEH9 = [ "class", "instance" ]
-tokKeywStrsHS9 = [ "deriving", "default", "do" ]
+tokKeywStrsHS9 = [ "default", "do" ]
 tokOpStrsEH9   = [ show hsnPrArrow, "<:" ]
 tokOpStrsHS9   = [  ]
 %%]
@@ -726,6 +727,15 @@ pDOTNET
 
 %%[13
 pDOTNET          = pKeyTk "dotnet"
+%%]
+
+%%[95
+pDERIVING   
+  :: IsParser p Token => p Token
+
+pDERIVING        = pKeyTk "deriving"
+
+tokKeywStrsEH95 = [ "deriving" ]
 %%]
 
 %%[90

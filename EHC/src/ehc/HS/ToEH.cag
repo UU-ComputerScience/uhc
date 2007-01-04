@@ -755,7 +755,10 @@ SEM Pattern
 %%[[1
                                               Literal_Int    r   s -> rngLift r EH.PatExpr_IConst (@sign * read s)
 %%][99
-                                              Literal_Int    r b s -> mke r $ ehExpVarApp r @litrefname [EH.Expr_IIConst (toInteger @sign * intDenot2Integer b s)]
+                                              Literal_Int    r b s
+                                                | @sign < 0        -> mk (\e -> ehExpVarApp r (@litrefnames !! 1) [e])
+                                                | otherwise        -> mk id
+                                                where mk neg = mke r $ neg $ ehExpVarApp r (@litrefnames !! 0) [EH.Expr_IIConst (intDenot2Integer b s)]
 %%]]
                                               Literal_Char   r s -> mkc r $ head s
 %%[[5
@@ -764,9 +767,13 @@ SEM Pattern
 %%[[8
                                               Literal_Float  r s -> rngLift r EH.PatExpr_FConst ((fromRational $ toRational @sign) * read s)
 %%][99
-                                              Literal_Float  r s -> mke r $ ehExpVarApp r (@litrefnames !! 1)
-                                                                    $ [rngLift r EH.Expr_Parens $ ehExpVarApp r (@litrefnames !! 0) [EH.Expr_IIConst (toInteger @sign * n),EH.Expr_IIConst d]]
-                                                                 where (n,d) = floatDenot2NomDenom s
+                                              Literal_Float  r s
+                                                | @sign < 0        -> mk (\e -> ehExpVarApp r (@litrefnames !! 2) [e])
+                                                | otherwise        -> mk id
+                                                where (n,d) = floatDenot2NomDenom s
+                                                      mk neg = mke r $ neg
+                                                                     $ ehExpVarApp r (@litrefnames !! 1)
+                                                                     $ [rngLift r EH.Expr_Parens $ ehExpVarApp r (@litrefnames !! 0) [EH.Expr_IIConst n,EH.Expr_IIConst d]]
 %%]]
     | Variable
         lhs         .   eh          =   rngLift @range EH.PatExpr_Var @refname       

@@ -173,6 +173,11 @@ SEM TyVars
 %%[7
 SEM TyExpr
   | Row         loc         .   ki                  =   kiRow
+
+SEM RowTyExpr
+  | Ext         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.ki kiStar
+                            .   ki                  =   foTy @fo_
+                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
 %%]
 
 %%[9
@@ -187,6 +192,7 @@ SEM RowTyExpr
   | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
                 loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (tgiKi @tgi_) kiRow
                             .   ki                  =   foTy @fo_
+                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @lhs.kiCnstr
 %%]
 
 %%[11
