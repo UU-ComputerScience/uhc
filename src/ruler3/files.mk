@@ -31,20 +31,25 @@ RULER3_CHS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_RULER3_PREFIX)%.chs,Config)
 RULER3_CHS_UTIL_DRV_HS					:= $(patsubst $(SRC_RULER3_PREFIX)%.chs,$(RULER3_BLD_PREFIX)%.hs,$(RULER3_CHS_UTIL_SRC_CHS))
 
 
-# generate included dependency-makefile if the list of dependencies changes
-$(SRC_PREFIX)ruler3/files-ag-s-dep.mk : $(SRC_PREFIX)ruler3/files-ag-s.dep $(SHUFFLE)
-	cd $(SRC_PREFIX)ruler3/; ../../$(SHUFFLE) files-ag-s.dep --dep --depnameprefix=RULER3_ --depsrcvar=SRC_RULER3_PREFIX --depdstvar=RULER3_BLD_PREFIX --depmainvar=RULER3_AG_S_MAIN_SRC_AG --depdpdsvar=RULER3_AG_S_DPDS_SRC_AG > files-ag-s-dep.mk
+include $(RULER3_BLD_PREFIX)files-ag-d-dep.mk
+include $(RULER3_BLD_PREFIX)files-ag-s-dep.mk
 
-$(SRC_PREFIX)ruler3/files-ag-d-dep.mk : $(SRC_PREFIX)ruler3/files-ag-d.dep $(SHUFFLE)
-	cd $(SRC_PREFIX)ruler3/; ../../$(SHUFFLE) files-ag-d.dep --dep --depnameprefix=RULER3_ --depsrcvar=SRC_RULER3_PREFIX --depdstvar=RULER3_BLD_PREFIX --depmainvar=RULER3_AG_D_MAIN_SRC_AG --depdpdsvar=RULER3_AG_D_DPDS_SRC_AG > files-ag-d-dep.mk
-
-include $(SRC_PREFIX)ruler3/files-ag-d-dep.mk
-include $(SRC_PREFIX)ruler3/files-ag-s-dep.mk
 
 RULER3_AG_DS_MAIN_SRC_AG				:=
 
 RULER3_AG_ALL_DPDS_SRC_AG				:= $(sort $(RULER3_AG_D_DPDS_SRC_AG) $(RULER3_AG_S_DPDS_SRC_AG))
 RULER3_AG_ALL_MAIN_SRC_AG				:= $(RULER3_AG_D_MAIN_SRC_AG) $(RULER3_AG_S_MAIN_SRC_AG) $(RULER3_AG_DS_MAIN_SRC_AG)
+RULER3_AG_ALL_ODPDS_SRC_AG                              := $(sort $(RULER3_AG_D_ODPDS_SRC_AG) $(RULER3_AG_S_ODPDS_SRC_AG))
+
+
+# Regenerate derived makefile
+$(RULER3_BLD_PREFIX)files-ag-s-dep.mk : $(SRC_PREFIX)ruler3/files-ag-s.dep $(SHUFFLE) $(RULER3_AG_ALL_ODPDS_SRC_AG) $(RULER3_AG_ALL_MAIN_SRC_AG)
+	mkdir -p $(RULER3_BLD_PREFIX)
+	cd $(SRC_PREFIX)ruler3/; ../../$(SHUFFLE) files-ag-s.dep --dep --depnameprefix=RULER3_ --depsrcvar=SRC_RULER3_PREFIX --depdstvar=RULER3_BLD_PREFIX --depmainvar=RULER3_AG_S_MAIN_SRC_AG --depdpdsvar=RULER3_AG_S_DPDS_SRC_AG --deporigdpdsvar=RULER3_AG_S_ODPDS_SRC_AG > ../../$(RULER3_BLD_PREFIX)files-ag-s-dep.mk
+
+$(RULER3_BLD_PREFIX)files-ag-d-dep.mk : $(SRC_PREFIX)ruler3/files-ag-d.dep $(SHUFFLE) $(RULER3_AG_ALL_ODPDS_SRC_AG) $(RULER3_AG_ALL_MAIN_SRC_AG)
+	mkdir -p $(RULER3_BLD_PREFIX)
+	cd $(SRC_PREFIX)ruler3/; ../../$(SHUFFLE) files-ag-d.dep --dep --depnameprefix=RULER3_ --depsrcvar=SRC_RULER3_PREFIX --depdstvar=RULER3_BLD_PREFIX --depmainvar=RULER3_AG_D_MAIN_SRC_AG --depdpdsvar=RULER3_AG_D_DPDS_SRC_AG --deporigdpdsvar=RULER3_AG_D_ODPDS_SRC_AG > ../../$(RULER3_BLD_PREFIX)files-ag-d-dep.mk
 
 # all src
 RULER3_ALL_SRC							:= $(RULER3_AG_ALL_MAIN_SRC_AG) $(RULER3_AG_ALL_DPDS_SRC_AG) $(RULER3_HS_MAIN_SRC_HS) \

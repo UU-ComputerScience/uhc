@@ -6,10 +6,13 @@ module Main where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Map(Map)
+import Data.Set(Set)
 import System
 import IO
 import System.Console.GetOpt
 import EH.Util.ParseUtils
+import EH.Util.DependencyGraph
 import UU.Pretty
 import Common
 import MainAG
@@ -132,20 +135,38 @@ doCompile fpa fpaRest opts
                              (bMpL,hdLL) = unzip [ (bldNmChMp b,[ (mkN n,h) | (n,h) <- bldHideCD b]) | b <- selBld opts r ]
                        ]
 
+trans :: Monad m => (String -> m [String]) -> [String] -> m (Map String [String])
+trans f
+  = trans' Map.empty
+  where
+    trans' mp []
+      = return mp
+    trans' mp keys
+      = do rs <- mapM f keys
+           let mp' = Map.fromList (zip keys rs) `Map.union` mp
+           let keys' = filter (\k -> not (Map.member k mp')) (concat rs)
+           trans' mp' keys'
+
 genDeps :: FPath -> Opts -> IO ()
 genDeps f opts
   = do filenames <- do c <- readFile (fpathToStr f)
                        return $ filter (not . null) (lines c)
-       depL <- mapM getDeps filenames
-       genDepsMakefile (zip filenames depL) opts
+       depMap <- trans getDeps filenames
+       let depGraph = mkDpdGrFromEdgesMpPadMissing depMap
+       let depL = [(r, Set.toList (dgReachableFrom depGraph r)) | r <- filenames ]
+       genDepsMakefile depL opts
+       return ()
   where
     getDeps fname
-      = do res <- doCompile' (mkFPath fname) opts
+      = do let fpath = fpathSetSuff "cag" $ mkFPath fname
+           res <- doCompile' fpath opts
            return (deps_Syn_AGItf res)
 
 genDepsMakefile :: [(String, [String])] -> Opts -> IO ()
 genDepsMakefile deps opts
   = do mapM_ (putStrLn . mkDep) deps
+       putStrLn ""
+       putStrLn mkOrigDepList
        putStrLn ""
        putStrLn mkDepList
        putStrLn ""
@@ -156,15 +177,21 @@ genDepsMakefile deps opts
     dstPrefix = optDepDstVar opts
     depListVar = optDepDpdsVar opts
     mainListVar = optDepMainVar opts
+    origListVar = optDepOrigDpdsVar opts
 
     mkDep (file, deps)
       = let name = encode file
             fileWithoutExt = stripExt file
+            deps' = map stripExt deps
          in unlines
              [ name ++ "_MAIN_SRC_AG := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ fileWithoutExt ++ ")"
-             , name ++ "_DPDS_SRC_AG := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag, " ++ unwords deps ++ ")"
-             , "$(patsubst $(" ++ srcPrefix ++ ")%.ag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ "_MAIN_SRC_AG)) : $(" ++ name ++ "_DPDS_SRC_AG)"
+             , name ++ "_DPDS_SRC_AG := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag, " ++ unwords deps' ++ ")"
+             , name ++ "_DPDS_ORIG   := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords deps' ++ ")"
+             , "$(patsubst $(" ++ srcPrefix ++ ")%.cag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ "_MAIN_SRC_AG)) : $(" ++ name ++ "_DPDS_SRC_AG)"
              ]
+
+    mkOrigDepList
+      = origListVar ++ " := $(sort " ++ unwords (map ((\n -> "$(" ++ n ++ "_DPDS_ORIG)") . encode . fst) deps) ++ ")"
 
     mkDepList
       = depListVar ++ " := $(sort " ++ unwords (map ((\n -> "$(" ++ n ++ "_DPDS_SRC_AG)") . encode . fst) deps) ++ ")"
@@ -227,6 +254,8 @@ cmdLineOpts
           "Varname for the list of main files"
      ,  Option ""   ["depdpdsvar"]      (OptArg oDepDpdsVar "<name>")
           "Varname for the list of dependencies"
+     ,  Option ""   ["deporigdpdsvar"]  (OptArg oDepOrigDpdsVar "<name>")
+          "Varname for the list of original dependencies"
      ,  Option ""   ["lhs2tex"]         (OptArg oLhs2tex "yes|no")
           "wrap chunks in lhs2tex's code environment, default=yes"
      ,  Option ""   ["def"]             (ReqArg oDef "key:value")
@@ -259,6 +288,7 @@ cmdLineOpts
          oDepDstVar     ms o = o { optDepDstVar = maybe "DST_VAR" id ms }
          oDepMainVar    ms o = o { optDepMainVar = maybe "FILES" id ms }
          oDepDpdsVar    ms o = o { optDepDpdsVar = maybe "DPDS" id ms }
+         oDepOrigDpdsVar ms o = o { optDepOrigDpdsVar = maybe "ORIG_DPDS" id ms }
          oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
                                 (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
                                 _         -> o
