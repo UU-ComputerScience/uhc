@@ -158,7 +158,9 @@ genDeps f opts
        return ()
   where
     getDeps fname
-      = do let fpath = fpathSetSuff "cag" $ mkFPath fname
+      = do let baseDir = optDepBaseDir opts
+           let baseDir' = if last baseDir /= '/' then baseDir ++ "/" else baseDir
+           let fpath = fpathSetSuff "cag" $ mkFPath (baseDir' ++ fname)
            res <- doCompile' fpath opts
            return (deps_Syn_AGItf res)
 
@@ -256,6 +258,8 @@ cmdLineOpts
           "Varname for the list of dependencies"
      ,  Option ""   ["deporigdpdsvar"]  (OptArg oDepOrigDpdsVar "<name>")
           "Varname for the list of original dependencies"
+     ,  Option ""   ["depbase"]         (OptArg oDepBaseDir "<dir>")
+          "Root directory for the dependency generation"
      ,  Option ""   ["lhs2tex"]         (OptArg oLhs2tex "yes|no")
           "wrap chunks in lhs2tex's code environment, default=yes"
      ,  Option ""   ["def"]             (ReqArg oDef "key:value")
@@ -289,6 +293,7 @@ cmdLineOpts
          oDepMainVar    ms o = o { optDepMainVar = maybe "FILES" id ms }
          oDepDpdsVar    ms o = o { optDepDpdsVar = maybe "DPDS" id ms }
          oDepOrigDpdsVar ms o = o { optDepOrigDpdsVar = maybe "ORIG_DPDS" id ms }
+         oDepBaseDir ms o = o { optDepBaseDir = maybe "./" id ms }
          oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
                                 (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
                                 _         -> o

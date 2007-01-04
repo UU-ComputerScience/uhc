@@ -120,6 +120,7 @@ data Opts
       , optDepMainVar    :: String
       , optDepDpdsVar    :: String
       , optDepOrigDpdsVar :: String
+      , optDepBaseDir     :: String
       } deriving (Show)
 
 defaultOpts
@@ -148,6 +149,7 @@ defaultOpts
       , optDepMainVar    = error "optDepMainVar not set"
       , optDepDpdsVar    = error "optDepDpdsVar not set"
       , optDepOrigDpdsVar = error "optDepOrigDpdsVar not set"
+      , optDepBaseDir     = error "optDepBaseDir not set"
       }
 
 optsHasNoVerOrder :: Opts -> Bool
