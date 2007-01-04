@@ -310,8 +310,5 @@ shuffle files-ag-d.dep --dep \
 \end{verbatim}
 results in a makefile containing the required rules and the lists @RULER3_AG_D_MAIN_SRC_AG@ and @RULER3_AG_D_DPDS_SRC_AG@.
 
-Note that @shuffle --dep@ takes only and all chunk-imports tagged with an @ag@-kind into consideration. Also note that it
-only takes the first level of these imports: if the imported AG file also imports other AG files, they will not be listed
-as dependencies [should be fixed some day].
-
+Note that @shuffle --dep@ takes only and all chunk-imports tagged with an @ag@-kind into consideration.
 %%]
