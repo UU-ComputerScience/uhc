@@ -44,14 +44,20 @@ SEM PatExpr
 %%[9
 SEM Decl
   | Instance    loc         .   (instPrElimTGam,ctxtArgNmL,_)
-                                                    =   peTGamInsertKnPrL @lhs.opts @prfCtxtId @lUniq6 @ctxtPrFixL (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
+                                                    =   peTGamInsertKnPrL @lhs.opts @prfCtxtId @lUniq6 @ctxtPrFixL
+                                                        $ tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
                             .   supPrUIDL           =   map (mkPrId @prfCtxtId) . mkNewUIDL (length @supPrTyL) $ @lUniq4
                             .   delPrElimTGam       =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
                             .   supPrElimTGam       =   @delPrElimTGam
-                            .   declsPrElimTGam     =   @delPrElimTGam
+                            .   declsPrElimTGam     =   if ehcCfgInstFldHaveSelf @lhs.opts
+                                                        then @delPrElimTGam
+                                                        else let d = case @instVariant of {InstDefault -> @dictSelfNm ; _ -> @dictBuildNm}
+                                                             in  peTGamInsertKnPr @lhs.opts @prfCtxtId d (mkPrId @prfCtxtId @lUniq2) (tyPred @hdPrTyFix) @delPrElimTGam
                 decls       .   prElimTGam          =   @declsPrElimTGam
                 lhs         .   prElimTGam          =   @lhs.prElimTGam
 %%]
+
+peTGamInsertKnPr :: EHCOpts -> PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Impl types
@@ -98,35 +104,52 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .   gathDeclSubsPredL   =   @decls.tyCnstr |=> @decls.gathPredL
-                            .   (gath2PrfPrOccL,gath2RemPrOccL)
+  | Let         loc         .   toResolvePrOccL     =   @decls.tyCnstr |=> @decls.gathPredL
+                            .   (toPrfPrOccL,remToPrfPrOccL)
                                                     =   partition  (\p -> let fv = ftv p
                                                                           in  null fv || all (`notElem` @gTyTvL) fv
                                                                    )
-                                                                   @gathDeclSubsPredL
-                            .   gath2BodySubsPredL  =   @body.tyCnstr |=> @body.gathPredL
+                                                                   @toResolvePrOccL
+                            .   toPrfSubsBodyPrOccL =   @body.tyCnstr |=> @body.gathPredL
 %%]
 
 %%[9
 SEM Expr
   | Let         loc         .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
-                                                    =   prfPredsDbg @lUniq4 (@fe {fePrElimTGam = @decls.prElimTGam}) @gath2PrfPrOccL
+                                                    =   prfPredsDbg @lUniq4 (@fe {fePrElimTGam = @decls.prElimTGam}) @toPrfPrOccL
                             .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,bodyPrfErrs)
-                                                    =   prfPreds @lUniq5 (@fe {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
+                                                    =   prfPreds @lUniq5 (@fe {fePrElimTGam = @body.prElimTGam}) @toPrfSubsBodyPrOccL
                             .   quantPrIdSet        =   Set.unions
                                                         . map (Set.unions . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . Set.toList . tqoInsPrIdSet)
                                                         . gamElts $ @tqoGam
-                            .   gathPredL           =   @gath2RemPrOccL ++ filter (not . (`Set.member` @quantPrIdSet) . poPoi) @prfArgPrOccL ++ @bodyPrfArgPrOccL
+                            .   gathPredL           =   @remToPrfPrOccL ++ filter (not . (`Set.member` @quantPrIdSet) . poPoi) @prfArgPrOccL ++ @bodyPrfArgPrOccL
                 lhs         .   gathPredL           =   @gathPredL
 %%]
 
 %%[9
 SEM Decl
   | Instance    loc         .   gathDeclSubsPredL   =   @decls.tyCnstr |=> @decls.gathPredL
+%%[[9
+                            .   toResolvePrOccL     =   @gathDeclSubsPredL
+%%][95
+                            .   toResolvePrOccL     =   case @instVariant of
+                                                          InstDeriving
+                                                            -> foCnstr foDt |=> concat altsPrOcc
+                                                            where ([dataTy],dataAltTy) = tyArrowArgsRes $ tgiDataTy @derivDataTGI
+                                                                  alts = tyRecExts2 dataAltTy
+                                                                  altsPrOcc
+                                                                       = [ [ PredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId @prfCtxtId u2)
+                                                                           | ((_,t),u2) <- zip a1 (mkNewUIDL (length a1) u1)
+                                                                           ]
+                                                                         | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
+                                                                         ]
+                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq9 dataTy @derivHdDataTy
+                                                          _ -> @gathDeclSubsPredL
+%%]]
                             .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
-                                                    =   prfPredsDbg @lUniq7 (@fe {fePrElimTGam = @decls.prElimTGam}) @gathDeclSubsPredL
+                                                    =   prfPredsDbg @lUniq7 (@fe {fePrElimTGam = @decls.prElimTGam}) @toResolvePrOccL
                             .   supForPrfPrOccL     =   zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL
                             .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs
                                   ,(dbgSup2PrfG,dbgSup2PrfPruneG,dbgSup2PrfOrG,dbgSup2PrfIntermG1,dbgSup2PrfIntermG2,dbgSup2PrElimTGam,dbgSup2PrLeaves,prfSupPoiFwdMp,prfSupPoiBackMp,dbgSup2TrPPL))

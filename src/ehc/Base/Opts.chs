@@ -115,16 +115,17 @@ data EHCOpts
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
 %%]]
 %%[[9
-      ,  ehcOptPrfCutOffAt    ::  Int
-      ,  ehcCfgClassViaRec    ::  Bool
+      ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
+      ,  ehcOptPrfCutOffAt    ::  Int				-- cut off limit for context reduction
+      ,  ehcCfgClassViaRec    ::  Bool				-- instance representation via record instead of data
 %%]]
 %%[[11
-      ,  ehcOptTyBetaRedCutOffAt
+      ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
                               ::  Int
 %%]]
 %%[[12
-      ,  ehcCheckRecompile    ::  Bool
-      ,  ehcFullProgGRIN      ::  Bool
+      ,  ehcOptCheckRecompile ::  Bool
+      ,  ehcOptFullProgGRIN   ::  Bool
 %%]]
 %%[[99
       ,  ehcProgName          ::  String
@@ -191,6 +192,7 @@ defaultEHCOpts
       ,  ehcOptGenCmt         =   False
 %%]]
 %%[[9
+      ,  ehcCfgInstFldHaveSelf=   False
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
 %%]]
@@ -199,8 +201,8 @@ defaultEHCOpts
                               =   20
 %%]]
 %%[[12
-      ,  ehcCheckRecompile    =   True
-      ,  ehcFullProgGRIN      =   False
+      ,  ehcOptCheckRecompile    =   True
+      ,  ehcOptFullProgGRIN      =   False
 %%]]
 %%[[99
       ,  ehcProgName          =   ""
@@ -311,7 +313,7 @@ ehcCmdLineOpts
                                 Just m | m `elem` ["exe","exec"]
                                              -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True
 %%[[12
-                                                  , ehcFullProgGRIN    = True
+                                                  , ehcOptFullProgGRIN    = True
 %%]]
                                                   }
                                 Just m | m `elem` ["bexe","bexec"]
@@ -320,7 +322,7 @@ ehcCmdLineOpts
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True
 %%[[12
-                                                  , ehcFullProgGRIN    = True
+                                                  , ehcOptFullProgGRIN    = True
 %%]]
                                                   }
                                 _            -> o
@@ -350,7 +352,7 @@ ehcCmdLineOpts
                                 _           -> o
 %%]]
 %%[[12
-         oNoRecomp       o =  o { ehcCheckRecompile             = False   }
+         oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }
 %%]]
 %%[[99
          oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
@@ -396,7 +398,7 @@ optsDiscrRecompileRepr opts
     $ [ o "grin"            (ehcOptEmitGrin     opts)
       , o "grinbc"          (ehcOptEmitGrinBC   opts)
       , o "exec"            (ehcOptEmitExec     opts)
-      , o "fullproggrin"    (ehcFullProgGRIN    opts)
+      , o "fullproggrin"    (ehcOptFullProgGRIN    opts)
       , o "bexec"           (ehcOptEmitExecBC   opts)
       , show (ehcOptOptimise opts)
       ]

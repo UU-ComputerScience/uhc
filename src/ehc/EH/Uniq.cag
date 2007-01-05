@@ -352,6 +352,12 @@ SEM TyExpr
   | Lam             (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 %%]
 
+%%[95
+SEM Decl
+  | Instance        (tyPrExpr.gUniq,loc.lUniq6,loc.lUniq7,loc.lUniq8,loc.lUniq9)
+                                                                    :=  mkNewLevUID4    @gUniq2
+%%]
+
 %%[99
 SEM PatExpr
   | Expr            (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq

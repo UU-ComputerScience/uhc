@@ -2492,11 +2492,15 @@ relation tyGamLookupId =
     holes [ nm: Nm, tyGam: TyGam | | ty: Ty, tgi: TyGamInfo ]
     judgespec nm :-> tgi, ty `elem` tyGam
     judgeuse tex nm :-> ty `elem` tyGam
+    judgeuse ag  (tgi,nmErrs) `=` tyGamLookupErr nm tyGam
+              |  ty           `=` tgiTy tgi
+{-
     judgeuse ag  (tgi,nmErrs) `=` case ( tyGamLookup nm tyGam of
                                        - Nothing    ->  (TyGamInfo Ty_Any,[mkErr_NamesNotIntrod "\"type\"" [nm]])
                                        - Just tgi   ->  (tgi,[])
                                        )
               |  ty           `=` tgiTy tgi
+-}
 
 relation tyGamLookupOrNewId =
   view HM =

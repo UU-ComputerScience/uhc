@@ -960,7 +960,7 @@ ecuIsValidHI ecu
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
   = ecuIsTopMod ecu
-    || (not $ ehcCheckRecompile $ crsiOpts $ crStateInfo cr)
+    || (not $ ehcOptCheckRecompile $ crsiOpts $ crStateInfo cr)
     || ecuIsHSNewerThanHI ecu
     || not (ecuIsValidHI ecu)
     || not (null newer)
@@ -1393,7 +1393,7 @@ cpOutputHI suff modNm
                               (EHSem.gathDataGam_Syn_AGItf          ehSem)
                               (EHSem.gathPrIntroGam_Syn_AGItf       ehSem)
                               (EHSem.gathPrElimTGam_Syn_AGItf       ehSem)
-                              (if ehcFullProgGRIN opts
+                              (if ehcOptFullProgGRIN opts
                                then Map.empty
                                else Core2GrSem.gathLamMp_Syn_CodeAGItf   coreSem
                               )
@@ -1601,7 +1601,7 @@ cpCompileCU targHSState modNm
                   , cpStopAt CompilePoint_AnalEH
                   , cpStepUID, cpProcessCore1 modNm
                   , cpStopAt CompilePoint_Core
-                  , cpSeq (if not (ehcFullProgGRIN opts)
+                  , cpSeq (if not (ehcOptFullProgGRIN opts)
                            then [cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm]
                                 ++ (if ecuIsTopMod ecu then [] else [cpCompileWithGCC GCC_CompileOnly [] modNm])
                            else []
@@ -1651,7 +1651,7 @@ cpCompileOrderedCUs
         core mL
           = cpSeq [cpGetPrevCore m | m <- mL]
         biggrin opts mL (mImpL,mMain)
-          = if ehcFullProgGRIN opts
+          = if ehcOptFullProgGRIN opts
             then cpSeq [core mL, oneBigCore, cpProcessCore2 mMain, cpProcessCore3 mMain, cpProcessGrin2 mMain, cpProcessGrin3 mMain]
             else return ()
           where oneBigCore

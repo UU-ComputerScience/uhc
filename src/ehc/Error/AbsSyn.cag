@@ -135,4 +135,11 @@ DATA Err
                         nmAlts     : {[HsName]}
 %%]
 
+%%[95
+DATA Err
+  | MalformedTy         kind       : String
+                        purpose    : String
+                        ty         : Ty
+%%]
+
 

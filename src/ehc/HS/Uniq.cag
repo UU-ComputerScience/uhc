@@ -54,3 +54,10 @@ SEM Declaration
   	| Default
   		(types.gUniq,loc.lUniq)			=   mkNewLevUID @lhs.gUniq
 %%]
+
+%%[95
+SEM Deriving
+  	| Deriving
+  		(lhs.gUniq,loc.lUniq)			=   mkNewLevUID @lhs.gUniq
+%%]
+

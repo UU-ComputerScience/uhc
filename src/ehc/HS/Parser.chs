@@ -364,7 +364,7 @@ pDeclarationData
 %%[95
 pDeriving :: HSParser Deriving
 pDeriving
-  = mkRngNm Deriving_Deriving <$> qconid
+  = (\t -> Deriving_Deriving (mkRange1 t) Nothing True (tokMkQName t)) <$> qconid
 %%]
 
 %%[5.pConstructor

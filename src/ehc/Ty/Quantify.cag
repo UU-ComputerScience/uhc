@@ -199,7 +199,7 @@ ATTR AllTy [ | | gathFxTvM USE {`Map.union`} {Map.empty}: TvCatMp ]
 ATTR AllTy [ fxTvM: TvCatMp | | ]
 
 SEM Ty
-  | Var         lhs         .   gathFxTvM   =   if tvCatIsFixed @categ.self then @tv `Map.singleton` @categ.self else Map.empty
+  | Var         lhs         .   gathFxTvM   =   @tv `Map.singleton` @categ.self
 
 SEM TyAGItf
   | AGItf       loc         .   fxTvM       =   @ty.gathFxTvM
@@ -355,7 +355,7 @@ SEM Ty
 %%% Is location in type a place where quantification of previously existentialized tvar may be done?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[6_4
 SEM Ty
   | App         loc         .   isReQuExLoc =   @lhs.rank > 1
                                                 ||  @lhs.rank == 1
@@ -366,9 +366,9 @@ SEM Ty
 %%]
 
 %%[9
+%%]
 SEM Ty
   | Pred        loc         .   isReQuExLoc =   True
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is location in type a place where quantification of fixed tvar may be done?
@@ -447,10 +447,13 @@ SEM TyAGItf
   | AGItf       loc         .   qHereTvL        =   []
 
 SEM Ty
-  | Var         loc         .   qHereTvL        =   if @isQuLoc then @frTvL else []
+  | Var         loc         .   qHereTvL        =   if @isQuLoc then {- filter (tvIsPlain @lhs.fxTvM) -} @frTvL else []
   | App         loc         .   qHereTvL        =   if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL : [@qOrphanTvL])
+                                                          then  let fv = listCombineUniq (tvarOccurGE2 @frTvLL : [@qOrphanTvL])
+                                                                in  {- if @appIsArrow
+                                                                    then filter (tvIsPlain @lhs.fxTvM) fv
+                                                                    else -} fv
                                                           else  @frTvL
                                                     else  []
 %%]

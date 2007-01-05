@@ -54,9 +54,23 @@ SEM AGItf
                                         =   []
 %%]
 
+%%[95
+SEM Deriving
+    | Deriving
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+%%]
+
 %%[12
 SEM Declaration
     | Class Instance InstanceUseImplicitly
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
         loc             .   mbPrevInstancename
                                         =   Nothing
 %%]

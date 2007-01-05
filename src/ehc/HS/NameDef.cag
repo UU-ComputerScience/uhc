@@ -68,6 +68,14 @@ SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 
+%%[95
+SEM Deriving
+    | Deriving
+        loc             .   instancerefname
+                                        =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm
+                                            $ maybe @instancename id @mbPrevInstancename
+%%]
+
 %%[1
 ATTR LeftHandSide [ | | refname: HsName ]
 %%]
@@ -266,6 +274,14 @@ SEM Body
         loc             .   idOccDefMain=   IdOcc hsnMain IdOcc_Val
 %%]
 
+%%[95
+SEM Deriving
+    | Deriving
+        loc             .   idOccDef    =   IdOcc @instancerefname IdOcc_Inst
+                        .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
+                        .   idOccDefs   =   [@idOccDef,@idOccDefVal]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc: simpletype internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -320,6 +336,12 @@ SEM Declaration
         loc         .   instancename=   mkHNm @lUniq
     | Default
         loc         .   defaultname =   mkHNm @lUniq
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
 %%]
 
 

@@ -58,13 +58,10 @@
 %%[6 export(KiGam, KiGamInfo(..),initKiGam)
 %%]
 
-%%[6 export(mkTGI)
+%%[6 export(mkTGI,mkTGIData)
 %%]
 
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
-%%]
-
-%%[7777 export(mkTGIData)
 %%]
 
 %%[8 import({%{EH}Core}) export(gamUpd)
@@ -638,6 +635,43 @@ valGamTyOfDataFld fldNm g
 data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
 %%]
 
+%%[6.TyGamInfo -1.TyGamInfo
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
+%%]
+
+%%[6.mkTGIData
+mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
+mkTGIData t k _ = TyGamInfo t k
+%%]
+
+%%[6
+mkTGI :: Ty -> Ty -> TyGamInfo
+mkTGI t k = mkTGIData t k Ty_Any
+%%]
+
+%%[1.emtpyTGI export(emtpyTGI)
+emtpyTGI :: TyGamInfo
+emtpyTGI = TyGamInfo Ty_Any
+%%]
+
+%%[6 -1.emtpyTGI export(emtpyTGI)
+emtpyTGI :: TyGamInfo
+emtpyTGI = mkTGI Ty_Any kiStar
+%%]
+
+%%[7.TyGamInfo -6.TyGamInfo
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiDataTy :: Ty } deriving Show
+%%]
+
+%%[7 -6.mkTGIData
+mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
+mkTGIData t k d = TyGamInfo t k d
+%%]
+
+%%[1.TyGam
+type TyGam = Gam HsName TyGamInfo
+%%]
+
 %%[1.tyGamLookup
 tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup nm g
@@ -647,25 +681,12 @@ tyGamLookup nm g
        _                        -> Nothing
 %%]
 
-%%[1.TyGam
-type TyGam = Gam HsName TyGamInfo
-%%]
-
-%%[6.TyGamInfo -1.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
-
-mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = TyGamInfo t k
-%%]
-
-%%[7.TyGamInfo -6.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
-
-mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
-mkTGIData t k _ = TyGamInfo t k
-
-mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = mkTGIData t k Ty_Any
+%%[1 export(tyGamLookupErr)
+tyGamLookupErr :: HsName -> TyGam -> (TyGamInfo,ErrL)
+tyGamLookupErr n g
+  = case tyGamLookup n g of
+      Nothing  -> (emtpyTGI,[mkErr_NamesNotIntrod "type" [n]])
+      Just tgi -> (tgi,[])
 %%]
 
 %%[6.tyGamLookup -1.tyGamLookup
@@ -807,15 +828,6 @@ dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
 dataGamTagsOfTy t g = fmap (map dtiCTag . Map.elems . dgiConstrTagMp) $ gamLookup (tyAppFunConNm t) $ g
 %%]
-
-%%[8
-%%]
-dataGamTagOfCon :: HsName -> Ty -> DataGam -> Maybe CTag
-dataGamTagOfCon conNm conTy dg
-  = case dataGamDgiOfTy conTy dg of
-      Just dgi
-        -> Just $ dtiCTag $ dgiDtiOfCon conNm dgi
-      _ -> Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Ty app spine" gam, to be merged with tyGam in the future

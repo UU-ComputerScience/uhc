@@ -151,6 +151,20 @@ SEM FunctionalDependency
                                           (map (rngLift @range EH.TyVar_Var) @totypevariables)
 %%]
 
+%%[95
+ATTR AllDeriving [ ehDataTyExpr: {EH.TyExpr} | | ]
+
+SEM Declaration
+    | Data Newtype
+        derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map EH.TyExpr_Var @simpletype.typevariables)
+
+SEM Deriving
+    | Deriving
+        loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
+                                                $ rngLift @range EH.PrExpr_Class @refname [@lhs.ehDataTyExpr]
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstDeriving h []
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Types           
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

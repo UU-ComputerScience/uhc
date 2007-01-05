@@ -950,11 +950,6 @@ fitsIn opts env uniq ty1 ty2
                             =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) . foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
                             where fo = f fi2 t1 tr2
 
-(bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,_)
-                                                    =   prfPreds @lUniq5 (@letFE {fePrElimTGam = @body.prElimTGam}) @gath2BodySubsPredL
-
-                                    (cbindLMap,csubst,remPrfPrL,evidL,prfErrs,_) = prfPreds u3 (fiEnv (fs |=> fi2)) [PredOcc (fs |=> pr1) pv1]
-
 %%[7
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
                   t2@(Ty_App (Ty_Con n2) tr2)
