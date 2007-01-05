@@ -15,6 +15,9 @@ WRAPPER GrAGItf
 %%]
 %%[8 hs import({%{GRIN}GRINCCommon}, {%{GRIN}Primitives}, {%{GRIN}HeapPointsToFixpoint})
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
+
 %%[8 hs export(heapPointsToAnalysis)
 
 {-
@@ -22,23 +25,31 @@ Main module entry point:
 Given a Grin-program, traverse it and collect equations for variables and locations.
 Then solve the constraints, and return the resulting abstract environment&heap: the "HptMap".
 As an additional Int parameter, take the first number that is not the number of any variable.
+Also return it, possibly modified.
 As an additional Int result, return the number of iterations that it took to solve the equations.
 -}
 
-heapPointsToAnalysis :: Int -> GrModule -> (Int,HptMap)
-heapPointsToAnalysis unique grmod 
+heapPointsToAnalysis :: GrModule -> Int -> (Int,Int,HptMap)
+heapPointsToAnalysis grmod unique
   = let -- traverse the tree
-        inh = Inh_GrAGItf { heapPointer_Inh_GrAGItf = 0  }
+        inh = Inh_GrAGItf { heapPointer_Inh_GrAGItf = 0, unique_Inh_GrAGItf = unique  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
 
-        -- we get four synthesized attributes
+        -- get four synthesized attributes
         equations = equations_Syn_GrAGItf syn
-        heapEqs   = heapList_Syn_GrAGItf syn
+        heapEqs   = heapEqs_Syn_GrAGItf syn
         applyMap  = applyMap_Syn_GrAGItf syn
-        maxHeap   = heapPointer_Syn_GrAGItf syn - 1
-
+        lenHeap   = heapPointer_Syn_GrAGItf syn
+        
         -- now solve the equations
-    in  solveEquations (unique-1) maxHeap equations heapEqs applyMap
+        (iterCount,hptMap) = solveEquations unique lenHeap equations heapEqs applyMap
+        
+        -- no new variables were introduced in the tree traversal, 
+        -- but the equation-solver uses a variable for each applyMap-entry
+        unique2   = unique + length applyMap
+        
+     in (iterCount, unique2, hptMap)
+     
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -50,19 +61,21 @@ The overall goal is to collect equations that express
 what constraints variables and heaplocations satisfy.
 -}
 
-ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [ | | equations USE {++} {[]} : {Equations}
-                                                        heapList  USE {++} {[]} : {HeapEquations}
+ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [ | | equations  USE {++} {[]} : {Equations}
+                                                        heapEqs    USE {++} {[]} : {HeapEquations}
                                                   ]
 
 {-
 The EvalMap is passed down to all expressions
 The ApplyMap (slightly rewritten) is passed up to the root
-A unique integer is threaded through all expressions to number all Stores locations
+A unique integer "heapPointer" is threaded through all expressions to number all Stores locations
+The vaue "unique" is the first unused variable number
 -}
 
 ATTR                  AllGlobal AllBind AllGrExpr [ evalMap: {EvalMap} |                  |                       ]
 ATTR GrAGItf GrModule                             [                    |                  | applyMap : {ApplyMap} ]
 ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [                    | heapPointer: Int |                       ]
+ATTR GrAGItf GrModule                             [ unique: {Int}      |                  |                       ]
 
 SEM GrModule
   | Mod     loc . evalMap = [ (t, f) | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
@@ -212,7 +225,7 @@ An equation is generated, which states that the targetvariable is known to be as
 
 SEM GrExpr
   | Store  lhs . heapPointer = @lhs.heapPointer + 1  
-           lhs . heapList    = case @val.valInfo of
+           lhs . heapEqs     = case @val.valInfo of
                                  NodeDen stag snms -> [( @lhs.heapPointer, ((stag, snms), lookup stag @lhs.evalMap) )]
                                  _                 -> error "HPT: source of Store should be a node"
            lhs . equations   = case @val.valInfo of
@@ -227,7 +240,7 @@ A global definition is similar to a Store expression
 
 SEM GrGlobal
   | Global lhs . heapPointer = @lhs.heapPointer + 1
-           lhs . heapList    = case @val.valInfo of
+           lhs . heapEqs     = case @val.valInfo of
                                  NodeDen stag snms -> [( @lhs.heapPointer, ((stag, snms), lookup stag @lhs.evalMap) )]
                                  _                 -> error "HPT: source of Global should be a node"
            loc . tvar        = getNr @nm
@@ -362,9 +375,9 @@ SEM GrExpr
 %%[8.apply
 SEM GrExpr
   | App    lhs . equations= case @lhs.targetInfo of
-                              NodeVar tvar -> let mkAppInfo :: NodeInfo (Maybe Int) -> Either Variable EquationRhs
+                              NodeVar tvar -> let mkAppInfo :: NodeInfo (Maybe Int) -> Variable
                                                   mkAppInfo l = case l of
-                                                                  NodeVar  v  -> Left v
+                                                                  NodeVar  v  -> v
                                                                   _           -> error "HPT: Apply arguments should all be variables"
                                               in  [ (tvar, EquationApply (getNr @nm) (map mkAppInfo @argL.valsInfo) @lhs.exceptVar) ]
                               _            -> error "HPT: Apply target should be a variable"
@@ -424,6 +437,14 @@ SEM GrBind
 ATTR AllBind AllGrExpr [                                    | | actualsEnv USE {.} {id} : {[(Int, [Maybe Int])] -> [(Int, [Maybe Int])]} ]
 ATTR AllBind           [ allActuals: {[(Int, [Maybe Int])]} | | ]
 
+
+
+SEM GrModule
+  | Mod     loc . partPar  = let  f (u,        xss) (_, EvApTagVar (HNmNr n _))  = (u+1, (n,(Just u):[]):xss )
+                                  f (u, (n,xs):xss) (_, EvApTagTag _          )  = (u+1, (n,(Just u):xs):xss )
+                             in snd (foldl f (@lhs.unique, []) @applyTagMp)
+
+
 SEM GrExpr
   | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = if grinStoreArity
                                                                       then tail mns -- first element is the size of the rest of the node
@@ -437,7 +458,7 @@ SEM GrExpr
   | Call        loc  .  actualsEnv   = ((@resultVar, @argL.depVars) :)
 
 SEM GrModule
-  | Mod       bindL  .  allActuals   = @bindL.actualsEnv []
+  | Mod       bindL  .  allActuals   = @bindL.actualsEnv @loc.partPar
 
 SEM GrBind
   | Bind      loc    .  bindActuals  = transpose [ actuals
@@ -455,7 +476,7 @@ SEM GrBind
                                           ]
                                        ++ @expr.equations
 
-              lhs    .  heapList     = if @prune 
+              lhs    .  heapEqs      = if @prune 
                                         then [] 
-                                        else @expr.heapList
+                                        else @expr.heapEqs
 %%]

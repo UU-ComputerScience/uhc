@@ -146,12 +146,10 @@ data EquationRhs
   = EquationKnownToBe !AbstractValue
   | EquationShouldBe  ![Variable]
   | EquationEval      Variable Variable
-  | EquationApply     Variable [ApplyArg] Variable
+  | EquationApply     Variable [Variable] Variable
   | EquationSelect    Variable GrTag Int
   | EquationTag       GrTag [Maybe Variable] (Maybe Variable)
     deriving (Show, Eq)
-
-type ApplyArg = Either Variable EquationRhs -- only contains the EquationTag here
 
 type EvalMap     = AssocL GrTag Int
 type ApplyMap    = AssocL GrTag (Either GrTag Int)
