@@ -252,7 +252,11 @@ SEM Decl
                                                     >#< "where" >-< indent 2 @decls.pp
   | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
                                                     >#< @tyPrExpr.pp
-                                                    >#< "where" >-< indent 2 @decls.pp
+                                                    >#< "where"
+%%[[95
+                                                    >#< ppCmt (pp $ show @instVariant)
+%%]]
+                                                    >-< indent 2 @decls.pp
                                                     >-< @errInstPP
                                                     >-< @errDeclsPP
   | InstanceIntro

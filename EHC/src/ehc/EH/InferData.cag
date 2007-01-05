@@ -151,7 +151,7 @@ SEM DataConstr
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
-                            .   dataTgi             :=  mkTGI (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) -- @dataAltTy
+                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) ([@dataTy] `mkArrow` @dataAltTy)
 %%]
 
 !!!!! Fix following w.r.t. dataUnConTy

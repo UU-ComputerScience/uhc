@@ -500,13 +500,16 @@ SEM Decl
                                                      vxStrict = CExpr_Var xStrict
                                                      mkSel n = mkCExprSatSelsCase ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
                                                                                   [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
+                                                     mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
+                                                             then (`CExpr_App` vx)
+                                                             else id
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
                                                        where nDflt = rulNmEvid . pigiRule $ @pigi
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (mkSel n `CExpr_App` vx))
+                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (mkApp $ mkSel n))
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -532,7 +535,7 @@ SEM Decl
                                                              -> dD
                                                              where nDflt = rulNmEvid . pigiRule $ @pigi
                                                                    nStrictDflt = hsnSuffix nDflt "!"
-                                                                   nR = hsnPrefix "_res_" @dictNm
+                                                                   nR = @dictBuildNm
                                                                    nStrictR = hsnSuffix nR "!"
                                                                    dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
                                                                              (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supPrfEvidL))
@@ -545,17 +548,22 @@ SEM Decl
                                                                           )
                                                            InstDefault
                                                              -> dD
-                                                             where nD = hsnPrefix "_self_" @dictNm
-                                                                   nR = hsnPrefix "_res_" @dictNm
+                                                             where nD = @dictSelfNm
+                                                                   nR = @dictBuildNm
                                                                    dD = mkCExprLam [nD]
                                                                           (mkCExprLetRec
-                                                                              [CBind_Bind nR
+                                                                              ([CBind_Bind nR
                                                                                   (mkCExprApp (CExpr_Tup @dictTag)
                                                                                       (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
+                                                                               ++ (@cSubst `cSubstApp` ({- @supPrfIntroCBindL ++ -} @prfIntroCBindL)))
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
                                                                      where b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
+%%[[95
+                                                           InstDeriving -- TBD
+                                                             -> cundefined @lhs.opts
+%%]]
                                                 in   [CBind_Bind @dictNm (@cSubst `cSubstApp` d)]
   | InstanceIntro
                 lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]

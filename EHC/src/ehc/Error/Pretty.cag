@@ -228,4 +228,11 @@ SEM Err
                                                         )
 %%]
 
+%%[95
+SEM Err
+  | MalformedTy         lhs     .  pp   =   ppMsgErr    ("Malformed " ++ @kind ++ " for " ++ @purpose)
+                                                        (    @kind >|< ":" >#< ppTy @ty
+                                                        )
+%%]
+
 

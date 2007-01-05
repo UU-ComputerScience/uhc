@@ -203,6 +203,14 @@ ATTR AllModule AGItf [ isTopMod: Bool | | ]
 %%% Top level instance names, propagated from prev phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[12 hs
+extrTopInstanceNm :: [HsName] -> (Maybe HsName,[HsName])
+extrTopInstanceNm nms
+  = case nms of
+      (n:t) -> (Just n,t)
+      _     -> (Nothing,[])
+%%]
+
 %%[12
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
@@ -210,7 +218,13 @@ ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
 SEM Declaration
     | Class Instance InstanceUseImplicitly
         (loc.mbPrevInstancename,lhs.topInstanceNmL)
-                                        =   case @lhs.topInstanceNmL of
-                                              (n:t) -> (Just n,t)
-                                              _     -> (Nothing,[])
+                                        =   extrTopInstanceNm @lhs.topInstanceNmL
 %%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        (loc.mbPrevInstancename,lhs.topInstanceNmL)
+                                        =   extrTopInstanceNm @lhs.topInstanceNmL
+%%]
+

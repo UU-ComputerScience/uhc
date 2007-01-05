@@ -28,9 +28,6 @@
 %%[4 hs export(tyConNm) 
 %%]
 
-%%[4 hs export(tvCatIsFixed) 
-%%]
-
 %%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
 %%]
 
@@ -142,14 +139,22 @@ type TyPlusId      = UID
 %%% Tyvar category
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 hs
+%%[4 hs export(tvCatIsFixed)
+tvCatIsPlain :: TyVarCateg -> Bool
+tvCatIsPlain TyVarCateg_Plain  = True
+tvCatIsPlain _                 = False
+
 tvCatIsFixed :: TyVarCateg -> Bool
-tvCatIsFixed TyVarCateg_Plain  = False
-tvCatIsFixed _                 = True
+tvCatIsFixed = not . tvCatIsPlain
 %%]
 
 %%[4 hs
 type TvCatMp = Map.Map TyVarId TyVarCateg
+%%]
+
+%%[4 hs export(tvIsPlain)
+tvIsPlain :: TvCatMp -> TyVarId -> Bool
+tvIsPlain fvM tv = maybe False tvCatIsPlain (Map.lookup tv fvM)
 %%]
 
 %%[6_4 hs
@@ -647,6 +652,12 @@ tyRecExtr lbl t
   =  case tyRowExtr lbl (tyRecRow t) of
        Nothing    -> Nothing
        Just (r,e) -> Just (hsnRec `mkConApp` [r],e)
+%%]
+
+%%[95 hs export(tyRecExts2)
+tyRecExts2 :: Ty -> AssocL HsName (AssocL HsName Ty)
+tyRecExts2
+  = assocLMapElt (snd . tyRecExts) . snd . tyRecExts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

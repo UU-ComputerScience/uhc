@@ -252,7 +252,12 @@ TYPE Derivings      			 = [ Deriving ]
 DATA Deriving
 	| Deriving
 		range                    : Range
+        maybeinstancename   	 : MaybeName
+        useimplicitly			 : Bool
         name        			 : Name
+
+SET AllDeriving
+  = Deriving Derivings
 %%]
 
 %%[1
@@ -265,7 +270,7 @@ SET AllDeclaration
     FunctionalDependency FunctionalDependencies
 %%]]
 %%[[95
-    Deriving Derivings
+    AllDeriving
 %%]]
 %%[[90
     Fixity

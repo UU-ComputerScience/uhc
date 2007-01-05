@@ -206,7 +206,13 @@ SEM AGItf
 
 %%[9
 SEM Decl
-  | Instance    loc         .   lErrL       =   firstNotEmpty [@valNoSigErrs,@tyPrExpr.errL ++ @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs]
+  | Instance    loc         .   lErrL       =   firstNotEmpty
+                                                  [ @valNoSigErrs,@tyPrExpr.errL
+%%[[95
+                                                  , @cxSplitErrs
+%%]]
+                                                  , @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
+                                                  ]
                             .   errInstPP   =   ppErrs @lErrL
                             .   errDeclsPP  =   ppErrs @decls.errL
                 lhs         .   errL        =   []

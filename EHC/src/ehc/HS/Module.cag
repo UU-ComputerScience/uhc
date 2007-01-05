@@ -131,8 +131,23 @@ SEM MaybeExports
 %%% Definitions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[12 hs
+mkInstDefsRel :: Bool -> HsName -> Maybe HsName -> IdOcc -> IdOcc -> ModEntRel
+mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
+  = (if useimplicitly
+     then Rel.singleton instancename (ModEnt IdOcc_Inst idOccDef Set.empty)
+     else Rel.empty)
+    `Rel.union`
+    maybe (Rel.empty) (\_ -> Rel.singleton instancename (ModEnt IdOcc_Val idOccDefVal Set.empty)) maybeinstancename
+%%]
+
 %%[12
-ATTR Declaration Declarations Body [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
+ATTR
+  Declaration Declarations Body
+%%[[95
+  AllDeriving
+%%]]
+    [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
 
 SEM Declaration
     | TypeSignature FunctionBindings PatternBinding ForeignImport -- ForeignExport
@@ -143,6 +158,10 @@ SEM Declaration
         loc             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
                                               (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub))
+%%[[95
+                                            `Rel.union`
+                                            @derivings.modDefsRel
+%%]]
                         .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsCon ++ @idOccDefsFld ]
     | Class
         loc             .   modDefsRel  =   Rel.singleton
@@ -154,11 +173,7 @@ SEM Declaration
                                             `Rel.union`
                                             Rel.fromList [ (hsnQualified $ ioccNm $ mentIdOcc e,e) | e <- @modEntsSub ]
     | Instance
-        lhs             .   modDefsRel  =   (if @useimplicitly
-                                             then Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
-                                             else Rel.empty)
-                                            `Rel.union`
-                                            maybe (Rel.empty) (\_ -> Rel.singleton @instancename (ModEnt IdOcc_Val @idOccDefVal Set.empty)) @maybeinstancename
+        lhs             .   modDefsRel  =   mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
     | InstanceUseImplicitly
         lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
 %%]
@@ -167,6 +182,12 @@ SEM Body
         lhs             .   modDefsRel  =   @declarations.modDefsRel
                                             `Rel.union` 
                                             (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
+
+%%[95
+SEM Deriving
+	| Deriving
+		lhs				.	modDefsRel	=	mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module

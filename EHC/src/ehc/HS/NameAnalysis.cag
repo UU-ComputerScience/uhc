@@ -122,7 +122,10 @@ ATTR
 %%[[7
   AllRowRecordPatternBinding
   AllRecordPatternBinding
-%%]
+%%]]
+%%[[95
+  AllDeriving
+%%]]
     [ | | idOccDefGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam ]
 %%]
 
@@ -154,6 +157,9 @@ SEM Declaration
 %%]]
                         .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) [@idOccDef]
                                             `gamAddGam` @idOccDefGamConstrs
+%%[[95
+                                            `gamAddGam` @derivings.idOccDefGam
+%%]]
 %%]
 %%[9
     | Class
@@ -246,6 +252,14 @@ SEM Type
                                         =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
 %%]
 
+%%[8
+SEM Body
+    | Body
+        loc             .   idOccDefGamMain
+                                        =   gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
+                                            `gamUnion` gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
+%%]
+
 %%[9
 SEM ContextItem
     | Forall
@@ -253,12 +267,11 @@ SEM ContextItem
                                         =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
 %%]
 
-%%[8
-SEM Body
-    | Body
-        loc             .   idOccDefGamMain
-                                        =   gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
-                                            `gamUnion` gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
+%%[95
+SEM Deriving
+    | Deriving
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @refname) [@idOccDef]
+                                            `gamUnion` mkDefGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDefVal]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -740,7 +753,12 @@ idFrOccGam2DpdMp g ts
 %%]
 
 %%[1
-ATTR AllDeclaration AllFunctionBinding [ | | idDpdMp USE {`idDpdMpUnion`} {Map.empty}: IdDpdMp ]
+ATTR
+  AllDeclaration AllFunctionBinding
+%%[[95
+  AllDeriving
+%%]]
+    [ | | idDpdMp USE {`idDpdMpUnion`} {Map.empty}: IdDpdMp ]
 ATTR AllNT [ | | undefOccGam USE {`gamUnion`} {emptyGam}: IdUseOccGam ]
 %%]
 
@@ -788,6 +806,10 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idFrOccGam2DpdMp @idOccDefGamConstrs [@idOccDef]
+%%[[95
+                                            `idDpdMpUnion`
+                                            @derivings.idDpdMp
+%%]]
 %%]]
 %%[[8
     | ForeignImport
@@ -857,6 +879,27 @@ SEM Body
                                             @declarations.idDpdMp
         lhs             .   undefOccGam =   let g = if @lhs.isTopMod then @undefOccGamMain else emptyGam
                                             in  gamUnions [g,@declarations.undefOccGam]
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        lhs             .   idDpdMp     =   idDpdMpUnions
+                                                [ idDpdMpSingleton @idOccDef @lhs.idOccDefData
+                                                , idDpdMpSingleton @idOccDefVal @idOccDef
+                                                ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data of deriving
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
+ATTR AllDeriving [ idOccDefData: IdOcc | | ]
+
+SEM Declaration
+    | Data Newtype
+        derivings       .   idOccDefData=   @idOccDef
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
