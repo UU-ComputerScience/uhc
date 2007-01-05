@@ -1,0 +1,145 @@
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- Ruler AST, pass 2
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Declarations
+-------------------------------------------------------------------------
+
+DATA Decl
+  | Preamble            preamble    : {String}
+  | ScVwExplain         exExpr      : {Expr}
+  | ScVwAtExplain       atExprs     : {[(Expr,Expr)]}
+  | RsVw                decl        : RsVwDecl
+  | AttrAG              decl        : AttrAGDecl
+  | DataAG              decl        : DataAGDecl
+  | Chunk               nm          : {Nm}
+                        decl        : Decl
+
+TYPE Decls = [Decl]
+
+SET AllDc = Decl Decls
+
+DATA RsVwDecl
+  | Rs                  nm          : {Nm}
+                        scNm        : {Nm}
+                        descr       : {String}
+                        vwDecls     : VwDecls
+
+TYPE RsVwDecls = [RsVwDecl]
+
+SET AllRs = RsVwDecl RsVwDecls
+
+DATA AttrAGDecl
+  | Attr                ndNm        : {Nm}
+                        inhAts      : {[(Nm,Nm)]}
+                        inhsynAts   : {[(Nm,Nm)]}
+                        synAts      : {[(Nm,Nm)]}
+
+SET AllAtAG = AttrAGDecl
+
+DATA DataAGDecl
+  | Data                ndNm        : {Nm}
+                        alts        : DataAGAlts
+                        
+DATA DataAGAlt
+  | Alt                 nm          : {Nm}
+                        flds        : DataAGFlds
+
+TYPE DataAGAlts = [DataAGAlt]
+
+DATA DataAGFld
+  | Fld                 nm          : {Nm}
+                        ty          : {Ty}
+                        tyIsData    : {Bool}
+
+TYPE DataAGFlds = [DataAGFld]
+
+SET AllDtFld = DataAGFlds DataAGFld
+SET AllDtAlt = DataAGAlts DataAGAlt
+SET AllDtAG = DataAGDecl AllDtAlt AllDtFld
+
+DATA VwDecl
+  | Vw                  nm          : {Nm}
+                        fullNm      : {Nm}
+                        rlDecls     : RlDecls
+  | Grp                 nm          : {Nm}
+                        fullNm      : {Nm}
+                        rlFullNmL   : {[(Nm,Nm)]}
+  | LTX                 nm          : {Nm}
+                        scMetaNm    : {Nm}
+                        scmExpr     : Expr
+                        rlDecls     : RlDecls
+  | LTXFig              nm          : {Nm}
+                        fullNm      : {Nm}
+                        scMetaNm    : {Nm}
+                        descr       : {String}
+                        rlFullNmL   : {[Nm]}
+
+TYPE VwDecls = [VwDecl]
+
+SET AllVw = VwDecl VwDecls
+
+DATA RlDecl
+  | Rl                  nm          : {Nm}
+                        fullNm      : {Nm}
+                        pos         : {SPos}
+                        agStr       : Nm
+                        preJds      : Jds
+                        postJds     : Jds
+  | LTX                 nm          : {Nm}
+                        rlNm        : {Nm}
+                        vwNm        : {Nm}
+                        pos         : {SPos}
+                        preJds      : Jds
+                        postJds     : Jds
+  | LTXAlias            fullAliasNm : {Nm}
+                        fullNm      : {Nm}
+  | AG                  nm          : {Nm}
+                        pos         : {SPos}
+                        arule       : ARule
+  | Chunk               nm          : {Nm}
+                        rl          : RlDecl
+
+TYPE RlDecls = [RlDecl]
+
+SET AllRl = RlDecl RlDecls
+
+DATA Jd
+  | Ats                 nm          : {Nm}
+                        scNm        : {Nm}
+                        ats         : JdAts
+  | Expr                nm          : {Nm}
+                        scNm        : {Nm}
+                        expr        : Expr
+  | LTX                 nm          : {Nm}
+                        scNm        : {Nm}
+                        expr        : Expr
+
+TYPE Jds = [Jd]
+
+SET AllJd = Jd Jds
+
+DATA JdAt
+  | At                  nm          : {Nm}
+                        expr        : Expr
+
+TYPE JdAts = [JdAt]
+
+SET AllAt = JdAt JdAts
+
+SET AllDecl
+  = AllDc AllRs AllVw
+    AllRl AllJd AllAt
+    AllAtAG
+    AllDtAG
+
+-------------------------------------------------------------------------
+-- Sets of AST data's
+-------------------------------------------------------------------------
+
+SET AllAS2 = AllDecl
+
+%%]

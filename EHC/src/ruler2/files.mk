@@ -1,9 +1,9 @@
-# location of ruler2 src
+# location of RULER2 src
 SRC_RULER2_PREFIX	:= $(SRC_PREFIX)ruler2/
 RULER2_DEMO_PREFIX	:= $(SRC_RULER2_PREFIX)demo/
 
 # location of shuffle build
-RULER2_BLD_PREFIX	:= $(BLD_PREFIX)ruler/
+RULER2_BLD_PREFIX	:= $(BLD_PREFIX)ruler2/
 
 # this file
 RULER2_MKF			:= $(SRC_RULER2_PREFIX)files.mk
@@ -14,231 +14,42 @@ RULER2_RULES_SRC_RL2					:= $(SRC_RULER2_PREFIX)RulerRules.rul
 # main + sources + dpds
 RULER2_MAIN			:= Ruler
 
-RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(SRC_RULER2_PREFIX),$(RULER2_MAIN).hs)
-RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
-RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.hs,\
+RULER2_HS_MAIN_SRC_HS					:= $(addprefix $(SRC_RULER2_PREFIX),$(RULER2_MAIN).chs)
+RULER2_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.chs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_MAIN_SRC_HS))
+RULER2_HS_DPDS_SRC_HS					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.chs,\
 											Version Common Err Opts AttrProps \
-											NmParser ViewSelParser SelParser KeywParser RulerParser \
-											ARuleUtils ExprUtils TyUtils LaTeXFmtUtils RulerUtils ViewSelUtils \
+											NmParser ViewSel/Parser SelParser KeywParser Parser \
+											ARule/Utils Expr/Utils Ty/Utils LaTeXFmtUtils Utils ViewSel/Utils \
 											Gam FmGam ECnstrGam RwExprGam WrKindGam JdShpGam \
-											RulerAdmin RulerMkAdmin \
-											ExprToAEqn \
-											RulerScanner RulerScannerMachine \
+											Admin MkAdmin \
+											Expr/ToAEqn \
+											Scanner ScannerMachine \
 											)
-RULER2_HS_DPDS_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.hs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_DPDS_SRC_HS))
+RULER2_HS_DPDS_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.chs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_HS_DPDS_SRC_HS))
 
-RULER2_CHS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.chs,RulerConfig)
+RULER2_CHS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.chs,Config)
 RULER2_CHS_UTIL_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.chs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_CHS_UTIL_SRC_CHS))
 
-RULER2_AGMAIN1_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,Main1AG)
-RULER2_AGMAIN1_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn1AG RulerAS1Misc RulerAS1Pretty RulerAS1RlSel RulerFmGamAG \
-											RulerAS1SchemeDpd RulerAS1ViewDpd \
-											RulerAS1GenAS2 \
-											ExprAbsSynAG ExprIsRwAG ExprNmSAG ExprFmGamAG ExprPrettyPrintAG ExprSelfAG \
-											TyAbsSynAG TySelfAG \
-											)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN1_MAIN_SRC_AG)) \
-										: $(RULER2_AGMAIN1_DPDS_SRC_AG)
 
-RULER2_AS1IMPS_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,RulerAS1Imports)
-RULER2_AS1IMPS_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag, \
-											RulerAbsSyn1AG RulerAbsSynCommonAG \
-											ExprAbsSynAG \
-											TyAbsSynAG \
-											)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AS1IMPS_MAIN_SRC_AG)) \
-										: $(RULER2_AS1IMPS_DPDS_SRC_AG)
+include $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
+include $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
 
-RULER2_AGMAIN2_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,Main2AG)
-RULER2_AGMAIN2_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts RulerAS2Pretty RulerFmGamAG \
-											ExprAbsSynAG ExprSelfAG ExprPrettyPrintAG ExprFmGamAG \
-											ARuleAbsSynAG ARuleSelfAG ARulePrettyPrintAG \
-											)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGMAIN2_MAIN_SRC_AG)) \
-										: $(RULER2_AGMAIN2_DPDS_SRC_AG)
 
-RULER2_TRF2ARULE_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,TrfAS2GenARule)
-RULER2_TRF2ARULE_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts \
-											TrfAS2CommonAG \
-											ExprAbsSynAG ExprSelfAG \
-											ARuleAbsSynAG ARuleSelfAG \
-											)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_TRF2ARULE_MAIN_SRC_AG)) \
-										: $(RULER2_TRF2ARULE_DPDS_SRC_AG)
-
-RULER2_TRF2LATEX_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,TrfAS2GenLaTeX)
-RULER2_TRF2LATEX_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag, \
-											RulerAbsSynCommonAG RulerAbsSyn2AG RulerAS2Opts \
-											TrfAS2CommonAG \
-											ExprAbsSynAG ExprSelfAG \
-											ARuleAbsSynAG ARuleSelfAG \
-											)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_TRF2LATEX_MAIN_SRC_AG)) \
-										: $(RULER2_TRF2LATEX_DPDS_SRC_AG)
-
-RULER2_AGRLAST1_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,RulerAbsSyn1)
-RULER2_AGRLAST1_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,RulerAbsSyn1AG RulerAbsSynCommonAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGRLAST1_MAIN_SRC_AG)) \
-										: $(RULER2_AGRLAST1_DPDS_SRC_AG)
-
-RULER2_AGRLAST2_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,RulerAbsSyn2)
-RULER2_AGRLAST2_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,RulerAbsSyn2AG RulerAbsSynCommonAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGRLAST2_MAIN_SRC_AG)) \
-										: $(RULER2_AGRLAST2_DPDS_SRC_AG)
-
-RULER2_AGEXPR_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,Expr)
-RULER2_AGEXPR_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGEXPR_MAIN_SRC_AG)) \
-										: $(RULER2_AGEXPR_DPDS_SRC_AG)
-
-RULER2_AGTY_MAIN_SRC_AG					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,Ty)
-RULER2_AGTY_DPDS_SRC_AG					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,TyAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGTY_MAIN_SRC_AG)) \
-										: $(RULER2_AGTY_DPDS_SRC_AG)
-
-RULER2_TYPRETTY_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,TyPrettyPrint)
-RULER2_TYPRETTY_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,TyAbsSynAG TyPrettyPrintAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_TYPRETTY_MAIN_SRC_AG)) \
-										: $(RULER2_TYPRETTY_DPDS_SRC_AG)
-
-RULER2_EXISRW_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprIsRw)
-RULER2_EXISRW_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprAbsSynAG ExprIsRwAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXISRW_MAIN_SRC_AG)) \
-										: $(RULER2_EXISRW_DPDS_SRC_AG)
-
-RULER2_EXNMS_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprNmS)
-RULER2_EXNMS_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprAbsSynAG ExprNmSAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXNMS_MAIN_SRC_AG)) \
-										: $(RULER2_EXNMS_DPDS_SRC_AG)
-
-RULER2_EXLTX_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprLaTeX)
-RULER2_EXLTX_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprAbsSynAG ExprOptsAG ExprLaTeXAG ExprFmGamAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXLTX_MAIN_SRC_AG)) \
-										: $(RULER2_EXLTX_DPDS_SRC_AG)
-
-RULER2_EXCOGAM_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprCoGam)
-RULER2_EXCOGAM_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXCOGAM_MAIN_SRC_AG)) \
-										: $(RULER2_EXCOGAM_DPDS_SRC_AG)
-
-#RULER2_EXREGAM_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprReGamExprFmGam)
-#RULER2_EXREGAM_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ExprAbsSynAG ExprSelfAG)
-#$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_EXREGAM_MAIN_SRC_AG)) \
-#										: $(RULER2_EXREGAM_DPDS_SRC_AG)
-
-RULER2_AGVWSL_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSel)
-RULER2_AGVWSL_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGVWSL_MAIN_SRC_AG)) \
-										: $(RULER2_AGVWSL_DPDS_SRC_AG)
-
-RULER2_VWSLSELF_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelSelf)
-RULER2_VWSLSELF_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_VWSLSELF_MAIN_SRC_AG)) \
-										: $(RULER2_VWSLSELF_DPDS_SRC_AG)
-
-RULER2_VWSLNMS_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelNmS)
-RULER2_VWSLNMS_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelAbsSynAG ViewSelDpdGrAG ViewSelNmSAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_VWSLNMS_MAIN_SRC_AG)) \
-										: $(RULER2_VWSLNMS_DPDS_SRC_AG)
-
-RULER2_RLSLRNM_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelRlRnm)
-RULER2_RLSLRNM_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_RLSLRNM_MAIN_SRC_AG)) \
-										: $(RULER2_RLSLRNM_DPDS_SRC_AG)
-
-RULER2_RLSLISSL_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelRlIsSel)
-RULER2_RLSLISSL_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelAbsSynAG ViewSelNmSAG ViewSelDpdGrAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_RLSLISSL_MAIN_SRC_AG)) \
-										: $(RULER2_RLSLISSL_DPDS_SRC_AG)
-
-RULER2_VWSLPP_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelPrettyPrint)
-RULER2_VWSLPP_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ViewSelAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_VWSLPP_MAIN_SRC_AG)) \
-										: $(RULER2_VWSLPP_DPDS_SRC_AG)
-
-RULER2_AGARULE_MAIN_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARule)
-RULER2_AGARULE_DPDS_SRC_AG				:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AGARULE_MAIN_SRC_AG)) \
-										: $(RULER2_AGARULE_DPDS_SRC_AG)
-
-RULER2_ARLPATUNQ_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARulePatternUniq)
-RULER2_ARLPATUNQ_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG ARuleOptsAG ExprAbsSynAG ARuleCopyRuleNmAG ARuleFmGamAG ExprFmGamAG ExprOptsAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_ARLPATUNQ_MAIN_SRC_AG)) \
-										: $(RULER2_ARLPATUNQ_DPDS_SRC_AG)
-
-RULER2_ARLRWSUBS_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleRwSubst)
-RULER2_ARLRWSUBS_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG ARuleOptsAG ExprAbsSynAG ARuleCopyRuleNmAG ARuleFmGamAG ExprFmGamAG ExprOptsAG ExprRwExprGamAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_ARLRWSUBS_MAIN_SRC_AG)) \
-										: $(RULER2_ARLRWSUBS_DPDS_SRC_AG)
-
-RULER2_ARLAVARSUBS_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAVarRename)
-RULER2_ARLAVARSUBS_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG ExprAbsSynAG ExprSelfAG ARuleSelfAG ARuleEqnDest1NmAG ARuleInCompDestAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_ARLAVARSUBS_MAIN_SRC_AG)) \
-										: $(RULER2_ARLAVARSUBS_DPDS_SRC_AG)
-
-RULER2_ARLELIMCR_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleElimCopyRule)
-RULER2_ARLELIMCR_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG ExprAbsSynAG ARuleCopyRuleNmAG ARuleEqnDest1NmAG ARuleInCompDestAG ExprSelfAG ARuleSelfAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_ARLELIMCR_MAIN_SRC_AG)) \
-										: $(RULER2_ARLELIMCR_DPDS_SRC_AG)
-
-RULER2_ARLELIMWLDC_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleElimWildcAssign)
-RULER2_ARLELIMWLDC_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG ExprAbsSynAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_ARLELIMWLDC_MAIN_SRC_AG)) \
-										: $(RULER2_ARLELIMWLDC_DPDS_SRC_AG)
-
-RULER2_ARLPRETTY_MAIN_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARulePrettyPrint)
-RULER2_ARLPRETTY_DPDS_SRC_AG			:= $(patsubst %,$(SRC_RULER2_PREFIX)%.ag,ARuleAbsSynAG ExprAbsSynAG ExprPrettyPrintAG ARulePrettyPrintAG ExprSelfAG ARuleSelfAG)
-$(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_ARLPRETTY_MAIN_SRC_AG)) \
-										: $(RULER2_ARLPRETTY_DPDS_SRC_AG)
-
-RULER2_AG_D_MAIN_SRC_AG					:= $(RULER2_AGEXPR_MAIN_SRC_AG) $(RULER2_AGTY_MAIN_SRC_AG) $(RULER2_AGRLAST1_MAIN_SRC_AG) $(RULER2_AGRLAST2_MAIN_SRC_AG) $(RULER2_AGVWSL_MAIN_SRC_AG) $(RULER2_AGARULE_MAIN_SRC_AG)
-RULER2_AG_S_MAIN_SRC_AG					:= $(RULER2_EXISRW_MAIN_SRC_AG) $(RULER2_EXNMS_MAIN_SRC_AG) $(RULER2_EXLTX_MAIN_SRC_AG) \
-											$(RULER2_EXCOGAM_MAIN_SRC_AG) $(RULER2_EXREGAM_MAIN_SRC_AG) \
-											$(RULER2_VWSLSELF_MAIN_SRC_AG) $(RULER2_VWSLNMS_MAIN_SRC_AG) $(RULER2_RLSLRNM_MAIN_SRC_AG) \
-											$(RULER2_RLSLISSL_MAIN_SRC_AG) $(RULER2_VWSLPP_MAIN_SRC_AG) $(RULER2_ARLPATUNQ_MAIN_SRC_AG) \
-											$(RULER2_ARLRWSUBS_MAIN_SRC_AG) $(RULER2_ARLAVARSUBS_MAIN_SRC_AG) $(RULER2_ARLELIMCR_MAIN_SRC_AG) $(RULER2_ARLELIMWLDC_MAIN_SRC_AG) \
-											$(RULER2_ARLPRETTY_MAIN_SRC_AG) \
-											$(RULER2_TYPRETTY_MAIN_SRC_AG) \
-											$(RULER2_AGMAIN1_MAIN_SRC_AG) $(RULER2_AGMAIN2_MAIN_SRC_AG) \
-											$(RULER2_AS1IMPS_MAIN_SRC_AG) \
-											$(RULER2_TRF2ARULE_MAIN_SRC_AG) $(RULER2_TRF2LATEX_MAIN_SRC_AG)
 RULER2_AG_DS_MAIN_SRC_AG				:=
 
-RULER2_AG_ALL_DPDS_SRC_AG				:= $(sort \
-											$(RULER2_AGMAIN1_DPDS_SRC_AG) \
-											$(RULER2_AS1IMPS_DPDS_SRC_AG) \
-											$(RULER2_AGMAIN2_DPDS_SRC_AG) \
-											$(RULER2_TRF2ARULE_DPDS_SRC_AG) \
-											$(RULER2_TRF2LATEX_DPDS_SRC_AG) \
-											$(RULER2_AGEXPR_DPDS_SRC_AG) \
-											$(RULER2_AGTY_DPDS_SRC_AG) \
-											$(RULER2_AGRLAST1_DPDS_SRC_AG) \
-											$(RULER2_AGRLAST2_DPDS_SRC_AG) \
-											$(RULER2_AGVWSL_DPDS_SRC_AG) \
-											$(RULER2_AGARULE_DPDS_SRC_AG) \
-											$(RULER2_EXISRW_DPDS_SRC_AG) \
-											$(RULER2_EXNMS_DPDS_SRC_AG) \
-											$(RULER2_EXLTX_DPDS_SRC_AG) \
-											$(RULER2_EXCOGAM_DPDS_SRC_AG) \
-											$(RULER2_EXREGAM_DPDS_SRC_AG) \
-											$(RULER2_VWSLSELF_DPDS_SRC_AG) \
-											$(RULER2_VWSLNMS_DPDS_SRC_AG) \
-											$(RULER2_RLSLRNM_DPDS_SRC_AG) \
-											$(RULER2_RLSLISSL_DPDS_SRC_AG) \
-											$(RULER2_VWSLPP_DPDS_SRC_AG) \
-											$(RULER2_ARLPATUNQ_DPDS_SRC_AG) \
-											$(RULER2_ARLRWSUBS_DPDS_SRC_AG) \
-											$(RULER2_ARLAVARSUBS_DPDS_SRC_AG) \
-											$(RULER2_ARLELIMCR_DPDS_SRC_AG) \
-											$(RULER2_ARLELIMWLDC_DPDS_SRC_AG) \
-											$(RULER2_ARLPRETTY_DPDS_SRC_AG) \
-											$(RULER2_TYPRETTY_DPDS_SRC_AG) \
-											)
-
+RULER2_AG_ALL_DPDS_SRC_AG				:= $(sort $(RULER2_AG_D_DPDS_SRC_AG) $(RULER2_AG_S_DPDS_SRC_AG))
 RULER2_AG_ALL_MAIN_SRC_AG				:= $(RULER2_AG_D_MAIN_SRC_AG) $(RULER2_AG_S_MAIN_SRC_AG) $(RULER2_AG_DS_MAIN_SRC_AG)
+RULER2_AG_ALL_ODPDS_SRC_AG                              := $(sort $(RULER2_AG_D_ODPDS_SRC_AG) $(RULER2_AG_S_ODPDS_SRC_AG))
+
+
+# Regenerate derived makefile
+$(RULER2_BLD_PREFIX)files-ag-s-dep.mk : $(SRC_PREFIX)ruler2/files-ag-s.dep $(SHUFFLE) $(RULER2_AG_ALL_ODPDS_SRC_AG) $(RULER2_AG_ALL_MAIN_SRC_AG)
+	mkdir -p $(RULER2_BLD_PREFIX)
+	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-s.dep --dep --depnameprefix=RULER2_ --depsrcvar=SRC_RULER2_PREFIX --depdstvar=RULER2_BLD_PREFIX --depmainvar=RULER2_AG_S_MAIN_SRC_AG --depdpdsvar=RULER2_AG_S_DPDS_SRC_AG --deporigdpdsvar=RULER2_AG_S_ODPDS_SRC_AG --depbase=$(SRC_RULER2_PREFIX) > $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
+
+$(RULER2_BLD_PREFIX)files-ag-d-dep.mk : $(SRC_PREFIX)ruler2/files-ag-d.dep $(SHUFFLE) $(RULER2_AG_ALL_ODPDS_SRC_AG) $(RULER2_AG_ALL_MAIN_SRC_AG)
+	mkdir -p $(RULER2_BLD_PREFIX)
+	$(SHUFFLE) $(SRC_RULER2_PREFIX)files-ag-d.dep --dep --depnameprefix=RULER2_ --depsrcvar=SRC_RULER2_PREFIX --depdstvar=RULER2_BLD_PREFIX --depmainvar=RULER2_AG_D_MAIN_SRC_AG --depdpdsvar=RULER2_AG_D_DPDS_SRC_AG --deporigdpdsvar=RULER2_AG_D_ODPDS_SRC_AG --depbase=$(SRC_RULER2_PREFIX) > $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
 
 # all src
 RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG) $(RULER2_HS_MAIN_SRC_HS) \
@@ -246,9 +57,9 @@ RULER2_ALL_SRC							:= $(RULER2_AG_ALL_MAIN_SRC_AG) $(RULER2_AG_ALL_DPDS_SRC_AG
 
 
 # derived
-RULER2_AG_D_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_D_MAIN_SRC_AG))
-RULER2_AG_S_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_S_MAIN_SRC_AG))
-RULER2_AG_DS_MAIN_DRV_HS				:= $(patsubst $(SRC_RULER2_PREFIX)%.ag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_DS_MAIN_SRC_AG))
+RULER2_AG_D_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.cag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_D_MAIN_SRC_AG))
+RULER2_AG_S_MAIN_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.cag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_S_MAIN_SRC_AG))
+RULER2_AG_DS_MAIN_DRV_HS				:= $(patsubst $(SRC_RULER2_PREFIX)%.cag,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_AG_DS_MAIN_SRC_AG))
 RULER2_AG_ALL_MAIN_DRV_HS				:= $(RULER2_AG_D_MAIN_DRV_HS) $(RULER2_AG_S_MAIN_DRV_HS) $(RULER2_AG_DS_MAIN_DRV_HS)
 
 RULER2_HS_ALL_DRV_HS					:= $(RULER2_HS_MAIN_DRV_HS) $(RULER2_HS_DPDS_DRV_HS)
@@ -266,21 +77,25 @@ $(RULER2_BLD_EXEC): $(RULER2_AG_ALL_MAIN_DRV_HS) $(RULER2_HS_ALL_DRV_HS) $(RULER
 	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
 	$(STRIP) $@
 
-$(RULER2_AG_D_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.ag
-	mkdir -p $(@D) ; \
-	$(AGC) -dr -P$(SRC_RULER2_PREFIX) -o $@ $<
+$(RULER2_BLD_PREFIX)%.ag: $(SRC_RULER2_PREFIX)%.cag $(SHUFFLE)
+	mkdir -p $(@D); \
+	$(SHUFFLE) --gen=1 --base=$(*F) --ag --preamble=no --lhs2tex=no --order="1" $< > $@
 
-$(RULER2_AG_S_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.ag
+$(RULER2_AG_D_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_BLD_PREFIX)%.ag
 	mkdir -p $(@D) ; \
-	$(AGC) -cfspr -P$(SRC_RULER2_PREFIX) -o $@ $<
+	$(AGC) -dr -P$(RULER2_BLD_PREFIX) -o $@ $<
 
-$(RULER2_AG_DS_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.ag
+$(RULER2_AG_S_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_BLD_PREFIX)%.ag
 	mkdir -p $(@D) ; \
-	$(AGC) --module=$(*F) -dcfspr -P$(SRC_RULER2_PREFIX) -o $@ $<
+	$(AGC) -cfspr -P$(RULER2_BLD_PREFIX) -o $@ $<
 
-$(RULER2_HS_ALL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.hs
+$(RULER2_AG_DS_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_BLD_PREFIX)%.ag
 	mkdir -p $(@D) ; \
-	cp $< $@
+	$(AGC) --module=$(*F) -dcfspr -P$(RULER2_BLD_PREFIX) -o $@ $<
+
+$(RULER2_HS_ALL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.chs
+	mkdir -p $(@D) ; \
+	$(SHUFFLE) --gen=1 --base=$(*F) --hs --preamble=no --lhs2tex=no --order="1" $< > $@
 
 $(RULER2_CHS_UTIL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D) ; \
@@ -384,5 +199,4 @@ $(RULER2_DEMO_DRV_HS_MAIN): $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_AG)
 $(RULER2_DEMO_EXEC): $(RULER2_DEMO_DRV_HS_MAIN) $(RULER2_DEMO_DRV_HS_UTILS) $(LIB_EH_UTIL_INS_FLAG)
 	mkdir -p $(@D)
 	$(GHC) --make $(GHC_OPTS) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_DEMO_PREFIX) $(RULER2_DEMO_DRV_HS_MAIN) -o $@
-
 

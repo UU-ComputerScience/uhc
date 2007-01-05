@@ -1,0 +1,17 @@
+-------------------------------------------------------------------------
+-- Is Expr a complex (non variable expr)? Then it will be used only for parameterized rewrites
+-------------------------------------------------------------------------
+
+%%[1 ag
+
+ATTR Expr AGExprItf [ | | exprIsRw: ExprIsRw ]
+
+SEM Expr
+  | Op              lhs     .   exprIsRw    =   let nm e = case e of {ExprIsRw n | n /= nmApp -> (`nmApd` n) ; _ -> id}
+                                                in  ExprIsRw . {- nm @lExpr.exprIsRw . -} nm @rExpr.exprIsRw $ @nm
+  | App             lhs     .   exprIsRw    =   ExprIsRw nmApp
+  | Var             lhs     .   exprIsRw    =   ExprIsVar @nm
+  | * - Op Var AppTop App
+                    lhs     .   exprIsRw    =   ExprIsOther
+
+%%]

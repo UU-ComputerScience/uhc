@@ -1,0 +1,36 @@
+-------------------------------------------------------------------------
+-- All used views
+-------------------------------------------------------------------------
+
+%%[1 ag
+
+ATTR AllDecl [ | | allVwNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM Decl
+  | RulView ScmView DataASTView
+                    lhs     .   allVwNmS    =   Set.singleton @nm
+
+-------------------------------------------------------------------------
+-- View order
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | gathVwOrder USE {++} {[]}: {[[[Nm]]]} ]
+
+SEM Decl
+  | ViewHierarchy   lhs     .   gathVwOrder =   [@nmOrder]
+
+-------------------------------------------------------------------------
+-- View dpd graph
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ vwDpdGr: {DpdGr Nm} | | ]
+
+SEM AGItf
+  | AGItf           loc     .   vwDpdGr     =   let vwOrderL = concat @decls.gathVwOrder
+                                                    missing = @decls.allVwNmS `Set.difference` Set.fromList (concat vwOrderL)
+                                                in  mkDpdGrFromOrderWithMissing (Set.toList missing) vwOrderL
+
+SEM Decl
+  | SchemeDeriv     loc     .   firstVwNm   =   last (dgTopSort @lhs.vwDpdGr)
+
+%%]
