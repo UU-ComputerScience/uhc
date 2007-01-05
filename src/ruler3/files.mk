@@ -9,7 +9,7 @@ RULER3_BLD_PREFIX	:= $(BLD_PREFIX)ruler3/
 RULER3_MKF			:= $(SRC_RULER3_PREFIX)files.mk
 
 # sources + dpds, for .rul
-RULER3_RULES_SRC_RL2					:= $(SRC_RULER3_PREFIX)RulerRules.crul
+RULER3_RULES_SRC_RL2					:= $(SRC_RULER3_PREFIX)RulerRules.rul
 
 # main + sources + dpds
 RULER3_MAIN			:= Ruler

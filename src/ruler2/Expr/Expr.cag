@@ -1,0 +1,134 @@
+-------------------------------------------------------------------------
+-- Haskell interface to Expr AST
+-------------------------------------------------------------------------
+
+%%[1 hs module (Expr.Expr)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map, Common)
+%%]
+
+%%[1 ag import ({Expr/AbsSynAG})
+%%]
+
+%%[1 ag
+DERIVING AllExpr: Eq,Ord
+%%]
+
+-------------------------------------------------------------------------
+-- Observation
+-------------------------------------------------------------------------
+
+%%[1 hs
+exprIsCnstr :: Expr -> Bool
+exprIsCnstr e
+  = ic (exprStrip StripFull e)
+  where ic (Expr_Cnstr _ _) = True
+        ic _                = False
+%%]
+
+-------------------------------------------------------------------------
+-- Construction
+-------------------------------------------------------------------------
+
+%%[1 hs
+mkExprApp :: Expr -> [Expr] -> Expr
+mkExprApp f = Expr_AppTop . foldl Expr_App f
+
+exprUnk :: Expr
+exprUnk = Expr_Var nmUnk
+
+exprMbNm :: Expr -> Maybe Nm
+exprMbNm (Expr_Var n) = Just n
+exprMbNm _            = Nothing
+
+exprAsNm :: Expr -> Nm
+exprAsNm = maybe nmUnk id . exprMbNm
+%%]
+
+%%[1 hs
+mkAFld :: Nm -> Expr
+mkAFld n = Expr_AVar (ANm_Fld n)
+
+mkALoc :: Nm -> Expr
+mkALoc n = Expr_AVar (ANm_Loc n [])
+
+mkALoc' :: Nm -> Expr
+mkALoc' n = mkALoc (nmStrApd n nmWild)
+
+mkALhs' :: [AtProp] -> Nm -> Expr
+mkALhs' p n = Expr_AVar (ANm_Lhs n p)
+
+mkALhs :: Nm -> Expr
+mkALhs = mkALhs' []
+
+mkANd :: Nm -> Nm -> Expr
+mkANd n a = Expr_AVar (ANm_Node n a)
+%%]
+
+-------------------------------------------------------------------------
+-- Rename map
+-------------------------------------------------------------------------
+
+%%[1 hs
+data RnSrc = RnNm ANm | RnExpr Expr | RnNone
+
+rnSrc2Expr :: RnSrc -> Expr
+rnSrc2Expr (RnNm   a) = Expr_AVar a
+rnSrc2Expr (RnExpr e) = e
+
+type RnMp = Map.Map Nm (Int,RnSrc)
+
+rnMpUnion :: RnMp -> RnMp -> RnMp
+rnMpUnion m1 m2
+  = Map.unionWith (\(c1,v1) (c2,v2) -> (c1+c2,u v1 v2)) m1 m2
+  where u RnNone r = r
+        u r      _ = r
+%%]
+
+-------------------------------------------------------------------------
+-- Ensure AppTop on top
+-------------------------------------------------------------------------
+
+%%[1 hs
+exprEnsureAppTop :: Expr -> Expr
+exprEnsureAppTop e@(Expr_App _ _    ) = Expr_AppTop e
+exprEnsureAppTop e@(Expr_Op  _ _ _ _) = Expr_AppTop e
+exprEnsureAppTop e                    = e
+%%]
+
+-------------------------------------------------------------------------
+-- Split into lines
+-------------------------------------------------------------------------
+
+%%[1 hs
+exprLines :: Expr -> [Expr]
+exprLines (Expr_LF l r) = l : exprLines r
+exprLines j             = [j]
+%%]
+
+-------------------------------------------------------------------------
+-- Strip syntactic sugar like structure
+-------------------------------------------------------------------------
+
+%%[1 hs
+data ExprStrip = StripBasicNoPar | StripBasic | StripFullNoTop | StripFull deriving (Eq,Ord)
+
+exprStrip' :: ExprStrip -> Expr -> (Expr,Expr->Expr,[Expr])
+exprStrip' s e
+  = str e
+  where str te@(Expr_AppTop  e)  | s >= StripBasicNoPar && s /= StripFullNoTop
+                                                         = sub Expr_AppTop    te e
+        str te@(Expr_Paren   e)  | s >= StripBasic       = sub Expr_Paren     te e
+        str te@(Expr_Named n e)  | s >= StripBasicNoPar  = sub (Expr_Named n) te e
+        str te@(Expr_Retain  e)  | s >= StripFull        = sub Expr_Retain    te e
+        str te@(Expr_SelTop  e)  | s >= StripFull        = sub Expr_SelTop    te e
+        str te                                           = (te,id,[te])
+        sub mkt te e = (e',mkt . mke,te:l)
+                     where (e',mke,l) = str e 
+
+exprStrip :: ExprStrip -> Expr -> Expr
+exprStrip s e
+  = e'
+  where (e',_,_) = exprStrip' s e
+%%]

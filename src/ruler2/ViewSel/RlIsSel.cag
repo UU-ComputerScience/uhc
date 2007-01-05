@@ -1,0 +1,63 @@
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel: RlSel is selected?
+-------------------------------------------------------------------------
+
+%%[1 hs module (ViewSel.RlIsSel)
+%%]
+
+%%[1 hs export (rlSelIsSel, RlSelIsSel)
+%%]
+
+%%[1 hs import (qualified Data.Set as Set, EH.Util.Nm, Common, EH.Util.DependencyGraph, ViewSel.ViewSel)
+%%]
+
+%%[1 ag import ({ViewSel/AbsSynAG}, {ViewSel/DpdGrAG}, {ViewSel/NmSAG})
+%%]
+
+%%[1 ag
+WRAPPER AGRlSelItf
+%%]
+
+%%[1 hs
+wrapRlSel :: DpdGr Nm -> RlSel -> Syn_AGRlSelItf
+wrapRlSel vwDpdGr vs
+  = let r1 = sem_AGRlSelItf (AGRlSelItf_AGItf vs)
+    in  wrap_AGRlSelItf r1
+            (Inh_AGRlSelItf {vwDpdGr_Inh_AGRlSelItf = vwDpdGr
+                            })
+
+rlSelIsSel :: DpdGr Nm -> RlSel -> RlSelIsSel
+rlSelIsSel vwDpdGr rs
+  = rlSelIsSel_Syn_AGRlSelItf r
+  where r = wrapRlSel vwDpdGr rs
+%%]
+
+-------------------------------------------------------------------------
+-- Is it selected?
+-------------------------------------------------------------------------
+
+%%[1 hs
+type RlSelIsSel = Nm -> Nm -> Nm -> Bool
+%%]
+
+%%[1 ag
+ATTR RlSel AGRlSelItf [ | | rlSelIsSel: RlSelIsSel ]
+
+SEM RlSel
+  | Sel             lhs     .   rlSelIsSel  =   \nVw nRs nRl
+                                                    ->  (nVw == nmAny || nVw `Set.member` @vwSel.vwSelNmS)
+                                                        && (nRs == nmAny || @rsSel.isSel nRs)
+                                                        && (nRl == nmAny || @rlSel.isSel nRl)
+%%]
+
+-------------------------------------------------------------------------
+-- Is name selected?
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR NmSel [ | | isSel: {Nm -> Bool} ]
+
+SEM NmSel
+  | All             lhs     .   isSel       =   const True
+  | Nms             lhs     .   isSel       =   (`elem` @nms)
+%%]
