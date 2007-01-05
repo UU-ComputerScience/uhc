@@ -1,7 +1,0 @@
--------------------------------------------------------------------------
--- View dpd graph
--------------------------------------------------------------------------
-
-%%[1 ag
-ATTR AGViewSelItf AGViewSelsItf AGRlSelItf AllViewSel AllRlSel [ vwDpdGr: {DpdGr Nm} | | ]
-%%]
