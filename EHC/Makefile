@@ -38,7 +38,6 @@ include $(SRC_PREFIX)libutil/files.mk
 
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
-include $(SRC_PREFIX)ruler3/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)grinc/variant.mk
 include $(SRC_PREFIX)ehc/files1.mk
