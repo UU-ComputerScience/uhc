@@ -86,7 +86,7 @@ ATTR AGItf [ dataGam: DataGam | | ]
 ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM Decl
-  | Data        loc         .   dgi                 =   mkDGI @tyNm @constrs.dataConstrTagMp @isNewtype
+  | Data        loc         .   dgi                 =   mkDGI @tyNm @constrs.dataConstrNmL @constrs.dataConstrTagMp @isNewtype
                 lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
 %%]
 
@@ -204,10 +204,15 @@ SEM DataConstr
 %%]
 
 %%[7
-ATTR AllDataConstr [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp ]
+ATTR
+  AllDataConstr
+    [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp
+          dataConstrNmL USE {++} {[]}: {[HsName]}
+    ]
 
 SEM DataConstr
   | Constr      lhs         .   dataConstrTagMp     =   @conNm `Map.singleton` @dti
+                            .   dataConstrNmL       =   [@conNm]
                 loc         .   dti                 =   emptyDataTagInfo
                                                           { dtiFldMp = @fldMp
                                                           , dtiConNm = @conNm

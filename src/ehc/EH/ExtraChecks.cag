@@ -91,3 +91,15 @@ SEM Expr
   | AppImpl LamImpl
                 loc         .   nmErrs              =   []
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
+SEM Decl
+  | Instance	loc			.	derivErrs			=	case Map.lookup @instClsNm @derivMp of
+  														  Nothing | @instVariant == InstDeriving
+  														    -> [Err_NoDerivFor @tyPrExpr.pp]
+  														  _ -> []
+%%]

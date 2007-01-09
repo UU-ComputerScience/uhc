@@ -57,8 +57,6 @@ SEM Decl
                 lhs         .   prElimTGam          =   @lhs.prElimTGam
 %%]
 
-peTGamInsertKnPr :: EHCOpts -> PrfCtxtId -> HsName -> PredOccId -> Pred -> PrElimTGam -> PrElimTGam
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Impl types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,9 +131,10 @@ SEM Decl
 %%[[9
                             .   toResolvePrOccL     =   @gathDeclSubsPredL
 %%][95
-                            .   toResolvePrOccL     =   case @instVariant of
+                            .   (toResolvePrOccL,derivAltsPrOcc)
+                                                    =   case @instVariant of
                                                           InstDeriving
-                                                            -> foCnstr foDt |=> concat altsPrOcc
+                                                            -> (foCnstr foDt |=> concat altsPrOcc,altsPrOcc)
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ tgiDataTy @derivDataTGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc
@@ -145,7 +144,7 @@ SEM Decl
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
                                                                          ]
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq9 dataTy @derivHdDataTy
-                                                          _ -> @gathDeclSubsPredL
+                                                          _ -> (@gathDeclSubsPredL,[])
 %%]]
                             .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))

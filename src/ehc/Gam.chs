@@ -777,6 +777,7 @@ type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: HsName
+      , dgiConstrNmL 		:: [HsName]
       , dgiConstrTagMp 		:: DataConstrTagMp
 %%[[8
       , dgiFldInConstrMp	:: DataFldInConstrMp
@@ -789,10 +790,10 @@ type DataGam = Gam HsName DataGamInfo
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
-mkDGI :: HsName -> DataConstrTagMp -> Bool -> DataGamInfo
-mkDGI tyNm m nt
+mkDGI :: HsName -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
+mkDGI tyNm cNmL m nt
   = DataGamInfo
-      tyNm m
+      tyNm cNmL m
 %%[[8
       fm nt
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
@@ -800,7 +801,12 @@ mkDGI tyNm m nt
 %%]]
 
 emptyDataGamInfo :: DataGamInfo
-emptyDataGamInfo = mkDGI hsnUnknown Map.empty False
+emptyDataGamInfo = mkDGI hsnUnknown [] Map.empty False
+%%]
+
+%%[12 export(dgiConstrTagAssocL)
+dgiConstrTagAssocL :: DataGamInfo -> AssocL HsName DataTagInfo
+dgiConstrTagAssocL dgi = [ (cn,panicJust "dgiConstrTagAssocL" $ Map.lookup cn $ dgiConstrTagMp dgi) | cn <- dgiConstrNmL dgi ]
 %%]
 
 %%[7 export(dgiDtiOfCon)
@@ -813,7 +819,7 @@ dataGamLookup :: HsName -> DataGam -> Maybe DataGamInfo
 dataGamLookup nm g
   =  case gamLookup nm g of
        Nothing
-         |  hsnIsProd nm
+         |  hsnIsProd nm							-- ??? should not be necessary, in variant 7 where tuples are represented by records
                  -> Just emptyDataGamInfo
        Just dgi  -> Just dgi
        _         -> Nothing
@@ -826,7 +832,15 @@ dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 
 %%[8 export(dataGamTagsOfTy)
 dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
-dataGamTagsOfTy t g = fmap (map dtiCTag . Map.elems . dgiConstrTagMp) $ gamLookup (tyAppFunConNm t) $ g
+dataGamTagsOfTy t g
+  = fmap
+%%[[8
+      (map dtiCTag . Map.elems . dgiConstrTagMp)
+%%][95
+      (map dtiCTag . assocLElts . dgiConstrTagAssocL)
+%%]]
+    $ gamLookup (tyAppFunConNm t)
+    $ g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

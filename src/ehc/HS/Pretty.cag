@@ -660,7 +660,6 @@ SEM AGItf
 		loc			.	ppExtra		:=	ppCmt (pp @module.mod)
 
 %%[1
-%%]
 SEM Body
     | Body
         loc         .   ppExtra     :=  ppCmt
@@ -671,6 +670,7 @@ SEM Body
         								  -- >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
         								  -- >-< ppGamDup @declarations.undefOccGam
         								  )
+%%]
 
 %%[1
 %%]

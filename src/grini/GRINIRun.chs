@@ -135,6 +135,10 @@ primMp
             ,\rs [RVInt i1,RVInt i2]    ->  let  c = case i1 `compare` i2 of {EQ->0; GT->1; LT->2}
                                             in   return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
           )
+        , ("primEqInt"
+            ,\rs [RVInt i1,RVInt i2]    ->  let  c = case i1 == i2 of {False->0; True->1}
+                                            in   return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
+          )
         , ("primCString2String"
             ,\rs [v@(RVStr _)]    ->  return (rs,Just v)
           )
@@ -330,7 +334,7 @@ grEvalExpr rs e
                                       ->  return (rs3,Nothing)
                                           where  rs2 = upd rs n
                                                  n2 = hsnWild
-                                                 nL@(nF:nAL) = take (length ndFAL) hsnLclSupplyL
+                                                 nL@(nF:nAL) = take (length ndFAL) hsnLclSupply
                                                  e = GrExpr_Seq (GrExpr_Eval nF) (GrPat_Var n2) (GrExpr_App n2 (map GrVal_Var nAL))
                                                  re = Map.fromList (zip nL ndFAL) `Map.union` rsGlobEnv rs
                                                  rs3 = rs2 {rsNext = Just e, rsEnv = re}

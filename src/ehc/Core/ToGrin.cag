@@ -98,11 +98,14 @@ ATTR AllCodeNT [ lamMp: CLamInfoMp | | ]
 
 %%[8.CodeAGItf.lamMp
 SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   Map.empty
+  | AGItf       module      .   lamMp       =   @module.lamNmMp
 %%]
 
 %%[12 -8.CodeAGItf.lamMp
 ATTR CodeAGItf [ lamMp: CLamInfoMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lamMp       =   @module.lamNmMp `Map.union` @lhs.lamMp
 %%]
 
 %%[8
@@ -117,9 +120,6 @@ SEM CBind
   | FFI         loc         .   (argTyL,resTy)
                                             =   tyArrowArgsRes @ty
                 lhs         .   bindLamMp   =   @nm `Map.singleton` length @argTyL
-
-SEM CExpr
-  | Let         loc         .   lamMp       =   @binds.bindLamMp `Map.union` @lhs.lamMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,7 +138,7 @@ SEM CModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | lamNmMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
+ATTR CModule CExpr [ | | lamNmMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
 ATTR CExpr [ | | cafNmMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
 
 SEM CExpr
@@ -444,30 +444,31 @@ SEM CExpr
                                                      n = uidHNm @lUniq
                                                      (argL',wrapGr) = simplArgL @lUniq2 @lhs.lamMp argL
                                                 in   case @func.mbTupApp of
-                                                        Just t
-                                                            ->  let  v  =  case t of
-                                                                             CTagRec       -> mkGrRecNode argL'
-                                                                             CTag _ l t _  -> mkGrConNode t l argL'
-                                                                in   wrapGr (mkE v)
-                                                        Nothing
-                                                            ->  let  ap = case @mbLam of
-                                                                             Just arity
-                                                                               | arity == @appArity && @lhs.isStrict
-                                                                                   -> GrExpr_Call funNm argL'
-                                                                               | arity == @appArity
-                                                                                   -> GrExpr_Store (mkGrTagNode GrTagFun 0 funNm argL')
-                                                                               | arity > @appArity
-                                                                                   -> mkE (mkNdPApp funNm (arity - @appArity) argL')
-                                                                               | arity < @appArity && @lhs.isStrict
-                                                                                   -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
-                                                                               | otherwise
-                                                                                   -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
-                                                                             Nothing
-                                                                               | @lhs.isStrict
-                                                                                   -> mkSq (GrExpr_Eval funNm) n (GrExpr_App n argL')
-                                                                               | otherwise
-                                                                                   -> GrExpr_Store (mkNdApp funNm argL')
-                                                                in   wrapGr ap
+                                                       Just t
+                                                         -> let v  =  case t of
+                                                                        CTagRec       -> mkGrRecNode argL'
+                                                                        CTag _ l t _  -> mkGrConNode t l argL'
+                                                            in  wrapGr (mkE v)
+                                                       Nothing
+                                                         -> let ap = case @mbLam of
+                                                                        Just arity
+                                                                          | arity == @appArity && @lhs.isStrict
+                                                                              -> GrExpr_Call funNm argL'
+                                                                          | arity == @appArity
+                                                                              -> GrExpr_Store (mkGrTagNode GrTagFun 0 funNm argL')
+                                                                          | arity > @appArity
+                                                                              -> mkE (mkNdPApp funNm (arity - @appArity) argL')
+                                                                          | arity < @appArity && @lhs.isStrict
+                                                                              -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
+                                                                          | otherwise
+                                                                              -- -> mkSq (GrExpr_Store (mkGrTagNode GrTagFun 0 funNm (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                              -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                        Nothing
+                                                                          | @lhs.isStrict
+                                                                              -> mkSq (GrExpr_Eval funNm) n (GrExpr_App n argL')
+                                                                          | otherwise
+                                                                              -> GrExpr_Store (mkNdApp funNm argL')
+                                                            in  wrapGr ap
   | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
   | Tup Int Char
                 loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
@@ -564,7 +565,7 @@ tyNmIsUnboxedForFFIRes
 %%[8
 SEM CBind
   | FFI         loc         .   (nmRes,nmArgL,nmArgPatL)
-                                            =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupplyL @lUniq)
+                                            =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mkPat ty n

@@ -633,7 +633,7 @@ mkInstElimRule opts n i sz ctxtToInstTy
            , rulCost      	= pcostBase `pcostExecMulBy` (2 * sz + 1)
            , rulFuncDeps  	= []
            }
-  where ns = take sz hsnLclSupplyL
+  where ns = take sz hsnLclSupply
         ev = MkEvidCtxt n
 
 instance Substitutable TyVarId (CnstrInfo Ty) Rule where

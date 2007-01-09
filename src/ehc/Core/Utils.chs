@@ -44,6 +44,18 @@ rceEnvDataAlts env t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Make pat from tag and arity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(mkCPatCon)
+mkCPatCon :: CTag -> Int -> Maybe [HsName] -> CPat
+mkCPatCon ctag arity mbNmL
+  = CPat_Con hsnWild ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
+  where mkB n o = CPatBind_Bind hsnUnknown (CExpr_Int o) n (CPat_Var n)
+        nmL = maybe (repeat hsnWild) id mbNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Saturate alt's of case w.r.t. all possible tags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -54,9 +66,7 @@ caltLSaturate env alts
       (alt1:_) -> listSaturateWith 0 (length allAlts - 1) (ctagTag . caltTag) allAlts alts
             where allAlts
                     = [ (ctagTag t,mkA env t (ctagArity t)) | t <- rceEnvDataAlts env (caltTag alt1) ]
-                    where mkA env ct a = CAlt_Alt (mkP ct a) (rceCaseCont env)
-                          mkP     ct a = CPat_Con hsnWild ct CPatRest_Empty [mkB o | o <- [0..a-1]]
-                          mkB o        = CPatBind_Bind hsnUnknown (CExpr_Int o) hsnWild (CPat_Var hsnWild)
+                    where mkA env ct a = CAlt_Alt (mkCPatCon ct a Nothing) (rceCaseCont env)
       _     -> []
 %%]
 
@@ -155,7 +165,7 @@ mkCExprSatSelsCases env ne e tgSels
               (CTagRec     ,Just (_,a)) -> mkloL a
               (CTag _ _ _ a,_         ) -> mkloL a
           where mklo (n,l,o) = (n,l,CExpr_Int o)
-                mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupplyL] $ nol
+                mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
 %%]
 
@@ -169,7 +179,7 @@ mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel
 mkCExprSatSelsCaseUpd :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> Int -> [(Int,CExpr)] -> MbCPatRest -> CExpr
 mkCExprSatSelsCaseUpd env ne e ct arity offValL mbRest
   = mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel
-  where ns = take arity hsnLclSupplyL
+  where ns = take arity hsnLclSupply
         nmLblOffL = zip3 ns ns [0..]
         sel = mkCExprApp (CExpr_Tup ct)
                          (map snd $ listSaturateWith 0 (arity-1) fst [(o,(o,CExpr_Var n)) | (n,_,o) <- nmLblOffL] offValL)

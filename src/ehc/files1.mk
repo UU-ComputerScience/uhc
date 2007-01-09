@@ -48,7 +48,7 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam Cnstr Pred Module Config \
+													Substitutable Gam Cnstr Pred Deriving Module Config \
 													Base/Opts Base/Common Base/Builtin Base/HsName Base/Debug \
 													NameAspect \
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
@@ -85,7 +85,7 @@ EHC_AGEHMAIN_DPDS_SRC_CAG				:= $(patsubst %,$(SRC_EHC_PREFIX)EH/%.cag,AbsSyn \
 													Uniq ExtraChecks GatherError \
 													ToCore ResolvePred InferClass \
 											) \
-							   $(patsubst %,$(SRC_EHC_PREFIX)%.cag, \
+							   				$(patsubst %,$(SRC_EHC_PREFIX)%.cag, \
 													Annotations/AnnDT Ty/TyConPatCollect Ty/AnnDecomposePat \
 													EH/ConstrInferExpr EH/ConstrInferData Annotations/AnnSolvers \
 													EH/PrettyHTML \

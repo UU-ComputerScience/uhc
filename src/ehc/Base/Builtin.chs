@@ -44,7 +44,7 @@
 %%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
 %%]
 
-%%[99 export(hsnOrdering, hsnEQ, hsnLT, hsnGT)
+%%[95 export(hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -284,8 +284,8 @@ mkRV m = hsnSetQual m . HNm
  , hsnBool,hsnTrue,hsnFalse
  , hsnString
  , hsnEq
-%%[[99
- , hsnOrdering, hsnEQ, hsnLT, hsnGT
+%%[[95
+ , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
 %%]]
  ]
   = map
@@ -298,7 +298,7 @@ mkRV m = hsnSetQual m . HNm
       , "Bool", "True", "False"
       , "String"
       , "=="
-%%[[99
+%%[[95
       , "Ordering", "EQ", "LT", "GT"
 %%]]
       ]
@@ -330,6 +330,11 @@ mkRV m = hsnSetQual m . HNm
 %%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail,hsnClassEq)
 [hsnMonadSeq,hsnMonadBind,hsnMonadFail
  , hsnClassEq
+%%[[95
+ , hsnClassEqFldEq
+ , hsnBoolAnd
+ , hsnClassOrd, hsnClassOrdFldCompare
+%%]]
  ]
   = map
 %%[[9
@@ -339,6 +344,11 @@ mkRV m = hsnSetQual m . HNm
 %%]]
       [ ">>", ">>=", "fail"
       , "Eq"
+%%[[95
+      , "=="
+      , "&&"
+      , "Ord", "compare"
+%%]]
       ]
 %%]
 
@@ -413,6 +423,19 @@ data EHBuiltinNames
 %%[[11
       , ehbnString                  :: HsName
 %%]]
+%%[[95
+      , ehbnBoolTrue                :: HsName
+      , ehbnBoolFalse               :: HsName
+      , ehbnBoolAnd                 :: HsName
+      , ehbnClassEq                 :: HsName
+      , ehbnClassEqFldEq            :: HsName
+      , ehbnClassOrd                :: HsName
+      , ehbnClassOrdFldCompare      :: HsName
+      , ehbnDataOrdering            :: HsName
+      , ehbnDataOrderingAltLT       :: HsName
+      , ehbnDataOrderingAltEQ       :: HsName
+      , ehbnDataOrderingAltGT       :: HsName
+%%]]
 %%[[99
       , ehbnPackedString2Integer    :: HsName
 %%]]
@@ -421,15 +444,28 @@ data EHBuiltinNames
 mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
 mkEHBuiltinNames f
   = EHBuiltinNames
-      { ehbnId                      = f IdOcc_Val  hsnId
-      , ehbnUndefined               = f IdOcc_Val  hsnUndefined
-      , ehbnError                   = f IdOcc_Val  hsnError
-      , ehbnPackedString2String     = f IdOcc_Val  hsnPackedString2String
+      { ehbnId                      = f IdOcc_Val  		hsnId
+      , ehbnUndefined               = f IdOcc_Val  		hsnUndefined
+      , ehbnError                   = f IdOcc_Val  		hsnError
+      , ehbnPackedString2String     = f IdOcc_Val  		hsnPackedString2String
 %%[[11
-      , ehbnString                  = f IdOcc_Type hsnString
+      , ehbnString                  = f IdOcc_Type 		hsnString
+%%]]
+%%[[95
+      , ehbnBoolTrue                = f IdOcc_Val  		hsnTrue
+      , ehbnBoolFalse               = f IdOcc_Val  		hsnFalse
+      , ehbnBoolAnd                 = f IdOcc_Val  		hsnBoolAnd
+      , ehbnClassEq                 = f IdOcc_Class 	hsnClassEq
+      , ehbnClassEqFldEq            = f IdOcc_Val   	hsnClassEqFldEq
+      , ehbnClassOrd                = f IdOcc_Class 	hsnClassOrd
+      , ehbnClassOrdFldCompare      = f IdOcc_Val   	hsnClassOrdFldCompare
+      , ehbnDataOrdering            = f IdOcc_Type   	hsnDataOrdering
+      , ehbnDataOrderingAltLT       = f IdOcc_Val   	hsnDataOrderingAltLT
+      , ehbnDataOrderingAltEQ       = f IdOcc_Val   	hsnDataOrderingAltEQ
+      , ehbnDataOrderingAltGT       = f IdOcc_Val   	hsnDataOrderingAltGT
 %%]]
 %%[[99
-      , ehbnPackedString2Integer    = f IdOcc_Val  hsnPackedString2Integer
+      , ehbnPackedString2Integer    = f IdOcc_Val  		hsnPackedString2Integer
 %%]]
       }
 %%]
