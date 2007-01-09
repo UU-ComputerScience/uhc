@@ -161,7 +161,7 @@ SEM Declaration
 SEM Deriving
     | Deriving
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
-                                                $ rngLift @range EH.PrExpr_Class @refname [@lhs.ehDataTyExpr]
+                                                $ rngLift @range EH.PrExpr_Class @refname [rngLift @range EH.TyExpr_Parens @lhs.ehDataTyExpr]
                                         in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstDeriving h []
 %%]
 

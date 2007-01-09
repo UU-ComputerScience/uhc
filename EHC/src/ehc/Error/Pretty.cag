@@ -233,6 +233,9 @@ SEM Err
   | MalformedTy         lhs     .  pp   =   ppMsgErr    ("Malformed " ++ @kind ++ " for " ++ @purpose)
                                                         (    @kind >|< ":" >#< ppTy @ty
                                                         )
+  | NoDerivFor          lhs     .  pp   =   ppMsgErr    ("No deriving for")
+                                                        (    "predicate:" >#< @pred
+                                                        )
 %%]
 
 

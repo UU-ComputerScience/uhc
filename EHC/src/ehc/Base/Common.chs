@@ -112,9 +112,6 @@
 %%[8 export(ppUID')
 %%]
 
-%%[8 export(hsnUniqSupplyL,hsnLclSupplyL)
-%%]
-
 %%[90 export(groupSortByOn)
 %%]
 
@@ -1015,12 +1012,15 @@ instance HSNM Token where
 %%% Name supply, with/without uniqueness required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-hsnUniqSupplyL :: UID -> [HsName]
-hsnUniqSupplyL = map uidHNm . iterate uidNext
+%%[8 hs export(hsnUniqSupply,hsnLclSupply,hsnLclSupplyWith)
+hsnUniqSupply :: UID -> [HsName]
+hsnUniqSupply = map uidHNm . iterate uidNext
 
-hsnLclSupplyL :: [HsName]
-hsnLclSupplyL = map (\i -> HNm ("_" ++ show i)) [1..]
+hsnLclSupplyWith :: HsName -> [HsName]
+hsnLclSupplyWith n = map (\i -> hsnSuffix n $ "_" ++ show i) [1..]
+
+hsnLclSupply :: [HsName]
+hsnLclSupply = hsnLclSupplyWith (HNm "")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

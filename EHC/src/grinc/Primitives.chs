@@ -151,7 +151,7 @@ primGlobalNames
   $ map (hsnPrefix rtsGlobalVarPrefix . hsnQualified)
   $ [ hsnTrue, hsnFalse
 %%[[99
-    , hsnEQ, hsnLT, hsnGT
+    , hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
 %%]]
     ]
 

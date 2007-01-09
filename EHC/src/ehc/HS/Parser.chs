@@ -364,7 +364,7 @@ pDeclarationData
 %%[95
 pDeriving :: HSParser Deriving
 pDeriving
-  = (\t -> Deriving_Deriving (mkRange1 t) Nothing True (tokMkQName t)) <$> qconid
+  = (\(n,u) t -> Deriving_Deriving (mkRange1 t) n u (tokMkQName t)) <$> pInstanceName <*> qconid
 %%]
 
 %%[5.pConstructor
@@ -428,11 +428,18 @@ pDeclarationClass
 %%]
 
 %%[9
+pInstanceName :: HSParser (Maybe HsName,Bool)
+pInstanceName
+  =   (\n e -> (Just (tokMkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON)
+  <|> pSucceed (Nothing,True)
+%%]
+
+%%[9
 pDeclarationInstance :: HSParser Declaration
 pDeclarationInstance
   = pINSTANCE
     <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (tokMkQName cl) ts d)
-             <$> ((\n e -> (Just (tokMkQName n),e)) <$> varid <*> (True <$ pLTCOLON <|> False <$ pDCOLON) <|> pSucceed (Nothing,True))
+             <$> pInstanceName
              <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pType
              <*> pWhere' pDeclarationValue
          <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)

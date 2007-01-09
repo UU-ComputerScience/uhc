@@ -60,7 +60,7 @@ SEM Decl
                                                                     , rulFuncDeps   = []
                                                                     }
                                                                where -- o   = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
-                                                                     -- [subn] = take 1 hsnLclSupplyL
+                                                                     -- [subn] = take 1 hsnLclSupply
                                                                      ev = MkEvidSup supNm (tyRecOffset supNm @clsTyRec) @dictTag
                                                         in   zipWith3 (\p n u -> (tyPredMatchNm p,mkR u @hdPrTy p n)) @ctxtPrTyL @supClsNmL (mkNewUIDL (length @ctxtPrTyL) @lUniq2)
                 lhs             .   patTyGam        =   @lhs.patTyGam
@@ -70,7 +70,7 @@ SEM Decl
                                 .   patPrElimTGam   =   foldr (\(n,r) g -> peTGamInsert @lhs.prfCtxtId n r g) @lhs.patPrElimTGam @elimRules
                                 .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
                                                         then @lhs.gathDataGam
-                                                        else let dgi = mkDGI @dataDictNm (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
+                                                        else let dgi = mkDGI @dataDictNm [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
                                                              in  gamAdd @dataDictNm dgi @lhs.gathDataGam
 %%]
                 decls           .   gathTySigGam    =   gamPushNew @lhs.gathTySigGam
@@ -167,6 +167,15 @@ SEM Decl
                 expr            .   knTy            =   foTy @foPr
 %%]
                 lhs             .   gathTySigGam    =   (maybe id (\(n,_) g -> gamAdd n (ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) g) @mbNmElim) @lhs.gathTySigGam
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Deriving info: which class and which field, with info for codegen. A bit hackerish...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
+SEM Decl
+  | Instance    loc             .   derivMp         =   mkDerivClsMp @lhs.opts @lhs.valGam @lhs.dataGam
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Names, yes/no introduced, gamma entries

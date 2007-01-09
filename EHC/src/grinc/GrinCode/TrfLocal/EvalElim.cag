@@ -45,13 +45,13 @@ WRAPPER GrAGItf
 ATTR GrExpr [ | | willEvalNmS: {Set.Set HsName} ]
 
 SEM GrExpr
-  | Eval        lhs         .   willEvalNmS     =   Set.singleton @nm
+  | Eval App    lhs         .   willEvalNmS     =   Set.singleton @nm
   | Seq         expr        .   willEval        =   case @pat.nmAlias of
                                                       NmAlias_Nm nmp
                                                         -> nmp `Set.member` @body.willEvalNmS
                                                       _ -> False
                 lhs         .   willEvalNmS     =   @expr.willEvalNmS `Set.union` @body.willEvalNmS
-  | * - Eval Seq
+  | * - Eval App Seq
                 lhs         .   willEvalNmS     =   Set.empty
 %%]
 
@@ -175,8 +175,11 @@ SEM GrVal
                                                         -> (Nothing,IsEval_Eval)
                                                       (GrTag_Lit GrTagRec _ _,_)									-- record as well
                                                         -> (Nothing,IsEval_Eval)
-                                                      (GrTag_Lit (GrTagPApp _) _ _,_)								-- partial app also, cannot be evaluated further
-                                                        -> (Nothing,IsEval_Eval)
+                                                      (GrTag_Lit (GrTagPApp nMiss) _ nm,_)						   	-- partial app also, cannot be evaluated further, unless 0 missing
+                                                        | @lhs.willEval && nMiss == 0
+                                                          -> (Just $ GrExpr_Call nm @fldL.trf,IsEval_Eval)
+                                                        | otherwise
+                                                          -> (Nothing,IsEval_Eval)
                                                       (t,_)
                                                         -> (Nothing,IsEval_None)
   | * - Node    lhs         .   mbGrExpr        =   Nothing

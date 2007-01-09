@@ -1002,6 +1002,19 @@ cpUpdateModOffMp modNmL
        }
 %%]
 
+-- create dummy module info for .eh's
+%%[12
+cpGetCheckEhMod :: HsName -> EHCompilePhase ()
+cpGetCheckEhMod modNm
+  = do { cr <- get
+       ; let crsi   = crStateInfo cr
+             mm     = crsiModMp crsi
+             mod    = Mod modNm Nothing Nothing [] Rel.empty []
+       ; cpUpdCU modNm (ecuStoreMod mod)
+       ; put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm emptyModMpInfo mm}})
+       }
+%%]
+
 %%[8
 cpTranslateHs2EH :: HsName -> EHCompilePhase ()
 cpTranslateHs2EH modNm
@@ -1550,6 +1563,9 @@ cpCompileCU targHSState modNm
                    ; cpSeq [ cpParseEH modNm
                            , cpStopAt CompilePoint_Parse
                            , cpStepUID, cpProcessEH modNm
+%%[[12
+                                      , cpGetCheckEhMod modNm
+%%]]
                            , cpStopAt CompilePoint_AnalEH
                            , cpStepUID, cpProcessCore1 modNm
                            , cpStopAt CompilePoint_Core
@@ -1646,6 +1662,7 @@ cpCompileOrderedCUs
                ; case {- (\v -> trp "XX" (m >#< show v) v) $ -} ecuState $ crCU m cr of
                    ECUSHaskell HSAllSem   -> flowSem
                    ECUSHaskell HSAllSemHI -> cpFlowHISem m
+                   _                      -> return ()
                }
           where flowSem = cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m,cpFlowOptim m]
         core mL

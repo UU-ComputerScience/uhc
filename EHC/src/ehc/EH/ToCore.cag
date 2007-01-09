@@ -280,7 +280,7 @@ SEM DataConstr
 
 %%[8
 SEM Decl
-  | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupplyL
+  | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                 in  if @isNewtype
                                                     then [ [ CBind_Bind f (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts)
@@ -347,7 +347,7 @@ SEM PatExpr
                                                     grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
                                                     max = ctagArity @tag - 1
                                                     sat = listSaturateWith 0 max (foffOffset . fst)
-                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n)))) [0..max] hsnLclSupplyL)
+                                                            (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n)))) [0..max] hsnLclSupply)
                                                 in  ( map (fsL2PatOffsetL . sat) $ grp fsL
                                                     , fsL2PatOffsetL fsL
                                                     )
@@ -518,34 +518,20 @@ SEM Decl
 %%% Instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%[9
 SEM Decl
   | Instance    lhs         .   cbindL      =   let  off n = cdictOffset n @recTy
-                                                     mkSetFlds1 d bs
+                                                     mkSetFldsRec d bs
                                                        = foldl (\d (CBind_Bind n v) -> mkSet d n v) d bs
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
-                                                     mkSetFlds2 d bs
+                                                     mkSetFldsData d bs
                                                        = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL Nothing
                                                        where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
                                                              offValL = [ (off n,v) | (CBind_Bind n v) <- bs ]
-                                                     mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFlds1 else mkSetFlds2
+                                                     mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFldsRec else mkSetFldsData
                                                      d = case @instVariant of
                                                            InstNormal
-                                                             -> dD
-                                                             where nDflt = rulNmEvid . pigiRule $ @pigi
-                                                                   nStrictDflt = hsnSuffix nDflt "!"
-                                                                   nR = @dictBuildNm
-                                                                   nStrictR = hsnSuffix nR "!"
-                                                                   dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
-                                                                             (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supPrfEvidL))
-                                                                   dD = mkCExprLam @ctxtArgNmL
-                                                                          (mkCExprLetRec
-                                                                              ([CBind_Bind nR
-                                                                                  (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d @decls.cbindL))]
-                                                                               ++ (@cSubst `cSubstApp` (@supPrfIntroCBindL ++ @prfIntroCBindL)))
-                                                                              (CExpr_Var nR)
-                                                                          )
+                                                             -> mkNormalD @decls.cbindL
                                                            InstDefault
                                                              -> dD
                                                              where nD = @dictSelfNm
@@ -562,12 +548,63 @@ SEM Decl
                                                                      where b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
 %%[[95
                                                            InstDeriving -- TBD
-                                                             -> cundefined @lhs.opts
+                                                             -> mkNormalD bindL
+                                                             where nsA@(n1:n1s) = hsnLclSupplyWith (mkHNm "x")
+                                                                   mkf :: DerivClsFld -> CBind
+                                                                   mkf dcf
+                                                                     = CBind_Bind (dcfNm dcf)
+                                                                         (mkCExprLam (take (fArity - 1) nsA)
+                                                                            (mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") (CExpr_Var n1)
+                                                                               [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag)) (mkc (splitTags ctag ctags) (fArity - 2) n1s [n1subs ctag] altPrOccL)
+                                                                               | (ctag,altPrOccL) <- zip ctags @derivAltsPrOcc
+                                                                               ]
+                                                                         )  )
+                                                                     where ctags = panicJust "Decl.Instance.Deriving.dataGamTagsOfTy" $ dataGamTagsOfTy @derivHdDataTy @lhs.dataGam
+                                                                           splitTags t ts -- in (lt,eq,gt), according to list ordering
+                                                                             = (l,e,g)
+                                                                             where (l,(e:g)) = span (/= t) ts
+                                                                           fArity = length $ tyArrowArgs $ dcfTy dcf
+                                                                           n1subs t = nsubs t n1
+                                                                           nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
+                                                                           mkc tg@(ctagsLT,ctag,ctagsGT) arity nms nmFldLL altPrOccL
+                                                                             = case nms of
+                                                                                 (n:ns) | arity > 0
+                                                                                   -> mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n "!") (CExpr_Var n)
+                                                                                        (   [ mka ctag tsubs (mkc tg (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
+                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- ctagsLT ]
+                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- ctagsGT ]
+                                                                                        )
+                                                                                   where tsubs = nsubs ctag n
+                                                                                         mka ctag nsubs e = CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just nsubs)) e
+                                                                                 _ -> dcfAllTagEqCExpr dcf @lUniq @rceEnv
+                                                                                      $ [ CExpr_Var (dcfNm dcf) `mkCExprApp` (mkCExprPrHole (poPoi prOcc) : map CExpr_Var nmFldL)
+                                                                                        | (nmFldL,prOcc) <- zip (transpose nmFldLL) altPrOccL
+                                                                                        ]
+                                                                   bindL
+                                                                     = [ mkf dcf | (_,dcf) <- panicJust "Decl.Instance.Deriving.derivMp" $ Map.lookup @instClsNm @derivMp ]
+                                                                           
 %%]]
+                                                     mkNormalD bindL
+                                                       = dD
+                                                       where nDflt = rulNmEvid . pigiRule $ @pigi
+                                                             nStrictDflt = hsnSuffix nDflt "!"
+                                                             nR = @dictBuildNm
+                                                             nStrictR = hsnSuffix nR "!"
+                                                             dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
+                                                                       (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supPrfEvidL))
+                                                             dD = mkCExprLam @ctxtArgNmL
+                                                                    (mkCExprLetRec
+                                                                        ([CBind_Bind nR
+                                                                            (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d bindL))]
+                                                                         ++ (@cSubst `cSubstApp` (@supPrfIntroCBindL ++ @prfIntroCBindL)))
+                                                                        (CExpr_Var nR)
+                                                                    )
                                                 in   [CBind_Bind @dictNm (@cSubst `cSubstApp` d)]
   | InstanceIntro
                 lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
 %%]
+
+mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Case
@@ -752,14 +789,14 @@ rceMatchConst env (arg:args) alts
 
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
-  |  raltIsVar      	alt  = rceMatchVar      	env args alts
-  |  raltIsConst    	alt  = rceMatchConst    	env args alts
+  |  raltIsVar          alt  = rceMatchVar          env args alts
+  |  raltIsConst        alt  = rceMatchConst        env args alts
   |  raltIsIrrefutable  alt  = rceMatchIrrefutable  env args alts
 %%[[99
-  |  raltIsBoolExpr 	alt  = rceMatchBoolExpr 	env args alts
+  |  raltIsBoolExpr     alt  = rceMatchBoolExpr     env args alts
 %%]]
-  |  raltIsConMany  	alt  = rceMatchConMany  	env args alts
-  |  otherwise          	 = rceMatchCon      	env args alts
+  |  raltIsConMany      alt  = rceMatchConMany      env args alts
+  |  otherwise               = rceMatchCon          env args alts
 
 rceMatch :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
@@ -828,5 +865,10 @@ SEM PatExpr
 %%[8
 SEM Decl
   | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%[95
+SEM Decl
+  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 

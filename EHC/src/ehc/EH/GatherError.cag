@@ -209,7 +209,7 @@ SEM Decl
   | Instance    loc         .   lErrL       =   firstNotEmpty
                                                   [ @valNoSigErrs,@tyPrExpr.errL
 %%[[95
-                                                  , @cxSplitErrs
+                                                  , @cxSplitErrs ++ @derivErrs
 %%]]
                                                   , @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
                                                   ]

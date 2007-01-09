@@ -799,7 +799,7 @@ SEM Declaration
                                                     , @context.idUseOccGam
 %%]]
 %%[[95
-                                                    , @derivings.idUseOccGam
+                                                    -- , @derivings.idUseOccGam
 %%]]
                                                     ]
                                                 )
