@@ -6,7 +6,7 @@
 %%[8 hs module {%{GRIN}GrinCode.GenSilly} import({%{GRIN}Silly}) export(grin2silly)
 %%]
 
-%%[8 hs import(UU.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config})
+%%[8 hs import(UU.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Config})
 %%]
 %%[8 hs import({%{GRIN}Silly})
 %%]
@@ -37,6 +37,25 @@ grin2silly hptmap gr optJump optPar optLoc
                                      }
                         )
    in silModule_Syn_GrAGItf t 
+%%]
+
+%%[12 hs import({%{EH}Base.Builtin},{%{GRIN}Config})
+-- primitive related names which should be globally available, in unqualified form
+
+primGlobalNames :: Set.Set HsName
+primGlobalNames
+  = Set.fromList
+  $ map (hsnPrefix rtsGlobalVarPrefix . hsnQualified)
+  $ [ hsnTrue, hsnFalse
+%%[[99
+    , hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
+%%]]
+    ]
+
+hsnToGlobal :: HsName -> HsName
+hsnToGlobal n
+  = if n2 `Set.member` primGlobalNames then n2 else n
+  where n2 = hsnQualified n
 %%]
 
 %%[8 import({GrinCode/ToSilly})
