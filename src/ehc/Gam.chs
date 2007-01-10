@@ -777,7 +777,9 @@ type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: HsName
+%%[[12
       , dgiConstrNmL 		:: [HsName]
+%%]]
       , dgiConstrTagMp 		:: DataConstrTagMp
 %%[[8
       , dgiFldInConstrMp	:: DataFldInConstrMp
@@ -793,7 +795,11 @@ instance Show DataGamInfo where
 mkDGI :: HsName -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
 mkDGI tyNm cNmL m nt
   = DataGamInfo
-      tyNm cNmL m
+      tyNm
+%%[[12
+      cNmL
+%%]]
+      m
 %%[[8
       fm nt
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union

@@ -7,7 +7,7 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},UU.Pretty)
+%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin},UU.Pretty)
 %%]
 
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -46,7 +46,7 @@ DERIVING *     : Show, Eq
 hsnGrApply  = HNm "!apply"
 hsnGrEval   = HNm "!eval"
 
-grBuiltinTyNmL = [ hsnInt, hsnChar, hsnPackedString ] ++ map hsnProd (0:[2..10])
+grBuiltinTyNmL opts = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames opts ] ++ map hsnProd (0:[2..10])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -148,7 +148,7 @@ format ag ANY = (Ty_Any|Ty)
 format ag ity = imprTy
 format ag ty.ident = gTy
 
-format ag  tyString2 = "(Ty_Con (ehbnString $ ehcOptBuiltinNames @lhs.opts))"
+format ag  tyString2 = "(Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))"
 format tex tyString2 = tyString
 
 -- tvars

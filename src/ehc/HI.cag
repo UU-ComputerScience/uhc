@@ -43,13 +43,13 @@ hiFromAllGams
      -> DataGam
      -> Pr.PrIntroGam
      -> Pr.PrElimTGam
-     -> CLamInfoMp
+     -> CArityMp
      -> GrInlMp
      -> FastSeq Binding
-hiFromAllGams exps fg idg vg tg dg ig eg lamMp inlMp
+hiFromAllGams exps fg idg vg tg dg ig eg arityMp inlMp
   = FSeqL [Binding_Export exps]
     :++: FSeqL [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
-    :++: FSeqL [Binding_Arities $ Map.toList lamMp]
+    :++: FSeqL [Binding_Arities $ Map.toList arityMp]
     :++: FSeqL [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
     :++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
     :++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg

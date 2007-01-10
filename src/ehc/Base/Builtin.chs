@@ -146,7 +146,7 @@ hsnFldUpd       nm                  =   strFldUpd `hsnPrefix` nm
 %%]
 
 %%[5
-hsnIsList       hsn                 =   hsn == hsnList
+hsnIsList       hsn                 =   hsn == hsnDataList
 %%]
 
 %%[6
@@ -279,11 +279,11 @@ mkRV m = hsnSetQual m . HNm
       [ "enumFromThenTo", "enumFromThen", "enumFromTo", "enumFrom" ]
 %%]
 
-%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnString,hsnList,hsnListCons,hsnListNil,hsnEq,hsnConcatMap)
-[hsnList,hsnListCons,hsnListNil,hsnConcatMap
+%%[5 export(hsnBool,hsnTrue,hsnFalse,hsnDataList,hsnDataListAltCons,hsnDataListAltNil,hsnClassEqFldEq,hsnPrelConcatMap)
+[hsnDataList,hsnDataListAltCons,hsnDataListAltNil,hsnPrelConcatMap
  , hsnBool,hsnTrue,hsnFalse
- , hsnString
- , hsnEq
+ , hsnPrelString
+ , hsnClassEqFldEq
 %%[[95
  , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
 %%]]
@@ -304,10 +304,10 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnPackedString2String,hsnPackedString,hsnId)
+%%[8 export(hsnUndefined,hsnPackedString2String,hsnPackedString,hsnPrelId)
 [hsnUndefined
  , hsnPackedString, hsnPackedString2String
- , hsnId
+ , hsnPrelId
 %%[[99
  , hsnPackedString2Integer
 %%]]
@@ -331,9 +331,10 @@ mkRV m = hsnSetQual m . HNm
 [hsnMonadSeq,hsnMonadBind,hsnMonadFail
  , hsnClassEq
 %%[[95
- , hsnClassEqFldEq
  , hsnBoolAnd
  , hsnClassOrd, hsnClassOrdFldCompare
+ , hsnPrelConcat2, hsnPrelConcat
+ , hsnPrelCompose
 %%]]
  ]
   = map
@@ -345,10 +346,28 @@ mkRV m = hsnSetQual m . HNm
       [ ">>", ">>=", "fail"
       , "Eq"
 %%[[95
-      , "=="
       , "&&"
       , "Ord", "compare"
+      , "concat", "++"
+      , "."
 %%]]
+      ]
+%%]
+
+%%[95
+[hsnClassShow
+ , hsnClassShowFldShow, hsnClassShowFldShowsPrec
+ , hsnPrelShowString, hsnPrelShowParen
+ ]
+  = map
+%%[[9
+      mkRV
+%%][99
+      (mkRV hsnModShow)
+%%]]
+      [ "Show"
+      , "show", "showsPrec"
+      , "showString", "showParen"
       ]
 %%]
 
@@ -397,6 +416,7 @@ hsnModBase                          =   hsnPrefixQual hsnEHC (HNm "Base")
 hsnModEnum                          =   hsnPrefixQual hsnEHC (HNm "Enum")
 hsnModNum                           =   hsnPrefixQual hsnEHC (HNm "Num")
 hsnModReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
+hsnModShow                          =   hsnPrefixQual hsnEHC (HNm "Show")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -419,9 +439,10 @@ data EHBuiltinNames
       { ehbnId                      :: HsName
       , ehbnUndefined               :: HsName
       , ehbnError                   :: HsName
+      , ehbnPackedString            :: HsName
       , ehbnPackedString2String     :: HsName
 %%[[11
-      , ehbnString                  :: HsName
+      , ehbnPrelString              :: HsName
 %%]]
 %%[[95
       , ehbnBoolTrue                :: HsName
@@ -435,6 +456,14 @@ data EHBuiltinNames
       , ehbnDataOrderingAltLT       :: HsName
       , ehbnDataOrderingAltEQ       :: HsName
       , ehbnDataOrderingAltGT       :: HsName
+      , ehbnClassShow               :: HsName
+      , ehbnClassShowFldShow        :: HsName
+      , ehbnClassShowFldShowsPrec   :: HsName
+      , ehbnPrelShowString          :: HsName
+      , ehbnPrelShowParen           :: HsName
+      , ehbnPrelConcat              :: HsName
+      , ehbnPrelConcat2             :: HsName
+      , ehbnPrelCompose             :: HsName
 %%]]
 %%[[99
       , ehbnPackedString2Integer    :: HsName
@@ -444,12 +473,13 @@ data EHBuiltinNames
 mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
 mkEHBuiltinNames f
   = EHBuiltinNames
-      { ehbnId                      = f IdOcc_Val  		hsnId
+      { ehbnId                      = f IdOcc_Val  		hsnPrelId
       , ehbnUndefined               = f IdOcc_Val  		hsnUndefined
       , ehbnError                   = f IdOcc_Val  		hsnError
+      , ehbnPackedString            = f IdOcc_Type 		hsnPackedString
       , ehbnPackedString2String     = f IdOcc_Val  		hsnPackedString2String
 %%[[11
-      , ehbnString                  = f IdOcc_Type 		hsnString
+      , ehbnPrelString              = f IdOcc_Type 		hsnPrelString
 %%]]
 %%[[95
       , ehbnBoolTrue                = f IdOcc_Val  		hsnTrue
@@ -463,6 +493,14 @@ mkEHBuiltinNames f
       , ehbnDataOrderingAltLT       = f IdOcc_Val   	hsnDataOrderingAltLT
       , ehbnDataOrderingAltEQ       = f IdOcc_Val   	hsnDataOrderingAltEQ
       , ehbnDataOrderingAltGT       = f IdOcc_Val   	hsnDataOrderingAltGT
+      , ehbnClassShow               = f IdOcc_Class 	hsnClassShow
+      , ehbnClassShowFldShow        = f IdOcc_Val   	hsnClassShowFldShow
+      , ehbnClassShowFldShowsPrec   = f IdOcc_Val   	hsnClassShowFldShowsPrec
+      , ehbnPrelShowString          = f IdOcc_Val   	hsnPrelShowString
+      , ehbnPrelShowParen           = f IdOcc_Val   	hsnPrelShowParen
+      , ehbnPrelConcat              = f IdOcc_Val   	hsnPrelConcat
+      , ehbnPrelConcat2             = f IdOcc_Val   	hsnPrelConcat2
+      , ehbnPrelCompose             = f IdOcc_Val   	hsnPrelCompose
 %%]]
 %%[[99
       , ehbnPackedString2Integer    = f IdOcc_Val  		hsnPackedString2Integer

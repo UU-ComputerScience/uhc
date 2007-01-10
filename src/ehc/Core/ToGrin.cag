@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.ToGrin} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty},{%{EH}GrinCode},Char)
+%%[8 hs module {%{EH}Core.ToGrin} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty},{%{EH}GrinCode},Char)
 %%]
 
 %%[8 hs export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
@@ -23,6 +23,14 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DataGam required for FFI possible tags
@@ -93,24 +101,68 @@ SEM CPatBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ lamMp: CLamInfoMp | | ]
-%%]
+ATTR
+  CModule CExpr
+%%[[12
+  CodeAGItf
+%%]]
+    [ | | gathArityMp: CArityMp ]
 
-%%[8.CodeAGItf.lamMp
-SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   @module.lamNmMp
-%%]
-
-%%[12 -8.CodeAGItf.lamMp
-ATTR CodeAGItf [ lamMp: CLamInfoMp | | ]
-
-SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   @module.lamNmMp `Map.union` @lhs.lamMp
+SEM CExpr
+  | Let         lhs         .   gathArityMp =   @binds.bindArityMp `Map.union` @body.gathArityMp
+  | * - Let     lhs         .   gathArityMp =   Map.empty
 %%]
 
 %%[8
-ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
-ATTR AllBind [ | | bindCafMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
+ATTR
+  AllCodeNT
+%%[[12
+  CodeAGItf
+%%]]
+    [ arityMp: CArityMp | | ]
+%%]
+
+%%[8.CodeAGItf.arityMp
+SEM CodeAGItf
+  | AGItf       module      .   arityMp     =   @module.gathArityMp
+%%]
+
+%%[12 -8.CodeAGItf.arityMp
+SEM CodeAGItf
+  | AGItf       module      .   arityMp     =   @module.gathArityMp `Map.union` @lhs.arityMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known function arity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+ATTR AllCodeNT [ lamMp: CArityMp | | ]
+
+%%[8.CodeAGItf.lamMp
+%%]
+SEM CodeAGItf
+  | AGItf       module      .   lamMp       =   @module.lamNmMp
+
+%%[12 -8.CodeAGItf.lamMp
+%%]
+ATTR CodeAGItf [ lamMp: CArityMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lamMp       =   @module.lamNmMp `Map.union` @lhs.lamMp
+
+%%[8
+ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
+
+SEM CBind
+  | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
+  | FFI         loc         .   (argTyL,resTy)
+                                            =   tyArrowArgsRes @ty
+                lhs         .   bindArityMp =   @nm `Map.singleton` length @argTyL
+%%]
+ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: CArityMp ]
+ATTR AllBind [ | | bindCafMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CBind
   | Bind        lhs         .   (bindLamMp,bindCafMp)
@@ -120,31 +172,30 @@ SEM CBind
   | FFI         loc         .   (argTyL,resTy)
                                             =   tyArrowArgsRes @ty
                 lhs         .   bindLamMp   =   @nm `Map.singleton` length @argTyL
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering known function arity for other modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[12
-ATTR CodeAGItf CModule [ | | gathLamMp: CLamInfoMp ]
+%%]
+ATTR CodeAGItf CModule [ | | gathLamMp: CArityMp ]
 
 SEM CModule
   | Mod         lhs         .   gathLamMp   =   @expr.lamNmMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% All function names (which only live on top level after lambda lifting), ditto CAF's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CModule CExpr [ | | lamNmMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
-ATTR CExpr [ | | cafNmMp USE {`Map.union`} {Map.empty}: CLamInfoMp ]
+%%]
+ATTR CModule CExpr [ | | lamNmMp USE {`Map.union`} {Map.empty}: CArityMp ]
+ATTR CExpr [ | | cafNmMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CExpr
   | Let         lhs         .   lamNmMp     =   @binds.bindLamMp `Map.union` @body.lamNmMp
                             .   cafNmMp     =   @binds.bindCafMp `Map.union` @body.cafNmMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Variables which are passed as parameter
@@ -154,12 +205,12 @@ SEM CExpr
 ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CExpr
-  | Var         loc         .   mbLam       =   case Map.lookup @nm @lhs.lamMp of
-                                                    Just arity | @lhs.isTopApp
-                                                        -> Just arity
+  | Var         loc         .   mbLam       =   case arityMpLookupLam @nm @lhs.arityMp of
+                                                    j@(Just arity) | @lhs.isTopApp
+                                                        -> j
                                                     _   -> Nothing
                 lhs         .   asArgNmS    =   maybe Set.empty (const (Set.singleton @nm)) @mbLam
-  | App         loc         .   mbLam       =   Map.lookup @grAppFun @lhs.lamMp
+  | App         loc         .   mbLam       =   arityMpLookupLam @grAppFun @lhs.arityMp
                             .   appArity    =   length @grAppArgL
                 lhs         .   asArgNmS    =   @func.asArgNmS
                                                     `Set.union`  maybe @arg.asArgNmS Set.singleton @arg.mbVar
@@ -178,10 +229,10 @@ SEM CExpr
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
-  | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 (if hsnIsProd n then hsnProdArity n else 1))])) grBuiltinTyNmL
+  | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 (if hsnIsProd n then hsnProdArity n else 1))])) (grBuiltinTyNmL @lhs.opts)
                             .   constrsMp   =   @primTyconMp ++ @ctagsMp
 
-                            .   allFPTags   =   Map.toList @expr.lamNmMp
+                            .   allFPTags   =   Map.toList $ arityMpFilterLam @expr.gathArityMp
                             .   allPTags    =   [ (nm, arity, k)
                                                 | (nm, arity) <- (hsnGrApply,2) : filter ((`Set.member` @expr.asArgNmS) . fst) @allFPTags
                                                 , k <- [1..arity]
@@ -192,7 +243,7 @@ SEM CModule
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
                                                        ( {- (hsnUndefined,0)
                                                        : -} (hsnGrApply,2)
-                                                       : @allFPTags ++ Map.toList @expr.cafNmMp
+                                                       : @allFPTags ++ (Map.toList $ arityMpFilterCaf @expr.gathArityMp)
                                                        )
 
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags
@@ -363,14 +414,14 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
 %%]
 
 %%[8 hs
-simplArgL :: UID -> CLamInfoMp -> GrValL -> (GrValL,GrExpr->GrExpr)
-simplArgL uniq lamMp vL
+simplArgL :: UID -> CArityMp -> GrValL -> (GrValL,GrExpr->GrExpr)
+simplArgL uniq arityMp vL
   =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
      in   foldr  (\(n,a) (aL,wG)
                     ->  case a of
                             GrVal_Var v | isJust mbArity
                                 -> (GrVal_Var n : aL,mkSq a' n . wG)
-                                where mbArity = Map.lookup v lamMp
+                                where mbArity = arityMpLookupLam v arityMp
                                       a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
                             GrVal_Node _ _
                                 -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
@@ -442,7 +493,7 @@ SEM CExpr
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
                                                      n = uidHNm @lUniq
-                                                     (argL',wrapGr) = simplArgL @lUniq2 @lhs.lamMp argL
+                                                     (argL',wrapGr) = simplArgL @lUniq2 @lhs.arityMp argL
                                                 in   case @func.mbTupApp of
                                                        Just t
                                                          -> let v  =  case t of
@@ -474,7 +525,7 @@ SEM CExpr
                 loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
   | TupIns TupUpd TupDel
                 loc         .   grExpr      =   if @lhs.isTopTup
-                                                then  mkGrAdapt @lUniq @lhs.lamMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
+                                                then  mkGrAdapt @lUniq @lhs.arityMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
                                                 else  GrExpr_Unit GrVal_Empty
   | * - Let Case App Var Tup Int Char TupIns TupUpd TupDel
                 loc         .   grExpr      =   GrExpr_Unit @grVal
@@ -483,12 +534,12 @@ SEM CExpr
 %%[8 hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
-mkGrAdapt :: UID -> CLamInfoMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
-mkGrAdapt u lamMp isStrict tupFldL tupRecNm
+mkGrAdapt :: UID -> CArityMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
+mkGrAdapt u arityMp isStrict tupFldL tupRecNm
   =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
           (oL',wrO) = unboxArgL u1 hsnInt oL
-          (vL',wrV) = simplArgL u2 lamMp vL
+          (vL',wrV) = simplArgL u2 arityMp vL
      in   wrV . wrO . retStrict isStrict
           . GrVal_NodeAdapt tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'
@@ -502,7 +553,7 @@ SEM CExpr
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
-  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnPackedString else id)  (GrVal_LitStr @str)
+  | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox (ehbnPackedString $ ehcOptBuiltinNames @lhs.opts) else id)  (GrVal_LitStr @str)
   | * - Int Char String Var Tup
                 loc         .   grVal       =   GrVal_Empty
 %%]
@@ -556,24 +607,25 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-tyNmIsUnboxedForFFIRes :: HsName -> Bool
-tyNmIsUnboxedForFFIRes
+tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Bool
+tyNmIsUnboxedForFFIRes opts
   = (`elem` ns)
-  where ns = [ hsnInt, hsnChar, hsnPackedString ]
+  where ns = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames opts ]
 %%]
 
 %%[8
 SEM CBind
-  | FFI         loc         .   (nmRes,nmArgL,nmArgPatL)
+  | FFI         loc         .   isUnboxed   =   tyNmIsUnboxedForFFIRes @lhs.opts
+                            .   (nmRes,nmArgL,nmArgPatL)
                                             =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | tyNmIsUnboxedForFFIRes t -> mkGrPatConNode 0 t [n]
-                                                            _                            -> GrPat_Var n
+                                                            t | @isUnboxed t -> mkGrPatConNode 0 t [n]
+                                                            _                -> GrPat_Var n
                                                      resTyNm = tyConNm @resTy
-                                                     resIsUnboxed = tyNmIsUnboxedForFFIRes resTyNm
+                                                     resIsUnboxed = @isUnboxed resTyNm
                                                      resTagL
                                                        = case dataGamTagsOfTy @resTy @lhs.dataGam of
                                                            Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering

@@ -197,15 +197,6 @@ GB_Byte gb_code_Eval[] =
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Node constants
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-See gbprim
-
-%%[8
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GMP memory allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -233,6 +224,32 @@ void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
 void gb_Free_GMP( void *n, size_t nBytesOld )
 {
 }
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finalization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
+#if USE_BOEHM_GC
+void gb_Node_Finalize( void* p, void* cd )
+{
+	GB_NodePtr n = Cast(GB_NodePtr,p) ;
+	GB_NodeHeader h = n->header ;
+	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl )
+	{
+		switch( GB_NH_Fld_Tag(h) )
+		{
+			case GB_NodeTag_Intl_Malloc :
+				free( n->content.ptr ) ;
+				break ;
+		}
+	}
+}
+
+void* gb_Dummy_Finalization_Proc ;
+void* gb_Dummy_Finalization_cd ;
 #endif
 %%]
 

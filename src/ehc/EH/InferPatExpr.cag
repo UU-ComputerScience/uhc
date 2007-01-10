@@ -229,7 +229,7 @@ SEM PatExpr
 
 %%[99
 SEM PatExpr
-  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnEq @lhs.valGam
+  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnClassEqFldEq @lhs.valGam
                             .   knExprTy            =   mkTyVar @lUniq
                             .   fo_                 =   fitsIn strongFIOpts @fe @lUniq2
                                                             (@lhs.tyCnstr |=> @eqTy)
@@ -237,7 +237,7 @@ SEM PatExpr
                 expr        .   knTy                =   @knExprTy
 %%]
 SEM PatExpr
-  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnEq @lhs.valGam
+  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnClassEqFldEq @lhs.valGam
                             .   knExprTy            =   mkTyVar @lUniq
                             .   fo_                 =   fitsIn strongFIOpts @fe @lUniq2
                                                             (@lhs.tyCnstr |=> @eqTy)

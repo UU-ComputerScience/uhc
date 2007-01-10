@@ -400,7 +400,7 @@ tagIsUnboxed gt
   = case gt of
       GrTag_Lit categ tg nm
         -> case categ of
-             GrTagCon | nm == hsnInt
+             GrTagCon | nm == hsnInt || nm == hsnChar
                -> True
              _ -> dflt
       GrTag_Unboxed

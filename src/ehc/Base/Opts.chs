@@ -108,9 +108,9 @@ data EHCOpts
       ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptEmitExecBC     ::  Bool
       ,  ehcOptSearchPath     ::  [String]
-      ,  ehcOptVerbosity      ::  Verbosity
+      ,  ehcOptVerbosity      ::  Verbosity			-- verbosity level
       ,  ehcOptTrf            ::  [TrfOpt]
-      ,  ehcOptOptimise       ::  Optimise
+      ,  ehcOptOptimise       ::  Optimise			-- optimisation level
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
 %%]]
@@ -125,13 +125,14 @@ data EHCOpts
 %%]]
 %%[[12
       ,  ehcOptCheckRecompile ::  Bool
-      ,  ehcOptFullProgGRIN   ::  Bool
+      ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
 %%]]
 %%[[99
-      ,  ehcProgName          ::  String
-      ,  ehcOptShowNumVersion ::  Bool
-      ,  ehcOptCPP            ::  Bool
-      ,  ehcOptUseAssumePrelude  ::  Bool
+      ,  ehcProgName          ::  String			-- name of this program
+      ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
+      ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
+      ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
+                              ::  Bool
 %%]]
       }
 %%]
@@ -400,6 +401,7 @@ optsDiscrRecompileRepr opts
       , o "exec"            (ehcOptEmitExec     opts)
       , o "fullproggrin"    (ehcOptFullProgGRIN    opts)
       , o "bexec"           (ehcOptEmitExecBC   opts)
+      , o "clsrec"          (ehcCfgClassViaRec   opts)
       , show (ehcOptOptimise opts)
       ]
   where o m v = if v then m else ""
