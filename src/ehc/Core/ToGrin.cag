@@ -576,9 +576,12 @@ SEM CBind
                                                      resIsUnboxed = tyNmIsUnboxedForFFIRes resTyNm
                                                      resTagL
                                                        = case dataGamTagsOfTy @resTy @lhs.dataGam of
-                                                           Just ts          -> [ GrTag_Lit GrTagCon (ctagTag' t) (ctagNm t) | t <- ts ]
-                                                           _ | resIsUnboxed -> [ GrTag_Unboxed ]
-                                                             | otherwise    -> [ GrTag_Any ]
+                                                           Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
+                                                                               [ GrTag_Lit GrTagCon (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                           _ | resIsUnboxed -> -- Result type is one of the unboxable types Int, Char, PackedString
+                                                                               [ GrTag_Unboxed ]
+                                                             | otherwise    -> -- Result type is any other type
+                                                                               [ GrTag_Any ]
                                                      mkRes v
                                                        = if resIsUnboxed
                                                          then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))

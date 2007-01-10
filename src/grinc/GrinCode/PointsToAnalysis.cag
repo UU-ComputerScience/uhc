@@ -13,7 +13,7 @@ WRAPPER GrAGItf
 %%]
 %%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon}, {%{GRIN}Primitives}, {%{GRIN}HeapPointsToFixpoint})
+%%[8 hs import({%{GRIN}GRINCCommon}, {%{GRIN}HeapPointsToFixpoint})
 %%]
 %%[8 hs import(Debug.Trace)
 %%]
@@ -343,30 +343,24 @@ SEM GrExpr
 %% FFI %%%
 %%%%%%%%%%
 %%[8.ffi
-{-
-TODO: Primitives need rethinking
-      we have the ctable, can we do something with that?
-      e.g. we could get the result Tags from it. If we save result type for a FFI.
--}
+
+{
+avForArity = if grinStoreArity
+              then [AV_Basic]
+              else []
+}
 
 ATTR AllGrTag [ | | self: SELF ]
 
 SEM GrExpr
-  | FFI  loc . primAbsVal = let l = case @resTagL.self of
-                                      (GrTag_Unboxed : _) -> [(GrTag_Unboxed,[AV_Basic])]
-                                      ts                  -> [ (e, avForArity) | e <- ts ]    -- don't understand this (JF)
-                            in  Map.fromList l
-             . primEquat  = case @lhs.targetInfo of
-                              NodeVar tvar      -> [ (tvar, EquationKnownToBe (AV_Nodes @primAbsVal)) ]
-                              NodeDen ttag tnms -> let tagElementsAV    = fromJust (Map.lookup ttag @loc.primAbsVal)
-                                                       makeAV teAV tnm  = (tnm, EquationKnownToBe teAV)
-                                                   in zipWith makeAV tagElementsAV tnms
-             . ffiEquat   = case @lhs.targetInfo of
-                              NodeDen ttag tnms -> [ (e, EquationKnownToBe AV_Basic) | e <- tnms ]
-                              _                 -> error "FFI should be followed by an unboxed node pattern"
-         lhs . equations  = if isPrim @nm 
-                             then @loc.primEquat 
-                             else @loc.ffiEquat
+  | FFI  loc . absVal     = Map.fromList ( case @resTagL.self of
+                                            (GrTag_Any:_)     -> error "FFI result type should be a datatype or an unboxable type"
+                                            (GrTag_Unboxed:_) -> [ (GrTag_Unboxed, [AV_Basic] )                       ]
+                                            constructors      -> [ (con          , avForArity ) | con <- constructors ]
+                                         )
+         lhs . equations  = case @lhs.targetInfo of
+                              NodeVar tvar      -> [ (tvar, EquationKnownToBe (AV_Nodes @loc.absVal)) ]
+                              NodeDen ttag tnms -> zip tnms (map EquationKnownToBe (fromJust (Map.lookup ttag @loc.absVal)))
 %%]
 
 %%%%%%%%%%%
