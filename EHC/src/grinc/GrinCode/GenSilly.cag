@@ -22,6 +22,9 @@
 %%[8 hs import(Debug.Trace)
 %%]
 
+%%[12 hs import(qualified Data.Set as Set, Data.Bits)
+%%]
+
 %%[8
 WRAPPER GrAGItf
 %%]

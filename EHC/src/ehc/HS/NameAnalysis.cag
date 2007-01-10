@@ -511,7 +511,7 @@ SEM Expression
 %%[[5
     | List
         loc             .   (_,refnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Con @range
+                                        =   mkUseOccGam @lhs.idGam [hsnDataListAltCons,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Con @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@expressions.idUseOccGam]
     | Enum
         loc             .   (refname,_,idUseOccGam,errIdUse)
@@ -531,7 +531,7 @@ SEM Expression
 SEM Literal
     | String
         loc             .   (_,refnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam [hsnDataListAltCons,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Var @range
 %%[[99
     | Int
         loc             .   (refname,refnames,idUseOccGam,errIdUse)
@@ -546,10 +546,10 @@ SEM Literal
 SEM Pattern
     | Literal
         loc             .   (eqrefname,_,idUseOccGamEq,errIdUseEq)
-                                        =   mkUseOccGam @lhs.idGam [hsnEq] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam [hsnClassEqFldEq] IdOcc_Val IdAsp_Val_Var @range
                         .   litnames    =   case @literal.eh of
 %%[[5
-                                              Literal_String r s   -> [hsnListCons,hsnListNil]
+                                              Literal_String r s   -> [hsnDataListAltCons,hsnDataListAltNil]
 %%]]
 %%[[99
                                               Literal_Int    _ _ _
@@ -579,18 +579,18 @@ SEM Pattern
 SEM Qualifier
     | Guard
         loc             .   (_,valrefnames,idUseOccGamVal,errIdUseVal)
-                                        =   mkUseOccGam @lhs.idGam [hsnTrue,hsnFalse,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam [hsnTrue,hsnFalse,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Var @range
                         .   (typerefname,_,idUseOccGamType,errIdUseType)
                                         =   mkUseOccGam @lhs.idGam [hsnBool] IdOcc_Type IdAsp_Type_Con @range
                         .   idUseOccGam =   gamUnions [@idUseOccGamVal,@idUseOccGamType]
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@guard.idUseOccGam]
     | Generator
         loc             .   (_,refnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [hsnConcatMap,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam [hsnPrelConcatMap,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Var @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@pattern.idUseOccGam,@expression.idUseOccGam]
     | Empty
         loc             .   (_,refnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam [hsnDataListAltCons,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
 %%[5
@@ -622,7 +622,7 @@ SEM Pattern
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@leftPattern.idUseOccGam,@rightPattern.idUseOccGam]
     | List
         loc             .   (_,refnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.idGam [hsnListCons,hsnListNil] IdOcc_Val IdAsp_Val_Con @range
+                                        =   mkUseOccGam @lhs.idGam [hsnDataListAltCons,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Con @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@patterns.idUseOccGam]
 %%]]
 %%[[7
@@ -719,7 +719,7 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
     | Newtype
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
-                                        =   mkUseOccGam @lhs.idGam [hsnId] IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.idGam [hsnPrelId] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

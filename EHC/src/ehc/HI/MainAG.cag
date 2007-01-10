@@ -51,7 +51,7 @@ ATTR
       dataGam       USE {`gamUnion`}        {emptyGam}          : DataGam
       prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
       prElimTGam    USE {`prElimTGamUnion`} {Pr.emptyPrElimTGam}: {Pr.PrElimTGam}
-      lamMp         USE {`Map.union`}       {Map.empty}         : CLamInfoMp
+      arityMp       USE {`Map.union`}       {Map.empty}         : CArityMp
       inlMp         USE {`Map.union`}       {Map.empty}         : GrInlMp
    ]
 
@@ -61,7 +61,7 @@ SEM Binding
     | Ids
         lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
     | Arities
-        lhs             .   lamMp       =   Map.fromList @idArities
+        lhs             .   arityMp     =   Map.fromList @idArities
     | GrInlines
         lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g) | (n,(a,g)) <- @inlMp ]
     | Fixity

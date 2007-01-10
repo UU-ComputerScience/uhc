@@ -480,9 +480,9 @@ pTypeBase
 %%]]
 %%[[5
   <|> pBracks'
-        (   (\t r -> Type_NormalApplication r (Type_Constructor r hsnList) [t])
+        (   (\t r -> Type_NormalApplication r (Type_Constructor r hsnDataList) [t])
             <$> pType
-        <|> pSucceed (\r -> Type_Constructor r hsnList)
+        <|> pSucceed (\r -> Type_Constructor r hsnDataList)
         )
 %%]]
   <|> pParens' pInParens

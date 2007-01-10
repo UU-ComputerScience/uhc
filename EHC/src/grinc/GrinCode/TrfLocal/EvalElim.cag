@@ -170,7 +170,8 @@ SEM GrVal
                                                       (GrTag_Lit GrTagFun _ nm,_) | @lhs.willEval					-- a to be evaluated saturated call closure -> immediate call
                                                         -> (Just $ GrExpr_Call nm @fldL.trf,IsEval_Eval)
                                                       (GrTag_Lit GrTagApp _ _,(GrVal_Var f:fs)) | @lhs.willEval		-- a to be evaluated apply closure -> immediate apply
-                                                        -> (Just $ GrExpr_App f fs,IsEval_Apply f fs)
+                                                        -> (Just $ GrExpr_Seq (GrExpr_Eval f) (GrPat_Var f') (GrExpr_App f fs),IsEval_Apply f' fs)
+                                                        where f' = hsnSuffix f "!"
                                                       (GrTag_Lit GrTagCon _ _,_)									-- constructor node is evaluated
                                                         -> (Nothing,IsEval_Eval)
                                                       (GrTag_Lit GrTagRec _ _,_)									-- record as well

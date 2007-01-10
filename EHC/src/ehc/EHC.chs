@@ -567,6 +567,7 @@ foldCore coreInh ecu crsi core
  = Core2GrSem.wrap_CodeAGItf
      (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
      (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf            = crsiHereUID crsi
+              , Core2GrSem.opts_Inh_CodeAGItf             = crsiOpts crsi
               })
 %%]
 
@@ -740,7 +741,7 @@ cpFlowCore2GrSem modNm
                  coreSem  = panicJust "cpFlowCore2GrSem.coreSem" $ ecuMbCoreSem ecu
                  coreInh  = crsiCoreInh crsi
                  coreInh' = coreInh
-                              { Core2GrSem.lamMp_Inh_CodeAGItf   = Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
+                              { Core2GrSem.arityMp_Inh_CodeAGItf   = Core2GrSem.gathArityMp_Syn_CodeAGItf coreSem `Map.union` Core2GrSem.arityMp_Inh_CodeAGItf coreInh
                               }
          ;  when (isJust (ecuMbCoreSem ecu))
                  (put (cr {crStateInfo = crsi {crsiCoreInh = coreInh'}}))
@@ -820,7 +821,7 @@ cpFlowHISem modNm
                             }
                  coreInh  = crsiCoreInh crsi
                  coreInh' = coreInh
-                              { Core2GrSem.lamMp_Inh_CodeAGItf   = HISem.lamMp_Syn_AGItf hiSem `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
+                              { Core2GrSem.arityMp_Inh_CodeAGItf   = HISem.arityMp_Syn_AGItf hiSem `Map.union` Core2GrSem.arityMp_Inh_CodeAGItf coreInh
                               }
                  optim    = crsiOptim crsi
                  optim'   = optim
@@ -1105,9 +1106,7 @@ cpTranslateGrin2ByteCode modNm
                                       evel = grAliasElim . grEvalElim . grAliasElim . grFlattenSeq
                  bc     = grinMod2ByteCodeMod opts
 %%[[12
-                            -- (if ecuIsTopMod ecu then concat modNmLL else [])
                             (if ecuIsTopMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
-                            -- (Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip (nub $ ecuImpNmL ecu) [0..] ])
                             (crsiModOffMp crsi)
                             expNmOffMp
 %%]]
@@ -1408,7 +1407,7 @@ cpOutputHI suff modNm
                               (EHSem.gathPrElimTGam_Syn_AGItf       ehSem)
                               (if ehcOptFullProgGRIN opts
                                then Map.empty
-                               else Core2GrSem.gathLamMp_Syn_CodeAGItf   coreSem
+                               else Core2GrSem.gathArityMp_Syn_CodeAGItf   coreSem
                               )
                               (optimGrInlMp                         optim)
                  hi     = HISem.wrap_AGItf
@@ -1823,8 +1822,9 @@ doCompileRun fn opts
              coreInh        = Core2GrSem.Inh_CodeAGItf
                                               { Core2GrSem.gUniq_Inh_CodeAGItf           = uidStart
                                               , Core2GrSem.dataGam_Inh_CodeAGItf         = emptyGam
+                                              , Core2GrSem.opts_Inh_CodeAGItf            = opts2
 %%[[12
-                                              , Core2GrSem.lamMp_Inh_CodeAGItf           = Map.empty
+                                              , Core2GrSem.arityMp_Inh_CodeAGItf         = Map.empty
 %%]]
                                               }
 %%[[12

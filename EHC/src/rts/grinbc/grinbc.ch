@@ -67,7 +67,7 @@ Node categories. Two groups, the first require evaluation, the second not.
 
 #define GB_NodeTagCat_Con				0			/* data, constructor 											*/
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 					*/
-%%[[99
+%%[[95
 #define GB_NodeTagCat_Intl				3			/* other internal structures, further described by tag 			*/
 %%]]
 %%]
@@ -135,10 +135,14 @@ typedef GB_Word GB_NodeHeader ;
 
 %%]
 
+%%[95
+#define GB_NodeTag_Intl_Malloc			0			// Internal node: A malloc'ed ptr, requiring finalisation
+%%]
+
 %%[99
 #if USE_GMP
-#define GB_NodeTag_GMP_mpz				0			/* A GMP mpz_t 						*/
-#define GB_NodeTag_GMP_intl				1			/* GMP internal allocated 			*/
+#define GB_NodeTag_Intl_GMP_mpz			1			// Internal node: A GMP mpz_t 
+#define GB_NodeTag_Intl_GMP_intl		2			// Internal node: GMP internal allocated 
 #endif
 %%]
 
@@ -147,9 +151,12 @@ typedef struct GB_Node {
   GB_NodeHeader	header ;
   union {
     GB_Word 		fields[1] ;			/* size 1 is ok for a CAF, but not for other static node initializers */
+%%[[95
+    void*			ptr ;				/* when GB_NodeTag_Intl_Malloc */
+%%]]
 %%[[99
 #if USE_GMP
-    mpz_t			mpz ;				/* when GB_NodeTag_GMP_mpz */
+    mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
 #endif
 %%]]
   } content ;
@@ -208,13 +215,19 @@ typedef struct GB_Node {
 extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%]
 
+%%[95
+#define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
+
+#define GB_MkMallocHeader					GB_MkHeader(GB_NodeMallocSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc)
+%%]
+
 %%[99
 #if USE_GMP
 #define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(GB_Word)) + 1)
 #define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(GB_Word)) + 1)
 
-#define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_GMP_mpz)
-#define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_GMP_intl)
+#define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_mpz)
+#define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_intl)
 #endif
 %%]
 
@@ -309,7 +322,13 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_HeapFixAlloc_Words(nWords)	GB_HeapFixAlloc_Bytes(nWords * sizeof(GB_Word))
 #define GB_HeapAlloc_Bytes(nBytes)		Cast(GB_Ptr,GC_MALLOC(nBytes))
 #define GB_HeapFixAlloc_Bytes(nBytes)	Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
+
+extern void gb_Node_Finalize( void* p, void* cd ) ;
+extern void* gb_Dummy_Finalization_Proc ;
+extern void* gb_Dummy_Finalization_cd ;
+
 #else
+
 #define GB_HeapAlloc_Words(nWords)		Cast(GB_Ptr,heapalloc(nWords))
 #define GB_HeapFixAlloc_Words(nWords)	GB_HeapAlloc_Words(nWords)
 #define GB_HeapAlloc_Bytes(nBytes)		GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
@@ -319,6 +338,18 @@ Size must be minimal 2 words to ensure enough space for an indirection pointer (
 #define GB_NodeAlloc_In(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
 #define GB_NodeFixAlloc_In(nWords,n)		{ (n) = Cast(GB_NodePtr,GB_HeapFixAlloc_Words(nWords)) ; }
 #define GB_NodeAlloc_Hdr_In(nWords,h,n)		{ GB_NodeAlloc_In(nWords,n) ; (n)->header = (h) ; }
+%%]
+
+For finalizers boehm's gc is assumed!!!!
+This breaks when compiled without bgc.
+
+%%[95
+#if USE_BOEHM_GC
+#define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
+											  (n)->content.ptr = malloc(nBytes) ; \
+											  GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, (n)->content.ptr, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd) ; \
+											}
+#endif
 %%]
 
 %%[99

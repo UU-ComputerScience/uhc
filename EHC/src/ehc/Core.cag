@@ -381,8 +381,30 @@ levMpAdd lm fvm = Map.map (fvsLev lm) fvm `Map.union` lm
 %%% Known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CLamInfoMp)
-type CLamInfoMp = Map.Map HsName Int
+%%[8 hs export(CArityMp)
+type CArityMp = Map.Map HsName Int
+%%]
+
+%%[8 hs export(arityMpLookupLam,arityMpLookupCaf)
+arityMpLookupLam :: HsName -> CArityMp -> Maybe Int
+arityMpLookupLam n m
+  = case Map.lookup n m of
+      j@(Just a) | a > 0 -> j
+      _                  -> Nothing
+
+arityMpLookupCaf :: HsName -> CArityMp -> Maybe Int
+arityMpLookupCaf n m
+  = case Map.lookup n m of
+      j@(Just a) | a == 0 -> j
+      _                   -> Nothing
+%%]
+
+%%[8 hs export(arityMpFilterLam,arityMpFilterCaf)
+arityMpFilterLam :: CArityMp -> CArityMp
+arityMpFilterLam = Map.filter (>0)
+
+arityMpFilterCaf :: CArityMp -> CArityMp
+arityMpFilterCaf = Map.filter (==0)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
