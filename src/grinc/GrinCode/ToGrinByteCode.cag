@@ -8,7 +8,7 @@
 %%[8 hs import(Data.Maybe,Data.List,UU.Pretty,EH.Util.FastSeq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[8 hs import({%{EH}GrinCode.Pretty},{%{EH}Base.Builtin},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{GRIN}GrinByteCode.BuiltinPrims})
+%%[8 hs import({%{EH}GrinCode.Pretty},{%{EH}Base.Builtin},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{GRIN}BuiltinPrims})
 %%]
 
 %%[8 hs export(grinMod2ByteCodeMod)
@@ -435,7 +435,7 @@ SEM GrExpr
 
 %%[8
 SEM GrExpr
-  | FFI         loc         .   mbGbPrim        =   Map.lookup @nm gbPrims
+  | FFI         loc         .   mbGbPrim        =   lookupPrim BackendGrinByteCode @nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

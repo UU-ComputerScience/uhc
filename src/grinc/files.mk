@@ -25,11 +25,11 @@ GRINC_HS_MAIN_SRC_CHS					:= $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,$(GRINC_MAIN)
 GRINC_HS_MAIN_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(GRINC_HS_MAIN_SRC_CHS))
 
 GRINC_HS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_GRINC_PREFIX)%.chs,\
-													GRINCCommon \
+													GRINCCommon           \
 													HeapPointsToFixpoint  \
-													CompilerDriver Config \
-													GrinByteCode/BuiltinPrims \
-													Silly/BuiltinPrims \
+													CompilerDriver        \
+													Config                \
+													BuiltinPrims          \
 											)
 GRINC_HS_UTIL_DRV_HS					:= $(patsubst $(SRC_GRINC_PREFIX)%.chs,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_HS_UTIL_SRC_CHS))
 
