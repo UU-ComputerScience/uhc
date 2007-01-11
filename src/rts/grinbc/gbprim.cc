@@ -207,7 +207,7 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 	int bufInx = 0 ;
 	int sz = 99 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
-	gb_listForceEval( n, sz ) ;
+	gb_listForceEval( &n, sz ) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
@@ -219,7 +219,7 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 %%]
 
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
-	gb_listForceEval( n, sz ) ;
+	gb_listForceEval( &n, sz ) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););}) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 n %x\n", n ););
@@ -238,7 +238,7 @@ GB_NodePtr gb_primMallocCString2String1Char( GB_NodePtr mn, GB_Int goff )
   	GB_NodePtr n, n2 ;
   	IF_GB_TR_ON(3,printf("gb_primMallocCString2String1Char %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
-		GB_MkCFunNode2(n2,&gb_primCString2String1Char,s,GB_Int_Add(goff,GB_Int1)) ;
+		GB_MkCFunNode2(n2,&gb_primMallocCString2String1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;

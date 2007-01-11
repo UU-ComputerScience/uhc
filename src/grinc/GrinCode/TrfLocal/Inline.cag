@@ -135,7 +135,7 @@ SEM GrBind
                                                       _ | not @isCAF
                                                           && (  @expr.isFFIWrapper                  -- wrappers are inlined
                                                              || @expr.isConWrapper
-                                                             || @expr.inlineCost <= 3               -- and low cost values as well
+                                                             || @expr.inlineCost <= 6               -- and low cost values as well
                                                              )
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)
                                                         | otherwise
@@ -159,7 +159,7 @@ SEM GrExpr
 %%]
 
 %%[8
-ATTR GrExpr [ | | inlineCost USE {+} {1}: Int ]
+ATTR AllGrExpr [ | | inlineCost USE {+} {1}: Int ]
 %%]
 
 %%[8.inlMp.init
@@ -222,6 +222,20 @@ SEM GrBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllGrExpr AllBind [ | uniq: Int | ]
+
+SEM GrExpr
+  | Call		lhs			.	uniq			=	@lhs.uniq+1
+
+SEM GrModule
+  | Mod         loc         .   uniq            =   0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation: inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -242,10 +256,11 @@ inlGrVar inlMp nmL
 inlNmsAreInlineable :: [Maybe HsName] -> Bool
 inlNmsAreInlineable = and . map isJust
 
-inlRename :: [Maybe HsName] -> [HsName] -> GrExpr -> GrExpr
-inlRename asFrom as e
-  = grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust asFrom)) e
+inlRename :: Int -> [Maybe HsName] -> [HsName] -> GrExpr -> GrExpr
+inlRename uniq asFrom as e
+  = grAliasRename (Just $ (`hsnSuffix` show uniq)) (mkNmAliasMp $ zip as (map fromJust asFrom)) e
 %%]
+  = grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust asFrom)) e
 
 %%[8
 SEM GrExpr
@@ -259,7 +274,7 @@ SEM GrExpr
 SEM GrExpr
   | Call        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
                                                       Just (GrInl_Call as e) | inlNmsAreInlineable @argL.asNmL
-                                                        -> ( @grVarTrf $ inlRename @argL.asNmL as e
+                                                        -> ( @grVarTrf $ inlRename @lhs.uniq @argL.asNmL as e
                                                            , Set.insert @nm @grVarInlNmS
                                                            )
                                                       _ -> (@grVarTrf @trf, @grVarInlNmS)
