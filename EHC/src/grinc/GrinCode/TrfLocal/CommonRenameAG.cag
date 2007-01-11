@@ -15,8 +15,20 @@ SEM GrBind
 SEM GrGlobal
   | Global      val         .   nmAliasMp       =   Map.empty
 
+SEM GrExpr
+  | Seq         loc			.	patAliasMp		=	mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
+
 SEM GrAlt
-  | Alt         expr        .   nmAliasMp       =   @lhs.nmAliasMp `Map.difference` Map.fromList [(n,n) | n <- @pat.introNmL]
+  | Alt         loc			.	patAliasMp		=	mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
+  				            .   nmAliasMp       =   @patAliasMp `Map.union` @lhs.nmAliasMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name renaming for locally introduced names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNT [ mkNewNm: {HsName -> HsName} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,6 +50,11 @@ SEM GrExpr
   | FetchUpdate lhs         .   trf             =   GrExpr_FetchUpdate (nmAliasRepl @lhs.nmAliasMp @src) (nmAliasRepl @lhs.nmAliasMp @dst)
   | Throw       lhs         .   trf             =   GrExpr_Throw (nmAliasRepl @lhs.nmAliasMp @nm)
   | Catch       lhs         .   trf             =   GrExpr_Catch @body.trf (nmAliasRepl @lhs.nmAliasMp @arg) @handler.trf
+
+SEM GrPat
+  | Var         lhs         .   trf             =   GrPat_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+  | NodeSplit   lhs         .   trf             =   GrPat_NodeSplit @tag.trf (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
+  | Node        lhs         .   trf             =   GrPat_Node @tag.trf (map (nmAliasRepl @lhs.nmAliasMp) @fldL)
 
 SEM GrVal
   | Var         lhs         .   trf             =   GrVal_Var $ nmAliasRepl @lhs.nmAliasMp @nm

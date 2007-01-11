@@ -5,9 +5,9 @@
 %%[whyShort
 \frame<presentation>
 {
-\frametitle{Why and what?}
+\frametitle{EHC?}
 \begin{itemize}
-\item EHC (Essential Haskell compiler) is a compiler
+\item Essential Haskell Compiler
 \begin{itemize}
 \item For Haskell restricted to its essentials
 \item Each language feature as general as possible
@@ -23,6 +23,27 @@
 \begin{itemize}
 \item Use explicit (type) information provided by programmer
 \item And make best effort to propagate this information to where it is needed
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[whyResearch
+\frame<presentation>
+{
+\frametitle{Experiments}
+Software technology: better programs by better programming languages
+\begin{itemize}
+\item Tools for writing compilers: coping with complexity
+\begin{itemize}
+\item Attribute Grammars: tree + aspect oriented programming (AG system)
+\item Source text management: documented programming (Shuffle)
+\item Semantics: type rule programming (Ruler)
+\end{itemize}
+\item Programming language
+\begin{itemize}
+\item Efficiency increasing language constructs
+\item Effective feedback to programmer
 \end{itemize}
 \end{itemize}
 }
@@ -495,6 +516,17 @@ infers kind @Eq :: Forall a . a -> a -> *@
 
 %%]
 
+%%[demoEH9Eq
+\frame<presentation>
+{
+\frametitle{EH version 9: explicit implicit parameters}
+%%[[wrap=safecode
+%%@[file:test/9/eq2.eh%%]
+%%]
+}
+
+%%]
+
 %%[demoEH9B
 \frame<presentation>[plain]
 {
@@ -561,6 +593,46 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \item \url{http://www.cs.uu.nl/groups/ST/Ehc/WebHome}
 \end{itemize}
 \end{itemize}
+}
+%%]
+
+%%[ehVariants
+\frame<presentation>
+{
+\frametitle{EHC variants}
+\begin{tabular}{lp{.4\linewidth}p{.42\linewidth}}
+\hline
+ & \textbf{Haskell} & \textbf{extensions} \\
+\hline
+1-4 & |lambda|-calculus, polymorphism, type checking/inferencing
+  & higher ranked types, existentials
+  \\
+5 & data types
+  & 
+  \\
+6 & kind inferencing
+  & kind signatures
+  \\
+7 & records
+  & tuples as records
+  \\
+8 & code generation
+  & GRIN
+  \\
+9 & classes
+  & explicit implicit parameters
+  \\
+10 & 
+  & extensible records
+  \\
+\hline
+11-12 &  type synonyms, modules
+  &
+  \\
+... & Integer, Float, deriving, IO, ...
+  &
+  \\
+\end{tabular}{}
 }
 %%]
 

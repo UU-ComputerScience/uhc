@@ -245,6 +245,7 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_List_IsNull(n)					(GB_NH_Fld_Tag((n)->header) == GB_Tag_List_Nil)
 #define GB_List_Head(n)						((n)->content.fields[0])
 #define GB_List_Tail(n)						Cast( GB_NodePtr,(n)->content.fields[1] )
+#define GB_List_TailPtr(n)					Cast( GB_NodePtr*,&(n)->content.fields[1] )
 
 #define GB_List_Iterate(n,sz,body)			while ( sz-- && ! GB_List_IsNull( n ) ) { \
 												body ; \
@@ -257,7 +258,7 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 extern GB_NodePtr gb_listTail( GB_NodePtr n ) ;
 extern GB_Word gb_listHead( GB_NodePtr n ) ;
 extern Bool gb_listNull( GB_NodePtr n ) ;
-extern void gb_listForceEval( GB_NodePtr n, int sz ) ;
+extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -594,6 +595,12 @@ extern void gb_checkInterpreterAssumptions() ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Dumping, tracing. printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if TRACE || DUMP_INTERNALS
+extern void gb_prWord( GB_Word x ) ;
+#endif
+%%]
 
 %%[8
 #if DUMP_INTERNALS

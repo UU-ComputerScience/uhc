@@ -755,6 +755,11 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[23
+\title{Essential Haskell (EH) project \\ where are we, where are we going to ...}
+\author{Atze Dijkstra, Jeroen Fokker, \\ Arie Middelkoop and Doaitse Swierstra}
+%%]
+
 %%[12
 \title{Ruler manual \\
 {\normalsize
@@ -2440,6 +2445,38 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %}
 
 %%@SlidesIntro.future
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for project overview
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[23
+%%@Slides.titlepage
+
+%%@SlidesIntro.whyShort
+%%@SlidesIntro.whyResearch
+
+%%@Slides.topics
+
+\section{EH variants + examples}
+
+%%@SlidesIntro.ehVariants
+%%@SlidesIntro.demoEH4Short
+%%@SlidesIntro.demoEH9Eq
+%{
+%format # = "."
+%%@SlidesIntro.demoEH10
+%}
+
+\section{Current status}
+
+%%@SlidesStatus.currentStatus
+
+\section{Near future work}
+
+%%@SlidesStatus.currentWork
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

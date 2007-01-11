@@ -34,8 +34,9 @@ The table is dependent on builtin names, stored in EHCOpts.
 %%[95 export(mkDerivClsMp)
 mkDerivClsMp :: EHCOpts -> ValGam -> DataGam -> DerivClsMp
 mkDerivClsMp opts valGam dataGam
-  = Map.fromList
-      [ mk ehbnClassEq [ehbnClassEqFldEq]
+  = Map.unionsWith (++)
+    $ map (uncurry Map.singleton) 
+    $ [ mk ehbnClassEq ehbnClassEqFldEq
            []
            []
            0
@@ -45,7 +46,7 @@ mkDerivClsMp opts valGam dataGam
                      _  -> foldr1 and vs
            )
            false false
-      , mk ehbnClassOrd [ehbnClassOrdFldCompare]
+      , mk ehbnClassOrd ehbnClassOrdFldCompare
            []
            []
            0
@@ -62,25 +63,25 @@ mkDerivClsMp opts valGam dataGam
                               nStrict = hsnSuffix n "!"
            )
            gt lt
-      , mk ehbnClassShow [ehbnClassShowFldShowsPrec]
+      , mk ehbnClassShow ehbnClassShowFldShowsPrec
            [precDepthNm]
            [CExpr_Int 11] -- dummy, for now, should computed from fixity, etc etc
            1
            (\_ _ tg [dNm] vs
                 -> case vs of
-                     [] -> showString $ show (ctagNm tg)
+                     [] -> showString $ tag2str tg
                      _  -> mkCExprApp (CExpr_Var $ fn ehbnPrelShowParen)
                              [ true
                              , foldr1 compose
-                                 (   [ showString $ show (ctagNm tg) ++ " " ]
+                                 (   [ showString $ tag2str tg ++ " " ]
                                   ++ intersperse (showString " ") vs
                                  )
                              ]
            )
            undef undef
       ]
-  where mk c fs as asSubs omTl cAllMatch cLT cGT
-          = (c', map mkf fs)
+  where mk c f as asSubs omTl cAllMatch cLT cGT
+          = (c', [mkf f])
           where c' = fn c
                 mkf f = (f', DerivClsFld f' t as asSubs omTl cAllMatch cLT cGT)
                       where f' = fn f
@@ -99,6 +100,7 @@ mkDerivClsMp opts valGam dataGam
         gt = CExpr_Var gtNm
         precDepthNm = mkHNm "d"
         undef = cundefined opts
+        tag2str = show . hsnQualified . ctagNm
         orderingTag conNm
           = dtiCTag
             $ dgiDtiOfCon conNm

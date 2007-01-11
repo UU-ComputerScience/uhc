@@ -20,12 +20,13 @@ Rename names to other names.
 %%]
 
 %%[8 hs export(grAliasRename)
-grAliasRename :: NmAliasMp -> GrExpr -> GrExpr
-grAliasRename m e
+grAliasRename :: Maybe (HsName -> HsName) -> NmAliasMp -> GrExpr -> GrExpr
+grAliasRename mbMkNewNm m e
   = trf_Syn_GrExpr t
   where t = wrap_GrExpr (sem_GrExpr e)
             $ Inh_GrExpr
                 { nmAliasMp_Inh_GrExpr = m
+                , mkNewNm_Inh_GrExpr = maybe id id mbMkNewNm
                 }
 %%]
 
@@ -38,12 +39,23 @@ WRAPPER GrExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defaults for imported code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM GrAGItf
+  | AGItf		loc			.	mkNewNm			=	id
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 SEM GrExpr
-  | Seq         body        .   nmAliasMp       =   @lhs.nmAliasMp `Map.difference` Map.fromList [(n,n) | n <- @pat.introNmL]
+  | Seq         loc         .   newAliasMp      =   @patAliasMp `Map.union` @lhs.nmAliasMp
+                pat         .   nmAliasMp       =   @newAliasMp
+                body        .   nmAliasMp       =   @newAliasMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

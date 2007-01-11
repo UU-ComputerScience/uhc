@@ -133,7 +133,7 @@ fviMpFromList = fviMpFromList' FvUse_Other
 %%% Name alias info used for alias removal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(NmAlias(..),NmAliasMp)
+%%[8 hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
 data NmAlias
  = NmAlias_Nm		HsName													-- name to name
  | NmAlias_Eval		HsName													-- name to evaluated name
@@ -142,6 +142,9 @@ data NmAlias
  | NmAlias_None
 
 type NmAliasMp = Map.Map HsName NmAlias
+
+mkNmAliasMp :: AssocL HsName HsName -> NmAliasMp
+mkNmAliasMp = Map.fromList . assocLMapElt NmAlias_Nm
 %%]
 
 Assume only mappings to NmAlias_Nm, others are not replaced.

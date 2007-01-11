@@ -160,7 +160,7 @@ SEM GrExpr
                                                 indent 2 (ppCurlysSemisV [@handler.pp])
 
 SEM GrAlt
-  | Alt         lhs         .   pp          =   @pat.pp >-< indent 4 ("->" >#< ppCurlysSemisV [@expr.pp])
+  | Alt         lhs         .   pp          =   @pat.pp >-< indent 2 ("->" >#< ppCurlysSemisV [@expr.pp])
 
 SEM GrVal
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)

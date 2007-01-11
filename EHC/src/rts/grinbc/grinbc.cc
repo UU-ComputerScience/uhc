@@ -288,14 +288,17 @@ Bool gb_listNull( GB_NodePtr n )
 	return GB_List_IsNull(n) ;
 }
 
-void gb_listForceEval( GB_NodePtr n, int sz )
+GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz )
 {
-	while ( sz-- && ! GB_List_IsNull( n = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,n) )) ) )
+	while ( sz-- && ! GB_List_IsNull( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) )
 	{
-  		IF_GB_TR_ON(3,printf("gb_listForceEval1 sz %d, n %x\n", sz, n ););
-		n = GB_List_Tail(n) ;
-  		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %x\n", n ););
+  		IF_GB_TR_ON(3,printf("gb_listForceEval1 sz %d, n %x: ", sz, *pn ););
+  		IF_GB_TR_ON(3,gb_prWord(Cast(GB_Word,*pn)););
+  		IF_GB_TR_ON(3,printf("\n" ););
+		pn = GB_List_TailPtr(*pn) ;
+  		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %x\n", *pn ););
 	}
+	return *pn ;
 }
 %%]
 
