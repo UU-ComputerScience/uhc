@@ -362,7 +362,7 @@ tagConstants eas
 
 showGrTagCateg :: GrTagCateg -> String
 showGrTagCateg (GrTagPApp need) = "P" ++ show need ++ "_"
-showGrTagCateg x = show x
+showGrTagCateg x = showGrTagCategLetter x
 
 
 tagName categ nm = showGrTagCateg categ ++ hsnShowAlphanumeric nm

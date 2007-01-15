@@ -54,9 +54,9 @@ pBinding
   <|> (\tn cs -> Binding_DataCon tn (map (\f -> f tn) cs))
       <$> pNmIs "data" <*  pOCURLY
                        <*> pCurlySemiBlock
-                             ((\n t a fm tn -> (n,(CTag tn n t a,fm)))
+                             ((\n t a ma fm tn -> (n,(CTag tn n t a ma,fm)))
                               <$> pDollNm   <*  pEQUAL
-                              <*  pOCURLY   <*> pInt <* pCOMMA <*> pInt
+                              <*  pOCURLY   <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt
                                             <*> pList ((,) <$ pSEMI <*> pDollNm <* pEQUAL <*> pInt)
                               <*  pCCURLY
                              )

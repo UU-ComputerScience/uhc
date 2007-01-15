@@ -55,7 +55,7 @@ SEM Binding
     | Val
         lhs         .   pp          =   hiNV "value" @nm [ppTyWithCfg cfgPPTyHI @ty]
     | DataCon
-        lhs         .   pp          =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t)]
+        lhs         .   pp          =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t),pp (ctagMaxArity t)]
                                             ppFldMp fm = [ ppHINm f >#< "=" >#< pp o | (f,o) <- fm ]
                                         in  hiNV "data" @nm
                                               [ ppCurlysSemisBlock

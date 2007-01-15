@@ -756,7 +756,7 @@ WWW home page:
 %%]
 
 %%[23
-\title{Essential Haskell (EH) project \\ where are we, where are we going to ...}
+\title{Essential Haskell (EH): \\ almost grown up ...}
 \author{Atze Dijkstra, Jeroen Fokker, \\ Arie Middelkoop and Doaitse Swierstra}
 %%]
 
@@ -2448,7 +2448,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Slides for project overview
+%%% Slides for project status
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[23
@@ -2459,10 +2459,10 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%@Slides.topics
 
-\section{EH variants + examples}
+\section{EH versions + examples}
 
 %%@SlidesIntro.ehVariants
-%%@SlidesIntro.demoEH4Short
+%%@SlidesIntro.demoEH4Shortest
 %%@SlidesIntro.demoEH9Eq
 %{
 %format # = "."

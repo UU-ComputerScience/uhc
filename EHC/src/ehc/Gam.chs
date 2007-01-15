@@ -849,6 +849,16 @@ dataGamTagsOfTy t g
     $ g
 %%]
 
+Lookup by constructor name:
+
+%%[8
+%%]
+valDataGamLookup :: HsName -> ValGam -> DataGam -> Maybe DataGamInfo
+valDataGamLookup nm vg dg
+  = do { vgi <- valGamLookup nm vg
+       ; dgi <- dataGamDgiOfTy (vgiTy vgi) dg
+       }
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

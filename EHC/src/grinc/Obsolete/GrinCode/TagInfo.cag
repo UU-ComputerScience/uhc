@@ -22,7 +22,7 @@ type FieldSize    = Int
 type TagInfo      = (TagLayout, FieldSize, FieldPattern)
 type TagInfoMap   = Map.Map CmmName TagInfo
 
-tagLit2cmmName (GrTag_Lit c _ n) = '@' : categStr c ++ cmmName' n
+tagLit2cmmName (GrTag_Lit c _ n) = '@' : showGrTagCategLetter c ++ cmmName' n
 
 bits2ints _  [] = []
 bits2ints bs l  = int (bits2int bits) : bits2ints bs overflowBits

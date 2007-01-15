@@ -398,15 +398,22 @@ nrWord2Byte sz
 tagIsUnboxed :: GrTag -> Bool
 tagIsUnboxed gt
   = case gt of
-      GrTag_Lit categ tg nm
-        -> case categ of
-             GrTagCon | nm == hsnInt || nm == hsnChar
-               -> True
-             _ -> dflt
+      GrTag_Lit (GrTagCon _) _ nm | nm == hsnInt || nm == hsnChar
+        -> True
       GrTag_Unboxed
         -> True
-      _ -> dflt
-  where dflt = False
+      _ -> False
+%%]
+
+%%[8 hs export(tagUnbox)
+tagUnbox :: GrTag -> Unbox
+tagUnbox gt
+  = if tagIsUnboxed gt
+    then Unbox_FirstField
+    else case gt of
+           GrTag_Lit (GrTagCon ann) t nm | gtannMaxArity ann == 0
+             -> Unbox_Tag t
+           _ -> Unbox_None
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -437,7 +444,7 @@ imm c
 %%% Constructing: loading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(ldc,ldl,ldg,ldi,l1tr,l2ts)
+%%[8 hs export(ldc,ldl,ldg,ldi,l1tr,l2ts,ldnt)
 ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
 ld ind locB locE c
   = Instr_Ld ind locB locE s i
@@ -460,6 +467,9 @@ l2ts c = ld InsOp_Deref_Two InsOp_LocB_TOS InsOp_LocE_SP (nrWord2Byte c)
 
 ldg :: InsOp_LocB -> Link -> Instr
 ldg locB l = Instr_LdGlobal locB l
+
+ldnt :: Instr
+ldnt = Instr_LdNodeTag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -618,7 +628,7 @@ tag env modNmConstInx stkDepth gt sz
         -> (tins :++: FSeqL [ldc tword],tinc+1,allocInc,isEvaluated)
         where (needEval,categ',tg',tins,tinc,allocInc)
                 = case categ of
-                    GrTagCon      -> (tgNeedEval_No ,0,tg,FSeqNil      ,0  ,0)
+                    GrTagCon _    -> (tgNeedEval_No ,0,tg,FSeqNil      ,0  ,0)
                     GrTagHole     -> (tgNeedEval_BlH,0,tg,FSeqL [ldc 0],1  ,0)
                     GrTagRec      -> (tgNeedEval_No ,0,tg,FSeqNil      ,0  ,0)
                     GrTagApp      -> (tgNeedEval_Yes,1,tg,FSeqNil      ,0  ,0)

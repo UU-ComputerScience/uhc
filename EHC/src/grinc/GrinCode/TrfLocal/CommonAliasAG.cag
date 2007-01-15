@@ -24,7 +24,7 @@ ATTR GrExpr GrVal [ | | nmAlias: NmAlias ]
 SEM GrVal
   | Var         lhs         .   nmAlias         =   NmAlias_Nm @nm
   | Node        lhs         .   nmAlias         =   case @tag.trf of -- assuming attr 'trf'
-                                                      GrTag_Lit GrTagCon _ _
+                                                      GrTag_Lit (GrTagCon _) _ _
                                                         -> NmAlias_Grp hsnUnknown @fldL.nmAliasL
                                                       _ -> NmAlias_None
   | LitInt      lhs         .   nmAlias         =   NmAlias_Const hsnUnknown (GrVal_LitInt @int)

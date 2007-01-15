@@ -187,9 +187,9 @@ SEM CExpr
   | Var         loc         .   jvSrc       =   jvNmPP @nm
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
   												in   case @func.mbTupApp of
-  												       Just (CTag _ l t _)  -> jvTupApp (("new Int" >|< pp_parens (pp t)) : as)
-  												       Just CTagRec         -> jvTupApp (as)
-  												       Nothing              -> jvApp f as
+  												       Just (CTag _ l t _ _)  -> jvTupApp (("new Int" >|< pp_parens (pp t)) : as)
+  												       Just CTagRec           -> jvTupApp (as)
+  												       Nothing                -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
                                                     CBindFFI     -> @binds.jvSrc
                                                     CBindPlain   -> @binds.jvSrc
@@ -217,10 +217,10 @@ SEM CExpr
                                             =   HNm (show @expr.varNm ++ "_scrutinee")
                             .   jvCaseResult
                                             =   HNm (show @expr.varNm ++ "_result")
-  | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\_ _ t _ -> jvTupApp ["new Int" >|< pp_parens (pp t)]) @tag
+  | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\_ _ t _ _ -> jvTupApp ["new Int" >|< pp_parens (pp t)]) @tag
   | TupDel      loc         .   jvSrc       =   empty
-  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
-  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
   | CaseAltFail loc			.	jvSrc		=	empty -- cannot happen
 
 SEM CBind
@@ -311,7 +311,7 @@ ATTR AllPatBind [ tagSz: Int | | ]
 ATTR CPatL CPat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM CPat
-  | Con         loc         .   tagSz       =   ctag 0 (\_ _ _ _ -> 1) @tag
+  | Con         loc         .   tagSz       =   ctag 0 (\_ _ _ _ _ -> 1) @tag
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

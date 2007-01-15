@@ -10,20 +10,10 @@
 A tag can be known, unknown or non existent (unboxed) All this information is
 gathered in attributes for C-- code generation.
 
-%%[8.cmmName4Tag hs
-categStr c = case c of
-               GrTagCon        -> "C"
-               GrTagHole       -> "H"
-               GrTagRec        -> "R"
-               GrTagApp        -> "A"
-               GrTagFun        -> "F" 
-               GrTagPApp need  -> 'P' : show need
-%%]
-
 %%[8.TagName
 ATTR GrTag [ | | tagName: {Maybe CmmName} ]
 SEM GrTag
-  | Lit      loc . tagName = Just $ '@' : categStr @categ ++ cmmName' @nm
+  | Lit      loc . tagName = Just $ '@' : showGrTagCategLetter @categ ++ cmmName' @nm
   | Var      loc . tagName = Just $ cmmName' @nm
   | Unboxed Any
              loc . tagName = Nothing

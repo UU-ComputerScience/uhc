@@ -39,7 +39,7 @@ pInt = tokMkInt <$> pInteger10Tk
 %%[8 export(pCTag)
 pCTag :: P CTag
 pCTag
-  = pCurly (   CTag <$> pDollNm <* pCOMMA <*> pDollNm <* pCOMMA <*> pInt <* pCOMMA <*> pInt
+  = pCurly (   CTag <$> pDollNm <* pCOMMA <*> pDollNm <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt
            <|> CTagRec <$ pKeyTk "Rec"
            )
 %%]

@@ -19,12 +19,12 @@ paremeterised with a function telling whether a node represents an unboxed value
 %%]
 
 %%[8 hs export(grUnbox)
-grUnbox :: (GrTag -> Bool) -> GrModule -> GrModule
-grUnbox tagIsUnboxed grmod
+grUnbox :: (GrTag -> Unbox) -> GrModule -> GrModule
+grUnbox tagUnbox grmod
   = trf_Syn_GrAGItf t
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
-                { tagIsUnboxed_Inh_GrAGItf = tagIsUnboxed
+                { tagUnbox_Inh_GrAGItf = tagUnbox
                 }
 %%]
 
@@ -41,7 +41,7 @@ WRAPPER GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR GrAGItf AllNT [ tagIsUnboxed: {GrTag -> Bool} | | ]
+ATTR GrAGItf AllNT [ tagUnbox: {GrTag -> Unbox} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,15 +55,17 @@ ATTR AllNT [ | | trf: SELF ]
 
 %%[8
 SEM GrPat
-  | Node        lhs         .   trf             =   case @fldL of
-                                                      [f] | @lhs.tagIsUnboxed @tag.trf
+  | Node        lhs         .   trf             =   case (@fldL,@lhs.tagUnbox @tag.trf) of
+                                                      ([f],Unbox_FirstField)
                                                         -> GrPat_Var f
                                                       _ -> @trf
 
 SEM GrVal
-  | Node        lhs         .   trf             =   case @fldL.trf of
-                                                      [f] | @lhs.tagIsUnboxed @tag.trf
+  | Node        lhs         .   trf             =   case (@fldL.trf,@lhs.tagUnbox @tag.trf) of
+                                                      ([f],Unbox_FirstField)
                                                         -> f
+                                                      ([],Unbox_Tag t)
+                                                        -> GrVal_LitInt t
                                                       _ -> @trf
 
 SEM GrExpr
