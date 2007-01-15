@@ -152,7 +152,7 @@ envChangeSet am env heap applyMap applyMapStartIndex
                                                          GrTag_Any          -> True
                                                          GrTag_Unboxed      -> True
                                                          GrTag_Lit cat _ _  -> case cat of
-                                                                                   GrTagCon     -> True
+                                                                                   GrTagCon  _  -> True
                                                                                    GrTagPApp _  -> True
                                                                                    GrTagApp     -> False
                                                                                    GrTagFun     -> False

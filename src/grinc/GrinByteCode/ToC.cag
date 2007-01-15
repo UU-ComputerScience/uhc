@@ -97,7 +97,7 @@ SEM Instr
                 lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
                 nArgMine    .   cLoc        =   @lhs.cLoc + 2
-  | CaseCall FetchUpdate
+  | CaseCall FetchUpdate LdNodeTag
                 lhs         .   cLoc        =   @lhs.cLoc + 1
   | CallC       nArg        .   cLoc        =   @lhs.cLoc + 2
   | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
@@ -394,7 +394,7 @@ SEM Instr
   | TailCall RetCall
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp,@retOffSurr.pp]
   | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp,@retOffSurr.pp]
-  | CaseCall FetchUpdate
+  | CaseCall FetchUpdate LdNodeTag
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp]
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp]
@@ -480,6 +480,7 @@ SEM Instr
   | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
   | CaseCall    lhs         .   mn          =   pp "casecall"
   | FetchUpdate lhs         .   mn          =   pp "fetchupd"
+  | LdNodeTag   lhs         .   mn          =   pp "lnt"
   | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
   | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
   | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
@@ -573,6 +574,7 @@ SEM Instr
   | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
   -- others
   | FetchUpdate loc         .   enc         =   0xF9
+  | LdNodeTag   loc         .   enc         =   0xFC
   | Halt        loc         .   enc         =   0xFE
 %%]
 

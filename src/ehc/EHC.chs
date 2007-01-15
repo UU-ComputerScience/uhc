@@ -1092,7 +1092,7 @@ cpTranslateGrin2ByteCode modNm
                         = if ehcOptOptimise opts >= OptimiseNormal then trfOptim grin else (trfNoOptim grin,Map.empty)
 %%]]
                         where trfNoOptim g
-                                = grFlattenSeq $ grUnbox GrinBC.tagIsUnboxed $ grUnusedMetaInfoElim $ g
+                                = grFlattenSeq $ grUnbox GrinBC.tagUnbox $ grUnusedMetaInfoElim $ g
                               trfOptim g
 %%[[8
                                 = g3
@@ -1101,7 +1101,7 @@ cpTranslateGrin2ByteCode modNm
                                 = (g3,gathInlMp)
                                 where (g2,gathInlMp) = grInline (Map.keysSet expNmOffMp) (optimGrInlMp optim) g1
 %%]]
-                                      g1 = evel $ grUnbox GrinBC.tagIsUnboxed $ grUnusedMetaInfoElim $ g
+                                      g1 = evel $ grUnbox GrinBC.tagUnbox $ grUnusedMetaInfoElim $ g
                                       g3 = grUnusedNameElim $ evel $ g2
                                       evel = grAliasElim . grEvalElim . grAliasElim . grFlattenSeq
                  bc     = grinMod2ByteCodeMod opts

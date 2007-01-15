@@ -43,8 +43,8 @@ pBind           =    GrBind_Bind <$> pGrNm <*> pGrNmL <* pKey "=" <*> pCurly pEx
 
 pCTags          ::   GRIParser CTagsMp
 pCTags          =    pCurly_pSemics
-                        ((\tn ts -> (tn,map (\(n,t,a) -> (n,CTag tn n t a)) ts))
-                        <$> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,) <$> pGrNm <*> pInt <*> pInt)
+                        ((\tn ts -> (tn,map (\(n,t,a,ma) -> (n,CTag tn n t a ma)) ts))
+                        <$> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,,) <$> pGrNm <*> pInt <*> pInt <*> pInt)
                         )
 
 pEvApTagMp      ::   GRIParser EvApTagMp
@@ -133,8 +133,11 @@ pTag            =    pKey "#"
 pTagVar         ::   GRIParser GrTag
 pTagVar         =    GrTag_Var <$> pGrNm
 
+pTagAnn         ::   GRIParser GrTagAnn
+pTagAnn         =    GrTagAnn       <$ pOCurly <*> pInt <* pComma <*> pInt <* pCCurly
+
 pTagCateg       ::   GRIParser GrTagCateg
-pTagCateg       =    GrTagCon       <$ pKey "C"
+pTagCateg       =    GrTagCon       <$ pKey "C" <*> pTagAnn
                 <|>  GrTagRec       <$ pKey "R"
                 <|>  GrTagHole      <$ pKey "H"
                 <|>  GrTagApp       <$ pKey "A"

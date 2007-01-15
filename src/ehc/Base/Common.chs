@@ -600,50 +600,85 @@ instance PP Belowness where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+data CTagAnn
+  = CTagAnn
+      { gtannArity 		:: Int
+      , gtannMaxArity 	:: Int
+      }
+  deriving (Eq,Ord)
+
+instance Show CTagAnn where
+  show (CTagAnn a ma) = "{" ++ show a ++ "," ++ show ma ++ "}"
+
+ppCTagAnn :: CTagAnn -> PP_Doc
+ppCTagAnn = pp . show
+
+mkCTagAnn :: Int -> Int -> CTagAnn
+mkCTagAnn = CTagAnn
+
+emptyCTagAnn = mkCTagAnn 0 0
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tags (of data)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
 data CTag
   = CTagRec
-  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag' :: Int, ctagArity :: Int}
+  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag' :: Int, ctagArity :: Int, ctagMaxArity :: Int}
   deriving (Show,Eq,Ord)
 
 ctagTag :: CTag -> Int
 ctagTag CTagRec = 0
 ctagTag t       = ctagTag' t
 
-ctagInt  =  CTag hsnInt  hsnInt  0 1
-ctagChar =  CTag hsnChar hsnChar 0 1
+ctagInt  =  CTag hsnInt  hsnInt  0 1 1
+ctagChar =  CTag hsnChar hsnChar 0 1 1
 
-emptyCTag = CTag hsnUnknown hsnUnknown 0 0
+emptyCTag = CTag hsnUnknown hsnUnknown 0 0 0
 %%]
 
 %%[9 export(mkClassCTag)
 -- only used when `not ehcCfgClassViaRec'
 mkClassCTag :: HsName -> Int -> CTag
-mkClassCTag n sz = CTag n n 0 sz
+mkClassCTag n sz = CTag n n 0 sz sz
 %%]
 
 %%[8 hs
-ctag :: a -> (HsName -> HsName -> Int -> Int -> a) -> CTag -> a
-ctag n t tg = case tg of {CTag tn cn i a -> t tn cn i a; _ -> n}
+ctag :: a -> (HsName -> HsName -> Int -> Int -> Int -> a) -> CTag -> a
+ctag n t tg = case tg of {CTag tn cn i a ma -> t tn cn i a ma; _ -> n}
 
 -- intended for parsing
 ppCTag' :: (HsName -> PP_Doc) -> CTag -> PP_Doc
 ppCTag' ppNm t
   = case t of
-      CTagRec              -> ppCurly "Rec"
-      CTag ty nm tag arity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity]
+      CTagRec                      -> ppCurly "Rec"
+      CTag ty nm tag arity mxarity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity, pp mxarity]
 
 ppCTag :: CTag -> PP_Doc
-ppCTag = ctag (pp "Rec") (\tn cn t a -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a)
+ppCTag = ctag (pp "Rec") (\tn cn t a ma -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a >|< "/" >|< pp ma)
 
 ppCTagInt :: CTag -> PP_Doc
-ppCTagInt = ctag (pp "-1") (\_ _ t _ -> pp t)
+ppCTagInt = ctag (pp "-1") (\_ _ t _ _ -> pp t)
 
 instance PP CTag where
   pp = ppCTag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unboxed values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(Unbox(..))
+data Unbox
+  = Unbox_FirstField
+  | Unbox_Tag Int
+  | Unbox_None
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

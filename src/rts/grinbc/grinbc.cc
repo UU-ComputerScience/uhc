@@ -131,6 +131,7 @@ typedef GB_Word GB_CFun();
 #define GB_Popn(n)				(sp+=(n))
 #define GB_Pop					(sp++)
 #define GB_PopCastedIn(ty,v)	{(v) = Cast(ty,*GB_Pop) ;}
+#define GB_TOSCastedIn(ty,v)	{(v) = Cast(ty,GB_TOS) ;}
 #define GB_PopIn(v)				GB_PopCastedIn(GB_Word,v)
 
 #define GB_PopnUpdTOS(n,x)		{sp += (n) ; GB_SetTOS(x) ; }
@@ -677,10 +678,12 @@ gb_interpreter_InsCallEntry:
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ;
 				*/
-				p = Cast(GB_Ptr,pc) ;										/* start of table after instr						*/
-				n = Cast(GB_NodePtr,GB_TOS) ;								/* scrutinee is node 								*/
-				dst = Cast(GB_BytePtr,p[GB_NH_Fld_Tag(n->header)]) ;		/* destination from following table, indexed by tag */
-				pc = dst ;													/* jump 											*/
+				p = Cast(GB_Ptr,pc) ;										// start of table after instr						
+				// n = Cast(GB_NodePtr,GB_TOS) ;							// scrutinee is node 								
+				GB_PopIn(x) ;												// tag of scrutinee is on TOS
+				// dst = Cast(GB_BytePtr,p[GB_NH_Fld_Tag(n->header)]) ;		// destination from following table, indexed by tag
+				dst = Cast(GB_BytePtr,p[GB_GBInt2Int(x)]) ;					// destination from following table, indexed by tag
+				pc = dst ;													// jump 											
 				break ;
 
 #define GB_CallC_Code(f,nargs,args,res) \
@@ -914,6 +917,12 @@ gb_interpreter_InsApplyEntry:
 				h = n->header ;
 				h = GB_MkHeader(GB_NH_Fld_Size(h),GB_NodeNdEv_Yes,GB_NodeTagCat_Ind,GB_NH_Fld_Tag(h)) ;
 				n->header = h ;
+				break ;
+
+			/* ldnt */
+			case GB_Ins_LdNodeTag :
+				GB_TOSCastedIn(GB_NodePtr,n) ;
+				GB_Push(GB_Int2GBInt(GB_NH_Fld_Tag(n->header))) ;
 				break ;
 
 			/* nop */
@@ -1166,10 +1175,12 @@ void gb_checkInterpreterAssumptions()
 		rts_panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_TagSize, x1 ) ;
 	}
 	
-	x1 = Cast(GB_Word,&gb_False) ;
+/*
+	x1 = Cast(GB_Word,gb_False) ;
 	if ( x1 & GB_Word_TagMask ) {
 		rts_panic2_2( m, "statically allocated nodes must must be word aligned", GB_Word_TagSize, x1 ) ;
 	}
+*/
 	
 }
 %%]
@@ -1291,6 +1302,7 @@ static GB_Mnem gb_mnemTable[] =
 , { GB_Ins_Apply(GB_InsOp_LocB_TOS)				, "applyt" 			}
 , { GB_Ins_Ext									, "ext" 			}
 , { GB_Ins_EvalApplyCont						, "evappcont" 		}
+, { GB_Ins_LdNodeTag							, "ldnt"	 		}
 , { GB_Ins_FetchUpdate							, "fetchupd" 		}
 , { GB_Ins_PApplyCont							, "papplycont" 		}
 , { GB_Ins_NOP									, "nop" 			}

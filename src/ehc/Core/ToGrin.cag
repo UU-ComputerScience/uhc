@@ -229,7 +229,9 @@ SEM CExpr
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
-  | Mod         loc         .   primTyconMp =   map (\n -> (n,[(n,CTag n n 0 (if hsnIsProd n then hsnProdArity n else 1))])) (grBuiltinTyNmL @lhs.opts)
+  | Mod         loc         .   primTyconMp =   map (\n -> let arity = if hsnIsProd n then hsnProdArity n else 1
+                                                           in  (n,[(n,CTag n n 0 arity arity)]))
+                                                    (grBuiltinTyNmL @lhs.opts)
                             .   constrsMp   =   @primTyconMp ++ @ctagsMp
 
                             .   allFPTags   =   Map.toList $ arityMpFilterLam @expr.gathArityMp
@@ -329,8 +331,8 @@ makeEvalMapEntryP x
    , EvApTagUnit
    )
 
-makeEvalMapEntryC (CTag tyNm nm tag arity)
- = ( ( GrTag_Lit GrTagCon tag nm, arity)
+makeEvalMapEntryC (CTag tyNm nm tag arity mxarity)
+ = ( ( GrTag_Lit (GrTagCon $ mkGrTagAnn arity mxarity) tag nm, arity)
    , EvApTagUnit
    )
 
@@ -344,10 +346,10 @@ makeEvalMapEntryF (nm, arity)
    , EvApTagVar nm
    )
 
-makeEvalBindEntryC n2 (CTag tyNm nm tag arity) ui
+makeEvalBindEntryC n2 (CTag tyNm nm tag arity mxarity) ui
  = let names = repeat hsnWild
        parameters = take arity names
-   in  GrAlt_Alt (mkGrPatTagNode GrTagCon tag nm parameters)
+   in  GrAlt_Alt (mkGrPatTagNode (GrTagCon $ mkGrTagAnn arity mxarity) tag nm parameters)
                  (GrExpr_Unit (GrVal_Var n2))
 
 makeEvalBindEntryH n2 ui
@@ -497,8 +499,8 @@ SEM CExpr
                                                 in   case @func.mbTupApp of
                                                        Just t
                                                          -> let v  =  case t of
-                                                                        CTagRec       -> mkGrRecNode argL'
-                                                                        CTag _ l t _  -> mkGrConNode t l argL'
+                                                                        CTagRec         -> mkGrRecNode argL'
+                                                                        CTag _ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l argL'
                                                             in  wrapGr (mkE v)
                                                        Nothing
                                                          -> let ap = case @mbLam of
@@ -549,7 +551,7 @@ mkGrAdapt u arityMp isStrict tupFldL tupRecNm
 ATTR CExpr   [ | | grVal: GrVal ]
 
 SEM CExpr
-  | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t _ -> mkGrConNode t l []) @tag
+  | Tup         loc         .   grVal       =   ctag (mkGrRecNode []) (\_ l t a ma -> mkGrConNode (mkGrTagAnn a ma) t l []) @tag
   | Var         loc         .   grVal       =   maybe (GrVal_Var @nm) (\a -> mkNdPApp @nm a []) @mbLam
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
@@ -622,14 +624,14 @@ SEM CBind
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | @isUnboxed t -> mkGrPatConNode 0 t [n]
+                                                            t | @isUnboxed t -> mkGrPatConNode (mkGrTagAnn 1 1) 0 t [n]
                                                             _                -> GrPat_Var n
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = @isUnboxed resTyNm
                                                      resTagL
                                                        = case dataGamTagsOfTy @resTy @lhs.dataGam of
                                                            Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
-                                                                               [ GrTag_Lit GrTagCon (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                                               [ GrTag_Lit (GrTagCon $ mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
                                                            _ | resIsUnboxed -> -- Result type is one of the unboxable types Int, Char, PackedString
                                                                                [ GrTag_Unboxed ]
                                                              | otherwise    -> -- Result type is any other type
@@ -692,11 +694,11 @@ SEM CPat
   | Con         lhs         .   (grPat,grWrapCase)
                                             =   case @rest.self of
                                                    CPatRest_Empty
-                                                     ->  (ctag mkGrPatRecNode (\_ l t _ -> mkGrPatConNode t l) @tag @binds.patNmL,id)
+                                                     ->  (ctag mkGrPatRecNode (\_ l t a ma -> mkGrPatConNode (mkGrTagAnn a ma) t l) @tag @binds.patNmL,id)
                                                    CPatRest_Var r
                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
                                                               (oL',wrO) = unboxArgL @lUniq hsnInt oL
-                                                         in   (ctag mkGrPatRecSplit (\_ l t _ -> mkGrPatConSplit t l) @tag r . zipWith ($) mkSL $ oL',wrO)
+                                                         in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t l) @tag r . zipWith ($) mkSL $ oL',wrO)
 
 SEM CPatL
   | Cons        lhs         .   grPatL      =   @hd.grPat : @tl.grPatL

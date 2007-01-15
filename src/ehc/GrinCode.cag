@@ -53,24 +53,55 @@ grBuiltinTyNmL opts = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames o
 %%% Tag categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+Tag annotation
+
+%%[8 hs export(GrTagAnn(..),mkGrTagAnn,emptyGrTagAnn)
+data GrTagAnn
+  = GrTagAnn
+      { gtannArity 		:: Int
+      , gtannMaxArity 	:: Int
+      }
+
+instance Eq GrTagAnn where
+  x == y = True
+
+instance Ord GrTagAnn where
+  x `compare` y = EQ
+
+instance Show GrTagAnn where
+  show (GrTagAnn a ma) = "{" ++ show a ++ "," ++ show ma ++ "}"
+
+mkGrTagAnn :: Int -> Int -> GrTagAnn
+mkGrTagAnn = GrTagAnn
+
+emptyGrTagAnn = mkGrTagAnn 0 0
+%%]
+
+%%[8 hs export(showGrTagCategLetter)
 data GrTagCateg
-  =  GrTagCon
+  =  GrTagCon		{grtgAnn	:: GrTagAnn	}
   |  GrTagHole
   |  GrTagRec
   |  GrTagApp
   |  GrTagFun
-  |  GrTagPApp {grtgNeeds :: Int}
+  |  GrTagPApp 		{grtgNeeds  :: Int		}
   |  GrTagWorld
   deriving (Eq,Ord)
 
 instance Show GrTagCateg where
-  show GrTagCon         = "C"
+  show (GrTagCon ann)   = "C" ++ show ann
   show GrTagHole        = "H"
   show GrTagRec         = "R"
   show GrTagApp         = "A"
   show GrTagFun         = "F"
   show (GrTagPApp need) = "P/" ++ show need
+
+showGrTagCategLetter :: GrTagCateg -> String
+showGrTagCategLetter c
+  = case c of
+      GrTagCon _      -> "C"
+      GrTagPApp need  -> 'P' : show need
+      _               -> show c
 
 instance PP GrTagCateg where
   pp t = text (show t)
@@ -226,33 +257,37 @@ mkGrPatTagSplit c t n r sL
 
 %%[8 hs
 -- partial parametrizarions of the above
-mkGrConNode ::  Int -> HsName -> GrValL -> GrVal
-mkGrConNode = mkGrTagNode GrTagCon
+mkGrConNode :: GrTagAnn -> Int -> HsName -> GrValL -> GrVal
+mkGrConNode ann = mkGrTagNode (GrTagCon ann)
 
 mkGrRecNode ::  GrValL -> GrVal
 --mkGrRecNode  = mkGrTagNode GrTagRec 0 hsnRec
-mkGrRecNode xs = mkGrTagNode GrTagCon 0 (hsnProd (length xs)) xs
+mkGrRecNode xs
+  = mkGrTagNode (GrTagCon $ mkGrTagAnn a a) 0 (hsnProd a) xs
+  where a = length xs
 
-mkGrPatConNode :: Int -> HsName -> [HsName] -> GrPat
-mkGrPatConNode = mkGrPatTagNode GrTagCon
+mkGrPatConNode :: GrTagAnn -> Int -> HsName -> [HsName] -> GrPat
+mkGrPatConNode ann = mkGrPatTagNode (GrTagCon ann)
 
 mkGrPatRecNode :: [HsName] -> GrPat
 --mkGrPatRecNode  = mkGrPatTagNode GrTagRec 0 hsnRec
-mkGrPatRecNode xs = mkGrPatTagNode GrTagCon 0 (hsnProd (length xs)) xs
+mkGrPatRecNode xs
+  = mkGrPatTagNode (GrTagCon $ mkGrTagAnn a a) 0 (hsnProd a) xs
+  where a = length xs
 
 
-mkGrPatConSplit :: Int -> HsName -> HsName -> GrSplitL -> GrPat
-mkGrPatConSplit = mkGrPatTagSplit GrTagCon
+mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPat
+mkGrPatConSplit ann = mkGrPatTagSplit (GrTagCon ann)
 
 mkGrPatRecSplit :: HsName -> GrSplitL -> GrPat
 mkGrPatRecSplit  = mkGrPatTagSplit GrTagRec 0 hsnRec
 
 
 mkGrBox :: HsName -> GrVal -> GrVal
-mkGrBox tyNm v = mkGrConNode 0 tyNm [v]
+mkGrBox tyNm v = mkGrConNode (mkGrTagAnn 1 1) 0 tyNm [v]
 
 mkGrUnbox :: HsName -> HsName -> GrPat
-mkGrUnbox tyNm n = mkGrPatConNode 0 tyNm [n]
+mkGrUnbox tyNm n = mkGrPatConNode (mkGrTagAnn 1 1) 0 tyNm [n]
 
 mkGrUnboxFFI :: HsName -> GrPat
 mkGrUnboxFFI n = GrPat_Node GrTag_Unboxed [n]

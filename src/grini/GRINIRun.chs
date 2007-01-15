@@ -163,7 +163,7 @@ primMp
 grEvalTag :: RunState -> GrTag -> ([RunVal],Bool)
 grEvalTag rs t
   =  case t of
-        GrTag_Lit GrTagCon           i _    ->  ([RVCat NdCon,RVInt i],szYes)
+        GrTag_Lit (GrTagCon _)       i _    ->  ([RVCat NdCon,RVInt i],szYes)
         GrTag_Lit GrTagHole          _ _    ->  ([RVCat NdHole],szNo)
         GrTag_Lit GrTagRec           _ _    ->  ([RVCat NdRec,RVInt 0],szYes)
         GrTag_Lit GrTagFun           _ n    ->  ([RVCat NdFun,rsVar rs n],szNo)

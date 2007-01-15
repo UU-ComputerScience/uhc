@@ -117,7 +117,7 @@ SEM GrModule
                                                          (map  (\(tn,ts)
                                                                     ->  ppGrNm tn >#< "="
                                                                         >#< ( ppListSep "" "" " | "
-                                                                            . map  (\(n,CTag _ _ t a) -> ppGrNm n >#< t >#< a)
+                                                                            . map  (\(n,CTag _ _ t a ma) -> ppGrNm n >#< t >#< a >#< ma)
                                                                             $ ts
                                                                             )
                                                                         >-< ""    

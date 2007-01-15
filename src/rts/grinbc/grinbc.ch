@@ -188,6 +188,7 @@ typedef struct GB_Node {
 #define GB_MkConHeader(sz,tg)				GB_MkHeader((sz)+1, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
 
 #define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
+#define GB_MkConEnumNodeAsTag(tg)			GB_Int2GBInt(tg)
 
 #define GB_FillNodeFlds1(n,x1)				{(n)->content.fields[0] = Cast(GB_Word,x1);}
 #define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1   );(n)->content.fields[1] = Cast(GB_Word,x2);}
@@ -521,6 +522,7 @@ typedef __mpz_struct*  GB_mpz ;
 #define GB_Ins_FetchUpdate						(GB_Ins_PreOther | 0x1)
 #define GB_Ins_EvalApplyCont					(GB_Ins_PreOther | 0x2)
 #define GB_Ins_PApplyCont						(GB_Ins_PreOther | 0x3)
+#define GB_Ins_LdNodeTag						(GB_Ins_PreOther | 0x4)
 #define GB_Ins_EvalUpdCont						(GB_Ins_PreOther | 0x5)
 #define GB_Ins_Ext								(GB_Ins_PreOther | 0x6)
 #define GB_Ins_NOP								(GB_Ins_PreOther | 0x7)

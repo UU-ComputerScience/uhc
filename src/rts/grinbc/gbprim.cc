@@ -11,20 +11,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-PRIM GB_Node gb_False
-	= GB_MkConEnumNode( 0 ) ;
-PRIM GB_Node gb_True
-	= GB_MkConEnumNode( 1 ) ;
+PRIM GB_Word gb_False
+	= GB_MkConEnumNodeAsTag( 0 ) ;
+PRIM GB_Word gb_True
+	= GB_MkConEnumNodeAsTag( 1 ) ;
 
 PRIM GB_Node gb_Nil
     = GB_MkConEnumNode( GB_Tag_List_Nil ) ;
 
-PRIM GB_Node gb_EQ
-	= GB_MkConEnumNode( 0 ) ;
-PRIM GB_Node gb_GT
-	= GB_MkConEnumNode( 1 ) ;
-PRIM GB_Node gb_LT
-	= GB_MkConEnumNode( 2 ) ;
+PRIM GB_Word gb_EQ
+	= GB_MkConEnumNodeAsTag( 0 ) ;
+PRIM GB_Word gb_GT
+	= GB_MkConEnumNodeAsTag( 1 ) ;
+PRIM GB_Word gb_LT
+	= GB_MkConEnumNodeAsTag( 2 ) ;
 
 %%]
 
@@ -73,31 +73,32 @@ PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
 PRIM GB_Word gb_primEqInt( GB_Word x, GB_Word y )
 {
 	if ( x == y )
-		return Cast(GB_Word,&gb_True) ;
-  	return Cast(GB_Word,&gb_False) ;
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
 }
 
 PRIM GB_Word gb_primGtInt( GB_Int x, GB_Int y )
 {
 	if ( x > y )
-		return Cast(GB_Word,&gb_True) ;
-  	return Cast(GB_Word,&gb_False) ;
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
 }
 
 PRIM GB_Word gb_primLtInt( GB_Int x, GB_Int y )
 {
 	if ( x < y )
-		return Cast(GB_Word,&gb_True) ;
-  	return Cast(GB_Word,&gb_False) ;
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
 }
 
 PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 {
+	IF_GB_TR_ON(3,printf("gb_primCmpInt eq %d, lt %d, gt %d\n", gb_EQ, gb_LT, gb_GT );) ;
 	if ( x < y )
-		return Cast(GB_Word,&gb_LT) ;
+		return Cast(GB_Word,gb_LT) ;
 	else if ( x == y )
-		return Cast(GB_Word,&gb_EQ) ;
-  	return Cast(GB_Word,&gb_GT) ;
+		return Cast(GB_Word,gb_EQ) ;
+  	return Cast(GB_Word,gb_GT) ;
 }
 
 %%]
@@ -111,18 +112,18 @@ PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	if ( GB_Integer_Cmp(x,y) == 0 )
-		return Cast(GB_Word,&gb_True) ;
-  	return Cast(GB_Word,&gb_False) ;
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
 }
 
 PRIM GB_Word gb_primCmpInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	int c = GB_Integer_Cmp(x,y) ;
 	if ( c < 0 )
-		return Cast(GB_Word,&gb_LT) ;
+		return Cast(GB_Word,gb_LT) ;
 	else if ( c == 0 )
-		return Cast(GB_Word,&gb_EQ) ;
-  	return Cast(GB_Word,&gb_GT) ;
+		return Cast(GB_Word,gb_EQ) ;
+  	return Cast(GB_Word,gb_GT) ;
 }
 
 PRIM GB_NodePtr gb_primAddInteger( GB_NodePtr x, GB_NodePtr y )

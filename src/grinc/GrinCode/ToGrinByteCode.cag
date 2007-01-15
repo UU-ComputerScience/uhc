@@ -184,6 +184,7 @@ data AltFetch
   = AltFetch_Many   [HsName]                -- introduced names
   | AltFetch_One    HsName Int              -- name, field offset in node (excluding header)
   | AltFetch_Zero
+  deriving Eq
 %%]
 
 %%[8
@@ -239,14 +240,6 @@ data ReturnCtxt
 %%]
 
 %%[8
-ATTR GrAltL [ | | nrAlts: Int ]
-
-SEM GrAltL
-  | Cons        lhs         .   nrAlts          =   1 + @tl.nrAlts
-  | Nil         lhs         .   nrAlts          =   0
-%%]
-
-%%[8
 ATTR AllGrExpr [ returnCtxt: ReturnCtxt | | ]
 
 SEM GrBind
@@ -259,6 +252,25 @@ SEM GrExpr
                                                         | @altL.nrAlts == 1 -> ReturnCtxt_CaseFallThrough
                                                         | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stkDepth
                                                       _                     -> @lhs.returnCtxt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alt info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAltL [ | | nrAlts: Int ]
+
+SEM GrAltL
+  | Cons        lhs         .   nrAlts          =   1 + @tl.nrAlts
+  | Nil         lhs         .   nrAlts          =   0
+%%]
+
+%%[8
+ATTR AllAlt [ | | isEnum USE {&&} {True}: Bool ]
+
+SEM GrAlt
+  | Alt         lhs         .   isEnum          =   @altFetch == AltFetch_Zero
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -498,17 +510,21 @@ SEM GrExpr
                                                         | @altL.nrAlts == 1
                                                           -> (ins :++: @altL.i,1,True,inc)
                                                         | otherwise
-                                                          -> (ins :++: ins',1,True,inc)
+                                                          -> (ins :++: insc :++: ins',1,True,incc+inc)
                                                           where ins' = FSeqL [GB.casecall,GB.label (GB.LocRef_Label @at1stOffLabel),GB.link $ GB.linkOffsets @nrOfAlts]
                                                                         :++: FSeqL [ GB.labelref l | l <- @altL.altLocRefs ]
                                                                         :++: @altL.i
                                                                         :++: FSeqL [GB.label @aftCaseLocRef]
+                                                                (insc,incc)
+                                                                     = if @altL.isEnum
+                                                                       then (FSeqNil,-1)
+                                                                       else (FSeqL [GB.ldnt],0)
   | Seq         loc         .   (seqIns,seqStkInc,newVaGam)
                                                 =   let nm ins inc nmIntro
                                                           = case nmIntro of
                                                               (NmIntro_Single nm)
                                                                 -> (ins,inc,Map.fromList [(nm,GB.Val_LocalOffset (@expr.stkDepth+inc))])
-                                                              (NmIntro_Grp _ nmL)
+                                                              (NmIntro_Grp _ nmL) | not (null nmL)
                                                                 -> (ins :++: fins, inc' + length nmL,g)
                                                                 where fins = FSeqL [GB.fetch GB.InsOp_LocB_TOS]
                                                                       inc' = inc - 1

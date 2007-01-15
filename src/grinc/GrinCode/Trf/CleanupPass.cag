@@ -18,6 +18,10 @@ WRAPPER GrAGItf
 %%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set, {%{EH}Base.Builtin}(hsnIsConstructorName))
 %%]
 
+debug:
+%%[8 hs import(EH.Util.Utils)
+%%]
+
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(cleanupPass)
 cleanupPass :: GrModule -> GrModule
 cleanupPass grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -61,7 +65,7 @@ Also, replace F-Tags for constructorfunctions by C-tags
 SEM GrTag
   | Lit  lhs  .  grTrf  = GrTag_Lit
                              (if   hsnIsConstructorName @nm && (@categ==GrTagFun || @categ==GrTagPApp 0)
-                              then GrTagCon
+                              then GrTagCon $ emptyGrTagAnn -- panic "CleanupPass.GrTag.Lit.grTrf"
                               else
                               if   @categ == GrTagPApp 0
                               then GrTagFun
@@ -104,7 +108,8 @@ SEM GrModule
                                     tag n             =  let  ts = filter (\x -> n==ctagNm x) @allCTags
                                                          in   if null ts
                                                               then GrTag_Lit GrTagFun 0 n
-                                                              else GrTag_Lit GrTagCon (ctagTag (head ts)) n
+                                                              else let t = head ts
+                                                                   in  GrTag_Lit (GrTagCon $ mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) n
                                     globalL           =  map buildGlobalVar
                                                              @cafNames
                                 in (if null @globalL.grTrf then globalL else @globalL.grTrf)

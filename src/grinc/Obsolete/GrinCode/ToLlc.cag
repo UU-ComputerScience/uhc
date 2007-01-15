@@ -285,7 +285,7 @@ SEM GrVal
 
 
 SEM GrTag
- | Lit     lhs.llcDoc = text (categStr @categ ++ show (hsnAlphanumeric @nm))
+ | Lit     lhs.llcDoc = text (showGrTagCategLetter @categ ++ show (hsnAlphanumeric @nm))
  | Var     lhs.llcDoc = text (show @nm)
  | Unboxed lhs.llcDoc = text "GrTag:Unboxed"
  | Any     lhs.llcDoc = text "GrTag:Any"
@@ -303,18 +303,10 @@ SEM GrPat
 
 {
 showGrTag :: GrTag -> String
-showGrTag (GrTag_Lit categ n nm) = categStr categ ++ show (hsnAlphanumeric nm)
+showGrTag (GrTag_Lit categ n nm) = showGrTagCategLetter categ ++ show (hsnAlphanumeric nm)
 showGrTag (GrTag_Var nm) = show nm
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
 showGrTag (GrTag_Any    ) = "GrTag:Any"
-
-categStr c = case c of
-               GrTagCon        -> "C"
-               GrTagHole       -> "H"
-               GrTagRec        -> "R"
-               GrTagApp        -> "A"
-               GrTagFun        -> "F"
-               GrTagPApp need  -> 'P' : show need
 }
 
 

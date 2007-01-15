@@ -31,19 +31,21 @@
 %%[whyResearch
 \frame<presentation>
 {
-\frametitle{Experiments}
+\frametitle{Constructing EHC}
 Software technology: better programs by better programming languages
 \begin{itemize}
+\item Programming languages become more complex
+\begin{itemize}
+\item More mechanisms which do work for a programmer
+\item Mechanisms have to co-exist
+\item Use of mechanisms must provide feedback to programmer
+\end{itemize}
 \item Tools for writing compilers: coping with complexity
 \begin{itemize}
-\item Attribute Grammars: tree + aspect oriented programming (AG system)
+\item Attribute Grammars: tree oriented programming (AG system)
 \item Source text management: documented programming (Shuffle)
 \item Semantics: type rule programming (Ruler)
-\end{itemize}
-\item Programming language
-\begin{itemize}
-\item Efficiency increasing language constructs
-\item Effective feedback to programmer
+\item Separation of concern: aspect oriented programming (all tools)
 \end{itemize}
 \end{itemize}
 }
@@ -321,6 +323,7 @@ in   id 3
 %%]
 
 %%[demoEH4Short
+%%[[demoEH4Shortest
 \frame<presentation>
 {
 \frametitle{EH version 4: Higher ranked types}
@@ -336,6 +339,7 @@ Type signatures for quantifiers on argument (higher ranked) positions
 \end{itemize}
 \end{itemize}
 }
+%%]]
 
 \frame<presentation>
 {
@@ -599,7 +603,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 %%[ehVariants
 \frame<presentation>
 {
-\frametitle{EHC variants}
+\frametitle{EHC versions}
 \begin{tabular}{lp{.4\linewidth}p{.42\linewidth}}
 \hline
  & \textbf{Haskell} & \textbf{extensions} \\

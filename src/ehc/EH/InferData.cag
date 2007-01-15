@@ -223,8 +223,22 @@ SEM DataConstr
 %%[[8
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @fields.fldTyL
-                            .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity
+                            .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity @lhs.maxArity
 %%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maximum arity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDataConstr [ maxArity: Int | | gathMaxArity USE {`max`} {0}: Int ]
+
+SEM DataConstr
+  | Constr      lhs         .   gathMaxArity        =   @arity
+
+SEM Decl
+  | Data        constrs     .   maxArity            =   @constrs.gathMaxArity
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

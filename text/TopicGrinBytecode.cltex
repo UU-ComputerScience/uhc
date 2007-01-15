@@ -30,6 +30,7 @@ the machinery.
 %format apply        = "\mathbf{apply}"
 %format eval        = "\mathbf{eval}"
 %format ffi        = "\mathbf{ffi}"
+%format ilnt         = "\mathsf{lnt}"
 %format ild(i)(rd)(rs)(x)        = "\mathsf{l}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format ist(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
 %format ist2(i)(rd)(rs)(x)       = "\mathsf{s}\langle{" i "}\rangle\langle{" rd "}\rangle\langle{" rs "}\rangle" ^^ x
@@ -75,6 +76,7 @@ the machinery.
 %format splitt        = "\mathsf{split}"
 %format nop         = "\mathsf{nop}"
 %format ldl         = "\mathsf{ldl}"
+%format ldnt        = "\mathsf{ldnt}"
 %format ldc         = "\mathsf{ldc}"
 %format ldi         = "\mathsf{ldi}"
 %format ldg         = "\mathsf{ldg}"
@@ -938,6 +940,41 @@ v &
 
 |v| is a word sized value, patched by linking during initialisation.
 
+\subsubsection{Load node tag}
+
+\begin{GrinEncoding}{|ilnt|}
+ &
+|1111 ^^ 1100| &
+ &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldnt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[p :-> ((C,t) : f1 .. Sub(f)(n))] `elem` gheap|
+ }{
+  |greg|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(t) : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |greg|
+ }{}
+}
+
+
 \subsubsection{Storing}
 
 \emph{No store instructions are required; storing is handled by node related instructions.}
@@ -1158,9 +1195,9 @@ Return is handled by |retcase|.
  }{%
   |casecall n : c1 : .. : cn : _|
  }{%
-  |p : gstack|
+  |t : gstack|
  }{%
-  |[ p :-> (t : f1 : .. : fm) ] `elem` gheap|
+  |gheap|
  }{
   |greg|
  }
@@ -1169,7 +1206,7 @@ Return is handled by |retcase|.
  }{%
   |Sub(c)(t)|
  }{%
-  |p : gstack|
+  |gstack|
  }{%
   |gheap|
  }{

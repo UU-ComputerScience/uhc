@@ -35,7 +35,7 @@ emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty uidStart (cundefined opts)
 rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
 rceEnvDataAlts env t
   = case t of
-      CTag _ conNm _ _
+      CTag _ conNm _ _ _
          -> case valGamTyOfDataCon conNm (rceValGam env) of
               (_,ty,[])
                  -> maybe [] id $ dataGamTagsOfTy ty (rceDataGam env)
@@ -109,7 +109,7 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 
 %%[8 export(mkCExprStrictSatCase)
 mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
-mkCExprStrictSatCase env eNm e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
+mkCExprStrictSatCase env eNm e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
   | dgiIsNewtype dgi
   = mkCExprLet CBindPlain [CBind_Bind pnm e] ae
   where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
@@ -146,7 +146,7 @@ mkCExprSelsCases' env ne e tgSels
          mkRest mbr ct
            = case mbr of
                Just (r,_) -> r
-               _          -> ctag (CPatRest_Var hsnWild) (\_ _ _ _ -> CPatRest_Empty) ct
+               _          -> ctag (CPatRest_Var hsnWild) (\_ _ _ _ _ -> CPatRest_Empty) ct
 %%]
 
 %%[8
@@ -161,9 +161,9 @@ mkCExprSatSelsCases env ne e tgSels
   =  mkCExprSelsCases' env ne e alts
   where mkOffL ct mbr nol
           = case (ct,mbr) of
-              (CTagRec     ,Nothing   ) -> map mklo nol
-              (CTagRec     ,Just (_,a)) -> mkloL a
-              (CTag _ _ _ a,_         ) -> mkloL a
+              (CTagRec       ,Nothing   ) -> map mklo nol
+              (CTagRec       ,Just (_,a)) -> mkloL a
+              (CTag _ _ _ a _,_         ) -> mkloL a
           where mklo (n,l,o) = (n,l,CExpr_Int o)
                 mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
