@@ -23,13 +23,7 @@
 type AbstractEnv s  = STArray s Variable AbstractValue
 type AbstractHeap s = STArray s Location AbstractValue
 
--- The equations of the element are fed to envChangeSet
--- and the output is merged to the baseset
-updateEnvElement :: EquationRhs -> AbstractValue -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> Int -> ST s AbstractValue
-updateEnvElement em ev env heap applyMap applyMapStartIndex = do
-    { newChangeSet <- envChangeSet em env heap applyMap applyMapStartIndex
-    ; return (ev `mappend` newChangeSet)
-    }
+
 
 updateHeapElement :: HeapEquationRhs -> AbstractValue -> AbstractEnv s -> ST s AbstractValue
 updateHeapElement hm hv env 
@@ -109,45 +103,71 @@ heapChangeSet ((tag, deps), resultDep) env = do
 %%[8.envChangeSet
 
 
-isPApp (GrTag_Lit (GrTagPApp _) _ _) = True
-isPApp _                             = False
+isPAppTag (GrTag_Lit (GrTagPApp _) _ _) = True
+isPAppTag _                             = False
 
-envChangeSet :: EquationRhs -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> Int -> ST s AbstractValue
-envChangeSet am env heap applyMap applyMapStartIndex
-  = case am of
-      EquationKnownToBe av     -> return av
-      EquationShouldBe  vs     -> do
-                                  {  rs <- mapM valAbsEnv vs
-                                  ;  return (mconcat rs)
-                                  }
-      EquationEval      v ev   -> do
-                                  {  p <- valAbsEnv v
-                                  ;  evalChangeSet ev p
-                                  }
-      EquationApply     f a ev -> do 
-                                  { pnodes  <- valAbsEnv f
-                                  ; argsVal <- mapM valAbsEnv a
-                                  ; applyChangeSet pnodes argsVal ev
-                                  }
-      EquationSelect    v n i  -> do
-                                  {  p <- valAbsEnv v
-                                  ;  return (selectChangeSet n i p)
-                                  }
-      EquationTag       t f r  -> tagChangeSet t f r
+isPAppNode (t,_) = isPAppTag t
+
+
+envChangeSet :: Equation -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> Int -> ST s [(Int,AbstractValue)]
+envChangeSet equat env2 heap2 applyMap applyMapStartIndex
+  = case equat of
+      EquationKnownToBe en av     -> return [(en, av)]
+
+      EquationShouldBe  en vs     -> do
+                                     { rs <- mapM valAbsEnv vs
+                                     ; return [(en, mconcat rs)]
+                                    }
+      EquationEval      en v ev   -> do
+                                     { p <- valAbsEnv v
+                                     ; res <- evalChangeSet ev p
+                                     ; return [(en,res)]
+                                     }
+      EquationApply     en f a ev -> do 
+                                     { pnodes  <- valAbsEnv f
+                                     ; argsVal <- mapM valAbsEnv a
+                                     ; (sfx,res) <- applyChangeSet pnodes argsVal ev
+                                     ; return ((en,res) : sfx)
+                                     }
+      EquationSelect    en v n i  -> do
+                                     { p <- valAbsEnv v
+                                     ; return [(en, selectChangeSet n i p)]
+                                     }
+      EquationTag       en t f r  -> do
+                                     { (sfx,res) <- tagChangeSet t f r
+                                     ; return ((en,res) : sfx)
+                                     }
+      EquationDynApp    (f:a) ev  -> do
+                                     { pnodes <- valCombined f
+                                     ; argsVal <- mapM valAbsEnv a
+                                     ; (sfx,res) <- applyChangeSet pnodes argsVal ev
+                                     --; return (trace ("DynApp f=" ++ show f ++ " p= " ++ show pnodes ++ " a=" ++ show a ++ " sfx=" ++ show sfx) sfx)
+                                     ; return sfx
+                                     }
+      
     where
     --valAbsEnv :: Variable -> ST s AbstractValue
-    valAbsEnv v = do
-        { elem <- lookupEnv env v
-        ; return elem
-        }
+    valAbsEnv v = lookupEnv env2 v
     --valAbsHeap :: Location -> ST s (AbstractValue, AbstractValue)
     valAbsHeap l = do
-        { elem <- lookupHeap heap l
+        { elem <- lookupHeap heap2 l
         ; return (elem, Nothing)
         --; let resultVar = snd (ahMod elem)
         --; exceptions <- maybe (return Nothing) (\v -> valAbsEnv (v+1) >>= return . Just) resultVar
         --; return (ahBaseSet elem `mappend` maybe AV_Nothing id (ahSharedSet elem), exceptions)
         }
+    valCombined v
+      =  do { av <- valAbsEnv v
+            ; case av of
+                AV_Locations l -> do { xs <- mapM (lookupHeap heap2) (Set.toList l)
+                                     ; return (mconcat xs)
+                                     }
+                AV_Nothing     -> return $ AV_Nodes Map.empty
+                AV_Nodes _     -> error "already is a node"  -- av 
+            }
+        
+        
+        
     evalFilter (AV_Nodes nodes) = let isValueTag t = case t of
                                                          GrTag_Any          -> True
                                                          GrTag_Unboxed      -> True
@@ -163,60 +183,65 @@ envChangeSet am env heap applyMap applyMapStartIndex
                                       newNodes          = Map.filterWithKey isValueNode nodes
                                   in if Map.null newNodes then AV_Nothing else AV_Nodes newNodes
     evalFilter av               = av
+
     --evalChangeSet :: AbstractValue -> ST s AbstractValue
     evalChangeSet exceptVar av = case av of
                                    AV_Nothing      -> return av
-                                   AV_Locations ls -> do { res <- mapM valAbsHeap (Set.toList ls)
+                                   AV_Locations ls -> do { 
+                                   	                       res <- mapM valAbsHeap (Set.toList ls)
                                                          ; let (vs,es)  = unzip res
                                                                v        = mconcat (map evalFilter vs)
-                                                               e        = mconcat [ x | (Just x) <- es ]
-                                                         ; exceptions <- readArray env exceptVar
-                                                         ; writeArray env exceptVar (e `mappend` exceptions)                                                         
+--                                                             e        = mconcat [ x | (Just x) <- es ]
+--                                                         ; exceptions <- readArray env exceptVar
+--                                                         ; writeArray env exceptVar (e `mappend` exceptions)                                                         
                                                          ; return v
                                                          }
                                    AV_Error _      -> return av
                                    otherwise       -> return $ AV_Error "Variable passed to eval is not a location"
+                                   
     selectChangeSet :: GrTag -> Int -> AbstractValue -> AbstractValue
     selectChangeSet nm idx av = case av of
                                   AV_Nothing    -> av
                                   AV_Nodes   ns -> maybe AV_Nothing (!! idx) (Map.lookup nm ns)
                                   AV_Error _    -> av
                                   otherwise     -> AV_Error "Variable passed to eval is not a node"
+                                  
     --tagChangeSet :: GrTag -> [Maybe Variable] -> (Maybe Variable) -> ST s AbstractValue
-    tagChangeSet t flds r = do { vars <- mapM (maybe (return AV_Basic) valAbsEnv) flds
-                               ; when (isPApp t) ( do { let tagindex = applyMapStartIndex + fromJust (elemIndex t (assocLKeys applyMap))
-                                                            tups = zip [tagindex+1..] vars
-                                                      ; mapM (\(i,v)->writeArray env i v) (reverse tups)
-                                                      ; return ()
-                                                      }
-                                                 )
-                               ; let newNodes = AV_Nodes (Map.singleton t vars)
-                               ; maybe (return newNodes) (\v -> valAbsEnv v >>= return . mappend newNodes) r
-                               }
-                               
+    tagChangeSet t flds r 
+      = do { vars <- mapM (maybe (return AV_Basic) valAbsEnv) flds
+           ; let newNodes = AV_Nodes (Map.singleton t vars)
+           ; res <- maybe (return newNodes) (\v -> valAbsEnv v >>= return . mappend newNodes) r
+           ; let sfx = case t of 
+                        GrTag_Lit (GrTagPApp needs) _ nm -> let lasttag = GrTag_Lit (GrTagPApp 1        ) 0 nm
+                                                                funnr   = either undefined id (fromJust $ lookup lasttag applyMap)
+                                                            in  zip [funnr+2..] (reverse vars)
+                        _                                -> []
+           ; return (sfx,res)
+           }
+
     --applyChangeSet :: AbstractValue -> [AbstractValue] -> ST s AbstractValue
-    applyChangeSet f argsVal exceptVar = foldM applyChangeSet1 f argsVal
-        where
-        --applyChangeSet1 :: AbstractValue -> AbstractValue -> ST s AbstractValue
-        applyChangeSet1 f arg = let partialApplicationNodes = [ node | node@((GrTag_Lit (GrTagPApp _) _ _), _) <- getNodes f ]
-                                    --getNewNode :: GrTag -> [AbstractValue] -> ST s AbstractValue
-                                    getNewNode tag args       = let tagindex = applyMapStartIndex + fromJust (elemIndex tag (assocLKeys applyMap))
-                                                                    newArgs = args ++ [arg]
-                                                                    partialF tag2 = return $ AV_Nodes (Map.singleton tag2 newArgs)
-                                                                    saturatedF var = do { exceptions <- readArray env exceptVar
-                                                                                        ; e <- valAbsEnv (var+1)
-                                                                                        ; writeArray env exceptVar (e `mappend` exceptions)                                                         
-                                                                    	                ; valAbsEnv var
-                                                                    	                }
-                                    
-                                                                in  do { writeArray env tagindex arg
-                                                                       -- ; trace (show tagindex ++ " also changed to " ++ show arg) $ return ()
-                                                                       ; either partialF saturatedF
-                                                                                (fromJust $ lookup tag applyMap)
-                                                                       }
-                                in mapM (uncurry getNewNode) partialApplicationNodes >>= return . mconcat
-
-
+    applyChangeSet f args exceptVar 
+      = do { let nodes = filter isPAppNode (getNodes f)
+           ; ts <- mapM addArgs nodes
+           ; let (sfxs,avs) = unzip ts
+           ; return (concat sfxs, mconcat avs)
+      	   }
+      where addArgs ( tag@(GrTag_Lit (GrTagPApp needs) _ nm) , oldArgs ) 
+              = do 
+                { let n = length args
+                      newtag  = GrTag_Lit (GrTagPApp (needs-n)) 0 nm
+                      lasttag = GrTag_Lit (GrTagPApp 1        ) 0 nm
+                      funnr   = either undefined id (fromJust $ lookup lasttag applyMap)
+                      sfx     = zip  [funnr+2+needs-length args ..] (reverse args)
+                ; res <-  if n<needs
+                           then return $ AV_Nodes (Map.singleton newtag (oldArgs++args))
+                           else valAbsEnv funnr
+                ; exc <-  if n<needs
+                           then return AV_Nothing
+                           else valAbsEnv (funnr+1)
+                ; let excfx = (exceptVar, exc)  
+                ; return (excfx:sfx, res)
+                }
 
 %%]
 
@@ -261,6 +286,19 @@ fixpoint equations heapEqs procEnv procHeap
 %%]
 
 %%[8
+
+
+procEq env (i,e2) =
+   do { e <- lookupEnv env i
+      ; let e3 = (e `mappend` e2)
+      ; let changed =  e /= e3
+      ; when changed (   -- trace (show i ++ " changed from " ++ show e ++ " to " ++ show e3) $
+                         writeArray env i e3
+                     )
+      -- ; when (not changed) (trace (show i ++ " not changed") $ return ())
+      ; return changed
+      }
+
 solveEquations :: Int -> Int -> Equations -> HeapEquations -> ApplyMap -> (Int,HptMap)
 solveEquations unique lenHeap equations heapEqs applyMap =
     runST (
@@ -269,16 +307,11 @@ solveEquations unique lenHeap equations heapEqs applyMap =
        ; env     <- newArray (0, unique + length applyMap - 1) AV_Nothing
        ; heap    <- newArray (0, lenHeap                  - 1) AV_Nothing
 
-       ; let procEnv (i,em) 
+       ; let procEnv equat
                 = do
-                  { e  <- lookupEnv env i
-                  ; e2 <- updateEnvElement em e env heap applyMap unique
-                  ; let changed =  e /= e2
-                  ; when changed (   -- trace (show i ++ " changed from " ++ show e ++ " to " ++ show e2) $
-                                     writeArray env i e2
-                                 )
-                  -- ; when (not changed) (trace (show i ++ " not changed") $ return ())
-                  ; return changed
+                  { cs <- envChangeSet equat env heap applyMap unique
+                  ; bs <- mapM (procEq env) cs
+                  ; return (or bs)
                   }
              procHeap (i,hm) 
                 = do

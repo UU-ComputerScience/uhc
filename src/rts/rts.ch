@@ -66,7 +66,7 @@ typedef GrWord* Pointer;
 #include "gc.h"
 #else
 
-#define HEAPSIZE 100000
+#define HEAPSIZE 1000000
 
 extern Pointer HP;
 extern Pointer Heap;
@@ -102,7 +102,7 @@ extern GrWord global_False;
 extern GrWord global_True;
 %%]
 
-%%[99
+%%[8
 extern GrWord global_LT;
 extern GrWord global_GT;
 extern GrWord global_EQ;

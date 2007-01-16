@@ -121,7 +121,9 @@ int main_Sil_Init1(int argc, char** argv)
 
 int main_Sil_Run(int argc, char** argv)
 {
+	clockStart = clock() ;
     fun_main();
+	clockStop = clock() ;
 
 /*
     int i;
@@ -145,7 +147,8 @@ int main_Sil_Run(int argc, char** argv)
 int main_Sil_Exit(int argc, char** argv)
 {
 	memoryDumpResult_Sil() ;
-
+	double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
+	printf("Time %.3f secs\n", clockDiff ) ;
     return 0;
 }
 %%]

@@ -24,7 +24,7 @@ ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          |
                          | localsF USE {.} {id}: {[HsName]->[HsName]}
-                           maxChildParameters USE {`max`} {0} : {Int}
+                           maxChildParameters USE {`max`} {10} : {Int}   -- TODO: 10 should be 0, but that causes the stack to be garbled
                            tailJumps USE {&&} {True} : {Bool}
                          ]
 
