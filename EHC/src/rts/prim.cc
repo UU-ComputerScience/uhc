@@ -18,23 +18,33 @@ PRIM int primXXXInt(int x, int y, int z)
 
 %%[8
 PRIM int primAddInt(int x, int y)
-{   return x+y;
+{   
+	//printf("add %d %d\n", x, y );
+	return x+y;
 }
 
 PRIM int primSubInt(int x, int y)
-{   return x-y;
+{   
+	//printf("sub %d %d\n", x, y );
+	return x-y;
 }
 
 PRIM int primMulInt(int x, int y)
-{   return x*y;
+{   
+	//printf("mul %d %d\n", x, y );
+	return x*y;
 }
 
 PRIM int primDivInt(int x, int y)
-{   return x/y;
+{   
+	//printf("div %d %d\n", x, y );
+	return x/y;
 }
 
 PRIM int primModInt(int x, int y)
-{   return x%y;
+{   
+	//printf("mod %d %d\n", x, y );
+	return x%y;
 }
 %%]
 
@@ -55,7 +65,10 @@ PRIM int primModInt(int x, int y)
 %%[8
 PRIM int primGtInt(int x, int y)
 {   if (x>y)
+    { //  printf ("%d is groter dan %d\n", x, y );
         return ((Pointer)global_True)[0];
+    }
+    //printf ("%d is niet groter dan %d\n", x, y );
     return ((Pointer)global_False)[0];
 }
 
@@ -66,7 +79,7 @@ PRIM int primLtInt(int x, int y)
 }
 %%]
 
-%%[99
+%%[8
 PRIM GrWord primCmpInt(int x, int y)
 {   if (x>y)
         return ((Pointer)global_GT)[0];
@@ -82,15 +95,21 @@ PRIM GrWord primCmpInt(int x, int y)
 
 %%[8
 PRIM int primEqInt(int x, int y)
-{   if (x==y)
+{
+	 //printf("eq %d %d\n", x, y );
+	
+	   if (x==y)
         return ((Pointer)global_True)[0];
     return ((Pointer)global_False)[0];
 }
 %%]
 
-%%[99
-PRIM int primNEInt(int x, int y)
-{   if (x/=y)
+%%[8
+PRIM int primNeInt(int x, int y)
+{
+	 //printf("neq %d %d\n", x, y );
+	
+	   if (x!=y)
         return ((Pointer)global_True)[0];
     return ((Pointer)global_False)[0];
 }

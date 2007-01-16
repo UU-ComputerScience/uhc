@@ -203,11 +203,11 @@ methodHeader :: Bool -> String -> [String] -> PP_Doc
 methodHeader optTrace nm params
  =  methodHead nm params
     >#< "{"
-    >-< ppWhen optTrace (trace ("enter " ++ show nm))
+    >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
 
 methodFooter ::  Bool -> String -> PP_Doc
 methodFooter optTrace nm
- =  ppWhen optTrace (trace ("leave "++show nm))
+ =  ppWhen optTrace (trace ("leave "++init (tail (show nm))))
     >-< text "}"
     >-< text ""
 
@@ -236,7 +236,7 @@ assignment v e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d\\n\", " >#< show v >#< ");")
+              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d\\n\", " >#< show v >#< "); fflush(stdout);")
 
 switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef scrutinee body

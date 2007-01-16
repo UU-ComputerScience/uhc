@@ -1,4 +1,5 @@
 data Bool = False | True
+data Ordering = EQ | GT | LT
 data ''[]'' a = a : [a] | ''[]''
 
 {-

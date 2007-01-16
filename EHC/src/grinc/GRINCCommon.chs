@@ -134,21 +134,22 @@ instance Show AbstractHeapElement where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation, Equations, EquationRhs(..), HeapEquation, HeapEquations, HeapEquationRhs, EvalMap, ApplyMap )
+%%[8 export(Equation(..), Equations, HeapEquation, HeapEquations, HeapEquationRhs, EvalMap, ApplyMap )
 
-type Equation      = (Variable, EquationRhs)
 type HeapEquation  = (Location, HeapEquationRhs)
 type Equations     = [Equation]
 type HeapEquations = [HeapEquation]
 
 type HeapEquationRhs = ((GrTag, [Maybe Variable]), Maybe Variable)
-data EquationRhs
-  = EquationKnownToBe !AbstractValue
-  | EquationShouldBe  ![Variable]
-  | EquationEval      Variable Variable
-  | EquationApply     Variable [Variable] Variable
-  | EquationSelect    Variable GrTag Int
-  | EquationTag       GrTag [Maybe Variable] (Maybe Variable)
+
+data Equation
+  = EquationKnownToBe Variable !AbstractValue
+  | EquationShouldBe  Variable ![Variable]
+  | EquationEval      Variable Variable Variable
+  | EquationApply     Variable Variable [Variable] Variable
+  | EquationSelect    Variable Variable GrTag Int
+  | EquationTag       Variable GrTag [Maybe Variable] (Maybe Variable)
+  | EquationDynApp                      [Variable] Variable
     deriving (Show, Eq)
 
 type EvalMap     = AssocL GrTag Int

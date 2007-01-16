@@ -30,9 +30,7 @@ data Primitive
       }
 
 lookupPrim :: Backend -> String -> Maybe Primitive
-lookupPrim backend name = maybe Nothing
-                                (\m -> Map.lookup backend m) 
-                                (Map.lookup name prims)
+lookupPrim backend name =  Map.lookup name prims >>= Map.lookup backend
 
 
 -- List of all primitives
@@ -40,17 +38,20 @@ lookupPrim backend name = maybe Nothing
 prims :: Map.Map String (Map.Map Backend Primitive)
 prims
   = Map.fromList
-      [ ( "primAddInt", Map.fromList[ (BackendSilly,SillyPrim (infixOperator "+")   ), (BackendGrinByteCode,GbPrim 2 (mkGbInsOp InsOp_TyOp_Add)) ] )
+      [ 
+ {-
+        ( "primAddInt", Map.fromList[ (BackendSilly,SillyPrim (infixOperator "+")   ), (BackendGrinByteCode,GbPrim 2 (mkGbInsOp InsOp_TyOp_Add)) ] )
       , ( "primSubInt", Map.fromList[ (BackendSilly,SillyPrim (infixOperator "-")   ), (BackendGrinByteCode,GbPrim 2 (mkGbInsOp InsOp_TyOp_Sub)) ] )
       , ( "primMulInt", Map.fromList[ (BackendSilly,SillyPrim (infixOperator "*")   ), (BackendGrinByteCode,GbPrim 2 (mkGbInsOp InsOp_TyOp_Mul)) ] )
       , ( "primDivInt", Map.fromList[ (BackendSilly,SillyPrim (infixOperator "/")   ), (BackendGrinByteCode,GbPrim 2 (mkGbInsOp InsOp_TyOp_Div)) ] )
-      
+
       , ( "primGtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator ">" )) ] )
       , ( "primLtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "<" )) ] )
       , ( "primGeInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator ">=")) ] )
       , ( "primLeInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "<=")) ] )
       , ( "primEqInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "==")) ] )
       , ( "primNeInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "!=")) ] )
+-}
       ]
 
 
@@ -80,9 +81,9 @@ mkGbOp opTy opndTy optim env modNmConstInx stkDepth [a1,a2]
 -- C implementation
           
 infixOperator :: String -> [PP_Doc] -> PP_Doc
-infixOperator op [arg1,arg2] = arg1  >#< op >#< arg2
+infixOperator op [arg1,arg2] = "((int)" >|< arg1 >|< ")" >#< op >#< "(int)(" >|< arg2 >|< ")"
 
 compareOperator :: String -> [PP_Doc] -> PP_Doc
-compareOperator op args = "(" >#< infixOperator op args >#< "?" >#< "CTrue" >#< ":" >#< "CFalse" >#< ")"
-
+--compareOperator op args = "((" >#< infixOperator op args >#< ")?" >#< "CTrue" >#< ":" >#< "CFalse" >#< ")"
+compareOperator op args@[arg1,arg2] = "((" >#< infixOperator op args >#< ")?" >#< "printf(\"%08x %08x groter\\n\", " >#< arg1 >#< "," >#< arg2 >#< "),((Pointer)global_True)[0]" >#< ":" >#< "printf(\"niet groter\\n\"),((Pointer)global_False)[0]" >#< ")"
 %%]
