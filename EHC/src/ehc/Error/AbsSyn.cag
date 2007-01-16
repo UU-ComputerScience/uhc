@@ -141,6 +141,9 @@ DATA Err
                         purpose    : String
                         ty         : Ty
   | NoDerivFor          pred       : PP_Doc
+  | NoDerivForData      ty         : Ty
+                        clNm       : HsName
+                        reason     : String
 %%]
 
 

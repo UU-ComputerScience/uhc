@@ -101,6 +101,11 @@ SEM Declaration
         loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map EH.TyVar_Var @simpletype.typevariables) [@constructors.eh]
         lhs         .   eh          =   [@eh]
 %%]
+%%[6
+    | KindSignature
+        loc         .   mkEHSig     =   \n -> rngLift @range EH.Decl_KiSig n @kind.eh
+        lhs         .   eh          =   map @mkEHSig @refnames
+%%]
 %%[8
     | ForeignImport
         loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @refname @type.eh
@@ -163,6 +168,30 @@ SEM Deriving
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @refname [rngLift @range EH.TyExpr_Parens @lhs.ehDataTyExpr]
                                         in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstDeriving h []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kinds           
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+ATTR Kinds [ | | eh USE {:} {[]}: {[EH.KiExpr]} ]
+
+ATTR Kind [ | | eh: {EH.KiExpr} ]
+
+SEM Kind
+    | NormalApplication
+        lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
+    | InfixApplication
+        loc         .   eh          =   mkRngApp @range [@operator.eh,@leftKind.eh,@rightKind.eh]
+    | Constructor
+        lhs         .   eh          =   rngLift @range EH.KiExpr_Con @refname
+    | Parenthesized
+        lhs         .   eh          =   rngLift @range EH.KiExpr_Parens @kind.eh
+    | Variable
+        lhs         .   eh          =   rngLift @range EH.KiExpr_Var @name
+    | Forall
+        lhs         .   eh          =   {- foldr (rngLift @range EH.KiExpr_Quant TyQu_Forall) -} @kind.eh {- @kindvariables -}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -297,11 +326,23 @@ SEM Constructor
 %%[7.Constructor -5.Constructor
 SEM Constructor
     | Constructor 
-        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname (map (ehPlainDataField emptyRange) @types.eh)
+        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
+%%[[95
+                                                Nothing
+%%]]
+                                                (map (ehPlainDataField emptyRange) @types.eh)
     | Infix
-        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
+        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
+%%[[95
+                                                (Just $ fgiPrio $ fixityGamLookup @conrefname @lhs.fixityGam)
+%%]]
+                                                (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
     | Record
-        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname @fieldDeclarations.eh
+        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
+%%[[95
+                                                Nothing
+%%]]
+                                                @fieldDeclarations.eh
 %%]
 
 %%[7

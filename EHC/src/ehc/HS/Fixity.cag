@@ -27,7 +27,10 @@ ATTR
   AllDeclaration AllExpression
 %%[[12
   AGItf AllModule
-%%]
+%%]]
+%%[[95
+  AllConstructor
+%%]]
     [ fixityGam: FixityGam | | ]
 %%]
 
@@ -95,10 +98,7 @@ SEM Expression
     | InfixApplication
         loc         .   fgi             =   case @operator.operatorName of
                                               Just n
-                                                -> case gamLookup n @lhs.fixityGam of
-                                                     Just i
-                                                       -> i
-                                                     _ -> defaultFixityGamInfo
+                                                -> fixityGamLookup n @lhs.fixityGam
                                               _ -> defaultFixityGamInfo
 %%]
 

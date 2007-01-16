@@ -489,11 +489,16 @@ type ErrGam = Gam HsName ErrL
 %%[1
 data FixityGamInfo = FixityGamInfo { fgiPrio :: Int, fgiFixity :: Fixity } deriving Show
 
-defaultFixityGamInfo = FixityGamInfo 9 Fixity_Infixl
+defaultFixityGamInfo = FixityGamInfo fixityMaxPrio Fixity_Infixl
 %%]
 
 %%[1.FixityGam
 type FixityGam = Gam HsName FixityGamInfo
+%%]
+
+%%[1 export(fixityGamLookup)
+fixityGamLookup :: HsName -> FixityGam -> FixityGamInfo
+fixityGamLookup nm fg = maybe defaultFixityGamInfo id $ gamLookup nm fg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -742,10 +747,13 @@ emptyDataFldInfo
 %%[7 export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
 data DataTagInfo
   = DataTagInfo
-      { dtiFldMp    :: DataFldMp
-      , dtiConNm	:: HsName
+      { dtiFldMp    		:: DataFldMp
+      , dtiConNm			:: HsName
 %%[[8
-      , dtiCTag 	:: CTag
+      , dtiCTag 			:: CTag
+%%]]
+%%[[95
+      , dtiMbFixityPrio 	:: Maybe Int
 %%]]
       } deriving Show
 
@@ -756,6 +764,9 @@ emptyDataTagInfo
       Map.empty hsnUnknown
 %%[[8
       emptyCTag
+%%]]
+%%[[95
+      Nothing
 %%]]
 %%]
 
@@ -836,17 +847,23 @@ dataGamDgiOfTy :: Ty -> DataGam -> Maybe DataGamInfo
 dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 %%]
 
-%%[8 export(dataGamTagsOfTy)
-dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
-dataGamTagsOfTy t g
+%%[8 export(dataGamDTIsOfTy)
+dataGamDTIsOfTy :: Ty -> DataGam -> Maybe [DataTagInfo]
+dataGamDTIsOfTy t g
   = fmap
 %%[[8
-      (map dtiCTag . Map.elems . dgiConstrTagMp)
+      (Map.elems . dgiConstrTagMp)
 %%][95
-      (map dtiCTag . assocLElts . dgiConstrTagAssocL)
+      (assocLElts . dgiConstrTagAssocL)
 %%]]
     $ gamLookup (tyAppFunConNm t)
     $ g
+%%]
+
+%%[8 export(dataGamTagsOfTy)
+dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
+dataGamTagsOfTy t g
+  = fmap (map dtiCTag) (dataGamDTIsOfTy t g)
 %%]
 
 Lookup by constructor name:

@@ -30,6 +30,10 @@ SEM Declaration
     | Data Newtype
         loc             .   nmLev       =   @lhs.nmLev -- + 1
 %%]]
+%%[[6
+    | KindSignature
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]]
 %%[[9
     | Class InstanceUseImplicitly Default
         loc             .   nmLev       =   @lhs.nmLev -- + 1

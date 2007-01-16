@@ -80,6 +80,30 @@ SEM Body
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Kind internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+ATTR Kind [ | | conNm: Name ]
+
+SEM Kind
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+%%]
+
+%%[6
+ATTR AllKind [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
+
+SEM Kind
+    | Variable
+        lhs         .   freeTvarS   =   Set.singleton @name
+    | Forall
+        lhs         .   freeTvarS   =   @kind.freeTvarS `Set.difference` Set.fromList @kindvariables
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc: Type internal info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

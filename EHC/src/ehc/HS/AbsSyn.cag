@@ -179,6 +179,12 @@ DATA Declaration                                  {- *** -}
         derivings                : Derivings
 %%]]
 %%]
+%%[6
+    | KindSignature
+        range                    : Range
+        names                    : Names
+        kind                     : Kind
+%%]
 %%[8
     | ForeignImport
         range                    : Range
@@ -203,8 +209,8 @@ DATA Declaration                                  {- *** -}
         where                    : MaybeDeclarations -- cannot have everything
     | Instance
         range                    : Range
-        maybeinstancename   	 : MaybeName
-        useimplicitly			 : Bool
+        maybeinstancename        : MaybeName
+        useimplicitly            : Bool
         context                  : ContextItems -- is a "simple" context
         name                     : Name
         types                    : Types        -- Haskell 98 allows only one type
@@ -212,7 +218,7 @@ DATA Declaration                                  {- *** -}
         where                    : MaybeDeclarations -- cannot have everything
     | InstanceUseImplicitly
         range                    : Range
-        expression  			 : Expression
+        expression               : Expression
         name                     : Name
         types                    : Types
     | Default
@@ -247,14 +253,14 @@ DATA FunctionalDependency
 %%]
 
 %%[95
-TYPE Derivings      			 = [ Deriving ]
+TYPE Derivings                   = [ Deriving ]
 
 DATA Deriving
-	| Deriving
-		range                    : Range
-        maybeinstancename   	 : MaybeName
-        useimplicitly			 : Bool
-        name        			 : Name
+    | Deriving
+        range                    : Range
+        maybeinstancename        : MaybeName
+        useimplicitly            : Bool
+        name                     : Name
 
 SET AllDeriving
   = Deriving Derivings
@@ -275,6 +281,43 @@ SET AllDeclaration
 %%[[90
     Fixity
 %%]]
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Kinds                                                              --
+-- ------------------------------------------------------------------------
+
+%%[6
+TYPE Kinds                       = [ Kind ]
+
+DATA Kind                                         {- *** -}
+    | NormalApplication                            {- *** -}
+        range                    : Range
+        function                 : Kind
+        arguments                : Kinds
+    | InfixApplication                            {- *** -}
+        range                    : Range
+        leftKind                 : Kind
+        operator                 : Kind
+        rightKind                : Kind
+    | Constructor                            {- *** -}
+        range                    : Range
+        name                     : Name
+    | Parenthesized
+        range                    : Range
+        kind                     : Kind
+    | Variable                               {- *** -}
+        range                    : Range
+        name                     : Name
+    | Forall
+        range                    : Range
+        kindvariables            : Names
+        kind                     : Kind
+%%]
+
+%%[6
+SET AllKind
+  = Kind Kinds
 %%]
 
 -- ------------------------------------------------------------------------
@@ -431,7 +474,7 @@ DATA ContextItem
     | NoImplicits
         range                    : Range
 %%[[10
-	| RowLacksLabel
+    | RowLacksLabel
         range                    : Range
         rowvariable              : Name
         name                     : Name
@@ -987,7 +1030,7 @@ DATA Pattern
         range                    : Range
         patterns                 : Patterns
 %%]
-    | Negate					-- see Literal
+    | Negate                    -- see Literal
         range                    : Range
         literal                  : Literal -- only numbers allowed here
 %%[4
@@ -1152,6 +1195,9 @@ SET AllBasics
 SET AllNT
   = AllModule AllDeclaration AllType AllPattern AllExpression
     AllBasics
+%%[[6
+    AllKind
+%%]]
 %%]
 
 %%[1

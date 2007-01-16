@@ -428,7 +428,11 @@ pExprPrefix     =    Expr_Let      <$ pLET
 pDataConstr     =    DataConstr_Constr <$> pCon <*> pTyExprs
 %%]
 %%[7.DataConstr1 -5.DataConstr1
+%%[[7
 pDataConstr     =    DataConstr_Constr
+%%][95
+pDataConstr     =    (\c f -> DataConstr_Constr c Nothing f)
+%%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
 %%]
 %%[50.DataConstr

@@ -98,8 +98,16 @@ SEM Expr
 
 %%[95
 SEM Decl
-  | Instance	loc			.	derivErrs			=	case Map.lookup @instClsNm @derivMp of
-  														  Nothing | @instVariant == InstDeriving
+  | Instance	loc			.	derivErrs			=	case (Map.lookup @instClsNm @derivMp,@instVariant) of
+  														  (Nothing,InstDeriving)
   														    -> [Err_NoDerivFor @tyPrExpr.pp]
+  														  (_,InstDeriving)
+  														    | null ctags
+  														      -> mke "has no constructors"
+  														    | @instClsNm == ehbnClassEnum (ehcOptBuiltinNames @lhs.opts)
+  														      && any (\t -> ctagArity t > 0) ctags
+  														      -> mke "has constructors with fields"
+  														    where ctags = panicJust "Decl.Instance.dataGamTagsOfTy" $ dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
+  														          mke m = [Err_NoDerivForData @derivHdDataTy @instClsNm m]
   														  _ -> []
 %%]

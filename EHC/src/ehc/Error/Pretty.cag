@@ -236,6 +236,11 @@ SEM Err
   | NoDerivFor          lhs     .  pp   =   ppMsgErr    ("No deriving for")
                                                         (    "predicate:" >#< @pred
                                                         )
+  | NoDerivForData      lhs     .  pp   =   ppMsgErr    ("Data type has wrong structure for deriving")
+                                                        (    "data type :" >#< @ty
+                                                         >-< "class name:" >#< @clNm
+                                                         >-< "because   :" >#< @reason
+                                                        )
 %%]
 
 

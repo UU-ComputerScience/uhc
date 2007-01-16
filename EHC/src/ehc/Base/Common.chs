@@ -907,6 +907,11 @@ instance PP Fixity where
   pp Fixity_Infixr = pp "infixr"
 %%]
 
+%%[1 export(fixityMaxPrio)
+fixityMaxPrio :: Int
+fixityMaxPrio = 9
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Eq,Ord for Pos
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

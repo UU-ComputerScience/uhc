@@ -26,22 +26,26 @@ SEM Declaration
 %%[[5
     | Data Newtype
         loc             .   typerefname =   @simpletype.name
-%%]
+%%]]
+%%[[6
+    | KindSignature
+        loc             .   refnames    =   @names
+%%]]
 %%[[8
     | ForeignImport ForeignExport
         loc             .   refname     =   @name
-%%]
+%%]]
 %%[[9
     | Class Instance InstanceUseImplicitly
         loc             .   instancerefname
                                         =   @instancename
     | Class
         loc             .   classrefname=   @simpletype.name
-%%]
+%%]]
 %%[[11
     | Type
         loc             .   typerefname =   @simpletype.name
-%%]
+%%]]
 %%]
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   @name
@@ -51,6 +55,8 @@ SEM Declaration
     | Fixity
         loc             .   oprefnames  =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @operators
     | TypeSignature
+        loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
+    | KindSignature
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
     | Data Newtype
         loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
@@ -213,6 +219,10 @@ SEM Declaration
 %%[[7
                                             ++ @idOccDefsFld
 %%]]
+%%]
+%%[6
+    | KindSignature
+        loc             .   idOccDefs   =   [ IdOcc n IdOcc_Type | n <- @refnames ]
 %%]
 %%[9
     | Class

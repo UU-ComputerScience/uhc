@@ -79,6 +79,10 @@ SEM Declaration
                                                   >-< ppParensCommas @derivings.ppL
 %%]]
 %%]
+%%[6
+    | KindSignature
+        loc         .   pp          =   ppCommas' @names >#< "::" >#< @kind.pp
+%%]
 %%[8
     | ForeignImport
         loc         .   pp          =   "foreign import" >#< @callconvention >#< @safety >#< maybe empty (pp.show) @importname >#< @name >#< "::" >#< @type.pp
@@ -113,6 +117,29 @@ SEM FunctionalDependency
 SEM Deriving
     | Deriving
         loc         .   pp          =   ppInstNm @useimplicitly @maybeinstancename >#< @name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kinds          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+SEM Kind
+    | NormalApplication
+        loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
+                                                  @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
+    | InfixApplication
+        loc         .   pp          =   let args = [@leftKind.pp,@rightKind.pp]
+        								in	ppAppTop  (@operator.conNm,@operator.pp)
+                                                  	  args (@operator.pp >#< ppSpaces args)
+    | Constructor
+        loc         .   pp          =   ppCon @name
+    | Parenthesized
+        loc         .   pp          =   pp_parens @kind.pp
+    | Variable
+        loc         .   pp          =   pp @name
+    | Forall
+        loc         .   pp          =   "forall" >#< ppSpaces @kindvariables >#< "." >#< @kind.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -568,6 +595,16 @@ SEM Qualifiers
         lhs         .   ppL         =   []
 %%]
 
+%%[6
+ATTR Kinds [ | | ppL: {[PP_Doc]} ]
+
+SEM Kinds
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]
+
 %%[7
 ATTR
   RecordExpressionBindings RecordPatternBindings
@@ -667,7 +704,7 @@ SEM Body
         								  -- >-< "loc.idGam:" >#< ppGam @idGam
         								  >-< "declarations.idUseOccGam:" >#< ppGamDup @declarations.idUseOccGam
         								  >-< "declarations.idDpdMp:" >#< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
-        								  -- >-< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
+        								  >-< "sccOrder:" >#< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
         								  -- >-< ppGamDup @declarations.undefOccGam
         								  )
 %%]
