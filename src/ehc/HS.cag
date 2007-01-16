@@ -25,6 +25,9 @@
 %%[5 hs export(SimpleType(..), AnnotatedType(..), AnnotatedTypes)
 %%]
 
+%%[6 hs export(Kind(..), Kinds)
+%%]
+
 %%[7 hs export(FieldDeclaration(..), FieldDeclarations)
 %%]
 

@@ -2,7 +2,7 @@
 %%% Aspect of name, for use by HS -> EH
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}NameAspect} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH) export(IdAspect(..),iaspIsSig,iaspIsFun)
+%%[1 module {%{EH}NameAspect} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH) export(IdAspect(..),iaspIsValSig,iaspIsFun)
 %%]
 
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
@@ -22,34 +22,36 @@ data IdAspect
   | IdAsp_Val_Con
 %%[[5
   | IdAsp_Val_Fld
-%%]
+%%]]
   | IdAsp_Type_Con
 %%[[3
   | IdAsp_Type_Var
-%%]
+%%]]
 %%[[5
   | IdAsp_Type_Def      {iaspDecl   ::  EH.Decl                         }
-%%]
+%%]]
 %%[[6
+  | IdAsp_Type_Sig      {iaspDecl   ::  EH.Decl                         }
   | IdAsp_Kind_Con
-%%]
+  | IdAsp_Kind_Var
+%%]]
 %%[[8
   | IdAsp_Val_FFI       {iaspDecl   ::  EH.Decl                         }
-%%]
+%%]]
 %%[[9
   | IdAsp_Class_Class
   | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst :: EH.Decl}
   | IdAsp_Inst_Inst
   | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: HsName }
   | IdAsp_Dflt_Def      {iaspDecl   ::  EH.Decl                         }
-%%]
+%%]]
   | IdAsp_Any
 %%]
 
 %%[1 hs
-iaspIsSig :: IdAspect -> Bool
-iaspIsSig (IdAsp_Val_Sig _) = True
-iaspIsSig _                 = False
+iaspIsValSig :: IdAspect -> Bool
+iaspIsValSig (IdAsp_Val_Sig _) = True
+iaspIsValSig _                 = False
 %%]
 
 %%[1 hs
@@ -82,7 +84,9 @@ instance PP IdAspect where
   pp (IdAsp_Type_Def _   )  = pp "DEF"
 %%]
 %%[[6
+  pp (IdAsp_Type_Sig _   )  = pp "SIG"
   pp  IdAsp_Kind_Con        = pp "CON"
+  pp  IdAsp_Kind_Var        = pp "VAR"
 %%]
 %%[[8
   pp (IdAsp_Val_FFI _    )  = pp "FFI"

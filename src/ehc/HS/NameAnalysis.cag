@@ -105,13 +105,31 @@ mkDefGam l r a os
 %%]
 
 %%[3 hs
+varL2IdDefOccGam :: IdOccKind -> IdAspect -> NmLev -> Range -> [HsName] -> IdDefOccGam
+varL2IdDefOccGam k a l r ns
+  = mkDefGam l r a [ IdOcc n k | n <- ns ]
+
 tvarL2IdDefOccGam :: NmLev -> Range -> [HsName] -> IdDefOccGam
-tvarL2IdDefOccGam l r ns
-  = mkDefGam l r IdAsp_Type_Var [ IdOcc n IdOcc_Type | n <- ns ]
+tvarL2IdDefOccGam
+  = varL2IdDefOccGam IdOcc_Type IdAsp_Type_Var
+
+varS2IdDefOccGam :: IdOccKind -> IdAspect -> NmLev -> Range -> HsNameS -> IdDefOccGam
+varS2IdDefOccGam k a l r ns
+  = varL2IdDefOccGam k a l r (Set.toList ns)
 
 tvarS2IdDefOccGam :: NmLev -> Range -> HsNameS -> IdDefOccGam
-tvarS2IdDefOccGam l r ns
-  = tvarL2IdDefOccGam l r (Set.toList ns)
+tvarS2IdDefOccGam
+  = varS2IdDefOccGam IdOcc_Type IdAsp_Type_Var
+%%]
+
+%%[6 hs
+kvarL2IdDefOccGam :: NmLev -> Range -> [HsName] -> IdDefOccGam
+kvarL2IdDefOccGam
+  = varL2IdDefOccGam IdOcc_Kind IdAsp_Kind_Var
+
+kvarS2IdDefOccGam :: NmLev -> Range -> HsNameS -> IdDefOccGam
+kvarS2IdDefOccGam
+  = varS2IdDefOccGam IdOcc_Kind IdAsp_Kind_Var
 %%]
 
 %%[1
@@ -161,12 +179,18 @@ SEM Declaration
                                             `gamAddGam` @derivings.idOccDefGam
 %%]]
 %%]
+%%[6
+    | KindSignature
+        loc             .   idOccDefGam =   mkDefGam' @lhs.nmLev @range (\o -> IdAsp_Type_Sig (@mkEHSig (ioccNm o))) @idOccDefs
+                        .   idOccDefGamKind
+                                        =   kvarS2IdDefOccGam @nmLev @range @kind.freeTvarS
+%%]
 %%[9
     | Class
         loc             .   idOccDefGamType
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
                         .   idOccDefGamSigAsVar
-                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idOccDefGam, iaspIsSig (doccAsp d) ]
+                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idOccDefGam, iaspIsValSig (doccAsp d) ]
                         .   idOccDefGam =   mkDefGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                             `gamUnion` @idOccDefGamSigAsVar
     | Instance
@@ -250,6 +274,13 @@ SEM Type
     | Forall Exists
         loc             .   idOccDefGamInside
                                         =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
+%%]
+
+%%[6
+SEM Kind
+    | Forall
+        loc             .   idOccDefGamInside
+                                        =   kvarL2IdDefOccGam @lhs.nmLev @range @kindvariables
 %%]
 
 %%[8
@@ -378,6 +409,10 @@ SEM Declaration
 %%]]
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
 %%]]
+%%[[6
+    | KindSignature
+        kind            .   idGam       =   gamAddGam @idOccDefGamKind @lhs.idGam
+%%]]
 %%[[9
     | Class
         loc             .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
@@ -426,6 +461,12 @@ SEM Statement
 %%[4
 SEM Type
     | Forall Exists
+        loc             .   idGam       =   gamAddGam @idOccDefGamInside @lhs.idGam
+%%]
+
+%%[6
+SEM Kind
+    | Forall
         loc             .   idGam       =   gamAddGam @idOccDefGamInside @lhs.idGam
 %%]
 
@@ -649,6 +690,19 @@ SEM Type
                                         =   mkUseOccGam @lhs.idGam [@name] @idOccKind @idAsp @range
 %%]
 
+%%[6
+SEM Kind
+    | Constructor
+        loc             .   idAsp       =   IdAsp_Kind_Con
+                        .   idOccKind   =   IdOcc_Kind
+    | Variable
+        loc             .   idAsp       =   IdAsp_Kind_Var
+                        .   idOccKind   =   IdOcc_Kind
+    | Constructor Variable
+        loc             .   (refname,_,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam [@name] @idOccKind @idAsp @range
+%%]
+
 %%[9
 SEM Type
     | Constructor
@@ -811,6 +865,13 @@ SEM Declaration
                                             @derivings.idDpdMp
 %%]]
 %%]]
+%%[[6
+    | KindSignature
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev @kind.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp (gamKeys @idOccDefGam) @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@kind.undefOccGam]
+%%]]
 %%[[8
     | ForeignImport
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
@@ -827,7 +888,7 @@ SEM Declaration
                                                 [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                 , idToOccGam2DpdMp [@idOccDef] @idOccDefGamSigAsVar
                                                 -- , idToOccGam2DpdMp [@idOccDef] @idOccDefGamInstForClass
-                                                -- , idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
+                                                , idFrOccGam2DpdMp @idOccDefGamSigAsVar [@idOccDef]
                                                 , idFrOccGam2DpdMp @idOccDefGamSigAsVar (gamKeys @idOccDefGamInstForClass)
                                                 , @where.idDpdMp
                                                 ]
@@ -984,11 +1045,15 @@ mkIdDefEH def
 %%[[5
       IdAsp_Type_Def decl
         -> [decl]
-%%]
+%%]]
+%%[[6
+      IdAsp_Type_Sig decl
+        -> [decl]
+%%]]
 %%[[8
       IdAsp_Val_FFI decl
         -> [decl]
-%%]
+%%]]
 %%[[9
       IdAsp_Class_Def decl declInst
         -> [decl,declInst]
@@ -996,7 +1061,7 @@ mkIdDefEH def
         -> [decl]
       IdAsp_Dflt_Def decl
         -> [] -- [decl]
-%%]
+%%]]
       _ -> []
 %%]
 
@@ -1033,16 +1098,6 @@ mergeFunDefL ds
       _   -> ([],[])
 %%]
 
-%%[9 hs
-%%]
-splitOffClsInst :: [IdDefOcc] -> [[IdDefOcc]]
-splitOffClsInst
-  = foldr (\df dfs -> zipWith (++) (s df) dfs) [[],[],[]]
-  where s d = case doccAsp d of
-                (IdAsp_Class_Def _ _) -> [[d],[],[]]
-                (IdAsp_Inst_Def  _ _) -> [[],[d],[]]
-                _                     -> [[],[],[d]]
-
 %%[1.splitOff hs
 splitOff :: [IdDefOcc] -> [[IdDefOcc]]
 splitOff os = [os,[]]
@@ -1076,13 +1131,6 @@ idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
 idDefOccs2Decls docss
   = ([concat ds], concat es)
   where (ds,es) = unzip $ map mkIdOccEH $ docss
-%%]
-
-%%[999 -1.idDefOccs2Decls hs
-idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
-idDefOccs2Decls docss
-  = (foldr (zipWith (++)) (repeat []) ds, concat es)
-  where (ds,es) = unzip [ (ds,concat es) | l <- map splitOffClsInst docss, let (ds,es) = unzip $ map mkIdOccEH $ l ]
 %%]
 
 %%[1.mkIdOccSccEH hs

@@ -429,6 +429,9 @@ DATA DataConstr
 %%[7.DataConstr1 -5.DataConstr1
 DATA DataConstr
   | Constr          conNm           : {HsName}
+%%[[95
+                    mbFixityPrio    : {Maybe Int}		-- Nothing: not infix
+%%]]
                     fields          : DataFields
 %%]
 %%[50.DataConstr

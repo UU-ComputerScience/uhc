@@ -25,9 +25,6 @@
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp,LevMp,fvLev,fvsLev)
 %%]
 
-%%[8 hs export(mkCExprAddInt)
-%%]
-
 %%[8 hs export(mkCMod)
 %%]
 
@@ -283,9 +280,9 @@ mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_V
 %%]
 
 %%[8 hs
+%%]
 mkCExprAddInt :: CExpr -> Int -> CExpr
 mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [e,CExpr_Int i]
-%%]
 
 %%[8 hs
 mkCMod :: CExpr -> CModule
@@ -309,13 +306,31 @@ cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% String
+%%% Operator construction, expressed in terms of primitives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(caddint)
+caddint :: EHCOpts -> CExpr -> Int -> CExpr
+caddint opts e i = if i == 0 then e else CExpr_Var (ehbnPrimAddInt $ ehcOptBuiltinNames opts) `mkCExprApp` [e,CExpr_Int i]
+%%]
+
+%%[8 hs export(cgtint)
+cgtint :: EHCOpts -> CExpr -> Int -> CExpr
+cgtint opts e i = CExpr_Var (ehbnPrimGtInt $ ehcOptBuiltinNames opts) `mkCExprApp` [e,CExpr_Int i]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% String construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(cstring)
 cstring :: EHCOpts -> String -> CExpr
 cstring opts m = CExpr_Var (ehbnPackedString2String $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Integer construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 hs export(cinteger)
 cinteger :: EHCOpts -> Integer -> CExpr

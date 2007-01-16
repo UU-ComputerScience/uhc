@@ -76,7 +76,7 @@ WRAPPER AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Global info: options, module name, name mapping
+%%% Global info: options, module name, name mapping, fixity (for deriving)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -90,6 +90,10 @@ ATTR AGItf [ moduleNm: HsName | | ]
 %%[12
 ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
 %%]
+
+%%[95
+%%]
+ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tying together gam's, combining with imported info, gathering for following modules and/or global use

@@ -622,12 +622,12 @@ fitsIn opts env uniq ty1 ty2
                                              ,  foUniq = u'
                                              }
                                    Ty_Var _ cat | tvCatIsFixed cat && not (null fuL)
-                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr u4 fuL r))]
+                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr (feEHCOpts $ fiEnv fi) u4 fuL r))]
                                              ,  foPredOccL = prUpdL ++ prDelL ++ foPredOccL fo
                                              ,  foUniq = u'
                                              }
                                    _ |  not (null fuUpdL)
-                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr u4 fuUpdL r))]
+                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr (feEHCOpts $ fiEnv fi) u4 fuUpdL r))]
                                              ,  foPredOccL = prUpdL ++ foPredOccL fo
                                              ,  foUniq = u'
                                              }
@@ -1269,7 +1269,7 @@ prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r l) prPoi) depth
                                ->  let  (u',u2) = mkNewUID u
                                         poi2 = mkPrId (poiCxId prPoi) u2
                                         newPr = PredOcc (Pred_Lacks row l) poi2
-                                        g2 = prvgAddPrNd pr [prPoi] (ProvenAnd pr [poi2] [] pcostZero (CExpr_Hole u2 `mkCExprAddInt` offset)) g
+                                        g2 = prvgAddPrNd pr [prPoi] (ProvenAnd pr [poi2] [] pcostZero (caddint (feEHCOpts fe) (CExpr_Hole u2) offset)) g
                                    in   (prfsAddPrOccL [newPr] (depth+1) st)
                                           {prfs2ProvenGraph = g2, prfs2Uniq = u'}
                          _     ->  let  g2 = prvgAddPrNd pr [prPoi] (ProvenAnd pr [] [] pcostZero (CExpr_Int offset)) g

@@ -35,7 +35,7 @@
 %%[8 export(hsnFloat)
 %%]
 
-%%[8 export(hsnPrimAddInt,hsnMain)
+%%[8 export(hsnMain)
 %%]
 
 %%[8 import(Char(isUpper)) export(hsnIsConstructorName)
@@ -185,7 +185,6 @@ hsnFloat                            =   HNm "Float"
 
 %%[8
 hsnMain                             =   HNm "main"
-hsnPrimAddInt                       =   HNm "primAddInt"
 %%]
 
 %%[8
@@ -286,6 +285,8 @@ mkRV m = hsnSetQual m . HNm
  , hsnClassEqFldEq
 %%[[95
  , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
+ , hsnClassBounded, hsnClassBoundedFldMinBound, hsnClassBoundedFldMaxBound
+ , hsnClassEnum, hsnClassEnumFldFromEnum, hsnClassEnumFldToEnum, hsnClassEnumFldSucc, hsnClassEnumFldPred
 %%]]
  ]
   = map
@@ -300,14 +301,17 @@ mkRV m = hsnSetQual m . HNm
       , "=="
 %%[[95
       , "Ordering", "EQ", "LT", "GT"
+      , "Bounded", "minBound", "maxBound"
+      , "Enum", "fromEnum", "toEnum", "succ", "pred"
 %%]]
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnPackedString2String,hsnPackedString,hsnPrelId)
+%%[8 export(hsnUndefined,hsnPackedString2String,hsnPackedString,hsnPrelId,hsnPrimAddInt)
 [hsnUndefined
  , hsnPackedString, hsnPackedString2String
  , hsnPrelId
+ , hsnPrimAddInt, hsnPrimGtInt
 %%[[99
  , hsnPackedString2Integer
 %%]]
@@ -321,6 +325,7 @@ mkRV m = hsnSetQual m . HNm
       [ "undefined"
       , "PackedString", "packedString2String"
       , "id"
+      , "primAddInt", "primGtInt"
 %%[[99
       , "packedString2Integer"
 %%]]
@@ -441,6 +446,8 @@ data EHBuiltinNames
       , ehbnError                   :: HsName
       , ehbnPackedString            :: HsName
       , ehbnPackedString2String     :: HsName
+      , ehbnPrimAddInt              :: HsName
+      , ehbnPrimGtInt               :: HsName
 %%[[11
       , ehbnPrelString              :: HsName
 %%]]
@@ -464,6 +471,14 @@ data EHBuiltinNames
       , ehbnPrelConcat              :: HsName
       , ehbnPrelConcat2             :: HsName
       , ehbnPrelCompose             :: HsName
+      , ehbnClassEnum               :: HsName
+      , ehbnClassEnumFldFromEnum    :: HsName
+      , ehbnClassEnumFldToEnum      :: HsName
+      , ehbnClassEnumFldSucc        :: HsName
+      , ehbnClassEnumFldPred        :: HsName
+      , ehbnClassBounded            :: HsName
+      , ehbnClassBoundedFldMinBound :: HsName
+      , ehbnClassBoundedFldMaxBound :: HsName
 %%]]
 %%[[99
       , ehbnPackedString2Integer    :: HsName
@@ -478,6 +493,8 @@ mkEHBuiltinNames f
       , ehbnError                   = f IdOcc_Val  		hsnError
       , ehbnPackedString            = f IdOcc_Type 		hsnPackedString
       , ehbnPackedString2String     = f IdOcc_Val  		hsnPackedString2String
+      , ehbnPrimAddInt              = f IdOcc_Val  		hsnPrimAddInt
+      , ehbnPrimGtInt               = f IdOcc_Val  		hsnPrimGtInt
 %%[[11
       , ehbnPrelString              = f IdOcc_Type 		hsnPrelString
 %%]]
@@ -501,6 +518,14 @@ mkEHBuiltinNames f
       , ehbnPrelConcat              = f IdOcc_Val   	hsnPrelConcat
       , ehbnPrelConcat2             = f IdOcc_Val   	hsnPrelConcat2
       , ehbnPrelCompose             = f IdOcc_Val   	hsnPrelCompose
+      , ehbnClassEnum               = f IdOcc_Class 	hsnClassEnum
+      , ehbnClassEnumFldFromEnum    = f IdOcc_Val   	hsnClassEnumFldFromEnum
+      , ehbnClassEnumFldToEnum      = f IdOcc_Val   	hsnClassEnumFldToEnum
+      , ehbnClassEnumFldSucc        = f IdOcc_Val   	hsnClassEnumFldSucc
+      , ehbnClassEnumFldPred        = f IdOcc_Val   	hsnClassEnumFldPred
+      , ehbnClassBounded            = f IdOcc_Class 	hsnClassBounded
+      , ehbnClassBoundedFldMinBound = f IdOcc_Val   	hsnClassBoundedFldMinBound
+      , ehbnClassBoundedFldMaxBound = f IdOcc_Val   	hsnClassBoundedFldMaxBound
 %%]]
 %%[[99
       , ehbnPackedString2Integer    = f IdOcc_Val  		hsnPackedString2Integer

@@ -7,7 +7,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
+%%[8 hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
 %%]
 
 %%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev})
@@ -19,10 +19,21 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-cmodTrfConstProp :: CModule -> CModule
-cmodTrfConstProp cmod
-  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+cmodTrfConstProp :: EHCOpts -> CModule -> CModule
+cmodTrfConstProp opts cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { opts_Inh_CodeAGItf = opts
+                               })
      in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +61,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App         lhs         .   cTrf        =   if @lhs.isTopApp
                                                 then  case (@appLam,reverse @appArgL) of
-                                                        (CExpr_Var n,[CExpr_Int i1,CExpr_Int i2]) | n == hsnPrimAddInt
+                                                        (CExpr_Var n,[CExpr_Int i1,CExpr_Int i2]) | n == (ehbnPrimAddInt $ ehcOptBuiltinNames @lhs.opts)
                                                           -> CExpr_Int (i1 + i2)
                                                         _ -> @cTrf
                                                 else  @cTrf

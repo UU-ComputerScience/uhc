@@ -129,7 +129,7 @@ SEM Expr
   | Rec         loc         .   rcexpr          =   if @recExpr.isExtFromEmpty
                                                     then  foldl CExpr_App (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
-                                                    else  fuMkCExpr @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
+                                                    else  fuMkCExpr @lhs.opts @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
                             .   cexpr           =   @rcexpr
 %%]
 
@@ -370,7 +370,7 @@ SEM PatExpr
                                                       ->  RPat_Con @cpNm @tag (RPatConBind_One @rest (map fst @rpatBinds))
                                                     CPatRest_Var r
                                                       ->  RPat_Con @cpNm @tag (RPatConBind_One @rest pbL)
-                                                          where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder $ reverse $ @fsRPatL
+                                                          where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder @lhs.opts $ reverse $ @fsRPatL
   | DataFields  loc         .   rpat        =   RPat_Con @cpNm @tag (rpatConBindUnFlatten $ map (RPatConBind_One @rest . map fst) $ @rpatBindss)
   | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @patExpr.cbindL
 %%]
@@ -555,29 +555,30 @@ SEM Decl
                                                                      = CBind_Bind (dcfNm dcf)
                                                                          (mkCExprLam (dcfInitialArgL dcf ++ take (fArity - 1) nsA)
                                                                             (mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") (CExpr_Var n1)
-                                                                               [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag)) (mkc (splitTags ctag ctags) (fArity - 2) n1s [n1subs ctag] altPrOccL)
-                                                                               | (ctag,altPrOccL) <- zip ctags @derivAltsPrOcc
+                                                                               [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag)) (mkc (splitDTIs ctag dtis) (fArity - 2) n1s [n1subs ctag] altPrOccL)
+                                                                               | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
                                                                                ]
                                                                          )  )
-                                                                     where ctags = panicJust "Decl.Instance.Deriving.dataGamTagsOfTy" $ dataGamTagsOfTy @derivHdDataTy @lhs.dataGam
-                                                                           splitTags t ts -- in (lt,eq,gt), according to list ordering
+                                                                     where dtis  = panicJust "Decl.Instance.Deriving.dataGamDTIsOfTy" $ dataGamDTIsOfTy @derivHdDataTy @lhs.dataGam
+                                                                           nrOfAlts = length dtis
+                                                                           splitDTIs t ts -- in (lt,eq,gt), according to list ordering
                                                                              = (l,e,g)
-                                                                             where (l,(e:g)) = span (/= t) ts
+                                                                             where (l,(e:g)) = span ((/= t) . dtiCTag) ts
                                                                            fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf
                                                                            n1subs t = nsubs t n1
                                                                            nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
-                                                                           mkc tg@(ctagsLT,ctag,ctagsGT) arity nms nmFldLL altPrOccL
+                                                                           mkc tg@(dtisLT,dti,dtisGT) arity nms nmFldLL altPrOccL
                                                                              = case nms of
                                                                                  (n:ns) | arity > 0
                                                                                    -> mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n "!") (CExpr_Var n)
-                                                                                        (   [ mka ctag tsubs (mkc tg (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
-                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- ctagsLT ]
-                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- ctagsGT ]
+                                                                                        (   [ mka (dtiCTag dti) tsubs (mkc tg (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
+                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- map dtiCTag dtisLT ]
+                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- map dtiCTag dtisGT ]
                                                                                         )
-                                                                                   where tsubs = nsubs ctag n
+                                                                                   where tsubs = nsubs (dtiCTag dti) n
                                                                                          mka ctag nsubs e = CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just nsubs)) e
-                                                                                 _ -> dcfAllTagEqCExpr dcf @lUniq @rceEnv ctag (dcfInitialArgL dcf)
-                                                                                      $ [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole (poPoi prOcc)] ++ dcfInitialSubArgL dcf ++ map CExpr_Var nmFldL)
+                                                                                 _ -> dcfAllTagEqCExpr dcf @lUniq @rceEnv dti (length dtisLT, nrOfAlts) (dcfInitialArgL dcf)
+                                                                                      $ [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
                                                                                         | (nmFldL,prOcc) <- zip (transpose nmFldLL) altPrOccL
                                                                                         ]
                                                                    bindL

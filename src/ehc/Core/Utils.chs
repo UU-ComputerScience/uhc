@@ -201,15 +201,15 @@ fuL2ExprL' f l = [ f e | (_,(e,_)) <- l ]
 fuL2ExprL :: FieldUpdateL CExpr -> [CExpr]
 fuL2ExprL = fuL2ExprL' cexprTupFld
 
-fuReorder :: [HsName] -> FieldUpdateL CExpr -> (CBindL,FieldUpdateL (CExpr -> CExpr))
-fuReorder nL fuL
+fuReorder :: EHCOpts -> [HsName] -> FieldUpdateL CExpr -> (CBindL,FieldUpdateL (CExpr -> CExpr))
+fuReorder opts nL fuL
   =  let  (fuL',offL,_,_)
             =  foldl
                  (\(fuL,offL,exts,dels) (n,(_,(f,_)))
                      ->  let  mkOff n lbl o
                                 =  let smaller l = rowLabCmp l lbl == LT
                                        off = length (filter smaller dels) - length (filter smaller exts)
-                                   in  CBind_Bind n (o `mkCExprAddInt` off)
+                                   in  CBind_Bind n (caddint opts o off)
                               no = CExpr_Var n
                          in   case f of
                                  CExpr_TupIns _ t l o e -> ((l,(\r -> CExpr_TupIns r t l no e,Nothing)) : fuL,(mkOff n l o):offL,l:exts,dels  )
@@ -222,10 +222,10 @@ fuReorder nL fuL
           cmpFU (n1,_ ) (n2,_) = rowLabCmp n1 n2
      in   (offL, sortBy cmpFU fuL')
 
-fuMkCExpr :: UID -> FieldUpdateL CExpr -> CExpr -> CExpr
-fuMkCExpr u fuL r
+fuMkCExpr :: EHCOpts -> UID -> FieldUpdateL CExpr -> CExpr -> CExpr
+fuMkCExpr opts u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
-          (oL,fuL') = fuReorder nL fuL
+          (oL,fuL') = fuReorder opts nL fuL
           bL = CBind_Bind n r : oL
      in   mkCExprLet CBindStrict bL $ foldl (\r (_,(f,_)) -> f r) (CExpr_Var n) $ fuL'
 %%]
@@ -272,14 +272,14 @@ fsL2PatL = concat . assocLElts
 -- Reordering compensates for the offset shift caused by predicate computation, which is predicate by predicate
 -- whereas these sets of patterns are dealt with in one go.
 %%[8 export(fsLReorder)
-fsLReorder :: FieldSplitL -> FieldSplitL
-fsLReorder fsL
+fsLReorder :: EHCOpts -> FieldSplitL -> FieldSplitL
+fsLReorder opts fsL
   =  let  (fsL',_)
             =  foldr
                  (\(FldComputeOffset l o,p) (fsL,exts) 
                      ->  let  mkOff lbl exts o
                                 =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
-                                   in  o `mkCExprAddInt` nrSmaller
+                                   in  caddint opts o nrSmaller
                          in   ((FldComputeOffset l (mkOff l exts o),p):fsL,l:exts)
                  )
                  ([],[])
@@ -288,14 +288,14 @@ fsLReorder fsL
 %%]
 
 %%[8 export(rpbReorder,patBindLOffset)
-rpbReorder :: [RPatBind] -> [RPatBind]
-rpbReorder pbL
+rpbReorder :: EHCOpts -> [RPatBind] -> [RPatBind]
+rpbReorder opts pbL
   =  let  (pbL',_)
             =  foldr
                  (\(RPatBind_Bind l o n p) (pbL,exts) 
                      ->  let  mkOff lbl exts o
                                 =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
-                                   in  o `mkCExprAddInt` nrSmaller
+                                   in  caddint opts o nrSmaller
                          in   ((RPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
                  )
                  ([],[])

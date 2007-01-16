@@ -41,7 +41,11 @@ SEM Module
 SEM Declaration
     | Newtype
         loc             .   errNewtype  =   case @constructors.eh of
-                                              EH.DataConstr_Constr _ [_]
+                                              EH.DataConstr_Constr _
+%%[[95
+                                                                   _
+%%]]
+                                                                   [_]
                                                 -> []
                                               _ -> [Err_Newtype @simpletype.name]
 %%]

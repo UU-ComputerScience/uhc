@@ -18,10 +18,15 @@ data DerivClsFld
       { dcfNm                       :: HsName                                   -- name of field
       , dcfTy                       :: Ty                                       -- type of field
       , dcfInitialArgL              :: [HsName]                                 -- initial arguments for function, passed to dcfAllTagEqCExpr
-      , dcfInitialSubArgL           :: [CExpr]                                  -- initial arguments for constituents
+      , dcfInitialSubArgL           :: DataTagInfo -> [CExpr]                   -- initial arguments for constituents
       , dcfNrOmitTailArg            :: Int                                      -- nr of args not passed, i.e. how much to omit for partial app
-      , dcfAllTagEqCExpr            :: UID -> RCEEnv -> CTag -> [HsName] -> [CExpr] -> CExpr
-                                                                                -- when tags are equal how to combine/fold result of constituents
+      , dcfAllTagEqCExpr            :: UID										-- construct out of constituents
+                                       -> RCEEnv
+                                       -> DataTagInfo
+                                       -> (Int,Int)								-- (index (a la toEnum), nr of alts)
+                                       -> [HsName]								-- names of initial args (usually same as dcfInitialArgL)
+                                       -> [CExpr]								-- constituents
+                                       -> CExpr
       , dcfAllTagLtCExpr            :: CExpr                                    -- when tags are < previous
       , dcfAllTagGtCExpr            :: CExpr                                    -- when tags are > previous
       }
@@ -38,9 +43,9 @@ mkDerivClsMp opts valGam dataGam
     $ map (uncurry Map.singleton) 
     $ [ mk ehbnClassEq ehbnClassEqFldEq
            []
-           []
+           (const [])
            0
-           (\_ _ _ _ vs
+           (\_ _ _ _ _ vs
                 -> case vs of
                      [] -> true
                      _  -> foldr1 and vs
@@ -48,9 +53,9 @@ mkDerivClsMp opts valGam dataGam
            false false
       , mk ehbnClassOrd ehbnClassOrdFldCompare
            []
-           []
+           (const [])
            0
-           (\uniq env _ _ vs
+           (\uniq env _ _ _ vs
                 -> case vs of
                      [] -> eq
                      _  -> foldr1 (\l r -> mkCExprStrictSatCase env (Just nStrict) l
@@ -63,20 +68,48 @@ mkDerivClsMp opts valGam dataGam
                               nStrict = hsnSuffix n "!"
            )
            gt lt
+      , mk ehbnClassEnum ehbnClassEnumFldToEnum
+           []
+           (const [])
+           0
+           (\_ env _ (altInx,_) _ []
+                -> CExpr_Int altInx
+           )
+           undef undef
+      , mk ehbnClassEnum ehbnClassEnumFldSucc
+           []
+           (const [])
+           0
+           (\_ env dti (altInx,nrOfAlts) _ []
+                -> if altInx < nrOfAlts  - 1
+                   then CExpr_Int $ altInx + 1
+                   else cerror opts $ "cannot succ last constructor: " ++ show (dtiConNm dti)
+           )
+           undef undef
+      , mk ehbnClassEnum ehbnClassEnumFldPred
+           []
+           (const [])
+           0
+           (\_ env dti (altInx,_) _ []
+                -> if altInx > 0
+                   then CExpr_Int $ altInx - 1
+                   else cerror opts $ "cannot pred first constructor: " ++ show (dtiConNm dti)
+           )
+           undef undef
       , mk ehbnClassShow ehbnClassShowFldShowsPrec
            [precDepthNm]
-           [CExpr_Int 11] -- dummy, for now, should computed from fixity, etc etc
+           (\dti -> [CExpr_Int $ maybe (fixityMaxPrio + 1) (+1) $ dtiMbFixityPrio $ dti])
            1
-           (\_ _ tg [dNm] vs
-                -> case vs of
-                     [] -> showString $ tag2str tg
-                     _  -> mkCExprApp (CExpr_Var $ fn ehbnPrelShowParen)
-                             [ true
-                             , foldr1 compose
-                                 (   [ showString $ tag2str tg ++ " " ]
-                                  ++ intersperse (showString " ") vs
-                                 )
-                             ]
+           (\_ _ dti _ [dNm] vs
+                -> let mk needParen v = mkCExprApp (CExpr_Var $ fn ehbnPrelShowParen) [needParen,v]
+                   in  case (vs,dtiMbFixityPrio dti) of
+                         ([],_)
+                           -> showString $ tag2str (dtiCTag dti)
+                         ([v1,v2],Just p)
+                           -> mk (cgtint opts (CExpr_Var dNm) p)
+                              $ foldr1 compose ([v1] ++ [ showString $ " " ++ tag2str (dtiCTag dti) ++ " " ] ++ [v2])
+                         _ -> mk (cgtint opts (CExpr_Var dNm) fixityMaxPrio)
+                              $ foldr1 compose ([showString $ tag2str (dtiCTag dti) ++ " "] ++ intersperse (showString " ") vs)
            )
            undef undef
       ]

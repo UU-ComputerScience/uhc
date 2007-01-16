@@ -203,10 +203,13 @@ pImportDeclaration
 pDeclaration :: HSParser Declaration
 pDeclaration
   =   pDeclarationValue
-  <|> pDeclarationSignature
+  <|> pDeclarationTypeSignature
   <|> pDeclarationFixity
 %%[[5
   <|> pDeclarationData
+%%]]
+%%[[6
+  <|> pDeclarationKindSignature
 %%]]
 %%[[9
   <|> pDeclarationClass
@@ -278,11 +281,11 @@ pFixity = Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-pDeclarationSignature :: HSParser Declaration
-pDeclarationSignature
+pDeclarationTypeSignature :: HSParser Declaration
+pDeclarationTypeSignature
   =   (\(v:vs) t -> Declaration_TypeSignature (mkRange1 v) (tokMkQNames (v:vs)) t)
       <$> pList1Sep pCOMMA var <* pDCOLON <*> pType
-  <?> "pDeclarationSignature"
+  <?> "pDeclarationTypeSignature"
 
 pDeclarationValue :: HSParser Declaration
 pDeclarationValue
@@ -302,12 +305,6 @@ pDeclarationValue
         pLhs     =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
                  <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
 %%]
-pDeclarationValue :: HSParser Declaration
-pDeclarationValue
-  =   (\l r -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange l r]) <$> pLhs <*> rhs
-  <|> Declaration_PatternBinding emptyRange <$> pPatternOp <*> rhs
-  <?> "pDeclarationValue"
-  where rhs = pRhs pEQUAL
 
 %%[8
 pDeclarationSimpleValue :: HSParser Declaration
@@ -330,15 +327,13 @@ pRhs pSep
   <?> "pRhs"
 %%]
 
-%%[1
+%%[6
+pDeclarationKindSignature :: HSParser Declaration
+pDeclarationKindSignature
+  =   (\(v:vs) t -> Declaration_KindSignature (mkRange1 v) (tokMkQNames (v:vs)) t)
+      <$> pList1Sep pCOMMA con <* pDCOLON <*> pKind
+  <?> "pDeclarationKindSignature"
 %%]
-pLhs :: HSParser LeftHandSide
-pLhs
-  =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
-  <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
-  <|> (\l o r -> LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r) <$> pPatternOp <*> varop <*> pPatternOp
-  <?> "pLhs"
-  where pLhsTail = pList1 pPatternBaseCon
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data definitions
@@ -420,7 +415,7 @@ pDeclarationClass
     <*> (pVBAR *> pListSep pCOMMA pFunctionalDependency
         `opt` []
         )
-    <*> pWhere' (pDeclarationValue <|> pDeclarationSignature)
+    <*> pWhere' (pDeclarationValue <|> pDeclarationTypeSignature)
   where pFunctionalDependency :: HSParser FunctionalDependency
         pFunctionalDependency
           = (\vs1@(v:_) vs2 -> FunctionalDependency_Dependency (mkRange1 v) (tokMkQNames vs1) (tokMkQNames vs2))
@@ -461,6 +456,44 @@ pDeclarationDefault
 pDeclarationType :: HSParser Declaration
 pDeclarationType
   =   (Declaration_Type . mkRange1) <$> pTYPE <*> pSimpleType <* pEQUAL <*> pType
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+pKindBase :: HSParser Kind
+pKindBase
+  =   mkRngNm Kind_Constructor <$> pSTAR
+  <|> mkRngNm Kind_Variable <$> tyvar
+  <|> pParens' pInParens
+  <?> "pKindBase"
+  where pInParens :: HSParser (Range -> Kind)
+        pInParens
+          =   (pKind
+               <**> (   pSucceed (flip Kind_Parenthesized)
+              )     )
+
+pKind :: HSParser Kind
+pKind
+  =   mkK <$> pK
+  <?> "pKind"
+  where pK ::  HSParser (Kind,Int)
+        pK =   pKindBase
+               <**> (   pSucceed (\k -> (k,1))
+                    <|> (\(op,rng) (r,opCnt) l -> (Kind_InfixApplication rng l op r,opCnt+1)) <$> pKindOp <*> pK
+                    )
+           <|> (\p e -> (p $ mkK $ e,1)) <$> pKindPrefix <*> pK
+        mkK (e,1) = e
+        mkK (e,_) = {- Expression_InfixApplicationChainTop emptyRange -} e
+        pKindOp :: HSParser (Kind,Range)
+        pKindOp = mkRngNm' Kind_Constructor <$> pRARROW
+
+pKindPrefix :: HSParser (Kind -> Kind)
+pKindPrefix
+  =  ((Kind_Forall . mkRange1) <$> pFORALL)
+     <*> (tokMkQNames <$> pTyVarBinds) <* pDOT
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -544,7 +577,6 @@ pType
 %%]]
   <|> pTypeApp
 %%]
-  <|> Type_Qualified emptyRange <$> pContextItemsPrefix2 <*> pType
 
 %%[4.pTypePrefix
 pTypePrefix :: HSParser (Type -> Type)
@@ -917,27 +949,6 @@ pExpression' pPreE
         mkE (e,1) = e
         mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
 %%]
-  where pE, pE1 :: HSParser Expression
-        pE  =   pExpressionOpPrefix pExpressionLayout <*> pE1
-            <|> pE1
-        pE1 =   pPreE <*> pE
-            <|> pExpressionLayout
-
-pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
-pExpression' pPreE
-  = pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  where pE :: HSParser Expression
-        pE  =   pExpressionOpPrefix pExpressionLayout <*> pE
-            <|> pPreE <*> pE
-            <|> pExpressionLayout
-pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
-pExpression' pPreE
-  = pE1 <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
-  where pE1, pE2 :: HSParser Expression
-        pE1  = pExpressionOpPrefix pExpressionLayout <*> pE2 <|> pE2
-        pE2  = pPre1 <*> pExpressionLayout <|> pExpressionLayout
-        pPre1 :: HSParser (Expression -> Expression)
-        pPre1 = foldr (.) id <$> pList1 pPreE
 
 %%[1
 pExpression :: HSParser Expression

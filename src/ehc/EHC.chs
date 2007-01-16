@@ -698,9 +698,13 @@ cpFlowHsSem1 modNm
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
                             { HSSem.idGam_Inh_AGItf      = HSSem.gathIdGam_Syn_AGItf                 hsSem `gamUnion` HSSem.idGam_Inh_AGItf     hsInh
+                            , HSSem.fixityGam_Inh_AGItf  = HSSem.gathFixityGam_Syn_AGItf             hsSem `gamUnion` HSSem.fixityGam_Inh_AGItf hsInh
                             }
                  ehInh' = ehInh
                             { EHSem.idQualGam_Inh_AGItf  = idGam2QualGam (HSSem.gathIdGam_Syn_AGItf hsSem) `gamUnion` EHSem.idQualGam_Inh_AGItf ehInh
+%%[[95
+                            -- , EHSem.fixityGam_Inh_AGItf  = HSSem.fixityGam_Inh_AGItf hsInh'
+%%]]
                             }
                  opts'  = opts
                             { ehcOptBuiltinNames = mkEHBuiltinNames mk
@@ -1232,7 +1236,7 @@ cpCore1Trf modNm trfNm
                  u1     = uidChild . crsiHereUID $ crsi
                  core2  = ( case trfNm of
                               "CER"     -> cmodTrfEtaRed
-                              "CCP"     -> cmodTrfConstProp
+                              "CCP"     -> cmodTrfConstProp opts
                               "CRU"     -> cmodTrfRenUniq
                               "CLU"     -> cmodTrfLetUnrec
                               "CILA"    -> cmodTrfInlineLetAlias
@@ -1802,7 +1806,7 @@ doCompileRun fn opts
                                               , HSSem.modEntToOrig_Inh_AGItf    = Map.empty
                                               , HSSem.fixityGam_Inh_AGItf       = emptyGam
                                               , HSSem.topInstanceNmL_Inh_AGItf  = []
-%%]
+%%]]
                                               }
              ehInh          = EHSem.Inh_AGItf { EHSem.moduleNm_Inh_AGItf        = mkHNm (fpathBase fp)
                                               , EHSem.gUniq_Inh_AGItf           = uidStart
@@ -1817,7 +1821,10 @@ doCompileRun fn opts
                                               , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
                                               , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
                                               , EHSem.idQualGam_Inh_AGItf       = emptyGam
-%%]
+%%]]
+%%[[95
+                                              -- , EHSem.fixityGam_Inh_AGItf       = emptyGam
+%%]]
                                               }
              coreInh        = Core2GrSem.Inh_CodeAGItf
                                               { Core2GrSem.gUniq_Inh_CodeAGItf           = uidStart
@@ -1834,13 +1841,13 @@ doCompileRun fn opts
                                                  }
              hiInh          = HISem.Inh_AGItf { HISem.opts_Inh_AGItf            = opts2
                                               }
-%%]
+%%]]
              initialState   = mkEmptyCompileRun
                                 topModNm
                                 (EHCompileRunStateInfo opts2 hsInh ehInh coreInh uidStart uidStart
 %%[[12
                                  hiInh hsModInh Map.empty Map.empty defaultOptim Map.empty
-%%]
+%%]]
                                 )
 %%[[8
              comp mbFp nm

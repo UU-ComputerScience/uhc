@@ -219,6 +219,9 @@ SEM DataConstr
 %%[[8
                                                           , dtiCTag  = @ctag
 %%]]
+%%[[95
+                                                          , dtiMbFixityPrio  = @mbFixityPrio
+%%]]
                                                           }
 %%[[8
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
