@@ -24,9 +24,12 @@ ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          |
                          | localsF USE {.} {id}: {[HsName]->[HsName]}
-                           maxChildParameters USE {`max`} {10} : {Int}   -- TODO: 10 should be 0, but that causes the stack to be garbled
+                           maxChildParameters USE {`max`} {0} : {Int}   -- TODO: 10 should be 0, but that causes the stack to be garbled
                            tailJumps USE {&&} {True} : {Bool}
                          ]
+
+ATTR GrExpr GrAltL GrAlt [ nk : {(Int,Int)} | | ]
+
 
 ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
 
@@ -73,8 +76,7 @@ SEM GrBind
                                     else []
                                    )
                                 ++ (if   @loc.ownAllocation
-                                    then [ Statement_Enter (if @lhs.optOwnLocals     then length @loc.locals       else 0)
-                                                           (if @lhs.optOwnParameters then @expr.maxChildParameters else 0)
+                                    then [ Statement_Enter @loc.nLocals @loc.nMaxChildPar
                                          ]
                                     else []
                                    )
@@ -87,9 +89,13 @@ SEM GrBind
                             ]
 
           expr . numberParameters = length @argNmL
+          expr . nk = (@loc.nLocals, @loc.nMaxChildPar)
           loc  . locals = filter (\n->n/="_" && n/="x0") (map hsnShowAlphanumeric (@expr.localsF []))
           loc  . params = map hsnShowAlphanumeric @argNmL
           loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
+          loc  . nLocals      = if @lhs.optOwnLocals     then length @loc.locals       else 0
+          loc  . nMaxChildPar = if @lhs.optOwnParameters then @expr.maxChildParameters else 0
+          
 
 SEM GrExpr
  | Seq     lhs.stats  = @expr.stats
@@ -171,16 +177,15 @@ SEM GrExpr
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
                                                    @argL.values
-                                        ++ [Statement_Call (hsnShowAlphanumeric @nm) [] ]
+                                        ++ [Statement_Call @lhs.nk (hsnShowAlphanumeric @nm) [] ]
                                         )
-                                   else [Statement_Call (hsnShowAlphanumeric @nm) @argL.values ]
+                                   else [Statement_Call @lhs.nk (hsnShowAlphanumeric @nm) @argL.values ]
                                   )
                               ++ [ Statement_Assignment v e
                                  | (v,e) <-zip  [Variable_Var (hsnShowAlphanumeric x)  | x <- @lhs.targets]
                                                 (map (arrayValue Variable_RP) [0..])
                                  , v/=Variable_Var "_" && v/=Variable_Var "x0"
-                                 ]                                         
-                                         
+                                 ]
                               )
 
            lhs.localsF = (@lhs.targets ++)

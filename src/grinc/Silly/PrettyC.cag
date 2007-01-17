@@ -86,6 +86,7 @@ SEM Statement
   | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = call @name @args.prettyCs >|< ";"
+                                >-< afterCall (fst @nk) (snd @nk)
   | Jump        lhs.prettyC   = jump @name
   | Enter       lhs.prettyC   = methodEnter @nLocal @nParam
   | Leave       lhs.prettyC   = methodLeave @diff
@@ -236,7 +237,7 @@ assignment v e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d\\n\", " >#< show v >#< "); fflush(stdout);")
+              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
 
 switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef scrutinee body
@@ -254,6 +255,12 @@ alternative when body
    >#< when
    >|< ":"
    >-< indent 4 (body >-< "break;")
+
+
+
+afterCall :: Int -> Int -> PP_Doc
+afterCall nLocal nParam
+ =  assignment (text "SP") (text ("BP+" ++ show (nLocal+nParam+1)))
 
 methodEnter :: Int -> Int -> PP_Doc
 methodEnter nLocal nParam

@@ -33,7 +33,8 @@ DATA Statement
                  source     : Value
   |  Switch      scrutinee  : Value
                  body       : Alternatives
-  |  Call        name       : {String}
+  |  Call        nk         : {(Int,Int)}
+                 name       : {String}
                  args       : Values
   |  Jump        name       : {String}
   |  Leave       diff       : {Int}
