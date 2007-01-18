@@ -76,7 +76,7 @@ the machinery.
 %format splitt        = "\mathsf{split}"
 %format nop         = "\mathsf{nop}"
 %format ldl         = "\mathsf{ldl}"
-%format ldnt        = "\mathsf{ldnt}"
+%format lnt         = "\mathsf{lnt}"
 %format ldc         = "\mathsf{ldc}"
 %format ldi         = "\mathsf{ldi}"
 %format ldg         = "\mathsf{ldg}"
@@ -106,6 +106,7 @@ the machinery.
 %format gheap       = "\textit{hp}"
 %format greg        = "\textit{r}"
 %format gpc         = "\textit{pc}"
+%format gmp         = "\textit{mp}"
 
 %format (ixx1(x)(f))    = x "_{" f "}"
 %format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
@@ -137,7 +138,7 @@ $\Longrightarrow$ &
 \newcommand{\GriniStep}[2]{%
 \begin{tabular}{lllll}
 \hline
-& Code & Stack & Heap & Reg \\
+& Code & Stack & Heap & Regs \\
 \hline
 #1 \\ #2 \\
 \hline
@@ -406,7 +407,7 @@ Node:
 \begin{GrinCS}
 |CSOne(case v ^^ {Vec(Sub(p)(i) -> Sub(e)(i))})(CSDep)((CSDep+1))(CSEnv)|
 &=&
-|CSVar(v)(CSDep)(CSDep')(CSEnv) : casecall :|
+|CSVar(v)(CSDep)(CSDep')(CSEnv) : lnt : casecall :|
 \\&&
 |Vec(CSAlt(Sub(p)(i) -> Sub(e)(i))(CSDep')(CSDep'')(CSEnv))|
 \end{GrinCS}
@@ -429,7 +430,7 @@ Case return
 
 \subsubsection{Optimisations}
 
-Alias need not be stored (saves 3\%).
+Alias need not be stored.
 
 \begin{GrinCS}
 |CSSeq(unit v ; \w -> e)(CSDep)(CSDep')(CSEnv)|
@@ -438,6 +439,9 @@ Alias need not be stored (saves 3\%).
 \end{GrinCS}
 
 |Int| can be treated unboxed in tagged pointer model.
+
+Enumeration datatypes can be represented by an integer.
+A |lnt| in front of a |casecall| then is no longer necessary.
 
 Avoid building closures which are evaluated anyway, and then don't evaluate these.
 
@@ -953,7 +957,7 @@ v &
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |ldnt : gcode|
+  |lnt : gcode|
  }{%
   |p : gstack|
  }{%

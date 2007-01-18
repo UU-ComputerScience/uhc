@@ -57,7 +57,7 @@ notMultiple x y = not ((y / x) * x == y)
 
 sieve (h:t) = h : sieve (filter (notMultiple h) t)
 
-main = sum (take 1500 (sieve [2..]))
+main = length {- sum -} (take 1500 (sieve [2..]))
 
 {-
 main = take 50 (sieve [2..])

@@ -1172,13 +1172,13 @@ void gb_checkInterpreterAssumptions()
 		rts_panic2_1( m, "heap allocation yields zero pointer", x1 ) ;
 	}
 	if ( x1 & GB_Word_TagMask ) {
-		rts_panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_TagSize, x1 ) ;
+		rts_panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_SizeOfWordTag, x1 ) ;
 	}
 	
 /*
 	x1 = Cast(GB_Word,gb_False) ;
 	if ( x1 & GB_Word_TagMask ) {
-		rts_panic2_2( m, "statically allocated nodes must must be word aligned", GB_Word_TagSize, x1 ) ;
+		rts_panic2_2( m, "statically allocated nodes must must be word aligned", GB_Word_SizeOfWordTag, x1 ) ;
 	}
 */
 	

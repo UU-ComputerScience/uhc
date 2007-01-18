@@ -547,26 +547,33 @@ SEM Decl
                                                                      = \n -> lookup n b
                                                                      where b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
 %%[[95
-                                                           InstDeriving -- TBD
+                                                           InstDeriving
                                                              -> mkNormalD bindL
                                                              where nsA@(n1:n1s) = hsnLclSupplyWith (mkHNm "x")
                                                                    mkf :: DerivClsFld -> CBind
                                                                    mkf dcf
                                                                      = CBind_Bind (dcfNm dcf)
-                                                                         (mkCExprLam (dcfInitialArgL dcf ++ take (fArity - 1) nsA)
-                                                                            (mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") (CExpr_Var n1)
-                                                                               [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag)) (mkc (splitDTIs ctag dtis) (fArity - 2) n1s [n1subs ctag] altPrOccL)
-                                                                               | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
-                                                                               ]
-                                                                         )  )
+                                                                         (if fArity == 0
+                                                                          then dcfNoArgSubsCExpr dcf
+                                                                               $ [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
+                                                                          else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
+                                                                                 (mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") (CExpr_Var n1)
+                                                                                    [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag)) (mkc (splitDTIs ctag dtis) (fArity - 1) n1s [n1subs ctag] altPrOccL)
+                                                                                    | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
+                                                                                    ]
+                                                                         )       )
                                                                      where dtis  = panicJust "Decl.Instance.Deriving.dataGamDTIsOfTy" $ dataGamDTIsOfTy @derivHdDataTy @lhs.dataGam
                                                                            nrOfAlts = length dtis
                                                                            splitDTIs t ts -- in (lt,eq,gt), according to list ordering
                                                                              = (l,e,g)
                                                                              where (l,(e:g)) = span ((/= t) . dtiCTag) ts
-                                                                           fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf
+                                                                           fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf - length (dcfInitialArgL dcf) - 1 {- dictionary -}
                                                                            n1subs t = nsubs t n1
                                                                            nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
+                                                                           mkcSubs dti nmFldLL altPrOccL
+                                                                             = [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
+                                                                               | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
+                                                                               ]
                                                                            mkc tg@(dtisLT,dti,dtisGT) arity nms nmFldLL altPrOccL
                                                                              = case nms of
                                                                                  (n:ns) | arity > 0
@@ -577,10 +584,8 @@ SEM Decl
                                                                                         )
                                                                                    where tsubs = nsubs (dtiCTag dti) n
                                                                                          mka ctag nsubs e = CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just nsubs)) e
-                                                                                 _ -> dcfAllTagEqCExpr dcf @lUniq @rceEnv dti (length dtisLT, nrOfAlts) (dcfInitialArgL dcf)
-                                                                                      $ [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
-                                                                                        | (nmFldL,prOcc) <- zip (transpose nmFldLL) altPrOccL
-                                                                                        ]
+                                                                                 _ -> dcfFoldSubsCExpr dcf @lUniq @rceEnv dti (length dtisLT, nrOfAlts) (dcfInitialArgL dcf)
+                                                                                      $ mkcSubs dti (transpose nmFldLL) altPrOccL
                                                                    bindL
                                                                      = [ mkf dcf | (_,dcf) <- panicJust "Decl.Instance.Deriving.derivMp" $ Map.lookup @instClsNm @derivMp ]
                                                                            
