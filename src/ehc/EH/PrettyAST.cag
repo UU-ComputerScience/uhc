@@ -512,6 +512,7 @@ SEM Expr
                                         , mkInfo1 "dbg2PrElimTGam" (pp @dbg2PrElimTGam)
                                         , mkInfo1 "dbg2TrPPL (decl)" (vlist @dbg2TrPPL)
                                         , mkInfo1 "prfFrPoiCxBindLM" (ppCxBindLMap @prfFrPoiCxBindLM)
+                                        , mkInfo1 "prfIntroCBindL" (ppCBindL @prfIntroCBindL)
                                         , mkInfo1 "prfCSubst" (ppAssocLV . Map.toList $ @prfCSubst)
                                         , mkInfo1 "prfPoiFwdMp (decl)" (ppAssocLV . assocLMapElt ppBracketsCommas . Map.toList $ @prfPoiFwdMp)
                                         , mkInfo1 "prfPoiBackMp (decl)" (ppAssocLV . Map.toList $ @prfPoiBackMp)

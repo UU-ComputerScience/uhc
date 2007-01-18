@@ -93,7 +93,6 @@ PRIM GB_Word gb_primLtInt( GB_Int x, GB_Int y )
 
 PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 {
-	IF_GB_TR_ON(3,printf("gb_primCmpInt eq %d, lt %d, gt %d\n", gb_EQ, gb_LT, gb_GT );) ;
 	if ( x < y )
 		return Cast(GB_Word,gb_LT) ;
 	else if ( x == y )
@@ -101,6 +100,18 @@ PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
   	return Cast(GB_Word,gb_GT) ;
 }
 
+%%]
+
+%%[95
+PRIM GB_Word gb_primMaxInt()
+{
+  	return GB_Int2GBInt(Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+}
+
+PRIM GB_Word gb_primMinInt()
+{
+  	return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,14 +230,6 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 }
 %%]
 
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
-	gb_listForceEval( &n, sz ) ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
-	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););}) ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 n %x\n", n ););
-	buf[bufInx] = 0 ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit5 `%s'\n", buf ););
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Show
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,3 +278,19 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exception handling, program running
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[96
+PRIM GB_Word gb_primCatchException( GB_Word e, GB_Word handler )
+{
+	return e ; // for now
+}
+
+PRIM GB_Word gb_primExitWith( GB_Word e )
+{
+	exit( GB_GBInt2Int( e ) ) ;
+	return e ; // for now
+}
+%%]

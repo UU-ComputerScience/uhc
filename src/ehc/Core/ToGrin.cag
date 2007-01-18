@@ -20,6 +20,9 @@ WRAPPER CodeAGItf
 %%[8 hs import({%{EH}Gam}(DataGam,dataGamTagsOfTy))
 %%]
 
+%%[96 hs import({%{EH}BuiltinPrims})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -640,11 +643,21 @@ SEM CBind
                                                        = if resIsUnboxed
                                                          then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
                                                          else id
+%%[[8
+                                                     mkEval (n,p)
+                                                       = GrExpr_Seq (GrExpr_Eval n) p
+%%][96
+                                                     mkEval (n,needEval,p)
+                                                       = GrExpr_Seq (if needEval then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n)) p
+%%]]
                                                 in   [GrBind_Bind @nm @nmArgL
-                                                        (foldr  (\(n,p) e -> GrExpr_Seq (GrExpr_Eval n) p e)
-                                                                (mkRes @nmRes (GrExpr_FFI @impEnt @nmArgPatL resTagL))
-                                                        . zip @nmArgL
-                                                        . zipWith mkPat @argTyL
+                                                        (foldr mkEval (mkRes @nmRes (GrExpr_FFI @impEnt @nmArgPatL resTagL))
+%%[[8
+                                                        $ zip @nmArgL
+%%][96
+                                                        $ zip3 @nmArgL (maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) (lookupPrim @impEnt))
+%%]]
+                                                        $ zipWith mkPat @argTyL
                                                         $ @nmArgPatL
                                                         )
                                                      ]

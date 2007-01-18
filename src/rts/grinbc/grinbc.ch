@@ -9,9 +9,16 @@ Requirement: sizeof(GB_Ptr) == sizeof(GB_Word)
 #if USE_64_BITS
 typedef uint64_t GB_Word ;
 typedef  int64_t GB_SWord ;
+
+#define GB_Word_SizeInBits		64
+
 #else
+
 typedef uint32_t GB_Word ;
 typedef  int32_t GB_SWord ;
+
+#define GB_Word_SizeInBits		32
+
 #endif
 
 typedef GB_Word* GB_Ptr ;
@@ -311,6 +318,21 @@ extern GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Call information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+After each call 'call information' is stored.
+Invariant is that a return address points to the address immediately after this information.
+The type and size used should agree with the code generation part.
+
+%%[8
+typedef uint8_t GB_CallInfo ;
+
+#define GB_CallInfo_Kind_BitSz			8
+#define GB_CallInfo_NrArgs_BitSz		8
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Memory management
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -370,13 +392,13 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Word_TagSize 			1
+#define GB_Word_SizeOfWordTag 		1
 #define GB_Word_TagMask 			1
 #define GB_Word_IntMask 			(~ GB_Word_TagMask)
 #define GB_Word_TagInt 				1
 #define GB_Word_TagPtr 				0
 
-#define GB_Int_ShiftPow2			Bits_Pow2(GB_Int,GB_Word_TagSize)
+#define GB_Int_ShiftPow2			Bits_Pow2(GB_Int,GB_Word_SizeOfWordTag)
 
 #define GB_Word_IsInt(x)			((x) & GB_Word_TagMask)
 #define GB_Word_IsPtr(x)			(! GB_Word_IsInt(x))
@@ -389,7 +411,7 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 %%[8
 #define GB_GBInt2CastedInt(ty,x)	(Cast(ty,(x)&GB_Word_IntMask) / GB_Int_ShiftPow2)
 #define GB_GBInt2Int(x)				GB_GBInt2CastedInt(int,x)
-#define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_TagSize | GB_Word_TagInt)
+#define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_SizeOfWordTag | GB_Word_TagInt)
 
 #define GB_Int0						GB_Int2GBInt(0)
 #define GB_Int1						GB_Int2GBInt(1)

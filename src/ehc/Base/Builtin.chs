@@ -376,6 +376,23 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
+%%[95
+[hsnClassRead
+ , hsnClassReadFldRead, hsnClassReadFldReadsPrec
+ , hsnPrelLex, hsnPrelReadParen
+ ]
+  = map
+%%[[9
+      mkRV
+%%][99
+      (mkRV hsnModRead)
+%%]]
+      [ "Read"
+      , "read", "readsPrec"
+      , "lex", "readParen"
+      ]
+%%]
+
 %%[99 export(hsnFromInteger)
 [hsnFromInteger]
   = map
@@ -422,6 +439,7 @@ hsnModEnum                          =   hsnPrefixQual hsnEHC (HNm "Enum")
 hsnModNum                           =   hsnPrefixQual hsnEHC (HNm "Num")
 hsnModReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
 hsnModShow                          =   hsnPrefixQual hsnEHC (HNm "Show")
+hsnModRead                          =   hsnPrefixQual hsnEHC (HNm "Read")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -468,6 +486,11 @@ data EHBuiltinNames
       , ehbnClassShowFldShowsPrec   :: HsName
       , ehbnPrelShowString          :: HsName
       , ehbnPrelShowParen           :: HsName
+      , ehbnClassRead               :: HsName
+      , ehbnClassReadFldRead        :: HsName
+      , ehbnClassReadFldReadsPrec   :: HsName
+      , ehbnPrelLex                 :: HsName
+      , ehbnPrelReadParen           :: HsName
       , ehbnPrelConcat              :: HsName
       , ehbnPrelConcat2             :: HsName
       , ehbnPrelCompose             :: HsName
@@ -515,6 +538,11 @@ mkEHBuiltinNames f
       , ehbnClassShowFldShowsPrec   = f IdOcc_Val   	hsnClassShowFldShowsPrec
       , ehbnPrelShowString          = f IdOcc_Val   	hsnPrelShowString
       , ehbnPrelShowParen           = f IdOcc_Val   	hsnPrelShowParen
+      , ehbnClassRead               = f IdOcc_Class 	hsnClassRead
+      , ehbnClassReadFldRead        = f IdOcc_Val   	hsnClassReadFldRead
+      , ehbnClassReadFldReadsPrec   = f IdOcc_Val   	hsnClassReadFldReadsPrec
+      , ehbnPrelLex                 = f IdOcc_Val   	hsnPrelLex
+      , ehbnPrelReadParen           = f IdOcc_Val   	hsnPrelReadParen
       , ehbnPrelConcat              = f IdOcc_Val   	hsnPrelConcat
       , ehbnPrelConcat2             = f IdOcc_Val   	hsnPrelConcat2
       , ehbnPrelCompose             = f IdOcc_Val   	hsnPrelCompose

@@ -190,7 +190,7 @@ data ProvenGraph
 
 prvgAddPrUids :: Pred -> [PredOccId] -> ProvenGraph -> ProvenGraph
 prvgAddPrUids pr uidL g@(ProvenGraph _ p2i _ _)
-  =  g {prvgPrIdMp = Map.insertWith (++) pr uidL p2i}
+  =  g {prvgPrIdMp = Map.insertWith (flip (++)) pr uidL p2i}
 
 prvgAddNd :: PredOccId -> ProvenNode -> ProvenGraph -> ProvenGraph
 prvgAddNd uid nd g@(ProvenGraph i2n _ _ _)

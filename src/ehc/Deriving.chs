@@ -17,16 +17,18 @@ data DerivClsFld
   = DerivClsFld
       { dcfNm                       :: HsName                                   -- name of field
       , dcfTy                       :: Ty                                       -- type of field
-      , dcfInitialArgL              :: [HsName]                                 -- initial arguments for function, passed to dcfAllTagEqCExpr
+      , dcfInitialArgL              :: [HsName]                                 -- initial arguments for function, passed to dcfFoldSubsCExpr
       , dcfInitialSubArgL           :: DataTagInfo -> [CExpr]                   -- initial arguments for constituents
       , dcfNrOmitTailArg            :: Int                                      -- nr of args not passed, i.e. how much to omit for partial app
-      , dcfAllTagEqCExpr            :: UID										-- construct out of constituents
+      , dcfFoldSubsCExpr            :: UID										-- construct out of constituents
                                        -> RCEEnv
-                                       -> DataTagInfo
+                                       -> DataTagInfo							-- this tag info
                                        -> (Int,Int)								-- (index (a la toEnum), nr of alts)
                                        -> [HsName]								-- names of initial args (usually same as dcfInitialArgL)
                                        -> [CExpr]								-- constituents
                                        -> CExpr
+      , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]					-- all tag info + subs
+                                       -> CExpr                                 -- when class member takes no args
       , dcfAllTagLtCExpr            :: CExpr                                    -- when tags are < previous
       , dcfAllTagGtCExpr            :: CExpr                                    -- when tags are > previous
       }
@@ -41,7 +43,9 @@ mkDerivClsMp :: EHCOpts -> ValGam -> DataGam -> DerivClsMp
 mkDerivClsMp opts valGam dataGam
   = Map.unionsWith (++)
     $ map (uncurry Map.singleton) 
-    $ [ mk ehbnClassEq ehbnClassEqFldEq
+    $ [
+      -- Eq((==))
+        mk ehbnClassEq ehbnClassEqFldEq
            []
            (const [])
            0
@@ -50,7 +54,10 @@ mkDerivClsMp opts valGam dataGam
                      [] -> true
                      _  -> foldr1 and vs
            )
+           (const undef)
            false false
+      
+      -- Ord(compare)
       , mk ehbnClassOrd ehbnClassOrdFldCompare
            []
            (const [])
@@ -67,7 +74,10 @@ mkDerivClsMp opts valGam dataGam
                         where n = mkHNm uniq
                               nStrict = hsnSuffix n "!"
            )
+           (const undef)
            gt lt
+      
+      -- Enum(toEnum,succ,pred)
       , mk ehbnClassEnum ehbnClassEnumFldToEnum
            []
            (const [])
@@ -75,6 +85,7 @@ mkDerivClsMp opts valGam dataGam
            (\_ env _ (altInx,_) _ []
                 -> CExpr_Int altInx
            )
+           (const undef)
            undef undef
       , mk ehbnClassEnum ehbnClassEnumFldSucc
            []
@@ -85,6 +96,7 @@ mkDerivClsMp opts valGam dataGam
                    then CExpr_Int $ altInx + 1
                    else cerror opts $ "cannot succ last constructor: " ++ show (dtiConNm dti)
            )
+           (const undef)
            undef undef
       , mk ehbnClassEnum ehbnClassEnumFldPred
            []
@@ -95,11 +107,40 @@ mkDerivClsMp opts valGam dataGam
                    then CExpr_Int $ altInx - 1
                    else cerror opts $ "cannot pred first constructor: " ++ show (dtiConNm dti)
            )
+           (const undef)
            undef undef
+      
+      -- Bounded(maxBound,minBound)
+      , mk ehbnClassBounded ehbnClassBoundedFldMaxBound
+           []
+           (const [])
+           0
+           (\_ _ _ _ _ _
+                -> undef
+           )
+           (\dtiSubs
+                -> let (dti,subs) = last dtiSubs
+                   in  CExpr_Tup (dtiCTag dti) `mkCExprApp` subs
+           )
+           undef undef
+      , mk ehbnClassBounded ehbnClassBoundedFldMinBound
+           []
+           (const [])
+           0
+           (\_ _ _ _ _ _
+                -> undef
+           )
+           (\dtiSubs
+                -> let (dti,subs) = head dtiSubs
+                   in  CExpr_Tup (dtiCTag dti) `mkCExprApp` subs
+           )
+           undef undef
+      
+      -- Show(showsPrec)
       , mk ehbnClassShow ehbnClassShowFldShowsPrec
            [precDepthNm]
            (\dti -> [CExpr_Int $ maybe (fixityMaxPrio + 1) (+1) $ dtiMbFixityPrio $ dti])
-           1
+           0
            (\_ _ dti _ [dNm] vs
                 -> let mk needParen v = mkCExprApp (CExpr_Var $ fn ehbnPrelShowParen) [needParen,v]
                    in  case (vs,dtiMbFixityPrio dti) of
@@ -111,12 +152,13 @@ mkDerivClsMp opts valGam dataGam
                          _ -> mk (cgtint opts (CExpr_Var dNm) fixityMaxPrio)
                               $ foldr1 compose ([showString $ tag2str (dtiCTag dti) ++ " "] ++ intersperse (showString " ") vs)
            )
+           (const undef)
            undef undef
       ]
-  where mk c f as asSubs omTl cAllMatch cLT cGT
+  where mk c f as asSubs omTl cAllMatch cNoArg cLT cGT
           = (c', [mkf f])
           where c' = fn c
-                mkf f = (f', DerivClsFld f' t as asSubs omTl cAllMatch cLT cGT)
+                mkf f = (f', DerivClsFld f' t as asSubs omTl cAllMatch cNoArg cLT cGT)
                       where f' = fn f
                             (t,_) = valGamLookupTy f' valGam
         fn f  = f $ ehcOptBuiltinNames opts

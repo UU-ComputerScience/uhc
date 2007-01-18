@@ -246,7 +246,7 @@ SEM Module
 %%]]
                                             =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm) >-< "#include \"rts.h\""
                                                     strNmL  = [ (@ppNmAString >|< i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
-                                                    strings = vlist [ "static char" >#< n >|< "[] =" >#< s >#< ";" | (n,s) <- strNmL ]
+                                                    strings = vlist [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
                                                               >-< ppTbl "char*" @ppNmStringTbl [ n | (n,_) <- strNmL ]
                                                     consts  = ppTbl "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmStringTbl) @constL)
                                                     bcode   = ppTbl "GB_Byte" @ppNmByteCodeTbl @instrs.ppL

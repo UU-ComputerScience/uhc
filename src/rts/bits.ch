@@ -23,3 +23,11 @@
 #define EntierUpDivBy(x,m)				(((x)-1)/(m)+1)
 #define EntierUpBy(x,m)					(EntierUpDivBy(x,m)*(m))
 %%]
+
+%%[8
+#define Bits_MaxSInt(ty,szBits,nBits)	((~ Cast(ty,0)) >> ((szBits) - (nBits)+1))
+#define Bits_MinSInt(ty,szBits,nBits)	((~ Cast(ty,0)) & Bits_Size2HiMask(ty,(nBits)-1))
+
+#define Bits_MaxUInt(ty,szBits,nBits)	((~ Cast(ty,0)) >> ((szBits) - (nBits)))
+#define Bits_MinUInt(ty,szBits,nBits)	Cast(ty,0)
+%%]
