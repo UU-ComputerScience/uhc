@@ -9,7 +9,8 @@
 
 %%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils, qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyC)
 %%]
-
+%%[8 hs import({%{EH}Base.Common})
+%%]
 %%[8 import({Silly/AbsSyn})
 %%]
 
@@ -84,12 +85,12 @@ SEM Function
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
   | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
+  | Increment   lhs.prettyC   = assignincr @dest.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = call @name @args.prettyCs >|< ";"
-                                >-< afterCall (fst @nk) (snd @nk)
   | Jump        lhs.prettyC   = jump @name
-  | Enter       lhs.prettyC   = methodEnter @nLocal @nParam
-  | Leave       lhs.prettyC   = methodLeave @diff
+  | Enter       lhs.prettyC   = error "Enter obsolete"
+  | Leave       lhs.prettyC   = error "Leave obsolete"
 
 
 SEM Alternative
@@ -113,16 +114,24 @@ SEM Constant
   | Alias       lhs.prettyC   = text @name
 
 SEM Variable
-  | Var         lhs.prettyC   = text @name
+  | Global
+    Local
+    Param       lhs.prettyC   = text @name
                 lhs.prettyPtr = "((Pointer)" >|< text @name >|< ")"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"
   | BP          lhs.prettyC   = text "BP"
                 lhs.prettyPtr = text "BP"
+  | BPVal       lhs.prettyC   = "((GrWord)" >|< text "BP" >|< ")"
+                lhs.prettyPtr = "((GrWord)" >|< text "BP" >|< ")"
   | RP          lhs.prettyC   = text "RP"
                 lhs.prettyPtr = text "RP"
-  | Subs        lhs.prettyC   = @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]"
-                lhs.prettyPtr = error "attempt to use subscription as pointer"
+  | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]"
+                lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
+  | SubsPtr     lhs.prettyC   = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
+                lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
+  | None        lhs.prettyC   = error "attempt to use Variable_None as value"
+                lhs.prettyPtr = error "attempt to use Variable_None as pointer"
 
 %%]
 
@@ -239,6 +248,15 @@ assignment v e
    >|< ppWhen optTraceAssign
               (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
 
+assignincr :: PP_Doc -> PP_Doc -> PP_Doc
+assignincr v e
+ = v
+   >#< "+="
+   >#< e
+   >|< ";"
+   >|< ppWhen optTraceAssign
+              (" printf(\"assignincr" >#< show v >#< "+=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+
 switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef scrutinee body
  = "switch ("
@@ -256,24 +274,5 @@ alternative when body
    >|< ":"
    >-< indent 4 (body >-< "break;")
 
-
-
-afterCall :: Int -> Int -> PP_Doc
-afterCall nLocal nParam
- =  assignment (text "SP") (text ("BP+" ++ show (nLocal+nParam+1)))
-
-methodEnter :: Int -> Int -> PP_Doc
-methodEnter nLocal nParam
- = comment "Enter"
-   >-< assignment (text "*SP") (text "((GrWord)BP)")
-   >-< assignment (text "BP")  (text "SP")
-   >-< incrementWith (text "SP") (nLocal+nParam+1)
-
-methodLeave :: Int -> PP_Doc
-methodLeave nDiff
- = comment "Leave"
-   >-< assignment (text "SP")  (text "BP")
-   >-< assignment (text "BP") (text "((Pointer)*SP)")
-   >-< incrementWith (text "SP") (nDiff)
 
 %%]

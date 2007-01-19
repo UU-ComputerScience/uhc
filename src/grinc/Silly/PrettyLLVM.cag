@@ -111,11 +111,10 @@ ATTR Statements Statement
      Alternatives Alternative 
      Variables Variable 
      Values Value
-     [ islocal : {String -> Bool} | uniq : {Int} | ]
+     [ | uniq : {Int} | ]
 
 SEM Function
-  | Function    body.islocal  = (\x -> x `elem` @locals)
-                body.uniq     = 0
+  | Function    body.uniq     = 0
 
                 
 --------------------------------------------------------------------------------
@@ -190,6 +189,7 @@ p x = text $ show x
 ATTR Variable Value [ | | resultName : {String} ]
 ATTR Values [ | | resultNames : {[String]} ]
 
+
 SEM Statement
   | Comment     lhs.code   = comment @comment
   {- Possible optimization: If a variable local to a function is defined only once
@@ -215,6 +215,9 @@ SEM Statement
                 dest.uniq   = @uniq + 1
                 source.uniq = @dest.uniq
                 lhs.uniq    = @source.uniq
+
+  | Increment   loc.err    = error "TODO: implement Increment for LLVM"
+                lhs.code   =  @loc.err
 
   | Switch      lhs.code       = @scrutinee.code
                                  >-< "switch uint" >#< pct @scrutinee.resultName
@@ -292,7 +295,9 @@ SEM Variable
                             , then you can fetch a substitution here, instead of 
                             loading the variable
   -}
-  | Var         lhs.code   = if isLHS @lhs.side
+  | Global
+    Local
+    Param       lhs.code   = if isLHS @lhs.side
                              then empty
                              else load @name @uniq (ptrOf @ty)
                 loc.uniq   = @lhs.uniq
@@ -308,7 +313,8 @@ SEM Variable
                                  else "SP." ++ show @uniq
                 loc.uniq       = @lhs.uniq
                 lhs.uniq       = @loc.uniq + 1
-  | BP          lhs.code       = if isLHS @lhs.side
+  | BP
+    BPVal       lhs.code       = if isLHS @lhs.side
                                  then empty
                                  else load "BP" @uniq ThunkPtrPtr
                 lhs.resultName = if isLHS @lhs.side
@@ -324,7 +330,10 @@ SEM Variable
                                  else "RP." ++ show @uniq
                 loc.uniq       = @lhs.uniq
                 lhs.uniq       = @loc.uniq + 1
-  | Subs        lhs.code       = @array.code
+  | None        lhs.code       = error "no code for None"
+                lhs.resultName = error "no resultName for None"
+  | Subs
+    SubsPtr     lhs.code       = @array.code
                                  >-<
                                  (if @array.ty /= ThunkPtr
                                   then (cast ("cast." ++ show @uniq) 
@@ -375,6 +384,7 @@ ATTR Variables Variable [ side : {Side} | | ]
 
 SEM Statement
   |  Assignment  dest.side   = LHS
+  |  Increment   dest.side   = LHS
 SEM Variable
   |  Subs        array.side  = RHS
 SEM Value
@@ -408,32 +418,37 @@ isPtrTypeOf ptr val = succ val == ptr
 ATTR Variable Value [ | | ty : {PtrType}]
 ATTR Variable [ | | local : {Bool}]
 
+
 SEM Variable
-  | Var         loc.ty    = if isLHS @lhs.side
+  | Local       lhs.local = True
+  | * - Local   lhs.local = False
+
+SEM Variable
+  | Global
+    Local
+    Param       loc.ty    = if isLHS @lhs.side
                             then ThunkPtr
                             else Thunk
                 lhs.ty    = @loc.ty
-                lhs.local = @lhs.islocal @name
   | SP          loc.ty    = if isLHS @lhs.side 
                             then ThunkPtrPtr
                             else ThunkPtr
                 lhs.ty    = @loc.ty
-                lhs.local = False
-  | BP          loc.ty    = if isLHS @lhs.side 
+  | BP 
+    BPVal       loc.ty    = if isLHS @lhs.side 
                             then ThunkPtrPtr
                             else ThunkPtr
                 lhs.ty    = @loc.ty
-                lhs.local = False
   | RP          loc.ty    = if isLHS @lhs.side 
                             then ThunkPtrPtr
                             else ThunkPtr
                 lhs.ty    = @loc.ty
-                lhs.local = False
-  | Subs        loc.ty    = if isLHS @lhs.side
+  | Subs 
+    SubsPtr     loc.ty    = if isLHS @lhs.side
                             then ThunkPtr
                             else Thunk -- result of array access is always a thunk
                 lhs.ty    = @loc.ty
-                lhs.local = False
+  | None        lhs.ty    = error "no type for None"
 
 SEM Value
   | Con         loc.ty  = Thunk
@@ -452,11 +467,16 @@ SEM Value
 ATTR Variable Value Constant Values [ | | descr : {PP_Doc} ]
 
 SEM Variable
-  |  Var    lhs.descr = text @name
-  |  Subs   lhs.descr = @array.descr >|< "[" >|< @index.descr >|< "]"
+  |  Global
+     Local
+     Param  lhs.descr = text @name
+  |  SubsPtr
+     Subs   lhs.descr = @array.descr >|< "[" >|< @index.descr >|< "]"
   |  SP     lhs.descr = text "SP"
-  |  BP     lhs.descr = text "BP"
+  |  BP
+     BPVal  lhs.descr = text "BP"
   |  RP     lhs.descr = text "RP"
+  |  None   lhs.descr = text "None"
 
 SEM Value
   | Con     lhs.descr = @con.descr

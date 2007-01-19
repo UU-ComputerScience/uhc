@@ -84,7 +84,7 @@ GrWord heapalloc(int);
 %%]
 
 %%[8
-#define STACKSIZE 100000
+#define STACKSIZE 200000
 #define RETURNSIZE 100
 
 extern Pointer SP, RP, BP;
