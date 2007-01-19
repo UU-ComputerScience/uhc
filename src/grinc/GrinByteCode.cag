@@ -31,11 +31,12 @@ nrNodeHdrWords :: Int
 nrNodeHdrWords = 1
 %%]
 
-Nr of words required for call return info
+Nr of words required for call return info:
+return address + saved bp
 
 %%[8 hs  export(nrCallRetWords)
 nrCallRetWords :: Int
-nrCallRetWords = 1
+nrCallRetWords = 2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,6 +55,7 @@ Constants
 data Const
   = Const_Str           { constInx :: Int }
   | Const_CFunction     { constCFunNm :: String }
+  | Const_CallInfo      { constCINm :: String }		-- used only in ToC
 %%[[12
   | Const_ImpNode
 %%]]
@@ -72,6 +74,7 @@ data LinkTbl
   | LinkTbl_PatchCode_Deref1		-- patch with *linkVal
   | LinkTbl_PatchCode_Deref2		-- patch with **linkVal
   | LinkTbl_PatchOffsets			-- patch offsets to absolute address
+  | LinkTbl_CallInfo				-- same as LinkTbl_Const, with implicit offset in determined by size of const table, used only in ToC
 %%[[12
   | LinkTbl_ImpEntry
 %%]]
@@ -124,6 +127,40 @@ data LocRef
 
 %%[8 hs export(StackDepth)
 type StackDepth = Int
+%%]
+
+Call Info
+
+%%[8 hs export(CallInfo(..),CallInfoKind(..))
+data CallInfo
+  = CallInfo
+      { ciKind		:: CallInfoKind
+      }
+  deriving(Eq,Ord,Show)
+
+data CallInfoKind
+  = CallInfoKind_Call             -- normal call
+  | CallInfoKind_Tail             -- tail call
+  | CallInfoKind_Eval             -- eval call
+  | CallInfoKind_EvalWrap         -- eval call internal wrapper
+  | CallInfoKind_TailEv           -- tail eval call
+  | CallInfoKind_Apply            -- apply call
+  | CallInfoKind_CCall            -- C call
+  | CallInfoKind_EvCont           -- eval update continuation
+  | CallInfoKind_ApCont           -- apply continuation
+  | CallInfoKind_PApCont          -- partial apply continuation
+  | CallInfoKind_Hdlr             -- exception handler installment
+  deriving (Enum,Eq,Ord,Show)
+%%]
+
+%%[8 hs export(mkCICall)
+mkCI :: CallInfoKind -> CallInfo
+mkCI k = CallInfo k
+
+mkCICall  = mkCI CallInfoKind_Call
+mkCICCall = mkCI CallInfoKind_CCall
+mkCIEval  = mkCI CallInfoKind_Eval
+mkCIApply = mkCI CallInfoKind_Apply
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -530,7 +567,7 @@ ndStore sz = (FSeqL [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_L
 
 %%[8 hs export(eval,apply,taileval)
 eval :: InsOp_LocB -> Instr
-eval locB = Instr_Eval locB
+eval locB = Instr_Eval locB mkCIEval
 
 taileval :: Integral c => InsOp_LocB -> c -> c -> Instr
 taileval locB nArgSurr retOffSurr
@@ -539,7 +576,7 @@ taileval locB nArgSurr retOffSurr
         (s2,i2) = imm $ nrWord2Byte retOffSurr
 
 apply :: InsOp_LocB -> Instr
-apply locB = Instr_Apply locB
+apply locB = Instr_Apply locB mkCIApply
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -548,7 +585,7 @@ apply locB = Instr_Apply locB
 
 %%[8 hs export(call,retcall,tailcall,casecall,retcase,callc)
 call :: InsOp_LocB -> Instr
-call locB = Instr_Call locB
+call locB = Instr_Call locB mkCICall
 
 rettailcall :: Integral c => (InsOp_ImmSz -> InsOp_ImmSz -> InsOp_ImmSz -> Imm -> Imm -> Imm -> Instr) -> c -> c -> c -> Instr
 rettailcall mk nArgMine nArgSurr retOffSurr
@@ -569,7 +606,7 @@ casecall
 
 callc :: Integral c => c -> Instr
 callc nArg
-  = Instr_CallC s1 i1
+  = Instr_CallC s1 i1 mkCICCall
   where (s1,i1) = imm nArg
 
 retcase :: Integral c => c -> c -> Instr

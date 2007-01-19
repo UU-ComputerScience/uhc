@@ -106,7 +106,22 @@ the machinery.
 %format gheap       = "\textit{hp}"
 %format greg        = "\textit{r}"
 %format gpc         = "\textit{pc}"
-%format gmp         = "\textit{mp}"
+%format gframep     = "\textit{bp}"
+%format gframep'
+%format gframepOff	= gframep "_{off}"
+%format gsp         = "\textit{sp}"
+
+%format callinfo		= "\mathsf{ci}"
+%format callinfoCall	= callinfo "_{call}"
+%format callinfoTail	= callinfo "_{tail}"
+%format callinfoTailEv	= callinfo "_{tailev}"
+%format callinfoEval	= callinfo "_{ev}"
+%format callinfoApply	= callinfo "_{ap}"
+%format callinfoCCall	= callinfo "_{C}"
+%format callinfoEvCont	= callinfo "_{evcont}"
+%format callinfoApCont	= callinfo "_{apcont}"
+%format callinfoPApCont	= callinfo "_{papcont}"
+%format callinfoHdlr	= callinfo "_{hdlr}"
 
 %format (ixx1(x)(f))    = x "_{" f "}"
 %format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
@@ -767,6 +782,36 @@ i  =  0
 t  =  1
 %%]]
 
+\subsubsection{Call information}
+
+After each call, call info |callinfo| is stored.
+The information stored contains:
+
+\begin{itemize}
+\item
+ Kind of call:
+ \\
+%%[[wrap=code
+callinfoCall        =  0     -- normal call
+callinfoTail        =  1     -- tail call
+callinfoEval        =  2     -- eval call
+callinfoTailEv      =  3     -- tail eval call
+callinfoApply       =  4     -- apply call
+callinfoCCall       =  5     -- C call
+callinfoEvCont      =  6     -- eval update continuation
+callinfoApCont      =  7     -- apply continuation
+callinfoPApCont     =  8     -- partial apply continuation
+callinfoHdlr        =  9     -- exception handler installment
+%%]]
+\end{itemize}
+
+Invariant: a return address into bytecodes has this information in just before the location pointed to by the return address.
+
+Issue: C call? primitives?
+
+Calling instructions also put a pointer to the previous |gframep| on the stack, using an offset |gframepOff| to this location which is part of the instruction.
+???? This is not going to work for |evalt| which uses |callt| indirectly: global |gframep| is required.
+
 \subsubsection{Instruction prefixes/categories}
 
 Instructions occupy 1 byte, plus additional immediate (inlined) parameters.
@@ -867,7 +912,6 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -878,7 +922,6 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -891,7 +934,6 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -902,7 +944,6 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -915,7 +956,6 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -926,7 +966,6 @@ ldi c       =   liti  c            -- push constant c in int encoding on stack
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -963,7 +1002,6 @@ v &
  }{%
   |[p :-> ((C,t) : f1 .. Sub(f)(n))] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -974,7 +1012,6 @@ v &
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1046,13 +1083,38 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 \GriniStep{%
  \GriniStateBefore{%
  }{%
+  |call : callinfoCall : gcode|
+ }{%
+  |d : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep=gframep'|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |d|
+ }{%
+  |(gframep :-> gframep') : gcode : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
   |call : gcode|
  }{%
   |d : gstack|
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1063,7 +1125,6 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1078,7 +1139,33 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 \\
 \end{GrinEncoding}
 
-where |n, m, r :: angle(is)|
+where |n, m, r :: angle(is)|.
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |tailcall n m r : _|
+ }{%
+  |d : a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |d|
+ }{%
+  |(gframep :-> gframep') : gcode : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Previous:
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1089,7 +1176,6 @@ where |n, m, r :: angle(is)|
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1100,7 +1186,6 @@ where |n, m, r :: angle(is)|
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1122,11 +1207,36 @@ where |n, m, r :: angle(is)|
  }{%
   |retcall n m r : _|
  }{%
+  |a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+}
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |retcall n m r : _|
+ }{%
   |a1 : .. : an : .. : Sup(c)(r) : b1 : .. : bm : gstack|
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1137,7 +1247,6 @@ where |n, m, r :: angle(is)|
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1163,7 +1272,6 @@ where |n, r:: angle(is)|
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1174,7 +1282,6 @@ where |n, r:: angle(is)|
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1203,7 +1310,6 @@ Return is handled by |retcase|.
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1214,7 +1320,6 @@ Return is handled by |retcase|.
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1231,13 +1336,12 @@ Return is handled by |retcase|.
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |callc n : gcode|
+  |callc n : callinfoCCall : gcode|
  }{%
   |f : a1 .. an : gstack|
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1248,7 +1352,33 @@ Return is handled by |retcase|.
  }{%
   |gheap|
  }{
-  |greg|
+ }{}
+}
+
+Internally, |gframep| is pushed onto the stack as well, before invoking the C function.
+This allows calling Haskell functions from C.
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |callc n : gcode|
+ }{%
+  |f : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(f a1 .. an) : gstack|
+ }{%
+  |gheap|
+ }{
  }{}
 }
 
@@ -1265,7 +1395,34 @@ Return is handled by |retcase|.
 \\
 \end{GrinEncoding}
 
+\Paragraph{Normal call}
 A saturated function call closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (F : f : a1 .. an) ] `elem` gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : callinfoEvCont : evupdcont|
+ }{%
+  |f : a1 .. an : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Previous:
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1274,35 +1431,33 @@ A saturated function call closure:
  }{%
   |p : gstack|
  }{%
-  |[ p :-> (F : f : a1 : .. : an) ] `elem` gheap|
+  |[ p :-> (F : f : a1 .. an) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
  }{%
   |call : evupdcont|
  }{%
-  |f : a1 : .. : an : gcode : p : gstack|
+  |f : a1 .. an : gcode : p : gstack|
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
+\Paragraph{C call}
 A saturated C function call closure:
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |evalt : gcode|
+  |evalt : callinfoEval : gcode|
  }{%
   |p : gstack|
  }{%
   |[ p :-> (CF : f : a1 : .. : an) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1313,11 +1468,61 @@ A saturated C function call closure:
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (CF : f : a1 : .. : an) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |(f a1 .. an) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+\Paragraph{Apply call}
 Special case, apply closure:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (A : f : a1 .. an) ] `elem` gheap|
+ }{
+  |gframep = gframep'|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoEval : evappcont|
+ }{%
+  |f : (gframep :-> gframep') : gcode : p : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Previous:
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1328,7 +1533,6 @@ Special case, apply closure:
  }{%
   |[ p :-> (A : f : a1 .. an) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1339,11 +1543,35 @@ Special case, apply closure:
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
+\Paragraph{Indirection}
 An indirection is just followed:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (I : p') ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoEval : gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+Previous:
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1354,7 +1582,6 @@ An indirection is just followed:
  }{%
   |[ p :-> (I : p') ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1365,22 +1592,21 @@ An indirection is just followed:
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
+\Paragraph{WHNF}
 Nodes which require no evaluation are left as is, e.g. constructors and partial applications:
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |evalt : gcode|
+  |evalt : callinfoEval : gcode|
  }{%
   |p : gstack|
  }{%
   |[ p :-> (C/P : _) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1391,7 +1617,30 @@ Nodes which require no evaluation are left as is, e.g. constructors and partial 
  }{%
   |gheap|
  }{
-  |greg|
+ }{}
+}
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evalt : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |[ p :-> (C/P : _) ] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |gheap|
+ }{
  }{}
 }
 
@@ -1413,11 +1662,11 @@ Updating only is done as part of |evalt|, hence is not generated/called directly
  }{%
   |evupdcont : _|
  }{%
-  |p' : gcode : p : gstack|
+  |p' : gframep' : gcode : p : gstack|
  }{%
   |[p' :-> x] `elem` gheap|
  }{
-  |greg|
+  |gframep|
  }
 }{%
  \GriniStateAfter{%
@@ -1428,7 +1677,33 @@ Updating only is done as part of |evalt|, hence is not generated/called directly
  }{%
   |gheap[ p :-> (x || (I : p')) ]|
  }{
-  |greg|
+  |gframep = gframep'|
+ }{}
+}
+
+Context call info of |gcode|: |callinfoEval|.
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evupdcont : _|
+ }{%
+  |p' : gcode : p : gstack|
+ }{%
+  |[p' :-> x] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap[ p :-> (x || (I : p')) ]|
+ }{
  }{}
 }
 
@@ -1457,7 +1732,34 @@ Only is done as part of |evalt|, hence is not generated/called directly.
  }{%
   |[f :-> (P m, _) : _, p :-> (A : f : a1 .. an) ] `elem` gheap|
  }{
-  |greg|
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : callinfoEval : gcode|
+ }{%
+  |f : n : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Context call info of |gcode|: |callinfoEval|.
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |evappcont : _|
+ }{%
+  |f : gcode : p : gstack|
+ }{%
+  |[f :-> (P m, _) : _, p :-> (A : f : a1 .. an) ] `elem` gheap|
+ }{
  }
 }{%
  \GriniStateAfter{%
@@ -1468,7 +1770,6 @@ Only is done as part of |evalt|, hence is not generated/called directly.
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1489,11 +1790,36 @@ Only is done as part of |evalt|, hence is not generated/called directly.
  }{%
   |taileval m r : _|
  }{%
-  |p : .. : Sup(c)(r) : b1 : .. : bm : gstack|
+  |p : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
  }{%
   |gheap|
  }{
-  |greg|
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoCall : gcode|
+ }{%
+  |p : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+}
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |taileval m r : _|
+ }{%
+  |p : .. : Sup(c)(r) : b1 .. bm : gstack|
+ }{%
+  |gheap|
+ }{
  }
 }{%
  \GriniStateAfter{%
@@ -1504,7 +1830,6 @@ Only is done as part of |evalt|, hence is not generated/called directly.
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1520,7 +1845,35 @@ Only is done as part of |evalt|, hence is not generated/called directly.
 \\
 \end{GrinEncoding}
 
+\Paragraph{Over saturated}
+
 When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : callinfoApply : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : callinfoPApCont : papplycont|
+ }{%
+  |f : b1 .. bk : a1 .. Sub(a)(m) : gcode : (n-m) : Sub(a)(1+m) .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Previous
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1531,7 +1884,6 @@ When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
  }{%
   |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1542,11 +1894,36 @@ When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
+\Paragraph{Exactly saturated}
+
 When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : callinfoApply : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |call : callinfoApply : gcode|
+ }{%
+  |f : b1 .. bk : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+Previous:
 
 \GriniStep{%
  \GriniStateBefore{%
@@ -1557,7 +1934,6 @@ When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
  }{%
   |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1568,22 +1944,22 @@ When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
+
+\Paragraph{Under saturated}
 
 When |m > n|, still missing parameters:
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |applyt : gcode|
+  |applyt : callinfoApply : gcode|
  }{%
   |p : n : a1 .. an : gstack|
  }{%
   |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1594,7 +1970,30 @@ When |m > n|, still missing parameters:
  }{%
   |gheap[p' :-> (P (m-n), f) : b1 .. bk : a1 .. an]|
  }{
-  |greg|
+ }{}
+}
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |applyt : gcode|
+ }{%
+  |p : n : a1 .. an : gstack|
+ }{%
+  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |p' : gstack|
+ }{%
+  |gheap[p' :-> (P (m-n), f) : b1 .. bk : a1 .. an]|
+ }{
  }{}
 }
 
@@ -1617,11 +2016,38 @@ The saved return address of the apply and result are shuffled to be ready for th
  }{%
   |papplycont : _|
  }{%
+  |p : gcode : n : a1 .. an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |applyt : callinfoApply : gcode|
+ }{%
+  |p : n : a1 : .. : an : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+}
+
+Context call info of |gcode|: |callinfoApply|.
+
+Previous:
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |papplycont : _|
+ }{%
   |p : gcode : n : a1 : .. : an : gstack|
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1632,7 +2058,6 @@ The saved return address of the apply and result are shuffled to be ready for th
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1673,7 +2098,6 @@ The saved return address of the apply and result are shuffled to be ready for th
  }{%
   |[ p :-> (t : f1 : .. : Sub(f)(n)) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1684,7 +2108,6 @@ The saved return address of the apply and result are shuffled to be ready for th
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1712,7 +2135,6 @@ Size in bytes, including tag.
  }{%
   |gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1723,7 +2145,6 @@ Size in bytes, including tag.
  }{%
   |gheap[ p :-> (t : f1 : .. : Sub(f)(s-1)) ]|
  }{
-  |greg|
  }{}
 }
 
@@ -1747,7 +2168,6 @@ Size in bytes, including tag.
  }{%
   |[ p :-> ((t,s) : f1 : .. : Sub(f)(s-1)) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1758,7 +2178,6 @@ Size in bytes, including tag.
  }{%
   |gheap|
  }{
-  |greg|
  }{}
 }
 
@@ -1784,7 +2203,6 @@ To tie the knot for mutual recursive structures on a non-global level (linking s
  }{%
   |[p :-> (H : _) ] `elem` gheap|
  }{
-  |greg|
  }
 }{%
  \GriniStateAfter{%
@@ -1795,7 +2213,6 @@ To tie the knot for mutual recursive structures on a non-global level (linking s
  }{%
   |gheap[p :-> (I : p') ]|
  }{
-  |greg|
  }{}
 }
 
