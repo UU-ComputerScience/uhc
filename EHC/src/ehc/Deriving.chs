@@ -77,8 +77,8 @@ mkDerivClsMp opts valGam dataGam
            (const undef)
            gt lt
       
-      -- Enum(toEnum,succ,pred)
-      , mk ehbnClassEnum ehbnClassEnumFldToEnum
+      -- Enum(fromEnum,succ,pred)
+      , mk ehbnClassEnum ehbnClassEnumFldFromEnum
            []
            (const [])
            0

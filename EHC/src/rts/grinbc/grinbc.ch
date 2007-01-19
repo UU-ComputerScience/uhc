@@ -34,6 +34,13 @@ typedef uint8_t  GB_Byte ;
 #define GB_Deref(x)						(*Cast(GB_Ptr,x))
 %%]
 
+%%[8
+#define GB_Word2Bytes(w)				Cast(GB_Byte,Bits_ExtrFromToSh(GB_Word,w,0,7)) \
+										, Cast(GB_Byte,Bits_ExtrFromToSh(GB_Word,w,8,15)) \
+										, Cast(GB_Byte,Bits_ExtrFromToSh(GB_Word,w,16,23)) \
+										, Cast(GB_Byte,Bits_ExtrFromSh(GB_Word,w,24))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Node structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,7 +286,7 @@ extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Linking, fixing addresses, module info
+%%% Linking, fixing addresses, module info, EntryKind should correspond to %{GRIN}GrinByteCode.LinkTbl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -290,8 +297,9 @@ extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz ) ;
 #define GB_LinkTbl_EntryKind_PatchCode_Deref1		4			/* patch code with *value */
 #define GB_LinkTbl_EntryKind_PatchCode_Deref2		5			/* patch code with **value */
 #define GB_LinkTbl_EntryKind_PatchOffsets			6			/* patch code containing offsets with abolute address */
+#define GB_LinkTbl_EntryKind_CallInfo  				7			/* obsolete, same as Const, used internally */
 %%[[12
-#define GB_LinkTbl_EntryKind_ImpEntry				7			/* import entry */
+#define GB_LinkTbl_EntryKind_ImpEntry				8			/* import entry */
 %%]]
 %%]
 
@@ -326,10 +334,35 @@ Invariant is that a return address points to the address immediately after this 
 The type and size used should agree with the code generation part.
 
 %%[8
-typedef uint8_t GB_CallInfo ;
+typedef uint8_t GB_CallInfo ;						// CallInfo itself
+typedef GB_CallInfo* GB_CallInfoPtr ;				
+#define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
-#define GB_CallInfo_Kind_BitSz			8
-#define GB_CallInfo_NrArgs_BitSz		8
+#define GB_MkCallInfo(k)				k			// make CallInfo
+
+#define GB_CallInfo_Fld_Kind(i)    		i
+
+#define GB_CallInfo_Kind_Call    		0			// normal call
+#define GB_CallInfo_Kind_Tail    		1			// tail call
+#define GB_CallInfo_Kind_Eval    		2			// eval call
+#define GB_CallInfo_Kind_EvalWrap  		3			// eval call wrapper
+#define GB_CallInfo_Kind_TailEv  		4			// tail eval call
+#define GB_CallInfo_Kind_Apply   		5			// apply call
+#define GB_CallInfo_Kind_CCall   		6			// C call
+#define GB_CallInfo_Kind_EvCont  		7			// eval update continuation
+#define GB_CallInfo_Kind_ApCont  		8			// apply continuation
+#define GB_CallInfo_Kind_PApCont  		9			// partial apply continuation
+#define GB_CallInfo_Kind_Hdlr    		10			// exception handler installment
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Calling convention
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_CallRetNrWords				2			// return address + bp link
+#define GB_CallRetNrBytes				(GB_CallRetNrWords * sizeof(GB_Word))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

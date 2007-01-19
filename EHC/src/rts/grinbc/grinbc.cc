@@ -86,6 +86,12 @@
 
 %%]
 
+Registers:
+pc: program counter
+sp: stack pointer (used for temporaries, locals, expression calculation)
+bp: base pointer (used for exception handling)
+rr: user available scratch register, but not much used yet
+
 %%[8
 #if USE_REGS_FOR_PC_SP
 register GB_BytePtr  pc PC_REG ;
@@ -94,6 +100,8 @@ register GB_Ptr      sp SP_REG ;
 static   GB_BytePtr  pc ;
 static   GB_Ptr      sp ;
 #endif
+
+static   GB_Ptr      bp ;
 
 #if defined(RR_REG) && USE_REGS_FOR_PC_SP
 register GB_Word     rr RR_REG ;
@@ -124,10 +132,12 @@ typedef GB_Word GB_CFun();
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Push(v)				{*(--sp) = ((GB_Word)(v)) ; }
-#define GB_Push2(v)				{*(sp-1) = ((GB_Word)(v)) ; sp-- ;}		/* avoid predecrement */
+#define GB_Push(v)				{*(--sp) = (Cast(GB_Word,v)) ; }
+#define GB_Push2(v)				{*(sp-1) = (Cast(GB_Word,v)) ; sp-- ;}		/* avoid predecrement */
 #define GB_TOS					(*sp)
 #define GB_SetTOS(x)			{*sp = (x);}
+#define GB_SetTOSRel(o,x)		{ *GB_SPRel(o) = (x); }
+#define GB_SetTOSByteRel(o,x)	{ *Cast(GB_Ptr,GB_SPByteRel(GB_Word,o)) = (x); }
 #define GB_Popn(n)				(sp+=(n))
 #define GB_Pop					(sp++)
 #define GB_PopCastedIn(ty,v)	{(v) = Cast(ty,*GB_Pop) ;}
@@ -148,6 +158,16 @@ typedef GB_Word GB_CFun();
 								IF_GB_TR_ON(3,printf("pfr %x pto %x sp %x\n",pfr,pto,sp);) ;			\
 								MemCopyBackward(pfr,pto,sp) ;
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Base pointer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_BP_Set				{ bp = sp ; }
+#define GB_BP_Link				{ GB_Push(bp) ; GB_BP_Set ; }
+#define GB_BP_Unlink			{ bp = Cast(GB_Ptr,GB_Deref(bp)) ; }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,13 +193,26 @@ typedef GB_Word GB_CFun();
 #define GB_PCImm(ty)			(*(((ty*)pc)++))
 #define GB_PCExt				GB_PCImm(GB_Byte)
 
+%%[8
+#define GB_Skip_CallInfoPtr		pc += sizeof(GB_CallInfo_Inline) ;
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal chunks of bytecode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+static GB_CallInfo gb_callinfo_EvalWrap = GB_MkCallInfo(GB_CallInfo_Kind_EvalWrap) ;
+static GB_CallInfo gb_callinfo_EvCont   = GB_MkCallInfo(GB_CallInfo_Kind_EvCont) ;
+%%]
+
+%%[8
 static GB_Byte gb_code_AfterEvalCall[] =
-  { GB_Ins_EvalUpdCont
+  { 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_EvalUpdCont
   } ;
 
 static GB_Byte gb_code_AfterEvalApplyFunCall[] =
@@ -192,8 +225,16 @@ static GB_Byte gb_code_AfterCallInApplyWithTooManyArgs[] =
 
 GB_Byte gb_code_Eval[] =
   { GB_Ins_Eval(GB_InsOp_LocB_TOS)
+  /* following is patched during init with &gb_callinfo_EvalWrap */ /* GB_Word2Bytes(Cast(GB_Word,&gb_callinfo_EvalWrap)) */
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
   , GB_Ins_Ext, GB_InsExt_Halt
   } ;
+
+#define GB_InitPatch_gb_code_Eval				*Cast(GB_Ptr,&gb_code_Eval[1]         ) = Cast(GB_Word,&gb_callinfo_EvalWrap)
+#define GB_InitPatch_gb_code_AfterEvalCall		*Cast(GB_Ptr,&gb_code_AfterEvalCall[0]) = Cast(GB_Word,&gb_callinfo_EvCont  )
 
 %%]
 
@@ -419,11 +460,11 @@ void gb_prState( char* msg, int maxStkSz )
 	for ( i = 0 ; i < 8 ; i++ )
 		printf(" %0.2x", pc[1+i]) ;
 #	if USE_64_BITS
-		printf( ", SP 0x%lx: 0x%0.16lx, RR 0x%lx"
+		printf( ", SP 0x%lx: 0x%0.16lx, BP 0x%lx, RR 0x%lx"
 #	else
-		printf( ", SP 0x%x: 0x%0.8x, RR 0x%x"
+		printf( ", SP 0x%x: 0x%0.8x, BP 0x%x, RR 0x%x"
 #	endif
-	      , sp, *sp, rr ) ;
+	      , sp, *sp, bp, rr ) ;
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
@@ -451,7 +492,7 @@ void gb_interpretLoop()
   	register GB_NodeHeader h ;
 
 	/* scratch */
-  	GB_Word x4, x5, x6, retSave ;
+  	GB_Word x4, x5, x6, retSave, bpSave ;
   	GB_Ptr  p4, p5, p6 ;
   	GB_BytePtr  dst ;
 
@@ -625,38 +666,41 @@ void gb_interpretLoop()
 			/* calling, returning, case */
 			/* callt */
 			case GB_Ins_Call(GB_InsOp_LocB_TOS) :
+				GB_Skip_CallInfoPtr ;
 				x = GB_TOS ;
 gb_interpreter_InsCallEntry:
-				GB_SetTOS( Cast(GB_Word,pc) ) ;
+				GB_SetTOS( Cast(GB_Word,pc) ) ;								/* return address on stack			*/
+				GB_BP_Link ;												/* link bp */
 				pc = Cast(GB_BytePtr,x) ;
 				break ;
 			
 			/* callr */
 
 			/* tailcallt */
-#define GB_RetTailCall_Code(getDst,jumpDst,getPrevRet,restorePrevRet)		/* share between tailcall & retcall */							\
+#define GB_RetTailCall_Code(getDst,jumpDst,getPrevCallAdmin,prepCallAdmin,restorePrevCallAdmin)		/* share between tailcall & retcall */							\
 				spSave = sp ;																												\
 				GB_PCExtIn(x) ;																												\
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,4,5),x3) ; 			/* nArgMine  , in bytes				*/							\
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x4) ; 			/* nArgSurr  , in bytes				*/							\
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x5) ; 			/* retOffSurr, in bytes 			*/							\
 				IF_GB_TR_ON(3,printf( "nArgMine %d nArgSurr %d retOffSurr %d\n", x3, x4, x5 );) \
-				getPrevRet ; 												/* ret address of current function 	*/							\
+				getPrevCallAdmin ; 											/* ret address of current function 	*/							\
 				getDst ; 													/* destination of call 				*/							\
 				IF_GB_TR_ON(3,printf( "retSave %x dst %x\n", retSave, dst );) \
-				p2 = GB_RegByteRel(GB_Word,spSave,x5+x4+sizeof(GB_Word)) ;	/* after last old arg is dst startpoint of backwards copy */	\
+				p2 = GB_RegByteRel(GB_Word,bp,x4+GB_CallRetNrBytes) ;		/* after last old arg is dst startpoint of backwards copy */	\
 				p  = GB_SPByteRel(GB_Word,x3) ;								/* after last new arg is src startpoint of backwards copy */	\
 				MemCopyBackward(p,sp,p2) ;									/* copy new args over old 			*/							\
-				sp = GB_RegByteRel(GB_Word,spSave,x4+x5-x3) ;				/* sp points to return addr,		*/							\
-				restorePrevRet ;											/* which is assigned here			*/							\
+				prepCallAdmin ;												/* sp points to call admin (if any),*/							\
+				restorePrevCallAdmin ;										/* which is assigned here			*/							\
 				jumpDst ;													/* jump to dst						*/
 
 			case GB_Ins_TailCall(GB_InsOp_LocB_TOS) :
 				GB_RetTailCall_Code
 					( GB_PopCastedIn(GB_BytePtr,dst)
 					, pc = dst
-					, retSave = GB_Deref(GB_RegByteRel(GB_Word,spSave,x5))
-					, GB_SetTOS( retSave )
+					, bpSave = GB_Deref(bp) ; retSave = GB_Deref(GB_RegRel(bp,1)) // retSave = GB_Deref(GB_RegByteRel(GB_Word,spSave,x5))
+					, sp = GB_RegByteRel(GB_Word,bp,x4-x3) ; GB_BP_Set
+					, GB_SetTOS( bpSave ) ; GB_SetTOSRel( 1, retSave )
 					) ;
 				break ;
 
@@ -665,10 +709,11 @@ gb_interpreter_InsCallEntry:
 			/* retcall */
 			case GB_Ins_RetCall :
 				GB_RetTailCall_Code
-					( dst = Cast(GB_BytePtr,GB_RegByteRelx(spSave,x5))
+					( dst = Cast(GB_BytePtr,GB_RegRelx(bp,1)) // dst = Cast(GB_BytePtr,GB_RegByteRelx(spSave,x5))
 					, pc = dst
 					, ;
-					, GB_Pop
+					, sp = GB_RegByteRel(GB_Word,bp,x4-x3+GB_CallRetNrBytes) ; GB_BP_Unlink
+					, ;
 					) ;
 				break ;
 
@@ -707,9 +752,14 @@ gb_interpreter_InsCallEntry:
 			case GB_Ins_CallC :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args										*/
-				GB_PopIn(x) ;												/* function											*/
-				GB_CallC_Code(x,x2,sp,x) ;
-				sp = GB_SPRel(x2) ;
+				GB_Skip_CallInfoPtr ;
+				p = GB_SPRel(1) ;											/* args												*/
+				x = GB_TOS ;												/* function											*/
+				GB_Push(pc) ;												/* setup call admin to look the same as normal 		*/
+				GB_BP_Link ;
+				GB_CallC_Code(x,x2,p,x) ;
+				sp = GB_RegRel(p,x2) ;
+				GB_BP_Unlink ;
 				GB_Push(x) ;
 				break ;
 
@@ -732,14 +782,16 @@ gb_interpreter_InsCallEntry:
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,2,3),x2) ; 			/* nArgSurr  , in bytes 			*/
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x3) ; 			/* retOffSurr, in bytes 			*/
-				pc = Cast(GB_BytePtr,GB_RegByteRelx(sp,x3))	;				/* continuation address				*/
+				pc = Cast(GB_BytePtr,GB_RegRelx(bp,1)) ;					/* continuation address				*/
 				x = GB_TOS ;
-				sp = GB_SPByteRel(GB_Word,x3+x2) ;							/* sp points to eval arg			*/
+				sp = GB_RegByteRel(GB_Word,bp,x2+GB_CallRetNrBytes-sizeof(GB_Word)) ;							/* sp points to eval arg			*/
 				GB_SetTOS( x ) ;											/* which is set here				*/
-																			/* so we can fall through to eval	*/
+				GB_BP_Unlink ;												/* in caller context (is return) 	*/
+				goto gb_interpreter_InsEvalEntry ;							/* jump to eval						*/
 
 			/* evalt */
 			case GB_Ins_Eval(GB_InsOp_LocB_TOS) :
+				GB_Skip_CallInfoPtr ;
 				x = GB_TOS ;
 gb_interpreter_InsEvalEntry:
 				if ( GB_Word_IsPtr(x) ) {
@@ -751,11 +803,13 @@ gb_interpreter_InsEvalEntry:
 							switch( GB_NH_Fld_TagCat(h) ) {
 								case GB_NodeTagCat_Fun :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
+									//GB_BP_Link ;													/* save bp for after eval			*/
 									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
 									p2 = &(n->content.fields[GB_NH_NrFlds(h)]) ;					/* after last arg 					*/
 									MemCopyBackward(p2,p,sp) ;										/* push args on stack 				*/
 									pc = Cast(GB_BytePtr,n->content.fields[0]) ;					/* jump to function 				*/
-									GB_Push(gb_code_AfterEvalCall) ;								/* ret addr is to update 			*/
+									GB_Push(&gb_code_AfterEvalCall[sizeof(GB_CallInfo_Inline)]) ;	/* ret addr is to update 			*/
+									GB_BP_Link ;													/* and bp							*/
 									GB_NH_SetFld_NdEv(n->header,GB_NodeNdEv_BlH) ;					/* may not be eval'd when eval'd	*/
 									break ;
 								case GB_NodeTagCat_CFun :
@@ -813,7 +867,7 @@ gb_interpreter_InsEvalUpdContEntry:
 				pc = Cast(GB_BytePtr,retSave) ;									/* jump to saved ret address				*/
 				break ;
 
-			/* evappcont */ /* under construction 20061122 */
+			/* evappcont */
 			case GB_Ins_EvalApplyCont :
 				GB_PopIn(x) ;													/* evaluated function						*/
 				GB_PopIn(retSave) ;												/* saved return address 					*/
@@ -826,15 +880,16 @@ gb_interpreter_InsEvalUpdContEntry:
 				goto gb_interpreter_InsApplyEntry ;
 				break ;
 
-			/* papplycont */ /* under construction 20061122 */
+			/* papplycont */
 			case GB_Ins_PApplyCont :
 				GB_PopIn(x) ;													/* result value								*/
 				pc = Cast(GB_BytePtr,GB_TOS) ;									/* continuation								*/
 				GB_SetTOS( x ) ;												/* result is slided down					*/
-																				/* fall through								*/
+				goto gb_interpreter_InsApplyEntry ;								/* goto apply								*/
 
-			/* applyt */ /* under construction 20061122 */
+			/* applyt */
 			case GB_Ins_Apply(GB_InsOp_LocB_TOS) :
+				GB_Skip_CallInfoPtr ;
 gb_interpreter_InsApplyEntry:
 				n = Cast(GB_NodePtr,GB_TOS) ;										/* function										*/
 				x = GB_SPRelx(1) ;													/* nArgs, in words 								*/
@@ -1053,7 +1108,10 @@ gb_interpreter_InsApplyEntry:
 %%[8
 void gb_Initialize()
 {
+	GB_InitPatch_gb_code_Eval ;
+	GB_InitPatch_gb_code_AfterEvalCall ;
 	sp = Cast(GB_Ptr,StackEnd) ;
+	bp = Cast(GB_Ptr,0) ;
 }
 
 %%]
