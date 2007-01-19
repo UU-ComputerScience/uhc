@@ -24,14 +24,12 @@ ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          |
                          | localsF USE {.} {id}: {[HsName]->[HsName]}
-                           maxChildParameters USE {`max`} {0} : {Int}   -- TODO: 10 should be 0, but that causes the stack to be garbled
                            tailJumps USE {&&} {True} : {Bool}
                          ]
 
-ATTR GrExpr GrAltL GrAlt [ nk : {(Int,Int)} | | ]
-
-
 ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
+ATTR GrExpr GrAlt GrAltL GrGlobal GrGlobalL GrValL GrVal GrTag GrTagL GrAdaptL GrAdapt GrPat GrPatL GrSplitL GrSplit [ embed : {EmbedFunction} | | ]
+
 
 ATTR GrValL [ | | length : {Int} ]
 SEM GrValL
@@ -53,6 +51,11 @@ SEM GrModule
                                 )
 
         loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
+        globalL . embed = embed Map.empty
+
+
+
+
 
 
 SEM GrBind
@@ -61,40 +64,53 @@ SEM GrBind
                                 (hsnShowAlphanumeric @nm)
                                 @expr.tailJumps
                                 -- parameters
-                                (    if @lhs.optOwnParameters then [] else @loc.params
+                                (   if @lhs.optOwnParameters then [] else @loc.paramsStr
                                 )
                                 -- locals
-                                (   (if @lhs.optOwnLocals     then [] else @loc.locals)
-                                ++  (if @lhs.optOwnParameters then @loc.params else [])
+                                (   if @lhs.optOwnLocals     
+                                     then [] 
+                                     else (   @loc.localsStr
+                                          ++  (if @lhs.optOwnParameters then @loc.paramsStr else [])
+                                          )
                                 )
                                 -- body
-                                (  (if   @lhs.optOwnParameters && not (null @argNmL)
+                                (  (if   @lhs.optOwnParameters && not @lhs.optOwnLocals && not (null @argNmL)
                                     then Statement_Comment "Parameters"
                                          : zipWith Statement_Assignment
-                                                   (map Variable_Var @loc.params)
-                                                   (map (arrayValue Variable_SP) [-1,-2..])
+                                                   (map (Variable_Param undefined) @loc.paramsStr)
+                                                   (map (arrayValue Variable_SP) [2..])
                                     else []
                                    )
                                 ++ (if   @loc.ownAllocation
-                                    then [ Statement_Enter @loc.nLocals @loc.nMaxChildPar
+                                    then [ Statement_Assignment Variable_BP (Value_Var Variable_SP)
+                                         , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.nLocals)))
+                                         , Statement_Comment (show @loc.embedMap)
                                          ]
                                     else []
                                    )
                                 ++ @expr.stats
                                 ++ ( if @loc.ownAllocation && not @expr.tailJumps
-                                     then [Statement_Leave 0]
+                                     then [ Statement_Assignment Variable_SP (Value_Var Variable_BP)
+                                          , Statement_Assignment Variable_BP (Value_Var (Variable_SubsPtr Variable_SP (Constant_LiteralInt 0)))
+                                          , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@loc.nParams+2)))
+                                          ]
                                      else []
                                    )
                                 )
                             ]
 
           expr . numberParameters = length @argNmL
-          expr . nk = (@loc.nLocals, @loc.nMaxChildPar)
-          loc  . locals = filter (\n->n/="_" && n/="x0") (map hsnShowAlphanumeric (@expr.localsF []))
-          loc  . params = map hsnShowAlphanumeric @argNmL
+          expr . embed    = (if @lhs.optOwnLocals then embed2 else embed) @loc.embedMap
+          loc  . embedMap = Map.fromList (@loc.paramsTup ++ @loc.localsTup)
+          loc  . localsHs  = filter (\(HNmNr n _)->n/=0) (@expr.localsF [])
+          loc  . paramsHs  = @argNmL
+          loc  . localsStr = map hsnShowAlphanumeric @loc.localsHs
+          loc  . paramsStr = map hsnShowAlphanumeric @loc.paramsHs
+          loc  . localsTup = zipWith (makeEmbedTupel Variable_Local) [1..] @loc.localsHs
+          loc  . paramsTup = zipWith (makeEmbedTupel Variable_Param) [1..] @loc.paramsHs
           loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
-          loc  . nLocals      = if @lhs.optOwnLocals     then length @loc.locals       else 0
-          loc  . nMaxChildPar = if @lhs.optOwnParameters then @expr.maxChildParameters else 0
+          loc  . nLocals      = if @lhs.optOwnLocals     then length @loc.localsHs     else 0
+          loc  . nParams      = if @lhs.optOwnParameters then length @loc.paramsHs     else 0
           
 
 SEM GrExpr
@@ -105,10 +121,10 @@ SEM GrExpr
                         : [ Statement_Assignment v e
                           | (v,e) <-zip  (if @isLastExpr
                                           then [arrayVariab Variable_RP i | i <- [0..] ]
-                                          else [Variable_Var (hsnShowAlphanumeric x)  | x <- @lhs.targets]
+                                          else [@lhs.embed x | x <- @lhs.targets]
                                          )
                                          @val.values
-                          , v/=Variable_Var "_" && v/=Variable_Var "x0"
+                          , isRealVar v
                           ]
 
 
@@ -118,34 +134,30 @@ SEM GrExpr
                             --n2 = @lhs.maxConstrParameters
                             n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap ph)))
                         in Statement_Comment "Store"
-                           : store (hsnShowAlphanumeric ph) n n2 vs
+                           : store @lhs.embed ph n n2 vs
 
            lhs.localsF = (@lhs.targets ++)
 
  | FetchUpdate 
-           lhs.stats  = let p = hsnShowAlphanumeric @dst
-                            q = hsnShowAlphanumeric @src
-                            -- it would be nice to use hptMap to determine size, and hptMap can now be used even after changing numbered variables back to names
+           lhs.stats  = let -- use hptMap to determine size, because hptMap can now be used even after changing numbered variables back to names
                             n = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @src)))
-                            -- n = 9
                          in Statement_Comment "FetchUpdate"
                             : zipWith Statement_Assignment
-                                     (map (arrayVariab (Variable_Var p)) [0..n])
-                                     (map (arrayValue  (Variable_Var q)) [0..n])
+                                     (map (arrayVariab (@lhs.embed @dst)) [0..n])
+                                     (map (arrayValue  (@lhs.embed @src)) [0..n])
 
 
 
- | Update  lhs.stats  = let p = hsnShowAlphanumeric @nm
-                            vs = @val.values
+ | Update  lhs.stats  = let vs = @val.values
                          in Statement_Comment "Update"
                             : zipWith Statement_Assignment
-                                      (map (arrayVariab (Variable_Var p)) [0..])
+                                      (map (arrayVariab (@lhs.embed @nm)) [0..])
                                       vs
 
  | Fetch   lhs.stats  = Statement_Comment "Fetch"
-                        : Statement_Assignment (Variable_Var (hsnShowAlphanumeric (head @lhs.targets)))
+                        : Statement_Assignment (@lhs.embed (head @lhs.targets))
                                                (case @mbOffset of
-                                                 Just offset -> (arrayValue (Variable_Var (hsnShowAlphanumeric @nm)) offset)
+                                                 Just offset -> arrayValue (@lhs.embed @nm) offset
                                                  Nothing     -> error "cant generate code for Fetch without offset"
                                                )
                         : []
@@ -163,41 +175,52 @@ SEM GrExpr
                          then (   Statement_Comment "Call (Tail)"
                               :   zipWith Statement_Assignment
                                           (map (arrayVariab Variable_RP) [1..])
-                                          @argL.values
+                                          (reverse @argL.values)
                               )
                               ++
-                              (   Statement_Leave (@argL.length - @lhs.numberParameters)
-                              :   zipWith Statement_Assignment
+                              (   [ Statement_Assignment Variable_SP (Value_Var Variable_BP)
+                                  , Statement_Assignment Variable_BP (Value_Var (Variable_SubsPtr Variable_SP (Constant_LiteralInt 0)))
+                                  , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@lhs.numberParameters+2)))
+                                  ]
+                              ++  zipWith Statement_Assignment
                                           (map (arrayVariab Variable_SP) [-1,-2..])
                                           (map (arrayValue  Variable_RP) [1 .. @argL.length])
                               )
-                              ++ [Statement_Jump (hsnShowAlphanumeric @nm)]
+                              ++ [ Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-1)) (Value_Con (Constant_LiteralInt 0))
+                                 , Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-2)) (Value_Var Variable_BPVal)
+                                 , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.nMyParams-2)))
+                                 , Statement_Jump (hsnShowAlphanumeric @nm)
+                                 ]
                          else (   Statement_Comment "Call (Normal)"
                               :   (if @lhs.optOwnParameters
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
-                                                   @argL.values
-                                        ++ [Statement_Call @lhs.nk (hsnShowAlphanumeric @nm) [] ]
+                                                   (reverse @argL.values)
+                                        ++ [ Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-1)) (Value_Con (Constant_LiteralInt 0))
+                                           , Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-2)) (Value_Var Variable_BPVal)
+                                           , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.nMyParams-2)))
+                                           , Statement_Call (hsnShowAlphanumeric @nm) [] 
+                                           ]
                                         )
-                                   else [Statement_Call @lhs.nk (hsnShowAlphanumeric @nm) @argL.values ]
+                                   else [Statement_Call (hsnShowAlphanumeric @nm) @argL.values ]
                                   )
                               ++ [ Statement_Assignment v e
-                                 | (v,e) <-zip  [Variable_Var (hsnShowAlphanumeric x)  | x <- @lhs.targets]
+                                 | (v,e) <-zip  [@lhs.embed x  | x <- @lhs.targets]
                                                 (map (arrayValue Variable_RP) [0..])
-                                 , v/=Variable_Var "_" && v/=Variable_Var "x0"
+                                 , isRealVar v
                                  ]
                               )
 
+           loc.nMyParams = @argL.length
            lhs.localsF = (@lhs.targets ++)
-           lhs.maxChildParameters = @argL.length
 
  | FFI     lhs.stats  = Statement_Comment "FFI"
                         : Statement_Assignment
                                (if @isLastExpr
                                 then (arrayVariab Variable_RP 0)
-                                else (Variable_Var (hsnShowAlphanumeric (head @lhs.targets)))
+                                else (@lhs.embed (head @lhs.targets))
                                )
-                               (Value_Call @nm (map (Value_Var . Variable_Var . hsnShowAlphanumeric) @argL))
+                               (Value_Call @nm (map (Value_Var . @lhs.embed) @argL))
                         : []
 
            lhs.localsF = (@lhs.targets ++)
@@ -226,9 +249,8 @@ SEM GrGlobal
  		   lhs.names       = [hsnShowAlphanumeric @globNm]
            lhs.initStats   = let vs = @val.values
                                  n  = length vs
-                                 --n2 = @lhs.maxConstrParameters
                                  n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @globNm)))
-                             in  store (hsnShowAlphanumeric @globNm) n n2 vs
+                             in  store @lhs.embed @globNm n n2 vs
 
 
 
@@ -236,9 +258,9 @@ SEM GrVal
  | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
  | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
 %%[[8
- | Var     loc.value  = Value_Var (Variable_Var (hsnShowAlphanumeric @nm))
+ | Var     loc.value  = Value_Var (@lhs.embed @nm)
 %%][12
- | Var     loc.value  = Value_Var (Variable_Var (hsnShowAlphanumeric $ hsnToGlobal @nm))
+ | Var     loc.value  = Value_Var (@lhs.embed (hsnToGlobal @nm))
 %%]]
            lhs.value  = @loc.value
            lhs.values = [@loc.value]
@@ -257,7 +279,7 @@ SEM GrTag
  | Lit     loc.constant = Constant_Alias (tagName @categ @nm)
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
- | Var     lhs.value    = Value_Var (Variable_Var (hsnShowAlphanumeric @nm))
+ | Var     lhs.value    = Value_Var (@lhs.embed @nm)
  | Unboxed lhs.value    = error "GrTag:Unboxed value"
  | Any     lhs.value    = error "GrTag:Any value"
  | * - Lit lhs.constant = error "GrTag:other constant"
@@ -279,6 +301,8 @@ SEM GrExpr
 
 
 %%]
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -318,9 +342,9 @@ ATTR GrAGItf GrModule GrBind GrBindL GrExpr GrAlt GrAltL
     optOwnLocals     : {Bool} -- when True, local variables are allocated on the Stack datastructure
   | | ]
 
--- Force OwnParameters when JumpTailCalls
+-- Force OwnParameters when JumpTailCalls and when OwnLocals
 SEM GrModule
-  | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls
+  | Mod bindL.optOwnParameters = @lhs.optOwnParameters || @lhs.optJumpTailCalls || @lhs.optOwnLocals
 %%]
 
 
@@ -328,6 +352,37 @@ SEM GrModule
 %%% Auxiliary Haskell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8 hs
+
+
+type EmbedMap = Map.Map Int Variable
+type EmbedFunction = HsName->Variable
+
+makeEmbedTupel :: (Int->String->Variable) -> Int -> HsName -> (Int,Variable)
+makeEmbedTupel constr k x@(HNmNr n _) = (n, constr k (hsnShowAlphanumeric x))
+
+
+embed :: EmbedMap -> EmbedFunction
+embed m x@(HNmNr n _) = if n==0
+                         then Variable_None
+                         else maybe (Variable_Global (hsnShowAlphanumeric x))
+                                    id
+                                    (Map.lookup n m)
+
+embed2 :: EmbedMap -> EmbedFunction
+embed2 m x@(HNmNr n _) = if n==0
+                          then Variable_None
+                          else maybe (Variable_Global (hsnShowAlphanumeric x))
+                                     (\v -> case v of
+                                              Variable_Local n _ -> Variable_Subs Variable_BP (Constant_LiteralInt (0-n))
+                                              Variable_Param n _ -> Variable_Subs Variable_BP (Constant_LiteralInt (1+n))
+                                     )
+                                     (Map.lookup n m)
+
+
+
+isRealVar Variable_None = False
+isRealVar _             = True
+
 
 -- n1 is the number of parameters of the tag
 -- n2 is the maximum number of parameters of all constructorfunctions
@@ -345,12 +400,13 @@ allocate _   n1 n2 = Value_Alloc (max n1 n2)
 tagcat :: [Value] -> Char
 tagcat (Value_Con (Constant_Alias (c:_)):_) = c
 
-store :: String -> Int -> Int -> [Value] -> Statements
-store pn n1 n2 vs
-       =  Statement_Assignment (Variable_Var pn) (allocate (tagcat vs) n1 n2)
-          : zipWith Statement_Assignment
-                    (map (arrayVariab (Variable_Var pn)) [0..])
-                    vs
+store :: EmbedFunction -> HsName -> Int -> Int -> [Value] -> Statements
+store em pn n1 n2 vs
+       =  let epn = em pn
+          in  Statement_Assignment epn (allocate (tagcat vs) n1 n2)
+              : zipWith Statement_Assignment
+                        (map (arrayVariab epn) [0..])
+                        vs
 
 arrayValue :: Variable -> Int -> Value
 arrayValue a i = Value_Var (Variable_Subs a (Constant_LiteralInt i))

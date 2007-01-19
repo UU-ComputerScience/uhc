@@ -30,4 +30,5 @@
 
 #define Bits_MaxUInt(ty,szBits,nBits)	((~ Cast(ty,0)) >> ((szBits) - (nBits)))
 #define Bits_MinUInt(ty,szBits,nBits)	Cast(ty,0)
+
 %%]

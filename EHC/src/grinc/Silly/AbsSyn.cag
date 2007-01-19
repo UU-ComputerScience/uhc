@@ -31,10 +31,11 @@ DATA Function
 DATA Statement
   |  Assignment  dest       : Variable
                  source     : Value
+  |  Increment   dest       : Variable
+                 source     : Value
   |  Switch      scrutinee  : Value
                  body       : Alternatives
-  |  Call        nk         : {(Int,Int)}
-                 name       : {String}
+  |  Call        name       : {String}
                  args       : Values
   |  Jump        name       : {String}
   |  Leave       diff       : {Int}
@@ -52,12 +53,20 @@ DATA Constant
   | Alias        name       : {String}
 
 DATA Variable
-  |  Var         name       : String
+  |  Local       pos        : {Int}
+                 name       : {String}
+  |  Param       pos        : {Int}
+                 name       : {String}
+  |  Global      name       : {String}
   |  Subs        array      : Variable
                  index      : Constant
   |  SP
   |  BP
   |  RP
+  |  BPVal
+  |  SubsPtr     array      : Variable
+                 index      : Constant
+  |  None
 
 DATA Value
   | Con          con        : Constant

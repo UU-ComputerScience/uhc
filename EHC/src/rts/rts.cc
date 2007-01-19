@@ -56,11 +56,17 @@ void memorySetup()
     Stack = (Pointer)malloc(sizeof(GrWord)*STACKSIZE);
     ReturnArea = (Pointer)malloc(sizeof(GrWord)*RETURNSIZE);
 #endif
-    
-    SP = Stack;
     RP = ReturnArea;
+
+	// stack builds bottom-up	    
+    // SP = Stack;
+    // StackEnd = Stack + STACKSIZE ;
     
-    StackEnd = Stack + STACKSIZE ;
+    // stack hangs top-down
+    SP = Stack + STACKSIZE - 1 - 2;
+    StackEnd = Stack;
+    
+    
 }
 %%]
 
@@ -87,10 +93,9 @@ GrWord heapalloc(int n)
 void memoryDumpResult_Sil()
 {
 #if USE_BOEHM_GC
-     printf("result SP-offset=%d tag=%d value=%d\n", SP-Stack, RP[0], RP[1] );
+     printf("result SP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, RP[0], RP[1] );
 #else
-/*    printf("result SP-offset=%d HP-offset=%d tag=%d arity=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1], RP[2] ); */
-     printf("result SP-offset=%d HP-offset=%d tag=%d value=%d\n", SP-Stack, HP-Heap, RP[0], RP[1] );
+     printf("result SP offset=%d HP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, HP-Heap, RP[0], RP[1] );
 #endif
 }
 %%]
