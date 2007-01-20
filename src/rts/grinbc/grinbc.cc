@@ -204,6 +204,7 @@ typedef GB_Word GB_CFun();
 %%[8
 static GB_CallInfo gb_callinfo_EvalWrap = GB_MkCallInfo(GB_CallInfo_Kind_EvalWrap) ;
 static GB_CallInfo gb_callinfo_EvCont   = GB_MkCallInfo(GB_CallInfo_Kind_EvCont) ;
+static GB_CallInfo gb_callinfo_PEvCont  = GB_MkCallInfo(GB_CallInfo_Kind_PApCont) ;
 %%]
 
 %%[8
@@ -220,7 +221,11 @@ static GB_Byte gb_code_AfterEvalApplyFunCall[] =
   } ;
 
 static GB_Byte gb_code_AfterCallInApplyWithTooManyArgs[] =
-  { GB_Ins_PApplyCont
+  { 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_PApplyCont
   } ;
 
 GB_Byte gb_code_Eval[] =
@@ -235,6 +240,8 @@ GB_Byte gb_code_Eval[] =
 
 #define GB_InitPatch_gb_code_Eval				*Cast(GB_Ptr,&gb_code_Eval[1]         ) = Cast(GB_Word,&gb_callinfo_EvalWrap)
 #define GB_InitPatch_gb_code_AfterEvalCall		*Cast(GB_Ptr,&gb_code_AfterEvalCall[0]) = Cast(GB_Word,&gb_callinfo_EvCont  )
+#define GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs	\
+												*Cast(GB_Ptr,&gb_code_AfterCallInApplyWithTooManyArgs[0]) = Cast(GB_Word,&gb_callinfo_PEvCont  )
 
 %%]
 
@@ -909,7 +916,8 @@ gb_interpreter_InsApplyEntry:
 							GB_SPRelx(nMiss+1) = nLeftOver ;
 							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
 							pc = Cast(GB_BytePtr,n->content.fields[0]) ;						/* call function									*/
-							GB_Push( Cast(GB_Word,gb_code_AfterCallInApplyWithTooManyArgs) ) ;  /* with continuation set to another apply			*/
+							GB_Push( Cast(GB_Word,&gb_code_AfterCallInApplyWithTooManyArgs[sizeof(GB_CallInfo_Inline)]) ) ;  /* with continuation set to another apply			*/
+							GB_BP_Link ;
 						} else if ( nLeftOver == 0 ) {
 							sp = Cast(GB_Ptr,GB_SPRel(2)) ;								/* remove node+size from stack 								*/
 							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
@@ -974,7 +982,7 @@ gb_interpreter_InsApplyEntry:
 				n->header = h ;
 				break ;
 
-			/* ldnt */
+			/* lnt */
 			case GB_Ins_LdNodeTag :
 				GB_TOSCastedIn(GB_NodePtr,n) ;
 				GB_Push(GB_Int2GBInt(GB_NH_Fld_Tag(n->header))) ;
@@ -1110,6 +1118,7 @@ void gb_Initialize()
 {
 	GB_InitPatch_gb_code_Eval ;
 	GB_InitPatch_gb_code_AfterEvalCall ;
+	GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs ;
 	sp = Cast(GB_Ptr,StackEnd) ;
 	bp = Cast(GB_Ptr,0) ;
 }
@@ -1360,7 +1369,7 @@ static GB_Mnem gb_mnemTable[] =
 , { GB_Ins_Apply(GB_InsOp_LocB_TOS)				, "applyt" 			}
 , { GB_Ins_Ext									, "ext" 			}
 , { GB_Ins_EvalApplyCont						, "evappcont" 		}
-, { GB_Ins_LdNodeTag							, "ldnt"	 		}
+, { GB_Ins_LdNodeTag							, "lnt"		 		}
 , { GB_Ins_FetchUpdate							, "fetchupd" 		}
 , { GB_Ins_PApplyCont							, "papplycont" 		}
 , { GB_Ins_NOP									, "nop" 			}
