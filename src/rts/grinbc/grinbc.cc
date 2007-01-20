@@ -401,7 +401,7 @@ void gb_prWord( GB_Word x )
 	      , x ) ;
 	if ( ( GB_Word_IsInt(x)
 #		if USE_BOEHM_GC
-	       || x < Cast(GB_Word,StackEnd)
+	       || x < Cast(GB_Word,StackAreaLow)
 #		else
 	       || x < Cast(GB_Word,Heap)
 #		endif
@@ -436,7 +436,7 @@ void gb_prStack( int maxStkSz )
 {
     int i ;
     
-	for ( i = 0 ; i < maxStkSz && sp+i < Cast(GB_Ptr,StackEnd) ; i++ )
+	for ( i = 0 ; i < maxStkSz && sp+i < Cast(GB_Ptr,StackAreaLow) ; i++ )
 	{
 #		if USE_64_BITS
 			printf( "  %lx: "
@@ -1119,7 +1119,7 @@ void gb_Initialize()
 	GB_InitPatch_gb_code_Eval ;
 	GB_InitPatch_gb_code_AfterEvalCall ;
 	GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs ;
-	sp = Cast(GB_Ptr,StackEnd) ;
+	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;
 }
 

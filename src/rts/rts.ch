@@ -90,7 +90,7 @@ GrWord heapalloc(int);
 extern Pointer SP, RP, BP;
 extern Pointer Stack, ReturnArea;
 
-extern Pointer StackEnd ;
+extern Pointer StackAreaHigh, StackAreaLow ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
