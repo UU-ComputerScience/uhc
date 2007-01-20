@@ -29,7 +29,7 @@ static clock_t clockStart, clockStop ;
 Pointer SP, RP, BP ;
 Pointer Stack, ReturnArea ;
 
-Pointer StackEnd ;
+Pointer StackAreaHigh, StackAreaLow ;
 
 #if ! USE_BOEHM_GC
 Pointer HP;
@@ -64,7 +64,8 @@ void memorySetup()
     
     // stack hangs top-down
     SP = Stack + STACKSIZE - 1 - 2;
-    StackEnd = Stack;
+    StackAreaLow = Stack;
+    StackAreaHigh = Stack + STACKSIZE;
     
     
 }
