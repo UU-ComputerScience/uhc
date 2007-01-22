@@ -211,8 +211,8 @@ ppNodeFlds n = n >|< ".content.fields"
 ppNodeFld :: (PP n,PP o) => n -> o -> PP_Doc
 ppNodeFld n o = ppArrAt (ppNodeFlds n) o
 
-ppCnst :: PP_Doc -> Const -> PP_Doc
-ppCnst st (Const_Str       i) = ppCast "GB_Word" $ ppAddrArrAt st i
+ppCnst :: (Int -> PP_Doc) -> Const -> PP_Doc
+ppCnst mk (Const_Str       i) = ppCast "GB_Word" $ mk i
 ppCnst _  (Const_CFunction n) = ppCast "GB_Word" $ ppAddrOf ("gb_" ++ n)
 ppCnst _  (Const_CallInfo  n) = ppCast "GB_Word" $ ppAddrOf n
 
@@ -251,10 +251,9 @@ SEM Module
   | Mod         loc         .   moduleNmPre             =   mkPre @moduleNm
                             .   ppNm                    =   \n -> @moduleNmPre >|< n
                             .   strNmcallInfo           =   "callinfo"
-                            .   ppNmAString             =   @ppNm "string"
+                            .   ppNmAString             =   \i -> @ppNm "string" >|< i
                             .   ppNmACallInfo           =   @ppNm @strNmcallInfo
                             .   ppNmACAF                =   @ppNm "caf"
-                            .   ppNmStringTbl           =   @ppNm "strings"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
                             .   ppNmConstTbl            =   @ppNm "constants"
                             .   ppNmLinkEntriesTbl      =   @ppNm "linkEntries"
@@ -282,15 +281,14 @@ SEM Module
                 lhs         .   (pp,ppMain)
 %%]]
                                             =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm) >-< "#include \"rts.h\""
-                                                    strNmL  = [ (@ppNmAString >|< i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
-                                                    strings = vlist [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
-                                                              >-< ppTbl "char*" @ppNmStringTbl [ n | (n,_) <- strNmL ]
-                                                    callinfoNmL = [ (@strNmcallInfo ++ show i,"GB_MkCallInfo" >|< ppParensCommasBlock [pp $ fromEnum $ ciKind ci] >#< ppCmtC @lhs.opts (show ci))
+                                                    strNmL  = [ (@ppNmAString i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
+                                                    strings = ppLine $ vlist [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
+                                                    callinfoNmL = [ (@strNmcallInfo ++ show i,"GB_MkCallInfo" >|< ppParensCommasBlock [pp $ fromEnum $ ciKind ci,maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci] >#< ppCmtC @lhs.opts (show ci))
                                                                   | (ci,i) <- sortOn snd $ Map.toList @instrs.callInfoMp
                                                                   ]
                                                     callinfos   = ppLine $ vlist [ "GB_CallInfo" >#< @ppNm n >#< "=" >#< def >#< ";" | (n,def) <- callinfoNmL ]
                                                     extraConstL = [ Const_CallInfo (@moduleNmPre ++ n) | (n,_) <- callinfoNmL ]
-                                                    consts  = ppTbl "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmStringTbl) (@constL ++ extraConstL))
+                                                    consts  = ppTbl "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmAString) (@constL ++ extraConstL))
                                                     bcode   = ppTbl "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
                                                     linkL   = toList @instrs.links
                                                     links   = ppTbl "GB_LinkEntry" @ppNmLinkEntriesTbl
@@ -436,8 +434,8 @@ SEM Instr
   | Call Eval Apply
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
   | TailCall RetCall
-                lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp,@retOffSurr.pp]
-  | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp,@retOffSurr.pp]
+                lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp]
+  | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp]
   | CaseCall FetchUpdate LdNodeTag
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
@@ -520,13 +518,13 @@ SEM Instr
   | AllocStore  lhs         .   mn          =   "allocstore"    >|< @locSrc.mn
   | Fetch       lhs         .   mn          =   "fetch"         >|< @locSrc.mn
   | Call        lhs         .   mn          =   "call"          >|< @locSrc.mn
-  | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
-  | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
+  | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
+  | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >#< @nArgSurr.mn 
   | CaseCall    lhs         .   mn          =   pp "casecall"
   | FetchUpdate lhs         .   mn          =   pp "fetchupd"
   | LdNodeTag   lhs         .   mn          =   pp "lnt"
   | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
-  | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >|< @retOffSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn >#< @retOffSurr.mn
+  | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
   | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
@@ -625,9 +623,9 @@ SEM Instr
 %%[8
 SEM Instr
   | TailCall RetCall
-                loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 4) .|. (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
+                loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
   | CallC       loc         .   enc2        =   (@nArgSz.enc)
-  | TailEval    loc         .   enc2        =   (@nArgSurrSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
+  | TailEval    loc         .   enc2        =   (@nArgSurrSz.enc `shiftL` 0)
   | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
   | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   | Halt        loc         .   enc2        =   0xFF
@@ -696,9 +694,7 @@ SEM Instr
   | TailCall RetCall
                 nArgMine    .   immSz       =   @nArgMineSz.self
                 nArgSurr    .   immSz       =   @nArgSurrSz.self
-                retOffSurr  .   immSz       =   @retOffSurrSz.self
   | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
-                retOffSurr  .   immSz       =   @retOffSurrSz.self
   | CallC       nArg        .   immSz       =   @nArgSz.self
   | RetCase     nRes        .   immSz       =   @nResSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self

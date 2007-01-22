@@ -127,7 +127,7 @@ PRIM GrWord primUnsafeId(GrWord x)
 PRIM int primUndefined()
 {
     printf("attempt tot evaluate undefined\n");
-    exit(1);
+    gb_exit(1);
     return 0;
 }
 

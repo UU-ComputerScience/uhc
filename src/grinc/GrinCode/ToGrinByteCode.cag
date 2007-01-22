@@ -99,14 +99,22 @@ SEM GrModule
 %%[8 hs
 type StrMp = Map.Map String GB.Const
 
+strAdd :: String -> StrMp -> (GB.Const,StrMp)
+strAdd str strMp 
+  = case Map.lookup str strMp of
+      Just c -> (c,strMp)
+      _      -> (c,Map.insert str c strMp)
+             where c        = GB.Const_Str $ Map.size strMp
+
 constStrAdd :: String -> StrMp -> ConstMp -> (Int,StrMp,ConstMp)
 constStrAdd str strMp constMp
   = case Map.lookup str strMp of
-      Just c -> (panicJust "constStrAdd" $ Map.lookup c constMp,strMp,constMp)
-      _      -> (constInx,Map.insert str c strMp,Map.insert c constInx constMp)
-             where strInx   = Map.size strMp
-                   constInx = Map.size constMp
-                   c        = GB.Const_Str strInx
+      Just c | isJust mbCnst
+        -> (fromJust mbCnst,strMp,constMp)
+        where mbCnst = Map.lookup c constMp
+      _ -> (constInx,strMp',Map.insert c constInx constMp)
+        where constInx = Map.size constMp
+              (c,strMp') = strAdd str strMp
 
 constAdd :: GB.Const -> ConstMp -> (Int,ConstMp)
 constAdd c constMp
@@ -133,6 +141,20 @@ SEM GrVal
 
 SEM GrExpr
   | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @nm @lhs.constMp
+                (loc.strConst,lhs.strMp)        =   strAdd @nm @lhs.strMp
+  | Eval        (loc.strConst,lhs.strMp)        =   strAdd (show hsnEval) @lhs.strMp
+  | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
+  | App         (loc.strConst,argL.strMp)       =   strAdd (show hsnApply) @lhs.strMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debug info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM GrExpr
+  | FFI Call Eval App
+  				loc			.	mbDebugStrInx	=	if ehcOptGenDebug @lhs.opts then Just (GB.constInx @strConst) else Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -379,7 +401,7 @@ ATTR GrValL [ | | grvalIntroL: {[GB.GrValIntro]} ]
 SEM GrVal
   | Var         lhs         .   grvalIntro      =   GB.GrValIntro_Nm @nm
   | LitInt      lhs         .   grvalIntro      =   GB.GrValIntro_Int (toInteger @int)
-  | LitStr      lhs         .   grvalIntro      =   GB.GrValIntro_Str @str (GB.linkConstPtr @constInx)
+  | LitStr      lhs         .   grvalIntro      =   GB.GrValIntro_Str @str (GB.linkConst @constInx)
   | Node        lhs         .   grvalIntro      =   GB.GrValIntro_Grp @tag.self @fldL.grvalIntroL
   | * - Var LitStr Node LitInt
                 lhs         .   grvalIntro      =   GB.GrValIntro_None
@@ -470,12 +492,12 @@ SEM GrExpr
                                                       GB.GrValIntroAlt_OnTOS ins inc _
                                                         -> case @lhs.returnCtxt of
                                                              ReturnCtxt_Returns nrArgsOuter
-                                                               -> (ins :++: fins :++: FSeqL [GB.tailcall GB.InsOp_LocB_TOS nArgMine nrArgsOuter retOffSurr], 0, True)
+                                                               -> (ins :++: fins :++: FSeqL [GB.tailcall GB.InsOp_LocB_TOS nArgMine nrArgsOuter {- retOffSurr -}], 0, True)
                                                                where (fins,fdep) = GB.nmLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc) @nm
                                                                      nArgMine    = length @argL.grvalIntroL
-                                                                     retOffSurr  = @lhs.stkDepth + inc + fdep
+                                                                     -- retOffSurr  = @lhs.stkDepth + inc + fdep
                                                              _ -> (ins', inc', False)
-                                                               where (ins',inc') = GB.gvCall @nmEnv @lhs.modNmConstInx ins inc @lhs.stkDepth @nm
+                                                               where (ins',inc') = GB.gvCall @mbDebugStrInx @nmEnv @lhs.modNmConstInx ins inc @lhs.stkDepth @nm
   | FFI         loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case @mbGbPrim of
                                                       Just gbPrim | gbprimNrArgs gbPrim == length @argL && ehcOptOptimise @lhs.opts >= OptimiseNormal
@@ -484,7 +506,7 @@ SEM GrExpr
                                                                -> (ins, inc, False)
                                                       _ -> case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
-                                                               -> (ins :++: fins :++: FSeqL [GB.callc inc], 1, False)
+                                                               -> (ins :++: fins :++: FSeqL [GB.callc @mbDebugStrInx inc], 1, False)
                                                                where fins = FSeqL [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of
@@ -495,14 +517,14 @@ SEM GrExpr
                                                     in  case @lhs.returnCtxt of
                                                           ReturnCtxt_Returns nrArgsOuter
                                                             -> (ins :++: eins, 0, True)
-                                                            where eins       = FSeqL [GB.taileval GB.InsOp_LocB_TOS nrArgsOuter retOffSurr]
-                                                                  retOffSurr = @lhs.stkDepth + inc
+                                                            where eins       = FSeqL [GB.taileval GB.InsOp_LocB_TOS nrArgsOuter {- retOffSurr -}]
+                                                                  -- retOffSurr = @lhs.stkDepth + inc
                                                           _ -> (ins :++: eins, inc, False)
-                                                            where eins = FSeqL [GB.eval GB.InsOp_LocB_TOS]
+                                                            where eins = FSeqL [GB.eval @mbDebugStrInx GB.InsOp_LocB_TOS]
   | App         loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @argL.grvalIntroL of
                                                       GB.GrValIntroAlt_OnTOS ins inc _
-                                                        -> (ins :++: FSeqL [GB.ldc (length @argL.grvalIntroL)] :++: fins :++: FSeqL [GB.apply GB.InsOp_LocB_TOS], 1, False)
+                                                        -> (ins :++: FSeqL [GB.ldc (length @argL.grvalIntroL)] :++: fins :++: FSeqL [GB.apply @mbDebugStrInx GB.InsOp_LocB_TOS], 1, False)
                                                         where (fins,_) = GB.nmLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc + 1) @nm
   | Case        loc         .   (valIns,valStkInc,retIsDone,scrutineeStkInc)
                                                 =   case GB.gviLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @val.grvalIntro of
@@ -552,8 +574,8 @@ mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackDepth -> GB.StackDepth -> GB.InsSeq
 mkRet returnCtxt retLocLbl stkDepth inc
   = case returnCtxt of
       ReturnCtxt_Returns nrArgsOuter
-        -> FSeqL [GB.retcall 1 nrArgsOuter retOffSurr]
-        where retOffSurr  = stkDepth + inc
+        -> FSeqL [GB.retcall 1 nrArgsOuter {- retOffSurr -}]
+        -- where retOffSurr  = stkDepth + inc
       ReturnCtxt_CaseReturns labelId dep
         -> FSeqL [ GB.retcase 1 (stkDepth + inc - dep)
                  , GB.label $ GB.LocRef_Label retLocLbl

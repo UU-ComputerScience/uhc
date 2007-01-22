@@ -19,11 +19,12 @@ typedef int Bool ;
 
 %%[8
 extern void rts_error( char* msg ) ;
-extern void rts_panic( char* msg ) ;
-extern void rts_panic1_1( char* msg, int i ) ;
-extern void rts_panic2( char* msg1, char* msg2 ) ;
-extern void rts_panic2_1( char* msg1, char* msg2, int i ) ;
-extern void rts_panic2_2( char* msg1, char* msg2, int i1, int i2 ) ;
+extern void gb_error( char* msg ) ;
+extern void gb_panic( char* msg ) ;
+extern void gb_panic1_1( char* msg, int i ) ;
+extern void gb_panic2( char* msg1, char* msg2 ) ;
+extern void gb_panic2_1( char* msg1, char* msg2, int i ) ;
+extern void gb_panic2_2( char* msg1, char* msg2, int i1, int i2 ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

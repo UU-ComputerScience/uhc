@@ -334,11 +334,16 @@ Invariant is that a return address points to the address immediately after this 
 The type and size used should agree with the code generation part.
 
 %%[8
-typedef uint8_t GB_CallInfo ;						// CallInfo itself
-typedef GB_CallInfo* GB_CallInfoPtr ;				
+typedef struct GB_CallInfo {
+  uint8_t kind ;
+  char*   name ;
+} GB_CallInfo ;
+
+typedef GB_CallInfo* GB_CallInfoPtr ;
+
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
-#define GB_MkCallInfo(k)				k			// make CallInfo
+#define GB_MkCallInfo(k,n)				{k,n}			// make CallInfo
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 
@@ -640,6 +645,14 @@ extern void gb_InitTables
 %%[8
 extern int gb_Opt_TraceSteps ;
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern void gb_exit( int i ) ;
+%%]			
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sanity check on assumptions made by interpreter
