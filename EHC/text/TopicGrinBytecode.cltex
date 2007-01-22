@@ -39,13 +39,13 @@ the machinery.
 %format iop2(ot)(dt)(od)(i)(rs)(x)       = "\mathsf{o}\langle{" ot "}\rangle\langle{" dt "}\rangle\langle{" od "}\rangle\langle{" i "}\rangle\langle{" rs "}\rangle" ^^ x
 %format iaddi(rd)(x)         = "\mathsf{addi}\langle{" rd "}\rangle" ^^ x
 %format icall(rs)         = "\mathsf{call}\langle{" rs "}\rangle"
-%format itailcall(rs)(n)(m)(r)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m ^^ r
+%format itailcall(rs)(n)(m)         = "\mathsf{tailcall}\langle{" rs "}\rangle" ^^ n ^^ m
 %format ildg(rd)(a)         = "\mathsf{ldg}\langle{" rd "}\rangle" ^^ a
-%format iretcall(n)(m)(r)         = "\mathsf{retcall}" ^^ n ^^ m ^^ r
+%format iretcall(n)(m)         = "\mathsf{retcall}" ^^ n ^^ m
 %format iretcase(n)(r)(c)         = "\mathsf{retcase}" ^^ n ^^ r ^^ c
 %format icasecall         = "\mathsf{casecall}"
 %format ieval(rs)         = "\mathsf{eval}\langle{" rs "}\rangle"
-%format itaileval(rs)(m)(r)         = "\mathsf{taileval}\langle{" rs "}\rangle" ^^ m ^^ r
+%format itaileval(rs)(m)         = "\mathsf{taileval}\langle{" rs "}\rangle" ^^ m
 %format iapply(rs)       = "\mathsf{apply}\langle{" rs "}\rangle"
 %format ialloc(rs)         = "\mathsf{alloc}\langle{" rs "}\rangle"
 %format iallocstore(rs)         = "\mathsf{allocstore}\langle{" rs "}\rangle"
@@ -299,8 +299,17 @@ Also note that int's are treated in unboxed for, thereby avoiding the need to al
 \item
   Stack grows from high to low addresses.
 \item
-  The size of all values pushed on the stack is known. No framepointer is required.
+  The size of all values pushed on the stack is known.
   All access can be done relative to the top of the stack.
+\item
+  A frame/base pointer is required for unwinding the stack in case of an exception.
+\item
+  After each call a pointer to call info is inlined. A return address points
+  to the location immediately after this pointer.
+  The kind of call is administered, as to be able to differentiate between normal calls and
+  the installation of an exception handler.
+  Furthermore, a saved return address is always pushed before a saved basepointer,
+  so exception can find this info via the basepointer.
 \item
   No scoping mechanism is required, all values are either local or global.
   Global values are either functions (their start address) and CAF's.
@@ -1131,20 +1140,20 @@ Previous:
 
 \subsubsection{Tail call}
 
-\begin{GrinEncoding}{|itailcall(rs)(n)(m)(r)|}
+\begin{GrinEncoding}{|itailcall(rs)(n)(m)|}
  &
 |1111 ^^ 001 ^ ixx1(rs)(0)| &
-|00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)| &
+|0000 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
 ... &
 \\
 \end{GrinEncoding}
 
-where |n, m, r :: angle(is)|.
+where |n, m :: angle(is)|.
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |tailcall n m r : _|
+  |tailcall n m : _|
  }{%
   |d : a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
  }{%
@@ -1192,20 +1201,20 @@ Previous:
 
 \subsubsection{Return from call}
 
-\begin{GrinEncoding}{|iretcall(n)(m)(r)|}
+\begin{GrinEncoding}{|iretcall(n)(m)|}
  &
 |1111 ^^ 0100| &
-|00 ^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)| &
+|0000 ^^ ixxjuxt(n)(1)(0) ^ ixxjuxt(m)(1)(0)| &
 ... &
 \\
 \end{GrinEncoding}
 
-where |n, m, r :: angle(is)|
+where |n, m :: angle(is)|
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |retcall n m r : _|
+  |retcall n m : _|
  }{%
   |a1 .. an : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
  }{%
@@ -1777,10 +1786,10 @@ Previous:
 
 \subsubsection{Tail eval}
 
-\begin{GrinEncoding}{|itaileval(rs)(m)(r)|}
+\begin{GrinEncoding}{|itaileval(rs)(m)|}
  &
 |1110 ^^ 010 ^ ixx1(rs)(0)| &
-|0000 ^ ixxjuxt(m)(1)(0) ^ ixxjuxt(r)(1)(0)|  &
+|0000 ^^ 00 ^ ixxjuxt(m)(1)(0)|  &
 ... &
 \\
 \end{GrinEncoding}
@@ -1788,7 +1797,7 @@ Previous:
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |taileval m r : _|
+  |taileval m : _|
  }{%
   |p : .. : (gframep :-> gframep') : gcode : b1 .. bm : gstack|
  }{%
@@ -2524,6 +2533,8 @@ int main(int argc, char** argv) {
 \subsection{Linking, constants, modules}
 
 \subsection{Primitives}
+
+\subsection{Exception handling}
 
 %%]
 

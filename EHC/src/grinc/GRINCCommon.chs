@@ -21,9 +21,9 @@ type RenameMap      = [(Int,  [Int])]
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (Just wildcardNm)
-evalNm     = HNm "!eval"
+evalNm     = hsnEval
 evalNr     = HNmNr 1 (Just evalNm)
-applyNm    = HNm "!apply"
+applyNm    = hsnApply
 applyNr    = HNmNr 2 (Just applyNm)
 
 mainNr     = HNmNr 3 (Just (hsnPrefix "fun_" hsnMain))

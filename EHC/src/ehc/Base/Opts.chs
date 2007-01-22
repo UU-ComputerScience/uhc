@@ -95,6 +95,7 @@ data EHCOpts
       ,  ehcOptGenOwnParams   ::  Bool
       ,  ehcOptGenOwnLocals   ::  Bool
       ,  ehcOptGenCmt         ::  Bool
+      ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
 
       ,  ehcOptShowGrin       ::  Bool              -- show Grin pretty print on stdout
       ,  ehcOptEmitHS         ::  Bool
@@ -165,6 +166,7 @@ defaultEHCOpts
       ,  ehcOptGenTailCall    =   True
       ,  ehcOptGenOwnParams   =   True
       ,  ehcOptGenOwnLocals   =   False
+      ,  ehcOptGenDebug       =   True
 
       ,  ehcOptShowGrin       =   False
       ,  ehcOptEmitHS         =   False
@@ -252,6 +254,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
      ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
+     ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
 %%]]
 %%[[12
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
@@ -372,6 +375,7 @@ optSetGenTailCall    o b = o { ehcOptGenTailCall    = b }
 optSetGenOwnParams   o b = o { ehcOptGenOwnParams   = b }
 optSetGenOwnLocals   o b = o { ehcOptGenOwnLocals   = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
+optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 
 optBoolean tr ms o
  = case ms of

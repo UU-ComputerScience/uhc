@@ -60,10 +60,8 @@ DATA Instr
   				callInfo		: CallInfo
   | RetCall     nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz
-  				retOffSurrSz	: InsOp_ImmSz
   				nArgMine		: Imm
   				nArgSurr		: Imm
-  				retOffSurr		: Imm
   | RetCase     nResSz			: InsOp_ImmSz
   				retOffSurrSz	: InsOp_ImmSz
   				nRes			: Imm
@@ -71,18 +69,14 @@ DATA Instr
   | TailCall    locSrc			: InsOp_LocB
   				nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz
-  				retOffSurrSz	: InsOp_ImmSz
   				nArgMine		: Imm
   				nArgSurr		: Imm
-  				retOffSurr		: Imm
   | CaseCall	
   | Eval        locSrc			: InsOp_LocB
   				callInfo		: CallInfo
   | TailEval    locSrc			: InsOp_LocB
   				nArgSurrSz		: InsOp_ImmSz
-  				retOffSurrSz	: InsOp_ImmSz
   				nArgSurr		: Imm
-  				retOffSurr		: Imm
   | Apply       locSrc			: InsOp_LocB
   				callInfo		: CallInfo
   | Op			op				: InsOp_TyOp

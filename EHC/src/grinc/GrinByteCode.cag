@@ -132,9 +132,12 @@ type StackDepth = Int
 Call Info
 
 %%[8 hs export(CallInfo(..),CallInfoKind(..))
+type MbStrInx = Maybe Int
+
 data CallInfo
   = CallInfo
-      { ciKind		:: CallInfoKind
+      { ciKind			:: CallInfoKind
+      , ciMbNmStrInx	:: MbStrInx					-- index of string, if any
       }
   deriving(Eq,Ord,Show)
 
@@ -154,8 +157,8 @@ data CallInfoKind
 %%]
 
 %%[8 hs export(mkCICall)
-mkCI :: CallInfoKind -> CallInfo
-mkCI k = CallInfo k
+mkCI :: CallInfoKind -> MbStrInx -> CallInfo
+mkCI k i = CallInfo k i
 
 mkCICall  = mkCI CallInfoKind_Call
 mkCICCall = mkCI CallInfoKind_CCall
@@ -381,9 +384,9 @@ gviLd optim env modNmConstInx stkDepth intro
 %%]
 
 %%[8 hs export(gvCall)
-gvCall :: NmEnv -> Int -> InsSeq -> Int -> StackDepth -> HsName -> (InsSeq,StackDepth)
-gvCall nmEnv modNmConstInx ins inc stkDepth nm
-  = (ins :++: fins :++: FSeqL [call InsOp_LocB_TOS], 1)
+gvCall :: MbStrInx -> NmEnv -> Int -> InsSeq -> Int -> StackDepth -> HsName -> (InsSeq,StackDepth)
+gvCall i nmEnv modNmConstInx ins inc stkDepth nm
+  = (ins :++: fins :++: FSeqL [call i InsOp_LocB_TOS], 1)
   where (fins,_) = nmLd defaultOptimCtxt nmEnv modNmConstInx (stkDepth + inc) nm
 %%]
 
@@ -566,17 +569,17 @@ ndStore sz = (FSeqL [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_L
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(eval,apply,taileval)
-eval :: InsOp_LocB -> Instr
-eval locB = Instr_Eval locB mkCIEval
+eval :: MbStrInx -> InsOp_LocB -> Instr
+eval i locB = Instr_Eval locB (mkCIEval i)
 
-taileval :: Integral c => InsOp_LocB -> c -> c -> Instr
-taileval locB nArgSurr retOffSurr
-  = Instr_TailEval locB s1 s2 i1 i2
+taileval :: Integral c => InsOp_LocB -> c -> Instr
+taileval locB nArgSurr
+  = Instr_TailEval locB s1 i1
   where (s1,i1) = imm $ nrWord2Byte nArgSurr
-        (s2,i2) = imm $ nrWord2Byte retOffSurr
+        -- (s2,i2) = imm $ nrWord2Byte retOffSurr
 
-apply :: InsOp_LocB -> Instr
-apply locB = Instr_Apply locB mkCIApply
+apply :: MbStrInx -> InsOp_LocB -> Instr
+apply i locB = Instr_Apply locB (mkCIApply i)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -584,29 +587,29 @@ apply locB = Instr_Apply locB mkCIApply
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(call,retcall,tailcall,casecall,retcase,callc)
-call :: InsOp_LocB -> Instr
-call locB = Instr_Call locB mkCICall
+call :: MbStrInx -> InsOp_LocB -> Instr
+call i locB = Instr_Call locB (mkCICall i)
 
-rettailcall :: Integral c => (InsOp_ImmSz -> InsOp_ImmSz -> InsOp_ImmSz -> Imm -> Imm -> Imm -> Instr) -> c -> c -> c -> Instr
-rettailcall mk nArgMine nArgSurr retOffSurr
-  = mk s1 s2 s3 i1 i2 i3
+rettailcall :: Integral c => (InsOp_ImmSz -> InsOp_ImmSz -> Imm -> Imm -> Instr) -> c -> c -> Instr
+rettailcall mk nArgMine nArgSurr -- retOffSurr
+  = mk s1 s2 i1 i2
   where (s1,i1) = imm $ nrWord2Byte nArgMine
         (s2,i2) = imm $ nrWord2Byte nArgSurr
-        (s3,i3) = imm $ nrWord2Byte retOffSurr
+        -- (s3,i3) = imm $ nrWord2Byte retOffSurr
 
-retcall :: Integral c => c -> c -> c -> Instr
+retcall :: Integral c => c -> c -> Instr
 retcall = rettailcall Instr_RetCall
 
-tailcall :: Integral c => InsOp_LocB -> c -> c -> c -> Instr
+tailcall :: Integral c => InsOp_LocB -> c -> c -> Instr
 tailcall locB = rettailcall (Instr_TailCall locB)
 
 casecall :: Instr
 casecall
   = Instr_CaseCall
 
-callc :: Integral c => c -> Instr
-callc nArg
-  = Instr_CallC s1 i1 mkCICCall
+callc :: Integral c => MbStrInx -> c -> Instr
+callc i nArg
+  = Instr_CallC s1 i1 (mkCICCall i)
   where (s1,i1) = imm nArg
 
 retcase :: Integral c => c -> c -> Instr

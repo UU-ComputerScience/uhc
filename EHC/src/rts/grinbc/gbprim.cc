@@ -225,7 +225,7 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
 	buf[bufInx] = 0 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 `%s'\n", buf ););
-	rts_error( buf ) ;
+	gb_error( buf ) ;
 	return n ;
 }
 %%]
@@ -290,7 +290,7 @@ PRIM GB_Word gb_primCatchException( GB_Word e, GB_Word handler )
 
 PRIM GB_Word gb_primExitWith( GB_Word e )
 {
-	exit( GB_GBInt2Int( e ) ) ;
+	gb_exit( GB_GBInt2Int( e ) ) ;
 	return e ; // for now
 }
 %%]
