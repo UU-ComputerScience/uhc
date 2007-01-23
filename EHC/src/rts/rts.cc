@@ -26,7 +26,7 @@ static clock_t clockStart, clockStop ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-Pointer SP, RP, BP ;
+Pointer SP, RP ;
 Pointer Stack, ReturnArea ;
 
 Pointer StackAreaHigh, StackAreaLow ;
@@ -34,7 +34,7 @@ Pointer StackAreaHigh, StackAreaLow ;
 #if ! USE_BOEHM_GC
 Pointer HP;
 Pointer Heap;
-Pointer HeapEndCAF, HeapLimit;
+Pointer HeapLimit;
 #endif
 %%]
 
@@ -48,9 +48,7 @@ void memorySetup()
     ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
 #else
     Heap = (Pointer)malloc(sizeof(GrWord)*HEAPSIZE);
-
     HeapLimit = Heap + HEAPSIZE;
-
     HP = Heap;
 
     Stack = (Pointer)malloc(sizeof(GrWord)*STACKSIZE);
@@ -117,36 +115,14 @@ extern int fun_main();
 int main_Sil_Init1(int argc, char** argv)
 {
 	memorySetup() ;
-    initialize();
-#if ! USE_BOEHM_GC
-    HeapEndCAF = HP;
-#endif
-
     return 0;
 }
 
 int main_Sil_Run(int argc, char** argv)
 {
 	clockStart = clock() ;
-    fun_main();
+    silly_main();
 	clockStop = clock() ;
-
-/*
-    int i;
-    for (i=0; i<10; i++)
-    {
-        printf("RP[%d] = %d\n", i, RP[i] );
-    }
-    for (i=0; i<10; i++)
-    {
-        printf("%d: St[%d] = %d\n", Stack+i, i, Stack[i] );
-    }
-    for (i=0; i<HP-Heap; i++)
-    {
-        printf("%d: Heap[%d] = %d\n", Heap+i, i, Heap[i] );
-    }
-*/
-
     return 0;
 }
 

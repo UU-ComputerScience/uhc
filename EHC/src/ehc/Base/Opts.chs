@@ -94,6 +94,8 @@ data EHCOpts
       ,  ehcOptGenTailCall    ::  Bool
       ,  ehcOptGenOwnParams   ::  Bool
       ,  ehcOptGenOwnLocals   ::  Bool
+      ,  ehcOptGenOwnCalls    ::  Bool
+      ,  ehcOptGenAsmSP       ::  Bool
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
 
@@ -166,6 +168,8 @@ defaultEHCOpts
       ,  ehcOptGenTailCall    =   True
       ,  ehcOptGenOwnParams   =   True
       ,  ehcOptGenOwnLocals   =   False
+      ,  ehcOptGenOwnCalls    =   False
+      ,  ehcOptGenAsmSP       =   False
       ,  ehcOptGenDebug       =   True
 
       ,  ehcOptShowGrin       =   False
@@ -253,6 +257,8 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
      ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no)"
+     ,  Option ""   ["gen-owncalls"]     (boolArg optSetGenOwnCalls)          "simulate calling mechanism (no)"
+     ,  Option ""   ["gen-asmsp"]        (boolArg optSetGenAsmSP)             "use %esp as stack pointer (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
 %%]]
@@ -374,6 +380,8 @@ optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenTailCall    o b = o { ehcOptGenTailCall    = b }
 optSetGenOwnParams   o b = o { ehcOptGenOwnParams   = b }
 optSetGenOwnLocals   o b = o { ehcOptGenOwnLocals   = b }
+optSetGenOwnCalls    o b = o { ehcOptGenOwnCalls    = b }
+optSetGenAsmSP       o b = o { ehcOptGenAsmSP       = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 

@@ -14,7 +14,8 @@
 %%]
 %%[8 hs import(qualified Data.Map as Map, Data.Bits)
 %%]
-
+%%[8 hs import({%{EH}Base.Opts})
+%%]
 %%[8 import({GrinCode/AbsSyn})
 %%]
 %%[8 import({GrinCode/LastExpr})
@@ -30,12 +31,10 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs
-grin2silly :: HptMap -> GrModule -> Bool -> Bool -> Bool -> SilModule
-grin2silly hptmap gr optJump optPar optLoc
+grin2silly :: HptMap -> GrModule -> EHCOpts -> SilModule
+grin2silly hptmap gr opts
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
-                        (Inh_GrAGItf { optJumpTailCalls_Inh_GrAGItf = optJump
-                                     , optOwnParameters_Inh_GrAGItf = optPar
-                                     , optOwnLocals_Inh_GrAGItf = optLoc
+                        (Inh_GrAGItf { opts_Inh_GrAGItf = opts
                                      , hptMap_Inh_GrAGItf = hptmap
                                      }
                         )

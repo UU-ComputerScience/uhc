@@ -11,15 +11,16 @@
 %%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
+%%[8 hs import({%{EH}Base.Opts})
+%%]
 %%[8 import({Silly/AbsSyn})
 %%]
 
 %%[8 hs
-prettyC :: Bool -> Bool -> SilModule -> PP_Doc
-prettyC optTrace optDef silmod
+prettyC :: EHCOpts -> SilModule -> PP_Doc
+prettyC opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod)
-                           (Inh_SilModule { optTraceCall_Inh_SilModule = optTrace
-                                          , optCaseDefault_Inh_SilModule = optDef
+                           (Inh_SilModule { opts_Inh_SilModule = opts
                                           }
                            )
      in  prettyC_Syn_SilModule t
@@ -33,10 +34,20 @@ prettyC optTrace optDef silmod
 
 WRAPPER SilModule
 
-ATTR SilModule Functions Function Statements Statement Alternatives Alternative
+ATTR SilModule
+  [ opts : {EHCOpts} | | ]
+
+ATTR Functions Function Statements Statement Alternatives Alternative
   [ optTraceCall     : {Bool} -- when True, function entrance/exit is logged
     optCaseDefault   : {Bool} -- when True, error messages are given as default case for each switch
+    optOwnCalls      : {Bool} -- when True, all Silly functions will be part of 1 C function, using a custom calling mechanism for Silly functions
   | | ]
+
+SEM SilModule
+  | SilModule  loc.optTraceCall   = ehcOptGenTrace       @lhs.opts
+               loc.optCaseDefault = ehcOptGenCaseDefault @lhs.opts
+               loc.optOwnCalls    = ehcOptGenOwnCalls    @lhs.opts || @loc.optGenAsmSP
+               loc.optGenAsmSP    = ehcOptGenAsmSP       @lhs.opts
 
 {
 optTraceAssign = False
@@ -54,7 +65,9 @@ ATTR Values [ | | prettyCs : {[PP_Doc]} ]
 
 ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 
-
+ATTR Functions Function Statements Statement Alternatives Alternative
+         [  |  retNr : {Int} |  ]
+         
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
                                 >-< comment "Tag constants"
@@ -63,22 +76,47 @@ SEM SilModule
                                 >-< comment "Global table"
                                 >-< ppVertically (map variableDeclaration @variables)
                                 >-< text ""
-                                >-< comment "Function prototypes"
-                                >-< @functions.protoC
+                                >-< comment "Main C function"
+                                >-< @loc.cMain
                                 >-< text ""
                                 >-< comment "Function definitions"
-                                >-< @functions.prettyC
+                                >-< if @loc.optOwnCalls
+                                     then  @loc.silMain1
+                                           >-< text ""
+                                           >-< @functions.prettyC
+                                           >-< @loc.silMain2
+                                     else  @functions.protoC
+                                           >-< text ""
+                                           >-< @loc.silMain1
+                                           >-< @loc.silMain2
+                                           >-< text ""
+                                           >-< @functions.prettyC
                                 >-< text ""
-                                >-< comment "Main entry point"
-                                >-< "int main(int argc, char** argv){ main_Sil_Init1( argc, argv) ; main_Sil_Run( argc, argv) ; return main_Sil_Exit( argc, argv) ; }"
+                functions.retNr = 3
+                loc.silMain1 =  text "int silly_main()"
+                                >-< text "{"
+                                >-< ppWhen @loc.optGenAsmSP (text "register GrWord* SP asm (\"%esp\");")
+                                >-< indent 4 (    callSillyFunctionFromC @loc.optOwnCalls 1 "initialize"
+                                             >-<  callSillyFunctionFromC @loc.optOwnCalls 2 "fun_main"
+                                             >-<  "return 0;"
+                                             )
+                loc.silMain2 =  text "}"
+                loc.cMain    =  text "int main(int argc, char** argv)"
+                                >-< text "{"
+                                >-< indent 4 (    text "main_Sil_Init1(argc, argv);"
+                                             >-<  text "main_Sil_Run(argc, argv);"
+                                             >-<  text "return main_Sil_Exit(argc, argv);"
+                                             )
+                                >-< text "}"
+
 
 SEM Function
-  | Function    lhs.prettyC   = methodHeader @lhs.optTraceCall @name @parameters
+  | Function    lhs.prettyC   = methodHeader @lhs.optOwnCalls @lhs.optTraceCall @name @parameters
                                 >-< indent 4 (   ppWhen @tailJumps jumpPrepare
                                              >-< methodLocals @locals
                                              >-< @body.prettyC
                                              )
-                                >-< methodFooter @lhs.optTraceCall @name
+                                >-< methodFooter @lhs.optOwnCalls @lhs.optTraceCall @name
 
                 lhs.protoC    = methodHead @name @parameters >|< ";"
 
@@ -87,11 +125,14 @@ SEM Statement
   | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
   | Increment   lhs.prettyC   = assignincr @dest.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
-  | Call        lhs.prettyC   = call @name @args.prettyCs >|< ";"
-  | Jump        lhs.prettyC   = jump @name
+  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls @lhs.retNr @name @args.prettyCs
+  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwnCalls @name
+  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optOwnCalls @diff
   | Enter       lhs.prettyC   = error "Enter obsolete"
   | Leave       lhs.prettyC   = error "Leave obsolete"
 
+SEM Statement
+  | Call        lhs.retNr     = @lhs.retNr + 1
 
 SEM Alternative
   | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
@@ -103,7 +144,7 @@ SEM Values
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | Var         lhs.prettyC   = @var.prettyC
-  | Call        lhs.prettyC   = ( maybe (call @name)
+  | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
   | Alloc       lhs.prettyC   = "heapalloc(" >|< show @size >|< ")"
@@ -120,10 +161,8 @@ SEM Variable
                 lhs.prettyPtr = "((Pointer)" >|< text @name >|< ")"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"
-  | BP          lhs.prettyC   = text "BP"
-                lhs.prettyPtr = text "BP"
-  | BPVal       lhs.prettyC   = "((GrWord)" >|< text "BP" >|< ")"
-                lhs.prettyPtr = "((GrWord)" >|< text "BP" >|< ")"
+  | SPOffset    lhs.prettyC   = "((GrWord)(" >|< text "SP + " >|< show @dist >|< "))"
+                lhs.prettyPtr = "(" >|< text "SP + " >|< show @dist >|< ")"
   | RP          lhs.prettyC   = text "RP"
                 lhs.prettyPtr = text "RP"
   | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]"
@@ -133,6 +172,7 @@ SEM Variable
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"
                 lhs.prettyPtr = error "attempt to use Variable_None as pointer"
 
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,6 +180,10 @@ SEM Variable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+
+
+label :: String -> PP_Doc
+label nm = nm >|< ":"
 
 commaSeparated :: [String] -> String
 commaSeparated = concat . intersperse ", "
@@ -177,9 +221,42 @@ caseDefault x
 comment :: String -> PP_Doc
 comment s = text ("/* " ++ s ++ " */")
 
-call :: String -> [PP_Doc] -> PP_Doc
-call f ps
+callCfunction ::  String -> [PP_Doc] -> PP_Doc
+callCfunction f ps
  = f >|< "(" >|< ppHorizontally (intersperse (text ", ") ps) >|< ")"
+
+callSillyFunctionFromC :: Bool -> Int -> String -> PP_Doc
+callSillyFunctionFromC False _ nm
+ = nm >|< "();"
+callSillyFunctionFromC True n nm
+ = let lab = "retlab" ++ show n
+   in  "*--SP = (GrWord)(&&" >|< lab >|< ");"   -- return address
+       >-< "*--SP = (GrWord)0;"                 -- link
+       >-< "goto" >#< nm >|< ";"                -- do the call
+       >-< label ("retlab" ++ show n)           -- return here
+ 
+ 
+callSillyFunctionFromSilly ::  Bool -> Int -> String -> [PP_Doc] -> PP_Doc
+callSillyFunctionFromSilly False _ nm pars
+ = callCfunction nm pars >|< ";"
+callSillyFunctionFromSilly True n nm _
+ = let lab = "retlab" ++ show n
+   in  "SP[1] = (GrWord)(&&" >|< lab >|< ");"   -- return address
+       >-< ppWhen optTraceAssign
+           (" printf(\"def " >#< lab >#< " = %d\\n\", &&" >#< lab >#< "); fflush(stdout);")
+       >-< "goto" >#< nm >|< ";"                -- do the call
+       >-< label ("retlab" ++ show n)           -- return here
+ 
+returnFromSillyFunction False _ 
+ = text ""
+returnFromSillyFunction True n
+ = ppWhen optTraceAssign
+          (" printf(\"return to %d\\n\", (SP[-" >|< show n >|< "])"  >#< "); fflush(stdout);")
+   >-< "goto *(SP[-" >|< show n >|< "]);"
+ 
+ 
+ 
+ 
 
 %%]
 
@@ -209,17 +286,22 @@ methodHead nm params
                       else commaSeparated (map (declareName "GrWord") params)
     in  "void" >#< nm >|< "(" >|< parameters >|< ")"
 
-methodHeader :: Bool -> String -> [String] -> PP_Doc
-methodHeader optTrace nm params
+methodHeader :: Bool -> Bool -> String -> [String] -> PP_Doc
+methodHeader False optTrace nm params
  =  methodHead nm params
     >#< "{"
     >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
+methodHeader True optTrace nm _
+ =  label nm
+    >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
 
-methodFooter ::  Bool -> String -> PP_Doc
-methodFooter optTrace nm
+methodFooter ::  Bool -> Bool -> String -> PP_Doc
+methodFooter False optTrace nm
  =  ppWhen optTrace (trace ("leave "++init (tail (show nm))))
     >-< text "}"
     >-< text ""
+methodFooter True _ _
+ = text ""
 
 methodLocals :: [String] -> PP_Doc
 methodLocals ns
@@ -232,12 +314,18 @@ jumpPrepare :: PP_Doc
 jumpPrepare
  =  pp machDepCForTailcallEnter
 
-jump :: String -> PP_Doc
-jump nm
+jumpSillyFunctionFromSilly :: Bool -> String -> PP_Doc
+jumpSillyFunctionFromSilly False nm
  =  machDepCForTailcallLeave1
-    >-< "register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
-    >-< machDepCForTailcallLeave2
+    >#< "register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
+    >#< machDepCForTailcallLeave2
     >-< "goto *_tail_call_dest;"
+jumpSillyFunctionFromSilly True nm
+ = "goto" >#< nm >|< ";"
+
+
+
+
 
 assignment :: PP_Doc -> PP_Doc -> PP_Doc
 assignment v e

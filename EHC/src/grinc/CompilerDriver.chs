@@ -184,8 +184,8 @@ caOutput = task_ VerboseNormal "Writing code"
     ( do { outputGrin <- gets (ehcOptDumpTrfGrin . gcsOpts)
          ; maybe (return ()) (caWriteGrin False) outputGrin
          ; options <- gets gcsOpts
-         ; when (ehcOptEmitLLVM options)
-           (caWriteFinalCode "ll" prettyLL)
+--         ; when (ehcOptEmitLLVM options)
+--           (caWriteFinalCode "ll" prettyLL)
          ; when (ehcOptEmitLlc options)
            (caWriteFinalCode "c" prettyC)
          }
@@ -289,22 +289,19 @@ caGrin2Silly :: CompileAction SilModule
 caGrin2Silly = do
     { code <- gets gcsCode
     ; hptMap  <- gets gcsHptMap
-    ; optJump <- gets (ehcOptGenTailCall  . gcsOpts)
-    ; optPar  <- gets (ehcOptGenOwnParams . gcsOpts)
-    ; optLoc  <- gets (ehcOptGenOwnLocals . gcsOpts)
-    ; return (grin2silly hptMap code optJump optPar optLoc)
+    ; opts    <- gets gcsOpts
+    ; return (grin2silly hptMap code opts)
     }
 
 
-caWriteFinalCode :: String -> (Bool -> Bool -> SilModule -> PP_Doc) -> CompileAction ()
+caWriteFinalCode :: String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
 caWriteFinalCode suffix ppFun =
   do input <- gets gcsPath
      do { let output = fpathSetSuff suffix input
         ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
         ; silly <- caGrin2Silly
-        ; optTrace    <- gets (ehcOptGenTrace . gcsOpts)
-        ; optCaseDef  <- gets (ehcOptGenCaseDefault . gcsOpts)
-        ; liftIO $ writePP (ppFun optTrace optCaseDef) silly output
+        ; opts  <- gets gcsOpts
+        ; liftIO $ writePP (ppFun opts) silly output
         }
 
 caWriteGrin :: Bool -> String -> CompileAction ()
