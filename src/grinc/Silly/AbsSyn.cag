@@ -38,6 +38,7 @@ DATA Statement
   |  Call        name       : {String}
                  args       : Values
   |  Jump        name       : {String}
+  |  Return      diff       : {Int}
   |  Leave       diff       : {Int}
   |  Comment     comment    : {String}
   |  Enter       nParam     : {Int}
@@ -61,9 +62,8 @@ DATA Variable
   |  Subs        array      : Variable
                  index      : Constant
   |  SP
-  |  BP
   |  RP
-  |  BPVal
+  |  SPOffset    dist       : {Int}
   |  SubsPtr     array      : Variable
                  index      : Constant
   |  None

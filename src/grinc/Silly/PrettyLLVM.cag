@@ -8,10 +8,13 @@
 
 %%[8 import({Silly/AbsSyn})
 %%]
+%%[8 hs import({%{EH}Base.Opts})
+%%]
+
 
 %%[8 hs
-prettyLL :: Bool -> Bool -> SilModule -> PP_Doc
-prettyLL optTrace optDef silmod
+prettyLL :: EHCOpts -> SilModule -> PP_Doc
+prettyLL opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod) 
                            (Inh_SilModule { }
                            )
@@ -78,7 +81,6 @@ header = comment "LLVM Code Generated From Grin"
          >-< "%HP = external global %thunk_type*"
          >-< "%SP = external global %thunk_type*"
          >-< "%RP = external global %thunk_type*"
-         >-< "%BP = external global %thunk_type*"
          >-< ""
 
 constantDefinition :: (String,Int) -> PP_Doc
@@ -136,13 +138,13 @@ enter :: Int -> Int -> PP_Doc
 enter i j =  
              comment "Function Entry"
          >-< "; store current BasePointer value on Stack"
-         >-< load' "BP.deref" "BP" ThunkPtrPtr
+         -- >-< load' "BP.deref" "BP" ThunkPtrPtr
          >-< load' "SP.deref" "SP" ThunkPtrPtr
-         >-< cast "BP.cast" ThunkPtr "BP.deref" Thunk
-         >-< store "BP.cast" Thunk "SP.deref"
+         -- >-< cast "BP.cast" ThunkPtr "BP.deref" Thunk
+         -- >-< store "BP.cast" Thunk "SP.deref"
          >-< ""
          >-< "; Set BasePointer equal to StackPointer"
-         >-< store "SP.deref" ThunkPtr "BP" 
+         -- >-< store "SP.deref" ThunkPtr "BP" 
          >-< ""
          >-< "; increment StackPointer"
          >-< ptrAdd "SP.incr" "SP.deref" ThunkPtr (i+1)
@@ -155,8 +157,8 @@ exit i =
           comment "Function Exit"
       >-< "; restore StackPointer and BasePointer"
       >-< store "SP.deref" ThunkPtr "SP"
-      >-< cast "BP.recast" Thunk "BP.cast" ThunkPtr
-      >-< store "BP.recast" ThunkPtr "BP"
+      -- >-< cast "BP.recast" Thunk "BP.cast" ThunkPtr
+      -- >-< store "BP.recast" ThunkPtr "BP"
       >-< if i /= 0 
           then ptrAdd "SP.incr_exit" "SP.deref" ThunkPtr i
                >-< store "SP.incr_exit" ThunkPtr "SP"
@@ -313,15 +315,6 @@ SEM Variable
                                  else "SP." ++ show @uniq
                 loc.uniq       = @lhs.uniq
                 lhs.uniq       = @loc.uniq + 1
-  | BP
-    BPVal       lhs.code       = if isLHS @lhs.side
-                                 then empty
-                                 else load "BP" @uniq ThunkPtrPtr
-                lhs.resultName = if isLHS @lhs.side
-                                 then "BP"
-                                 else "BP." ++ show @uniq
-                loc.uniq       = @lhs.uniq
-                lhs.uniq       = @loc.uniq + 1
   | RP          lhs.code       = if isLHS @lhs.side
                                  then empty
                                  else load "RP" @uniq ThunkPtrPtr
@@ -330,6 +323,8 @@ SEM Variable
                                  else "RP." ++ show @uniq
                 loc.uniq       = @lhs.uniq
                 lhs.uniq       = @loc.uniq + 1
+  | SPOffset    lhs.code       = error "TODO: LLVM code for SPOffset"
+                lhs.resultName = error "TODO: LLVM resultName for SPOffset"
   | None        lhs.code       = error "no code for None"
                 lhs.resultName = error "no resultName for None"
   | Subs
@@ -434,11 +429,6 @@ SEM Variable
                             then ThunkPtrPtr
                             else ThunkPtr
                 lhs.ty    = @loc.ty
-  | BP 
-    BPVal       loc.ty    = if isLHS @lhs.side 
-                            then ThunkPtrPtr
-                            else ThunkPtr
-                lhs.ty    = @loc.ty
   | RP          loc.ty    = if isLHS @lhs.side 
                             then ThunkPtrPtr
                             else ThunkPtr
@@ -448,6 +438,7 @@ SEM Variable
                             then ThunkPtr
                             else Thunk -- result of array access is always a thunk
                 lhs.ty    = @loc.ty
+  | SPOffset    lhs.ty    = error "no type for SPOffset"
   | None        lhs.ty    = error "no type for None"
 
 SEM Value
@@ -473,9 +464,8 @@ SEM Variable
   |  SubsPtr
      Subs   lhs.descr = @array.descr >|< "[" >|< @index.descr >|< "]"
   |  SP     lhs.descr = text "SP"
-  |  BP
-     BPVal  lhs.descr = text "BP"
   |  RP     lhs.descr = text "RP"
+  |  SPOffset lhs.descr = text "SP+"
   |  None   lhs.descr = text "None"
 
 SEM Value

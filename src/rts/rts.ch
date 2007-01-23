@@ -19,7 +19,7 @@
 Internal config
 
 %%[8
-#define TRACE 					1
+#define TRACE 					0
 
 #if TRACE
 #define GB_COUNT_STEPS			1
@@ -70,7 +70,7 @@ typedef GrWord* Pointer;
 
 extern Pointer HP;
 extern Pointer Heap;
-extern Pointer HeapEndCAF, HeapLimit;
+extern Pointer HeapLimit;
 
 #endif
 %%]
@@ -87,7 +87,7 @@ GrWord heapalloc(int);
 #define STACKSIZE 200000
 #define RETURNSIZE 100
 
-extern Pointer SP, RP, BP;
+extern Pointer SP, RP;
 extern Pointer Stack, ReturnArea;
 
 extern Pointer StackAreaHigh, StackAreaLow ;
