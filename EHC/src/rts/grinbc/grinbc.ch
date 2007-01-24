@@ -361,6 +361,12 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 
 %%]
 
+Retrieval of call info given a bp
+
+%%[8
+#define GB_FromBPToCallInfo(p)			Cast(GB_CallInfo*,GB_Deref(GB_RegRelx(p,1) - sizeof(GB_CallInfo_Inline)))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Calling convention
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -607,11 +613,25 @@ extern void gb_push( GB_Word x ) ;
 extern GB_Word gb_eval( GB_Word x ) ;
 
 #if GB_COUNT_STEPS
-extern unsigned int gb_StepCounter ;
+extern unsigned long gb_StepCounter ;
 #endif
 
 extern void gb_interpretLoop( ) ;
 extern void gb_interpretLoopWith( GB_BytePtr initPC ) ;
+%%]
+
+%%[96
+extern void gb_unlinkSP() ;
+extern void gb_setPC( GB_BytePtr c ) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exception
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[96
+extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
+extern GB_Word gb_intl_primThrowException( GB_Word exc ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

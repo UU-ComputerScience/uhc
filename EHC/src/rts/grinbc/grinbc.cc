@@ -115,6 +115,8 @@ static   GB_Word     rr ;
 #define GB_RegRelx(r,o)			GB_Deref(GB_RegRel(r,o))
 #define GB_PCRel(o)				GB_RegRel(pc,o)
 
+#define GB_SetRegRel(r,o,v)		{ *GB_RegRel(r,o) = v ; }
+
 #define GB_RegByteRel(ty,r,o)	Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
 #define GB_RegByteRelx(r,o)		GB_Deref(GB_RegByteRel(GB_Word,r,o))
 %%]
@@ -135,7 +137,7 @@ typedef GB_Word GB_CFun();
 #define GB_Push(v)				{*(--sp) = (Cast(GB_Word,v)) ; }
 #define GB_Push2(v)				{*(sp-1) = (Cast(GB_Word,v)) ; sp-- ;}		/* avoid predecrement */
 #define GB_TOS					(*sp)
-#define GB_SetTOS(x)			{*sp = (x);}
+#define GB_SetTOS(x)			{*sp = Cast(GB_Word,x);}
 #define GB_SetTOSRel(o,x)		{ *GB_SPRel(o) = (x); }
 #define GB_SetTOSByteRel(o,x)	{ *Cast(GB_Ptr,GB_SPByteRel(GB_Word,o)) = (x); }
 #define GB_Popn(n)				(sp+=(n))
@@ -148,6 +150,8 @@ typedef GB_Word GB_CFun();
 
 #define GB_SPRel(o)				GB_RegRel(sp,o)
 #define GB_SPRelx(o)			GB_Deref(GB_SPRel(o))
+
+#define GB_SetSPRel(o,v)		GB_SetRegRel(sp,o,v)
 
 #define GB_SPByteRel(ty,o)		GB_RegByteRel(ty,sp,o)
 #define GB_SPByteRelx(o)		GB_Deref(GB_SPByteRel(GB_Word,o))
@@ -243,6 +247,65 @@ GB_Byte gb_code_Eval[] =
 #define GB_InitPatch_gb_code_AfterEvalCall		*Cast(GB_Ptr,&gb_code_AfterEvalCall[0]) = Cast(GB_Word,&gb_callinfo_EvCont  )
 #define GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs	\
 												*Cast(GB_Ptr,&gb_code_AfterCallInApplyWithTooManyArgs[0]) = Cast(GB_Word,&gb_callinfo_PEvCont  )
+
+%%]
+
+%%[96
+static GB_CallInfo gb_callinfo_ExcHdl_EvalValue  					= GB_MkCallInfo(GB_CallInfo_Kind_Call , "exception handler value eval"	) ;
+static GB_CallInfo gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler  = GB_MkCallInfo(GB_CallInfo_Kind_Hdlr , "exception handler"				) ;
+static GB_CallInfo gb_callinfo_ExcHdl_ThrowReturn  					= GB_MkCallInfo(GB_CallInfo_Kind_Call , "exception handler throw eval"	) ;
+static GB_CallInfo gb_callinfo_Apply 								= GB_MkCallInfo(GB_CallInfo_Kind_Apply, "apply"							) ;
+%%]
+
+%%[96
+static GB_Byte gb_code_ExcHdl_EvalValue[] =
+  { 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  //, GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08), 2*sizeof(GB_Word)
+  , GB_Ins_Eval(GB_InsOp_LocB_TOS)
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_RetCall, GB_InsOp_ImmSz_08<<2 | GB_InsOp_ImmSz_08, sizeof(GB_Word), sizeof(GB_Word)
+  } ;
+
+static GB_Byte gb_code_ExcHdl_NormalReturn_MarkedAsHandler[] =
+  { 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_RetCall, GB_InsOp_ImmSz_08<<2 | GB_InsOp_ImmSz_08, sizeof(GB_Word), 2*sizeof(GB_Word)
+  } ;
+
+static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
+  { 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08), 1
+  , GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08), 5*sizeof(GB_Word)	// after: 1, exc, bp, ret, expr
+  //, GB_Ins_Eval(GB_InsOp_LocB_TOS)
+  , GB_Ins_Apply(GB_InsOp_LocB_TOS)
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_RetCall, GB_InsOp_ImmSz_08<<2 | GB_InsOp_ImmSz_08, sizeof(GB_Word), 2*sizeof(GB_Word)
+  } ;
+
+#define GB_InitPatch_gb_code_ExcHdl_EvalValue \
+									{ *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[0]         					) = Cast(GB_Word,&gb_callinfo_ExcHdl_EvalValue) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(GB_Word)]         	) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
+									}
+#define GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler \
+									*Cast(GB_Ptr,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[0]         	) = Cast(GB_Word,&gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler)
+#define GB_InitPatch_gb_code_ExcHdl_ThrowReturn \
+									{ *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[0]         					) = Cast(GB_Word,&gb_callinfo_ExcHdl_ThrowReturn) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[5+sizeof(GB_Word)]         	) = Cast(GB_Word,&gb_callinfo_Apply) ; \
+									}
 
 %%]
 
@@ -371,6 +434,20 @@ GB_Word gb_eval( GB_Word x )
 }
 %%]
 
+%%[96
+void gb_unlinkSP()
+{
+	GB_BP_UnlinkSP ;
+}
+
+void gb_setPC( GB_BytePtr c )
+{
+	pc = c ;
+	GB_BP_UnlinkSP ;
+}
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,7 +462,7 @@ int gb_Opt_TraceSteps = True ;
 
 %%[8
 #if GB_COUNT_STEPS
-unsigned int gb_StepCounter ;
+unsigned long gb_StepCounter ;
 #endif
 
 #if TRACE || DUMP_INTERNALS
@@ -455,9 +532,9 @@ void gb_prState( char* msg, int maxStkSz )
 	int i ;
 	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
 #	if USE_64_BITS
-		printf( "[%d]PC 0x%lx: 0x%0.2x '%s'"
+		printf( "[%ld]PC 0x%lx: 0x%0.2x '%s'"
 #	else
-		printf( "[%d]PC 0x%x: 0x%0.2x '%s'"
+		printf( "[%ld]PC 0x%x: 0x%0.2x '%s'"
 #	endif
 #	if GB_COUNT_STEPS
 	      , gb_StepCounter
@@ -473,6 +550,12 @@ void gb_prState( char* msg, int maxStkSz )
 		printf( ", SP 0x%x: 0x%0.8x, BP 0x%x, RR 0x%x"
 #	endif
 	      , sp, *sp, bp, rr ) ;
+%%[[96
+	if ( bp != NULL )
+	{
+		printf( ", CI.kind %d", GB_FromBPToCallInfo(bp)->kind ) ;
+	}
+%%]]
 	printf( "\n" ) ;
 	gb_prStack( maxStkSz ) ;
 }
@@ -762,13 +845,13 @@ gb_interpreter_InsCallEntry:
 				GB_Skip_CallInfoPtr ;
 				p = GB_SPRel(1) ;											/* args												*/
 				x = GB_TOS ;												/* function											*/
-				GB_Push(pc) ;												/* setup call admin to look the same as normal 		*/
+				GB_SetTOS(pc) ;												/* setup call admin to look the same as normal 		*/
 				GB_BP_Link ;
 				GB_CallC_Code(x,x2,p,x) ;
 				GB_BP_UnlinkSP ;
 				GB_PopCastedIn(GB_BytePtr,pc) ;
 				sp = GB_RegRel(sp,x2) ;
-				GB_SetTOS(x) ;
+				GB_Push(x) ;
 				break ;
 
 			/* retcase */
@@ -1110,6 +1193,46 @@ gb_interpreter_InsApplyEntry:
 %%]			
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exception handling, program running
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[96
+GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
+{
+	GB_Push( e ) ;																				// build stack frame which just returns the value
+	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[sizeof(GB_Word)]) ) ;	// return, marked has handler
+	GB_BP_Link ;
+	
+	GB_Push( handler ) ;																		// build adapted copy of primitive stack frame
+	GB_Push( e ) ;
+	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_EvalValue[sizeof(GB_Word)]) ) ;						// with return to evaluation code
+	GB_BP_Link ;
+	
+	return e ;
+}
+
+GB_Word gb_intl_primThrowException( GB_Word exc )
+{
+	GB_Ptr p ;
+	GB_CallInfo* ci ;
+	for ( p = bp
+	    ; p != NULL && ((ci = GB_FromBPToCallInfo(p))->kind) != GB_CallInfo_Kind_Hdlr
+	    ; p = Cast(GB_Ptr,*p)
+	    ) {}
+	if ( p != NULL )
+	{
+		sp = bp = p ;																			// stack is unwound to handler frame
+		GB_SetSPRel( 1, Cast(GB_Word,&gb_code_ExcHdl_ThrowReturn[sizeof(GB_Word)]) ) ;			// patch return address so primitive returns to handler calling code
+	}
+	else
+	{
+		gb_panic( "uncaught exception" ) ;
+	}
+	return exc ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Exit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1119,12 +1242,12 @@ void gb_exit( int i )
 	GB_Ptr p = bp ;
 	while ( p != NULL )
 	{
-		GB_Word p2 = GB_RegRelx(p,1) ;
-		p2 -= sizeof(GB_CallInfo_Inline) ;
-		GB_CallInfo* ci = Cast(GB_CallInfo*,GB_Deref(p2)) ;
+		GB_CallInfo* ci = GB_FromBPToCallInfo(p) ;
 		printf( "  bp=%x ci=%x", p, ci ) ;
 		if ( ci->name ) {
 			printf( ": %s\n", ci->name ) ;
+		} else {
+			printf( "\n" ) ;
 		}
 		p = Cast(GB_Ptr,*p) ;
 	}
@@ -1142,6 +1265,11 @@ void gb_Initialize()
 	GB_InitPatch_gb_code_Eval ;
 	GB_InitPatch_gb_code_AfterEvalCall ;
 	GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs ;
+%%[[96
+	GB_InitPatch_gb_code_ExcHdl_EvalValue ;
+	GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler ;
+	GB_InitPatch_gb_code_ExcHdl_ThrowReturn ;
+%%]]
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;
 }

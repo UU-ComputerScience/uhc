@@ -19,7 +19,7 @@
 Internal config
 
 %%[8
-#define TRACE 					0
+#define TRACE 					1
 
 #if TRACE
 #define GB_COUNT_STEPS			1

@@ -369,7 +369,7 @@ SEM Module
                                                     etc     = if ehcOptEmitLlc @lhs.opts
                                                               then empty
                                                               else ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
-                                                                   >-< "void fun_main(void){}" >-< "void initialize(void){}"
+                                                                   >-< "void silly_main(void){}"
 %%[[12
                                                     {-
                                                     impnd   = ppLine $ "static GB_NodePtr" >#< @ppNmImpNode >#< ";"

@@ -47,7 +47,7 @@ to a loop.
 %%[8 hs import({%{GRIN}GrinCode.TrfLocal.AliasRename})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonAliasAG}, {GrinCode/TrfLocal/CommonFreeVar})
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG}, {GrinCode/TrfLocal/CommonFreeVar}, {GrinCode/TrfLocal/CommonWillEval})
 %%]
 
 %%[8.grInline hs export(grInline)
@@ -125,8 +125,9 @@ SEM GrBind
                                                           && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
-                                                      Just (FvInfo 1 use)                               -- a once used value can be inlined and its binding removed
+                                                      Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
                                                         | @isCAF
+                                                          && @nm `Set.member` @expr.willEvalNmS
                                                           && FvUse_Val `Set.member` use
 %%[[12
                                                           && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value

@@ -2536,6 +2536,19 @@ int main(int argc, char** argv) {
 
 \subsection{Exception handling}
 
+A primitive |primCatchException :: a -> (x -> a) -> a| installs a handler, |primThrowException :: x -> ()| raises an exception.
+Catching pushes a special stackframe, of which the call info has kind |callinfoHdlr|. Installing such a stackframe is complicated by the necessity not to leave
+the stack frame for calling on primitive on the stack. This is solved by:
+\begin{itemize}
+\item
+ leaving the stack frame for the call to the primitive on the stack,
+\item
+ pushing a handler stack frame,
+\item
+ and pushing a copy of the primitive call stack frame, which will be removed by the primitive return.
+ The only modification to this stack frame is the return address, which points to code for the evaluation of the expression wrapped by the handler.
+\end{itemize}
+
 %%]
 
 %%[XX

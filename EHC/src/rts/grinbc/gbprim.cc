@@ -285,9 +285,16 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 %%[96
 PRIM GB_Word gb_primCatchException( GB_Word e, GB_Word handler )
 {
-	return e ; // for now
+	return gb_intl_primCatchException( e, handler ) ;
 }
 
+PRIM GB_Word gb_primThrowException( GB_Word exc )
+{
+	return gb_intl_primThrowException( exc ) ;
+}
+%%]
+
+%%[96
 PRIM GB_Word gb_primExitWith( GB_Word e )
 {
 	gb_exit( GB_GBInt2Int( e ) ) ;

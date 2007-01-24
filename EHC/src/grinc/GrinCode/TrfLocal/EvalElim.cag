@@ -18,7 +18,7 @@
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonAliasAG},{GrinCode/TrfLocal/CommonFreeVar})
+%%[8 import({GrinCode/TrfLocal/CommonAliasAG},{GrinCode/TrfLocal/CommonFreeVar},{GrinCode/TrfLocal/CommonWillEval})
 %%]
 
 %%[8 hs export(grEvalElim)
@@ -35,46 +35,6 @@ grEvalElim grmod
 
 %%[8.wrapper
 WRAPPER GrAGItf
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is name evaluated later on? Then (e.g.) building of closures can be avoided.
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR GrExpr [ | | willEvalNmS: {Set.Set HsName} ]
-
-SEM GrExpr
-  | Eval App    lhs         .   willEvalNmS     =   Set.singleton @nm
-  | Seq         expr        .   willEval        =   case @pat.nmAlias of
-                                                      NmAlias_Nm nmp
-                                                        -> nmp `Set.member` @body.willEvalNmS
-                                                      _ -> False
-                lhs         .   willEvalNmS     =   @expr.willEvalNmS `Set.union` @body.willEvalNmS
-  | * - Eval App Seq
-                lhs         .   willEvalNmS     =   Set.empty
-%%]
-
-%%[8
-ATTR GrExpr GrVal [ willEval: Bool | | ]
-
-SEM GrAlt
-  | Alt         expr        .   willEval        =   False
-
-SEM GrGlobal
-  | Global      loc         .   willEval        =   False
-
-SEM GrBind
-  | Bind        expr        .   willEval        =   False
-
-SEM GrAdapt
-  | *           loc         .   willEval        =   False
-
-SEM GrSplit
-  | *           loc         .   willEval        =   False
-
-SEM GrValL
-  | Cons        hd          .   willEval        =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
