@@ -38,8 +38,9 @@ DATA Statement
   |  Call        name       : {String}
                  args       : Values
   |  Jump        name       : {String}
-  |  Return      diff       : {Int}
+  |  Return
   |  Leave       diff       : {Int}
+  |  Label       name       : {String}
   |  Comment     comment    : {String}
   |  Enter       nParam     : {Int}
                  nLocal     : {Int}
@@ -49,9 +50,9 @@ DATA Alternative
                  body       : Statements
 
 DATA Constant
-  | LiteralInt   value      : {Int}
-  | LiteralStr   value      : {String}
-  | Alias        name       : {String}
+  |  LiteralInt  value      : {Int}
+  |  LiteralStr  value      : {String}
+  |  Alias       name       : {String}
 
 DATA Variable
   |  Local       pos        : {Int}
@@ -66,13 +67,15 @@ DATA Variable
   |  SPOffset    dist       : {Int}
   |  SubsPtr     array      : Variable
                  index      : Constant
+  |  Aux
   |  None
 
 DATA Value
-  | Con          con        : Constant
-  | Var          var        : Variable
-  | Alloc        size       : {Int}
-  | Call         name       : String
+  |  Con         con        : Constant
+  |  Var         var        : Variable
+  |  Alloc       size       : {Int}
+  |  Label       name       : {String}
+  |  Call        name       : String
                  args       : Values
 
 

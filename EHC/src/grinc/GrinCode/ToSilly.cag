@@ -37,6 +37,11 @@ SEM GrValL
   | Nil lhs.length = 0
   | Cons lhs.length = 1 + @tl.length
 
+
+ATTR GrBind GrBindL GrExpr GrAlt GrAltL
+         [  |  retNr : {Int} |  ]
+
+
 %%]
 
 %%[8
@@ -46,8 +51,8 @@ SEM GrModule
                                 @globalL.names              -- variables
                                 ( Function_Function "initialize" False [] []
                                                     ( @globalL.initStats
-                                                    ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (2)))
-                                                       , Statement_Return 1
+                                                    ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (1)))
+                                                       , Statement_Return
                                                        ]
 
                                                     )
@@ -56,6 +61,7 @@ SEM GrModule
 
         loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
         globalL . embed = embed Map.empty
+        bindL . retNr   = 3
 
 
 
@@ -93,9 +99,9 @@ SEM GrBind
                                    )
                                 ++ @expr.stats
                                 ++ ( if @loc.ownAllocation && not @expr.tailJumps
-                                     then [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@loc.distance)))
-                                          , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@loc.nParams+2)))
-                                          , Statement_Return (@loc.nParams+1)
+                                     then [ Statement_Assignment (arrayVariab Variable_SP (@loc.distance+ @loc.nParams+1)) (arrayValue Variable_SP (@loc.distance+1))
+                                          , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@loc.distance+ @loc.nParams+1)))
+                                          , Statement_Return
                                           ]
                                      else []
                                    )
@@ -177,34 +183,25 @@ SEM GrExpr
            lhs.localsF = (@lhs.targets ++) . @altL.localsF
 
  | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
-                         then (   Statement_Comment "Call (Tail)"
-                              :   zipWith Statement_Assignment
-                                          (map (arrayVariab Variable_RP) [1..])
-                                          (reverse @argL.values)
-                              )
-                              ++
-                              (   [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@lhs.distance)))
-                                  , Statement_Assignment (arrayVariab Variable_RP 0) (arrayValue Variable_SP 1)
-                                  , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@lhs.numberParameters+2)))
-                                  ]
-                              ++  zipWith Statement_Assignment
-                                          (map (arrayVariab Variable_SP) [-1,-2..])
-                                          (map (arrayValue  Variable_RP) [1 .. @argL.length])
-                              )
-                              ++ [ Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-1)) (arrayValue Variable_RP 0)
-                                 , Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-2)) (Value_Var (Variable_SPOffset @lhs.distance))
-                                 , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.nMyParams-2)))
-                                 , Statement_Jump (hsnShowAlphanumeric @nm)
-                                 ]
+                         then let dp = @lhs.distance+ @lhs.numberParameters
+                                  smartTups = zip [dp+1,dp ..] ((reverse @argL.values) ++ map (Value_Var . Variable_Subs Variable_SP . Constant_LiteralInt) [ @lhs.distance+1, @lhs.distance ] )
+                              in  Statement_Comment "Call (Tail) "
+                                  :  smartAssignment smartTups
+                                  ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@lhs.distance+ @lhs.numberParameters+2- @loc.nMyParams-2)))
+                                     , Statement_Jump (hsnShowAlphanumeric @nm)
+                                     ]
                          else (   Statement_Comment "Call (Normal)"
                               :   (if @lhs.optOwnParameters
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
-                                                   (reverse @argL.values)
-                                        ++ [ Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-1)) (Value_Con (Constant_LiteralInt 0))
-                                           , Statement_Assignment (arrayVariab Variable_SP (- @loc.nMyParams-2)) (Value_Var (Variable_SPOffset @lhs.distance))
-                                           , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.nMyParams-2)))
+                                                   (  reverse @argL.values
+                                                   ++ [ Value_Label ("retlab"++show @lhs.retNr)
+                                                      , Value_Var (Variable_SPOffset @lhs.distance)
+                                                      ]
+                                                   )
+                                        ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.nMyParams-2)))
                                            , Statement_Call (hsnShowAlphanumeric @nm) [] 
+                                           , Statement_Label ("retlab"++show @lhs.retNr)
                                            ]
                                         )
                                    else [Statement_Call (hsnShowAlphanumeric @nm) @argL.values ]
@@ -218,6 +215,7 @@ SEM GrExpr
 
            loc.nMyParams = @argL.length
            lhs.localsF = (@lhs.targets ++)
+           lhs.retNr   = @lhs.retNr + 1
 
  | FFI     lhs.stats  = Statement_Comment "FFI"
                         : Statement_Assignment
@@ -308,8 +306,6 @@ SEM GrExpr
 %%]
 
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determining the target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -358,7 +354,7 @@ SEM GrAGItf
           loc.optOwnCalls        = ehcOptGenOwnCalls  @lhs.opts
           loc.optGenAsmSP        = ehcOptGenAsmSP     @lhs.opts
           loc.optJumpTailCalls   = ehcOptGenTailCall  @lhs.opts
-          -- Force OwnParameters when JumpTailCalls and when OwnLocals
+          -- Force some options to imply some others
           module.optOwnParameters = @loc.optOwnParameters  || @loc.optOwnLocals || @loc.optJumpTailCalls || @loc.optOwnCalls || @loc.optGenAsmSP
           module.optOwnLocals     =                           @loc.optOwnLocals || @loc.optJumpTailCalls || @loc.optOwnCalls || @loc.optGenAsmSP
           
@@ -366,10 +362,87 @@ SEM GrAGItf
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Auxiliary Haskell
+%%% The Smart Assignation strategy (probably reinvented a topological sort algorithm here)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8 hs
 
+type EIV = Either Int Value
+data SmartTree = SmartTree EIV [SmartTree]
+
+smartAssignment :: [(Int,Value)] -> [Statement]
+smartAssignment = concat . map smartAss . foldr smartAdd [] . convertTups
+
+convertTups :: [(Int,Value)] -> [(EIV,Int)]
+convertTups tups = [ (dependency, destination) 
+                   | (destination, value) <- tups
+                   , let dependency = smartDep value
+                   , either (\n->n/=destination) (\v->True) dependency
+                   ]
+
+smartDep :: Value -> EIV
+smartDep (Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt n))) = Left n
+smartDep v = Right v
+
+smartFind :: EIV -> [SmartTree] -> (SmartTree, [SmartTree])
+smartFind n [] =  (SmartTree n [], [])
+smartFind n (t@(SmartTree r ks):ts)
+  | n==r       =  (t, ts)
+  | otherwise  =  let (t2,ts2) = smartFind n ts
+                  in (t2, t:ts2)
+
+smartAdd :: (EIV,Int) -> [SmartTree] -> [SmartTree]
+smartAdd p@(x,y) ts = let (y2,ts2) = smartFind (Left y) ts
+                          (rs,b) = smartIns (x,y2) ts2
+                      in  if b
+                           then rs
+                           else (SmartTree x [y2]) : ts2
+                           
+smartInsert :: (EIV,SmartTree) -> SmartTree -> (SmartTree,Bool)
+smartInsert p@(x,y) t@(SmartTree root kids)
+ | x==root   =  (SmartTree root (y:kids), True)
+ | otherwise =  let (rs,b) = smartIns p kids
+                in  if b
+                     then (SmartTree root rs, True)
+                     else (t                , False)
+                    
+smartIns :: (EIV,SmartTree) -> [SmartTree] -> ([SmartTree],Bool)
+smartIns p ts = foldr f ([],False) ts
+  where f t (rs,True) = (t:rs, True)
+        f t (rs,False) = let (r,b) = smartInsert p t
+                         in  (r:rs, b)
+       
+smartElems :: SmartTree -> [Int]
+smartElems (SmartTree (Left n) [])   = [n]
+smartElems (SmartTree (Left n) kids) = n : concat (map smartElems kids)
+
+
+auxVar = Variable_Aux
+auxVal = Value_Var auxVar
+
+smartAss :: SmartTree -> [Statement]
+smartAss t@(SmartTree root kids) 
+  =  either
+     (\n -> if  n `elem` concat (map smartElems kids)
+             then Statement_Assignment auxVar (arrayValue Variable_SP n) 
+                  : concat (map (smartChain auxVal) kids)
+             else concat (map (smartChain (arrayValue Variable_SP n)) kids)
+     )
+     (\v -> concat (map (smartChain v) kids)
+     )
+     root
+  
+smartChain :: Value -> SmartTree -> [Statement]
+smartChain v (SmartTree (Left root) kids) 
+   = concat (map (smartChain (arrayValue Variable_SP root)) kids) 
+     ++ [ Statement_Assignment (arrayVariab Variable_SP root) v ]
+       
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Embedding of parameters and local variables on the stack
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8 hs
 
 type EmbedMap = Map.Map Int Variable
 type EmbedFunction = HsName->Variable
@@ -396,10 +469,16 @@ embed2 d m x@(HNmNr n _) = if n==0
                                        (Map.lookup n m)
 
 
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Other auxiliary Haskell
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8 hs
 
 isRealVar Variable_None = False
 isRealVar _             = True
-
 
 -- n1 is the number of parameters of the tag
 -- n2 is the maximum number of parameters of all constructorfunctions
