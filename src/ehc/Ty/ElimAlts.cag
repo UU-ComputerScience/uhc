@@ -16,7 +16,7 @@
 %%[44_2 hs export(tyElimForgetAlts,cnstrElimForgetAlts)
 %%]
  
-%%[4_2.WRAPPER import({Ty/AbsSyn})
+%%[4_2.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 

@@ -16,7 +16,7 @@
 %%[9 hs import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
 
-%%[1 import({Error/AbsSyn})
+%%[1 ag import({Error/AbsSyn})
 WRAPPER Err
 %%]
 

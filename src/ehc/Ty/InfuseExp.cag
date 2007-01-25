@@ -18,7 +18,7 @@ Notice:
 %%[7_2 hs import({%{EH}EH}, {%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.TyConPat}, {%{EH}Cnstr})
 %%]
 
-%%[7_2 import({Ty/AbsSyn})
+%%[7_2 ag import({Ty/AbsSyn})
 %%]
 
 %%[7_2 hs export(infuseExp, MkExpTyConF, MkExpTyConFSyn, MkExpFSyn)

@@ -13,7 +13,7 @@
 %%[4 hs import(qualified Data.Map as Map) export(tyFtvMp)
 %%]
 
-%%[2.WRAPPER import({Ty/AbsSyn})
+%%[2.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 

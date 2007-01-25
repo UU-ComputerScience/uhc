@@ -10,7 +10,7 @@
 %%[7_2 hs import(Debug.Trace)
 %%]
 
-%%[7_2 import({%{EH}Ty.AbsSyn})
+%%[7_2 ag import({%{EH}Ty.AbsSyn})
 %%]
 
 %%[7 hs export(inferTyConstr)

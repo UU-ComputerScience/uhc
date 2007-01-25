@@ -34,7 +34,7 @@
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[8 ag import({GrinCode/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
 

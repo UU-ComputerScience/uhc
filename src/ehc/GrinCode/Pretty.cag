@@ -19,7 +19,7 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 %%[8 hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPat,ppGrTag)
 %%]
 
-%%[8.WRAPPER import({GrinCode/AbsSyn})
+%%[8.WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrAGItf GrExpr GrPat GrTag
 %%]
 

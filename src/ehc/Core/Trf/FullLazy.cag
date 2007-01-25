@@ -13,7 +13,7 @@
 %%[8 hs import({%{EH}Base.Debug})
 %%]
 
-%%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
 WRAPPER CodeAGItf
 %%]
 

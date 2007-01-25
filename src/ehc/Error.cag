@@ -10,7 +10,7 @@
 %%[1 hs module {%{EH}Error} import(UU.Pretty,{%{EH}Base.Common},{%{EH}Ty}) export(Err(..), ErrL, mkErr_NamesNotIntrod, mkErr_NamesNotIntrod', mkNestErr)
 %%]
 
-%%[1 import({Error/AbsSyn})
+%%[1 ag import({Error/AbsSyn})
 %%]
 
 %%[9 hs import({%{EH}Core})

@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}Core.ToJava} import(UU.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
 %%]
 
-%%[8.WRAPPER import({Core/CommonLev},{Core/AbsSyn})
+%%[8.WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 

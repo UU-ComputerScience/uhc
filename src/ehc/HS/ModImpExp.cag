@@ -24,7 +24,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
+%%[1 ag import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
 WRAPPER AGItf
 %%]
 

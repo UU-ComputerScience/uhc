@@ -10,7 +10,7 @@
 %%[4_2 hs module {%{EH}Ty.ElimBoth} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyElimBoth)
 %%]
 
-%%[4_2.WRAPPER import({Ty/AbsSyn})
+%%[4_2.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 

@@ -26,6 +26,8 @@ import Data.Maybe
 import Data.Char
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Map(Map)
+import Data.Set(Set)
 import Network.URI
 import IO
 import System.Directory
@@ -121,6 +123,8 @@ data Opts
       , optDepDpdsVar    :: String
       , optDepOrigDpdsVar :: String
       , optDepBaseDir     :: String
+      , optDepTerm        :: Map String [String]
+      , optDepIgn         :: Set String
       } deriving (Show)
 
 defaultOpts
@@ -150,6 +154,8 @@ defaultOpts
       , optDepDpdsVar    = error "optDepDpdsVar not set"
       , optDepOrigDpdsVar = error "optDepOrigDpdsVar not set"
       , optDepBaseDir     = error "optDepBaseDir not set"
+      , optDepTerm        = Map.empty
+      , optDepIgn         = Set.empty
       }
 
 optsHasNoVerOrder :: Opts -> Bool

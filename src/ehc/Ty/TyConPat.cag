@@ -57,25 +57,33 @@ DATA TyConSeqPat
 
 isMatchingTyConSubSeq :: TyConSeqPat -> [HsName] -> Bool
 isMatchingTyConSubSeq pat tokens
-  = let allTyCons = nub $ tokens   -- not exactly all, but the missing ones do not matter
+  = False -- disabled
+
+{-
+let allTyCons = nub $ tokens   -- not exactly all, but the missing ones do not matter
         inh = Inh_AGItf { allTrans_Inh_AGItf = allTyCons }
         syn = wrap_AGItf (sem_AGItf (AGItf_AGItf pat)) inh
         sm  = sm_Syn_AGItf syn
         res = SM.run sm 1 tokens
      in not (Set.null res)
+-}
 
 type AnnTyConSeqChkF = [HsName] -> Bool
 
 mkTyConSeqChkF :: [TyConSeqPat] -> [HsName] ->  AnnTyConSeqChkF
 mkTyConSeqChkF [] _ = \_ -> False
 mkTyConSeqChkF allows allTyCons
-  = let pat = foldr1 TyConSeqPat_Or allows
+  = \t -> False -- disabled
+
+{-
+let pat = foldr1 TyConSeqPat_Or allows
         inh = Inh_AGItf { allTrans_Inh_AGItf = allTyCons }
         syn = wrap_AGItf (sem_AGItf (AGItf_AGItf pat)) inh
         sm  = sm_Syn_AGItf syn
      in \tokens -> let tks = tokens : smallestEnclosingRepeatedTyConsSubsequence tokens
                        res = all (SM.accept sm 1) tks
                     in res
+-}
 
 smallestEnclosingRepeatedTyConsSubsequence :: [HsName] -> [[HsName]]
 smallestEnclosingRepeatedTyConsSubsequence s

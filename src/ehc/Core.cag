@@ -46,7 +46,7 @@
 %%[12 hs export(cModMerge)
 %%]
 
-%%[8 import({Core/AbsSyn})
+%%[8 ag import({Core/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
 
