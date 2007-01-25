@@ -53,26 +53,26 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 import({EH/AbsSyn},{EH/Pretty},{EH/PrettyAST},EHRulerRules,{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/ExtraChecks},{EH/GatherError})
+%%[1 ag import({EH/AbsSyn},{EH/Pretty},{EH/PrettyAST},EHRulerRules,{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/ExtraChecks},{EH/GatherError})
 WRAPPER AGItf
 %%]
 
-%%[2 import({EH/Uniq})
+%%[2 ag import({EH/Uniq})
 %%]
 
-%%[5 import({EH/InferCaseExpr},{EH/InferData})
+%%[5 ag import({EH/InferCaseExpr},{EH/InferData})
 %%]
 
-%%[6 import({EH/InferKiExpr})
+%%[6 ag import({EH/InferKiExpr})
 %%]
 
-%%[7_2 import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
+%%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
 %%]
 
-%%[8 import({EH/ToCore})
+%%[8 ag import({EH/ToCore})
 %%]
 
-%%[9 import({EH/ResolvePred},{EH/InferClass})
+%%[9 ag import({EH/ResolvePred},{EH/InferClass})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

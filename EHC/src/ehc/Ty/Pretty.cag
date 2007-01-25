@@ -25,7 +25,7 @@
 %%[9 hs export(ppTyPr)
 %%]
 
-%%[1.WRAPPER import({Ty/AbsSyn},{Ty/CommonAG})
+%%[1.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
 

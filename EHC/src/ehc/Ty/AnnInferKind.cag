@@ -14,7 +14,7 @@
 %%[7_2 hs import(Debug.Trace)
 %%]
 
-%%[7_2 import({Ty/AbsSyn})
+%%[7_2 ag import({Ty/AbsSyn})
 %%]
 
 %%[7_2 hs export(inferAnnKindMap, AnnKindMap)

@@ -16,7 +16,7 @@
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List)
 %%]
 
-%%[4 import({Ty/AbsSyn},{Ty/CommonAG})
+%%[4 ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
 

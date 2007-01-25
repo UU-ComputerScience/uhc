@@ -14,7 +14,7 @@ annotations are reduced with preference for the lower one.
 %%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, Data.Map(Map), qualified Data.Map as Map)
 %%]
 
-%%[7_2 import({Ty/AbsSyn})
+%%[7_2 ag import({Ty/AbsSyn})
 %%]
 
 %%[7_2 hs export(infuseAnn)

@@ -13,6 +13,7 @@ import IO
 import System.Console.GetOpt
 import EH.Util.ParseUtils
 import EH.Util.DependencyGraph
+import EH.Util.FPath
 import UU.Pretty
 import Common
 import MainAG
@@ -20,7 +21,6 @@ import ChunkParser
 import CDoc
 import CDocSubst
 import Data.Char
--- import Data.List
 
 -------------------------------------------------------------------------
 -- main
@@ -153,16 +153,27 @@ genDeps f opts
                        return $ filter (not . null) (lines c)
        depMap <- trans getDeps filenames
        let depGraph = mkDpdGrFromEdgesMpPadMissing depMap
-       let depL = [(r, Set.toList (dgReachableFrom depGraph r)) | r <- filenames ]
+       let depL = [(r, filter (not . (`elem` filenames)) . stripIgn . Set.toList $ dgReachableFrom depGraph r) | r <- filenames ]
        genDepsMakefile depL opts
        return ()
   where
+    mp = optDepTerm opts
+    ignSet = optDepIgn opts
+    stripIgn = filter (not . flip Set.member ignSet . stripDir)
+
     getDeps fname
-      = do let baseDir = optDepBaseDir opts
-           let baseDir' = if last baseDir /= '/' then baseDir ++ "/" else baseDir
-           let fpath = fpathSetSuff "cag" $ mkFPath (baseDir' ++ fname)
-           res <- doCompile' fpath opts
-           return (deps_Syn_AGItf res)
+      = Map.findWithDefault
+          ( do let baseDir = optDepBaseDir opts
+               let baseDir' = if last baseDir /= '/' then baseDir ++ "/" else baseDir
+               let fpath = fpathSetSuff "cag" $ mkFPath (baseDir' ++ fname)
+               res <- doCompile' fpath opts
+               return (deps_Syn_AGItf res)
+          ) name (Map.map return mp)
+      where
+        name = fpathBase . mkFPath $ fname
+
+stripDir :: String -> String
+stripDir = fpathToStr . fpathRemoveDir . mkFPath
 
 genDepsMakefile :: [(String, [String])] -> Opts -> IO ()
 genDepsMakefile deps opts
@@ -185,11 +196,13 @@ genDepsMakefile deps opts
       = let name = encode file
             fileWithoutExt = stripExt file
             deps' = map stripExt deps
+            ignSet = optDepIgn opts
          in unlines
              [ name ++ "_MAIN_SRC_AG := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ fileWithoutExt ++ ")"
-             , name ++ "_DPDS_SRC_AG := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag, " ++ unwords deps' ++ ")"
-             , name ++ "_DPDS_ORIG   := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords deps' ++ ")"
-             , "$(patsubst $(" ++ srcPrefix ++ ")%.cag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ "_MAIN_SRC_AG)) : $(" ++ name ++ "_DPDS_SRC_AG)"
+             , name ++ "_DPDS_SRC_AG := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords deps' ++ ")"
+             , name ++ "_DPDS_ORIG   := $(patsubst %,$(" ++ srcPrefix ++ ")%.cag," ++ unwords (filter (not . flip Set.member ignSet . stripDir) deps') ++ ")"
+             , name ++ "_DPDS_DERIV  := $(patsubst %,$(" ++ dstPrefix ++ ")%.ag," ++ unwords deps' ++ ")"
+             , "$(patsubst $(" ++ srcPrefix ++ ")%.cag,$(" ++ dstPrefix ++ ")%.hs,$(" ++ name ++ "_MAIN_SRC_AG)) : $(" ++ name ++ "_DPDS_DERIV)"
              ]
 
     mkOrigDepList
@@ -260,6 +273,10 @@ cmdLineOpts
           "Varname for the list of original dependencies"
      ,  Option ""   ["depbase"]         (OptArg oDepBaseDir "<dir>")
           "Root directory for the dependency generation"
+     ,  Option ""   ["depign"]          (OptArg oDepIgn "(<file> )*")
+          "Totally ignored dependencies"
+     ,  Option ""   ["depterm"]         (OptArg oDepTerm "(<file> => <dep>+ ,)*")
+          "Dependency ignore list (or terminals)"
      ,  Option ""   ["lhs2tex"]         (OptArg oLhs2tex "yes|no")
           "wrap chunks in lhs2tex's code environment, default=yes"
      ,  Option ""   ["def"]             (ReqArg oDef "key:value")
@@ -294,6 +311,8 @@ cmdLineOpts
          oDepDpdsVar    ms o = o { optDepDpdsVar = maybe "DPDS" id ms }
          oDepOrigDpdsVar ms o = o { optDepOrigDpdsVar = maybe "ORIG_DPDS" id ms }
          oDepBaseDir ms o = o { optDepBaseDir = maybe "./" id ms }
+         oDepTerm ms o = o { optDepTerm = maybe Map.empty (Map.fromList . parseDeps) ms }
+         oDepIgn ms o = o { optDepIgn = maybe Set.empty (Set.fromList . words) ms }
          oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
                                 (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
                                 _         -> o
@@ -304,3 +323,12 @@ cmdLineOpts
                                 _           -> o
          yesno             =  yesno' True False
 
+         parseDeps "" = []
+         parseDeps (',' : rest) = parseDeps rest
+         parseDeps s
+           = let (s',rest) = break (==',') s
+              in parseDep s' : parseDeps rest
+
+         parseDep s
+           = let (term,_:deps) = break (=='>') s
+              in (term, words deps)

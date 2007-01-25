@@ -13,7 +13,7 @@
 %%[8 hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cexprFvS)
 %%]
 
-%%[8.WRAPPER import({Core/AbsSyn},{Core/Trf/CommonFv})
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 

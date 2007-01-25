@@ -10,7 +10,7 @@
 %%[50 hs module {%{EH}Ty.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyElimEqual)
 %%]
 
-%%[50.WRAPPER import({Ty/AbsSyn})
+%%[50.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 

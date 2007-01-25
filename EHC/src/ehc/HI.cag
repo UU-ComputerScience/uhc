@@ -16,7 +16,7 @@
 %%[12 hs export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
 %%]
 
-%%[12 import({HI/AbsSyn})
+%%[12 ag import({HI/AbsSyn})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

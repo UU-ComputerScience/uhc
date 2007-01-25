@@ -5,7 +5,7 @@
 %%[12 hs module {%{EH}Ty.MapName} import({%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[12.WRAPPER import({Ty/AbsSyn})
+%%[12.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 

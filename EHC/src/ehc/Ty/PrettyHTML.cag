@@ -11,7 +11,7 @@
 %%[7_2 hs import({%{EH}Base.HtmlCommon})
 %%]
 
-%%[7_2 import({Ty/AbsSyn})
+%%[7_2 ag import({Ty/AbsSyn})
 %%]
 
 %%[7_2 hs export(ppTyHTML)

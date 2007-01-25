@@ -55,7 +55,7 @@
 %%[50 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
-%%[1 import({EH/AbsSyn})
+%%[1 ag import({EH/AbsSyn})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

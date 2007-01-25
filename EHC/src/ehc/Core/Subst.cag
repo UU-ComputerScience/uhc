@@ -16,7 +16,7 @@
 %%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
 %%]
 
-%%[9.WRAPPER import({Core/AbsSyn})
+%%[9.WRAPPER ag import({Core/AbsSyn})
 WRAPPER CExpr
 %%]
 

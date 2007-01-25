@@ -8,7 +8,7 @@
 %%[7_2 hs import({%{EH}Base.Common},{%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
 %%]
 
-%%[7_2 import({Ty/AbsSyn})
+%%[7_2 ag import({Ty/AbsSyn})
 %%]
 
 %%[7_2 hs export(inferExposedAnns, ExposedAnnEnv, ExposedAnnMap, instantiateAnns, initExposedAnnEnv)

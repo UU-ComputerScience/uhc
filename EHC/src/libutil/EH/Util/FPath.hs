@@ -6,7 +6,7 @@ module EH.Util.FPath
   , mkFPathFromDirsFile
   , fpathToStr, fpathIsEmpty
   , fpathSetBase, fpathSetSuff, fpathSetDir
-  , fpathRemoveSuff
+  , fpathRemoveSuff, fpathRemoveDir
   , fpathPrependDir, mkTopLevelFPath
   
   , fpathDirSep, fpathDirSepChar

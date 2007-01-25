@@ -7,7 +7,7 @@
 %%[7_2 hs import({%{EH}Ty.AnnInferKind}, {%{EH}Cnstr}, {%{EH}Ty.Subst}, {%{EH}Substitutable}, {%{EH}Base.Opts}, {%{EH}Annotations.Constraints}, {%{EH}Ty.InfuseAnn}, {%{EH}Ty.InferExposedAnns})
 %%]
 
-%%[7_2 import({Ty/AbsSyn})
+%%[7_2 ag import({Ty/AbsSyn})
 %%]
 
 %%[7_2 hs export(inferTyConstr)
