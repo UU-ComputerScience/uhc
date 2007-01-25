@@ -8,6 +8,8 @@
 
 %%[8 hs import(UU.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Config})
 %%]
+%%[8 hs import(Data.Graph)
+%%]
 %%[8 hs import({%{GRIN}Silly})
 %%]
 %%[8 hs import(EH.Util.Utils,{%{EH}Base.Common} hiding "((<+>))")

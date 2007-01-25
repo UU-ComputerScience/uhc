@@ -167,8 +167,8 @@ defaultEHCOpts
       ,  ehcOptGenCaseDefault =   False
       ,  ehcOptGenTailCall    =   True
       ,  ehcOptGenOwnParams   =   True
-      ,  ehcOptGenOwnLocals   =   False
-      ,  ehcOptGenOwnCalls    =   False
+      ,  ehcOptGenOwnLocals   =   True
+      ,  ehcOptGenOwnCalls    =   True
       ,  ehcOptGenAsmSP       =   False
       ,  ehcOptGenDebug       =   True
 
@@ -256,8 +256,8 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
-     ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (no)"
-     ,  Option ""   ["gen-owncalls"]     (boolArg optSetGenOwnCalls)          "simulate calling mechanism (no)"
+     ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (yes)"
+     ,  Option ""   ["gen-owncalls"]     (boolArg optSetGenOwnCalls)          "simulate calling mechanism (yes)"
      ,  Option ""   ["gen-asmsp"]        (boolArg optSetGenAsmSP)             "use %esp as stack pointer (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"

@@ -65,9 +65,6 @@ ATTR Values [ | | prettyCs : {[PP_Doc]} ]
 
 ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 
-ATTR Functions Function Statements Statement Alternatives Alternative
-         [  |  retNr : {Int} |  ]
-         
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
                                 >-< comment "Tag constants"
@@ -75,6 +72,9 @@ SEM SilModule
                                 >-< text ""
                                 >-< comment "Global table"
                                 >-< ppVertically (map variableDeclaration @variables)
+                                >-< text ""
+                                >-< comment "Auxiliary variable"
+                                >-< text "GrWord auxVar;"
                                 >-< text ""
                                 >-< comment "Main C function"
                                 >-< @loc.cMain
@@ -92,7 +92,6 @@ SEM SilModule
                                            >-< text ""
                                            >-< @functions.prettyC
                                 >-< text ""
-                functions.retNr = 3
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
                                 >-< ppWhen @loc.optGenAsmSP (text "register GrWord* SP asm (\"%esp\");")
@@ -125,14 +124,12 @@ SEM Statement
   | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
   | Increment   lhs.prettyC   = assignincr @dest.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
-  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls @lhs.retNr @name @args.prettyCs
+  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls @name @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwnCalls @name
-  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optOwnCalls @diff
+  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optOwnCalls
+  | Label       lhs.prettyC   = label @name
   | Enter       lhs.prettyC   = error "Enter obsolete"
   | Leave       lhs.prettyC   = error "Leave obsolete"
-
-SEM Statement
-  | Call        lhs.retNr     = @lhs.retNr + 1
 
 SEM Alternative
   | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
@@ -148,6 +145,7 @@ SEM Value
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
   | Alloc       lhs.prettyC   = "heapalloc(" >|< show @size >|< ")"
+  | Label       lhs.prettyC   = "((GrWord)(&&" >|< @name >|< "))"
 
 SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
@@ -169,6 +167,8 @@ SEM Variable
                 lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
   | SubsPtr     lhs.prettyC   = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
                 lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
+  | Aux         lhs.prettyC   = text "auxVar"
+                lhs.prettyPtr = text "auxVar"
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"
                 lhs.prettyPtr = error "attempt to use Variable_None as pointer"
 
@@ -229,31 +229,28 @@ callSillyFunctionFromC :: Bool -> Int -> String -> PP_Doc
 callSillyFunctionFromC False _ nm
  = nm >|< "();"
 callSillyFunctionFromC True n nm
- = let lab = "retlab" ++ show n
+ = let lab = "mainlab" ++ show n
    in  "*--SP = (GrWord)(&&" >|< lab >|< ");"   -- return address
        >-< "*--SP = (GrWord)0;"                 -- link
        >-< "goto" >#< nm >|< ";"                -- do the call
-       >-< label ("retlab" ++ show n)           -- return here
+       >-< label lab                            -- return here
  
  
-callSillyFunctionFromSilly ::  Bool -> Int -> String -> [PP_Doc] -> PP_Doc
-callSillyFunctionFromSilly False _ nm pars
+callSillyFunctionFromSilly ::  Bool -> String -> [PP_Doc] -> PP_Doc
+callSillyFunctionFromSilly False nm pars
  = callCfunction nm pars >|< ";"
-callSillyFunctionFromSilly True n nm _
- = let lab = "retlab" ++ show n
-   in  "SP[1] = (GrWord)(&&" >|< lab >|< ");"   -- return address
-       >-< ppWhen optTraceAssign
-           (" printf(\"def " >#< lab >#< " = %d\\n\", &&" >#< lab >#< "); fflush(stdout);")
-       >-< "goto" >#< nm >|< ";"                -- do the call
-       >-< label ("retlab" ++ show n)           -- return here
+callSillyFunctionFromSilly True nm _
+ = "goto" >#< nm >|< ";"
  
-returnFromSillyFunction False _ 
- = text ""
-returnFromSillyFunction True n
+returnFromSillyFunction False
+ = text "SP++;"
+returnFromSillyFunction True
  = ppWhen optTraceAssign
-          (" printf(\"return to %d\\n\", (SP[-" >|< show n >|< "])"  >#< "); fflush(stdout);")
-   >-< "goto *(SP[-" >|< show n >|< "]);"
- 
+          (text " printf(\"return to %d\\n\", *SP); fflush(stdout);")
+   >-< text "SP++; goto *(SP[-1]);"
+   -- >-< text "goto *SP++;"
+   -- >-< text "asm(\"ret\");"
+   -- >-< text "SP++; asm(\"jmp *-4(%esp)\");"
  
  
  
