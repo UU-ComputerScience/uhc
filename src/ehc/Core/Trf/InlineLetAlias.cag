@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
-%%[8.WRAPPER import({Core/AbsSyn},{Core/CommonLev})
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 

@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenUniq)
 %%]
 
-%%[8.WRAPPER import({Core/AbsSyn})
+%%[8.WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
