@@ -22,6 +22,7 @@ ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
                               names        USE {++} {[]} : {[String]}     ]
 
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
+                           distance : {Int}
                          |
                          | localsF USE {.} {id}: {[HsName]->[HsName]}
                            tailJumps USE {&&} {True} : {Bool}
@@ -29,7 +30,6 @@ ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
 
 ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
 ATTR GrExpr GrAlt GrAltL GrGlobal GrGlobalL GrValL GrVal GrTag GrTagL GrAdaptL GrAdapt GrPat GrPatL GrSplitL GrSplit [ embed : {EmbedFunction} | | ]
-ATTR GrExpr GrAlt GrAltL [ distance : {Int} | | ]
 
 
 ATTR GrValL [ | | length : {Int} ]
@@ -51,10 +51,8 @@ SEM GrModule
                                 @globalL.names              -- variables
                                 ( Function_Function "initialize" False [] []
                                                     ( @globalL.initStats
-                                                    ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (1)))
-                                                       , Statement_Return
+                                                    ++ [ Statement_Return 2 1
                                                        ]
-
                                                     )
                                 : @bindL.functions            -- functions
                                 )
@@ -98,13 +96,6 @@ SEM GrBind
                                     else []
                                    )
                                 ++ @expr.stats
-                                ++ ( if @loc.ownAllocation && not @expr.tailJumps
-                                     then [ Statement_Assignment (arrayVariab Variable_SP (@loc.distance+ @loc.nParams+1)) (arrayValue Variable_SP (@loc.distance+1))
-                                          , Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@loc.distance+ @loc.nParams+1)))
-                                          , Statement_Return
-                                          ]
-                                     else []
-                                   )
                                 )
                             ]
 
@@ -128,15 +119,51 @@ SEM GrExpr
  | Seq     lhs.stats  = @expr.stats
                         ++ @body.stats
 
- | Unit    lhs.stats  = Statement_Comment "Unit"
-                        : [ Statement_Assignment v e
-                          | (v,e) <-zip  (if @isLastExpr
-                                          then [arrayVariab Variable_RP i | i <- [0..] ]
-                                          else [@lhs.embed x | x <- @lhs.targets]
-                                         )
-                                         @val.values
-                          , isRealVar v
-                          ]
+ | Unit    lhs.stats  = if @isLastExpr
+                         then Statement_Comment "Unit (Yielding)"
+                              : if @lhs.optOwnParameters || @lhs.optOwnLocals
+                                 then let dp = @lhs.distance+ @lhs.numberParameters
+                                          smartTups = zip [dp+1,dp ..] (@val.values ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet ])
+                                      in  smartAssignment smartTups
+                                          ++ [ Statement_Return (@lhs.distance+ @lhs.numberParameters+2) (max @loc.nMyRes @lhs.numberParameters + 1)
+                                             ]
+                                 else [ Statement_Assignment v e
+                                      | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
+                                                    @val.values
+                                      ]
+                         else Statement_Comment "Unit (Internal)"
+                              : [ Statement_Assignment v e
+                                | (v,e) <-zip [@lhs.embed x | x <- @lhs.targets]
+                                              @val.values
+                                , isRealVar v
+                                ]                         
+                          
+           loc.nMyRes = length (@val.values)
+           loc.moveRet= @loc.nMyRes > @lhs.numberParameters
+
+ | FFI     lhs.stats  = if @isLastExpr
+                         then Statement_Comment "FFI (Yielding)"
+                              : if @lhs.optOwnParameters || @lhs.optOwnLocals
+                                 then let dp = @lhs.distance+ @lhs.numberParameters
+                                          smartTups = zip [dp+1,dp ..] (@loc.callres ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet])
+                                      in  smartAssignment smartTups
+                                          ++ [ Statement_Return (@lhs.distance+ @lhs.numberParameters+2) (max @loc.nMyRes @lhs.numberParameters + 1)
+                                             ]
+                                 else [ Statement_Assignment v e
+                                      | (v,e) <-zip [arrayVariab Variable_RP 0]
+                                                    @loc.callres
+                                      ]
+                         else Statement_Comment "FFI (Internal)"
+                              : [ Statement_Assignment v e
+                                | (v,e) <-zip [@lhs.embed (head @lhs.targets)]
+                                              @loc.callres
+                                , isRealVar v
+                                ]                         
+
+           lhs.localsF = (@lhs.targets ++)
+           loc.callres = [Value_Call @nm (map (Value_Var . @lhs.embed) @argL)]
+           loc.nMyRes  = length @loc.callres
+           loc.moveRet= @loc.nMyRes > @lhs.numberParameters
 
 
  | Store   lhs.stats  = let ph = head @lhs.targets
@@ -161,8 +188,10 @@ SEM GrExpr
 
  | Update  lhs.stats  = let vs = @val.values
                          in Statement_Comment "Update"
+                            --: Statement_Assignment Variable_Ptr (Value_Var (@lhs.embed @nm))
                             : zipWith Statement_Assignment
                                       (map (arrayVariab (@lhs.embed @nm)) [0..])
+                                      --(map (Variable_Subs Variable_Ptr . Constant_LiteralInt) [0..])
                                       vs
 
  | Fetch   lhs.stats  = Statement_Comment "Fetch"
@@ -184,7 +213,7 @@ SEM GrExpr
 
  | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
                          then let dp = @lhs.distance+ @lhs.numberParameters
-                                  smartTups = zip [dp+1,dp ..] ((reverse @argL.values) ++ map (Value_Var . Variable_Subs Variable_SP . Constant_LiteralInt) [ @lhs.distance+1, @lhs.distance ] )
+                                  smartTups = zip [dp+1,dp ..] ((reverse @argL.values) ++ map (Value_Var . Variable_Subs Variable_SP . Constant_LiteralInt) [ @lhs.distance+1 , @lhs.distance ] )
                               in  Statement_Comment "Call (Tail) "
                                   :  smartAssignment smartTups
                                   ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@lhs.distance+ @lhs.numberParameters+2- @loc.nMyParams-2)))
@@ -208,7 +237,10 @@ SEM GrExpr
                                   )
                               ++ [ Statement_Assignment v e
                                  | (v,e) <-zip  [@lhs.embed x  | x <- @lhs.targets]
-                                                (map (arrayValue Variable_RP) [0..])
+                                                ( if @lhs.optOwnParameters || @lhs.optOwnLocals
+                                                   then map (arrayValue Variable_SP) [-1,-2..]
+                                                   else map (arrayValue Variable_RP) [0..]
+                                                )
                                  , isRealVar v
                                  ]
                               )
@@ -216,17 +248,6 @@ SEM GrExpr
            loc.nMyParams = @argL.length
            lhs.localsF = (@lhs.targets ++)
            lhs.retNr   = @lhs.retNr + 1
-
- | FFI     lhs.stats  = Statement_Comment "FFI"
-                        : Statement_Assignment
-                               (if @isLastExpr
-                                then (arrayVariab Variable_RP 0)
-                                else (@lhs.embed (head @lhs.targets))
-                               )
-                               (Value_Call @nm (map (Value_Var . @lhs.embed) @argL))
-                        : []
-
-           lhs.localsF = (@lhs.targets ++)
 
  | App     lhs.stats  = [Statement_Comment "App: SHOULDNT"]
  | Eval    lhs.stats  = [Statement_Comment "Eval: SHOULDNT"]

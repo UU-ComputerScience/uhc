@@ -75,6 +75,7 @@ SEM SilModule
                                 >-< text ""
                                 >-< comment "Auxiliary variable"
                                 >-< text "GrWord auxVar;"
+                                >-< text "GrWord auxPtr;"
                                 >-< text ""
                                 >-< comment "Main C function"
                                 >-< @loc.cMain
@@ -95,8 +96,10 @@ SEM SilModule
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
                                 >-< ppWhen @loc.optGenAsmSP (text "register GrWord* SP asm (\"%esp\");")
+                                -- >-< ppWhen @loc.optGenAsmSP (text "register GrWord  auxPtr asm (\"%ecx\");")
                                 >-< indent 4 (    callSillyFunctionFromC @loc.optOwnCalls 1 "initialize"
                                              >-<  callSillyFunctionFromC @loc.optOwnCalls 2 "fun_main"
+                                             >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
                                              >-<  "return 0;"
                                              )
                 loc.silMain2 =  text "}"
@@ -126,7 +129,7 @@ SEM Statement
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls @name @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwnCalls @name
-  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optOwnCalls
+  | Return      lhs.prettyC   = returnFromSillyFunction @spincr @retdiff @lhs.optOwnCalls
   | Label       lhs.prettyC   = label @name
   | Enter       lhs.prettyC   = error "Enter obsolete"
   | Leave       lhs.prettyC   = error "Leave obsolete"
@@ -169,6 +172,8 @@ SEM Variable
                 lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
   | Aux         lhs.prettyC   = text "auxVar"
                 lhs.prettyPtr = text "auxVar"
+  | Ptr         lhs.prettyC   = text "auxPtr"
+                lhs.prettyPtr = text "((Pointer)auxPtr)"
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"
                 lhs.prettyPtr = error "attempt to use Variable_None as pointer"
 
@@ -183,7 +188,10 @@ SEM Variable
 
 
 label :: String -> PP_Doc
-label nm = nm >|< ":"
+label nm 
+ = nm >|< ":"
+   >|< ppWhen optTraceAssign
+              (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< "); fflush(stdout);")
 
 commaSeparated :: [String] -> String
 commaSeparated = concat . intersperse ", "
@@ -231,6 +239,8 @@ callSillyFunctionFromC False _ nm
 callSillyFunctionFromC True n nm
  = let lab = "mainlab" ++ show n
    in  "*--SP = (GrWord)(&&" >|< lab >|< ");"   -- return address
+       >-< ppWhen optTraceAssign
+                  (" printf(\"def label" >#< lab >#< "= %d \\n\", " >#< "SP[0]" >#< "); fflush(stdout);")
        >-< "*--SP = (GrWord)0;"                 -- link
        >-< "goto" >#< nm >|< ";"                -- do the call
        >-< label lab                            -- return here
@@ -242,17 +252,10 @@ callSillyFunctionFromSilly False nm pars
 callSillyFunctionFromSilly True nm _
  = "goto" >#< nm >|< ";"
  
-returnFromSillyFunction False
- = text "SP++;"
-returnFromSillyFunction True
- = ppWhen optTraceAssign
-          (text " printf(\"return to %d\\n\", *SP); fflush(stdout);")
-   >-< text "SP++; goto *(SP[-1]);"
-   -- >-< text "goto *SP++;"
-   -- >-< text "asm(\"ret\");"
-   -- >-< text "SP++; asm(\"jmp *-4(%esp)\");"
- 
- 
+returnFromSillyFunction spincr _ False
+ = text "SP += " >|< show spincr >|< ";"
+returnFromSillyFunction spincr retdiff True
+ = text "SP += " >|< show spincr >|< "; goto *(SP[-" >|< show retdiff >|< "]);"
  
 
 %%]
@@ -340,7 +343,7 @@ assignincr v e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignincr" >#< show v >#< "+=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              (" printf(\"assignincr" >#< show v >#< "+=" >#< e >#< " : %d \\n\", " >#< show v >#< "); fflush(stdout);")
 
 switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef scrutinee body
