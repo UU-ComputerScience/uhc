@@ -804,13 +804,14 @@ The information stored contains:
 callinfoCall        =  0     -- normal call
 callinfoTail        =  1     -- tail call
 callinfoEval        =  2     -- eval call
-callinfoTailEv      =  3     -- tail eval call
-callinfoApply       =  4     -- apply call
-callinfoCCall       =  5     -- C call
-callinfoEvCont      =  6     -- eval update continuation
-callinfoApCont      =  7     -- apply continuation
-callinfoPApCont     =  8     -- partial apply continuation
-callinfoHdlr        =  9     -- exception handler installment
+callinfoEvalWrap    =  3     -- eval call wrapper
+callinfoTailEv      =  4     -- tail eval call
+callinfoApply       =  5     -- apply call
+callinfoCCall       =  6     -- C call
+callinfoEvCont      =  7     -- eval update continuation
+callinfoApCont      =  8     -- apply continuation
+callinfoPApCont     =  9     -- partial apply continuation
+callinfoHdlr        =  10    -- exception handler installment
 %%]]
 \end{itemize}
 
@@ -1416,14 +1417,14 @@ A saturated function call closure:
  }{%
   |[ p :-> (F : f : a1 .. an) ] `elem` gheap|
  }{
-  |gframep|
+  |gframep = gframep'|
  }
 }{%
  \GriniStateAfter{%
  }{%
   |call : callinfoEvCont : evupdcont|
  }{%
-  |f : a1 .. an : gcode : p : gstack|
+  |f : a1 .. an : (gframep :-> gframep') : gcode : p : gstack|
  }{%
   |gheap|
  }{
@@ -1671,7 +1672,7 @@ Updating only is done as part of |evalt|, hence is not generated/called directly
  }{%
   |evupdcont : _|
  }{%
-  |p' : gframep' : gcode : p : gstack|
+  |p' : (gframep :-> gframep') : gcode : p : gstack|
  }{%
   |[p' :-> x] `elem` gheap|
  }{
@@ -1687,32 +1688,6 @@ Updating only is done as part of |evalt|, hence is not generated/called directly
   |gheap[ p :-> (x || (I : p')) ]|
  }{
   |gframep = gframep'|
- }{}
-}
-
-Context call info of |gcode|: |callinfoEval|.
-
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evupdcont : _|
- }{%
-  |p' : gcode : p : gstack|
- }{%
-  |[p' :-> x] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |gcode|
- }{%
-  |p' : gstack|
- }{%
-  |gheap[ p :-> (x || (I : p')) ]|
- }{
  }{}
 }
 

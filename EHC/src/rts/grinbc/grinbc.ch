@@ -223,9 +223,9 @@ typedef struct GB_Node {
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
 #define GB_FillCFunNode2(n,f,x1,x2)			{GB_NodeHeader _h = GB_MkCFunHeader(2); GB_FillNodeHdr(_h,n);GB_FillNodeFlds3(n,f,x1,x2);}
 
-#define GB_MkCFunNode0(n,f)					{GB_NodeAlloc_In(2,n); GB_FillCFunNode0(n,f); }
-#define GB_MkCFunNode1(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillCFunNode1(n,f,x1); }
-#define GB_MkCFunNode2(n,f,x1,x2)			{GB_NodeAlloc_In(4,n); GB_FillCFunNode2(n,f,x1,x2); }
+#define GB_MkCFunNode0In(n,f)				{GB_NodeAlloc_In(2,n); GB_FillCFunNode0(n,f); }
+#define GB_MkCFunNode1In(n,f,x1)			{GB_NodeAlloc_In(3,n); GB_FillCFunNode1(n,f,x1); }
+#define GB_MkCFunNode2In(n,f,x1,x2)			{GB_NodeAlloc_In(4,n); GB_FillCFunNode2(n,f,x1,x2); }
 
 extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%]
@@ -343,7 +343,7 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
-#define GB_MkCallInfo(k,n)				{k,n}			// make CallInfo
+#define GB_MkCallInfo(k,n)				{k,n}		// make CallInfo
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 

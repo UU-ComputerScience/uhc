@@ -191,7 +191,7 @@ GB_NodePtr gb_primCString2String1Char( char* s, GB_Int goff )
   	GB_NodePtr n, n2 ;
   	IF_GB_TR_ON(3,printf("gb_primCString2String1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
-		GB_MkCFunNode2(n2,&gb_primCString2String1Char,s,GB_Int_Add(goff,GB_Int1)) ;
+		GB_MkCFunNode2In(n2,&gb_primCString2String1Char,s,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;
@@ -242,7 +242,7 @@ GB_NodePtr gb_primMallocCString2String1Char( GB_NodePtr mn, GB_Int goff )
   	GB_NodePtr n, n2 ;
   	IF_GB_TR_ON(3,printf("gb_primMallocCString2String1Char %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
-		GB_MkCFunNode2(n2,&gb_primMallocCString2String1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
+		GB_MkCFunNode2In(n2,&gb_primMallocCString2String1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;

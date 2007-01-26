@@ -3,11 +3,14 @@
 %include afp.fmt
 %%]
 
+Pass all free variables of lambda expressions explicitly.
+Later, these lambda expressions can then be lifted globally.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fully lazy code
+%%% Globals as args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.LamLift} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamLift)
+%%[8 hs module {%{EH}Core.Trf.LamGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamGlobalAsArg)
 %%]
 
 -- for debug
@@ -23,8 +26,8 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-cmodTrfLamLift :: CModule -> CModule
-cmodTrfLamLift cmod
+cmodTrfLamGlobalAsArg :: CModule -> CModule
+cmodTrfLamGlobalAsArg cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                               (Inh_CodeAGItf)
      in   cTrf_Syn_CodeAGItf t
@@ -133,18 +136,19 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 ATTR CExpr [ | | isLet: Bool ]
 
 SEM CExpr
   | Let         lhs         .   isLet       =   True
   | * - Let     lhs         .   isLet       =   False
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Has a strictness?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 ATTR CExpr [ | | hasStrict: Bool ]
 
 SEM CExpr
@@ -152,7 +156,6 @@ SEM CExpr
                 lhs         .   hasStrict   =   True
   | * - TupIns TupDel Case
                 lhs         .   hasStrict   =   False
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Mapping of argument names
@@ -209,8 +212,6 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type LamBindSq = Seq (CBindCateg,CBindL)
-
 fvLAsArg :: LevMp -> FvS -> AssocL HsName Int
 fvLAsArg levMp fvS
   =  sortOn snd
@@ -235,35 +236,17 @@ varRepl nMp n = maybe (CExpr_Var n) CExpr_Var $ Map.lookup n nMp
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
-ATTR AllCodeNT [ | | lamBindSq USE {<+>} {emptySeq}: LamBindSq ]
-ATTR AllBind [ | | bindLamBindL, bindCAFBindL, bindVarBindL USE {++} {[]}: CBindL ]
-
 SEM CBind
-  | Bind        (expr.gUniq,loc.argMp,loc.bindLamBindL,loc.bindCAFBindL,loc.bindVarBindL,loc.bindLamArgMp)
+  | Bind        (expr.gUniq,loc.argMp,lhs.cTrf,loc.bindLamArgMp)
                                             =   if @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.levMp $ panicJust "CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+                                                then  let  argLevL = fvLAsArg @lhs.introLevMp $ panicJust "CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
                                                       in   ( @lhs.gUniq + length argOL
                                                            , argONMp
-                                                           , [CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)]
-                                                           , []
-                                                           , []
+                                                           , CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)
                                                            , @nm `Map.singleton` argOL
                                                            )
-                                                else  if True -- @expr.isLet
-                                                then  let  argLevL = fvLAsArg (@lhs.mutRecMp `Map.union` @lhs.levMp) @expr.fvS
-                                                           cafLamNm = mkFvNm @lhs.gUniq @nm
-                                                           (argOL,argNL,argONMp) = fvLArgRepl (@lhs.gUniq + 1) argLevL
-                                                      in   if null argLevL
-                                                           then  ( @lhs.gUniq, Map.empty, [], [@cTrf], [], Map.empty )
-                                                           else  ( @lhs.gUniq + 1 + length argOL
-                                                                 , argONMp
-                                                                 , [CBind_Bind cafLamNm (mkCExprLam argNL @expr.cTrf)]
-                                                                 , []
-                                                                 , [CBind_Bind @nm (mkCExprApp (CExpr_Var cafLamNm) (map (varRepl @lhs.argSubst) argOL))]
-                                                                 , Map.empty
-                                                                 )
-                                                else  ( @lhs.gUniq, Map.empty, [], [], [@cTrf], Map.empty )
+                                                else  ( @lhs.gUniq, Map.empty, @cTrf, Map.empty )
   | FFI         loc         .   bindVarBindL=   [@cTrf]
 %%]
 
@@ -273,18 +256,4 @@ SEM CExpr
                                                      v1 = r @nm
                                                      v2 = maybe v1 (mkCExprApp v1 . map r) $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2
-  | Let         (loc.hereBindSq,lhs.lamBindSq)
-                                            =   let  b1      = @binds.lamBindSq
-                                                     b2l     = unitSeq (@categ,@binds.bindLamBindL)
-                                                     b2c     = unitSeq (@categ,@binds.bindCAFBindL)
-                                                     b2v     = unitSeq (@categ,@binds.bindVarBindL)
-                                                     b12lcv  = unitSeq (@categ,(concat . map snd . seqToList $ b1)
-                                                                                ++ @binds.bindLamBindL ++ @binds.bindCAFBindL ++ @binds.bindVarBindL)
-                                                     b3      = @body.lamBindSq
-                                                in   if @lhs.lev == cLevModule
-                                                     then  (b12lcv <+> b3,emptySeq)
-                                                     else if @categ == CBindStrict
-                                                     then  (b2c <+> b2v,b1 <+> b2l <+> b3)
-                                                     else  (b2v,b1 <+> b2l <+> b2c <+> b3)
-                lhs         .   cTrf        =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cTrf . seqToList $ @hereBindSq
 %%]

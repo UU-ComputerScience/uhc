@@ -31,6 +31,32 @@ SEM CAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Intro level of id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ introLevMp: LevMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   introLevMp  =   Map.empty
+
+SEM CExpr
+  | Lam         body        .   introLevMp  =   Map.insert @arg @lev @lhs.introLevMp
+  | Let         loc         .   introLevMp  =   Map.map (const @lhs.lev) @binds.bindsIntroLevMp `Map.union` @lhs.introLevMp
+
+SEM CAlt
+  | Alt         expr        .   introLevMp  =   Map.fromList (zip @pat.nmL (repeat @lev)) `Map.union` @lhs.introLevMp
+%%]
+
+%%[8
+ATTR AllBind [ | | bindsIntroLevMp USE {`Map.union`} {Map.empty}: LevMp ]
+
+SEM CBind
+  | Bind        lhs         .   bindsIntroLevMp
+                                            =   Map.singleton @nm @lhs.lev
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Level of expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
