@@ -13,7 +13,7 @@
 %%[8 hs import({%{EH}Base.Debug},UU.DData.Scc)
 %%]
 
-%%[8.WRAPPER import({Core/AbsSyn})
+%%[8.WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
