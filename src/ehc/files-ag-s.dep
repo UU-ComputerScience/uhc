@@ -34,6 +34,8 @@ Core/Trf/EtaRed.cag
 Core/Trf/FullLazy.cag
 Core/Trf/InlineLetAlias.cag
 Core/Trf/LamLift.cag
+Core/Trf/LamGlobalAsArg.cag
+Core/Trf/LamFloatGlobal.cag
 Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 GrinCode/Pretty.cag

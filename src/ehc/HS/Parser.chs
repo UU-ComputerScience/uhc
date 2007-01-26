@@ -618,7 +618,7 @@ pTyVarBind :: HSParser Token
 pTyVarBind =  tyvar
 
 pTyVarBinds :: HSParser [Token]
-pTyVarBinds =  pList1 pTyVarBind
+pTyVarBinds =  pList pTyVarBind
 %%]
 
 %%[5

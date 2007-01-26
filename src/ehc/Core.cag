@@ -372,11 +372,15 @@ type FvS = HsNameS
 type FvSMp = Map.Map HsName FvS
 %%]
 
-%%[8 hs export(cLevModule,cLevExtern,cLevIntern)
-cLevModule, cLevExtern, cLevIntern :: Int
-cLevIntern = 1
+%%[8 hs export(cLevModule,cLevExtern)
+cLevModule, cLevExtern :: Int
 cLevModule = 0
 cLevExtern = 0
+%%]
+
+%%[12 hs export(cLevIntern)
+cLevIntern :: Int
+cLevIntern = 1
 %%]
 
 %%[8 hs

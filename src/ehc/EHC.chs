@@ -19,7 +19,7 @@
 %%[8 import ({%{EH}Core.ToJava},{%{EH}Core.Pretty})
 %%]
 
-%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
+%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamGlobalAsArg},{%{EH}Core.Trf.LamFloatGlobal},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
 %%]
 
 %%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
@@ -1071,15 +1071,8 @@ cpTranslateCore2Grin modNm
                  mbCoreSem = ecuMbCoreSem ecu
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
-                 optGrin   = ( id
-                             . grUnusedNameElim 
-                             . grAliasElim 
-                             . grEvalElim  
-                             . grAliasElim 
-                             . grFlattenSeq 
-                             ) grin
          ;  when (isJust mbCoreSem && (ehcOptEmitGrin opts || ehcOptEmitGrinBC opts || ehcOptEmitLlc opts || ehcOptEmitLLVM opts))
-                 (cpUpdCU modNm (ecuStoreGrin optGrin))
+                 (cpUpdCU modNm (ecuStoreGrin grin))
          }
 %%]
 
@@ -1251,7 +1244,9 @@ cpCore1Trf modNm trfNm
                                              (Map.keysSet $ crsiExpNmOffMp modNm crsi)
 %%]]
                               "CFL"     -> cmodTrfFullLazy u1
-                              "CLL"     -> cmodTrfLamLift
+                              "CLGA"    -> cmodTrfLamGlobalAsArg
+                              "CLFG"    -> cmodTrfLamFloatGlobal
+                              -- "CLL"     -> cmodTrfLamLift
                               _         -> id
                           ) core
          ;  lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Transforming" (lookup trfNm cmdLineTrfs) modNm fp
@@ -1294,7 +1289,10 @@ cpProcessEH modNm
 
 cpProcessCore1 :: HsName -> EHCompilePhase ()
 cpProcessCore1 modNm 
-  = cpSeq [ cpTransformCore modNm ["CER", "CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL", "CLU"]
+  = cpSeq [ cpTransformCore
+              modNm
+              -- [ "CER", "CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL", "CLU" ]
+              [ "CER", "CCP", "CRU", "CLU", "CILA", "CFL", {- "CLL", -} "CLGA", "CLU", "CFL", "CLFG" {- , "CFL", "CLU" -} ]
           , cpOutputCore "core" modNm
           ]
           

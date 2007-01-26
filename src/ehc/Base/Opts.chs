@@ -53,6 +53,8 @@ cmdLineTrfs
     , ("CILA"   , "Core Inline Let Alias (remove unnecessary alpha renamings)")
     , ("CFL"    , "Core Full Laziness (give names to all expressions and float them outwards)")
     , ("CLL"    , "Core Lambda Lift")
+    , ("CLGA"   , "Core Lambda Global as Arg")
+    , ("CLFG"   , "Core Lambda Float to Global")
     ]
 
 trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool

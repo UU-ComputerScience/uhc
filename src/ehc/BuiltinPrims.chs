@@ -39,5 +39,6 @@ prims
   = Map.fromList
       [ 
         ( "primCatchException", Prim [False] )
+      , ( "primThrowException", Prim [False] )
       ]
 %%]
