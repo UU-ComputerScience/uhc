@@ -38,7 +38,8 @@ DATA Statement
   |  Call        name       : {String}
                  args       : Values
   |  Jump        name       : {String}
-  |  Return
+  |  Return      spincr     : {Int}
+                 retdiff    : {Int}
   |  Leave       diff       : {Int}
   |  Label       name       : {String}
   |  Comment     comment    : {String}
@@ -68,6 +69,7 @@ DATA Variable
   |  SubsPtr     array      : Variable
                  index      : Constant
   |  Aux
+  |  Ptr
   |  None
 
 DATA Value
