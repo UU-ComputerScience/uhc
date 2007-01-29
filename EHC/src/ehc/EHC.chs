@@ -1077,6 +1077,27 @@ cpTranslateCore2Grin modNm
 %%]
 
 %%[8
+cpOptimizeGrin :: HsName -> EHCompilePhase ()
+cpOptimizeGrin modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mbGrin = ecuMbGrin ecu
+                 grin   = panicJust "cpOptimizeGrin" mbGrin
+                 optGrin   = ( grUnusedNameElim   
+                             . grAliasElim   
+                             . grEvalElim   
+                             . grAliasElim   
+                             . grFlattenSeq   
+                             ) grin 
+         ;  when (  ehcOptOptimise opts >= OptimiseNormal
+                 && isJust mbGrin 
+                 && (ehcOptEmitLlc opts || ehcOptEmitLLVM opts)
+                 )
+                 (cpUpdCU modNm (ecuStoreGrin optGrin))
+         }
+%%]
+
+%%[8
 cpTranslateGrin2ByteCode :: HsName -> EHCompilePhase ()
 cpTranslateGrin2ByteCode modNm
   =  do  {  cr <- get
@@ -1311,7 +1332,7 @@ cpProcessGrin1 modNm
   = cpSeq [ cpTranslateGrin2ByteCode modNm
           , cpOutputByteCodeAsC "c" modNm
           ]
-          
+
 cpProcessGrin2 :: HsName -> EHCompilePhase ()
 cpProcessGrin2 modNm 
   = cpSeq [ cpOutputGrin "grin2" modNm
@@ -1319,7 +1340,8 @@ cpProcessGrin2 modNm
           
 cpProcessGrin3 :: HsName -> EHCompilePhase ()
 cpProcessGrin3 modNm 
-  = cpSeq [ cpTranslateGrin modNm
+  = cpSeq [ cpOptimizeGrin modNm
+          , cpTranslateGrin modNm
           ]
 %%]
 
@@ -1553,11 +1575,19 @@ cpCompileCU targHSState modNm
                            , cpParseHs False modNm
 %%]]
                            , cpStopAt CompilePoint_Parse
-                           , cpStepUID, cpProcessHs modNm
+                           , cpStepUID
+                           , cpProcessHs modNm
                            , cpStopAt CompilePoint_AnalHS
-                           , cpStepUID, cpProcessEH modNm
+                           , cpStepUID
+                           , cpProcessEH modNm
                            , cpStopAt CompilePoint_AnalEH
-                           , cpStepUID, cpProcessCore1 modNm, cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm, cpProcessGrin3 modNm
+                           , cpStepUID
+                           , cpProcessCore1 modNm
+                           , cpProcessCore2 modNm
+                           , cpProcessCore3 modNm
+                           , cpProcessGrin1 modNm
+                           , cpProcessGrin2 modNm
+                           , cpProcessGrin3 modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
@@ -1570,14 +1600,20 @@ cpCompileCU targHSState modNm
              -> do { msg "Compiling EH"
                    ; cpSeq [ cpParseEH modNm
                            , cpStopAt CompilePoint_Parse
-                           , cpStepUID, cpProcessEH modNm
+                           , cpStepUID
+                           , cpProcessEH modNm
 %%[[12
-                                      , cpGetCheckEhMod modNm
+                           , cpGetCheckEhMod modNm
 %%]]
                            , cpStopAt CompilePoint_AnalEH
-                           , cpStepUID, cpProcessCore1 modNm
+                           , cpStepUID
+                           , cpProcessCore1 modNm
                            , cpStopAt CompilePoint_Core
-                           , cpProcessCore2 modNm, cpProcessCore3 modNm, cpProcessGrin1 modNm, cpProcessGrin2 modNm, cpProcessGrin3 modNm
+                           , cpProcessCore2 modNm
+                           , cpProcessCore3 modNm
+                           , cpProcessGrin1 modNm
+                           , cpProcessGrin2 modNm
+                           , cpProcessGrin3 modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
