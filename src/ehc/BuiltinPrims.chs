@@ -38,7 +38,7 @@ prims :: Map.Map String ({- Map.Map Backend -} Primitive)
 prims
   = Map.fromList
       [ 
-        ( "primCatchException", Prim [False] )
+        ( "primCatchException", Prim [False,False] )
       , ( "primThrowException", Prim [False] )
       ]
 %%]

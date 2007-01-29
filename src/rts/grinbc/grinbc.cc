@@ -286,7 +286,11 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 #endif
   , GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08), 1
   , GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08), (3+GB_CallRetNrWords)*sizeof(GB_Word)	// after: 1, exc, bp, ret, expr
-  //, GB_Ins_Eval(GB_InsOp_LocB_TOS)
+  , GB_Ins_Eval(GB_InsOp_LocB_TOS)
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
   , GB_Ins_Apply(GB_InsOp_LocB_TOS)
   , 0, 0, 0, 0
 #if USE_64_BITS
@@ -296,14 +300,15 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
   } ;
 
 #define GB_InitPatch_gb_code_ExcHdl_EvalValue \
-									{ *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[0]         					) = Cast(GB_Word,&gb_callinfo_ExcHdl_EvalValue) ; \
-									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(GB_CallInfo_Inline)]  ) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
+									{ *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[0]         						) = Cast(GB_Word,&gb_callinfo_ExcHdl_EvalValue) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(GB_CallInfo_Inline)]  	) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
 									}
 #define GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler \
-									*Cast(GB_Ptr,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[0]         	) = Cast(GB_Word,&gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler)
+									*Cast(GB_Ptr,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[0]         		) = Cast(GB_Word,&gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler)
 #define GB_InitPatch_gb_code_ExcHdl_ThrowReturn \
-									{ *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[0]         					) = Cast(GB_Word,&gb_callinfo_ExcHdl_ThrowReturn) ; \
-									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[5+sizeof(GB_CallInfo_Inline)]         	) = Cast(GB_Word,&gb_callinfo_Apply) ; \
+									{ *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[0]         						) = Cast(GB_Word,&gb_callinfo_ExcHdl_ThrowReturn) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[5+sizeof(GB_CallInfo_Inline)]    ) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[6+2*sizeof(GB_CallInfo_Inline)]  ) = Cast(GB_Word,&gb_callinfo_Apply) ; \
 									}
 
 %%]
@@ -982,12 +987,13 @@ gb_interpreter_InsEvalEntry:
 									pc = Cast(GB_BytePtr,n->content.fields[0]) ;					/* jump to function 				*/
 									GB_Push(&gb_code_AfterEvalCall[sizeof(GB_CallInfo_Inline)]) ;	/* ret addr is to update 			*/
 									GB_BP_Link ;													/* and bp							*/
-									GB_NH_SetFld_NdEv(n->header,GB_NodeNdEv_BlH) ;					/* may not be eval'd when eval'd	*/
+									n->header = GB_NH_SetFld_NdEv(h,GB_NodeNdEv_BlH) ;				/* may not be eval'd when eval'd	*/
 									break ;
 								case GB_NodeTagCat_CFun :
 									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
 									x2 = x ;                                                        /* remember val + pc 				*/
 									retSave = Cast(GB_Word,pc) ;
+									n->header = GB_NH_SetFld_NdEv(h,GB_NodeNdEv_BlH) ;				/* may not be eval'd when eval'd	*/
 									GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 									break ;
@@ -1004,7 +1010,7 @@ gb_interpreter_InsEvalEntry:
 							}
 							break ;
 						case GB_NodeNdEv_BlH :
-							gb_panic1_1( "black hole", x ) ;									/* black hole means panic			*/
+							gb_panic1_1( "black hole", x ) ;										/* black hole means cycle			*/
 							break ;
 					}
 				}
@@ -1261,8 +1267,8 @@ GB_Word gb_intl_primThrowException( GB_Word exc )
 					GB_MkCFunNode1In(n,&gb_intl_primThrowException,exc) ;
 				}
 				GB_NodePtr nOld = Cast(GB_NodePtr,GB_RegRelx(p2,2)) ;
-				IF_GB_TR_ON(3,{printf("gb_intl_primThrowException:callInfo2: p %x p2 %x : ", p, p2) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
-				// GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,n)) ;
+				IF_GB_TR_ON(3,{printf("gb_intl_primThrowException:callInfo2: p %x p2 %x nOld %x: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
+				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,n)) ;
 			}
 		}
 	}
