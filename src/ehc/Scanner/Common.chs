@@ -120,7 +120,7 @@ ehScanOpts
         ,   scoOffsideClose     =   "}"
         }
   where offsideTrigs     =
-            [  "let"
+            [  "let", "where"
 %%[[5
             ,  "of"
 %%]]
@@ -128,7 +128,7 @@ ehScanOpts
             ,  "letstrict"
 %%]]
 %%[[9
-            ,  "where"
+            ,  "do"
 %%]]
             ]
 %%]
