@@ -1084,11 +1084,17 @@ cpOptimizeGrin modNm
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOptimizeGrin" mbGrin
                  optGrin   = ( grUnusedNameElim   
+
                              . grAliasElim   
+
                              . grEvalElim   
+
                              . grAliasElim   
+
                              . grFlattenSeq   
+
                              ) grin 
+
          ;  when (  ehcOptOptimise opts >= OptimiseNormal
                  && isJust mbGrin 
                  && (ehcOptEmitLlc opts || ehcOptEmitLLVM opts)
@@ -1487,7 +1493,7 @@ cpStopAt atPhase
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
        ; unless (atPhase < ehcStopAtPoint opts)
-                cpSetStopSeq
+                cpSetStopAllSeq
        }
 %%]
 
@@ -1899,12 +1905,14 @@ doCompileRun fn opts
 %%][12
              imp mbFp nm
                = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
+                    -- ; lift $ putStrLn $ show nm ++ ": " ++ show mbFp ++ ": " ++ show mbFoundFp
                     ; when (isJust mbFp)
                            (cpUpdCU nm (ecuSetIsTopMod True))
                     ; when (isJust mbFoundFp)
                            (cpCompileCU (Just HSOnlyImports) nm)
                     }
 %%]]
+       -- ; putStrLn $ show searchPath
 %%[[8
        ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
                                ]) initialState

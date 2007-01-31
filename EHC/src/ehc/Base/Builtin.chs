@@ -260,7 +260,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[1
       mkRV
 %%][99
-      (mkRV hsnModNum)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlNum)
 %%]]
       [ "negate" ]
 %%]
@@ -271,7 +271,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[1
       mkRV
 %%][99
-      (mkRV hsnModBase)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
 %%]]
       [ "error" ]
 %%]
@@ -282,7 +282,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[5
       mkRV
 %%][99
-      (mkRV hsnModEnum)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlEnum)
 %%]]
       [ "enumFromThenTo", "enumFromThen", "enumFromTo", "enumFrom" ]
 %%]
@@ -302,7 +302,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[5
       mkRV
 %%][99
-      (mkRV hsnModBase)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
 %%]]
       [ "[]", ":", "[]", "concatMap"
       , "Bool", "True", "False"
@@ -329,7 +329,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[8
       mkRV
 %%][99
-      (mkRV hsnModBase)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
 %%]]
       [ "undefined"
       , "PackedString", "packedString2String"
@@ -355,7 +355,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[9
       mkRV
 %%][99
-      (mkRV hsnModBase)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
 %%]]
       [ ">>", ">>=", "fail"
       , "Eq"
@@ -377,7 +377,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[9
       mkRV
 %%][99
-      (mkRV hsnModShow)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlShow)
 %%]]
       [ "Show"
       , "show", "showsPrec"
@@ -394,7 +394,7 @@ mkRV m = hsnSetQual m . HNm
 %%[[9
       mkRV
 %%][99
-      (mkRV hsnModRead)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlRead)
 %%]]
       [ "Read"
       , "read", "readsPrec"
@@ -405,14 +405,14 @@ mkRV m = hsnSetQual m . HNm
 %%[99 export(hsnFromInteger)
 [hsnFromInteger]
   = map
-      (mkRV hsnModNum)
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlNum)
       [ "fromInteger" ]
 %%]
 
 %%[99 export(hsnFromRational,hsnMkRatio)
 [hsnFromRational,hsnMkRatio]
   = map
-      (mkRV hsnModReal)
+      (mkRV hsnModIntlReal) -- (mkRV hsnModIntlReal)
       [ "fromRational", "%" ]
 %%]
 
@@ -422,10 +422,6 @@ mkRV m = hsnSetQual m . HNm
 
 %%[12 export(hsnModBuiltin)
 hsnModBuiltin                       =   mkHNm "#Builtin"
-%%]
-
-%%[99 export(hsnModPrelude)
-hsnModPrelude                       =   mkHNm "Prelude"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -442,13 +438,15 @@ hsnIsInPrelude n
       _         -> False
 %%]
 
-%%[99 export(hsnModBase,hsnModEnum,hsnModNum,hsnModReal)
-hsnModBase                          =   hsnPrefixQual hsnEHC (HNm "Base")
-hsnModEnum                          =   hsnPrefixQual hsnEHC (HNm "Enum")
-hsnModNum                           =   hsnPrefixQual hsnEHC (HNm "Num")
-hsnModReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
-hsnModShow                          =   hsnPrefixQual hsnEHC (HNm "Show")
-hsnModRead                          =   hsnPrefixQual hsnEHC (HNm "Read")
+%%[99 export(hsnModPrelude)
+hsnModIntlBase                          =   hsnPrefixQual hsnEHC (HNm "Base")
+hsnModIntlEnum                          =   hsnPrefixQual hsnEHC (HNm "Enum")
+hsnModIntlNum                           =   hsnPrefixQual hsnEHC (HNm "Num")
+hsnModIntlReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
+hsnModIntlShow                          =   hsnPrefixQual hsnEHC (HNm "Show")
+hsnModIntlRead                          =   hsnPrefixQual hsnEHC (HNm "Read")
+hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (HNm "Prelude")
+hsnModPrelude                           =                         HNm "Prelude"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

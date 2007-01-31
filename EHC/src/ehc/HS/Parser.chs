@@ -116,11 +116,13 @@ pModule :: HSParser Body -> HSParser Module
 pModule pBody
   =   (\b -> Module_Module emptyRange Nothing b) <$> pBody
   <|> (\t m b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) b) <$> pMODULE <*> modid <* pWHERE <*> pBody
+  <?> "pModule"
 %%]
 %%[12.pModule -1.pModule
 pModule pBody
   =   (\b -> Module_Module emptyRange Nothing Nothing b) <$> pBody
   <|> (\t m e b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) e b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
+  <?> "pModule"
 %%]
 
 %%[1.pBody
@@ -128,6 +130,7 @@ pBody :: HSParser Body
 pBody
   =   Body_Body emptyRange <$> pDeclarations1' pTopDeclaration
   <|> pSucceed (Body_Body emptyRange [])
+  <?> "pBody"
 %%]
 %%[12 -1.pBody
 pBody :: HSParser Body
@@ -135,6 +138,7 @@ pBody
   =   (\ids -> let (i,d) = foldr cmbid ([],[]) ids in Body_Body emptyRange i d)
       <$> pDeclarations1' ((\d -> ([],[d])) <$> pTopDeclaration <|> (\i -> ([i],[])) <$> pImportDeclaration)
   <|> pSucceed (Body_Body emptyRange [] [])
+  <?> "pBody"
   where cmbid ([i],_) (is,ds) = (i:is,ds)
         cmbid (_,[d]) (_ ,ds) = ([],d:ds)
 %%]
@@ -147,6 +151,7 @@ pBody
 pBodyImport :: HSParser Body
 pBodyImport
   =   (\d -> Body_Body emptyRange d []) <$> pDeclarations' pImportDeclaration
+  <?> "pBodyImport"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,6 +169,7 @@ pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
                  )
            <|> pSucceed (\n -> mkRngNm sem_tOrC n Nothing)
            )
+  <?> "pImportExport"
 %%]
 
 %%[12
@@ -171,15 +177,20 @@ pExport :: HSParser Export
 pExport
   =   (\t m -> Export_Module (mkRange1 t) (tokMkQName m)) <$> pMODULE <*> modid
   <|> pImportExport (Export_Variable,Export_TypeOrClass,Export_TypeOrClassComplete)
+  <?> "pExport"
 
 pMaybeExports :: HSParser MaybeExports
-pMaybeExports = Just <$> pParens (pListSep pCOMMA pExport) <|> pSucceed Nothing         
+pMaybeExports
+  =   Just <$> pParens (pListSep pCOMMA pExport)
+  <|> pSucceed Nothing
+  <?> "pMaybeExports"
 %%]
 
 %%[12
 pImport :: HSParser Import
 pImport
   =   pImportExport (Import_Variable,Import_TypeOrClass,Import_TypeOrClassComplete)
+  <?> "pImport"
 
 pImportDeclaration :: HSParser ImportDeclaration
 pImportDeclaration
@@ -188,6 +199,7 @@ pImportDeclaration
     <*> modid
     <*> (Just <$ pAS <*> modid <|> pSucceed Nothing)
     <*> (Just <$> pImportSpecification <|> pSucceed Nothing)
+  <?> "pImportDeclaration"
   where pImportSpecification :: HSParser ImportSpecification
         pImportSpecification
           = (True <$ pHIDING <|> pSucceed False)
@@ -289,12 +301,10 @@ pDeclarationTypeSignature
 
 pDeclarationValue :: HSParser Declaration
 pDeclarationValue
-  =   (\lhs rhs -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange lhs rhs])
-      <$> pLhs <*> rhs
+  =   mkF <$> pLhs <*> rhs
   <|> pPatternOp
-      <**> (   (\rhs p -> Declaration_PatternBinding emptyRange p rhs)
-               <$> rhs
-           <|> (\o r rhs l -> Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange (LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r) rhs])
+      <**> (   (flip mkP) <$> rhs
+           <|> (\o r rhs l -> mkF (mkLI l o r) rhs)
                <$> varop <*> pPatternOp <*> rhs
            )
   <?> "pDeclarationValue"
@@ -302,8 +312,18 @@ pDeclarationValue
         pLhsTail ::  HSParser [Pattern]
         pLhsTail =   pList1 pPatternBaseCon
         pLhs     ::  HSParser LeftHandSide
-        pLhs     =   mkRngNm LeftHandSide_Function <$> qvar <*> pLhsTail
-                 <|> pParens' ((\l r t -> LeftHandSide_Parenthesized r l t) <$> pLhs) <*> pLhsTail
+        pLhs     =   mkRngNm LeftHandSide_Function <$> var <*> pLhsTail
+                 <|> pParens'
+                       (   (\l r t -> mkLP r l t)
+                           <$> pLhs
+                       <|> (\pl o pr r t -> mkLP r (mkLI pl o pr) t)
+                           <$> pPatternOp <*> varop <*> pPatternOp
+                       )
+                     <*> pLhsTail
+        mkP  p     rhs = Declaration_PatternBinding emptyRange p rhs
+        mkF  lhs   rhs = Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange lhs rhs]
+        mkLI l o r     = LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r
+        mkLP r l t     = LeftHandSide_Parenthesized r l t
 %%]
 
 %%[8
@@ -571,11 +591,21 @@ pType =  pChainr (mk1Arrow <$ pRARROW) pTypeBase
 %%[4.pType -1.pType
 pType ::  HSParser Type
 pType
-  =   pTypePrefix <*> pType
-  <|> pTypeOpPrefix <*> pType
+  =   pTypeApp
+      <**> (   pSucceed id
+           <|> (\(op,rng) r l -> Type_InfixApplication rng l op r) <$> pTypeOp <*> pType
+           )
 %%[[9
+  <|> (\c -> Type_Qualified emptyRange [c]) <$> pContextItemImpl <* pRARROW <*> pType
 %%]]
-  <|> pTypeApp
+  <|> pTypePrefix <*> pType
+  where pTypeOp
+          = mkRngNm' Type_Constructor
+            <$> (   pRARROW
+%%[[9
+                <|> pDARROW
+%%]]
+                )
 %%]
 
 %%[4.pTypePrefix
@@ -618,7 +648,7 @@ pTyVarBind :: HSParser Token
 pTyVarBind =  tyvar
 
 pTyVarBinds :: HSParser [Token]
-pTyVarBinds =  pList pTyVarBind
+pTyVarBinds =  pList1 pTyVarBind
 %%]
 
 %%[5
@@ -630,7 +660,9 @@ pSimpleType
 %%[5
 pAnnotatedType :: HSParser Type -> HSParser AnnotatedType
 pAnnotatedType pT
-  = AnnotatedType_Type emptyRange False <$> pT
+  =   (\(r,s) t -> AnnotatedType_Type r s t)
+      <$> ((\t -> (mkRange1 t,True)) <$> pBANG <|> pSucceed (emptyRange,False))
+      <*> pT
 %%]
 
 %%[9.pTypeContextPrefix
@@ -676,8 +708,7 @@ pContextItemClass
 %%[9
 pContextItemPrefix :: HSParser (ContextItem -> ContextItem)
 pContextItemPrefix
-  =   ContextItem_Arrow emptyRange <$> pContextItemBase <* pDARROW
-  <|> (ContextItem_Forall . mkRange1) <$> pFORALL <*> (tokMkQNames <$> pTyVarBinds) <* pDOT
+  =   (ContextItem_Forall . mkRange1) <$> pFORALL <*> (tokMkQNames <$> pTyVarBinds) <* pDOT
 %%]
 
 %%[9
@@ -685,10 +716,17 @@ pContextItem :: HSParser ContextItem
 pContextItem
   =   pContextItemPrefix <*> pContextItem
   <|> pContextItemBase
+      <**> (   pSucceed id
+           <|> (\o r l -> ContextItem_Arrow (mkRange1 o) l r) <$> pDARROW <*> pContextItem
+           )
+%%]
 
+%%[9
 pContextItemImplWild :: HSParser ContextItem
 pContextItemImplWild = (ContextItem_Implicits . mkRange1) <$> pTDOT
+%%]
 
+%%[9
 pContextItemImpl :: HSParser ContextItem
 pContextItemImpl
   = pImpls'
@@ -701,7 +739,6 @@ pContextItemImpl
 pContextItemBase ::   HSParser ContextItem
 pContextItemBase
   =   pContextItemClass
-  <|> pParens pContextItem
 %%]
 %%[1010
   <|> ContextItem_DynVar <$> pDynVar <* pDCOLON <*> pType
@@ -926,16 +963,6 @@ pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Construc
 %%]
 
 %%[1
-pExpressionOpPrefix :: HSParser Expression -> HSParser (Expression -> Expression)
-pExpressionOpPrefix pLeftOpndE
-  =   (\l e -> Expression_InfixApplicationChainTop emptyRange
-               $ foldr (\(l,(op,rng)) r -> Expression_InfixApplication rng l op r) e l
-      )
-      <$> pList1_ng ((,) <$> pLeftOpndE <*> pOp)
-  <?> "pExpressionOpPrefix"
-%%]
-
-%%[1
 pExpression' :: HSParser (Expression -> Expression) -> HSParser Expression
 pExpression' pPreE
   =   (mkE <$> pE) <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
@@ -1040,9 +1067,47 @@ pPatternConSuffix
   <?> "pPatternConSuffix"
 %%]
 
-%%[1.pPatternBase
-pPatternBase :: HSParser Pattern
-pPatternBase
+%%[1.pPatternBaseInParens
+pPatternBaseInParens :: HSParser (Range -> Pattern)
+pPatternBaseInParens
+  =   (pPattern
+       <**> (   pSucceed (flip Pattern_Parenthesized)
+%%[[1
+            <|> (\es e r -> Pattern_Tuple r (e:es))
+                <$>  pList1 (pComma *> pPattern)
+%%][7
+            <|> (\es e r -> Pattern_RowRecordBinding r (Pattern_RowRecordEmpty r)
+                              (map (RowRecordPatternBinding_Binding r Nothing) (e:es)))
+                <$>  pList1 (pComma *> pPattern)
+%%]]
+      )     )
+  <|> (\v _ -> mkRngNm Pattern_Variable v) <$> qvarsym_forpar
+%%[[1
+  <|> pSucceed (\r -> Pattern_Constructor r (hsnProd 0) [])
+%%][7
+  <|> pSucceed (\r -> Pattern_RowRecordEmpty r)
+  <|> (\fs r -> Pattern_RowRecordBinding r (Pattern_RowRecordEmpty r) fs) <$> pFlds
+  <|> pExtFlds
+  <?> "pPatternBaseInParens"
+  where pFld :: HSParser (Pattern -> RowRecordPatternBinding)
+        pFld = qvarid
+               <**> (   (\l -> RowRecordPatternBinding_Binding (mkRange1 l) (Just (tokMkQName l))) <$ pEQUAL
+                    )
+        pFlds :: HSParser [RowRecordPatternBinding]
+        pFlds = pList1Sep pComma (pFld <*> pPattern)
+        pExtFlds :: HSParser (Range -> Pattern)
+        pExtFlds
+             = (\e fs r -> Pattern_RowRecordBinding r e fs)
+               <$> (   mkRngNm Pattern_Variable <$> qvar
+                   <|> pSucceed (Pattern_RowRecordEmpty emptyRange)
+                   )
+               <*  pVBAR <*> pFlds
+%%]]
+%%]
+
+%%[1.pPatternBaseNoParens
+pPatternBaseNoParens :: HSParser Pattern
+pPatternBaseNoParens
   =   qvarid
       <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBaseCon
            <|> pSucceed (mkRngNm Pattern_Variable)
@@ -1055,48 +1120,16 @@ pPatternBase
 %%[[8
   <|> (Pattern_Irrefutable . mkRange1) <$> pTILDE <*> pPatternBaseCon
 %%]]
-  <|> pParens' pInParens
-  <?> "pPatternBase"
-  where pInParens :: HSParser (Range -> Pattern)
-        pInParens
-          =   (pPattern
-               <**> (   pSucceed (flip Pattern_Parenthesized)
-%%[[1
-                    <|> (\es e r -> Pattern_Tuple r (e:es))
-                        <$>  pList1 (pComma *> pPattern)
-%%][7
-                    <|> (\es e r -> Pattern_RowRecordBinding r (Pattern_RowRecordEmpty r)
-                                      (map (RowRecordPatternBinding_Binding r Nothing) (e:es)))
-                        <$>  pList1 (pComma *> pPattern)
-%%]]
-              )     )
-          <|> (\v _ -> mkRngNm Pattern_Variable v) <$> qvarsym_forpar
-%%[[1
-          <|> pSucceed (\r -> Pattern_Constructor r (hsnProd 0) [])
-%%][7
-          <|> pSucceed (\r -> Pattern_RowRecordEmpty r)
-          <|> (\fs r -> Pattern_RowRecordBinding r (Pattern_RowRecordEmpty r) fs) <$> pFlds
-          <|> pExtFlds
-          where pFld :: HSParser (Pattern -> RowRecordPatternBinding)
-                pFld = qvarid
-                       <**> (   (\l -> RowRecordPatternBinding_Binding (mkRange1 l) (Just (tokMkQName l))) <$ pEQUAL
-                            )
-                pFlds :: HSParser [RowRecordPatternBinding]
-                pFlds = pList1Sep pComma (pFld <*> pPattern)
-                pExtFlds :: HSParser (Range -> Pattern)
-                pExtFlds
-                     = (\e fs r -> Pattern_RowRecordBinding r e fs)
-                       <$> (   mkRngNm Pattern_Variable <$> qvar
-                           <|> pSucceed (Pattern_RowRecordEmpty emptyRange)
-                           )
-                       <*  pVBAR <*> pFlds
-%%]]
+  <?> "pPatternBaseNoParens"
 %%]
+
+%%[1.pPatternBase
 pPatternBase :: HSParser Pattern
 pPatternBase
-  =   qvar <**> (   (\a p v -> Pattern_As (mkRange1 a) (tokMkQName v) p) <$> pAT <*> pPatternBaseCon
-                <|> pSucceed (mkRngNm Pattern_Variable)
-                )
+  =   pPatternBaseNoParens
+  <|> pParens' pPatternBaseInParens
+  <?> "pPatternBase"
+%%]
 
 %%[1
 pPatternBaseCon :: HSParser Pattern

@@ -230,7 +230,7 @@ getchar []          = (Nothing,0,[])
 getchar s@('\n':_ ) = (Nothing,0,s )
 getchar s@('\t':_ ) = (Nothing,0,s)
 getchar s@('\'':_ ) = (Nothing,0,s)
-getchar s@('\"' :_ ) = (Nothing,0,s)
+getchar s@('\"':_ ) = (Nothing,0,s)
 getchar   ('\\':xs) = let (c,l,r) = getEscChar xs
                       in (c,l+1,r)
 getchar (x:xs)      = (Just x,1,xs)
@@ -243,6 +243,12 @@ scanDQuoteIdent (x:xs)         = let (s,w,r) = scanDQuoteIdent xs -- should chec
 
 getEscChar :: [Char] -> (Maybe Char,Int,[Char])
 getEscChar [] = (Nothing,0,[])
+%%[[99
+getEscChar s@('x':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
+                                  in  (Just $ chr $ fromInteger $ getBaseNumber 16 n, len-1, rest)
+getEscChar s@('o':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
+                                  in  (Just $ chr $ fromInteger $ getBaseNumber 8  n, len-1, rest)
+%%]]
 getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                                       val = case tp of
                                               TkInteger8  -> getBaseNumber 8  n

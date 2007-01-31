@@ -18,7 +18,8 @@ module EH.Util.CompileRun
   , ppCR
   
   , cpUpdCU
-  , cpSetFail, cpSetStop, cpSetStopSeq, cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
+  , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
+  , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
   , cpSeq
   , cpFindFileForFPath
   , cpImportGather
@@ -78,6 +79,7 @@ data CompileRunState err
   = CRSOk									-- continue
   | CRSFail									-- fail and stop
   | CRSStopSeq								-- stop current cpSeq
+  | CRSStopAllSeq							-- stop current cpSeq, but also the surrounding ones
   | CRSStop									-- stop completely
   | CRSFailErrL String [err] (Maybe Int)	-- fail with errors and stop
   | CRSErrInfoL String Bool [err]			-- just errors, continue
@@ -157,6 +159,9 @@ crSetStop cr = cr {crState = CRSStop}
 
 crSetStopSeq :: CompileRun n u i e -> CompileRun n u i e
 crSetStopSeq cr = cr {crState = CRSStopSeq}
+
+crSetStopAllSeq :: CompileRun n u i e -> CompileRun n u i e
+crSetStopAllSeq cr = cr {crState = CRSStopAllSeq}
 
 crSetErrs' :: Maybe Int -> String -> [e] -> CompileRun n u i e -> CompileRun n u i e
 crSetErrs' limit about es cr
@@ -259,6 +264,10 @@ cpSetStopSeq :: CompilePhase n u i e ()
 cpSetStopSeq
  = modify crSetStopSeq
 
+cpSetStopAllSeq :: CompilePhase n u i e ()
+cpSetStopAllSeq
+ = modify crSetStopAllSeq
+
 cpSetOk :: CompilePhase n u i e ()
 cpSetOk
  = modify (\cr -> (cr {crState = CRSOk}))
@@ -334,6 +343,8 @@ cpHandle1 rest first
            CRSStop
              -> do { lift $ exitWith ExitSuccess
                    }
+           CRSStopAllSeq
+             -> cpSetStopAllSeq
            CRSStopSeq
              -> cpSetOk
            CRSOk

@@ -173,7 +173,7 @@ PRIM GB_NodePtr gb_primCString2Integer( char* s )
 	return n ;
 }
 
-PRIM GB_Word gb_primInteger2Int( GB_NodePtr n )
+PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
 {
 	return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
 }

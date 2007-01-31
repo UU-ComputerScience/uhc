@@ -181,5 +181,5 @@ searchPathForReadableFile paths suffs fp
               [] -> tryToOpen Nothing fp
               _  -> select (\(ms,f) -> tryToOpen ms f) ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
         tryToOpenInDir dir
-          = select (tryToOpenWithSuffs suffs) [fpathSetDir dir fp,fpathPrependDir dir fp]
+          = select (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp,fpathSetDir dir fp]
      in select tryToOpenInDir paths

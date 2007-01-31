@@ -197,7 +197,7 @@ SEM Err
                                                          >-< "pred :" >#< pp @pred
                                                         )
   | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
-                                                        (    "preds:" >#< ppBracketsCommas @preds
+                                                        (    "preds:" >#< vlist @preds
                                                         )
   | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proof for predicates did overlap"
                                                         (    vlist . map (\(p,evs) -> p >#< ":" >#< ppBracketsCommas evs) $ @overl
