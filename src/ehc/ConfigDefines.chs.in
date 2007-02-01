@@ -25,7 +25,7 @@ useBoehmGC :: Bool
 useBoehmGC = mkB USE_BOEHM_GC
 %%]
 
-%%[99 export(useGMP)
+%%[97 export(useGMP)
 #undef USE_GMP
 
 useGMP :: Bool

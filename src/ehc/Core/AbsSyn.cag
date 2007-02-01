@@ -39,7 +39,6 @@ DATA CExpr
                 dflt            : CExpr
   | Int         int             : {Int}
   | Char        char            : {Char}
-  | Float       float           : {Float}
   | String      str             : {String}
   | Tup         tag             : {CTag}
   | TupDel      expr            : CExpr
@@ -71,10 +70,9 @@ DATA CExpr
                 body            : CExpr
 %%]
 
-%%[99
+%%[97
 DATA CExpr
   | Integer     integer         : {Integer}
-  | Double      double          : {Double}
 %%]
 
 %%[8
@@ -135,7 +133,7 @@ DATA CPatBind
 TYPE CPatBindL  =   [CPatBind]
 %%]
 
-%%[99
+%%[97
 DATA CPat
   | BoolExpr    pnm             : {HsName}
                 cexpr           : {CExpr}

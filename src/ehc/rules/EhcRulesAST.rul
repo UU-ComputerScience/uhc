@@ -23,8 +23,10 @@ data Expr   		[ expr, expr.impr 	]
     = AppTop	  	[ e.apptop			]		eTop		:: Expr
   view DT
     = SConst    	[ e.str : e.int		]       str     	:: String
+{-
   view CG
     = FConst    	[ e.float : e.int	]       float     	:: Float
+-}
   view I1
     = AppImpred  	[ e.app.f : e.app	]       eFun    	:: Expr
                                 				eArg    	:: Expr
@@ -35,9 +37,8 @@ data Expr   		[ expr, expr.impr 	]
     | LamImpl      	[ e.ilam 			]       lamPat  	:: PatExpr
                                 				lamBody 	:: Expr
                                 				lamPred 	:: Pred
-  view HS
+  view NUM
     = IIConst    	[ e.iint : e.int	]       integer   	:: Integer
-    | DConst    	[ e.double : e.int	]       double   	:: Double
 
 data Decl			[ decl, decl.impr	]
   view K
@@ -61,8 +62,10 @@ data PatExpr		[ patexpr, patexpr.impr	]
 												pArg		:: PatExpr
   view DT
     = SConst    	[ p.str : p.int		]       str     	:: String
+{-
   view CG
     = FConst    	[ p.float : p.int	]       float     	:: Float
+-}
   view I1
 	= TypeAs		[ p.ann				]		tAnn		:: TyExpr
 												pExpr		:: PatExpr

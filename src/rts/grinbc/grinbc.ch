@@ -153,10 +153,15 @@ typedef GB_Word GB_NodeHeader ;
 #define GB_NodeTag_Intl_Malloc			0			// Internal node: A malloc'ed ptr, requiring finalisation
 %%]
 
-%%[99
+%%[97
+#define GB_NodeTag_Intl_Float			1			// Internal node: Float
+#define GB_NodeTag_Intl_Double			2			// Internal node: Double
+%%]
+
+%%[97
 #if USE_GMP
-#define GB_NodeTag_Intl_GMP_mpz			1			// Internal node: A GMP mpz_t 
-#define GB_NodeTag_Intl_GMP_intl		2			// Internal node: GMP internal allocated 
+#define GB_NodeTag_Intl_GMP_mpz			3			// Internal node: A GMP mpz_t 
+#define GB_NodeTag_Intl_GMP_intl		4			// Internal node: GMP internal allocated 
 #endif
 %%]
 
@@ -168,7 +173,9 @@ typedef struct GB_Node {
 %%[[95
     void*			ptr ;				/* when GB_NodeTag_Intl_Malloc */
 %%]]
-%%[[99
+%%[[97
+    float			flt ;				/* when GB_NodeTag_Intl_Float */
+    double			dbl ;				/* when GB_NodeTag_Intl_Double */
 #if USE_GMP
     mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
 #endif
@@ -219,6 +226,8 @@ typedef struct GB_Node {
 #define GB_MkConNode1(n,tg,x1)				{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)			{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
 
+#define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
+
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
 #define GB_FillCFunNode2(n,f,x1,x2)			{GB_NodeHeader _h = GB_MkCFunHeader(2); GB_FillNodeHdr(_h,n);GB_FillNodeFlds3(n,f,x1,x2);}
@@ -236,7 +245,13 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_MkMallocHeader					GB_MkHeader(GB_NodeMallocSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc)
 %%]
 
-%%[99
+%%[97
+#define GB_NodeFloatSize					(EntierUpDivBy(sizeof(float),sizeof(GB_Word)) + 1)
+#define GB_MkFloatHeader					GB_MkHeader(GB_NodeFloatSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Float)
+
+#define GB_NodeDoubleSize					(EntierUpDivBy(sizeof(float),sizeof(GB_Word)) + 1)
+#define GB_MkDoubleHeader					GB_MkHeader(GB_NodeDoubleSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Double)
+
 #if USE_GMP
 #define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(GB_Word)) + 1)
 #define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(GB_Word)) + 1)
@@ -420,7 +435,10 @@ This breaks when compiled without bgc.
 #endif
 %%]
 
-%%[99
+%%[97
+#define GB_NodeAlloc_Float_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeFloatSize, GB_MkFloatHeader, n) ; }
+#define GB_NodeAlloc_Double_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeDoubleSize,GB_MkDoubleHeader,n) ; }
+
 #if USE_GMP
 #define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init((n)->content.mpz) ; }
 #define GB_NodeAlloc_GMP_In(nBytes,n)		{ int sz = GB_NodeGMPSize(nBytes) ; GB_NodeAlloc_Hdr_In(sz,GB_MkGMPHeader(sz),n) ; }
@@ -461,12 +479,48 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #define GB_Int1						GB_Int2GBInt(1)
 #define GB_Int2						GB_Int2GBInt(2)
 
+#define GB_Int_Zero					GB_Int0
+#define GB_Int_One					GB_Int1
+#define GB_Int_Two					GB_Int2
+
 #define GB_Int_Add(x,y)				((x) + (y) - GB_Word_TagInt)
 #define GB_Int_Sub(x,y)				((x) - (y) + GB_Word_TagInt)
 #define GB_Int_Mul(x,y)				(((x)-GB_Word_TagInt) * ((y)/GB_Int_ShiftPow2) + GB_Word_TagInt)
 #define GB_Int_Div(x,y)				((((x)-GB_Word_TagInt) / (((y)-GB_Word_TagInt))) * GB_Int_ShiftPow2 + GB_Word_TagInt)
-#define GB_Int_Neg(x)				GB_Int_Sub(GB_Int0,x)
+#define GB_Int_Quot(x,y)			((((x)-GB_Word_TagInt) / (((y)-GB_Word_TagInt))) * GB_Int_ShiftPow2 + GB_Word_TagInt)
+#define GB_Int_Rem(x,y)				GB_Int2GBInt( GB_GBInt2Int(x) % GB_GBInt2Int(y) )
+#define GB_Int_Neg(x)				GB_Int_Sub(GB_Int_Zero,x)
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Float/Double
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+#define GB_Float_Op1_In1(op,z,x)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = op x->content.flt ; }
+#define GB_Float_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = x->content.flt op y->content.flt ; }
+
+#define GB_Float_Neg_In(z,x)				GB_Float_Op1_In1(-,z,x)
+#define GB_Float_Add_In(z,x,y)				GB_Float_Op2_In1(+,z,x,y)
+#define GB_Float_Sub_In(z,x,y)				GB_Float_Op2_In1(-,z,x,y)
+#define GB_Float_Mul_In(z,x,y)				GB_Float_Op2_In1(*,z,x,y)
+#define GB_Float_Div_In(z,x,y)				GB_Float_Op2_In1(/,z,x,y)
+
+#define GB_Float_Cmp(x,y,lt,eq,gt)			(x->content.flt > y->content.flt ? (gt) : (x->content.flt == y->content.flt ? (eq) : (lt)))
+%%]
+
+%%[97
+#define GB_Double_Op1_In1(op,z,x)			{ GB_NodeAlloc_Double_In(z) ; z->content.dbl = op x->content.dbl ; }
+#define GB_Double_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Double_In(z) ; z->content.dbl = x->content.dbl op y->content.dbl ; }
+
+#define GB_Double_Neg_In(z,x)				GB_Double_Op1_In1(-,z,x)
+#define GB_Double_Add_In(z,x,y)				GB_Double_Op2_In1(+,z,x,y)
+#define GB_Double_Sub_In(z,x,y)				GB_Double_Op2_In1(-,z,x,y)
+#define GB_Double_Mul_In(z,x,y)				GB_Double_Op2_In1(*,z,x,y)
+#define GB_Double_Div_In(z,x,y)				GB_Double_Op2_In1(/,z,x,y)
+
+#define GB_Double_Cmp(x,y,lt,eq,gt)			(x->content.dbl > y->content.dbl ? (gt) : (x->content.dbl == y->content.dbl ? (eq) : (lt)))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -477,17 +531,25 @@ mpz_t is defined as an array, this makes casting problematic (compiler complains
 so a pointer based definition is used. However, __mpz_struct is an internal type which may
 undergo name changes as GMP versions progress.
 
-%%[99
+%%[97
 #if USE_GMP
 typedef __mpz_struct*  GB_mpz ;
 
-#define GB_Integer_Op_In(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y->content.mpz ) ; }
-#define GB_Integer_Add_In(z,x,y)		GB_Integer_Op_In(mpz_add,z,x,y)
-#define GB_Integer_Sub_In(z,x,y)		GB_Integer_Op_In(mpz_sub,z,x,y)
-#define GB_Integer_Mul_In(z,x,y)		GB_Integer_Op_In(mpz_mul,z,x,y)
-#define GB_Integer_Div_In(z,x,y)		GB_Integer_Op_In(mpz_cdiv_q,z,x,y)
+#define GB_Integer_Op1_In1(op,z,x)			{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz ) ; }
+#define GB_Integer_Op2_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y->content.mpz ) ; }
+#define GB_Integer_Op2_In2(op,z1,z2,x,y)	{ GB_NodeAlloc_Mpz_In(z1) ; GB_NodeAlloc_Mpz_In(z2) ; op( z1->content.mpz, z2->content.mpz, x->content.mpz, y->content.mpz ) ; }
+#define GB_Integer_Add_In(z,x,y)			GB_Integer_Op2_In1(mpz_add,z,x,y)
+#define GB_Integer_Sub_In(z,x,y)			GB_Integer_Op2_In1(mpz_sub,z,x,y)
+#define GB_Integer_Mul_In(z,x,y)			GB_Integer_Op2_In1(mpz_mul,z,x,y)
+#define GB_Integer_Div_In(z,x,y)			GB_Integer_Op2_In1(mpz_tdiv_q,z,x,y)
+#define GB_Integer_Mod_In(z,x,y)			GB_Integer_Op2_In1(mpz_tdiv_r,z,x,y)
+#define GB_Integer_DivMod_In(z1,z2,x,y)		GB_Integer_Op2_In2(mpz_tdiv_qr,z1,z2,x,y)
+#define GB_Integer_Quot_In(z,x,y)			GB_Integer_Op2_In1(mpz_fdiv_q,z,x,y)
+#define GB_Integer_Rem_In(z,x,y)			GB_Integer_Op2_In1(mpz_fdiv_r,z,x,y)
+#define GB_Integer_QuotRem_In(z1,z2,x,y)	GB_Integer_Op2_In2(mpz_fdiv_qr,z1,z2,x,y)
+#define GB_Integer_Neg_In(z,x)				GB_Integer_Op1_In1(mpz_neg,z,x)
 
-#define GB_Integer_Cmp(x,y)				mpz_cmp(x->content.mpz, y->content.mpz)
+#define GB_Integer_Cmp(x,y)					mpz_cmp(x->content.mpz, y->content.mpz)
 
 #endif
 %%]
@@ -521,7 +583,7 @@ typedef __mpz_struct*  GB_mpz ;
 #define GB_InsOp_TyOp_Add			0x0
 #define GB_InsOp_TyOp_Sub			0x1
 #define GB_InsOp_TyOp_Mul			0x2
-#define GB_InsOp_TyOp_Div			0x3
+#define GB_InsOp_TyOp_Quot			0x3
 
 /* Operator data kind/type */
 #define GB_InsOp_DataOp_IW			0x0

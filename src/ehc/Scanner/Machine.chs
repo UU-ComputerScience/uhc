@@ -12,7 +12,7 @@
 %%[8 export(getRational)
 %%]
 
-%%[99 export(getBaseNumber)
+%%[97 export(getBaseNumber)
 %%]
 
 %%[5.scanHandle -1.scanHandle
@@ -87,10 +87,10 @@ scan opts pos input
    doScan p ('-':'-':s)  = doScan p (dropWhile (/= '\n') s)
    doScan p ('{':'-':s)  = lexNest doScan (advc 2 p) s
    doScan p ('"':ss)
-     = let (s,swidth,rest) = scanString ss
+     = let (s,p',rest) = scanString (advc 1 p) ss
        in if null rest || head rest /= '"'
-             then errToken "Unterminated string literal" p : doScan (advc swidth p) rest
-             else valueToken TkString s p : doScan (advc (swidth+2) p) (tail rest)
+             then errToken "Unterminated string literal" p : doScan p' rest
+             else valueToken TkString s p : doScan (advc 2 p') (tail rest)
 %%]
 
 %%[8
@@ -210,16 +210,20 @@ lexNest cont pos inp = lexNest' cont pos inp
        lexNest' _ _ []          = [ errToken "Unterminated nested comment" pos]
 
 
-scanString :: String -> (String,Int,String)
-scanString []            = ("",0,[])
-scanString ('\\':'&':xs) = let (str,w,r) = scanString xs
-                           in (str,w+2,r)
-scanString ('\'':xs)     = let (str,w,r) = scanString xs
-                           in ('\'': str,w+1,r)
-scanString xs = let (ch,cw,cr) = getchar xs
-                    (str,w,r)  = scanString cr
-                    str' = maybe "" (:str) ch
-                in maybe ("",0,xs) (\c -> (c:str,cw+w,r)) ch
+scanString :: Pos -> String -> (String,Pos,String)
+scanString p []            = ("",p,[])
+scanString p ('\\':'&':xs) = let (str,p',r) = scanString (advc 2 p) xs
+                             in  (str,advc 2 p',r)
+scanString p ('\'':xs)     = let (str,p',r) = scanString (advc 1 p) xs
+                             in  ('\'': str,advc 1 p',r)
+scanString p ('\\':x:xs) | isSpace x
+                           = let (white,rest) = span isSpace xs
+                             in  case rest of
+                                   ('\\':rest') -> scanString (advc 1 $ foldl adv (advc 2 p) white) rest'
+                                   _            -> ("",advc 2 p,xs)
+scanString p xs = let (ch,cw,cr) = getchar xs
+                      (str,p',r) = scanString (advc cw p) cr
+                  in  maybe ("",p,xs) (\c -> (c:str,p',r)) ch
 
 scanChar :: [Char] -> (Maybe Char,Int,[Char])
 scanChar ('"' :xs) = (Just '"',1,xs)

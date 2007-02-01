@@ -564,7 +564,7 @@ SEM InsOp_TyOp
   | Add         lhs         .   mn          =   pp "a"
   | Sub         lhs         .   mn          =   pp "s"
   | Mul         lhs         .   mn          =   pp "m"
-  | Div         lhs         .   mn          =   pp "d"
+  | Quot        lhs         .   mn          =   pp "q"
 
 SEM InsOp_DataOp
   | IntWord     lhs         .   mn          =   pp "iw"
@@ -657,7 +657,7 @@ SEM InsOp_TyOp
   | Add         lhs         .   enc         =   0
   | Sub         lhs         .   enc         =   1
   | Mul         lhs         .   enc         =   2
-  | Div         lhs         .   enc         =   3
+  | Quot        lhs         .   enc         =   3
 
 SEM InsOp_DataOp
   | IntWord     lhs         .   enc         =   0

@@ -427,12 +427,6 @@ SEM Decl
 %%]
 
 %%[8
-SEM Expr
-  | FConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","FConst"] [@pp] [] []
-
-SEM PatExpr
-  | FConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","FConst"] [@pp] [] []
-
 SEM Decl
   | FFI         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppNm @nm] [@tyExpr.ppAST] @info
                         .  info     =   []
@@ -591,10 +585,9 @@ SEM DataConstr
                                         ]
 %%]
 
-%%[99
+%%[97
 SEM Expr
   | IIConst     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","IIConst"] [@pp] [] []
-  | DConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","DConst"] [@pp] [] []
 %%]
 
 

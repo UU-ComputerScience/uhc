@@ -317,7 +317,7 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 %%% GMP memory allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[97
 #if USE_GMP
 void* gb_Alloc_GMP( size_t nBytes )
 {
@@ -1165,7 +1165,7 @@ gb_interpreter_InsApplyEntry:
 				break ;
 
 			/* operators */
-			/* int add/sub/mul/div to TOS from XXX */
+			/* int add/sub/mul/quot to TOS from XXX */
 			case GB_Ins_Op(GB_InsOp_TyOp_Add,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
 				switch( *(pc++) )
 				{
@@ -1199,10 +1199,10 @@ gb_interpreter_InsApplyEntry:
 				}
 				break ;
 
-			case GB_Ins_Op(GB_InsOp_TyOp_Div,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
+			case GB_Ins_Op(GB_InsOp_TyOp_Quot,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS) :
 				switch( *(pc++) )
 				{
-					GB_Op_TOSDst_Case_Code( GB_Int_Div )
+					GB_Op_TOSDst_Case_Code( GB_Int_Quot )
 
 					default:
 						gb_panic1_1( "odiwt<XXX> instruction not implemented", *(pc-1) ) ;
@@ -1556,8 +1556,8 @@ static GB_Mnem gb_mnemTable[] =
 , { GB_Ins_Op(GB_InsOp_TyOp_Mul,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
   , "omiwt XXX"
   }
-, { GB_Ins_Op(GB_InsOp_TyOp_Div,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
-  , "odiwt XXX"
+, { GB_Ins_Op(GB_InsOp_TyOp_Quot,GB_InsOp_DataOp_IW,GB_InsOp_LocODst_TOS)
+  , "oqiwt XXX"
   }
 , { GB_Ins_Ldg(GB_InsOp_LocB_TOS)				, "ldgt" 			}
 , { GB_Ins_Ldg(GB_InsOp_LocB_Reg)				, "ldgr" 			}

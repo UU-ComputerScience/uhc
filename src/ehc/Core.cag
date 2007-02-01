@@ -64,7 +64,7 @@ data RPat
   | RPat_Int			{ rcpPNm :: RPatNm, rcpInt :: Int }
   | RPat_Char			{ rcpPNm :: RPatNm, rcpChar :: Char }
   | RPat_Irrefutable	{ rcpPNm :: RPatNm, rcpCBindL :: [CBind] }
-%%[[99
+%%[[97
   | RPat_BoolExpr		{ rcpPNm :: RPatNm, rcpExpr :: CExpr }
 %%]]
 
@@ -119,7 +119,7 @@ raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _) = True
 raltIsIrrefutable _                                       = False
 %%]
 
-%%[99 hs export(raltIsBoolExpr)
+%%[97 hs export(raltIsBoolExpr)
 raltIsBoolExpr :: RAlt -> Bool
 raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _)  = True
 raltIsBoolExpr _                                     = False
@@ -144,7 +144,7 @@ rpat2CPat p
                             where (r,bs) = rpatConBind2CPatConBind b
       RPat_Int      n v     -> CPat_Int (rpatNmNm n) v
       RPat_Char     n v     -> CPat_Char (rpatNmNm n) v
-%%[[99
+%%[[97
       RPat_BoolExpr n v     -> CPat_BoolExpr (rpatNmNm n) v
 %%]]
 %%]
@@ -332,7 +332,7 @@ cstring opts m = CExpr_Var (ehbnPackedString2String $ ehcOptBuiltinNames opts) `
 %%% Integer construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(cinteger)
+%%[97 hs export(cinteger)
 cinteger :: EHCOpts -> Integer -> CExpr
 cinteger opts i = CExpr_Var (ehbnPackedString2Integer $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String $ show $ i]
 %%]

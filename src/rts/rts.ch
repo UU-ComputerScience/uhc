@@ -10,7 +10,7 @@
 #include "config.h"
 %%]
 
-%%[99
+%%[97
 #if USE_GMP
 #include "gmp.h"
 #endif

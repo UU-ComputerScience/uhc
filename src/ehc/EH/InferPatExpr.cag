@@ -31,12 +31,7 @@ SEM PatExpr
                 lhs         .  arity                =   0
 %%]
 
-%%[8
-SEM PatExpr
-  | FConst      lhs         .  arity                =   0
-%%]
-
-%%[99
+%%[97
 SEM PatExpr
   | Expr        lhs         .  arity                =   0
 %%]
@@ -227,7 +222,7 @@ SEM PatExpr
                 lhs         .   tyCnstr             =   foCnstr @fo_fitR_ |=> @lhs.tyCnstr
 %%]
 
-%%[99
+%%[97
 SEM PatExpr
   | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnClassEqFldEq @lhs.valGam
                             .   knExprTy            =   mkTyVar @lUniq

@@ -563,10 +563,9 @@ SEM CExpr
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
-%%[99
+%%[97
 SEM CExpr
   | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt $ fromInteger $ @integer)
-  | Double      loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt $ round $ @double)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -689,7 +688,7 @@ ATTR CPat    [ | | patNm: HsName ]
 
 SEM CPat
   | Var Con Int Char
-%%[[99
+%%[[97
     BoolExpr
 %%]]
                 loc         .   patNm       =   @pnm
@@ -718,7 +717,7 @@ SEM CPatL
   | Nil         lhs         .   grPatL      =   []
 %%]
 
-%%[99
+%%[97
 SEM CPat
   | BoolExpr    lhs         .   grPat       =   GrPat_Empty -- transformed into explicit if-then-else
 %%]

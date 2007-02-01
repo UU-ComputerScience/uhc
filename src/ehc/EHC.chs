@@ -77,7 +77,7 @@ main
          ;  let  ehcOpts        = defaultEHCOpts
 %%[[99
                                     {ehcProgName = progName}
-%%]
+%%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts           = foldl (flip ($)) ehcOpts o
          ;  if ehcOptHelp opts
@@ -96,7 +96,7 @@ main
 %%[[99
             else  if ehcOptShowNumVersion opts
             then  putStrLn (Cfg.verNumeric Cfg.version)
-%%]
+%%]]
             else  if null errs
                   then  doCompileRun (if null n then "" else head n) opts
                   else  putStr (head errs)

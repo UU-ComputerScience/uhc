@@ -455,10 +455,10 @@ pDeclarationInstance
   = pINSTANCE
     <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (tokMkQName cl) ts d)
              <$> pInstanceName
-             <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pType
+             <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
              <*> pWhere' pDeclarationValue
          <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
-             <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pType
+             <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
          )
 %%]
 
@@ -764,18 +764,17 @@ pLiteralNumber :: HSParser Literal
 pLiteralNumber
 %%[[1
   =   mkRngStr Literal_Int <$> pIntegerTk
-%%][99
+%%][97
   =   mk  8 <$> pInteger8Tk
   <|> mk 10 <$> pInteger10Tk
   <|> mk 16 <$> pInteger16Tk
 %%]]
   <?> "pLiteralNumber"
-%%[[99
+%%[[97
   where mk b t = Literal_Int (mkRange1 t) b (tokMkStr t)
 %%]]
 %%]
 
-ast (mkRange1 t) (tokMkStr t)
 %%[1
 pLiteral :: HSParser Literal
 pLiteral
@@ -784,7 +783,7 @@ pLiteral
 %%[[5
   <|> mkRngStr Literal_String <$> pStringTk
 %%]]
-%%[[8
+%%[[97
   <|> mkRngStr Literal_Float  <$> pFractionTk
 %%]]
   <?> "pLiteral"

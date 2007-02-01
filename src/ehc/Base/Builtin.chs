@@ -32,9 +32,6 @@
 %%[7 export(hsnFldUpd)
 %%]
 
-%%[8 export(hsnFloat)
-%%]
-
 %%[8 export(hsnMain)
 %%]
 
@@ -180,10 +177,6 @@ positionalFldNames                  =   map HNPos [1..]
 %%]
 
 %%[8
-hsnFloat                            =   HNm "Float"
-%%]
-
-%%[8
 hsnMain                             =   HNm "main"
 %%]
 
@@ -226,9 +219,8 @@ hsnIsUnknown                        =   (==hsnUnknown)
 hsnDynVar                           =   HNm "?"
 %%]
 
-%%[99 export(hsnInteger,hsnDouble)
+%%[97 export(hsnInteger)
 hsnInteger                          =   HNm "Integer"
-hsnDouble                           =   HNm "Double"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,7 +313,7 @@ mkRV m = hsnSetQual m . HNm
  , hsnPackedString, hsnPackedString2String
  , hsnPrelId
  , hsnPrimAddInt, hsnPrimGtInt
-%%[[99
+%%[[97
  , hsnPackedString2Integer
 %%]]
  ]
@@ -335,7 +327,7 @@ mkRV m = hsnSetQual m . HNm
       , "PackedString", "packedString2String"
       , "id"
       , "primAddInt", "primGtInt"
-%%[[99
+%%[[97
       , "packedString2Integer"
 %%]]
       ]
@@ -402,17 +394,25 @@ mkRV m = hsnSetQual m . HNm
       ]
 %%]
 
-%%[99 export(hsnFromInteger)
+%%[97 export(hsnFromInteger)
 [hsnFromInteger]
   = map
+%%[[97
+      mkRV
+%%][99
       (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlNum)
+%%]]
       [ "fromInteger" ]
 %%]
 
-%%[99 export(hsnFromRational,hsnMkRatio)
+%%[97 export(hsnFromRational,hsnMkRatio)
 [hsnFromRational,hsnMkRatio]
   = map
+%%[[97
+      mkRV
+%%][99
       (mkRV hsnModIntlReal) -- (mkRV hsnModIntlReal)
+%%]]
       [ "fromRational", "%" ]
 %%]
 
@@ -510,7 +510,7 @@ data EHBuiltinNames
       , ehbnClassBoundedFldMinBound :: HsName
       , ehbnClassBoundedFldMaxBound :: HsName
 %%]]
-%%[[99
+%%[[97
       , ehbnPackedString2Integer    :: HsName
 %%]]
       }
@@ -562,7 +562,7 @@ mkEHBuiltinNames f
       , ehbnClassBoundedFldMinBound = f IdOcc_Val   	hsnClassBoundedFldMinBound
       , ehbnClassBoundedFldMaxBound = f IdOcc_Val   	hsnClassBoundedFldMaxBound
 %%]]
-%%[[99
+%%[[97
       , ehbnPackedString2Integer    = f IdOcc_Val  		hsnPackedString2Integer
 %%]]
       }

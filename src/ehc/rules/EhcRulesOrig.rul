@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < MD < HS, I1 < I2, DT < ANN
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < MD < NUM < HS, I1 < I2, DT < ANN
 
 -------------------------------------------------------------------------
 -- Rewriting
@@ -543,6 +543,7 @@ ruleset expr.base scheme expr "Expression type rules" =
           | lty = tyString2
       ---
 
+{-
   rule e.float : e.int "FConst" =
     view E =
       ---
@@ -572,6 +573,7 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | translExpr = coe (translFloat (float) | TranslExpr)
+-}
 
   rule e.iint : e.int "IIConst" =
     view E =
@@ -602,36 +604,6 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | translExpr = coe (translInteger (integer) | TranslExpr)
-
-  rule e.double : e.int "DConst" =
-    view E =
-      ---
-      judge R : expr
-          | e = double
-          | ty = tyDouble
-    view K =
-      judge F : fit
-          | lty = tyDouble
-      ---
-    view I2 =
-      ---
-      judge R : expr
-          | ity = tyDouble
-    view ANN =
-      judge A : annotateTyRef = ty ~> tyAnnRef
-      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
-      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
-      judge V2 : createUID
-          | uid = (retain ppHtmlBlockUID)
-      ---
-    view CG =
-      ---
-      judge R : expr
-          | translExpr = translDouble (double)
-    view P =
-      ---
-      judge R : expr
-          | translExpr = coe (translDouble (double) | TranslExpr)
 
   rule e.var "Var" =
     view E =
@@ -1514,6 +1486,7 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       judge R : patexpr
           | ty = tyString2
 
+{-
   rule p.float : p.int "FConst" =
     view K =
       judge F : fit
@@ -1526,6 +1499,7 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       judge R : patexpr
           | ty = tyFloat
           | patFunTy = ANY
+-}
 
   rule p.con "Con" =
     view K =

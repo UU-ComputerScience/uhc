@@ -111,7 +111,7 @@ libnamesGcc
         then [ "@EXTLIBS_BGC_PKG_NAME@" ]
         else []
        )
-%%[[99
+%%[[97
     ++ (if useGMP
         then [ "@EXTLIBS_GMP_PKG_NAME@" ]
         else []

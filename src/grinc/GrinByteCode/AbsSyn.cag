@@ -145,7 +145,7 @@ DATA InsOp_TyOp
   | Add
   | Sub
   | Mul
-  | Div
+  | Quot
 %%]
 
 /* Operator data kind/type */

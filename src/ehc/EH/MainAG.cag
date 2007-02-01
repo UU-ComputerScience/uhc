@@ -158,7 +158,7 @@ SEM Expr
   | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam @lhs.gathPrfCtxtId
 %%]
 
-%%[99
+%%[97
 SEM PatExpr
   | Expr        loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
 %%]

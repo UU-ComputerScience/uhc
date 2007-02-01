@@ -1068,17 +1068,13 @@ initTyGam
       , (hsnRow,        mkTGI (Ty_Con hsnUnknown) kiRow)
       , (hsnRec,        mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
       , (hsnSum,        mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-%%]
-%%[[8
-      , (hsnFloat  ,    mkTGI tyFloat   kiStar)
-%%]
+%%]]
 %%[[9
       , (hsnPrArrow,    mkTGI (Ty_Con hsnPrArrow) ([kiStar,kiStar] `mkArrow` kiStar))
-%%]
-%%[[99
+%%]]
+%%[[97
       , (hsnInteger,    mkTGI tyInteger kiStar)
-      , (hsnDouble ,    mkTGI tyDouble  kiStar)
-%%]
+%%]]
       ]
 %%]
 

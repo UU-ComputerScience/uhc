@@ -24,7 +24,7 @@ Note: everything is exported.
 %%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
 %%]
 
-%%[99 import (Data.Ratio)
+%%[97 import (Data.Ratio)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,10 +217,10 @@ coreScanOpts :: ScanOpts
 coreScanOpts
   =  grinScanOpts
         {   scoKeywordsTxt      =   [ "let", "in", "case", "of", "rec", "foreign", "uniq"
-                                    , "Int", "Char", "Float", "String", "Tag", "Rec"
+                                    , "Int", "Char", "String", "Tag", "Rec"
                                     , "module", "default"
 %%[[12
-                                    , "Integer", "Double" 
+                                    , "Integer" 
 %%]
                                     ]
                                     ++ scoKeywordsTxt tyScanOpts
@@ -312,7 +312,7 @@ offsideScanHandle scanOpts fn fh
 %%% Splitting up a rational into nominator/denominator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[97
 floatDenot2NomDenom :: String -> (Integer,Integer)
 floatDenot2NomDenom denot
   = (numerator f,denominator f)
