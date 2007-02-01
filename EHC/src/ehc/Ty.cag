@@ -64,9 +64,6 @@
 %%[7_2 hs export(TyExpConstr(..),TyExpConstrs,TyExpFields,TyExpField(..),Annotations,Annotation(..), DecomposedAnnMap)
 %%]
 
-%%[8 hs export(tyFloat) 
-%%]
-
 %%[8 hs export(tyRecOffset) 
 %%]
 
@@ -97,7 +94,10 @@
 %%[11 hs export(tyLamArgsRes)
 %%]
 
-%%[99 hs export(tyInteger,tyDouble,tyBool) 
+%%[97 hs export(tyInteger) 
+%%]
+
+%%[97 hs export(tyBool) 
 %%]
 
 %%[1 ag import({Ty/AbsSyn})
@@ -431,14 +431,12 @@ tyRecEmpty  = mkTyRec []
 tySumEmpty  = mkTySum []
 %%]
 
-%%[8 hs
-tyFloat     = Ty_Con hsnFloat
+%%[97 hs
+tyInteger   = Ty_Con hsnInteger
 %%]
 
-%%[99 hs
+%%[97 hs
 tyBool      = Ty_Con hsnBool
-tyInteger   = Ty_Con hsnInteger
-tyDouble    = Ty_Con hsnDouble
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

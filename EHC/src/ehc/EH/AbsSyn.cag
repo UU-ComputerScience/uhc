@@ -315,7 +315,6 @@ DATA Expr
 
 %%[8
 DATA Expr
-  | FConst          float           : {Float}
   | Undefined
   | CaseAltFail     caseId          : {UID}
 %%]
@@ -335,10 +334,9 @@ DATA Expr
   | DynVar          nm              : {HsName}
 %%]
 
-%%[99.Expr
+%%[97.Expr
 DATA Expr
   | IIConst         integer         : {Integer}
-  | DConst          double          : {Double}
 %%]
 
 %%[1.AllExpr
@@ -386,11 +384,10 @@ DATA PatExpr
 
 %%[8
 DATA PatExpr
-  | FConst          float           : {Float}
   | Irrefutable     patExpr         : PatExpr
 %%]
 
-%%[99
+%%[97
 DATA PatExpr
   | Expr            expr         	: Expr
 %%]

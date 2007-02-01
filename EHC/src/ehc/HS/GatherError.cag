@@ -33,6 +33,8 @@ SEM Body
 
 %%[1
 SEM Expression
+    | Literal
+        loc         .   errL        =   @errIdUse ++ @literal.errL
     | Variable Constructor
         loc         .   errL        =   @errIdUse
     | Let

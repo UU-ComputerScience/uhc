@@ -59,7 +59,7 @@ SEM DataConstrEq
 %%[7.dataGam
 ATTR
   AllDecl AllExpr AllCase
-%%[[99
+%%[[97
   AllPatExpr
 %%]]
     [ | gathDataGam: DataGam | ]

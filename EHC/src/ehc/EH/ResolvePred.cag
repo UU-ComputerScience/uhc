@@ -32,7 +32,7 @@ SEM RecPatExpr
                 lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @knRecTy) @nm) @prUid] ++ @recPatExpr.gathPredL ++ @patExpr.gathPredL
 %%]
 
-%%[99
+%%[97
 SEM PatExpr
   | Expr        lhs         .   gathPredL           =   foPredOccL @fo_ ++ @expr.gathPredL
 %%]

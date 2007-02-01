@@ -113,7 +113,7 @@ SEM Expr
   | DynVar      loc         .   cexpr       =   cundefined @lhs.opts
 %%]
 
-%%[99
+%%[97
 SEM PatExpr
   | Expr        loc         .   cexprBaseEq =   CExpr_Var hsnClassEqFldEq
                             .   cexpr       =   mkCExprApp (foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
@@ -311,8 +311,8 @@ SEM Decl
 
 %%[8
 SEM PatExpr
-  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst FConst Irrefutable
-%%[[99
+  | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable
+%%[[97
     Expr
 %%]]
                 loc         .   cpNm        =   maybe (RPatNmUniq @topNm) RPatNmOrig @mbTopNm
@@ -359,7 +359,6 @@ ATTR PatExpr [ | | rpat: RPat ]
 SEM PatExpr
   | IConst      loc         .   rpat        =   RPat_Int @cpNm @int
   | CConst      loc         .   rpat        =   RPat_Char @cpNm @char
-  | FConst      loc         .   rpat        =   RPat_Int @cpNm (-1) -- for now
   | SConst      loc         .   rpat        =   RPat_Int @cpNm (-1) -- for now
   | Var         loc         .   rpat        =   RPat_Var @cpNm
   | VarAs       loc         .   rpat        =   @patExpr.rpat {rcpPNm = @cpNm}
@@ -375,7 +374,7 @@ SEM PatExpr
   | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @patExpr.cbindL
 %%]
 
-%%[99
+%%[97
 SEM PatExpr
   | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm @cexpr
 %%]
@@ -716,7 +715,7 @@ type RCEAltL = [RAlt]
 %%[8 hs
 data RCESplitCateg
   = RCESplitVar | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
-%%[[99
+%%[[97
   | RCESplitBoolExpr
 %%]]
   deriving Eq
@@ -798,7 +797,7 @@ rceMatchSplits env args alts@(alt:_)
   |  raltIsVar          alt  = rceMatchVar          env args alts
   |  raltIsConst        alt  = rceMatchConst        env args alts
   |  raltIsIrrefutable  alt  = rceMatchIrrefutable  env args alts
-%%[[99
+%%[[97
   |  raltIsBoolExpr     alt  = rceMatchBoolExpr     env args alts
 %%]]
   |  raltIsConMany      alt  = rceMatchConMany      env args alts
@@ -825,7 +824,7 @@ rceMatch env args alts
      $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar
                         else if raltIsConst         a  then RCESplitConst
                         else if raltIsIrrefutable   a  then RCESplitIrrefutable
-%%[[99
+%%[[97
                         else if raltIsBoolExpr      a  then RCESplitBoolExpr
 %%]]
                         else if raltIsConMany       a  then RCESplitConMany
@@ -839,7 +838,7 @@ rceUpdEnv e env
         }
 %%]
 
-%%[99 hs
+%%[97 hs
 -- for now
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchBoolExpr env (arg:args) alts = rceCaseCont env

@@ -1171,9 +1171,9 @@ prfOneStep fe prOcc@(PredOcc pr prPoi) st@(ProofState g@(ProvenGraph _ p2i _ _) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-prfRuleMatches :: UID -> PredOcc -> [Rule] -> [([PredOcc],(Pred,PredOccId,CExpr),CExpr,ProofCost)]
-prfRuleMatches u prOcc rules
-  = catMaybes . zipWith (\u r -> matchRule u prOcc r) (mkNewUIDL (length rules) u) $ rules
+prfRuleMatches :: FIEnv -> UID -> PredOcc -> [Rule] -> [([PredOcc],(Pred,PredOccId,CExpr),CExpr,ProofCost)]
+prfRuleMatches fe u prOcc rules
+  = catMaybes . zipWith (\u r -> matchRule fe u prOcc r) (mkNewUIDL (length rules) u) $ rules
 %%]
 
 %%[9
@@ -1202,7 +1202,7 @@ prfOneStepClass  fe prOcc@(PredOcc pr@(Pred_Class t) prPoi) depth
                           levMax        = length pegis + 1
                           pcostFail     = pcostNotAvail levMax
                           ndFail        = ProvenArg pr pcostFail
-                          ruleMatches   = prfRuleMatches u1 prOcc rules
+                          ruleMatches   = prfRuleMatches fe u1 prOcc rules
                           ((g',newPrOccL),depth')
                              = case ruleMatches of
                                    [] ->  ((prvgAddPrNd pr [prPoi] ndFail g,[]),depth)
@@ -1252,7 +1252,7 @@ prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r l) prPoi) depth
                                          -> fromJust mbMatch
                                          where    (u',u1,u2)    = mkNewLevUID2 u
                                                   rules         = pegiLRuleL pegis
-                                                  ruleMatches   = prfRuleMatches u1 prOcc rules
+                                                  ruleMatches   = prfRuleMatches fe u1 prOcc rules
                                                   mbMatch
                                                     =  case ruleMatches of
                                                          [] ->  Nothing
@@ -1399,12 +1399,12 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-matchRule :: UID -> PredOcc -> Rule -> Maybe ([PredOcc],(Pred,PredOccId,CExpr),CExpr,ProofCost)
-matchRule u prOcc r
+matchRule :: FIEnv -> UID -> PredOcc -> Rule -> Maybe ([PredOcc],(Pred,PredOccId,CExpr),CExpr,ProofCost)
+matchRule fe u prOcc r
   =  let  (_,u1,u2,u3)   = mkNewLevUID3 u
           pr             = poPr prOcc
           (us,vs)        = mkNewUIDTyVarL (tyArrowArity (rulRuleTy r)) u2
-          fo             = fitsIn (predFIOpts {fioDontBind = ftv pr}) emptyFE u3 (rulRuleTy r) (vs `mkArrow` Ty_Pred pr)
+          fo             = fitsIn (predFIOpts {fioDontBind = ftv pr}) fe u3 (rulRuleTy r) (vs `mkArrow` Ty_Pred pr)
      in   if foHasErrs fo
           then Nothing
           else Just  ( zipWith PredOcc (map tyPred . tyArrowArgs . foTy $ fo) (map (mkPrId . poiCxId . poPoi $ prOcc) us)

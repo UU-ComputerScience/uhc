@@ -620,13 +620,12 @@ SEM PatExpr
   | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
   | App         lhs         .   topNm               =   hsnUnknown
   | AppTop Con Rec CConst IConst DataFields
-%%[[99
+%%[[97
     Expr
 %%]]
                 loc         .   topNm               =   uidHNm @lUniq
   | SConst      loc         .   topNm               =   uidHNm @uniq1
 %%[[8
-  | FConst      loc         .   topNm               =   uidHNm @uniq1
   | Irrefutable loc         .   topNm               =   @patExpr.topNm
 %%]]
 %%]

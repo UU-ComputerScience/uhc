@@ -97,11 +97,9 @@ SEM CModule
 SEM CExpr
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)
   | Char        loc         .   pp          =   ppLit "Char"   [@char]
-  | Float       loc         .   pp          =   ppLit "Float"  (show @float)
   | String      loc         .   pp          =   ppLit "String" @str
-%%[[99
+%%[[97
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
-  | Double      loc         .   pp          =   ppLit "Double"  (show @double)
 %%]
   | Var         loc         .   pp          =   ppCNm @nm
   | App         loc         .   pp          =   let args = reverse $ map pp_parens $ @appArgPPL

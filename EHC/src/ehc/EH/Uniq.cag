@@ -358,7 +358,7 @@ SEM Decl
                                                                     :=  mkNewLevUID4    @gUniq2
 %%]
 
-%%[99
+%%[97
 SEM PatExpr
   | Expr            (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
 %%]

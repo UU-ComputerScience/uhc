@@ -38,11 +38,9 @@ pCExprBase
   <|> pNUMBER
        *> (   (   (CExpr_Int     . read) <$ pKeyTk "Int"
               <|> (CExpr_Char    . head) <$ pKeyTk "Char"
-              <|> (CExpr_Float   . read) <$ pKeyTk "Float"
               <|> (CExpr_String        ) <$ pKeyTk "String"
-%%[[99
+%%[[97
               <|> (CExpr_Integer . read) <$ pKeyTk "Integer"
-              <|> (CExpr_Double  . read) <$ pKeyTk "Double"
 %%]
               )
               <*> (tokMkStr <$> pStringTk)

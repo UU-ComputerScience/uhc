@@ -40,6 +40,119 @@ PRIM GB_Word gb_primUnsafeId( GB_Word x )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+PRIM GB_NodePtr gb_primIntToFloat( GB_Int x )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Float_In(n) ;
+	n->content.flt = (float)GB_GBInt2Int(x) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDoubleToFloat( GB_NodePtr nd )
+{
+	GB_NodePtr nf ;
+	GB_NodeAlloc_Float_In(nf) ;
+	nf->content.flt = nd->content.dbl ;
+	return nf ;
+}
+
+PRIM GB_NodePtr gb_primFloatToDouble( GB_NodePtr nf )
+{
+	GB_NodePtr nd ;
+	GB_NodeAlloc_Double_In(nd) ;
+	nd->content.dbl = nf->content.flt ;
+	return nd ;
+}
+
+PRIM GB_NodePtr gb_primIntToDouble( GB_Int x )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Double_In(n) ;
+	n->content.dbl = (double)GB_GBInt2Int(x) ;
+	return n ;
+}
+
+#if USE_GMP
+PRIM GB_NodePtr gb_primRationalToFloat( GB_NodePtr nr )
+{
+	GB_NodePtr nf ;
+	GB_NodePtr numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ;
+	GB_NodePtr divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ;
+	GB_NodeAlloc_Float_In(nf) ;
+	nf->content.flt = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
+	return nf ;
+}
+
+PRIM GB_NodePtr gb_primRationalToDouble( GB_NodePtr nr )
+{
+	GB_NodePtr nf ;
+	GB_NodePtr numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ;
+	GB_NodePtr divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ;
+	GB_NodeAlloc_Double_In(nf) ;
+	nf->content.dbl = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
+	return nf ;
+}
+
+PRIM GB_NodePtr gb_primIntegerToFloat( GB_NodePtr n )
+{
+	GB_NodePtr nf ;
+	GB_NodeAlloc_Float_In(nf) ;
+	nf->content.flt = mpz_get_d( n->content.mpz ) ;		// not sure whether this works without explicit truncation or something like that...
+	return nf ;
+}
+
+PRIM GB_NodePtr gb_primIntegerToDouble( GB_NodePtr n )
+{
+	GB_NodePtr nf ;
+	GB_NodeAlloc_Double_In(nf) ;
+	nf->content.dbl = mpz_get_d( n->content.mpz ) ;
+	return nf ;
+}
+
+PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
+{
+	return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
+}
+
+PRIM GB_NodePtr gb_primCString2Integer( char* s )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_set_str( n->content.mpz, s, 10 ) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_set_si( n->content.mpz, GB_GBInt2Int( x ) ) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primFloatToInteger( GB_NodePtr nf )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_set_d( n->content.mpz, nf->content.flt ) ;	// not sure whether this works without explicit coercion...
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDoubleToInteger( GB_NodePtr nf )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_set_d( n->content.mpz, nf->content.dbl ) ;
+	return n ;
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Int
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -62,10 +175,76 @@ PRIM GB_Word gb_primMulInt( GB_Word x, GB_Word y )
   	return GB_Int_Mul(x,y);
 }
 
+/* DivInt and ModInt use euclidean division, ie.
+   the modulus is always positive.
+   
+   These routines are taken from lvm.
+*/
+
 PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primDivInt %d(%d)/%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Div(x,y)), GB_Int_Div(x,y) );) ;
-  	return GB_Int_Div(x,y);
+	GB_Int numerator = GB_GBInt2Int(x) ;
+	GB_Int divisor   = GB_GBInt2Int(y) ;
+	GB_Int div = numerator / divisor ;
+	GB_Int mod = numerator % divisor ;
+	
+	// todo: if ( divisor == 0 ) ...
+	
+	/* adjust to euclidean division */
+	if ( mod < 0 ) {
+		if ( divisor > 0 )
+			div -= 1 ;
+		else
+			div += 1 ;
+	}
+	
+  	return GB_Int2GBInt(div) ;
+}
+%%]
+
+%%[97
+PRIM GB_Word gb_primModInt( GB_Word x, GB_Word y )
+{
+	GB_Int divisor   = GB_GBInt2Int(y) ;
+	GB_Int mod = GB_GBInt2Int(x) % divisor ;
+	
+	// todo: if ( divisor == 0 ) ...
+	
+	/* adjust to euclidean modulus */
+	if ( mod < 0 ) {
+		if ( divisor > 0 )
+			mod += divisor ;
+		else
+			mod -= divisor ;
+	}
+	
+  	return GB_Int2GBInt(mod) ;
+}
+
+/* QuotInt and RemInt use truncated division, ie.
+   QuotInt D d = trunc(D/d)
+   RemInt D d  = D - d*(QuotInt D d)
+*/
+
+PRIM GB_Word gb_primQuotInt( GB_Word x, GB_Word y )
+{
+	// todo: if ( divisor == 0 ) ...
+	
+  	return GB_Int_Quot(x,y);
+}
+
+PRIM GB_Word gb_primRemInt( GB_Word x, GB_Word y )
+{
+	// todo: if ( divisor == 0 ) ...
+	
+  	return GB_Int_Rem(x,y);
+}
+%%]
+
+%%[97
+PRIM GB_Int gb_primNegInt( GB_Int x )
+{
+	return GB_Int_Neg(x) ;
 }
 %%]
 
@@ -115,10 +294,114 @@ PRIM GB_Word gb_primMinInt()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Float
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+PRIM GB_Word gb_primEqFloat( GB_NodePtr x, GB_NodePtr y )
+{
+	return GB_Float_Cmp(x,y, Cast(GB_Word,gb_False), Cast(GB_Word,gb_True), Cast(GB_Word,gb_False) ) ;
+}
+
+PRIM GB_Word gb_primCmpFloat( GB_NodePtr x, GB_NodePtr y )
+{
+	return GB_Float_Cmp(x,y, Cast(GB_Word,gb_LT), Cast(GB_Word,gb_EQ), Cast(GB_Word,gb_GT) ) ;
+}
+
+PRIM GB_NodePtr gb_primAddFloat( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Float_Add_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primSubFloat( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Float_Sub_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primMulFloat( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Float_Mul_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDivFloat( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Float_Div_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primNegFloat( GB_NodePtr x )
+{
+	GB_NodePtr n ;
+	GB_Float_Neg_In(n,x) ;
+	return n ;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Double
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+PRIM GB_Word gb_primEqDouble( GB_NodePtr x, GB_NodePtr y )
+{
+	return GB_Double_Cmp(x,y, Cast(GB_Word,gb_False), Cast(GB_Word,gb_True), Cast(GB_Word,gb_False) ) ;
+}
+
+PRIM GB_Word gb_primCmpDouble( GB_NodePtr x, GB_NodePtr y )
+{
+	return GB_Double_Cmp(x,y, Cast(GB_Word,gb_LT), Cast(GB_Word,gb_EQ), Cast(GB_Word,gb_GT) ) ;
+}
+
+PRIM GB_NodePtr gb_primAddDouble( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Double_Add_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primSubDouble( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Double_Sub_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primMulDouble( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Double_Mul_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDivDouble( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Double_Div_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primNegDouble( GB_NodePtr x )
+{
+	GB_NodePtr n ;
+	GB_Double_Neg_In(n,x) ;
+	return n ;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Integer, via GMP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[97
 #if USE_GMP
 PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
 {
@@ -165,19 +448,76 @@ PRIM GB_NodePtr gb_primDivInteger( GB_NodePtr x, GB_NodePtr y )
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primCString2Integer( char* s )
+PRIM GB_NodePtr gb_primModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_set_str( n->content.mpz, s, 10 ) ;
+	GB_Integer_Mod_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
+PRIM GB_NodePtr gb_primQuotInteger( GB_NodePtr x, GB_NodePtr y )
 {
-	return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
+	GB_NodePtr n ;
+	GB_Integer_Quot_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primRemInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Rem_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n, n1, n2 ;
+	GB_Integer_QuotRem_In(n1,n2,x,y) ;
+	GB_MkTupNode2_In(n,n1,n2) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDivModInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n, n1, n2 ;
+	GB_Integer_DivMod_In(n1,n2,x,y) ;
+	GB_MkTupNode2_In(n,n1,n2) ;
+	return n ;
 }
 #endif
+%%]
+
+%%[97
+#if USE_GMP
+PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
+{
+	GB_NodePtr n ;
+	GB_Integer_Neg_In(n,x) ;
+	return n ;
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Char
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GB_Word gb_primCharIsUpper( GB_Int x )
+{
+	char c = GB_GBInt2Int( x ) ;
+	if ( c >= 'A' && c <= 'Z' )
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
+}
+
+PRIM GB_Word gb_primCharIsLower( GB_Int x )
+{
+	char c = GB_GBInt2Int( x ) ;
+	if ( c >= 'a' && c <= 'z' )
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

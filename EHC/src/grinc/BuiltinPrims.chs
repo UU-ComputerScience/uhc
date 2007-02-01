@@ -47,9 +47,16 @@ prims
       , ( "primMulInt", Map.fromList[ (BackendSilly			, SillyPrim (infixOperator "*")   		)
                                     , (BackendGrinByteCode	, GbPrim 2 (mkGbInsOp InsOp_TyOp_Mul)	)
                                     ] )
-      , ( "primDivInt", Map.fromList[ (BackendSilly			, SillyPrim (infixOperator "/")   		)
-                                    , (BackendGrinByteCode	, GbPrim 2 (mkGbInsOp InsOp_TyOp_Div)	)
+%%[[8
+      , ( "primDivInt"		-- for now, to not break test examples using primDivInt
+%%][97
+      , ( "primQuotInt"
+%%]]
+                      , Map.fromList[ (BackendSilly			, SillyPrim (infixOperator "/")   		)
+                                    , (BackendGrinByteCode	, GbPrim 2 (mkGbInsOp InsOp_TyOp_Quot)	)
                                     ] )
+
+      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\o env m d [a] -> gviLd' o env m d a)	) ] )
 
       , ( "primGtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator ">" )) ] )
       , ( "primLtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "<" )) ] )

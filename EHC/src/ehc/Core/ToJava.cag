@@ -182,7 +182,6 @@ SEM CModule
 SEM CExpr
   | Int         loc         .   jvSrc       =   "new Int" >|< pp_parens (pp @int)
   | Char        loc         .   jvSrc       =   "new Char" >|< pp_parens (pp (show @char))
-  | Float       loc         .   jvSrc       =   "new Float" >|< pp_parens (pp @float)
   | String      loc         .   jvSrc       =   pp (show @str)
   | Var         loc         .   jvSrc       =   jvNmPP @nm
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
@@ -235,7 +234,7 @@ ATTR CPat [ | | fldNm: HsName ]
 
 SEM CPat
   | Var Con Int Char
-%%[[99
+%%[[97
     BoolExpr
 %%]]
                 lhs         .   fldNm       =   @pnm
@@ -264,10 +263,9 @@ SEM CExpr
   | ImplsLam    loc         .   jvSrc       =   @body.jvSrc
 %%]
 
-%%[99
+%%[97
 SEM CExpr
   | Integer     loc         .   jvSrc       =   "new Int" >|< pp_parens (pp (show @integer))
-  | Double      loc         .   jvSrc       =   "new Double" >|< pp_parens (pp (show @double))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

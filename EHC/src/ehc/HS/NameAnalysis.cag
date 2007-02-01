@@ -480,6 +480,24 @@ SEM ContextItem
 %%% Identifier use's: lookup+gather of uses of defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1 hs
+litNames :: Literal -> Int -> [HsName]
+litNames lit sign
+  = case lit of
+%%[[5
+      Literal_String r s   -> [hsnDataListAltCons,hsnDataListAltNil]
+%%]]
+%%[[97
+      Literal_Int    _ _ _
+        | sign < 0         -> [hsnFromInteger,hsnNegate]
+        | otherwise        -> [hsnFromInteger]
+      Literal_Float  _ _
+        | sign < 0         -> [hsnMkRatio,hsnFromRational,hsnNegate]
+        | otherwise        -> [hsnMkRatio,hsnFromRational]
+%%]]
+      _                    -> []
+%%]
+
 %%[1.mkUseOccGam hs
 mkUseOccGam :: IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ [] _ _ _
@@ -528,6 +546,11 @@ ATTR AllNT [ | | idUseOccGam USE {`gamAddGam`} {emptyGam}: IdUseOccGam ]
 
 %%[1
 SEM Expression
+    | Literal
+        loc             .   litnames    =   litNames @literal.eh 1
+                        .   (litrefname,litrefnames,idUseOccGam,errIdUse)
+                                        =   mkUseOccGam @lhs.idGam @litnames IdOcc_Val IdAsp_Val_Var @range
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGam, @literal.idUseOccGam]
     | Variable
         loc             .   idAsp       =   IdAsp_Val_Var
     | Constructor
@@ -573,7 +596,7 @@ SEM Literal
     | String
         loc             .   (_,refnames,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [hsnDataListAltCons,hsnDataListAltNil] IdOcc_Val IdAsp_Val_Var @range
-%%[[99
+%%[[97
     | Int
         loc             .   (refname,refnames,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam [hsnFromInteger] IdOcc_Val IdAsp_Val_Var @range
@@ -588,19 +611,7 @@ SEM Pattern
     | Literal
         loc             .   (eqrefname,_,idUseOccGamEq,errIdUseEq)
                                         =   mkUseOccGam @lhs.idGam [hsnClassEqFldEq] IdOcc_Val IdAsp_Val_Var @range
-                        .   litnames    =   case @literal.eh of
-%%[[5
-                                              Literal_String r s   -> [hsnDataListAltCons,hsnDataListAltNil]
-%%]]
-%%[[99
-                                              Literal_Int    _ _ _
-                                                | @sign < 0        -> [hsnFromInteger,hsnNegate]
-                                                | otherwise        -> [hsnFromInteger]
-                                              Literal_Float  _ _
-                                                | @sign < 0        -> [hsnMkRatio,hsnFromRational,hsnNegate]
-                                                | otherwise        -> [hsnMkRatio,hsnFromRational]
-%%]]
-                                              _                    -> []
+                        .   litnames    =   litNames @literal.eh @sign
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
                                         =   mkUseOccGam @lhs.idGam @litnames IdOcc_Val IdAsp_Val_Var @range
 %%[[9
