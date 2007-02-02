@@ -134,12 +134,14 @@ SEM GrVal
                  . node        = maybe @grTrf id @maybeNode
 
 SEM GrExpr
-  | Fetch Update Eval Throw  loc . maybeNode   = Map.lookup @nm @lhs.grNodeSubst
-                                 . newName     = maybe @nm (\(GrVal_Var nm) -> nm) @maybeNode
-  | Fetch    lhs  .  grTrf  = GrExpr_Fetch @newName @mbOffset @mbTag
-  | Update   lhs  .  grTrf  = GrExpr_Update @newName @val.grTrf @mbTag
-  | Eval     lhs  .  grTrf  = GrExpr_Eval  @newName
-  | Throw    lhs  .  grTrf  = GrExpr_Throw @newName
+  | FetchNode FetchField Update Eval Throw  
+               loc  . maybeNode = Map.lookup @nm @lhs.grNodeSubst
+               loc  . newName   = maybe @nm (\(GrVal_Var nm) -> nm) @maybeNode
+  | FetchNode  lhs  . grTrf     = GrExpr_FetchNode  @newName
+  | FetchField lhs  . grTrf     = GrExpr_FetchField @newName @offset @mbTag
+  | Update     lhs  . grTrf     = GrExpr_Update @newName @val.grTrf @mbTag
+  | Eval       lhs  . grTrf     = GrExpr_Eval  @newName
+  | Throw      lhs  . grTrf     = GrExpr_Throw @newName
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%

@@ -61,8 +61,10 @@ pExpr           ::   GRIParser GrExpr
 pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm
-                <|>  GrExpr_Fetch   <$  pKey "fetch"        <*> pGrNm   <*>  (Just <$> pInt `opt` Nothing)
-                                                                        <*>  (Just <$> pTag `opt` Nothing)
+                <|>  GrExpr_FetchNode
+                                    <$ pKey "fetchnode"     <*> pGrNm
+                <|>  GrExpr_FetchField
+                                    <$pKey "fetchfield"     <*> pGrNm   <*>  pInt   <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_FetchUpdate
                 					<$  pKey "fetchupdate"  <*> pGrNm   <*>  pGrNm
                 <|>  GrExpr_Update  <$  pKey "update"       <*> pGrNm   <*>  pVal

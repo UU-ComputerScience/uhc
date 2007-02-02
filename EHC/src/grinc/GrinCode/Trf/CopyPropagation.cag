@@ -190,9 +190,10 @@ SEM GrTag [ | | tag: GrTag ]
   | Var      lhs  .  tag  =  Map.findWithDefault @grTrf @nm (snd @lhs.valueMap)
   | * - Var  lhs . tag = @grTrf
 SEM GrExpr
-  | Fetch   lhs  .  grTrf  = GrExpr_Fetch  (getHsName @nm @lhs.valueMap) @mbOffset @mbTag
-  | Update  lhs  .  grTrf  = GrExpr_Update (getHsName @nm @lhs.valueMap) @val.grTrf @mbTag
-  | FFI     lhs  .  grTrf  = GrExpr_FFI @nm (map (flip getHsName @lhs.valueMap) @argL) @resTagL.grTrf
+  | FetchNode  lhs  .  grTrf  = GrExpr_FetchNode  (getHsName @nm @lhs.valueMap)
+  | FetchField lhs  .  grTrf  = GrExpr_FetchField (getHsName @nm @lhs.valueMap) @offset @mbTag
+  | Update     lhs  .  grTrf  = GrExpr_Update (getHsName @nm @lhs.valueMap) @val.grTrf @mbTag
+  | FFI        lhs  .  grTrf  = GrExpr_FFI @nm (map (flip getHsName @lhs.valueMap) @argL) @resTagL.grTrf
 %%]
 
 % vim:ts=4:et:ai:

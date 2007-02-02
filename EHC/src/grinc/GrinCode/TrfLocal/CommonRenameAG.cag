@@ -45,7 +45,8 @@ SEM GrExpr
   | App         lhs         .   trf             =   GrExpr_App (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm (map (nmAliasRepl @lhs.nmAliasMp) @argL) @resTagL.trf
   | Eval        lhs         .   trf             =   GrExpr_Eval $ nmAliasRepl @lhs.nmAliasMp @nm
-  | Fetch       lhs         .   trf             =   GrExpr_Fetch (nmAliasRepl @lhs.nmAliasMp @nm) @mbOffset @mbTag
+  | FetchNode   lhs         .   trf             =   GrExpr_FetchNode  (nmAliasRepl @lhs.nmAliasMp @nm)
+  | FetchField  lhs         .   trf             =   GrExpr_FetchField (nmAliasRepl @lhs.nmAliasMp @nm) @offset @mbTag
   | Update      lhs         .   trf             =   GrExpr_Update (nmAliasRepl @lhs.nmAliasMp @nm) @val.trf @mbTag
   | FetchUpdate lhs         .   trf             =   GrExpr_FetchUpdate (nmAliasRepl @lhs.nmAliasMp @src) (nmAliasRepl @lhs.nmAliasMp @dst)
   | Throw       lhs         .   trf             =   GrExpr_Throw (nmAliasRepl @lhs.nmAliasMp @nm)

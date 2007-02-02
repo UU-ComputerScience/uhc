@@ -33,6 +33,8 @@ DATA Statement
                  source     : Value
   |  Increment   dest       : Variable
                  source     : Value
+  |  If          scrutinee  : Value
+                 body       : Alternatives
   |  Switch      scrutinee  : Value
                  body       : Alternatives
   |  Call        name       : {String}
@@ -74,6 +76,7 @@ DATA Variable
 
 DATA Value
   |  Con         con        : Constant
+  |  UnboxCon    con        : Value
   |  Var         var        : Variable
   |  Alloc       size       : {Int}
   |  Label       name       : {String}

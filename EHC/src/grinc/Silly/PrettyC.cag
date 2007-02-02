@@ -70,6 +70,8 @@ SEM SilModule
                                 >-< comment "Tag constants"
                                 >-< ppVertically (map constantDefinition @constants)
                                 >-< text ""
+                                >-< constantDefinition ("UNBOXED",1)
+                                >-< constantDefinition ("ANY",0)
                                 >-< comment "Global table"
                                 >-< ppVertically (map variableDeclaration @variables)
                                 >-< text ""
@@ -127,6 +129,7 @@ SEM Statement
   | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
   | Increment   lhs.prettyC   = assignincr @dest.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
+  | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls @name @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwnCalls @name
   | Return      lhs.prettyC   = returnFromSillyFunction @spincr @retdiff @lhs.optOwnCalls
@@ -143,6 +146,7 @@ SEM Values
 
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
+  | UnboxCon    lhs.prettyC   = "((" >#< @con.prettyC >#< ")<<1)|1 "
   | Var         lhs.prettyC   = @var.prettyC
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
@@ -354,6 +358,18 @@ switch optDef scrutinee body
    >-< indent 4 body
    >-< ppWhen optDef (indent 4 (caseDefault scrutinee))
    >-< "}"
+
+ifstat ::  PP_Doc -> PP_Doc -> PP_Doc
+ifstat scrutinee body
+ = "switch ("
+   >|< scrutinee
+   >|< " & 1)"
+   >#< "{"
+   >-< indent 4 body
+   >-< "}"
+
+
+
 
 alternative :: PP_Doc -> PP_Doc -> PP_Doc
 alternative when body

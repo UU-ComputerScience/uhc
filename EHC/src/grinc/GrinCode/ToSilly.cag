@@ -32,6 +32,26 @@ ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters
 ATTR GrExpr GrAlt GrAltL GrGlobal GrGlobalL GrValL GrVal GrTag GrTagL GrAdaptL GrAdapt GrPat GrPatL GrSplitL GrSplit [ embed : {EmbedFunction} | | ]
 
 
+
+
+ATTR GrAlt GrAltL [  | | hasUnboxies USE {||} {False} : {Bool} ]
+ATTR GrPat GrTag [ | | isUnboxy: {Bool} ]
+
+SEM GrAlt
+  | Alt            loc . hasUnboxies = @pat.isUnboxy
+ 
+SEM GrPat          
+  | Tag            lhs . isUnboxy = @tag.isUnboxy
+  | * - Tag        lhs . isUnboxy = False
+  
+SEM GrTag
+  | Unboxed        lhs . isUnboxy = True
+  | * - Unboxed    lhs . isUnboxy = False
+
+
+
+
+
 ATTR GrValL [ | | length : {Int} ]
 SEM GrValL
   | Nil lhs.length = 0
@@ -123,13 +143,13 @@ SEM GrExpr
                          then Statement_Comment "Unit (Yielding)"
                               : if @lhs.optOwnParameters || @lhs.optOwnLocals
                                  then let dp = @lhs.distance+ @lhs.numberParameters
-                                          smartTups = zip [dp+1,dp ..] (@val.values ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet ])
+                                          smartTups = zip [dp+1,dp ..] (@loc.vs ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet ])
                                       in  smartAssignment smartTups
                                           ++ [ Statement_Return (@lhs.distance+ @lhs.numberParameters+2) (max @loc.nMyRes @lhs.numberParameters + 1)
                                              ]
                                  else [ Statement_Assignment v e
                                       | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
-                                                    @val.values
+                                                    @loc.vs
                                       ]
                          else Statement_Comment "Unit (Internal)"
                               : [ Statement_Assignment v e
@@ -138,8 +158,16 @@ SEM GrExpr
                                 , isRealVar v
                                 ]                         
                           
-           loc.nMyRes = length (@val.values)
+           loc.nMyRes = length (@loc.vs)
            loc.moveRet= @loc.nMyRes > @lhs.numberParameters
+
+           loc.cat    = tagcat @val.values
+           loc.vs     = if    @loc.cat=='U'
+                        then  [Value_UnboxCon (head (tail @val.values))]
+                        else @val.values
+              
+
+
 
  | FFI     lhs.stats  = if @isLastExpr
                          then Statement_Comment "FFI (Yielding)"
@@ -193,22 +221,25 @@ SEM GrExpr
                                       (map (arrayVariab (@lhs.embed @nm)) [0..])
                                       --(map (Variable_Subs Variable_Ptr . Constant_LiteralInt) [0..])
                                       vs
-
- | Fetch   lhs.stats  = Statement_Comment "Fetch"
-                        : Statement_Assignment (@lhs.embed (head @lhs.targets))
-                                               (case @mbOffset of
-                                                 Just offset -> arrayValue (@lhs.embed @nm) offset
-                                                 Nothing     -> error "cant generate code for Fetch without offset"
-                                               )
-                        : []
-
+ | FetchNode
+           lhs.stats  = error "FetchNode found while generating Silly"
+           lhs.localsF= error "FetchNode found while generating Silly"
+           
+ | FetchField
+           lhs.stats  = [ Statement_Comment "Fetch"
+                        , Statement_Assignment (@lhs.embed (head @lhs.targets))
+                                               (arrayValue (@lhs.embed @nm) @offset)
+                        ]
            lhs.localsF = (@lhs.targets ++)
 
- | Case    lhs.stats  = Statement_Comment "Case"
-                        : Statement_Switch @val.value
-                                           @altL.alternatives
-                        : []
-
+ | Case    lhs.stats  = [ Statement_Comment "Case"
+                        , if @altL.hasUnboxies
+                           then Statement_If     @val.value
+                                                 @altL.alternatives
+                           else Statement_Switch @val.value
+                                                 @altL.alternatives
+                        ]
+                        
            lhs.localsF = (@lhs.targets ++) . @altL.localsF
 
  | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
@@ -304,9 +335,12 @@ SEM GrTag
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
  | Var     lhs.value    = Value_Var (@lhs.embed @nm)
- | Unboxed lhs.value    = error "GrTag:Unboxed value"
+ | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")   -- error "GrTag:Unboxed value"
  | Any     lhs.value    = error "GrTag:Any value"
- | * - Lit lhs.constant = error "GrTag:other constant"
+ | Unboxed lhs.constant = Constant_Alias "UNBOXED"
+ | Any     lhs.constant = Constant_Alias "ANY"
+ | * - Lit Unboxed Any
+           lhs.constant = error "GrTag:other constant"
 
 SEM GrPat
  | Tag     lhs.value    = @tag.value
@@ -513,17 +547,21 @@ allocate :: Char -> Int -> Int -> Value
 allocate 'C' n1 _  = Value_Alloc n1
 allocate _   n1 n2 = Value_Alloc (max n1 n2)
        
--- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks etc.
+-- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char
 tagcat (Value_Con (Constant_Alias (c:_)):_) = c
+tagcat _ = ' '
 
 store :: EmbedFunction -> HsName -> Int -> Int -> [Value] -> Statements
 store em pn n1 n2 vs
        =  let epn = em pn
-          in  Statement_Assignment epn (allocate (tagcat vs) n1 n2)
-              : zipWith Statement_Assignment
-                        (map (arrayVariab epn) [0..])
-                        vs
+              cat = tagcat vs
+          in  if    cat=='U'
+              then [Statement_Assignment epn (Value_UnboxCon (head (tail vs)))]
+              else Statement_Assignment epn (allocate cat n1 n2)
+                   : zipWith Statement_Assignment
+                             (map (arrayVariab epn) [0..])
+                             vs
 
 arrayValue :: Variable -> Int -> Value
 arrayValue a i = Value_Var (Variable_Subs a (Constant_LiteralInt i))
