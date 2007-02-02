@@ -178,7 +178,7 @@ evalCode unique evalMap hptMap locatVar
                    = let (uniqNext, entrNext, altNext) = buildEvalAlt locatVar fetchVar tag av evalMap hptMap uniqPrev
                      in  (uniqNext, entrNext++entrPrev, altNext:altsPrev)
 
-       code        = GrExpr_Seq (GrExpr_Fetch locatVar Nothing Nothing) fetchPat $
+       code        = GrExpr_Seq (GrExpr_FetchNode locatVar) fetchPat $
                      GrExpr_Case fetchVal altsFinal
    in ( uniqFinal
       , addEnvVars hptMap entrFinal

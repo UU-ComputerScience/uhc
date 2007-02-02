@@ -410,9 +410,10 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8.fetch
 SEM GrExpr
-  | Fetch        lhs . equations =  case @lhs.targetInfo of
-                                      NodeVar tvar -> [ EquationShouldBe tvar [getNr @nm] ]              -- why doesn't this use the mbOffset field? (JF)
+  | FetchNode    lhs . equations =  case @lhs.targetInfo of
+                                      NodeVar tvar -> [ EquationShouldBe tvar [getNr @nm] ]
                                       _            -> error "HPT: Fetch target should be a variable"
+  | FetchField   lhs . equations =  error "FetchField found during HPT"
   | Update       lhs . equations =  [ EquationShouldBe (getNr @nm)  [getNr @nm,  getNr @val.getName] ]
   | FetchUpdate  lhs . equations =  [ EquationShouldBe (getNr @dst) [getNr @dst, getNr @src        ] ]
   

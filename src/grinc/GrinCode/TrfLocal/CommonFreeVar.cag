@@ -20,7 +20,7 @@ SEM GrExpr
                             .   gathFviMp       =   fviMpUnions [@expr.gathFviMp, @gathBodyFviMp]
   | Call App    loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton' FvUse_Call @nm, @argL.gathFviMp]
   | FFI         loc         .   gathFviMp       =   fviMpFromList @argL
-  | Eval Fetch Throw
+  | Eval FetchNode FetchField Throw
                 loc         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
   | Update      loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton @nm, @val.gathFviMp]
   | FetchUpdate loc         .   gathFviMp       =   fviMpFromList [@src,@dst]

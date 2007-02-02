@@ -262,7 +262,7 @@ SEM CModule
                                                     n2 = uidHNm ui2
                                                 in GrBind_Bind hsnGrEval
                                                                [n1]
-                                                               (GrExpr_Seq (GrExpr_Fetch n1 Nothing Nothing)
+                                                               (GrExpr_Seq (GrExpr_FetchNode n1)
                                                                            (GrPat_Var n2)
                                                                            (GrExpr_Case (GrVal_Var n2)
                                                                                         (zipWith ($)
@@ -291,16 +291,20 @@ SEM CModule
                                                             []
                                                             (GrExpr_FFI "primUndefined" [] [{- GrTag_Any -}])
 
+
                 lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                     [] -- TODO: this should contain all the caf variables
                                                     (@expr.grBindL
-                                                     ++ [ @evalBind
-                                                        , @applyBind
-                                                        -- , @undefBind
-                                                        ])
+                                                     --  ++ [ @evalBind, @applyBind ]  -- See note below
+                                                    )
                                                     @constrsMp
                                                     @evalTagMp
                                                     @applyTagMp
+                                                -- Note: evalBind contains Update-expressions. 
+                                                -- These are wrongly thrown away by cpOptimizeGrin, 
+                                                -- so if you need evalBind, you should fix this or disable the optimization.
+                                                -- But as both backends throw away these two bindings anyway, let's just not generate them.
+    
 %%]
 
 

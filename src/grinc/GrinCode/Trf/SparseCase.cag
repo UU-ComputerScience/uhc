@@ -38,6 +38,7 @@ SEM GrAltL
 
 SEM GrAlt
   | Alt   lhs  .  isPossible  =  @pat.tag `elem` @lhs.possibleTags
+                                 || @pat.tag == GrTag_Unboxed
 
 SEM GrExpr
   | Case  altL  .  possibleTags  =  getTags . getEnvVar @lhs.hptMap $ @val.varId

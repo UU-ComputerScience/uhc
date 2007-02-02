@@ -148,8 +148,8 @@ SEM GrExpr
   | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | Store       lhs         .   pp          =   "store" >#< @val.pp
-  | Fetch       lhs         .   pp          =   "fetch" >#<  @lhs.ppGrNm @nm >#< maybe empty pp      @mbOffset
-                                                                             >#< maybe empty ppGrTag @mbTag
+  | FetchNode   lhs         .   pp          =   "fetchnode"  >#<  @lhs.ppGrNm @nm 
+  | FetchField  lhs         .   pp          =   "fetchfield" >#<  @lhs.ppGrNm @nm >#< pp @offset >#< maybe empty ppGrTag @mbTag
   | Update      lhs         .   pp          =   "update" >#< @lhs.ppGrNm @nm >#< @val.pp
                                                                              >#< maybe empty ppGrTag @mbTag
   | FetchUpdate lhs         .   pp          =   "fetchupdate" >#< @lhs.ppGrNm @src >#< @lhs.ppGrNm @dst

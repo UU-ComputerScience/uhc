@@ -53,9 +53,13 @@ DATA GrExpr
   | Eval        nm              : {HsName}
   | Unit        val             : GrVal
   | Store       val             : GrVal
-  | Fetch       nm              : {HsName}
-                mbOffset        : {Maybe Int}
+  | FetchNode   nm              : {HsName}
+  | FetchField  nm              : {HsName}
+                offset          : {Int}
                 mbTag           : {Maybe GrTag}
+  -- | Fetch       nm              : {HsName}
+  --               mbOffset        : {Maybe Int}
+  --               mbTag           : {Maybe GrTag}
   | Update      nm              : {HsName}
                 val             : GrVal
                 mbTag           : {Maybe GrTag}

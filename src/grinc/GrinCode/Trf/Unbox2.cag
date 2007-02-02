@@ -1,0 +1,60 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unbox Int and Char
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.Unbox2}
+%%]
+
+%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 hs export(unbox2)
+unbox2 :: GrModule -> GrModule
+unbox2 grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                    (Inh_GrAGItf)
+               in trf_Syn_GrAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: replace #C/Int and #C/Char by #U
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[8 hs
+
+tagCanbeUnboxed :: GrTag -> Bool
+tagCanbeUnboxed gt
+  = case gt of
+      GrTag_Lit (GrTagCon _) _ nm | nm == hsnInt || nm == hsnChar
+        -> True
+      _ -> False
+
+
+%%]
+
+
+%%[8
+SEM GrPat
+  | Node        lhs         .   trf             =   if tagCanbeUnboxed @tag.trf
+                                                     then GrPat_Node GrTag_Unboxed @fldL
+                                                     else @trf
+SEM GrVal
+  | Node        lhs         .   trf             =   if tagCanbeUnboxed @tag.trf
+                                                     then GrVal_Node GrTag_Unboxed @fldL.trf
+                                                     else @trf
+%%]

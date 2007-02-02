@@ -27,6 +27,10 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
 %%]
+%%[8 import({%{GRIN}GrinCode.Trf.TestUnbox})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.Unbox2})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.ReturningCatch})
@@ -57,7 +61,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.GenSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
 %%]
-%%[8 import({%{GRIN}Silly.PrettyC(prettyC)},{%{GRIN}Silly.PrettyLLVM(prettyLL)})
+%%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,13 +146,18 @@ caKnownCalls = task_ VerboseNormal "Removing unknown calls"
     ( do { transformTriple inlineEA "Inlining Eval and Apply calls" 
          ; caRightSkew
          ; caWriteGrin True "3-knownCalls"
+         -- ; transformCode unbox2 "Unboxing Int and Char"
+         ; caWriteGrin True "3a-unboxed"
          }
     )
 -- optionsations part I
 caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
     ( do { transformTriple sparseCase "Removing impossible case alternatives"
+         ; caWriteGrin True "4a-sparseCaseRemoved"
          ; transformCode   caseElimination "Removing evaluated and trivial cases"
+         ; caWriteGrin True "4b-evaluatedCaseRemoved"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
+         ; caWriteGrin True "4c-unusedExprRemoved"
          ; caDropUnusedBindings
          ; caWriteGrin True "4-partlyOptimized"
          }
@@ -172,8 +181,16 @@ caOptimize = task_ VerboseNormal "Optimizing (full)"
 -- simplification part III
 caFinalize = task_ VerboseNormal "Finalizing"
     ( do { transformTriple splitFetch "Splitting and specializing fetch operations"
+         ; caWriteGrin True "8a-fetchSplitted"
+         ; transformCode testUnbox "Testing Unboxed values"
+         ; transformCode   caseElimination "Removing evaluated and trivial cases"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
+         ; caWriteGrin True "8x-unboxes tested"
+         ; transformTriple dropUnusedExpr "Remove unused expressions"
+         ; caWriteGrin True "8b-unusedExprRemoved"
          ; transformCode   dropUnusedTags "Remove unused tags"
+         ; caWriteGrin True "8c-unusedTagsRemoved"
+         ; caCopyPropagation
          ; transformTriple returnCatch "Ensure code exists after catch statement"
          ; caWriteGrin True "8-final"
          }
