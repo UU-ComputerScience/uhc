@@ -12,6 +12,8 @@
 %%]
 %%[8 import( Data.Maybe, Data.Array.IArray, qualified Data.Map as Map )
 %%]
+%%[8 import(Debug.Trace)
+%%]
 %%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun, EH.Util.FPath )
 %%]
 %%[8 import( EH.Util.CompileRun, EH.Util.FPath )
@@ -85,6 +87,8 @@ doCompileGrin input opts
            ; caNormalize        -- part II
            ; caOptimize         -- optimisations
            ; caFinalize         -- part III
+           ; isDebugging <- gets (ehcOptGrinDebug . gcsOpts)
+           ; when (isDebugging) traceHptMap
            ; caOutput
            }
       )
@@ -126,18 +130,7 @@ caAnalyse = task_ VerboseNormal "Analyzing"
     ( do { caNormForHPT
          ; caRightSkew
          ; caHeapPointsTo
-         ; debugging <- gets (ehcOptDebug . gcsOpts)
-         ; when debugging (do { {- ((env, heap),_) <- gets gcsHptMap
-                              ; let newVar i = show i
-                              ; putDebugMsg "*** Equations ***"
-                              ; printArray "env:"  newVar aeMod env
-                              ; printArray "heap:" show ahMod heap
-                              ; putDebugMsg "*** Abstract Values ***"
-                              ; printArray "env:"  newVar aeBaseSet env
-                              ; printArray "heap:" show ahBaseSet heap
-                              ; -} caWriteGrin True "2-analyzed"
-                              }
-                          )
+         ; caWriteGrin True "2-analyzed"
          }
     )
 
@@ -146,7 +139,8 @@ caKnownCalls = task_ VerboseNormal "Removing unknown calls"
     ( do { transformTriple inlineEA "Inlining Eval and Apply calls" 
          ; caRightSkew
          ; caWriteGrin True "3-knownCalls"
-         -- ; transformCode unbox2 "Unboxing Int and Char"
+         ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
          ; caWriteGrin True "3a-unboxed"
          }
     )
@@ -165,6 +159,8 @@ caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
 -- simplification part II
 caNormalize = task_ VerboseNormal "Normalizing"
     ( do { transformTriple lowerGrin "Lowering Grin"
+         ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
          ; caWriteGrin True "5-normalized"
          }
     )
@@ -182,7 +178,9 @@ caOptimize = task_ VerboseNormal "Optimizing (full)"
 caFinalize = task_ VerboseNormal "Finalizing"
     ( do { transformTriple splitFetch "Splitting and specializing fetch operations"
          ; caWriteGrin True "8a-fetchSplitted"
-         ; transformCode testUnbox "Testing Unboxed values"
+         ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         ; when doUnbox (transformTriple testUnbox "Testing Unboxed values")
+         ; caWriteGrin True "8y-unboxes tested"
          ; transformCode   caseElimination "Removing evaluated and trivial cases"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
          ; caWriteGrin True "8x-unboxes tested"
@@ -323,7 +321,7 @@ caWriteFinalCode suffix ppFun =
 
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
-    { when debug (gets (ehcOptDebug . gcsOpts) >>= guard)
+    { when debug (gets (ehcOptGrinDebug . gcsOpts) >>= guard)
     ; input <- gets gcsPath
     ; let prefix     = if debug then "debug-" else ""
           fileName   = prefix ++ fpathBase input ++ if null fn then "-out" else fn
@@ -371,6 +369,13 @@ gcsPutTriple (code,unique,hptMap)
                     }
            )
 
+
+traceHptMap :: CompileAction ()
+traceHptMap
+  = do { hptMap <- gets gcsHptMap
+       ; trace (showHptMap hptMap) (return ())
+       }
+
 transformTriple :: ((GrModule,Int,HptMap) -> (GrModule,Int,HptMap)) -> String -> CompileAction ()
 transformTriple process message = do
     putMsg VerboseALot message Nothing
@@ -390,13 +395,6 @@ caFix step = caFixCount 1
     caFixCount n = do
         changes <- step
         if changes then (caFixCount $ n+1) else return n
-
-printArray s f g a = harden_ $ do
-    { isDebugging <- gets (ehcOptDebug . gcsOpts)
-    ; guard isDebugging
-    ; putDebugMsg s
-    ; mapM_ (\(k, v) -> putDebugMsg ("  " ++ f k ++ " = " ++ show (g v))) (assocs a)
-    }
 
 %%]
 
@@ -454,7 +452,7 @@ putLn = putStrLn ""
 
 putDebugMsg :: String -> CompileAction ()
 putDebugMsg msg = harden_ $ do
-    { isDebugging <- gets (ehcOptDebug . gcsOpts)
+    { isDebugging <- gets (ehcOptGrinDebug . gcsOpts)
     ; guard isDebugging
     ; (indent, first) <- gets gcsMsgInfo
     ; when first (liftIO putLn >> modify (\s -> s { gcsMsgInfo = (indent, False) }))

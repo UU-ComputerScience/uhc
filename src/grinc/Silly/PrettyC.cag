@@ -67,22 +67,22 @@ ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
-                                >-< comment "Tag constants"
+                                >-< comment ["Tag constants"]
                                 >-< ppVertically (map constantDefinition @constants)
                                 >-< text ""
                                 >-< constantDefinition ("UNBOXED",1)
                                 >-< constantDefinition ("ANY",0)
-                                >-< comment "Global table"
+                                >-< comment ["Global table"]
                                 >-< ppVertically (map variableDeclaration @variables)
                                 >-< text ""
-                                >-< comment "Auxiliary variable"
+                                >-< comment ["Auxiliary variable"]
                                 >-< text "GrWord auxVar;"
                                 >-< text "GrWord auxPtr;"
                                 >-< text ""
-                                >-< comment "Main C function"
+                                >-< comment ["Main C function"]
                                 >-< @loc.cMain
                                 >-< text ""
-                                >-< comment "Function definitions"
+                                >-< comment ["Function definitions"]
                                 >-< if @loc.optOwnCalls
                                      then  @loc.silMain1
                                            >-< text ""
@@ -147,6 +147,7 @@ SEM Values
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | UnboxCon    lhs.prettyC   = "((" >#< @con.prettyC >#< ")<<1)|1 "
+  | BoxVar      lhs.prettyC   = "(" >#< @var.prettyC >#< ")>>1 "
   | Var         lhs.prettyC   = @var.prettyC
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
@@ -230,8 +231,10 @@ caseDefault :: PP_Doc -> PP_Doc
 caseDefault x
  =  "default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
 
-comment :: String -> PP_Doc
-comment s = text ("/* " ++ s ++ " */")
+comment :: [String] -> PP_Doc
+comment []  = text ""
+comment [s] = text ("// " ++ s)
+comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
 
 callCfunction ::  String -> [PP_Doc] -> PP_Doc
 callCfunction f ps
@@ -271,7 +274,7 @@ returnFromSillyFunction spincr retdiff True
 
 preambule :: PP_Doc
 preambule
- = comment "Generated C code"
+ = comment ["Generated C code"]
    >-< text "#include \"rts.h\""
    >-< text ""
 
@@ -310,7 +313,7 @@ methodFooter True _ _
 methodLocals :: [String] -> PP_Doc
 methodLocals ns
  = ppUnless (null ns)
-            (   comment "Local names"
+            (   comment ["Local names"]
             >-< declareNames "GrWord" ns
             )
 
@@ -320,7 +323,10 @@ jumpPrepare
 
 jumpSillyFunctionFromSilly :: Bool -> String -> PP_Doc
 jumpSillyFunctionFromSilly False nm
- =  machDepCForTailcallLeave1
+ =  
+    ppWhen optTraceAssign
+               (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
+ 	>-< machDepCForTailcallLeave1
     >#< "register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
     >#< machDepCForTailcallLeave2
     >-< "goto *_tail_call_dest;"

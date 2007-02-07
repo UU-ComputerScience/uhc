@@ -91,8 +91,10 @@ data EHCOpts
       ,  ehcOptDumpTrfGrin    ::  Maybe String
       ,  ehcOptTimeCompile    ::  Bool
 
+      ,  ehcOptGrinDebug      ::  Bool              -- debug info for code generation phase
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenCaseDefault ::  Bool
+      ,  ehcOptGenUnbox       ::  Bool
       ,  ehcOptGenTailCall    ::  Bool
       ,  ehcOptGenOwnParams   ::  Bool
       ,  ehcOptGenOwnLocals   ::  Bool
@@ -165,8 +167,10 @@ defaultEHCOpts
       ,  ehcOptDumpTrfGrin    =   Nothing
       ,  ehcOptTimeCompile    =   False
 
+      ,  ehcOptGrinDebug      =   False
       ,  ehcOptGenTrace       =   False
       ,  ehcOptGenCaseDefault =   False
+      ,  ehcOptGenUnbox       =   True
       ,  ehcOptGenTailCall    =   True
       ,  ehcOptGenOwnParams   =   True
       ,  ehcOptGenOwnLocals   =   True
@@ -254,8 +258,10 @@ ehcCmdLineOpts
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
      ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
 
+     ,  Option ""   ["grindebug"]        (NoArg oGrinDebug)                   "show debug information for grin code generation"
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
+     ,  Option ""   ["gen-unbox"]        (boolArg optSetGenUnbox)             "unbox int and char (yes)"
      ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
      ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
      ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (yes)"
@@ -377,8 +383,11 @@ ehcCmdLineOpts
 %%[8
 boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
 
+
+oGrinDebug           o   = o { ehcOptGrinDebug      = True }
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
+optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
 optSetGenTailCall    o b = o { ehcOptGenTailCall    = b }
 optSetGenOwnParams   o b = o { ehcOptGenOwnParams   = b }
 optSetGenOwnLocals   o b = o { ehcOptGenOwnLocals   = b }

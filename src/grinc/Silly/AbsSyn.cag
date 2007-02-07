@@ -44,7 +44,7 @@ DATA Statement
                  retdiff    : {Int}
   |  Leave       diff       : {Int}
   |  Label       name       : {String}
-  |  Comment     comment    : {String}
+  |  Comment     comment    : {[String]}
   |  Enter       nParam     : {Int}
                  nLocal     : {Int}
 
@@ -77,6 +77,7 @@ DATA Variable
 DATA Value
   |  Con         con        : Constant
   |  UnboxCon    con        : Value
+  |  BoxVar      var        : Variable
   |  Var         var        : Variable
   |  Alloc       size       : {Int}
   |  Label       name       : {String}

@@ -188,7 +188,7 @@ type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 fromJust' s Nothing = error $ "fromJust':" ++ s
 fromJust' _ (Just v) = v
 
-nodeSize t nodeSizes = (if grinStoreArity then 1 else 0) + Map.findWithDefault 0 t nodeSizes
+nodeSize t nodeSizes = (if grinStoreArity then 1 else 0) + Map.findWithDefault 1 t nodeSizes
 
 getTagName (GrVal_Var    v               )  =  v
 getTagName (GrVal_Tag   (GrTag_Var v)    )  =  v

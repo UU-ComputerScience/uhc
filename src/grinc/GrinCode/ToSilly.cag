@@ -31,26 +31,38 @@ ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
 ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
 ATTR GrExpr GrAlt GrAltL GrGlobal GrGlobalL GrValL GrVal GrTag GrTagL GrAdaptL GrAdapt GrPat GrPatL GrSplitL GrSplit [ embed : {EmbedFunction} | | ]
 
+ATTR GrTagL [ | | mbOnlyTagValue : {Maybe Value}  isEmpty : {Bool} ]
+
+ATTR GrAlt GrAltL [ | | hasAnies USE {||} {False} : {Bool} ]
+ATTR GrPat GrTag  [ | | isAny: {Bool} ]
+ATTR GrTag GrVal  [ | | isUnboxed: {Bool} ]
 
 
-
-ATTR GrAlt GrAltL [  | | hasUnboxies USE {||} {False} : {Bool} ]
-ATTR GrPat GrTag [ | | isUnboxy: {Bool} ]
+SEM GrTagL
+  | Nil            lhs . isEmpty        = True
+                   lhs . mbOnlyTagValue = Nothing
+  | Cons           lhs . isEmpty        = False
+                   lhs . mbOnlyTagValue = if @tl.isEmpty
+                                           then Just @hd.value
+                                           else Nothing
 
 SEM GrAlt
-  | Alt            loc . hasUnboxies = @pat.isUnboxy
+  | Alt            loc . hasAnies = @pat.isAny
  
-SEM GrPat          
-  | Tag            lhs . isUnboxy = @tag.isUnboxy
-  | * - Tag        lhs . isUnboxy = False
-  
 SEM GrTag
-  | Unboxed        lhs . isUnboxy = True
-  | * - Unboxed    lhs . isUnboxy = False
+  | Any            lhs . isAny = True
+  | * - Any        lhs . isAny = False
+  | Unboxed        lhs . isUnboxed = True
+  | * - Unboxed    lhs . isUnboxed = False
 
+SEM GrVal
+  | Node           lhs . isUnboxed = @tag.isUnboxed
+  | * - Node       lhs . isUnboxed = False
 
-
-
+SEM GrPat          
+  | Tag            lhs . isAny = @tag.isAny
+  | * - Tag        lhs . isAny = False
+  
 
 ATTR GrValL [ | | length : {Int} ]
 SEM GrValL
@@ -60,6 +72,29 @@ SEM GrValL
 
 ATTR GrBind GrBindL GrExpr GrAlt GrAltL
          [  |  retNr : {Int} |  ]
+
+
+
+ATTR GrExpr GrAltL GrAlt
+  [ realNodes: {[HsName]} | | ]
+  
+ATTR GrExpr
+  [  | | mbExtraRealNode: {Maybe HsName} ]
+
+
+SEM GrExpr
+  | FetchField      lhs.mbExtraRealNode = if  @offset==0
+                                           then Just @nm
+                                           else Nothing
+  | * - FetchField  lhs.mbExtraRealNode = Nothing
+  
+SEM GrExpr
+  | Seq             body.realNodes      = maybe id (:) @expr.mbExtraRealNode $ @lhs.realNodes
+
+SEM GrBind
+  | Bind            expr.realNodes      = []
+
+
 
 
 %%]
@@ -103,7 +138,7 @@ SEM GrBind
                                 )
                                 -- body
                                 (  (if   @lhs.optOwnParameters && not @lhs.optOwnLocals && not (null @argNmL)
-                                    then Statement_Comment "Parameters"
+                                    then Statement_Comment ["Parameters"]
                                          : zipWith Statement_Assignment
                                                    (map (Variable_Param undefined) @loc.paramsStr)
                                                    (map (arrayValue Variable_SP) [2..])
@@ -111,7 +146,7 @@ SEM GrBind
                                    )
                                 ++ (if   @loc.ownAllocation
                                     then [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (- @loc.distance)))
-                                         , Statement_Comment (show @loc.embedMap)
+                                         , Statement_Comment (map (showEmbedPair @loc.distance @lhs.hptMap) @loc.embedList)
                                          ]
                                     else []
                                    )
@@ -122,7 +157,8 @@ SEM GrBind
           expr . numberParameters = length @argNmL
           expr . embed    = (if @lhs.optOwnLocals then (embed2 @loc.distance) else embed) @loc.embedMap
           loc  . distance = @loc.nLocals + @loc.roomForCcalls
-          loc  . embedMap = Map.fromList (@loc.paramsTup ++ @loc.localsTup)
+          loc  . embedList= @loc.paramsTup ++ @loc.localsTup
+          loc  . embedMap = Map.fromList @loc.embedList
           loc  . localsHs  = filter (\(HNmNr n _)->n/=0) (@expr.localsF [])
           loc  . paramsHs  = @argNmL
           loc  . localsStr = map hsnShowAlphanumeric @loc.localsHs
@@ -140,56 +176,49 @@ SEM GrExpr
                         ++ @body.stats
 
  | Unit    lhs.stats  = if @isLastExpr
-                         then Statement_Comment "Unit (Yielding)"
+                         then Statement_Comment ["Unit (Yielding)"]
                               : if @lhs.optOwnParameters || @lhs.optOwnLocals
                                  then let dp = @lhs.distance+ @lhs.numberParameters
-                                          smartTups = zip [dp+1,dp ..] (@loc.vs ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet ])
-                                      in  smartAssignment smartTups
+                                          smartTups = zip [dp+1,dp ..] (@val.values ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet ])
+                                      in  smartAssignment (filter hasRealVal smartTups)
                                           ++ [ Statement_Return (@lhs.distance+ @lhs.numberParameters+2) (max @loc.nMyRes @lhs.numberParameters + 1)
                                              ]
                                  else [ Statement_Assignment v e
                                       | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
-                                                    @loc.vs
+                                                    @val.values
                                       ]
-                         else Statement_Comment "Unit (Internal)"
+                         else Statement_Comment ["Unit (Internal)"]
                               : [ Statement_Assignment v e
                                 | (v,e) <-zip [@lhs.embed x | x <- @lhs.targets]
                                               @val.values
                                 , isRealVar v
                                 ]                         
                           
-           loc.nMyRes = length (@loc.vs)
+           loc.nMyRes = length (@val.values)
            loc.moveRet= @loc.nMyRes > @lhs.numberParameters
-
-           loc.cat    = tagcat @val.values
-           loc.vs     = if    @loc.cat=='U'
-                        then  [Value_UnboxCon (head (tail @val.values))]
-                        else @val.values
-              
-
 
 
  | FFI     lhs.stats  = if @isLastExpr
-                         then Statement_Comment "FFI (Yielding)"
+                         then Statement_Comment ["FFI (Yielding)"]
                               : if @lhs.optOwnParameters || @lhs.optOwnLocals
                                  then let dp = @lhs.distance+ @lhs.numberParameters
                                           smartTups = zip [dp+1,dp ..] (@loc.callres ++ [Value_Var (Variable_Subs Variable_SP (Constant_LiteralInt (@lhs.distance+1))) | @loc.moveRet])
-                                      in  smartAssignment smartTups
+                                      in  smartAssignment (filter hasRealVal smartTups)
                                           ++ [ Statement_Return (@lhs.distance+ @lhs.numberParameters+2) (max @loc.nMyRes @lhs.numberParameters + 1)
                                              ]
                                  else [ Statement_Assignment v e
-                                      | (v,e) <-zip [arrayVariab Variable_RP 0]
+                                      | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
                                                     @loc.callres
                                       ]
-                         else Statement_Comment "FFI (Internal)"
+                         else Statement_Comment ["FFI (Internal)"]
                               : [ Statement_Assignment v e
-                                | (v,e) <-zip [@lhs.embed (head @lhs.targets)]
+                                | (v,e) <-zip [@lhs.embed x | x <- @lhs.targets]
                                               @loc.callres
                                 , isRealVar v
                                 ]                         
 
            lhs.localsF = (@lhs.targets ++)
-           loc.callres = [Value_Call @nm (map (Value_Var . @lhs.embed) @argL)]
+           loc.callres = maybe id (:) @resTagL.mbOnlyTagValue $ [Value_Call @nm (map (Value_Var . @lhs.embed) @argL)]
            loc.nMyRes  = length @loc.callres
            loc.moveRet= @loc.nMyRes > @lhs.numberParameters
 
@@ -199,7 +228,7 @@ SEM GrExpr
                             n  = length vs
                             --n2 = @lhs.maxConstrParameters
                             n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap ph)))
-                        in Statement_Comment "Store"
+                        in Statement_Comment ["Store"]
                            : store @lhs.embed ph n n2 vs
 
            lhs.localsF = (@lhs.targets ++)
@@ -207,33 +236,41 @@ SEM GrExpr
  | FetchUpdate 
            lhs.stats  = let -- use hptMap to determine size, because hptMap can now be used even after changing numbered variables back to names
                             n = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @src)))
-                         in Statement_Comment "FetchUpdate"
+                         in Statement_Comment ["FetchUpdate"]
                             : zipWith Statement_Assignment
                                      (map (arrayVariab (@lhs.embed @dst)) [0..n])
                                      (map (arrayValue  (@lhs.embed @src)) [0..n])
 
 
 
- | Update  lhs.stats  = let vs = @val.values
-                         in Statement_Comment "Update"
-                            --: Statement_Assignment Variable_Ptr (Value_Var (@lhs.embed @nm))
-                            : zipWith Statement_Assignment
-                                      (map (arrayVariab (@lhs.embed @nm)) [0..])
-                                      --(map (Variable_Subs Variable_Ptr . Constant_LiteralInt) [0..])
-                                      vs
+ | Update   loc.name   = @lhs.embed @nm
+            loc.change = --Statement_Assignment Variable_Ptr (Value_Var @loc.name) :                -- if this line is enabled, uses option 2 instead of option 1
+                         zipWith Statement_Assignment
+                                 (map (arrayVariab @loc.name) [0..])                                -- option 1
+                                 --(map (Variable_Subs Variable_Ptr . Constant_LiteralInt) [0..])   -- option 2
+                                 @val.values
+            lhs.stats  = Statement_Comment ["Update"] : 
+                         if @val.isUnboxed
+                          then 
+                               @loc.change ++     -- TODO: this line could be deleted if uniqueness analyses revealed that context is unique
+                               [ Statement_Assignment @loc.name (Value_UnboxCon (head(tail @val.values))) ]
+                          else @loc.change
  | FetchNode
            lhs.stats  = error "FetchNode found while generating Silly"
            lhs.localsF= error "FetchNode found while generating Silly"
            
  | FetchField
-           lhs.stats  = [ Statement_Comment "Fetch"
+           lhs.stats  = [ Statement_Comment ["Fetch"]
                         , Statement_Assignment (@lhs.embed (head @lhs.targets))
-                                               (arrayValue (@lhs.embed @nm) @offset)
+                                               (if   @offset==1 && maybe False (==GrTag_Unboxed) @mbTag && not (elem @nm @lhs.realNodes)
+                                                then Value_BoxVar (@lhs.embed @nm)
+                                                else arrayValue (@lhs.embed @nm) @offset
+                                               )
                         ]
            lhs.localsF = (@lhs.targets ++)
 
- | Case    lhs.stats  = [ Statement_Comment "Case"
-                        , if @altL.hasUnboxies
+ | Case    lhs.stats  = [ Statement_Comment ["Case"]
+                        , if @altL.hasAnies
                            then Statement_If     @val.value
                                                  @altL.alternatives
                            else Statement_Switch @val.value
@@ -245,12 +282,12 @@ SEM GrExpr
  | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
                          then let dp = @lhs.distance+ @lhs.numberParameters
                                   smartTups = zip [dp+1,dp ..] ((reverse @argL.values) ++ map (Value_Var . Variable_Subs Variable_SP . Constant_LiteralInt) [ @lhs.distance+1 , @lhs.distance ] )
-                              in  Statement_Comment "Call (Tail) "
+                              in  Statement_Comment ["Call (Tail) "]
                                   :  smartAssignment smartTups
                                   ++ [ Statement_Increment  Variable_SP (Value_Con (Constant_LiteralInt (@lhs.distance+ @lhs.numberParameters+2- @loc.nMyParams-2)))
                                      , Statement_Jump (hsnShowAlphanumeric @nm)
                                      ]
-                         else (   Statement_Comment "Call (Normal)"
+                         else (   Statement_Comment ["Call (Normal)"]
                               :   (if @lhs.optOwnParameters
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
@@ -280,10 +317,10 @@ SEM GrExpr
            lhs.localsF = (@lhs.targets ++)
            lhs.retNr   = @lhs.retNr + 1
 
- | App     lhs.stats  = [Statement_Comment "App: SHOULDNT"]
- | Eval    lhs.stats  = [Statement_Comment "Eval: SHOULDNT"]
- | Throw   lhs.stats  = [Statement_Comment "Throw: TODO"]
- | Catch   lhs.stats  = [Statement_Comment "Catch: TODO"]
+ | App     lhs.stats  = [Statement_Comment ["App: SHOULDNT"]]
+ | Eval    lhs.stats  = [Statement_Comment ["Eval: SHOULDNT"]]
+ | Throw   lhs.stats  = [Statement_Comment ["Throw: TODO"]]
+ | Catch   lhs.stats  = [Statement_Comment ["Catch: TODO"]]
 
 
 SEM GrAltL
@@ -335,7 +372,7 @@ SEM GrTag
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
  | Var     lhs.value    = Value_Var (@lhs.embed @nm)
- | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")   -- error "GrTag:Unboxed value"
+ | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
  | Any     lhs.value    = error "GrTag:Any value"
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
  | Any     lhs.constant = Constant_Alias "ANY"
@@ -383,7 +420,7 @@ SEM GrPat
 
 SEM GrTag
   | Var      lhs  .  patternNames  = [@nm]
-  | Unboxed  lhs  .  patternNames  = []
+  | Unboxed  lhs  .  patternNames  = [wildcardNr]
   | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
 %%]
 
@@ -505,7 +542,6 @@ type EmbedFunction = HsName->Variable
 makeEmbedTupel :: (Int->String->Variable) -> Int -> HsName -> (Int,Variable)
 makeEmbedTupel constr k x@(HNmNr n _) = (n, constr k (hsnShowAlphanumeric x))
 
-
 embed :: EmbedMap -> EmbedFunction
 embed m x@(HNmNr n _) = if n==0
                          then Variable_None
@@ -523,6 +559,13 @@ embed2 d m x@(HNmNr n _) = if n==0
                                        )
                                        (Map.lookup n m)
 
+showEmbedPair :: Int -> HptMap -> (Int,Variable) -> String
+showEmbedPair d h (i, Variable_Param n name) = "Param " ++ show n ++ " \t" ++ postPad 12 name ++ "\tSP[" ++ show (d+1+n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"
+showEmbedPair d h (i, Variable_Local n name) = "Local " ++ show n ++ " \t" ++ postPad 12 name ++ "\tSP[" ++ show (d+0-n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"
+
+postPad n s = let w = length s
+              in  if w>=n then s else s ++ replicate (n-w) ' '
+                  
 
 %%]
 
@@ -534,6 +577,9 @@ embed2 d m x@(HNmNr n _) = if n==0
 
 isRealVar Variable_None = False
 isRealVar _             = True
+
+hasRealVal (_, Value_Con (Constant_Alias "UNBOXED")) = False
+hasRealVal _                                         = True
 
 -- n1 is the number of parameters of the tag
 -- n2 is the maximum number of parameters of all constructorfunctions

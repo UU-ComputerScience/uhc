@@ -12,11 +12,13 @@
 %%]
 
 %%[8 hs export(testUnbox)
-testUnbox :: GrModule -> GrModule
-testUnbox grmod 
-  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                         (Inh_GrAGItf)
-    in trf_Syn_GrAGItf t
+
+testUnbox :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+testUnbox (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {uniq_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (trf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,8 +35,9 @@ WRAPPER GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+ATTR GrAGItf AllNT [ | uniq: Int  | ]
 ATTR GrAGItf [ | | trf: GrModule ]
-ATTR AllNT [ | | trf: SELF ]
+ATTR AllNT   [ | | trf: SELF     ]
 %%]
 
 %%[8
@@ -48,46 +51,54 @@ ATTR GrExpr [ | | isFetchTag: {Bool}
                   getBody: {GrExpr}
             ] 
             
-ATTR GrAlt GrAltL [  | | hasUnboxies USE {||} {False} : {Bool} ]
-
-ATTR GrPat GrTag [ | | isUnboxy: {Bool} ]
+ATTR GrAlt GrAltL [ | | hasUnboxies USE {||} {False} : {Bool} ]
+ATTR GrPat GrTag  [ | | isUnboxy: {Bool} ]
 
 
 SEM GrExpr
   | FetchField     lhs . isFetchTag   =  @offset == 0
                    lhs . getName      =  @nm
   | * - FetchField lhs . isFetchTag   =  False
-                   lhs . getName      =  error "TestUnox.cag: getName taken from non-FetchField"
+                   lhs . getName      =  error "TestUnbox.cag: getName taken from non-FetchField"
+
 
 SEM GrExpr
   | Seq            loc . original     =  GrExpr_Seq @expr.trf @pat.trf @body.trf
-                   loc . newcase      =  \e -> GrExpr_Case (GrVal_Var @expr.getName)
-                                                           [ GrAlt_Alt (GrPat_Tag GrTag_Unboxed) (GrExpr_Unit (GrVal_Node GrTag_Unboxed [GrVal_Var @expr.getName]))
-                                                           , GrAlt_Alt (GrPat_Tag GrTag_Any    ) (GrExpr_Seq @expr.trf @pat.trf e)
-                                                           ]
+                   loc . newcase      =  \e -> let newName = HNmNr @lhs.uniq Nothing
+                                               in  GrExpr_Case (GrVal_Var @expr.getName)
+                                                               [ GrAlt_Alt (GrPat_Tag GrTag_Unboxed) 
+                                                                           (GrExpr_Seq (GrExpr_FetchField @expr.getName 1 (Just GrTag_Unboxed))
+                                                                                       (GrPat_Var newName)
+                                                                                       (GrExpr_Unit (GrVal_Node GrTag_Unboxed [GrVal_Var newName]))
+                                                                           )
+                                                               , GrAlt_Alt (GrPat_Tag GrTag_Any) 
+                                                                           (GrExpr_Seq @expr.trf @pat.trf e)
+                                                               ]
                    lhs . trf          =  if @expr.isFetchTag && @body.startsWithCaseHavingUnboxies
                                          then GrExpr_Seq (@loc.newcase @body.getExpr) @body.getPat @body.getBody
                                          else if @expr.isFetchTag && @body.isCaseHavingUnboxies
                                               then @loc.newcase @body.trf
                                               else @loc.original
+                                              
+                   lhs . uniq         =  if @expr.isFetchTag && ( @body.startsWithCaseHavingUnboxies || @body.isCaseHavingUnboxies )
+                                          then @lhs.uniq + 1
+                                          else @lhs.uniq
                                          
   | Seq            lhs . startsWithCaseHavingUnboxies = @expr.isCaseHavingUnboxies
-  | Case           lhs . startsWithCaseHavingUnboxies = @loc.isCaseHavingUnboxies
+  | Case           loc . isCaseHavingUnboxies         = @altL.hasUnboxies
+                   lhs . startsWithCaseHavingUnboxies = @loc.isCaseHavingUnboxies
   | * - Seq Case   lhs . startsWithCaseHavingUnboxies = False
-  
-  | Case           loc . isCaseHavingUnboxies = @altL.hasUnboxies
-  | * - Case       loc . isCaseHavingUnboxies = False
+  | * - Case       loc . isCaseHavingUnboxies         = False
   
   | Seq            lhs . getExpr = @expr.trf
-                   lhs . getPat = @pat.trf
+                   lhs . getPat  = @pat.trf
                    lhs . getBody = @body.trf
-                   
   | * - Seq        lhs . getExpr = error "getExpr from non-Seq"
                    lhs . getPat  = error "getPat from non-Seq"
                    lhs . getBody = error "getBody from non-Seq"
   
 SEM GrAlt
-  | Alt            loc . hasUnboxies = @pat.isUnboxy
+  | Alt            lhs . hasUnboxies = @pat.isUnboxy
  
 SEM GrPat          
   | Tag            lhs . isUnboxy = @tag.isUnboxy
@@ -100,11 +111,9 @@ SEM GrTag
 
 SEM GrAltL
   | Nil            lhs . trf = []
-  | Cons           lhs . trf = if @hd.hasUnboxies
-                               then @tl.trf
-                               else @hd.trf : @tl.trf
+  | Cons           lhs . trf = -- if @hd.hasUnboxies
+                               -- then @tl.trf               -- in a unique context, the head (containing the #U case) is not needed
+                               -- else 
+                                       @hd.trf : @tl.trf
 
-
-
- 
 %%]
