@@ -37,7 +37,7 @@
 %%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
-%%[9 hs import({%{EH}Pred},{%{EH}Core.Subst})
+%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}Core.Subst})
 %%]
 
 %%[12 hs import({%{EH}Ty.MapName})

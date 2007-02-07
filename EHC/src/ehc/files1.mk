@@ -48,8 +48,8 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam Cnstr Pred Deriving Module Config BuiltinPrims \
-													Base/Opts Base/Common Base/Builtin Base/HsName Base/Debug \
+													Substitutable Gam Cnstr Pred Deriving Module Config BuiltinPrims CHR \
+													Base/Opts Base/Common Base/Builtin Base/HsName Base/Debug Base/Trie \
 													NameAspect \
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
 													Base/Parser Ty/Parser EH/Parser HS/Parser HI/Parser Core/Parser GrinCode/Parser \
