@@ -41,10 +41,10 @@ SEM Decl
   | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "lhs.tySigGam" (ppGam @lhs.tySigGam)
                                         ]
-  | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] @info
-                loc     .  info     =   [ mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
-                                        , mkInfo1 "ty_sig_" (ppTy @ty_sig_)
+  | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] (@info_1 ++ @info_5)
+                loc     .  info_1   =   [ mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
                                         ]
+                        .  info_5   =   [ ]
 
 SEM Expr
   | IConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","IConst"] [@pp] [] (@info_1 ++ @info_2)
@@ -284,6 +284,8 @@ SEM Decl
                                         ]
                         .  info_6   =   []
                         .  info_7   =   []
+  | TySig       loc     .  info_5   :=  [ mkInfo1 "ty_sig_" (ppTy @ty_sig_)
+                                        ]
 
 SEM Expr
   | SConst      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","SConst"] [@pp] [] []
