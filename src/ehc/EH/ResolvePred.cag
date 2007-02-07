@@ -14,6 +14,7 @@ SEM Expr
   | IConst CConst Var Con
                 lhs         .   gathPredL           =   foPredOccL @fo_
   | App         lhs         .   gathPredL           =   @prOccL ++ @func.gathPredL ++ @arg.gathPredL
+  | TypeAs      lhs         .   gathPredL           =   foPredOccL @fo_ ++ foPredOccL @fo_fitDown ++ @expr.gathPredL
 %%]
 
 %%[10

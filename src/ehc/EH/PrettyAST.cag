@@ -43,6 +43,7 @@ SEM Decl
                                         ]
   | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
+                                        , mkInfo1 "ty_sig_" (ppTy @ty_sig_)
                                         ]
 
 SEM Expr
@@ -144,6 +145,9 @@ SEM Decl
                                         , mkInfo1 "expr.tyCnstr" (ppCnstrV @expr.tyCnstr)
                                         ]
 
+SEM TyExpr
+  | Wild        lhs     .  ppAST    =   ppNest ["TyExpr","Wild"] [] []
+
 SEM Expr
   | IConst CConst
                 loc     .  info_2   :=  [ mkInfo1 "knTy+lhs.cnstr" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
@@ -190,11 +194,15 @@ SEM PatExpr
 SEM TyExpr
   | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Var"] [ppNm @nm] [] @info
                 loc     .  info     =   []
+  | VarWild     lhs     .  ppAST    =   ppNest ["TyExpr","VarWild"] [ppNm @nm] []
 
 SEM Expr
   | Let         loc     .  info_3   :=  [ mkInfo1 "lSubsValGam_" (ppGam @lSubsValGam_)
                                         ]
-  | TypeAs      loc     .  info_3   :=  [ mkInfo1 "ty_q_" (ppTy @ty_q_)
+  | TypeAs      loc     .  info_3   :=  [ mkInfo1 "knTy+lhs.tyCnstr" (ppTy (@lhs.tyCnstr |=> @lhs.knTy))
+                                        , mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)
+                                        , mkInfo1 "foCnstr fo" (pp (foCnstr @fo_))
+                                        , mkInfo1 "ty_q_" (ppTy @ty_q_)
                                         ]
 
 %%]
@@ -222,6 +230,7 @@ SEM PatExpr
                                         , mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         , mkInfo1 "foCnstr fo" (pp (foCnstr @fo_))
+                                        , mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "ty_r_" (ppTy @ty_r_)
                                         ]

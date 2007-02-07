@@ -105,7 +105,7 @@ SEM Expr
                                                     @arg.cexpr
   | Lam LamImpl loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
   | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppCoe @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
 %%]
 
 %%[10

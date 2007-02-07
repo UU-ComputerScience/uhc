@@ -187,13 +187,16 @@ SEM PatExpr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.TypeAs
+-- 20070205 - AD, this does not match ruler rules anymore: options to fit, type expr is passed further on, uninstantiated
 %%[5.TypeAs
 SEM PatExpr
   | TypeAs      loc         .   ty_q_               =   @lhs.tyCnstr |=> @tyExpr.ty
-                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_q_
-                patExpr     .   knTy                =   foTy @fo_
+                            .   fo_                 =   fitsIn strongFIOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_q_
+                patExpr     .   knTy                =   foCnstr @fo_ |=> @ty_q_
                             .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
+                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @lhs.knTy) @ty_q_
+                patExpr     .   knTy                =   foTy @fo_
 
 -- generated from ruler rules into EHRulerRules, was 2.Rest
 %%[5.Rest

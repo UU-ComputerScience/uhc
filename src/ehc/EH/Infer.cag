@@ -710,6 +710,13 @@ SEM Expr
                 arg         .  fiOpts               =   @argFIOpts
 %%]
 
+-- 20070205 - AD, should be generated from ruler rules, but not yet is
+%%[5
+SEM Expr
+  | TypeAs      loc         .  asFiOpts             =   strongFIOpts
+                expr        .  fiOpts               =   @asFiOpts
+%%]
+
 %%[5
 ATTR AllCase [ fiOpts: FIOpts | | ]
 

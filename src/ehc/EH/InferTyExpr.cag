@@ -92,7 +92,7 @@ SEM PrExpr
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
 %%[5.tyVarWildL
-ATTR TyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+ATTR AllTyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
 %%]
 
 %%[3.tyWildL

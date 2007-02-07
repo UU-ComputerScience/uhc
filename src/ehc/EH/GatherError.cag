@@ -88,6 +88,8 @@ SEM PatExpr
 %%[5
 SEM Expr
   | SConst      lhs         .   errL        =   mkNestErr @pp (foErrL @fo_)
+  | TypeAs      lhs         .   errL        :=  mkNestErr @pp
+                                                    (@expr.errL ++ @tyExpr.errL ++ foErrL @fo_ ++ foErrL @fo_fitDown)
 %%]
 
 %%[5_1
