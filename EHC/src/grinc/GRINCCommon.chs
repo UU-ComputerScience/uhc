@@ -161,9 +161,28 @@ type ApplyMap    = AssocL GrTag (Either GrTag Int)
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom)
+%%[8 export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, showHptMap)
 
 type HptMap        = (Array Int AbstractValue, Array Int AbstractValue, Map.Map Int AbstractValue)
+
+showHptElem :: (Int,AbstractValue) -> String
+showHptElem (n,v) = show n ++ ": " ++ show v
+
+showHptMap :: HptMap -> String
+showHptMap (ae, ah, aex)
+  =  unlines (  ( "HEAP"
+                : map showHptElem (assocs ah)
+                )
+             ++ ( "BASE ENVIRONMENT"
+                : map showHptElem (assocs ae)
+                )
+             ++ ( "EXTENDED ENVIRONMENT"
+                : map showHptElem (Map.toAscList aex)
+                )
+             )
+     
+     
+
 
 
 getEnvVar :: HptMap -> Int -> AbstractValue

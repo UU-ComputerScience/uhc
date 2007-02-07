@@ -4,18 +4,20 @@
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
-
+%%[8 hs import(qualified Data.Set as Set)
+%%]
 %%[8 hs module {%{GRIN}GrinCode.Trf.Unbox2}
 %%]
-
 %%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
 %%[8 hs export(unbox2)
-unbox2 :: GrModule -> GrModule
-unbox2 grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                    (Inh_GrAGItf)
-               in trf_Syn_GrAGItf t
+unbox2 :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+unbox2 (input,unique,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (trf_Syn_GrAGItf syn, unique, hptMap)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,16 +35,29 @@ WRAPPER GrAGItf
 %%[8
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT [ | | trf: SELF ]
+
+ATTR GrAGItf AllNT [ hptMap: {HptMap} | | ]
+
 %%]
 
 %%[8 hs
 
-tagCanbeUnboxed :: GrTag -> Bool
-tagCanbeUnboxed gt
+
+typeCanbeUnboxed :: HsName -> Bool
+typeCanbeUnboxed nm 
+  =   nm == hsnInt  ||  nm == hsnChar
+
+
+tagCanbeUnboxed :: HptMap -> GrTag -> Bool
+tagCanbeUnboxed hptMap gt
   = case gt of
-      GrTag_Lit (GrTagCon _) _ nm | nm == hsnInt || nm == hsnChar
-        -> True
-      _ -> False
+      GrTag_Lit (GrTagCon _) _ nm -> typeCanbeUnboxed nm
+      GrTag_Var (HNmNr n _)       -> case getEnvVar hptMap n of
+                                      AV_Tags set -> case Set.elems set of
+                                                       [tag] -> tagCanbeUnboxed hptMap tag
+                                                       _     -> False
+                                      _           -> False
+      _                           -> False
 
 
 %%]
@@ -50,11 +65,13 @@ tagCanbeUnboxed gt
 
 %%[8
 SEM GrPat
-  | Node        lhs         .   trf             =   if tagCanbeUnboxed @tag.trf
-                                                     then GrPat_Node GrTag_Unboxed @fldL
-                                                     else @trf
+  | Node  lhs . trf   =  if tagCanbeUnboxed @lhs.hptMap @tag.trf
+                          then GrPat_Node GrTag_Unboxed @fldL
+                          else @trf
 SEM GrVal
-  | Node        lhs         .   trf             =   if tagCanbeUnboxed @tag.trf
-                                                     then GrVal_Node GrTag_Unboxed @fldL.trf
-                                                     else @trf
+  | Node  lhs . trf   =  if tagCanbeUnboxed @lhs.hptMap @tag.trf
+                          then GrVal_Node GrTag_Unboxed @fldL.trf
+                          else @trf
+                                                     
+  
 %%]
