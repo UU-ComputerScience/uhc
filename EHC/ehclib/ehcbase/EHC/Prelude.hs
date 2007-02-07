@@ -849,12 +849,12 @@ signumReal x | x == 0    =  0
              | otherwise = -1
 
 {-----------------------------
+-----------------------------}
 instance Real Int where
     toRational x = toInteger x % 1
 
 instance Real Integer where
     toRational x = x % 1
------------------------------}
 
 {-----------------------------
 primitive primDivInt,

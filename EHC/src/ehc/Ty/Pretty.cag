@@ -432,6 +432,7 @@ SEM TyAGItf
 SEM Ty
   | Ext             (loc.positionalNm,lhs.positionalFldNmL)
                                                     =   hdAndTl @ty.positionalFldNmL
+                    extTy   .   positionalFldNmL    =   positionalFldNames
   | * - Ext         lhs     .   positionalFldNmL    =   @lhs.positionalFldNmL
 %%]
 

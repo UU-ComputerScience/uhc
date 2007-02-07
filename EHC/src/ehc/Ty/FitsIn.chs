@@ -1331,11 +1331,11 @@ prvnPruneHighCost isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
                                     in   (poi,c',cm',pbm',gp')
                               ProvenOr pr es _
                                 ->  let  (cs,cm,pbm,gp)      = costOfL es costMp' pruneBackMp gPrune
-                                         alts@((_,calt):_)   = head . groupSortOn snd $ cs
                                          (poi',gp',c')
-                                           =  case alts of
-                                                [(poia,_)]    ->  (poia,prvgAddPrUids pr [poi] gp,calt)
-                                                ((poia,_):_)  ->  (poia,prvgAddNd poi (ProvenOr pr (map fst alts) calt) gp,calt)
+                                           =  case head $ groupSortOn snd $ cs of
+                                                [(poia,calt)]        -> (poia,prvgAddPrUids pr [poi] gp,calt)
+                                                alts@((poia,calt):_) -> (poi,prvgAddNd poi (ProvenOr pr (map fst alts) calt) gp,calt)
+                                                -- alts@((poia,calt):_) -> (poia,prvgAddNd poi (ProvenOr pr (map fst alts) calt) gp,calt)
                                          cm'                 = Map.insert poi' (Just c') (Map.delete poi cm)
                                          pbm'                = Map.insert poi poi' pbm
                                     in   (poi',c',cm',pbm',gp')
@@ -1374,6 +1374,7 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
             = prvnPruneHighCost isPrCheap g
           pruneStartPoiL
             = prunePois `poisApp` prvgOrigs g
+{-
           (gPruneNoOr,gPruneOr,orPoiL)
             = splitOr gPrune
           gPruneReached
@@ -1382,6 +1383,15 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
             = prvg2ReachableFrom gPruneReached pruneStartPoiL
           sharePois
             = prvgShareMp gPruneReached (reverse pruneRevTopSort)
+-}
+          gPruneReached
+            = onlyReachables pruneStartPoiL gPrune
+          (gPruneNoOr,gPruneOr,orPoiL)
+            = splitOr gPruneReached
+          (_,pruneRevTopSort)
+            = prvg2ReachableFrom gPruneNoOr pruneStartPoiL
+          sharePois
+            = prvgShareMp gPruneNoOr (reverse pruneRevTopSort)
           backPois
             = sharePois `poisApp` prunePois
           origRestorePois
@@ -1389,8 +1399,12 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
             where m = poisMp backPois
           fullBackPois
             = origRestorePois `poisApp` backPois
+{-
           gPruneBack
             = prvgAppPoiSubst fullBackPois gPruneReached
+-}
+          gPruneBack
+            = prvgAppPoiSubst fullBackPois gPruneNoOr
      in   (gPruneBack, onlyReachables orPoiL gPruneOr, poisMp fullBackPois, (gPrune,gPruneReached))
 %%]
 

@@ -342,6 +342,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.TypeAs
+-- 20070205 - AD, this does not match ruler rules anymore. Split up in check for context and inner expression, latter should have (e.g.) forall skolemized. Which is now does.
 %%[5.TypeAs
 SEM Expr
   | TypeAs      loc         .   gTyTvL              =   let  ftvVal  = ftv (@lhs.tyCnstr |=> @lhs.valGam)
@@ -349,8 +350,14 @@ SEM Expr
                                                         in   ftvVal ++ ftvTy
                             .   tyTy                :=  @lhs.tyCnstr |=> @tyExpr.ty
                             .   ty_q_               :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
-                            .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @ty_q_) (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   ty_q_2_             =   @lhs.tyCnstr |=> @ty_q_
+                            .   fo_                 :=  fitsIn strongFIOpts @fe @lUniq @ty_q_2_ (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   knTyDown            =   mkTyVar @lUniq3
+                            .   fo_fitDown          =   fitsIn (strongFIOpts {fioBindLFirst = False}) @fe @lUniq2 @knTyDown (foCnstr @fo_ |=> @ty_q_2_)
+                expr        .   knTy                :=  @knTyDown
+                            .   tyCnstr             :=  foCnstr @fo_fitDown |=> foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
+                            .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq (@lhs.tyCnstr |=> @ty_q_) (@lhs.tyCnstr |=> @lhs.knTy)
 
 -- generated from ruler rules into EHRulerRules, was 4_2.TypeAs
 %%[90.TypeAs
