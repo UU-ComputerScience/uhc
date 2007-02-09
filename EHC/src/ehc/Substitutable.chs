@@ -32,14 +32,8 @@ infixr 6 |=>
 %%]
 
 %%[2.Substitutable
-class Substitutable k v vv | vv -> v k where
-  (|=>)         ::  Cnstr' k v -> vv -> vv
-  ftv           ::  vv -> [k]
-%%]
-
-%%[9.Substitutable -2.Substitutable
-class Substitutable k v vv | vv -> v k where
-  (|=>)         ::  Cnstr' k v -> vv -> vv
+class Substitutable vv k subst | vv -> subst k where
+  (|=>)         ::  subst -> vv -> vv
   ftv           ::  vv -> [k]
 %%]
 
@@ -55,58 +49,67 @@ c1 |>> c2 = cnstrMapTy (const (c1 |=>)) c2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.SubstitutableTy
-instance Substitutable TyVarId Ty Ty where
+instance Substitutable Ty TyVarId Cnstr where
   (|=>)  = tyAppCnstr
   ftv    = tyFtv
 %%]
 
 %%[9.SubstitutableTy -2.SubstitutableTy
-instance Substitutable TyVarId (CnstrInfo Ty) Ty where
+instance Substitutable Ty TyVarId Cnstr where
   (|=>)  = tyAppCnstr
   ftv    = tyFtv
 %%]
 
 %%[2.SubstitutableList
-instance (Ord k,Substitutable k v vv) => Substitutable k v [vv] where
+instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
   s      |=>  l   =   map (s |=>) l
   ftv         l   =   unions . map ftv $ l
 %%]
 
 %%[2.SubstitutableCnstr
-instance (Ord k,Substitutable k v v) => Substitutable k v (Cnstr' k v) where
+instance Substitutable (Cnstr' TyVarId Ty) TyVarId Cnstr where
   s1@(Cnstr sl1) |=> s2@(Cnstr sl2)
     = Cnstr (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
     where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
   ftv (Cnstr sl)
     = ftv . map snd $ sl
 %%]
+instance (Ord k,Substitutable v k subst) => Substitutable (Cnstr' k v) k subst where
+  s1@(Cnstr sl1) |=> s2@(Cnstr sl2)
+    = Cnstr (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
+    where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
+  ftv (Cnstr sl)
+    = ftv . map snd $ sl
 
 %%[7
-instance Substitutable k v vv => Substitutable k v (HsName,vv) where
+instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where
   s |=>  (k,v) =  (k,s |=> v)
   ftv    (_,v) =  ftv v
 %%]
 
 %%[9.SubstitutableCnstr -2.SubstitutableCnstr
-instance (Ord k,Substitutable k v v) => Substitutable k v (Cnstr' k v) where
+instance Substitutable (Cnstr' TyVarId (CnstrInfo Ty)) TyVarId Cnstr where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 `Map.union` Map.map (s1 |=>) sl2)
   ftv                  (Cnstr sl)      =   ftv . Map.elems $ sl
 %%]
+instance (Ord k,Substitutable v k subst) => Substitutable (Cnstr' k v) k subst where
+  s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 `Map.union` Map.map (s1 |=>) sl2)
+  ftv                  (Cnstr sl)      =   ftv . Map.elems $ sl
 
 %%[9
-instance Substitutable TyVarId (CnstrInfo Ty) Pred where
+instance Substitutable Pred TyVarId Cnstr where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
   ftv    p  =  ftv (Ty_Pred p)
 
-instance Substitutable TyVarId (CnstrInfo Ty) PredOcc where
-  s |=>  (PredOcc pr id)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id
-  ftv    (PredOcc pr _)   = ftv (Ty_Pred pr)
+instance Substitutable PredOcc TyVarId Cnstr where
+  s |=>  (PredOcc pr id sc)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id sc
+  ftv    (PredOcc pr _  _ )  = ftv (Ty_Pred pr)
 
-instance Substitutable TyVarId (CnstrInfo Ty) Impls where
+instance Substitutable Impls TyVarId Cnstr where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
   ftv    i  =  ftv (Ty_Impls i)
 
-instance Substitutable TyVarId (CnstrInfo Ty) (CnstrInfo Ty) where
+instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
   s |=>  ci =  case ci of
                  CITy     t -> CITy (s |=> t)
                  CIImpls  i -> CIImpls (s |=> i)

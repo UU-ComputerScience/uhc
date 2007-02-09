@@ -636,7 +636,7 @@ mkInstElimRule opts n i sz ctxtToInstTy
   where ns = take sz hsnLclSupply
         ev = MkEvidCtxt n
 
-instance Substitutable TyVarId (CnstrInfo Ty) Rule where
+instance Substitutable Rule TyVarId Cnstr where
   s |=>  r = r { rulRuleTy = s |=> rulRuleTy r }
   ftv    r = ftv (rulRuleTy r)
 
@@ -666,7 +666,7 @@ emptyPIGI = PrIntroGamInfo Ty_Any Ty_Any emptyRule
 instance PP PrIntroGamInfo where
   pp pigi = pp (pigiRule pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
 
-instance Substitutable TyVarId (CnstrInfo Ty) PrIntroGamInfo where
+instance Substitutable PrIntroGamInfo TyVarId Cnstr where
   s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
   ftv   pigi        =   ftv (pigiKi pigi)
 %%]
@@ -691,7 +691,7 @@ data PrElimGamInfo
 emptyPrElimGamInfo :: PrElimGamInfo
 emptyPrElimGamInfo = PrElimGamInfo []
 
-instance Substitutable TyVarId (CnstrInfo Ty) PrElimGamInfo where
+instance Substitutable PrElimGamInfo TyVarId Cnstr where
   s |=>  pegi = pegi { pegiRuleL = s |=> pegiRuleL pegi }
   ftv    pegi = ftv (pegiRuleL pegi)
 

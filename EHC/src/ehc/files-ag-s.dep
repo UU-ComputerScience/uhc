@@ -4,6 +4,7 @@ HS/MainAG.cag
 HS/ModImpExp.cag
 HI/MainAG.cag
 Ty/Ftv.cag
+Ty/TrieKey.cag
 Ty/Instantiate.cag
 Ty/Pretty.cag
 Ty/Quantify.cag

@@ -8,7 +8,7 @@
 %%[8 hs module {%{GRIN}GrinCode.TrfLocal.FlattenSeq}
 %%]
 
-%%[8 hs import(EH.Util.FastSeq)
+%%[8 hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
@@ -35,11 +35,11 @@ WRAPPER GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR GrExpr [ | | trfL: {FastSeq (GrExpr,GrPat)}  trfLast: GrExpr ]
+ATTR GrExpr [ | | trfL: {Seq.FastSeq (GrExpr,GrPat)}  trfLast: GrExpr ]
 
 SEM GrExpr
-  | Seq         lhs         .   trfL            =   @expr.trfL :++: FSeq (@expr.trfLast,@pat.trf) :++: @body.trfL
-  | * - Seq     lhs         .   trfL            =   FSeqNil
+  | Seq         lhs         .   trfL            =   @expr.trfL Seq.:++: Seq.singleton (@expr.trfLast,@pat.trf) Seq.:++: @body.trfL
+  | * - Seq     lhs         .   trfL            =   Seq.empty
 
 SEM GrExpr
   | Seq         lhs         .   trfLast         =   @body.trfLast
@@ -60,6 +60,6 @@ SEM GrExpr
   | Seq         lhs         .   trf             =   foldr
                                                       (\(e,p) b -> GrExpr_Seq e p b)
                                                       (GrExpr_Seq @expr.trfLast @pat.trf @body.trf)
-                                                      (toList @expr.trfL)
+                                                      (Seq.toList @expr.trfL)
 %%]
 

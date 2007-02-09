@@ -957,22 +957,22 @@ idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.Substitutable.Gam
-instance (Eq k,Eq tk,Substitutable k v vv) => Substitutable k v (Gam tk vv) where
+instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k subst where
   s |=> (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
   ftv   (Gam ll)    =   unions . map ftv . map snd . concat $ ll
 %%]
 
 %%[9.Substitutable.TreeGam -2.Substitutable.Gam
-instance (Ord tk,Ord k,Substitutable k v vv) => Substitutable k v (TreeGam i tk vv) where
+instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (TreeGam i tk vv) k subst where
   s |=> g    =   g {tgamEntriesOf = Map.map (\(n,e) -> (n,Map.map (s |=>) e)) (tgamEntriesOf g)}
   ftv   g    =   unions . map (ftv . map head . Map.elems . snd) . Map.elems . tgamEntriesOf $ g
 %%]
 
 %%[2.Substitutable.inst.ValGamInfo
-instance Substitutable TyVarId Ty ValGamInfo where
+instance Substitutable ValGamInfo TyVarId Cnstr where
 %%]
 %%[9 -2.Substitutable.inst.ValGamInfo
-instance Substitutable TyVarId (CnstrInfo Ty) ValGamInfo where
+instance Substitutable ValGamInfo TyVarId Cnstr where
 %%]
 %%[2
   s |=> vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
@@ -980,10 +980,10 @@ instance Substitutable TyVarId (CnstrInfo Ty) ValGamInfo where
 %%]
 
 %%[6.Substitutable.inst.TyGamInfo
-instance Substitutable TyVarId Ty TyGamInfo where
+instance Substitutable TyGamInfo TyVarId Cnstr where
 %%]
 %%[9 -6.Substitutable.inst.TyGamInfo
-instance Substitutable TyVarId (CnstrInfo Ty) TyGamInfo where
+instance Substitutable TyGamInfo TyVarId Cnstr where
 %%]
 %%[6
   s |=> tgi         =   tgi { tgiKi = s |=> tgiKi tgi }
@@ -991,7 +991,7 @@ instance Substitutable TyVarId (CnstrInfo Ty) TyGamInfo where
 %%]
 
 %%[9
-gamSubstTop :: (Ord k,Substitutable k v vv) => Cnstr' k v -> Gam k vv -> Gam k vv
+gamSubstTop :: (Ord k,Substitutable vv k subst) => subst -> Gam k vv -> Gam k vv
 gamSubstTop s g
   =  let  (h,t) = gamPop g
      in   gamPushGam (s |=> h) t

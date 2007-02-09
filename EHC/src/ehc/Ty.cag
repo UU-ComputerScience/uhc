@@ -85,9 +85,6 @@
 %%[9_1 hs export(TyPlusId)
 %%]
 
-%%[9 hs export(PredOcc(..),poId)
-%%]
-
 %%[10 hs export(tyExtsOffset)
 %%]
 
@@ -196,16 +193,31 @@ instance Show TyHardness where
 %%% Pred occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[9 hs export(PredOcc(..),PredScope(..),poId,mkPredOcc)
+data PredScope
+  = PredScope_Lev [Int]
+  | PredScope_Var TyVarId
+  deriving (Eq,Ord)
+
 data PredOcc
   =  PredOcc
        { poPr               :: Pred
        , poPoi              :: PredOccId
+       , poScope			:: PredScope
        }
   deriving (Show,Eq)
 
 poId :: PredOcc -> UID
 poId = poiId . poPoi
+
+mkPredOcc :: Pred -> PredOccId -> PredOcc
+mkPredOcc p i = PredOcc p i (PredScope_Lev [])
+%%]
+
+%%[9 hs
+instance Show PredScope where
+  show (PredScope_Lev l) = showList l ""
+  show (PredScope_Var v) = "?" ++ show v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -662,7 +674,7 @@ tyRecExts2
 %%% Canonical ordering of fields of record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn)
+%%[7 hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn,tyRowCanonLblOrder)
 rowLabCmp :: HsName -> HsName -> Ordering
 rowLabCmp = compare
 
@@ -677,6 +689,9 @@ tyRowCanonOrderBy cmp = sortByOn cmp fst
 
 tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
 tyRowCanonOrder = tyRowCanonOrderBy rowLabCmp
+
+tyRowCanonLblOrder :: [HsName] -> [HsName]
+tyRowCanonLblOrder = sortBy rowLabCmp
 %%]
 
 %%[8 hs export(tyRowOffsetOrder)
@@ -755,7 +770,7 @@ tyImpls (Ty_Impls i) = i
 
 implsPredsTail :: Impls -> ([PredOcc],Impls)
 implsPredsTail (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail t
-                                         in   (PredOcc p pv : p',mi)
+                                         in   (mkPredOcc p pv : p',mi)
 implsPredsTail t                      =  ([],t)
 
 implsPredsMbTail :: Impls -> ([PredOcc],Maybe ImplsVarId)

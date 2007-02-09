@@ -10,7 +10,7 @@ Assume that each lambda has no free variables, other than the globally available
 %%% Float lambda's to global level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.LamFloatGlobal} import(EH.Util.Utils,EH.Util.FastSeq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamFloatGlobal)
+%%[8 hs module {%{EH}Core.Trf.LamFloatGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamFloatGlobal)
 %%]
 
 -- for debug
@@ -47,26 +47,26 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ | | cTrf: SELF  cFloatedBinds USE {:++:} {FSeqNil}: {FastSeq (CBindCateg,FastSeq CBind)} ]
-ATTR AllBind [ | | cLamBinds, cOtherBinds USE {:++:} {FSeqNil}: {FastSeq CBind} ]
+ATTR AllCodeNT [ | | cTrf: SELF  cFloatedBinds USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (CBindCateg,Seq.FastSeq CBind)} ]
+ATTR AllBind [ | | cLamBinds, cOtherBinds USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq CBind} ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBind
   | Bind        lhs         .   (cOtherBinds,cLamBinds)
                                             =   if @expr.isLam
-                                                then (FSeqNil,FSeq @cTrf)
-                                                else (FSeq @cTrf,FSeqNil)
-  | FFI         lhs         .   cOtherBinds =   FSeq @cTrf
+                                                then (Seq.empty,Seq.singleton @cTrf)
+                                                else (Seq.singleton @cTrf,Seq.empty)
+  | FFI         lhs         .   cOtherBinds =   Seq.singleton @cTrf
 
 SEM CExpr
   | Let         lhs         .   (cTrf,cFloatedBinds)
                                             =   if @lhs.lev == cLevModule
-                                                then ( foldr (\(c,b) e -> mkCExprLet c (toList b) e) @body.cTrf
-                                                       $ toList (@binds.cFloatedBinds :++: FSeq (@categ,@binds.cLamBinds :++: @binds.cOtherBinds))
-                                                     , FSeqNil
+                                                then ( foldr (\(c,b) e -> mkCExprLet c (Seq.toList b) e) @body.cTrf
+                                                       $ Seq.toList (@binds.cFloatedBinds Seq.:++: Seq.singleton (@categ,@binds.cLamBinds Seq.:++: @binds.cOtherBinds))
+                                                     , Seq.empty
                                                      )
-                                                else ( mkCExprLet @categ (toList @binds.cOtherBinds) @body.cTrf
-                                                     , FSeq (@categ,@binds.cLamBinds) :++: @binds.cFloatedBinds :++: @body.cFloatedBinds
+                                                else ( mkCExprLet @categ (Seq.toList @binds.cOtherBinds) @body.cTrf
+                                                     , Seq.singleton (@categ,@binds.cLamBinds) Seq.:++: @binds.cFloatedBinds Seq.:++: @body.cFloatedBinds
                                                      )
 %%]
 

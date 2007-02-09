@@ -94,7 +94,7 @@ SEM Ty
 
 %%[7
 SEM Ty
-  | Ext         ty          .   appSpinePos     =   0
+  | Ext         ty          .   appSpinePos     =   @lhs.appSpinePos + 1 {- 0 -}
                 extTy       .   appSpinePos     =   0
 %%]
 

@@ -10,7 +10,7 @@ Remove the stuff required for full program analysis, but not for direct executio
 %%[8 hs module {%{GRIN}GrinCode.TrfLocal.UnusedMetaInfoElim}
 %%]
 
-%%[8 hs import(EH.Util.FastSeq)
+%%[8 hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
@@ -43,18 +43,18 @@ ATTR AllNT [ | | trf: SELF ]
 
 %%[8
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] (toList @bindL.trfSq) [] [] []
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] (Seq.toList @bindL.trfSq) [] [] []
 
 SEM GrExpr
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL []
 %%]
 
 %%[8
-ATTR AllBind [ | | trfSq USE {:++:} {FSeqNil}: {FastSeq GrBind} ]
+ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
 
 SEM GrBind
   | Bind        lhs         .   trfSq           =   if @nm `elem` [hsnGrEval, hsnGrApply]
-                                                    then FSeqNil
-                                                    else FSeq @trf
-  | Rec         lhs         .   trfSq           =   FSeq $ GrBind_Rec $ toList @bindL.trfSq
+                                                    then Seq.empty
+                                                    else Seq.singleton @trf
+  | Rec         lhs         .   trfSq           =   Seq.singleton $ GrBind_Rec $ Seq.toList @bindL.trfSq
 %%]
