@@ -83,7 +83,10 @@ instance PP Impls where
   pp i = ppTy (Ty_Impls i)
 
 instance PP PredOcc where
-  pp po = pp (poPr po) >|< "/" >|< pp (poPoi po)
+  pp po = pp (poPr po) >|< "/" >|< pp (poPoi po) >|< "/" >|< pp (poScope po)
+
+instance PP PredScope where
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

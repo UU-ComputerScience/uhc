@@ -8,7 +8,7 @@
 %%[8 hs import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
 %%]
 
-%%[8 hs import(Data.Maybe,Data.Char,Data.Bits,EH.Util.FastSeq,EH.Util.Utils,qualified Data.Map as Map)
+%%[8 hs import(Data.Maybe,Data.Char,Data.Bits,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Map as Map)
 %%]
 
 %%[8 hs export(gbmod2C)
@@ -118,10 +118,10 @@ SEM Instr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllInstr [ | | locRefs USE {:++:} {FSeqNil}: {FastSeq (LocRef,Int)} ]
+ATTR AllInstr [ | | locRefs USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (LocRef,Int)} ]
 
 SEM Instr
-  | Label       lhs         .   locRefs     =   FSeq (@locRef,@labelCLoc)
+  | Label       lhs         .   locRefs     =   Seq.singleton (@locRef,@labelCLoc)
 %%]
 
 %%[8 hs
@@ -153,14 +153,14 @@ SEM Instr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllInstr [ | | links USE {:++:} {FSeqNil}: {FastSeq (Link,Int)} ]
+ATTR AllInstr [ | | links USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (Link,Int)} ]
 
 SEM Instr
   | LdGlobal Link
-                lhs         .   links       =   FSeq (@link,@linkCLoc)
+                lhs         .   links       =   Seq.singleton (@link,@linkCLoc)
   | Call CallC Eval Apply
   				loc			.	link		=	Link LinkTbl_CallInfo @ciInx
-  				lhs			.	links		=	FSeq (@link,@linkCLoc)
+  				lhs			.	links		=	Seq.singleton (@link,@linkCLoc)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -290,7 +290,7 @@ SEM Module
                                                     extraConstL = [ Const_CallInfo (@moduleNmPre ++ n) | (n,_) <- callinfoNmL ]
                                                     consts  = ppTbl "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmAString) (@constL ++ extraConstL))
                                                     bcode   = ppTbl "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
-                                                    linkL   = toList @instrs.links
+                                                    linkL   = Seq.toList @instrs.links
                                                     links   = ppTbl "GB_LinkEntry" @ppNmLinkEntriesTbl
                                                                 (map (\(l,c)
                                                                        -> let (kind,val,loc) = kv l c
@@ -305,7 +305,7 @@ SEM Module
                                                                              LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l             , ppAddrArrAt @ppNmByteCodeTbl c)
                                                                              LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz, ppAddrArrAt @ppNmByteCodeTbl c)
                                                                              k                 -> (k, pp $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
-                                                    glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- toList @instrs.locRefs ]
+                                                    glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
                                                     glEntries= ppTbl "GB_BytePtr" @ppNmGlobEntriesTbl [ e i c | (i,c) <- Map.assocs glEntryMp ]
                                                              where e i c = case Map.lookup i cafMp of
                                                                              Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n

@@ -28,7 +28,7 @@ to a loop.
 %%[8 hs module {%{GRIN}GrinCode.TrfLocal.Inline}
 %%]
 
-%%[8 hs import(EH.Util.FastSeq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
+%%[8 hs import(qualified EH.Util.FastSeq as Seq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
@@ -290,16 +290,16 @@ SEM GrExpr
 %%]
 
 %%[8
-ATTR AllBind [ | | trfSq USE {:++:} {FSeqNil}: {FastSeq GrBind} ]
+ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
 
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (toList @bindL.trfSq) @ctagsMp @evalTagMp @applyTagMp
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @ctagsMp @evalTagMp @applyTagMp
 
 SEM GrBind
   | Bind        lhs         .   trfSq           =   if @omitBind && @nm `Set.member` @lhs.inlNmS
-                                                    then FSeqNil
-                                                    else FSeq @trf
-  | Rec         lhs         .   trfSq           =   FSeq $ GrBind_Rec $ toList @bindL.trfSq
+                                                    then Seq.empty
+                                                    else Seq.singleton @trf
+  | Rec         lhs         .   trfSq           =   Seq.singleton $ GrBind_Rec $ Seq.toList @bindL.trfSq
 %%]
 
 

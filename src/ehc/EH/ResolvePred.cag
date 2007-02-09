@@ -20,17 +20,17 @@ SEM Expr
 %%[10
 SEM Expr
   | Sel         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq2
-                lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid] ++ @expr.gathPredL
+                lhs         .   gathPredL           =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid] ++ @expr.gathPredL
   | Rec         lhs         .   gathPredL           =   foPredOccL @fo_ ++ @recExpr.gathPredL
 
 SEM RecExpr
   | Ext         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq3
   | Upd         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq4
-  | Ext Upd     lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @recTy) @nm) @prUid] ++ @recExpr.gathPredL ++ @expr.gathPredL
+  | Ext Upd     lhs         .   gathPredL           =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) @nm) @prUid] ++ @recExpr.gathPredL ++ @expr.gathPredL
 
 SEM RecPatExpr
   | Ext         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq3
-                lhs         .   gathPredL           =   [PredOcc (Pred_Lacks (tyRecRow @knRecTy) @nm) @prUid] ++ @recPatExpr.gathPredL ++ @patExpr.gathPredL
+                lhs         .   gathPredL           =   [mkPredOcc (Pred_Lacks (tyRecRow @knRecTy) @nm) @prUid] ++ @recPatExpr.gathPredL ++ @patExpr.gathPredL
 %%]
 
 %%[97
@@ -72,7 +72,7 @@ SEM Expr
 SEM Expr
   | LamImpl     loc         .   knPr                =   tyPred . (@body.tyCnstr |=>) $ @knArgImpl
                             .   knPrUid             =   mkPrId @prfCtxtId @lUniq
-                            .   knPrL               =   [PredOcc @knPr @knPrUid]
+                            .   knPrL               =   [mkPredOcc @knPr @knPrUid]
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @imSubsTy
 %%]
 
@@ -139,7 +139,7 @@ SEM Decl
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ tgiDataTy @derivDataTGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc
-                                                                       = [ [ PredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId @prfCtxtId u2)
+                                                                       = [ [ mkPredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId @prfCtxtId u2)
                                                                            | ((_,t),u2) <- zip a1 (mkNewUIDL (length a1) u1)
                                                                            ]
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
@@ -150,7 +150,7 @@ SEM Decl
                             .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
                                   ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
                                                     =   prfPredsDbg @lUniq7 (@fe {fePrElimTGam = @decls.prElimTGam}) @toResolvePrOccL
-                            .   supForPrfPrOccL     =   zipWith PredOcc (map tyPred @supPrTyL) @supPrUIDL
+                            .   supForPrfPrOccL     =   zipWith mkPredOcc (map tyPred @supPrTyL) @supPrUIDL
                             .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs
                                   ,(dbgSup2PrfG,dbgSup2PrfPruneG,dbgSup2PrfOrG,dbgSup2PrfIntermG1,dbgSup2PrfIntermG2,dbgSup2PrElimTGam,dbgSup2PrLeaves,prfSupPoiFwdMp,prfSupPoiBackMp,dbgSup2TrPPL))
                                                     =   prfPredsDbg @lUniq5 (@fe {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL

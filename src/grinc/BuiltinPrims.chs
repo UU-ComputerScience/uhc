@@ -12,7 +12,7 @@ Ideally, these tables should be merged.
 %%[8 import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.Builtin},{%{GRIN}GrinByteCode})
 %%]
 
-%%[8 import(qualified Data.Map as Map, EH.Util.FastSeq, UU.Pretty)
+%%[8 import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, UU.Pretty)
 %%]
 
 %%[8 export(Backend(..), Primitive(..), lookupPrim)
@@ -76,11 +76,11 @@ mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> OptimCtxt -> NmEnv -> Int -> StackDepth 
 mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
   = case gviLd' optim env modNmConstInx (stkDepth+inc1) a2 of
       GrValIntroAlt_OnTOS ins2 inc2 optimEffect
-        -> GrValIntroAlt_OnTOS (ins1 :++: ins2 :++: oins) 1 optimEffect
-        where oins = FSeqL [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect
+        where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
       GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc)
-        -> GrValIntroAlt_OnTOS (ins1 :++: pins :++: oins) 1 optimEffect
-        where oins = FSeqL [op opTy opndTy InsOp_LocODst_TOS deref src imm]
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins) 1 optimEffect
+        where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                    where (deref,src,imm)
                            = case ldsrc of
                                LoadSrc_TOS       -> (InsOp_Deref_One , InsOp_LocOSrc_TOS, 0)

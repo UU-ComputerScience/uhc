@@ -5,7 +5,7 @@
 %%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg,{%{EH}GrinCode.Pretty})
 %%]
 
-%%[8 hs import(UU.Pretty,Data.Bits,EH.Util.FastSeq,qualified Data.Map as Map)
+%%[8 hs import(UU.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
 %%[8 hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
@@ -46,7 +46,7 @@ nrCallRetWords = 2
 Instruction sequence
 
 %%[8 hs export(InsSeq)
-type InsSeq = FastSeq Instr
+type InsSeq = Seq.FastSeq Instr
 %%]
 
 Constants
@@ -260,11 +260,11 @@ data LoadSrc
 ldsrc2ins' :: (Instr -> Instr) -> LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins' ann s
   = case s of
-      LoadSrc_TOS       -> (FSeqNil,0)
-      LoadSrc_TOS_Rel o -> (FSeq $ ann $ ldl  o,1)
-      LoadSrc_Reg_Rel o -> (FSeq $ ann $ l1tr o,1)
-      LoadSrc_Imm     c -> (FSeq $ ann $ ldc  c,1)
-      LoadSrc_Imm_Int c -> (FSeq $ ann $ ldi  c,1)
+      LoadSrc_TOS       -> (Seq.empty,0)
+      LoadSrc_TOS_Rel o -> (Seq.singleton $ ann $ ldl  o,1)
+      LoadSrc_Reg_Rel o -> (Seq.singleton $ ann $ l1tr o,1)
+      LoadSrc_Imm     c -> (Seq.singleton $ ann $ ldc  c,1)
+      LoadSrc_Imm_Int c -> (Seq.singleton $ ann $ ldi  c,1)
 
 ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins = ldsrc2ins' id
@@ -290,17 +290,17 @@ nmLd' optim env modNmConstInx stkDepth nm
       mva@(Just va)
         -> case va of
              Val_LocalOffset o
-               -> (mva,Load FSeqNil 0 (if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off))
+               -> (mva,Load Seq.empty 0 (if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off))
                where off = stkDepth - o
              Val_Int i
-               -> (mva,Load FSeqNil 0 (LoadSrc_Imm_Int i))
+               -> (mva,Load Seq.empty 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
-               -> (mva,Load (FSeq $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) 1 LoadSrc_TOS)
+               -> (mva,Load (Seq.singleton $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) 1 LoadSrc_TOS)
 %%[[12
              Val_ImpEntry mo eo
-               -> (mva,Load (FSeqL [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+1))
+               -> (mva,Load (Seq.fromList [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+1))
 %%]]
-      _ -> (Nothing,Load (FSeq $ ann ("dummy ld for" >#< nm) $ ldl stkDepth) 1 LoadSrc_TOS)
+      _ -> (Nothing,Load (Seq.singleton $ ann ("dummy ld for" >#< nm) $ ldl stkDepth) 1 LoadSrc_TOS)
 %%]
 
 %%[8 hs
@@ -309,10 +309,10 @@ vaAndLd2Ins optim nm vald
   = case vald of
       (Just (Val_LocalOffset _),Load pins pdep LoadSrc_TOS)
         | not (ocxOmitTOSLd optim)
-          -> (pins :++: ins,pdep + dep)
+          -> (pins Seq.:++: ins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (ann nm) (LoadSrc_TOS_Rel 0)
       (_,Load pins pdep ls)
-          -> (pins :++: ins,pdep + dep)
+          -> (pins Seq.:++: ins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (ann $ show ls) ls
 %%]
 
@@ -344,30 +344,30 @@ gviLdFold' :: GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrVal
 gviLdFold' dflt optim env modNmConstInx stkDepth introL
   = foldl ld dflt $ reverse $ introL
   where ld (GrValIntroAlt_OnTOS ins dep _) intro
-          = GrValIntroAlt_OnTOS (ins :++: ins') (dep+dep') defaultOptimEffect
+          = GrValIntroAlt_OnTOS (ins Seq.:++: ins') (dep+dep') defaultOptimEffect
           where (GrValIntroAlt_OnTOS ins' dep' _) = gviLd optim env modNmConstInx (stkDepth+dep) intro
 
 gviLdFold :: OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-gviLdFold = gviLdFold' (GrValIntroAlt_OnTOS FSeqNil 0 defaultOptimEffect)
+gviLdFold = gviLdFold' (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect)
 
 gviLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd' optim env modNmConstInx stkDepth intro
-  = ld optim (GrValIntroAlt_OnTOS FSeqNil 0 defaultOptimEffect) intro
+  = ld optim (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect) intro
   where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _) intro
           = case intro of
               GrValIntro_Nm nm
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
                 where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Str s l
-                -> GrValIntroAlt_OnTOS (ins ::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+1) defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins Seq.::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+1) defaultOptimEffect
               GrValIntro_Int i
-                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (Load FSeqNil 0 $ LoadSrc_Imm_Int i)
+                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (Load Seq.empty 0 $ LoadSrc_Imm_Int i)
 {-
               GrValIntro_Grp gtag [i] | tagIsUnboxed gtag
                 -> ld optim dflt i
 -}
               GrValIntro_Grp gtag is
-                -> GrValIntroAlt_OnTOS (ins :++: FSeqL [meta (ppGrTag gtag)] :++: tins :++: sins) sinc defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
                 where i@(GrValIntroAlt_OnTOS ins inc _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
                       (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
                       (sins,sinc) = ndStore (allocInc + inc + tinc)
@@ -378,7 +378,7 @@ gviLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd optim env modNmConstInx stkDepth intro
   = case gviLd' optim env modNmConstInx stkDepth intro of
       GrValIntroAlt_Delay ins inc optimEffect mbva l
-        -> GrValIntroAlt_OnTOS (ins :++: sins) (inc + sinc) optimEffect
+        -> GrValIntroAlt_OnTOS (ins Seq.:++: sins) (inc + sinc) optimEffect
         where (sins,sinc) = vaAndLd2Ins optim hsnUnknown (mbva,l)
       a -> a
 %%]
@@ -386,7 +386,7 @@ gviLd optim env modNmConstInx stkDepth intro
 %%[8 hs export(gvCall)
 gvCall :: MbStrInx -> NmEnv -> Int -> InsSeq -> Int -> StackDepth -> HsName -> (InsSeq,StackDepth)
 gvCall i nmEnv modNmConstInx ins inc stkDepth nm
-  = (ins :++: fins :++: FSeqL [call i InsOp_LocB_TOS], 1)
+  = (ins Seq.:++: fins Seq.:++: Seq.fromList [call i InsOp_LocB_TOS], 1)
   where (fins,_) = nmLd defaultOptimCtxt nmEnv modNmConstInx (stkDepth + inc) nm
 %%]
 
@@ -561,7 +561,7 @@ fetchupdate :: Instr
 fetchupdate = Instr_FetchUpdate
 
 ndStore :: Int -> (InsSeq,StackDepth)
-ndStore sz = (FSeqL [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], 1)
+ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], 1)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -665,20 +665,20 @@ tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,StackDep
 tag env modNmConstInx stkDepth gt sz
   = case gt of
       GrTag_Lit categ tg nm
-        -> (tins :++: FSeqL [ldc tword],tinc+1,allocInc,isEvaluated)
+        -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,allocInc,isEvaluated)
         where (needEval,categ',tg',tins,tinc,allocInc)
                 = case categ of
-                    GrTagCon _    -> (tgNeedEval_No ,0,tg,FSeqNil      ,0  ,0)
-                    GrTagHole     -> (tgNeedEval_BlH,0,tg,FSeqL [ldc 0],1  ,0)
-                    GrTagRec      -> (tgNeedEval_No ,0,tg,FSeqNil      ,0  ,0)
-                    GrTagApp      -> (tgNeedEval_Yes,1,tg,FSeqNil      ,0  ,0)
-                    GrTagFun      -> (tgNeedEval_Yes,0,tg,ins          ,inc,0)
+                    GrTagCon _    -> (tgNeedEval_No ,0,tg,Seq.empty      ,0  ,0)
+                    GrTagHole     -> (tgNeedEval_BlH,0,tg,Seq.fromList [ldc 0],1  ,0)
+                    GrTagRec      -> (tgNeedEval_No ,0,tg,Seq.empty      ,0  ,0)
+                    GrTagApp      -> (tgNeedEval_Yes,1,tg,Seq.empty      ,0  ,0)
+                    GrTagFun      -> (tgNeedEval_Yes,0,tg,ins              ,inc,0)
                                   where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
-                    GrTagPApp m   -> (tgNeedEval_No ,1,m ,ins          ,inc,0)
+                    GrTagPApp m   -> (tgNeedEval_No ,1,m ,ins              ,inc,0)
                                   where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
               tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
               isEvaluated = needEval == tgNeedEval_No
-      _ -> (FSeqNil,0,0,False)
+      _ -> (Seq.empty,0,0,False)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
