@@ -65,6 +65,15 @@ instance Show k => Show (TrieKey k) where
 %%% Trie structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9 export(TrieKeyable(..))
+class TrieKeyable x k where
+  toTrieKey :: x -> [TrieKey k]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Trie structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 export(Trie,emptyTrie,empty)
 data Trie k v
   = Trie
@@ -179,7 +188,7 @@ elems = map snd . toListByKey
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(singletonByKey)
+%%[9 export(singletonByKey,singletonKeyable)
 singletonByKey :: Ord k => [TrieKey k] -> v -> Trie k v
 singletonByKey keys val
   = s keys
@@ -190,6 +199,9 @@ singletonByKey keys val
 
 singleton :: Ord k => [k] -> v -> Trie k v
 singleton keys val = singletonByKey (mkTrieKeys keys) val
+
+singletonKeyable :: (Ord k,TrieKeyable v k) => v -> Trie (TrieKey k) v
+singletonKeyable val = singleton (toTrieKey val) val
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -49,8 +49,8 @@ EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_P
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam Cnstr Deriving Module Config BuiltinPrims \
-													CHR CHR/Key CHR/Constraint \
-													Pred Pred/ToCHR Pred/CHR \
+													CHR CHR/Key CHR/Constraint CHR/Solve \
+													Pred Pred/ToCHR Pred/CHR Pred/Heuristics \
 													Base/Opts Base/Common Base/Builtin Base/HsName Base/Debug Base/Trie \
 													NameAspect \
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \

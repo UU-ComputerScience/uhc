@@ -32,7 +32,7 @@
 %%[4_2 export(tyAsCnstr,cnstrTyRevUnit)
 %%]
 
-%%[9 import(qualified Data.Map as Map,{%{EH}Base.Debug}) export(CnstrInfo(..),cnstrImplsLookup,cnstrImplsUnit,assocLToCnstrImpls,cnstrToAssocL)
+%%[9 import(qualified Data.Map as Map,{%{EH}Base.Debug}) export(CnstrInfo(..),cnstrToAssocL)
 %%]
 
 %%[50 export(cnstrKeys)
@@ -160,6 +160,7 @@ cnstrTyLookup tv (Cnstr s) = lookup tv s
 data CnstrInfo v
   = CITy v
   | CIImpls Impls
+  | CIScope PredScope
   deriving (Eq,Show)
 
 type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
@@ -167,11 +168,14 @@ type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
 instance Show Cnstr where
   show (Cnstr c) = show (Map.toList c)
 
+cnstrLookup' :: Ord k => (CnstrInfo v -> Maybe res) -> k -> Cnstr' k (CnstrInfo v) -> Maybe res
+cnstrLookup' get v (Cnstr s)
+  = do { ci <- Map.lookup v s
+       ; get ci
+       }
+
 cnstrTyLookup :: Ord k => k -> Cnstr' k (CnstrInfo v) -> Maybe v
-cnstrTyLookup v (Cnstr s)
-  = case Map.lookup v s of
-      Just (CITy t)  -> Just t
-      _              -> Nothing
+cnstrTyLookup = cnstrLookup' (\ci -> case ci of {CITy t -> Just t; _ -> Nothing})
 %%]
 
 %%[4_2.cnstrTyRevUnit
@@ -220,18 +224,23 @@ cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,th
 cnstrMapThrTy f = cnstrMapThr (\v i thr -> case i of {CITy t -> let (t',thr') = f v t thr in (CITy t,thr'); _ -> (i,thr)})
 %%]
 
-%%[9
+%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit)
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (Map.fromList [(v,CIImpls i)])
 
+cnstrScopeUnit :: ImplsVarId -> PredScope -> Cnstr
+cnstrScopeUnit v sc = Cnstr (Map.fromList [(v,CIScope sc)])
+
 assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
 assocLToCnstrImpls = Cnstr . Map.fromList . assocLMapElt CIImpls
+%%]
 
+%%[9 export(cnstrImplsLookup,cnstrScopeLookup)
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
-cnstrImplsLookup v (Cnstr s)
-  = case Map.lookup v s of
-      Just (CIImpls i)  -> Just i
-      _                 -> Nothing
+cnstrImplsLookup = cnstrLookup' (\ci -> case ci of {CIImpls i -> Just i; _ -> Nothing})
+
+cnstrScopeLookup :: TyVarId -> Cnstr -> Maybe PredScope
+cnstrScopeLookup = cnstrLookup' (\ci -> case ci of {CIScope s -> Just s; _ -> Nothing})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

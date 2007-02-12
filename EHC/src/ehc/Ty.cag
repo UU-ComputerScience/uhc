@@ -190,15 +190,53 @@ instance Show TyHardness where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred occurrence
+%%% Pred scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(PredOcc(..),PredScope(..),poId,mkPredOcc)
+%%[9 hs export(PredScope(..))
 data PredScope
   = PredScope_Lev [Int]
   | PredScope_Var TyVarId
   deriving (Eq,Ord)
 
+%%]
+
+%%[9 hs
+instance Show PredScope where
+  show (PredScope_Lev l) = show l
+  show (PredScope_Var v) = "sc_" ++ show v
+%%]
+
+%%[9 hs export(pscpEnter,pscpLeave)
+pscpEnter :: Int -> PredScope -> PredScope
+pscpEnter x (PredScope_Lev s) = PredScope_Lev (x:s)
+
+pscpLeave :: PredScope -> PredScope
+pscpLeave (PredScope_Lev (_:s)) = PredScope_Lev s
+%%]
+
+%%[9 hs export(pscpIsVisibleIn,pscpParent,pscpCommon)
+pscpIsVisibleIn :: PredScope -> PredScope -> Bool
+pscpIsVisibleIn (PredScope_Lev sIn) (PredScope_Lev sOut) = sOut `isSuffixOf` sIn
+pscpIsVisibleIn _                   _                    = False
+
+pscpParent :: PredScope -> Maybe PredScope
+pscpParent (PredScope_Lev (_:s)) = Just $ PredScope_Lev s
+pscpParent _                     = Nothing        
+
+pscpCommon :: PredScope -> PredScope -> Maybe PredScope
+pscpCommon (PredScope_Lev s1) (PredScope_Lev s2) = Just $ PredScope_Lev $ reverse $ commonPrefix (reverse s1) (reverse s2)
+                                                 where commonPrefix (x:xs)  (y:ys)  | x == y     = x : commonPrefix xs ys
+                                                                                    | otherwise  = []
+                                                       commonPrefix _       _                    = []
+pscpCommon _                  _                  = Nothing        
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred occurrence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs export(PredOcc(..),poId,mkPredOcc)
 data PredOcc
   =  PredOcc
        { poPr               :: Pred
@@ -214,10 +252,11 @@ mkPredOcc :: Pred -> PredOccId -> PredOcc
 mkPredOcc p i = PredOcc p i (PredScope_Lev [])
 %%]
 
-%%[9 hs
-instance Show PredScope where
-  show (PredScope_Lev l) = showList l ""
-  show (PredScope_Var v) = "?" ++ show v
+Only during testing of CHR framework:
+
+%%[9 hs export(mkPredOccSimple)
+mkPredOccSimple :: Pred -> PredOcc
+mkPredOccSimple p = mkPredOcc p emptyPredOccId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

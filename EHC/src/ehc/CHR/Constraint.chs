@@ -17,31 +17,40 @@
 
 %%[9 export(Constraint(..))
 data Constraint p info
-  = Prove      p
-  | Assume     p
-  | Reduction  p info [p]
+  = Prove      		p					-- proof obligation
+  | Assume     		p					-- assumed
+  | Reduction  		p info [p]			-- 'side effect', residual info used by (e.g.) codegeneration
   deriving (Eq, Ord, Show)
 %%]
 
 %%[9
+reducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
+reducablePart (Prove  p) = Just ("Prf",p,Prove)
+reducablePart (Assume p) = Just ("Ass",p,Assume)
+reducablePart _          = Nothing
+%%]
+
+%%[9
 instance Keyable p => Keyable (Constraint p info) where
-  toKey (Prove     p    ) = TK_One TKK_Normal (Key_Str "Prf") : toKey p
-  toKey (Assume    p    ) = TK_One TKK_Normal (Key_Str "Ass") : toKey p
-  toKey (Reduction p _ _) = TK_One TKK_Normal (Key_Str "Red") : toKey p
+  toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ reducablePart c
 
 instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
-  chrMatch env (Prove     p) (Prove     q) = chrMatch env p q
-  chrMatch env (Assume    p) (Assume    q) = chrMatch env p q
-  chrMatch _   _             _             = Nothing
+  chrMatchTo env c1 c2
+    = do { (_,p1,_) <- reducablePart c1
+         ; (_,p2,_) <- reducablePart c2
+         ; chrMatchTo env p1 p2
+         }
 
 instance CHRSubstitutable p v s => CHRSubstitutable (Constraint p info) v s where
-  chrFtv (Prove  p)          = chrFtv p
-  chrFtv (Assume p)          = chrFtv p
-  chrFtv (Reduction p _ ps)  = Set.unions (chrFtv p : map chrFtv ps)
+  chrFtv c
+    = case reducablePart c of
+        Just (_,p,_) -> chrFtv p
+        _            -> Set.empty
 
-  chrAppSubst s      (Prove  p)         = Prove  (chrAppSubst s p)
-  chrAppSubst s      (Assume p)         = Assume (chrAppSubst s p)
   chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) i (map (chrAppSubst s) ps)
+  chrAppSubst s      c                  = case reducablePart c of
+                                            Just (_,p,mk) -> mk (chrAppSubst s p)
+                                            _             -> c
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,7 +58,7 @@ instance CHRSubstitutable p v s => CHRSubstitutable (Constraint p info) v s wher
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(CHRRule)
-type CHRRule p s info = CHR (Constraint p info) s
+type CHRRule p g s info = CHR (Constraint p info) g s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

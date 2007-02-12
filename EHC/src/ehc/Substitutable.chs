@@ -101,6 +101,12 @@ instance Substitutable Pred TyVarId Cnstr where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
   ftv    p  =  ftv (Ty_Pred p)
 
+instance Substitutable PredScope TyVarId Cnstr where
+  s |=>  sc@(PredScope_Var v) = maybe sc id $ cnstrScopeLookup v s
+  s |=>  sc                   = sc
+  ftv    (PredScope_Var v)    = [v]
+  ftv    _                    = []
+
 instance Substitutable PredOcc TyVarId Cnstr where
   s |=>  (PredOcc pr id sc)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id sc
   ftv    (PredOcc pr _  _ )  = ftv (Ty_Pred pr)
@@ -111,11 +117,13 @@ instance Substitutable Impls TyVarId Cnstr where
 
 instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
   s |=>  ci =  case ci of
-                 CITy     t -> CITy (s |=> t)
-                 CIImpls  i -> CIImpls (s |=> i)
+                 CITy     t  -> CITy (s |=> t)
+                 CIImpls  i  -> CIImpls (s |=> i)
+                 CIScope  sc -> CIScope (s |=> sc)
   ftv    ci =  case ci of
-                 CITy     t -> ftv t
-                 CIImpls  i -> ftv i
+                 CITy     t  -> ftv t
+                 CIImpls  i  -> ftv i
+                 CIScope  sc -> ftv sc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

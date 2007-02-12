@@ -96,23 +96,19 @@ foAppCoe' (fCS,fLC,fRC) c cs ce
 %%% Internal interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FIIn.hd
+%%[4.FIIn export(FIIn(..))
 data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
-%%]
-%%[9
+%%[[9
                         ,  fiEnv             ::  FIEnv
-%%]
-%%[4.FIn.tl
+%%]]
                         }
 %%]
 
-%%[4.FIn.emptyFI.hd
+%%[4.FIn.emptyFI export(emptyFI)
 emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
-%%]
-%%[9
+%%[[9
                         ,  fiEnv             =   emptyFE
-%%]
-%%[4.FIn.emptyFI.tl
+%%]]
                         }
 %%]
 
@@ -292,15 +288,24 @@ manyFO :: [FIOut] -> FIOut
 manyFO = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
 
 fitsIn :: FIOpts -> FIEnv -> UID -> Ty -> Ty -> FIOut
-fitsIn opts env uniq ty1 ty2
+fitsIn opts env uniq
+  =  fitsInFI (emptyFI  { fiUniq = uniq, fiFIOpts = opts
+%%[[9
+                        , fiEnv = env
+%%]]
+                        }
+              )
+
+fitsInFI :: FIIn -> Ty -> Ty -> FIOut
+fitsInFI fi ty1 ty2
   =  fo
   where
             res fi t                =  emptyFO  { foUniq = fiUniq fi, foTy = t
                                                 , foAppSpineL = asGamLookup appSpineGam (tyConNm t)}
-            err    e                =  emptyFO {foUniq = fioUniq opts, foErrL = e}
-            errClash fi t1 t2       =  err [Err_UnifyClash ty1 ty2 (fioMode opts) t1 t2 (fioMode (fiFIOpts fi))]
+            err    e                =  emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e}
+            errClash fi t1 t2       =  err [Err_UnifyClash ty1 ty2 (fioMode (fiFIOpts fi)) t1 t2 (fioMode (fiFIOpts fi))]
             occurBind fi v t
-                | v `elem` ftv t    =  err [Err_UnifyOccurs ty1 ty2 (fioMode opts) v t (fioMode (fiFIOpts fi))]
+                | v `elem` ftv t    =  err [Err_UnifyOccurs ty1 ty2 (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
                 | otherwise         =  bind fi v t
 %%]
 
@@ -490,7 +495,7 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[50
-            instCoConst = fioInstCoConst opts
+            instCoConst = fioInstCoConst (fiFIOpts fi)
 %%]
 
 %%[7.fitsIn.fRow.Base
@@ -1007,21 +1012,14 @@ fitsIn opts env uniq ty1 ty2
 %%]
 
 %%[4.fitsIn.SetupAndResult
-            fo  = f (emptyFI {fiUniq = uniq, fiFIOpts = opts}) ty1 ty2
-%%]
-
-%%[9.fitsIn.SetupAndResult -4.fitsIn.SetupAndResult
-            fo  = ff (emptyFI  { fiUniq = uniq, fiFIOpts = opts
-                               , fiEnv = env
-                               }
-                     ) ty1 ty2
+            fo  = f fi ty1 ty2
 %%]
 
 %%[9
+%%]
             f' msg fi t1 t2 = let fo = f (trPP ("FIT" ++ "-" ++ msg ++ "-" ++ "fi") fi) (m "t1" t1) (m "t2" t2)
                                   m mm x = trPP ("FIT" ++ "-" ++ msg ++ "-" ++ mm) x
                               in  tr ("FIT" ++ "-" ++ msg) (pp (foTy fo)) fo
-%%]
 
 %%[9
 fitsIn' :: String -> FIOpts -> FIEnv -> UID -> Ty -> Ty -> FIOut
@@ -1411,6 +1409,17 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule matching
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(fitPredInPred)
+fitPredInPred :: FIIn -> Pred -> Pred -> Maybe (Pred,Cnstr)
+fitPredInPred fi pr1 pr2
+  = if foHasErrs fo
+    then Nothing
+    else Just (tyPred $ foTy fo,foCnstr fo)
+  where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
+        fe = fiEnv fi
+        u  = fiUniq fi
+%%]
 
 %%[9
 matchRule :: FIEnv -> UID -> PredOcc -> Rule -> Maybe ([PredOcc],(Pred,PredOccId,CExpr),CExpr,ProofCost)
