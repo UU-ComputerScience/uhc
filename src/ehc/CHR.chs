@@ -21,30 +21,32 @@ to avoid explosion of search space during resolution.
 %%% CHR, derived structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHR(..),CHRStore)
-data CHR cnstr subst
+%%[9 export(CHR(..))
+data CHR cnstr guard subst
   = CHR
       { chrSimpHead     :: [cnstr]
       , chrPropHead     :: [cnstr]
-      , chrGuard        :: subst -> Maybe subst
+      , chrGuard        :: [guard] -- subst -> Maybe subst
       , chrBody         :: [cnstr]
       }
 
-emptyCHRGuard :: (Monoid a) => t -> Maybe a
-emptyCHRGuard = const $ Just mempty
-
-type CHRStore cnstr subst = Trie.Trie (Trie.TrieKey Key) (CHR cnstr subst)
-type CHRWorkList cnstr = Trie.Trie (Trie.TrieKey Key) cnstr
+emptyCHRGuard :: [a]
+emptyCHRGuard = []
 %%]
 
 %%[9
-instance (Show c) => Show (CHR c s) where
+instance (Show c) => Show (CHR c g s) where
   showsPrec _ chr
     = case chr of
         (CHR []       ph@(_:_) _ b) -> shows "{ " . showList ph . shows  " ==> " . showList b . shows " }"
         (CHR sh@(_:_) []       _ b) -> shows "{ " . showList sh . shows " <==> " . showList b . shows " }"
         (CHR sh@(_:_) ph@(_:_) _ b) -> shows "{ " . showList sh . shows " | " . showList ph . shows " <==> " . showList b . shows " }"
         (CHR []       []       _ b) -> shows "{ " . showList b . shows " }"
+%%]
+
+%%[9
+instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
+  toKey chr = toKey $ head $ chrSimpHead chr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,21 +69,31 @@ instance (Ord var,Substitutable x var subst) => CHRSubstitutable x var subst whe
 %%% CHRMatchable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+A Matchable participates in the reduction process as a reducable constraint.
+
 %%[9 export(CHRMatchable(..))
 class (Keyable x) => CHRMatchable env x subst | x -> subst env where
-  chrMatch      :: env -> x -> x -> Maybe subst
+  chrMatchTo      :: env -> x -> x -> Maybe subst
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHRCheckable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A Checkable participates in the reduction process as a guard, to be checked.
+
+%%[9 export(CHRCheckable(..))
+class CHRCheckable x subst | x -> subst where
+  chrCheck      :: x -> Maybe subst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(ppCHRStore)
-instance PP c => PP (CHR c s) where
+%%[9
+instance PP c => PP (CHR c g s) where
   pp = pp . show
-
-ppCHRStore :: PP c => CHRStore c s -> PP_Doc
-ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> k >-< indent 2 (":" >#< v)) . Trie.toList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,11 +104,11 @@ ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> k >-< indent 2 (":" >#< v)) . 
 infix   1 <==>, ==>
 infixr  0 |>
 
-(<==>), (==>) :: Monoid s => [c] -> [c] -> CHR c s
+(<==>), (==>) :: [c] -> [c] -> CHR c g s
 hs <==>  bs = CHR hs [] emptyCHRGuard bs
 hs  ==>  bs = CHR [] hs emptyCHRGuard bs
 
-(|>) :: CHR c s -> (s -> Maybe s) -> CHR c s
-chr |> g = chr {chrGuard = g}
+(|>) :: CHR c g s -> [g] -> CHR c g s
+chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%]
 

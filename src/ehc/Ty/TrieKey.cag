@@ -41,6 +41,13 @@ tyTrieKey ty
 
 instance Keyable Ty where
   toKey = tyTrieKey
+
+instance Keyable Pred where
+  toKey pr = toKey $ Ty_Pred pr
+
+instance Keyable PredOcc where
+  toKey po = toKey $ poPr po
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

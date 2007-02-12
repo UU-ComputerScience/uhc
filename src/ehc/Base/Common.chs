@@ -277,6 +277,11 @@ instance PP PredOccId where
   pp poi = "Poi" >|< ppPredOccId' pp poi
 %%]
 
+%%[9 export(emptyPredOccId)
+emptyPredOccId :: PredOccId
+emptyPredOccId = mkPrId basePrfCtxtId uidStart
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ordered sequence, 'delayed concat' list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

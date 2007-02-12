@@ -6,10 +6,167 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[9 module {%{EH}Pred.ToCHR} import({%{EH}CHR},{%{EH}CHR.Constraint})
+%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr})
 %%]
 
-%%[9 import(qualified Data.Set as Set,Data.Maybe)
+%%[9 import(Data.Maybe)
+%%]
+
+%%[9 import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Solve})
+%%]
+
+%%[9 import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics})
+%%]
+
+%%[9 import(EH.Util.AGraph)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Rule store
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(PredStore)
+type PredStore p g s info = CHRStore (Constraint p info) g s
+%%]
+type PredStore = CHRStore (Constraint PredOcc ()) Guard Cnstr
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Temporary stuff, placeholders for types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+type Info = ()
+%%]
+
+%%[9
+type ClassDecl    a info = ([a], a, [info])
+type InstanceDecl a info = ([a], a, info)
+%%]
+type ClassDecl    a info = ([a], a, [info])
+type InstanceDecl a info = ([a], a, info)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion/expansion into CHR, initial (test) version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-----------------------------------------------------------------------------
+-- Functions to generate chrs for a list of class declarations
+-- and to check the acyclicity of the class hiearchy.
+-----------------------------------------------------------------------------
+
+%%[9
+genChrs :: (CHRMatchable env a s, Ord a, Ord info) => [ClassDecl a info] -> [InstanceDecl a info] -> PredStore a g s info
+genChrs classes insts =
+  let classChrs = genClassChrs classes
+      instChrs  = genInstanceChrs insts
+  in  classChrs `chrStoreUnion` instChrs
+
+genClassChrs :: (CHRMatchable env a s, Ord a, Ord info) => [ClassDecl a info] -> PredStore a g s info
+genClassChrs clsDecls =
+  let assumeChrs = chrStoreUnions $ map genAssumeChrs clsDecls
+      simplChrs  = chrStoreUnions $ map (genClassSimplChrs' assumeChrs) clsDecls
+  in  assumeChrs `chrStoreUnion` simplChrs
+
+genAssumeChrs :: (CHRMatchable env a s, Ord info) => ClassDecl a info -> PredStore a g s info
+genAssumeChrs ([]     , _   , _    ) = emptyCHRStore
+genAssumeChrs (context, head, infos) =
+  let super sClass info = [Assume sClass, Reduction sClass info [head]]
+  in  chrStoreSingletonElem $ [Assume head] ==> concat (zipWith super context infos)
+%%]
+
+-- Versie met evidence
+
+%%[9
+genClassSimplChrs' :: (CHRMatchable env a s, Ord a, Ord info) => PredStore a g s info -> ClassDecl a info -> PredStore a g s info
+genClassSimplChrs' rules (context, head, infos) =
+  let superClasses = chrSolve' rules (map Assume context)
+      graph        = foldr addReduction emptyAGraph superClasses 
+
+      mapTrans reds subClass = concatMap (transClosure reds subClass)
+
+      transClosure reds par (info, pr@(Red_Pred p)) =
+        let reds'  = Reduction p info [par] : reds
+            pres   = predecessors graph pr
+         in ([Prove head, Prove p] ==> reds')
+            : mapTrans reds' p pres
+
+  in chrStoreFromElems $ mapTrans [] head (zip infos (map Red_Pred context))
+%%]
+
+%%[9
+-----------------------------------------------------------------------------
+-- Chrs for instance declarations
+-----------------------------------------------------------------------------
+genInstanceChrs :: (CHRMatchable env a s, Ord info) => [InstanceDecl a info] -> PredStore a g s info
+genInstanceChrs =
+  let genSimpl (context, head, info) = chrStoreSingletonElem $ [Prove head] ==> Reduction head info context : map Prove context
+  in  chrStoreUnions . map genSimpl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Simplification
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+%%]
+{-# OPTIONS -fglasgow-exts #-}
+module Simplification
+     ( Graph
+     , Node (..)
+     , emptyAGraph
+     , addAssumption
+     , addReduction
+     , alternatives
+     )
+where
+
+import qualified Data.Set as Set
+
+import Constraints
+import AGraph
+import Heuristics (Red (..), Alts (..))
+
+%%[9
+data RedNode p
+  =  Red_Pred p
+  |  Red_And [p]
+  deriving (Eq, Ord)
+
+instance Show p => Show (RedNode p) where
+  show (Red_Pred p)    = show p
+  show (Red_And [])    = "True"
+  show (Red_And _ )    = "And"
+
+true  ::  RedNode p
+true  =   Red_And []
+
+type Graph p info = AGraph (RedNode p) info
+    
+------------------------------------------------------------------
+-- Constructing a graph from Reduction constraints
+------------------------------------------------------------------
+
+addAssumption :: Ord p => Constraint p info -> [info] -> Graph p info -> Graph p info
+addAssumption (Assume  p)  is  = insertEdges (zip3 (repeat (Red_Pred p)) (repeat true) is) 
+addAssumption _            _   = id
+
+addReduction :: Ord p => Constraint p info -> Graph p info -> Graph p info
+addReduction (Reduction p i [q])  =  insertEdge (Red_Pred p, Red_Pred q  , i)
+addReduction (Reduction p i ps)   =  let  andNd  = Red_And ps
+                                          edges  = map (\q -> (andNd, Red_Pred q, i)) ps
+                                     in   insertEdges ((Red_Pred p, andNd, i) : edges)
+addReduction _                    =  id
+
+------------------------------------------------------------------
+-- Generating alternatives from a reduction graph
+------------------------------------------------------------------
+alternatives :: Ord p => Graph p info -> p -> Alts p info
+alternatives gr = recOr
+  where  recOr   p       = Alts  p  (map recAnd  (successors gr (Red_Pred p))) 
+         recAnd  (i, n)  = Red   i  (map recOr   (preds n))
+         preds  n  = case n of
+                       Red_Pred  q   -> [q]
+                       Red_And   qs  -> qs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

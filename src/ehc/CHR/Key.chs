@@ -2,7 +2,7 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.Trie(TrieKey)})
+%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.Trie})
 %%]
 
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
@@ -34,6 +34,11 @@ instance Show Key where
 %%[9 export(Keyable(..))
 class Keyable k where
   toKey :: k -> [TrieKey Key]
+%%]
+
+%%[9
+instance Keyable x => TrieKeyable x Key where
+  toTrieKey = toKey
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
