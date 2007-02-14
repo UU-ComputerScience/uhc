@@ -1,0 +1,132 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Classes via CHR's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR store
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR NTPrf [ chrStore: ScopedPredStore | | ]
+%%]
+
+%%[9
+ATTR Expr AllDecl [ | | gathChrStore USE {`chrStoreUnion`} {emptyCHRStore}: ScopedPredStore ]
+%%]
+
+%%[9.initChrStore
+SEM AGItf
+  | AGItf       loc         .   initChrStore        =   initScopedPredStore @chrFIIn
+%%]
+
+%%[9
+SEM AGItf
+  | AGItf       loc         .   exprChrStore        =   mkScopedCHR2 @chrFIIn (Seq.toList @expr.chrClassDeclSq) (Seq.toList @expr.chrInstDeclSq)
+                            .   chrStore            =   chrStoreUnions [@exprChrStore,@initChrStore]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scope
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR NTPrf [ predScope: PredScope | | ]
+ATTR AllCase AllExpr [ predSameScopeCounter: Int | | ]
+ATTR AllDecl [ | predSameScopeCounter: Int | ]
+%%]
+
+%%[9
+SEM AGItf
+  | AGItf       loc         .   predScope           =   initPredScope
+                            .   predSameScopeCounter=   0
+
+SEM Expr
+  | Let         decls       .   predSameScopeCounter=   if @lhs.isFirstLet then 0 else @lhs.predSameScopeCounter
+  | Lam LamImpl (_,loc.predScope)                   =   pscpEnter 0 @lhs.predScope
+
+SEM Decl
+  | Class Instance
+                decls       .   predSameScopeCounter=   0
+
+SEM Decl
+  | Val Class Instance
+                (lhs.predSameScopeCounter,loc.predScope)
+                                                    =   pscpEnter @lhs.predSameScopeCounter @lhs.predScope
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHREnv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM AGItf
+  | AGItf       loc         .   chrFIIn             =   @expr.chrFIIn {fiUniq = @lUniq}
+%%]
+
+%%[9
+ATTR Expr [ | | chrFIIn: FIIn ]
+
+SEM Expr
+  | Let         loc         .   chrFIIn             =   @body.chrFIIn
+  | * - Let     loc         .   chrFIIn             =   FIIn strongFIOpts uidStart
+                                                             (emptyFE
+                                                                { fePredScope = @lhs.predScope
+                                                                , feEHCOpts = @lhs.opts
+%%[[11
+                                                                , feTyGam = @lhs.tyGam
+%%]]
+                                                                })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class to CHR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRClassDecl Pred RedInfo)} ]
+%%]
+
+%%[9
+SEM Decl
+  | Class       loc         .   chrClassDecl        =   let off n = tyRecOffset n @clsTyRec
+                                                        in  ( map tyPred @ctxtPrTyL
+                                                            , tyPred @hdPrTy
+                                                            , zipWith (\p n -> mkRedInfo (RedHow_BySuperClass n (off n) @dictTag)) @ctxtPrTyL @supClsNmL
+                                                            )
+                lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
+
+SEM Expr
+  | * - Let     lhs         .   chrClassDeclSq      =   Seq.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instance to CHR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllDecl Expr [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedInfo PredScope)} ]
+%%]
+
+%%[9
+SEM Decl
+  | Instance    loc         .   chrInstDecl         =   let (cx,hd) = tyArrowArgsRes @tyPrExpr.ty
+                                                        in  ( map tyPred cx
+                                                            , tyPred hd
+                                                            , mkRedInfo (RedHow_ByInstance @dictNm)
+                                                            , @lhs.predScope
+                                                            )
+                lhs         .   chrInstDeclSq       =   if @inclForElim then Seq.singleton @chrInstDecl else Seq.empty
+  | InstanceIntro
+                loc         .   chrInstDecl         =   let 
+                                                        in  ( []
+                                                            , tyPred @prExpr.ty
+                                                            , mkRedInfo (RedHow_ByInstance @dictNm)
+                                                            , @lhs.predScope
+                                                            )
+                lhs         .   chrInstDeclSq       =   Seq.singleton @chrInstDecl
+%%]

@@ -418,6 +418,7 @@ SEM DataFieldExpr
 SEM Expr
   | Let         loc         .   fe                  =   emptyFE
                                                             { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -425,6 +426,7 @@ SEM Expr
   | Lam AppTop LamImpl
                 loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -432,6 +434,7 @@ SEM Expr
   | * - Lam AppTop LamImpl Let
                 loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -440,6 +443,7 @@ SEM Expr
 SEM RecExpr
   | *           loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -448,6 +452,7 @@ SEM RecExpr
 SEM DataFieldExpr
   | *           loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]

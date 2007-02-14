@@ -136,7 +136,7 @@ type TyPlusId      = UID
 %%% Tyvar category
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 hs export(tvCatIsFixed)
+%%[4 hs export(tvCatIsPlain,tvCatIsFixed)
 tvCatIsPlain :: TyVarCateg -> Bool
 tvCatIsPlain TyVarCateg_Plain  = True
 tvCatIsPlain _                 = False
@@ -193,12 +193,14 @@ instance Show TyHardness where
 %%% Pred scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(PredScope(..))
+%%[9 hs export(PredScope(..),initPredScope)
 data PredScope
   = PredScope_Lev [Int]
   | PredScope_Var TyVarId
   deriving (Eq,Ord)
 
+initPredScope :: PredScope
+initPredScope = PredScope_Lev []
 %%]
 
 %%[9 hs
@@ -208,8 +210,8 @@ instance Show PredScope where
 %%]
 
 %%[9 hs export(pscpEnter,pscpLeave)
-pscpEnter :: Int -> PredScope -> PredScope
-pscpEnter x (PredScope_Lev s) = PredScope_Lev (x:s)
+pscpEnter :: Int -> PredScope -> (Int,PredScope)
+pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (x:s))
 
 pscpLeave :: PredScope -> PredScope
 pscpLeave (PredScope_Lev (_:s)) = PredScope_Lev s
@@ -217,8 +219,8 @@ pscpLeave (PredScope_Lev (_:s)) = PredScope_Lev s
 
 %%[9 hs export(pscpIsVisibleIn,pscpParent,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
-pscpIsVisibleIn (PredScope_Lev sIn) (PredScope_Lev sOut) = sOut `isSuffixOf` sIn
-pscpIsVisibleIn _                   _                    = False
+pscpIsVisibleIn (PredScope_Lev sInner) (PredScope_Lev sOuter) = sOuter `isSuffixOf` sInner
+pscpIsVisibleIn _                      _                      = False
 
 pscpParent :: PredScope -> Maybe PredScope
 pscpParent (PredScope_Lev (_:s)) = Just $ PredScope_Lev s
@@ -243,20 +245,23 @@ data PredOcc
        , poPoi              :: PredOccId
        , poScope			:: PredScope
        }
-  deriving (Show,Eq)
+  deriving (Show,Eq,Ord)
 
 poId :: PredOcc -> UID
 poId = poiId . poPoi
 
-mkPredOcc :: Pred -> PredOccId -> PredOcc
-mkPredOcc p i = PredOcc p i (PredScope_Lev [])
+mkPredOcc :: Pred -> PredOccId -> PredScope -> PredOcc
+mkPredOcc p i sc = PredOcc p i sc
 %%]
 
-Only during testing of CHR framework:
+%%[9 hs export(mkPredOccCHR)
+mkPredOccCHR :: UID -> Pred -> PredScope -> PredOcc
+mkPredOccCHR u p sc = PredOcc p (emptyPredOccId {poiId = u}) sc
+%%]
 
-%%[9 hs export(mkPredOccSimple)
-mkPredOccSimple :: Pred -> PredOcc
-mkPredOccSimple p = mkPredOcc p emptyPredOccId
+%%[9 hs export(poUpdSc)
+poUpdSc :: PredScope -> PredOcc -> PredOcc
+poUpdSc sc po = po {poScope = sc}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -809,7 +814,7 @@ tyImpls (Ty_Impls i) = i
 
 implsPredsTail :: Impls -> ([PredOcc],Impls)
 implsPredsTail (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail t
-                                         in   (mkPredOcc p pv : p',mi)
+                                         in   (mkPredOcc p pv initPredScope : p',mi)	-- scope for now
 implsPredsTail t                      =  ([],t)
 
 implsPredsMbTail :: Impls -> ([PredOcc],Maybe ImplsVarId)

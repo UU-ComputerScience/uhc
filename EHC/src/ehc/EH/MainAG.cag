@@ -37,7 +37,13 @@
 %%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
-%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}Core.Subst})
+%%[9 hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[9 hs import({%{EH}Core.Subst})
+%%]
+
+%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
 %%]
 
 %%[12 hs import({%{EH}Ty.MapName})
@@ -72,7 +78,7 @@ WRAPPER AGItf
 %%[8 ag import({EH/ToCore})
 %%]
 
-%%[9 ag import({EH/ResolvePred},{EH/InferClass})
+%%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

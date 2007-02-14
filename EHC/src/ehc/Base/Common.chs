@@ -262,7 +262,10 @@ basePrfCtxtId = uidStart
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-data PredOccId =  PredOccId {poiCxId :: PrfCtxtId, poiId :: UID} deriving (Show,Eq,Ord)
+data PredOccId
+  = PredOccId {poiCxId :: PrfCtxtId, poiId :: UID}
+  | PredOccId_Var UID
+  deriving (Show,Eq,Ord)
 
 mkPrId :: PrfCtxtId -> UID -> PredOccId
 mkPrId ci u = PredOccId ci u
@@ -274,7 +277,8 @@ ppPredOccId' :: (UID -> PP_Doc) -> PredOccId -> PP_Doc
 ppPredOccId' ppi poi = ppCurlysCommas [ppi (poiCxId poi),ppi (poiId poi)]
 
 instance PP PredOccId where
-  pp poi = "Poi" >|< ppPredOccId' pp poi
+  pp (PredOccId_Var v) = "poi_" >|< v
+  pp poi               = "Poi" >|< ppPredOccId' pp poi
 %%]
 
 %%[9 export(emptyPredOccId)

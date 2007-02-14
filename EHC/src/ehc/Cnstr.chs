@@ -161,6 +161,8 @@ data CnstrInfo v
   = CITy v
   | CIImpls Impls
   | CIScope PredScope
+  | CIPred  Pred
+  | CIPoi   PredOccId
   deriving (Eq,Show)
 
 type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
@@ -224,23 +226,35 @@ cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,th
 cnstrMapThrTy f = cnstrMapThr (\v i thr -> case i of {CITy t -> let (t',thr') = f v t thr in (CITy t,thr'); _ -> (i,thr)})
 %%]
 
-%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit)
+%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit,cnstrPredUnit,cnstrPoiUnit)
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (Map.fromList [(v,CIImpls i)])
 
-cnstrScopeUnit :: ImplsVarId -> PredScope -> Cnstr
+cnstrScopeUnit :: TyVarId -> PredScope -> Cnstr
 cnstrScopeUnit v sc = Cnstr (Map.fromList [(v,CIScope sc)])
+
+cnstrPoiUnit :: UID -> PredOccId -> Cnstr
+cnstrPoiUnit v sc = Cnstr (Map.fromList [(v,CIPoi sc)])
+
+cnstrPredUnit :: TyVarId -> Pred -> Cnstr
+cnstrPredUnit v p = Cnstr (Map.fromList [(v,CIPred p)])
 
 assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
 assocLToCnstrImpls = Cnstr . Map.fromList . assocLMapElt CIImpls
 %%]
 
-%%[9 export(cnstrImplsLookup,cnstrScopeLookup)
+%%[9 export(cnstrImplsLookup,cnstrScopeLookup,cnstrPredLookup,cnstrPoiLookup)
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup = cnstrLookup' (\ci -> case ci of {CIImpls i -> Just i; _ -> Nothing})
 
 cnstrScopeLookup :: TyVarId -> Cnstr -> Maybe PredScope
 cnstrScopeLookup = cnstrLookup' (\ci -> case ci of {CIScope s -> Just s; _ -> Nothing})
+
+cnstrPoiLookup :: UID -> Cnstr -> Maybe PredOccId
+cnstrPoiLookup = cnstrLookup' (\ci -> case ci of {CIPoi p -> Just p; _ -> Nothing})
+
+cnstrPredLookup :: TyVarId -> Cnstr -> Maybe Pred
+cnstrPredLookup = cnstrLookup' (\ci -> case ci of {CIPred p -> Just p; _ -> Nothing})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

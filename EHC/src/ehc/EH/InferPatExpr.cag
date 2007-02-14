@@ -258,6 +258,7 @@ SEM PatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -270,6 +271,7 @@ SEM RecPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -282,6 +284,7 @@ SEM DataFieldPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]

@@ -5,7 +5,7 @@
 Derived from work by Gerrit vd Geest, but with searching structures for predicates
 to avoid explosion of search space during resolution.
 
-%%[9 module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Substitutable},{%{EH}Cnstr})
+%%[9 module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Base.Common},{%{EH}Substitutable},{%{EH}Cnstr})
 %%]
 
 %%[9 import(Data.Monoid,qualified Data.Set as Set)
@@ -35,18 +35,34 @@ emptyCHRGuard = []
 %%]
 
 %%[9
-instance (Show c) => Show (CHR c g s) where
-  showsPrec _ chr
+instance Show (CHR c g s) where
+  show _ = "CHR"
+%%]
     = case chr of
-        (CHR []       ph@(_:_) _ b) -> shows "{ " . showList ph . shows  " ==> " . showList b . shows " }"
-        (CHR sh@(_:_) []       _ b) -> shows "{ " . showList sh . shows " <==> " . showList b . shows " }"
-        (CHR sh@(_:_) ph@(_:_) _ b) -> shows "{ " . showList sh . shows " | " . showList ph . shows " <==> " . showList b . shows " }"
-        (CHR []       []       _ b) -> shows "{ " . showList b . shows " }"
+        (CHR []       ph@(_:_) _ b) -> showString "{ " . showList ph . showString  " ==> " . showList b . showString " }"
+        (CHR sh@(_:_) []       _ b) -> showString "{ " . showList sh . showString " <==> " . showList b . showString " }"
+        (CHR sh@(_:_) ph@(_:_) _ b) -> showString "{ " . showList sh . showString " | " . showList ph . showString " <==> " . showList b . showString " }"
+        (CHR []       []       _ b) -> showString "{ " . showList b  . showString " }"
+
+%%[9
+instance (PP c,PP g) => PP (CHR c g s) where
+  pp chr
+    = case chr of
+        (CHR []       ph@(_:_) g b) -> ppChr ([ppL ph, pp  "==>"] ++ ppGB g b)
+        (CHR sh@(_:_) []       g b) -> ppChr ([ppL sh, pp "<==>"] ++ ppGB g b)
+        (CHR sh@(_:_) ph@(_:_) g b) -> ppChr ([ppL sh, pp "|", ppL ph, pp "<==>"] ++ ppGB g b)
+        (CHR []       []       g b) -> ppChr (ppGB g b)
+    where ppGB g@(_:_) b@(_:_) = [ppL g, "|" >#< ppL b]
+          ppGB g@(_:_) []      = [ppL g >#< "|"]
+          ppGB []      b@(_:_) = [ppL b]
+          ppL [x] = pp x
+          ppL xs  = ppBracketsCommasV xs -- ppParensCommasBlock xs
+          ppChr l = vlist l -- ppCurlysBlock
 %%]
 
 %%[9
 instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
-  toKey chr = toKey $ head $ chrSimpHead chr
+  toKey chr = toKey $ head $ chrSimpHead chr ++ chrPropHead chr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,12 +73,24 @@ instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
 class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
   chrFtv       :: x -> Set.Set var
   chrAppSubst  :: subst -> x -> x
+--  chrCmbSubst  :: subst -> subst -> subst
 %%]
 
 %%[9
+%%]
 instance (Ord var,Substitutable x var subst) => CHRSubstitutable x var subst where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHREmptySubstitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Capability to yield an empty substitution.
+
+%%[9 export(CHREmptySubstitution(..))
+class CHREmptySubstitution subst where
+  chrEmptySubst :: subst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,9 +120,9 @@ class CHRCheckable x subst | x -> subst where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
 instance PP c => PP (CHR c g s) where
   pp = pp . show
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction

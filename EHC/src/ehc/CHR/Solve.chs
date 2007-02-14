@@ -4,36 +4,87 @@
 
 Derived from work by Gerrit vd Geest, but greatly adapted to use more efficient searching.
 
+Assumptions (to be documented further)
+- The key [Trie.TrieKey Key] used to lookup a constraint in a CHR should be distinguishing enough to be used for the prevention
+  of the application of a propagation rule for a 2nd time.
+
 %%[9 module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key})
 %%]
 
 %%[9 import({%{EH}Base.Trie} as Trie)
 %%]
 
+%%[9 import(qualified Data.Set as Set,Data.List as List)
+%%]
+
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 export(CHRStore,emptyCHRStore)
-type TrieStore x = Trie.Trie (Trie.TrieKey Key) x
-type CHRStore cnstr guard subst = TrieStore (CHR cnstr guard subst)
-type CHRWorkList cnstr = Trie.Trie (Trie.TrieKey Key) cnstr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR store, with fast search
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-emptyCHRStore :: TrieStore x
-emptyCHRStore = Trie.empty
+%%[9 export(CHRStore,emptyCHRStore)
+type CHRKey = [Trie.TrieKey Key]
+
+data StoredCHR p i g s
+  = StoredCHR
+      { storedChr       :: CHR (Constraint p i) g s     -- the CHR
+      , storedKeyedInx  :: Int                          -- index of constraint for which is keyed into store
+      , storedSimpSz    :: Int                          -- nr of simpl CHR
+      , storedKeys      :: [Maybe CHRKey]               -- keys of all constraints; at storedKeyedInx: Nothing
+      , storedIdent     :: CHRKey                       -- the identification of a CHR, used for propagation rules (see remark at begin)
+      }
+
+data CHRStore pred info guard subst
+  = CHRStore
+      { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
+      }
+
+mkCHRStore trie = CHRStore trie
+
+emptyCHRStore :: CHRStore pred info guard subst
+emptyCHRStore = mkCHRStore Trie.empty
 %%]
 
 %%[9 export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
-chrStoreFromElems :: Keyable x => [x] -> TrieStore x
-chrStoreFromElems xs = Trie.fromList [ (toKey x,x) | x <- xs ]
+chrStoreFromElems :: Keyable p => [CHR (Constraint p i) g s] -> CHRStore p i g s
+chrStoreFromElems chrs
+  = mkCHRStore
+    $ Trie.fromListByKeyWith (++)
+        [ (k,[StoredCHR chr i simpSz ks' (concat ks)])
+        | chr <- chrs
+        , let cs = chrSimpHead chr ++ chrPropHead chr
+              simpSz = length $ chrSimpHead chr
+              ks = map toKey cs
+        , (c,k,i) <- zip3 cs ks [0..]
+        , let (ks1,(_:ks2)) = splitAt i ks
+              ks' = map Just ks1 ++ [Nothing] ++ map Just ks2
+        ]
 
-chrStoreSingletonElem :: Keyable x => x -> TrieStore x
-chrStoreSingletonElem = Trie.singletonKeyable
+chrStoreSingletonElem :: Keyable p => CHR (Constraint p i) g s -> CHRStore p i g s
+chrStoreSingletonElem x = chrStoreFromElems [x]
 
-chrStoreUnion :: TrieStore x -> TrieStore x -> TrieStore x
-chrStoreUnion = Trie.union
+chrStoreUnion :: CHRStore p i g s -> CHRStore p i g s -> CHRStore p i g s
+chrStoreUnion cs1 cs2 = mkCHRStore $ Trie.unionWith (++) (chrstoreTrie cs1) (chrstoreTrie cs2)
 
-chrStoreUnions :: [TrieStore x] -> TrieStore x
-chrStoreUnions = Trie.unions
+chrStoreUnions :: [CHRStore p i g s] -> CHRStore p i g s
+chrStoreUnions []  = emptyCHRStore
+chrStoreUnions [s] = s
+chrStoreUnions ss  = foldr1 chrStoreUnion ss
+%%]
+
+%%[9 export(chrStoreToList,chrStoreElems)
+chrStoreToList :: CHRStore p i g s -> [(CHRKey,[CHR (Constraint p i) g s])]
+chrStoreToList cs
+  = [ (k,chrs)
+    | (k,e) <- Trie.toListByKey $ chrstoreTrie cs
+    , let chrs = [chr | (StoredCHR {storedChr = chr, storedKeyedInx = 0}) <- e]
+    , not $ Prelude.null chrs
+    ]
+
+chrStoreElems :: CHRStore p i g s -> [CHR (Constraint p i) g s]
+chrStoreElems = concatMap snd . chrStoreToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,17 +92,93 @@ chrStoreUnions = Trie.unions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(ppCHRStore)
-ppCHRStore :: PP c => CHRStore c g s -> PP_Doc
-ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> k >-< indent 2 (":" >#< v)) . Trie.toList
+ppCHRStore :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
+ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppBracketsCommas k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Solving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(chrSolve')
-chrSolve' :: CHRStore c g s -> [c] -> [c]
-chrSolve' = undefined
+%%[9
+type WorkKey = CHRKey
+
+data Work p i
+  = Work
+      { workCnstr   :: Constraint p i           -- the constraint to be reduced
+      , workUsedIn  :: Set.Set WorkKey          -- marked with the propagation rules already applied to it
+      }
+
+data WorkList p i
+  = WorkList
+      { wlTrie      :: Trie.Trie Key (Work p i)
+      , wlQueue     :: [CHRKey]
+      }
+
+mkWorkList :: Keyable p => [Constraint p i] -> WorkList p i
+mkWorkList cs
+  = WorkList (Trie.fromListByKeyWith (const) work) (map fst work)
+  where work = [ (toKey c,Work c Set.empty) | c <- cs ]
+%%]
+
+%%[9
+data SolveStep p i g s
+  = SolveStep
+      { stepChr     :: CHR (Constraint p i) g s
+      , stepSimps   :: [Constraint p i]
+      , stepProps   :: [Constraint p i]
+      , stepBody    :: [Constraint p i]
+      }
+
+type SolveTrace p i g s = [SolveStep p i g s]
+
+data SolveState p i g s
+  = SolveState
+      { stWorkList      :: WorkList p i
+      , stScannedWork   :: [WorkKey]
+      , stDoneCnstrs    :: [Constraint p i]
+      , stTrace         :: SolveTrace p i g s
+      }
+%%]
+
+%%[9 export(chrSolve)
+chrSolve :: ( CHRMatchable env p s, CHRCheckable g s
+            , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+            , CHREmptySubstitution s
+            ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
+chrSolve env chrStore cnstrs
+  = stDoneCnstrs $ iter initState
+  where iter st
+          = case firstMatch st of
+              Just m
+                -> st
+              _ -> st
+        firstMatch st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:workTl), wlTrie = wlTrie}})
+          = foldr first Nothing
+            $ concatMap (\c -> zip (repeat c) (foldr combine [] $ candidate c))
+            $ concat $ lookupResultToList $ lookupPartialByKey False workHd
+            $ chrstoreTrie chrStore
+          where candidate (StoredCHR {storedKeys = ks})
+                  = map (maybe (lkup workHd) lkup) ks
+                  where lkup k = lookupResultToList $ lookupPartialByKey' (,) True k wlTrie
+                combine l ls = concatMap (\e -> map (e:) ls) l
+                match chr cnstrs
+                  = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
+                  where matches (StoredCHR {storedChr = CHR {chrSimpHead = sc, chrPropHead = pc}}) cnstrs
+                          = zipWith mt (sc ++ pc) cnstrs
+                          where mt cFr cTo subst = chrMatchTo env (subst `chrAppSubst` cFr) cTo
+                        checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
+                          = map chk gd
+                          where chk g subst = chrCheck (subst `chrAppSubst` g)
+                        cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
+                        cmb _        _    = Nothing
+                first (chr,keysWorks) cont
+                  = case match chr (map (workCnstr . snd) keysWorks) of
+                      r@(Just s) -> Just (chr,keysWorks,s)
+                      _          -> cont
+        initState = SolveState (mkWorkList wl) [] done []
+                  where (wl,done) = splitDone cnstrs
+        splitDone = partition (\x -> cnstrRequiresSolve x)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,8 +275,8 @@ matches :: Matchable a s => a -> [a] -> [(s, a, [a])]
 matches h' = rec []
   where rec _  []     = []
         rec rs (h:hs) = case match h' h of
- 	                 Nothing -> rec (h:rs) hs
- 	                 Just s  -> (s, h, rs ++ hs) : rec (h:rs) hs
+                     Nothing -> rec (h:rs) hs
+                     Just s  -> (s, h, rs ++ hs) : rec (h:rs) hs
 
 simplify :: Matchable c s => Maybe s -> [c] -> [c] -> Constraints c -> (Constraints c, [c])
 simplify Nothing   _   _    st = (st, [])

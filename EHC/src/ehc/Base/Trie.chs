@@ -57,8 +57,14 @@ instance Show TrieKeyKind where
   show TKK_Partial = "P"
   show TKK_Normal  = "N"
 
+instance PP TrieKeyKind where
+  pp = pp . show
+
 instance Show k => Show (TrieKey k) where
   show k = show (tkKind k) ++ ":" ++ show (tkKey k)
+
+instance PP k => PP (TrieKey k) where
+  pp k = tkKind k >|< ":" >|< tkKey k
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -93,9 +99,9 @@ empty = emptyTrie
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
 instance PP a => PP (TrieKey a) where
   pp = pp . show
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conversion
@@ -104,22 +110,31 @@ instance PP a => PP (TrieKey a) where
 Reconstruction of original key-value pairs.
 
 %%[9 export(toListByKey,toList)
-toFastSeq :: Trie k v -> Seq.FastSeq ([TrieKey k],v)
-toFastSeq trie
-  =          maybe Seq.empty (\v -> Seq.singleton ([],v)) (trieMbVal trie)
-    Seq.:++: maybe Seq.empty (\(k,t) -> Seq.map (\(ks,v) -> (TK_One TKK_Partial k:ks,v)) $ toFastSeq t) (trieMbPartial trie)
-    Seq.:++: Seq.unions [ Seq.map (\(ks,v) -> (TK_One TKK_Normal k:ks,v)) $ toFastSeq t | (k,t) <- Map.toList $ trieCont trie ]
+toFastSeq :: Bool -> Trie k v -> Seq.FastSeq ([TrieKey k],v)
+toFastSeq inclEmpty trie
+  =          (case trieMbVal trie of
+                Just v | inclEmpty -> Seq.singleton ([],v)
+                _                  -> Seq.empty
+             )
+    Seq.:++: maybe Seq.empty (\(k,t) -> Seq.map (\(ks,v) -> (TK_One TKK_Partial k:ks,v)) $ toFastSeq True t) (trieMbPartial trie)
+    Seq.:++: Seq.unions [ Seq.map (\(ks,v) -> (TK_One TKK_Normal k:ks,v)) $ toFastSeq True t | (k,t) <- Map.toList $ trieCont trie ]
 
 toListByKey :: Trie k v -> [([TrieKey k],v)]
-toListByKey = Seq.toList . toFastSeq
+toListByKey = Seq.toList . toFastSeq True
 
 toList :: Trie k v -> [([k],v)]
 toList = map (\(k,v) -> (map tkKey k,v)) . toListByKey
 %%]
 
-%%[9 export(fromListByKey,fromList)
+%%[9 export(fromListByKey,fromListByKeyWith,fromListWith,fromList)
+fromListByKeyWith :: Ord k => (v -> v -> v) -> [([TrieKey k],v)] -> Trie k v
+fromListByKeyWith cmb = unionsWith cmb . map (uncurry singletonByKey)
+
 fromListByKey :: Ord k => [([TrieKey k],v)] -> Trie k v
 fromListByKey = unions . map (uncurry singletonByKey)
+
+fromListWith :: Ord k => (v -> v -> v) -> [([k],v)] -> Trie k v
+fromListWith cmb = fromListByKeyWith cmb . map (\(k,v) -> (mkTrieKeys k,v))
 
 fromList :: Ord k => [([k],v)] -> Trie k v
 fromList = fromListByKey . map (\(k,v) -> (mkTrieKeys k,v))
@@ -140,7 +155,55 @@ instance (Show k, Show v) => Show (Trie k v) where
 
 Normal lookup for exact match + partial matches (which require some sort of further unification)
 
-%%[9 export(lookupPartialByKey,lookupByKey,lookup)
+%%[9 export(lookupPartialByKey,lookupPartialByKey',lookupByKey,lookup)
+lookupPartialByKey' :: Ord k => ([TrieKey k] -> v -> v') -> Bool -> [TrieKey k] -> Trie k v -> ([v'],Maybe v')
+lookupPartialByKey' mkRes stopAtPartialKey keys trie
+  = l keys
+  where l  []                = ([],fmap (mkRes keys) $ trieMbVal trie)
+        l  (TK_One TKK_Partial k : ks) | stopAtPartialKey
+                             = (map (uncurry mkRes) $ Seq.toList $ toFastSeq False trie,Nothing)
+        l  (TK_One _ k : ks) = case Map.lookup k $ trieCont trie of
+                                 Just trie'
+                                   -> (lp ks ++ p, m)
+                                   where (p,m) = lookupPartialByKey' mkRes stopAtPartialKey ks trie'
+                                 _ -> (lp ks, Nothing)
+        lp ks                = case (trieMbPartial trie,ks) of
+                                 (Just (_,pt),[]) -> lp' [[]] pt
+                                 (Just (_,pt),_ ) -> lp' [[],ks] pt
+                                 _ -> []
+                             where lp' kss pt = concat [ lookupResultToList r | ks <- kss, let r = lookupPartialByKey' mkRes stopAtPartialKey ks pt ]
+
+lookupPartialByKey :: Ord k => Bool -> [TrieKey k] -> Trie k v -> ([v],Maybe v)
+lookupPartialByKey = lookupPartialByKey' (\_ v -> v)
+
+lookupByKey :: Ord k => [TrieKey k] -> Trie k v -> Maybe v
+lookupByKey keys trie = snd $ lookupPartialByKey False keys trie
+
+lookup :: Ord k => [k] -> Trie k v -> Maybe v
+lookup keys = lookupByKey $ mkTrieKeys keys
+%%]
+
+%%[9 export(lookupResultToList)
+lookupResultToList :: ([v],Maybe v) -> [v]
+lookupResultToList (vs,mv) = maybeToList mv ++ vs
+%%]
+lookupPartialByKey :: Ord k => Bool -> [TrieKey k] -> Trie k v -> ([v],Maybe v)
+lookupPartialByKey stopAtPartialKey keys trie
+  = l keys
+  where l  []                = ([],trieMbVal trie)
+        l  (TK_One TKK_Partial k : ks) | stopAtPartialKey
+                             = (map snd $ Seq.toList $ toFastSeq False trie,Nothing)
+        l  (TK_One _ k : ks) = case Map.lookup k $ trieCont trie of
+                                 Just trie'
+                                   -> (lp ks ++ p, m)
+                                   where (p,m) = lookupPartialByKey stopAtPartialKey ks trie'
+                                 _ -> (lp ks, Nothing)
+        lp ks                = case (trieMbPartial trie,ks) of
+                                 (Just (_,pt),[]) -> lp' [[]] pt
+                                 (Just (_,pt),_ ) -> lp' [[],ks] pt
+                                 _ -> []
+                             where lp' kss pt = concat [ maybeToList m ++ p | ks <- kss, let (p,m) = lookupPartialByKey stopAtPartialKey ks pt ]
+
 lookupPartialByKey :: Ord k => [TrieKey k] -> Trie k v -> ([v],Maybe v)
 lookupPartialByKey keys trie
   = l keys
@@ -156,19 +219,11 @@ lookupPartialByKey keys trie
                                  _ -> []
                              where lp' kss pt = concat [ maybeToList m ++ p | ks <- kss, let (p,m) = lookupPartialByKey ks pt ]
 
-lookupByKey :: Ord k => [TrieKey k] -> Trie k v -> Maybe v
-lookupByKey keys trie = snd $ lookupPartialByKey keys trie
-
-lookup :: Ord k => [k] -> Trie k v -> Maybe v
-lookup keys = lookupByKey $ mkTrieKeys keys
-
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Observation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(isEmpty,null,elems)
+%%[9 export(isEmpty,null)
 isEmpty :: Trie k v -> Bool
 isEmpty trie
   =  isNothing (trieMbVal trie)
@@ -179,7 +234,7 @@ null :: Trie k v -> Bool
 null = isEmpty
 %%]
 
-%%[9
+%%[9 export(elems)
 elems :: Trie k v -> [v]
 elems = map snd . toListByKey
 %%]
@@ -208,7 +263,7 @@ singletonKeyable val = singleton (toTrieKey val) val
 %%% Union, insert, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(unionWith,union,unions)
+%%[9 export(unionWith,union,unionsWith,unions)
 unionWith :: Ord k => (v -> v -> v) -> Trie k v -> Trie k v -> Trie k v
 unionWith cmb t1 t2
   = Trie

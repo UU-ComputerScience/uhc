@@ -137,6 +137,7 @@ data FIEnv
 %%[[9
         {   fePrElimTGam    ::  PrElimTGam          ,   feEHCOpts       ::  EHCOpts
         ,   fePrfCtxtId     ::  PrfCtxtId           ,   feDontBind      ::  TyVarIdL
+        ,   fePredScope     ::  PredScope
 %%[[11
         ,   feTyGam         ::  TyGam
 %%]]
@@ -148,6 +149,7 @@ emptyFE
 %%[[9
         {   fePrElimTGam    =   emptyTGam uidStart  ,   feEHCOpts       =   defaultEHCOpts
         ,   fePrfCtxtId     =   uidStart            ,   feDontBind      =   []
+        ,   fePredScope     =   initPredScope
 %%[[11
         ,   feTyGam         =   emptyGam
 %%]]
@@ -469,7 +471,8 @@ fitsInFI fi ty1 ty2
             fiAddPr ci n i prTy fi
                 =  let  e = fiEnv fi
                         tg = peTGamInsertKnPr (feEHCOpts $ fiEnv fi) ci n i (tyPred prTy) (tgamPushNew (fePrfCtxtId e) ci (fePrElimTGam e))
-                   in   fi { fiEnv = e {fePrElimTGam = tg, fePrfCtxtId = ci} }
+                        (_,sc) = pscpEnter 0 (fePredScope e)
+                   in   fi { fiEnv = e {fePrElimTGam = tg, fePrfCtxtId = ci, fePredScope = sc} }
             foUpdErrs e fo = fo {foErrL = e ++ foErrL fo}
             foUpdLCoe l fo = fo {foLCoeL = l : foLCoeL fo}
             foUpdRCoe r fo = fo {foRCoeL = r : foRCoeL fo}
@@ -588,13 +591,14 @@ fitsInFI fi ty1 ty2
                        foUpdRecCoe r1 r2 e1 e12 e2 fo
                          =  let  rn = uidHNm u1
                                  prfCxId = fePrfCtxtId (fiEnv fi)
+                                 predScope = fePredScope (fiEnv fi)
                                  r = CExpr_Var rn
                                  tr1s = foCnstr fo |=> tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv $ feEHCOpts $ fiEnv fi) (Just $ hsnSuffix rn "!") r CTagRec n n (CExpr_Hole u) Nothing
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
-                                      in   (mkPredOcc (Pred_Lacks r' l) (mkPrId prfCxId u),r')
+                                      in   (mkPredOcc (Pred_Lacks r' l) (mkPrId prfCxId u) predScope,r')
                                  mkLPred r l u = fst (mkLPred' r l u)
                                  rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
                                  (fuUpdL,prUpdL,tr1s',_)
@@ -926,13 +930,14 @@ fitsInFI fi ty1 ty2
                 = fromJust mbfp
                 where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
                        prfCxId          = fePrfCtxtId (fiEnv fi)
+                       predScope        = fePredScope (fiEnv fi)
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fP tpr1
                        fSub pv1 pr1 tr1
                             =  let  fo    = f fi2 tr1 t2
                                     fs    = foCnstr fo
                                     (cxbindLMap,introCBindL,csubst,remPrfPrL,evidL,prfErrs)
-                                          = prfPreds u3 (fiEnv (fs |=> fi2)) [mkPredOcc (fs |=> pr1) pv1]
+                                          = prfPreds u3 (fiEnv (fs |=> fi2)) [mkPredOcc (fs |=> pr1) pv1 predScope]
                                     coe   = mkCoe (\e -> (csubst `cSubstApp` introCBindL) `mkCExprLetRec` (e `mkCExprApp` evidL))
                                in   (foUpdErrs prfErrs fo,coe,csubst,remPrfPrL)
                        fP (Ty_Impls (Impls_Nil))
@@ -1088,7 +1093,7 @@ prfPredsDbg u fe prOccL
           factPoiS                      = Set.fromList (prvgFactL gPrune)
           isFact                        = (`Set.member` factPoiS)
           cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . Map.toList $ backMp
-          argPrOccL                     = [ mkPredOcc p i | (i,ProvenArg p _) <- Map.toList i2n ]
+          argPrOccL                     = [ mkPredOcc p i (fePredScope fe) | (i,ProvenArg p _) <- Map.toList i2n ]
           overl                         = [ (pr,map (\e -> case Map.lookup e (prvgIdNdMp gOr) of {Just (ProvenAnd _ _ _ _ ev) -> ev; _ -> mkCExprPrHole e}) es)
                                           | (ProvenOr pr es _) <- Map.elems (prvgIdNdMp gOr)
                                           ]
@@ -1266,7 +1271,7 @@ prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r l) prPoi _) depth
                            | otherwise
                                ->  let  (u',u2) = mkNewUID u
                                         poi2 = mkPrId (poiCxId prPoi) u2
-                                        newPr = mkPredOcc (Pred_Lacks row l) poi2
+                                        newPr = mkPredOcc (Pred_Lacks row l) poi2 (fePredScope fe)
                                         g2 = prvgAddPrNd pr [prPoi] (ProvenAnd pr [poi2] [] pcostZero (caddint (feEHCOpts fe) (CExpr_Hole u2) offset)) g
                                    in   (prfsAddPrOccL [newPr] (depth+1) st)
                                           {prfs2ProvenGraph = g2, prfs2Uniq = u'}
@@ -1298,7 +1303,7 @@ prfOneStepPred  fe prOcc@(PredOcc pr@(Pred_Pred t) prPoi _) depth
            prf              = ProvenAnd (pr) (poi4 : []) (poi5 : poi4 : prfCtxtUIDL) (mkPCostExec 1) (prfCtxtNmL `mkCExprLam` (poiId poi5 `CExpr_HoleLet` CExpr_Hole u4))
            g'               = prvgAddPrNd pr [prPoi] prf g
            g''              = g'
-           st'              = (prfsAddPrOccL [mkPredOcc (tyPred prfTyPr) poi4] (depth+1) st)
+           st'              = (prfsAddPrOccL [mkPredOcc (tyPred prfTyPr) poi4 (fePredScope fe)] (depth+1) st)
                                 {prfs2Uniq = u', prfs2ProvenGraph = g'', prfs2PrElimTGam = prfElimTGam}
       in   st'
 %%]
@@ -1412,7 +1417,10 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
 
 %%[9 export(fitPredInPred)
 fitPredInPred :: FIIn -> Pred -> Pred -> Maybe (Pred,Cnstr)
-fitPredInPred fi pr1 pr2
+fitPredInPred _  (Pred_Var pv1)     pr2@(Pred_Var pv2) | pv1 /= pv2  	= Just (pr2,pv1 `cnstrPredUnit` pr2)
+fitPredInPred _  pr1 				(Pred_Var pv2)						= Nothing
+fitPredInPred _  (Pred_Var pv1) 	pr2									= Just (pr2,pv1 `cnstrPredUnit` pr2)
+fitPredInPred fi pr1 				pr2
   = if foHasErrs fo
     then Nothing
     else Just (tyPred $ foTy fo,foCnstr fo)
@@ -1430,7 +1438,7 @@ matchRule fe u prOcc r
           fo             = fitsIn (predFIOpts {fioDontBind = ftv pr}) fe u3 (rulRuleTy r) (vs `mkArrow` Ty_Pred pr)
      in   if foHasErrs fo
           then Nothing
-          else Just  ( zipWith mkPredOcc (map tyPred . tyArrowArgs . foTy $ fo) (map (mkPrId . poiCxId . poPoi $ prOcc) us)
+          else Just  ( zipWith3 mkPredOcc (map tyPred . tyArrowArgs . foTy $ fo) (map (mkPrId . poiCxId . poPoi $ prOcc) us) (repeat $ fePredScope fe)
                      , (tyPred (rulRuleTy r),rulId r,CExpr_Var (rulNmEvid r))
                      , rulMkEvid r (map CExpr_Hole us)
                      , rulCost r

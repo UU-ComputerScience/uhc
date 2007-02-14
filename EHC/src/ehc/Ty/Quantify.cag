@@ -428,6 +428,9 @@ SEM Ty
 SEM Impls
   | Cons		lhs			.	qOrphanTvL      =   @pr.qOrphanTvL ++ @tl.qOrphanTvL
   | * - Cons	lhs			.	qOrphanTvL      =   []
+
+SEM Pred
+  | Var  		lhs			.	qOrphanTvL      =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

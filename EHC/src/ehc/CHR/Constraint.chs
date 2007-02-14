@@ -77,5 +77,7 @@ cnstrRequiresSolve _                 = True
 
 %%[9
 instance (PP p, PP info) => PP (Constraint p info) where
-  pp = pp . show
+  pp (Prove p) = "Prove" >#< p
+  pp (Assume p) = "Assume" >#< p
+  pp (Reduction p i ps) = "Red" >#< p >#< "<" >#< i >#< "<" >#< ppParensCommas ps
 %%]

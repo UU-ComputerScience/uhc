@@ -45,6 +45,14 @@ instance Keyable Ty where
 instance Keyable Pred where
   toKey pr = toKey $ Ty_Pred pr
 
+instance Keyable PredScope where
+  toKey (PredScope_Var v) = [TK_One TKK_Partial $ Key_UID v]
+  toKey (PredScope_Lev l) = [TK_One TKK_Normal  $ Key_Str $ show l]
+
+instance Keyable PredOccId where
+  toKey (PredOccId_Var v) = [TK_One TKK_Partial $ Key_UID v]
+  toKey (PredOccId   _ i) = [TK_One TKK_Normal  $ Key_UID i]
+
 instance Keyable PredOcc where
   toKey po = toKey $ poPr po
 
@@ -55,9 +63,9 @@ instance Keyable PredOcc where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR TyAGItf Ty  [ | | trieKey: {FastSeq (TrieKey Key)} ]
+ATTR TyAGItf Ty Pred [ | | trieKey: {FastSeq (TrieKey Key)} ]
 ATTR Ty  [ | | trieKeyFun, trieKeyArgs, trieKeyArgsNest: {FastSeq (TrieKey Key)} ]
-ATTR Ty  [ | | trieKeyNest: {FastSeq (TrieKey Key)} ]
+ATTR Ty Pred [ | | trieKeyNest: {FastSeq (TrieKey Key)} ]
 
 SEM TyAGItf
   | AGItf           lhs     .   trieKey         =   @ty.trieKey :++: @ty.trieKeyNest
@@ -76,13 +84,17 @@ SEM Ty
                                                          , @trieKeyArgs :++: @trieKeyArgsNest
                                                          )
                                                     else (empty,empty)
-  | Var             loc     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @tv
+  | Var             loc     .   trieKey         =   singleton $ TK_One
+                                                                  (if tvCatIsPlain @categ.self then TKK_Partial else TKK_Normal)
+                                                              $ Key_UID @tv
                             .   trieKeyNest     =   empty
   | Con             loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_HNm @nm
                             .   trieKeyNest     =   empty
   | Quant           loc     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_TyQu @qu.self
                             .   trieKeyNest     =   empty
-  | * - App Var Con Quant Ext
+  | Pred            loc     .   trieKey         =   @pr.trieKey
+                            .   trieKeyNest     =   @pr.trieKeyNest
+  | * - App Var Con Quant Ext Pred
                     loc     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_Ty @self
                             .   trieKeyNest     =   empty
 
@@ -95,6 +107,10 @@ SEM Ty
                             .   trieKeyArgsNest =   @func.trieKeyArgsNest :++: @arg.trieKeyNest
   | Ext             loc     .   trieKeyArgs     =   @ty.trieKeyArgs :++: @extTy.trieKeyFun
                             .   trieKeyArgsNest =   @ty.trieKeyArgsNest :++: @extTy.trieKeyNest
+
+SEM Pred
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @pv
+                            .   trieKeyNest     =   empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,6 +135,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+%%]
 (_,u1,u2,u3,u4) = mkNewLevUID4 uidStart
 v1 = mkTyVar u1
 v2 = mkTyVar u2
@@ -133,4 +150,3 @@ t5 = mkArrow [v3] v4
 t6 = mkArrow [t4] t5
 t7 = mkArrow [v1] t5
 t8 = mkArrow [t4] v3
-%%]
