@@ -80,7 +80,7 @@ SEM GrExpr
                                               then @loc.newcase @body.trf
                                               else @loc.original
                                               
-                   lhs . uniq         =  if @expr.isFetchTag && ( @body.startsWithCaseHavingUnboxies || @body.isCaseHavingUnboxies )
+                   expr. uniq         =  if @expr.isFetchTag && ( @body.startsWithCaseHavingUnboxies || @body.isCaseHavingUnboxies )
                                           then @lhs.uniq + 1
                                           else @lhs.uniq
                                          

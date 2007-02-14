@@ -10,10 +10,23 @@
 
 %%[8 hs module {%{GRIN}Silly} import ({%{GRIN}GRINCCommon} hiding (Variable(..)))
 %%]
-
 %%[8 hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Variables, Values )
+%%]
+%%[8 hs import({%{EH}Base.Common})
 %%]
 
 %%[8 import({Silly/AbsSyn})
-DERIVING * : Show, Eq
+DERIVING * : Show , Eq
+%%]
+
+%%[8 hs
+
+instance Show (Int -> [Value])
+ where show x = "(Function)"
+
+instance Eq (Int -> [Value])
+ where  x==y = False
+
+
+
 %%]

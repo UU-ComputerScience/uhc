@@ -61,9 +61,15 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.PointsToAnalysis})
 %%]
-%%[8 import({%{GRIN}GrinCode.GenSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
+%%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
 %%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
+%%]
+%%[8 import({%{GRIN}Silly.Pretty(pretty)})
+%%]
+%%[8 import({%{GRIN}Silly.Shortcut(shortcut)})
+%%]
+%%[8 import({%{GRIN}Silly.EmbedVars(embedVars)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -199,7 +205,14 @@ caFinalize = task_ VerboseNormal "Finalizing"
 -- write final code
 caOutput = task_ VerboseNormal "Writing code"
     ( do { options <- gets gcsOpts
+    
          ; caGrin2Silly
+         ; caWriteSilly "sil1" pretty
+         ; transformSilly   shortcut      "Shortcut single-use variables"
+         ; caWriteSilly "sil2" pretty
+         ; transformSilly   embedVars     "Embed Variables"
+         ; caWriteSilly "sil3" pretty
+         
 --       ; when (ehcOptEmitLLVM options)
 --         (caWriteSilly "ll" prettyLL)
          ; when (ehcOptEmitLlc options)
@@ -393,11 +406,12 @@ transformGrin process message
        ; modify (gcsUpdateGrin (process grin))
        }
 
-transformSilly :: (SilModule->SilModule) -> String -> CompileAction ()
+transformSilly :: (EHCOpts->SilModule->SilModule) -> String -> CompileAction ()
 transformSilly process message 
   = do { putMsg VerboseALot message Nothing
        ; silly <- gets gcsSilly
-       ; modify (gcsUpdateSilly (process silly))
+       ; options <- gets gcsOpts
+       ; modify (gcsUpdateSilly (process options silly))
        }
 
 

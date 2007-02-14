@@ -18,35 +18,30 @@ TYPE Values       = [Value]
 
 DATA SilModule
   |  SilModule   constants  : {[(String,Int)]}
-                 variables  : {[String]}
+                 variables  : {[HsName]}
                  functions  : Functions
 
 DATA Function
-  |  Function    name       : {String}
+  |  Function    name       : {HsName}
                  tailJumps  : {Bool}
-                 parameters : {[String]}
-                 locals     : {[String]}
+                 parameters : {[HsName]}
+                 locals     : {[HsName]}
                  body       : Statements
 
 DATA Statement
   |  Assignment  dest       : Variable
                  source     : Value
-  |  Increment   dest       : Variable
-                 source     : Value
   |  If          scrutinee  : Value
                  body       : Alternatives
   |  Switch      scrutinee  : Value
                  body       : Alternatives
-  |  Call        name       : {String}
+  |  Call        name       : {HsName}
                  args       : Values
-  |  Jump        name       : {String}
-  |  Return      spincr     : {Int}
-                 retdiff    : {Int}
-  |  Leave       diff       : {Int}
+  |  Jump        name       : {HsName}
+  |  Return      retdiff    : {Int}
   |  Label       name       : {String}
   |  Comment     comment    : {[String]}
-  |  Enter       nParam     : {Int}
-                 nLocal     : {Int}
+  |  Smart       vals       : Values
 
 DATA Alternative
   |  Alternative when       : Constant
@@ -58,18 +53,17 @@ DATA Constant
   |  Alias       name       : {String}
 
 DATA Variable
+  |  Unembedded  name       : {HsName}
   |  Local       pos        : {Int}
-                 name       : {String}
+                 name       : {HsName}
   |  Param       pos        : {Int}
-                 name       : {String}
-  |  Global      name       : {String}
+                 name       : {HsName}
+  |  Global      name       : {HsName}
   |  Subs        array      : Variable
-                 index      : Constant
+                 index      : {Int}
   |  SP
   |  RP
-  |  SPOffset    dist       : {Int}
-  |  SubsPtr     array      : Variable
-                 index      : Constant
+  |  BP
   |  Aux
   |  Ptr
   |  None
@@ -79,11 +73,18 @@ DATA Value
   |  UnboxCon    con        : Value
   |  BoxVar      var        : Variable
   |  Var         var        : Variable
+  |  Offset      var        : Variable
+                 off        : {Int}
+  |  Cast        val        : Value
+                 word       : {Bool}
   |  Alloc       size       : {Int}
   |  Label       name       : {String}
   |  Call        name       : String
                  args       : Values
 
 
-DERIVING * : Show
+SET AllNT       =   SilModule Functions Function Statements Statement Alternatives Alternative Constant Variables Variable Values Value
+
+
+DERIVING * : Show, Ord
 %%]

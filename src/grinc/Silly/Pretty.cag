@@ -1,0 +1,109 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Silly program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{GRIN}Silly.Pretty} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils, qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(pretty)
+%%]
+%%[8 hs import({%{EH}Base.Common})
+%%]
+%%[8 hs import({%{EH}Base.Opts})
+%%]
+%%[8 import({Silly/AbsSyn})
+%%]
+
+%%[8 hs
+pretty :: EHCOpts -> SilModule -> PP_Doc
+pretty opts silmod
+  = let t = wrap_SilModule (sem_SilModule silmod)
+                           (Inh_SilModule { opts_Inh_SilModule = opts
+                                          }
+                           )
+     in  pretty_Syn_SilModule t
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+WRAPPER SilModule
+%%]
+
+
+%%[8
+ATTR SilModule [ opts : {EHCOpts} | | ]
+
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
+         [ | | pretty USE {>-<} {empty} : PP_Doc ]
+
+
+
+SEM SilModule
+  | SilModule  lhs.pretty = @functions.pretty
+  
+  
+SEM Function
+  | Function   lhs.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
+                            >-< "{"
+                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
+                            >-< indent 4 (@body.pretty)
+                            >-< "}"
+
+SEM Statement
+  | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
+  | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
+  | If          lhs.pretty = "IF"     >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
+  | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
+  | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
+  | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
+  | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
+  | Smart       lhs.pretty = "SMART ("  >#< @vals.pretty >|< ");"
+  | Comment     lhs.pretty = comment @comment
+    
+  
+SEM Alternative
+  | Alternative lhs.pretty = "WHEN" >#< @when.pretty >-< indent 4 (@body.pretty)
+ 
+SEM Constant
+  | LiteralInt  lhs.pretty = text (show @value)
+  | LiteralStr  lhs.pretty = text (show @value)
+  | Alias       lhs.pretty = text @name
+
+SEM Variable
+  | Unembedded     lhs.pretty = text ("U" ++ hsnShowAlphanumeric @name)
+  | Local          lhs.pretty = text ("L" ++ hsnShowAlphanumeric @name)
+  | Param          lhs.pretty = text ("P" ++ hsnShowAlphanumeric @name)
+  | Global         lhs.pretty = text ("G" ++ hsnShowAlphanumeric @name)
+  | SP             lhs.pretty = text "SP"  
+  | BP             lhs.pretty = text "BP"  
+  | RP             lhs.pretty = text "RP"  
+  | Subs           lhs.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
+  | Aux            lhs.pretty = text "AUX"
+  | Ptr            lhs.pretty = text "PTR"
+  | None           lhs.pretty = text "NONE"
+
+SEM Value
+  | Con            lhs.pretty = text "CON" >#< @con.pretty
+  | UnboxCon       lhs.pretty = text "UNBOXCON" >#< @con.pretty
+  | BoxVar         lhs.pretty = text "BOXVAR" >#< @var.pretty
+  | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
+  | Alloc          lhs.pretty = text "ALLOC" >#< show @size
+  | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
+  | Label          lhs.pretty = text "LABEL" >#< show @name
+
+SEM Values
+  | Nil            lhs.pretty = empty
+  | Cons           lhs.pretty = @hd.pretty >|< ", " >|< @tl.pretty
+
+%%]
+%%[8 hs
+comment :: [String] -> PP_Doc
+comment []  = text ""
+comment [s] = text ("// " ++ s)
+comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
+%%]
