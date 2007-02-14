@@ -107,9 +107,15 @@ instance Substitutable PredScope TyVarId Cnstr where
   ftv    (PredScope_Var v)    = [v]
   ftv    _                    = []
 
+instance Substitutable PredOccId UID Cnstr where
+  s |=>  i@(PredOccId_Var v) = maybe i id $ cnstrPoiLookup v s
+  s |=>  i                   = i
+  ftv    (PredOccId_Var v)   = [v]
+  ftv    _                   = []
+
 instance Substitutable PredOcc TyVarId Cnstr where
-  s |=>  (PredOcc pr id sc)  = PredOcc (tyPred (s |=> Ty_Pred pr)) id sc
-  ftv    (PredOcc pr _  _ )  = ftv (Ty_Pred pr)
+  s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) (s |=> id) (s |=> sc)
+  ftv    (PredOcc pr id sc)  = unions [ftv pr,ftv id,ftv sc]
 
 instance Substitutable Impls TyVarId Cnstr where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))

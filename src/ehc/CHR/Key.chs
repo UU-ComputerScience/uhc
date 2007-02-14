@@ -8,6 +8,9 @@
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
 %%]
 
+%%[9 import({%{EH}Ty.Pretty})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Key
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,11 +27,14 @@ data Key
 
 %%[9
 instance Show Key where
-  show (Key_HNm  n) = show n
-  show (Key_UID  n) = show n
-  show (Key_Str  n) = show n
-  show (Key_TyQu n) = show n
-  show (Key_Ty   n) = show n
+  show _ = "Key"
+
+instance PP Key where
+  pp (Key_HNm  n) = pp n
+  pp (Key_UID  n) = pp n
+  pp (Key_Str  n) = pp n
+  pp (Key_TyQu n) = pp $ show n
+  pp (Key_Ty   n) = pp n
 %%]
 
 %%[9 export(Keyable(..))
@@ -46,6 +52,6 @@ instance Keyable x => TrieKeyable x Key where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
 instance PP Key where
   pp = pp . show
-%%]

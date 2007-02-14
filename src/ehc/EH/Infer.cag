@@ -380,6 +380,7 @@ SEM Decl
 SEM Decl
   | Instance    loc         .   fe                  :=  emptyFE
                                                             { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
@@ -823,4 +824,30 @@ SEM Expr
                 body        .   prIntroGam          =   gamPushGam @lQuPrIGam @gSubsPrIGam
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is let a first let in a sequence of lets?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9
+ATTR Expr [ isFirstLet: Bool | | ]
+
+SEM CaseAlt
+  | Pat       	loc         .   isFirstLet          =   True
+
+SEM DataFieldExpr
+  | Expr Upd    loc         .   isFirstLet          =   True
+
+SEM Decl
+  | InstanceIntro Val
+  				loc         .   isFirstLet          =   True
+
+SEM RecExpr
+  | Expr Ext Upd
+  				loc         .   isFirstLet          =   True
+
+SEM AGItf
+  | AGItf       loc         .   isFirstLet          =   True
+
+SEM Expr
+  | Let			loc			.	isFirstLet			=	False
+%%]

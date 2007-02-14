@@ -399,6 +399,9 @@ SEM Impls
   | Cons            loc     .   ppPv    =   maybe (mkDefaultTvNm @lhs.cfg "p" (poiId @pv)) id (lookup @iv @lhs.tnMap)
                     lhs     .   pp      =   @ppIv >|< "=" >|< @pr.pp >|< "/" >|< @ppPv >|< "," >|< @tl.pp
   | Nil             lhs     .   pp      =   pp "_"
+
+SEM Pred
+  | Var             lhs     .   pp      =   maybe (mkDefaultTvNm @lhs.cfg "p" @pv) id (lookup @pv @lhs.tnMap)
 %%]
 
 %%[9_1

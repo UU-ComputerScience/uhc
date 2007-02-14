@@ -76,6 +76,9 @@ SEM Ty
 %%[9
 SEM Impls
   | Tail            lhs     .   repl        =   maybe @repl id (cnstrImplsLookup @iv @lhs.cnstr)
+
+SEM Pred
+  | Var             lhs     .   repl        =   maybe @repl id (cnstrPredLookup @pv @lhs.cnstr)
 %%]
 
 %%[50

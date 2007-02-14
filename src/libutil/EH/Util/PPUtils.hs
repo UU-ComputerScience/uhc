@@ -29,6 +29,9 @@ ppCommas' = ppListSep "" "" ", "
 ppSpaces :: PP a => [a] -> PP_Doc
 ppSpaces = ppListSep "" "" " "
 
+ppCurlysBlock :: PP a => [a] -> PP_Doc
+ppCurlysBlock = pp_block "{ " "}" "  " . map pp
+
 ppCurlysSemisBlock :: PP a => [a] -> PP_Doc
 ppCurlysSemisBlock = pp_block "{ " "}" "; " . map pp
 
@@ -43,6 +46,9 @@ ppParensCommasBlock = pp_block "( " ")" ", " . map pp
 
 ppBracketsCommas :: PP a => [a] -> PP_Doc
 ppBracketsCommas = ppListSep "[" "]" ","
+
+ppBracketsCommasV :: PP a => [a] -> PP_Doc
+ppBracketsCommasV = ppListSepV3 "[" "]" ","
 
 ppBracketsCommas' :: PP a => [a] -> PP_Doc
 ppBracketsCommas' = ppListSep "[" "]" ", "
@@ -74,6 +80,14 @@ ppListSepV' aside o c s pps
   where l []      = o `aside` c
         l [p]     = o `aside` p `aside` c
         l (p:ps)  = vlist ([o `aside` p] ++ map (s `aside`) (init ps) ++ [s `aside` last ps `aside` c])
+
+-- compact vertical list
+ppListSepV3 :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
+ppListSepV3 o c s pps
+  = l pps
+  where l []      = o >|< c
+        l [p]     = o >|< p >|< c
+        l (p:ps)  = vlist ([o >|< p] ++ map (s >|<) (init ps) ++ [s >|< last ps >|< c])
 
 ppListSepV :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
 ppListSepV = ppListSepV' (>|<)

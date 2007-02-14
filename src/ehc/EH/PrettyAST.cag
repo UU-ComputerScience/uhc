@@ -30,12 +30,13 @@ mkInfo1 = (,)
 ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
-  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info_2 ++ @info_3 ++ @info_4_2 ++ @info_8)
+  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info_2 ++ @info_3 ++ @info_4_2 ++ @info_8 ++ @info_9)
                 loc     .  info     =   []
                         .  info_2   =   []
                         .  info_3   =   []
                         .  info_4_2 =   []
                         .  info_8   =   []
+                        .  info_9   =   []
 
 SEM Decl
   | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @info
@@ -498,6 +499,10 @@ SEM FuncDep
 SEM FuncDeps
   | Nil         lhs     .  ppAST    =   ppNest ["FuncDeps","Nil"] [] []
   | Cons        lhs     .  ppAST    =   ppNest ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST]
+
+SEM AGItf
+  | AGItf       loc     .  info_9   :=  [ mkInfo1 "chrStore" (ppCHRStore @chrStore)
+                                        ]
 %%]
 
 %%[9
