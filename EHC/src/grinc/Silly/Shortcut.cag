@@ -1,0 +1,106 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import({Silly/AbsSyn})
+%%]
+
+%%[8.wrapper
+WRAPPER SilModule
+%%]
+
+%%[8 hs module {%{GRIN}Silly.Shortcut} export(shortcut)
+%%]
+%%[8 hs import({%{GRIN}Silly})
+%%]
+%%[8 hs import({%{EH}Base.Common})
+%%]
+%%[8 hs import({%{EH}Base.Opts})
+%%]
+%%[8 hs import(qualified Data.Map as Map)
+%%]
+
+
+%%[8 hs
+shortcut :: EHCOpts -> SilModule -> SilModule
+shortcut options input   
+  = let t = wrap_SilModule (sem_SilModule input)
+                           (Inh_SilModule {opts_Inh_SilModule = options} )
+    in trf_Syn_SilModule t
+%%]
+
+%%[8
+
+ATTR SilModule   [ opts : {EHCOpts} | | ]
+
+ATTR AllNT [ | | trf: SELF     ]
+
+ATTR Variable [ | | self: SELF ]
+
+ATTR Statement Statements Alternative Alternatives [  | defMap : {Map.Map Variable Int} | ]
+ATTR Statement Statements Alternative Alternatives Variable Variables Value Values [  | useMap : {Map.Map Variable Int} | ]
+ATTR Statement Statements Alternative Alternatives [ allDefMap : {Map.Map Variable Int}  allUseMap : {Map.Map Variable Int} | | ]
+ATTR Statement Statements Alternative Alternatives [ | env : {Map.Map Variable Value} | ]
+ATTR Value Values [ env : {Map.Map Variable Value} | | ]
+
+ATTR Value Variable [ | | isSimple : {Bool} ]
+ATTR       Variable [ | | isVerySimple : {Bool} ]
+
+
+SEM Function
+  | Function  body.useMap    =  @loc.startMap
+              body.defMap    =  @loc.startMap   
+              body.env       =  Map.empty
+              body.allUseMap =  @body.useMap
+              body.allDefMap =  @body.defMap
+              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+
+              -- lhs.trf        =  Function_Function @name @tailJumps @parameters @locals (@loc.envs : @loc.uses : @loc.defs : @body.trf )
+              -- loc.defs       =  Statement_Comment (map show (Map.toList @body.defMap))
+              -- loc.uses       =  Statement_Comment (map show (Map.toList @body.useMap))
+              -- loc.envs       =  Statement_Comment (map show (Map.toList @body.env))
+
+
+SEM Statement
+  | Assignment  lhs.defMap  =  Map.adjust (+1) @dest.self @lhs.defMap
+
+SEM Variable
+  | Unembedded  lhs.useMap  =  Map.adjust (+1) @loc.trf @lhs.useMap
+
+SEM Statement
+  | Assignment  (lhs.trf, lhs.env)  =  if virtualizable (Map.lookup @dest.self @lhs.allDefMap)
+                                                        (Map.lookup @dest.self @lhs.allUseMap)
+                                                        @source.isSimple
+                                        then ( Statement_Comment [" (inlined)"]  --  ++ show @source.trf ]
+                                             , Map.insert @dest.self @source.trf @lhs.env 
+                                             )
+                                        else ( Statement_Assignment @dest.self @source.trf
+                                             , @lhs.env
+                                             )
+                                             
+SEM Value
+  | Var          lhs.trf  = maybe (Value_Var @var.self) id (Map.lookup @var.self @lhs.env)
+
+
+SEM Variable
+  | Subs         lhs.isSimple  =  @array.isVerySimple
+  | * - Subs     lhs.isSimple  =  True
+  
+  | SP           lhs.isVerySimple = True
+  | * - SP       lhs.isVerySimple = False
+
+SEM Value
+  | Alloc         lhs.isSimple  =  False
+  | Var           lhs.isSimple  =  @var.isSimple
+  | * - Alloc Var lhs.isSimple  =  True
+
+                                  
+%%]
+
+%%[8 hs
+
+virtualizable (Just def) (Just use) simpleVal = def==1 && ( use==2 || simpleVal )
+virtualizable _ _ _ = False
+
+%%]

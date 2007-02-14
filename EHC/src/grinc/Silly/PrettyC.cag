@@ -73,7 +73,7 @@ SEM SilModule
                                 >-< constantDefinition ("UNBOXED",1)
                                 >-< constantDefinition ("ANY",0)
                                 >-< comment ["Global table"]
-                                >-< ppVertically (map variableDeclaration @variables)
+                                >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
                                 >-< text ""
                                 >-< comment ["Auxiliary variable"]
                                 >-< text "GrWord auxVar;"
@@ -115,27 +115,25 @@ SEM SilModule
 
 
 SEM Function
-  | Function    lhs.prettyC   = methodHeader @lhs.optOwnCalls @lhs.optTraceCall @name @parameters
+  | Function    lhs.prettyC   = methodHeader @lhs.optOwnCalls @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
                                 >-< indent 4 (   ppWhen @tailJumps jumpPrepare
-                                             >-< methodLocals @locals
+                                             >-< methodLocals (map hsnShowAlphanumeric @locals)
                                              >-< @body.prettyC
                                              )
-                                >-< methodFooter @lhs.optOwnCalls @lhs.optTraceCall @name
+                                >-< methodFooter @lhs.optOwnCalls @lhs.optTraceCall (hsnShowAlphanumeric @name)
 
-                lhs.protoC    = methodHead @name @parameters >|< ";"
+                lhs.protoC    = methodHead (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters) >|< ";"
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
   | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
-  | Increment   lhs.prettyC   = assignincr @dest.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
   | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyC
-  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls @name @args.prettyCs
-  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwnCalls @name
-  | Return      lhs.prettyC   = returnFromSillyFunction @spincr @retdiff @lhs.optOwnCalls
+  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls (hsnShowAlphanumeric @name) @args.prettyCs
+  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwnCalls (hsnShowAlphanumeric @name)
+  | Return      lhs.prettyC   = returnFromSillyFunction @retdiff @lhs.optOwnCalls
   | Label       lhs.prettyC   = label @name
-  | Enter       lhs.prettyC   = error "Enter obsolete"
-  | Leave       lhs.prettyC   = error "Leave obsolete"
+  | Smart       lhs.prettyC   = error "Statement_Smart found while generating C"
 
 SEM Alternative
   | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
@@ -149,6 +147,8 @@ SEM Value
   | UnboxCon    lhs.prettyC   = "((" >#< @con.prettyC >#< ")<<1)|1 "
   | BoxVar      lhs.prettyC   = "(" >#< @var.prettyC >#< ")>>1 "
   | Var         lhs.prettyC   = @var.prettyC
+  | Offset      lhs.prettyC   = @var.prettyC >|< "+" ++ show @off
+  | Cast        lhs.prettyC   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyC >|< "))"
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
@@ -163,24 +163,24 @@ SEM Constant
 SEM Variable
   | Global
     Local
-    Param       lhs.prettyC   = text @name
-                lhs.prettyPtr = "((Pointer)" >|< text @name >|< ")"
+    Param       lhs.prettyC   = text (hsnShowAlphanumeric @name)
+                lhs.prettyPtr = "((Pointer)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"
-  | SPOffset    lhs.prettyC   = "((GrWord)(" >|< text "SP + " >|< show @dist >|< "))"
-                lhs.prettyPtr = "(" >|< text "SP + " >|< show @dist >|< ")"
+  | BP          lhs.prettyC   = text "BP"
+                lhs.prettyPtr = text "BP"
   | RP          lhs.prettyC   = text "RP"
                 lhs.prettyPtr = text "RP"
-  | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]"
-                lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
-  | SubsPtr     lhs.prettyC   = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
-                lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< @index.prettyC >|< "]" >|< "))"
+  | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
+                lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
   | Aux         lhs.prettyC   = text "auxVar"
                 lhs.prettyPtr = text "auxVar"
   | Ptr         lhs.prettyC   = text "auxPtr"
                 lhs.prettyPtr = text "((Pointer)auxPtr)"
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"
                 lhs.prettyPtr = error "attempt to use Variable_None as pointer"
+  | Unembedded  lhs.prettyC   = text ("UNEMB " ++ hsnShowAlphanumeric @name)  -- error "attempt to use Variable_Unembedded as value"
+                lhs.prettyPtr = error "attempt to use Variable_Unembedded as pointer"
 
 
 %%]
@@ -258,12 +258,14 @@ callSillyFunctionFromSilly False nm pars
  = callCfunction nm pars >|< ";"
 callSillyFunctionFromSilly True nm _
  = "goto" >#< nm >|< ";"
- 
-returnFromSillyFunction spincr _ False
- = text "SP += " >|< show spincr >|< ";"
-returnFromSillyFunction spincr retdiff True
- = text "SP += " >|< show spincr >|< "; goto *(SP[-" >|< show retdiff >|< "]);"
- 
+
+
+returnFromSillyFunction retdiff True
+ = "goto *(SP[-" >|< show retdiff >|< "]);"
+
+returnFromSillyFunction _ False
+ = text ""
+
 
 %%]
 
