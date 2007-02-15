@@ -275,7 +275,7 @@ mkInstanceChr env (context, hd, i, s)
     , (body,constraint)
     )
   where (up:uother) = mkNewLevUIDL (length context + 1) $ fiUniq env
-        constraint = mkPredOccCHR up hd sc1
+        constraint = mkPredOcc hd poi1 sc1
         body = zipWith (\u p -> mkPredOccCHR u p sc1) uother context
 %%]
 

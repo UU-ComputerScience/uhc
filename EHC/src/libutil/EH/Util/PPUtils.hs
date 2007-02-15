@@ -48,7 +48,7 @@ ppBracketsCommas :: PP a => [a] -> PP_Doc
 ppBracketsCommas = ppListSep "[" "]" ","
 
 ppBracketsCommasV :: PP a => [a] -> PP_Doc
-ppBracketsCommasV = ppListSepV3 "[" "]" ","
+ppBracketsCommasV = ppListSepV3 "[ " "]" ", "
 
 ppBracketsCommas' :: PP a => [a] -> PP_Doc
 ppBracketsCommas' = ppListSep "[" "]" ", "

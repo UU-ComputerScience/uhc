@@ -14,10 +14,14 @@ Assumptions (to be documented further)
 %%[9 import({%{EH}Base.Trie} as Trie)
 %%]
 
-%%[9 import(qualified Data.Set as Set,Data.List as List)
+%%[9 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
+%%]
+
+-- For debug
+%%[9 import(EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,6 +49,21 @@ mkCHRStore trie = CHRStore trie
 
 emptyCHRStore :: CHRStore pred info guard subst
 emptyCHRStore = mkCHRStore Trie.empty
+%%]
+
+%%[9
+instance Show (StoredCHR p i g s) where
+  show _ = "StoredCHR"
+
+instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
+  pp c = storedChr c
+         >-< indent 2
+               (ppParensCommas
+                 [ pp $ storedKeyedInx c
+                 , pp $ storedSimpSz c
+                 , ppBracketsCommas $ map (maybe (pp "?") ppBracketsCommas) $ storedKeys c
+                 , ppBracketsCommas $ storedIdent c
+                 ])
 %%]
 
 %%[9 export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
@@ -87,17 +106,13 @@ chrStoreElems :: CHRStore p i g s -> [CHR (Constraint p i) g s]
 chrStoreElems = concatMap snd . chrStoreToList
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pretty printing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%[9 export(ppCHRStore)
 ppCHRStore :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
 ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppBracketsCommas k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Solving
+%%% Solver worklist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
@@ -106,28 +121,58 @@ type WorkKey = CHRKey
 data Work p i
   = Work
       { workCnstr   :: Constraint p i           -- the constraint to be reduced
-      , workUsedIn  :: Set.Set WorkKey          -- marked with the propagation rules already applied to it
+      -- , workUsedIn  :: Set.Set WorkKey          -- marked with the propagation rules already applied to it
       }
 
 data WorkList p i
   = WorkList
       { wlTrie      :: Trie.Trie Key (Work p i)
       , wlQueue     :: [CHRKey]
+      , wlQueueSet  :: Set.Set CHRKey					-- for fast membership test
+      , wlUsedIn	:: Map.Map CHRKey (Set.Set CHRKey)	-- which work items are used in which propagation constraints
       }
 
-mkWorkList :: Keyable p => [Constraint p i] -> WorkList p i
-mkWorkList cs
-  = WorkList (Trie.fromListByKeyWith (const) work) (map fst work)
-  where work = [ (toKey c,Work c Set.empty) | c <- cs ]
+emptyWorkList = WorkList Trie.empty [] Set.empty Map.empty
 %%]
 
 %%[9
+instance Show (Work p i) where
+  show _ = "SolveWork"
+
+instance (PP p,PP i) => PP (Work p i) where
+  pp w = pp $ workCnstr w
+%%]
+
+%%[9
+mkWorkList :: Keyable p => [Constraint p i] -> WorkList p i
+mkWorkList = flip wlInsert emptyWorkList
+
+wlToList :: WorkList p i -> [Constraint p i]
+wlToList wl@(WorkList {wlQueue = q, wlTrie = t})
+  = mapMaybe (\k -> fmap workCnstr $ lookupByKey k t) q
+
+wlInsert :: Keyable p => [Constraint p i] -> WorkList p i -> WorkList p i
+wlInsert cs wl@(WorkList {wlQueue = q, wlTrie = t, wlQueueSet = qs})
+  = wl {wlQueueSet = Map.keysSet work `Set.union` qs, wlTrie = trie `Trie.union` t, wlQueue = q ++ Map.keys work}
+  where work = Map.fromList [ (toKey c,Work c) | c <- cs, let k = toKey c, not (k `Set.member` qs) ]
+        trie = Trie.fromListByKey $ Map.toList work
+
+wlDeleteByKey :: [[Trie.TrieKey Key]] -> WorkList p i -> WorkList p i
+wlDeleteByKey keys wl@(WorkList {wlQueue = wlq, wlTrie = wlt, wlQueueSet = wlqs})
+  = wl { wlQueue = wlq \\ keys, wlQueueSet = wlqs `Set.difference` Set.fromList keys
+       , wlTrie = Trie.deleteListByKey keys wlt
+       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Solver trace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(SolveStep(..),SolveTrace)
 data SolveStep p i g s
   = SolveStep
       { stepChr     :: CHR (Constraint p i) g s
-      , stepSimps   :: [Constraint p i]
-      , stepProps   :: [Constraint p i]
-      , stepBody    :: [Constraint p i]
+      , stepSubst   :: s
       }
 
 type SolveTrace p i g s = [SolveStep p i g s]
@@ -141,27 +186,63 @@ data SolveState p i g s
       }
 %%]
 
-%%[9 export(chrSolve)
-chrSolve :: ( CHRMatchable env p s, CHRCheckable g s
-            , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
-            , CHREmptySubstitution s
-            ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
+%%[9 export(ppSolveTrace)
+ppSolveTrace :: (PP s, PP p, PP i, PP g) => SolveTrace p i g s -> PP_Doc
+ppSolveTrace tr = ppBracketsCommasV [ stepSubst st >-< "|=>" >#< stepChr st | st <- tr ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Solver
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(chrSolve,chrSolve')
+chrSolve
+  :: ( CHRMatchable env p s, CHRCheckable g s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHREmptySubstitution s
+     , PP g, PP i, PP p -- for debugging
+     ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
 chrSolve env chrStore cnstrs
-  = stDoneCnstrs $ iter initState
-  where iter st
+  = work ++ done
+  where (work,done,_) = chrSolve' env chrStore cnstrs
+
+chrSolve'
+  :: ( CHRMatchable env p s, CHRCheckable g s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHREmptySubstitution s
+     , PP g, PP i, PP p -- for debugging
+     ) => env -> CHRStore p i g s -> [Constraint p i] -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
+chrSolve' env chrStore cnstrs
+  = (wlToList (stWorkList finalState), stDoneCnstrs finalState, stTrace finalState)
+  where iter st@(SolveState {stWorkList = wl@(WorkList {wlQueue = (_:_)})})
           = case firstMatch st of
-              Just m
-                -> st
+              Just (StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b}), storedSimpSz = simpSz},(keys,works),subst)
+                -> iter st'
+                where (keysSimp,keysProp) = splitAt simpSz keys
+                      usedIn = Map.fromListWith Set.union $ zip keysProp (repeat $ Set.singleton chrId)
+                      (bTodo,bDone) = splitDone $ map (chrAppSubst subst) b
+                      wl' = wlInsert bTodo $ wlDeleteByKey keysSimp $ wl {wlUsedIn = usedIn `Map.union` wlUsedIn wl}
+                      st' = st { stWorkList = wl'
+                               , stTrace = SolveStep chr subst : stTrace st
+                               , stDoneCnstrs = bDone ++ (map workCnstr $ take simpSz works) ++ stDoneCnstrs st
+                               }
               _ -> st
-        firstMatch st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:workTl), wlTrie = wlTrie}})
+        iter st
+          = st
+        firstMatch st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:workTl), wlTrie = wlTrie, wlUsedIn = wlUsedIn, wlQueueSet = wlQueueSet}})
           = foldr first Nothing
-            $ concatMap (\c -> zip (repeat c) (foldr combine [] $ candidate c))
+            $ filter (not . isUsedByPropPart)
+            $ concatMap (\c -> zip (repeat c) (map unzip $ combine' $ candidate c))
             $ concat $ lookupResultToList $ lookupPartialByKey False workHd
             $ chrstoreTrie chrStore
           where candidate (StoredCHR {storedKeys = ks})
                   = map (maybe (lkup workHd) lkup) ks
                   where lkup k = lookupResultToList $ lookupPartialByKey' (,) True k wlTrie
-                combine l ls = concatMap (\e -> map (e:) ls) l
+                -- combine l ls = concatMap (\e -> map (e:) ls) l
+                combine l ls = concatMap (\e@(k,_) -> mapMaybe (\l -> maybe (Just (e:l)) (const Nothing) $ List.lookup k l) ls) l
+                combine' [] = []
+                combine' [x] = [x]
+                combine' (l:ls) = combine l $ combine' ls
                 match chr cnstrs
                   = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
                   where matches (StoredCHR {storedChr = CHR {chrSimpHead = sc, chrPropHead = pc}}) cnstrs
@@ -172,166 +253,61 @@ chrSolve env chrStore cnstrs
                           where chk g subst = chrCheck (subst `chrAppSubst` g)
                         cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
                         cmb _        _    = Nothing
-                first (chr,keysWorks) cont
-                  = case match chr (map (workCnstr . snd) keysWorks) of
-                      r@(Just s) -> Just (chr,keysWorks,s)
+                isUsedByPropPart (chr,(keys,_))
+                  = any fnd $ drop (storedSimpSz chr) keys
+                  where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup k wlUsedIn
+                first (chr,kw@(_,works)) cont
+                  = case match chr (map workCnstr works) of
+                      r@(Just s) -> Just (chr,kw,s)
                       _          -> cont
-        initState = SolveState (mkWorkList wl) [] done []
-                  where (wl,done) = splitDone cnstrs
-        splitDone = partition (\x -> cnstrRequiresSolve x)
+        initState  = SolveState (mkWorkList wl) [] done []
+                   where (wl,done) = splitDone cnstrs
+        finalState = iter initState
+        splitDone  = partition (\x -> cnstrRequiresSolve x)
 %%]
+        firstMatch st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:workTl), wlTrie = wlTrie, wlUsedIn = wlUsedIn, wlQueueSet = wlQueueSet}})
+          = foldr first Nothing
+            $ filter (not . isUsedByPropPart)
+            $ (\v -> trp "XX" (ppBracketsCommasV v) v)
+            $ concatMap (\c -> zip (repeat c) (map unzip $ (\v -> trp "AA" (ppBracketsCommasV v) v) $ combine' $ candidate c))
+            $ concat $ lookupResultToList $ lookupPartialByKey False workHd
+            $ chrstoreTrie chrStore
+          where candidate (StoredCHR {storedKeys = ks})
+                  = (\v -> trp "ZZ" ("workHd" >#< ppBracketsCommas workHd >#< "ks" >#< (ppBracketsCommas $ map (fmap ppBracketsCommas) ks) >#< (ppBracketsCommasV $ map (map (\(a,b) -> ppParensCommas [ppBracketsCommas a,pp b])) $ v)) v)
+                    $ map (maybe (lkup workHd) lkup) ks
+                  where lkup k = (\v -> trp "YY" (ppBracketsCommas k >#< ppBracketsCommasV (map (\(a,b) -> ppParensCommas [ppBracketsCommas a,pp b]) v)) v) $ lookupResultToList $ lookupPartialByKey' (,) True k wlTrie
+                -- combine l ls = concatMap (\e -> map (e:) ls) l
+                combine l ls = concatMap (\e@(k,_) -> mapMaybe (\l -> maybe (Just (e:l)) (const Nothing) $ List.lookup k l) ls) l
+                combine' [] = []
+                combine' [x] = [x]
+                combine' (l:ls) = combine l $ combine' ls
+                match chr cnstrs
+                  = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
+                  where matches (StoredCHR {storedChr = CHR {chrSimpHead = sc, chrPropHead = pc}}) cnstrs
+                          = zipWith mt (sc ++ pc) cnstrs
+                          where mt cFr cTo subst = chrMatchTo env (subst `chrAppSubst` cFr) cTo
+                        checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
+                          = map chk gd
+                          where chk g subst = chrCheck (subst `chrAppSubst` g)
+                        cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
+                        cmb _        _    = Nothing
+                isUsedByPropPart (chr,(keys,_))
+                  = any fnd $ drop (storedSimpSz chr) keys
+                  where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup k wlUsedIn
+                first (chr,kw@(_,works)) cont
+                  = case match chr (map workCnstr works) of
+                      r@(Just s) -> Just (chr,kw,s)
+                      _          -> cont
+        initState  = SolveState (mkWorkList wl) [] done []
+                   where (wl,done) = splitDone cnstrs
+        finalState = iter initState
+        splitDone  = partition (\x -> cnstrRequiresSolve x)
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gerrit's stuff:
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-{-# OPTIONS -fglasgow-exts #-}
-module CHRSolver
- ( (<=>)
- , (==>)
- , (|>)
- , CHR (..)
- , Matchable (..)
- , chrSolve'
- , chrSolve
- , chrSolveWl
- , Subst
- , Pattern (..)
- , propMatch
- )
-where
 
--- 
--- TODO:: - Solver can be made faster in the case: ftv constraint == []
---        - Use of monoid (`mappend`) for substitutions is wrong, substitutions must agree
 
-import Data.List ((\\))
-import qualified Data.Set as Set
-import Data.Maybe
-import Data.Monoid
-import Test.QuickCheck (property, Property)
 
-infix   1 <=>, ==>
-infixr  0 |>
+            $ (\v -> trp "XX" (ppBracketsCommasV v >-< ppBracketsCommas (map ppBracketsCommas $ Set.toList wlQueueSet)) v)
+                  where lkup k | k `Set.member` wlQueueSet = lookupResultToList $ lookupPartialByKey' (,) True k wlTrie
+                               | otherwise                 = []
 
-class (Ord c, Monoid s) => Matchable c s | c -> s where
-  match :: c -> c -> Maybe s
-  subst :: s -> c -> c
-
-  -- default case: syntactic equality
-  match x y | x == y    = Just mempty
-            | otherwise = Nothing
-  subst = flip const
-
-data CHR c s = CHR { head    :: [c]
-                   , guard   :: (s -> Maybe s)
-                   , body    :: [c]
-                   }
-
-emptyGuard :: (Monoid a) => t -> Maybe a
-emptyGuard = const $ Just mempty
-
-instance (Show c, Eq c) => Show (CHR c s) where
-  show (CHR  hs _ cs) = if all (`elem` cs) hs
-                        then  sepWithComma hs ++ " ==> " ++ isEmpty (sepWithComma (cs \\ hs))
-                        else  sepWithComma hs ++ " <=> " ++ isEmpty (sepWithComma cs)
-
-(|>) :: CHR p s -> (s -> Maybe s) -> CHR p s
-(|>) (CHR hs _ bs) g = CHR hs g bs
-
-(<=>), (==>) :: Monoid s => [p] -> [p] -> CHR p s
-hs <=>  bs = CHR hs emptyGuard bs
-hs ==>  bs = hs <=> (hs ++ bs)
-
-type Constraints c = Set.Set c
-
-chrSolve' :: Matchable c s => [CHR c s] -> [c] -> [c]
-chrSolve' chrs cs = Set.toList $ chrSolveWl chrs (Set.fromList cs) cs
-
-chrSolve :: Matchable c s => [CHR c s] ->  Constraints c -> Constraints c
-chrSolve chrs cs = chrSolveWl chrs cs (Set.toList cs)
-
-chrSolveWl :: Matchable c s => [CHR c s] -> Constraints c -> [c] -> Constraints c
-chrSolveWl chrs = foldr (solveConstraint chrs)
-
-solveConstraint :: Matchable c s => [CHR c s] -> c -> Constraints c -> Constraints c
-solveConstraint chrs c cs = foldr (applyCHR chrs [] mempty c) cs chrs
-
-applyCHR :: Matchable c s => [CHR c s] -> [c] -> s -> c -> CHR c s -> Constraints c -> Constraints c
-applyCHR chrs ms s' c (CHR hs g bs) constraints
-  = foldr f constraints (matches c hs)
-  where f (s, m, mhs) cs  = let sbs = map (subst s) bs                           
-                                sms = map (subst s) (m:ms)
-                                shs = map (subst s) mhs
-                                s'' = s `mappend` s'  
-                                (cs', wl) = simplify (g s'') sms sbs cs
-                            in if null mhs
-                               then chrSolveWl chrs cs' wl
-                               else Set.fold (\d-> applyCHR chrs sms s'' d (CHR shs g sbs)) 
-                                             cs 
-                                             (Set.delete c cs) 
-
-matches :: Matchable a s => a -> [a] -> [(s, a, [a])]
-matches h' = rec []
-  where rec _  []     = []
-        rec rs (h:hs) = case match h' h of
-                     Nothing -> rec (h:rs) hs
-                     Just s  -> (s, h, rs ++ hs) : rec (h:rs) hs
-
-simplify :: Matchable c s => Maybe s -> [c] -> [c] -> Constraints c -> (Constraints c, [c])
-simplify Nothing   _   _    st = (st, [])
-simplify (Just s)  hd  bd   st
- =  if all (`Set.member` st) hd
-    then (foldr Set.insert st' sbd, new)
-    else (st, [])
-    where new = filter (\c -> not $ Set.member c st) sbd
-          st' = foldr Set.delete st hd
-          sbd = map (subst s) bd
-     
--- Substitution + variable + instance Matchable
-data Pattern a = Var Int
-               | Val a
-               deriving (Eq, Ord)
-
-type Subst a = [(Int, a)]
-
-instance Matchable a s => Matchable (Pattern a) (Subst a, s) where
-  match (Val x) (Var i) = return ([(i, x)], mempty)
-  match (Val x) (Val y) = do s <- match x y 
-                             return ([], s)
-  match _       _       = Nothing 
-
-  subst (_, s)   (Val x) = Val (subst s x)
-  subst (s, _) v@(Var i) = case lookup i s of
-                                Nothing -> v
-                                Just x  -> Val x
-                                
-instance Functor Pattern where
-  fmap f (Val x) = Val (f x)
-  fmap _ (Var i) = Var i
-
-instance Show a => Show (Pattern a) where
-  show (Val a) = show a
-  show (Var i) = "v" ++ show i
-
---- Tests
-propMatch :: Pattern Int -> Pattern Int -> Property
-propMatch c h =
-  case match c h of 
-    Just s   -> property (c == subst s h)
-    Nothing  -> property ()
-
-instance Matchable Int ()
-
--- Some helper function for pp:
-sepWithComma :: Show a => [a] -> String
-sepWithComma = sepWith ", "
-
-sepWith :: Show a => String -> [a] -> String
-sepWith _   [] = ""
-sepWith _   [x]    = show x
-sepWith sep (x:xs) = show x ++ sep ++ sepWith sep xs
-
-isEmpty :: String -> String
-isEmpty "" = "true"
-isEmpty s  = s

@@ -125,10 +125,14 @@ instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
   s |=>  ci =  case ci of
                  CITy     t  -> CITy (s |=> t)
                  CIImpls  i  -> CIImpls (s |=> i)
+                 CIPred   i  -> CIPred (s |=> i)
+                 CIPoi    i  -> CIPoi (s |=> i)
                  CIScope  sc -> CIScope (s |=> sc)
   ftv    ci =  case ci of
                  CITy     t  -> ftv t
                  CIImpls  i  -> ftv i
+                 CIPred   i  -> ftv i
+                 CIPoi    i  -> ftv i
                  CIScope  sc -> ftv sc
 %%]
 
