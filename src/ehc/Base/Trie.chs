@@ -19,7 +19,7 @@ Partial matching is implemented by administering two deeper nested search trees 
 Normally the default tree is filled when constructing a Trie, the partial tree is filled when the key is flagged
 with TKK_Partial. Only at insertion time the proper search structure is setup.
 
-%%[9 module {%{EH}Base.Trie} import(qualified Data.Map as Map,Data.Maybe)
+%%[9 module {%{EH}Base.Trie} import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
 %%[9 import(Prelude hiding (lookup,null))
@@ -161,13 +161,15 @@ lookupPartialByKey' mkRes stopAtPartialKey keys trie
   = l keys
   where l  []                = ([],fmap (mkRes keys) $ trieMbVal trie)
         l  (TK_One TKK_Partial k : ks) | stopAtPartialKey
-                             = (map (uncurry mkRes) $ Seq.toList $ toFastSeq False trie,Nothing)
-        l  (TK_One _ k : ks) = case Map.lookup k $ trieCont trie of
+                             = (map (\(ks,v) -> mkRes ks v) $ Seq.toList $ toFastSeq False trie,Nothing)
+        l  (TK_One knd k : ks)
+                             = case Map.lookup k $ trieCont trie of
                                  Just trie'
-                                   -> (lp ks ++ p, m)
-                                   where (p,m) = lookupPartialByKey' mkRes stopAtPartialKey ks trie'
-                                 _ -> (lp ks, Nothing)
-        lp ks                = case (trieMbPartial trie,ks) of
+                                   -> (lp mkRes' ks ++ p, m)
+                                   where (p,m) = lookupPartialByKey' mkRes' stopAtPartialKey ks trie'
+                                 _ -> (lp mkRes' ks, Nothing)
+                             where mkRes' ks v = mkRes (TK_One knd k : ks) v
+        lp mkRes ks          = case (trieMbPartial trie,ks) of
                                  (Just (_,pt),[]) -> lp' [[]] pt
                                  (Just (_,pt),_ ) -> lp' [[],ks] pt
                                  _ -> []
@@ -302,7 +304,7 @@ insert keys = insertByKey $ mkTrieKeys keys
 %%% Delete, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(deleteByKey,delete)
+%%[9 export(deleteByKey,deleteListByKey,delete)
 deleteByKey :: Ord k => [TrieKey k] -> Trie k v -> Trie k v
 deleteByKey keys trie
   = d keys trie
@@ -321,6 +323,9 @@ deleteByKey keys trie
                 p   = if null t'' then Nothing else Just (k,t'')
         d _ t = t
 
+deleteListByKey :: Ord k => [[TrieKey k]] -> Trie k v -> Trie k v
+deleteListByKey keys trie = foldl (\t k -> deleteByKey k t) trie keys
+
 delete :: Ord k => [k] -> Trie k v -> Trie k v
 delete keys = deleteByKey $ mkTrieKeys keys
 %%]
@@ -331,12 +336,14 @@ delete keys = deleteByKey $ mkTrieKeys keys
 
 %%[9
 %%]
-l1 = lookupPartialByKey [TK_One TKK_Normal 1]
-l2 = lookupPartialByKey [TK_One TKK_Normal 1,TK_One TKK_Normal 2]
-l3 = lookupPartialByKey [TK_One TKK_Normal 4]
-l4 = lookupPartialByKey [TK_One TKK_Normal 4,TK_One TKK_Normal 2]
-l5 = lookupPartialByKey [TK_One TKK_Normal 4,TK_One TKK_Normal 5]
-l6 = lookupPartialByKey [TK_One TKK_Normal 4,TK_One TKK_Normal 6]
+l1 = lookupPartialByKey False [TK_One TKK_Normal 1]
+l1pn = lookupPartialByKey True [TK_One TKK_Normal 1]
+l1pp = lookupPartialByKey True [TK_One TKK_Partial 1]
+l2 = lookupPartialByKey False [TK_One TKK_Normal 1,TK_One TKK_Normal 2]
+l3 = lookupPartialByKey False [TK_One TKK_Normal 4]
+l4 = lookupPartialByKey False [TK_One TKK_Normal 4,TK_One TKK_Normal 2]
+l5 = lookupPartialByKey False [TK_One TKK_Normal 4,TK_One TKK_Normal 5]
+l6 = lookupPartialByKey False [TK_One TKK_Normal 4,TK_One TKK_Normal 6]
 
 test1
   = fromListByKey
@@ -354,3 +361,9 @@ test2
       , ([TK_One TKK_Partial 4,TK_One TKK_Partial 5],"de")
       , ([TK_One TKK_Normal 4,TK_One TKK_Normal 6],"df")
       ]
+
+test3
+  = fromListByKey
+      [ ([TK_One TKK_Normal 1,TK_One TKK_Normal 2],"ab")
+      ]
+

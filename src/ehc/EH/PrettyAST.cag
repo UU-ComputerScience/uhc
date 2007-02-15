@@ -463,12 +463,12 @@ SEM Decl
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@tyPrExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
                         .  info     =   []
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info
-                        .  info     =   [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
+                        .  info     =   [ mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
+                                        , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "prTyFix" (ppTy @prTyFix)
                                         , mkInfo1 "tyPrExpr.evTy" (ppTy @tyPrExpr.evTy)
                                         , mkInfo1 "recTy" (ppTy @recTy)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
-                                        , mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
                                         , mkInfo1 "instPrElimTGam" (pp @instPrElimTGam)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
                                         , mkInfo1 "dbg2PrfPruneG (decl)" (pp @dbg2PrfPruneG)
@@ -510,9 +510,12 @@ SEM Expr
   | Var         loc     .  info_9   :=  [ mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (foLCoeL @fo_))
                                         , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (foRCoeL @fo_))
                                         ]
-  | Let         loc     .  info_9   :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
+  | Let         loc     .  info_9   :=  [ mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
+                                        , mkInfo1 "chrSolveWorkConstraints" (ppBracketsCommasV @chrSolveWorkConstraints)
+                                        , mkInfo1 "chrSolveDoneConstraints" (ppBracketsCommasV @chrSolveDoneConstraints)
+                                        , mkInfo1 "chrSolveTrace" (ppSolveTrace @chrSolveTrace)
+                                        , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
-                                        , mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
                                         , mkInfo1 "dbg2PrfPruneG (decl)" (pp @dbg2PrfPruneG)
                                         , mkInfo1 "dbg2PrfOrG (decl)" (pp @dbg2PrfOrG)

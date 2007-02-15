@@ -317,7 +317,10 @@ instance PP Cnstr where
 
 %%[9
 instance PP v => PP (CnstrInfo v) where
-  pp (CITy t) = pp t
+  pp (CITy    t) = pp t
   pp (CIImpls i) = pp i
+  pp (CIScope s) = pp s
+  pp (CIPoi   i) = pp i
+  pp (CIPred  p) = pp p
 %%]
 
