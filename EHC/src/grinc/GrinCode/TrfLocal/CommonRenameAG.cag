@@ -47,7 +47,7 @@ SEM GrExpr
   | Eval        lhs         .   trf             =   GrExpr_Eval $ nmAliasRepl @lhs.nmAliasMp @nm
   | FetchNode   lhs         .   trf             =   GrExpr_FetchNode  (nmAliasRepl @lhs.nmAliasMp @nm)
   | FetchField  lhs         .   trf             =   GrExpr_FetchField (nmAliasRepl @lhs.nmAliasMp @nm) @offset @mbTag
-  | Update      lhs         .   trf             =   GrExpr_Update (nmAliasRepl @lhs.nmAliasMp @nm) @val.trf @mbTag
+  | UpdateUnit  lhs         .   trf             =   GrExpr_UpdateUnit (nmAliasRepl @lhs.nmAliasMp @nm) @val.trf
   | FetchUpdate lhs         .   trf             =   GrExpr_FetchUpdate (nmAliasRepl @lhs.nmAliasMp @src) (nmAliasRepl @lhs.nmAliasMp @dst)
   | Throw       lhs         .   trf             =   GrExpr_Throw (nmAliasRepl @lhs.nmAliasMp @nm)
   | Catch       lhs         .   trf             =   GrExpr_Catch @body.trf (nmAliasRepl @lhs.nmAliasMp @arg) @handler.trf

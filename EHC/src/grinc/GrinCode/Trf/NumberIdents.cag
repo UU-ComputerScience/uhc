@@ -165,7 +165,7 @@ SEM GrTag
   | Var  lhs  .  grTrf  = GrTag_Var (findNewVar @lhs.var2id @nm)
 
 SEM GrExpr
-  | App Eval FetchNode FetchField Update Throw  
+  | App Eval FetchNode FetchField Throw UpdateUnit
                 loc  .  newName  =  findNewVar @lhs.var2id @nm
   | App         lhs  .  grTrf    =  GrExpr_App     @newName @argL.grTrf
   | Eval        lhs  .  grTrf    =  GrExpr_Eval    @newName
@@ -173,7 +173,7 @@ SEM GrExpr
                 lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
   | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
   | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
-  | Update      lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
+  | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.var2id @src) (findNewVar @lhs.var2id @dst)
   | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch       lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf

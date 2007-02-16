@@ -126,7 +126,8 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment @dest.prettyC @source.prettyC
+  | Assignment  lhs.prettyC   = assignment  @dest.prettyC  @source.prettyC
+  | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
   | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwnCalls (hsnShowAlphanumeric @name) @args.prettyCs
@@ -338,6 +339,16 @@ jumpSillyFunctionFromSilly True nm
 
 
 
+assignment2 :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+assignment2 v1 v2 e
+ = v1
+   >#< "="
+   >#< v2
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen optTraceAssign
+              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
 
 assignment :: PP_Doc -> PP_Doc -> PP_Doc
 assignment v e

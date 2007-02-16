@@ -147,11 +147,10 @@ SEM GrExpr
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map @lhs.ppGrNm @argL) >#< ppCurlysSemisV @resTagL.ppL
   | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
+  | UpdateUnit  lhs         .   pp          =   "updateunit" >#< @val.pp >#< ppGrNm @nm
   | Store       lhs         .   pp          =   "store" >#< @val.pp
   | FetchNode   lhs         .   pp          =   "fetchnode"  >#<  @lhs.ppGrNm @nm 
   | FetchField  lhs         .   pp          =   "fetchfield" >#<  @lhs.ppGrNm @nm >#< pp @offset >#< maybe empty ppGrTag @mbTag
-  | Update      lhs         .   pp          =   "update" >#< @lhs.ppGrNm @nm >#< @val.pp
-                                                                             >#< maybe empty ppGrTag @mbTag
   | FetchUpdate lhs         .   pp          =   "fetchupdate" >#< @lhs.ppGrNm @src >#< @lhs.ppGrNm @dst
   | Throw       lhs         .   pp          =   "throw" >#< @lhs.ppGrNm @nm
   | Catch       lhs         .   pp          =   "try" >-<

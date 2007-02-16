@@ -372,10 +372,8 @@ makeEvalBindEntryF n1 (nm, arity) ui
    in  GrAlt_Alt (mkGrPatTagNode GrTagFun 0 nm parameters)
                  (GrExpr_Seq (GrExpr_Call nm (map GrVal_Var parameters))
                              (GrPat_Var result)
-                             (GrExpr_Seq (GrExpr_Update n1 (GrVal_Var result) Nothing)
-                                         GrPat_Empty
-                                         (GrExpr_Unit (GrVal_Var result))
-                 )           )
+                             (GrExpr_UpdateUnit n1 (GrVal_Var result))
+                 )
 
 makeEvalBindEntryP n2 (nm, arity, k) ui
  = let names = map uidHNm (mkInfNewUIDL (uidChild ui))
@@ -408,7 +406,7 @@ mbMkStrict u isStrict v
   where dflt = GrExpr_Unit v
 
 retStrict :: Bool -> GrVal -> GrExpr
-retStrict isStrict = if isStrict then GrExpr_Unit else GrExpr_Store
+retStrict isStrict = if isStrict then (\v->GrExpr_Unit v) else GrExpr_Store
 %%]
 
 %%[8 hs

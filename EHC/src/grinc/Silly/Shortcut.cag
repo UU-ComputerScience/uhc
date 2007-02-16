@@ -64,6 +64,7 @@ SEM Function
 
 SEM Statement
   | Assignment  lhs.defMap  =  Map.adjust (+1) @dest.self @lhs.defMap
+  | Assignment2 lhs.defMap  =  Map.adjust (+1) @dest1.self (Map.adjust (+1) @dest2.self @lhs.defMap)
 
 SEM Variable
   | Unembedded  lhs.useMap  =  Map.adjust (+1) @loc.trf @lhs.useMap

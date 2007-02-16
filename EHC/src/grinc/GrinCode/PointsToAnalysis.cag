@@ -204,7 +204,7 @@ If the target is a node, we generate a list of equations: one for each variable 
 -}
 
 SEM GrExpr
-  | Unit   lhs . equations  = case @lhs.targetInfo of
+  | Unit   loc . equations1 = case @lhs.targetInfo of
                                 NodeXXX           -> []
                                 NodeVar tvar      -> case @val.valInfo of
                                                        NodeVar svar      -> [EquationShouldBe tvar [svar]]
@@ -212,6 +212,22 @@ SEM GrExpr
                                 NodeDen ttag tnms -> case @val.valInfo of
                                                        NodeVar svar      -> buildSelectEquations svar ttag tnms
                                                        NodeDen stag snms -> buildUnifyEquations  snms tnms
+           lhs . equations  =  @loc.equations1
+
+  | UpdateUnit
+           loc . equations1 = case @lhs.targetInfo of
+                                NodeXXX           -> []
+                                NodeVar tvar      -> case @val.valInfo of
+                                                       NodeVar svar      -> [EquationShouldBe tvar [svar]]
+                                                       NodeDen stag snms -> [EquationTag tvar stag snms Nothing]
+                                NodeDen ttag tnms -> case @val.valInfo of
+                                                       NodeVar svar      -> buildSelectEquations svar ttag tnms
+                                                       NodeDen stag snms -> buildUnifyEquations  snms tnms
+                                                       
+           loc . equations2 =  [ EquationShouldBe (getNr @nm)  [getNr @nm,  getNr @val.getName] ]
+           lhs . equations  =  @loc.equations2 ++ @loc.equations1
+
+                                                       
 %%]
 %%[8.unitaux hs
 
@@ -414,7 +430,6 @@ SEM GrExpr
                                       NodeVar tvar -> [ EquationShouldBe tvar [getNr @nm] ]
                                       _            -> error "HPT: Fetch target should be a variable"
   | FetchField   lhs . equations =  error "FetchField found during HPT"
-  | Update       lhs . equations =  [ EquationShouldBe (getNr @nm)  [getNr @nm,  getNr @val.getName] ]
   | FetchUpdate  lhs . equations =  [ EquationShouldBe (getNr @dst) [getNr @dst, getNr @src        ] ]
   
 SEM GrVal [ | | getName : {HsName} ]

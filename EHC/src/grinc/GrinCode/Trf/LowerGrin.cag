@@ -14,7 +14,7 @@ Some transformations are needed to allow easy code generation for GRIN
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, {%{EH}GrinCode}) export(lowerGrin)
+%%[8 hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
 lowerGrin :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
 lowerGrin (input,unique,hptMap)
@@ -134,12 +134,12 @@ SEM GrVal
                  . node        = maybe @grTrf id @maybeNode
 
 SEM GrExpr
-  | FetchNode FetchField Update Eval Throw  
+  | FetchNode FetchField Eval Throw UpdateUnit
                loc  . maybeNode = Map.lookup @nm @lhs.grNodeSubst
                loc  . newName   = maybe @nm (\(GrVal_Var nm) -> nm) @maybeNode
   | FetchNode  lhs  . grTrf     = GrExpr_FetchNode  @newName
   | FetchField lhs  . grTrf     = GrExpr_FetchField @newName @offset @mbTag
-  | Update     lhs  . grTrf     = GrExpr_Update @newName @val.grTrf @mbTag
+  | UpdateUnit lhs  . grTrf     = GrExpr_UpdateUnit @newName @val.grTrf
   | Eval       lhs  . grTrf     = GrExpr_Eval  @newName
   | Throw      lhs  . grTrf     = GrExpr_Throw @newName
 %%]

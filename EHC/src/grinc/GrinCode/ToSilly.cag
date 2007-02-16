@@ -196,50 +196,33 @@ SEM GrExpr
  | Seq     lhs.stats  = @expr.stats
                         ++ @body.stats
 
- | Unit    lhs.stats  = if @isLastExpr
-                         then Statement_Comment ["Unit (Yielding)"]
-                              : if @lhs.optOwnParameters || @lhs.optOwnLocals
-                                 then [ Statement_Smart (@val.values ++ [Value_Var (Variable_Subs Variable_BP 1) | @loc.moveRet ])
-                                      , Statement_Assignment Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2))
-                                      , Statement_Return (max @loc.nMyRes @lhs.numberParameters + 1)
-                                      ]
-                                 else [ Statement_Assignment v e
-                                      | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
-                                                    @val.values
-                                      ]
-                         else Statement_Comment ["Unit (Internal)"]
-                              : [ Statement_Assignment v e
-                                | (v,e) <-zip [mkVar x | x <- @lhs.targets]
-                                              @val.values
-                                , isRealVar v
-                                ]                         
-                          
-           loc.nMyRes = length (@val.values)
-           loc.moveRet= @loc.nMyRes > @lhs.numberParameters
+ | UpdateUnit
+           loc.name   = mkVar @nm
+           loc.overwr = if @val.isUnboxed
+                          then [ Statement_Assignment @loc.name (Value_UnboxCon (head(tail @val.values))) ]
+                          else []
+                                
+           lhs.stats   = if @isLastExpr
+                          then internal2 "Update" @loc.name @val.values
+                               ++ @loc.overwr
+                               ++ yielding "Unit" (@lhs.optOwnParameters || @lhs.optOwnLocals) @val.values @lhs.numberParameters
+                          else 
+                               []
+                               -- ++ internal2 "Update" @loc.name @val.values
+                               -- ++ internal1 "Unit" @lhs.targets @val.values 
+                               ++ internal3 "UpdateUnit" @loc.name @lhs.targets @val.values
+                               ++ @loc.overwr                         
 
+ | Unit    lhs.stats  = if @isLastExpr
+                          then yielding  "Unit" (@lhs.optOwnParameters || @lhs.optOwnLocals) @val.values @lhs.numberParameters
+                          else internal1 "Unit" @lhs.targets @val.values
 
  | FFI     lhs.stats  = if @isLastExpr
-                         then Statement_Comment ["FFI (Yielding)"]
-                              : if @lhs.optOwnParameters || @lhs.optOwnLocals
-                                 then [ Statement_Smart (@loc.callres ++ [Value_Var (Variable_Subs Variable_BP 1) | @loc.moveRet])
-                                      , Statement_Assignment Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2))
-                                      , Statement_Return (max @loc.nMyRes @lhs.numberParameters + 1)
-                                      ]
-                                 else [ Statement_Assignment v e
-                                      | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
-                                                    @loc.callres
-                                      ]
-                         else Statement_Comment ["FFI (Internal)"]
-                              : [ Statement_Assignment v e
-                                | (v,e) <-zip [mkVar x | x <- @lhs.targets]
-                                              @loc.callres
-                                , isRealVar v
-                                ]                         
+                         then yielding  "FFI" (@lhs.optOwnParameters || @lhs.optOwnLocals) @loc.callres @lhs.numberParameters
+                         else internal1 "FFI" @lhs.targets @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
            loc.callres = maybe id (:) @resTagL.mbOnlyTagValue $ [Value_Call @nm (map (Value_Var . mkVar) @argL)]
-           loc.nMyRes  = length @loc.callres
-           loc.moveRet= @loc.nMyRes > @lhs.numberParameters
 
 
  | Store   lhs.stats  = let ph = head @lhs.targets
@@ -262,18 +245,6 @@ SEM GrExpr
 
 
 
- | Update   loc.name   = mkVar @nm
-            loc.change = --Statement_Assignment Variable_Ptr (Value_Var @loc.name) :                -- if this line is enabled, uses option 2 instead of option 1
-                         zipWith Statement_Assignment
-                                 (map (arrayVariab @loc.name) [0..])                                -- option 1
-                                 --(map (Variable_Subs Variable_Ptr) [0..])   -- option 2
-                                 @val.values
-            lhs.stats  = Statement_Comment ["Update"] : 
-                         if @val.isUnboxed
-                          then 
-                               @loc.change ++     -- TODO: this line could be deleted if uniqueness analyses revealed that context is unique
-                               [ Statement_Assignment @loc.name (Value_UnboxCon (head(tail @val.values))) ]
-                          else @loc.change
  | FetchNode
            lhs.stats  = error "FetchNode found while generating Silly"
            lhs.localsSet= error "FetchNode found while generating Silly"
@@ -474,9 +445,68 @@ SEM GrAGItf
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Other auxiliary Haskell
+%%% Auxiliary Haskell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8 hs
+
+yielding what own values numberParameters
+  =  let nMyRes  = length values
+         moveRet = nMyRes > numberParameters
+     in  Statement_Comment [what ++ " (Yielding)"]
+         : if own
+            then [ Statement_Smart (values ++ [Value_Var (Variable_Subs Variable_BP 1) | moveRet])
+                 , Statement_Assignment Variable_SP (Value_Offset Variable_BP (numberParameters+2))
+                 , Statement_Return (max nMyRes numberParameters + 1)
+                 ]
+            else [ Statement_Assignment v e
+                 | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
+                               values
+                 ]
+
+internal1 what targets values
+   = Statement_Comment [what ++ " (Internal)"]
+     : [ Statement_Assignment v e
+       | (v,e) <-zip [mkVar x | x <- targets]
+                     values
+       , isRealVar v
+       ]                         
+
+internal2 what name values
+  =  Statement_Comment [what] 
+     :  
+     --Statement_Assignment Variable_Ptr (Value_Var @loc.name) :                -- if this line is enabled, uses option 2 instead of option 1
+     zipWith Statement_Assignment
+             (map (arrayVariab name) [0..])                                -- option 1
+             --(map (Variable_Subs Variable_Ptr) [0..])   -- option 2
+             values
+                        
+
+internal3 what name targets values
+  = Statement_Comment [what] 
+    :
+    [ if isRealVar v1
+       then (if isRealVar v2
+              then Statement_Assignment2 v2 v1 e
+              else Statement_Assignment v1 e
+            )
+       else Statement_Assignment v2 e
+    | (v1,v2,e) <-zip3 (map (arrayVariab name) [0..])
+                       [mkVar x | x <- targets]
+                       values
+    , isRealVar v1 || isRealVar v2
+    ]
+
+
+
+
+
+
+
+
+
+
+
+
 
 isRealVar Variable_None = False
 isRealVar (Variable_Unembedded (HNmNr 0 _)) = False

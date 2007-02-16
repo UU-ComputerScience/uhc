@@ -10,7 +10,7 @@ Rename names to other names.
 %%[8 hs module {%{GRIN}GrinCode.TrfLocal.AliasRename}
 %%]
 
-%%[8 hs import(qualified Data.Map as Map)
+%%[8 hs import(qualified Data.Map as Map, Data.Maybe)
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
