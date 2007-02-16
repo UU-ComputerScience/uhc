@@ -92,7 +92,7 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
     where
     (arity, rhs) = fromJust' ("tag not found: " ++ show tag ++ " in " ++ show (map fst evalMap)) (lookup tag evalMap)
     tf u args t  = error "no tag at the right hand side of eval map expected"
-    uf u args    = (u, [], GrExpr_Unit $ GrVal_Var fetchVar)
+    uf u args    = (u, [], GrExpr_Unit (GrVal_Var fetchVar))
     vf u args functVar  
                  = -- process an evalMap entry which represents a function call
                    let 
@@ -109,14 +109,15 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                        boundEntry = (getNr boundVar, functAbsVal)
                        -- generate code for the call          
                        callExpr   = GrExpr_Seq (GrExpr_Call functVar $ map GrVal_Var args) boundPat  $
-                                    GrExpr_Seq (GrExpr_Update locatVar boundVal Nothing)   emptyPat  $
-                                    GrExpr_Unit boundVal
+                                    GrExpr_UpdateUnit locatVar boundVal
                    in  if  not (isEmptyAbsVal excepAbsVal)
                        -- do we need to handle exceptions?  
                         then let
                                  -- create some more new names
                                  throwVar   = HNmNr (u+1) Nothing
                                  catchVar   = HNmNr (u+2) Nothing
+                                 noVar      = HNmNr 0 Nothing
+                                 noPat      = GrPat_Var noVar
                                  -- and wrap them for use in Grin
                                  throwVal   = GrVal_Var throwVar
                                  catchVal   = GrVal_Var catchVar
@@ -128,8 +129,8 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                                  eArity     = if grinStoreArity  then (GrVal_LitInt 1 : ) else id
                                  eNode      = GrVal_Node throwTag (eArity [throwVal])
                                  -- generate code for handling the exception
-                                 eCode      = GrExpr_Catch callExpr throwVar                              $
-                                              GrExpr_Seq (GrExpr_Update locatVar eNode Nothing) emptyPat  $
+                                 eCode      = GrExpr_Catch callExpr throwVar                        $
+                                              GrExpr_Seq (GrExpr_UpdateUnit locatVar eNode) noPat  $
                                               GrExpr_Throw throwVar
                                  handleExpr = GrExpr_Seq eCode catchPat $
                                               GrExpr_Unit catchVal

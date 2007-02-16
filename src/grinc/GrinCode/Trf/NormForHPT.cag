@@ -96,9 +96,9 @@ Transform the last statement of an alternative which is no simple unit
 SEM GrExpr
   | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && @isLastExpr && (not @simpleUnit)
                              .  (var, unique)  = newVar' @doUnitTrans @lhs.unique
-                             .  (val', pat')   = newGrIdent @var
+                             .  (val2, pat2)   = newGrIdent @var
                         lhs  .  grTrf          = if @doUnitTrans 
-                                                 then GrExpr_Seq @grTrf @pat' (GrExpr_Unit @val')
+                                                 then GrExpr_Seq @grTrf @pat2 (GrExpr_Unit @val2)
                                                  else @grTrf
                              .  unique         = @unique -- note: we break the normal unique sequence (but it is 'safe')
 %%]
@@ -140,10 +140,10 @@ are rewritten into a copy
 SEM GrExpr
   | Seq  loc  .  doPatternTrans    = @expr.needsSimplePattern && not @pat.isSimplePattern
               .  (var, newUnique)  = newVar' @doPatternTrans @expr.unique
-              .  (val', pat')      = newGrIdent @var
+              .  (val2, pat2)      = newGrIdent @var
          lhs  .  grTrf             = if @doPatternTrans
-                                     then GrExpr_Seq @expr.grTrf @pat'
-                                                     (GrExpr_Seq (GrExpr_Unit @val') @pat.grTrf @body.grTrf)
+                                     then GrExpr_Seq @expr.grTrf @pat2
+                                                     (GrExpr_Seq (GrExpr_Unit @val2) @pat.grTrf @body.grTrf)
                                      else @grTrf
          body  .  unique           = @newUnique
 %%]
@@ -155,9 +155,7 @@ This is actually something for the code generator, but it is easier to prepare t
 %%[8.catch
 SEM GrExpr
   | Catch   loc  .  var         =  HNmNr @handler.unique Nothing
-                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit $ GrVal_Var @var)
+                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit (GrVal_Var @var))
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
                  .  unique      =  if @lhs.hasNext then @handler.unique else @handler.unique + 1
 %%]
-
-% vim:ts=4:et:

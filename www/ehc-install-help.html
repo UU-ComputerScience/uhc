@@ -36,21 +36,21 @@ The good news is that you may find the tools useful in different situations as w
 <H2>1. Cygwin: a command line shell</H2>
 EHC makes use of Unix-style development tools,
 like <I>make</I> and <I>configure</I>.
-For being able to use such command line tools without having so far as
-to istall Linux, you can use Cygwin: a command line shell which comes
+For being able to use such command line tools without having to go so far as
+to install Linux, you can use Cygwin: a command line shell which comes
 with many of the needed development tools. 
 <P>
-to install Cygwin, go to <A href="http://www.cygwin.com">the Cygwin website</A>
+To install Cygwin, go to <A href="http://www.cygwin.com">the Cygwin website</A>
 and download the small (250k) installation program.
 During installation it asks for:
 <UL>
-<LI>A root directory. As this directory might need to be mentioned in variuos places,
+<LI>A root directory. As this directory might need to be mentioned in various places,
 a short path without spaces is recommended, for example <B>d:\cygwin</B>.
 <LI>A local package directory. This directory is used to store temporary files
 during download and installation of Cygwin. Any path will do, for example <B>d:\downloads\cygwin</B>.
 <LI>Internet connection type, and mirrorsite to download from. Default choices will do.
 <LI>Packages to select: the default selections are all we need. You can always
-add more packages later be starting the installation program again.
+add more packages later by starting the installation program again.
 </UL>
 After installation you will have a desktop icon and/or an item in the start menu.
 <P>
@@ -61,13 +61,13 @@ Start Cygwin and try some Unix commands, like <B>ls</B> and <B>date</B>
 (but DOS commands also work, e.g. <B>dir</B>).
 <LI>
 The root of the file system is the directory that you mentioned during installation.
-So when you typ <B>ls /</B> you will see the files that are physically located in
+So when you type <B>ls /</B> you will see the files that are physically located in
 <B>d:\cygwin\</B>. 
 But you can also access files outside the Cygwin system, using Windows pathnames:
 try <B>ls c:</B>.
 <LI>
 Some programs that are not designed specifically for Windows might, however, not like 
-colons in their pathnames. If you still need to adress files outside the Cygwin directory,
+colons in their pathnames. If you still need to address files outside the Cygwin directory,
 to can address e.g. the C-disk by <B>ls /cygdrive/c</B>.
 <LI>
 To have an even more convenient access to your files, issue the command
@@ -79,9 +79,9 @@ as if they were in directory /c. This command needs to be given only once.
 <A name="tortoise">
 <H2>2. Tortoise: SVN version management client</H2>
 
-The tools in step 4 to 6 are maintained in a collaborative verion management
+The tools in step 4 to 6 are maintained in a collaborative version management
 system called Subversion, or SVN. 
-You need a Subverion client to download files from a repository.
+You need a Subversion client to download files from a repository.
 Tortoise offers a graphical user interface to SVN. It integrates in the explorer,
 so you will hardly notice it exists as a seprate program: you will just notice
 enhanced explorer behaviour.
@@ -146,8 +146,8 @@ you should compile it by <B>ghc --make Test.hs</B>
 <A name="uulib">
 <H2>4. UUlib: Additional Haskell libraries from Utrecht University</H2>
 
-Haskell comes with a large number of libraries.
-But of course we like our own better. 
+Haskell comes with a large number of libraries,
+but of course we like our own better. 
 Download and install them as follows:
 <UL>
 <LI>Create a directory <B>uulib</B> in a convenient place.
@@ -172,7 +172,7 @@ start Cygwin and go to the directory you just created. Then type the following c
 <H2>5. UU-AGC: Attribute Grammar Compiler</H2>
 
 The Attribute Grammar Compiler is a preprocessor to Haskell that generates
-recursive tree walks. Input to the preprocessor is a custom description of an attribute grammar.
+recursive tree walks. Input to this preprocessor is a custom description of an attribute grammar.
 <P>
 Download and install it as follows:
 <UL>

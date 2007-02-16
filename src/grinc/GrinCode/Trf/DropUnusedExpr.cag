@@ -58,7 +58,7 @@ SEM GrExpr
   | Eval    lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
   | FetchNode  lhs.  usedVars  =  Set.insert @nm @lhs.usedVars
   | FetchField lhs.  usedVars  =  Set.insert @nm @lhs.usedVars
-  | Update  val   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | UpdateUnit val.  usedVars  =  Set.insert @nm @lhs.usedVars
   | FetchUpdate  
             lhs   .  usedVars  =  Set.insert @src @lhs.usedVars
   | Throw   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
@@ -132,8 +132,8 @@ SEM GrTag
   | * - Var  lhs  .  isDead  =  True
  
 SEM GrExpr [ | | sideEffect : Bool ]
-  |     Update FFI Throw FetchUpdate  lhs  .  sideEffect  =  True
-  | * - Update FFI Throw FetchUpdate  lhs  .  sideEffect  =  False
+  |     FFI Throw FetchUpdate UpdateUnit  lhs  .  sideEffect  =  True
+  | * - UpdateUnit FFI Throw FetchUpdate  lhs  .  sideEffect  =  False
 
 SEM GrExpr
   | Seq  lhs  .  grTrf      =  if @expr.throws then @expr.grTrf

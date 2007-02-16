@@ -31,6 +31,9 @@ DATA Function
 DATA Statement
   |  Assignment  dest       : Variable
                  source     : Value
+  |  Assignment2 dest1      : Variable
+                 dest2      : Variable
+                 source     : Value
   |  If          scrutinee  : Value
                  body       : Alternatives
   |  Switch      scrutinee  : Value

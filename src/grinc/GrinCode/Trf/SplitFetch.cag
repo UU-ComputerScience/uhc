@@ -172,12 +172,12 @@ SEM GrVal
              lhs . grTrf       = maybe @grTrf (GrVal_Var . (\n->HNmNr n Nothing) . head) @maybeVars
 
 SEM GrExpr
-  | FetchNode FetchField Update Eval Throw  
+  | FetchNode FetchField Eval Throw UpdateUnit
                loc  . maybeVars  = lookup (getNr @nm) @lhs.renameMap
                loc  . newName    = maybe @nm ((\n->HNmNr n Nothing) . head) @maybeVars
   | FetchNode  loc  . grTrf      = GrExpr_FetchNode  @newName
   | FetchField loc  . grTrf      = GrExpr_FetchField @newName @offset @mbTag
-  | Update     loc  . grTrf      = GrExpr_Update @newName @val.grTrf @mbTag
+  | UpdateUnit loc  . grTrf      = GrExpr_UpdateUnit @newName @val.grTrf
   | Eval       loc  . grTrf      = GrExpr_Eval  @newName
   | Throw      loc  . grTrf      = GrExpr_Throw @newName
 %%]

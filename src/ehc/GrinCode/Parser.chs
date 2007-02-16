@@ -59,6 +59,7 @@ pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey 
 
 pExpr           ::   GRIParser GrExpr
 pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
+                <|>  GrExpr_UpdateUnit <$  pKey "updateunit"<*> pGrNm <*> pVal    
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm
                 <|>  GrExpr_FetchNode
@@ -67,8 +68,6 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                                     <$pKey "fetchfield"     <*> pGrNm   <*>  pInt   <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_FetchUpdate
                 					<$  pKey "fetchupdate"  <*> pGrNm   <*>  pGrNm
-                <|>  GrExpr_Update  <$  pKey "update"       <*> pGrNm   <*>  pVal
-                                                                        <*>  (Just <$> pTag `opt` Nothing)
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pGrNmL

@@ -12,7 +12,7 @@ Rename numbered identifiers to their names.
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.NameIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map) export(nameIdents)
+%%[8 hs module {%{GRIN}GrinCode.Trf.NameIdents} import({%{GRIN}GRINCCommon}, Data.Maybe, {%{EH}Base.Common}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map) export(nameIdents)
 
 nameIdents :: IdentNameMap -> GrModule -> GrModule
 nameIdents m grmod = let t        = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -47,14 +47,14 @@ SEM GrTag
   | Var  lhs  .  grTrf  = GrTag_Var (getName' @lhs.names @nm)
 
 SEM GrExpr
-  | App Eval Call FetchNode FetchField Update Throw  
+  | App Eval Call FetchNode FetchField Throw UpdateUnit
                 loc  .  newName  =  getName' @lhs.names @nm
   | App         lhs  .  grTrf    =  GrExpr_App     @newName @argL.grTrf
   | Eval        lhs  .  grTrf    =  GrExpr_Eval    @newName
   | Call        lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
   | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
   | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
-  | Update      lhs  .  grTrf    =  GrExpr_Update  @newName @val.grTrf @mbTag
+  | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate  (getName' @lhs.names @src)(getName' @lhs.names @dst)
   | FFI         lhs  .  grTrf    =  GrExpr_FFI     @nm (map (getName' @lhs.names) @argL) @resTagL.grTrf
   | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
