@@ -94,11 +94,7 @@ data EHCOpts
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenCaseDefault ::  Bool
       ,  ehcOptGenUnbox       ::  Bool
-      ,  ehcOptGenTailCall    ::  Bool
-      ,  ehcOptGenOwnParams   ::  Bool
-      ,  ehcOptGenOwnLocals   ::  Bool
-      ,  ehcOptGenOwnCalls    ::  Bool
-      ,  ehcOptGenAsmSP       ::  Bool
+      ,  ehcOptOwn            ::  Int
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
 
@@ -169,11 +165,7 @@ defaultEHCOpts
       ,  ehcOptGenTrace       =   False
       ,  ehcOptGenCaseDefault =   False
       ,  ehcOptGenUnbox       =   True
-      ,  ehcOptGenTailCall    =   True
-      ,  ehcOptGenOwnParams   =   True
-      ,  ehcOptGenOwnLocals   =   True
-      ,  ehcOptGenOwnCalls    =   True
-      ,  ehcOptGenAsmSP       =   False
+      ,  ehcOptOwn            =   3
       ,  ehcOptGenDebug       =   True
 
       ,  ehcOptShowGrin       =   False
@@ -259,11 +251,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option ""   ["gen-unbox"]        (boolArg optSetGenUnbox)             "unbox int and char (yes)"
-     ,  Option ""   ["gen-tailcall"]     (boolArg optSetGenTailCall)          "jumps for tail calls in C (yes)"
-     ,  Option ""   ["gen-ownparams"]    (boolArg optSetGenOwnParams)         "explicit parameter allocation (yes)"
-     ,  Option ""   ["gen-ownlocals"]    (boolArg optSetGenOwnLocals)         "explicit local allocation (yes)"
-     ,  Option ""   ["gen-owncalls"]     (boolArg optSetGenOwnCalls)          "simulate calling mechanism (yes)"
-     ,  Option ""   ["gen-asmsp"]        (boolArg optSetGenAsmSP)             "use %esp as stack pointer (no)"
+     ,  Option "g"  ["gen-own"]          (OptArg  oOwn "0|1|2|3|4")           "generate own 1=parameters/tailjumps, 2=locals, 3=calls, 4=stack (3)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
 %%]]
@@ -351,6 +339,14 @@ ehcCmdLineOpts
                                                    ("+",_)    -> [TrfAllYes]
                                                    ("-",_)    -> [TrfAllNo]
                                                    _          -> []
+         oOwn        ms  o =  case ms of
+                                Just "0"    -> o { ehcOptOwn     = 0       }
+                                Just "1"    -> o { ehcOptOwn     = 1       }
+                                Just "2"    -> o { ehcOptOwn     = 2       }
+                                Just "3"    -> o { ehcOptOwn     = 3       }
+                                Just "4"    -> o { ehcOptOwn     = 4       }
+                                Nothing     -> o { ehcOptOwn     = 3       }
+                                _           -> o { ehcOptOwn     = 3       }
          oVerbose    ms  o =  case ms of
                                 Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
                                 Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
@@ -384,11 +380,6 @@ oGrinDebug           o   = o { ehcOptGrinDebug      = True }
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
-optSetGenTailCall    o b = o { ehcOptGenTailCall    = b }
-optSetGenOwnParams   o b = o { ehcOptGenOwnParams   = b }
-optSetGenOwnLocals   o b = o { ehcOptGenOwnLocals   = b }
-optSetGenOwnCalls    o b = o { ehcOptGenOwnCalls    = b }
-optSetGenAsmSP       o b = o { ehcOptGenAsmSP       = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 
