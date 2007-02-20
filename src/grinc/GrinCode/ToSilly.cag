@@ -93,7 +93,6 @@ ATTR GrAlt GrAltL [ | | hasAnies USE {||} {False} : {Bool} ]
 ATTR GrPat GrTag  [ | | isAny: {Bool} ]
 ATTR GrTag GrVal  [ | | isUnboxed: {Bool} ]
 
-
 SEM GrTagL
   | Nil            lhs . isEmpty        = True
                    lhs . mbOnlyTagValue = Nothing
@@ -158,13 +157,15 @@ SEM GrBind
 %%[8
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagConstants @evalTagMp)   -- constants
+                                (tagConstants1 (tagConstants2 @ctagsMp) @evalTagMp)    -- constants
                                 @globalL.names              -- variables
                                 ( Function_Function (HNm "initialize") False [] []
                                                     ( @globalL.initStats
-                                                    ++ [ Statement_Assignment Variable_SP (Value_Offset Variable_BP (0+2))
-                                                       , Statement_Return 1
-                                                       ]
+                                                    ++ (if @lhs.optOwn>=1
+                                                         then [ Statement_Assignment Variable_SP (Value_Offset Variable_BP (0+2)) ]
+                                                         else []
+                                                       )
+                                                    ++ [ Statement_Return 1 ]
                                                     )
                                 : @bindL.functions            -- functions
                                 )
@@ -189,7 +190,7 @@ SEM GrBind
 
           expr . numberParameters = length @argNmL
           loc  . locals  = filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet)
-          loc  . nParams      = if @lhs.optOwnParameters then length @argNmL else 0
+          loc  . nParams      = if @lhs.optOwn>=1 then length @argNmL else 0
           
 
 SEM GrExpr
@@ -205,7 +206,7 @@ SEM GrExpr
            lhs.stats   = if @isLastExpr
                           then internal2 "Update" @loc.name @val.values
                                ++ @loc.overwr
-                               ++ yielding "Unit" (@lhs.optOwnParameters || @lhs.optOwnLocals) @val.values @lhs.numberParameters
+                               ++ yielding "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                           else 
                                []
                                -- ++ internal2 "Update" @loc.name @val.values
@@ -214,11 +215,11 @@ SEM GrExpr
                                ++ @loc.overwr                         
 
  | Unit    lhs.stats  = if @isLastExpr
-                          then yielding  "Unit" (@lhs.optOwnParameters || @lhs.optOwnLocals) @val.values @lhs.numberParameters
+                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                           else internal1 "Unit" @lhs.targets @val.values
 
  | FFI     lhs.stats  = if @isLastExpr
-                         then yielding  "FFI" (@lhs.optOwnParameters || @lhs.optOwnLocals) @loc.callres @lhs.numberParameters
+                         then yielding  "FFI" (@lhs.optOwn>=1) @loc.callres @lhs.numberParameters
                          else internal1 "FFI" @lhs.targets @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
@@ -269,31 +270,35 @@ SEM GrExpr
                         
            lhs.localsSet = Set.union (Set.fromList @lhs.targets) @altL.localsSet
 
- | Call    lhs.stats  = if @isLastExpr && @lhs.optJumpTailCalls
+ | Call    lhs.stats  = if @isLastExpr && @lhs.optOwn>=1
                          then [ Statement_Comment ["Call (Tail) "]
                               , Statement_Smart (reverse @argL.values ++ map (Value_Var . Variable_Subs Variable_BP) [1, 0] )
                               , Statement_Assignment  Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2- @loc.nMyParams-2))
                               , Statement_Jump @nm
                               ]
                          else (   Statement_Comment ["Call (Normal)"]
-                              :   (if @lhs.optOwnParameters
+                              :   (if @lhs.optOwn>=1
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
                                                    (  reverse @argL.values
-                                                   ++ [ Value_Label ("retlab"++show @lhs.retNr)
+                                                   ++ [ if @lhs.optOwn>=3 
+                                                         then Value_Label @loc.label
+                                                         else Value_Con (Constant_LiteralInt 0)
                                                       , Value_Cast (Value_Offset Variable_BP 0) True
                                                       ]
                                                    )
                                         ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
                                            , Statement_Call @nm [] 
-                                           , Statement_Label ("retlab"++show @lhs.retNr)
                                            ]
+                                        ++ if @lhs.optOwn>=3
+                                            then [ Statement_Label @loc.label ]
+                                            else []
                                         )
                                    else [Statement_Call @nm @argL.values ]
                                   )
                               ++ [ Statement_Assignment v e
                                  | (v,e) <-zip  [mkVar x  | x <- @lhs.targets]
-                                                ( if @lhs.optOwnParameters || @lhs.optOwnLocals
+                                                ( if @lhs.optOwn>=1
                                                    then map (arrayValue Variable_SP) [-1,-2..]
                                                    else map (arrayValue Variable_RP) [0..]
                                                 )
@@ -303,7 +308,8 @@ SEM GrExpr
 
            loc.nMyParams = @argL.length
            lhs.localsSet = Set.fromList @lhs.targets
-           lhs.retNr   = @lhs.retNr + 1
+           lhs.retNr     = @lhs.retNr + 1
+           loc.label     = "retlab"++show @lhs.retNr
 
  | App     lhs.stats  = [Statement_Comment ["App: SHOULDNT"]]
  | Eval    lhs.stats  = [Statement_Comment ["Eval: SHOULDNT"]]
@@ -377,7 +383,7 @@ SEM GrPat
 
 SEM GrExpr
  | Seq     lhs.tailJumps = @body.tailJumps
- | Call    lhs.tailJumps = @isLastExpr && @lhs.optJumpTailCalls
+ | Call    lhs.tailJumps = @isLastExpr && @lhs.optOwn>=1
  | Case    lhs.tailJumps = @altL.tailJumps
  | * - Seq Call Case
            lhs.tailJumps = False
@@ -423,21 +429,11 @@ ATTR GrAGItf
   [ opts : {EHCOpts} | | ]
 
 ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
-  [ optJumpTailCalls : {Bool} -- when True, tail calls are implemented with a goto
-    optOwnParameters : {Bool} -- when True, parameter passing is via the Stack datastructure
-    optOwnLocals     : {Bool} -- when True, local variables are allocated on the Stack datastructure
-  | | ]
+  [ optOwn : {Int}   | | ]
 
 SEM GrAGItf
-  | AGItf loc.optOwnParameters   = ehcOptGenOwnParams @lhs.opts
-          loc.optOwnLocals       = ehcOptGenOwnLocals @lhs.opts
-          loc.optOwnCalls        = ehcOptGenOwnCalls  @lhs.opts
-          loc.optGenAsmSP        = ehcOptGenAsmSP     @lhs.opts
-          loc.optJumpTailCalls   = ehcOptGenTailCall  @lhs.opts
-          -- Force some options to imply some others
-          module.optOwnParameters = @loc.optOwnParameters  || @loc.optOwnLocals || @loc.optJumpTailCalls || @loc.optOwnCalls || @loc.optGenAsmSP
-          module.optOwnLocals     =                           @loc.optOwnLocals || @loc.optJumpTailCalls || @loc.optOwnCalls || @loc.optGenAsmSP
-          
+  | AGItf loc.optOwn  = ehcOptOwn @lhs.opts
+
 %%]
 
 
@@ -474,7 +470,7 @@ internal1 what targets values
 internal2 what name values
   =  Statement_Comment [what] 
      :  
-     --Statement_Assignment Variable_Ptr (Value_Var @loc.name) :                -- if this line is enabled, uses option 2 instead of option 1
+     --Statement_Assignment Variable_Ptr (Value_Var @loc.name) :           -- if this line is enabled, uses option 2 instead of option 1
      zipWith Statement_Assignment
              (map (arrayVariab name) [0..])                                -- option 1
              --(map (Variable_Subs Variable_Ptr) [0..])   -- option 2
@@ -549,11 +545,17 @@ arrayValue a i = Value_Var (Variable_Subs a i)
 arrayVariab :: Variable -> Int -> Variable
 arrayVariab a i = Variable_Subs a i
 
-tagConstants :: EvApTagMp -> [(String,Int)]
-tagConstants eas
- = let f ((t,s),k) n = (showGrTag t,n)
-   in  zipWith f eas [0..]
+tagConstants1 :: [(String,Int)] -> EvApTagMp -> [(String,Int)]
+tagConstants1 bs eas
+ = let m = Map.fromList bs
+       f n ((t,s),k) = let nm = showGrTag t
+                       in  maybe (nm,n) (\n2->(nm,n2)) (Map.lookup nm m)
+   in  zipWith f [0..] eas 
 
+tagConstants2 :: CTagsMp -> [(String,Int)]
+tagConstants2 cts
+ = let f n (nm,ct) = ('C' : hsnShowAlphanumeric (ctagNm ct), n)
+   in  concat (map ((zipWith f [0..]).snd) cts)
 
 
 showGrTagCateg :: GrTagCateg -> String

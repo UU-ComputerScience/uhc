@@ -56,7 +56,7 @@ genInfo v p nnf nvf vnf vvf e = case (v,p) of
 ATTR GrExpr [ | | unitInfo : {Maybe GrVal} ]
 
 SEM GrExpr
-  | Unit       loc  .  unitInfo = Just @val.grTrf   -- maybe (Just @val.grTrf) (const Nothing) @mbUpdateNm
+  | Unit       loc  .  unitInfo = Just @val.grTrf
   | * - Unit   loc  .  unitInfo = Nothing
 %%]
 
@@ -65,7 +65,7 @@ SEM GrExpr
 %%% Right Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%%
 
-change terms like '<m>; \x -> unit x' Nothing => '<m>'
+change terms like '<m>; \x -> unit x' => '<m>'
 
 one form possible:
     seq v x (unit x)           => v

@@ -40,23 +40,12 @@ ATTR Statement Statements Alternative Alternatives Variable Variables Value Valu
 ATTR Statement Statements Alternative Alternatives Variable [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 ATTR Statement Statements Alternative Alternatives [ numberParameters : {Int} | | ]
 ATTR Statement  [ | | trfStats: {[Statement]} ]
-
-ATTR Function Functions
-  [ optJumpTailCalls : {Bool} -- when True, tail calls are implemented with a goto
-    optOwnParameters : {Bool} -- when True, parameter passing is via the Stack datastructure
-    optOwnLocals     : {Bool} -- when True, local variables are allocated on the Stack datastructure
-  | | ]
+ATTR Function Functions  [ optOwn  : {Int}  | | ]
 
 SEM SilModule
-  | SilModule
-          loc.optOwnParameters   = ehcOptGenOwnParams @lhs.opts
-          loc.optOwnLocals       = ehcOptGenOwnLocals @lhs.opts
-          loc.optOwnCalls        = ehcOptGenOwnCalls  @lhs.opts
-          loc.optGenAsmSP        = ehcOptGenAsmSP     @lhs.opts
-          loc.optJumpTailCalls   = ehcOptGenTailCall  @lhs.opts
-          -- Force some options to imply some others
-          functions.optOwnParameters = @loc.optOwnParameters  || @loc.optOwnLocals || @loc.optJumpTailCalls || @loc.optOwnCalls || @loc.optGenAsmSP
-          functions.optOwnLocals     =                           @loc.optOwnLocals || @loc.optJumpTailCalls || @loc.optOwnCalls || @loc.optGenAsmSP
+  | SilModule  loc.optOwn  = ehcOptOwn @lhs.opts
+
+
 %%]
 
 %%[8
@@ -76,21 +65,21 @@ SEM Function
   | Function  lhs . trf    =  Function_Function @name
                                                 @tailJumps
                                                 -- parameters
-                                                (if @lhs.optOwnParameters then [] else @parameters)
+                                                (if @lhs.optOwn>=1 then [] else @parameters)
                                                 -- locals
-                                                (if @lhs.optOwnLocals     
+                                                (if @lhs.optOwn>=2
                                                  then [] 
-                                                 else if @lhs.optOwnParameters then @loc.newlocals ++ @parameters else @loc.newlocals
+                                                 else if @lhs.optOwn>=1 then @loc.newlocals ++ @parameters else @loc.newlocals
                                                 )
                                                 -- body
-                                                (  (if   @lhs.optOwnParameters && not @lhs.optOwnLocals && not (null @parameters)
+                                                (  (if   @lhs.optOwn==1 && not (null @parameters)
                                                     then Statement_Comment ["Parameters"]
                                                          : zipWith Statement_Assignment
                                                                    (map (Variable_Param undefined) @parameters)
                                                                    (map (Value_Var . Variable_Subs Variable_SP) [2..])
                                                     else []
                                                    )
-                                                ++ (if   @loc.ownAllocation
+                                                ++ (if   @lhs.optOwn>=1
                                                     then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.distance))
                                                          -- , Statement_Comment (map (showEmbedPair @loc.distance @lhs.hptMap) @loc.embedList)
                                                          ]
@@ -102,17 +91,14 @@ SEM Function
 SEM Function
   | Function  body . numberParameters = length @parameters
               loc  . distance = @loc.nLocals + @loc.roomForCcalls
-              loc  . nLocals      = if @lhs.optOwnLocals     then length @loc.newlocals   else 0
-              --loc  . nParams      = if @lhs.optOwnParameters then length @loc.params     else 0
+              loc  . nLocals      = if @lhs.optOwn>=2  then length @loc.newlocals   else 0
               loc  . roomForCcalls= 2
-              body . embed    = (if @lhs.optOwnLocals then (embed2 @loc.distance) else embed) @loc.embedMap
-              -- loc  . newlocals  =  @locals
+              body . embed    = (if @lhs.optOwn>=2 then (embed2 @loc.distance) else embed) @loc.embedMap
               loc  . newlocals  =  Set.toList (Set.difference @body.localsSet (Set.fromList @parameters))
               loc  . embedMap = Map.fromList @loc.embedList
               loc  . embedList = @loc.paramsTup ++ @loc.localsTup
               loc  . localsTup = zipWith (makeEmbedTupel Variable_Local) [1..] @loc.newlocals
               loc  . paramsTup = zipWith (makeEmbedTupel Variable_Param) [1..] @parameters
-              loc  . ownAllocation = @lhs.optOwnParameters || @lhs.optOwnLocals
 
 SEM Variable
   | Unembedded      lhs . localsSet = Set.singleton @name
