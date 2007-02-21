@@ -21,7 +21,7 @@ ATTR Expr AllDecl [ | | gathChrStore USE {`chrStoreUnion`} {emptyCHRStore}: Scop
 
 %%[9.initChrStore
 SEM AGItf
-  | AGItf       loc         .   initChrStore        =   initScopedPredStore @chrFIIn
+  | AGItf       loc         .   initChrStore        =   initScopedPredStore
 %%]
 
 %%[9
@@ -36,7 +36,12 @@ SEM AGItf
 
 %%[9
 ATTR NTPrf [ predScope: PredScope | | ]
-ATTR AllCase AllExpr [ predSameScopeCounter: Int | | ]
+ATTR
+  AllCase AllExpr
+%%[[97
+  AllPatExpr
+%%]]
+    [ predSameScopeCounter: Int | | ]
 ATTR AllDecl [ | predSameScopeCounter: Int | ]
 %%]
 
@@ -47,7 +52,10 @@ SEM AGItf
 
 SEM Expr
   | Let         decls       .   predSameScopeCounter=   if @lhs.isFirstLet then 0 else @lhs.predSameScopeCounter
-  | Lam LamImpl (_,loc.predScope)                   =   pscpEnter 0 @lhs.predScope
+  | Lam LamImpl AppTop
+                (_,loc.predScope)                   =   pscpEnter 0 @lhs.predScope
+  | * - Lam LamImpl AppTop
+                loc			.	predScope          	=	@lhs.predScope
 
 SEM Decl
   | Class Instance
@@ -63,6 +71,8 @@ SEM Decl
 %%% CHREnv
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+The env from the bottom of a let sequence is required because we need (e.g.) type synonyms info.
+
 %%[9
 SEM AGItf
   | AGItf       loc         .   chrFIIn             =   @expr.chrFIIn {fiUniq = @lUniq}
@@ -74,13 +84,7 @@ ATTR Expr [ | | chrFIIn: FIIn ]
 SEM Expr
   | Let         loc         .   chrFIIn             =   @body.chrFIIn
   | * - Let     loc         .   chrFIIn             =   FIIn strongFIOpts uidStart
-                                                             (emptyFE
-                                                                { fePredScope = @lhs.predScope
-                                                                , feEHCOpts = @lhs.opts
-%%[[11
-                                                                , feTyGam = @lhs.tyGam
-%%]]
-                                                                })
+                                                             @fe
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +92,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRClassDecl Pred RedInfo)} ]
+ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRClassDecl Pred RedHowAnnotation)} ]
 %%]
 
 %%[9
@@ -96,7 +100,7 @@ SEM Decl
   | Class       loc         .   chrClassDecl        =   let off n = tyRecOffset n @clsTyRec
                                                         in  ( map tyPred @ctxtPrTyL
                                                             , tyPred @hdPrTy
-                                                            , zipWith (\p n -> mkRedInfo (RedHow_BySuperClass n (off n) @dictTag)) @ctxtPrTyL @supClsNmL
+                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) @ctxtPrTyL @supClsNmL
                                                             )
                 lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
 
@@ -109,23 +113,24 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllDecl Expr [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedInfo PredScope)} ]
+ATTR AllDecl Expr [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
 %%]
 
 %%[9
 SEM Decl
   | Instance    loc         .   chrInstDecl         =   let (cx,hd) = tyArrowArgsRes @tyPrExpr.ty
+                                                            hdPr = tyPred hd
                                                         in  ( map tyPred cx
-                                                            , tyPred hd
-                                                            , mkRedInfo (RedHow_ByInstance @dictNm)
+                                                            , hdPr
+                                                            , RedHow_ByInstance @dictNm hdPr initPredScope
                                                             , @lhs.predScope
                                                             )
                 lhs         .   chrInstDeclSq       =   if @inclForElim then Seq.singleton @chrInstDecl else Seq.empty
   | InstanceIntro
-                loc         .   chrInstDecl         =   let 
+                loc         .   chrInstDecl         =   let pr = tyPred @prExpr.ty
                                                         in  ( []
-                                                            , tyPred @prExpr.ty
-                                                            , mkRedInfo (RedHow_ByInstance @dictNm)
+                                                            , pr
+                                                            , RedHow_ByInstance @dictNm pr initPredScope
                                                             , @lhs.predScope
                                                             )
                 lhs         .   chrInstDeclSq       =   Seq.singleton @chrInstDecl

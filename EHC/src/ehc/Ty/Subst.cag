@@ -10,7 +10,7 @@
 %%[2 hs module {%{EH}Ty.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr}) export(tyAppCnstr)
 %%]
 
-%%[2.WRAPPER import({Ty/AbsSyn})
+%%[2.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 

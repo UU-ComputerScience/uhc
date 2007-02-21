@@ -4,123 +4,246 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.Heuristics} import({%{EH}CHR},{%{EH}CHR.Constraint})
+%%[9 module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsIn},{%{EH}CHR},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
-%%[9 import(Data.List(nub, maximumBy),Data.Maybe)
+%%[9 import(Data.List(nub, maximumBy, partition),Data.Maybe)
 %%]
 
-%%[9 import(EH.Util.AGraph)
+%%[9 import(UU.Pretty,EH.Util.AGraph,EH.Util.Utils,EH.Util.PPUtils)
 %%]
-
-{-# OPTIONS -fglasgow-exts #-}
-module Heuristics
-(  toHeuristic
-,  updateUnresolved
-)
-where
 
 %%[9 export(Heuristic,SHeuristic)
-type Heuristic p info = [info] -> Alts p info -> [(info, Evidence p info)]
+type Heuristic p info = [info] -> HeurAlts p info -> [(info, Evidence p info)]
 
-type SHeuristic p info = Alts p info -> Evidence p info
+type SHeuristic p info = HeurAlts p info -> Evidence p info
 %%]
 
-------------------------------------------------------------------
--- Alternatives: Each alternative for reducing a predicate is
--- represented in the datatype Alts, because Haskell is lazy this
--- tree is only evaluated when needed.
-------------------------------------------------------------------
-%%[9 export(Alts(..),Red(..))
-data Alts  p  info = Alts  { predicate  :: p,       alts     :: [Red p info]    }
-data Red   p  info = Red   { info       :: info,    context  :: [Alts p info]   }
-%%]
- 
-------------------------------------------------------------------
--- Representation of evidence
-------------------------------------------------------------------
-%%[9 export(Evidence(..))
-data Evidence  p info  =  Unresolved p
-                       |  Proof p  info [Evidence p info]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alternatives: Each alternative for reducing a predicate is
+%%% represented in the datatype HeurAlts, because Haskell is lazy this
+%%% tree is only evaluated when needed.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(HeurAlts(..),HeurRed(..))
+data HeurAlts  p  info = HeurAlts  { redaltsPredicate  :: p,       redaltsAlts  :: [HeurRed p info]    }
+data HeurRed   p  info = HeurRed   { redInfo           :: info,    redContext   :: [HeurAlts p info]   }
 %%]
 
 %%[9
-instance (Show info, Show p) => Show (Evidence p info) where
-  show (Proof _ info []) = show info
-  show (Proof _ info es) = show info ++ " " ++ show es
-  show (Unresolved p)    = "unresolved: " ++ show p
-%%]
+instance Show (HeurAlts  p  info) where
+  show _ = "HeurAlts"
 
-instance Substitutable p v s => Substitutable (Evidence  p info) v s where
-  ftv (Unresolved  p)        = ftv p
-  ftv (Proof p _ es)         = ftv p ++ concatMap ftv es
+instance Show (HeurRed  p  info) where
+  show _ = "HeurRed"
+%%]
  
-  substitute s (Unresolved  p)  = Unresolved   (substitute s p)
-  substitute s (Proof  p i es)  = Proof (substitute s p) i (map (substitute s) es)  
+%%[9
+instance (PP p, PP info) => PP (HeurAlts  p  info) where
+  pp x = "HeurAlts" >#< redaltsPredicate x >#< ppBracketsCommasV (redaltsAlts x)
 
-%%[9 export(unresolved)
-unresolved :: Eq p => Evidence p info -> [p]
-unresolved (Unresolved p)  = [p]
-unresolved (Proof _ _ ps)  = nub $ concatMap unresolved ps
+instance (PP p, PP info) => PP (HeurRed  p  info) where
+  pp x = "HeurRed" >#< redInfo x >#< ppBracketsCommasV (redContext x)
 %%]
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Making a Heuristic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-updateUnresolved :: Eq p => Evidence p info -> Evidence p info -> Evidence p info
-updateUnresolved e                 (Unresolved _)  = e
-updateUnresolved (Proof p i qs)    e               = Proof p i [updateUnresolved q e | q <- qs] 
-updateUnresolved u@(Unresolved q)  e@(Proof p _ _)
-           | q == p     = e
-           | otherwise  = u
-
+%%[9 export(toHeuristic)
 toHeuristic :: SHeuristic p info -> Heuristic p info
-toHeuristic h infos alts = zip infos (repeat $ h alts)
-
------------------------------------------------------------------------------
--- Try combinator
------------------------------------------------------------------------------
-%%[9 export(try,toEvidence)
-try :: Eq p => SHeuristic p info -> SHeuristic p info -> SHeuristic p info
-try f g a  | null (unresolved e)    = e
-           | otherwise              = g a
-           where e = f a
-
-toEvidence :: (Alts p info -> Alts p info) -> SHeuristic p info
-toEvidence f a = rec (f a)
-  where  rec (Alts p [])            =  Unresolved p
-         rec (Alts p [Red i alts])  =  Proof p i (map rec alts)
-         rec _                      =  error "Alternatives left"
+toHeuristic h infos alts
+  = zip infos (repeat ev)
+  where ev = h alts
 %%]
 
------------------------------------------------------------------------------
--- Local / Binary choice
------------------------------------------------------------------------------
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Try combinator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(heurTry)
+heurTry :: Eq p => SHeuristic p info -> SHeuristic p info -> SHeuristic p info
+heurTry f g a  | null (evidUnresolved ev) = ev
+               | otherwise                = g a
+               where ev = f a
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion to evidence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(toEvidence)
+toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
+toEvidence f a = rec (f a)
+  where  rec (HeurAlts p [])                 =  Evid_Unresolved p
+         rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (red r)
+         rec (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
+         red (HeurRed _ alts)                =  map rec alts
+         reds rs                             =  map red rs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Local / Binary choice
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(localChoice,binChoice)
 localChoice :: Eq info => (p -> [info] -> [info]) -> SHeuristic p info  
-localChoice choose (Alts p reds) = 
-  let  redinfos  = choose p (map info reds)
-  in   case filter ((`elem` redinfos) . info) reds of
-         []            -> Unresolved p
-         [(Red i rs)]  -> Proof p i (map (localChoice choose) rs)
-         _             -> error "Alternatives left"
+localChoice choose (HeurAlts p reds) = 
+  case filter ((`elem` redinfos) . redInfo) reds of
+    []                  -> Evid_Unresolved p
+    [r@(HeurRed i _)]   -> Evid_Proof p i (ch r)
+    rs                  -> Evid_Ambig p (chs rs)
+  where redinfos          = choose p (map redInfo reds)
+        ch (HeurRed _ rs) = map (localChoice choose) rs
+        chs rs            = map ch rs
 
-binChoice :: Eq info => (info -> info -> Ordering) -> SHeuristic p info
+binChoice :: Eq info => (info -> info -> PartialOrdering) -> SHeuristic p info
 binChoice order = localChoice (const local)
   where  local []  = []
-         local is  = [maximumBy order is]
+         local is  = [mx]
+                   where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
 %%]
 
------------------------------------------------------------------------------
--- Heuristic that only selects solvable alternatives (using backtracking)
------------------------------------------------------------------------------
+%%[9
+heurChoose :: (x -> x -> PartialOrdering) -> (x,[(x,x)]) -> x -> (x,[(x,x)])
+heurChoose cmp (x,eqPairs) y
+  = case cmp x y of
+      P_LT -> (y,[])
+      P_GT -> (x,eqPairs)
+      P_EQ -> (x,[(x,y)]++eqPairs)
+
+heurMaximumBy :: (x -> x -> PartialOrdering) -> [x] -> (x,[(x,x)])
+heurMaximumBy cmp (x:xs)
+  = foldl (heurChoose cmp) (x,[]) xs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Local / Binary choice with reduction context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+contextChoice :: (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p info
+contextChoice choose (HeurAlts p reds) = 
+  case choose p reds of
+         []                 -> Evid_Unresolved p
+         [r@(HeurRed i _)]  -> Evid_Proof p i (ch r)
+         rs                 -> Evid_Ambig p (chs rs)
+  where ch (HeurRed _ rs) = map (contextChoice choose) rs
+        chs rs            = map ch rs
+         
+contextBinChoice :: (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
+contextBinChoice order = contextChoice (const local)
+  where  local []  = []
+         local is  = [mx]         
+                   where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Heuristic that only selects solvable alternatives (using backtracking)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(solvable)
-solvable :: Alts p info -> Alts p info
-solvable (Alts p rs) = Alts p (catMaybes (map rec rs))
-   where rec (Red info reds)  | all hasAlts reds'  = Just (Red info  reds') 
-                              | otherwise          = Nothing
-                              where reds' = map solvable reds
+solvable :: HeurAlts p info -> HeurAlts p info
+solvable (HeurAlts p rs) = HeurAlts p (catMaybes (map rec rs))
+   where rec (HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
+                                  | otherwise          = Nothing
+                                  where reds' = map solvable reds
 
-hasAlts :: Alts p info -> Bool
-hasAlts (Alts _ [])  = False
-hasAlts _            = True
+hasAlts :: HeurAlts p info -> Bool
+hasAlts (HeurAlts _ [])  = False
+hasAlts _                = True
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predefined heuristics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+specificness :: FIIn -> Pred -> Pred -> PartialOrdering
+specificness env p q = 
+  case  chrMatchTo env p q of 
+    Nothing  -> P_LT
+    Just _   -> case  chrMatchTo env q p of
+                  Nothing  -> P_GT
+                  Just _   -> P_EQ
+%%]
+
+%%[9 export(heurHaskell98)
+anncmpHaskell98 :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+anncmpHaskell98 env ann1 ann2
+  = case (ann1,ann2) of
+      (RedHow_ByInstance   _ p s, RedHow_ByInstance   _ q t)  ->  case pscpCmpByLen s t of
+                                                                    EQ   -> specificness env p q
+                                                                    ord  -> toPartialOrdering ord
+      (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
+      (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
+      (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
+      (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
+      (RedHow_Assumption     _ _, _                        )  ->  P_GT
+      (_                        , RedHow_Assumption     _ _)  ->  P_LT
+      (RedHow_ByScope           , _                        )  ->  P_GT
+      (_                        , RedHow_ByScope           )  ->  P_LT
+      (RedHow_ProveObl       _ _, _                        )  ->  P_GT
+--      (_                        , RedHow_ProveObl       _ _)  ->  P_LT
+
+heurHaskell98 :: FIIn -> Heuristic p RedHowAnnotation
+heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
+%%]
+
+%%[9 export(heurGHC)
+anncmpGHCBinSolve :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+anncmpGHCBinSolve env ann1 ann2
+  = case (ann1,ann2) of
+      (RedHow_Assumption     _ _, _                        )  ->  P_GT
+      (_                        , RedHow_Assumption     _ _)  ->  P_LT
+      (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
+      (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
+      (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
+      (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
+      (RedHow_ByScope           , _                        )  ->  P_GT
+      (_                        , RedHow_ByScope           )  ->  P_LT
+      (RedHow_ProveObl       _ _, _                        )  ->  P_GT
+--      (_                        , RedHow_ProveObl       _ _)  ->  P_LT
+
+ghcSolve :: Eq p => FIIn -> SHeuristic p RedHowAnnotation
+ghcSolve env = binChoice (anncmpGHCBinSolve env)
+
+ghcLocalReduce :: a -> [RedHowAnnotation] -> [RedHowAnnotation]
+ghcLocalReduce _  reds =  let  p (RedHow_BySuperClass _ _ _)  = True
+                               p _                            = False
+                          in   filter p reds
+
+ghcReduce :: Eq p => SHeuristic p RedHowAnnotation
+ghcReduce = localChoice ghcLocalReduce
+
+heurGHC :: Eq p => FIIn -> Heuristic p RedHowAnnotation
+heurGHC env
+  = toHeuristic
+    $ heurTry (ghcSolve env)
+              ghcReduce
+%%]
+
+%%[9 export(heurScopedEHC)
+anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
+anncmpEHCScoped env ann1 ann2
+  = case (ann1,ann2) of
+      (HeurRed (RedHow_ByInstance  _ p  s) _, HeurRed (RedHow_ByInstance  _ q  t) _)  ->  case pscpCmpByLen s t of
+                                                                                            EQ   -> specificness env p q
+                                                                                            ord  -> toPartialOrdering ord
+      (HeurRed (RedHow_ByInstance  _ _  _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
+      (HeurRed (RedHow_BySuperClass _ _ _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_BySuperClass _ _ _) _)  ->  P_LT
+      (HeurRed (RedHow_Assumption     _ _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_Assumption     _ _) _)  ->  P_LT
+      (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
+
+heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC env = toHeuristic $ contextBinChoice (anncmpEHCScoped env)
+%%]
+
+%%[9
+btHeuristic :: Heuristic p RedHowAnnotation
+btHeuristic = toHeuristic $ toEvidence solvable
+%%]
+

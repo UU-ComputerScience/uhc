@@ -117,6 +117,10 @@ instance Substitutable PredOcc TyVarId Cnstr where
   s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) (s |=> id) (s |=> sc)
   ftv    (PredOcc pr id sc)  = unions [ftv pr,ftv id,ftv sc]
 
+instance Substitutable CHRPredOcc TyVarId Cnstr where
+  s |=>  (CHRPredOcc pr sc)  = CHRPredOcc (s |=> pr) (s |=> sc)
+  ftv    (CHRPredOcc pr sc)  = unions [ftv pr,ftv sc]
+
 instance Substitutable Impls TyVarId Cnstr where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
   ftv    i  =  ftv (Ty_Impls i)

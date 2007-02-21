@@ -147,6 +147,7 @@ DATA Impls
   | Cons        iv              : {ImplsVarId}
                 pr              : Pred
                 pv              : {PredOccId}
+                psc             : {PredScope}
                 tl              : Impls
   | Nil
 %%]

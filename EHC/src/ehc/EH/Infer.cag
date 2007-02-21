@@ -851,3 +851,9 @@ SEM AGItf
 SEM Expr
   | Let			loc			.	isFirstLet			=	False
 %%]
+
+%%[97
+SEM PatExpr
+  | Expr       	loc         .   isFirstLet          =   True
+
+%%]

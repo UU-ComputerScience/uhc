@@ -1,0 +1,51 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred occurrence gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR NTPrf [ | | gathCnstrMp USE {`cnstrMpUnion`} {Map.empty}: CHRPredOccCnstrMp ]
+
+SEM Expr
+  | IConst CConst Var Con
+                lhs         .   gathCnstrMp         =   foGathCnstrMp @fo_
+  | App         lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToProveCnstrMp $ @prOccL, @func.gathCnstrMp, @arg.gathCnstrMp]
+  | TypeAs      lhs         .   gathCnstrMp         =   cnstrMpUnions [foGathCnstrMp @fo_, foGathCnstrMp @fo_fitDown, @expr.gathCnstrMp]
+  | Let         loc         .   gathCnstrMp         =   @toProveElsewhereCnstrMp -- for now
+  | Lam LamImpl lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToAssumeCnstrMp @knPrL,@body.gathCnstrMp]
+  | AppTop      lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToAssumeCnstrMp @knPrL,@expr.gathCnstrMp]
+%%]
+
+%%[10
+SEM Expr
+  | Sel         lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToProveCnstrMp @prOccL, @expr.gathCnstrMp]
+  | Rec         lhs         .   gathCnstrMp         =   cnstrMpUnions [foGathCnstrMp @fo_, @recExpr.gathCnstrMp]
+
+SEM RecExpr
+  | Ext Upd     lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToProveCnstrMp @prOccL, @recExpr.gathCnstrMp, @expr.gathCnstrMp]
+
+SEM RecPatExpr
+  | Ext         lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToProveCnstrMp @prOccL, @recPatExpr.gathCnstrMp, @patExpr.gathCnstrMp]
+%%]
+
+%%[97
+SEM PatExpr
+  | Expr        lhs         .   gathCnstrMp         =   cnstrMpUnions [foGathCnstrMp @fo_, @expr.gathCnstrMp]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Proving (predicates) via CHR's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | Let         loc         .   toProveCnstrMp      =   @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
+                            .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
+                                                    =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
+                            .   ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),chrSolveState)
+                                                    =   chrSimplifyToEvidence (@chrFIIn {fiUniq = @lUniq4}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp
+                            .   (chrSolveRemCnstrMp2,chrSolveEvidMp2)
+                                                    =	patchUnresolvedWithAssumption (@chrFIIn {fiUniq = @lUniq5}) @chrSolveRemCnstrMp @chrSolveEvidMp
+                            .   (chrSolveDoneConstraints,chrSolveTrace)
+                                                    =   (chrSolveStateDoneConstraints @chrSolveState,chrSolveStateTrace @chrSolveState)
+%%]
+

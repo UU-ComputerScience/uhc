@@ -214,6 +214,12 @@ SEM Err
   | MalformedPred       lhs     .  pp   =   ppMsgErr    ("Type cannot be parsed as context")
                                                         (    "type:" >#< @pp
                                                         )
+  | NoMostSpecificPred  lhs     .  pp   =   ppMsgErr    "No most specific predicate can be chosen between"
+                                                        (    "preds:" >#< vlist [@pred1,@pred2]
+                                                        )
+  | EvidenceAltsLeft    lhs     .  pp   =   ppMsgErr    "Evidence alternatives left (TBD: more info)"
+                                                        (    empty
+                                                        )
 %%]
 
 %%[12

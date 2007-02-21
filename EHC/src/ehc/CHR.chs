@@ -24,9 +24,9 @@ to avoid explosion of search space during resolution.
 %%[9 export(CHR(..))
 data CHR cnstr guard subst
   = CHR
-      { chrSimpHead     :: [cnstr]
-      , chrPropHead     :: [cnstr]
-      , chrGuard        :: [guard] -- subst -> Maybe subst
+      { chrHead     	:: [cnstr]
+      , chrSimpSz       :: Int			-- length of the part of the head which is the simplification part
+      , chrGuard        :: [guard] 		-- subst -> Maybe subst
       , chrBody         :: [cnstr]
       }
 
@@ -38,20 +38,15 @@ emptyCHRGuard = []
 instance Show (CHR c g s) where
   show _ = "CHR"
 %%]
-    = case chr of
-        (CHR []       ph@(_:_) _ b) -> showString "{ " . showList ph . showString  " ==> " . showList b . showString " }"
-        (CHR sh@(_:_) []       _ b) -> showString "{ " . showList sh . showString " <==> " . showList b . showString " }"
-        (CHR sh@(_:_) ph@(_:_) _ b) -> showString "{ " . showList sh . showString " | " . showList ph . showString " <==> " . showList b . showString " }"
-        (CHR []       []       _ b) -> showString "{ " . showList b  . showString " }"
 
 %%[9
 instance (PP c,PP g) => PP (CHR c g s) where
   pp chr
     = case chr of
-        (CHR []       ph@(_:_) g b) -> ppChr ([ppL ph, pp  "==>"] ++ ppGB g b)
-        (CHR sh@(_:_) []       g b) -> ppChr ([ppL sh, pp "<==>"] ++ ppGB g b)
-        (CHR sh@(_:_) ph@(_:_) g b) -> ppChr ([ppL sh, pp "|", ppL ph, pp "<==>"] ++ ppGB g b)
-        (CHR []       []       g b) -> ppChr (ppGB g b)
+        (CHR h@(_:_)  sz g b) | sz == 0        -> ppChr ([ppL h, pp  "==>"] ++ ppGB g b)
+        (CHR h@(_:_)  sz g b) | sz == length h -> ppChr ([ppL h, pp "<==>"] ++ ppGB g b)
+        (CHR h@(_:_)  sz g b)                  -> ppChr ([ppL (take sz h), pp "|", ppL (drop sz h), pp "<==>"] ++ ppGB g b)
+        (CHR []       _  g b)                  -> ppChr (ppGB g b)
     where ppGB g@(_:_) b@(_:_) = [ppL g, "|" >#< ppL b]
           ppGB g@(_:_) []      = [ppL g >#< "|"]
           ppGB []      b@(_:_) = [ppL b]
@@ -62,7 +57,7 @@ instance (PP c,PP g) => PP (CHR c g s) where
 
 %%[9
 instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
-  toKey chr = toKey $ head $ chrSimpHead chr ++ chrPropHead chr
+  toKey chr = toKey $ head $ chrHead chr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,6 +76,14 @@ class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
 instance (Ord var,Substitutable x var subst) => CHRSubstitutable x var subst where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
+
+%%[9
+instance (CHRSubstitutable c v s,CHRSubstitutable g v s) => CHRSubstitutable (CHR c g s) v s where
+  chrFtv          (CHR {chrHead=h, chrGuard=g, chrBody=b})
+    = Set.unions $ concat [map chrFtv h, map chrFtv g, map chrFtv b]
+  chrAppSubst s r@(CHR {chrHead=h, chrGuard=g, chrBody=b})
+    = r {chrHead = map (chrAppSubst s) h, chrGuard = map (chrAppSubst s) g, chrBody = map (chrAppSubst s) b}
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHREmptySubstitution
@@ -133,8 +136,8 @@ infix   1 <==>, ==>
 infixr  0 |>
 
 (<==>), (==>) :: [c] -> [c] -> CHR c g s
-hs <==>  bs = CHR hs [] emptyCHRGuard bs
-hs  ==>  bs = CHR [] hs emptyCHRGuard bs
+hs <==>  bs = CHR hs (length hs) emptyCHRGuard bs
+hs  ==>  bs = CHR hs 0 emptyCHRGuard bs
 
 (|>) :: CHR c g s -> [g] -> CHR c g s
 chr |> g = chr {chrGuard = chrGuard chr ++ g}

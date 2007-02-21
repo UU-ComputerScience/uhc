@@ -22,6 +22,9 @@
 %%[9 import({%{EH}Core},{%{EH}Core.Subst})
 %%]
 
+%%[9 import({%{EH}Pred.CommonCHR})
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface to result/output
@@ -49,6 +52,7 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
 %%[9
                         ,  foCSubst          ::  CSubst              ,  foPredOccL        ::  [PredOcc]
                         ,  foLCoeL           ::  [Coe]               ,  foRCoeL           ::  [Coe]
+                        ,  foGathCnstrMp     ::  CHRPredOccCnstrMp
 %%]
 %%[10
                         ,  foRowCoeL         ::  AssocL HsName Coe
@@ -68,6 +72,7 @@ emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy    
 %%[9
                         ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
                         ,  foLCoeL           =   []                  ,  foRCoeL           =   []
+                        ,  foGathCnstrMp     =   emptyCnstrMp
 %%]
 %%[10
                         ,  foRowCoeL         =   []

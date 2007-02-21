@@ -85,6 +85,9 @@ instance PP Impls where
 instance PP PredOcc where
   pp po = pp (poPr po) >|< "/" >|< pp (poPoi po) >|< "/" >|< pp (poScope po)
 
+instance PP CHRPredOcc where
+  pp po = pp (cpoPr po) >|< pp (cpoScope po)
+
 instance PP PredScope where
   pp = pp . show
 %%]
