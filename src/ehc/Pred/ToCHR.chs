@@ -6,22 +6,23 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr})
+%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Error},{%{EH}Cnstr})
 %%]
 
-%%[9 import(Data.Maybe)
+%%[9 import(Data.Maybe,qualified Data.Map as Map)
 %%]
 
 %%[9 import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Solve})
 %%]
 
-%%[9 import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics})
+%%[9 import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
 %%]
 
 %%[9 import({%{EH}Ty.FitsIn})
 %%]
 
-%%[9 import(EH.Util.AGraph)
+-- debug
+%%[9 import(UU.Pretty,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +31,7 @@ Conversion from Pred to CHR.
 
 %%[9 export(ScopedPredStore)
 type PredStore p g s info = CHRStore p info g s
-type ScopedPredStore = PredStore PredOcc Guard Cnstr RedInfo
+type ScopedPredStore = PredStore CHRPredOcc Guard Cnstr RedHowAnnotation
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,133 +39,17 @@ type ScopedPredStore = PredStore PredOcc Guard Cnstr RedInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(CHRClassDecl,CHRScopedInstanceDecl)
-type CHRClassDecl    		a info 		= ([a], a, [info])
-type CHRInstanceDecl 		a info 		= ([a], a, info)
-type CHRScopedInstanceDecl  a info sc 	= ([a], a, info, sc)
+type CHRClassDecl           a info      = ([a], a, [info])
+type CHRInstanceDecl        a info      = ([a], a, info)
+type CHRScopedInstanceDecl  a info sc   = ([a], a, info, sc)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Conversion/expansion into CHR, initial (test) version
+%%% Info to Evidence map for CHRPredOcc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
------------------------------------------------------------------------------
--- Functions to generate chrs for a list of class declarations
--- and to check the acyclicity of the class hiearchy.
------------------------------------------------------------------------------
-
-%%[9
-%%]
-genChrs :: (CHRMatchable env a s, Ord a, Ord info) => [CHRClassDecl a info] -> [CHRInstanceDecl a info] -> PredStore a g s info
-genChrs classes insts =
-  let classChrs = genClassChrs classes
-      instChrs  = genInstanceChrs insts
-  in  classChrs `chrStoreUnion` instChrs
-
-genClassChrs :: (CHRMatchable env a s, Ord a, Ord info) => [CHRClassDecl a info] -> PredStore a g s info
-genClassChrs clsDecls =
-  let assumeChrs = chrStoreUnions $ map genAssumeChrs clsDecls
-      simplChrs  = chrStoreUnions $ map (genClassSimplChrs' assumeChrs) clsDecls
-  in  assumeChrs `chrStoreUnion` simplChrs
-
-genAssumeChrs :: (CHRMatchable env a s, Ord info) => CHRClassDecl a info -> PredStore a g s info
-genAssumeChrs ([]     , _   , _    ) = emptyCHRStore
-genAssumeChrs (context, head, infos) =
-  let super sClass info = [Assume sClass, Reduction sClass info [head]]
-  in  chrStoreSingletonElem $ [Assume head] ==> concat (zipWith super context infos)
-
--- Versie met evidence
-
-%%[9
-%%]
-genClassSimplChrs' :: (CHRMatchable env a s, Ord a, Ord info) => PredStore a g s info -> CHRClassDecl a info -> PredStore a g s info
-genClassSimplChrs' rules (context, head, infos) =
-  let superClasses = chrSolve' rules (map Assume context)
-      graph        = foldr addReduction emptyAGraph superClasses 
-
-      mapTrans reds subClass = concatMap (transClosure reds subClass)
-
-      transClosure reds par (info, pr@(Red_Pred p)) =
-        let reds'  = Reduction p info [par] : reds
-            pres   = predecessors graph pr
-         in ([Prove head, Prove p] ==> reds')
-            : mapTrans reds' p pres
-
-  in chrStoreFromElems $ mapTrans [] head (zip infos (map Red_Pred context))
-
-%%[9
-%%]
------------------------------------------------------------------------------
--- Chrs for instance declarations
------------------------------------------------------------------------------
-genInstanceChrs :: (CHRMatchable env a s, Ord info) => [CHRInstanceDecl a info] -> PredStore a g s info
-genInstanceChrs =
-  let genSimpl (context, head, info) = chrStoreSingletonElem $ [Prove head] ==> Reduction head info context : map Prove context
-  in  chrStoreUnions . map genSimpl
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Simplification
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-%%]
-{-# OPTIONS -fglasgow-exts #-}
-module Simplification
-     ( Graph
-     , Node (..)
-     , emptyAGraph
-     , addAssumption
-     , addReduction
-     , alternatives
-     )
-where
-
-import qualified Data.Set as Set
-
-import Constraints
-import AGraph
-import Heuristics (Red (..), Alts (..))
-
-%%[9
-data RedNode p
-  =  Red_Pred p
-  |  Red_And [p]
-  deriving (Eq, Ord)
-
-instance Show p => Show (RedNode p) where
-  show (Red_Pred p)    = show p
-  show (Red_And [])    = "True"
-  show (Red_And _ )    = "And"
-
-true  ::  RedNode p
-true  =   Red_And []
-
-type Graph p info = AGraph (RedNode p) info
-    
-------------------------------------------------------------------
--- Constructing a graph from Reduction constraints
-------------------------------------------------------------------
-
-addAssumption :: Ord p => Constraint p info -> [info] -> Graph p info -> Graph p info
-addAssumption (Assume  p)  is  = insertEdges (zip3 (repeat (Red_Pred p)) (repeat true) is) 
-addAssumption _            _   = id
-
-addReduction :: Ord p => Constraint p info -> Graph p info -> Graph p info
-addReduction (Reduction p i [q])  =  insertEdge (Red_Pred p, Red_Pred q  , i)
-addReduction (Reduction p i ps)   =  let  andNd  = Red_And ps
-                                          edges  = map (\q -> (andNd, Red_Pred q, i)) ps
-                                     in   insertEdges ((Red_Pred p, andNd, i) : edges)
-addReduction _                    =  id
-
-------------------------------------------------------------------
--- Generating alternatives from a reduction graph
-------------------------------------------------------------------
-alternatives :: Ord p => Graph p info -> p -> Alts p info
-alternatives gr = recOr
-  where  recOr   p       = Alts  p  (map recAnd  (successors gr (Red_Pred p))) 
-         recAnd  (i, n)  = Red   i  (map recOr   (preds n))
-         preds  n  = case n of
-                       Red_Pred  q   -> [q]
-                       Red_And   qs  -> qs
+%%[9 export(CHRPredOccEvidMp)
+type CHRPredOccEvidMp = InfoToEvidenceMap CHRPredOcc RedHowAnnotation
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,8 +57,8 @@ alternatives gr = recOr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-type MkRes1 =  (ScopedPredStore,([PredOcc],PredOcc))
-type MkResN = (ScopedPredStore,[([PredOcc],PredOcc)])
+type MkRes1 =  (ScopedPredStore,([CHRPredOcc],CHRPredOcc))
+type MkResN = (ScopedPredStore,[([CHRPredOcc],CHRPredOcc)])
 %%]
 
 Variables used in CHR's are implicitly universally quantified for each constraint,
@@ -193,110 +78,152 @@ Hence we can safely use non-unique variables.
 %%]
 
 %%[9 export(initScopedPredStore)
-initScopedPredStore :: FIIn -> ScopedPredStore
-initScopedPredStore env
+initScopedPredStore :: ScopedPredStore
+initScopedPredStore
   = chrStoreFromElems [scopeProve,scopeAssum]
-  where  p1s1         = mkPredOcc pr1 poi1 sc1
-         p1s2         = mkPredOcc pr1 poi1 sc2
-         p1s3         = mkPredOcc pr1 poi1 sc3
+  where  p1s1         = mkCHRPredOcc pr1 sc1
+         p1s2         = mkCHRPredOcc pr1 sc2
+         p1s3         = mkCHRPredOcc pr1 sc3
          scopeProve   = [Prove p1s1, Prove p1s2] 
-                          ==> [Prove p1s3, Reduction p1s1 (mkRedInfo RedHow_ByScope) [p1s3]]
-                           |> [HasCommonScope sc1 sc2 sc3]
+                          ==> [Prove p1s3, Reduction p1s1 RedHow_ByScope [p1s3]]
+                           |> [HasStrictCommonScope sc3 sc1 sc2]
          scopeAssum   = [Prove p1s1, Assume p1s2] 
-                          ==> [Reduction p1s1 (mkRedInfo RedHow_ByScopeA) [p1s3]]
-                            |> [HasCommonScope sc1 sc2 sc3]
+                          ==> [Reduction p1s1 RedHow_ByScope [p1s3]]
+                            |> [HasStrictCommonScope sc3 sc1 sc2]
 %%]
 
 %%[9 export(mkScopedCHR2)
-mkScopedCHR2 :: FIIn -> [CHRClassDecl Pred RedInfo] -> [CHRScopedInstanceDecl Pred RedInfo PredScope] -> ScopedPredStore
+mkScopedCHR2 :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> ScopedPredStore
 mkScopedCHR2 env clsDecls insts
   = chrStoreUnions $ [assumeStore,instStore] ++ simplStores
-  where  (u1:ucls) = mkNewLevUIDL (length clsDecls + 1) $ fiUniq env
-         ((assumeStore,assumePredOccs), (instStore,_)) = mkScopedChrs (env {fiUniq = u1}) clsDecls insts
-         simplStores  = zipWith3 (\u (cx,h) (_,_,i) -> mkClassSimplChrs (env {fiUniq = u}) assumeStore (cx,h,i)) ucls assumePredOccs clsDecls
+  where  ucls = mkNewLevUIDL (length clsDecls) $ fiUniq env
+         ((assumeStore,assumePredOccs), (instStore,_)) = mkScopedChrs clsDecls insts
+         simplStores  = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) assumeStore (cx,h,i)) ucls clsDecls
 
-mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl PredOcc RedInfo -> ScopedPredStore
+mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)
-  = chrStoreFromElems $ mapTrans [] head (zip infos (map Red_Pred context))
-  where superClasses = chrSolve env rules (map Assume context)
-        graph        = foldr addReduction emptyAGraph superClasses
-        head1        = poUpdSc sc1 head
-        head2        = poUpdSc sc2 head
-        head3        = poUpdSc sc3 head
-        byScInfo     = mkRedInfo RedHow_ByScope
+  = chrStoreFromElems $ mapTrans [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
+  where superClasses = chrSolve env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
+        graph        = mkRedGraphFromReductions superClasses
+        head1        = mkCHRPredOcc head sc1
+        head2        = mkCHRPredOcc head sc2
+        head3        = mkCHRPredOcc head sc3
+        byScInfo     = RedHow_ByScope
     
         mapTrans reds subClass = concatMap (transClosure reds subClass)
     
-        transClosure reds par (info, pr@(Red_Pred p))
+        transClosure reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
           = superRule : scopeRule1 : scopeRule2 : rules
-          where super1     = poUpdSc sc1 p
-                super2     = poUpdSc sc2 p
-                super3     = poUpdSc sc3 p
-                superRule  = [Prove head1, Prove p] ==> Prove head1 : reds'
+          where super1     = mkCHRPredOcc super sc1
+                super2     = mkCHRPredOcc super sc2
+                super3     = mkCHRPredOcc super sc3
+                superRule  = [Prove head1, Prove p] ==> reds'
                 scopeRule1 = [Prove head1, Prove super2] 
                                ==> [Prove head3, Reduction head1 byScInfo [head3]]
-                                 |> [HasCommonScope sc1 sc2 sc3]
+                                 |> [HasStrictCommonScope sc3 sc1 sc2]
                 scopeRule2 = [Prove head2, Prove super1] 
                                ==> [Prove super3, Reduction super1 byScInfo [super3]]
-                                 |> [HasCommonScope sc1 sc2 sc3]
+                                 |> [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = Reduction p info [par] : reds
                 rules      = mapTrans reds' p (predecessors graph pr)             
 
-mkScopedChrs :: FIIn -> [CHRClassDecl Pred RedInfo] -> [CHRScopedInstanceDecl Pred RedInfo PredScope] -> (MkResN,MkResN)
-mkScopedChrs env clsDecls insts
+mkScopedChrs :: [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> (MkResN,MkResN)
+mkScopedChrs clsDecls insts
   = ((chrStoreUnions assumeStores,assumePredOccs), instChrs)
-  where [u1,u2] = mkNewLevUIDL 2 $ fiUniq env
-        (assumeStores,assumePredOccs) = unzip $ mapMaybe (mkAssumeChrs (env {fiUniq = u1})) clsDecls 
-        instChrs   = mkInstanceChrs (env {fiUniq = u2}) insts
+  where (assumeStores,assumePredOccs) = unzip $ mapMaybe mkAssumeChrs clsDecls 
+        instChrs   = mkInstanceChrs insts
 
-mkAssumeChrs :: FIIn -> CHRClassDecl Pred RedInfo -> Maybe MkRes1
-mkAssumeChrs env ([]     ,  _  , _    ) = Nothing
-mkAssumeChrs env (context, head, infos) =
-  let (up:uother) = mkNewLevUIDL (length context + 1) $ fiUniq env
-      prThis = mkPredOccCHR up head sc1
+mkAssumeChrs :: CHRClassDecl Pred RedHowAnnotation -> Maybe MkRes1
+mkAssumeChrs ([]     ,  _  , _    ) = Nothing
+mkAssumeChrs (context, head, infos) =
+  let prThis = mkCHRPredOcc head sc1
       super prSuper info = [Assume prSuper, Reduction prSuper info [prThis]]
-      prSuper = zipWith (\u c -> mkPredOccCHR u c sc1) uother context
+      prSuper = map (\c -> mkCHRPredOcc c sc1) context
   in  Just ( chrStoreSingletonElem $ [Assume prThis] ==> concat (zipWith super prSuper infos)
            , (prSuper,prThis)
            )
 
-mkInstanceChrs :: FIIn -> [CHRScopedInstanceDecl Pred RedInfo PredScope] -> MkResN
-mkInstanceChrs env insts
+mkInstanceChrs :: [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> MkResN
+mkInstanceChrs insts
   = (chrStoreUnions instStores,instChrs)
-  where us = mkNewLevUIDL (length insts) $ fiUniq env
-        (instStores,instChrs) = unzip $ zipWith (\u i -> mkInstanceChr (env {fiUniq = u}) i) us insts
+  where (instStores,instChrs) = unzip $ map mkInstanceChr insts
 
-mkInstanceChr :: FIIn -> CHRScopedInstanceDecl Pred RedInfo PredScope -> MkRes1
-mkInstanceChr env (context, hd, i, s)
+mkInstanceChr :: CHRScopedInstanceDecl Pred RedHowAnnotation PredScope -> MkRes1
+mkInstanceChr (context, hd, i, s)
   = ( chrStoreSingletonElem
       $ [Prove constraint]
           ==> Reduction constraint i body : map Prove body
             |> [sc1 `IsVisibleInScope` s]
     , (body,constraint)
     )
-  where (up:uother) = mkNewLevUIDL (length context + 1) $ fiUniq env
-        constraint = mkPredOcc hd poi1 sc1
-        body = zipWith (\u p -> mkPredOccCHR u p sc1) uother context
+  where constraint = mkCHRPredOcc hd sc1
+        body = map (\p -> mkCHRPredOcc p sc1) context
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CHREnv, additional info required for CHR solving
+%%% Evidence construction from Constraint reduction graph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+mkEvidence
+  :: ( Ord p, Ord i
+     , PP i, PP p -- for debugging
+     ) => Heuristic p i -> ConstraintToInfoMap p i -> RedGraph p i
+          -> (ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err])
+mkEvidence heur cnstrMp redGraph
+  = ( (cnstrMp `Map.intersection` remCnstrMp) `Map.union` remCnstrMp
+    , evidMp
+    , err
+    )
+  where (remCnstrMp,evidMp,err)
+          = foldl (\(cm,em,err) c -> let (cm',em',err') = mk c in (cnstrMpUnion cm' cm, evidMpUnion em' em, err' ++ err))
+                  (Map.empty,Map.empty,[])
+            $ Map.toList cnstrMp
+        mk (Prove p, infos)
+          = (remCnstrMp,evidMp,[])
+          where redTrees   = heur infos $ redAlternatives redGraph p
+                evidMp     = foldr (uncurry evidMpInsert) Map.empty redTrees
+                remCnstrMp = cnstrMpFromList
+                             $ concatMap (\(i,t) -> zip (map Prove (evidUnresolved t)) (repeat i))
+                             $ redTrees
+        mk (c, infos)
+          = (cnstrMpFromList $ zip (repeat c) infos,Map.empty,[])
 %%]
-data CHREnv
-  = CHREnv
-  	  { fiUniq		:: UID
-  	  , chrenvFIIn		:: FIIn
-  	  }
+          where (redTrees,err) = heur infos $ (\v -> trp "XX" (p >#< ":" >#< v) v) $ redAlternatives redGraph p
 
-emptyCHREnv :: CHREnv
-emptyCHREnv = mkCHREnvFromFI emptyFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Evidence construction from Constraint reduction graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-mkCHREnv :: FIOpts -> UID -> FIEnv -> CHREnv
-mkCHREnv o u e = mkCHREnvFromFI (emptyFI {fiFIOpts = o, fiUniq = u, fiEnv = e})
+%%[9 export(patchUnresolvedWithAssumption)
+patchUnresolvedWithAssumption :: FIIn -> CHRPredOccCnstrMp -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp)
+patchUnresolvedWithAssumption env unresCnstrMp evidMp
+  = (cnstrMpFromList assumeCnstrs, evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp)
+  where us = mkNewLevUIDL (Map.size unresCnstrMp) $ fiUniq env
+        assumeCnstrs  = zipWith (\(Prove p,_) u -> mkAssumeConstraint (cpoPr p) u (cpoScope p)) (Map.toList unresCnstrMp) us
+        assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
+%%]
 
-mkCHREnvFromFI :: FIIn -> CHREnv
-mkCHREnvFromFI fi = CHREnv (fiUniq fi) fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Simplify (including solving):
+%%% construction of RedGraph, followed by evidence, using some (currently fixed) heuristic
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(chrSimplifyToEvidence)
+chrSimplifyToEvidence
+  :: ( Ord p, Ord i
+     , CHRMatchable FIIn p s, CHRCheckable g s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHREmptySubstitution s
+     , PP g, PP i, PP p -- for debugging
+     ) => FIIn -> CHRStore p i g s -> Heuristic p i -> ConstraintToInfoMap p i -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SolveState p i g s)
+chrSimplifyToEvidence env chrStore heur cnstrInfoMp
+  = (mkEvidence heur cnstrInfoMp redGraph,solveState)
+  where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
+        solveState = chrSolve'' (env {fiUniq = u1}) chrStore $ Map.keys cnstrInfoMp
+        redGraph
+          = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
+            $ mkRedGraphFromAssumes cnstrInfoMp
+%%]
+  = (mkEvidence heur cnstrInfoMp $ trp "ZZ" (ppRedGraph redGraph) $ redGraph,solveState)
 

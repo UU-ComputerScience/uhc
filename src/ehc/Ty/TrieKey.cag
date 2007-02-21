@@ -54,7 +54,10 @@ instance Keyable PredOccId where
   toKey (PredOccId   _ i) = [TK_One TKK_Normal  $ Key_UID i]
 
 instance Keyable PredOcc where
-  toKey po = toKey $ poPr po
+  toKey po = toKey (poPr po)
+
+instance Keyable CHRPredOcc where
+  toKey po = toKey (cpoScope po) ++ toKey (cpoPr po)
 
 %%]
 

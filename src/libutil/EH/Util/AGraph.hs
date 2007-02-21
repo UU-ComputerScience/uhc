@@ -3,7 +3,7 @@
 -------------------------------------------------------------------------
 
 module EH.Util.AGraph 
-  ( AGraph
+  ( AGraph(agraphGraph)
   , insertEdge
   , insertEdges
   , deleteEdge
@@ -20,7 +20,7 @@ import Data.Graph.Inductive.Graphviz  (graphviz')
 
 import Data.Maybe (fromJust)
 
-data AGraph a b = AGr (NodeMap a) (Gr a b)
+data AGraph a b = AGr { agraphNodeMap :: NodeMap a, agraphGraph :: Gr a b}
 
 instance (Show a, Show b) => Show (AGraph a b) where
   show (AGr _ gr) = graphviz' gr

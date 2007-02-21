@@ -8,7 +8,7 @@
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 import(qualified Data.Set as Set)
+%%[9 import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -17,9 +17,9 @@
 
 %%[9 export(Constraint(..))
 data Constraint p info
-  = Prove      		p					-- proof obligation
-  | Assume     		p					-- assumed
-  | Reduction  		p info [p]			-- 'side effect', residual info used by (e.g.) codegeneration
+  = Prove      		{ cnstrPred :: p }														-- proof obligation
+  | Assume     		{ cnstrPred :: p }														-- assumed
+  | Reduction  		{ cnstrPred :: p, cnstrInfo :: info, cnstrFromPreds :: [p] }			-- 'side effect', residual info used by (e.g.) codegeneration
   deriving (Eq, Ord, Show)
 %%]
 
@@ -54,6 +54,28 @@ instance CHRSubstitutable p v s => CHRSubstitutable (Constraint p info) v s wher
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping: constraint -> info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(ConstraintToInfoMap,emptyCnstrMp)
+type ConstraintToInfoMap p info = Map.Map (Constraint p info) [info]
+
+emptyCnstrMp :: ConstraintToInfoMap p info
+emptyCnstrMp = Map.empty
+%%]
+
+%%[9 export(cnstrMpFromList,cnstrMpUnion,cnstrMpUnions)
+cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,i)] -> ConstraintToInfoMap p i
+cnstrMpFromList l = Map.fromListWith (++) [ (c,[i]) | (c,i) <- l ]
+
+cnstrMpUnion :: (Ord p, Ord i) => ConstraintToInfoMap p i -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
+cnstrMpUnion = Map.unionWith (++)
+
+cnstrMpUnions :: (Ord p, Ord i) => [ConstraintToInfoMap p i] -> ConstraintToInfoMap p i
+cnstrMpUnions = Map.unionsWith (++)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -77,7 +99,7 @@ cnstrRequiresSolve _                 = True
 
 %%[9
 instance (PP p, PP info) => PP (Constraint p info) where
-  pp (Prove p) = "Prove" >#< p
-  pp (Assume p) = "Assume" >#< p
-  pp (Reduction p i ps) = "Red" >#< p >#< "<" >#< i >#< "<" >#< ppParensCommas ps
+  pp (Prove     p     ) = "Prove"  >#< p
+  pp (Assume    p     ) = "Assume" >#< p
+  pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppParensCommas ps
 %%]

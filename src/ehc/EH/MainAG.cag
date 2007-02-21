@@ -43,7 +43,7 @@
 %%[9 hs import({%{EH}Core.Subst})
 %%]
 
-%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
+%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve},{%{EH}Pred.EvidenceToCore})
 %%]
 
 %%[12 hs import({%{EH}Ty.MapName})
@@ -78,7 +78,7 @@ WRAPPER AGItf
 %%[8 ag import({EH/ToCore})
 %%]
 
-%%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ProveCHR})
+%%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

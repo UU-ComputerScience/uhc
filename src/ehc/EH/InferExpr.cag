@@ -426,7 +426,7 @@ SEM Expr
   | Lam AppTop LamImpl
                 loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
-                                                            , fePredScope = @lhs.predScope
+                                                            , fePredScope = @predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]

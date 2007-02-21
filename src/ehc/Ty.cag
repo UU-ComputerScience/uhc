@@ -211,31 +211,37 @@ instance Show PredScope where
 
 %%[9 hs export(pscpEnter,pscpLeave)
 pscpEnter :: Int -> PredScope -> (Int,PredScope)
-pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (x:s))
+pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (s ++ [x]))
 
 pscpLeave :: PredScope -> PredScope
-pscpLeave (PredScope_Lev (_:s)) = PredScope_Lev s
+pscpLeave (PredScope_Lev s) = PredScope_Lev $ init s
 %%]
 
-%%[9 hs export(pscpIsVisibleIn,pscpParent,pscpCommon)
+%%[9 hs export(pscpIsVisibleIn,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
-pscpIsVisibleIn (PredScope_Lev sInner) (PredScope_Lev sOuter) = sOuter `isSuffixOf` sInner
+pscpIsVisibleIn (PredScope_Lev sInner) (PredScope_Lev sOuter) = sOuter `isPrefixOf` sInner
 pscpIsVisibleIn _                      _                      = False
 
+pscpCommon :: PredScope -> PredScope -> Maybe PredScope
+pscpCommon (PredScope_Lev s1) (PredScope_Lev s2)
+  = Just $ PredScope_Lev $ commonPrefix s1 s2
+  where commonPrefix (x:xs)  (y:ys)  | x == y     = x : commonPrefix xs ys
+                                     | otherwise  = []
+        commonPrefix _       _                    = []
+pscpCommon _                  _                  
+  = Nothing        
+%%]
 pscpParent :: PredScope -> Maybe PredScope
 pscpParent (PredScope_Lev (_:s)) = Just $ PredScope_Lev s
 pscpParent _                     = Nothing        
 
-pscpCommon :: PredScope -> PredScope -> Maybe PredScope
-pscpCommon (PredScope_Lev s1) (PredScope_Lev s2) = Just $ PredScope_Lev $ reverse $ commonPrefix (reverse s1) (reverse s2)
-                                                 where commonPrefix (x:xs)  (y:ys)  | x == y     = x : commonPrefix xs ys
-                                                                                    | otherwise  = []
-                                                       commonPrefix _       _                    = []
-pscpCommon _                  _                  = Nothing        
+%%[9 hs export(pscpCmpByLen)
+pscpCmpByLen :: PredScope -> PredScope -> Ordering                  
+pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (length s) `compare` (length t)                    
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred occurrence
+%%% Pred occurrence, to be obsolete when fully moved to CHR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs export(PredOcc(..),poId,mkPredOcc)
@@ -259,9 +265,25 @@ mkPredOccCHR :: UID -> Pred -> PredScope -> PredOcc
 mkPredOccCHR u p sc = PredOcc p (emptyPredOccId {poiId = u}) sc
 %%]
 
-%%[9 hs export(poUpdSc)
-poUpdSc :: PredScope -> PredOcc -> PredOcc
-poUpdSc sc po = po {poScope = sc}
+%%[9 hs export(poUpdPoiSc)
+poUpdPoiSc :: PredOccId -> PredScope -> PredOcc -> PredOcc
+poUpdPoiSc poi sc po = po {poPoi = poi, poScope = sc}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR Pred occurrence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs export(CHRPredOcc(..),mkCHRPredOcc)
+data CHRPredOcc
+  =  CHRPredOcc
+       { cpoPr               :: Pred
+       , cpoScope			 :: PredScope
+       }
+  deriving (Show,Eq,Ord)
+
+mkCHRPredOcc :: Pred -> PredScope -> CHRPredOcc
+mkCHRPredOcc p sc = CHRPredOcc p sc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -813,9 +835,9 @@ tyImpls :: Ty -> Impls
 tyImpls (Ty_Impls i) = i
 
 implsPredsTail :: Impls -> ([PredOcc],Impls)
-implsPredsTail (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail t
-                                         in   (mkPredOcc p pv initPredScope : p',mi)	-- scope for now
-implsPredsTail t                      =  ([],t)
+implsPredsTail (Impls_Cons v p pv sc t)  =  let  (p',mi) = implsPredsTail t
+                                            in   (mkPredOcc p pv sc : p',mi)	-- scope for now
+implsPredsTail t                         =  ([],t)
 
 implsPredsMbTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
 implsPredsMbTail i =  case implsPredsTail i of

@@ -125,6 +125,9 @@ DATA Err
                         decls      : {AssocL IdOccKind [HsName]}
   | ValWithoutSig       nmL        : {[HsName]}
   | MalformedPred       pp         : {PP_Doc}
+  | NoMostSpecificPred  pred1      : {Pred}
+                        pred2      : {Pred}
+  | EvidenceAltsLeft
 %%]
 
 %%[12

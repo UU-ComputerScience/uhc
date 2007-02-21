@@ -947,7 +947,7 @@ pExpressionLayout :: HSParser Expression
 pExpressionLayout
   =   pExpressionApp
 %%[[5
-  <|> (Expression_Case . mkRange1) <$> pCASE <*> pExpression <* pOF <*> pAlternatives
+  <|> (Expression_Case . mkRange1) <$> pCASE <*> pExpression <* pOptSEMISeparator <* pOF <*> pAlternatives
 %%]]
 %%[[9
   <|> pExpressionDo
@@ -1011,7 +1011,7 @@ pExpressionNoLetPrefix :: HSParser (Expression -> Expression)
 pExpressionNoLetPrefix
   =   (Expression_Negate . mkRange1) <$> pMINUS
 %%[[5
-  <|> (Expression_If . mkRange1) <$> pIF <*> pExpression <* pTHEN <*> pExpression <* pELSE
+  <|> (Expression_If . mkRange1) <$> pIF <*> pExpression <* pOptSEMISeparator <* pTHEN <*> pExpression <* pOptSEMISeparator <* pELSE
 %%]]
   <|> pLAM <**> pLamArgs
   <?> "pExpressionNoLetPrefix"
@@ -1196,8 +1196,15 @@ pSelector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-commas :: HSParser Token 
+commas :: HSParser Token
 commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr1 (tokConcat,tokEmpty) pCOMMA
+%%]
+
+The separator used for after conditional+then expressions in an if-then-else in a do.
+
+%%[5
+pOptSEMISeparator :: HSParser (Maybe ())
+pOptSEMISeparator = pMb (pSeparator <|> () <$ pSEMI)
 %%]
 
 %%[1
