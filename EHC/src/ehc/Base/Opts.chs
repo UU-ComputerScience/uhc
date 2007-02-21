@@ -345,6 +345,7 @@ ehcCmdLineOpts
                                 Just "2"    -> o { ehcOptOwn     = 2       }
                                 Just "3"    -> o { ehcOptOwn     = 3       }
                                 Just "4"    -> o { ehcOptOwn     = 4       }
+                                Just "5"    -> o { ehcOptOwn     = 5       }
                                 Nothing     -> o { ehcOptOwn     = 3       }
                                 _           -> o { ehcOptOwn     = 3       }
          oVerbose    ms  o =  case ms of
