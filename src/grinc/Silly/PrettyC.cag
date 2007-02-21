@@ -80,9 +80,6 @@ SEM SilModule
                                 >-< text "GrWord auxVar;"
                                 >-< text "GrWord auxPtr;"
                                 >-< text ""
-                                >-< comment ["Main C function"]
-                                >-< @loc.cMain
-                                >-< text ""
                                 >-< comment ["Function definitions"]
                                 >-< if @loc.optOwn>=3
                                      then  @loc.silMain1
@@ -106,14 +103,6 @@ SEM SilModule
                                              >-<  "return 0;"
                                              )
                 loc.silMain2 =  text "}"
-                loc.cMain    =  text "int main(int argc, char** argv)"
-                                >-< text "{"
-                                >-< indent 4 (    text "main_Sil_Init1(argc, argv);"
-                                             >-<  text "main_Sil_Run(argc, argv);"
-                                             >-<  text "return main_Sil_Exit(argc, argv);"
-                                             )
-                                >-< text "}"
-
 
 SEM Function
   | Function    lhs.prettyC   = methodHeader @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
@@ -266,11 +255,12 @@ quoted :: String -> String
 quoted s = "\"" ++ s ++ "\""
 
 returnFromSillyFunction retdiff optOwn
- | optOwn>=9   = "asm ( " >|< (  --  quoted ("movl -" ++ show (4*retdiff) ++ "(%esp),%eax\\n\\t")
+ | optOwn>=5   = "asm ( " >|< (  --  quoted ("movl -" ++ show (4*retdiff) ++ "(%esp),%eax\\n\\t")
                                  --  >-<  quoted "jmp *%eax"
                                  quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)")
                               )
                           >|< ");"
+                 >-< "goto *(SP[-" >|< show retdiff >|< "]);"                          
  | optOwn>=3   = "goto *(SP[-" >|< show retdiff >|< "]);"
  | optOwn<=2   = text ""
 

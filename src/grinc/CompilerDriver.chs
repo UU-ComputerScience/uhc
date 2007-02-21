@@ -65,6 +65,8 @@
 %%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
+%%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
+%%]
 %%[8 import({%{GRIN}Silly.Pretty(pretty)})
 %%]
 %%[8 import({%{GRIN}Silly.Shortcut(shortcut)})
@@ -217,6 +219,8 @@ caOutput = task_ VerboseNormal "Writing code"
 --         (caWriteSilly "ll" prettyLL)
          ; when (ehcOptEmitLlc options)
            (caWriteSilly "c" prettyC)
+         ; when (ehcOptEmitLlc options)
+           (caWriteSilly "s" prettyS)
          }
     )
 %%]

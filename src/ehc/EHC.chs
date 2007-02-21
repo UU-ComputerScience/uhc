@@ -1215,6 +1215,9 @@ cpCompileWithGCC how othModNmL modNm
                                  ++ targOpt
                                  ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
+                                 ++ [ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include/mainSil.c"
+                                    | ehcOptEmitExec opts
+                                    ]
                                  ++ linkLibOpt
                                  )
                      ; when (ehcOptVerbosity opts >= VerboseALot)
