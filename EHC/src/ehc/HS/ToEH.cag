@@ -36,7 +36,7 @@ SEM Body
                                                   )
 %%]
 
-%%[12 -8.Body.hsnMain
+%%[20 -8.Body.hsnMain
 SEM Body
     | Body
         lhs         .   eh          =   @mkSccLet (if @lhs.isTopMod then rngLift @range EH.Expr_Var hsnMain
@@ -56,7 +56,7 @@ SEM Body
                                             (rngLift @range EH.Expr_IConst 0)
 %%]
 
-%%[12 -8.Body.ehMainDecl
+%%[20 -8.Body.ehMainDecl
 SEM Body
     | Body
         loc         .   ehMainDecl  =   rngLift @range EH.Decl_Val

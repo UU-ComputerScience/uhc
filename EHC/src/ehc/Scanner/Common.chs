@@ -59,7 +59,7 @@ ehScanOpts
 %%[11
                 ++ tokKeywStrsEH11
 %%]
-%%[12
+%%[20
                 ++ tokKeywStrsEH12
 %%]
 %%[95
@@ -162,7 +162,7 @@ hsScanOpts
 %%[11
                 ++ tokKeywStrsHS11
 %%]
-%%[12
+%%[20
                 ++ tokKeywStrsHS12
 %%]
 %%[1
@@ -219,7 +219,7 @@ coreScanOpts
         {   scoKeywordsTxt      =   [ "let", "in", "case", "of", "rec", "foreign", "uniq"
                                     , "Int", "Char", "String", "Tag", "Rec"
                                     , "module", "default"
-%%[[12
+%%[[20
                                     , "Integer" 
 %%]
                                     ]
@@ -256,7 +256,7 @@ hiScanOpts
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     , "True", "False"
                                     ]
-%%[[12
+%%[[20
                                     ++ tokKeywStrsHI6
 %%]]
                                     ++ scoKeywordsTxt hsScanOpts
@@ -351,7 +351,7 @@ pKeyw k                 =   pKeyTk (show k)
 pStringTk, pCharTk,
   pInteger8Tk, pInteger10Tk, pInteger16Tk, pFractionTk,
 %%]
-%%[12
+%%[20
   pQVaridTk, pQConidTk,
   pQVarsymTk, pQConsymTk,
 %%]
@@ -377,7 +377,7 @@ pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"
 pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
-%%[12
+%%[20
 pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
 pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
 pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
@@ -399,7 +399,7 @@ pVARID'          = pVaridTk'
 pVARSYM          = pVarsymTk
 %%]
 
-%%[12
+%%[20
 pQCONID, pQCONSYM, pQVARID, pQVARSYM :: IsParser p Token => p Token
 
 pQCONID          = pQConidTk
@@ -700,7 +700,7 @@ tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
 %%]
 
-%%[12
+%%[20
 pQUALIFIED      ,
     pQUESTQUEST ,
     pAS         ,
@@ -709,7 +709,7 @@ pQUALIFIED      ,
   :: IsParser p Token => p Token
 %%]
 
-%%[12
+%%[20
 pQUALIFIED       = pKeyTk "qualified"
 pAS              = pKeyTk "as"
 pHIDING          = pKeyTk "hiding"

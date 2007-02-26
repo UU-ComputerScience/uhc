@@ -12,22 +12,22 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Error})
+%%[20 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Error})
 %%]
 
-%%[12 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntDomMp,ModEntRngMp)
+%%[20 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntDomMp,ModEntRngMp)
 %%]
 
-%%[12 export(emptyMod)
+%%[20 export(emptyMod)
 %%]
 
-%%[12 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
+%%[20 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
 %%]
 
-%%[12 import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
+%%[20 import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
 %%]
 
-%%[12 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
+%%[20 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
 %%]
 
 %%[99 export(modImpPrelude)
@@ -37,7 +37,7 @@
 %%% Imp/Exp entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 data ModEnt
   = ModEnt
       { mentKind    :: IdOccKind
@@ -64,7 +64,7 @@ mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
 %%]
 
-%%[12
+%%[20
 -- intended for parsing
 ppModEnt :: (HsName -> PP_Doc) -> ModEnt -> PP_Doc
 ppModEnt pn e
@@ -90,7 +90,7 @@ ppModEntDomMp = ppCurlysCommasBlock . map (\(a,b) -> pp a >|< "<>" >|< ppBracket
 %%% Imp/Exp's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 data ModExp
   = ModExpEnt ModEntSpec
   | ModExpMod HsName
@@ -135,7 +135,7 @@ modImpPrelude
       }
 %%]
 
-%%[12
+%%[20
 instance PP ModExp where
   pp (ModExpEnt s) = pp s
   pp (ModExpMod m) = "module" >#< m
@@ -155,7 +155,7 @@ instance PP ModImp where
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 data Mod
   = Mod
       { modName         :: HsName
@@ -179,7 +179,7 @@ modBuiltin
             `Rel.union` Rel.fromList [ (n,ModEnt IdOcc_Kind (IdOcc n IdOcc_Kind) Set.empty) | (n,_) <- gamToAssocL initKiGam ]
 %%]
 
-%%[12
+%%[20
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
          >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "DEF" >#< ppModEntRel (modDefs m))
@@ -189,7 +189,7 @@ instance PP Mod where
 %%% 5.1 Importing or exporting an entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1212
+%%[2012
 modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
 modEntSpec isHiding rel (ModEntSpec x subspec)
   = Rel.unions [mSpec,mSub]
@@ -205,7 +205,7 @@ modEntSpec isHiding rel (ModEntSpec x subspec)
           | otherwise                     = not . mentIsCon
 %%]
 
-%%[12
+%%[20
 modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
 modEntSpec isHiding rel (ModEntSpec x subspec)
   | isHiding && isNothing subspec
@@ -224,7 +224,7 @@ modEntSpec isHiding rel (ModEntSpec x subspec)
 %%% 5.2 Export relations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 modExports :: Mod -> ModEntRel -> ModEntRel
 modExports mod inscp
   = case modExpL mod of
@@ -233,7 +233,7 @@ modExports mod inscp
               where exps = modExpListEntry inscp `map` es
 %%]
 
-%%[12
+%%[20
 modExpListEntry :: ModEntRel -> ModExp -> ModEntRel
 modExpListEntry inscp (ModExpEnt it)
   = modEntSpec False inscp it
@@ -246,7 +246,7 @@ modExpListEntry inscp (ModExpMod m)
 %%% 5.3 In-scope relations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 modInscope :: Mod -> (HsName -> ModEntRel) -> ModEntRel
 modInscope m expsOf
   = Rel.unions [imports,locals]
@@ -258,7 +258,7 @@ modInscope m expsOf
         imports = Rel.unions $ map (modImp expsOf) (modImpL m)
 %%]
 
-%%[12
+%%[20
 modImp :: (HsName -> ModEntRel) -> ModImp -> ModEntRel
 modImp expsOf imp
   | mimpQualified imp = qs
@@ -277,7 +277,7 @@ modImp expsOf imp
 %%% 5.4 Recursive modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 modInsOuts :: (HsName -> ModEntRel) -> [Mod] -> [(ModEntRel,ModEntRel)]
 modInsOuts otherExps mods
   = inscps `zip` exps
@@ -290,7 +290,7 @@ modInsOuts otherExps mods
         modIxs       = map modName mods `zip` [0..]
 %%]
 
-%%[12
+%%[20
 lfpAfter :: Eq x => (x -> x) -> x -> x
 lfpAfter f x
   = if fx == x then fx else lfpAfter f fx
@@ -301,7 +301,7 @@ lfpAfter f x
 %%% 6 Error detection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 checkMod :: (HsName -> Maybe ModEntRel) -> ModEntRel -> Mod -> [Err]
 checkMod expsOf inscp mod
   = checkAmbigExps modExports
@@ -314,7 +314,7 @@ checkMod expsOf inscp mod
         missingModules  = nub [ mimpSource imp | (imp,Nothing) <- impSources ]
 %%]
 
-%%[12
+%%[20
 checkAmbigExps :: ModEntRel -> [Err]
 checkAmbigExps exps
   = concatMap isAmbig (Set.toList (Rel.dom exps))
@@ -326,7 +326,7 @@ checkAmbigExps exps
         ambig n _            = []
 %%]
 
-%%[1212
+%%[2012
 checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
 checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
   = case xents of
@@ -346,7 +346,7 @@ checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
           | otherwise                     = not . mentIsCon
 %%]
 
-%%[12
+%%[20
 checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
 checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
   | isHiding && isNothing subspec
@@ -367,7 +367,7 @@ checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
                     _ -> []
 %%]
 
-%%[12
+%%[20
 checkExpSpec :: ModEntRel -> Mod -> [Err]
 checkExpSpec inscp mod
   = case modExpL mod of
@@ -382,7 +382,7 @@ checkExpSpec inscp mod
         err2 e x = mkErr_NamesNotIntrod ("subexport of export " ++ show e) [x]
 %%]
 
-%%[12
+%%[20
 checkImp :: ModEntRel -> ModImp -> [Err]
 checkImp exps imp
   = concatMap chk (mimpImpL imp)
@@ -396,7 +396,7 @@ checkImp exps imp
 %%% 7 Top level (The semantics of a Haskell program)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(ModMpInfo(..),ModMp,emptyModMpInfo,mkModMpInfo)
+%%[20 export(ModMpInfo(..),ModMp,emptyModMpInfo,mkModMpInfo)
 data ModMpInfo
   = ModMpInfo
       { mmiInscps   :: ModEntRel
@@ -430,7 +430,7 @@ ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 
 The exported names of the module
 
-%%[12
+%%[20
 expsNmOffMp :: ModEntRel -> HsName2OffsetMp
 expsNmOffMp exps
   = Map.fromList
@@ -440,7 +440,7 @@ expsNmOffMp exps
     $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val || mentKind e == IdOcc_Inst ]
 %%]
 
-%%[12 export(modMpCombine)
+%%[20 export(modMpCombine)
 modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
 modMpCombine ms mp
   = (newMp,concat errs)

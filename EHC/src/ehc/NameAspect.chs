@@ -112,7 +112,7 @@ data IdDefOcc
       , doccAsp     :: IdAspect
       , doccLev     :: NmLev
       , doccRange   :: Range
-%%[[12
+%%[[20
       , doccNmAlts  :: Maybe [HsName]
 %%]
       }
@@ -127,7 +127,7 @@ mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
 mkIdDefOcc o a l r = IdDefOcc o a l r
 %%]
 
-%%[12 -1.mkIdDefOcc hs
+%%[20 -1.mkIdDefOcc hs
 mkIdDefOcc :: IdOcc -> IdAspect -> NmLev -> Range -> IdDefOcc
 mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
 %%]
@@ -135,7 +135,7 @@ mkIdDefOcc o a l r = IdDefOcc o a l r Nothing
 %%[1
 instance PP IdDefOcc where
   pp o = doccOcc o >|< "/" >|< doccAsp o >|< "/" >|< doccLev o
-%%[[12
+%%[[20
          >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
 %%]
 %%]

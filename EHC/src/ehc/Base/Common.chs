@@ -130,7 +130,7 @@
 %%[9 export(basePrfCtxtId)
 %%]
 
-%%[12 export(ppCurlysAssocL)
+%%[20 export(ppCurlysAssocL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -748,7 +748,7 @@ ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocLV = ppAssocL' vlist
 %%]
 
-%%[12
+%%[20
 -- intended for parsing
 ppCurlysAssocL :: (k -> PP_Doc) -> (v -> PP_Doc) -> AssocL k v -> PP_Doc
 ppCurlysAssocL pk pv = ppCurlysCommasBlock . map (\(k,v) -> pk k >#< "=" >#< pv v)

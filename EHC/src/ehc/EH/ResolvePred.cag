@@ -183,7 +183,7 @@ SEM AGItf
   | AGItf       loc         .   prfCtxtId           =   @lUniq
 %%]
 
-%%[12 -9.initPrfCtxtId
+%%[20 -9.initPrfCtxtId
 ATTR AGItf [ prfCtxtId: PrfCtxtId | | ]
 
 SEM AGItf

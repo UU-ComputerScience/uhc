@@ -38,7 +38,7 @@ pigiGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Class)
 data IdIsDef
   = IdIsDef             { idIsDefLev :: NmLev }
   | IdIsNotDef
-%%[[12
+%%[[20
   | IdIsInWrongModule   IdOcc
 %%]]
   deriving (Show)
@@ -50,7 +50,7 @@ idIsDef _           = False
 instance PP IdIsDef where
   pp (IdIsDef _)            = pp "Def'd"
   pp IdIsNotDef             = pp "Undef'd"
-%%[[12
+%%[[20
   pp (IdIsInWrongModule o)  = "Wrong" >#< o
 %%]]
 %%]
@@ -346,7 +346,7 @@ SEM Body
         loc             .   idGam       =   gamAddGam @declarations.idOccDefGam @lhs.idGam
 %%]
 
-%%[12 -1.initIdGam
+%%[20 -1.initIdGam
 ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
 
 SEM Body
@@ -511,7 +511,7 @@ mkUseOccGam idGam names@(fstName:_) kind asp rng
                 idUseOccGam = gamUnit idOccUse (IdUseOcc idOccUse asp rng (doccForUse mbDef))
 %%]
 
-%%[12 -1.mkUseOccGam hs
+%%[20 -1.mkUseOccGam hs
 mkUseOccGam :: IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ [] _ _ _
   = (undefined,[],emptyGam,[])
@@ -521,7 +521,7 @@ mkUseOccGam idGam names kind asp rng
         mkUse idGam name kind asp rng
           = (nmOfDef,idUseOccGam,errs)
           where idOccUse    = IdOcc name kind
-%%[[12
+%%[[20
                 mbDef       = gamLookup idOccUse idGam
 %%][99
                 mbDef       = case gamLookup idOccUse idGam of
@@ -941,7 +941,7 @@ SEM Body
                         .   mainExists  =   null @errIdUse && (null $ gamToAssocL $ @undefOccGamMain)
 %%]
 
-%%[12
+%%[20
 SEM Body
     | Body
         loc             .   idDpdMp     =   idToOccL2DpdMp [@idOccDefMain] ((IdOcc @mainrefname IdOcc_Val,undefined) : @idUseHereOccL)
@@ -1185,7 +1185,7 @@ SEM Body
                                             in  mkIdOccSccEH @range False (g `gamUnion` @declarations.idOccDefGam) (Just @sccOrder)
 %%]
 
-%%[12 -8.Body.mkSccLet
+%%[20 -8.Body.mkSccLet
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
@@ -1245,7 +1245,7 @@ SEM Statement
 %%% Mapping of module names via 'as'
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllImportDeclaration [ | | modAsMp USE {`Map.union`} {Map.empty}: {Map.Map HsName HsName} ]
 
 SEM ImportDeclaration

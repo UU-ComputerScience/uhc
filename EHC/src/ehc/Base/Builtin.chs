@@ -103,7 +103,7 @@ hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   HNm (strUn ++ show nm)
 %%]
 
-%%[12 -3.hsnUn
+%%[20 -3.hsnUn
 hsnUn                               ::  HsName -> HsName
 hsnUn           nm                  =   strUn `hsnPrefix` nm
 %%]
@@ -113,7 +113,7 @@ hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         (HNm s)             =   isPrefixOf strUn s
 %%]
 
-%%[12 -3.hsnIsUn
+%%[20 -3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         hsn
   = case hsnInitLast hsn of
@@ -125,7 +125,7 @@ hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         (HNm s)             =   HNm (drop (length strUn) s)
 %%]
 
-%%[12 -3.hsnUnUn
+%%[20 -3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
@@ -137,7 +137,7 @@ hsnFldUpd                           ::  HsName -> HsName
 hsnFldUpd       nm                  =   HNm (strFldUpd ++ show nm)
 %%]
 
-%%[12 -7.hsnFldUpd
+%%[20 -7.hsnFldUpd
 hsnFldUpd                           ::  HsName -> HsName
 hsnFldUpd       nm                  =   strFldUpd `hsnPrefix` nm
 %%]
@@ -192,7 +192,7 @@ hsnIsConstructorName :: HsName -> Bool
 hsnIsConstructorName (HNm (x:xs)) = constructorInitial x
 hsnIsConstructorName (HNPos n) = False
 %%]
-%%[12
+%%[20
 hsnIsConstructorName (HNmQ hs) = hsnIsConstructorName (last hs)
 %%]
 
@@ -420,7 +420,7 @@ mkRV m = hsnSetQual m . HNm
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(hsnModBuiltin)
+%%[20 export(hsnModBuiltin)
 hsnModBuiltin                       =   mkHNm "#Builtin"
 %%]
 

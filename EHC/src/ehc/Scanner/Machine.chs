@@ -142,7 +142,7 @@ scan opts pos input
                                     else valueToken (varKind cs) name p
            in tok :  doScan p' s'
 %%]
-%%[12 -5.id
+%%[20 -5.id
      | isIdStart c || isUpper c
          = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
                name               = c:name'

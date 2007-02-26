@@ -313,7 +313,7 @@ extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz ) ;
 #define GB_LinkTbl_EntryKind_PatchCode_Deref2		5			/* patch code with **value */
 #define GB_LinkTbl_EntryKind_PatchOffsets			6			/* patch code containing offsets with abolute address */
 #define GB_LinkTbl_EntryKind_CallInfo  				7			/* obsolete, same as Const, used internally */
-%%[[12
+%%[[20
 #define GB_LinkTbl_EntryKind_ImpEntry				8			/* import entry */
 %%]]
 %%]
@@ -330,7 +330,7 @@ typedef struct GB_LinkEntry {
 
 Module info
 
-%%[12
+%%[20
 typedef struct GB_ModEntry {
   char*			name ;
   GB_NodePtr	*expNode ;
@@ -710,7 +710,7 @@ extern void gb_InitTables
 	, GB_LinkEntry* linkEntries
 	, GB_BytePtr* globalEntries
 	, GB_Word* consts
-%%[[12
+%%[[20
 	// , GB_NodePtr *impNode
 	// , int impNodeSz, char** impNodeNms
 	, GB_NodePtr expNode

@@ -29,7 +29,7 @@
 %%[9 hs import({%{EH}Pred}) export(pigiGam2IdDefOccGam)
 %%]
 
-%%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
@@ -43,7 +43,7 @@
 WRAPPER AGItf
 %%]
 
-%%[12 hs
+%%[20 hs
 %%]
 type HSModAndRest = (Mod,ModEntDomMp -> Syn_AGItf)
 
@@ -65,11 +65,11 @@ ATTR AGItf AllNT [ opts: EHCOpts | | ]
 %%% Tying together gam's, combining with imported info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
 %%]
 
-%%[12
+%%[20
 SEM Body
     | Body
         lhs             .   gathIdGam   =   @declarations.idOccDefGam
@@ -219,7 +219,7 @@ SEM Constructor
 %%% Is toplevel mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllModule AGItf [ isTopMod: Bool | | ]
 %%]
 
@@ -227,7 +227,7 @@ ATTR AllModule AGItf [ isTopMod: Bool | | ]
 %%% Top level instance names, propagated from prev phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs
+%%[20 hs
 extrTopInstanceNm :: [HsName] -> (Maybe HsName,[HsName])
 extrTopInstanceNm nms
   = case nms of
@@ -235,7 +235,7 @@ extrTopInstanceNm nms
       _     -> (Nothing,[])
 %%]
 
-%%[12
+%%[20
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
 

@@ -14,7 +14,7 @@
 %%[8 hs export(grinMod2ByteCodeMod)
 %%]
 
-%%[12 hs import({%{EH}Ty(tyRowCanonOrder)})
+%%[20 hs import({%{EH}Ty(tyRowCanonOrder)})
 %%]
 
 %%[8 import({GrinCode/TrfLocal/CommonFreeVar})
@@ -34,7 +34,7 @@ grinMod2ByteCodeMod opts gmod
      in   gbMod_Syn_GrAGItf t
 %%]
 
-%%[12 -8.grinMod2ByteCodeMod hs
+%%[20 -8.grinMod2ByteCodeMod hs
 grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> GB.Module
 grinMod2ByteCodeMod opts allImpNmL impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
@@ -63,7 +63,7 @@ ATTR AllBind AllGrExpr GrModule GrAGItf [ opts: EHCOpts | | ]
 ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 %%]
 
-%%[12
+%%[20
 ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]} | | ]
 %%]
 
@@ -71,7 +71,7 @@ ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]} | | ]
 %%% Module name map to field nr in node with imported modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR GrAGItf GrModule AllBind AllGrExpr [ impNmOffMpMp: HsName2OffsetMpMp | | ]
 %%]
 
@@ -127,7 +127,7 @@ constCFunAdd :: String -> ConstMp -> (Int,ConstMp)
 constCFunAdd nm = constAdd (GB.Const_CFunction nm)
 %%]
 
-%%[12 hs
+%%[20 hs
 constImpNodeAdd :: ConstMp -> (Int,ConstMp)
 constImpNodeAdd = constAdd GB.Const_ImpNode
 %%]
@@ -368,7 +368,7 @@ SEM GrAlt
 SEM GrExpr
   | *           loc         .   nmEnv           =   GB.NmEnv
                                                       { GB.neVAGam = @lhs.vaGam
-%%[[12
+%%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
 %%]]
                                                       }
@@ -376,7 +376,7 @@ SEM GrExpr
 SEM GrBind
   | Bind        loc         .   nmEnv           =   GB.NmEnv
                                                       { GB.neVAGam = @lhs.vaGam
-%%[[12
+%%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
 %%]]
                                                       }
@@ -384,7 +384,7 @@ SEM GrBind
 SEM GrModule
   | Mod         loc         .   nmEnv           =   GB.NmEnv
                                                       { GB.neVAGam = @vaGam
-%%[[12
+%%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
 %%]]
                                                       }
@@ -615,7 +615,7 @@ SEM GrModule
   | Mod         loc         .   (entryNmMp,isCafL)
                                                 =   let (nL,cafL) = unzip $ Seq.toList @bindL.entryNms
                                                         mpMod = Map.fromList $ zip nL [0..]
-%%[[12
+%%[[20
                                                         mpReExp = Map.fromList $ zip [ n | n <- Map.keys @lhs.expNmOffMp, not (n `Map.member` mpMod) ] [Map.size mpMod ..]
 %%]]
                                                     in  ( mpMod
@@ -637,7 +637,7 @@ ATTR GrAGItf GrModule [ | | gbMod: {GB.Module} ]
 
 SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
-%%[[12
+%%[[20
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
                                                       [ (n,hsnShowAlphanumeric n) | (n,_) <- sortOn (fst.snd) $ Map.toList @lhs.impNmOffMpMp ]
                                                       [ (n,m) | (n,Just m) <- map (\(n,_) -> (n,Map.lookup n @entryNmMp)) $ sortOn snd $ Map.toList @lhs.expNmOffMp ]

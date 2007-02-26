@@ -7,27 +7,27 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[20 module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
-%%[12 export(pUIDHI,pTy)
+%%[20 export(pUIDHI,pTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 type P p = PlainParser Token p
 %%]
 
-%%[12
+%%[20
 pUIDHI :: P UID
 pUIDHI = pKeyTk "uid" *> pUID
 
 %%]
 
-%%[12
+%%[20
 pTyBase :: P Ty
 pTyBase
   =   mkTyVar <$> pUIDHI

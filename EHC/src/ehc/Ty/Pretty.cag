@@ -140,7 +140,7 @@ ppHINm :: HsName -> PP_Doc
 ppHINm = ppHsnNonAlpha hiScanOpts
 %%]
 
-%%[12 -8.ppHINm hs
+%%[20 -8.ppHINm hs
 ppHINm :: HsName -> PP_Doc
 ppHINm n
   = case n of

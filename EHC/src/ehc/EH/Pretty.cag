@@ -295,7 +295,7 @@ SEM TyExpr
   | Lam         loc     .   pp      =   "\\" >|< @tyVar >#< "->" >#< @tyExpr.pp
 %%]
 
-%%[12
+%%[20
 SEM AGItf
   | AGItf       loc     .   ppExtra :=  ppCmt (ppGam @lhs.valGam)
 %%]

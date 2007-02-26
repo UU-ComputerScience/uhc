@@ -2,14 +2,14 @@
 %%% Haskell importable interface to map names in types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs module {%{EH}Ty.MapName} import({%{EH}Base.Common},{%{EH}Ty})
+%%[20 hs module {%{EH}Ty.MapName} import({%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[12.WRAPPER ag import({Ty/AbsSyn})
+%%[20.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[12 hs export(tyMapName)
+%%[20 hs export(tyMapName)
 type MapName = HsName -> HsName
 
 tyMapName :: MapName -> Ty -> Ty
@@ -24,7 +24,7 @@ tyMapName mapName ty
 %%% Map name function
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR TyAGItf AllTy [ mapName: MapName | | ]
 %%]
 
@@ -32,12 +32,12 @@ ATTR TyAGItf AllTy [ mapName: MapName | | ]
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllTyAndFlds [ | | repl: SELF  ]
 ATTR TyAGItf      [ | | repl: Ty    ]
 %%]
 
-%%[12
+%%[20
 SEM Ty
   | Con             lhs     .   repl        =   Ty_Con (@lhs.mapName @nm)
 %%]

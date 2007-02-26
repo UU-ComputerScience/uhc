@@ -10,10 +10,10 @@
 %%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
 %%]
 
-%%[12 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
+%%[20 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
 %%]
 
-%%[12 import(qualified {%{EH}Pred} as Pr)
+%%[20 import(qualified {%{EH}Pred} as Pr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,19 +44,19 @@ pCTag
            )
 %%]
 
-%%[12 export(pBool)
+%%[20 export(pBool)
 pBool :: P Bool
 pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%]
 
 -- counterpart of ppPredOccId'
-%%[12 export(pPredOccId)
+%%[20 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
   = PredOccId <$ pOCURLY <*> pUID <* pCOMMA <*> pUID <* pCCURLY
 %%]
 
-%%[12 export(pIdOcc)
+%%[20 export(pIdOcc)
 -- counterpart of PP IdOccKind instance
 pIdOccKind :: P IdOccKind
 pIdOccKind
@@ -74,12 +74,12 @@ pIdOcc :: P IdOcc
 pIdOcc = IdOcc <$ pOCURLY <*> pDollNm <* pCOMMA <*> pIdOccKind <* pCCURLY
 %%]
 
-%%[12
+%%[20
 pAssocL :: P a -> P b -> P (AssocL a b)
 pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCURLY
 %%]
 
-%%[12 export(pModEntRel)
+%%[20 export(pModEntRel)
 pModEnt :: P ModEnt
 pModEnt
   = ModEnt <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
@@ -91,7 +91,7 @@ pModEntRel
   = Rel.fromList <$> pAssocL pDollNm pModEnt
 %%]
 
-%%[12 export(pProofCost)
+%%[20 export(pProofCost)
 pProofCost :: P Pr.ProofCost
 pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
 %%]
@@ -100,7 +100,7 @@ pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(pCurlySemiBlock,pCurlys,pSemiBlock)
+%%[20 export(pCurlySemiBlock,pCurlys,pSemiBlock)
 pSemiBlock :: P p -> P [p]
 pSemiBlock p = pListSep pSEMI p
 

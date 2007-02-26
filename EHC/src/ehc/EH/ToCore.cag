@@ -12,7 +12,7 @@ SEM AGItf
                                             =   not @mainUseExists
 %%]
 
-%%[12
+%%[20
 SEM AGItf
   | AGItf       loc         .   insertMainUse
                                             :=  not @mainUseExists && @lhs.isTopMod
@@ -31,7 +31,7 @@ SEM AGItf
                                             =   not @mainDefExists
 %%]
 
-%%[12
+%%[20
 SEM AGItf
   | AGItf       loc         .   insertMainDef
                                             :=  not @mainDefExists && @lhs.isTopMod

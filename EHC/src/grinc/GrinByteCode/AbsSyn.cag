@@ -20,7 +20,7 @@ DATA AGItf
 %%[8
 DATA Module
   | Mod         moduleNm        : {String}
-%%[[12
+%%[[20
                 allImpModNmL	: {AssocL HsName String}
                 impModNmL		: {AssocL HsName String}
                 expEntryL		: {AssocL HsName Int}

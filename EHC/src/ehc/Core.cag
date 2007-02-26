@@ -40,7 +40,7 @@
 %%[9 hs export(cbindLNub)
 %%]
 
-%%[12 hs export(cModMerge)
+%%[20 hs export(cModMerge)
 %%]
 
 %%[8 ag import({Core/AbsSyn})
@@ -375,7 +375,7 @@ cLevModule = 0
 cLevExtern = 0
 %%]
 
-%%[12 hs export(cLevIntern)
+%%[20 hs export(cLevIntern)
 cLevIntern :: Int
 cLevIntern = 1
 %%]
@@ -427,7 +427,7 @@ arityMpFilterCaf = Map.filter (==0)
 %%% Name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs export(HsName2OffsetMp,HsName2OffsetMpMp)
+%%[20 hs export(HsName2OffsetMp,HsName2OffsetMpMp)
 type HsName2OffsetMp = Map.Map HsName Int
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
@@ -478,7 +478,7 @@ instance Show Coe where
 %%% Module merge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs
+%%[20 hs
 cModMerge :: [CModule] -> CModule
 cModMerge mL
   = foldr1 cmb mL

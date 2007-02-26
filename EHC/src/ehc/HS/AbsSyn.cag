@@ -29,14 +29,14 @@ DATA Module
         range                    : Range
         name                     : MaybeName
 %%]
-%%[12
+%%[20
         exports                  : MaybeExports
 %%]
 %%[1
         body                     : Body
 %%]
 
-%%[12
+%%[20
 TYPE Exports                     = [ Export ]
 
 TYPE MaybeExports                = MAYBE Exports
@@ -65,14 +65,14 @@ DATA Body
     | Body
         range                    : Range
 %%]
-%%[12
+%%[20
         importdeclarations       : ImportDeclarations
 %%]
 %%[1
         declarations             : Declarations
 %%]
 
-%%[12
+%%[20
 TYPE ImportDeclarations          = [ ImportDeclaration ]
 
 DATA ImportDeclaration
@@ -120,7 +120,7 @@ DATA Import
 SET AllModule
   = Module Body
 %%]
-%%[12
+%%[20
     AllImportDeclaration Import Imports
     AllImportSpecification
     Export Exports MaybeExports

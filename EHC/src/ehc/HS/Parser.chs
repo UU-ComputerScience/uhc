@@ -17,7 +17,7 @@
 %%[1 import(EH.Util.Utils, UU.Pretty)
 %%]
 
-%%[12 export(pFixity, pAGItfImport, HSParser')
+%%[20 export(pFixity, pAGItfImport, HSParser')
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,7 +47,7 @@ pAGItf
   =   AGItf_AGItf <$> pModule pBody
 %%]
 
-%%[12
+%%[20
 pAGItfImport :: HSParser AGItf
 pAGItfImport
   =   AGItf_AGItf <$> pModule pBodyImport
@@ -118,7 +118,7 @@ pModule pBody
   <|> (\t m b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) b) <$> pMODULE <*> modid <* pWHERE <*> pBody
   <?> "pModule"
 %%]
-%%[12.pModule -1.pModule
+%%[20.pModule -1.pModule
 pModule pBody
   =   (\b -> Module_Module emptyRange Nothing Nothing b) <$> pBody
   <|> (\t m e b -> Module_Module (mkRange1 t) (Just $ tokMkQName $ m) e b) <$> pMODULE <*> modid <*> pMaybeExports <* pWHERE <*> pBody
@@ -132,7 +132,7 @@ pBody
   <|> pSucceed (Body_Body emptyRange [])
   <?> "pBody"
 %%]
-%%[12 -1.pBody
+%%[20 -1.pBody
 pBody :: HSParser Body
 pBody
   =   (\ids -> let (i,d) = foldr cmbid ([],[]) ids in Body_Body emptyRange i d)
@@ -147,7 +147,7 @@ pBody
 %%% Module header + import only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 pBodyImport :: HSParser Body
 pBodyImport
   =   (\d -> Body_Body emptyRange d []) <$> pDeclarations' pImportDeclaration
@@ -158,7 +158,7 @@ pBodyImport
 %%% Export, import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 pImportExport :: (Range -> Name -> ie,Range -> Name -> MaybeNames -> ie,Range -> Name -> ie) -> HSParser ie
 pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   =   mkRngNm sem_Var <$> qvar
@@ -172,7 +172,7 @@ pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   <?> "pImportExport"
 %%]
 
-%%[12
+%%[20
 pExport :: HSParser Export
 pExport
   =   (\t m -> Export_Module (mkRange1 t) (tokMkQName m)) <$> pMODULE <*> modid
@@ -186,7 +186,7 @@ pMaybeExports
   <?> "pMaybeExports"
 %%]
 
-%%[12
+%%[20
 pImport :: HSParser Import
 pImport
   =   pImportExport (Import_Variable,Import_TypeOrClass,Import_TypeOrClassComplete)
@@ -1211,13 +1211,13 @@ pOptSEMISeparator = pMb (pSeparator <|> () <$ pSEMI)
 modid :: HSParser Token
 modid
   =   pCONID
-%%[[12
+%%[[20
   <|> pQCONID
 %%]]
   <?> "modid"
 %%]
 
-%%[12
+%%[20
 qcnames :: HSParser [Token] 
 qcnames
   =   pListSep pCOMMA qcname
@@ -1278,7 +1278,7 @@ qvar
 qvarsym_forpar :: HSParser Token
 qvarsym_forpar
   =   varsym
-%%[[12
+%%[[20
   <|> qvarsym1
 %%]]
   <?> "qvarsym_forpar"
@@ -1335,7 +1335,7 @@ qconop
 qvarsym :: HSParser Token 
 qvarsym
   =   varsym
-%%[[12
+%%[[20
   <|> qvarsym1
 %%]]
   <?> "qvarsym"
@@ -1345,13 +1345,13 @@ qvarsym
 qvarsym_no_minus :: HSParser Token
 qvarsym_no_minus
   =   varsym_no_minus
-%%[[12
+%%[[20
   <|> qvarsym1
 %%]]
   <?> "qvarsym_no_minus"
 %%]
 
-%%[12
+%%[20
 qvarsym1 :: HSParser Token
 qvarsym1
   =   pQVARSYM 
@@ -1387,7 +1387,7 @@ special_sym
 qconid :: HSParser Token    -- Qualified or unqualifiedb
 qconid
   =   conid
-%%[[12
+%%[[20
   <|> pQCONID
 %%]]
   <?> "qconid"
@@ -1402,7 +1402,7 @@ conid
 qconsym :: HSParser Token   -- Qualified or unqualified
 qconsym
   =   consym
-%%[[12
+%%[[20
   <|> pQCONSYM
 %%]]
   <?> "qconsym"
@@ -1452,7 +1452,7 @@ qopm
 qvarid :: HSParser Token
 qvarid
   =   varid
-%%[[12
+%%[[20
   <|> pQVARID
 %%]]
   <?> "qvarid"
@@ -1527,7 +1527,7 @@ special_id_no_callconv
   =   pLABEL   
   <|> pDYNAMIC
   <|> pEXPORT
-%%[[12
+%%[[20
   <|> pAS      
   <|> pQUALIFIED   
   <|> pHIDING
@@ -1578,7 +1578,7 @@ oqtycon
 qtycon :: HSParser Token    -- Qualified or unqualified
 qtycon
   =   tycon
-%%[[12
+%%[[20
   <|> pQCONID
 %%]]
   <?> "qtycon"
@@ -1588,7 +1588,7 @@ qtycon
 qtyconsym :: HSParser Token
 qtyconsym
   =   tyconsym
-%%[[12
+%%[[20
   <|> pQCONSYM
 %%]]
   <?> "qtyconsym"
@@ -1601,7 +1601,7 @@ tyconsym
   <?> "tyconsym"
 %%]
 
-%%[12
+%%[20
 qtyconop :: HSParser Token  -- Qualified or unqualified
 qtyconop
   =   qtyconsym

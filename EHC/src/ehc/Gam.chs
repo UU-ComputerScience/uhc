@@ -79,7 +79,7 @@
 %%[9 export(idDefOccGamPartitionByKind)
 %%]
 
-%%[12 export(idDefOccGamByKind)
+%%[20 export(idDefOccGamByKind)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -788,7 +788,7 @@ type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: HsName
-%%[[12
+%%[[20
       , dgiConstrNmL 		:: [HsName]
 %%]]
       , dgiConstrTagMp 		:: DataConstrTagMp
@@ -807,7 +807,7 @@ mkDGI :: HsName -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
 mkDGI tyNm cNmL m nt
   = DataGamInfo
       tyNm
-%%[[12
+%%[[20
       cNmL
 %%]]
       m
@@ -821,7 +821,7 @@ emptyDataGamInfo :: DataGamInfo
 emptyDataGamInfo = mkDGI hsnUnknown [] Map.empty False
 %%]
 
-%%[12 export(dgiConstrTagAssocL)
+%%[20 export(dgiConstrTagAssocL)
 dgiConstrTagAssocL :: DataGamInfo -> AssocL HsName DataTagInfo
 dgiConstrTagAssocL dgi = [ (cn,panicJust "dgiConstrTagAssocL" $ Map.lookup cn $ dgiConstrTagMp dgi) | cn <- dgiConstrNmL dgi ]
 %%]
@@ -931,7 +931,7 @@ idDefOccGamPartitionByKind ks
   = partition (\(IdOcc n k',_) -> k' `elem` ks) . gamToAssocDupL
 %%]
 
-%%[12
+%%[20
 idDefOccGamByKind :: IdOccKind -> IdDefOccGam -> AssocL HsName IdDefOcc
 idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitionByKind [k] g) ]
 %%]
@@ -940,11 +940,11 @@ idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitio
 %%% Identifier unqualified to qualified gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(IdQualGam)
+%%[20 export(IdQualGam)
 type IdQualGam = Gam IdOcc HsName
 %%]
 
-%%[12 export(idGam2QualGam,idQualGamReplacement)
+%%[20 export(idGam2QualGam,idQualGamReplacement)
 idGam2QualGam :: IdDefOccGam -> IdQualGam
 idGam2QualGam = gamMap (\(iocc,docc) -> (iocc {ioccNm = hsnQualified $ ioccNm iocc},ioccNm $ doccOcc $ docc))
 
