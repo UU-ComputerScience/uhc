@@ -291,7 +291,7 @@ SEM Body
                                             `gamUnion` gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
 %%]
 
-%%[9
+%%[12
 SEM ContextItem
     | Forall
         loc             .   idOccDefGamInside
@@ -470,7 +470,7 @@ SEM Kind
         loc             .   idGam       =   gamAddGam @idOccDefGamInside @lhs.idGam
 %%]
 
-%%[9
+%%[12
 SEM ContextItem
     | Forall
         loc             .   idGam       =   gamAddGam @idOccDefGamInside @lhs.idGam

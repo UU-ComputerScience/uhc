@@ -64,7 +64,7 @@ SEM FieldDeclaration
         loc             .   nmLev       =   @lhs.nmLev + 1
 %%]
 
-%%[9
+%%[12
 SEM ContextItem
     | Forall
         loc             .   nmLev       =   @lhs.nmLev + 1

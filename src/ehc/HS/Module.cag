@@ -63,7 +63,7 @@ SEM Module
         loc             .   modImpL     =   @body.modImpL
 %%]
 
-%%[99 -12.Module.modImpL
+%%[99 -20.Module.modImpL
 SEM Module
     | Module
         loc             .   modImpL     =   if hsnModPrelude `elem` map mimpSource @body.modImpL

@@ -480,7 +480,9 @@ SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 %%[9
 DATA Decl
   | Class           tyPrExpr        : TyExpr
+%%[[13
                     funcDeps        : FuncDeps
+%%]]
                     mbDefaultInstNm : {Maybe HsName}
                     decls           : Decls
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
@@ -490,7 +492,9 @@ DATA Decl
   | InstanceIntro   mbNmElim        : {Maybe (HsName)}
                     expr            : Expr
                     prExpr          : PrExpr
+%%]
 
+%%[13
 DATA FuncDep
   | Dep             fromTvs         : TyVars
                     toTvs           : TyVars
@@ -519,7 +523,10 @@ SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr Al
 
 %%[9.AllNT -6.AllNT
 SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
-                        AllKiExpr AllFuncDep
+                        AllKiExpr
+%%[[13
+                        AllFuncDep
+%%]]
 
 SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr
 %%]

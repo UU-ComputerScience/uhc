@@ -46,10 +46,13 @@
 %%[9 hs export(ehIsDeclVal)
 %%]
 
-%%[9 hs export(PrExpr(..), PrExprs,FuncDep(..), FuncDeps)
+%%[9 hs export(PrExpr(..), PrExprs)
 %%]
 
 %%[9 hs export(mkUnit,mkError')
+%%]
+
+%%[13 hs export(FuncDep(..), FuncDeps)
 %%]
 
 %%[50 hs export(DataConstrEq(..), DataConstrEqs)

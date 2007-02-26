@@ -40,9 +40,6 @@
 %%[9 export(ProofCost(..),ppProofCost',mkPCostExec,pcostNotAvail,pcostAvailAsArg,pcostZero,pcostZero',pcostCmb,pcostBase,pcostInf,pcostLevelSet,pcostExecMulBy)
 %%]
 
-%%[9 export(ClsFuncDep(..))
-%%]
-
 %%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
 %%]
 
@@ -59,6 +56,9 @@
 %%]
 
 %%[9 export(prfsAddPrOccL)
+%%]
+
+%%[13 export(ClsFuncDep(..))
 %%]
 
 %%[20 export(emptyPrElimTGam)
@@ -567,7 +567,7 @@ prfsAddPrOccL prOccL depth st
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[13
 data ClsFuncDep = ClsFuncDep [Int] [Int] deriving Show
 
 instance PP ClsFuncDep where
@@ -615,13 +615,18 @@ data Rule
        , rulNmEvid          :: HsName
        , rulId              :: PredOccId
        , rulCost            :: ProofCost
+%%[[13
        , rulFuncDeps        :: [ClsFuncDep]
+%%]]
        }
 
 instance Eq Rule where
   r1 == r2 = poiId (rulId r1) == poiId (rulId r2)
 
-emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) pcostInf []
+emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) pcostInf
+%%[[13
+                 []
+%%]]
 
 mkInstElimRule :: EHCOpts -> HsName -> PredOccId -> Int -> Ty -> Rule
 mkInstElimRule opts n i sz ctxtToInstTy
@@ -631,7 +636,9 @@ mkInstElimRule opts n i sz ctxtToInstTy
            , rulNmEvid    	= n
            , rulId        	= i
            , rulCost      	= pcostBase `pcostExecMulBy` (2 * sz + 1)
+%%[[13
            , rulFuncDeps  	= []
+%%]]
            }
   where ns = take sz hsnLclSupply
         ev = MkEvidCtxt n

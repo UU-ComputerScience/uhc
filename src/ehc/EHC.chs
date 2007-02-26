@@ -511,7 +511,7 @@ cpParseHsImport :: HsName -> EHCompilePhase ()
 cpParseHsImport = cpParseOffsideStopAtErr HSPrs.pAGItfImport hsScanOpts ecuStoreHS
 %%]
 
-%%[99 -12.cpParseHsImport
+%%[99 -20.cpParseHsImport
 cpParseHsImport :: Bool -> HsName -> EHCompilePhase ()
 cpParseHsImport litmode = cpParseOffsideStopAtErr HSPrs.pAGItfImport (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
 %%]

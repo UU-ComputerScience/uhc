@@ -91,7 +91,10 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        loc         .   pp          =   "class" >#< pp_parens @context.pp >#< "=>" >#< @simpletype.pp >#< "|" >#< @dependencies.pp
+        loc         .   pp          =   "class" >#< pp_parens @context.pp >#< "=>" >#< @simpletype.pp
+%%[[13
+                                        >#< "|" >#< @dependencies.pp
+%%]]
                                         >-< indent 2 @where.pp
     | Instance
         loc         .   pp          =   "instance" >|< ppInstNm @useimplicitly @maybeinstancename
@@ -107,7 +110,7 @@ SEM Declaration
         loc         .   pp          =   "type" >#< @simpletype.pp >#< "=" >#< @type.pp
 %%]
 
-%%[9
+%%[13
 SEM FunctionalDependency
     | Dependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
@@ -217,10 +220,6 @@ SEM SimpleType
 SEM ContextItem
     | Class
         loc         .   pp          =   @name >#< ppSpaces @types.ppL
-    | Arrow
-        loc         .   pp          =   @argument.pp >#< "->" >#< @result.pp
-    | Forall
-        loc         .   pp          =   "forall" >#< ppSpaces @typevariables >#< "." >#< @context.pp
     | Implicits
         loc         .   pp          =   pp "..."
     | NoImplicits
@@ -230,6 +229,13 @@ SEM ContextItem
 SEM ContextItem
     | RowLacksLabel
         loc         .   pp          =   @name >|< "\\" >|< @rowvariable
+%%]
+%%[12
+SEM ContextItem
+    | Arrow
+        loc         .   pp          =   @argument.pp >#< "->" >#< @result.pp
+    | Forall
+        loc         .   pp          =   "forall" >#< ppSpaces @typevariables >#< "." >#< @context.pp
 %%]
 
 %%[5.Constructor

@@ -7,7 +7,7 @@
 %%% Gamma's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[13
 ATTR AllFuncDep [ | tyGam: TyGam | ]
 %%]
 
@@ -45,7 +45,9 @@ SEM Decl
                                                                     , rulNmEvid     = n
                                                                     , rulId         = mkPrId @lhs.prfCtxtId @lUniq
                                                                     , rulCost       = mkPCostExec 10
+%%[[13
                                                                     , rulFuncDeps   = @funcDeps.funcDeps
+%%]]
                                                                     }
                                                                where ev = MkEvidVar n
                                                         in   PrIntroGamInfo (tyQuantifyClosed ([@hdPrTy] `mkArrow` @clsTyRec)) k r
@@ -57,7 +59,9 @@ SEM Decl
                                                                     , rulNmEvid     = hsnUnknown
                                                                     , rulId         = mkPrId @lhs.prfCtxtId u
                                                                     , rulCost       = pcostBase `pcostExecMulBy` 2
+%%[[13
                                                                     , rulFuncDeps   = []
+%%]]
                                                                     }
                                                                where -- o   = (CExpr_Int . tyRecOffset supNm $ @clsTyRec)
                                                                      -- [subn] = take 1 hsnLclSupply
@@ -81,7 +85,7 @@ SEM Decl
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[13
 ATTR AllFuncDep [ clsTyArgs: TyL | | funcDeps USE {++} {[]} : {[ClsFuncDep]} ]
 
 SEM FuncDep

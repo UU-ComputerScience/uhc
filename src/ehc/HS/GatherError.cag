@@ -172,7 +172,11 @@ SEM ContextItem
 
 SEM Declaration
     | Class
-        loc         .   errL        =   @errReorder ++ @context.errL ++ @simpletype.errL ++ @dependencies.errL ++ @where.errL
+        loc         .   errL        =   @errReorder ++ @context.errL ++ @simpletype.errL
+%%[[13
+                                        ++ @dependencies.errL
+%%]]
+                                        ++ @where.errL
     | Instance
         loc         .   errL        =   firstNotEmpty [@errIdUse ++ @context.errL ++ @types.errL ++ @where.errL, @errReorder]
     | InstanceUseImplicitly
