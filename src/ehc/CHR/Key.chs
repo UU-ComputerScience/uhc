@@ -39,7 +39,14 @@ instance PP Key where
 
 %%[9 export(Keyable(..))
 class Keyable k where
-  toKey :: k -> [TrieKey Key]
+  toKey               :: k -> [TrieKey Key]
+  toKeyParentChildren :: k -> ([TrieKey Key],[TrieKey Key])
+
+  -- minimal def, mutually recursive
+  toKey               x = let (p,c) = toKeyParentChildren x in p ++ c
+  toKeyParentChildren x = case toKey x of
+                            (h:t) -> ([h],t)
+                            _     -> ([],[])
 %%]
 
 %%[9

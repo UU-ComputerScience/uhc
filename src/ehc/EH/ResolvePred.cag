@@ -76,7 +76,7 @@ SEM Expr
   | LamImpl     loc         .   knPr                =   tyPred . (@body.tyCnstr |=>) $ @knArgImpl
                             .   knPrUid             =   mkPrId @prfCtxtId @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
-  | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail . tyImpls $ @imSubsTy
+  | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,7 +125,7 @@ SEM Expr
                             .   quantPrIdSet        =   Set.unions
                                                         . map (Set.unions . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . Set.toList . tqoInsPrIdSet)
                                                         . gamElts $ @tqoGam
-                            .   gathPredL           =   @remToPrfPrOccL ++ filter (not . (`Set.member` @quantPrIdSet) . poPoi) @prfArgPrOccL ++ @bodyPrfArgPrOccL
+                            .   gathPredL           =   @remToPrfPrOccL ++ filter (not . (`Set.member` @quantPrIdSet) . poPoi) @quantPrOccL ++ @bodyPrfArgPrOccL
                 lhs         .   gathPredL           =   @gathPredL
 %%]
 
@@ -230,11 +230,16 @@ SEM AGItf
   | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
-  | Instance    loc         .   cSubst              =   @lhs.cSubst `cSubstApp` @supPrfCSubst `cSubstApp` @prfCSubst
+  | Instance    loc         .   cSubst              =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then @lhs.cSubst
+                                                        else cSubstApp @lhs.cSubst $ cSubstApp @supPrfCSubst @prfCSubst
 
 SEM Expr
-  | Let         loc         .   cSubst              =   cnstrImplsToCSubst @tqoTyCnstr `cSubstApp` @lhs.cSubst
-                                                          `cSubstApp` @bodyPrfCSubst `cSubstApp` @prfCSubst
+  | Let         loc         .   cSubst              =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr) @lhs.cSubst
+                                                        else cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr)
+                                                             $ cSubstApp @lhs.cSubst
+                                                             $ cSubstApp @bodyPrfCSubst @prfCSubst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -244,7 +249,7 @@ SEM Expr
 %%[9
 SEM Expr
   | App AppImpred
-                loc         .   appImplsCoeL        =   mkImplsAppCoe . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
+                loc         .   appImplsCoeL        =   mkImplsAppCoe @lhs.opts . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
   | AppImpl     loc         .   appImplsCoeL        =   []
 %%]
 
@@ -278,7 +283,9 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam AppTop LamImpl
-                loc         .   poiBindL            =   mkCxBindLForPoiL @availPoiS @lhs.cxbindLMap @poiL
+                loc         .   poiBindL            =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then @chrAssumeBindL
+                                                        else mkCxBindLForPoiL @availPoiS @lhs.cxbindLMap @poiL
 %%]
 
 

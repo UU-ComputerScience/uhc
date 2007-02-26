@@ -120,6 +120,7 @@ data EHCOpts
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
       ,  ehcOptPrfCutOffAt    ::  Int				-- cut off limit for context reduction
       ,  ehcCfgClassViaRec    ::  Bool				-- instance representation via record instead of data
+      ,  ehcCfgClassViaCHR    ::  Bool				-- use CHR based variant
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
@@ -198,6 +199,7 @@ defaultEHCOpts
       ,  ehcCfgInstFldHaveSelf=   False
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
+      ,  ehcCfgClassViaCHR    =   False -- True
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
@@ -254,6 +256,9 @@ ehcCmdLineOpts
      ,  Option "g"  ["gen-own"]          (OptArg  oOwn "0|1|2|3|4")           "generate own 1=parameters/tailjumps, 2=locals, 3=calls, 4=stack (3)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
+%%]]
+%%[[9
+     ,  Option ""   ["cls-via-chr"]      (boolArg oClsViaCHR)                 "class predicate handling vir CHR's (default=off)"
 %%]]
 %%[[12
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
@@ -361,6 +366,9 @@ ehcCmdLineOpts
                                 Just "2"    -> o { ehcOptOptimise      = OptimiseALot       }
                                 Nothing     -> o { ehcOptOptimise      = OptimiseALot       }
                                 _           -> o
+%%]]
+%%[[9
+         oClsViaCHR    o b =  o { ehcCfgClassViaCHR       = b }
 %%]]
 %%[[12
          oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }

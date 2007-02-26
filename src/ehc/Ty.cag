@@ -270,6 +270,11 @@ poUpdPoiSc :: PredOccId -> PredScope -> PredOcc -> PredOcc
 poUpdPoiSc poi sc po = po {poPoi = poi, poScope = sc}
 %%]
 
+%%[9 hs
+instance PredOccKeyable PredOcc where
+  pokKey = pokKey . poPoi
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR Pred occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -834,25 +839,31 @@ predTy p
 tyImpls :: Ty -> Impls
 tyImpls (Ty_Impls i) = i
 
-implsPredsTail :: Impls -> ([PredOcc],Impls)
-implsPredsTail (Impls_Cons v p pv sc t)  =  let  (p',mi) = implsPredsTail t
+implsPredsTail :: PredScope -> Impls -> ([PredOcc],Impls)
+implsPredsTail sc (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail sc t
                                             in   (mkPredOcc p pv sc : p',mi)	-- scope for now
-implsPredsTail t                         =  ([],t)
+implsPredsTail _  t                      =  ([],t)
 
 implsPredsMbTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
-implsPredsMbTail i =  case implsPredsTail i of
+implsPredsMbTail i =  case implsPredsTail initPredScope i of
                         (i',Impls_Tail v  ) -> (i',Just v)
                         (i',Impls_Nil     ) -> (i',Nothing)
 
-tyImplsPreds :: Ty -> [PredOcc]
-tyImplsPreds = fst . implsPredsTail . tyImpls
+tyImplsPreds :: PredScope -> Ty -> [PredOcc]
+tyImplsPreds sc = fst . implsPredsTail sc . tyImpls
 
 tyIsImplsTail :: Ty -> Bool
 tyIsImplsTail (Ty_Impls (Impls_Tail _))  = True
 tyIsImplsTail _                          = False
 
 implsPrIds :: Impls -> [PredOccId]
-implsPrIds = map poPoi . fst . implsPredsTail
+implsPrIds = map poPoi . fst . implsPredsTail initPredScope
+%%]
+
+%%[9 hs export(implsIsEmpty)
+implsIsEmpty :: Impls -> Bool
+implsIsEmpty (Impls_Cons _ _ _ _) = False
+implsIsEmpty _                    = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

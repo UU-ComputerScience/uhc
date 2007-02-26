@@ -46,7 +46,7 @@ instance CHRMatchable FIIn PredOccId Cnstr where
   chrMatchTo _ (PredOccId_Var v1) sc2                               = Just $ v1 `cnstrPoiUnit` sc2
   chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)            = Just emptyCnstr
 --  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyCnstr
-  chrMatchTo _ _                  _                                 = Nothing
+--  chrMatchTo _ _                  _                                 = Nothing
 
 instance CHRMatchable FIIn PredOcc Cnstr where
   chrMatchTo fi po1 po2

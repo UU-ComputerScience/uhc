@@ -179,8 +179,8 @@ anncmpHaskell98 env ann1 ann2
       (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
       (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
-      (RedHow_Assumption     _ _, _                        )  ->  P_GT
-      (_                        , RedHow_Assumption     _ _)  ->  P_LT
+      (RedHow_Assumption   _ _ _, _                        )  ->  P_GT
+      (_                        , RedHow_Assumption   _ _ _)  ->  P_LT
       (RedHow_ByScope           , _                        )  ->  P_GT
       (_                        , RedHow_ByScope           )  ->  P_LT
       (RedHow_ProveObl       _ _, _                        )  ->  P_GT
@@ -194,8 +194,8 @@ heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 anncmpGHCBinSolve :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpGHCBinSolve env ann1 ann2
   = case (ann1,ann2) of
-      (RedHow_Assumption     _ _, _                        )  ->  P_GT
-      (_                        , RedHow_Assumption     _ _)  ->  P_LT
+      (RedHow_Assumption   _ _ _, _                        )  ->  P_GT
+      (_                        , RedHow_Assumption   _ _ _)  ->  P_LT
       (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
       (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
@@ -234,8 +234,8 @@ anncmpEHCScoped env ann1 ann2
       (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
       (HeurRed (RedHow_BySuperClass _ _ _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_BySuperClass _ _ _) _)  ->  P_LT
-      (HeurRed (RedHow_Assumption     _ _) _, _                                    )  ->  P_GT
-      (_                                    , HeurRed (RedHow_Assumption     _ _) _)  ->  P_LT
+      (HeurRed (RedHow_Assumption   _ _ _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_Assumption   _ _ _) _)  ->  P_LT
       (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
 
 heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation

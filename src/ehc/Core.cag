@@ -40,9 +40,6 @@
 %%[9 hs export(cbindLNub)
 %%]
 
-%%[9 hs export(mkCExprPrHole)
-%%]
-
 %%[12 hs export(cModMerge)
 %%]
 
@@ -439,9 +436,12 @@ type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%% Hole construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
-mkCExprPrHole :: PredOccId -> CExpr
-mkCExprPrHole = CExpr_Hole . poiId
+%%[9 hs export(mkCExprPrHole,mkCExprHole)
+mkCExprHole :: EHCOpts -> UID -> CExpr
+mkCExprHole opts = if ehcCfgClassViaCHR opts then CExpr_Var . mkHNm else CExpr_Hole
+
+mkCExprPrHole :: EHCOpts -> PredOccId -> CExpr
+mkCExprPrHole opts = mkCExprHole opts . poiId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

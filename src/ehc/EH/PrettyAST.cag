@@ -464,10 +464,26 @@ SEM Decl
                         .  info     =   []
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info
                         .  info     =   [ mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
+                                        , mkInfo1 "predScope" (pp @predScope)
+                                        , mkInfo1 "toProveDeclsCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveDeclsCnstrMp)
+                                        , mkInfo1 "chrSolveDeclsDoneConstraints" (ppBracketsCommasV @chrSolveDeclsDoneConstraints)
+                                        , mkInfo1 "chrSolveDeclsRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveDeclsRemCnstrMp)
+                                        , mkInfo1 "chrSolveDeclsEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveDeclsEvidBindMp)
+                                        , mkInfo1 "chrSolveDeclsEvidBinds" (ppCBindL @chrSolveDeclsEvidBinds)
+                                        , mkInfo1 "chrSolveDeclsTrace" (ppSolveTrace @chrSolveDeclsTrace)
+                                        , mkInfo1 "chrSolveDeclsRedGraph" (pp $ show @chrSolveDeclsRedGraph)
+                                        , mkInfo1 "toProveSuperCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveSuperCnstrMp)
+                                        , mkInfo1 "chrSolveSuperDoneConstraints" (ppBracketsCommasV @chrSolveSuperDoneConstraints)
+                                        , mkInfo1 "chrSolveSuperRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveSuperRemCnstrMp)
+                                        , mkInfo1 "chrSolveSuperEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveSuperEvidBindMp)
+                                        , mkInfo1 "chrSolveSuperEvidBinds" (ppCBindL @chrSolveSuperEvidBinds)
+                                        , mkInfo1 "chrSolveSuperTrace" (ppSolveTrace @chrSolveSuperTrace)
+                                        , mkInfo1 "chrSolveSuperRedGraph" (pp $ show @chrSolveSuperRedGraph)
                                         , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "prTyFix" (ppTy @prTyFix)
                                         , mkInfo1 "tyPrExpr.evTy" (ppTy @tyPrExpr.evTy)
                                         , mkInfo1 "recTy" (ppTy @recTy)
+                                        {-
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
                                         , mkInfo1 "instPrElimTGam" (pp @instPrElimTGam)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
@@ -488,6 +504,7 @@ SEM Decl
                                         , mkInfo1 "dbg2PrfIntermG1 (sup)" (pp @dbgSup2PrfIntermG1)
                                         , mkInfo1 "dbg2PrfIntermG2 (sup)" (pp @dbgSup2PrfIntermG2)
                                         , mkInfo1 "dbg2PrLeaves (sup)" (ppBracketsCommas @dbgSup2PrLeaves)
+                                        -}
                                         ]
   | InstanceIntro
                 loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info
@@ -514,13 +531,14 @@ SEM Expr
                                         , mkInfo1 "toProveHereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveHereCnstrMp)
                                         , mkInfo1 "toProveElsewhereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveElsewhereCnstrMp)
                                         -- , mkInfo1 "chrSolveWorkConstraints" (ppBracketsCommasV @chrSolveWorkConstraints)
-                                        , mkInfo1 "lhs.predScope" (pp @lhs.predScope)
+                                        , mkInfo1 "predScope" (pp @predScope)
                                         , mkInfo1 "chrSolveDoneConstraints" (ppBracketsCommasV @chrSolveDoneConstraints)
                                         , mkInfo1 "chrSolveRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveRemCnstrMp)
-                                        , mkInfo1 "chrSolveEvidMp" (ppAssocLV $ Map.toList @chrSolveEvidMp)
-                                        , mkInfo1 "chrSolveRemCnstrMp2" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveRemCnstrMp2)
-                                        , mkInfo1 "chrSolveEvidMp2" (ppAssocLV $ Map.toList @chrSolveEvidMp2)
+                                        , mkInfo1 "chrSolveEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveEvidBindMp)
+                                        , mkInfo1 "chrSolveEvidBinds" (ppCBindL @chrSolveEvidBinds)
                                         , mkInfo1 "chrSolveTrace" (ppSolveTrace @chrSolveTrace)
+                                        , mkInfo1 "chrSolveRedGraph" (pp $ show @chrSolveRedGraph)
+                                        {-
                                         , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
                                         , mkInfo1 "dbg2PrfG (decl)" (pp @dbg2PrfG)
@@ -538,6 +556,8 @@ SEM Expr
                                         , mkInfo1 "prfPoiBackMp (decl)" (ppAssocLV . Map.toList $ @prfPoiBackMp)
                                         , mkInfo1 "prfArgPrOccL (decl)" (ppBracketsCommas @prfArgPrOccL)
                                         , mkInfo1 "gathPredL (decl)" (ppBracketsCommas @gathPredL)
+                                        -}
+                                        , mkInfo1 "quantPrOccL (decl)" (ppBracketsCommas @quantPrOccL)
                                         , mkInfo1 "tqoGam" (pp @tqoGam)
                                         ]
   | Lam         loc     .  info_9   :=  [ mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)

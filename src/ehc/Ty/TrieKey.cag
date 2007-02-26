@@ -31,19 +31,19 @@ a -> (c -> d)                       (->) a ((->) c d)                       [->,
 WRAPPER TyAGItf
 %%]
 
-%%[9 hs export(tyTrieKey)
-tyTrieKey :: Ty -> [TrieKey Key]
-tyTrieKey ty
+%%[9 hs
+tyTrieKeyParentChildren :: Ty -> ([TrieKey Key],[TrieKey Key])
+tyTrieKeyParentChildren ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf)
-     in   toList $ trieKey_Syn_TyAGItf t
+     in   (toList $ trieKey_Syn_TyAGItf t, toList $ trieKeyNest_Syn_TyAGItf t)
 
 instance Keyable Ty where
-  toKey = tyTrieKey
+  toKeyParentChildren = tyTrieKeyParentChildren
 
 instance Keyable Pred where
-  toKey pr = toKey $ Ty_Pred pr
+  toKeyParentChildren pr = toKeyParentChildren $ Ty_Pred pr
 
 instance Keyable PredScope where
   toKey (PredScope_Var v) = [TK_One TKK_Partial $ Key_UID v]
@@ -57,7 +57,9 @@ instance Keyable PredOcc where
   toKey po = toKey (poPr po)
 
 instance Keyable CHRPredOcc where
-  toKey po = toKey (cpoScope po) ++ toKey (cpoPr po)
+  toKeyParentChildren po
+    = (ppr ++ toKey (cpoScope po),cpr)
+    where (ppr,cpr) = toKeyParentChildren $ cpoPr po
 
 %%]
 
@@ -68,10 +70,7 @@ instance Keyable CHRPredOcc where
 %%[9
 ATTR TyAGItf Ty Pred [ | | trieKey: {FastSeq (TrieKey Key)} ]
 ATTR Ty  [ | | trieKeyFun, trieKeyArgs, trieKeyArgsNest: {FastSeq (TrieKey Key)} ]
-ATTR Ty Pred [ | | trieKeyNest: {FastSeq (TrieKey Key)} ]
-
-SEM TyAGItf
-  | AGItf           lhs     .   trieKey         =   @ty.trieKey :++: @ty.trieKeyNest
+ATTR TyAGItf Ty Pred [ | | trieKeyNest: {FastSeq (TrieKey Key)} ]
 
 SEM Ty
   | App             lhs     .   (trieKey,trieKeyNest)

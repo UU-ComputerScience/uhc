@@ -53,9 +53,15 @@ SEM AGItf
 SEM Expr
   | Let         decls       .   predSameScopeCounter=   if @lhs.isFirstLet then 0 else @lhs.predSameScopeCounter
   | Lam LamImpl AppTop
-                (_,loc.predScope)                   =   pscpEnter 0 @lhs.predScope
+                (_,loc.predScope)                   =   if @implsIsEmpty
+                                                        then (0,@lhs.predScope)
+                                                        else pscpEnter 0 @lhs.predScope
   | * - Lam LamImpl AppTop
-                loc			.	predScope          	=	@lhs.predScope
+                loc         .   predScope           =   @lhs.predScope
+
+SEM Expr
+  | Lam AppTop  loc			.	implsIsEmpty   		=   implsIsEmpty $ tyImpls @imSubsTy
+  | LamImpl     loc			.	implsIsEmpty   		=   null @knPrL
 
 SEM Decl
   | Class Instance
@@ -76,6 +82,12 @@ The env from the bottom of a let sequence is required because we need (e.g.) typ
 %%[9
 SEM AGItf
   | AGItf       loc         .   chrFIIn             =   @expr.chrFIIn {fiUniq = @lUniq}
+%%]
+
+%%[9
+SEM Decl
+  | Instance    loc         .   chrFIIn             =   FIIn strongFIOpts uidStart
+                                                             @fe
 %%]
 
 %%[9

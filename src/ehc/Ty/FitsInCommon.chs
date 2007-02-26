@@ -115,23 +115,23 @@ data AppSpineInfo
   =  AppSpineInfo
        { asCoCo         :: CoContraVariance
        , asFIO          :: FIOpts -> FIOpts
-       , asFOUpdCoe     :: FIOut -> FIOut -> FIOut
+       , asFOUpdCoe     :: EHCOpts -> FIOut -> FIOut -> FIOut
        }
 
 unknownAppSpineInfoL :: [AppSpineInfo]
-unknownAppSpineInfoL = repeat (AppSpineInfo CoContraVariant fioMkUnify (\_ x -> x))
+unknownAppSpineInfoL = repeat (AppSpineInfo CoContraVariant fioMkUnify (\_ _ x -> x))
 
 arrowAppSpineInfoL :: [AppSpineInfo]
 arrowAppSpineInfoL
   =  [  AppSpineInfo ContraVariant fioMkStrong
-            (\_ x -> x)
+            (\_ _ x -> x)
      ,  AppSpineInfo CoVariant id
-            (\ffo afo
+            (\opts ffo afo
                 ->  let  (u',u1) = mkNewUID (foUniq afo)
                          n = uidHNm u1
                          r = mkCoe (\e ->  CExpr_Lam n e)
                          l = mkCoe (\e ->  CExpr_App e
-                                             (coeWipeWeave emptyCnstr (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
+                                             (coeWipeWeave opts emptyCnstr (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
                                                `coeEvalOn` CExpr_Var n)
                                    )
                     in   afo  { foRCoeL = r : foRCoeL afo, foLCoeL = l : foLCoeL afo
@@ -141,7 +141,7 @@ arrowAppSpineInfoL
      ]
 
 prodAppSpineInfoL :: [AppSpineInfo]
-prodAppSpineInfoL = repeat (AppSpineInfo CoVariant id (\_ x -> x))
+prodAppSpineInfoL = repeat (AppSpineInfo CoVariant id (\_ _ x -> x))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
