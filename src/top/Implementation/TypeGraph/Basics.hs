@@ -10,7 +10,7 @@ module Top.Implementation.TypeGraph.Basics where
 
 import Top.Implementation.TypeGraph.Path
 import Top.Types
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 import Data.Maybe
 import Data.List (sort, partition, intersperse)
 

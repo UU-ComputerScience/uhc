@@ -17,7 +17,7 @@ import Top.Types
 import qualified Data.Map as M
 import Data.List (nub)
 import Data.Maybe (isJust)
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 data StandardTypeGraph info = STG
    { referenceMap            :: M.Map VertexId Int{- group number -}

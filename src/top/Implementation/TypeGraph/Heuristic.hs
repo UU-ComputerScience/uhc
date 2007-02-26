@@ -14,7 +14,7 @@ import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.Path
 import Top.Types
 import Top.Solver
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 -----------------------------------------------------------------------------
 

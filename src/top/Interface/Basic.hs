@@ -13,7 +13,7 @@ import Top.Constraint
 import Top.Util.Option
 import Top.Monad.Select
 import Top.Monad.StateFix
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 ------------------------------------------------------------------------
 -- (I)  Class name and (dedicated) deselect function

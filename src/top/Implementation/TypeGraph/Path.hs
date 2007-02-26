@@ -11,7 +11,7 @@ module Top.Implementation.TypeGraph.Path where
 import Data.List
 import Data.Maybe
 import qualified Data.Map as M
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 ----------------------
    

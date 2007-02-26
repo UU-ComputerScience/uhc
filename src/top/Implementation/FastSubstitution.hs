@@ -17,7 +17,7 @@ import Top.Interface.TypeInference
 import Top.Interface.Basic
 import Top.Interface.Substitution
 import qualified Data.Map as M
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 ------------------------------------------------------------------------
 -- (I)  Algebraic data type
