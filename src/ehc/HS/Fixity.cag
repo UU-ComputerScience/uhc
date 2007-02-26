@@ -16,7 +16,7 @@ ATTR
 %%[[9
   Statement
 %%]
-%%[[12
+%%[[20
   AllModule AGItf
 %%]
     [ | | gathFixityGam USE {`gamAddGam`} {emptyGam}: FixityGam ]
@@ -25,7 +25,7 @@ ATTR
 %%[1
 ATTR
   AllDeclaration AllExpression
-%%[[12
+%%[[20
   AGItf AllModule
 %%]]
 %%[[95
@@ -48,7 +48,7 @@ SEM Body
         declarations    .   fixityGam   =   @declarations.gathFixityGam
 %%]
 
-%%[12 -1.initFixityGam
+%%[20 -1.initFixityGam
 SEM Body
     | Body
         declarations    .   fixityGam   =   @declarations.gathFixityGam `gamUnion` @lhs.fixityGam

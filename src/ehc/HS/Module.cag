@@ -6,7 +6,7 @@
 %%% Import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR Import [ | | modEntSpec: ModEntSpec ]
 
 SEM Import
@@ -20,7 +20,7 @@ SEM Import
         lhs             .   modEntSpec  =   ModEntSpec @name (Just ModEntSubAll)
 %%]
 
-%%[12
+%%[20
 ATTR Imports AllImportSpecification [ | | modEntSpecL: {[ModEntSpec]} ]
 
 SEM Imports
@@ -34,7 +34,7 @@ SEM MaybeImportSpecification
         lhs             .   modEntSpecL =   []
 %%]
 
-%%[12
+%%[20
 ATTR AllImportSpecification [ | | isHiding: Bool ]
 
 SEM ImportSpecification
@@ -46,7 +46,7 @@ SEM MaybeImportSpecification
         lhs             .   isHiding    =   True
 %%]
 
-%%[12
+%%[20
 ATTR AllImportDeclaration Body [ | | modImpL USE {++} {[]}: {[ModImp]} ]
 
 SEM ImportDeclaration
@@ -57,7 +57,7 @@ SEM ImportDeclaration
         lhs             .   modImpL     =   []
 %%]
 
-%%[12.Module.modImpL
+%%[20.Module.modImpL
 SEM Module
     | Module
         loc             .   modImpL     =   @body.modImpL
@@ -78,7 +78,7 @@ SEM Module
 %%% Imports for module dpd anal only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AGItf Module [ | | modImpNmL: {[HsName]} ]
 
 SEM Module
@@ -90,7 +90,7 @@ SEM Module
 %%% Export
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR Export [ | | modExp: ModExp ]
 
 SEM Export
@@ -106,7 +106,7 @@ SEM Export
         lhs             .   modExp      =   ModExpMod @name
 %%]
 
-%%[12
+%%[20
 ATTR Exports [ | | modExpL: {[ModExp]} ]
 
 SEM Exports
@@ -117,7 +117,7 @@ SEM Exports
 %%]
 
 
-%%[12
+%%[20
 ATTR MaybeExports [ | | modExpsMb: {Maybe [ModExp]} ]
 
 SEM MaybeExports
@@ -131,7 +131,7 @@ SEM MaybeExports
 %%% Definitions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs
+%%[20 hs
 mkInstDefsRel :: Bool -> HsName -> Maybe HsName -> IdOcc -> IdOcc -> ModEntRel
 mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
   = (if useimplicitly
@@ -141,7 +141,7 @@ mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
     maybe (Rel.empty) (\_ -> Rel.singleton instancename (ModEnt IdOcc_Val idOccDefVal Set.empty)) maybeinstancename
 %%]
 
-%%[12
+%%[20
 ATTR
   Declaration Declarations Body
 %%[[95
@@ -193,7 +193,7 @@ SEM Deriving
 %%% Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR Module AGItf [ | | mod: Mod ]
 
 SEM Module

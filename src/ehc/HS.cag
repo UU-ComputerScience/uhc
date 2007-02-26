@@ -49,7 +49,7 @@
 %%[9 hs export(Statement(..), Statements)
 %%]
 
-%%[12 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
+%%[20 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
 %%]
 
 %%[95 hs export(Deriving(..), Derivings)

@@ -222,7 +222,7 @@ SEM Err
                                                         )
 %%]
 
-%%[12
+%%[20
 SEM Err
   | ModNameMismatch     lhs     .  pp   =   ppMsgErr    "Module names do not match"
                                                         (    "filename        :" >#< @nmOfFile

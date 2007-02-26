@@ -46,7 +46,7 @@
 %%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve},{%{EH}Pred.EvidenceToCore})
 %%]
 
-%%[12 hs import({%{EH}Ty.MapName})
+%%[20 hs import({%{EH}Ty.MapName})
 %%]
 
 %%[50 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
@@ -93,7 +93,7 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 ATTR AGItf [ moduleNm: HsName | | ]
 %%]
 
-%%[12
+%%[20
 ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
 %%]
 
@@ -106,7 +106,7 @@ ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
 %%% Note: will move to AG files where attr's are actually defined/used
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AGItf Expr [ | | gathValGam: ValGam ]
 
 SEM Expr
@@ -114,7 +114,7 @@ SEM Expr
   | * - Let     lhs         .   gathValGam          =   emptyGam
 %%]
 
-%%[12
+%%[20
 ATTR AGItf Expr [ | | gathTyGam: TyGam ]
 
 SEM Expr
@@ -122,7 +122,7 @@ SEM Expr
   | * - Let     lhs         .   gathTyGam           =   emptyGam
 %%]
 
-%%[12
+%%[20
 ATTR AGItf Expr [ | | gathKiGam: KiGam ]
 
 SEM Expr
@@ -130,7 +130,7 @@ SEM Expr
   | * - Let     lhs         .   gathKiGam           =   emptyGam
 %%]
 
-%%[12
+%%[20
 ATTR AGItf Expr [ | | gathPrIntroGam: PrIntroGam ]
 
 SEM Expr
@@ -169,7 +169,7 @@ SEM PatExpr
   | Expr        loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
 %%]
 
-%%[12
+%%[20
 ATTR AGItf [ | | gathPrElimTGam: PrElimTGam ]
 %%]
 
@@ -177,7 +177,7 @@ ATTR AGItf [ | | gathPrElimTGam: PrElimTGam ]
 %%% Is toplevel mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AGItf [ isTopMod: Bool | | ]
 %%]
 

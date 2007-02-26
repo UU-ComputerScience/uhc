@@ -26,7 +26,7 @@ gbmod2C opts m
     in  pp_Syn_AGItf t
 %%]
 
-%%[12 -8.gbmod2C hs
+%%[20 -8.gbmod2C hs
 gbmod2C :: EHCOpts -> Module -> (PP_Doc,PP_Doc)
 gbmod2C opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
@@ -242,7 +242,7 @@ ppTbl tp nm tbl = ppLine $ "static" >#< tp >#< nm >|< "[] =" >-< ppArr tbl
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: PP_Doc ]
 %%]
 
-%%[12
+%%[20
 ATTR Module AGItf [ | | ppMain: PP_Doc ]
 %%]
 
@@ -263,7 +263,7 @@ SEM Module
                             .   strNmInitF              =   "initModule"
                             .   ppNmInitF               =   @ppNm @strNmInitF
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
-%%[[12
+%%[[20
                             .   strNmImpNode            =   "impNode"
                             .   strNmExpNode            =   "expNode"
                             .   strNmExpNodeSz          =   @strNmExpNode ++ "_size"
@@ -277,7 +277,7 @@ SEM Module
 
 %%[[8
                 lhs         .   pp          
-%%][12
+%%][20
                 lhs         .   (pp,ppMain)
 %%]]
                                             =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm) >-< "#include \"rts.h\""
@@ -328,7 +328,7 @@ SEM Module
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
 %%[[8
                                                                                   "()"
-%%][12
+%%][20
                                                                                   "(GB_ModEntry* modTbl)"
 %%]]
                                                                                  )
@@ -337,7 +337,7 @@ SEM Module
                                                                          , pp (length linkL), @ppNmLinkEntriesTbl
                                                                          , @ppNmGlobEntriesTbl
                                                                          , @ppNmConstTbl
-%%[[12
+%%[[20
                                                                          -- , ppAddrOf @ppNmImpNode
                                                                          -- , pp (length @impModNmL), @ppNmImpNodeNms
                                                                          , @ppNmExpNode
@@ -355,7 +355,7 @@ SEM Module
                                                                                   >-< "argc -= nRtsOpts ; argv += nRtsOpts ;"
 %%[[8
                                                                                   >-< @ppNmInitF >|< "()" >#< ";"
-%%][12
+%%][20
                                                                                   >-< (vlist [ "GB_MkFixConNodeN(" >#< mkPre m >|< @strNmExpNode >|< "," >#< mkPre m >|< @strNmExpNodeSz >|<  ", 0 ) ;"
                                                                                              | (_,m) <- @allImpModNmL
                                                                                              ])
@@ -370,7 +370,7 @@ SEM Module
                                                               then empty
                                                               else ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
                                                                    >-< "void silly_main(void){}"
-%%[[12
+%%[[20
                                                     {-
                                                     impnd   = ppLine $ "static GB_NodePtr" >#< @ppNmImpNode >#< ";"
                                                                        >-< "static char*" >#< @ppNmImpNodeNms >|< "[] ="
@@ -398,7 +398,7 @@ SEM Module
                                                       >-< consts
                                                       >-< cafs
                                                       >-< glEntries
-%%[[12
+%%[[20
                                                       -- >-< impnd
                                                       >-< expnd
 %%]]
@@ -408,7 +408,7 @@ SEM Module
                                                       >-< maincaf
                                                       >-< etc
                                                       >-< mainf
-%%][12
+%%][20
                                                     , maincaf
                                                       >-< externs
                                                       >-< mods

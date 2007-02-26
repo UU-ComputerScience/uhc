@@ -16,7 +16,7 @@
 %%[8 import(Data.Set) export(tokTpIsId)
 %%]
 
-%%[12 export(tokTpQual)
+%%[20 export(tokTpQual)
 %%]
 
 %%[5
@@ -27,7 +27,7 @@ data EnumValToken
   | TkConid
   | TkOp
   | TkConOp
-%%[[12
+%%[[20
   | TkQVarid
   | TkQConid
   | TkQOp
@@ -67,13 +67,13 @@ tokTpIsId
   = (`member` ts)
   where ts = fromList
   			   [TkVarid,TkConid,TkOp,TkConOp
-%%[[12
+%%[[20
   			   ,TkQVarid,TkQConid,TkQOp,TkQConOp
 %%]
   			   ]
 %%]
 
-%%[12
+%%[20
 tokTpQual :: EnumValToken -> EnumValToken
 tokTpQual TkVarid = TkQVarid
 tokTpQual TkConid = TkQConid

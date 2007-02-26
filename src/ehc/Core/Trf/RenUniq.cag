@@ -46,7 +46,7 @@ SEM CAlt
 %%% Module name used to uniqify globally over all modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllExpr [ moduleNm: HsName | | ]
 
 SEM CModule
@@ -70,7 +70,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 type ARenMp = Map.Map HsName HsName
 %%]
 
-%%[12 hs
+%%[20 hs
 -- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
 mkUniq :: HsName -> HsName -> UID -> HsName
 mkUniq q n u
@@ -86,7 +86,7 @@ aRenAdd nL u m
      in   Map.fromList [ (n,hsnSuffix n ("__" ++ show u)) | (n,u) <- zip nL uL] `Map.union` m
 %%]
 
-%%[12 -8.aRenAdd hs
+%%[20 -8.aRenAdd hs
 aRenAdd :: HsName -> [HsName] -> UID -> ARenMp -> ARenMp
 aRenAdd q nL u m
   =  let  uL = mkNewUIDL (length nL) u
@@ -133,7 +133,7 @@ SEM CAlt
                 expr        .   lev         =   @lhs.lev + 1
 %%]
 
-%%[12
+%%[20
 SEM CExpr
   | Let         loc         .   aRenMp      :=  if @lhs.lev == cLevModule
                                                 then @lhs.aRenMp

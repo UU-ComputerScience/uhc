@@ -17,7 +17,7 @@
 %%[8 import({GrinByteCode/AbsSyn})
 %%]
 
-%%[12 hs import({%{EH}Core(HsName2OffsetMpMp)})
+%%[20 hs import({%{EH}Core(HsName2OffsetMpMp)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,7 +56,7 @@ data Const
   = Const_Str           { constInx :: Int }
   | Const_CFunction     { constCFunNm :: String }
   | Const_CallInfo      { constCINm :: String }		-- used only in ToC
-%%[[12
+%%[[20
   | Const_ImpNode
 %%]]
   deriving(Eq,Ord,Show)
@@ -75,7 +75,7 @@ data LinkTbl
   | LinkTbl_PatchCode_Deref2		-- patch with **linkVal
   | LinkTbl_PatchOffsets			-- patch offsets to absolute address
   | LinkTbl_CallInfo				-- same as LinkTbl_Const, with implicit offset in determined by size of const table, used only in ToC
-%%[[12
+%%[[20
   | LinkTbl_ImpEntry
 %%]]
   deriving (Show,Eq,Ord,Enum)
@@ -102,7 +102,7 @@ linkOffsets :: Int -> Link
 linkOffsets x = Link LinkTbl_PatchOffsets x
 %%]
 
-%%[12 hs export(linkImpEntry)
+%%[20 hs export(linkImpEntry)
 linkImpEntry :: Int -> Link
 linkImpEntry m = Link LinkTbl_ImpEntry m
 %%]
@@ -201,7 +201,7 @@ data ValAccess
   = Val_LocalOffset     StackDepth
   | Val_Int             Integer
   | Val_GlobEntry       { vaEntryInx :: Int }
-%%[[12
+%%[[20
   | Val_ImpEntry        { vaModOff, vaEntryOff :: Int }
 %%]]
   deriving Show
@@ -212,7 +212,7 @@ instance PP ValAccess where
 type ValAccessGam = Map.Map HsName ValAccess
 %%]
 
-%%[12 hs export(ImpNmMp)
+%%[20 hs export(ImpNmMp)
 type ImpNmMp = Map.Map HsName Int
 %%]
 
@@ -220,7 +220,7 @@ type ImpNmMp = Map.Map HsName Int
 data NmEnv
   = NmEnv
       { neVAGam     :: ValAccessGam
-%%[[12
+%%[[20
       , neImpNmMp   :: HsName2OffsetMpMp
 %%]]
       }
@@ -231,7 +231,7 @@ nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
 nmEnvLookup nm env = Map.lookup nm $ neVAGam env
 %%]
 
-%%[12 -8.nmEnvLookup hs export(nmEnvLookup)
+%%[20 -8.nmEnvLookup hs export(nmEnvLookup)
 nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
 nmEnvLookup nm env
   = case Map.lookup nm $ neVAGam env of
@@ -296,7 +296,7 @@ nmLd' optim env modNmConstInx stkDepth nm
                -> (mva,Load Seq.empty 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
                -> (mva,Load (Seq.singleton $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) 1 LoadSrc_TOS)
-%%[[12
+%%[[20
              Val_ImpEntry mo eo
                -> (mva,Load (Seq.fromList [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+1))
 %%]]

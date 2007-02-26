@@ -2,7 +2,7 @@
 %%% Pretty printed source
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs
+%%[20 hs
 hiNV' :: String -> HsName -> PP_Doc -> PP_Doc
 hiNV' k n v = k >#< ppHINm n >-< indent 1 ("=" >#< v)
 
@@ -21,7 +21,7 @@ ppAttr a b = ppHINm a >#< ":" >#< b
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 %%]
 
-%%[12
+%%[20
 SEM Module
     | Module
         lhs         .   pp          =   hiNV "module" @nm @bindings.ppL
@@ -71,13 +71,13 @@ SEM Binding
         lhs         .   pp          =   hiNV "instance" @nm @rules.ppL
 %%]
 
-%%[12
+%%[20
 SEM Rule
     | Rule
         lhs         .   pp          =   hiNV "rule" @nm [ppTyWithCfg cfgPPTyHI @ty,Pr.ppHowMkEvid ppHINm @mkEvid,ppPredOccId' ppUID' @uid,Pr.ppProofCost' @cost]
 %%]
 
-%%[12
+%%[20
 ATTR
   Bindings Rules
     [ | | ppL: {[PP_Doc]} ]

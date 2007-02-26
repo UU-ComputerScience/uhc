@@ -23,7 +23,7 @@
 %%[10 export(hsnConcat)
 %%]
 
-%%[12 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+%%[20 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -52,7 +52,7 @@ data HsName
 %%[8
   |   HNmNr Int (Maybe HsName)
 %%]
-%%[12
+%%[20
   |   HNmQ [HsName]
 %%]
 %%[7
@@ -66,7 +66,7 @@ hsnShow _   (HNPos p  )  = show p
 %%[[8
 hsnShow _ (HNmNr n _)  = "x_" ++ show n
 %%]]
-%%[[12
+%%[[20
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
 %%]]
 %%]
@@ -83,7 +83,7 @@ instance Show HsName where
 
 %%[5 export(hsnInitLast)
 hsnToList :: HsName -> [HsName]
-%%[[12
+%%[[20
 hsnToList (HNmQ ns) = ns
 %%]
 hsnToList n         = [n]
@@ -165,7 +165,7 @@ hsnAlphanumeric (HNPos p) = HNm ("y"++show p)
 hsnAlphanumeric (HNmNr n Nothing) = HNm ("x"++show n)
 hsnAlphanumeric (HNmNr n (Just orig)) = hsnAlphanumeric orig
 %%]
-%%[12
+%%[20
 hsnAlphanumeric (HNmQ ns) = HNm $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)
 %%]
 
@@ -189,7 +189,7 @@ hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
 %%% HsName & module related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 -- qualified part of a name
 hsnQualified :: HsName -> HsName
 hsnQualified = snd . hsnInitLast
@@ -262,7 +262,7 @@ instance HSNM ([HsName],HsName) where
 instance HSNM [HsName] where
   mkHNm [n] = n
   mkHNm []  = HNm "" -- ????, or empty alternative of HsName
-%%[[12
+%%[[20
   mkHNm ns  = HNmQ ns
 %%]
 %%]
@@ -296,7 +296,7 @@ data IdOccKind
   | IdOcc_Dflt
 %%]]
   | IdOcc_Any
-%%[[12
+%%[[20
   | IdOcc_Data
 %%]]
   deriving (Show,Eq,Ord)
@@ -317,7 +317,7 @@ instance PP IdOccKind where
   pp IdOcc_Dflt     = pp "Default"
 %%]]
   pp IdOcc_Any      = pp "Any"
-%%[[12
+%%[[20
   pp IdOcc_Data     = pp "Data"
 %%]]
 %%]

@@ -21,7 +21,7 @@ SEM Body
         loc         .   errL        =   @errReorder ++ @declarations.errL
 %%]
 
-%%[12 -1.Module
+%%[20 -1.Module
 SEM Module
     | Module
         lhs         .   errL        =   firstNotEmpty [@errUndef,@errModName,@body.errL]

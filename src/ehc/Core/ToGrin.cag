@@ -106,7 +106,7 @@ SEM CPatBind
 %%[8
 ATTR
   CModule CExpr
-%%[[12
+%%[[20
   CodeAGItf
 %%]]
     [ | | gathArityMp: CArityMp ]
@@ -119,7 +119,7 @@ SEM CExpr
 %%[8
 ATTR
   AllCodeNT
-%%[[12
+%%[[20
   CodeAGItf
 %%]]
     [ arityMp: CArityMp | | ]
@@ -130,7 +130,7 @@ SEM CodeAGItf
   | AGItf       module      .   arityMp     =   @module.gathArityMp
 %%]
 
-%%[12 -8.CodeAGItf.arityMp
+%%[20 -8.CodeAGItf.arityMp
 SEM CodeAGItf
   | AGItf       module      .   arityMp     =   @module.gathArityMp `Map.union` @lhs.arityMp
 %%]
@@ -148,7 +148,7 @@ ATTR AllCodeNT [ lamMp: CArityMp | | ]
 SEM CodeAGItf
   | AGItf       module      .   lamMp       =   @module.lamNmMp
 
-%%[12 -8.CodeAGItf.lamMp
+%%[20 -8.CodeAGItf.lamMp
 %%]
 ATTR CodeAGItf [ lamMp: CArityMp | | ]
 
@@ -180,7 +180,7 @@ SEM CBind
 %%% Gathering known function arity for other modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 %%]
 ATTR CodeAGItf CModule [ | | gathLamMp: CArityMp ]
 

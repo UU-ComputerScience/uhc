@@ -7,16 +7,16 @@
 %%% Haskell importable interface to HI/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}GrinCode},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
+%%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}GrinCode},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
 %%]
 
-%%[12 hs import(qualified Data.Map as Map,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,{%{EH}Module})
+%%[20 hs import(qualified Data.Map as Map,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,{%{EH}Module})
 %%]
 
-%%[12 hs export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
+%%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
 %%]
 
-%%[12 ag import({HI/AbsSyn})
+%%[20 ag import({HI/AbsSyn})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,7 +27,7 @@
 %%% Building
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs export(hiFromAllGams)
+%%[20 hs export(hiFromAllGams)
 hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> Seq.FastSeq Binding
 hiFromGam mk g = Seq.fromList [ mk n v | (n,v) <- gamToAssocL g ]
 

@@ -2,20 +2,20 @@
 %%% AST for HI (Haskell Interface) of modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 DATA AGItf
     | AGItf
         module                  : Module
 %%]
 
-%%[12
+%%[20
 DATA Module
     | Module
         nm                      : HsName
         bindings                : Bindings
 %%]
 
-%%[12
+%%[20
 DATA Binding
     | Stamp
         srcTimestamp            : String
@@ -64,7 +64,7 @@ SET AllBinding
   = Binding Bindings
 %%]
 
-%%[12
+%%[20
 DATA Rule
     | Rule
         nm                      : HsName
@@ -80,7 +80,7 @@ SET AllRule
   = Rule Rules
 %%]
 
-%%[12
+%%[20
 SET AllNT
   = AllBinding AllRule Module
 %%]

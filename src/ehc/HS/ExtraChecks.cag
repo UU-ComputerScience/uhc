@@ -24,7 +24,7 @@ SEM Declaration
         loc             .   errNotAllowed
                                         =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idOccDefGam
 
-%%[12
+%%[20
 SEM Module
     | Module
         loc             .   errModName  =   case @name of

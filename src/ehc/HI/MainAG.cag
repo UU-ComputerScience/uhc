@@ -8,17 +8,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[12 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
+%%[20 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[12 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}GrinCode},{%{EH}GrinCode.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
+%%[20 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}GrinCode},{%{EH}GrinCode.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 ag import({HI/AbsSyn},{HI/Pretty},{HI/Uniq})
+%%[20 ag import({HI/AbsSyn},{HI/Pretty},{HI/Uniq})
 WRAPPER AGItf
 %%]
 
@@ -26,7 +26,7 @@ WRAPPER AGItf
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -34,12 +34,12 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%% Reconstruction of original info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 hs
+%%[20 hs
 prElimTGamUnion :: Pr.PrElimTGam -> Pr.PrElimTGam -> Pr.PrElimTGam
 prElimTGamUnion = Pr.peTGamUnion basePrfCtxtId basePrfCtxtId
 %%]
 
-%%[12
+%%[20
 ATTR
   AllNT AGItf
     [ | |
@@ -87,7 +87,7 @@ SEM Binding
         lhs             .   prElimTGam  =   tgamSingleton basePrfCtxtId @nm (Pr.PrElimGamInfo @rules.rules)
 %%]
 
-%%[12
+%%[20
 ATTR Rule [ | | rule: {Pr.Rule} ]
 ATTR Rules [ | | rules: {[Pr.Rule]} ]
 
@@ -111,7 +111,7 @@ SEM Rules
 
 %%]
 
-%%[12
+%%[20
 %%]
 SEM AGItf
     | AGItf
@@ -121,7 +121,7 @@ SEM AGItf
 %%% Valid version?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllNT AGItf [ | | isValidVersion USE {||} {False}: Bool ]
 
 SEM Binding

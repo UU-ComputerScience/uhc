@@ -22,14 +22,14 @@ SEM Body
 		loc			.	ppExtra		=	empty
 %%]
 
-%%[12.Body -1.Body
+%%[20.Body -1.Body
 SEM Body
     | Body
         lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
 		loc			.	ppExtra		=	empty
 %%]
 
-%%[12
+%%[20
 SEM AGItf
 	| AGItf
 		lhs			.	pp			=	@ppExtra >-< @module.pp
@@ -690,7 +690,7 @@ SEM Derivings
 %%% Extra info for pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 %%]
 SEM AGItf
 	| AGItf

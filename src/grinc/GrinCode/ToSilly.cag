@@ -23,7 +23,7 @@
 %%[8 hs import(Debug.Trace)
 %%]
 
-%%[12 hs import(qualified Data.Set as Set, Data.Bits)
+%%[20 hs import(qualified Data.Set as Set, Data.Bits)
 %%]
 
 %%[8
@@ -41,7 +41,7 @@ grin2silly hptmap gr opts
    in silModule_Syn_GrAGItf t 
 %%]
 
-%%[12 hs import({%{EH}Base.Builtin},{%{GRIN}Config})
+%%[20 hs import({%{EH}Base.Builtin},{%{GRIN}Config})
 -- primitive related names which should be globally available, in unqualified form
 
 primGlobalNames :: Set.Set HsName
@@ -262,9 +262,13 @@ SEM GrExpr
 
  | Case    lhs.stats  = [ Statement_Comment ["Case"]
                         , if @altL.hasAnies
+
                            then Statement_If     @val.value
+
                                                  @altL.alternatives
+
                            else Statement_Switch @val.value
+
                                                  @altL.alternatives
                         ]
                         
@@ -329,7 +333,7 @@ SEM GrAlt
 SEM GrGlobal
 %%[[8
  | Global  loc.globNm      = @nm
-%%][12
+%%][20
  | Global  loc.globNm      = hsnToGlobal @nm
 %%]]
  		   lhs.names       = [@globNm]
@@ -345,7 +349,7 @@ SEM GrVal
  | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
 %%[[8
  | Var     loc.value  = Value_Var (mkVar @nm)
-%%][12
+%%][20
  | Var     loc.value  = Value_Var (mkVar (hsnToGlobal @nm))
 %%]]
            lhs.value  = @loc.value

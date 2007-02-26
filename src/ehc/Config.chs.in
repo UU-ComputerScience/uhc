@@ -8,7 +8,7 @@
 %%[8 import({%{EH}ConfigDefines}) export(module {%{EH}ConfigDefines})
 %%]
 
-%%[12 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
 %%[8 export(fileprefixInplaceInstall)
@@ -33,7 +33,7 @@ data Version
       , verMinorMinor       :: String
       , verQuality          :: String
       , verProg             :: String
-%%[[12
+%%[[20
       , verTimestamp        :: String
       , verSig              :: String
 %%]
@@ -50,7 +50,7 @@ version
       , verMinorMinor       = "@EH_VERSION_MINORMINOR@"
       , verQuality          = "@EH_VERSION_STABILITY@"
       , verProg             = "ehc"
-%%[[12
+%%[[20
       , verTimestamp        = Sig.timestamp
       , verSig              = Sig.sig
 %%]

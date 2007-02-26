@@ -14,7 +14,7 @@
 WRAPPER CodeAGItf
 %%]
 
-%%[12 hs import(qualified Data.Set as Set)
+%%[20 hs import(qualified Data.Set as Set)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,7 +28,7 @@ cmodTrfInlineLetAlias cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[12 -8.cmodTrfInlineLetAlias hs
+%%[20 -8.cmodTrfInlineLetAlias hs
 cmodTrfInlineLetAlias :: HsNameS -> CModule -> CModule
 cmodTrfInlineLetAlias globNmS cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -40,7 +40,7 @@ cmodTrfInlineLetAlias globNmS cmod
 %%% Globally used vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR CodeAGItf CExpr CModule AllBind [ globNmS: HsNameS | | ]
 
 SEM CAlt
@@ -110,7 +110,7 @@ SEM CBind
   | Bind        lhs         .   (bindNmMp,bindL)
                                             =   case @expr.mbRepl of
                                                   Just r | @nm /= hsnMain
-%%[[12
+%%[[20
                                                            && not (@nm `Set.member` @lhs.globNmS)
 %%]]
                                                     -> (@nm `Map.singleton` r,[(@nm,@cTrf)])

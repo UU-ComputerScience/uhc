@@ -213,7 +213,7 @@ SEM AGItf
   | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
-%%[12 -1.initValGam
+%%[20 -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
 %%]
 
@@ -417,7 +417,7 @@ SEM AGItf
                                                           ]
 %%]
 
-%%[12 -1.initTyGam
+%%[20 -1.initTyGam
 ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
@@ -439,7 +439,7 @@ SEM AGItf
   | AGItf       loc         .   kiGam               =   initKiGam
 %%]
 
-%%[12 -6.initKiGam
+%%[20 -6.initKiGam
 ATTR AGItf [ kiGam: KiGam | | ]
 %%]
 
@@ -782,7 +782,7 @@ SEM AGItf
 %%]
   | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
 
-%%[12 -9.initPrElimTGam
+%%[20 -9.initPrElimTGam
 ATTR AGItf [ prElimTGam: PrElimTGam | | ]
 
 SEM AGItf
@@ -806,7 +806,7 @@ SEM AGItf
   | AGItf       loc         .   prIntroGam          =   initPIGIGam
 %%]
 
-%%[12 -9.initPrIntroGam
+%%[20 -9.initPrIntroGam
 ATTR AGItf [ prIntroGam: PrIntroGam | | ]
 %%]
 

@@ -72,7 +72,7 @@ SEM CExpr
                 loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
   | Lam         loc         .   levOf       =   fvsLev @lhs.levMp cLevModule @body.fvS
   | Let         loc         .   levOf       =   fvsLev @lhs.levMp cLevModule @fvS
-%%[[12
+%%[[20
   | String      loc         .   levOf       =   cLevIntern
 %%]]
 

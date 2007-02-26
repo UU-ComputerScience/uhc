@@ -8,16 +8,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[12 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}HS}, {%{EH}Gam}, {%{EH}NameAspect})
+%%[20 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}HS}, {%{EH}Gam}, {%{EH}NameAspect})
 %%]
 
-%%[12 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%[20 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
 %%]
 
-%%[12 hs import(qualified Data.Set as Set)
+%%[20 hs import(qualified Data.Set as Set)
 %%]
 
-%%[12 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,7 +32,7 @@ WRAPPER AGItf
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AGItf Module [ opts: EHCOpts | | ]
 %%]
 
@@ -40,7 +40,7 @@ ATTR AGItf Module [ opts: EHCOpts | | ]
 %%% Top level instance names, to be propagated to next phase -- a hack :-(
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
 
 SEM Declaration
@@ -61,7 +61,7 @@ SEM Deriving
                                         =   @instancename : @lhs.topInstanceNmL
 %%]
 
-%%[12
+%%[20
 SEM Declaration
     | Class Instance InstanceUseImplicitly
         loc             .   mbPrevInstancename

@@ -1339,7 +1339,7 @@ void gb_InitTables
 	, GB_LinkEntry* linkEntries
 	, GB_BytePtr* globalEntries
 	, GB_Word* consts
-%%[[12
+%%[[20
 	// , GB_NodePtr *impNode
 	// , int impNodeSz, char** impNodeNms
 	, GB_NodePtr expNode
@@ -1358,7 +1358,7 @@ void gb_InitTables
 	}
 */
 
-%%[[12
+%%[[20
 /*
 	GB_MkConNodeN(*impNode,impNodeSz,0) ;
 	for ( i = 0 ; i < impNodeSz ; i++ )
@@ -1397,7 +1397,7 @@ void gb_InitTables
 				}
 				break ;
 
-%%[[12
+%%[[20
 			case GB_LinkTbl_EntryKind_ImpEntry :
 				// *p = (*impNode)->content.fields[ linkEntries[i].linkVal ] ;
 				*p = Cast(GB_Word,*(modTbl[ linkEntries[i].linkVal ].expNode)) ;
@@ -1407,7 +1407,7 @@ void gb_InitTables
 		}
 	}
 	
-%%[[12
+%%[[20
 	for ( i = 0 ; i < expNodeSz ; i++ )
 	{
 		expNode->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
@@ -1462,7 +1462,7 @@ void gb_checkInterpreterAssumptions()
 %%% Module lookup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
 {
 	for ( ; modTbl->name != NULL && strcmp( modTbl->name, modNm ) != 0 ; modTbl++ ) ;

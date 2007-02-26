@@ -61,7 +61,7 @@
 %%[9 export(prfsAddPrOccL)
 %%]
 
-%%[12 export(emptyPrElimTGam)
+%%[20 export(emptyPrElimTGam)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -748,7 +748,7 @@ peTGamUnion2 c1 c2 g1 g2
   = peTGamUnion c1 c2 (peTGamSetRuleCtxt c1 c2 g1) g2
 %%]
 
-%%[12
+%%[20
 emptyPrElimTGam :: PrElimTGam
 emptyPrElimTGam = emptyTGam basePrfCtxtId
 %%]

@@ -34,7 +34,7 @@ to a loop.
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[12 hs import({%{GRIN}GrinCode.FreeVars})
+%%[20 hs import({%{GRIN}GrinCode.FreeVars})
 %%]
 
 %%[8 hs import({%{EH}Core}(FvS))
@@ -58,7 +58,7 @@ grInline grmod
             $ Inh_GrAGItf
 %%]
 
-%%[12 -8.grInline hs export(grInline)
+%%[20 -8.grInline hs export(grInline)
 grInline :: HsNameS -> GrInlMp -> GrModule -> (GrModule,GrInlMp)
 grInline expNmS inlMp grmod
   = (trf_Syn_GrAGItf t,gathInlMp_Syn_GrAGItf t)
@@ -81,7 +81,7 @@ WRAPPER GrAGItf
 %%% Globally used vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR GrAGItf GrModule AllBind [ expNmS: HsNameS | | ]
 %%]
 
@@ -89,7 +89,7 @@ ATTR GrAGItf GrModule AllBind [ expNmS: HsNameS | | ]
 %%% Introduced global names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12
+%%[20
 ATTR AllBind [ | | introNmS USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 
 SEM GrBind
@@ -121,7 +121,7 @@ SEM GrBind
                                                       Just (FvInfo 1 use)
                                                         | not @isCAF
                                                           && FvUse_Call `Set.member` use
-%%[[12
+%%[[20
                                                           && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
@@ -129,7 +129,7 @@ SEM GrBind
                                                         | @isCAF
                                                           && @nm `Set.member` @expr.willEvalNmS
                                                           && FvUse_Val `Set.member` use
-%%[[12
+%%[[20
                                                           && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
                                                           -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
@@ -168,7 +168,7 @@ SEM GrModule
   | Mod         bindL       .   inlMp           =   @bindL.gathInlMp
 %%]
 
-%%[12 hs
+%%[20 hs
 inlMayExport :: HsNameS -> HsNameS -> HsName -> GrInl -> Bool
 inlMayExport onlyInThisModule expNmS n inl
   = case inl of
@@ -178,7 +178,7 @@ inlMayExport onlyInThisModule expNmS n inl
       _ -> False
 %%]
 
-%%[12 -8.inlMp.init
+%%[20 -8.inlMp.init
 ATTR GrAGItf GrModule [ inlMp: GrInlMp | | gathInlMp: GrInlMp ]
 
 SEM GrModule

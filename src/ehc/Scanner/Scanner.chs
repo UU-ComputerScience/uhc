@@ -27,7 +27,7 @@ instance Show EnumValToken where
   TkConid      -> "upper case identifier" 
   TkOp         -> "operator"  
   TkConOp      -> "con operator"  
-%%[[12          
+%%[[20          
   TkQOp        -> "qualified operator"  
   TkQVarid     -> "lower case qualified identifier" 
   TkQConid     -> "upper case qualified identifier" 

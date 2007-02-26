@@ -126,7 +126,7 @@ data EHCOpts
       ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
                               ::  Int
 %%]]
-%%[[12
+%%[[20
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
 %%]]
@@ -205,7 +205,7 @@ defaultEHCOpts
       ,  ehcOptTyBetaRedCutOffAt
                               =   20
 %%]]
-%%[[12
+%%[[20
       ,  ehcOptCheckRecompile    =   True
       ,  ehcOptFullProgGRIN      =   False
 %%]]
@@ -260,7 +260,7 @@ ehcCmdLineOpts
 %%[[9
      ,  Option ""   ["cls-via-chr"]      (boolArg oClsViaCHR)                 "class predicate handling vir CHR's (default=off)"
 %%]]
-%%[[12
+%%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
 %%]]
 %%[[99
@@ -319,7 +319,7 @@ ehcCmdLineOpts
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just m | m `elem` ["exe","exec"]
                                              -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True
-%%[[12
+%%[[20
                                                   , ehcOptFullProgGRIN    = True
 %%]]
                                                   }
@@ -328,7 +328,7 @@ ehcCmdLineOpts
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True
-%%[[12
+%%[[20
                                                   , ehcOptFullProgGRIN    = True
 %%]]
                                                   }
@@ -370,7 +370,7 @@ ehcCmdLineOpts
 %%[[9
          oClsViaCHR    o b =  o { ehcCfgClassViaCHR       = b }
 %%]]
-%%[[12
+%%[[20
          oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }
 %%]]
 %%[[99
@@ -410,7 +410,7 @@ optBoolean tr ms o
 %%% Discrimination options for recompile, represent as string, difference means recompile
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[12 export(optsDiscrRecompileRepr)
+%%[20 export(optsDiscrRecompileRepr)
 optsDiscrRecompileRepr :: EHCOpts -> String
 optsDiscrRecompileRepr opts
   = concat
