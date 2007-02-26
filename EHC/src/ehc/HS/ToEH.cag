@@ -120,7 +120,11 @@ SEM Declaration
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                             a = mkArrow c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
-                                        in  ( rngLift @range EH.Decl_Class a @dependencies.eh (Just @instancerefname) sigs
+                                        in  ( rngLift @range EH.Decl_Class a
+%%[[13
+                                                      @dependencies.eh
+%%]]
+                                                      (Just @instancerefname) sigs
                                             , rngLift @range EH.Decl_Instance (Just (@instancerefname,False)) InstDefault a vals
                                             )
         lhs         .   eh          =   [@eh,@ehInst]
@@ -144,7 +148,7 @@ SEM Declaration
         lhs         .   eh          =   [@eh]
 %%]
 
-%%[9
+%%[13
 ATTR FunctionalDependencies [ | | eh USE {:} {[]}: {[EH.FuncDep]} ]
 
 ATTR FunctionalDependency [ | | eh: {EH.FuncDep} ]
@@ -283,12 +287,14 @@ ATTR ContextItem [ | | eh: {EH.PrExpr}  ehTy: {EH.TyExpr} ]
 SEM ContextItem
     | Class
         loc         .   eh          =   rngLift @range EH.PrExpr_Class @refname @types.eh
+    | Implicits NoImplicits
+        loc         .   eh          =   undefined -- may not occur nested
+%%[[12
     | Arrow
         loc         .   eh          =   rngLift @range EH.PrExpr_Arrow @argument.eh @result.eh
     | Forall
         loc         .   eh          =   foldr (rngLift @range EH.PrExpr_Forall) @context.eh @typevariables
-    | Implicits NoImplicits
-        loc         .   eh          =   undefined -- may not occur nested
+%%]]
 
 SEM ContextItem
     | * - Implicits NoImplicits

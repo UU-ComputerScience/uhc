@@ -565,12 +565,18 @@ pClassHead      =    pTyPrExprPrefix <*> pHd <|> pHd
                 where pHd = TyExpr_Pred <$> pPrExprClass
 
 pDeclClass      ::   EHCParser Decl
+%%[[9
+pDeclClass      =    (\h d -> Decl_Class h Nothing d)
+%%][13
 pDeclClass      =    (\h deps d -> Decl_Class h deps Nothing d)
+%%]]
                      <$   pKey "class"
                      <*>  pClassHead
+%%[[13
                      <*>  (pKey "|" *> pListSep pComma (FuncDep_Dep <$> pTyVars1 <* pKey "->" <*> pTyVars1)
                           `opt` []
                           )
+%%]]
                      <*   pKey "where" <*> pDecls
 
 pDeclInstance   ::   EHCParser Decl

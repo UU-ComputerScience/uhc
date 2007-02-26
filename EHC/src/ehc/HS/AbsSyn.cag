@@ -205,7 +205,9 @@ DATA Declaration                                  {- *** -}
         range                    : Range
         context                  : ContextItems -- is a "simple" context
         simpletype               : SimpleType   -- Haskell 98 allows only one variable
+%%[[13
         dependencies             : FunctionalDependencies
+%%]]
         where                    : MaybeDeclarations -- cannot have everything
     | Instance
         range                    : Range
@@ -242,7 +244,7 @@ DATA Fixity
         range                    : Range
 %%]
 
-%%[9
+%%[13
 TYPE FunctionalDependencies      = [ FunctionalDependency ]
 
 DATA FunctionalDependency
@@ -272,7 +274,7 @@ SET AllDeclarationPlain
 
 SET AllDeclaration
   = AllDeclarationPlain
-%%[[9
+%%[[13
     FunctionalDependency FunctionalDependencies
 %%]]
 %%[[95
@@ -461,6 +463,7 @@ DATA ContextItem
         range                    : Range
         name                     : Name   -- that is the class
         types                    : Types  -- in Haskell 98, this is only one type
+%%[[12
     | Forall
         range                    : Range
         typevariables            : Names
@@ -469,6 +472,7 @@ DATA ContextItem
         range                    : Range
         argument                 : ContextItem
         result                   : ContextItem
+%%]]
     | Implicits
         range                    : Range
     | NoImplicits

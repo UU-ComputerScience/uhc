@@ -43,10 +43,13 @@
 %%[7 hs export(RowRecordExpressionUpdate(..), RowRecordExpressionUpdates, RowRecordPatternBinding(..), RowRecordPatternBindings, RowTypeUpdate(..), RowTypeUpdates)
 %%]
 
-%%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns, FunctionalDependency(..), FunctionalDependencies)
+%%[9 hs export(ContextItem(..), ContextItems, ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns)
 %%]
 
 %%[9 hs export(Statement(..), Statements)
+%%]
+
+%%[13 hs export(FunctionalDependency(..), FunctionalDependencies)
 %%]
 
 %%[20 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)

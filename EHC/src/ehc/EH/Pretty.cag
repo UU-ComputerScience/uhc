@@ -219,7 +219,7 @@ SEM PatExpr
 %%]
 
 %%[9
-ATTR PrExprs FuncDeps [ | | ppL: {[PP_Doc]} ]
+ATTR PrExprs [ | | ppL: {[PP_Doc]} ]
 
 SEM Expr
   | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
@@ -246,7 +246,9 @@ SEM PrExprs
 
 SEM Decl
   | Class       loc     .   pp      =   "class"     >#< @tyPrExpr.pp
+%%[[13
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
+%%]]
                                                     >#< "where" >-< indent 2 @decls.pp
   | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
                                                     >#< @tyPrExpr.pp
@@ -260,13 +262,6 @@ SEM Decl
   | InstanceIntro
                 loc     .   pp      =   "instance"  >#< @expr.pp >#< "<:" >#< @prExpr.pp
                                                     >-< @errInstPP
-
-SEM FuncDep
-  | Dep         lhs     .   pp      =   @fromTvs.pp >#< "->" >#< @toTvs.pp
-
-SEM FuncDeps
-  | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[10
@@ -293,6 +288,17 @@ SEM Decl
 
 SEM TyExpr
   | Lam         loc     .   pp      =   "\\" >|< @tyVar >#< "->" >#< @tyExpr.pp
+%%]
+
+%%[13
+ATTR FuncDeps [ | | ppL: {[PP_Doc]} ]
+
+SEM FuncDep
+  | Dep         lhs     .   pp      =   @fromTvs.pp >#< "->" >#< @toTvs.pp
+
+SEM FuncDeps
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
 %%[20

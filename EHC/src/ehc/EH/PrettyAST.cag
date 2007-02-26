@@ -460,7 +460,11 @@ SEM PrExpr
   | Arrow       loc     .  ppAST    =   ppNest ["PrExpr","Arrow"] [] [@arg.ppAST,@res.ppAST]
 
 SEM Decl
-  | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [@tyPrExpr.ppAST,@funcDeps.ppAST,@decls.ppAST] @info
+  | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [ @tyPrExpr.ppAST
+%%[[13
+                                                                                 , @funcDeps.ppAST
+%%]]
+                                                                                 , @decls.ppAST] @info
                         .  info     =   []
   | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info
                         .  info     =   [ mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
@@ -509,13 +513,6 @@ SEM Decl
   | InstanceIntro
                 loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info
                         .  info     =   []
-
-SEM FuncDep
-  | Dep         loc     .  ppAST    =   ppNest ["FuncDep","Dep"] [] [@fromTvs.ppAST,@toTvs.ppAST]
-
-SEM FuncDeps
-  | Nil         lhs     .  ppAST    =   ppNest ["FuncDeps","Nil"] [] []
-  | Cons        lhs     .  ppAST    =   ppNest ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST]
 
 SEM AGItf
   | AGItf       loc     .  info_9   :=  [ mkInfo1 "chrStore" (ppCHRStore @chrStore)
@@ -605,6 +602,16 @@ SEM Expr
 SEM PrExpr
   | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [ppNm @nm] [@rowTyExpr.ppAST]
   | DynVar      loc     .  ppAST    =   ppNest ["PrExpr","DynVar"] [ppNm @nm] [@tyExpr.ppAST]
+%%]
+
+%%[13
+SEM FuncDep
+  | Dep         loc     .  ppAST    =   ppNest ["FuncDep","Dep"] [] [@fromTvs.ppAST,@toTvs.ppAST]
+
+SEM FuncDeps
+  | Nil         lhs     .  ppAST    =   ppNest ["FuncDeps","Nil"] [] []
+  | Cons        lhs     .  ppAST    =   ppNest ["FuncDeps","Cons"] [] [@hd.ppAST,@tl.ppAST]
+
 %%]
 
 %%[1010
