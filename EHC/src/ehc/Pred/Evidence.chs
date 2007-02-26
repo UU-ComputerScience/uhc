@@ -10,7 +10,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.PPUtils)
+%%[9 import(UU.Pretty,EH.Util.PPUtils,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,6 +27,17 @@ data Evidence  p info
 %%[9
 instance (Show info, Show p) => Show (Evidence p info) where
   show _ = "Evidence"
+
+instance Eq info => Eq (Evidence p info) where
+  (Evid_Proof _ i1 evs1) == (Evid_Proof _ i2 evs2) = i1 == i2 && evs1 == evs2
+  _                      == _                      = False
+
+instance Ord info => Ord (Evidence p info) where
+  Evid_Unresolved _      `compare` _                      = LT
+  _                      `compare` Evid_Unresolved _      = GT
+  Evid_Proof _ i1 evs1   `compare` Evid_Proof _ i2 evs2   = orderingLexic (i1 `compare` i2 : zipWith compare evs1 evs2)
+  Evid_Proof _ _  _      `compare` _                      = LT
+  _                      `compare` Evid_Proof _ _  _      = GT
 %%]
 
 %%[9

@@ -281,9 +281,30 @@ instance PP PredOccId where
   pp poi               = "Poi" >|< ppPredOccId' pp poi
 %%]
 
+%%[9 export(mkPrIdCHR)
+mkPrIdCHR :: UID -> PredOccId
+mkPrIdCHR = mkPrId basePrfCtxtId
+%%]
+
 %%[9 export(emptyPredOccId)
 emptyPredOccId :: PredOccId
 emptyPredOccId = mkPrId basePrfCtxtId uidStart
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred occurrence key, abstraction over the identification of a PredOcc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+20070225: This is temporary, because of the transition to CHR's
+
+%%[9 export(PredOccKeyable(..))
+class PredOccKeyable x where
+  pokKey :: x -> UID
+%%]
+
+%%[9
+instance PredOccKeyable PredOccId where
+  pokKey = poiId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -92,20 +92,22 @@ SEM Expr
   | CConst      loc         .   cexprBase   :=  CExpr_Char @char
   | Var         loc         .   cexprBase   :=  CExpr_Var @nm
   | Var IConst CConst
-                loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
+                loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
   | Con         loc         .   cexprBase   :=  CExpr_Var @nm
-                            .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
+                            .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
 %%[9
 SEM Expr
-  | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
+  | Let         loc         .   letCBindL   :=  if ehcCfgClassViaCHR @lhs.opts
+                                                then [ (@howToBind,@decls.cbindL ++ @chrSolveEvidBinds) ]
+                                                else [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
   | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App
-                                                    (coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
+                                                    (coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
-  | Lam LamImpl loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
-  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppCoe @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
+  | Lam LamImpl loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
+  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppCoe @lhs.opts @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
 %%]
 
 %%[10
@@ -116,7 +118,7 @@ SEM Expr
 %%[97
 SEM PatExpr
   | Expr        loc         .   cexprBaseEq =   CExpr_Var hsnClassEqFldEq
-                            .   cexpr       =   mkCExprApp (foAppCoe @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
+                            .   cexpr       =   mkCExprApp (foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
                                                            [@expr.cexpr]
 %%]
 
@@ -179,7 +181,7 @@ SEM RecExpr
 
 %%[10
 SEM RecExpr
-  | Ext Upd     loc         .   offset          :=  @lhs.cSubst `cSubstApp` mkCExprPrHole @prUid
+  | Ext Upd     loc         .   offset          :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -252,7 +254,7 @@ SEM Expr
 
 %%[10
 SEM Expr
-  | Sel         loc         .   offset          :=  @lhs.cSubst `cSubstApp` mkCExprPrHole @prUid
+  | Sel         loc         .   offset          :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -427,7 +429,7 @@ SEM RecPatExpr
 
 %%[10
 SEM RecPatExpr
-  | Ext         loc         .   offset      :=  @lhs.cSubst `cSubstApp` mkCExprPrHole @prUid
+  | Ext         loc         .   offset      :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -540,7 +542,10 @@ SEM Decl
                                                                               ([CBind_Bind nR
                                                                                   (mkCExprApp (CExpr_Tup @dictTag)
                                                                                       (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
-                                                                               ++ (@cSubst `cSubstApp` ({- @supPrfIntroCBindL ++ -} @prfIntroCBindL)))
+                                                                               ++ (cSubstOptApp @lhs.opts @cSubst
+                                                                                    (if ehcCfgClassViaCHR @lhs.opts
+                                                                                     then @chrSolveDeclsEvidBinds
+                                                                                     else {- @supPrfIntroCBindL ++ -} @prfIntroCBindL)))
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
@@ -570,7 +575,7 @@ SEM Decl
                                                                            n1subs t = nsubs t n1
                                                                            nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
                                                                            mkcSubs dti nmFldLL altPrOccL
-                                                                             = [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
+                                                                             = [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole @lhs.opts (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
                                                                                | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
                                                                                ]
                                                                            mkc tg@(dtisLT,dti,dtisGT) arity nms nmFldLL altPrOccL
@@ -596,20 +601,24 @@ SEM Decl
                                                              nR = @dictBuildNm
                                                              nStrictR = hsnSuffix nR "!"
                                                              dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
-                                                                       (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL @supPrfEvidL))
+                                                                       (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL
+                                                                                                   (if ehcCfgClassViaCHR @lhs.opts
+                                                                                                    then map CExpr_Var @chrSuperProveNmL
+                                                                                                    else @supPrfEvidL)))
                                                              dD = mkCExprLam @ctxtArgNmL
                                                                     (mkCExprLetRec
                                                                         ([CBind_Bind nR
                                                                             (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d bindL))]
-                                                                         ++ (@cSubst `cSubstApp` (@supPrfIntroCBindL ++ @prfIntroCBindL)))
+                                                                         ++ (cSubstOptApp @lhs.opts @cSubst
+                                                                               $ (if ehcCfgClassViaCHR @lhs.opts
+                                                                                  then @chrAssumeSuperBindL ++ @chrSolveSuperEvidBinds ++ @chrSolveDeclsEvidBinds
+                                                                                  else @supPrfIntroCBindL ++ @prfIntroCBindL)))
                                                                         (CExpr_Var nR)
                                                                     )
-                                                in   [CBind_Bind @dictNm (@cSubst `cSubstApp` d)]
+                                                in   [CBind_Bind @dictNm (cSubstOptApp @lhs.opts @cSubst d)]
   | InstanceIntro
                 lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
 %%]
-
-mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Case

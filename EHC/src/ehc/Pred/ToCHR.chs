@@ -200,7 +200,9 @@ patchUnresolvedWithAssumption :: FIIn -> CHRPredOccCnstrMp -> CHRPredOccEvidMp -
 patchUnresolvedWithAssumption env unresCnstrMp evidMp
   = (cnstrMpFromList assumeCnstrs, evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp)
   where us = mkNewLevUIDL (Map.size unresCnstrMp) $ fiUniq env
-        assumeCnstrs  = zipWith (\(Prove p,_) u -> mkAssumeConstraint (cpoPr p) u (cpoScope p)) (Map.toList unresCnstrMp) us
+        assumeCnstrs  = concat $ zipWith mk (Map.toList unresCnstrMp) us
+                      where mk (Prove p,_) u = [mkAssumeConstraint (cpoPr p) u (cpoScope p)]
+                            mk _           _ = []
         assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
 %%]
 
@@ -216,9 +218,10 @@ chrSimplifyToEvidence
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
-     ) => FIIn -> CHRStore p i g s -> Heuristic p i -> ConstraintToInfoMap p i -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SolveState p i g s)
+     ) => FIIn -> CHRStore p i g s -> Heuristic p i -> ConstraintToInfoMap p i
+          -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SolveState p i g s,RedGraph p i)
 chrSimplifyToEvidence env chrStore heur cnstrInfoMp
-  = (mkEvidence heur cnstrInfoMp redGraph,solveState)
+  = (mkEvidence heur cnstrInfoMp redGraph,solveState,redGraph)
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
         solveState = chrSolve'' (env {fiUniq = u1}) chrStore $ Map.keys cnstrInfoMp
         redGraph

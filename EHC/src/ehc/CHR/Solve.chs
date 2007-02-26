@@ -130,13 +130,14 @@ data Work p i
 data WorkList p i
   = WorkList
       { wlTrie      :: Trie.Trie Key (Work p i)
+      , wlDoneSet   :: Set.Set WorkKey					-- accumulative store of all keys added, set semantics, thereby avoiding double entry
       , wlQueue     :: [CHRKey]
-      , wlQueueSet  :: Set.Set CHRKey					-- for fast membership test
+      -- , wlQueueSet  :: Set.Set CHRKey					-- for fast membership test
       , wlScanned   :: [CHRKey]							-- tried but could not solve, so retry when other succeeds
       , wlUsedIn	:: WorkUsedInMap					-- which work items are used in which propagation constraints
       }
 
-emptyWorkList = WorkList Trie.empty [] Set.empty [] Map.empty
+emptyWorkList = WorkList Trie.empty Set.empty [] {- Set.empty -} [] Map.empty
 %%]
 
 %%[9
@@ -162,6 +163,18 @@ wlToList wl@(WorkList {wlQueue = q, wlScanned = s, wlTrie = t})
   -- = mapMaybe (\k -> fmap workCnstr $ lookupByKey k $ t) $ q ++ s
 
 wlInsert :: Keyable p => [Constraint p i] -> WorkList p i -> WorkList p i
+wlInsert cs wl@(WorkList {wlQueue = q, wlTrie = t, wlDoneSet = ds})
+  = wl {wlDoneSet = Map.keysSet work `Set.union` ds, wlTrie = trie `Trie.union` t, wlQueue = Map.keys work ++ q }
+  where work = Map.fromList [ (k,Work c) | c <- cs, let k = toKey c, not (k `Set.member` ds) ]
+        trie = Trie.fromListPartialByKeyWith TrieLookup_Normal const $ Map.toList work
+
+wlDeleteByKey :: [[Trie.TrieKey Key]] -> WorkList p i -> WorkList p i
+wlDeleteByKey keys wl@(WorkList {wlQueue = wlq, wlTrie = wlt})
+  = wl { wlQueue = wlq \\ keys
+       , wlTrie = Trie.deleteListByKey keys wlt
+       }
+%%]
+wlInsert :: Keyable p => [Constraint p i] -> WorkList p i -> WorkList p i
 wlInsert cs wl@(WorkList {wlQueue = q, wlTrie = t, wlQueueSet = qs})
   = wl {wlQueueSet = Map.keysSet work `Set.union` qs, wlTrie = trie `Trie.union` t, wlQueue = Map.keys work ++ q }
   where work = Map.fromList [ (toKey c,Work c) | c <- cs, let k = toKey c, not (k `Set.member` qs) ]
@@ -172,7 +185,6 @@ wlDeleteByKey keys wl@(WorkList {wlQueue = wlq, wlTrie = wlt, wlQueueSet = wlqs}
   = wl { wlQueue = wlq \\ keys, wlQueueSet = wlqs `Set.difference` Set.fromList keys
        , wlTrie = Trie.deleteListByKey keys wlt
        }
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Solver trace
@@ -281,20 +293,20 @@ chrSolve'' env chrStore cnstrs
                          >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppTrieKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
         iter st
           = st
-        firstMatch st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:_), wlTrie = wlTrie, wlUsedIn = wlUsedIn, wlQueueSet = wlQueueSet}})
+        firstMatch st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:_), wlTrie = wlTrie, wlUsedIn = wlUsedIn}})
           = (r4, pp2 >-< pp3)
           where -- results
                 r2 = concat $ lookupResultToList $ lookupPartialByKey TrieLookup_Partial workHd $ chrstoreTrie chrStore
                 r3 = concatMap (\c -> zip (repeat c) (map unzip $ combine' $ candidate c)) $ r2
-                r4 = foldr first Nothing $ r3
+                r4 = foldr first Nothing $ filter (not . isUsedByPropPart) $ r3
                 pp2 = "lookups" >#< ppBracketsCommasV r2
                 pp3 = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
                 -- util functions
                 candidate (StoredCHR {storedIdent = chrId, storedKeys = ks, storedChr = chr@(CHR {chrSimpSz = simpSz})})
-                  = cand lkup sks ++ cand (\h k -> notPropUsed $ lkup h k) pks
+                  = cand lkup sks ++ cand (\h k -> {- notPropUsed $ -} lkup h k) pks
                   where (sks,pks)   = splitAt simpSz ks
                         lkup how k  = lookupResultToList $ lookupPartialByKey' (,) how k wlTrie
-                        notPropUsed = filter (\(k,_) -> maybe True (not . (chrId `Set.member`)) $ Map.lookup k wlUsedIn)
+                        -- notPropUsed = filter (\(k,_) -> maybe True (not . (chrId `Set.member`)) $ Map.lookup k wlUsedIn)
                         cand lkup   = map (maybe (lkup TrieLookup_Normal workHd) (lkup TrieLookup_StopAtPartial))
                 combine' [] = []
                 combine' [[]] = []
@@ -311,6 +323,9 @@ chrSolve'' env chrStore cnstrs
                           where chk g subst = chrCheck (subst `chrAppSubst` g)
                         cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
                         cmb _        _    = Nothing
+                isUsedByPropPart (chr,(keys,_))
+                  = all fnd $ drop (storedSimpSz chr) keys
+                  where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup k wlUsedIn
                 first (chr,kw@(_,works)) cont
                   = case match chr (map workCnstr works) of
                       r@(Just s) -> Just (chr,kw,s)
@@ -319,6 +334,7 @@ chrSolve'' env chrStore cnstrs
                    where (wl,done) = splitDone cnstrs
         splitDone  = partition (\x -> cnstrRequiresSolve x)
 %%]
+                r4 = foldr first Nothing $ r3
                 -> iter $ trp "PICK" (schr >-< "HD:" >#< ppTrieKey workHd >-< "TL:" >#< ppBracketsCommas (map ppTrieKey workTl) >-< "KEYS:" >#< ppBracketsCommas (map ppTrieKey keys) >-< "WORKS:" >#< ppBracketsCommasV works) $ st'
               _ -> iter $ trp "NOT MATCHED" (ppTrieKey workHd) $ st'
                   = (\v -> trp "ZZ" ("workHd" >#< ppBracketsCommas workHd >#< "ks" >#< (ppBracketsCommas $ map (fmap ppBracketsCommas) ks) >#< (ppBracketsCommasV $ map (map (\(a,b) -> ppParensCommas [ppBracketsCommas a,pp b])) $ v)) v)

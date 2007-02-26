@@ -1371,7 +1371,7 @@ cpOutputCore suff modNm
                  fpC = fpathSetSuff suff fp                
          ;  when (ehcOptEmitCore opts) 
                  (do { lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Emit Core" Nothing modNm fpC
-                     ; lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule cMod) 100
+                     ; lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule opts cMod) 100
                      })
          -- ;  when (ehcOptEmitJava opts)
          --         (lift (putPPFile (fpathToStr (fpathSetSuff "java" fpJ)) jPP 100))

@@ -461,7 +461,7 @@ prvgBackToOrig g@(ProvenGraph i2n p2i _ p2fi)
                            ]
           backFM        =  Map.fromList backL
           backUid uid   =  maybe uid id (Map.lookup uid backFM)
-          backCSubst    =  poiCExprLToCSubst . assocLMapElt mkCExprPrHole $ backL
+          backCSubst    =  poiCExprLToCSubst . assocLMapElt (mkCExprPrHole defaultEHCOpts) $ backL
           backN n       =  case n of
                              ProvenAnd pr es les c ev    -> ProvenAnd pr (map backUid es) (map backUid les) c (backCSubst `cSubstApp` ev)
                              ProvenOr pr es c            -> ProvenOr pr (map backUid es) c
