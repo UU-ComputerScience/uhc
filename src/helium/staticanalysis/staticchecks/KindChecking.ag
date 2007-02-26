@@ -1,0 +1,103 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+-- 
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- A kind checker for Helium.
+--
+-- Note: Kind Inferencing for the Helium language is pretty straightforward: check
+--    if each type constructor has the right number of arguments, and whether 
+--    no types are applied to a type variable.
+--
+-------------------------------------------------------------------------------
+
+ATTR Declarations MaybeDeclarations Declaration 
+     Expression Expressions MaybeExpression GuardedExpression GuardedExpressions
+     Statement Statements Qualifier Qualifiers
+     Alternative Alternatives 
+     Body RightHandSide FunctionBinding FunctionBindings 
+     Constructor Constructors AnnotatedTypes AnnotatedType 
+     [ | kindErrors : {[Error]} | ]
+
+SEM Module
+  | Module         body . kindErrors = []
+                    loc . kindErrors = @body.kindErrors
+  
+SEM Expression
+  | Typed           lhs . kindErrors = @newErrors ++ @expression.kindErrors
+                    loc . newErrors  = checkType @lhs.typeConstructors (@lhs.namesInScope ++ @lhs.allValueConstructors) @type.self
+
+SEM Declaration
+  | Type            lhs . kindErrors = @newErrors ++ @lhs.kindErrors
+                    loc . newErrors  = checkType @lhs.typeConstructors (@lhs.namesInScope ++ @lhs.allValueConstructors) @type.self
+                      
+  | TypeSignature   lhs . kindErrors = @newErrors ++ @lhs.kindErrors
+                    loc . newErrors  = checkType @lhs.typeConstructors (@lhs.namesInScope ++ @lhs.allValueConstructors) @type.self
+
+SEM AnnotatedType
+  | AnnotatedType   lhs . kindErrors = @newErrors ++ @lhs.kindErrors
+                    loc . newErrors  = checkType @lhs.typeConstructors (@lhs.namesInScope ++ @lhs.allValueConstructors) @type.self
+  
+{
+checkType :: M.Map Name Int -> Names -> Type -> [Error]
+checkType typeConstructors namesInScope t =
+    let (f, xs) = walkSpine t
+        xsErrors = concatMap (checkType typeConstructors namesInScope) xs
+    in
+        xsErrors
+        ++
+        case f of
+            Type_Constructor r c ->
+                checkKind c typeConstructors (length xs) namesInScope
+                ++ [ TupleTooBig r
+ 	                 | let nameAsString = show c
+ 	                 , isTupleConstructor nameAsString
+ 	                 , length nameAsString - 1 > 10
+ 	                 ]
+            Type_Variable _ v ->
+                if length xs /= 0 then
+                    [ TypeVarApplication v ]
+                else
+                    []
+            _ ->
+                internalError "StaticAnalysis" "checkType" "unexpected type"
+
+walkSpine :: Type -> (Type, [Type])
+walkSpine t =
+    case t of
+        Type_Variable _ _ -> (t, [])
+        Type_Constructor _ _ -> (t, [])
+        Type_Application _ _ f xs ->
+            let (t, ys) = walkSpine f
+            in (t, ys ++ xs)
+        Type_Parenthesized _ t -> walkSpine t
+        Type_Qualified _ _ t -> walkSpine t
+        _ -> internalError "StaticAnalysis" "walkSpine" "unexpected type"
+
+checkKind :: Name -> M.Map Name Int -> Int -> Names -> [Error]
+checkKind tycon@(Name_Special _ _ ('(':commas)) _ useArity namesInScope = -- !!!Name
+    if expected == useArity then
+        []
+    else
+        [ ArityMismatch TypeConstructor tycon expected useArity]
+    where
+        expected =
+            case length (takeWhile (== ',') commas) of
+                 0 -> 0  -- ()
+                 n -> n + 1 -- (,) (,,) ...
+
+checkKind tycon typeConstructors useArity namesInScope =
+    case M.lookup tycon typeConstructors of
+        Nothing ->
+            let hint = [ "Constructor "++show (show tycon)++" cannot be used in a type"
+                       | tycon `elem` namesInScope
+                       ]
+            in [ Undefined TypeConstructor tycon (M.keys typeConstructors) hint ]
+        Just defArity ->
+            if useArity /= defArity then
+                [ ArityMismatch TypeConstructor tycon defArity useArity ]
+            else
+                [ ]
+}
