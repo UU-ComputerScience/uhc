@@ -23,7 +23,7 @@ import Top.Interface.Qualification hiding (contextReduction)
 import Top.Interface.TypeInference
 import Top.Solver
 import Top.Types 
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 type ErrorInfo info = ([EdgeId], info)
 

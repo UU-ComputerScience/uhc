@@ -13,7 +13,7 @@ import Top.Types
 import Top.Implementation.TypeGraph.Basics
 import qualified Data.Set as S
 import Data.List (nub)
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 class TypeGraph graph info | graph -> info where          
    

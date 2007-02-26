@@ -21,7 +21,7 @@ import qualified Data.Map as M
 import Top.Util.Empty
 import Top.Monad.Select
 import Control.Monad.State
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 ------------------------------------------------------------------------
 -- (I)  Algebraic data type

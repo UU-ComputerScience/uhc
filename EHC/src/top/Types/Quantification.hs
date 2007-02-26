@@ -16,7 +16,7 @@ import Top.Types.Primitive
 import Top.Types.Substitution
 import Data.List
 import Data.Maybe
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 -----------------------------------------------------------------------------
 -- * Quantification

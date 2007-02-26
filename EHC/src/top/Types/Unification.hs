@@ -16,7 +16,7 @@ import Top.Types.Substitution
 import Top.Types.Primitive
 import Top.Types.Synonym
 import qualified Data.Map as M
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 -- |There are two reasons why two types cannot be unified: either two (different) type constants clash (they
 -- should be the same), or a type variable should be unified with a composed type that contains this same

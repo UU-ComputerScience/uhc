@@ -17,7 +17,7 @@ import Top.Types.Primitive
 import Data.List (union, (\\), nub)
 import qualified Data.Map as M
 import qualified Data.Set as S
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 
 ----------------------------------------------------------------------
 -- * Substitutions and substitutables

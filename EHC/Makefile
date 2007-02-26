@@ -35,7 +35,7 @@ include $(SRC_PREFIX)ehc/shared.mk
 include mk/shared.mk
 
 include $(SRC_PREFIX)libutil/files.mk
-
+include $(SRC_PREFIX)top/files.mk
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk

@@ -17,7 +17,7 @@ module Top.Types.Synonym where
 
 import Top.Types.Primitive
 import Top.Types.Substitution
-import Utils (internalError)
+import Top.Util.IntErr (internalError)
 import Data.Graph (scc, buildG)
 import Data.Tree (flatten)
 import qualified Data.Map as M
