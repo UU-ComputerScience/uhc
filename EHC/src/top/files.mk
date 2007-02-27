@@ -86,7 +86,7 @@ $(LIB_TOP_CABAL_DRV): $(TOP_MKF) $(LIB_TOP_HS_SRC)
 		, $(EH_VERSION) \
 		, mtl \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
-		, Top library \
+		, Typing Our Programs library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(SRC_TOP_PREFIX)%.hs,$(LIB_TOP_QUAL_PREFIX)%, $(LIB_TOP_HS_SRC) )) \
 	) > $@
 
