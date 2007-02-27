@@ -1,0 +1,319 @@
+-- ------------------------------------------------------------------------
+-- -- Expressions                                                        --
+-- ------------------------------------------------------------------------
+
+SEM MaybeExpression [ | | core : { Maybe Core.Expr } ]
+    | Nothing       lhs.core = Nothing
+    | Just          lhs.core = Just @expression.core
+    --  expression               : Expression
+
+
+ATTR Expressions [ | | core USE { : } { [] } : { [Core.Expr] } ]
+
+SEM Expression [ | | core : { Core.Expr } ]
+    | Literal            lhs.core = @literal.core      
+    --  range                    : Range
+    --  literal                  : Literal
+
+    | Variable           lhs.core = insertDictionaries @name.self @lhs.dictionaryEnv                     
+    --  range                    : Range
+    --  name                     : Name
+
+    | Constructor        lhs.core = Core.Con (Core.ConId (idFromName @name.self))
+    --  range                    : Range
+    --  name                     : Name
+
+    | Parenthesized      lhs.core = @expression.core
+    --  range                    : Range
+    --  expression               : Expression
+
+    | NormalApplication  lhs.core = foldl Core.Ap @function.core @arguments.core  
+    --  range                    : Range
+    --  function                 : Expression
+    --  arguments                : Expressions
+
+    | InfixApplication   lhs.core =
+        case (@leftExpression.core, @rightExpression.core) of
+            (Nothing, Nothing) -> @operator.core
+            (Just l , Nothing) -> Core.Ap @operator.core l
+            (Nothing, Just r ) -> Core.Lam parameterId 
+                                    (foldl Core.Ap @operator.core [Core.Var parameterId, r])
+            {-
+                -- At most one new variable is needed. Consider
+                --  (. (+ 3))  ==  \x -> (.) x (\x -> (+) x 3)
+            -}
+            (Just l , Just r ) -> foldl Core.Ap @operator.core [l,r]
+    --  range                    : Range
+    --  leftExpression           : MaybeExpression
+    --  operator                 : Expression
+    --  rightExpression          : MaybeExpression
+
+    | If                 lhs.core = 
+        if_ @guardExpression.core @thenExpression.core @elseExpression.core
+    --  range                    : Range
+    --  guardExpression          : Expression
+    --  thenExpression           : Expression
+    --  elseExpression           : Expression
+
+    | Lambda             lhs.core = 
+        let ids = freshIds "u$" @patterns.length
+        in let_ nextClauseId (patternMatchFail "lambda expression" @range.self)
+            (foldr 
+                Core.Lam 
+                (patternsToCore 
+                    (zip ids @patterns.self) 
+                    @expression.core
+                )
+                ids
+            )
+    --  range                    : Range
+    --  patterns                 : Patterns
+    --  expression               : Expression
+
+    | Case               lhs.core = let_ caseExprId @expression.core @alternatives.core
+                         alternatives.caseRange = @range.self
+    --  range                    : Range
+    --  expression               : Expression
+    --  alternatives             : Alternatives
+
+    | Let                declarations.patBindNr = 0
+                         declarations.isTopLevel = False
+                         lhs.core =
+        letrec_ @declarations.decls @expression.core
+    --  range                    : Range
+    --  declarations             : Declarations
+    --  expression               : Expression
+
+    | Do                 lhs.core = chainCode @statements.core
+    --  range                    : Range
+    --  statements               : Statements
+
+    | List               lhs.core = coreList @expressions.core
+    --  range                    : Range
+    --  expressions              : Expressions
+
+    | Tuple              lhs.core = 
+        foldl 
+            Core.Ap 
+            (Core.Con
+                (Core.ConTag
+                    (Core.Lit (Core.LitInt 0))
+                    (length @expressions.core)
+                )
+            )
+            @expressions.core
+    --  range                    : Range
+    --  expressions              : Expressions
+
+    | Comprehension      lhs.core = 
+        let singleton x = cons x nil
+        in foldr ($) (singleton @expression.core) @qualifiers.core
+    --  range                    : Range
+    --  expression               : Expression
+    --  qualifiers               : Qualifiers
+
+    | Typed              lhs.core = @expression.core
+    --  range                    : Range
+    --  expression               : Expression
+    --  type                     : Type
+
+    -- negate is overloaded and we need to insert a dictionary argument
+    | Negate             lhs.core = insertDictionaries (setNameRange intUnaryMinusName @range.self) @lhs.dictionaryEnv                  
+                                    `app_` @expression.core 
+    --  range                    : Range
+    --  expression               : Expression
+
+    | NegateFloat        lhs.core = 
+            var "$primNegFloat" `app_` @expression.core 
+    --  range                    : Range
+    --  expression               : Expression
+
+    -- enumerations are overloaded and we need to insert a dictionary argument
+    | Enum               lhs.core = 
+            case (@then.core, @to.core) of
+                (Just then_, Just to) -> 
+                    insertDictionaries (setNameRange enumFromThenToName @range.self) @lhs.dictionaryEnv
+                       `app_` @from.core `app_` then_ `app_` to
+                (Just then_, Nothing) -> 
+                    insertDictionaries (setNameRange enumFromThenName @range.self) @lhs.dictionaryEnv
+                       `app_` @from.core `app_` then_
+                (Nothing, Just to) ->
+                    insertDictionaries (setNameRange enumFromToName @range.self) @lhs.dictionaryEnv 
+                       `app_` @from.core `app_` to
+                (Nothing, Nothing) ->
+                    insertDictionaries (setNameRange enumFromName @range.self) @lhs.dictionaryEnv
+                       `app_` @from.core
+                    
+    --  range                    : Range
+    --  from                     : Expression
+    --  then                     : MaybeExpression
+    --  to                       : MaybeExpression
+
+    | RecordConstruction lhs.core = internalError "ToCoreExpr" "Expression" "records not supported"
+    --  range                    : Range
+    --  name                     : Name
+    --  recordExpressionBindings : RecordExpressionBindings
+
+    | RecordUpdate       lhs.core = internalError "ToCoreExpr" "Expression" "records not supported"
+    --  range                    : Range
+    --  expression               : Expression
+    --  recordExpressionBindings : RecordExpressionBindings
+
+
+ATTR Statements [ | | core USE { : } { [] } : { [Maybe Core.Expr -> Core.Expr] } ]
+
+SEM Statement [ | | core : { Maybe Core.Expr -> Core.Expr } ]
+    | Expression          lhs.core =
+            \rest -> 
+                case rest of
+                    Nothing   -> @expression.core
+                    Just rest -> bind @expression.core (Core.Lam dummyId rest)
+    --  range                    : Range
+    --  expression               : Expression
+
+    | Let                 declarations.patBindNr = 0
+                          declarations.isTopLevel = False
+                          lhs.core =
+            \rest ->
+                case rest of
+                    Nothing   -> internalError "ToCoreExpr" "Statement" "'let' can't be last in 'do'"
+                    Just rest -> letrec_ @declarations.decls rest 
+    --  range                    : Range
+    --  declarations             : Declarations
+
+    -- let _nextClause = <throw exception> in
+    -- let _ok = \_misc -> case _misc of { pattern -> ...; _ -> _nextClause }
+    -- in expression >>= ok
+    | Generator           lhs.core =
+        \rest -> case rest of
+            Nothing   -> internalError "ToCoreExpr" "Statement" "generator can't be last in 'do'"
+            Just rest -> 
+                let_ nextClauseId (patternMatchFail "generator" @range.self)
+                    (let_ 
+                        okId 
+                        (Core.Lam parameterId
+                            (patternToCore (parameterId, @pattern.self) rest)
+                        )
+                        (@expression.core `bind` Core.Var okId)
+                    )
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  expression               : Expression
+
+-- Not supported
+
+    | Empty               lhs.core =
+            \rest ->
+                case rest of 
+                    Nothing   -> internalError "ToCoreExpr" "Statement" "empty statements not supported"
+                    Just rest -> rest
+    --  range                    : Range
+
+
+
+ATTR Qualifiers [ | | core USE { : } { [] } : { [Core.Expr -> Core.Expr] } ]
+
+SEM Qualifier [ | | core : { Core.Expr -> Core.Expr } ]
+    | Guard               lhs.core = \continue -> if_ @guard.core continue nil
+    --  range                    : Range
+    --  guard                    : Expression -- type: Boolean
+
+    | Let                 declarations.patBindNr = 0
+                          declarations.isTopLevel = False
+                          lhs.core = \continue -> letrec_ @declarations.decls continue
+    --  range                    : Range
+    --  declarations             : Declarations
+   
+    -- See Haskell report 3.11
+    -- let _nextClause = [] in
+    -- let _ok = \_misc -> case _misc of { pattern -> ...; _ -> _nextClause }
+    -- in concatMap _ok expression
+
+    | Generator           lhs.core = 
+        \continue ->
+            let_ nextClauseId nil
+                (let_ 
+                    okId 
+                    (Core.Lam parameterId
+                        (patternToCore (parameterId, @pattern.self) continue)
+                    )
+                    (var "$primConcatMap"
+                        `app_` Core.Var okId 
+                        `app_` @expression.core
+                    )
+                )
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  expression               : Expression
+    
+-- Not supported
+
+    | Empty               lhs.core = internalError "ToCoreExpr" "Qualifier" "empty qualifiers not supported"
+    --  range                    : Range
+                  
+SEM Alternatives [ caseRange : Range | | core : { Core.Expr } ]
+    | Cons              lhs.core     = @hd.core @tl.core
+    | Nil               lhs.core     = patternMatchFail "case expression" @lhs.caseRange
+
+SEM Alternative [ | | core : { Core.Expr -> Core.Expr } ]
+    | Alternative       lhs.core   = \nextCase  ->
+                                        let thisCase =
+                                                patternToCore 
+                                                    (caseExprId, @pattern.self) 
+                                                    @righthandside.core
+                                        in
+                                            let_ nextClauseId nextCase thisCase
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  righthandside            : RightHandSide
+
+    | Empty             lhs.core   = id
+    --  range                    : Range
+
+ATTR GuardedExpressions [ | | core USE { : } { [] } : { [Core.Expr -> Core.Expr] } ]
+
+SEM GuardedExpression [ | | core : { Core.Expr -> Core.Expr } ]
+    | GuardedExpression lhs.core = 
+        \fail -> if_ @guard.core @expression.core fail
+    --  range                    : Range
+    --  guard                    : Expression -- type: Boolean
+    --  expression               : Expression
+
+SEM Literal [ | | core : { Core.Expr } ]
+    | Int                   lhs.core = Core.Lit (Core.LitInt (read @value))
+    --  range                    : Range
+    --  value                    : String
+
+    | Char                  lhs.core = 
+            Core.Lit (Core.LitInt (ord 
+                (read ("'" ++ @value ++ "'"))))
+    --  range                    : Range
+    --  value                    : String -- without the quotes
+
+    | Float                 lhs.core = float @value
+    --  range                    : Range
+    --  value                    : String
+
+    | String                lhs.core = 
+        var "$primPackedToString" `app_` 
+            packedString (read ("\"" ++ @value ++ "\""))
+    --  range                    : Range
+    --  value                    : String -- without the quotes
+
+{
+
+-- Function "bind" is used in the translation of do-expressions
+bind :: Core.Expr -> Core.Expr -> Core.Expr
+bind ma f = Core.Var primBindIOId `app_` ma `app_` f
+
+( primBindIOId :  caseExprId :  okId :  parameterId : []) = map idFromString $
+ "$primBindIO"  : "caseExpr$" : "ok$" : "parameter$" : []
+
+-- Function "chainCode" is used in the translation of do-expressions
+chainCode :: [Maybe Core.Expr -> Core.Expr] -> Core.Expr
+chainCode cores =
+    case cores of
+        [core] -> core Nothing
+        (core:cores) -> core (Just (chainCode cores))
+}
+
