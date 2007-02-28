@@ -5,60 +5,60 @@
 To be used by Trf/MergePred and Trf/Quantify
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free type vars
+%%% Free type vars as Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.frTvLL
-ATTR AllTy [ | | frTvLL USE {++} {[]}: {[TyVarIdL]} ]
+%%[4.frTvSL
+ATTR AllTy [ | | frTvSL USE {++} {[]}: {[TyVarIdS]} ]
 
 SEM TyAGItf
-  | AGItf       loc         .   frTvL       =   head @ty.frTvLL
+  | AGItf       loc         .   frTvS       =   head @ty.frTvSL
 
 SEM Ty
-  | Var         loc         .   frTvL       =   [@tv]
-  | App         loc         .   frTvLL      =   @arg.frTvLL ++ @func.frTvLL
-                            .   frTvL       =   listCombineUniq @frTvLL
-                lhs         .   frTvLL      =   if @isSpineRoot then [@frTvL] else @frTvLL
+  | Var         loc         .   frTvS       =   Set.singleton @tv
+  | App         loc         .   frTvSL      =   @arg.frTvSL ++ @func.frTvSL
+                            .   frTvS       =   Set.unions @frTvSL
+                lhs         .   frTvSL      =   if @isSpineRoot then [@frTvS] else @frTvSL
   | Quant
 %%[[11
     Lam
 %%]]
-                loc         .   frTvL       =   head @ty.frTvLL \\ @introTVarL
-  | Any Con     loc         .   frTvL       =   []
+                loc         .   frTvS       =   head @ty.frTvSL `Set.difference` @introTVarS
+  | Any Con     loc         .   frTvS       =   Set.empty
   | Quant Var Any Con
 %%[[11
     Lam
 %%]]
-                lhs         .   frTvLL      =   [@frTvL]
+                lhs         .   frTvSL      =   [@frTvS]
 %%]
 
 %%[4_2
 SEM TyL
-  | Nil         lhs         .   frTvLL      =   []
+  | Nil         lhs         .   frTvSL      =   []
 
 SEM TyPlusL
-  | Nil         lhs         .   frTvLL      =   []
+  | Nil         lhs         .   frTvSL      =   []
 %%]
 
 %%[7
 SEM Ty
-  | Ext         loc         .   frTvLL      =   @extTy.frTvLL ++ @ty.frTvLL
+  | Ext         loc         .   frTvSL      =   @extTy.frTvSL ++ @ty.frTvSL
 %%]
 
 %%[9
 SEM Ty
-  | App         (loc.frRowTvL,loc.frTvLL)   :=  if @argIsRow
-                                                then hdAndTl (reverse @arg.frTvLL)
-                                                else ([],@arg.frTvLL ++ @func.frTvLL)
-                loc         .   frTvL       :=  listCombineUniq (@frRowTvL : @frTvLL)
-                            .   arrArgTvL   =   @frTvLL !! 1
-  | Pred        loc         .   frTvL       =   listCombineUniq @pr.frTvLL
-  | Impls       loc         .   frTvL       =   listCombineUniq @impls.frTvLL
-  | Pred Impls  lhs         .   frTvLL      =   [@frTvL]
+  | App         (loc.frRowTvS,loc.frTvSL)   :=  if @argIsRow
+                                                then hdAndTl (reverse @arg.frTvSL)
+                                                else (Set.empty,@arg.frTvSL ++ @func.frTvSL)
+                loc         .   frTvS       :=  Set.unions (@frRowTvS : @frTvSL)
+                            .   arrArgTvS   =   @frTvSL !! 1
+  | Pred        loc         .   frTvS       =   Set.unions @pr.frTvSL
+  | Impls       loc         .   frTvS       =   Set.unions @impls.frTvSL
+  | Pred Impls  lhs         .   frTvSL      =   [@frTvS]
 
 SEM Impls
-  | Tail Nil    lhs         .   frTvLL      =   []
-  | Cons        lhs         .   frTvLL      =   @pr.frTvLL ++ @tl.frTvLL
+  | Tail Nil    lhs         .   frTvSL      =   []
+  | Cons        lhs         .   frTvSL      =   @pr.frTvSL ++ @tl.frTvSL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,43 +148,43 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Candidate free type variables to be quantified over 'here'
+%%% Candidate free type variables to be quantified over 'here', as Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.tvarOccurCount hs
-tvarOccurCount :: [TyVarIdL] -> AssocL TyVarId Int
-tvarOccurCount = map (\vl@(v:_) -> (v,length vl)) . group . sort . concat
+%%[4.tvarSOccurCount hs
+tvarSOccurCount :: [TyVarIdS] -> AssocL TyVarId Int
+tvarSOccurCount = map (\vl@(v:_) -> (v,length vl)) . group . sort . concat . map Set.toList
 
-tvarOccurGE2 :: [TyVarIdL] -> TyVarIdL
-tvarOccurGE2 =  map fst . filter ((>1).snd) . tvarOccurCount
+tvarSOccurGE2 :: [TyVarIdS] -> TyVarIdS
+tvarSOccurGE2 =  Set.fromList . map fst . filter ((>1).snd) . tvarSOccurCount
 %%]
 
-%%[4.qHereTvL
+%%[4.qHereTvS
 SEM TyAGItf
-  | AGItf       loc         .   qHereTvL        =   []
+  | AGItf       loc         .   qHereTvS        =   Set.empty
 
 SEM Ty
-  | Var         loc         .   qHereTvL        =   if @isQuLoc then {- filter (tvIsPlain @lhs.fxTvM) -} @frTvL else []
-  | App         loc         .   qHereTvL        =   if @isQuLoc
+  | Var         loc         .   qHereTvS        =   if @isQuLoc then {- filter (tvIsPlain @lhs.fxTvM) -} @frTvS else Set.empty
+  | App         loc         .   qHereTvS        =   if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  let fv = listCombineUniq (tvarOccurGE2 @frTvLL : [@qOrphanTvL])
+                                                          then  let fv = Set.unions (tvarSOccurGE2 @frTvSL : [@qOrphanTvS])
                                                                 in  {- if @appIsArrow
                                                                     then filter (tvIsPlain @lhs.fxTvM) fv
                                                                     else -} fv
-                                                          else  @frTvL
-                                                    else  []
+                                                          else  @frTvS
+                                                    else  Set.empty
 %%]
 
 %%[6_4
 SEM Ty
-  | Var         loc         .   qHereTvL        =   if @isQuLoc && @isReQuExLoc
-                                                    then  filter (tvIsEx @lhs.fxTvM) [@tv]
-                                                    else  []
-  | App         loc         .   qHereTvL        :=  if @isQuLoc
+  | Var         loc         .   qHereTvS        =   if @isQuLoc && @isReQuExLoc && tvIsEx @lhs.fxTvM
+                                                    then Set.singleton @tv
+                                                    else Set.empty
+  | App         loc         .   qHereTvS        :=  if @isQuLoc
                                                     then  if    @isSpecLoc
-                                                          then  tvarOccurGE2 @frTvLL
-                                                          else  filter (not . tvIsEx @lhs.fxTvM) @frTvL
-                                                    else  []
+                                                          then  tvarSOccurGE2 @frTvSL
+                                                          else  Set.filter (not . tvIsEx @lhs.fxTvM) @frTvS
+                                                    else  Set.empty
 %%]
 SEM Ty
   | Var         loc         .   qHereTvL        =   if @isQuLoc
@@ -192,22 +192,22 @@ SEM Ty
                                                     else  []
   | App         loc         .   qHereTvL        :=  if @isQuLoc
                                                     then  if    @isSpecLoc
-                                                          then  tvarOccurGE2 @frTvLL
+                                                          then  tvarLOccurGE2 @frTvLL
                                                           else  filter (not . tvIsEx @lhs.fxTvM) @frTvL
                                                     else  []
 
 %%[9
 SEM Ty
-  | App         loc         .   qHereTvL        :=  if @isQuLoc
+  | App         loc         .   qHereTvS        :=  if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
-                                                          then  listCombineUniq (tvarOccurGE2 @frTvLL `List.union` @frRowTvL : [@qOrphanTvL])
-                                                          else  @frTvL
-                                                    else  []
-  | Pred        loc         .   qHereTvL        =   @frTvL \\ @pr.qInsideTvL
+                                                          then  Set.unions [tvarSOccurGE2 @frTvSL, @frRowTvS, @qOrphanTvS]
+                                                          else  @frTvS
+                                                    else  Set.empty
+  | Pred        loc         .   qHereTvS        =   @frTvS `Set.difference` @pr.qInsideTvS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free tvs which should be quantified deeper but cannot because of isQuLoc == False
+%%% Free tvs which should be quantified deeper but cannot because of isQuLoc == False, as Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
@@ -216,21 +216,21 @@ ATTR
 %%[[9
   Pred Impls
 %%]]
-    [ | | qOrphanTvL: TyVarIdL ]
+    [ | | qOrphanTvS: TyVarIdS ]
 %%]
 
 %%[4
 SEM Ty
-  | App         loc         .   qOrphanTvL      =   @arg.qOrphanTvL ++ @func.qOrphanTvL
+  | App         loc         .   qOrphanTvS      =   @arg.qOrphanTvS `Set.union` @func.qOrphanTvS
 %%[[7
-  | Ext         loc         .   qOrphanTvL      =   @extTy.qOrphanTvL ++ @ty.qOrphanTvL
+  | Ext         loc         .   qOrphanTvS      =   @extTy.qOrphanTvS `Set.union` @ty.qOrphanTvS
 %%]]
 %%]
 
 %%[4
 SEM Ty
-  | App         lhs         .   qOrphanTvL      =   if @isSpineRoot && @isQuLoc then [] else @qOrphanTvL
-  | Var         lhs         .   qOrphanTvL      =   if @isQuLoc then [] else @frTvL
+  | App         lhs         .   qOrphanTvS      =   if @isSpineRoot && @isQuLoc then Set.empty else @qOrphanTvS
+  | Var         lhs         .   qOrphanTvS      =   if @isQuLoc then Set.empty else @frTvS
   | * - App Var
 %%[[7
     Ext
@@ -238,40 +238,40 @@ SEM Ty
 %%[[9
     Pred Impls
 %%]]
-                lhs         .   qOrphanTvL      =   []
+                lhs         .   qOrphanTvS      =   Set.empty
 %%]
 
 %%[9
 SEM Impls
-  | Cons		lhs			.	qOrphanTvL      =   @pr.qOrphanTvL ++ @tl.qOrphanTvL
-  | * - Cons	lhs			.	qOrphanTvL      =   []
+  | Cons		lhs			.	qOrphanTvS      =   @pr.qOrphanTvS `Set.union` @tl.qOrphanTvS
+  | * - Cons	lhs			.	qOrphanTvS      =   Set.empty
 
 SEM Pred
-  | Var  		lhs			.	qOrphanTvL      =   []
+  | Var  		lhs			.	qOrphanTvS      =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Inside 'here' tvars
+%%% Inside 'here' tvars, as Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllTy [ | | qInsideTvL USE {++} {[]}: TyVarIdL ]
+ATTR AllTy [ | | qInsideTvS USE {`Set.union`} {Set.empty}: TyVarIdS ]
 
 SEM Ty
-  | App         lhs         .   qInsideTvL      =   @qHereTvL
+  | App         lhs         .   qInsideTvS      =   @qHereTvS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Surrounding tvars
+%%% Surrounding tvars, as Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllTy [ qSurrTvL: TyVarIdL | | ]
+ATTR AllTy [ qSurrTvS: TyVarIdS | | ]
 
 SEM TyAGItf
-  | AGItf       loc         .   qSurrTvL                =   @qHereTvL
+  | AGItf       loc         .   qSurrTvS                =   @qHereTvS
 
 SEM Ty
-  | App Var     loc         .   qSurrTvL                =   @qHereTvL ++ @lhs.qSurrTvL
+  | App Var     loc         .   qSurrTvS                =   @qHereTvS `Set.union` @lhs.qSurrTvS
 %%]
 

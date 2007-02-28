@@ -24,7 +24,7 @@ a -> (c -> d)                       (->) a ((->) c d)                       [->,
 %%[9 hs module {%{EH}Ty.TrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
 %%]
 
-%%[9 hs import(Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
+%%[9 hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
 %%]
 
 %%[9 ag import({Ty/AbsSyn},{Ty/CommonAG})

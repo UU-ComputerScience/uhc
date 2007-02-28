@@ -23,7 +23,7 @@ WRAPPER TyAGItf
 %%[6 hs export(kiQuantify)
 %%]
 
-%%[9 hs import(Data.Maybe,EH.Util.Utils,UU.Pretty) export(tyQuantifyPr,tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
+%%[9 hs import(Data.Maybe,EH.Util.Utils,UU.Pretty) export(tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,7 +46,7 @@ tyQuantifyClosed = tyQuantifyRank [1..]
 
 tyQuantifyRank :: [Int] -> Ty -> Ty
 tyQuantifyRank rL ty
-  = tqoTy (tyQuantifyPr (defaultTyQuOpts {tqoptQuRanks = rL}) (const False) TyQu_Forall [] ty)
+  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL}) (const False) TyQu_Forall ty)
 %%]
 
 %%[4.tyQuantify -3.tyQuantify hs
@@ -79,48 +79,33 @@ tyQuantify' tvIsBound baseQuant ty
 
 %%[9.tyQuantifyPrime -6.tyQuantifyPrime hs
 tyQuantify' :: (TyVarId -> Bool) -> TyQu -> Ty -> Ty
-tyQuantify' tvIsBound baseQuant ty = tqoTy (tyQuantifyPr defaultTyQuOpts tvIsBound baseQuant [] ty)
+tyQuantify' tvIsBound baseQuant ty = tqoTy (tyQuantifyWithOpts defaultTyQuOpts tvIsBound baseQuant ty)
 %%]
 
 %%[9 hs
-data TyQuOpts  = TyQuOpts  {tqoptLeaveImpls :: Bool, tqoptQuRanks :: [Int]}
+data TyQuOpts  = TyQuOpts  {tqoptQuRanks :: [Int]}
 
 defaultTyQuOpts :: TyQuOpts
-defaultTyQuOpts = TyQuOpts False [1..]
+defaultTyQuOpts = TyQuOpts [1..]
 
 data TyQuOut
   = TyQuOut   { tqoTy               ::  Ty
-              , tqoInsPrIdSet       ::  Set.Set PredOccId
-              , tqoImplsCnstr       ::  Cnstr
               }
-
-instance Show TyQuOut where
-  show _ = ""
-
-instance PP TyQuOut where
-  pp tqo = pp (tqoImplsCnstr tqo)
 %%]
-              , tqoPredAsArgLocs    ::  PredAsArgLocs
-instance PP TyQuOut where
-  pp tqo = pp (tqoImplsCnstr tqo) >|< "/" >|< ppBracketsCommas (tqoPredAsArgLocs tqo)
 
 %%[9 hs
-tyQuantifyPr :: TyQuOpts -> (TyVarId -> Bool) -> TyQu -> [PredOcc] -> Ty -> TyQuOut
-tyQuantifyPr opts tvIsBound baseQuant prL ty
+tyQuantifyWithOpts :: TyQuOpts -> (TyVarId -> Bool) -> TyQu -> Ty -> TyQuOut
+tyQuantifyWithOpts opts tvIsBound baseQuant ty
   = let  t  =  wrap_TyAGItf
                   (sem_TyAGItf  (TyAGItf_AGItf ty))
                   (Inh_TyAGItf  { baseQu_Inh_TyAGItf        = baseQuant
                                 , tvIsBound_Inh_TyAGItf     = tvIsBound
                                 , opts_Inh_TyAGItf          = opts
-                                , prLL_Inh_TyAGItf          = [prL]
                                 })
     in   TyQuOut
             { tqoTy                 = quTy_Syn_TyAGItf t
-            , tqoInsPrIdSet         = Set.empty -- insPrIdSet_Syn_TyAGItf t
-            , tqoImplsCnstr         = emptyCnstr -- assocLToCnstrImpls (prImpls_Syn_TyAGItf t)
             }
 %%]
-            , tqoPredAsArgLocs      = predAsArgsLocs_Syn_TyAGItf t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options
@@ -183,18 +168,6 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is type a tvar?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4
-%%]
-ATTR Ty [ | | isVar: Bool ]
-
-SEM Ty
-  | Var         lhs         .   isVar       =   True
-  | * - Var     lhs         .   isVar       =   False
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is location in type a place where we treat quantification specially?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -247,113 +220,31 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% The implicit preds
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To be removed when Trf/MergePreds is done
-
-%%[9
-ATTR Ty [ | | mbImpls: {Maybe Impls} ]
-
-SEM Ty
-  | Impls       lhs         .   mbImpls                 =   Just @impls.quTy
-  | App         lhs         .   mbImpls                 =   if @isArrowArg then @arg.mbImpls else Nothing
-  | * - App Impls
-                lhs         .   mbImpls                 =   Nothing
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Can predicates be inserted at location in ty
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To be removed when Trf/MergePreds is done
-
-%%[9
-ATTR AllTy [ mbPrLoc: {Maybe ImplsVarId} | | ]
-
-SEM TyAGItf
-  | AGItf       ty          .   mbPrLoc                 =   Nothing
-
-SEM Ty
-  | App         loc         .   (implsPrL,mbTail)       =   if tqoptLeaveImpls @lhs.opts
-                                                            then ([],Nothing)
-                                                            else maybe ([],Nothing) implsPredsMbTail @func.mbImpls
-                arg         .   mbPrLoc                 =   @mbTail
-  | Var         loc         .   implsPrL                =   []
-  | * - App Var Con Any
-                loc         .   mbPrLoc                 =   Nothing
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Determine insertable preds
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To be removed when Trf/MergePreds is done
-
-%%[9 hs
-prLLArrowSplit :: [TyVarId] -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
-prLLArrowSplit frTvL prLL
-  =  let  (h,r) = partition (all (`elem` frTvL) . ftv) . concat $ prLL
-     in   (h,[r])
-%%]
-
-%%[9
-ATTR TyAGItf AllTy [ prLL: {[[PredOcc]]} | | ]
-
-SEM Ty
-  | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvL @lhs.prLL
-  | App         (loc.herePrL,func.prLL,arg.prLL)        =   if @isSpineRoot
-                                                            then  if @appIsArrow
-                                                                  then  let  (h,r) = prLLArrowSplit (@arrArgTvL ++ @lhs.qSurrTvL) @lhs.prLL
-                                                                        in   (h,[],r)
-                                                                  else  let  (h,_) = prLLArrowSplit (@frTvL ++ @lhs.qSurrTvL) @lhs.prLL
-                                                                        in   (h,[],[])
-                                                            else  ([],[],[])
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pass preds up to pred insertable location
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To be removed when Trf/MergePreds is done
-
-%%[9
-ATTR AllTy [ | | insPrL USE {++} {[]} : {[PredOcc]} ]
-
-SEM Ty
-  | App         loc         .   candPrL         =   @herePrL ++ @func.insPrL ++ @arg.insPrL
-  | Var         loc         .   candPrL         =   @herePrL
-  | App Var     (loc.insHerePrL,lhs.insPrL)     =   maybe ([],@candPrL) (const (@candPrL,[])) @lhs.mbPrLoc
-                loc         .   insPrL          =   @implsPrL ++ @insHerePrL
-                            .   hasNoInsPrL     =   null @insPrL
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine quantifiable tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.tvBoundAdd hs
-tvBoundAdd :: (TyVarId -> Bool) -> TyVarIdL -> TyVarId -> Bool
-tvBoundAdd tvIsBound tvL = \v -> v `elem` tvL || tvIsBound v
+tvBoundAdd :: (TyVarId -> Bool) -> TyVarIdS -> TyVarId -> Bool
+tvBoundAdd tvIsBound tvS = \v -> v `Set.member` tvS || tvIsBound v
 %%]
 
 %%[4.tvarsToQuant hs
-tvarsToQuant :: Bool -> TvCatMp -> (TyVarId -> Bool) -> (TyVarId -> Bool) -> TyVarIdL -> (TyVarIdL,TyVarIdL,TyVarId -> Bool)
-tvarsToQuant isQuLoc _ mayQuFx tvIsBound tvL
+tvarsToQuant :: Bool -> TvCatMp -> (TyVarId -> Bool) -> (TyVarId -> Bool) -> TyVarIdS -> (TyVarIdS,TyVarIdS,TyVarId -> Bool)
+tvarsToQuant isQuLoc _ mayQuFx tvIsBound tvS
   =  if isQuLoc
-     then  let boundables = filter (\tv -> not (tvIsBound tv)) tvL
-           in (boundables,[],tvBoundAdd tvIsBound boundables)
-     else  ([],[],tvIsBound)
+     then  let boundables = Set.filter (\tv -> not (tvIsBound tv)) tvS
+           in (boundables,Set.empty,tvBoundAdd tvIsBound boundables)
+     else  (Set.empty,Set.empty,tvIsBound)
 %%]
 
 %%[6_4.tvarsToQuant -4.tvarsToQuant hs
-tvarsToQuant :: Bool -> TvCatMp -> (TyVarId -> Bool) -> (TyVarId -> Bool) -> TyVarIdL -> (TyVarIdL,TyVarIdL,TyVarId -> Bool)
-tvarsToQuant isQuLoc fxTvM mayQuFx tvIsBound tvL
+tvarsToQuant :: Bool -> TvCatMp -> (TyVarId -> Bool) -> (TyVarId -> Bool) -> TyVarIdS -> (TyVarIdS,TyVarIdS,TyVarId -> Bool)
+tvarsToQuant isQuLoc fxTvM mayQuFx tvIsBound tvS
   =  if isQuLoc
-     then  let  tvFrL = filter (\tv -> not (tvIsBound tv)) tvL
-                (bndEx,bnd) = partition (tvIsEx fxTvM) tvFrL
-           in   (bnd,filter mayQuFx bndEx,tvBoundAdd tvIsBound tvFrL)
-     else  ([],[],tvIsBound)
+     then  let  tvFrS = Set.filter (\tv -> not (tvIsBound tv)) tvS
+                (bndEx,bnd) = Set.partition (tvIsEx fxTvM) tvFrS
+           in   (bnd,Set.filter mayQuFx bndEx,tvBoundAdd tvIsBound tvFrS)
+     else  (Set.empty,Set.empty,tvIsBound)
 %%]
 
 %%[4.tvMayQuFx hs
@@ -372,30 +263,33 @@ tvMayQuFx qu fxTvM isQuFxLoc tv
 ATTR TyAGItf AllTy [ tvIsBound: {TyVarId -> Bool} | | ]
 
 SEM TyAGItf
-  | AGItf       loc         .   (qBndTvL,qBndExTvL,tvIsBound)
-                                                        =   tvarsToQuant True @fxTvM (const False) @lhs.tvIsBound @qHereTvL
+  | AGItf       loc         .   (qBndTvS,qBndExTvS,tvIsBound)
+                                                        =   tvarsToQuant True @fxTvM (const False) @lhs.tvIsBound @qHereTvS
 
 SEM Ty
-  | App Var     loc         .   (qBndTvL,qBndExTvL,tvIsBound)
-                                                        =   tvarsToQuant @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound @qHereTvL
-  | Quant       loc         .   tvIsBound               =   tvBoundAdd @lhs.tvIsBound @introTVarL
+  | App Var     loc         .   (qBndTvS,qBndExTvS,tvIsBound)
+                                                        =   tvarsToQuant @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound @qHereTvS
+  | Quant       loc         .   tvIsBound               =   tvBoundAdd @lhs.tvIsBound @introTVarS
 %%]
 
 %%[9
 SEM Ty
-  | App Var     loc         .   (qBndTvL,qBndExTvL,tvIsBound)
-                                                        :=  tvarsToQuant @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvL `List.union` ftv @candPrL)
+  | App Var     loc         .   (qBndTvS,qBndExTvS,tvIsBound)
+                                                        :=  tvarsToQuant @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound @qHereTvS
 %%]
+SEM Ty
+  | App Var     loc         .   (qBndTvS,qBndExTvS,tvIsBound)
+                                                        :=  tvarsToQuant @isQuLoc @lhs.fxTvM (tvMayQuFx @hereQu @lhs.fxTvM @isQuFxLoc) @lhs.tvIsBound (@qHereTvS `Set.union` ftvSet @candPrL)
 
 %%[9
 SEM Ty
-  | Pred        loc         .   (qBndTvL,qBndExTvL,tvIsBound)
-                                                        =   tvarsToQuant @isQuLoc @lhs.fxTvM (const False) @lhs.tvIsBound @qHereTvL
+  | Pred        loc         .   (qBndTvS,qBndExTvS,tvIsBound)
+                                                        =   tvarsToQuant @isQuLoc @lhs.fxTvM (const False) @lhs.tvIsBound @qHereTvS
 %%]
 
 %%[11
 SEM Ty
-  | Lam         loc         .   tvIsBound               =   tvBoundAdd @lhs.tvIsBound @introTVarL
+  | Lam         loc         .   tvIsBound               =   tvBoundAdd @lhs.tvIsBound @introTVarS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -425,9 +319,12 @@ SEM Ty
 
 %%[9.hereQu
 SEM Ty
+  | App         loc         .   qAsExist        :=  (@appIsLikeProd || @lhs.coco == ContraVariant && not @appIsArrow)
+  | Var         loc         .   qAsExist        :=  @lhs.coco == ContraVariant
+%%]
+SEM Ty
   | App         loc         .   qAsExist        :=  @hasNoInsPrL && (@appIsLikeProd || @lhs.coco == ContraVariant && not @appIsArrow)
   | Var         loc         .   qAsExist        :=  @hasNoInsPrL && @lhs.coco == ContraVariant
-%%]
 
 %%[9
 SEM Ty
@@ -440,8 +337,8 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4 hs
-mkTyQuEx :: TyQu -> TyVarIdL -> TyVarIdL -> Ty -> Ty
-mkTyQuEx q tvL tvExL t = mkTyQu q tvL (mkTyQu (tyquExists q) tvExL t)
+mkTyQuEx :: TyQu -> TyVarIdS -> TyVarIdS -> Ty -> Ty
+mkTyQuEx q tvS tvExS t = mkTyQu q (Set.toList tvS) (mkTyQu (tyquExists q) (Set.toList tvExS) t)
 %%]
 
 %%[4.quTy
@@ -449,73 +346,31 @@ ATTR TyAGItf [ | | quTy: Ty ]
 ATTR AllTy TyQu TyVarCateg [ | | quTy: SELF ]
 
 SEM TyAGItf
-  | AGItf       lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvL @qBndExTvL @ty.quTy
+  | AGItf       lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS @ty.quTy
 
 SEM Ty
-  | Var         lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_Var @tv @categ.quTy)
-  | App         loc         .   quTy            =   mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_App @func.quTy @arg.quTy)
+  | Var         lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS (Ty_Var @tv @categ.quTy)
+  | App         loc         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS (Ty_App @func.quTy @arg.quTy)
   | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv @ty.quTy
 %%]
-SEM Ty
-  | App         loc         .   quTy            =   mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_App @func.quTy @arg.quTy)
-  | Var         lhs         .   quTy            =   tr "Var" (pp @self >#< "coco=" >|< @lhs.coco >#< "isQuLoc=" >|< @isQuLoc >#< ppBracketsCommas @qBndTvL >#< ppBracketsCommas @frTvL) $ mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_Var @tv @categ.quTy)
-  | App         loc         .   quTy            =   tr "App" (pp @self >#< "coco=" >|< @lhs.coco >#< "isQuLoc=" >|< @isQuLoc >#< "isQuFxLoc=" >|< @isQuFxLoc >#< "isSpineRoot=" >|< @isSpineRoot >#< ppBracketsCommas @qBndTvL >#< ppBracketsCommas (map ppBracketsCommas @frTvLL)) $ mkTyQuEx @hereQu @qBndTvL @qBndExTvL (Ty_App @func.quTy @arg.quTy)
 
 %%[9 hs
-mkTyQuForRank :: Bool -> TyQu -> TyVarIdL -> TyVarIdL -> Ty -> Ty
-mkTyQuForRank allow q tvL tvExL t = if allow then mkTyQuEx q tvL tvExL t else t
+mkTyQuForRank :: Bool -> TyQu -> TyVarIdS -> TyVarIdS -> Ty -> Ty
+mkTyQuForRank allow q tvS tvExS t = if allow then mkTyQuEx q tvS tvExS t else t
 %%]
 
 %%[9
 SEM Ty
-  | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvL @qBndExTvL $ Ty_Var @tv @categ.quTy
-  | App         loc         .   quTy            :=  let  (rwYTvL,rwNTvL) = partition (`elem` @frRowTvL) @qBndTvL
-                                                    in   mkTyQuForRank @isQuRank @hereQu rwNTvL @qBndExTvL
-                                                         $  mkTyQuForRank @isQuRank @lhs.baseQu rwYTvL []
+  | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvS @qBndExTvS $ Ty_Var @tv @categ.quTy
+  | App         loc         .   quTy            :=  let  (rwYTvS,rwNTvS) = Set.partition (`Set.member` @frRowTvS) @qBndTvS
+                                                    in   mkTyQuForRank @isQuRank @hereQu rwNTvS @qBndExTvS
+                                                         $  mkTyQuForRank @isQuRank @lhs.baseQu rwYTvS Set.empty
                                                          $  Ty_App @func.quTy @arg.quTy
-  | Pred        lhs         .   quTy            =   mkTyQuForRank @isQuRank @hereQu @qBndTvL @qBndExTvL (Ty_Pred @pr.quTy)
+  | Pred        lhs         .   quTy            =   mkTyQuForRank @isQuRank @hereQu @qBndTvS @qBndExTvS (Ty_Pred @pr.quTy)
 %%]
 
 %%[11
 SEM Ty
   | Lam         lhs         .   quTy            =   Ty_Lam @tv @ty.quTy
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Preds which have been inserted (from the given ones)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To be removed when Trf/MergePreds is done
-
-%%[9
-%%]
-ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
-
-SEM Ty
-  | App         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
-  | Var         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional bindings for implicits variables
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To be removed when Trf/MergePreds is done
-
-%%[9 hs
-prOccLImpls :: Maybe ImplsVarId -> [PredOcc] -> AssocL ImplsVarId Impls
-prOccLImpls mbI prL
-  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poPoi p) im) Impls_Nil prL)]) mbI
-%%]
-
-%%[9
-ATTR TyAGItf [ | | prImpls: {AssocL ImplsVarId Impls} ]
-ATTR AllTy [ | prImpls: {AssocL ImplsVarId Impls} | ]
-
-SEM TyAGItf
-  | AGItf       ty          .   prImpls         =   []
-
-SEM Ty
-  | App         lhs         .   prImpls         =   (if @isArrowRoot then prOccLImpls @lhs.mbPrLoc @insHerePrL else []) ++ @arg.prImpls
-  | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
 %%]
 

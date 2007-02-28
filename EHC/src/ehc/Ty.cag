@@ -13,7 +13,10 @@
 %%[1 hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
 %%]
 
-%%[2 hs export(TyVarId, TyVarIdL, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
+%%[2 hs export(TyVarId, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
+%%]
+
+%%[2 hs import(qualified Data.Set as Set) 
 %%]
 
 %%[3 hs export(mkTyQu, TyVarCateg(..))
@@ -55,7 +58,7 @@
 %%[7 hs export(tyAppFunArg,tyAppFunConNm) 
 %%]
 
-%%[7_2 hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
+%%[7_2 hs import(Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
 %%]
 
 %%[7_2 hs export(tyInsertAnnRec, tyReplaceAnnRec, touchAnn, touchAnnTy, addAnn, mkTruncArrow, rightmostResultAnnotation, annotationsStar, mkAnnArrow, addTrunc, tyAnnSubst)
@@ -113,8 +116,9 @@ type TyL        = [Ty]
 type TyVarId    = UID
 %%]
 
-%%[2.TyVarId.Rest hs
+%%[2.TyVarId.Rest hs export(TyVarIdL,TyVarIdS)
 type TyVarIdL   = [TyVarId]
+type TyVarIdS   = Set.Set TyVarId
 %%]
 
 %%[4_2 -1.TyL
