@@ -84,13 +84,17 @@ instance CHRSubstitutable Cnstr TyVarId Cnstr where
 
 instance CHRSubstitutable Guard TyVarId Cnstr where
   chrFtv        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map (Set.fromList . ftv) [p1,p2,p3]
-  -- chrFtv        (IsParentScope    p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
+  chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map (Set.fromList . ftv) [p1,p2,p3]
   chrFtv        (IsVisibleInScope p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
+  chrFtv        (NotEqualScope    p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
 
   chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s |=> p1) (s |=> p2) (s |=> p3)
-  -- chrAppSubst s (IsParentScope    p1 p2   ) = IsParentScope    (s |=> p1) (s |=> p2)
+  chrAppSubst s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s |=> p1) (s |=> p2) (s |=> p3)
   chrAppSubst s (IsVisibleInScope p1 p2   ) = IsVisibleInScope (s |=> p1) (s |=> p2)
+  chrAppSubst s (NotEqualScope    p1 p2   ) = NotEqualScope    (s |=> p1) (s |=> p2)
 %%]
+  -- chrFtv        (IsParentScope    p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
+  -- chrAppSubst s (IsParentScope    p1 p2   ) = IsParentScope    (s |=> p1) (s |=> p2)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lattice ordering, for annotations which have no ordering
@@ -127,6 +131,8 @@ toOrdering o
 data Guard
   = HasStrictCommonScope 	PredScope PredScope PredScope                   -- have strict/proper common scope?
   | IsVisibleInScope    	PredScope PredScope                             -- is visible in 2nd scope?
+  | NotEqualScope    		PredScope PredScope                             -- scopes are unequal
+  | IsStrictParentScope  	PredScope PredScope PredScope                   -- parent scope of each other?
 %%]
   | IsParentScope       PredScope PredScope                             -- is parent scope?
 
@@ -135,9 +141,11 @@ instance Show Guard where
   show _ = "CHR Guard"
 
 instance PP Guard where
-  pp (HasStrictCommonScope sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< sc2,sc1 >#< "<=" >#< sc3]
+  pp (HasStrictCommonScope   sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< sc2,sc1 >#< "<=" >#< sc3]
+  pp (IsStrictParentScope sc1 sc2 sc3) = ppParens (sc1 >#< "==" >#< sc2 >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
   -- pp (IsParentScope sc1 sc2) = sc1 >#< "+ 1 ==" >#< sc2
-  pp (IsVisibleInScope sc1 sc2) = sc1 >#< ">=" >#< sc2
+  pp (IsVisibleInScope sc1 sc2) = sc1 >#< "`visibleIn`" >#< sc2
+  pp (NotEqualScope    sc1 sc2) = sc1 >#< "/=" >#< sc2
 %%]
 
 %%[9
@@ -148,12 +156,21 @@ instance CHRCheckable Guard Cnstr where
            then Nothing
            else return $ vDst `cnstrScopeUnit` scDst
          }
+  chrCheck (IsStrictParentScope (PredScope_Var vDst) sc1 sc2)
+    = do { scDst <- pscpCommon sc1 sc2
+         ; if scDst == sc1 && sc1 /= sc2
+           then return $ vDst `cnstrScopeUnit` scDst
+           else Nothing
+         }
 {-
   chrCheck (IsParentScope (PredScope_Var vDst) sc1)
     = do { scDst <- pscpParent sc1
          ; return $ vDst `cnstrScopeUnit` scDst
          }
 -}
+  chrCheck (NotEqualScope sc1 sc2) | isJust c
+    = if fromJust c /= EQ then return emptyCnstr else Nothing
+    where c = pscpCmp sc1 sc2
   chrCheck (IsVisibleInScope (PredScope_Var vDst) sc1)
     = return $ vDst `cnstrScopeUnit` sc1
   chrCheck (IsVisibleInScope scDst sc1) | pscpIsVisibleIn scDst sc1

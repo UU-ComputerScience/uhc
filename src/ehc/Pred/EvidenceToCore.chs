@@ -11,7 +11,7 @@
 %%[9 import({%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[9 import({%{EH}Ty.FitsIn}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils})
+%%[9 import({%{EH}Ty.FitsIn}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
@@ -73,14 +73,19 @@ evidMpToCore env evidMp
         mkv x         = mknm $ mkHNm x
         mknm          = CExpr_Var
         ins insk k evnm ev c uses st
-                      = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vc r)) $ Map.lookup ev $ tcsEvMp st
-                      where mkk c st = if insk then st {tcsMp = Map.insert k c $ tcsMp st} else st
+                      = case Map.lookup ev $ tcsEvMp st of
+                          Just r -> (        mkk r                  st,vr r)
+                          _      -> (mkc r $ mkk (ToCoreRes c uses) st,   r)
+                      where mkk r st = if insk then st {tcsMp = Map.insert k r $ tcsMp st} else st
                             mkc v st = st {tcsEvMp = Map.insert ev v $ tcsEvMp st}
                             v = mknm evnm
-                            r = ToCoreRes v uses
-                            vc r = case tcrCExpr r of
-                                     CExpr_Var v -> r
+                            r = ToCoreRes (vc c v) uses
+                            vr r = case tcrCExpr r of
+                                     CExpr_Var _ -> r
                                      _           -> r {tcrCExpr = v}
+                            vc c c' = case c of
+                                        CExpr_Var _ -> c
+                                        _           -> c'
         ann (RedHow_Assumption   _ n _) _     = mknm n
         ann (RedHow_ByInstance   n _ _) ctxt  = mknm n `mkCExprApp` ctxt
         ann (RedHow_BySuperClass n o t) [sub] = mkCExprSatSelsCase
@@ -91,6 +96,8 @@ evidMpToCore env evidMp
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
         strip ev                                 = ev
 %%]
+                          Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrCExpr r >#< tcrCExpr (vr r)) $ (        mkk r                  st,vr r)
+                      = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
 %%[9 export(evidKeyCoreMpToBinds)
 evidKeyCoreMpToBinds :: EvidKeyToCExprMap -> (EvidKeyToCBindMap,[CBind])
@@ -104,5 +111,11 @@ evidKeyCoreMpToBinds m
     ,   [  CBind_Bind (mkHNm i) e    | (i,(e,_)) <- Map.toList independentOfAssumes ]
     )
   where (independentOfAssumes, dependentOnAssumes) = Map.partition (\(_,uses) -> Set.null uses) m
+%%]
+
+%%[9 export(evidKeyBindMpToCSubst)
+evidKeyBindMpToCSubst :: EvidKeyToCBindMap -> CSubst
+evidKeyBindMpToCSubst
+  = uidCBindLLToCSubst . Map.toList
 %%]
 

@@ -103,8 +103,9 @@ SEM CExpr
 %%]
   | Var         loc         .   pp          =   ppCNm @nm
   | App         loc         .   pp          =   let args = reverse $ map pp_parens $ @appArgPPL
-                                                in  ppOr (ppDef @appFunPP (vlist args))
-                                                         (@appFunPP >#< (ppSpaces args))
+                                                    fun  = pp_parens @appFunPP
+                                                in  ppOr (ppDef fun (vlist args))
+                                                         (fun >#< (ppSpaces args))
   | Let         loc         .   ppCateg     =   case @categ of
                                                   CBindRec     -> pp " rec"
                                                   CBindStrict  -> pp " !"
