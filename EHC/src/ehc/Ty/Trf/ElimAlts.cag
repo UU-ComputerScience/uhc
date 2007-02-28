@@ -7,7 +7,7 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs module {%{EH}Ty.ElimAlts} import(qualified Data.Set as Set,Data.List,EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Cnstr},{%{EH}Substitutable},{%{EH}Gam},{%{EH}Ty.FitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
+%%[4_2 hs module {%{EH}Ty.Trf.ElimAlts} import(qualified Data.Set as Set,Data.List,EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Cnstr},{%{EH}Substitutable},{%{EH}Gam},{%{EH}Ty.FitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
 %%]
 
 %%[4_2 hs import({%{EH}Base.Debug},UU.Pretty,{%{EH}Error.Pretty})

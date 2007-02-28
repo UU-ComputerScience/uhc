@@ -31,13 +31,13 @@
 %%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[3 import({%{EH}Ty.Quantify}) export(valGamQuantify,gamMapElts,valGamMapTy)
+%%[3 import({%{EH}Ty.Trf.Quantify}) export(valGamQuantify,gamMapElts,valGamMapTy)
 %%]
 
 %%[3 export(gamPartition)
 %%]
 
-%%[4 import({%{EH}Base.Opts},{%{EH}Ty.Instantiate}) export(valGamInst1Exists)
+%%[4 import({%{EH}Base.Opts},{%{EH}Ty.Trf.Instantiate}) export(valGamInst1Exists)
 %%]
 
 %%[4 import({%{EH}Ty.FitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
@@ -68,6 +68,9 @@
 %%]
 
 %%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%]
+
+%%[9 import({%{EH}Ty.Trf.MergePreds})
 %%]
 
 %%[9 export(TreeGam,emptyTGam,tgamSingleton,tgamLookup,tgamLookupAll,tgamLookupAllEmp,tgamElts,tgamMap,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope,tgamToAssocL)
@@ -586,11 +589,18 @@ gamUnzip g = tgamUnzip (tgamSize1 g) g
 %%[9.valGamQuantify -3.valGamQuantify
 valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
 valGamQuantify globTvL prL g
+  =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
+                                          tqo  = tyQuantifyPr (defaultTyQuOpts {tqoptLeaveImpls=True}) (`elem` globTvL) TyQu_Forall [] (tmpoTy tmpo)
+                                     in   (vgi {vgiTy = tqoTy tqo},tqo {tqoInsPrIdSet = tmpoInsPrIdSet tmpo, tqoImplsCnstr = tmpoImplsCnstr tmpo})
+                           ) g
+     in   gamUnzip g'
+%%]
+valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
+valGamQuantify globTvL prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tqo = tyQuantifyPr defaultTyQuOpts (`elem` globTvL) TyQu_Forall prL (vgiTy vgi)
                                      in   (vgi {vgiTy = tqoTy tqo},tqo)
                            ) g
      in   gamUnzip g'
-%%]
 
 %%[4.valGamInst1Exists
 gamInst1Exists :: Ord k => (v -> Ty,v -> Ty -> v) -> UID -> Gam k v -> Gam k v

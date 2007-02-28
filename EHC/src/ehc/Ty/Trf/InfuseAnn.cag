@@ -8,7 +8,7 @@ If the Ty is already annotated, it replaces the annotations with fresh
 ones, but the "ref" field set to the original annotation. Stacked
 annotations are reduced with preference for the lower one.
 
-%%[1 hs module {%{EH}Ty.InfuseAnn}
+%%[7_2 hs module {%{EH}Ty.Trf.InfuseAnn}
 %%]
 
 %%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, Data.Map(Map), qualified Data.Map as Map)

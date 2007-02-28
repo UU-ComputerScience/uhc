@@ -13,19 +13,19 @@
 %%[2 hs import({%{EH}Cnstr},{%{EH}Substitutable},Data.Maybe)
 %%]
 
-%%[3 hs import({%{EH}Ty.Quantify},{%{EH}Ty.Instantiate})
+%%[3 hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
 %%]
 
 %%[4 hs import({%{EH}Base.Debug})
 %%]
 
-%%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.ElimAlts},{%{EH}Ty.FreshVar})
+%%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.Trf.ElimAlts},{%{EH}Ty.Trf.FreshVar})
 %%]
 
-%%[7 hs import(qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.FreshVar},{%{EH}Ty.Ftv})
+%%[7 hs import(qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.PPUtils,{%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
-%%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
+%%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
 %%]
 
 %%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))
@@ -46,10 +46,7 @@
 %%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve},{%{EH}Pred.EvidenceToCore})
 %%]
 
-%%[20 hs import({%{EH}Ty.MapName})
-%%]
-
-%%[50 hs import({%{EH}Ty.ElimEqual},{%{EH}Gam.Utils})
+%%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
 %%[95 hs import({%{EH}Deriving})

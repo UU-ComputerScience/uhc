@@ -1,0 +1,178 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Merge preds into positions indicated by Impls
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+MergePreds gets a set of predicates and places those predicates
+- at places indicated by Impls, where implicit parameters are (still) expected,
+- as deeply nested as possible w.r.t. '->', i.e. function structure,
+- and just before the location where all tyvars of the predicate occur.
+
+%%[9 hs module {%{EH}Ty.Trf.MergePreds} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Builtin})
+%%]
+
+%%[9 hs import({%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable})
+%%]
+
+%%[9 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
+%%]
+
+%%[9 hs import(UU.Pretty)
+%%]
+
+%%[9 ag import({Ty/AbsSyn},{Ty/CommonAG},{Ty/TyVarCommon})
+WRAPPER TyAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty merge preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs export(tyMergePreds)
+tyMergePreds :: [PredOcc] -> Ty -> TyMergePredOut
+tyMergePreds prL ty
+  = let  t  =  wrap_TyAGItf
+                  (sem_TyAGItf  (TyAGItf_AGItf ty))
+                  (Inh_TyAGItf  { prLL_Inh_TyAGItf          = [prL]
+                                })
+    in   TyMergePredOut
+            { tmpoTy                 = prTy_Syn_TyAGItf t
+            , tmpoInsPrIdSet         = insPrIdSet_Syn_TyAGItf t
+            , tmpoImplsCnstr         = assocLToCnstrImpls (prImpls_Syn_TyAGItf t)
+            }
+%%]
+
+%%[9 hs export(TyMergePredOut(..))
+data TyMergePredOut
+  = TyMergePredOut
+  	  { tmpoTy               ::  Ty
+      , tmpoInsPrIdSet       ::  Set.Set PredOccId
+      , tmpoImplsCnstr       ::  Cnstr
+      }
+
+instance Show TyMergePredOut where
+  show _ = ""
+
+instance PP TyMergePredOut where
+  pp tmpo = pp (tmpoImplsCnstr tmpo)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The implicit preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR Ty [ | | mbImpls: {Maybe Impls} ]
+
+SEM Ty
+  | Impls       lhs         .   mbImpls                 =   Just @impls.prTy
+  | App         lhs         .   mbImpls                 =   if @isArrowArg then @arg.mbImpls else Nothing
+  | * - App Impls
+                lhs         .   mbImpls                 =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Can predicates be inserted at location in ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllTy [ mbPrLoc: {Maybe ImplsVarId} | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   mbPrLoc                 =   Nothing
+
+SEM Ty
+  | App         loc         .   (implsPrL,mbTail)       =   maybe ([],Nothing) implsPredsMbTail @func.mbImpls
+                arg         .   mbPrLoc                 =   @mbTail
+  | Var         loc         .   implsPrL                =   []
+  | * - App Var Con Any
+                loc         .   mbPrLoc                 =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determine insertable preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+prLLArrowSplit :: [TyVarId] -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
+prLLArrowSplit frTvL prLL
+  =  let  (h,r) = partition (all (`elem` frTvL) . ftv) . concat $ prLL
+     in   (h,[r])
+%%]
+
+%%[9
+ATTR TyAGItf AllTy [ prLL: {[[PredOcc]]} | | ]
+
+SEM Ty
+  | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvL @lhs.prLL
+  | App         (loc.herePrL,func.prLL,arg.prLL)        =   if @isSpineRoot
+                                                            then  if @appIsArrow
+                                                                  then  let  (h,r) = prLLArrowSplit (@arrArgTvL ++ @lhs.qSurrTvL) @lhs.prLL
+                                                                        in   (h,[],r)
+                                                                  else  let  (h,_) = prLLArrowSplit (@frTvL ++ @lhs.qSurrTvL) @lhs.prLL
+                                                                        in   (h,[],[])
+                                                            else  ([],[],[])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pass preds up to pred insertable location
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllTy [ | | insPrL USE {++} {[]} : {[PredOcc]} ]
+
+SEM Ty
+  | App         loc         .   candPrL         =   @herePrL ++ @func.insPrL ++ @arg.insPrL
+  | Var         loc         .   candPrL         =   @herePrL
+  | App Var     (loc.insHerePrL,lhs.insPrL)     =   maybe ([],@candPrL) (const (@candPrL,[])) @lhs.mbPrLoc
+                loc         .   insPrL          =   @implsPrL ++ @insHerePrL
+                            .   hasNoInsPrL     =   null @insPrL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Preds which have been inserted (from the given ones)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
+
+SEM Ty
+  | App         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+  | Var         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional bindings for implicits variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+prOccLImpls :: Maybe ImplsVarId -> [PredOcc] -> AssocL ImplsVarId Impls
+prOccLImpls mbI prL
+  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poPoi p) im) Impls_Nil prL)]) mbI
+%%]
+
+%%[9
+ATTR TyAGItf [ | | prImpls: {AssocL ImplsVarId Impls} ]
+ATTR AllTy [ | prImpls: {AssocL ImplsVarId Impls} | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   prImpls         =   []
+
+SEM Ty
+  | App         lhs         .   prImpls         =   (if @isArrowRoot then prOccLImpls @lhs.mbPrLoc @insHerePrL else []) ++ @arg.prImpls
+  | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicated type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR TyAGItf [ | | prTy: Ty ]
+ATTR AllTy TyQu TyVarCateg [ | | prTy: SELF ]
+%%]
+
+%%[9
+SEM Ty
+  | Var         lhs         .   prTy            =   mkTyImpls (map poPr @insPrL) $ Ty_Var @tv @categ.prTy
+  | App         loc         .   prTy            =   mkTyImpls (map poPr @insPrL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
+%%]

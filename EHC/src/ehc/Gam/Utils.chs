@@ -10,10 +10,10 @@
 %%[4 module {%{EH}Gam.Utils} import(Data.List,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn},{%{EH}Error},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[4_2 import({%{EH}Ty.ElimAlts}) export(valGamElimAlts)
+%%[4_2 import({%{EH}Ty.Trf.ElimAlts}) export(valGamElimAlts)
 %%]
 
-%%[50 import({%{EH}Ty.ElimEqual}) export(valGamElimEqual)
+%%[50 import({%{EH}Ty.Trf.ElimEqual}) export(valGamElimEqual)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
