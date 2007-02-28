@@ -32,7 +32,7 @@
 %%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[4 import({%{EH}Ty.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
+%%[4 import({%{EH}Ty.Trf.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
 %%]
 
 %%[4 export(FIEnv(..),emptyFE)
@@ -41,10 +41,10 @@
 %%[4 import({%{EH}Base.Debug})
 %%]
 
-%%[4_2 import({%{EH}Ty.ElimAlts}) export(mkFitsInWrap,mkFitsInWrap')
+%%[4_2 import({%{EH}Ty.Trf.ElimAlts}) export(mkFitsInWrap,mkFitsInWrap')
 %%]
 
-%%[4_2 import({%{EH}Ty.ElimBoth}) export(foHasErrs)
+%%[4_2 import({%{EH}Ty.Trf.ElimBoth}) export(foHasErrs)
 %%]
 
 %%[6 export(fitsInL)

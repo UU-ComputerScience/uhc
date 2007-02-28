@@ -7,7 +7,7 @@
 %%% Haskell importable interface to refresh tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 hs module {%{EH}Ty.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyFreshVar)
+%%[4 hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyFreshVar)
 %%]
 
 %%[4.WRAPPER ag import({Ty/AbsSyn})

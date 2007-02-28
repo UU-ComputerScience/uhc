@@ -9,7 +9,7 @@ Notice:
       to inherited/synthesized attributes. Take care of those, since there are some local attributes
       out there that implicitly participate in the propagation of values.
 
-%%[1 hs module {%{EH}Ty.InfuseExp}
+%%[1 hs module {%{EH}Ty.Trf.InfuseExp}
 %%]
 
 %%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))

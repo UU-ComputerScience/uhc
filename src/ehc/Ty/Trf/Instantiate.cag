@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Ty instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs module {%{EH}Ty.Instantiate}
+%%[3 hs module {%{EH}Ty.Trf.Instantiate}
 %%]
 
 %%[3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyInst)
