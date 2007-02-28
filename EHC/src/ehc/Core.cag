@@ -31,9 +31,6 @@
 %%[8 hs export(CaseFailSubst)
 %%]
 
-%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLetRecCoe)
-%%]
-
 %%[9 hs import(Data.Maybe) export(CxBindLMap(..), emptyCxBindLMap, mkCxBindLForPoiL, mkCxBindLForPoiL', plusCxBM, cxbmDpdPoiS, cxbmIntroPoiL)
 %%]
 
@@ -442,13 +439,16 @@ mkCExprHole opts = if ehcCfgClassViaCHR opts then CExpr_Var . mkHNm else CExpr_H
 
 mkCExprPrHole :: EHCOpts -> PredOccId -> CExpr
 mkCExprPrHole opts = mkCExprHole opts . poiId
+
+mkCExprLetHole :: UID -> CExpr -> CExpr
+mkCExprLetHole i b = i `CExpr_HoleLet` b
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLamLetCoe, mkLetRecCoe)
 data Coe = CoeId | Coe (CExpr -> CExpr) | CoeC CExpr | CoeImplApp ImplsVarId | CoeImplLam ImplsVarId
 
 coeId :: Coe
@@ -467,12 +467,17 @@ mkAppCoe eL = mkCoe (\e -> e `mkCExprApp` eL)
 mkLamCoe :: HsName -> Coe
 mkLamCoe n = mkCoe (\e -> n `CExpr_Lam` e)
 
+mkLamLetCoe :: HsName -> UID -> Coe
+mkLamLetCoe n i = mkCoe (\e -> n `CExpr_Lam` mkCExprLetHole i e)
+
 mkLetRecCoe :: CBindL -> Coe
 mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
 
 instance Show Coe where
   show _ = "COE"
 %%]
+
+CExpr_HoleLet
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module merge

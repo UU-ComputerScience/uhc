@@ -85,12 +85,18 @@ initScopedPredStore
          p1s2         = mkCHRPredOcc pr1 sc2
          p1s3         = mkCHRPredOcc pr1 sc3
          scopeProve   = [Prove p1s1, Prove p1s2] 
+                          ==> [Reduction p1s2 RedHow_ByScope [p1s3]]
+                           |> [IsStrictParentScope sc3 sc1 sc2]
+         scopeAssum   = [Prove p1s1, Assume p1s2] 
+                          ==> [Reduction p1s1 RedHow_ByScope [p1s2]]
+                            |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
+%%]
+         scopeProve   = [Prove p1s1, Prove p1s2] 
                           ==> [Prove p1s3, Reduction p1s1 RedHow_ByScope [p1s3]]
                            |> [HasStrictCommonScope sc3 sc1 sc2]
          scopeAssum   = [Prove p1s1, Assume p1s2] 
                           ==> [Reduction p1s1 RedHow_ByScope [p1s3]]
                             |> [HasStrictCommonScope sc3 sc1 sc2]
-%%]
 
 %%[9 export(mkScopedCHR2)
 mkScopedCHR2 :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> ScopedPredStore
@@ -153,7 +159,7 @@ mkInstanceChr (context, hd, i, s)
   = ( chrStoreSingletonElem
       $ [Prove constraint]
           ==> Reduction constraint i body : map Prove body
-            |> [sc1 `IsVisibleInScope` s]
+            |> [s `IsVisibleInScope` sc1]
     , (body,constraint)
     )
   where constraint = mkCHRPredOcc hd sc1

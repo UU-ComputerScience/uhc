@@ -231,12 +231,14 @@ SEM AGItf
 
 SEM Decl
   | Instance    loc         .   cSubst              =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then @lhs.cSubst
+                                                        then cSubstApp @lhs.cSubst $ evidKeyBindMpToCSubst @chrSolveDeclsEvidBindMp
                                                         else cSubstApp @lhs.cSubst $ cSubstApp @supPrfCSubst @prfCSubst
 
 SEM Expr
   | Let         loc         .   cSubst              =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr) @lhs.cSubst
+                                                        then cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr)
+                                                             $ cSubstApp @lhs.cSubst
+                                                             $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
                                                         else cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr)
                                                              $ cSubstApp @lhs.cSubst
                                                              $ cSubstApp @bodyPrfCSubst @prfCSubst

@@ -535,6 +535,7 @@ SEM Expr
                                         , mkInfo1 "chrSolveEvidBinds" (ppCBindL @chrSolveEvidBinds)
                                         , mkInfo1 "chrSolveTrace" (ppSolveTrace @chrSolveTrace)
                                         , mkInfo1 "chrSolveRedGraph" (pp $ show @chrSolveRedGraph)
+                                        , mkInfo1 "chrSolveEvidCoreMp" (ppAssocLV $ assocLMapElt (\(c,s) -> c >-< show s) $ Map.toList @chrSolveEvidCoreMp)
                                         {-
                                         , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)

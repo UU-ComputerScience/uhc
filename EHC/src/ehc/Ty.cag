@@ -219,7 +219,7 @@ pscpLeave (PredScope_Lev s) = PredScope_Lev $ init s
 
 %%[9 hs export(pscpIsVisibleIn,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
-pscpIsVisibleIn (PredScope_Lev sInner) (PredScope_Lev sOuter) = sOuter `isPrefixOf` sInner
+pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `isPrefixOf` sInner
 pscpIsVisibleIn _                      _                      = False
 
 pscpCommon :: PredScope -> PredScope -> Maybe PredScope
@@ -235,7 +235,11 @@ pscpParent :: PredScope -> Maybe PredScope
 pscpParent (PredScope_Lev (_:s)) = Just $ PredScope_Lev s
 pscpParent _                     = Nothing        
 
-%%[9 hs export(pscpCmpByLen)
+%%[9 hs export(pscpCmp,pscpCmpByLen)
+pscpCmp :: PredScope -> PredScope -> Maybe Ordering                  
+pscpCmp (PredScope_Lev s) (PredScope_Lev t) = Just $ s `compare` t                   
+pscpCmp _                 _                 = Nothing                 
+
 pscpCmpByLen :: PredScope -> PredScope -> Ordering                  
 pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (length s) `compare` (length t)                    
 %%]

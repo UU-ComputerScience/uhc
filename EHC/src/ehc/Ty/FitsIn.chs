@@ -924,7 +924,10 @@ fitsInFI fi ty1 ty2
                                     (fi3,cnstrMp)
                                           = fiAddPr ci pr2n pr2v tpr2 fi2
                                     fo    = f fi3 t1 tr2
-                               in   (foUpdCnstrMp cnstrMp fo,mkLamCoe pr2n)
+                                    rCoe  = if ehcCfgClassViaCHR globOpts
+                                            then mkLamLetCoe pr2n (poiId pr2v)
+                                            else mkLamCoe pr2n
+                               in   (foUpdCnstrMp cnstrMp fo,rCoe)
                        fP (Ty_Impls (Impls_Nil))
                             =  Just fo
                             where fo = f fi2 t1 tr2
