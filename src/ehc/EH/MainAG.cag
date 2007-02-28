@@ -43,6 +43,9 @@
 %%[9 hs import({%{EH}Core.Subst})
 %%]
 
+%%[9 hs import({%{EH}Ty.Trf.MergePreds})
+%%]
+
 %%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve},{%{EH}Pred.EvidenceToCore})
 %%]
 

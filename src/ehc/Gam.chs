@@ -587,20 +587,14 @@ gamUnzip g = tgamUnzip (tgamSize1 g) g
 %%]
 
 %%[9.valGamQuantify -3.valGamQuantify
-valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
+valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
 valGamQuantify globTvL prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
-                                          tqo  = tyQuantifyPr (defaultTyQuOpts {tqoptLeaveImpls=True}) (`elem` globTvL) TyQu_Forall [] (tmpoTy tmpo)
-                                     in   (vgi {vgiTy = tqoTy tqo},tqo {tqoInsPrIdSet = tmpoInsPrIdSet tmpo, tqoImplsCnstr = tmpoImplsCnstr tmpo})
+                                          ty   = tyQuantify (`elem` globTvL) (tmpoTy tmpo)
+                                     in   (vgi {vgiTy = ty},tmpo {tmpoTy = ty})
                            ) g
      in   gamUnzip g'
 %%]
-valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyQuOut)
-valGamQuantify globTvL prL g
-  =  let  g' = gamMapElts  (\vgi ->  let  tqo = tyQuantifyPr defaultTyQuOpts (`elem` globTvL) TyQu_Forall prL (vgiTy vgi)
-                                     in   (vgi {vgiTy = tqoTy tqo},tqo)
-                           ) g
-     in   gamUnzip g'
 
 %%[4.valGamInst1Exists
 gamInst1Exists :: Ord k => (v -> Ty,v -> Ty -> v) -> UID -> Gam k v -> Gam k v

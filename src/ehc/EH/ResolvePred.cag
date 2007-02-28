@@ -123,7 +123,7 @@ SEM Expr
                             .   (bodyPrfFrPoiCxBindLM,bodyPrfIntroCBindL,bodyPrfCSubst,bodyPrfArgPrOccL,_,bodyPrfErrs)
                                                     =   prfPreds @lUniq5 (@fe {fePrElimTGam = @body.prElimTGam}) @toPrfSubsBodyPrOccL
                             .   quantPrIdSet        =   Set.unions
-                                                        . map (Set.unions . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . Set.toList . tqoInsPrIdSet)
+                                                        . map (Set.unions . map (cxbmDpdPoiS @prfFrPoiCxBindLM) . Set.toList . tmpoInsPrIdSet)
                                                         . gamElts $ @tqoGam
                             .   gathPredL           =   @remToPrfPrOccL ++ filter (not . (`Set.member` @quantPrIdSet) . poPoi) @quantPrOccL ++ @bodyPrfArgPrOccL
                 lhs         .   gathPredL           =   @gathPredL

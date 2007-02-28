@@ -93,9 +93,9 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-prLLArrowSplit :: [TyVarId] -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
-prLLArrowSplit frTvL prLL
-  =  let  (h,r) = partition (all (`elem` frTvL) . ftv) . concat $ prLL
+prLLArrowSplit :: TyVarIdS -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
+prLLArrowSplit frTvS prLL
+  =  let  (h,r) = partition (all (`Set.member` frTvS) . ftv) . concat $ prLL
      in   (h,[r])
 %%]
 
@@ -103,12 +103,12 @@ prLLArrowSplit frTvL prLL
 ATTR TyAGItf AllTy [ prLL: {[[PredOcc]]} | | ]
 
 SEM Ty
-  | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvL @lhs.prLL
+  | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvS @lhs.prLL
   | App         (loc.herePrL,func.prLL,arg.prLL)        =   if @isSpineRoot
                                                             then  if @appIsArrow
-                                                                  then  let  (h,r) = prLLArrowSplit (@arrArgTvL ++ @lhs.qSurrTvL) @lhs.prLL
+                                                                  then  let  (h,r) = prLLArrowSplit (@arrArgTvS `Set.union` @lhs.qSurrTvS) @lhs.prLL
                                                                         in   (h,[],r)
-                                                                  else  let  (h,_) = prLLArrowSplit (@frTvL ++ @lhs.qSurrTvL) @lhs.prLL
+                                                                  else  let  (h,_) = prLLArrowSplit (@frTvS `Set.union` @lhs.qSurrTvS) @lhs.prLL
                                                                         in   (h,[],[])
                                                             else  ([],[],[])
 %%]

@@ -78,7 +78,7 @@ SEM Expr
   | Let         loc         .   (quValGam_ex_,tqoGam)
                                                     :=  let  (vg,tqog) = valGamQuantify @gTyTvL @quantPrOccL @lSubsValGam_
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .   tqoTyCnstr          =   foldr (\tqo c -> tqoImplsCnstr tqo |=> c) emptyCnstr (gamElts @tqoGam)
+                            .   tqoTyCnstr          =   foldr (\tmpo c -> tmpoImplsCnstr tmpo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
 
 %%[50
@@ -515,9 +515,7 @@ SEM Decl
 
 %%[9
 SEM Decl
-  | TySig       loc         .   ty_sig_             :=  tqoTy (tyQuantifyPr  (defaultTyQuOpts {tqoptLeaveImpls=True})
-                                                                             (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL))
-                                                                             TyQu_Forall [] @tyExpr.ty)
+  | TySig       loc         .   ty_sig_             :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
 %%]
 
 %%[8

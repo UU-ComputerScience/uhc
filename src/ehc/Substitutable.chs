@@ -17,6 +17,9 @@
 %%[2 module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Cnstr},{%{EH}Ty.Trf.Subst},{%{EH}Ty.Ftv}) export(Substitutable(..))
 %%]
 
+%%[2 import(qualified Data.Set as Set)
+%%]
+
 %%[4_2 export((|>>))
 %%]
 
@@ -35,6 +38,11 @@ infixr 6 |=>
 class Substitutable vv k subst | vv -> subst k where
   (|=>)         ::  subst -> vv -> vv
   ftv           ::  vv -> [k]
+%%]
+
+%%[2 export(ftvSet)
+ftvSet :: (Ord k,Substitutable vv k subst) => vv -> Set.Set k
+ftvSet = Set.fromList . ftv
 %%]
 
 %%[4_2.partialSubstApp
