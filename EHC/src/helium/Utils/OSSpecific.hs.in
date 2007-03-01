@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module OSSpecific where
+module Helium.Utils.OSSpecific where
 
 slash :: Char
 slash =  '@SLASH@'
