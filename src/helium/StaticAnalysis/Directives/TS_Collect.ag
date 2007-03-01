@@ -9,10 +9,6 @@
 --
 -- (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -----------------------------------------------------------------------------
-imports {
-import ExpressionTypeInferencer (expressionTypeInferencer)
-import qualified Data.Map as M
-}
 
 -- Collect all type variables 
 

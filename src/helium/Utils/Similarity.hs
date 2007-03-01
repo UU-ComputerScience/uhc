@@ -13,10 +13,10 @@
 	If either of the identifiers is just one character long, they are by definition not similar.
 -}
 
-module Similarity(similar) where
+module Helium.Utils.Similarity(similar) where
 
 import Char
-import Utils(internalError)
+import Helium.Utils.Utils(internalError)
 
 similar :: String -> String -> Bool
 -- ignore primitives

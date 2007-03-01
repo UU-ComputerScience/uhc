@@ -9,16 +9,16 @@
 	(the phase before type inference, as well as during type inference)
 -}
 
-module Warnings where
+module Helium.StaticAnalysis.Messages.Warnings where
 
-import UHA_Range    (getNameRange, showRange, sortRanges)
-import UHA_Syntax
-import UHA_Utils
+import Helium.Syntax.UHA_Range    (getNameRange, showRange, sortRanges)
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
 import Top.Types
-import Messages
-import Utils        (internalError)
+import Helium.StaticAnalysis.Messages.Messages
+import Helium.Utils.Utils        (internalError)
 import Data.List    (intersperse)
-import qualified UHA_Pretty as PP (sem_Pattern, sem_LeftHandSide, sem_Expression)
+import qualified Helium.Syntax.UHA_Pretty as PP (sem_Pattern, sem_LeftHandSide, sem_Expression)
 
 -------------------------------------------------------------
 -- (Static) Warnings

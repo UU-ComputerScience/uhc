@@ -1,15 +1,20 @@
-imports{
-import UHA_Utils
-import UHA_Syntax 
-import UHA_Range
-import OperatorTable
+{
+module Helium.Parser.ResolveOperators
+where
+}
+
+{
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA 
+import Helium.Syntax.UHA_Range
+import Helium.Parser.OperatorTable
 import Char
-import Utils
-import Messages
+import Helium.Utils.Utils
+import Helium.StaticAnalysis.Messages.Messages
 import qualified Data.Map as M
 }
 
-INCLUDE "../syntax/UHA_Syntax.ag"
+INCLUDE "../Syntax/UHA_Syntax.ag"
 
 {
 
@@ -66,6 +71,9 @@ collectInfixdecls
         isInfixdecl _ = False
 }
 
+ATTR *
+   [ | | self : SELF ]
+
 ATTR Module Body Declarations Declaration FunctionBindings RightHandSide
      FunctionBinding LeftHandSide MaybeDeclarations GuardedExpressions
      GuardedExpression Expression Patterns Pattern Alternatives Alternative
@@ -74,13 +82,13 @@ ATTR Module Body Declarations Declaration FunctionBindings RightHandSide
      RecordExpressionBindings
     [ opTable : OperatorTable 
     | resolveErrors : { [ResolveError] } 
-    | 
+    |
     ]                
 
 SEM Pattern 
     | List lhs.resolveErrors = @errs ++ @patterns.resolveErrors
            loc . (self, errs) = 
-                    case @range of
+                    case @range.self of
                         Range_Range Position_Unknown Position_Unknown -> 
                             resolvePattern @lhs.opTable @patterns.self
                         _ -> 
@@ -89,7 +97,7 @@ SEM Pattern
 SEM Expression
     | List lhs . resolveErrors = @errs ++ @expressions.resolveErrors
            loc . (self, errs) = 
-                    case @range of
+                    case @range.self of
                         Range_Range Position_Unknown Position_Unknown -> 
                             resolveExpression @lhs.opTable @expressions.self
                         _ -> (Expression_List @range.self @expressions.self, [])

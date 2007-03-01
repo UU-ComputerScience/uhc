@@ -54,11 +54,11 @@ SEM Declaration
                  . unknCls = [ if className `elem` [ "Num", "Enum", "Ord" ]
                                 then NonDerivableClass c
                                 else UnknownClass c
-                             | c <- @derivings, let className = show c
+                             | c <- @derivings.self, let className = show c
                              , className `notElem` ["Show", "Eq"]
                              ]
                  . cantDer = [ CannotDerive c [ tp | ReductionError (Predicate _ tp) <- errs ]
-                             | c <- @derivings
+                             | c <- @derivings.self
                              , let preds     = map (Predicate (show c)) @constructors.parameterTypes
                                    (_, errs) = contextReduction @lhs.orderedTypeSynonyms @lhs.classEnvironment preds
                              , not (null errs)
@@ -239,7 +239,7 @@ SEM Literal
   | Int loc . intLiteralTooBigErrors = 
                  let val = read @value :: Integer in
                  if length @value > 9 && (val > maxInt || val < minInt)  then 
-                    [ IntLiteralTooBig @range @value ]
+                    [ IntLiteralTooBig @range.self @value ]
                  else 
                     []
         lhs . miscerrors = @intLiteralTooBigErrors ++ @lhs.miscerrors
@@ -251,7 +251,7 @@ SEM Type -- does every type variable in the contexts appear in the type?
         ( if Overloading `elem` @lhs.options then
             [ AmbiguousContext v | v <-  @context.contextVars, v `notElem` @type.typevariables ]
           else 
-            [ OverloadingDisabled @range ]
+            [ OverloadingDisabled @range.self ]
         )
         ++ 
         @type.miscerrors
@@ -260,9 +260,9 @@ ATTR ContextItems ContextItem [ | | contextVars USE { ++ } { [] } : {[Name]} ]
 
 SEM ContextItem
   | ContextItem lhs.contextVars = @types.typevariables
-                lhs.miscerrors = if elem (getNameName @name) (M.keys standardClasses) 
+                lhs.miscerrors = if elem (getNameName @name.self) (M.keys standardClasses) 
                                     then @types.miscerrors  
-                                    else UnknownClass @name : @types.miscerrors
+                                    else UnknownClass @name.self : @types.miscerrors
 
 -- context for restricted pattern error
 ATTR Declaration Declarations [ | | restrictedNames USE { ++ } { [] } : Names ]

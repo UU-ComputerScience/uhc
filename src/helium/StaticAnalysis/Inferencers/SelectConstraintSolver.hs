@@ -10,13 +10,13 @@
     Select the type constraint solver of your own liking
 -}
 
-module SelectConstraintSolver (selectConstraintSolver) where
+module Helium.StaticAnalysis.Inferencers.SelectConstraintSolver (selectConstraintSolver) where
 
-import Args (Option(..))
-import ConstraintInfo
-import TypeConstraints
-import ImportEnvironment (ImportEnvironment, getSiblings)
-import ListOfHeuristics (listOfHeuristics)
+import Helium.Compiler.Args (Option(..))
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import Helium.ModuleSystem.ImportEnvironment (ImportEnvironment, getSiblings)
+import Helium.StaticAnalysis.Heuristics.ListOfHeuristics (listOfHeuristics)
 import Top.Types
 import Top.Solver
 import Top.Ordering.TreeWalk

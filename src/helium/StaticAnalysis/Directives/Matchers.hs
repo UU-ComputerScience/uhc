@@ -10,10 +10,10 @@
     (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -}
 
-module Matchers where
+module Helium.StaticAnalysis.Directives.Matchers where
 
-import UHA_Syntax
-import Messages () -- instance Eq Name
+import Helium.Syntax.UHA
+import Helium.StaticAnalysis.Messages.Messages () -- instance Eq Name
 
 -------------------------------------------------------------
 -- Expression

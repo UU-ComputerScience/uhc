@@ -6,16 +6,16 @@
     Portability :  portable
 -}
 
-module CoreToLvm ( coreToLvm ) where
+module Helium.CodeGeneration.CoreToLvm ( coreToLvm ) where
 
-import Id         ( newNameSupply )
-import CoreToAsm  ( coreToAsm )         -- enriched lambda expressions (Core) to Asm
-import AsmToLvm   ( asmToLvm )          -- translate Asm to instructions
-import AsmOptimize( asmOptimize )       -- optimize Asm (ie. inlining)
-import LvmWrite   ( lvmWriteFile )
+import Lvm.Common.Id         ( newNameSupply )
+import Lvm.Core.CoreToAsm  ( coreToAsm )         -- enriched lambda expressions (Core) to Asm
+import Lvm.Asm.AsmToLvm   ( asmToLvm )          -- translate Asm to instructions
+import Lvm.Asm.AsmOptimize( asmOptimize )       -- optimize Asm (ie. inlining)
+import Lvm.Lvm.LvmWrite   ( lvmWriteFile )
 
-import PPrint     ( putDoc )
-import LvmPretty  ( lvmPretty )
+import Lvm.Common.PPrint     ( putDoc )
+import Lvm.Lvm.LvmPretty  ( lvmPretty )
 
 coreToLvm source coremod = do
     nameSupply  <- newNameSupply

@@ -36,6 +36,8 @@ include mk/shared.mk
 
 include $(SRC_PREFIX)libutil/files.mk
 include $(SRC_PREFIX)top/files.mk
+include $(SRC_PREFIX)helium/files.mk
+include $(SRC_PREFIX)lvm/files.mk
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
@@ -82,6 +84,9 @@ explanation:
 	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
 	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
 	echo  "make grincs              : make all grin compiler ($(GRINC_EXEC_NAME)) versions" ; \
+	echo  "make top                 : make Typing Our Programs library" ; \
+	echo  "make lvm                 : make Lazy Virtual Machine library" ; \
+	echo  "make helium              : make Helium library" ; \
 	echo  "make test-regress        : run regression test," ; \
 	echo  "                           restrict to versions <v> by specifying 'VERSIONS=<v>'," ; \
 	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \

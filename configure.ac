@@ -279,6 +279,7 @@ suffix_lib=".a"
 prefix_lib=""
 # path separator
 paths_sep=":"
+slash="/"
 # libtool usage
 libtoolStatic="libtool -static -o"
 libtoolDynamic="echo Dynamic linking not available: "
@@ -292,6 +293,7 @@ case $HostPlatform in
         #prefix_lib="lib"
         # path separator
         paths_sep=";"
+        slash="\\\\"
         # libtool usage
         libtoolStatic="no"
         ;;
@@ -322,6 +324,7 @@ AC_SUBST(SUFFIX_EXEC,"$suffix_exec")
 AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
+AC_SUBST(SLASH,"$slash")
 
 # libtool used, if any
 AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
@@ -365,7 +368,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
-AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs])
+AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs src/helium/utils/OSSpecific.hs])
 AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch])
 AC_OUTPUT
 

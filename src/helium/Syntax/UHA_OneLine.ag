@@ -1,15 +1,19 @@
-INCLUDE "UHA_Syntax.ag"
-
-imports{
-import OneLiner
-import Char
-import UHA_Utils (showNameAsOperator)
-import Top.Types
-import TypeConversion
-import UHA_Syntax
-import List
-import Utils (internalError)
+{
+module Helium.Syntax.UHA_OneLine
+where
 }
+{
+import Char
+import List
+import Helium.Utils.OneLiner
+import Helium.Syntax.UHA_Utils (showNameAsOperator)
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Helium.Syntax.UHA
+import Helium.Utils.Utils (internalError)
+import Top.Types
+}
+
+INCLUDE "UHA_Syntax.ag"
 
 {
 
@@ -41,6 +45,13 @@ oneLineTreeAsOperator tree =
          -> OneLineNode [ OneLineText "`", tree, OneLineText "`" ]
       _  -> tree
 }
+
+ATTR
+    Names Name Types Type Range Position Strings ContextItems ContextItem
+    [
+    |
+    | self : SELF
+    ]
 
 ATTR
     Declaration

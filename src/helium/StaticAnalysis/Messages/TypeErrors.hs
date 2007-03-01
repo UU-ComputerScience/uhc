@@ -8,15 +8,15 @@
     Errors that are constructed during type inferece.
 -}
 
-module TypeErrors where
+module Helium.StaticAnalysis.Messages.TypeErrors where
 
-import Messages
+import Helium.StaticAnalysis.Messages.Messages
 import Top.Types
 import List       (union, intersperse, partition)
-import OneLiner   (OneLineTree(..) )
-import UHA_Syntax (Range, Name)
-import UHA_Range  (getNameRange)
-import UHA_Source
+import Helium.Utils.OneLiner   (OneLineTree(..) )
+import Helium.Syntax.UHA (Range, Name)
+import Helium.Syntax.UHA_Range  (getNameRange)
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
 import Data.Maybe
 
 type TypeErrors = [TypeError]

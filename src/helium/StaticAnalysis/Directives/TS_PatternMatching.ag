@@ -13,14 +13,6 @@
 -- (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -----------------------------------------------------------------------------
 
-imports {
-import List
-import Matchers
-import TS_Apply (applyTypingStrategy, matchInformation)
-import TS_CoreSyntax
-import TS_Attributes
-}
-
 ATTR Body Statement Qualifier Statements Qualifiers Expression RightHandSide MaybeExpression
      Expressions GuardedExpression GuardedExpressions FunctionBinding FunctionBindings
      Declaration Declarations MaybeDeclarations Alternative Alternatives

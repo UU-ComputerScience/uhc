@@ -8,12 +8,12 @@
 	Some Prelude-like functions
 -}
 
-module Utils where
+module Helium.Utils.Utils where
 
 import Data.IORef
 import GHC.IOBase (unsafePerformIO)
 import List (group, groupBy, sort, elemIndex)
-import Logger
+import Helium.Utils.Logger
 
 -------------------------------------------------------
 -- String utils

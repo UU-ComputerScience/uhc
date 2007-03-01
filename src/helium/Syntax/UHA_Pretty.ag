@@ -1,13 +1,17 @@
-INCLUDE "../syntax/UHA_Syntax.ag"
-
-imports{
-import PPrint
+{
+module Helium.Syntax.UHA_Pretty
+where
+}
+{
+import Lvm.Common.PPrint as PPrint
 import Char
 import List (intersperse)
 import Top.Types (isTupleConstructor)
-import UHA_Syntax
-import Utils (internalError)
+import Helium.Syntax.UHA
+import Helium.Utils.Utils (internalError)
 }
+
+INCLUDE "UHA_Syntax.ag"
 
 {
 intErr = internalError "UHA_Pretty"

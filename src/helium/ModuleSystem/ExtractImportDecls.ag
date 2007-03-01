@@ -1,16 +1,26 @@
+{
+module Helium.ModuleSystem.ExtractImportDecls
+where
+}
+{
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
+import Lvm.Common.Id
+import qualified Lvm.Core.Core as Core
+import Helium.Utils.Utils (internalError)
+}
+
+INCLUDE "../Syntax/UHA_Syntax.ag"
+INCLUDE "../CodeGeneration/ToCoreName.ag"
+
 ATTR Module [ | | coreImportDecls : { [(Core.CoreDecl,[Id])] } ] 
 
-INCLUDE "../syntax/UHA_Syntax.ag"
-INCLUDE "../codegeneration/ToCoreName.ag"
+ATTR
+    Name Range Position Strings
+    [ | | self : SELF ]
 
-imports{
-import UHA_Syntax
-import UHA_Utils
-import Id
-import qualified Core
-import Utils (internalError)
-}
-  
+
+
 ATTR Body ImportDeclarations ImportDeclaration
    [ | | coreImportDecls USE { ++ } { [] } : { [(Core.CoreDecl,[Id])] } ]  
     

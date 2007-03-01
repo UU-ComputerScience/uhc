@@ -6,9 +6,9 @@
     Portability :  portable
 -}
 
-module LayoutRule(layout) where
+module Helium.Parser.LayoutRule(layout) where
 
-import LexerToken(Token, Lexeme(..), lexemeLength)
+import Helium.Parser.LexerToken(Token, Lexeme(..), lexemeLength)
 import Text.ParserCombinators.Parsec.Pos
 
 layout :: [Token] -> [Token]

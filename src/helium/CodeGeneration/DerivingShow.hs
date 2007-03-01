@@ -6,19 +6,19 @@
     Portability :  portable
 -}
 
-module DerivingShow
+module Helium.CodeGeneration.DerivingShow
 	( dataShowFunction
 	, typeShowFunction
 	, dataDictionary
 	, nameOfShowFunction, typeOfShowFunction, showFunctionOfType
 	) where
 
-import qualified UHA_Syntax as UHA
-import UHA_Utils
-import CoreUtils
-import Core
-import Id
-import Utils
+import qualified Helium.Syntax.UHA as UHA
+import Helium.Syntax.UHA_Utils
+import Helium.CodeGeneration.CoreUtils
+import Lvm.Core.Core
+import Lvm.Common.Id
+import Helium.Utils.Utils
 import Top.Types
 
 -- Show function for a data type declaration

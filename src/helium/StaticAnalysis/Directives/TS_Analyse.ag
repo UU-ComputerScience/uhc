@@ -9,6 +9,36 @@
 --
 -- (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -----------------------------------------------------------------------------
+{
+module Helium.StaticAnalysis.Directives.TS_Analyse
+where
+}
+{
+import Top.Types
+import Top.Solver.Greedy
+import Top.Solver
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
+import Helium.StaticAnalysis.Directives.TS
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import List
+import Helium.Syntax.UHA_Utils (nameFromString)
+import Helium.Syntax.UHA_Range (noRange)
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
+import Helium.StaticAnalysis.Messages.Messages
+import Helium.StaticAnalysis.Messages.TypeErrors
+import Helium.StaticAnalysis.Directives.TS_Messages
+import Helium.ModuleSystem.ImportEnvironment hiding (setTypeSynonyms)
+import Helium.StaticAnalysis.Inferencers.ExpressionTypeInferencer (expressionTypeInferencer)
+import Char (isAlphaNum)
+import Helium.Utils.Utils (internalError)
+import qualified Helium.Syntax.UHA_Pretty as PP
+import qualified Data.Map as M
+import Helium.Syntax.UHA
+}
+INCLUDE "../../Syntax/UHA_Syntax.ag"
+INCLUDE "TS_Syntax.ag"
+INCLUDE "TS_Collect.ag"
 
 {
 analyseTypingStrategies :: TypingStrategies -> ImportEnvironment -> (TS_Errors, TS_Warnings)
@@ -21,32 +51,11 @@ analyseTypingStrategy ts ie =
     let (errs, _, wars) = sem_TypingStrategy ts ie in (errs, wars)
 }
 
-INCLUDE "../../syntax/UHA_Syntax.ag"
-INCLUDE "TS_Syntax.ag"
-INCLUDE "TS_Collect.ag"
 
-imports {
-import Top.Types
-import Top.Solver.Greedy
-import Top.Solver
-import TypeConstraints
-import ConstraintInfo
-import TS_Syntax
-import TypeConversion
-import List
-import UHA_Utils (nameFromString)
-import UHA_Range (noRange)
-import UHA_Source
-import Messages
-import TypeErrors
-import TS_Messages
-import ImportEnvironment hiding (setTypeSynonyms)
-import ExpressionTypeInferencer (expressionTypeInferencer)
-import Char (isAlphaNum)
-import Utils (internalError)
-import qualified UHA_Pretty as PP
-import qualified Data.Map as M
-}
+
+ATTR *
+   [ | | self : SELF ]
+
 
 ATTR TypingStrategy  [ importEnvironment : ImportEnvironment
                      |

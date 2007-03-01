@@ -6,22 +6,22 @@
     Portability :  portable
 -}
 
-module CoreToImportEnv(getImportEnvironment) where
+module Helium.ModuleSystem.CoreToImportEnv(getImportEnvironment) where
 
-import Core
-import Utils
-import TypeConversion
-import ParseLibrary
-import Lexer(lexer)
-import Parser(type_, contextAndType)
-import ImportEnvironment
-import UHA_Utils
-import Id
-import UHA_Syntax
-import OperatorTable
+import Lvm.Core.Core as Core
+import Helium.Utils.Utils
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Helium.Parser.ParseLibrary
+import Helium.Parser.Lexer(lexer)
+import Helium.Parser.Parser(type_, contextAndType)
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.Syntax.UHA_Utils
+import Lvm.Common.Id
+import Helium.Syntax.UHA
+import Helium.Parser.OperatorTable
 import Top.Types
-import Byte(stringFromBytes)
-import UHA_Range(makeImportRange, setNameRange)
+import Lvm.Common.Byte(stringFromBytes)
+import Helium.Syntax.UHA_Range(makeImportRange, setNameRange)
 
 typeFromCustoms :: String -> [Custom] -> TpScheme
 typeFromCustoms n [] =
@@ -29,7 +29,7 @@ typeFromCustoms n [] =
         ("function import without type: " ++ n)
 typeFromCustoms n ( CustomDecl (DeclKindCustom id) [CustomBytes bytes] : cs) 
     | stringFromId id == "type" =
-        let string = filter (/= '!') (Byte.stringFromBytes bytes) 
+        let string = filter (/= '!') (stringFromBytes bytes) 
         in makeTpSchemeFromType (parseFromString contextAndType string)
     | otherwise =
         typeFromCustoms n cs
@@ -46,7 +46,7 @@ parseFromString p string =
 typeSynFromCustoms :: String -> [Custom] -> (Int, Tps -> Tp) -- !!! yuck
 typeSynFromCustoms n (CustomBytes bs:cs) =
     let
-        typeSynDecl = Byte.stringFromBytes bs
+        typeSynDecl = stringFromBytes bs
         -- (too?) simple parser; works because type variables in synonym decls are renamed to 1 letter
         ids         = ( map (\x -> nameFromString [x])
                       . filter    (' '/=)
@@ -75,7 +75,7 @@ arityFromCustoms n [] =
 arityFromCustoms n ( CustomInt arity : _ ) = arity
 arityFromCustoms n ( CustomDecl (DeclKindCustom id) [CustomBytes bytes] : cs ) 
     | stringFromId id == "kind" = 
-        (length . filter ('*'==) . Byte.stringFromBytes) bytes - 1
+        (length . filter ('*'==) . stringFromBytes) bytes - 1
         -- the number of stars minus 1 is the arity
 arityFromCustoms n (_:cs) = arityFromCustoms n cs
 

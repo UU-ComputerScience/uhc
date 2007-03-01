@@ -8,15 +8,15 @@
     Error messages repoted by kind inference.
 -}
 
-module KindErrors where
+module Helium.StaticAnalysis.Messages.KindErrors where
 
 import Top.Types
-import UHA_Syntax (Range, Type)
-import PPrint (Doc)
-import Messages
+import Helium.Syntax.UHA (Range, Type)
+import Lvm.Common.PPrint (Doc)
+import Helium.StaticAnalysis.Messages.Messages
 import List (union)
-import qualified UHA_Pretty as PP
-import qualified PPrint
+import qualified Helium.Syntax.UHA_Pretty as PP
+import qualified Lvm.Common.PPrint
 
 type KindErrors = [KindError]
 data KindError  = MustBeStar Range String Doc Kind

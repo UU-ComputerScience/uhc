@@ -8,14 +8,14 @@
     Utilities to extract data from the syntax tree
 -}
 
-module UHA_Utils where
+module Helium.Syntax.UHA_Utils where
 
-import UHA_Range(noRange, getNameRange)
-import UHA_Syntax(Name(..), ImportDeclaration(..), Pattern(..))
-import Id(Id, idFromString, stringFromId)
+import Lvm.Common.Id(Id, idFromString, stringFromId)
 import Char
 import Top.Types(isTupleConstructor)
-import Utils(internalError)
+import Helium.Syntax.UHA_Range(noRange, getNameRange)
+import Helium.Syntax.UHA(Name(..), ImportDeclaration(..), Pattern(..))
+import Helium.Utils.Utils(internalError)
 
 instance Eq Name where
    n1 == n2 = getNameName n1 == getNameName n2

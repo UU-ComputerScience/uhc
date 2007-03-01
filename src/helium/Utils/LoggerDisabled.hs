@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module Logger ( logger ) where
+module Helium.Utils.Logger ( logger ) where
 
 {-# NOTINLINE logger #-}
 

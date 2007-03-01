@@ -2,9 +2,6 @@
 -- -- Modules                                                            --
 -- ------------------------------------------------------------------------
 
-imports{
-import Byte(bytesFromString)
-}
 
 {
 makeCoreModule name decls =
