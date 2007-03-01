@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module Logger ( logger ) where
+module Helium.Utils.Logger ( logger ) where
 
 import Network
 import Control.Concurrent
@@ -15,7 +15,7 @@ import System
 import Char
 import List
 import IO
-import Version
+import Helium.Compiler.Version
 
 {-# NOTINLINE logger #-}
 

@@ -6,13 +6,13 @@
     Portability :  portable
 -}
 
-module UHA_Range where
+module Helium.Syntax.UHA_Range where
 
-import UHA_Syntax
-import Id(Id, stringFromId)
-import Utils(internalError)
+import Lvm.Common.Id(Id, stringFromId)
 import Maybe(isJust)
 import List(sort, partition)
+import Helium.Syntax.UHA
+import Helium.Utils.Utils(internalError)
 
 --------------------------------------------------------------
 -- instances for Range and Position

@@ -131,7 +131,7 @@ SEM Type
 -- Context in type signature can be simplified
 
 SEM ContextItem [ | | contextRanges:{[Range]} ]
-  | ContextItem lhs.contextRanges = [@range]
+  | ContextItem lhs.contextRanges = [@range.self]
   
 SEM ContextItems [ | | contextRanges:{[Range]} ]
   | Cons  lhs.contextRanges = @hd.contextRanges ++ @tl.contextRanges

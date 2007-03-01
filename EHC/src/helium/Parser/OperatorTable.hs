@@ -6,14 +6,14 @@
     Portability :  portable
 -}
 
-module OperatorTable
+module Helium.Parser.OperatorTable
     (   Assoc(..)
     ,   OperatorTable
     ,   assoc, prio
     ) where
 
-import UHA_Syntax
-import UHA_Utils ()
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils ()
 import qualified Data.Map as M
 
 type OperatorTable = M.Map Name (Int, Assoc)

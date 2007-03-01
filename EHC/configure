@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD cppCmd CPP_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME EXTLIBS_GMP_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD cppCmd CPP_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP SLASH LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME EXTLIBS_GMP_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -4043,6 +4043,7 @@ suffix_lib=".a"
 prefix_lib=""
 # path separator
 paths_sep=":"
+slash="/"
 # libtool usage
 libtoolStatic="libtool -static -o"
 libtoolDynamic="echo Dynamic linking not available: "
@@ -4056,6 +4057,7 @@ case $HostPlatform in
         #prefix_lib="lib"
         # path separator
         paths_sep=";"
+        slash="\\\\"
         # libtool usage
         libtoolStatic="no"
         ;;
@@ -4090,6 +4092,8 @@ SUFFIX_LIB="$suffix_lib"
 PREFIX_LIB="$prefix_lib"
 
 PATHS_SEP="$paths_sep"
+
+SLASH="$slash"
 
 
 # libtool used, if any
@@ -4146,7 +4150,7 @@ EXTLIBS_GMP_PKG_NAME="gmp"
 ### file generation
                     ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
-                    ac_config_files="$ac_config_files src/grinc/Config.chs src/ehc/Config.chs"
+                              ac_config_files="$ac_config_files src/grinc/Config.chs src/ehc/Config.chs src/helium/utils/OSSpecific.hs"
 
                               ac_config_headers="$ac_config_headers src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch"
 
@@ -4232,9 +4236,10 @@ for ac_i in : $LIBOBJS; do test "x$ac_i" = x: && continue
   # 1. Remove the extension, and $U if already installed.
   ac_i=`echo "$ac_i" |
 	 sed 's/\$U\././;s/\.o$//;s/\.obj$//'`
-  # 2. Add them.
-  ac_libobjs="$ac_libobjs $ac_i\$U.$ac_objext"
-  ac_ltlibobjs="$ac_ltlibobjs $ac_i"'$U.lo'
+  # 2. Prepend LIBOBJDIR.  When used with automake>=1.10 LIBOBJDIR
+  #    will be set to the directory where LIBOBJS objects are built.
+  ac_libobjs="$ac_libobjs \${LIBOBJDIR}$ac_i\$U.$ac_objext"
+  ac_ltlibobjs="$ac_ltlibobjs \${LIBOBJDIR}$ac_i"'$U.lo'
 done
 LIBOBJS=$ac_libobjs
 
@@ -4678,6 +4683,7 @@ do
   "mk/shared.mk" ) CONFIG_FILES="$CONFIG_FILES mk/shared.mk" ;;
   "src/grinc/Config.chs" ) CONFIG_FILES="$CONFIG_FILES src/grinc/Config.chs" ;;
   "src/ehc/Config.chs" ) CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
+  "src/helium/utils/OSSpecific.hs" ) CONFIG_FILES="$CONFIG_FILES src/helium/utils/OSSpecific.hs" ;;
   "src/grinc/ConfigDefines.chs" ) CONFIG_HEADERS="$CONFIG_HEADERS src/grinc/ConfigDefines.chs" ;;
   "src/ehc/ConfigDefines.chs" ) CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
   "src/rts/config.ch" ) CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
@@ -4813,6 +4819,7 @@ s,@SUFFIX_EXEC@,$SUFFIX_EXEC,;t t
 s,@SUFFIX_LIB@,$SUFFIX_LIB,;t t
 s,@PREFIX_LIB@,$PREFIX_LIB,;t t
 s,@PATHS_SEP@,$PATHS_SEP,;t t
+s,@SLASH@,$SLASH,;t t
 s,@LIBTOOL_STATIC_CMD@,$LIBTOOL_STATIC_CMD,;t t
 s,@LIBTOOL_DYNAMIC_CMD@,$LIBTOOL_DYNAMIC_CMD,;t t
 s,@EHC_GCC_OPTS_STATIC@,$EHC_GCC_OPTS_STATIC,;t t

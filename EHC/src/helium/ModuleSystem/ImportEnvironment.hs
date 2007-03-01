@@ -6,17 +6,17 @@
     Portability :  portable
 -}
 
-module ImportEnvironment where
+module Helium.ModuleSystem.ImportEnvironment where
 
 import qualified Data.Map as M
-import Utils (internalError)
-import UHA_Syntax  (Name)
-import UHA_Utils
+import Helium.Utils.Utils (internalError)
+import Helium.Syntax.UHA  (Name)
+import Helium.Syntax.UHA_Utils
 import Top.Types
-import OperatorTable
-import Messages () -- instance Show Name
-import RepairHeuristics (Siblings)
-import TS_CoreSyntax
+import Helium.Parser.OperatorTable
+import Helium.StaticAnalysis.Messages.Messages () -- instance Show Name
+import Helium.StaticAnalysis.Heuristics.RepairHeuristics (Siblings)
+import Helium.StaticAnalysis.Directives.TS_Core
 import Data.List 
 import Data.Maybe (catMaybes)
 
@@ -113,7 +113,7 @@ removeTypingStrategies importenv = importenv {typingStrategies = []}
 
 getSiblingGroups :: ImportEnvironment -> [[String]]
 getSiblingGroups importenv = 
-   [ xs | Siblings xs <- typingStrategies importenv ]
+   [ xs | Core_TypingStrategy_Siblings xs <- typingStrategies importenv ]
 
 getSiblings :: ImportEnvironment -> Siblings
 getSiblings importenv =

@@ -10,10 +10,6 @@
 -- 
 -----------------------------------------------------------------------------
 
-imports {
-import UHA_Utils
-}
-
 {
 pmError = internalError "PatternMatchWarnings"
 }
@@ -69,7 +65,7 @@ SEM Alternatives
   
 SEM Alternative
   | Alternative      lhs . elements  = (@pattern.elements, @righthandside.fallthrough)
-                     lhs . unrwar    = UnreachablePatternCase @range @pattern.self
+                     lhs . unrwar    = UnreachablePatternCase @range.self @pattern.self
   | Empty            lhs . elements  = ([], False)
                      lhs . unrwar    = pmError "Alternative_Empty.unrwar" "empty alternative"
 
@@ -131,7 +127,7 @@ SEM Expression
                                                                        @expression.beta
                                                                        (:[])
                                                                        @alternatives.elementss
-                                                                       @range
+                                                                       @range.self
                                                                        Nothing
                                                                        False
                                                                        @alternatives.unrwars
@@ -143,7 +139,7 @@ SEM Expression
                                                                        @loc.beta
                                                                        (take (length @patterns.self) . fst . functionSpine)
                                                                        [(concat @patterns.elementss, False)]
-                                                                       @range
+                                                                       @range.self
                                                                        (Just $ Name_Special noRange [] "\\") -- !!!Name
                                                                        True
                                                                        []
@@ -157,7 +153,7 @@ SEM Declaration
                                                                        @loc.beta
                                                                        (take @bindings.argcount . fst . functionSpine)
                                                                        @bindings.elementss
-                                                                       @range
+                                                                       @range.self
                                                                        (Just @bindings.name)
                                                                        True
                                                                        @bindings.unrwars
@@ -169,7 +165,7 @@ SEM Declaration
                                                                        @pattern.beta
                                                                        (:[])
                                                                        [(@pattern.elements, @righthandside.fallthrough)]
-                                                                       @range
+                                                                       @range.self
                                                                        Nothing
                                                                        False
                                                                        []
@@ -183,7 +179,7 @@ SEM Statement
                                                                        @pattern.beta
                                                                        (:[])
                                                                        [(@pattern.elements, False)]
-                                                                       @range
+                                                                       @range.self
                                                                        Nothing
                                                                        False
                                                                        []
@@ -197,7 +193,7 @@ SEM Qualifier
                                                                        @pattern.beta
                                                                        (:[])
                                                                        [(@pattern.elements, False)]
-                                                                       @range
+                                                                       @range.self
                                                                        Nothing
                                                                        False
                                                                        []
@@ -214,7 +210,7 @@ SEM RightHandSide
   | Expression        lhs . fallthrough = False
   | Guarded           lhs . fallthrough = @guardedexpressions.fallthrough
                       guardedexpressions . open = True
-                      lhs . patternMatchWarnings = (if @guardedexpressions.fallthrough then [FallThrough @range] else [])
+                      lhs . patternMatchWarnings = (if @guardedexpressions.fallthrough then [FallThrough @range.self] else [])
                                                    ++ @where.patternMatchWarnings
 
 SEM GuardedExpressions
@@ -229,10 +225,10 @@ SEM GuardedExpression
                                           of Expression_Variable    _ (Name_Identifier _ _ "otherwise") -> False -- !!!Name
                                              Expression_Constructor _ (Name_Identifier _ _ "True"     ) -> False -- !!!Name
                                              _                                                          -> True
-                      lhs . unrwar = UnreachableGuard @range @guard.self
+                      lhs . unrwar = UnreachableGuard @range.self @guard.self
 
 SEM GuardedExpression
-  | GuardedExpression lhs . range = @range
+  | GuardedExpression lhs . range = @range.self
 
 {
 

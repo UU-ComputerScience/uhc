@@ -1,14 +1,14 @@
-module Information where
+module Helium.StaticAnalysis.Messages.Information where
 
 import Top.Types
-import Args
-import ImportEnvironment
-import CompileUtils
-import OperatorTable
-import Messages hiding (Constructor)
-import UHA_Syntax hiding (Fixity)
-import UHA_Utils
-import UHA_Range
+import Helium.Compiler.Args
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.Compiler.CompileUtils
+import Helium.Parser.OperatorTable
+import Helium.StaticAnalysis.Messages.Messages hiding (Constructor)
+import Helium.Syntax.UHA hiding (Fixity)
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA_Range
 import qualified Data.Map as M
 import Data.List (intersperse)
 

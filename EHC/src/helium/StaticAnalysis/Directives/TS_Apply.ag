@@ -9,35 +9,44 @@
 --
 -- (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -----------------------------------------------------------------------------
-
-INCLUDE "TS_CoreSyntax.ag"
-
-imports {
-import UHA_Syntax
-import TypeConstraints
-import ConstraintInfo
+{
+module Helium.StaticAnalysis.Directives.TS_Apply
+where
+}
+{
+import Helium.Syntax.UHA
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
 import Top.Types
 import List
-import UHA_Range (noRange)
-import UHA_Utils (nameFromString)
-import Utils (internalError)
-import OneLiner
-import Messages
-import TypeErrors
-import ImportEnvironment
-import BindingGroupAnalysis (Assumptions, combine, noAssumptions)
-import OperatorTable (OperatorTable)
-import Parser (exp_)
-import Lexer (strategiesLexer)
-import ParseLibrary (runHParser)
-import qualified ResolveOperators
+import Helium.Syntax.UHA_Range (noRange)
+import Helium.Syntax.UHA_Utils (nameFromString)
+import Helium.Utils.Utils (internalError)
+import Helium.Utils.OneLiner
+import Helium.StaticAnalysis.Messages.Messages
+import Helium.StaticAnalysis.Messages.TypeErrors
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.StaticAnalysis.Inferencers.BindingGroupAnalysis (Assumptions, combine, noAssumptions)
+import Helium.Parser.OperatorTable (OperatorTable)
+import Helium.Parser.Parser (exp_)
+import Helium.Parser.Lexer (strategiesLexer)
+import Helium.Parser.ParseLibrary (runHParser)
+import qualified Helium.Parser.ResolveOperators as ResolveOperators
 import qualified Data.Map as M
-import TS_Attributes
-import TS_CoreSyntax
+import Helium.StaticAnalysis.Directives.TS_Attributes
+import Helium.StaticAnalysis.Directives.TS_Core
 import Top.Ordering.Tree
-import UHA_Source
-import DoublyLinkedTree (root)
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
+import Helium.StaticAnalysis.Miscellaneous.DoublyLinkedTree (root)
 }
+{
+-- From TS_CoreSyntax
+import Top.Types
+}
+
+
+
+INCLUDE "TS_CoreSyntax.ag"
 
 {
 applyTypingStrategy :: Core_TypingStrategy -> MetaVariableInfo -> MetaVariableTable -> Int 
@@ -47,10 +56,10 @@ applyTypingStrategy = sem_Core_TypingStrategy
 matchInformation :: ImportEnvironment -> Core_TypingStrategy -> [(Expression, [String])]
 matchInformation importEnvironment typingStrategy = 
    case typingStrategy of 
-      TypingStrategy _ (TypeRule premises conclusion) _ -> 
-         let Judgement exprstring _ = conclusion
+      Core_TypingStrategy_TypingStrategy _ (Core_TypeRule_TypeRule premises conclusion) _ -> 
+         let Core_Judgement_Judgement exprstring _ = conclusion
              expression = expressionParser (operatorTable importEnvironment) exprstring
-             metas      = [ s | Judgement s t <- premises ]
+             metas      = [ s | Core_Judgement_Judgement s t <- premises ]
          in [(expression, metas)]
       _ -> []
       

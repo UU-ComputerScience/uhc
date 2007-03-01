@@ -10,18 +10,18 @@
 	other. The type error messages will be more "symmetric".
 -}
 
-module UnifierHeuristics where
+module Helium.StaticAnalysis.Heuristics.UnifierHeuristics where
 
 import Top.Types
 import Top.Interface.TypeInference
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.ClassMonadic
 import Top.Implementation.TypeGraph.Heuristic
-import RepairHeuristics
-import ConstraintInfo
+import Helium.StaticAnalysis.Heuristics.RepairHeuristics
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
 import Data.List (partition, sortBy)
 import Data.Maybe (isNothing, fromJust)
-import Utils (internalError)
+import Helium.Utils.Utils (internalError)
 
 class IsUnifier a where
    typeErrorForUnifier :: (Tp, Tp) -> (a, a) -> a

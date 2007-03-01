@@ -8,20 +8,20 @@
     A list of all type graph heuristics that is used.
 -}
 
-module ListOfHeuristics (listOfHeuristics) where
+module Helium.StaticAnalysis.Heuristics.ListOfHeuristics (listOfHeuristics) where
 
-import Args (Option(..))
-import ConstraintInfo
-import HeuristicsInfo () -- instances
+import Helium.Compiler.Args (Option(..))
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
+import Helium.StaticAnalysis.Heuristics.HeuristicsInfo () -- instances
 import Top.Types
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.DefaultHeuristics
--- import RepairSystem (repairSystem)
+-- import Helium.StaticAnalysis.Heuristics.RepairSystem (repairSystem)
 import Top.Implementation.TypeGraph.ClassMonadic
-import RepairHeuristics
-import UnifierHeuristics
-import OnlyResultHeuristics
-import TieBreakerHeuristics
+import Helium.StaticAnalysis.Heuristics.RepairHeuristics
+import Helium.StaticAnalysis.Heuristics.UnifierHeuristics
+import Helium.StaticAnalysis.Heuristics.OnlyResultHeuristics
+import Helium.StaticAnalysis.Heuristics.TieBreakerHeuristics
 
 -- temporary
 import Top.Implementation.TypeGraph.Path

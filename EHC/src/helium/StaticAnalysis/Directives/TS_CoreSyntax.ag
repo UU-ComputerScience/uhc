@@ -10,10 +10,6 @@
 -- (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -----------------------------------------------------------------------------
 
-imports {
-import Top.Types
-}
-
 DERIVING Core_TypingStrategy Core_Judgement Core_UserStatement Core_TypeRule : Show, Read
 
 DATA Core_TypingStrategy 

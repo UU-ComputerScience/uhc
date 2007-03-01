@@ -8,9 +8,41 @@
 -- Kind inference.
 --
 ---------------------------------------------------------------------------------------
+{
+module Helium.StaticAnalysis.Inferencers.KindInferencing
+where
+}
+-------------------------------------------------------------------------------
+-- Imports
+
+{
+import Top.Types
+import Top.Solver.Greedy
+import Top.Solver
+import Top.Constraint.Information
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import Helium.Syntax.UHA
+import Helium.Compiler.Args
+import qualified Data.Map as M
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import Helium.Utils.Utils (internalError)
+import Lvm.Common.TopSort (topSort)
+import Helium.ModuleSystem.ImportEnvironment hiding (setTypeSynonyms)
+import Helium.StaticAnalysis.Messages.KindErrors
+import Char (isLower)
+import Helium.StaticAnalysis.Inferencers.BindingGroupAnalysis (Assumptions, PatternAssumptions, noAssumptions, combine, single) 
+}
+-------------------------------------------------------------------------------
+-- Includes
+
+INCLUDE "../../Syntax/UHA_Syntax.ag"
+
 
 -------------------------------------------------------------------------------
 -- Attributes for kind inferencing
+
+ATTR *
+   [ | | self : SELF ]
 
 ATTR Module
    [ importEnvironment : ImportEnvironment
@@ -21,31 +53,6 @@ ATTR Module
      kindErrors        : KindErrors
    ]
    
--------------------------------------------------------------------------------
--- Includes
-
-INCLUDE "../../syntax/UHA_Syntax.ag"
-
--------------------------------------------------------------------------------
--- Imports
-
-imports {
-import Top.Types
-import Top.Solver.Greedy
-import Top.Solver
-import Top.Constraint.Information
-import TypeConstraints
-import UHA_Syntax
-import Args
-import qualified Data.Map as M
-import TypeConstraints
-import Utils (internalError)
-import TopSort (topSort)
-import ImportEnvironment hiding (setTypeSynonyms)
-import KindErrors
-import Char (isLower)
-import BindingGroupAnalysis (Assumptions, PatternAssumptions, noAssumptions, combine, single) 
-}
 
 -------------------------------------------------------------------------------
 -- Semantic functions

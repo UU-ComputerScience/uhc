@@ -10,22 +10,22 @@
 	(directives based on "Scripting the Type Inference Process", ICFP 2003)
 -}
 
-module TS_Compile where
+module Helium.StaticAnalysis.Directives.TS_Compile where
 
-import TS_CoreSyntax
-import ImportEnvironment
-import TS_ToCore      (typingStrategyToCore)
+import Helium.StaticAnalysis.Directives.TS_Core
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.StaticAnalysis.Directives.TS_ToCore      (typingStrategyToCore)
 import System         (exitWith, ExitCode(..) )
 import Directory      (doesFileExist)
-import TS_Parser      (parseTypingStrategies)
-import Lexer          (strategiesLexer)
-import TS_Analyse     (analyseTypingStrategies)
-import HeliumMessages (sortAndShowMessages)
+import Helium.StaticAnalysis.Directives.TS_Parser      (parseTypingStrategies)
+import Helium.Parser.Lexer          (strategiesLexer)
+import Helium.StaticAnalysis.Directives.TS_Analyse     (analyseTypingStrategies)
+import Helium.StaticAnalysis.Messages.HeliumMessages (sortAndShowMessages)
 import Monad          (unless, when)
-import qualified Args (Option(..))
-import ParseMessage
-import CoreUtils
-import Core
+import qualified Helium.Compiler.Args as Args (Option(..))
+import Helium.Parser.ParseMessage
+import Helium.CodeGeneration.CoreUtils
+import Lvm.Core.Core
 
 readTypingStrategiesFromFile :: [Args.Option] -> String -> ImportEnvironment -> 
     IO (Core_TypingStrategies, [CoreDecl])

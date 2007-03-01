@@ -10,21 +10,21 @@
 	each type constraint
 -}
 
-module HeuristicsInfo where
+module Helium.StaticAnalysis.Heuristics.HeuristicsInfo where
 
-import ConstraintInfo
-import RepairHeuristics
-import TieBreakerHeuristics
-import OnlyResultHeuristics
-import UnifierHeuristics
-import DoublyLinkedTree
-import OneLiner
-import UHA_Source
-import UHA_Syntax
-import Messages
-import HeliumMessages ()
-import TypeErrors
-import Utils (internalError)
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
+import Helium.StaticAnalysis.Heuristics.RepairHeuristics
+import Helium.StaticAnalysis.Heuristics.TieBreakerHeuristics
+import Helium.StaticAnalysis.Heuristics.OnlyResultHeuristics
+import Helium.StaticAnalysis.Heuristics.UnifierHeuristics
+import Helium.StaticAnalysis.Miscellaneous.DoublyLinkedTree
+import Helium.Utils.OneLiner
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
+import Helium.Syntax.UHA
+import Helium.StaticAnalysis.Messages.Messages
+import Helium.StaticAnalysis.Messages.HeliumMessages ()
+import Helium.StaticAnalysis.Messages.TypeErrors
+import Helium.Utils.Utils (internalError)
 import Top.Types
 import Top.Implementation.TypeGraph.Heuristic
 import Data.Maybe

@@ -6,16 +6,16 @@
     Portability :  portable
 -}
 
-module PatternMatch(patternToCore, patternsToCore, nextClauseId, freshIds) where
+module Helium.CodeGeneration.PatternMatch(patternToCore, patternsToCore, nextClauseId, freshIds) where
 
-import qualified Core
-import UHA_Syntax
-import UHA_Utils
-import UHA_Range
-import Id
+import qualified Lvm.Core.Core as Core
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA_Range
+import Lvm.Common.Id
 import Char
-import Utils
-import CoreUtils
+import Helium.Utils.Utils
+import Helium.CodeGeneration.CoreUtils
 
 patternsToCore :: [(Id, Pattern)] -> Core.Expr -> Core.Expr
 patternsToCore nps continue = fst (patternsToCore' nps continue 0)

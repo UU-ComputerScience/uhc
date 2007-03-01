@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module Parser
+module Helium.Parser.Parser
     ( module_, exp_, exp0, type_, atype, contextAndType
     , parseOnlyImports
     ) where
@@ -33,19 +33,19 @@ Simplified:
 - fixity declarations only at top-level
 -}
 
-import ParseLibrary hiding (satisfy)
+import Helium.Parser.ParseLibrary hiding (satisfy)
 import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Pos
-import Lexer
-import LayoutRule
-import qualified Texts
+import Helium.Parser.Lexer
+import Helium.Parser.LayoutRule
+import qualified Helium.Utils.Texts as Texts
 
-import UHA_Syntax
-import UHA_Utils
-import UHA_Range
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA_Range
 
-import qualified CollectFunctionBindings
-import Utils
+import qualified Helium.Parser.CollectFunctionBindings as CollectFunctionBindings
+import Helium.Utils.Utils
 
 parseOnlyImports :: String -> IO [String]
 parseOnlyImports fullName = do

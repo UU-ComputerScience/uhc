@@ -1,3 +1,66 @@
+{
+module Helium.CodeGeneration.CodeGeneration
+where
+}
+
+{
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA_Range 
+import List (union)
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.ModuleSystem.DictionaryEnvironment
+import qualified Data.Map as M
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Char (ord)
+
+import Lvm.Common.Id
+import Lvm.Common.IdSet 
+import Helium.Utils.Utils(internalError)
+
+import Top.Types
+
+import Helium.CodeGeneration.PatternMatch
+import Helium.CodeGeneration.DerivingShow as DerivingShow
+import Helium.CodeGeneration.DerivingEq as DerivingEq
+
+-- Semi-Daan
+import Helium.CodeGeneration.CoreUtils
+
+-- Daan
+import qualified Lvm.Core.Core as Core
+import qualified Lvm.Lvm.Module as Module
+import qualified Lvm.Common.Byte as Byte
+import qualified Lvm.Core.CoreParse as CoreParse
+}
+{
+import Helium.Syntax.UHA
+}
+{
+-- From ToCoreModule
+import Lvm.Common.Byte(bytesFromString)
+}
+
+
+
+-- Transformation into Core
+INCLUDE "ToCoreModule.ag"
+INCLUDE "ToCoreDecl.ag"
+INCLUDE "ToCoreExpr.ag"
+INCLUDE "ToCorePat.ag"
+INCLUDE "ToCoreName.ag"
+
+-- UHA
+INCLUDE "../Syntax/UHA_Syntax.ag"
+
+
+
+{
+type CoreDecl = Core.Decl Core.Expr
+}
+
+--Collect.ag
+
 ATTR Module
    [   dictionaryEnv    : DictionaryEnvironment
        extraDecls       : { [Core.CoreDecl] }
@@ -7,53 +70,9 @@ ATTR Module
    |   core             : { Core.CoreModule }
    ]
 
--- UHA
-INCLUDE "../syntax/UHA_Syntax.ag"
 
--- Transformation into Core
-INCLUDE "ToCoreModule.ag"
-INCLUDE "ToCoreDecl.ag"
-INCLUDE "ToCoreExpr.ag"
-INCLUDE "ToCorePat.ag"
-INCLUDE "ToCoreName.ag"
-
-imports{
-import UHA_Syntax
-import UHA_Utils
-import UHA_Range 
-import List (union)
-import ImportEnvironment
-import DictionaryEnvironment
-import qualified Data.Map as M
-import TypeConversion
-import Char (ord)
-
-import Id
-import IdSet 
-import Utils(internalError)
-
-import Top.Types
-
-import PatternMatch
-import DerivingShow
-import DerivingEq
-
--- Semi-Daan
-import CoreUtils
-
--- Daan
-import qualified Core
-import qualified Module
-import qualified Byte
-import qualified CoreParse
-}
-
-{
-
-type CoreDecl = Core.Decl Core.Expr
-}
-
---Collect.ag
+ATTR *
+   [ | | self : SELF ]
 
 ATTR Body Declarations Declaration Expressions Expression Statements Statement
      Qualifiers Qualifier GuardedExpressions GuardedExpression 

@@ -9,14 +9,14 @@
 	reported as incorrect if only the result type is reponsible for non-unifiability.
 -}
 
-module OnlyResultHeuristics where
+module Helium.StaticAnalysis.Heuristics.OnlyResultHeuristics where
 
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Interface.TypeInference
 import Top.Types
-import OneLiner (OneLineTree)
-import UHA_Syntax (Range)
-import UHA_Source
+import Helium.Utils.OneLiner (OneLineTree)
+import Helium.Syntax.UHA (Range)
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
       
 -----------------------------------------------------------------------------
 

@@ -9,15 +9,15 @@
 	(For instance, one could define another layout, or produce XML-like output).
 -}
 
-module HeliumMessages where
+module Helium.StaticAnalysis.Messages.HeliumMessages where
 
-import Messages 
+import Helium.StaticAnalysis.Messages.Messages 
 import Top.Types
-import qualified PPrint
-import qualified OneLiner
+import qualified Lvm.Common.PPrint as PPrint
+import qualified Helium.Utils.OneLiner as OneLiner
 import List                (intersperse, zipWith4)
-import TypesToAlignedDocs  (qualifiedTypesToAlignedDocs)
-import UHA_Range           (isImportRange, showRanges)
+import Helium.StaticAnalysis.Miscellaneous.TypesToAlignedDocs  (qualifiedTypesToAlignedDocs)
+import Helium.Syntax.UHA_Range           (isImportRange, showRanges)
 import Char                (isSpace)
 
 ----------------------------------------------------------

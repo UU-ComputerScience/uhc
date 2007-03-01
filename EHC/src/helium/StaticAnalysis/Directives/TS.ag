@@ -1,0 +1,11 @@
+{
+module Helium.StaticAnalysis.Directives.TS
+where
+}
+{
+-- From TS_Syntax
+import Helium.Syntax.UHA
+}
+
+INCLUDE "TS_Syntax.ag"
+

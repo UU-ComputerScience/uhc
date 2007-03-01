@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module DictionaryEnvironment 
+module Helium.ModuleSystem.DictionaryEnvironment 
    ( DictionaryEnvironment, DictionaryTree(..) 
    , emptyDictionaryEnvironment, addForDeclaration, addForVariable
    , getPredicateForDecl, getDictionaryTrees
@@ -14,9 +14,9 @@ module DictionaryEnvironment
    ) where
 
 import qualified Data.Map as M
-import UHA_Syntax (Name)
-import UHA_Utils (NameWithRange(..) )
-import Utils (internalError)
+import Helium.Syntax.UHA (Name)
+import Helium.Syntax.UHA_Utils (NameWithRange(..) )
+import Helium.Utils.Utils (internalError)
 import Top.Types
 
 data DictionaryEnvironment = 

@@ -11,6 +11,44 @@
 --
 -- (directives based on "Scripting the Type Inference Process", ICFP 2003)
 -----------------------------------------------------------------------------
+{
+module Helium.StaticAnalysis.Directives.TS_ToCore
+where
+}
+{
+import Helium.StaticAnalysis.Directives.TS
+import Helium.StaticAnalysis.Directives.TS_Core
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.StaticAnalysis.Messages.Messages
+import Top.Types
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
+import Helium.Syntax.UHA_Range (noRange)
+import Helium.Syntax.UHA_Utils (getNameName, nameFromString)
+import qualified Helium.Syntax.UHA_OneLine as UHA_OneLine 
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Helium.Utils.Utils (internalError)
+import List
+import Helium.StaticAnalysis.Messages.TypeErrors
+import Helium.Utils.OneLiner
+import Helium.StaticAnalysis.Directives.TS_Attributes
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+}
+{
+-- From TS_Syntax
+import Helium.Syntax.UHA
+}
+{
+-- From TS_Collect
+import Helium.StaticAnalysis.Inferencers.ExpressionTypeInferencer (expressionTypeInferencer)
+import qualified Data.Map as M
+}
+
+
+INCLUDE "TS_Syntax.ag"
+INCLUDE "TS_Collect.ag"
+INCLUDE "../../Syntax/UHA_Syntax.ag"
+
 
 {
 typingStrategyToCore :: ImportEnvironment -> TypingStrategy -> Core_TypingStrategy
@@ -18,45 +56,27 @@ typingStrategyToCore importEnv strategy =
    fst (sem_TypingStrategy strategy importEnv)
 }
 
-INCLUDE "TS_Syntax.ag"
-INCLUDE "TS_Collect.ag"
-INCLUDE "../../syntax/UHA_Syntax.ag"
 
-imports {
-import TS_Syntax
-import TS_CoreSyntax
-import ImportEnvironment
-import Messages
-import Top.Types
-import ConstraintInfo
-import UHA_Range (noRange)
-import UHA_Utils (getNameName, nameFromString)
-import qualified UHA_OneLine 
-import UHA_Source
-import TypeConversion
-import Utils (internalError)
-import List
-import TypeErrors
-import OneLiner
-import TS_Attributes
-import TypeConstraints
-}
+ATTR *
+   [ | | self : SELF ]
+
+
 ATTR TypingStrategies TypingStrategy [ importEnvironment : ImportEnvironment | | ]
 
 SEM TypingStrategy [ | | core : Core_TypingStrategy ]
   | Siblings
-      lhs . core = Siblings (map getNameName @names.self)
+      lhs . core = Core_TypingStrategy_Siblings (map getNameName @names.self)
   | TypingStrategy
-      lhs . core = TypingStrategy @typeEnv @typerule.core @statements.core    
+      lhs . core = Core_TypingStrategy_TypingStrategy @typeEnv @typerule.core @statements.core    
       loc . nameMap = zip @uniqueTypevariables (map TVar [0..])
 
 SEM TypeRule [ | | core : Core_TypeRule ]
   | TypeRule 
-      lhs . core = TypeRule @premises.core @conclusion.core
+      lhs . core = Core_TypeRule_TypeRule @premises.core @conclusion.core
 
 SEM Judgement [ | | core : Core_Judgement ]
   | Judgement
-       lhs . core = Judgement (showOneLine 10000 $ fst $ UHA_OneLine.sem_Expression @expression.self) (makeTpFromType @lhs.nameMap @type.self)   
+       lhs . core = Core_Judgement_Judgement (showOneLine 10000 $ id $ UHA_OneLine.sem_Expression @expression.self) (makeTpFromType @lhs.nameMap @type.self)   
 
 SEM SimpleJudgements [ | | core : Core_Judgements ]
   | Cons  lhs . core = @hd.core : @tl.core
@@ -64,23 +84,23 @@ SEM SimpleJudgements [ | | core : Core_Judgements ]
 
 SEM SimpleJudgement [ | | core : Core_Judgement ] 
   | SimpleJudgement 
-       lhs . core = Judgement (show @name.self) (makeTpFromType @lhs.nameMap @type.self)              
+       lhs . core = Core_Judgement_Judgement (show @name.self) (makeTpFromType @lhs.nameMap @type.self)              
        
 SEM UserStatements [ | | core : Core_UserStatements ]
   | Cons  lhs . core = @hd.core : @tl.core
   | Nil   lhs . core = []
 
 SEM UserStatement [ | | core : Core_UserStatement ]
-  | Equal                     lhs . core = Equal 
+  | Equal                     lhs . core = Core_UserStatement_Equal 
                                              (makeTpFromType @lhs.nameMap @leftType.self) 
                                              (makeTpFromType @lhs.nameMap @rightType.self) 
                                              (changeAttributes (useNameMap @lhs.nameMap) @message)
-  | Pred                      lhs . core = Pred
+  | Pred                      lhs . core = Core_UserStatement_Pred
                                              (show @predClass.self)
                                              (makeTpFromType @lhs.nameMap @predType.self)
                                              (changeAttributes (useNameMap @lhs.nameMap) @message)
-  | MetaVariableConstraints   lhs . core = MetaVariableConstraints (show @name.self)
-  | Phase                     lhs . core = CorePhase @phase
+  | MetaVariableConstraints   lhs . core = Core_UserStatement_MetaVariableConstraints (show @name.self)
+  | Phase                     lhs . core = Core_UserStatement_CorePhase @phase
   
 -- collecting the fixed constant types
 --

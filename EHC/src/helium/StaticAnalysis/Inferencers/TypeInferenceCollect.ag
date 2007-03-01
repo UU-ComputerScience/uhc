@@ -196,7 +196,7 @@ ATTR Module -> Declaration [ | | collectInstances USE { ++ } { [] } : {[(Name, I
 SEM Declaration
   | Data
        lhs . collectInstances = [ (cl, makeInstance (show cl) (length @simpletype.typevariables) (show @simpletype.name) ) 
-                                | cl <- @derivings 
+                                | cl <- @derivings.self
                                 ]
 
 ATTR SimpleType [ | | name:Name typevariables:Names ]

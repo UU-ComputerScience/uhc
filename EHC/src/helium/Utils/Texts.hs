@@ -1,4 +1,4 @@
-module Texts where
+module Helium.Utils.Texts where
 
 import Data.IORef
 import System.IO.Unsafe

@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module CoreUtils
+module Helium.CodeGeneration.CoreUtils
     (   custom, customStrategy
     ,   stringToCore, coreList
     ,   let_, if_, app_, letrec_
@@ -15,10 +15,10 @@ module CoreUtils
     ,   float, packedString
     ) where
 
-import Core
-import Id
+import Lvm.Core.Core as Core
+import Lvm.Common.Id
 import Char
-import Byte(bytesFromString)
+import Lvm.Common.Byte as Byte(bytesFromString)
 
 infixl `app_`
 

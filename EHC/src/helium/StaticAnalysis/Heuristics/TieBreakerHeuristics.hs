@@ -9,7 +9,7 @@
 	which error to report. 
 -}
 
-module TieBreakerHeuristics where
+module Helium.StaticAnalysis.Heuristics.TieBreakerHeuristics where
 
 import Top.Types
 import Top.Interface.TypeInference (getTypeSynonyms)

@@ -8,6 +8,34 @@
 -- A static analyzer. The checks are defined in the included ag-modules.
 --
 -----------------------------------------------------------------------------
+{
+module Helium.StaticAnalysis.StaticChecks.StaticChecks
+where
+}
+{
+import Helium.Utils.Similarity ( similar )
+import Helium.Compiler.Args
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA_Range
+import Top.Types
+import Helium.StaticAnalysis.Messages.StaticErrors
+import Helium.StaticAnalysis.Messages.Warnings
+import Helium.StaticAnalysis.Messages.Messages
+import List
+import Helium.Utils.Utils ( internalError, fst3, minInt, maxInt )
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Helium.CodeGeneration.DerivingShow
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import qualified Data.Map as M
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.Parser.OperatorTable
+import Char ( isUpper )
+}
+
+ATTR *
+   [ | | self : SELF ]
+
 
 ATTR Module
    [ baseName              : String
@@ -23,7 +51,7 @@ ATTR Module
 ATTR Module -> Type [ options : {[Option]} || ]
 
 INCLUDE "Collect.ag"
-INCLUDE "../../syntax/UHA_Syntax.ag"
+INCLUDE "../../Syntax/UHA_Syntax.ag"
 INCLUDE "Scope.ag"
 INCLUDE "KindChecking.ag"
 INCLUDE "Warnings.ag"
@@ -33,26 +61,6 @@ INCLUDE "ExportErrors.ag"
 INCLUDE "HeliumPartialSyntax.ag"
 INCLUDE "ScopeErrors.ag"
 
-imports {
-import Similarity ( similar )
-import Args
-import UHA_Syntax
-import UHA_Utils
-import UHA_Range
-import Top.Types
-import StaticErrors
-import Warnings
-import Messages
-import List
-import Utils ( internalError, fst3, minInt, maxInt )
-import TypeConversion
-import DerivingShow
-import TypeConstraints
-import qualified Data.Map as M
-import ImportEnvironment
-import OperatorTable
-import Char ( isUpper )
-}
 
 -- combine all the collected errors, then filter out the "entity is undefined" 
 -- errors that are caused by the removal of "duplicated entities"

@@ -9,22 +9,22 @@
 	can be corrected.
 -}
 
-module RepairHeuristics where
+module Helium.StaticAnalysis.Heuristics.RepairHeuristics where
 
 import Top.Types
 import Top.Interface.TypeInference
 import Top.Interface.Qualification hiding (contextReduction)
 import Top.Interface.Substitution
-import UHA_Syntax (Range)
-import OneLiner (OneLineTree)
+import Helium.Syntax.UHA (Range)
+import Helium.Utils.OneLiner (OneLineTree)
 import Top.Implementation.TypeGraph.Heuristic
 import Top.Implementation.TypeGraph.Basics
 import Top.Implementation.TypeGraph.ClassMonadic
 import Data.Maybe
-import Messages (showNumber, ordinal, prettyAndList)
-import OnlyResultHeuristics
+import Helium.StaticAnalysis.Messages.Messages (showNumber, ordinal, prettyAndList)
+import Helium.StaticAnalysis.Heuristics.OnlyResultHeuristics
 import Data.List
-import UHA_Source
+import Helium.StaticAnalysis.Miscellaneous.UHA_Source
 
 -----------------------------------------------------------------------------
 

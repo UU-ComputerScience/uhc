@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module OneLiner(OneLineTree(..), showOneLine) where
+module Helium.Utils.OneLiner(OneLineTree(..), showOneLine) where
 
 import List
 

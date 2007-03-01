@@ -6,18 +6,18 @@
     Portability :  portable
 -}
 
-module Lexer
+module Helium.Parser.Lexer
     ( lexer, strategiesLexer
     , Token, Lexeme(..)
     , lexemeLength
-    , module LexerMessage
+    , module Helium.Parser.LexerMessage
     ) where
 
-import LexerMonad
-import LexerMessage
-import LexerToken
+import Helium.Parser.LexerMonad
+import Helium.Parser.LexerMessage
+import Helium.Parser.LexerToken
 import Text.ParserCombinators.Parsec.Pos
-import Utils(internalError)
+import Helium.Utils.Utils(internalError)
 
 import Monad(when)
 import Char(ord)

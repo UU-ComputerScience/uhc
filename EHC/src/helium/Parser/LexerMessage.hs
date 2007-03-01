@@ -6,7 +6,7 @@
     Portability :  portable
 -}
 
-module LexerMessage
+module Helium.Parser.LexerMessage
     ( LexerError(..)
     , LexerErrorInfo(..)
     , LexerWarning(..)
@@ -16,10 +16,10 @@ module LexerMessage
     ) where
 
 import Text.ParserCombinators.Parsec.Pos
-import UHA_Syntax(Range(..), Position(..))
-import Messages
+import Helium.Syntax.UHA(Range(..), Position(..))
+import Helium.StaticAnalysis.Messages.Messages
 import Data.List (partition)
-import qualified Texts
+import qualified Helium.Utils.Texts as Texts
 
 instance HasMessage LexerError where
     getRanges (LexerError _ (StillOpenAtEOF brackets)) =

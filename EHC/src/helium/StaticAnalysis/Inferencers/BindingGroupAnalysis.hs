@@ -10,12 +10,12 @@
 
 -- To do: clean up this module. Also see BGA for kind inferencing
 
-module BindingGroupAnalysis where
+module Helium.StaticAnalysis.Inferencers.BindingGroupAnalysis where
 
-import UHA_Syntax
-import TypeConstraints
-import ConstraintInfo
-import TopSort (topSort)
+import Helium.Syntax.UHA
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import Helium.StaticAnalysis.Miscellaneous.ConstraintInfo
+import Lvm.Common.TopSort (topSort)
 import Top.Types
 import Top.Ordering.Tree
 import qualified Data.Map as M
