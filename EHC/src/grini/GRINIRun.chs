@@ -177,11 +177,16 @@ grEvalTag rs t
 grEvalVal :: RunState -> GrVal -> RunVal
 grEvalVal rs v
   =  case v of
+        GrVal_Empty             ->  RVNil
+        GrVal_LitInt    i       ->  RVInt i
+        GrVal_LitStr    s       ->  RVStr s
+        GrVal_Tag  t            ->  error "tag only variables not implemented"
+        GrVal_Var       n       ->  rsVar rs n
         GrVal_Node t    fL      ->  case grEvalTag rs t of
                                         (tgL,True ) -> mkRN (tgL ++ [RVInt (length fL)] ++ vL)
                                         (tgL,False) -> mkRN (tgL ++                        vL)
                                 where vL = map (grEvalVal rs) fL
-        GrVal_Tag  t            ->  error "tag only variables not implemented"
+%%[[10                               
         GrVal_NodeAdapt r adL   ->  case rsVar rs r of
                                         RVNode a
                                           ->  case elems a of
@@ -205,10 +210,7 @@ grEvalVal rs v
                                                                    where  fL' = ad adL fL (fO+1)
                                                              ad [] fL _
                                                                 =  fL
-        GrVal_LitInt    i       ->  RVInt i
-        GrVal_LitStr    s       ->  RVStr s
-        GrVal_Var       n       ->  rsVar rs n
-        GrVal_Empty             ->  RVNil
+%%]]                                                                
 %%]
 
 %%[8
@@ -290,7 +292,7 @@ grEvalExpr rs e
                   ;  ns' `seq` writeArray (rhMem . rsHeap $ rs) pd ns'
                   ;  return (rs,Just RVNil)
                   }
-        GrExpr_FetchNode n _
+        GrExpr_FetchNode n
           ->  do  {  n' <- rsVarDeref rs n
                   ;  return (rs,Just n')
                   }
@@ -319,7 +321,7 @@ grEvalExpr rs e
         GrExpr_Eval n
           ->  let  upd rs n
                      =  let  n2 = hsnWild
-                             e = GrExpr_UpdateUnit n (GrVal_Var n2) (GrVal_Var n2)
+                             e = GrExpr_UpdateUnit n (GrVal_Var n2)
                              stk = (GrPat_Var n2,e,rsEnv rs) : rsStack rs
                         in   rs {rsStack = stk, rsNext = Just e}
               in   do  {  n' <- rsVarDeref rs n
@@ -353,8 +355,10 @@ grEvalExpr rs e
                           ->  let  lookup t []    = Nothing
                                    lookup t (GrAlt_Alt p@(GrPat_Node (GrTag_Lit _ t' _) _) e:aL)
                                      | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+%%[[10                                     
                                    lookup t (GrAlt_Alt p@(GrPat_NodeSplit (GrTag_Lit _ t' _) _ _) e:aL)
                                      | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+%%]]                                     
                                    lookup t (_:aL)= lookup t aL
                               in   case lookup ndTg altL of
                                      Just (extRE,e)
@@ -392,12 +396,14 @@ grEvalExpr rs e
 grPatBind :: RunState -> RunEnv -> RunVal -> GrPat -> RunEnv
 grPatBind rs re v p
   =  case p of
-        GrPat_Var n
-          ->  Map.insert n v re
         GrPat_Empty
           ->  re
         GrPat_LitInt _
           ->  re
+        GrPat_Tag _
+          ->  re
+        GrPat_Var n
+          ->  Map.insert n v re
         GrPat_Node GrTag_Unboxed (pf:_)
           ->  Map.insert pf v re
         GrPat_Node _ pfL
@@ -406,8 +412,7 @@ grPatBind rs re v p
                   ->  case elems a of
                         (RVCat _:_:_:vfL)
                           ->  Map.fromList (zip pfL vfL) `Map.union` re
-        GrPat_Tag _
-          ->  re
+%%[[10          
         GrPat_NodeSplit _ rNm splL
           ->  case v of
                 RVNode a
@@ -424,6 +429,7 @@ grPatBind rs re v p
                                            where  (rfL,bfL) = spl splL fL (fO+1)
                                      spl [] fL fO
                                         =  (fL,[])
+%%]]                                        
 %%]
 
 %%[8

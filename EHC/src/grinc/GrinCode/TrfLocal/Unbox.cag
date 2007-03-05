@@ -71,6 +71,8 @@ SEM GrVal
 SEM GrExpr
   | Store       lhs         .   trf             =   case @val.trf of
                                                       GrVal_Node _ _        -> @trf
+%%[[10
                                                       GrVal_NodeAdapt _ _   -> @trf
+%%]]
                                                       v                     -> GrExpr_Unit v
 %%]

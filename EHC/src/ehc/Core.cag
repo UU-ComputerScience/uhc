@@ -158,7 +158,7 @@ rpatBind2CPatBind (RPatBind_Bind l o n p) = CPatBind_Bind l o n (rpat2CPat p)
 %%% Tuple operator info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cTupLbl)
+%%[10 hs export(cTupLbl)
 cTupLbl :: CExpr -> HsName
 cTupLbl e
   =  case e of
@@ -167,7 +167,7 @@ cTupLbl e
          CExpr_TupDel _ _ l _   -> l
 %%]
 
-%%[8 hs export(cTupTag)
+%%[10 hs export(cTupTag)
 cTupTag :: CExpr -> CTag
 cTupTag e
   =  case e of
@@ -176,7 +176,7 @@ cTupTag e
          CExpr_TupDel _ t _ _   -> t
 %%]
 
-%%[8 hs export(cTupOff)
+%%[10 hs export(cTupOff)
 cTupOff :: CExpr -> CExpr
 cTupOff e
   =  case e of
@@ -295,7 +295,9 @@ cexprVar _             = hsnUnknown
 
 %%[8 hs export(cexprTupFld)
 cexprTupFld :: CExpr -> CExpr
+%%[[10
 cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
+%%]]
 cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 

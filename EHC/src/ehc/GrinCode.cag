@@ -19,16 +19,25 @@
 %%[8 hs export(GrAGItf(..), GrModule(..))
 %%]
 
-%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..), GrTagL, GrAdapt(..),GrAdaptL,GrSplit(..),GrSplitL)
+%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..), GrTagL)
+%%]
+
+%%[10 hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
+%%]
+
+%%[10 hs export(GrNodeAdapt(..), grRecTag)
 %%]
 
 %%[8 hs export(GrTagCateg(..),grinStoreArity,mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode)
 %%]
 
-%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrPatRecSplit,mkGrPatConSplit,mkGrUnbox,mkGrUnboxFFI)
+%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrUnbox,mkGrUnboxFFI)
 %%]
 
-%%[8 hs export(GrNodeAdapt(..),grRecTag,hsnGrApply,hsnGrEval,grBuiltinTyNmL)
+%%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
+%%]
+
+%%[8 hs export(hsnGrApply,hsnGrEval,grBuiltinTyNmL)
 %%]
 
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
@@ -217,7 +226,7 @@ type GrInlMp = Map.Map HsName GrInl
 %%% Row/record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[10 hs
 data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
 
 grRecTag :: GrTag
@@ -244,15 +253,14 @@ mkGrPatTagNode c t n pL
  = if grinStoreArity
     then GrPat_Node (GrTag_Lit c t n) (hsnWild : pL)
     else GrPat_Node (GrTag_Lit c t n)            pL
+%%]
 
+%%[10 hs
 mkGrPatTagSplit :: GrTagCateg -> Int -> HsName -> HsName -> GrSplitL -> GrPat
 mkGrPatTagSplit c t n r sL
  = GrPat_NodeSplit (GrTag_Lit c t n) r sL
 
 %%]
-
-
-
 
 
 %%[8 hs
@@ -275,14 +283,6 @@ mkGrPatRecNode xs
   = mkGrPatTagNode (GrTagCon $ mkGrTagAnn a a) 0 (hsnProd a) xs
   where a = length xs
 
-
-mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPat
-mkGrPatConSplit ann = mkGrPatTagSplit (GrTagCon ann)
-
-mkGrPatRecSplit :: HsName -> GrSplitL -> GrPat
-mkGrPatRecSplit  = mkGrPatTagSplit GrTagRec 0 hsnRec
-
-
 mkGrBox :: HsName -> GrVal -> GrVal
 mkGrBox tyNm v = mkGrConNode (mkGrTagAnn 1 1) 0 tyNm [v]
 
@@ -291,5 +291,12 @@ mkGrUnbox tyNm n = mkGrPatConNode (mkGrTagAnn 1 1) 0 tyNm [n]
 
 mkGrUnboxFFI :: HsName -> GrPat
 mkGrUnboxFFI n = GrPat_Node GrTag_Unboxed [n]
+%%]
 
+%%[10 hs
+mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPat
+mkGrPatConSplit ann = mkGrPatTagSplit (GrTagCon ann)
+
+mkGrPatRecSplit :: HsName -> GrSplitL -> GrPat
+mkGrPatRecSplit  = mkGrPatTagSplit GrTagRec 0 hsnRec
 %%]

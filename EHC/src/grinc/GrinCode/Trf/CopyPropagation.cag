@@ -133,13 +133,14 @@ SEM GrBind
 
 -- AD 20060530: avoid AGC error msg
 %%[8
+SEM GrGlobal
+  | *		loc		.	valueMap	=	emptyValueMap
+%%]
+%%[10
 SEM GrAdapt
   | *		loc		.	valueMap	=	emptyValueMap
 
 SEM GrSplit
-  | *		loc		.	valueMap	=	emptyValueMap
-
-SEM GrGlobal
   | *		loc		.	valueMap	=	emptyValueMap
 %%]
 

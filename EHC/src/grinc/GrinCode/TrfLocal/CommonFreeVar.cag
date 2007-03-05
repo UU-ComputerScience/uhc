@@ -13,7 +13,9 @@ SEM GrTag
 
 SEM GrVal
   | Var         lhs         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
+%%[[10
   | NodeAdapt   lhs         .   gathFviMp       =   fviMpUnions [fviMpSingleton @nm, @fldL.gathFviMp]
+%%]]
 
 SEM GrExpr
   | Seq         loc         .   gathBodyFviMp   =   @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL

@@ -73,45 +73,37 @@ DATA GrAlt
 TYPE GrAltL     =   [GrAlt]
 
 DATA GrVal
-  | Node        tag             : GrTag
-                fldL            : GrValL
-  | NodeAdapt   nm              : {HsName}
-                fldL            : GrAdaptL
-  | Tag         tag             : GrTag
   | Empty
   | LitInt      int             : {Int}
   | LitStr      str             : {String}
+  | Tag         tag             : GrTag
   | Var         nm              : {HsName}
+  | Node        tag             : GrTag
+                fldL            : GrValL
+%%[[10
+  | NodeAdapt   nm              : {HsName}
+                fldL            : GrAdaptL
+
+%%]]
+
 
 TYPE GrValL     =   [GrVal]
 
-DATA GrAdapt
-  | Upd         off             : GrVal
-                val             : GrVal
-  | Ins         off             : GrVal
-                val             : GrVal
-  | Del         off             : GrVal
-
-TYPE GrAdaptL   =   [GrAdapt]
-
 DATA GrPat
+  | Empty
+  | LitInt      int             : {Int}
+  | Tag         tag             : GrTag
+  | Var         nm              : {HsName}
   | Node        tag             : GrTag
                 fldL            : {[HsName]}
+%%[[10
   | NodeSplit   tag             : GrTag
                 nm              : {HsName}
                 fldL            : GrSplitL
-  | Tag         tag             : GrTag
-  | Empty
-  | LitInt      int             : {Int}
-  | Var         nm              : {HsName}
+%%]]
+  
 
 TYPE GrPatL     =   [GrPat]
-
-DATA GrSplit
-  | Sel         nm              : {HsName}
-                off             : GrVal
-
-TYPE GrSplitL   =   [GrSplit]
 
 DATA GrTag
   | Lit         categ           : {GrTagCateg}
@@ -125,17 +117,38 @@ TYPE GrTagL     =   [GrTag]
 %%]
 
 
+%%[10
+DATA GrSplit
+  | Sel         nm              : {HsName}
+                off             : GrVal
+
+DATA GrAdapt
+  | Upd         off             : GrVal
+                val             : GrVal
+  | Ins         off             : GrVal
+                val             : GrVal
+  | Del         off             : GrVal
+
+TYPE GrSplitL   =   [GrSplit]
+TYPE GrAdaptL   =   [GrAdapt]
+
+%%]
+
 %%[8
 SET AllGlobal   =   GrGlobal GrGlobalL
 SET AllBind     =   GrBind GrBindL
-SET AllAdapt    =   GrAdapt GrAdaptL
-SET AllSplit    =   GrSplit GrSplitL
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
 SET AllGrTag    =   GrTag GrTagL
 SET AllGrVal    =   GrVal GrValL
 SET AllGrPat    =   GrPat GrPatL
 SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
-SET AllNTNoMod  =   AllExpr AllGlobal AllBind AllAdapt AllSplit
+SET AllWithName =   AllExpr
+%%[[10
+                    AllAdapt AllSplit
+SET AllAdapt    =   GrAdapt GrAdaptL
+SET AllSplit    =   GrSplit GrSplitL
+%%]]
+SET AllNTNoMod  =   AllWithName AllGlobal AllBind
 SET AllNT       =   GrModule AllNTNoMod
 %%]

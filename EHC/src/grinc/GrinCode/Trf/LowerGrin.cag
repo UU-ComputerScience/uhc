@@ -153,7 +153,7 @@ For case simplifying we must know if values and patterns are in a case construct
 (the scurinizer and pattern alternatives need to be rewritten)
 
 %%[8.isInCase
-ATTR GrVal GrValL AllAdapt GrPat GrPatL AllAlt [ isInCase: {Bool} | | ]
+ATTR GrVal GrValL GrPat GrPatL AllAlt [ isInCase: {Bool} | | ]
 SEM GrExpr
   | * - Case loc  . isInCase = False
   | Case     loc  . isInCase = True
@@ -164,8 +164,10 @@ SEM GrVal
 
 SEM GrGlobal
   | Global   loc  . isInCase = False
+%%]
 
--- TODO: what must stand here?
+%%[10
+ATTR AllAdapt [ isInCase: {Bool} | | ]
 SEM GrSplit
   | Sel      loc  . isInCase = False
 %%]

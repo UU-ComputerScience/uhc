@@ -32,13 +32,14 @@ SEM GrGlobal
 SEM GrBind
   | Bind        expr        .   willEval        =   False
 
+SEM GrValL
+  | Cons        hd          .   willEval        =   False
+%%]
+
+%%[10
 SEM GrAdapt
   | *           loc         .   willEval        =   False
 
 SEM GrSplit
   | *           loc         .   willEval        =   False
-
-SEM GrValL
-  | Cons        hd          .   willEval        =   False
 %%]
-

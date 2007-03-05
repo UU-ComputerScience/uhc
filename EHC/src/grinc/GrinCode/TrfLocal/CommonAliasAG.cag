@@ -52,14 +52,19 @@ SEM GrValL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllGrPat AllSplit [ | | introNmL USE {++} {[]}: {[HsName]} ]
+ATTR AllGrPat [ | | introNmL USE {++} {[]}: {[HsName]} ]
 
 SEM GrPat
   | Var         lhs         .   introNmL        =   [@nm]
   | Node        lhs         .   introNmL        =   @fldL
+%%[[10
   | NodeSplit   lhs         .   introNmL        =   @nm : @fldL.introNmL
+%%]
+%%]
+
+%%[10
+ATTR AllSplit [ | | introNmL USE {++} {[]}: {[HsName]} ]
 
 SEM GrSplit
   | Sel         lhs         .   introNmL        =   [@nm]
 %%]
-

@@ -75,10 +75,12 @@ SEM GrModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Clone
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%[10
+ATTR AllAdapt AllSplit [ | | self: SELF ]
+%%]
 %%[8
 ATTR AllBind [ | | lamGlobL, cafGlobL USE {++} {[]}: {AssocL HsName RunVal} ]
-ATTR AllExpr AllAdapt AllSplit [ | | self: SELF ]
+ATTR AllExpr [ | | self: SELF ]
 
 SEM GrBind
   | Bind        lhs         .   (lamGlobL,cafGlobL)

@@ -65,7 +65,7 @@ ppGrPat tg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllExpr AllAdapt AllSplit [ ppGrNm: PPGrNm | | ]
+ATTR AllWithName [ ppGrNm: PPGrNm | | ]
 
 SEM GrBind
   | Bind        loc         .   ppGrNm      =   ppGrNm
@@ -162,27 +162,32 @@ SEM GrAlt
   | Alt         lhs         .   pp          =   @pat.pp >-< indent 2 ("->" >#< ppCurlysSemisV [@expr.pp])
 
 SEM GrVal
-  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
-  | NodeAdapt   lhs         .   pp          =   pp_parens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
   | LitStr      lhs         .   pp          =   pp $ show @str
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
+%%[[10
+  | NodeAdapt   lhs         .   pp          =   pp_parens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
 SEM GrAdapt
   | Upd         lhs         .   pp          =   @off.pp >|< ":=" >|< @val.pp
   | Ins         lhs         .   pp          =   @off.pp >|< "+=" >|< @val.pp
   | Del         lhs         .   pp          =   @off.pp >|< "-="
+%%]]
 
 SEM GrPat
-  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
-  | NodeSplit   lhs         .   pp          =   pp_parens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
   | Empty       lhs         .   pp          =   pp "()"
   | LitInt      lhs         .   pp          =   pp @int
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+  | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
+%%[[10
+  | NodeSplit   lhs         .   pp          =   pp_parens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
 SEM GrSplit
   | Sel         lhs         .   pp          =   @lhs.ppGrNm @nm >|< "=" >|< @off.pp
+%%]]
+
 
 SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
@@ -192,7 +197,7 @@ SEM GrTag
 %%]
 
 %%[8
-ATTR GrGlobalL GrBindL GrAltL GrTagL GrPatL GrValL GrAdaptL GrSplitL [ | | ppL: {[PP_Doc]} ]
+ATTR GrGlobalL GrBindL GrAltL GrTagL GrPatL GrValL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrGlobalL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
@@ -217,6 +222,9 @@ SEM GrPatL
 SEM GrValL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
+%%]
+%%[10
+ATTR GrAdaptL GrSplitL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrAdaptL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
