@@ -62,6 +62,18 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Impl prove occurrence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | App AppImpred
+                loc         .   imPrvOcc            =   mkImplsProveOcc @lUniq3 @lhs.predScope
+                            .   (implsPrvOccTl,prvOccTlCnstr)
+                                                    =   cnstrTailAddOcc @imPrvOcc @implsTl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Impl types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -73,7 +85,7 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | LamImpl     loc         .   knPr                =   tyPred . (@body.tyCnstr |=>) $ @knArgImpl
+  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyCnstr |=>) $ @knArgImpl
                             .   knPrUid             =   mkPrId @prfCtxtId @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
@@ -236,10 +248,11 @@ SEM Decl
 
 SEM Expr
   | Let         loc         .   cSubst              =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr)
-                                                             $ cSubstApp @lhs.cSubst
+                                                        then cSubstApp @lhs.cSubst
+                                                             $ cSubstApp @prvArgCSubst
+                                                             $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyCnstr)
                                                              $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
-                                                        else cSubstApp (cnstrImplsToCSubst @lhs.opts @tqoTyCnstr)
+                                                        else cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyCnstr)
                                                              $ cSubstApp @lhs.cSubst
                                                              $ cSubstApp @bodyPrfCSubst @prfCSubst
 %%]
@@ -251,7 +264,10 @@ SEM Expr
 %%[9
 SEM Expr
   | App AppImpred
-                loc         .   appImplsCoeL        =   mkImplsAppCoe @lhs.opts . tyImpls . (@lhs.finTyCnstr |=>) $ @imTy
+                loc         .   appImplsCoeL        =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL)
+                                                             ++ [CoeImplApp $ ipoId @imPrvOcc]
+                                                        else mkImplsAppCoe @lhs.opts $ tyImpls $ (@lhs.finTyCnstr |=>) $ @imTy
   | AppImpl     loc         .   appImplsCoeL        =   []
 %%]
 

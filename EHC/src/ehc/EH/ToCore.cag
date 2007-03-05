@@ -98,7 +98,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   letCBindL   :=  if ehcCfgClassViaCHR @lhs.opts
-                                                then [ (@howToBind,@decls.cbindL ++ @chrSolveEvidBinds) ]
+                                                then [ (@howToBind,@decls.cbindL ++ @chrSolve1EvidBinds ++ @chrSolve2EvidBinds) ]
                                                 else [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
   | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App

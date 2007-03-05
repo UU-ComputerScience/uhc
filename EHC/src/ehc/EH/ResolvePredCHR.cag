@@ -69,17 +69,22 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-simplify env chrStore heur toProveHereCnstrMp
-  = (chrSolveRemCnstrMp2,chrSolveEvidBindMp,chrSolveEvidBinds,chrSolveErrs,chrSolveState,chrRedGraph,chrSolveEvidCoreMp)
+simplify env chrStore heur toProveHereCnstrMp prevRes
+  = (chrSolveRemCnstrMp2,chrSolveEvidBindMp,chrSolveEvidBinds,chrSolveErrs,chrSimplifyResult,chrSolveEvidCoreMp)
   where (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
-        ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),chrSolveState,chrRedGraph)
-          = chrSimplifyToEvidence (env {fiUniq = u1}) chrStore heur toProveHereCnstrMp
+        ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),chrSimplifyResult)
+          = chrSimplifyToEvidence (env {fiUniq = u1}) chrStore heur toProveHereCnstrMp prevRes
         (chrSolveRemCnstrMp2,chrSolveEvidMp2)
           = patchUnresolvedWithAssumption (env {fiUniq = u2}) chrSolveRemCnstrMp chrSolveEvidMp
         chrSolveEvidCoreMp
           = evidMpToCore (env {fiUniq = u3}) chrSolveEvidMp2
         (chrSolveEvidBindMp,chrSolveEvidBinds)
           = evidKeyCoreMpToBinds chrSolveEvidCoreMp
+
+debugInfo chrSimplifyResult
+  = (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
+  where s  = simpresSolveState chrSimplifyResult
+        rg = simpresRedGraph chrSimplifyResult
 %%]
 
 %%[9
@@ -87,25 +92,35 @@ SEM Expr
   | Let         loc         .   toProveCnstrMp      =   @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
-                            .   (chrSolveRemCnstrMp,chrSolveEvidBindMp,chrSolveEvidBinds,chrSolveErrs,chrSolveState,chrSolveRedGraph,chrSolveEvidCoreMp)
-                                                    =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp
-                            .   (chrSolveDoneConstraints,chrSolveTrace)
-                                                    =   (chrSolveStateDoneConstraints @chrSolveState,chrSolveStateTrace @chrSolveState)
+                            .   (chrSolve1RemCnstrMp,chrSolve1EvidBindMp,chrSolve1EvidBinds,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidCoreMp)
+                                                    =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
+                            .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace)
+                                                    =   debugInfo @chrSimplifyResult1
+
+                            .   (chrSolve2RemCnstrMp,chrSolve2EvidBindMp,chrSolve2EvidBinds,chrSolve2Errs,chrSimplifyResult2,chrSolve2EvidCoreMp)
+                                                    =   simplify (@chrFIIn {fiUniq = @lUniq4}) @lhs.chrStore (heurScopedEHC @chrFIIn) @quantCnstrMp
+                                                        $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
+                            .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace)
+                                                    =   debugInfo @chrSimplifyResult2
 %%]
 
 %%[9
 SEM Decl
   | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp,@chrCtxtAssumeCnstrMp,@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp]
-                            .   (chrSolveDeclsRemCnstrMp,chrSolveDeclsEvidBindMp,chrSolveDeclsEvidBinds,chrSolveDeclsErrs,chrSolveDeclsState,chrSolveDeclsRedGraph,_)
-                                                    =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp
-                            .   (chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
-                                                    =   (chrSolveStateDoneConstraints @chrSolveDeclsState,chrSolveStateTrace @chrSolveDeclsState)
+                            .   (chrSolveDeclsRemCnstrMp,chrSolveDeclsEvidBindMp,chrSolveDeclsEvidBinds,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
+                                                    =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp emptySimplifyResult
+                            .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
+                                                    =   let s  = simpresSolveState @chrDeclsSimplifyResult
+                                                            rg = simpresRedGraph @chrDeclsSimplifyResult
+                                                        in  (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
 
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
-                            .   (chrSolveSuperRemCnstrMp,chrSolveSuperEvidBindMp,chrSolveSuperEvidBinds,chrSolveSuperErrs,chrSolveSuperState,chrSolveSuperRedGraph,_)
-                                                    =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveSuperCnstrMp
-                            .   (chrSolveSuperDoneConstraints,chrSolveSuperTrace)
-                                                    =   (chrSolveStateDoneConstraints @chrSolveSuperState,chrSolveStateTrace @chrSolveSuperState)
+                            .   (chrSolveSuperRemCnstrMp,chrSolveSuperEvidBindMp,chrSolveSuperEvidBinds,chrSolveSuperErrs,chrSuperSimplifyResult,_)
+                                                    =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveSuperCnstrMp emptySimplifyResult
+                            .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace)
+                                                    =   let s  = simpresSolveState @chrSuperSimplifyResult
+                                                            rg = simpresRedGraph @chrSuperSimplifyResult
+                                                        in  (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
 %%]
 SEM Decl
   | Instance    loc         .   gathDeclSubsPredL   =   @decls.tyCnstr |=> @decls.gathPredL
@@ -124,8 +139,35 @@ Interaction with existing impl:
 %%[9
 SEM Expr
   | Let         loc         .   quantPrOccL         =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then [ mkPredOcc (cpoPr o) (mkPrIdCHR i) sc | (Assume o,[RedHow_Assumption i _ sc]) <- Map.toList @chrSolveRemCnstrMp ]
+                                                        then [ mkPredOcc (cpoPr o) (mkPrIdCHR i) sc | (Assume o,[RedHow_Assumption i _ sc]) <- Map.toList @chrSolve1RemCnstrMp ]
                                                         else @prfArgPrOccL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional prove requirements + assume introductions yielded by generalization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | Let         loc         .   (quantCnstrMp, coeArgIdMp)
+                                                    =   let mk u nm tmpo
+                                                              = (cnstrMpFromList ass `cnstrMpUnion` cnstrMpUnions (map cnstrMpFromList prvs), concat coeArgIds)
+                                                              where assSc = maybe @predScope id $ gamLookup nm @decls.scopeGam
+                                                                    (ass,prvs,coeArgIds)
+                                                                      = unzip3 [ ( mkAssumeConstraint (poPr po) (poId po) assSc
+                                                                                 , zipWith (\u i -> mkProveConstraint (poPr po) u (ipoScope i)) ups ipos
+                                                                                 , zipWith (\i u -> (ipoId i,u)) ipos ups
+                                                                                 )
+                                                                               | ((po,ipos),u') <- zip impls $ mkNewLevUIDL (length impls) u
+                                                                               , let ups = mkNewLevUIDL (length ipos) u'
+                                                                               ]
+                                                                      where impls = tmpoImplsPrvReq tmpo
+                                                            tmpos = gamToAssocL @tqoGam
+                                                            (quantCnstrMps, coeArgIds) = unzip $ zipWith (\(nm,tmpo) u -> mk u nm tmpo) tmpos (mkNewLevUIDL (length tmpos) @lUniq6)
+                                                        in  ( cnstrMpUnions quantCnstrMps
+                                                            , foldr (\(occ,arg) m -> Map.insertWith (++) occ [arg] m) Map.empty $ concat coeArgIds
+                                                            )
+                            .   prvArgCSubst        =   uidImplsLToCSubst [ (occ, ([mkAppCoe $ map (mkCExprHole @lhs.opts) args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -139,10 +181,11 @@ SEM AGItf
   | AGItf       loc         .   chrEvidBindMp       =   Map.empty
 
 SEM Decl
-  | Instance    loc         .   chrEvidBindMp       =   @chrSolveDeclsEvidBindMp `Map.union` @lhs.chrEvidBindMp
+  | Instance    loc         .   chrEvidBindMp       =   @chrSolveDeclsEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
 
 SEM Expr
-  | Let         loc         .   chrEvidBindMp       =   @chrSolveEvidBindMp `Map.union` @lhs.chrEvidBindMp
+  | Let         loc         .   chrSolveEvidBindMp  =   @chrSolve2EvidBindMp `evidKeyToCBindMapUnion` @chrSolve1EvidBindMp
+                            .   chrEvidBindMp       =   @chrSolveEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -7,13 +7,10 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Cnstr},{%{EH}Core.Pretty},{%{EH}Core.FvS}) export(CSubstitutable(..),cAppCoeArg)
+%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,UU.Pretty,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Cnstr},{%{EH}Core.Pretty},{%{EH}Core.FvS})
 %%]
 
-%%[9 hs export(CSubst,emptyCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst)
-%%]
-
-%%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
+%%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkPoisAppCoe,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
 %%]
 
 %%[9.WRAPPER ag import({Core/AbsSyn})
@@ -24,7 +21,7 @@ WRAPPER CExpr
 %%% Code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[9 hs export(CSubst,emptyCSubst)
 data CSubstInfo
 	=  CSIExpr      {csiRepl    ::  CExpr                                           }
     |  CSIImpls     {csiAppCoeL ::  [Coe]       , csiLamCoeL    ::  [Coe]           }
@@ -35,7 +32,9 @@ type CSubst = Map.Map UID CSubstInfo
 
 emptyCSubst :: CSubst
 emptyCSubst = Map.empty
+%%]
 
+%%[9 hs export(uidImplsLToCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst,cAppCoeArg)
 cAppCoeArg :: CExpr -> CExpr -> CExpr
 cAppCoeArg ce coeArg
   =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = emptyCSubst, coeArg_Inh_CExpr = coeArg})
@@ -59,7 +58,9 @@ cnstrImplsToCSubst opts c
         [ (iv,(mkImplsAppCoe opts i,mkImplsLamCoe coeId i))
         | (iv,CIImpls i) <- cnstrToAssocL c, let (_,mbTl) = implsPredsMbTail i, isNothing mbTl
         ]
+%%]
 
+%%[9 hs
 instance PP CSubstInfo where
   pp (CSIExpr       ce   )  = pp ce
   pp (CSIImpls      l r  )  = pp (coeWeaveOn emptyCSubst l r CExpr_CoeArg)
@@ -70,7 +71,7 @@ instance PP CSubstInfo where
 %%% Code substitution as class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[9 hs export(CSubstitutable(..))
 infixr `cSubstApp`
 
 class CSubstitutable a where
@@ -205,8 +206,11 @@ coeWipe cs l r
           (l',r') = w (reverse l) (reverse r)
      in   (reverse l',reverse r')
 
+mkPoisAppCoe :: EHCOpts -> [PredOccId] -> [Coe]
+mkPoisAppCoe opts = map (\i -> mkAppCoe [mkCExprPrHole opts i])
+
 mkImplsAppCoe :: EHCOpts -> Impls -> [Coe]
-mkImplsAppCoe opts = map (\i -> mkAppCoe [mkCExprPrHole opts i]) . implsPrIds
+mkImplsAppCoe opts = mkPoisAppCoe opts . implsPrIds
 
 mkPoiLLamCoe :: Coe -> [PredOccId] -> [Coe]
 mkPoiLLamCoe onLast poiL

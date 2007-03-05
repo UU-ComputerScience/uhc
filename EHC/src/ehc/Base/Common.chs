@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
-%%[1 export(AssocL, ppAssocL)
+%%[1 export(Assoc,AssocL, ppAssocL)
 %%]
 
 %%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
@@ -289,22 +289,6 @@ mkPrIdCHR = mkPrId basePrfCtxtId
 %%[9 export(emptyPredOccId)
 emptyPredOccId :: PredOccId
 emptyPredOccId = mkPrId basePrfCtxtId uidStart
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pred occurrence key, abstraction over the identification of a PredOcc
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-20070225: This is temporary, because of the transition to CHR's
-
-%%[9 export(PredOccKeyable(..))
-class PredOccKeyable x where
-  pokKey :: x -> UID
-%%]
-
-%%[9
-instance PredOccKeyable PredOccId where
-  pokKey = poiId
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -729,7 +713,8 @@ ppCTagsMp pn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AssocL
-type AssocL k v = [(k,v)]
+type Assoc k v = (k,v)
+type AssocL k v = [Assoc k v]
 %%]
 
 %%[1.ppAssocL

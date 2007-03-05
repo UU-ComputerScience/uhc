@@ -55,9 +55,12 @@ mkRedGraphFromReductions :: Ord p => [Constraint p info] -> RedGraph p info
 mkRedGraphFromReductions cs = addToRedGraphFromReductions cs emptyRedGraph
 %%]
 
-%%[9 export(mkRedGraphFromAssumes)
+%%[9 export(addToRedGraphFromAssumes,mkRedGraphFromAssumes)
+addToRedGraphFromAssumes :: Ord p => ConstraintToInfoMap p info -> RedGraph p info -> RedGraph p info
+addToRedGraphFromAssumes cm g = Map.foldWithKey addAssumption g cm
+
 mkRedGraphFromAssumes :: Ord p => ConstraintToInfoMap p info -> RedGraph p info
-mkRedGraphFromAssumes cm = Map.foldWithKey addAssumption emptyRedGraph cm
+mkRedGraphFromAssumes cm = addToRedGraphFromAssumes cm emptyRedGraph
 %%]
 
 %%[9

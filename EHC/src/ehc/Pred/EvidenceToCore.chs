@@ -52,6 +52,11 @@ data ToCoreRes
       }
 %%]
 
+%%[9 export(evidKeyToCBindMapUnion)
+evidKeyToCBindMapUnion :: EvidKeyToCBindMap -> EvidKeyToCBindMap -> EvidKeyToCBindMap
+evidKeyToCBindMapUnion = Map.unionWith (++)
+%%]
+
 %%[9 export(evidMpToCore)
 evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> EvidKeyToCExprMap
 evidMpToCore env evidMp
