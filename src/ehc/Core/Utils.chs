@@ -189,7 +189,7 @@ mkCExprSatSelsCaseUpd env ne e ct arity offValL mbRest
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(FieldUpdateL,fuL2ExprL,fuMkCExpr,fuMap)
+%%[8 export(FieldUpdateL,fuL2ExprL,fuMap)
 type FieldUpdateL e = AssocL HsName (e,Maybe Int)
 
 fuMap :: (HsName -> e -> (e',Int)) -> FieldUpdateL e -> FieldUpdateL e'
@@ -221,6 +221,9 @@ fuReorder opts nL fuL
             $  fuL
           cmpFU (n1,_ ) (n2,_) = rowLabCmp n1 n2
      in   (offL, sortBy cmpFU fuL')
+%%]
+
+%%[10 export(fuMkCExpr)
 
 fuMkCExpr :: EHCOpts -> UID -> FieldUpdateL CExpr -> CExpr -> CExpr
 fuMkCExpr opts u fuL r

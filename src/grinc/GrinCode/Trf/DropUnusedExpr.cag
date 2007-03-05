@@ -98,13 +98,14 @@ SEM GrExpr
 %%]
 
 -- AD 20060526: avoid AGC error msg
-%%[8
+%%[10
 SEM GrAdapt
   | *    loc      .  usedVars  =  Set.empty
 
 SEM GrSplit
   | *    loc      .  usedVars  =  Set.empty
-
+%%]
+%%[8
 SEM GrGlobal
   | *    loc      .  usedVars  =  Set.empty
 %%]

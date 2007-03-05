@@ -44,7 +44,7 @@ SEM GrTag
 %%]
 
 -- AD 20060526: avoid AGC error msg
-%%[8
+%%[10
 SEM GrAdapt
   | *    loc      .  usedTags  =  Set.empty
 

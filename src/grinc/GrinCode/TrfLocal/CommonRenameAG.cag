@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllGrExpr AllGrVal AllAdapt AllSplit AllGrPat [ nmAliasMp: NmAliasMp | | ]
+ATTR AllWithName AllGrVal AllGrPat [ nmAliasMp: NmAliasMp | | ]
 
 SEM GrBind
   | Bind        expr        .   nmAliasMp       =   Map.empty
@@ -54,10 +54,14 @@ SEM GrExpr
 
 SEM GrPat
   | Var         lhs         .   trf             =   GrPat_Var $ nmAliasRepl @lhs.nmAliasMp @nm
-  | NodeSplit   lhs         .   trf             =   GrPat_NodeSplit @tag.trf (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
   | Node        lhs         .   trf             =   GrPat_Node @tag.trf (map (nmAliasRepl @lhs.nmAliasMp) @fldL)
+%%[[10
+  | NodeSplit   lhs         .   trf             =   GrPat_NodeSplit @tag.trf (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
+%%]]
 
 SEM GrVal
   | Var         lhs         .   trf             =   GrVal_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+%%[[10
   | NodeAdapt   lhs         .   trf             =   GrVal_NodeAdapt (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
+%%]]
 %%]

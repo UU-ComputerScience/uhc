@@ -128,10 +128,14 @@ SEM PatExpr
 
 %%[8
 SEM Expr
-  | Rec         loc         .   rcexpr          =   if @recExpr.isExtFromEmpty
-                                                    then  foldl CExpr_App (CExpr_Tup CTagRec)
+  | Rec         loc         .   rcexpr          =   
+%%[[10  
+                                                    if  not (@recExpr.isExtFromEmpty)
+                                                    then  fuMkCExpr @lhs.opts @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
+                                                    else
+%%]]                                                    
+                                                          foldl CExpr_App (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
-                                                    else  fuMkCExpr @lhs.opts @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
                             .   cexpr           =   @rcexpr
 %%]
 

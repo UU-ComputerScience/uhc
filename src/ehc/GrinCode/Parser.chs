@@ -87,7 +87,9 @@ pVal            =    pSVal
                 <|>  GrVal_Tag      <$> pTag
                 <|>  pParens
                         (    GrVal_Node <$> (pTag <|> pTagVar) <*> pSValL
+%%[[10                        
                         <|>  GrVal_NodeAdapt <$> pGrNm <* pKey "|" <*> pList1Sep pComma pAdapt
+%%]]                        
                         <|>  pSucceed GrVal_Empty
                         )
 
@@ -96,9 +98,6 @@ pSValL          =    pList pSVal
 
 pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
-
-pAdapt          ::   GRIParser GrAdapt
-pAdapt          =    pSVal <**> ((flip GrAdapt_Ins <$ pKey "+=" <|> flip GrAdapt_Upd <$ pKey ":=") <*> pVal <|> GrAdapt_Del <$ pKey "-=")
 
 pAlt            ::   GRIParser GrAlt
 pAlt            =    GrAlt_Alt <$> pPat <* pKey "->" <*> pCurly pExprSeq
@@ -113,16 +112,16 @@ pPat            =    pSPat
                 <|>  pParens
                         (    (pTag <|> pTagVar)
                              <**>  (pGrNm
-                                    <**>  (    (\sL r t -> GrPat_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit
-                                          <|>  (\nL n t -> GrPat_Node t (n:nL)) <$> pGrNmL
+                                    <**>  (    
+%%[[10                                    
+                                               (\sL r t -> GrPat_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit <|>  
+%%]]                                          
+                                               (\nL n t -> GrPat_Node t (n:nL)) <$> pGrNmL
                                           )
                                    <|> pSucceed (flip GrPat_Node [])
                                    )
                         <|>  pSucceed GrPat_Empty
                         )
-
-pSplit          ::   GRIParser GrSplit
-pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
@@ -160,5 +159,15 @@ pId             =    pConid <|> pVarid
 
 pInt            ::   GRIParser Int
 pInt            =    (negate <$ pKey "-" `opt` id) <*> (read <$> pInteger)
+%%]
+
+
+%%[10
+pSplit          ::   GRIParser GrSplit
+pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
+
+pAdapt          ::   GRIParser GrAdapt
+pAdapt          =    pSVal <**> ((flip GrAdapt_Ins <$ pKey "+=" <|> flip GrAdapt_Upd <$ pKey ":=") <*> pVal <|> GrAdapt_Del <$ pKey "-=")
+
 %%]
 

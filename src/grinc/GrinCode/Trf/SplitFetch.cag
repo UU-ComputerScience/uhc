@@ -63,7 +63,9 @@ SEM GrPat [ | | mbTag: {Maybe GrTag} names: {[HsName]} ]
   | Node                lhs  .  names  =  @fldL
   | Var                 lhs  .  names  =  error "SplitFetch.ag: attempt to get names from GrPat_Var"
   | Tag Empty  LitInt   lhs  .  names  =  []
+%%[[10
   | NodeSplit           lhs  .  names  =  []   -- AD 20060526: avoid AGC error msg
+%%]]
 
 SEM GrExpr
   | Seq   loc  .  fetches  = do { p <- @expr.fetchPointer

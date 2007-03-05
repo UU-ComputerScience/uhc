@@ -169,3 +169,6 @@ $(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
 $(WWW_SRC_TGZ): $(DIST_TGZ)
 	cp $^ $@
 
+heliumdoc: $(LIB_HELIUM_ALL_DRV_HS)
+	mkdir -p hdoc/helium
+	haddock --html --odir=hdoc/helium $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)

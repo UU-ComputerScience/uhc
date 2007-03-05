@@ -130,13 +130,15 @@ data NodeInfo a
 %%[8.valInfo
 
 SEM GrVal [ | | valInfo : {NodeInfo (Maybe Int)}]
-  | Node      lhs . valInfo = NodeDen @tag.tagName @fldL.depVars
-  | Tag       lhs . valInfo = NodeDen @tag.tagName []
-  | Var       lhs . valInfo = NodeVar (getNr @nm)
   | Empty     lhs . valInfo = error "HPT: valinfo: empty"
   | LitInt 
     LitStr    lhs . valInfo = error "HPT: valinfo: literal"
+  | Tag       lhs . valInfo = NodeDen @tag.tagName []
+  | Var       lhs . valInfo = NodeVar (getNr @nm)
+  | Node      lhs . valInfo = NodeDen @tag.tagName @fldL.depVars
+%%[[10
   | NodeAdapt lhs . valInfo = error "HPT: valinfo: nodeadapt"
+%%]]
 
 SEM GrValL [ | | valsInfo : {[NodeInfo (Maybe Int)]}]
   | Cons      lhs . valsInfo = @hd.valInfo : @tl.valsInfo
@@ -151,12 +153,14 @@ SEM GrValL [ | | depVars: {[Maybe Int]}  ]
   | Nil      lhs . depVars = []
 
 SEM GrPat [ | | patInfo: {NodeInfo Int} ]
-  | Node       lhs . patInfo = NodeDen @tag.tagName (map getNr @fldL)
-  | Tag        lhs . patInfo = NodeDen @tag.tagName []
-  | Var        lhs . patInfo = NodeVar (getNr @nm)
   | Empty      lhs . patInfo = NodeVar (getNr wildcardNr)
   | LitInt     lhs . patInfo = error "HPT: patInfo: literal"
+  | Tag        lhs . patInfo = NodeDen @tag.tagName []
+  | Var        lhs . patInfo = NodeVar (getNr @nm)
+  | Node       lhs . patInfo = NodeDen @tag.tagName (map getNr @fldL)
+%%[[10
   | NodeSplit  lhs . patInfo = error "HPT: patInfo: nodesplit"
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -365,7 +369,10 @@ We generate a single equation for the destination variable: it can be equal to t
 For a Catch we proceed similarly, the body and the handler being the two alternatives.
 -}
 
-ATTR GrVal GrValL GrAdaptL GrAdapt [ | | self : SELF ]
+ATTR GrVal GrValL [ | | self : SELF ]
+%%[[10
+ATTR GrAdaptL GrAdapt [ | | self : SELF ]
+%%]]
 
 SEM GrExpr
   | Case   loc   .  equat       =  case @lhs.targetInfo of
