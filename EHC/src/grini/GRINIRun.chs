@@ -278,9 +278,11 @@ grEvalExpr rs e
   =  case e of
         GrExpr_Unit v
           ->  return (rs,Just (grEvalVal rs v))
-        GrExpr_Fetch n Nothing _
-          ->  do  {  n' <- rsVarDeref rs n
-                  ;  return (rs,Just n')
+        GrExpr_UpdateUnit n v
+          ->  do  {  let  (RVPtr p) = rsVar rs n
+                          rv = grEvalVal rs v
+                  ;  rv `seq` writeArray (rhMem . rsHeap $ rs) p rv
+                  ;  return (rs,Just rv)
                   }
         GrExpr_FetchUpdate ns nd
           ->  do  {  ns' <- rsVarDeref rs ns
@@ -288,7 +290,11 @@ grEvalExpr rs e
                   ;  ns' `seq` writeArray (rhMem . rsHeap $ rs) pd ns'
                   ;  return (rs,Just RVNil)
                   }
-        GrExpr_Fetch n (Just offset) _
+        GrExpr_FetchNode n _
+          ->  do  {  n' <- rsVarDeref rs n
+                  ;  return (rs,Just n')
+                  }
+        GrExpr_FetchField n offset _
           ->  do  {  (RVNode n') <- rsVarDeref rs n
                   ;  error "fetch with offset not supported yet"
                   ;  return (rs,Just $ n' ! offset)
@@ -301,12 +307,6 @@ grEvalExpr rs e
                           rv = grEvalVal rs v
                   ;  rv `seq` writeArray (rhMem h) p rv
                   ;  return (rs2 {rsHeap = h {rhFree = p+1}},Just (RVPtr p))
-                  }
-        GrExpr_Update n v _
-          ->  do  {  let  (RVPtr p) = rsVar rs n
-                          rv = grEvalVal rs v
-                  ;  rv `seq` writeArray (rhMem . rsHeap $ rs) p rv
-                  ;  return (rs,Just RVNil)
                   }
         GrExpr_Call fn aL
           ->  do  {  fn' <- rsVarDeref rs fn
