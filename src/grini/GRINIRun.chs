@@ -319,7 +319,7 @@ grEvalExpr rs e
         GrExpr_Eval n
           ->  let  upd rs n
                      =  let  n2 = hsnWild
-                             e = GrExpr_Seq (GrExpr_Update n (GrVal_Var n2) Nothing) (GrPat_Empty) (GrExpr_Unit (GrVal_Var n2))
+                             e = GrExpr_UpdateUnit n (GrVal_Var n2) (GrVal_Var n2)
                              stk = (GrPat_Var n2,e,rsEnv rs) : rsStack rs
                         in   rs {rsStack = stk, rsNext = Just e}
               in   do  {  n' <- rsVarDeref rs n
