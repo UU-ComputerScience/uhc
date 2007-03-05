@@ -137,10 +137,12 @@ SEM Type
 %%[[4
     | Forall Exists
         lhs         .   freeTvarS   =   @type.freeTvarS `Set.difference` Set.fromList @typevariables
+%%]]
 %%]
 
-%%[[12
+%%[10
 SEM ContextItem
+%%[[12
     | Forall
         lhs         .   freeTvarS   =   @context.freeTvarS `Set.difference` Set.fromList @typevariables
 %%]]
@@ -181,6 +183,8 @@ ATTR Types Type AllRowTypeUpdate [ isAsPred: Bool | | ]
 SEM Type
     | InfixApplication
         leftType    .   isAsPred    =   @operator.isPrArrow
+    | NormalApplication
+        arguments   .   isAsPred    =   False
 
 SEM AnnotatedType
     | *
