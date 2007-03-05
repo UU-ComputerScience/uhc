@@ -71,12 +71,18 @@ checkClNms s = if Set.null s then [] else [mkErr_NamesNotIntrod "class" (Set.toL
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   predNotPrfErrs      =   if null @expr.gathPredL then [] else [Err_NotProvenPreds @expr.gathPredL]
+  | AGItf       loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then if Map.null @chrSolveMainRemCnstrMp
+                                                             then []
+                                                             else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys @chrSolveMainRemCnstrMp]
+                                                        else if null @expr.gathPredL
+                                                             then []
+                                                             else [Err_NotProvenPreds $ map poPr $ @expr.gathPredL]
 
 SEM Decl
   | Instance    loc         .   predNotPrfErrs      =   if null @supPrfArgPrOccL && null @prfArgPrOccL 
                                                         then []
-                                                        else [Err_NotProvenPreds (@prfArgPrOccL ++ @supPrfArgPrOccL)]
+                                                        else [Err_NotProvenPreds $ map poPr (@prfArgPrOccL ++ @supPrfArgPrOccL)]
                             .   valNoSigErrs        =   let ns = gamKeys (gamTop @decls.patValGam) \\ gamKeys @tySigGam
                                                         in  if null ns
                                                             then []
@@ -90,6 +96,9 @@ SEM PrExpr
 SEM Expr
   | AppImpl LamImpl
                 loc         .   nmErrs              =   []
+  | Let         loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts && not (Map.null @toAssumeNeverCnstrMp)
+                                                        then [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys @toAssumeNeverCnstrMp]
+                                                        else []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

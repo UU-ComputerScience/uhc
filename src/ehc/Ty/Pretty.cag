@@ -80,7 +80,7 @@ instance PP (Annotation a) where
 
 %%[9 hs
 instance PP Pred where
-  pp p = ppTy (Ty_Pred p)
+  pp p = ppTyWithCfg cfgPPTyPred (Ty_Pred p)
 
 instance PP Impls where
   pp i = ppTy (Ty_Impls i)

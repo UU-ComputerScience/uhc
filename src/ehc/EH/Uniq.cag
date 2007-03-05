@@ -292,7 +292,7 @@ SEM PatExpr
 
 %%[9
 SEM AGItf
-  | AGItf           (expr.gUniq,loc.lUniq)                          :=  mkNewLevUID     @lhs.gUniq
+  | AGItf           (expr.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
 
 SEM Expr
   | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5,loc.lUniq6)

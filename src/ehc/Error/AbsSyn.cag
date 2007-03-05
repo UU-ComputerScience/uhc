@@ -118,7 +118,7 @@ DATA Err
 DATA Err
   | PrfCutOffReached    pred       : {PredOcc}
                         depth      : {Int}
-  | NotProvenPreds      preds      : {[PredOcc]}
+  | NotProvenPreds      preds      : {[Pred]}
   | OverlapPreds        overl      : {AssocL Pred [CExpr]}
   | TyHasFreeTVars      ty         : {Ty}
   | DeclsNotAllowed     inside     : String

@@ -295,9 +295,7 @@ cexprVar _             = hsnUnknown
 
 %%[8 hs export(cexprTupFld)
 cexprTupFld :: CExpr -> CExpr
-%%[[10
 cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
-%%]]
 cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 

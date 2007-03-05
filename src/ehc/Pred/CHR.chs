@@ -183,10 +183,15 @@ instance CHRCheckable Guard Cnstr where
 %%% Criterium for proving in a let expression
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(isLetProveCandidate)
+%%[9 export(isLetProveCandidate,isLetProveFailure)
 isLetProveCandidate :: (Ord v, CHRSubstitutable x v s) => Set.Set v -> x -> Bool
 isLetProveCandidate glob x
   = Set.null fv || Set.null (fv `Set.intersection` glob)
+  where fv = chrFtv x
+
+isLetProveFailure :: (Ord v, CHRSubstitutable x v s) => Set.Set v -> x -> Bool
+isLetProveFailure glob x
+  = Set.null fv
   where fv = chrFtv x
 %%]
 
