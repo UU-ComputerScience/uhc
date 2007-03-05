@@ -243,6 +243,13 @@ assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
 assocLToCnstrImpls = Cnstr . Map.fromList . assocLMapElt CIImpls
 %%]
 
+%%[9 hs export(cnstrTailAddOcc)
+cnstrTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,Cnstr)
+cnstrTailAddOcc o (Impls_Tail i os) = (t, cnstrImplsUnit i t)
+                                    where t = Impls_Tail i (o:os)
+cnstrTailAddOcc _ x                 = (x,emptyCnstr)
+%%]
+
 %%[9 export(cnstrImplsLookup,cnstrScopeLookup,cnstrPredLookup,cnstrPoiLookup)
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup = cnstrLookup' (\ci -> case ci of {CIImpls i -> Just i; _ -> Nothing})

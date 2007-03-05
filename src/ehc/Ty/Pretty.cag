@@ -93,6 +93,9 @@ instance PP CHRPredOcc where
 
 instance PP PredScope where
   pp = pp . show
+
+instance PP ImplsProveOcc where
+  pp o = ipoId o >|< "/" >|< ipoScope o
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -400,7 +403,7 @@ SEM Ty
                                             else cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
 
 SEM Impls
-  | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNm @lhs.cfg "i" @iv) id (lookup @iv @lhs.tnMap)
+  | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNm @lhs.cfg "i" @iv) id (lookup @iv @lhs.tnMap) >|< ppBracketsCommas @proveOccs
   | Tail            lhs     .   pp      =   @ppIv
   | Cons            loc     .   ppPv    =   maybe (mkDefaultTvNm @lhs.cfg "p" (poiId @pv)) id (lookup @iv @lhs.tnMap)
                     lhs     .   pp      =   @ppIv >|< "=" >|< @pr.pp >|< "/" >|< @ppPv >|< "," >|< @tl.pp

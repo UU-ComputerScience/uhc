@@ -295,10 +295,10 @@ SEM AGItf
   | AGItf           (expr.gUniq,loc.lUniq)                          :=  mkNewLevUID     @lhs.gUniq
 
 SEM Expr
-  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5)
-                                                                    :=  mkNewLevUID5    @lhs.gUniq
+  | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5,loc.lUniq6)
+                                                                    :=  mkNewLevUID6    @lhs.gUniq
   | AppTop          (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
-  | App             (func.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
+  | App AppImpred   (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
   | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
   | LamImpl         (argPr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)

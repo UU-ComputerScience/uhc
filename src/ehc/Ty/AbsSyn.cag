@@ -144,9 +144,11 @@ DATA Ty
 
 DATA Impls
   | Tail        iv              : {ImplsVarId}
+                proveOccs		: {[ImplsProveOcc]}
   | Cons        iv              : {ImplsVarId}
                 pr              : Pred
                 pv              : {PredOccId}
+                proveOccs		: {[ImplsProveOcc]}
                 tl              : Impls
   | Nil
 %%]

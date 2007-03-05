@@ -183,7 +183,8 @@ SEM Expr
                                                              im = mkImplsVar i
                                                         in   ([im,mkTyVar a] `mkArrow` @lhs.knTy,im)
                 (_,arg.knTy,loc.ty_)                :=  tyArrowImplsArgRes @func.ty
-                loc         .   prOccL              =   tyImplsPreds @lhs.predScope (@arg.tyCnstr |=> @imTy)
+                loc         .   (prOccL,implsTl)    =   implsPredsTail @lhs.predScope $ tyImpls $ @arg.tyCnstr |=> @imTy
+                lhs			.	tyCnstr				=	@prvOccTlCnstr |=> @arg.tyCnstr
 %%]
 
 %%[9_1.App

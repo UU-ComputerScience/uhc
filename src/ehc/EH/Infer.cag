@@ -78,7 +78,7 @@ SEM Expr
   | Let         loc         .   (quValGam_ex_,tqoGam)
                                                     :=  let  (vg,tqog) = valGamQuantify @gTyTvL @quantPrOccL @lSubsValGam_
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .   tqoTyCnstr          =   foldr (\tmpo c -> tmpoImplsCnstr tmpo |=> c) emptyCnstr (gamElts @tqoGam)
+                            .   tmpoTyCnstr         =   foldr (\tmpo c -> tmpoImplsCnstr tmpo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
 
 %%[50
@@ -159,7 +159,7 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc         .   finTyCnstr          =   @tqoTyCnstr |=> @lhs.finTyCnstr
+  | Let         loc         .   finTyCnstr          =   @tmpoTyCnstr |=> @lhs.finTyCnstr
 %%]
 
 %%[1010

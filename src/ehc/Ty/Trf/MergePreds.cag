@@ -38,22 +38,27 @@ tyMergePreds prL ty
             { tmpoTy                 = prTy_Syn_TyAGItf t
             , tmpoInsPrIdSet         = insPrIdSet_Syn_TyAGItf t
             , tmpoImplsCnstr         = assocLToCnstrImpls (prImpls_Syn_TyAGItf t)
+            , tmpoImplsPrvReq        = prvReqs_Syn_TyAGItf t
             }
 %%]
 
 %%[9 hs export(TyMergePredOut(..))
+type InsPrPrvOcc = Assoc PredOcc [ImplsProveOcc]
+type PrvReqs = [InsPrPrvOcc]
+
 data TyMergePredOut
   = TyMergePredOut
-  	  { tmpoTy               ::  Ty
+      { tmpoTy               ::  Ty
       , tmpoInsPrIdSet       ::  Set.Set PredOccId
       , tmpoImplsCnstr       ::  Cnstr
+      , tmpoImplsPrvReq      ::  PrvReqs
       }
 
 instance Show TyMergePredOut where
   show _ = ""
 
 instance PP TyMergePredOut where
-  pp tmpo = pp (tmpoImplsCnstr tmpo)
+  pp tmpo = pp (tmpoImplsCnstr tmpo) >-< ppAssocLV (tmpoImplsPrvReq tmpo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,7 +80,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllTy [ mbPrLoc: {Maybe ImplsVarId} | | ]
+ATTR AllTy [ mbPrLoc: {Maybe Impls} | | ]
 
 SEM TyAGItf
   | AGItf       ty          .   mbPrLoc                 =   Nothing
@@ -117,15 +122,20 @@ SEM Ty
 %%% Pass preds up to pred insertable location
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9 hs
+toInsPrPrvOcc :: [PredOcc] -> [ImplsProveOcc] -> [InsPrPrvOcc]
+toInsPrPrvOcc ps ipos = [ (p,ipos) | p <- ps ]
+%%]
+
 %%[9
 ATTR AllTy [ | | insPrL USE {++} {[]} : {[PredOcc]} ]
 
 SEM Ty
   | App         loc         .   candPrL         =   @herePrL ++ @func.insPrL ++ @arg.insPrL
   | Var         loc         .   candPrL         =   @herePrL
-  | App Var     (loc.insHerePrL,lhs.insPrL)     =   maybe ([],@candPrL) (const (@candPrL,[])) @lhs.mbPrLoc
-                loc         .   insPrL          =   @implsPrL ++ @insHerePrL
-                            .   hasNoInsPrL     =   null @insPrL
+  | App Var     (loc.insHerePrL,lhs.insPrL)     =   maybe ([],@candPrL) (\(Impls_Tail _ ipos) -> (toInsPrPrvOcc @candPrL ipos,[])) @lhs.mbPrLoc
+                loc         .   insPrPrvOccL    =   @implsPrL ++ @insHerePrL
+                            .   hasNoInsPrL     =   null @insPrPrvOccL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,8 +146,8 @@ SEM Ty
 ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
 
 SEM Ty
-  | App         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
-  | Var         lhs         .   insPrIdSet      =   Set.fromList (map poPoi @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+  | Var         lhs         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -145,9 +155,9 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-prOccLImpls :: Maybe ImplsVarId -> [PredOcc] -> AssocL ImplsVarId Impls
+prOccLImpls :: Maybe Impls -> [InsPrPrvOcc] -> AssocL ImplsVarId Impls
 prOccLImpls mbI prL
-  = maybe [] (\i -> [(i,foldr (\p im -> Impls_Cons (poId p) (poPr p) (poPoi p) im) Impls_Nil prL)]) mbI
+  = maybe [] (\i -> [(implsTailVar i,foldr (\(p,_) im -> Impls_Cons (poId p) (poPr p) (poPoi p) [] im) Impls_Nil prL)]) mbI
 %%]
 
 %%[9
@@ -163,6 +173,23 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional prove requirements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+prOccLPrvReqs :: Maybe Impls -> [InsPrPrvOcc] -> PrvReqs
+prOccLPrvReqs mbI prL = maybe [] (const prL) mbI
+%%]
+
+%%[9
+ATTR TyAGItf AllTy [ | | prvReqs USE {++} {[]}: PrvReqs ]
+
+SEM Ty
+  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc (if @isArrowRoot then @insHerePrL else []) ++ @arg.prvReqs
+  | Var         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicated type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -173,6 +200,6 @@ ATTR AllTy TyQu TyVarCateg [ | | prTy: SELF ]
 
 %%[9
 SEM Ty
-  | Var         lhs         .   prTy            =   mkTyImpls (map poPr @insPrL) $ Ty_Var @tv @categ.prTy
-  | App         loc         .   prTy            =   mkTyImpls (map poPr @insPrL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
+  | Var         lhs         .   prTy            =   mkTyImpls (map (poPr . fst) @insPrPrvOccL) $ Ty_Var @tv @categ.prTy
+  | App         loc         .   prTy            =   mkTyImpls (map (poPr . fst) @insPrPrvOccL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
 %%]

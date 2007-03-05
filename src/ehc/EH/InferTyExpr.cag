@@ -182,7 +182,7 @@ SEM RowTyExpr
 %%[9
 SEM TyExpr
   | Impls       loc         .   implsVarId          =   @lUniq
-                            .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId)) kiStar
+                            .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId [])) kiStar
                             .   ki                  =   tgiKi @tgi_
   | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil) kiStar
                             .   ki                  =   tgiKi @tgi_

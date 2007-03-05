@@ -76,7 +76,7 @@
 %%[9 hs export(tyRecExts,tyRecRow,tyArrowArity,tyQuant)
 %%]
 
-%%[9 hs export(tyImpls,Impls(..),ImplsVarId,mkImplsVar,implsPredsTail,implsPrIds,implsPredsMbTail,tyIsImplsTail,tyImplsPreds)
+%%[9 hs export(Impls(..),ImplsVarId,mkImplsVar)
 %%]
 
 %%[9 hs export(TyCtxt(..))
@@ -249,6 +249,26 @@ pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (length s) `compare` (length 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Possible prove occurrence of predicate, but not yet known which
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Of Impls it is yet unknown to which pred it will bind.
+Nevertheless, it can occur at locations which normally would give rise to prove obligations.
+Hence we need to remember all required info except the yet unknown predicate.
+
+%%[9 hs export(ImplsProveOcc(..),mkImplsProveOcc)
+data ImplsProveOcc
+  = ImplsProveOcc
+      { ipoId		:: UID
+      , ipoScope	:: PredScope
+      }
+  deriving (Eq,Show,Ord)
+
+mkImplsProveOcc :: UID -> PredScope -> ImplsProveOcc
+mkImplsProveOcc = ImplsProveOcc
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred occurrence, to be obsolete when fully moved to CHR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -276,11 +296,6 @@ mkPredOccCHR u p sc = PredOcc p (emptyPredOccId {poiId = u}) sc
 %%[9 hs export(poUpdPoiSc)
 poUpdPoiSc :: PredOccId -> PredScope -> PredOcc -> PredOcc
 poUpdPoiSc poi sc po = po {poPoi = poi, poScope = sc}
-%%]
-
-%%[9 hs
-instance PredOccKeyable PredOcc where
-  pokKey = pokKey . poPoi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -471,7 +486,7 @@ mkTyFreshProd = mkTyFreshProdFrom uidStart
 
 %%[9 hs
 mkImplsVar :: ImplsVarId -> Ty
-mkImplsVar v = Ty_Impls (Impls_Tail v)
+mkImplsVar v = Ty_Impls (Impls_Tail v [])
 %%]
 
 %%[9 hs
@@ -843,35 +858,52 @@ predTy p
 %%% Destruction for implicits
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[9 hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIds)
 tyImpls :: Ty -> Impls
 tyImpls (Ty_Impls i) = i
 
-implsPredsTail :: PredScope -> Impls -> ([PredOcc],Impls)
-implsPredsTail sc (Impls_Cons v p pv t)  =  let  (p',mi) = implsPredsTail sc t
-                                            in   (mkPredOcc p pv sc : p',mi)	-- scope for now
-implsPredsTail _  t                      =  ([],t)
+implsPredsTail' :: PredScope -> Impls -> ([(PredOcc,[ImplsProveOcc])],Impls)
+implsPredsTail' sc (Impls_Cons _ p pv ipos t)  = ((mkPredOcc p pv sc,ipos) : p',mi)
+                                               where (p',mi) = implsPredsTail' sc t
+implsPredsTail' _  t                           = ([],t)
 
-implsPredsMbTail :: Impls -> ([PredOcc],Maybe ImplsVarId)
-implsPredsMbTail i =  case implsPredsTail initPredScope i of
-                        (i',Impls_Tail v  ) -> (i',Just v)
-                        (i',Impls_Nil     ) -> (i',Nothing)
+implsPredsTail :: PredScope -> Impls -> ([PredOcc],Impls)
+implsPredsTail sc i
+  = (map fst is,t)
+  where (is,t) = implsPredsTail' sc i
+
+implsPredsMbTail :: Impls -> ([(PredOcc,[ImplsProveOcc])],Maybe Impls)
+implsPredsMbTail i =  case implsPredsTail' initPredScope i of
+                        (i',t@(Impls_Tail _ _)) -> (i',Just t)
+                        (i',   Impls_Nil      ) -> (i',Nothing)
 
 tyImplsPreds :: PredScope -> Ty -> [PredOcc]
 tyImplsPreds sc = fst . implsPredsTail sc . tyImpls
 
+implsIsTail :: Impls -> Bool
+implsIsTail (Impls_Tail _ _)  = True
+implsIsTail _                 = False
+
 tyIsImplsTail :: Ty -> Bool
-tyIsImplsTail (Ty_Impls (Impls_Tail _))  = True
-tyIsImplsTail _                          = False
+tyIsImplsTail = implsIsTail . tyImpls
 
 implsPrIds :: Impls -> [PredOccId]
 implsPrIds = map poPoi . fst . implsPredsTail initPredScope
 %%]
+tyIsImplsTail :: Ty -> Bool
+tyIsImplsTail (Ty_Impls (Impls_Tail _ _))  = True
+tyIsImplsTail _                            = False
+
+%%[9 hs export(implsTailVar)
+implsTailVar :: Impls -> ImplsVarId
+implsTailVar (Impls_Tail v _) = v
+implsTailVar _                = panic "implsTailVar"
+%%]
 
 %%[9 hs export(implsIsEmpty)
 implsIsEmpty :: Impls -> Bool
-implsIsEmpty (Impls_Cons _ _ _ _) = False
-implsIsEmpty _                    = True
+implsIsEmpty (Impls_Cons _ _ _ _ _) = False
+implsIsEmpty _                      = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -167,6 +167,27 @@ mkInstanceChr (context, hd, i, s)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Simplification result which can be used as the starting point for further simplification
+%%% with additional Constraints
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(SimplifyResult(..),emptySimplifyResult)
+data SimplifyResult p i g s
+  = SimplifyResult
+      { simpresSolveState		:: SolveState p i g s
+      , simpresRedGraph			:: RedGraph p i
+      }
+
+emptySimplifyResult :: Ord p => SimplifyResult p i g s
+emptySimplifyResult = SimplifyResult emptySolveState emptyRedGraph
+%%]
+
+%%[9 export(simplifyResultResetForAdditionalWork)
+simplifyResultResetForAdditionalWork :: SimplifyResult p i g s -> SimplifyResult p i g s
+simplifyResultResetForAdditionalWork r = r {simpresSolveState = solveStateResetDone $ simpresSolveState r}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Evidence construction from Constraint reduction graph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -225,14 +246,16 @@ chrSimplifyToEvidence
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => FIIn -> CHRStore p i g s -> Heuristic p i -> ConstraintToInfoMap p i
-          -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SolveState p i g s,RedGraph p i)
-chrSimplifyToEvidence env chrStore heur cnstrInfoMp
-  = (mkEvidence heur cnstrInfoMp redGraph,solveState,redGraph)
+          -> SimplifyResult p i g s
+          -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SimplifyResult p i g s)
+chrSimplifyToEvidence env chrStore heur cnstrInfoMp prevRes
+  = (mkEvidence heur cnstrInfoMp redGraph,SimplifyResult solveState redGraph)
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore $ Map.keys cnstrInfoMp
+        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys cnstrInfoMp) (simpresSolveState prevRes)
         redGraph
           = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
-            $ mkRedGraphFromAssumes cnstrInfoMp
+            $ addToRedGraphFromAssumes cnstrInfoMp
+            $ simpresRedGraph prevRes
 %%]
   = (mkEvidence heur cnstrInfoMp $ trp "ZZ" (ppRedGraph redGraph) $ redGraph,solveState)
 
