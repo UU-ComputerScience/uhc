@@ -50,19 +50,6 @@ SEM Decl
                                                             , d
                                                             )
 %%]
-SEM Decl
-  | Instance    loc         .   (instPrElimTGam,ctxtArgNmL,_)
-                                                    =   peTGamInsertKnPrL @lhs.opts @prfCtxtId @lUniq6 @ctxtPrFixL
-                                                        $ tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
-                            .   supPrUIDL           =   map (mkPrId @prfCtxtId) . mkNewUIDL (length @supPrTyL) $ @lUniq4
-                            .   delPrElimTGam       =   peTGamDel @prfCtxtId @instClsNm @elimRule @instPrElimTGam
-                            .   supPrElimTGam       =   @delPrElimTGam
-                            .   declsPrElimTGam     =   if ehcCfgInstFldHaveSelf @lhs.opts
-                                                        then @delPrElimTGam
-                                                        else let d = case @instVariant of {InstDefault -> @dictSelfNm ; _ -> @dictBuildNm}
-                                                             in  peTGamInsertKnPr @lhs.opts @prfCtxtId d (mkPrId @prfCtxtId @lUniq2) (tyPred @hdPrTyFix) @delPrElimTGam
-                decls       .   prElimTGam          =   @declsPrElimTGam
-                lhs         .   prElimTGam          =   @lhs.prElimTGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Proving (predicates) via CHR's
@@ -88,6 +75,16 @@ debugInfo chrSimplifyResult
 %%]
 
 %%[9
+SEM AGItf
+  | AGItf       loc         .   toProveCnstrMp      =   @expr.tyCnstr `chrAppSubst` @expr.gathCnstrMp
+                            .   toProveHereCnstrMp  =   @toProveCnstrMp
+                            .   (chrSolveMainRemCnstrMp,chrSolveMainEvidBindMp,chrSolveMainEvidBinds,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
+                                                    =   simplify (@chrFIIn {fiUniq = @lUniq2}) @chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
+                            .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace)
+                                                    =   debugInfo @chrSimplifyResult
+%%]
+
+%%[9
 SEM Expr
   | Let         loc         .   toProveCnstrMp      =   @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
@@ -96,6 +93,9 @@ SEM Expr
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace)
                                                     =   debugInfo @chrSimplifyResult1
+
+                            .   (toAssumeNeverCnstrMp,_)
+                                                    =   Map.partitionWithKey (\k _ -> isLetProveFailure (Set.fromList @gTyTvL) $ cnstrPred k) @chrSolve1RemCnstrMp
 
                             .   (chrSolve2RemCnstrMp,chrSolve2EvidBindMp,chrSolve2EvidBinds,chrSolve2Errs,chrSimplifyResult2,chrSolve2EvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq4}) @lhs.chrStore (heurScopedEHC @chrFIIn) @quantCnstrMp
@@ -110,29 +110,14 @@ SEM Decl
                             .   (chrSolveDeclsRemCnstrMp,chrSolveDeclsEvidBindMp,chrSolveDeclsEvidBinds,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
-                                                    =   let s  = simpresSolveState @chrDeclsSimplifyResult
-                                                            rg = simpresRedGraph @chrDeclsSimplifyResult
-                                                        in  (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
+                                                    =   debugInfo @chrDeclsSimplifyResult
 
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
                             .   (chrSolveSuperRemCnstrMp,chrSolveSuperEvidBindMp,chrSolveSuperEvidBinds,chrSolveSuperErrs,chrSuperSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveSuperCnstrMp emptySimplifyResult
                             .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace)
-                                                    =   let s  = simpresSolveState @chrSuperSimplifyResult
-                                                            rg = simpresRedGraph @chrSuperSimplifyResult
-                                                        in  (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
+                                                    =   debugInfo @chrSuperSimplifyResult
 %%]
-SEM Decl
-  | Instance    loc         .   gathDeclSubsPredL   =   @decls.tyCnstr |=> @decls.gathPredL
-                            .   toResolvePrOccL     =   @gathDeclSubsPredL
-                            .   (prfFrPoiCxBindLM,prfIntroCBindL,prfCSubst,prfArgPrOccL,_,prfErrs
-                                  ,(dbg2PrfG,dbg2PrfPruneG,dbg2PrfOrG,dbg2PrfIntermG1,dbg2PrfIntermG2,dbg2PrElimTGam,dbg2PrLeaves,prfPoiFwdMp,prfPoiBackMp,dbg2TrPPL))
-                                                    =   prfPredsDbg @lUniq7 (@fe {fePrElimTGam = @decls.prElimTGam}) @toResolvePrOccL
-                            .   supForPrfPrOccL     =   zipWith3 mkPredOcc (map tyPred @supPrTyL) @supPrUIDL (repeat @predScope)
-                            .   (supPrfFrPoiCxBindLM,supPrfIntroCBindL,supPrfCSubst,supPrfArgPrOccL,supPrfEvidL,supPrfErrs
-                                  ,(dbgSup2PrfG,dbgSup2PrfPruneG,dbgSup2PrfOrG,dbgSup2PrfIntermG1,dbgSup2PrfIntermG2,dbgSup2PrElimTGam,dbgSup2PrLeaves,prfSupPoiFwdMp,prfSupPoiBackMp,dbgSup2TrPPL))
-                                                    =   prfPredsDbg @lUniq5 (@fe {fePrElimTGam = @supPrElimTGam}) @supForPrfPrOccL
-                lhs         .   gathPredL           =   []
 
 Interaction with existing impl:
 
