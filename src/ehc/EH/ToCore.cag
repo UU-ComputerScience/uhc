@@ -48,8 +48,16 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then CExpr_Var hsnMain else @expr.letCBody
                                                     d = if @insertMainDef then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
-                                                        (foldr (\(c,b) e -> mkCExprLet c b e) (d b) (@expr.frontCBindL ++ @expr.letCBindL))
+                                                        (foldr (\(c,b) e -> mkCExprLet c b e)
+                                                               (d b)
+                                                               (@extraCBindL ++ @expr.frontCBindL ++ @expr.letCBindL))
                                                         [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
+                loc         .   extraCBindL =   []
+%%]
+
+%%[9
+SEM AGItf
+  | AGItf       loc         .   extraCBindL :=  if ehcCfgClassViaCHR @lhs.opts then [(CBindRec,@chrScopeMainBindL)] else []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,7 +106,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   letCBindL   :=  if ehcCfgClassViaCHR @lhs.opts
-                                                then [ (@howToBind,@decls.cbindL ++ @chrSolve1EvidBinds ++ @chrSolve2EvidBinds) ]
+                                                then [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
                                                 else [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
   | App AppImpred AppImpl
                 loc         .   cexpr       :=  CExpr_App
@@ -548,7 +556,7 @@ SEM Decl
                                                                                       (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
                                                                                ++ (cSubstOptApp @lhs.opts @cSubst
                                                                                     (if ehcCfgClassViaCHR @lhs.opts
-                                                                                     then @chrSolveDeclsEvidBinds
+                                                                                     then @chrScopeDeclsBindL ++ @chrAssumeDeclsInstBindL
                                                                                      else {- @supPrfIntroCBindL ++ -} @prfIntroCBindL)))
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
@@ -609,13 +617,15 @@ SEM Decl
                                                                                                    (if ehcCfgClassViaCHR @lhs.opts
                                                                                                     then map CExpr_Var @chrSuperProveNmL
                                                                                                     else @supPrfEvidL)))
-                                                             dD = mkCExprLam @ctxtArgNmL
+                                                             dD = mkCExprLam (if ehcCfgClassViaCHR @lhs.opts
+                                                                              then @chrCtxtArgNmL
+                                                                              else @ctxtArgNmL)
                                                                     (mkCExprLetRec
                                                                         ([CBind_Bind nR
                                                                             (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d bindL))]
                                                                          ++ (cSubstOptApp @lhs.opts @cSubst
                                                                                $ (if ehcCfgClassViaCHR @lhs.opts
-                                                                                  then @chrAssumeSuperBindL ++ @chrSolveSuperEvidBinds ++ @chrSolveDeclsEvidBinds
+                                                                                  then @chrAssumeSuperBindL ++ @chrAssumeDeclsInstBindL ++ @chrAssumeDeclsCtxtBindL ++ @chrScopeSuperBindL ++ @chrScopeDeclsBindL
                                                                                   else @supPrfIntroCBindL ++ @prfIntroCBindL)))
                                                                         (CExpr_Var nR)
                                                                     )

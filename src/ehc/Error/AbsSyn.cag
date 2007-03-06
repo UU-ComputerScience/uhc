@@ -119,7 +119,7 @@ DATA Err
   | PrfCutOffReached    pred       : {PredOcc}
                         depth      : {Int}
   | NotProvenPreds      preds      : {[Pred]}
-  | OverlapPreds        overl      : {AssocL Pred [CExpr]}
+  | OverlapPreds        overl      : {AssocL Pred [PP_Doc]}
   | TyHasFreeTVars      ty         : {Ty}
   | DeclsNotAllowed     inside     : String
                         decls      : {AssocL IdOccKind [HsName]}

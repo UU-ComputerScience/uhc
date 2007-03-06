@@ -68,7 +68,7 @@ test-expect test-regress: test-lists
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
 	        tc=$${tb2}.core ; tg=$${tb2}.$(TEST_GRIN_SUFFIX) ; \
 	        rm -f $${tc} $${tg} ; \
-	        $$ehc $${t2} > $${th} 2>&1 ; \
+	        $$ehc $${t2} $${TEST_OPTIONS} > $${th} 2>&1 ; \
 	        if test -r $${tc} ; \
 	        then \
 	          echo "== core ==" >> $${th} ; \
@@ -76,7 +76,7 @@ test-expect test-regress: test-lists
 	          if test -x $$gri -a "x$(CORE_TARG_SUFFIX)" = "x$(TEST_GRIN_SUFFIX)" ; \
 	          then \
 	            rm -f $${tg} ; \
-	            $$ehc --code=grin $${t2} > /dev/null ; \
+	            $$ehc $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
 	            echo "== grin execution ==" >> $${th} ; \
 	            $$gri $${tg} >> $${th} 2>&1 ; \
 	          fi \

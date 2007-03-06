@@ -461,7 +461,7 @@ SEM PrExpr
 
 SEM Decl
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [ @tyPrExpr.ppAST
-%%[[13
+%%[[15
                                                                                  , @funcDeps.ppAST
 %%]]
                                                                                  , @decls.ppAST] @info
@@ -473,14 +473,14 @@ SEM Decl
                                         , mkInfo1 "chrSolveDeclsDoneConstraints" (ppBracketsCommasV @chrSolveDeclsDoneConstraints)
                                         , mkInfo1 "chrSolveDeclsRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveDeclsRemCnstrMp)
                                         , mkInfo1 "chrSolveDeclsEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveDeclsEvidBindMp)
-                                        , mkInfo1 "chrSolveDeclsEvidBinds" (ppCBindL @chrSolveDeclsEvidBinds)
+                                        , mkInfo1 "chrSolveDeclsScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveDeclsScopeBindMp)
                                         , mkInfo1 "chrSolveDeclsTrace" (ppSolveTrace @chrSolveDeclsTrace)
                                         , mkInfo1 "chrSolveDeclsRedGraph" (pp $ show @chrSolveDeclsRedGraph)
                                         , mkInfo1 "toProveSuperCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveSuperCnstrMp)
                                         , mkInfo1 "chrSolveSuperDoneConstraints" (ppBracketsCommasV @chrSolveSuperDoneConstraints)
                                         , mkInfo1 "chrSolveSuperRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveSuperRemCnstrMp)
                                         , mkInfo1 "chrSolveSuperEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveSuperEvidBindMp)
-                                        , mkInfo1 "chrSolveSuperEvidBinds" (ppCBindL @chrSolveSuperEvidBinds)
+                                        , mkInfo1 "chrSolveSuperScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveSuperScopeBindMp)
                                         , mkInfo1 "chrSolveSuperTrace" (ppSolveTrace @chrSolveSuperTrace)
                                         , mkInfo1 "chrSolveSuperRedGraph" (pp $ show @chrSolveSuperRedGraph)
                                         , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
@@ -529,13 +529,14 @@ SEM Expr
                                         , mkInfo1 "toProveElsewhereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveElsewhereCnstrMp)
                                         -- , mkInfo1 "chrSolveWorkConstraints" (ppBracketsCommasV @chrSolveWorkConstraints)
                                         , mkInfo1 "predScope" (pp @predScope)
+                                        -- , if @lhs.isFirstLet then mkInfo1 "chrStore" (ppCHRStore @chrStore) else ("",empty)
                                         , mkInfo1 "chrSolve1DoneConstraints" (ppBracketsCommasV @chrSolve1DoneConstraints)
                                         , mkInfo1 "chrSolve1RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve1RemCnstrMp)
                                         , mkInfo1 "chrSolve1EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1EvidBindMp)
-                                        , mkInfo1 "chrSolve1EvidBinds" (ppCBindL @chrSolve1EvidBinds)
+                                        , mkInfo1 "chrSolve1ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1ScopeBindMp)
                                         , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)
-                                        , mkInfo1 "chrSolve1EvidCoreMp" (ppAssocLV $ assocLMapElt (\(c,s) -> c >-< show s) $ Map.toList @chrSolve1EvidCoreMp)
+                                        , mkInfo1 "chrSolve1EvidCoreMp" (ppAssocLV $ assocLMapElt (\(c,s,sc) -> c >-< show s >-< sc) $ Map.toList @chrSolve1EvidCoreMp)
                                         {-
                                         , mkInfo1 "prfCtxtId's" (pp @lhs.prfCtxtId >#< "-" >#< pp @prfCtxtId)
                                         , mkInfo1 "decls.prElimTGam" (pp @decls.prElimTGam)
@@ -561,7 +562,7 @@ SEM Expr
                                         , mkInfo1 "tqoGam" (ppGam @tqoGam)
                                         , mkInfo1 "chrSolve2RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve2RemCnstrMp)
                                         , mkInfo1 "chrSolve2EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2EvidBindMp)
-                                        , mkInfo1 "chrSolve2EvidBinds" (ppCBindL @chrSolve2EvidBinds)
+                                        , mkInfo1 "chrSolve2ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2ScopeBindMp)
                                         , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)
                                         , mkInfo1 "cSubst" (ppAssocLV . Map.toList $ @cSubst)
                                         ]
@@ -612,7 +613,7 @@ SEM PrExpr
   | DynVar      loc     .  ppAST    =   ppNest ["PrExpr","DynVar"] [ppNm @nm] [@tyExpr.ppAST]
 %%]
 
-%%[13
+%%[15
 SEM FuncDep
   | Dep         loc     .  ppAST    =   ppNest ["FuncDep","Dep"] [] [@fromTvs.ppAST,@toTvs.ppAST]
 

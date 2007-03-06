@@ -76,9 +76,9 @@ heurTry f g a  | null (evidUnresolved ev) = ev
 toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
 toEvidence f a = rec (f a)
   where  rec (HeurAlts p [])                 =  Evid_Unresolved p
-         rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (red r)
+         rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
          rec (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
-         red (HeurRed _ alts)                =  map rec alts
+         red (HeurRed i alts)                =  (i,map rec alts)
          reds rs                             =  map red rs
 %%]
 
@@ -91,10 +91,10 @@ localChoice :: Eq info => (p -> [info] -> [info]) -> SHeuristic p info
 localChoice choose (HeurAlts p reds) = 
   case filter ((`elem` redinfos) . redInfo) reds of
     []                  -> Evid_Unresolved p
-    [r@(HeurRed i _)]   -> Evid_Proof p i (ch r)
+    [r@(HeurRed i _)]   -> Evid_Proof p i (snd $ ch r)
     rs                  -> Evid_Ambig p (chs rs)
   where redinfos          = choose p (map redInfo reds)
-        ch (HeurRed _ rs) = map (localChoice choose) rs
+        ch (HeurRed i rs) = (i,map (localChoice choose) rs)
         chs rs            = map ch rs
 
 binChoice :: Eq info => (info -> info -> PartialOrdering) -> SHeuristic p info
@@ -126,17 +126,23 @@ contextChoice :: (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p inf
 contextChoice choose (HeurAlts p reds) = 
   case choose p reds of
          []                 -> Evid_Unresolved p
-         [r@(HeurRed i _)]  -> Evid_Proof p i (ch r)
+         [r@(HeurRed i _)]  -> Evid_Proof p i (snd $ ch r)
          rs                 -> Evid_Ambig p (chs rs)
-  where ch (HeurRed _ rs) = map (contextChoice choose) rs
+  where ch (HeurRed i rs) = (i,map (contextChoice choose) rs)
         chs rs            = map ch rs
          
+contextBinChoice :: (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
+contextBinChoice order = contextChoice (const local)
+  where  local []                = []
+         local is | null eqPairs = [mx]
+                  | otherwise    = concatMap (\(x,y) -> [x,y]) eqPairs
+                   where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
+%%]
 contextBinChoice :: (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
 contextBinChoice order = contextChoice (const local)
   where  local []  = []
          local is  = [mx]         
                    where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Heuristic that only selects solvable alternatives (using backtracking)

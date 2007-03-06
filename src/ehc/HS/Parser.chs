@@ -432,13 +432,13 @@ pDeclarationClass
   = (\t -> Declaration_Class (mkRange1 t))
     <$> pCLASS
     <*> pContextItemsPrefixOpt <*> pSimpleType
-%%[[13
+%%[[15
     <*> (pVBAR *> pListSep pCOMMA pFunctionalDependency
         `opt` []
         )
 %%]]
     <*> pWhere' (pDeclarationValue <|> pDeclarationTypeSignature)
-%%[[13
+%%[[15
   where pFunctionalDependency :: HSParser FunctionalDependency
         pFunctionalDependency
           = (\vs1@(v:_) vs2 -> FunctionalDependency_Dependency (mkRange1 v) (tokMkQNames vs1) (tokMkQNames vs2))
@@ -709,7 +709,7 @@ pContextItemClass
   =    mkRngNm ContextItem_Class <$> qconid <*> pList1 pType
 %%]
 
-%%[12
+%%[13
 pContextItemPrefix :: HSParser (ContextItem -> ContextItem)
 pContextItemPrefix
   =   (ContextItem_Forall . mkRange1) <$> pFORALL <*> (tokMkQNames <$> pTyVarBinds) <* pDOT
@@ -719,12 +719,12 @@ pContextItemPrefix
 pContextItem :: HSParser ContextItem
 pContextItem
   =   pContextItemBase
-%%[[12
+%%[[13
       <**> (   pSucceed id
            <|> (\o r l -> ContextItem_Arrow (mkRange1 o) l r) <$> pDARROW <*> pContextItem
            )
 %%]]
-%%[[12
+%%[[13
   <|> pContextItemPrefix <*> pContextItem
 %%]]
 %%]

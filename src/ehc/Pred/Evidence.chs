@@ -7,6 +7,9 @@ Derived from work by Gerrit vd Geest.
 %%[9 module {%{EH}Pred.Evidence} import({%{EH}CHR},{%{EH}Pred.CHR})
 %%]
 
+%%[9 import({%{EH}Base.Common})
+%%]
+
 %%[9 import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
@@ -21,7 +24,7 @@ Derived from work by Gerrit vd Geest.
 data Evidence  p info
   =  Evid_Unresolved p
   |  Evid_Proof      p  info  [Evidence p info]
-  |  Evid_Ambig      p       [[Evidence p info]]
+  |  Evid_Ambig      p        [(info,[Evidence p info])]
 %%]
 
 %%[9
@@ -44,7 +47,7 @@ instance Ord info => Ord (Evidence p info) where
 instance (PP info, PP p) => PP (Evidence p info) where
   pp (Evid_Proof _ info []) = "Ev:" >#< info
   pp (Evid_Proof _ info es) = "Ev:" >#< info >#< ppBracketsCommas' es
-  pp (Evid_Ambig _      es) = "Ev: ambiguous:" >#< ppBracketsCommas' (map ppBracketsCommas es)
+  pp (Evid_Ambig _     ess) = "Ev: ambiguous:" >#< ppBracketsCommas' (map (ppBracketsCommas . snd) ess)
   pp (Evid_Unresolved p   ) = "Ev: unresolved:" >#< p
 %%]
 
@@ -52,10 +55,10 @@ instance (PP info, PP p) => PP (Evidence p info) where
 instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
   chrFtv            (Evid_Unresolved  p     )    = chrFtv p
   chrFtv            (Evid_Proof       p _ es)    = Set.unions $ chrFtv p : map chrFtv es
-  chrFtv            (Evid_Ambig       p   es)    = Set.unions $ chrFtv p : map (Set.unions . map chrFtv) es
+  chrFtv            (Evid_Ambig       p  ess)    = Set.unions $ chrFtv p : map (Set.unions . map chrFtv . snd) ess
   chrAppSubst s     (Evid_Unresolved  p     )    = Evid_Unresolved $ chrAppSubst s p
   chrAppSubst s     (Evid_Proof       p i es)    = Evid_Proof (chrAppSubst s p ) i (map (chrAppSubst s) es)
-  chrAppSubst s     (Evid_Ambig       p   es)    = Evid_Ambig (chrAppSubst s p ) (map (map (chrAppSubst s)) es)
+  chrAppSubst s     (Evid_Ambig       p  ess)    = Evid_Ambig (chrAppSubst s p ) (assocLMapElt (map (chrAppSubst s)) ess)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,7 +69,7 @@ instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
 evidUnresolved :: Eq p => Evidence p info -> [p]
 evidUnresolved (Evid_Unresolved p)  = [p]
 evidUnresolved (Evid_Proof _ _ ps)  = nub $ concatMap evidUnresolved ps
-evidUnresolved (Evid_Ambig _   ps)  = nub $ concatMap (concatMap evidUnresolved) ps
+evidUnresolved (Evid_Ambig _  pss)  = nub $ concatMap (concatMap evidUnresolved . snd) pss
 %%]
 
 %%[9 export(evidUpdateUnresolved)
@@ -87,7 +90,7 @@ evidSubstUnresolved lkup ev
                    | isJust mbev   -> fromJust mbev
                    where mbev = lkup p
                  Evid_Proof p i es -> Evid_Proof p i $ map s es
-                 Evid_Ambig p ess  -> Evid_Ambig p $ map (map s) ess
+                 Evid_Ambig p  ess -> Evid_Ambig p $ assocLMapElt (map s) ess
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -173,7 +173,7 @@ SEM ContextItem
 SEM Declaration
     | Class
         loc         .   errL        =   @errReorder ++ @context.errL ++ @simpletype.errL
-%%[[13
+%%[[15
                                         ++ @dependencies.errL
 %%]]
                                         ++ @where.errL

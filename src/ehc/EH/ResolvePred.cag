@@ -243,7 +243,7 @@ SEM AGItf
 
 SEM Decl
   | Instance    loc         .   cSubst              =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then cSubstApp @lhs.cSubst $ evidKeyBindMpToCSubst @chrSolveDeclsEvidBindMp
+                                                        then @lhs.cSubst -- cSubstApp @lhs.cSubst $ evidKeyBindMpToCSubst @chrSolveDeclsEvidBindMp
                                                         else cSubstApp @lhs.cSubst $ cSubstApp @supPrfCSubst @prfCSubst
 
 SEM Expr
@@ -302,7 +302,7 @@ SEM Expr
 SEM Expr
   | Lam AppTop LamImpl
                 loc         .   poiBindL            =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then @chrAssumeBindL
+                                                        then @chrAssumeBindL ++ @chrScopeBindL
                                                         else mkCxBindLForPoiL @availPoiS @lhs.cxbindLMap @poiL
 %%]
 

@@ -720,12 +720,12 @@ tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
-%%[13
+%%[15
 pDOTNET      
   :: IsParser p Token => p Token
 %%]
 
-%%[13
+%%[15
 pDOTNET          = pKeyTk "dotnet"
 %%]
 

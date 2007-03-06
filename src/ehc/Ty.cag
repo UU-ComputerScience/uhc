@@ -235,9 +235,12 @@ pscpCommon (PredScope_Lev s1) (PredScope_Lev s2)
 pscpCommon _                  _                  
   = Nothing        
 %%]
-pscpParent :: PredScope -> Maybe PredScope
-pscpParent (PredScope_Lev (_:s)) = Just $ PredScope_Lev s
-pscpParent _                     = Nothing        
+
+%%[9 hs export(pscpParents)
+pscpParents :: PredScope -> [PredScope]
+pscpParents (PredScope_Lev s@(_:_)) = map PredScope_Lev $ inits $ init s
+pscpParents _                       = []
+%%]
 
 %%[9 hs export(pscpCmp,pscpCmpByLen)
 pscpCmp :: PredScope -> PredScope -> Maybe Ordering                  
