@@ -9,9 +9,11 @@ EHC_MKF									:= $(patsubst %,$(SRC_EHC_PREFIX)%.mk,files1 files2 shared)
 
 # end products, binary, executable, etc
 EHC_EXEC_NAME							:= ehc
+EHC_HADDOCK_NAME						:= hdoc
 EHC_BLD_EXEC							:= $(EHC_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
 EHC_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_PUB_VARIANTS))
 EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_VARIANTS))
+EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(EHC_VARIANTS))
 
 # sources + dpds, for .rul
 EHC_RULES_1_SRC_RUL						:= $(SRC_EHC_PREFIX)rules.rul
@@ -178,6 +180,9 @@ INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_
 # all dependents for a variant to kick of building
 EHC_ALL_DPDS_NO_MAIN					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)
 EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)
+
+EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefines.hs, ,$(EHC_ALL_DPDS))
+
 
 # variant dispatch rules
 $(patsubst %,echo-gen-by-ruler-%,$(EHC_VARIANTS)):

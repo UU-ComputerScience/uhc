@@ -162,6 +162,8 @@ GRINC_AG_ALL_DPDS_DRV_AG				:= $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_L
 
 # all dependents for a variant to kick of building
 GRINC_ALL_DPDS							:= $(GRINC_HS_ALL_DRV_HS) $(GRINC_AG_ALL_MAIN_DRV_HS)
+GRINC_ALL_DPDS_NOPREPROC				:= $(subst $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefines.hs, ,$(GRINC_ALL_DPDS))
+
 
 # all src
 GRINC_ALL_CHUNK_SRC						:= $(GRINC_AG_ALL_MAIN_SRC_CAG) $(GRINC_AG_ALL_DPDS_SRC_CAG) $(GRINC_HS_ALL_SRC_CHS)

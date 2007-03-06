@@ -96,7 +96,6 @@ caltOffsetL alt
          ->  (CAlt_Alt (CPat_Con n t r b') e,offBL)
              where (b',offBL) = cpatBindOffsetL b
        _ ->  (alt,[])
-  where 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

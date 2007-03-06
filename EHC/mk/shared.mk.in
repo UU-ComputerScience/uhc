@@ -58,6 +58,10 @@ GRIN_VARIANTS							:= $(GRIN_PUB_VARIANTS) $(EHC_UHC_VARIANT)
 BIN_PREFIX			:= $(TOP_PREFIX)bin/
 BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
 
+# location for haddock
+HDOC_PREFIX			:= $(TOP_PREFIX)hdoc/
+HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
+
 # location for libraries
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 

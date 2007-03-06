@@ -72,8 +72,8 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 explanation:
 	@echo "make <n>/ehc             : make compiler version <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
-	echo  "make <n>/grini           : make grin interpreter version <n> (bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make <n>/grinc           : make grin compiler version <n> (where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make <n>/grini           : make grin interpreter version <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make <n>/hdoc            : make Haddock documentation for version <n> (in hdoc/)" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
 	echo  "make $(SHUFFLE_NAME)              : make shuffle tool" ; \
 	echo  "" ; \
@@ -87,6 +87,7 @@ explanation:
 	echo  "make top                 : make Typing Our Programs library" ; \
 	echo  "make lvm                 : make Lazy Virtual Machine library" ; \
 	echo  "make helium              : make Helium library" ; \
+	echo  "make heliumdoc           : make Haddock documentation for Helium, Top and Lvm (in hdoc/)" ; \
 	echo  "make test-regress        : run regression test," ; \
 	echo  "                           restrict to versions <v> by specifying 'VERSIONS=<v>'," ; \
 	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
@@ -140,7 +141,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_INS_FLAG),)
+	@echo $(EHC_ALL_DPDS_NOPREPROC)
 
 tstv:
 	$(MAKE) EHC_VARIANT=8 tst
@@ -169,6 +170,6 @@ $(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
 $(WWW_SRC_TGZ): $(DIST_TGZ)
 	cp $^ $@
 
-heliumdoc: $(LIB_HELIUM_ALL_DRV_HS)
+heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 	mkdir -p hdoc/helium
 	haddock --html --odir=hdoc/helium $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
