@@ -92,7 +92,7 @@ SEM Declaration
 %%[9
     | Class
         loc         .   pp          =   "class" >#< pp_parens @context.pp >#< "=>" >#< @simpletype.pp
-%%[[13
+%%[[15
                                         >#< "|" >#< @dependencies.pp
 %%]]
                                         >-< indent 2 @where.pp
@@ -110,7 +110,7 @@ SEM Declaration
         loc         .   pp          =   "type" >#< @simpletype.pp >#< "=" >#< @type.pp
 %%]
 
-%%[13
+%%[15
 SEM FunctionalDependency
     | Dependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
@@ -230,7 +230,7 @@ SEM ContextItem
     | RowLacksLabel
         loc         .   pp          =   @name >|< "\\" >|< @rowvariable
 %%]
-%%[12
+%%[13
 SEM ContextItem
     | Arrow
         loc         .   pp          =   @argument.pp >#< "->" >#< @result.pp

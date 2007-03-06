@@ -139,7 +139,7 @@ data FIEnv
   =   FIEnv
 %%[[9
         {   fePrElimTGam    ::  PrElimTGam          ,   feEHCOpts       ::  EHCOpts
-        ,   fePrfCtxtId     ::  PrfCtxtId           ,   feDontBind      ::  TyVarIdL
+        ,   fePrfCtxtId     ::  PrfCtxtId           ,   feDontBind      ::  TyVarIdS
         ,   fePredScope     ::  PredScope
 %%[[11
         ,   feTyGam         ::  TyGam
@@ -151,7 +151,7 @@ emptyFE
   =   FIEnv
 %%[[9
         {   fePrElimTGam    =   emptyTGam uidStart  ,   feEHCOpts       =   defaultEHCOpts
-        ,   fePrfCtxtId     =   uidStart            ,   feDontBind      =   []
+        ,   fePrfCtxtId     =   uidStart            ,   feDontBind      =   Set.empty
         ,   fePredScope     =   initPredScope
 %%[[11
         ,   feTyGam         =   emptyGam
@@ -1113,7 +1113,7 @@ prfPredsDbg u fe prOccL
           isFact                        = (`Set.member` factPoiS)
           cSubst                        = poiCExprLToCSubst . assocLMapElt (CExpr_Var . poiHNm) . Map.toList $ backMp
           argPrOccL                     = [ mkPredOcc p i (fePredScope fe) | (i,ProvenArg p _) <- Map.toList i2n ]
-          overl                         = [ (pr,map (\e -> case Map.lookup e (prvgIdNdMp gOr) of {Just (ProvenAnd _ _ _ _ ev) -> ev; _ -> mkCExprPrHole defaultEHCOpts e}) es)
+          overl                         = [ (pr,map (\e -> case Map.lookup e (prvgIdNdMp gOr) of {Just (ProvenAnd _ _ _ _ ev) -> pp ev; _ -> pp $ mkCExprPrHole defaultEHCOpts e}) es)
                                           | (ProvenOr pr es _) <- Map.elems (prvgIdNdMp gOr)
                                           ]
           overlErrs                     = if null overl then [] else [Err_OverlapPreds overl]
@@ -1443,7 +1443,7 @@ fitPredInPred fi pr1 				pr2
   = if foHasErrs fo
     then Nothing
     else Just (tyPred $ foTy fo,foCnstr fo)
-  where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
+  where fo = fitsIn (predFIOpts {fioDontBind = fioDontBind $ fiFIOpts fi}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
         fe = fiEnv fi
         u  = fiUniq fi
 %%]

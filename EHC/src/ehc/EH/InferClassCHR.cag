@@ -26,9 +26,13 @@ SEM AGItf
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   exprChrStore        =   mkScopedCHR2 @chrFIIn (Seq.toList @expr.chrClassDeclSq) (Seq.toList @expr.chrInstDeclSq)
-                            .   chrStore            =   chrStoreUnions [@exprChrStore,@initChrStore]
+  | AGItf       loc         .   chrStore            =   mkScopedCHR2 @chrFIIn (Seq.toList @expr.chrClassDeclSq) (Seq.toList @expr.chrInstDeclSq) @initChrStore
+
 %%]
+SEM Expr
+  | Let         loc         .   chrStore            =   if @lhs.isFirstLet
+                                                        then mkScopedCHR2 @chrFIIn (Seq.toList @chrClassDeclSq) (Seq.toList @chrInstDeclSq) @lhs.chrStore
+                                                        else @lhs.chrStore
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scope
@@ -60,8 +64,8 @@ SEM Expr
                 loc         .   predScope           =   @lhs.predScope
 
 SEM Expr
-  | Lam AppTop  loc			.	implsIsEmpty   		=   implsIsEmpty $ tyImpls @imSubsTy
-  | LamImpl     loc			.	implsIsEmpty   		=   null @knPrL
+  | Lam AppTop  loc         .   implsIsEmpty        =   implsIsEmpty $ tyImpls @imSubsTy
+  | LamImpl     loc         .   implsIsEmpty        =   null @knPrL
 
 SEM Decl
   | Class Instance
@@ -85,7 +89,7 @@ type ScopeGam = Gam HsName PredScope
 ATTR AllDecl AllPatExpr [ | | scopeGam USE {`gamUnion`} {emptyGam}: ScopeGam ]
 
 SEM PatExpr
-  | Var			lhs			.	scopeGam			=	gamSingleton @nm @lhs.predScope
+  | Var         lhs         .   scopeGam            =   gamSingleton @nm @lhs.predScope
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,6 +136,7 @@ SEM Decl
                 lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
 
 SEM Expr
+  | Let         loc         .   chrClassDeclSq      =   @decls.chrClassDeclSq `Seq.union` @body.chrClassDeclSq
   | * - Let     lhs         .   chrClassDeclSq      =   Seq.empty
 %%]
 
@@ -140,7 +145,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllDecl Expr [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
+ATTR NTPrf [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
 %%]
 
 %%[9
@@ -149,7 +154,7 @@ SEM Decl
                                                             hdPr = tyPred hd
                                                         in  ( map tyPred cx
                                                             , hdPr
-                                                            , RedHow_ByInstance @dictNm hdPr initPredScope
+                                                            , RedHow_ByInstance @dictNm hdPr @lhs.predScope
                                                             , @lhs.predScope
                                                             )
                 lhs         .   chrInstDeclSq       =   if @inclForElim then Seq.singleton @chrInstDecl else Seq.empty
@@ -157,7 +162,7 @@ SEM Decl
                 loc         .   chrInstDecl         =   let pr = tyPred @prExpr.ty
                                                         in  ( []
                                                             , pr
-                                                            , RedHow_ByInstance @dictNm pr initPredScope
+                                                            , RedHow_ByInstance @dictNm pr @lhs.predScope
                                                             , @lhs.predScope
                                                             )
                 lhs         .   chrInstDeclSq       =   Seq.singleton @chrInstDecl

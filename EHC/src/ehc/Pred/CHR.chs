@@ -34,17 +34,19 @@ instance CHRMatchable FIIn Pred Cnstr where
          }
 
 instance CHRMatchable FIIn PredScope Cnstr where
-  chrMatchTo _ (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 /= v2 = Just $ v1 `cnstrScopeUnit` sc2
-  chrMatchTo _ _                      (PredScope_Var v2)            = Nothing
-  chrMatchTo _ (PredScope_Var v1) sc2                               = Just $ v1 `cnstrScopeUnit` sc2
-  chrMatchTo _ (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2 = Just emptyCnstr
-  chrMatchTo _ _                  _                                 = Nothing
+  chrMatchTo _ (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2  = Just emptyCnstr
+                                                         | otherwise = Just $ v1 `cnstrScopeUnit` sc2
+  chrMatchTo _ _                      (PredScope_Var v2)             = Nothing
+  chrMatchTo _ (PredScope_Var v1) sc2                                = Just $ v1 `cnstrScopeUnit` sc2
+  chrMatchTo _ (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyCnstr
+  chrMatchTo _ _                  _                                  = Nothing
 
 instance CHRMatchable FIIn PredOccId Cnstr where
-  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 /= v2 = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ _                      (PredOccId_Var v2)            = Nothing
-  chrMatchTo _ (PredOccId_Var v1) sc2                               = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)            = Just emptyCnstr
+  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 == v2  = Just emptyCnstr
+                                                         | otherwise = Just $ v1 `cnstrPoiUnit` sc2
+  chrMatchTo _ _                      (PredOccId_Var v2)             = Nothing
+  chrMatchTo _ (PredOccId_Var v1) sc2                                = Just $ v1 `cnstrPoiUnit` sc2
+  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)             = Just emptyCnstr
 --  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyCnstr
 --  chrMatchTo _ _                  _                                 = Nothing
 
@@ -129,10 +131,10 @@ toOrdering o
 
 %%[9 export(Guard(..))
 data Guard
-  = HasStrictCommonScope 	PredScope PredScope PredScope                   -- have strict/proper common scope?
-  | IsVisibleInScope    	PredScope PredScope                             -- is visible in 2nd scope?
-  | NotEqualScope    		PredScope PredScope                             -- scopes are unequal
-  | IsStrictParentScope  	PredScope PredScope PredScope                   -- parent scope of each other?
+  = HasStrictCommonScope    PredScope PredScope PredScope                   -- have strict/proper common scope?
+  | IsVisibleInScope        PredScope PredScope                             -- is visible in 2nd scope?
+  | NotEqualScope           PredScope PredScope                             -- scopes are unequal
+  | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
 %%]
   | IsParentScope       PredScope PredScope                             -- is parent scope?
 

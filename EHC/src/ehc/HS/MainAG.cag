@@ -142,7 +142,7 @@ SEM Type
 
 %%[10
 SEM ContextItem
-%%[[12
+%%[[13
     | Forall
         lhs         .   freeTvarS   =   @context.freeTvarS `Set.difference` Set.fromList @typevariables
 %%]]

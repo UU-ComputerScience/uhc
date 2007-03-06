@@ -208,7 +208,9 @@ SEM Decl
 %%[[95
                                                   , @cxSplitErrs ++ @derivErrs
 %%]]
-                                                  , @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
+                                                  , if ehcCfgClassViaCHR @lhs.opts
+                                                    then @predNotPrfErrs ++ @chrSolveSuperErrs ++ @chrSolveDeclsErrs
+                                                    else @predNotPrfErrs ++ @supPrfErrs ++ @prfErrs
                                                   ]
                             .   errInstPP   =   ppErrs @lErrL
                             .   errDeclsPP  =   ppErrs @decls.errL
@@ -219,10 +221,16 @@ SEM Decl
                 lhs         .   errL        =   []
 
 SEM Expr
-  | Let         loc         .   letErrL     :=  @dupErrs ++ @prfErrs ++ @bodyPrfErrs
+  | Let         loc         .   letErrL     :=  @dupErrs ++ (if ehcCfgClassViaCHR @lhs.opts
+                                                             then @predNotPrfErrs ++ @chrSolve1Errs ++ @chrSolve2Errs
+                                                             else @prfErrs ++ @bodyPrfErrs)
 
 SEM AGItf
-  | AGItf       loc         .   errTopPP    :=  ppErrs (@predNotPrfErrs)
+  | AGItf       loc         .   lErrL       =   @predNotPrfErrs
+                                                ++ (if ehcCfgClassViaCHR @lhs.opts
+                                                    then @chrSolveMainErrs
+                                                    else [])
+                            .   errTopPP    :=  ppErrs @lErrL
 %%]
 
 %%[9_1
@@ -251,6 +259,6 @@ SEM Decl
                 lhs         .   allErrL     =   @lErrL
 
 SEM AGItf
-  | AGItf       lhs         .   allErrL     =   @predNotPrfErrs ++ @expr.allErrL
+  | AGItf       lhs         .   allErrL     =   @lErrL ++ @expr.allErrL
 %%]
 

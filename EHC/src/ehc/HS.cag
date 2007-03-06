@@ -49,7 +49,7 @@
 %%[9 hs export(Statement(..), Statements)
 %%]
 
-%%[13 hs export(FunctionalDependency(..), FunctionalDependencies)
+%%[15 hs export(FunctionalDependency(..), FunctionalDependencies)
 %%]
 
 %%[20 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)

@@ -121,7 +121,7 @@ SEM Declaration
                                             a = mkArrow c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
                                         in  ( rngLift @range EH.Decl_Class a
-%%[[13
+%%[[15
                                                       @dependencies.eh
 %%]]
                                                       (Just @instancerefname) sigs
@@ -148,7 +148,7 @@ SEM Declaration
         lhs         .   eh          =   [@eh]
 %%]
 
-%%[13
+%%[15
 ATTR FunctionalDependencies [ | | eh USE {:} {[]}: {[EH.FuncDep]} ]
 
 ATTR FunctionalDependency [ | | eh: {EH.FuncDep} ]
@@ -289,7 +289,7 @@ SEM ContextItem
         loc         .   eh          =   rngLift @range EH.PrExpr_Class @refname @types.eh
     | Implicits NoImplicits
         loc         .   eh          =   undefined -- may not occur nested
-%%[[12
+%%[[13
     | Arrow
         loc         .   eh          =   rngLift @range EH.PrExpr_Arrow @argument.eh @result.eh
     | Forall

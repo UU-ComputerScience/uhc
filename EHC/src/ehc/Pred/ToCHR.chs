@@ -99,12 +99,15 @@ initScopedPredStore
                             |> [HasStrictCommonScope sc3 sc1 sc2]
 
 %%[9 export(mkScopedCHR2)
-mkScopedCHR2 :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> ScopedPredStore
-mkScopedCHR2 env clsDecls insts
-  = chrStoreUnions $ [assumeStore,instStore] ++ simplStores
+mkScopedCHR2
+  :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
+       -> ScopedPredStore -> ScopedPredStore
+mkScopedCHR2 env clsDecls insts prevStore
+  = chrStoreUnions $ [store2,instStore] ++ simplStores
   where  ucls = mkNewLevUIDL (length clsDecls) $ fiUniq env
          ((assumeStore,assumePredOccs), (instStore,_)) = mkScopedChrs clsDecls insts
-         simplStores  = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) assumeStore (cx,h,i)) ucls clsDecls
+         store2 = chrStoreUnions [assumeStore,prevStore]
+         simplStores  = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) store2 (cx,h,i)) ucls clsDecls
 
 mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)
@@ -114,7 +117,6 @@ mkClassSimplChrs env rules (context, head, infos)
         head1        = mkCHRPredOcc head sc1
         head2        = mkCHRPredOcc head sc2
         head3        = mkCHRPredOcc head sc3
-        byScInfo     = RedHow_ByScope
     
         mapTrans reds subClass = concatMap (transClosure reds subClass)
     
@@ -125,10 +127,10 @@ mkClassSimplChrs env rules (context, head, infos)
                 super3     = mkCHRPredOcc super sc3
                 superRule  = [Prove head1, Prove p] ==> reds'
                 scopeRule1 = [Prove head1, Prove super2] 
-                               ==> [Prove head3, Reduction head1 byScInfo [head3]]
+                               ==> [Prove head3, Reduction head1 RedHow_ByScope [head3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 scopeRule2 = [Prove head2, Prove super1] 
-                               ==> [Prove super3, Reduction super1 byScInfo [super3]]
+                               ==> [Prove super3, Reduction super1 RedHow_ByScope [super3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = Reduction p info [par] : reds
                 rules      = mapTrans reds' p (predecessors graph pr)             
@@ -165,6 +167,7 @@ mkInstanceChr (context, hd, i, s)
   where constraint = mkCHRPredOcc hd sc1
         body = map (\p -> mkCHRPredOcc p sc1) context
 %%]
+  where superClasses = (\(w,d,t) -> trp "XX" (ppCHRStore' rules >-< context >#< ":" >#< (w++d) >-< ppSolveTrace t) (w++d)) $ chrSolve' env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Simplification result which can be used as the starting point for further simplification

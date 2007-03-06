@@ -34,7 +34,7 @@ SEM PatExpr
 
 %%[9
 SEM Decl
-  | Instance    loc         .   (chrCtxtAssumeCnstrMp,chrSuperProveCnstrMp,chrInstAssumeCnstrMp,chrCtxtArgUIDL,chrCtxtArgNmL,chrSuperProveUIDL,chrSuperProveNmL,chrInstNm)
+  | Instance    loc         .   (chrCtxtAssumeCnstrMp,chrSuperProveCnstrMp,chrInstAssumeCnstrMp,chrCtxtArgUIDL,chrCtxtArgNmL,chrSuperProveUIDL,chrSuperProveNmL,chrInstArgUID,chrInstNm)
                                                     =   let (u:us) = mkNewUIDL (lc + ls + 1) @lUniq6
                                                             (usc,uss) = splitAt lc us
                                                             lc = length @ctxtPrFixL
@@ -47,8 +47,10 @@ SEM Decl
                                                             , map mkHNm usc
                                                             , uss
                                                             , map mkHNm uss
+                                                            , u
                                                             , d
                                                             )
+               lhs         .   gathCnstrMp         =   Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,16 +59,20 @@ SEM Decl
 
 %%[9 hs
 simplify env chrStore heur toProveHereCnstrMp prevRes
-  = (chrSolveRemCnstrMp2,chrSolveEvidBindMp,chrSolveEvidBinds,chrSolveErrs,chrSimplifyResult,chrSolveEvidCoreMp)
+  = (chrSolveRemCnstrMp2,chrSolveEvidBindMp,chrSolveScopeBindMp,firstNotEmpty [chrSolveErrs,ambigErrs],chrSimplifyResult,chrSolveEvidCoreMp)
   where (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
+        env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMp}}
         ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),chrSimplifyResult)
-          = chrSimplifyToEvidence (env {fiUniq = u1}) chrStore heur toProveHereCnstrMp prevRes
+          = chrSimplifyToEvidence (env' {fiUniq = u1}) chrStore heur toProveHereCnstrMp prevRes
         (chrSolveRemCnstrMp2,chrSolveEvidMp2)
-          = patchUnresolvedWithAssumption (env {fiUniq = u2}) chrSolveRemCnstrMp chrSolveEvidMp
-        chrSolveEvidCoreMp
-          = evidMpToCore (env {fiUniq = u3}) chrSolveEvidMp2
-        (chrSolveEvidBindMp,chrSolveEvidBinds)
+          = patchUnresolvedWithAssumption (env' {fiUniq = u2}) chrSolveRemCnstrMp chrSolveEvidMp
+        (chrSolveEvidCoreMp,ambigEvids)
+          = evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
+        (chrSolveEvidBindMp,chrSolveScopeBindMp)
           = evidKeyCoreMpToBinds chrSolveEvidCoreMp
+        ambigErrs = if null ambigEvids then [] else [Err_OverlapPreds [ (cpoPr $ ambigevidPredOcc a,map pp $ ambigevidInfos a) | a <- ambigEvids]]
+
+fixedFtv mp = ftv $ map cnstrPred $ Map.keys mp
 
 debugInfo chrSimplifyResult
   = (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
@@ -78,7 +84,7 @@ debugInfo chrSimplifyResult
 SEM AGItf
   | AGItf       loc         .   toProveCnstrMp      =   @expr.tyCnstr `chrAppSubst` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
-                            .   (chrSolveMainRemCnstrMp,chrSolveMainEvidBindMp,chrSolveMainEvidBinds,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
+                            .   (chrSolveMainRemCnstrMp,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq2}) @chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace)
                                                     =   debugInfo @chrSimplifyResult
@@ -89,7 +95,7 @@ SEM Expr
   | Let         loc         .   toProveCnstrMp      =   @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
-                            .   (chrSolve1RemCnstrMp,chrSolve1EvidBindMp,chrSolve1EvidBinds,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidCoreMp)
+                            .   (chrSolve1RemCnstrMp,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace)
                                                     =   debugInfo @chrSimplifyResult1
@@ -97,7 +103,7 @@ SEM Expr
                             .   (toAssumeNeverCnstrMp,_)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveFailure (Set.fromList @gTyTvL) $ cnstrPred k) @chrSolve1RemCnstrMp
 
-                            .   (chrSolve2RemCnstrMp,chrSolve2EvidBindMp,chrSolve2EvidBinds,chrSolve2Errs,chrSimplifyResult2,chrSolve2EvidCoreMp)
+                            .   (chrSolve2RemCnstrMp,chrSolve2EvidBindMp,chrSolve2ScopeBindMp,chrSolve2Errs,chrSimplifyResult2,chrSolve2EvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq4}) @lhs.chrStore (heurScopedEHC @chrFIIn) @quantCnstrMp
                                                         $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
                             .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace)
@@ -107,13 +113,13 @@ SEM Expr
 %%[9
 SEM Decl
   | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp,@chrCtxtAssumeCnstrMp,@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp]
-                            .   (chrSolveDeclsRemCnstrMp,chrSolveDeclsEvidBindMp,chrSolveDeclsEvidBinds,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
+                            .   (chrSolveDeclsRemCnstrMp,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
                                                     =   debugInfo @chrDeclsSimplifyResult
 
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
-                            .   (chrSolveSuperRemCnstrMp,chrSolveSuperEvidBindMp,chrSolveSuperEvidBinds,chrSolveSuperErrs,chrSuperSimplifyResult,_)
+                            .   (chrSolveSuperRemCnstrMp,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,chrSolveSuperErrs,chrSuperSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveSuperCnstrMp emptySimplifyResult
                             .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace)
                                                     =   debugInfo @chrSuperSimplifyResult
@@ -160,17 +166,46 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR NTPrf [ chrEvidBindMp: EvidKeyToCBindMap | | ]
+ATTR NTPrf [ chrEvidBindMp: EvidKeyToCBindMap   chrScopeBindMp: PredScopeToCBindMap | | ]
 
 SEM AGItf
-  | AGItf       loc         .   chrEvidBindMp       =   Map.empty
+  | AGItf       loc         .   chrEvidBindMp       =   @chrSolveMainEvidBindMp
+  			         		.   chrScopeBindMp      =   @chrSolveMainScopeBindMp
 
 SEM Decl
   | Instance    loc         .   chrEvidBindMp       =   @chrSolveDeclsEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
+  			         		.   chrScopeBindMp      =   @chrSolveDeclsScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
 
 SEM Expr
   | Let         loc         .   chrSolveEvidBindMp  =   @chrSolve2EvidBindMp `evidKeyToCBindMapUnion` @chrSolve1EvidBindMp
                             .   chrEvidBindMp       =   @chrSolveEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
+  			         		.   chrSolveScopeBindMp =   @chrSolve2ScopeBindMp `predScopeToCBindMapUnion` @chrSolve1ScopeBindMp
+                            .   chrScopeBindMp      =   @chrSolveScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings depending on scope
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+mkScopeBindings :: Bool -> PredScope -> PredScopeToCBindMap -> [CBind]
+mkScopeBindings alsoOuter sc mp
+  = concatMap f $ (if alsoOuter then sc : pscpParents sc else [sc])
+  where f sc = Map.findWithDefault [] sc mp
+%%]
+
+%%[9
+SEM AGItf
+  | AGItf       loc         .   chrScopeMainBindL 	=   mkScopeBindings True @predScope @chrScopeBindMp
+
+SEM Decl
+  | Instance    loc         .   chrScopeSuperBindL 	=   mkScopeBindings True @predScope @chrSolveSuperScopeBindMp
+                            .   chrScopeDeclsBindL 	=   mkScopeBindings True @predScope @chrSolveDeclsScopeBindMp
+
+SEM Expr
+  | Let         loc         .   chrScopeBindL      	=   mkScopeBindings True @predScope @chrSolveScopeBindMp
+  | Lam AppTop LamImpl
+                loc         .   chrScopeBindL      	=   mkScopeBindings False @predScope @lhs.chrScopeBindMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,7 +220,9 @@ mkAssumeBindings ids mp
 
 %%[9
 SEM Decl
-  | Instance    loc         .   chrAssumeSuperBindL =   mkAssumeBindings @chrCtxtArgUIDL @chrSolveSuperEvidBindMp
+  | Instance    loc         .   chrAssumeSuperBindL 	=   mkAssumeBindings @chrCtxtArgUIDL @chrSolveSuperEvidBindMp
+                            .   chrAssumeDeclsInstBindL =   mkAssumeBindings [@chrInstArgUID] @chrEvidBindMp
+                            .   chrAssumeDeclsCtxtBindL =   mkAssumeBindings @chrCtxtArgUIDL @chrEvidBindMp
 
 SEM Expr
   | Lam AppTop LamImpl

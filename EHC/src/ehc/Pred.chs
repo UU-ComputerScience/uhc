@@ -58,7 +58,7 @@
 %%[9 export(prfsAddPrOccL)
 %%]
 
-%%[13 export(ClsFuncDep(..))
+%%[15 export(ClsFuncDep(..))
 %%]
 
 %%[20 export(emptyPrElimTGam)
@@ -567,7 +567,7 @@ prfsAddPrOccL prOccL depth st
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[13
+%%[15
 data ClsFuncDep = ClsFuncDep [Int] [Int] deriving Show
 
 instance PP ClsFuncDep where
@@ -615,7 +615,7 @@ data Rule
        , rulNmEvid          :: HsName
        , rulId              :: PredOccId
        , rulCost            :: ProofCost
-%%[[13
+%%[[15
        , rulFuncDeps        :: [ClsFuncDep]
 %%]]
        }
@@ -624,7 +624,7 @@ instance Eq Rule where
   r1 == r2 = poiId (rulId r1) == poiId (rulId r2)
 
 emptyRule = Rule Ty_Any head (MkEvidVar hsnUnknown) hsnUnknown (mkPrId uidStart uidStart) pcostInf
-%%[[13
+%%[[15
                  []
 %%]]
 
@@ -636,7 +636,7 @@ mkInstElimRule opts n i sz ctxtToInstTy
            , rulNmEvid    	= n
            , rulId        	= i
            , rulCost      	= pcostBase `pcostExecMulBy` (2 * sz + 1)
-%%[[13
+%%[[15
            , rulFuncDeps  	= []
 %%]]
            }

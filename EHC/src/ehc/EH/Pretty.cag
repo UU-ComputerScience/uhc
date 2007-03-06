@@ -246,7 +246,7 @@ SEM PrExprs
 
 SEM Decl
   | Class       loc     .   pp      =   "class"     >#< @tyPrExpr.pp
-%%[[13
+%%[[15
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
 %%]]
                                                     >#< "where" >-< indent 2 @decls.pp
@@ -290,7 +290,7 @@ SEM TyExpr
   | Lam         loc     .   pp      =   "\\" >|< @tyVar >#< "->" >#< @tyExpr.pp
 %%]
 
-%%[13
+%%[15
 ATTR FuncDeps [ | | ppL: {[PP_Doc]} ]
 
 SEM FuncDep

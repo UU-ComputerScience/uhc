@@ -7,7 +7,7 @@
 %%% Gamma's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[13
+%%[15
 ATTR AllFuncDep [ | tyGam: TyGam | ]
 %%]
 
@@ -45,7 +45,7 @@ SEM Decl
                                                                     , rulNmEvid     = n
                                                                     , rulId         = mkPrId @lhs.prfCtxtId @lUniq
                                                                     , rulCost       = mkPCostExec 10
-%%[[13
+%%[[15
                                                                     , rulFuncDeps   = @funcDeps.funcDeps
 %%]]
                                                                     }
@@ -59,7 +59,7 @@ SEM Decl
                                                                     , rulNmEvid     = hsnUnknown
                                                                     , rulId         = mkPrId @lhs.prfCtxtId u
                                                                     , rulCost       = pcostBase `pcostExecMulBy` 2
-%%[[13
+%%[[15
                                                                     , rulFuncDeps   = []
 %%]]
                                                                     }
@@ -85,7 +85,7 @@ SEM Decl
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[13
+%%[15
 ATTR AllFuncDep [ clsTyArgs: TyL | | funcDeps USE {++} {[]} : {[ClsFuncDep]} ]
 
 SEM FuncDep
