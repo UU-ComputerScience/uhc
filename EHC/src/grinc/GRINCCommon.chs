@@ -106,10 +106,6 @@ instance Ord GrTag where
                                                  GrTag_Lit c2 _ n2 -> case compare c1 c2 of
                                                                           EQ -> compare n1 n2
                                                                           a  -> a
-                                                 GrTag_Var _       -> LT
-                        GrTag_Var n1      -> case t2 of
-                                                 GrTag_Var n2      -> compare n1 n2
-                                                 otherwise         -> GT
 
 {-
 -- obsolete abstract domain for Locations

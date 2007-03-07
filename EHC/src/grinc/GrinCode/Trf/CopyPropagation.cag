@@ -39,17 +39,19 @@ SEM GrExpr
 %%[8 hs
 -- fix empty patterns and values are not handled cleanly.
 genInfo v p nnf nvf vnf vvf e = case (v,p) of
-    (GrVal_Node vt vls, GrPat_Node pt nms) -> nnf vt vls pt nms
-    (GrVal_Tag  vt    , GrPat_Node pt nms) -> nnf vt  [] pt nms
-    (GrVal_Node vt vls, GrPat_Tag  pt    ) -> nnf vt vls pt  []
-    (GrVal_Tag  vt    , GrPat_Tag  pt    ) -> nnf vt  [] pt  []
-    (GrVal_Node vt vls, GrPat_Var  pn    ) -> nvf vt vls pn
-    (GrVal_Tag  vt    , GrPat_Var  pn    ) -> nvf vt  [] pn
-    (GrVal_Var  vn    , GrPat_Node pt nms) -> vnf vn     pt nms
-    (GrVal_Var  vn    , GrPat_Tag  pt    ) -> vnf vn     pt  []
-    (GrVal_Var  vn    , GrPat_Var  pn    ) -> vvf vn     pn
-    (GrVal_Empty      , _                ) -> e
-    (_                , GrPat_Empty      ) -> e
+    (GrVal_Node vt vls, GrPat_Node pt nms)      -> nnf vt vls pt nms
+    (GrVal_Tag  vt    , GrPat_Node pt nms)      -> nnf vt  [] pt nms
+    (GrVal_Node vt vls, GrPat_Tag  pt    )      -> nnf vt vls pt  []
+    (GrVal_Tag  vt    , GrPat_Tag  pt    )      -> nnf vt  [] pt  []
+    (GrVal_Node vt vls, GrPat_Var  pn    )      -> nvf vt vls pn
+    (GrVal_Tag  vt    , GrPat_Var  pn    )      -> nvf vt  [] pn
+    (GrVal_Var  vn    , GrPat_Node pt nms)      -> vnf vn     pt nms
+    (GrVal_Var  vn    , GrPat_Tag  pt    )      -> vnf vn     pt  []
+    (GrVal_Var  vn    , GrPat_Var  pn    )      -> vvf vn     pn
+    (GrVal_Empty      , _                )      -> e
+    (_                , GrPat_Empty      )      -> e
+    (_                , GrPat_VarNode _  )      -> e    -- TODO: is this sensible?
+    (GrVal_VarNode _  , _                )      -> e    -- TODO: is this sensible?
 %%]
 
 %%[8.valueInfo
@@ -152,9 +154,7 @@ addLeftUnitSubst seqPat unitVal (valMap, tagMap) =
        ; v <- unitVal
        ; let vvf vn pn          = Just (Map.insert pn (GrVal_Var vn) valMap, tagMap)
              nnf vt vls pt pls  = let valMap'  = foldl (\m (p,v) -> Map.insert p v m) valMap (zip pls vls)
-                                      tagMap'  = case pt of
-                                                     GrTag_Var ptn  -> Map.insert ptn vt tagMap
-                                                     _              -> tagMap
+                                      tagMap'  = tagMap
                                   in Just (valMap', tagMap')
              vnf vn     pt pls  = Nothing
              nvf vt vls pn      = let valMap'  = Map.insert pn (GrVal_Node vt vls) valMap
@@ -185,11 +185,9 @@ getHsName nm valueMap = let  mbVal     =  Map.lookup nm (fst valueMap)
 %%[8.applySubstitutions
 SEM GrVal
   | Var   lhs  .  grTrf  =  Map.findWithDefault @grTrf @nm (fst @lhs.valueMap)
-  | Tag   lhs  .  grTrf  =  GrVal_Tag @tag.tag
-  | Node  lhs  .  grTrf  =  GrVal_Node @tag.tag @fldL.grTrf
-SEM GrTag [ | | tag: GrTag ]
-  | Var      lhs  .  tag  =  Map.findWithDefault @grTrf @nm (snd @lhs.valueMap)
-  | * - Var  lhs . tag = @grTrf
+  | Node     lhs  .  grTrf  =  GrVal_Node @tag.grTrf @fldL.grTrf
+  | VarNode  lhs  .  grTrf  =  GrVal_VarNode         @fldL.grTrf
+
 SEM GrExpr
   | FetchNode  lhs  .  grTrf  = GrExpr_FetchNode  (getHsName @nm @lhs.valueMap)
   | FetchField lhs  .  grTrf  = GrExpr_FetchField (getHsName @nm @lhs.valueMap) @offset @mbTag

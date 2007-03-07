@@ -35,8 +35,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.ReturningCatch})
-%%]
+--%%[8 import({%{GRIN}GrinCode.Trf.ReturningCatch})
+--%%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SparseCase})
@@ -199,7 +199,7 @@ caFinalize = task_ VerboseNormal "Finalizing"
          ; transformGrin   dropUnusedTags "Remove unused tags"
          ; caWriteGrin True "8c-unusedTagsRemoved"
          ; caCopyPropagation
-         ; transformTriple returnCatch "Ensure code exists after catch statement"
+--       ; transformTriple returnCatch "Ensure code exists after catch statement"
          ; caWriteGrin True "8-final"
          }
     )

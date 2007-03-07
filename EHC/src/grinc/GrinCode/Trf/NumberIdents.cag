@@ -107,12 +107,6 @@ SEM GrBind
                                          else Map.insert @nm @bindName @lhs.bind2idFrag
 %%]
 
-%%[8.TagName
-SEM GrTag [ | | varName: {Maybe HsName} ]
-  | Var       lhs  .  varName  =  Just @nm
-  | * - Var   lhs  .  varName  =  Nothing
-%%]
-
 %%[8.GetDefinedNames
 
 SEM GrGlobal
@@ -121,14 +115,11 @@ SEM GrGlobal
                     .  unique   = @lhs.unique + 1
 
 SEM GrPat
-  | Node       loc  .  (var2id', newNames, unique') = addList @lhs.unique @lhs.var2id @fldL
-  | Tag        loc  .  var2id'  = @lhs.var2id
-                    .  unique'  = @unique'
+  | Node       loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL
+  | VarNode    loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL
   | Var        lhs  .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
                loc  .  newName  = HNmNr @lhs.unique (Just @nm)
-  | Node Tag   loc  .  (var2id , unique )  = addMaybe @unique' @var2id' @tag.varName
-               loc  .  newTag              = maybe @tag.grTrf GrTag_Var @tag.varName
 
 SEM GrExpr
   | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
@@ -150,8 +141,8 @@ SEM GrGlobal
   | Global  lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
 
 SEM GrPat
-  | Node  lhs  .  grTrf  = GrPat_Node @newTag @newNames
-  | Tag   lhs  .  grTrf  = GrPat_Tag  @newTag
+  | Node  lhs  .  grTrf  = GrPat_Node @tag.grTrf @newNames
+  | VarNode lhs  .  grTrf  = GrPat_VarNode @newNames
   | Var   lhs  .  grTrf  = GrPat_Var  @newName
 
 SEM GrBind
@@ -160,9 +151,6 @@ SEM GrBind
 
 SEM GrVal
   | Var  lhs  .  grTrf  = GrVal_Var (findNewVar @lhs.var2id @nm)
-
-SEM GrTag
-  | Var  lhs  .  grTrf  = GrTag_Var (findNewVar @lhs.var2id @nm)
 
 SEM GrExpr
   | App Eval FetchNode FetchField Throw UpdateUnit

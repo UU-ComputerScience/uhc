@@ -32,8 +32,9 @@ SEM GrGlobal
   | Global  lhs  .  grTrf  =  GrGlobal_Global (getName' @lhs.names @nm) @val.grTrf
 
 SEM GrPat
-  | Node  lhs  .  grTrf     = GrPat_Node @tag.grTrf (map (getName' @lhs.names) @fldL)
-  | Var   lhs  .  grTrf     = GrPat_Var  (getName' @lhs.names @nm)
+  | Node    lhs  .  grTrf  = GrPat_Node @tag.grTrf (map (getName' @lhs.names) @fldL)
+  | VarNode lhs  .  grTrf  = GrPat_VarNode         (map (getName' @lhs.names) @fldL)
+  | Var     lhs  .  grTrf  = GrPat_Var                  (getName' @lhs.names @nm)
 
 SEM GrBind
   | Bind  loc  .  bindName  = getName' @lhs.names @nm
@@ -42,9 +43,6 @@ SEM GrBind
 
 SEM GrVal
   | Var  lhs  .  grTrf  = GrVal_Var (getName' @lhs.names @nm)
-
-SEM GrTag
-  | Var  lhs  .  grTrf  = GrTag_Var (getName' @lhs.names @nm)
 
 SEM GrExpr
   | App Eval Call FetchNode FetchField Throw UpdateUnit
@@ -70,38 +68,11 @@ SEM GrModule
 newMap map (k, EvApTagVar nm) = (k, EvApTagVar $ getName' map nm)
 newMap map x                  = x
 
---getName :: IdentNameMap -> Int -> String
---getName m i = show $ getName' m (HNmNr i Nothing)
-
 getName' :: IdentNameMap -> HsName -> HsName
 getName' (names, m) nm@(HNmNr i Nothing    ) = nm
 getName' (names, m) nm@(HNmNr i (Just orig)) = orig
 getName' (names, m) nm@(HNPos p) = nm
---getName' (names, m) nm@(HNPos p) = error $ "findNewVar: position: " ++ show p
 getName' (names, m) nm@(HNm s) = error $ "findNewVar: name: " ++ s
-
-{-
-getName' (names, m) nm@(HNmNr i _)
-  = if wildcardNr == nm
-    then wildcardNm
-    else if applyNr == nm
-    then applyNm
-    else if evalNr == nm
-    then evalNm
-    else let newNm = findNewVar' i ""
-         in if   isDigit (head (show newNm))
-            then HNm ('x':'_':show i)
-            else newNm
-    where
-    inBetween n (l, h) = n >= l && n <= h
-    findNewVar' v suffix = if v `inBetween` bounds names
-                           then hsnSuffix (names ! v) suffix
-                           else maybe (hsnSuffix (HNPos v) suffix) id (Map.lookup v m >>= return . flip findNewVar' ("_" ++ show v ++ suffix))
--}
-{- AD 20070103: gives overlapping pattern warning
-getName' _  nm = error $ "findNewVar: Not a number: " ++ show nm
--}
-
 
 type IdentNameMap   = (Array Int HsName, Map.Map Int Int)
 
@@ -109,10 +80,5 @@ mergeRenameMap :: IdentNameMap -> RenameMap -> IdentNameMap
 mergeRenameMap (a,m) rm = (a,foldl addToMap m rm)
     where
     addToMap m (orig,vars) = foldl (\m v -> Map.insert v orig m) m vars
-
-
-
-
-
 
 %%]

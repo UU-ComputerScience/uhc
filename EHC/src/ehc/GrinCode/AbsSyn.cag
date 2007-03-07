@@ -80,6 +80,7 @@ DATA GrVal
   | Var         nm              : {HsName}
   | Node        tag             : GrTag
                 fldL            : GrValL
+  | VarNode     fldL            : GrValL
 %%[[10
   | NodeAdapt   nm              : {HsName}
                 fldL            : GrAdaptL
@@ -96,6 +97,7 @@ DATA GrPat
   | Var         nm              : {HsName}
   | Node        tag             : GrTag
                 fldL            : {[HsName]}
+  | VarNode     fldL            : {[HsName]}
 %%[[10
   | NodeSplit   tag             : GrTag
                 nm              : {HsName}
@@ -109,7 +111,7 @@ DATA GrTag
   | Lit         categ           : {GrTagCateg}
                 int             : {Int}
                 nm              : {HsName}
-  | Var         nm              : {HsName}
+--  | Var         nm              : {HsName}         -- not necessary anymore; now part of GrVal_VarNode and GrPat_VarNode
   | Unboxed
   | Any
 
