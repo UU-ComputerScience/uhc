@@ -89,8 +89,6 @@ SEM GrAGItf
 -- We use the name @UNBOXED for unboxed nodes.
 -- Any other node should have a named tag.
 SEM GrTag [ | | tagName: SELF ]
-  | Var     lhs . tagName = error "HPT: Tag variables not allowed"
-
 
 
 SEM GrAGItf
@@ -136,6 +134,7 @@ SEM GrVal [ | | valInfo : {NodeInfo (Maybe Int)}]
   | Tag       lhs . valInfo = NodeDen @tag.tagName []
   | Var       lhs . valInfo = NodeVar (getNr @nm)
   | Node      lhs . valInfo = NodeDen @tag.tagName @fldL.depVars
+  | VarNode   lhs . valInfo = error "HPT: valinfo: varnode"
 %%[[10
   | NodeAdapt lhs . valInfo = error "HPT: valinfo: nodeadapt"
 %%]]
@@ -158,6 +157,7 @@ SEM GrPat [ | | patInfo: {NodeInfo Int} ]
   | Tag        lhs . patInfo = NodeDen @tag.tagName []
   | Var        lhs . patInfo = NodeVar (getNr @nm)
   | Node       lhs . patInfo = NodeDen @tag.tagName (map getNr @fldL)
+  | VarNode    lhs . patInfo = error "HPT: patInfo: varnode"
 %%[[10
   | NodeSplit  lhs . patInfo = error "HPT: patInfo: nodesplit"
 %%]]

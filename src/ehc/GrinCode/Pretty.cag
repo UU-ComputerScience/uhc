@@ -167,6 +167,7 @@ SEM GrVal
   | LitStr      lhs         .   pp          =   pp $ show @str
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
+  | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " (          @fldL.ppL)
 %%[[10
   | NodeAdapt   lhs         .   pp          =   pp_parens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
@@ -181,6 +182,7 @@ SEM GrPat
   | LitInt      lhs         .   pp          =   pp @int
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
+  | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " (          map @lhs.ppGrNm @fldL)
 %%[[10
   | NodeSplit   lhs         .   pp          =   pp_parens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
@@ -191,7 +193,6 @@ SEM GrSplit
 
 SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
-  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
   | Unboxed     lhs         .   pp          =   pp "#U"
   | Any         lhs         .   pp          =   pp "#*"
 %%]

@@ -53,13 +53,10 @@ SEM GrPat
 %%]
 
 %%[8.val
-ATTR GrVal GrTag [ | | varId: Int ]
+ATTR GrVal [ | | varId: Int ]
 
 SEM GrVal
   | Var          lhs  .  varId  =  getNr @nm
-  | * - Tag Var  lhs  .  varId  =  error "not a simple variable as scrutinizer"
+  | * - Var      lhs  .  varId  =  error "not a simple variable as scrutinizer"
   
-SEM GrTag
-  | Var          lhs  .  varId  =  getNr @nm
-  | * - Var      lhs  .  varId  =  error "not a tag variable as scrutinizer"
 %%]

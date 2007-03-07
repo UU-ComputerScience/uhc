@@ -61,5 +61,3 @@ SEM GrExpr
                                       otherwise        -> (@active, @grTrf)
          loc  . active          = @expr.active || @body.active
 %%]
-
-% vim:ts=4:et:

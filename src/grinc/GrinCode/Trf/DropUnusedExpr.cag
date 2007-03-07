@@ -49,8 +49,8 @@ SEM GrBind
 SEM GrVal
   | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
 
-SEM GrTag
-  | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+--SEM GrTag
+--  | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
 
 SEM GrExpr
   | FFI     lhs   .  usedVars  =  foldr Set.insert @lhs.usedVars @argL
@@ -120,17 +120,16 @@ possible side effect is useless without that result. (The ones
 retained are update, throw and FFI)
 
 %%[8.removeUnusedSeqExpr
-ATTR GrTag GrPat [ | | isDead : Bool ]
+--ATTR GrTag GrPat [ | | isDead : Bool ]
+ATTR GrPat [ | | isDead : Bool ]
 
 SEM GrPat
-  | Node  lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL) && @tag.isDead
-  | Var   lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
-  | Tag   lhs  .  isDead  =  @tag.isDead
-  | * - Node Var Tag  lhs  .  isDead  =  True
-
-SEM GrTag
-  | Var      lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
-  | * - Var  lhs  .  isDead  =  True
+  | Node    lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL)
+  | VarNode lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL)
+  | Var     lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
+  | Tag     lhs  .  isDead  =  True
+  | * - Node Var Tag VarNode
+            lhs  .  isDead  =  True
  
 SEM GrExpr [ | | sideEffect : Bool ]
   |     FFI Throw FetchUpdate UpdateUnit  lhs  .  sideEffect  =  True
@@ -149,13 +148,11 @@ with wildcards.
 
 %%[8.removeUnusedNamedBinding
 SEM GrPat
-  | Node  lhs  .  grTrf  =  GrPat_Node @tag.tag (map (mkWildcard @lhs.usedVars) @fldL)
-  | Var   lhs  .  grTrf  =  GrPat_Var (mkWildcard @lhs.usedVars @nm)
-  | Tag   lhs  .  grTrf  =  GrPat_Tag @tag.tag
+  | Node     lhs  .  grTrf  =  GrPat_Node @tag.grTrf (map (mkWildcard @lhs.usedVars) @fldL)
+  | VarNode  lhs  .  grTrf  =  GrPat_VarNode         (map (mkWildcard @lhs.usedVars) @fldL)
+  | Var      lhs  .  grTrf  =  GrPat_Var                  (mkWildcard @lhs.usedVars  @nm)
+  | Tag      lhs  .  grTrf  =  GrPat_Tag @tag.grTrf
 
-SEM GrTag [ | | tag: GrTag ]
-  | Var      lhs  .  tag  =  GrTag_Var (mkWildcard @lhs.usedVars @nm)
-  | * - Var  lhs  .  tag  =  @grTrf
 %%]
 
 %%[8.renameToWildcard hs

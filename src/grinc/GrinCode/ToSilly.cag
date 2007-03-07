@@ -356,9 +356,11 @@ SEM GrVal
            lhs.values = [@loc.value]
  | Tag     lhs.value  = @tag.value
  | Node    lhs.values = @tag.value : @fldL.values
- | * - LitInt LitStr Var Tag
+ | VarNode lhs.values =              @fldL.values
+ | Node    lhs.value  = @tag.value                            -- TODO: why does this not need the values of fldL? can this be removed after CopyPropgation is repaired?
+ | * - LitInt LitStr Var Tag Node
            lhs.value  = error "GrVal:other value"
- | * - Node Var
+ | * - Node VarNode Var
            lhs.values = error "GrVal:other values"
 
 SEM GrValL
@@ -369,7 +371,7 @@ SEM GrTag
  | Lit     loc.constant = Constant_Alias (tagName @categ @nm)
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
- | Var     lhs.value    = Value_Var (mkVar @nm)
+-- | Var     lhs.value    = Value_Var (mkVar @nm)
  | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
  | Any     lhs.value    = error "GrTag:Any value"
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
@@ -402,7 +404,7 @@ SEM GrExpr
 %%[8
 
 ATTR AllGrExpr [ targets : {[HsName]} | | ]
-ATTR GrPat GrTag [ | |  patternNames: {[HsName]} ]
+ATTR GrPat [ | |  patternNames: {[HsName]} ]
 
 SEM GrBind
   | Bind     expr . targets = []
@@ -412,14 +414,12 @@ SEM GrExpr
              body . targets = @lhs.targets
 
 SEM GrPat
-  | Var   lhs  .  patternNames = [@nm]
-  | Node  lhs  .  patternNames = @tag.patternNames ++ @fldL
-  | * - Var Node Tag  lhs  .  patternNames  =  []
+  | Var     lhs  .  patternNames = [@nm]
+  | Node    lhs  .  patternNames = wildcardNr : @fldL
+  | VarNode lhs  .  patternNames = @fldL
+  | Tag     lhs  .  patternNames = [wildcardNr]
+  | * - Var Node VarNode Tag lhs  .  patternNames  =  []
 
-SEM GrTag
-  | Var      lhs  .  patternNames  = [@nm]
-  | Unboxed  lhs  .  patternNames  = [wildcardNr]
-  | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
 %%]
 
 
@@ -571,7 +571,6 @@ tagName categ nm = showGrTagCateg categ ++ hsnShowAlphanumeric nm
 
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Lit categ n nm) = tagName categ nm
-showGrTag (GrTag_Var nm) = hsnShowAlphanumeric nm
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
 showGrTag (GrTag_Any    ) = "GrTag:Any"
 

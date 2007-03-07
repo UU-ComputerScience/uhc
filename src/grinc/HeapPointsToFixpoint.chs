@@ -178,7 +178,7 @@ envChangeSet equat env2 heap2 applyMap applyMapStartIndex
                                                                                    GrTagFun     -> False
                                                                                    GrTagHole    -> False
                                                                                    GrTagRec     -> False
-                                                         GrTag_Var _        -> error $ "tag variable unexpected: " ++ show t
+--                                                         GrTag_Var _        -> error $ "tag variable unexpected: " ++ show t
                                       isValueNode t f   = isValueTag t
                                       newNodes          = Map.filterWithKey isValueNode nodes
                                   in if Map.null newNodes then AV_Nothing else AV_Nodes newNodes

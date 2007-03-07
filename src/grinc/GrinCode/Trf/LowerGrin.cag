@@ -1,7 +1,3 @@
-Some transformations are needed to allow easy code generation for GRIN
-  - variables can refer only to pointers or basic values (tags or integers)
-  - case statement on tag only (not on a complete node)
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -68,74 +64,86 @@ isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
                              AV_Error     e  -> error $ "analysis errror: " ++ e
 %%]
 
-Vectorisation is not done on all places. Location variables are pointers and
-should be left alone. The HPT analysis will tell us which variable is a location.
 
 %%[8
-ATTR GrVal [ | | varName: {Maybe HsName} ]
-
-SEM GrVal
-  | Var      lhs . varName = Just @nm
-  | * - Var  lhs . varName = Nothing
-
-%%]
-
-Rename all non location patterns \v to \(t f1 f2 fl)
-%%[8
-SEM GrPat
-  | Var       loc . (tn, fldnL, uniq, newMap)  = let (uniq, tn:fldnL, newMap) = newNames @lhs.hptMap @lhs.uniq @nm
-                                                 in (tn, fldnL, uniq, newMap)
-              lhs .  (grTrf, nameMapping)     =  if isSingleVar @lhs.hptMap @nm 
-                                                 then (@grTrf, @lhs.nameMapping)
-                                                 else (GrPat_Node (GrTag_Var @tn) @fldnL, @newMap : @lhs.nameMapping)
-%%]
-
-%%[8 hs
-maybeElem :: Eq a => Maybe a -> [a] -> Bool
-maybeElem (Nothing) _  = False
-maybeElem (Just v ) ls = v `elem` ls
-%%]
-
-Substitute variable uses.
-
-In a case we transform from the maximal node size of the scrutinized value to
-the maximal node size in each alternative. (see below)
-
-%%[8
-ATTR AllNT [ grNodeSubst : {Map.Map HsName GrVal} | |                                        ]
-ATTR GrPat   [                                        | | grNodeSubst : {Map.Map HsName GrVal} ]
+ATTR AllNT  [     nodeSubst : {Map.Map HsName [HsName]} | | ]
+ATTR GrPat  [ | | nodeSubst : {Map.Map HsName [HsName]} varSubst : {Map.Map HsName GrVal}  ]
+ATTR AllNT [ varSubst : {Map.Map HsName GrVal} | | ]
 
 
 SEM GrAGItf
-  | AGItf    module . grNodeSubst = Map.empty
+  | AGItf    module . varSubst    = Map.empty
+             module . nodeSubst = Map.empty
+
+
 
 -- An apply has one argument which shoud be vectorised
 SEM GrBind
-  | Bind     loc  .  (grNodeSubst, uniq, grTrf', nameMapping) =  if @nm == HNm "apply"
-                                                                 then let (arg:args) = @argNmL
-                                                                          (uniq, vectorArgs, newMap) = newNames @lhs.hptMap @lhs.uniq arg
-                                                                          (tn:fldnL) = vectorArgs
-                                                                          vars       = map GrVal_Var fldnL
-                                                                          substMap   = Map.singleton arg (GrVal_Node (GrTag_Var tn) vars)
-                                                                          grTrf      = GrBind_Bind @nm (vectorArgs ++ args) @expr.grTrf
-                                                                      in (substMap, uniq, grTrf, newMap : @lhs.nameMapping)
-                                                                 else (Map.empty, @lhs.uniq, @grTrf, @lhs.nameMapping)
+  | Bind     loc  .  (nodeSubst, uniq, grTrf', nameMapping) =  if @nm == HNm "apply"
+                                                               then let (arg:args) = @argNmL
+                                                                        (uniq, vectorArgs, newMap) = newNames @lhs.hptMap @lhs.uniq arg
+                                                                        (tn:fldnL) = vectorArgs
+                                                                        -- vars       = map GrVal_Var fldnL
+                                                                        substMap   = Map.singleton arg (tn:fldnL)
+                                                                        grTrf      = GrBind_Bind @nm (vectorArgs ++ args) @expr.grTrf
+                                                                    in (substMap, uniq, grTrf, newMap : @lhs.nameMapping)
+                                                               else (Map.empty, @lhs.uniq, @grTrf, @lhs.nameMapping)
              lhs  .  uniq                       = @expr.uniq
                   .  nameMapping                = @expr.nameMapping
                   .  grTrf                      = @grTrf'
 
+
+
+-- In a lambda pattern  \n  , if HPT says that n refers to a node, replace it by  (\t x y) and add that fact to the varSubst
 SEM GrPat
-  | Var      lhs . grNodeSubst = if isSingleVar @lhs.hptMap @nm
-                                 then @lhs.grNodeSubst
-                                 else Map.insert @nm (GrVal_Node (GrTag_Var @tn) (map GrVal_Var @fldnL)) @lhs.grNodeSubst
+  | Var       loc . (uniq, names, newMap)           = newNames @lhs.hptMap @lhs.uniq @nm
+              loc . newPat      =  GrPat_VarNode @names
+              loc . newNode     =  GrVal_VarNode (map GrVal_Var @names)
+              lhs . (nameMapping, grTrf, nodeSubst, varSubst) = if isSingleVar @lhs.hptMap @nm
+                                                                 then (          @lhs.nameMapping, @loc.grTrf  ,                       @lhs.nodeSubst ,                             @lhs.varSubst )
+                                                                 else (@newMap : @lhs.nameMapping, @loc.newPat , Map.insert @nm @names @lhs.nodeSubst , Map.insert @nm @loc.newNode @lhs.varSubst )
+
+
+-- At a case, change scrutinee  n  by  t , if n occurs in substitution
+SEM GrExpr
+  | Case     loc . (scrutRepl, scrutSubst) = case @val.scrutName of
+                                               Nothing -> ( @val.grTrf, [] )
+                                               Just nm -> case Map.lookup nm @lhs.nodeSubst of
+                                                            Nothing     -> ( @val.grTrf  , [nm]  )
+                                                            Just (t:xs) -> ( GrVal_Var t , nm:xs )
+             lhs . grTrf      = GrExpr_Case @loc.scrutRepl @altL.grTrf
+  
+ATTR AllAlt [ scrutSubst: {[HsName]} | | ]
+ATTR GrVal  [ | | scrutName: {Maybe HsName} ]
 
 SEM GrVal
-  | Var      loc . maybeNode   = Map.lookup @nm @lhs.grNodeSubst
-                 . node        = maybe @grTrf id @maybeNode
+  | Var      lhs . scrutName = Just @nm
+  | * - Var  lhs . scrutName = Nothing
+
+
+-- in each alternative C p q
+-- add the following subsitutions:  p->x, q->y, n->(C x y)
+-- and change the pattern from (C p q) to C
+SEM GrAlt
+  | Alt        expr . varSubst  =  case @lhs.scrutSubst of
+                                     []      ->  @lhs.varSubst
+                                     (nm:xs) ->  let values = map GrVal_Var xs
+                                                     mappings = zip @pat.patFieldL values
+                                                     newNode  = GrVal_Node @pat.patTag (map snd mappings)
+                                                 in  Map.fromList ((nm,newNode) : mappings)  `Map.union`  @lhs.varSubst
+                                                 
+               lhs . grTrf  =  GrAlt_Alt (GrPat_Tag @pat.patTag) @expr.grTrf
+
+
+-- Perform the variable substitution
+
+SEM GrVal
+  | Var        lhs . grTrf       = Map.findWithDefault (GrVal_Var @nm) @nm @lhs.varSubst
+
 
 SEM GrExpr
   | FetchNode FetchField Eval Throw UpdateUnit
-               loc  . maybeNode = Map.lookup @nm @lhs.grNodeSubst
+               loc  . maybeNode = Map.lookup @nm @lhs.varSubst
                loc  . newName   = maybe @nm (\(GrVal_Var nm) -> nm) @maybeNode
   | FetchNode  lhs  . grTrf     = GrExpr_FetchNode  @newName
   | FetchField lhs  . grTrf     = GrExpr_FetchField @newName @offset @mbTag
@@ -144,75 +152,18 @@ SEM GrExpr
   | Throw      lhs  . grTrf     = GrExpr_Throw @newName
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Case simplification %%
-%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-For case simplifying we must know if values and patterns are in a case construct.
-(the scurinizer and pattern alternatives need to be rewritten)
-
-%%[8.isInCase
-ATTR GrVal GrValL GrPat GrPatL AllAlt [ isInCase: {Bool} | | ]
-SEM GrExpr
-  | * - Case loc  . isInCase = False
-  | Case     loc  . isInCase = True
-
--- we are never in a case for the values inside a node
-SEM GrVal
-  | Node     fldL . isInCase = False
-
-SEM GrGlobal
-  | Global   loc  . isInCase = False
-%%]
-
-%%[10
-ATTR AllAdapt [ isInCase: {Bool} | | ]
-SEM GrSplit
-  | Sel      loc  . isInCase = False
-%%]
-
-Do the case simplification
 
 %%[8
--- replace scrutinizer in case with Tag only
--- note: GrVal_Var.node contains result of vectorisation transformation
-SEM GrVal
-  | Node          loc  . node     = @grTrf
-  | Var Node      lhs  . grTrf    = let tag = case @node of
-                                                GrVal_Node t _ -> GrVal_Tag t
-                                                otherwise      -> error $ "Not a node in case: " ++ (show @node)
-                                    in if @lhs.isInCase then tag else @node
-
--- replace pattern in alternatives with Tag only
-SEM GrPat
-  | Node          lhs  . grTrf       = if @lhs.isInCase then GrPat_Tag @tag.grTrf else @grTrf
-
-
 -- return the fields of pattern and value to the Alternative node
-
-ATTR AllAlt [ varNode: {GrVal} varName: {Maybe HsName} | | ]
-
-ATTR GrVal [ | | varNode: {GrVal} ]
-
-SEM GrVal
-  | Node Var      lhs  . varNode = if @lhs.isInCase then @node else undefined
-  | * - Node Var  lhs  . varNode = undefined
-
-ATTR GrPat [ | | patFieldL: {[HsName]} ]
+ATTR GrPat [ | | patFieldL: {[HsName]} patTag: GrTag ]
 
 SEM GrPat 
   | Node          lhs  . patFieldL   = @fldL
+                  lhs  . patTag      = @tag.grTrf
   | Tag           lhs  . patFieldL   = []
+                  lhs  . patTag      = @tag.grTrf
   | * - Node Tag  lhs  . patFieldL   = error "Only Node or Tag values expected in a case"
+                  lhs  . patTag      = error "Only Node or Tag values expected in a case"
 
-
--- add the substitutions for the case alternatives
-SEM GrAlt
-  | Alt           expr . grNodeSubst = let (GrVal_Node t l) = @lhs.varNode -- if failed: no node in a case
-                                           mappings         = Map.fromList $ zip @pat.patFieldL l
-                                           newNode          = GrVal_Node t (zipWith const l @pat.patFieldL)
-                                           addVectorMap  fm = maybe fm (\n -> Map.insert n newNode fm) @lhs.varName
-                                       in addVectorMap $ @lhs.grNodeSubst `Map.union` mappings
 %%]
-
