@@ -554,14 +554,14 @@ SEM Expression
         loc         .   eh          =   rngLift @range EH.Expr_Sel @expression.eh @name
 %%]
 %%[9
+    | Do
+        loc         .   (eh,_)      =   foldr1 (\(_,s) (e,_) -> (s e,undefined)) @statements.eh
+%%]
+%%[12
     | ImplicitApplication
         loc         .   eh          =   ehExpApp' (\f (e,p) -> EH.Expr_AppImpl f p e) @range @function.eh @arguments.eh
     | ImplicitLambda
         loc         .   eh          =   foldr (\(p,c) e -> rngLift @range EH.Expr_LamImpl c p e) @expression.eh @patterns.eh
-%%]
-%%[9
-    | Do
-        loc         .   (eh,_)      =   foldr1 (\(_,s) (e,_) -> (s e,undefined)) @statements.eh
 %%]
 -- Helium
 %%[55
@@ -570,7 +570,7 @@ SEM Expression
         expression               : Expression
 %%]
 
-%%[9
+%%[12
 ATTR ContextedExpressions [ | | eh USE {:} {[]}: {[(EH.Expr,EH.PrExpr)]} ]
 
 ATTR ContextedExpression [ | | eh: {(EH.Expr,EH.PrExpr)} ]
@@ -883,7 +883,7 @@ SEM Pattern
         literal                  : Literal -- only numbers allowed here
 %%]
 
-%%[9
+%%[12
 ATTR ContextedPatterns [ | | eh USE {:} {[]}: {[(EH.PatExpr,EH.PrExpr)]} ]
 
 ATTR ContextedPattern [ | | eh: {(EH.PatExpr,EH.PrExpr)} ]

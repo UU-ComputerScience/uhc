@@ -108,12 +108,19 @@ SEM Expr
   | Let         loc         .   letCBindL   :=  if ehcCfgClassViaCHR @lhs.opts
                                                 then [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
                                                 else [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
-  | App AppImpred AppImpl
+  | App AppImpred
+%%[[12
+    AppImpl
+%%]]
                 loc         .   cexpr       :=  CExpr_App
                                                     (coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
-  | Lam LamImpl loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
   | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
   | TypeAs      loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppCoe @lhs.opts @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
 %%]
@@ -452,14 +459,20 @@ SEM RecPatExpr
 ATTR Expr [ | | appArgCoeL: {[Coe]}  appFunCExpr: CExpr ]
 
 SEM Expr
-  | App AppImpl
+  | App
+%%[[12
+    AppImpl
+%%]]
                 lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe [@arg.cexpr]]
                             .   appFunCExpr     =   @func.appFunCExpr
   | AppTop      lhs         .   (appArgCoeL,appFunCExpr)
                                                 =   if null @lamArgCoeL
                                                     then (@expr.appArgCoeL,@expr.appFunCExpr)
                                                     else ([],@cexpr)
-  | * - App AppImpl AppTop
+  | * - App AppTop
+%%[[12
+    AppImpl
+%%]]
                 lhs         .   appArgCoeL      =   []
                             .   appFunCExpr     =   @cexpr
 %%]
@@ -722,7 +735,7 @@ SEM Expr
   | Lam         arg         .   ceParentNm  =   @arg.topNm
 %%]
 
-%%[9
+%%[12
 SEM Expr
   | LamImpl     arg         .   ceParentNm  =   @arg.topNm
 %%]
@@ -874,7 +887,7 @@ rceMatchBoolExpr env (arg:args) alts = rceCaseCont env
 %%[8
 SEM Expr
   | Lam Sel DataFields
-%%[[9
+%%[[12
     LamImpl
 %%]]
                 loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }

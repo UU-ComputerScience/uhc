@@ -127,7 +127,10 @@ SEM Expression
 ATTR
   AllType
 %%[[9
-  AllContextedPattern AllContextItem
+  AllContextItem
+%%]]
+%%[[12
+  AllContextedPattern
 %%]]
     [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
 

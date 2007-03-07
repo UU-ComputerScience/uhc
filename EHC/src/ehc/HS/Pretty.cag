@@ -350,14 +350,14 @@ SEM Expression
         recordExpressionBindings : RecordExpressionBindings
 %%]
 %%[9
+    | Do
+        loc         .   pp          =   "do" >#< vlist @statements.ppL
+%%]
+%%[12
     | ImplicitApplication
         loc         .   pp          =   @function.pp >#< ppListSep hsnOImpl hsnCImpl ", " @arguments.ppL
     | ImplicitLambda
         loc         .   pp          =   "\\" >|< ppListSep hsnOImpl hsnCImpl ", " @patterns.ppL >#< "->" >#< @expression.pp
-%%]
-%%[9
-    | Do
-        loc         .   pp          =   "do" >#< vlist @statements.ppL
 %%]
 -- Helium
 %%[55
@@ -366,7 +366,7 @@ SEM Expression
         expression               : Expression
 %%]
 
-%%[9
+%%[12
 SEM ContextedExpression
     | Contexted
         loc         .   pp          =   @expression.pp >#< "<:" >#< @context.pp
@@ -517,7 +517,7 @@ SEM Pattern
         literal                  : Literal -- only numbers allowed here
 %%]
 
-%%[9
+%%[12
 SEM ContextedPattern
     | Contexted
         loc         .   pp          =   @pattern.pp >#< "<:" >#< @context.pp
@@ -657,7 +657,7 @@ SEM RowRecordPatternBindings
 
 %%[9
 ATTR
-  ContextedExpressions ContextedPatterns Statements
+  Statements
     [ | | ppL: {[PP_Doc]} ]
 
 SEM Statements
@@ -665,6 +665,13 @@ SEM Statements
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil
         lhs         .   ppL         =   []
+
+%%]
+
+%%[12
+ATTR
+  ContextedExpressions ContextedPatterns
+    [ | | ppL: {[PP_Doc]} ]
 
 SEM ContextedExpressions
     | Cons

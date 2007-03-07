@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < MD < NUM < HS, I1 < I2, DT < ANN
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < EP < MD < NUM < HS, I1 < I2, DT < ANN
 
 -------------------------------------------------------------------------
 -- Rewriting
@@ -809,8 +809,8 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge R : expr
           | e = (node 1 = eFun) ^^ ~ (node 2 = eArg)
 
-  rule e.iapp viewsel P - * "AppImpl" =
-    view P =
+  rule e.iapp viewsel EP - * "AppImpl" =
+    view EP =
       judge F : expr = implFIOpts ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; (pred.2 => knTy) :- eFun : (pred.a => ty) ~> tyCnstr.fun ; translExpr.f
       judge G : predGamLookupPrTyEv = pred.a :> _ : ty.a `elem` valGam
       judge A : expr = strongFIOpts ; kiGam ; tyGam ; valGam ; tyCnstr.fun ; ty.a :- eArg : _ ~> tyCnstr.arg ; translExpr.a
@@ -1007,8 +1007,8 @@ ruleset expr.base scheme expr "Expression type rules" =
           | ty = tyCnstr.e pred.a.._ => tyCnstr.e ty.p -> ty.e
           | translExpr = translExpr.i.._ -> \lamPat -> translExpr.e
 
-  rule e.ilam viewsel P - * "LamImpl" =
-    view P =
+  rule e.ilam viewsel EP - * "LamImpl" =
+    view EP =
       judge V : tvarvFresh
       judge fitP : match = implFIOpts :- (pred => tvarv) <=>.(<=) (tyCnstr.inh knTy) : (pred.a => ty.r) ~> tyCnstr.fitP ; coe.lam
       judge G : predGamLookupPrTyEv = pred.a :> _ : ty.a `elem` valGam

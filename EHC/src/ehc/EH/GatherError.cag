@@ -156,15 +156,19 @@ SEM Expr
                                                     (foErrL @fo_fitF_
                                                       ++ @arg.errL ++ @body.errL)
   | AppTop      lhs         .   errL        :=  mkNestErr @pp (@expr.errL)
-  | AppImpl     lhs         .   errL        =   mkNestErr @pp
-                                                    (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
-  | LamImpl     lhs         .   errL        =   mkNestErr @pp
-                                                    (@nmErrs ++ foErrL @fo_fitF_ ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%[11
 SEM Decl
   | Type        lhs         .   errL        =   mkNestErr @pp (@tyExpr.errL ++ foErrL @fo_)
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     lhs         .   errL        =   mkNestErr @pp
+                                                    (@nmErrs ++ foErrL @foPr ++ @func.errL ++ @arg.errL ++ @argPr.errL)
+  | LamImpl     lhs         .   errL        =   mkNestErr @pp
+                                                    (@nmErrs ++ foErrL @fo_fitF_ ++ foErrL @foPr ++ @arg.errL ++ @argPr.errL ++ @body.errL)
 %%]
 
 %%[97

@@ -221,11 +221,6 @@ SEM PatExpr
 %%[9
 ATTR PrExprs [ | | ppL: {[PP_Doc]} ]
 
-SEM Expr
-  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
-                        .   pp      =   @func.pp >#< hsnOImpl >#< @argPP >#< hsnCImpl
-  | LamImpl     loc     .   pp      =   "\\" >|< hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl >#< "->" >#< @body.pp
-
 SEM RowTyExpr
   | Var         loc     .   pp      =   pp @nm
                 lhs     .   ppL     =   []
@@ -288,6 +283,13 @@ SEM Decl
 
 SEM TyExpr
   | Lam         loc     .   pp      =   "\\" >|< @tyVar >#< "->" >#< @tyExpr.pp
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
+                        .   pp      =   @func.pp >#< hsnOImpl >#< @argPP >#< hsnCImpl
+  | LamImpl     loc     .   pp      =   "\\" >|< hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl >#< "->" >#< @body.pp
 %%]
 
 %%[15
@@ -508,7 +510,7 @@ SEM Expr
                         .   appFunPP    :=  @recExpr.pp
 %%]
 
-%%[9
+%%[12
 SEM Expr
   | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
                         .   appArgPPL   :=  @func.appArgPPL ++ [@argPP]

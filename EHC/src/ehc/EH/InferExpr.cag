@@ -192,7 +192,7 @@ SEM Expr
   | App         (_,arg.knTy,loc.ty_)                :=  tyArrowImplsArgRes . tyAltsTy $ @func.ty
 %%]
 
-%%[9.AppImpl
+%%[12.AppImpl
 SEM Expr
   | AppImpl     loc         .   knFunTy             =   [@argPr.ty] `mkArrow` @lhs.knTy
                 func        .   knTy                =   @knFunTy
@@ -279,7 +279,7 @@ SEM Expr
                                                                   @body.tyCnstr
 %%]
 
-%%[9.LamImpl
+%%[12.LamImpl
 SEM Expr
   | LamImpl     loc         .   funTy               =   let  r = mkNewTyVar @lUniq
                                                         in   [@lhs.tyCnstr |=> @argPr.ty] `mkArrow` r
@@ -424,7 +424,10 @@ SEM Expr
                                                             , feTyGam = @lhs.tyGam
 %%]]
                                                             }
-  | Lam AppTop LamImpl
+  | Lam AppTop
+%%[[12
+    LamImpl
+%%]]
                 loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
                                                             , fePredScope = @predScope
@@ -432,7 +435,10 @@ SEM Expr
                                                             , feTyGam = @lhs.tyGam
 %%]]
                                                             }
-  | * - Lam AppTop LamImpl Let
+  | * - Lam AppTop Let
+%%[[12
+    LamImpl
+%%]]
                 loc         .   fe                  =   emptyFE
                                                             { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope

@@ -678,6 +678,11 @@ DATA Expression                                   {- *** -}
         name                     : Name
 %%]
 %%[9
+    | Do
+        range                    : Range
+        statements               : Statements
+%%]
+%%[12
     | ImplicitApplication
         range                    : Range
         function                 : Expression
@@ -686,11 +691,6 @@ DATA Expression                                   {- *** -}
         range                    : Range
         patterns                 : ContextedPatterns
         expression               : Expression
-%%]
-%%[9
-    | Do
-        range                    : Range
-        statements               : Statements
 %%]
 
 %%[1
@@ -796,7 +796,7 @@ DATA Expression                                   {- *** -}
 
 %%]
 
-%%[9
+%%[12
 TYPE ContextedExpressions        = [ ContextedExpression ]
 
 DATA ContextedExpression
@@ -998,8 +998,10 @@ SET AllExpression
     AllRowRecordExpressionUpdate
 %%]
 %%[9
-    ContextedExpression ContextedExpressions
     AllStatement
+%%]
+%%[12
+    ContextedExpression ContextedExpressions
 %%]
 
 -- ------------------------------------------------------------------------
@@ -1083,7 +1085,7 @@ DATA Pattern
         literal                  : Literal -- only numbers allowed here
 %%]
 
-%%[9
+%%[12
 TYPE ContextedPatterns           = [ ContextedPattern ]
 
 DATA ContextedPattern
@@ -1104,7 +1106,7 @@ SET AllPattern
     AllRowRecordPatternBinding
     AllRecordPatternBinding
 %%]
-%%[9
+%%[12
     AllContextedPattern
 %%]
 

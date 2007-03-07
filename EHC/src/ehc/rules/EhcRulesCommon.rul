@@ -11,7 +11,7 @@ external _ instTyFixed ftv alpha tvarv exists forall
 -- View hierarchy
 -------------------------------------------------------------------------
 
-viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < HS, I1 < I2
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < EP < MD < NUM < HS, I1 < I2, DT < ANN
 
 -------------------------------------------------------------------------
 -- Rewriting

@@ -85,10 +85,14 @@ SEM Expr
 
 %%[9
 SEM Expr
+  | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
+%%]
+
+%%[12
+SEM Expr
   | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyCnstr |=>) $ @knArgImpl
                             .   knPrUid             =   mkPrId @prfCtxtId @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
-  | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,19 +101,27 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | LamImpl     loc         .   lPrElimTGam         =   peTGamInsertKnPr @lhs.opts @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
   | AppTop Lam  loc         .   lPrElimTGam         =   foldr  (\p g -> peTGamInsertKnPr @lhs.opts @prfCtxtId (poiHNm (poPoi p)) (poPoi p) (poPr p) g)
                                                                (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam) @knPrL
   | Let         loc         .   lPrElimTGam         =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 %%]
   | Let         loc         .   lPrElimTGam         =   tgamPushGam @prfCtxtId @lhs.prfCtxtId @prfCtxtId @decls.patPrElimTGam @lhs.prElimTGam
 
+%%[12
+SEM Expr
+  | LamImpl     loc         .   lPrElimTGam         =   peTGamInsertKnPr @lhs.opts @prfCtxtId @arg.topNm @knPrUid @knPr (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
+%%]
+
 %%[9
 SEM Expr
   | Let         decls       .   prElimTGam          =   @lPrElimTGam
   | AppTop      expr        .   prElimTGam          =   @lPrElimTGam
-  | Lam LamImpl
-                body        .   prElimTGam          =   @lPrElimTGam
+  | Lam         body        .   prElimTGam          =   @lPrElimTGam
+%%]
+
+%%[12
+SEM Expr
+  | LamImpl     body        .   prElimTGam          =   @lPrElimTGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,7 +194,10 @@ SEM Decl
 ATTR NTPrf [ prfCtxtId: PrfCtxtId | | ]
 
 SEM Expr
-  | Let AppTop Lam LamImpl
+  | Let AppTop Lam
+%%[[12
+    LamImpl
+%%]]
                 loc         .   prfCtxtId           =   @lUniq
 
 SEM Decl
@@ -209,7 +224,10 @@ SEM AGItf
 %%[9
 SEM Expr
   | Lam AppTop  loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam `Set.union` Set.fromList @poiLKnTl
-  | Let LamImpl
+  | Let
+%%[[12
+    LamImpl
+%%]]
                 loc         .   availPoiS           =   peTGamPoiS @prfCtxtId @lPrElimTGam
 %%]
 
@@ -268,12 +286,20 @@ SEM Expr
                                                         then (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL)
                                                              ++ [CoeImplApp $ ipoId @imPrvOcc]
                                                         else mkImplsAppCoe @lhs.opts $ tyImpls $ (@lhs.finTyCnstr |=>) $ @imTy
+%%]
+
+%%[12
+SEM Expr
   | AppImpl     loc         .   appImplsCoeL        =   []
 %%]
 
 %%[9
 SEM Expr
-  | Lam LamImpl loc         .   lamBodyCoeL         =   mkLamBodyCoe
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   lamBodyCoeL         =   mkLamBodyCoe
                                                             (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e]))
                                                             @body.appArgCoeL
 %%]
@@ -282,6 +308,10 @@ SEM Expr
 SEM Expr
   | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
   | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
+%%]
+
+%%[12
+SEM Expr
   | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
 %%]
 
@@ -295,12 +325,19 @@ SEM Expr
                             .   impls2KnTl          =   @lhs.finTyCnstr |=> @knImplsTl
                             .   poiLKnTl            =   implsPrIds @impls2KnTl
                             .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
+%%]
+
+%%[12
+SEM Expr
   | LamImpl     loc         .   poiL                =   [@knPrUid]
 %%]
 
 %%[9
 SEM Expr
-  | Lam AppTop LamImpl
+  | Lam AppTop
+%%[[12
+    LamImpl
+%%]]
                 loc         .   poiBindL            =   if ehcCfgClassViaCHR @lhs.opts
                                                         then @chrAssumeBindL ++ @chrScopeBindL
                                                         else mkCxBindLForPoiL @availPoiS @lhs.cxbindLMap @poiL

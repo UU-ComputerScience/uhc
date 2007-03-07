@@ -319,7 +319,7 @@ DATA Expr
   | CaseAltFail     caseId          : {UID}
 %%]
 
-%%[9
+%%[12
 DATA Expr
   | AppImpl         func            : Expr
                     argPr           : PrExpr

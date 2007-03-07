@@ -586,6 +586,21 @@ SEM Expr
                                         , mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imTy+subst" (pp (@expr.tyCnstr |=> @imTy))
                                         ]
+%%]
+
+%%[10
+SEM Expr
+  | DynVar      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","DynVar"] [ppNm @nm] [] (@info)
+                loc     .  info     =   [
+                                        ]
+
+SEM PrExpr
+  | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [ppNm @nm] [@rowTyExpr.ppAST]
+  | DynVar      loc     .  ppAST    =   ppNest ["PrExpr","DynVar"] [ppNm @nm] [@tyExpr.ppAST]
+%%]
+
+%%[12
+SEM Expr
   | AppImpl     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppImpl"] [] [@func.ppAST,@arg.ppAST,@argPr.ppAST] @info_9
                 loc     .  info_9   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
@@ -600,17 +615,6 @@ SEM Expr
                                         , mkInfo1 "lamBodyCoeL" (ppBracketsCommas @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppBracketsCommas @lamArgCoeL)
                                         ]
-%%]
-
-%%[10
-SEM Expr
-  | DynVar      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","DynVar"] [ppNm @nm] [] (@info)
-                loc     .  info     =   [
-                                        ]
-
-SEM PrExpr
-  | Lacks       loc     .  ppAST    =   ppNest ["PrExpr","Lacks"] [ppNm @nm] [@rowTyExpr.ppAST]
-  | DynVar      loc     .  ppAST    =   ppNest ["PrExpr","DynVar"] [ppNm @nm] [@tyExpr.ppAST]
 %%]
 
 %%[15

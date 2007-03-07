@@ -943,7 +943,7 @@ pExpressionApp
 %%[[4
            <|> (\es e -> Expression_ImpredicativeApplication emptyRange e es) <$> pList1 (pTILDE *> pE)
 %%]]
-%%[[9
+%%[[12
            <|> (\es e -> Expression_ImplicitApplication emptyRange e es) <$> pList1 (pImpls' pContextedExpression)
            where pContextedExpression = (\e c r -> ContextedExpression_Contexted r e c) <$> pExpression <* pLTCOLON <*> pContextItem
                  pContextedExpression :: HSParser (Range -> ContextedExpression)
@@ -1026,13 +1026,13 @@ pExpressionNoLetPrefix
   where pLamArgs
           =   (\a1 a2 t e -> a1 t (a2 t e))
               <$> (   (\ps t e -> Expression_Lambda (mkRange1 t) ps e) <$> pList1 pPatternBaseCon
-%%[[9
+%%[[12
                   <|> (\ps t e -> Expression_ImplicitLambda (mkRange1 t) ps e) <$> pList1 (pImpls' pContextedPattern)
 %%]]
                   )
               <*> pLamArgs
           <|> (\_ e -> e) <$ pRARROW
-%%[[9
+%%[[12
         pContextedPattern = (\p c r -> ContextedPattern_Contexted r p c) <$> pPattern <* pLTCOLON <*> pContextItem
         pContextedPattern :: HSParser (Range -> ContextedPattern)
 %%]]

@@ -94,11 +94,15 @@ SEM PrExpr
   | Class       loc         .   nmErrs              =   checkClNms @clMissNmS
 
 SEM Expr
-  | AppImpl LamImpl
-                loc         .   nmErrs              =   []
   | Let         loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts && not (Map.null @toAssumeNeverCnstrMp)
                                                         then [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys @toAssumeNeverCnstrMp]
                                                         else []
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl LamImpl
+                loc         .   nmErrs              =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

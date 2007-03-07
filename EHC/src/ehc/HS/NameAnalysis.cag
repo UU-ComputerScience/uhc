@@ -262,7 +262,7 @@ SEM Expression
     | Typed
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
-%%[[9
+%%[[12
     | ImplicitLambda
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @patterns.freeTvarS
@@ -382,7 +382,7 @@ SEM Expression
         expression      .   idGam       =   @qualifiers.idGam
         qualifiers      .   idGam       =   @lhs.idGam
 %%]]
-%%[[9
+%%[[12
     | ImplicitLambda
         loc             .   idGam       =   gamUnions [@idOccDefGamType, @lhs.idGam]
         expression      .   idGam       =   gamUnions [@patterns.idOccDefGam, @idGam]
