@@ -9,7 +9,7 @@ Conversion from Pred to CHR.
 %%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Error},{%{EH}Cnstr})
 %%]
 
-%%[9 import(Data.Maybe,qualified Data.Map as Map)
+%%[9 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
 %%[9 import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Solve})
@@ -103,24 +103,29 @@ mkScopedCHR2
   :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
        -> ScopedPredStore -> ScopedPredStore
 mkScopedCHR2 env clsDecls insts prevStore
-  = chrStoreUnions $ [store2,instStore] ++ simplStores
-  where  ucls = mkNewLevUIDL (length clsDecls) $ fiUniq env
-         ((assumeStore,assumePredOccs), (instStore,_)) = mkScopedChrs clsDecls insts
-         store2 = chrStoreUnions [assumeStore,prevStore]
-         simplStores  = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) store2 (cx,h,i)) ucls clsDecls
+  = stores
+  where  stores      = chrStoreUnions $ [store2,instStore] ++ simplStores
+         ucls        = mkNewLevUIDL (length clsDecls) $ fiUniq env
+         ((assumeStore,assumePredOccs), (instStore,_))
+                     = mkScopedChrs clsDecls insts
+         store2      = chrStoreUnions [assumeStore,prevStore]
+         simplStores = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) store2 (cx,h,i)) ucls clsDecls
 
 mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)
-  = chrStoreFromElems $ mapTrans [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
-  where superClasses = chrSolve env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
+  = simps
+  where simps        = chrStoreFromElems $ mapTrans (Set.fromList [head1]) [] head1 (zip infos (map (\p -> Red_Pred $ mkCHRPredOcc p sc1) context))
+        superClasses = chrSolve env rules (map (\p -> Assume $ mkCHRPredOcc p sc1) context)
         graph        = mkRedGraphFromReductions superClasses
         head1        = mkCHRPredOcc head sc1
         head2        = mkCHRPredOcc head sc2
         head3        = mkCHRPredOcc head sc3
     
-        mapTrans reds subClass = concatMap (transClosure reds subClass)
+        mapTrans done reds subClass
+          = concatMap (transClosure done reds subClass)
+            . filter (\(_,x) -> rednodePred x `Set.notMember` done)
     
-        transClosure reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
+        transClosure done reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
           = superRule : scopeRule1 : scopeRule2 : rules
           where super1     = mkCHRPredOcc super sc1
                 super2     = mkCHRPredOcc super sc2
@@ -133,7 +138,7 @@ mkClassSimplChrs env rules (context, head, infos)
                                ==> [Prove super3, Reduction super1 RedHow_ByScope [super3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = Reduction p info [par] : reds
-                rules      = mapTrans reds' p (predecessors graph pr)             
+                rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)             
 
 mkScopedChrs :: [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> (MkResN,MkResN)
 mkScopedChrs clsDecls insts

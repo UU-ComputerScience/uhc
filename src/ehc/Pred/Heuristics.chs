@@ -165,12 +165,12 @@ hasAlts _                = True
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-specificness :: FIIn -> Pred -> Pred -> PartialOrdering
-specificness env p q = 
+cmpSpecificness :: FIIn -> Pred -> Pred -> PartialOrdering
+cmpSpecificness env p q = 
   case  chrMatchTo env p q of 
-    Nothing  -> P_LT
+    Nothing  -> P_GT
     Just _   -> case  chrMatchTo env q p of
-                  Nothing  -> P_GT
+                  Nothing  -> P_LT
                   Just _   -> P_EQ
 %%]
 
@@ -179,7 +179,7 @@ anncmpHaskell98 :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrderi
 anncmpHaskell98 env ann1 ann2
   = case (ann1,ann2) of
       (RedHow_ByInstance   _ p s, RedHow_ByInstance   _ q t)  ->  case pscpCmpByLen s t of
-                                                                    EQ   -> specificness env p q
+                                                                    EQ   -> cmpSpecificness env p q
                                                                     ord  -> toPartialOrdering ord
       (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
@@ -233,8 +233,25 @@ heurGHC env
 anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped env ann1 ann2
   = case (ann1,ann2) of
+      (HeurRed (RedHow_Assumption   _ _ _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_Assumption   _ _ _) _)  ->  P_LT
       (HeurRed (RedHow_ByInstance  _ p  s) _, HeurRed (RedHow_ByInstance  _ q  t) _)  ->  case pscpCmpByLen s t of
-                                                                                            EQ   -> specificness env p q
+                                                                                            EQ   -> cmpSpecificness env p q
+                                                                                            ord  -> toPartialOrdering ord
+      (HeurRed (RedHow_ByInstance  _ _  _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
+      (HeurRed (RedHow_BySuperClass _ _ _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_BySuperClass _ _ _) _)  ->  P_LT
+      (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
+
+heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC env = toHeuristic $ contextBinChoice (anncmpEHCScoped env)
+%%]
+anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
+anncmpEHCScoped env ann1 ann2
+  = case (ann1,ann2) of
+      (HeurRed (RedHow_ByInstance  _ p  s) _, HeurRed (RedHow_ByInstance  _ q  t) _)  ->  case pscpCmpByLen s t of
+                                                                                            EQ   -> cmpSpecificness env p q
                                                                                             ord  -> toPartialOrdering ord
       (HeurRed (RedHow_ByInstance  _ _  _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
@@ -243,10 +260,6 @@ anncmpEHCScoped env ann1 ann2
       (HeurRed (RedHow_Assumption   _ _ _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_Assumption   _ _ _) _)  ->  P_LT
       (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
-
-heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
-heurScopedEHC env = toHeuristic $ contextBinChoice (anncmpEHCScoped env)
-%%]
 
 %%[9
 btHeuristic :: Heuristic p RedHowAnnotation

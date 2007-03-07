@@ -42,7 +42,7 @@ instance Show RedHowAnnotation where
 
 %%[9
 instance PP RedHowAnnotation where
-  pp (RedHow_ByInstance   s _ sc)  = "inst" >#< s >|< pp sc
+  pp (RedHow_ByInstance   s p sc)  = "inst" >#< s >|< sc >#< "::" >#< p
   pp (RedHow_BySuperClass s _ _ )  = "super" >#< s
   pp (RedHow_ProveObl     i   sc)  = "prove" >#< i >#< sc
   pp (RedHow_Assumption   _ n sc)  = "assume" >#< n >#< sc
