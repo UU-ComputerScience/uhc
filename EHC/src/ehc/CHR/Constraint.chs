@@ -52,6 +52,7 @@ instance CHRSubstitutable p v s => CHRSubstitutable (Constraint p info) v s wher
                                             Just (_,p,mk) -> mk (chrAppSubst s p)
                                             _             -> c
 %%]
+  chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) i (map (chrAppSubst s) ps)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Mapping: constraint -> info

@@ -32,8 +32,8 @@ Derived from work by Gerrit vd Geest.
 
 %%[9 export(RedNode(..))
 data RedNode p
-  =  Red_Pred p
-  |  Red_And [p]
+  =  Red_Pred { rednodePred 	::  p 	}
+  |  Red_And  { rednodePreds 	:: [p] 	}
   deriving (Eq, Ord)
 
 true  ::  RedNode p

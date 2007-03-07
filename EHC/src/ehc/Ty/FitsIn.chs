@@ -50,7 +50,7 @@
 %%[6 export(fitsInL)
 %%]
 
-%%[9 import(EH.Util.Utils(groupSortOn,sortByOn))
+%%[9 import(EH.Util.Utils)
 %%]
 
 %%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,{%{EH}Core.Pretty},{%{EH}Pred},{%{EH}Core},{%{EH}Core.Subst}) export(foAppCoe,foAppCoe',fitPredToEvid)
@@ -957,7 +957,9 @@ fitsInFI fi ty1 ty2
                                     prfPrL= [mkPredOcc (fs |=> pr1) pv1 psc1]
                                     (cxbindLMap,introCBindL,csubst,remPrfPrL,evidL,prfErrs)
                                           = prfPreds u3 (fiEnv (fs |=> fi2)) prfPrL
-                                    coe   = mkCoe (\e -> (cSubstOptApp globOpts csubst introCBindL) `mkCExprLetRec` (e `mkCExprApp` evidL))
+                                    coe   = if ehcCfgClassViaCHR globOpts
+                                            then mkAppCoe [mkCExprPrHole globOpts pv1]
+                                            else mkCoe (\e -> (cSubstOptApp globOpts csubst introCBindL) `mkCExprLetRec` (e `mkCExprApp` evidL))
                                in   (foUpdErrs prfErrs fo,coe,csubst,remPrfPrL,gathPredLToProveCnstrMp prfPrL)
                        fP (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 tr1 t2)
@@ -1443,7 +1445,7 @@ fitPredInPred fi pr1 				pr2
   = if foHasErrs fo
     then Nothing
     else Just (tyPred $ foTy fo,foCnstr fo)
-  where fo = fitsIn (predFIOpts {fioDontBind = fioDontBind $ fiFIOpts fi}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
+  where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2 ++ fioDontBind (fiFIOpts fi)}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
         fe = fiEnv fi
         u  = fiUniq fi
 %%]

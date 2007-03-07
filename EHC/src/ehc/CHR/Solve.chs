@@ -288,7 +288,7 @@ chrSolve'' env chrStore cnstrs prevState
                 -> expandMatch st matches
                 where expandMatch st@(SolveState {stWorkList = wl})
                                   (((schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})}),(keys,works)),subst) : tlMatch)
-                        = expandMatch st'
+                        = expandMatch (st')
                           $ filter (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || isUsedByPropPart (wlUsedIn wl') r))
                           $ tlMatch
                         where (keysSimp,keysProp) = splitAt simpSz keys
