@@ -367,7 +367,7 @@ pExprApp        =    pE <??> ((\l e -> semAppTop (foldl (flip ($)) e l)) <$> pLi
 %%[4.pExprAppA
                 where  pA = flip semApp <$> pE <|> pImpred
 %%]
-%%[9.pExprAppA -4.pExprAppA
+%%[12.pExprAppA -4.pExprAppA
                 where  pA = flip semApp <$> pE <|> pImpred <|> pImpl
 %%]
 %%[4.pExprAppE
@@ -379,7 +379,7 @@ pExprApp        =    pE <??> ((\l e -> semAppTop (foldl (flip ($)) e l)) <$> pLi
 %%[7.pExprAppE -4.pExprAppE
                        pE = pExprBase <**> pExprSelSuffix
 %%]
-%%[9.pExprAppImpl
+%%[12.pExprAppImpl
                        pImpl = pPackImpl ((\a p e -> Expr_AppImpl e p a) <$> pExpr <* pKey "<:" <*> pPrExpr)
 %%]
 
@@ -413,7 +413,9 @@ pExprPrefix     =    Expr_Let      <$ pLET
                 <|>  (flip (foldr ($)))
                      <$   pKey "\\"
                      <*>  pList1  (    Expr_Lam <$> pPatExprBase
+%%[[12
                                   <|>  pPackImpl (flip Expr_LamImpl <$> pPatExpr <* pKey "<:" <*> pPrExpr)
+%%]]
                                   )
                      <*   pKey "->"
 %%]

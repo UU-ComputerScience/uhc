@@ -123,7 +123,7 @@ SEM DataFieldPatExpr
   | Ext         patExpr     .  knTyL                =   []
 %%]
 
-%%[9
+%%[12
 SEM Expr
   | LamImpl     arg         .  knTyL                =   []
 %%]

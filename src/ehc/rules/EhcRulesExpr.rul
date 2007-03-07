@@ -312,7 +312,7 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge R : expr
           | e = (node 1 = eFun) ^^ ~ (node 2 = eArg)
 
-  rule e.iapp viewsel P - * "AppImpl" =
+  rule e.iapp viewsel EP - * "AppImpl" =
     view P =
       judge F : expr = implFIOpts ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; (pred.2 => knTy) :- eFun : (pred.a => ty) ~> tyCnstr.fun ; translExpr.f
       judge G : predGamLookupPrTyEv = pred.a :> _ : ty.a `elem` valGam
@@ -510,7 +510,7 @@ ruleset expr.base scheme expr "Expression type rules" =
           | ty = tyCnstr.e pred.a.._ => tyCnstr.e ty.p -> ty.e
           | translExpr = translExpr.i.._ -> \lamPat -> translExpr.e
 
-  rule e.ilam viewsel P - * "LamImpl" =
+  rule e.ilam viewsel EP - * "LamImpl" =
     view P =
       judge V : tvarvFresh
       judge fitP : match = implFIOpts :- (pred => tvarv) <=>.(<=) (tyCnstr.inh knTy) : (pred.a => ty.r) ~> tyCnstr.fitP ; coe.lam

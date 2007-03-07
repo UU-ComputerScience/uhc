@@ -299,10 +299,7 @@ SEM Expr
                                                                     :=  mkNewLevUID6    @lhs.gUniq
   | AppTop          (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
   | App AppImpred   (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
-  | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
   | Lam             (arg.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
-  | LamImpl         (argPr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
-                                                                    =   mkNewLevUID4    @lhs.gUniq
 
 SEM RecExpr
   | Expr            (expr.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
@@ -350,6 +347,13 @@ SEM Decl
 
 SEM TyExpr
   | Lam             (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl         (func.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
+  | LamImpl         (argPr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                                                    =   mkNewLevUID4    @lhs.gUniq
 %%]
 
 %%[95

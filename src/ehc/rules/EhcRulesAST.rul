@@ -30,7 +30,7 @@ data Expr   		[ expr, expr.impr 	]
   view I1
     = AppImpred  	[ e.app.f : e.app	]       eFun    	:: Expr
                                 				eArg    	:: Expr
-  view P
+  view EP
     = AppImpl       [ e.iapp 			]       eFun    	:: Expr
                                 				eArg    	:: Expr
                                 				ePred   	:: Pred

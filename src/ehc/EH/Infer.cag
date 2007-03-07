@@ -588,7 +588,7 @@ SEM DataFieldPatExpr
   | Ext         patExpr     .   inclVarBind         =   True
 %%]
 
-%%[9
+%%[12
 SEM Expr
   | LamImpl     arg         .   inclVarBind         =   True
 %%]
@@ -745,11 +745,15 @@ SEM Expr
 %%[9
 SEM Expr
   | App         func        .  fiOpts               :=  implFIOpts
-  | AppImpl     arg         .  fiOpts               =   strongFIOpts
 
 SEM Decl
   | InstanceIntro
                 expr        .  fiOpts               =   strongFIOpts
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     arg         .  fiOpts               =   strongFIOpts
 %%]
 
 %%[1010

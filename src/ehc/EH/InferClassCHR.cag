@@ -56,16 +56,21 @@ SEM AGItf
 
 SEM Expr
   | Let         decls       .   predSameScopeCounter=   if @lhs.isFirstLet then 0 else @lhs.predSameScopeCounter
-  | Lam LamImpl AppTop
+  | Lam AppTop
+%%[[12
+    LamImpl
+%%]]
                 (_,loc.predScope)                   =   if @implsIsEmpty
                                                         then (0,@lhs.predScope)
                                                         else pscpEnter 0 @lhs.predScope
-  | * - Lam LamImpl AppTop
+  | * - Lam AppTop
+%%[[12
+    LamImpl
+%%]]
                 loc         .   predScope           =   @lhs.predScope
 
 SEM Expr
   | Lam AppTop  loc         .   implsIsEmpty        =   implsIsEmpty $ tyImpls @imSubsTy
-  | LamImpl     loc         .   implsIsEmpty        =   null @knPrL
 
 SEM Decl
   | Class Instance
@@ -75,6 +80,11 @@ SEM Decl
   | Val Class Instance
                 (lhs.predSameScopeCounter,loc.predScope)
                                                     =   pscpEnter @lhs.predSameScopeCounter @lhs.predScope
+%%]
+
+%%[12
+SEM Expr
+  | LamImpl     loc         .   implsIsEmpty        =   null @knPrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
