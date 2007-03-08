@@ -297,7 +297,7 @@ cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
 cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 
-%%[9 hs export(cexprIsEvaluated)
+%%[8 hs export(cexprIsEvaluated)
 cexprIsEvaluated :: CExpr -> Bool
 cexprIsEvaluated (CExpr_Int  _) = True
 cexprIsEvaluated (CExpr_Char _) = True
