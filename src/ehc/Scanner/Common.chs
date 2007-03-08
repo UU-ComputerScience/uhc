@@ -700,6 +700,15 @@ tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
 %%]
 
+%%[15
+pDOTNET      
+  :: IsParser p Token => p Token
+%%]
+
+%%[15
+pDOTNET          = pKeyTk "dotnet"
+%%]
+
 %%[20
 pQUALIFIED      ,
     pQUESTQUEST ,
@@ -718,15 +727,6 @@ pQUESTQUEST      = pKeyTk "??"
 
 tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
-%%]
-
-%%[15
-pDOTNET      
-  :: IsParser p Token => p Token
-%%]
-
-%%[15
-pDOTNET          = pKeyTk "dotnet"
 %%]
 
 %%[95

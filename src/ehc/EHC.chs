@@ -1322,7 +1322,7 @@ cpProcessCore1 modNm
   = cpSeq [ cpTransformCore
               modNm
               -- [ "CER", "CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL", "CLU" ]
-              [ "CER", "CCP", "CRU", "CLU", "CILA", "CFL", {- "CLL", -} "CLGA", "CLU", "CFL", "CLFG" {- , "CFL", "CLU" -} ]
+              [ "CER", "CRU", "CLU", "CILA", "CCP", "CILA", "CFL", {- "CLL", -} "CLGA", "CLU", "CFL", "CLFG" {- , "CFL", "CLU" -} ]
           , cpOutputCore "core" modNm
           ]
           

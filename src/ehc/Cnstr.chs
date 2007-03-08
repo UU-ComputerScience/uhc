@@ -163,6 +163,11 @@ data CnstrInfo v
   | CIScope PredScope
   | CIPred  Pred
   | CIPoi   PredOccId
+%%[[10
+  | CILabel  Label
+  | CIOffset LabelOffset
+  | CIExts   RowExts
+%%]]
   deriving (Eq,Show)
 
 type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
@@ -243,6 +248,17 @@ assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
 assocLToCnstrImpls = Cnstr . Map.fromList . assocLMapElt CIImpls
 %%]
 
+%%[10 export(cnstrLabelUnit,cnstrOffsetUnit,cnstrExtsUnit)
+cnstrLabelUnit :: LabelVarId -> Label -> Cnstr
+cnstrLabelUnit v l = Cnstr (Map.fromList [(v,CILabel l)])
+
+cnstrOffsetUnit :: UID -> LabelOffset -> Cnstr
+cnstrOffsetUnit v l = Cnstr (Map.fromList [(v,CIOffset l)])
+
+cnstrExtsUnit :: UID -> RowExts -> Cnstr
+cnstrExtsUnit v l = Cnstr (Map.fromList [(v,CIExts l)])
+%%]
+
 %%[9 hs export(cnstrTailAddOcc)
 cnstrTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,Cnstr)
 cnstrTailAddOcc o (Impls_Tail i os) = (t, cnstrImplsUnit i t)
@@ -262,6 +278,17 @@ cnstrPoiLookup = cnstrLookup' (\ci -> case ci of {CIPoi p -> Just p; _ -> Nothin
 
 cnstrPredLookup :: TyVarId -> Cnstr -> Maybe Pred
 cnstrPredLookup = cnstrLookup' (\ci -> case ci of {CIPred p -> Just p; _ -> Nothing})
+%%]
+
+%%[10 export(cnstrLabelLookup,cnstrOffsetLookup,cnstrExtsLookup)
+cnstrLabelLookup :: LabelVarId -> Cnstr -> Maybe Label
+cnstrLabelLookup = cnstrLookup' (\ci -> case ci of {CILabel l -> Just l; _ -> Nothing})
+
+cnstrOffsetLookup :: UID -> Cnstr -> Maybe LabelOffset
+cnstrOffsetLookup = cnstrLookup' (\ci -> case ci of {CIOffset l -> Just l; _ -> Nothing})
+
+cnstrExtsLookup :: UID -> Cnstr -> Maybe RowExts
+cnstrExtsLookup = cnstrLookup' (\ci -> case ci of {CIExts l -> Just l; _ -> Nothing})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -329,5 +356,10 @@ instance PP v => PP (CnstrInfo v) where
   pp (CIScope s) = pp s
   pp (CIPoi   i) = pp i
   pp (CIPred  p) = pp p
+%%[[10
+  pp (CILabel  x) = pp x
+  pp (CIOffset x) = pp x
+  pp (CIExts   x) = pp "exts" -- pp x
+%%]]
 %%]
 

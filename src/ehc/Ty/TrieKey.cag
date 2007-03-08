@@ -63,15 +63,44 @@ instance Keyable CHRPredOcc where
 
 %%]
 
+%%[10
+WRAPPER LabelAGItf
+%%]
+
+%%[10 hs
+labelTrieKey :: Label -> [TrieKey Key]
+labelTrieKey label
+  =  let  t =  wrap_LabelAGItf
+                 (sem_LabelAGItf (LabelAGItf_AGItf label))
+                 (Inh_LabelAGItf)
+     in   (toList $ trieKey_Syn_LabelAGItf t)
+%%]
+
+%%[10 hs
+instance Keyable LabelOffset where
+  toKey (LabelOffset_Var v) = [TK_One TKK_Partial $ Key_UID v]
+  toKey (LabelOffset_Off l) = [TK_One TKK_Normal  $ Key_Str $ show l]
+
+instance Keyable Label where
+  toKey = labelTrieKey
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR TyAGItf Ty Pred [ | | trieKey: {FastSeq (TrieKey Key)} ]
+ATTR
+  TyAGItf Ty Pred
+%%[[10
+  Label LabelAGItf RowExts
+%%]]
+    [ | | trieKey: {FastSeq (TrieKey Key)} ]
 ATTR Ty  [ | | trieKeyFun, trieKeyArgs, trieKeyArgsNest: {FastSeq (TrieKey Key)} ]
 ATTR TyAGItf Ty Pred [ | | trieKeyNest: {FastSeq (TrieKey Key)} ]
+%%]
 
+%%[9
 SEM Ty
   | App             lhs     .   (trieKey,trieKeyNest)
                                                 =   if @isSpineRoot
@@ -105,14 +134,32 @@ SEM Ty
                             .   trieKeyArgs     =   empty
                             .   trieKeyArgsNest =   empty
   | App             loc     .   trieKeyFun      =   @func.trieKeyFun
-                            .   trieKeyArgs     =   @func.trieKeyArgs :++: @arg.trieKeyFun
+                            .   trieKeyArgs     =   @func.trieKeyArgs     :++: @arg.trieKeyFun
                             .   trieKeyArgsNest =   @func.trieKeyArgsNest :++: @arg.trieKeyNest
-  | Ext             loc     .   trieKeyArgs     =   @ty.trieKeyArgs :++: @extTy.trieKeyFun
+  | Ext             loc     .   trieKeyArgs     =   @ty.trieKeyArgs     :++: @extTy.trieKeyFun
                             .   trieKeyArgsNest =   @ty.trieKeyArgsNest :++: @extTy.trieKeyNest
 
 SEM Pred
   | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @pv
                             .   trieKeyNest     =   empty
+%%]
+
+%%[10
+SEM Pred
+  | Lacks           lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "\\") :++: @lab.trieKey
+                            .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
+  | RowSplit        lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "|"
+                            .   trieKeyNest     =   @ty.trieKey :++: @exts.trieKey
+%%]
+
+%%[10
+SEM Label
+  | Lab             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_HNm @nm
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @lv
+
+SEM RowExts
+  | Exts            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_Str "exts"
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @ev
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

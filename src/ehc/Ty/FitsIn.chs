@@ -606,7 +606,7 @@ fitsInFI fi ty1 ty2
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnSuffix rn "!") r CTagRec n n (mkCExprHole globOpts u) Nothing
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
-                                      in   (mkPredOcc (Pred_Lacks r' l) (mkPrId prfCxId u) predScope,r')
+                                      in   (mkPredOcc (Pred_Lacks r' (Label_Lab l)) (mkPrId prfCxId u) predScope,r')
                                  mkLPred r l u = fst (mkLPred' r l u)
                                  rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
                                  (fuUpdL,prUpdL,tr1s',_)
@@ -787,9 +787,9 @@ fitsInFI fi ty1 ty2
                             where fo = ff fi prt1 prt2
 %%]
 %%[10
-                       fP (Pred_Lacks lt1 l1)       (Pred_Lacks lt2 l2)
+                       fP (Pred_Lacks lt1 (Label_Lab l1))       (Pred_Lacks lt2 (Label_Lab l2))
                             | l1 == l2
-                            = Just (fo,Pred_Lacks (foTy fo) l1)
+                            = Just (fo,Pred_Lacks (foTy fo) (Label_Lab l1))
                             where fo = ff fi lt1 lt2
 %%]
 %%[9
@@ -1262,7 +1262,7 @@ prfOneStepClass  fe prOcc@(PredOcc pr@(Pred_Class t) prPoi _) depth
 
 %%[10
 prfOneStepLacks :: FIEnv -> PredOcc -> Int -> ProofState -> ProofState
-prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r l) prPoi _) depth
+prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r (Label_Lab l)) prPoi _) depth
                  st@(ProofState g@(ProvenGraph i2n p2i p2oi p2fi) u _ _ _ errL)
   =  case tyRowExtr l r of
        Just _ ->  st {prfs2ErrL = [Err_TooManyRowLabels [l] r] ++ errL}
@@ -1292,7 +1292,7 @@ prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r l) prPoi _) depth
                            | otherwise
                                ->  let  (u',u2) = mkNewUID u
                                         poi2 = mkPrId (poiCxId prPoi) u2
-                                        newPr = mkPredOcc (Pred_Lacks row l) poi2 (fePredScope fe)
+                                        newPr = mkPredOcc (Pred_Lacks row (Label_Lab l)) poi2 (fePredScope fe)
                                         g2 = prvgAddPrNd pr [prPoi] (ProvenAnd pr [poi2] [] pcostZero (caddint (feEHCOpts fe) (CExpr_Hole u2) offset)) g
                                    in   (prfsAddPrOccL [newPr] (depth+1) st)
                                           {prfs2ProvenGraph = g2, prfs2Uniq = u'}
@@ -1436,19 +1436,32 @@ prfPredsPruneProvenGraph isPrCheap g@(ProvenGraph i2n p2i p2oi p2fi)
 %%% Rule matching
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(fitPredInPred)
-fitPredInPred :: FIIn -> Pred -> Pred -> Maybe (Pred,Cnstr)
-fitPredInPred _  (Pred_Var pv1)     pr2@(Pred_Var pv2) | pv1 /= pv2  	= Just (pr2,pv1 `cnstrPredUnit` pr2)
-fitPredInPred _  pr1 				(Pred_Var pv2)						= Nothing
-fitPredInPred _  (Pred_Var pv1) 	pr2									= Just (pr2,pv1 `cnstrPredUnit` pr2)
-fitPredInPred fi pr1 				pr2
-  = if foHasErrs fo
-    then Nothing
-    else Just (tyPred $ foTy fo,foCnstr fo)
-  where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2 ++ fioDontBind (fiFIOpts fi)}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
-        fe = fiEnv fi
-        u  = fiUniq fi
+%%[9 export(fitPredIntoPred)
+fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,Cnstr)
+fitPredIntoPred fi pr1 pr2 
+  = f pr1 pr2
+  where f (Pred_Var pv1)    	pr2@(Pred_Var pv2) | pv1 /= pv2     = Just (pr2,pv1 `cnstrPredUnit` pr2)
+                                                   | otherwise      = Just (pr2,emptyCnstr)
+        f pr1               	(Pred_Var pv2)                      = Nothing
+        f (Pred_Var pv1)    	pr2                                 = Just (pr2,pv1 `cnstrPredUnit` pr2)
+%%[[10
+        f (Pred_Lacks (Ty_Var rv1 TyVarCateg_Plain)    (Label_Var lv1))
+          (Pred_Lacks ty2                           l2@(Label_Lab lb2))
+          = Just (Pred_Lacks ty2 l2, (rv1 `cnstrTyUnit` ty2) |=> (lv1 `cnstrLabelUnit` l2))
+        f (Pred_Lacks ty1                              (Label_Var lv1))
+          (Pred_Lacks ty2                           l2@(Label_Lab lb2))
+          | tyIsEmptyRow ty1 && tyIsEmptyRow ty2
+          = Just (Pred_Lacks ty2 l2, lv1 `cnstrLabelUnit` l2)
+%%]]
+        f pr1               	pr2
+          = if foHasErrs fo
+            then Nothing
+            else Just (tyPred $ foTy fo,foCnstr fo)
+          where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2 ++ fioDontBind (fiFIOpts fi)}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
+                fe = fiEnv fi
+                u  = fiUniq fi
 %%]
+        f (Pred_RowSplit (Ty_Var rv1) (RowExts_Var ev1))
 
 %%[9
 matchRule :: FIEnv -> UID -> PredOcc -> Rule -> Maybe ([PredOcc],(Pred,PredOccId,CExpr),CExpr,ProofCost)

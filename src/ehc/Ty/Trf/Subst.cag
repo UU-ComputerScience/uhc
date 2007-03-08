@@ -40,6 +40,18 @@ tvRepl tv c isBound repl
         _                          -> repl
 %%]
 
+%%[10
+WRAPPER LabelAGItf
+%%]
+
+%%[10 hs export(labelAppCnstr)
+labelAppCnstr cnstr label
+  =  let  t =  wrap_LabelAGItf
+                 (sem_LabelAGItf (LabelAGItf_AGItf label))
+                 (Inh_LabelAGItf {cnstr_Inh_LabelAGItf = cnstr})
+     in   repl_Syn_LabelAGItf t
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Apply substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +60,14 @@ tvRepl tv c isBound repl
 ATTR TyAGItf AllTy  [ cnstr: Cnstr  | |             ]
 ATTR AllTyAndFlds   [               | | repl: SELF  ]
 ATTR TyAGItf        [               | | repl: Ty    ]
+%%]
 
+%%[10
+ATTR LabelAGItf Label  [ cnstr: Cnstr  | |             ]
+ATTR LabelAGItf        [               | | repl: Label    ]
+%%]
+
+%%[2
 SEM Ty
   | Var             lhs     .   repl        =   maybe @repl id (cnstrTyLookup @tv @lhs.cnstr)
 %%]
@@ -79,6 +98,15 @@ SEM Impls
 
 SEM Pred
   | Var             lhs     .   repl        =   maybe @repl id (cnstrPredLookup @pv @lhs.cnstr)
+%%]
+
+%%[10
+SEM Label
+  | Var             lhs     .   repl        =   maybe @repl id (cnstrLabelLookup @lv @lhs.cnstr)
+
+SEM RowExts
+  | Exts			lhs		.	repl		=	RowExts_Exts $ assocLMapElt (tyAppCnstr @lhs.cnstr) @exts
+  | Var             lhs     .   repl        =   maybe @repl id (cnstrExtsLookup @ev @lhs.cnstr)
 %%]
 
 %%[50

@@ -195,7 +195,7 @@ SEM Ty
 
 %%[9
 ATTR TyAGItf [ | | prTy: Ty ]
-ATTR AllTy TyQu TyVarCateg [ | | prTy: SELF ]
+ATTR AllTyAndFlds [ | | prTy: SELF ]
 %%]
 
 %%[9

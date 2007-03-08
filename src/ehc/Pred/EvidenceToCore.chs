@@ -54,6 +54,14 @@ data ToCoreRes
       }
 %%]
 
+%%[9
+instance Show ToCoreRes where
+  show _ = "ToCoreRes"
+
+instance PP ToCoreRes where
+  pp r = "TCR" >#< tcrCExpr r
+%%]
+
 %%[9 export(AmbigEvid(..))
 data AmbigEvid
   = AmbigEvid
@@ -81,23 +89,27 @@ evidMpToCore env evidMp
   where (evidMp',ambigs) = unzip [ ((i,ev3),as) | (i,ev) <- Map.toList evidMp, let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
         mke (RedHow_ProveObl i _,ev) st = fst $ mk1 st (Just i) ev
         mk1 st mbevk ev@(Evid_Proof p info evs)
-                      = ins (insk || isJust mbevk) (maybe evk id mbevk) evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
+                      = ins (insk || isJust mbevk) evk evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
                       where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn st evs
                             (c,sc)          = ann info rs
                             (u',evk,insk,evnm,uses)
                                             = case info of
-                                                RedHow_ProveObl   i   _ -> (u,i,True,mkHNm i,Set.empty)
-                                                RedHow_Assumption i n s -> (u,i,False,n,Set.singleton (i,s))
-                                                _                       -> (u1,u2,True,mkHNm u2,Set.empty)
+                                                RedHow_ProveObl   i   _ -> (u,choosek i,True,choosen $ mkHNm i,Set.empty)
+                                                RedHow_Assumption i n s -> (u,choosek i,False,choosen n,Set.singleton (i,s))
+                                                _                       -> (u1,choosek u2,True,choosen $ mkHNm u2,Set.empty)
                                                                         where (u1,u2) = mkNewUID u
+                            choosek k = maybe k id mbevk
+                            choosen n = maybe n mkHNm mbevk
         mkn st        = foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
         mknm          = CExpr_Var
         ins insk k evnm ev c sc uses st
-                      = case Map.lookup ev $ tcsEvMp st of
-                          Just r -> (        mkk r                     st,vr r)
-                          _      -> (mkc r $ mkk (ToCoreRes c uses sc) st,   r)
-                      where mkk r st = if insk then st {tcsMp = Map.insert k r $ tcsMp st} else st
+                      = {- trp "XX" ((ppAssocLV $ Map.toList $ tcsMp st') >-< (ppAssocLV $ Map.toList $ tcsEvMp st')) $ -} res
+                      where res@(st',_)
+                              = case Map.lookup ev $ tcsEvMp st of
+                                  Just r -> (        mkk r                     st,vr r)
+                                  _      -> (mkc r $ mkk (ToCoreRes c uses sc) st,   r)
+                            mkk r st = if insk then st {tcsMp = Map.insert k r $ tcsMp st} else st
                             mkc v st = st {tcsEvMp = Map.insert ev v $ tcsEvMp st}
                             v = mknm evnm
                             r = ToCoreRes (vc c v) uses sc
@@ -115,6 +127,10 @@ evidMpToCore env evidMp
                                                      [(n,n,o)] Nothing (CExpr_Var n)
                                                  , tcrScope sub
                                                  )
+%%[[10
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( CExpr_Int o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( caddint (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
+%%]]
         strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
         strip ev                                 = ev

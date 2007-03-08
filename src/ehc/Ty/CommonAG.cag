@@ -177,14 +177,7 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[3
-ATTR TyVarCateg [ | | self: SELF ]
+ATTR AllTyAndFlds [ | | self: SELF ]
 %%]
 
-%%[4
-ATTR TyQu [ | | self: SELF ]
-%%]
-
-%%[4
-ATTR AllTy [ | | self: SELF ]
-%%]
 

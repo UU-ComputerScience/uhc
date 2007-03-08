@@ -7,6 +7,9 @@
 %%% Haskell importable interface to refresh tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Replace type variables with fresh ones.
+Module is currently not used.
+
 %%[4 hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyFreshVar)
 %%]
 
@@ -35,6 +38,13 @@ ATTR TyAGItf AllTyAndFlds [ allowFresh: {TyVarId -> Bool} | | ]
 
 SEM Ty
   | Quant           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
+%%]
+
+Arbitrary:
+
+%%[10
+SEM LabelAGItf
+  | AGItf           loc     .   allowFresh  =   const False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

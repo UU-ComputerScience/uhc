@@ -68,6 +68,19 @@ instance Substitutable Ty TyVarId Cnstr where
   ftv    = tyFtv
 %%]
 
+%%[10
+instance Substitutable Label TyVarId Cnstr where
+  (|=>)             = labelAppCnstr
+  ftv (Label_Var v) = [v]
+  ftv _             = []
+
+instance Substitutable LabelOffset TyVarId Cnstr where
+  s |=> o@(LabelOffset_Var v) = maybe o id $ cnstrOffsetLookup v s
+  s |=> o                     = o
+  ftv (LabelOffset_Var v) = [v]
+  ftv _                   = []
+%%]
+
 %%[2.SubstitutableList
 instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
   s      |=>  l   =   map (s |=>) l
@@ -98,11 +111,11 @@ instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where
 %%[9.SubstitutableCnstr -2.SubstitutableCnstr
 instance Substitutable (Cnstr' TyVarId (CnstrInfo Ty)) TyVarId Cnstr where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 `Map.union` Map.map (s1 |=>) sl2)
-  ftv                  (Cnstr sl)      =   ftv . Map.elems $ sl
+  ftv                  (Cnstr sl)      =   ftv $ Map.elems sl
 %%]
 instance (Ord k,Substitutable v k subst) => Substitutable (Cnstr' k v) k subst where
   s1@(Cnstr sl1) |=>   s2@(Cnstr sl2)  =   Cnstr (sl1 `Map.union` Map.map (s1 |=>) sl2)
-  ftv                  (Cnstr sl)      =   ftv . Map.elems $ sl
+  ftv                  (Cnstr sl)      =   ftv $ Map.elems sl
 
 %%[9
 instance Substitutable Pred TyVarId Cnstr where
@@ -132,7 +145,9 @@ instance Substitutable CHRPredOcc TyVarId Cnstr where
 instance Substitutable Impls TyVarId Cnstr where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
   ftv    i  =  ftv (Ty_Impls i)
+%%]
 
+%%[9
 instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
   s |=>  ci =  case ci of
                  CITy     t  -> CITy (s |=> t)
@@ -140,12 +155,30 @@ instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
                  CIPred   i  -> CIPred (s |=> i)
                  CIPoi    i  -> CIPoi (s |=> i)
                  CIScope  sc -> CIScope (s |=> sc)
+%%[[10
+                 CIExts   x  -> CIExts (s |=> x)
+                 ci          -> ci
+%%]]
   ftv    ci =  case ci of
                  CITy     t  -> ftv t
                  CIImpls  i  -> ftv i
                  CIPred   i  -> ftv i
                  CIPoi    i  -> ftv i
                  CIScope  sc -> ftv sc
+%%[[10
+                 CIExts   x  -> ftv x
+                 ci          -> []
+%%]]
+%%]
+
+This is still/regretfully duplicated in Ty/Subst.cag, Ty/Ftv.cag
+
+%%[10
+instance Substitutable RowExts TyVarId Cnstr where
+  s |=>  e@(RowExts_Var  v) = maybe e id $ cnstrExtsLookup v s
+  s |=>    (RowExts_Exts x) = RowExts_Exts $ assocLMapElt (s |=>) x
+  ftv      (RowExts_Var  v) = [v]
+  ftv    _                  = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

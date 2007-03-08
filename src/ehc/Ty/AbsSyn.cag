@@ -16,6 +16,11 @@ DATA TyAGItf
   | AGItf       ty              : Ty
 %%]
 
+%%[10
+DATA LabelAGItf
+  | AGItf       lab            	: Label
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,57 +199,132 @@ TYPE TyPlusL    =   [TyPlus]
 DATA Pred
   | Class       ty              : Ty
   | Pred        ty              : Ty
-  | Var         pv              : TyVarId		-- only used by CHR's
 %%]
 
 %%[10
 DATA Pred
   | Lacks       ty              : Ty
-                nm              : {HsName}
+                lab             : Label
+%%]
+
+%%[10
+DATA Label
+  | Lab			nm              : HsName
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR specific
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA Pred
+  | Var         pv              : TyVarId
+%%]
+
+%%[10
+DATA Pred
+  | RowSplit	ty				: Ty				
+  				exts			: RowExts
+%%]
+
+%%[10
+DATA RowExts										
+  | Exts		exts			: {AssocL HsName Ty}
+  | Var			ev              : UID
+%%]
+
+%%[10
+DATA Label
+  | Var			lv              : LabelVarId		
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SET's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1
+SET AllTyTy
+  = Ty
+%%[[4_2
+    TyL TyPlus TyPlusL
+%%]]
+%%[[7_2
+    TyExpConstrs TyExpConstr TyExpFields TyExpField
+%%]]
+%%]
+
+%%[1
+SET AllTy
+  = AllTyTy
+%%[[9
+    Pred Impls
+%%]]
+%%[[10
+    RowExts
+%%]]
+%%]
+
+%%[1
+SET AllTyAndFlds
+  = AllTy
+%%[[3
+    TyVarCateg
+%%]]
+%%[[4
+    TyQu
+%%]]
+%%[[10
+    Label
+%%]]
+%%]
+
+Less concise version:
+
 %%[1.AllTy
+%%]
 SET AllTyTy         = Ty
 SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy
-%%]
 
 %%[3.AllTy -1.AllTy
+%%]
 SET AllTyTy         = Ty
 SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy TyVarCateg
-%%]
 
 %%[4.AllTy -3.AllTy
+%%]
 SET AllTyTy         = Ty
 SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-%%]
 
 %%[4_2.AllTy -4.AllTy
+%%]
 SET AllTyTy         = Ty TyL TyPlus TyPlusL
 SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-%%]
 
 %%[7_2.AllTy -4.AllTy
+%%]
 SET AllTyTy         = Ty TyExpConstrs TyExpConstr TyExpFields TyExpField
 SET AllTy           = AllTyTy
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-%%]
 
 %%[9.AllTy -4.AllTy
+%%]
 SET AllTyTy         = Ty
 SET AllTy           = AllTyTy Pred Impls
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-%%]
 
 %%[9_1.AllTy -4_2.AllTy
+%%]
 SET AllTyTy         = Ty TyL TyPlus TyPlusL
 SET AllTy           = AllTyTy Pred Impls
 SET AllTyAndFlds    = AllTy TyVarCateg TyQu
+
+%%[10.AllTy -9.AllTy
 %%]
+SET AllTyTy         = Ty
+SET AllTy           = AllTyTy Pred Impls Label
+SET AllTyAndFlds    = AllTy TyVarCateg TyQu
+
