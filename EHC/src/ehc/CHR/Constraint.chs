@@ -41,13 +41,13 @@ instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
          ; chrMatchTo env p1 p2
          }
 
-instance CHRSubstitutable p v s => CHRSubstitutable (Constraint p info) v s where
+instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable (Constraint p info) v s where
   chrFtv c
     = case reducablePart c of
         Just (_,p,_) -> chrFtv p
         _            -> Set.empty
 
-  chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) i (map (chrAppSubst s) ps)
+  chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) (chrAppSubst s i) (map (chrAppSubst s) ps)
   chrAppSubst s      c                  = case reducablePart c of
                                             Just (_,p,mk) -> mk (chrAppSubst s p)
                                             _             -> c

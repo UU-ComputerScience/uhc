@@ -22,6 +22,9 @@ Derived from work by Gerrit vd Geest.
 %%[9 import({%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
 %%]
 
+%%[10 import({%{EH}Base.Builtin})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,7 +32,7 @@ Derived from work by Gerrit vd Geest.
 %%[9
 instance CHRMatchable FIIn Pred Cnstr where
   chrMatchTo fi pr1 pr2
-    = do { (_,subst) <- fitPredInPred fi pr1 pr2
+    = do { (_,subst) <- fitPredIntoPred fi pr1 pr2
          ; return subst
          }
 
@@ -76,6 +79,10 @@ instance CHRSubstitutable CHRPredOcc TyVarId Cnstr where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 
+instance CHRSubstitutable PredScope TyVarId Cnstr where
+  chrFtv        x = Set.fromList (ftv x)
+  chrAppSubst s x = s |=> x
+
 instance CHRSubstitutable CHRPredOccCnstrMp TyVarId Cnstr where
   chrFtv        x = Set.unions [ chrFtv k | k <- Map.keys x ]
   chrAppSubst s x = Map.mapKeys (chrAppSubst s) x
@@ -85,18 +92,65 @@ instance CHRSubstitutable Cnstr TyVarId Cnstr where
   chrAppSubst s x = s |=> x
 
 instance CHRSubstitutable Guard TyVarId Cnstr where
-  chrFtv        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map (Set.fromList . ftv) [p1,p2,p3]
-  chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map (Set.fromList . ftv) [p1,p2,p3]
-  chrFtv        (IsVisibleInScope p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
-  chrFtv        (NotEqualScope    p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
+  chrFtv        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
+  chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
+  chrFtv        (IsVisibleInScope p1 p2     ) = Set.unions $ map ftvSet [p1,p2]
+  chrFtv        (NotEqualScope    p1 p2     ) = Set.unions $ map ftvSet [p1,p2]
+%%[[10
+  chrFtv        (NonEmptyRowLacksLabel r o t l) = Set.unions [ftvSet r,ftvSet o,ftvSet t,ftvSet l]
+  chrFtv        (IsEmptyRow                t  ) = ftvSet t
+%%]]
 
   chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s |=> p1) (s |=> p2) (s |=> p3)
   chrAppSubst s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s |=> p1) (s |=> p2) (s |=> p3)
   chrAppSubst s (IsVisibleInScope p1 p2   ) = IsVisibleInScope (s |=> p1) (s |=> p2)
   chrAppSubst s (NotEqualScope    p1 p2   ) = NotEqualScope    (s |=> p1) (s |=> p2)
+%%[[10
+  chrAppSubst s (NonEmptyRowLacksLabel r o t l) = NonEmptyRowLacksLabel (s |=> r) (s |=> o) (s |=> t) (s |=> l)
+  chrAppSubst s (IsEmptyRow                t  ) = IsEmptyRow                                (s |=> t)
+%%]]
 %%]
-  -- chrFtv        (IsParentScope    p1 p2   ) = Set.unions $ map (Set.fromList . ftv) [p1,p2]
-  -- chrAppSubst s (IsParentScope    p1 p2   ) = IsParentScope    (s |=> p1) (s |=> p2)
+
+%%[9
+instance CHRSubstitutable RedHowAnnotation TyVarId Cnstr where
+%%[[10
+  chrFtv        (RedHow_ByLabel      l o sc)  = Set.unions [chrFtv l,chrFtv o,chrFtv sc]
+%%]]
+  chrFtv        _                             = Set.empty
+
+%%[[10
+  chrAppSubst s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (chrAppSubst s l) (chrAppSubst s o) (chrAppSubst s sc)
+%%]]
+  chrAppSubst _ x                             = x
+%%]
+
+%%[10
+instance CHRSubstitutable Label TyVarId Cnstr where
+  chrFtv        x = Set.fromList (ftv x)
+  chrAppSubst s x = s |=> x
+
+instance CHRSubstitutable LabelOffset TyVarId Cnstr where
+  chrFtv        x = Set.fromList (ftv x)
+  chrAppSubst s x = s |=> x
+%%]
+
+%%[10
+instance CHRMatchable FIIn Label Cnstr where
+  chrMatchTo _ (Label_Var v1) lb2@(Label_Var v2) | v1 == v2  = Just emptyCnstr
+                                                 | otherwise = Just $ v1 `cnstrLabelUnit` lb2
+  chrMatchTo _ _                  (Label_Var v2)             = Nothing
+  chrMatchTo _ (Label_Var v1) lb2                            = Just $ v1 `cnstrLabelUnit` lb2
+  chrMatchTo _ (Label_Lab l1)     (Label_Lab l2) | l1 == l2  = Just emptyCnstr
+  chrMatchTo _ _              _                              = Nothing
+
+instance CHRMatchable FIIn LabelOffset Cnstr where
+  chrMatchTo _ (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2  = Just emptyCnstr
+                                                             | otherwise = Just $ v1 `cnstrOffsetUnit` of2
+  chrMatchTo _ _                        (LabelOffset_Var v2)             = Nothing
+  chrMatchTo _ (LabelOffset_Var v1) of2                                  = Just $ v1 `cnstrOffsetUnit` of2
+  chrMatchTo _ (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2  = Just emptyCnstr
+  chrMatchTo _ _                    _                                    = Nothing
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lattice ordering, for annotations which have no ordering
@@ -135,6 +189,10 @@ data Guard
   | IsVisibleInScope        PredScope PredScope                             -- is visible in 2nd scope?
   | NotEqualScope           PredScope PredScope                             -- scopes are unequal
   | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
+%%[[10
+  | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
+  | IsEmptyRow    			Ty												-- is row empty?
+%%]]
 %%]
   | IsParentScope       PredScope PredScope                             -- is parent scope?
 
@@ -148,6 +206,10 @@ instance PP Guard where
   -- pp (IsParentScope sc1 sc2) = sc1 >#< "+ 1 ==" >#< sc2
   pp (IsVisibleInScope sc1 sc2) = sc1 >#< "`visibleIn`" >#< sc2
   pp (NotEqualScope    sc1 sc2) = sc1 >#< "/=" >#< sc2
+%%[[10
+  pp (NonEmptyRowLacksLabel r o t l) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
+  pp (IsEmptyRow                t  ) = t >#< "==" >#< hsnRowEmpty
+%%]]
 %%]
 
 %%[9
@@ -177,6 +239,13 @@ instance CHRCheckable Guard Cnstr where
     = return $ vDst `cnstrScopeUnit` sc1
   chrCheck (IsVisibleInScope scDst sc1) | pscpIsVisibleIn scDst sc1
     = return emptyCnstr
+%%[[10
+  chrCheck (NonEmptyRowLacksLabel (Ty_Var tv TyVarCateg_Plain) (LabelOffset_Var vDst) ty (Label_Lab lab)) | not (null exts) -- tyIsEmptyRow row
+    = return $ (vDst `cnstrOffsetUnit` LabelOffset_Off offset)
+               |=> (tv `cnstrTyUnit` row)
+    where (row,exts) = tyRowExts ty
+          offset = tyExtsOffset lab $ tyRowCanonOrder exts
+%%]]
   chrCheck _
     = Nothing
 %%]

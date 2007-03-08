@@ -98,6 +98,33 @@ instance PP ImplsProveOcc where
   pp o = ipoId o >|< "/" >|< ipoScope o
 %%]
 
+%%[10 hs
+instance PP LabelOffset where
+  pp = pp . show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface specifically for Label
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[10
+WRAPPER LabelAGItf
+%%]
+
+%%[10 hs
+ppLabel :: Label -> PP_Doc
+ppLabel lab
+  =  let  t =  wrap_LabelAGItf
+                 (sem_LabelAGItf (LabelAGItf_AGItf lab))
+                 (Inh_LabelAGItf)
+     in   pp_Syn_LabelAGItf t
+%%]
+
+%%[10 hs
+instance PP Label where
+  pp = ppLabel
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Configuration of PP of Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -171,17 +198,46 @@ cfgAside c a b = if cfgPPTyFollowAST c then a >-< b else a >#< b
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Internal utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7.ppExts hs
+ppExts :: HsName -> PP_Doc -> [PP_Doc] -> PP_Doc
+ppExts appFunNm appFunPP appArgPPL
+  = ppNice
+  where ppNice = ppAppTop (hsnRow,mkPPAppFun appFunNm appFunPP)
+                          appArgPPL empty
+%%]
+
+%%[8 -7.ppExts hs
+ppExts :: CfgPPTy -> HsName -> PP_Doc -> [PP_Doc] -> (PP_Doc,PP_Doc)
+ppExts cfg appFunNm appFunPP appArgPPL
+  = (ppNice,ppCfg)
+  where ppNice = ppAppTop (hsnRow,mkPPAppFun appFunNm appFunPP)
+                          appArgPPL empty
+        ppCfg  = if cfgPPTyFollowAST cfg
+                 then let (e:es) = appArgPPL 
+                      in  hv ([hsnORow >#< appFunPP,"|" >#< e] ++ map ("," >#<) es ++ [pp hsnCRow])
+                 else ppNice
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The context (of a config) of a type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR TyAGItf AllTy [ cfg: CfgPPTy | | ]
+ATTR TyAGItf AllTyAndFlds [ cfg: CfgPPTy | | ]
 %%]
 
 %%[9
 SEM Pred
   | Pred        loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Pred }
   | * - Pred    loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Ty   }
+%%]
+
+%%[10
+SEM LabelAGItf
+  | AGItf       loc         .   cfg             =   cfgPPTyDflt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,12 +289,22 @@ tvCategPrefix TyVarCateg_Exist = "C"
 %%]
 
 %%[3
-ATTR AllTy [ | tnUniq: {Int}  tnMap: TVarNameMap | ]
+ATTR AllTyAndFlds [ | tnUniq: {Int}  tnMap: TVarNameMap | ]
+%%]
 
+%%[3
 SEM TyAGItf
   | AGItf           ty      .   tnUniq      =   0
                             .   tnMap       =   []
+%%]
 
+%%[10
+SEM LabelAGItf
+  | AGItf       	loc     .   tnUniq      =   0
+                            .   tnMap       =   []
+%%]
+
+%%[3
 SEM Ty
   | Quant 
 %%[[11
@@ -264,8 +330,15 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.pp
-ATTR TyAGItf AllTy [ | | pp USE {>#<} {empty}: PP_Doc ]
+ATTR
+  TyAGItf AllTyAndFlds
+%%[[10
+  LabelAGItf
+%%]]
+    [ | | pp USE {>#<} {empty}: PP_Doc ]
+%%]
 
+%%[1
 SEM Ty
   | Con             loc     .   pp      =   ppCon @nm
   | App             loc     .   ppDflt  =   @func.pp >#< @arg.pp
@@ -310,8 +383,6 @@ SEM Ty
 %%]
 
 %%[4.Quant -3.Quant
-ATTR TyQu [ | | pp: PP_Doc ]
-
 SEM Ty
   | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
                                                        (@qu.pp >#< @tnPP >#< "." >#< @ty.pp)
@@ -355,8 +426,7 @@ SEM TyQu
 
 %%[7
 SEM Ty
-  | Ext             loc     .   ppNice  =   ppAppTop  (hsnRow,mkPPAppFun @appFunNm @appFunPP)
-                                                      @appArgPPL empty
+  | Ext             loc     .   ppNice  =   ppExts @appFunNm @appFunPP @appArgPPL
                             .   pp      =   @ppNice
 %%]
 
@@ -385,12 +455,9 @@ SEM TyExpFields
 %%[8
 SEM Ty
   | Ext             loc     .   ppDflt  =   hsnORow >#< @ty.pp >#< "|" >#< @fldPP >#< hsnCRow
-                            .   pp      :=  if @isSpineRoot
-                                            then if cfgPPTyFollowAST @lhs.cfg
-                                                 then let (e:es) = @appArgPPL 
-                                                      in  hv ([hsnORow >#< @appFunPP,"|" >#< e] ++ map ("," >#<) es ++ [pp hsnCRow])
-                                                 else @ppNice
-                                            else @ppNice
+                            .   (ppNice,ppCfg)
+                                        :=  ppExts @lhs.cfg @appFunNm @appFunPP @appArgPPL
+                            .   pp      :=  if @isSpineRoot then @ppCfg else @ppNice
 %%]
 
 %%[9
@@ -420,7 +487,12 @@ SEM TyPlus
 
 %%[10
 SEM Pred
-  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< cfgPPTyPPHsn @lhs.cfg @nm
+  | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @lab.pp
+  | RowSplit		(_,lhs.pp)			=	ppExts @lhs.cfg @ty.appFunNm @ty.appFunPP @exts.appArgPPL
+
+SEM Label
+  | Lab             lhs     .   pp      =   cfgPPTyPPHsn @lhs.cfg @nm
+  | Var             lhs     .   pp      =   maybe (mkDefaultTvNm @lhs.cfg "l" @lv) id (lookup @lv @lhs.tnMap)
 %%]
 
 %%[11
@@ -471,6 +543,9 @@ SEM Pred
 %%[1.appFunPP
 ATTR Ty [ | | appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
 %%]
+%%[10
+ATTR RowExts [ | | appArgPPL: {[PP_Doc]} ]
+%%]
 
 %%[1.appFunPP.Ty
 SEM Ty
@@ -501,6 +576,12 @@ SEM Ty
                                                                  (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
   | Ext             loc     .  fldPP        :=  let pn = if cfgPPTyFollowAST @lhs.cfg then Nothing else Just @positionalNm
                                                 in  ppFld "::" pn @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp
+%%]
+
+%%[10
+SEM RowExts
+  | Exts			loc		.	appArgPPL	=	[ ppFld "::" Nothing l (pp l) (ppTyWithCfg @lhs.cfg t) | (l,t) <- @exts ]
+  | Var				loc		.	appArgPPL	=	[ maybe (mkDefaultTvNm @lhs.cfg "e" @ev) id (lookup @ev @lhs.tnMap) ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

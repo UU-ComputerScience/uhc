@@ -240,6 +240,11 @@ anncmpEHCScoped env ann1 ann2
                                                                                             ord  -> toPartialOrdering ord
       (HeurRed (RedHow_ByInstance  _ _  _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
+%%[[10
+      (HeurRed (RedHow_ByLabel     _ _  s) _, HeurRed (RedHow_ByLabel     _ _  t) _)  ->  toPartialOrdering $ pscpCmpByLen s t
+      (HeurRed (RedHow_ByLabel     _ _  _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_ByLabel     _ _  _) _)  ->  P_LT
+%%]]
       (HeurRed (RedHow_BySuperClass _ _ _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_BySuperClass _ _ _) _)  ->  P_LT
       (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)

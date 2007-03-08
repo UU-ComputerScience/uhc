@@ -343,7 +343,7 @@ mkTyQuEx q tvS tvExS t = mkTyQu q (Set.toList tvS) (mkTyQu (tyquExists q) (Set.t
 
 %%[4.quTy
 ATTR TyAGItf [ | | quTy: Ty ]
-ATTR AllTy TyQu TyVarCateg [ | | quTy: SELF ]
+ATTR AllTyAndFlds [ | | quTy: SELF ]
 
 SEM TyAGItf
   | AGItf       lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS @ty.quTy

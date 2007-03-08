@@ -256,7 +256,7 @@ ppSolveTrace tr = ppBracketsCommasV [ pp st | st <- tr ]
 %%[9 export(chrSolve,chrSolve',chrSolve'')
 chrSolve
   :: ( CHRMatchable env p s, CHRCheckable g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
@@ -266,7 +266,7 @@ chrSolve env chrStore cnstrs
 
 chrSolve'
   :: ( CHRMatchable env p s, CHRCheckable g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => env -> CHRStore p i g s -> [Constraint p i] -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
@@ -276,7 +276,7 @@ chrSolve' env chrStore cnstrs
 
 chrSolve''
   :: ( CHRMatchable env p s, CHRCheckable g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => env -> CHRStore p i g s -> [Constraint p i] -> SolveState p i g s -> SolveState p i g s

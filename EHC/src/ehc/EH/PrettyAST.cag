@@ -39,9 +39,11 @@ SEM AGItf
                         .  info_9   =   []
 
 SEM Decl
-  | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] @info
-                loc     .  info     =   [ mkInfo1 "lhs.tySigGam" (ppGam @lhs.tySigGam)
+  | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] (@info_1 ++ @info_2 ++ @info_9)
+                loc     .  info_1   =   [ mkInfo1 "lhs.tySigGam" (ppGam @lhs.tySigGam)
                                         ]
+                        .  info_2   =   [ ]
+                        .  info_9   =   [ ]
   | TySig       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","TySig"] [ppNm @nm] [@tyExpr.ppAST] (@info_1 ++ @info_5)
                 loc     .  info_1   =   [ mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
                                         ]
@@ -138,8 +140,7 @@ SEM Decls
 
 %%[2
 SEM Decl
-  | Val         loc     .  info     :=  [ mkInfo1 "lhs.tySigGam" (ppGam @lhs.tySigGam)
-                                        , mkInfo1 "ty_sig_" (ppTy @ty_sig_)
+  | Val         loc     .  info_2   :=  [ mkInfo1 "ty_sig_" (ppTy @ty_sig_)
                                         , mkInfo1 "patExpr.ty" (ppTy @patExpr.ty)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
                                         , mkInfo1 "lhs.tyCnstr" (ppCnstrV @lhs.tyCnstr)
@@ -460,6 +461,8 @@ SEM PrExpr
   | Arrow       loc     .  ppAST    =   ppNest ["PrExpr","Arrow"] [] [@arg.ppAST,@res.ppAST]
 
 SEM Decl
+  | Val         loc     .  info_9   :=  [ mkInfo1 "predScope" (pp @predScope)
+                                        ]
   | Class       loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Class"] [] [ @tyPrExpr.ppAST
 %%[[15
                                                                                  , @funcDeps.ppAST
@@ -532,6 +535,7 @@ SEM Expr
                                         -- , if @lhs.isFirstLet then mkInfo1 "chrStore" (ppCHRStore @chrStore) else ("",empty)
                                         , mkInfo1 "chrSolve1DoneConstraints" (ppBracketsCommasV @chrSolve1DoneConstraints)
                                         , mkInfo1 "chrSolve1RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve1RemCnstrMp)
+                                        , mkInfo1 "chrSolve1EvidMp" (ppAssocLV $ Map.toList @chrSolve1EvidMp)
                                         , mkInfo1 "chrSolve1EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1EvidBindMp)
                                         , mkInfo1 "chrSolve1ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1ScopeBindMp)
                                         , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)

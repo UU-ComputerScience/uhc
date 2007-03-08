@@ -342,7 +342,7 @@ SEM PrExpr
 
 %%[10
 SEM PrExpr
-  | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow @nm
+  | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow (Label_Lab @nm)
   | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `mkConApp` [@tyExpr.ty])
 %%]
 

@@ -32,6 +32,9 @@ data RedHowAnnotation
   |  RedHow_ProveObl      UID  PredScope
   |  RedHow_Assumption    UID  HsName  PredScope
   |  RedHow_ByScope
+%%[[10
+  |  RedHow_ByLabel       Label LabelOffset PredScope
+%%]]
   deriving (Eq, Ord)
 %%]
 
@@ -47,6 +50,9 @@ instance PP RedHowAnnotation where
   pp (RedHow_ProveObl     i   sc)  = "prove" >#< i >#< sc
   pp (RedHow_Assumption   _ n sc)  = "assume" >#< n >#< sc
   pp (RedHow_ByScope            )  = pp "scope"
+%%[[10
+  pp (RedHow_ByLabel      l o sc)  = "label" >#< l >|< "@" >|< o >|< sc
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

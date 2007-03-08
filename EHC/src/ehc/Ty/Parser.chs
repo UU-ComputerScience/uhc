@@ -37,7 +37,7 @@ pTyBase
   <|> Ty_Pred
       <$ pOIMPL
          <*> (pTy
-              <**> (   (flip Pred_Lacks) <$ pLAM <*> pDollNm
+              <**> (   (flip Pred_Lacks) <$ pLAM <*> (Label_Lab <$> pDollNm <|> Label_Var <$> pUIDHI)
                    <|> pSucceed Pred_Class
              )     )
          <*  pCIMPL

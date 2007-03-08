@@ -20,19 +20,19 @@ SEM Expr
 %%[10
 SEM Expr
   | Sel         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq2
-                            .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) @lbl) @prUid @lhs.predScope]
+                            .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) (Label_Lab @lbl)) @prUid @lhs.predScope]
                 lhs         .   gathPredL           =   @prOccL ++ @expr.gathPredL
   | Rec         lhs         .   gathPredL           =   foPredOccL @fo_ ++ @recExpr.gathPredL
 
 SEM RecExpr
   | Ext         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq3
   | Upd         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq4
-  | Ext Upd     loc         .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) @nm) @prUid @lhs.predScope]
+  | Ext Upd     loc         .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) (Label_Lab @nm)) @prUid @lhs.predScope]
                 lhs         .   gathPredL           =   @prOccL ++ @recExpr.gathPredL ++ @expr.gathPredL
 
 SEM RecPatExpr
   | Ext         loc         .   prUid               =   mkPrId @lhs.prfCtxtId @lUniq3
-                            .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @knRecTy) @nm) @prUid @lhs.predScope]
+                            .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @knRecTy) (Label_Lab @nm)) @prUid @lhs.predScope]
                 lhs         .   gathPredL           =   @prOccL ++ @recPatExpr.gathPredL ++ @patExpr.gathPredL
 %%]
 

@@ -16,12 +16,6 @@
 %%[8 hs export(RPatNm(..))
 %%]
 
-%%[8 hs export(mkCExprLet,mkCExprLetRec,mkCExprLam,mkCExprApp)
-%%]
-
-%%[8 hs export(mkCExprStrictIn)
-%%]
-
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp,LevMp,fvLev,fvsLev)
 %%]
 
@@ -256,9 +250,18 @@ instance Show RPatNm where
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLam,mkCExprApp,mkCExprStrictIn)
+mkCExprLet' :: Bool -> CBindCateg -> CBindL -> CExpr -> CExpr
+mkCExprLet' merge c bs e
+  = if null bs
+    then e
+    else case e of
+           CExpr_Let c' bs' e' | merge && c' == c
+             -> CExpr_Let c (bs++bs') e'
+           _ -> CExpr_Let c bs e
+
 mkCExprLet :: CBindCateg -> CBindL -> CExpr -> CExpr
-mkCExprLet c bs e = if null bs then e else CExpr_Let c bs e
+mkCExprLet c bs e = mkCExprLet' False c bs e
 
 mkCExprLetRec :: CBindL -> CExpr -> CExpr
 mkCExprLetRec = mkCExprLet CBindRec
@@ -272,11 +275,6 @@ mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
 mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
 %%]
-
-%%[8 hs
-%%]
-mkCExprAddInt :: CExpr -> Int -> CExpr
-mkCExprAddInt e i = if i == 0 then e else CExpr_Var hsnPrimAddInt `mkCExprApp` [e,CExpr_Int i]
 
 %%[8 hs
 mkCMod :: CExpr -> CModule
@@ -299,13 +297,25 @@ cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
 cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 
+%%[9 hs export(cexprIsEvaluated)
+cexprIsEvaluated :: CExpr -> Bool
+cexprIsEvaluated (CExpr_Int  _) = True
+cexprIsEvaluated (CExpr_Char _) = True
+cexprIsEvaluated _              = False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Operator construction, expressed in terms of primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(caddint)
 caddint :: EHCOpts -> CExpr -> Int -> CExpr
-caddint opts e i = if i == 0 then e else CExpr_Var (ehbnPrimAddInt $ ehcOptBuiltinNames opts) `mkCExprApp` [e,CExpr_Int i]
+caddint opts e i
+  = if i == 0
+    then e
+    else case e of
+           CExpr_Int i' -> CExpr_Int $ i+i'
+           _            -> CExpr_Var (ehbnPrimAddInt $ ehcOptBuiltinNames opts) `mkCExprApp` [e,CExpr_Int i]
 %%]
 
 %%[8 hs export(cgtint)
@@ -476,8 +486,6 @@ mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
 instance Show Coe where
   show _ = "COE"
 %%]
-
-CExpr_HoleLet
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Module merge

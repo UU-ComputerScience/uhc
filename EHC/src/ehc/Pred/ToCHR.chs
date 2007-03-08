@@ -69,18 +69,37 @@ Hence we can safely use non-unique variables.
 ([sc1,sc2,sc3]
  ,[poi1,poi2,poi3]
  ,[pr1,pr2,pr3]
+%%[[10
+ ,[ty1,ty2]
+ ,[lab1]
+ ,[off1]
+%%]]
  )
   = ( map PredScope_Var [u1,u2,u3]
     , map PredOccId_Var [u4,u5,u6]
     , map Pred_Var [u7,u8,u9]
+%%[[10
+    , map mkTyVar [u10,u11]
+    , map Label_Var [u12]
+    , map LabelOffset_Var [u13]
+%%]]
     )
+%%[[9
   where [u1,u2,u3,u4,u5,u6,u7,u8,u9] = mkNewLevUIDL 9 uidStart
+%%][10
+  where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13] = mkNewLevUIDL 13 uidStart
+%%]]
 %%]
 
 %%[9 export(initScopedPredStore)
 initScopedPredStore :: ScopedPredStore
 initScopedPredStore
-  = chrStoreFromElems [scopeProve,scopeAssum]
+  = chrStoreFromElems
+      [ scopeProve, scopeAssum
+%%[[10
+      , labelProve1, labelProve2
+%%]]
+      ]
   where  p1s1         = mkCHRPredOcc pr1 sc1
          p1s2         = mkCHRPredOcc pr1 sc2
          p1s3         = mkCHRPredOcc pr1 sc3
@@ -89,7 +108,17 @@ initScopedPredStore
                            |> [IsStrictParentScope sc3 sc1 sc2]
          scopeAssum   = [Prove p1s1, Assume p1s2] 
                           ==> [Reduction p1s1 RedHow_ByScope [p1s2]]
-                            |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
+                           |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
+%%[[10
+         l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
+         l2s1         = mkCHRPredOcc (Pred_Lacks ty2 lab1) sc1
+         l3s1         = mkCHRPredOcc (Pred_Lacks tyRowEmpty lab1) sc1
+         labelProve1  = [Prove l1s1]
+                          ==> [Prove l2s1, Reduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
+                           |> [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]
+         labelProve2  = [Prove l3s1]
+                          ==> [Reduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
+%%]]
 %%]
          scopeProve   = [Prove p1s1, Prove p1s2] 
                           ==> [Prove p1s3, Reduction p1s1 RedHow_ByScope [p1s3]]
@@ -250,7 +279,7 @@ patchUnresolvedWithAssumption env unresCnstrMp evidMp
 chrSimplifyToEvidence
   :: ( Ord p, Ord i
      , CHRMatchable FIIn p s, CHRCheckable g s
-     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable p tvar s
+     , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging
      ) => FIIn -> CHRStore p i g s -> Heuristic p i -> ConstraintToInfoMap p i

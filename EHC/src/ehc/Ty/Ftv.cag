@@ -67,6 +67,14 @@ SEM Ty
                     lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
 %%]
 
+%%[10
+SEM Pred
+  | RowSplit		lhs		.	tvMp		=	Map.unions [@ty.tvMp,@exts.tvMp] 
+
+SEM RowExts
+  | Exts			lhs		.	tvMp		=	Map.unions [ tyFtvMp t | (_,t) <- @exts ] 
+%%]
+
 %%[50
 SEM Ty
   | Equal           lhs     .   tvs         =   [@tv] `union` @ty.tvs
