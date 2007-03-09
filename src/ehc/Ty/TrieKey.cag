@@ -108,12 +108,13 @@ SEM Ty
                                                     else (empty,empty)
   | Ext             lhs     .   (trieKey,trieKeyNest)
                                                 =   if @isSpineRoot
-                                                    then ( singleton
-                                                           $ TK_One
-                                                               (if @ty.isFixed then TKK_Normal else TKK_Partial)
-                                                               (Key_Str $ concat $ intersperse "," $ Lst.map show $ tyRowCanonLblOrder @ty.lblL)
-                                                         , @trieKeyArgs :++: @trieKeyArgsNest
-                                                         )
+                                                    then let (_,exts) = tyRowExts @self
+                                                         in  ( singleton
+                                                               $ TK_One
+                                                                   (if @ty.isFixed then TKK_Normal else TKK_Partial)
+                                                                   (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
+                                                             , @trieKeyArgs :++: @trieKeyArgsNest
+                                                             )
                                                     else (empty,empty)
   | Var             loc     .   trieKey         =   singleton $ TK_One
                                                                   (if tvCatIsPlain @categ.self then TKK_Partial else TKK_Normal)
@@ -167,11 +168,7 @@ SEM RowExts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR Ty [ | | lblL: {[HsName]}  isFixed: Bool ]
-
-SEM Ty
-  | Ext             lhs     .   lblL            =   @nm : @ty.lblL
-  | * - Ext         lhs     .   lblL            =   []
+ATTR Ty [ | | isFixed: Bool ]
 
 SEM Ty
   | Ext             lhs     .   isFixed         =   @ty.isFixed

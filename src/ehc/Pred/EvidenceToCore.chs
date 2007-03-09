@@ -100,6 +100,7 @@ evidMpToCore env evidMp
                                                                         where (u1,u2) = mkNewUID u
                             choosek k = maybe k id mbevk
                             choosen n = maybe n mkHNm mbevk
+        mk1 st _    _ = (st,ToCoreRes (cundefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
         mkn st        = foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
         mknm          = CExpr_Var

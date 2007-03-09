@@ -7,17 +7,17 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs module {%{EH}Ty.Ftv} import(Data.List,{%{EH}Base.Common},{%{EH}Ty}) export(tyFtv)
+%%[2 hs module {%{EH}Ty.Ftv} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[4 hs import(qualified Data.Map as Map) export(tyFtvMp)
+%%[4 hs import(qualified Data.Map as Map)
 %%]
 
 %%[2.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[2.tyFtv hs
+%%[2.tyFtv hs export(tyFtv)
 tyFtv :: Ty -> TyVarIdL
 tyFtv ty
   =  let  t =  wrap_TyAGItf
@@ -26,7 +26,7 @@ tyFtv ty
      in   tvs_Syn_TyAGItf t
 %%]
 
-%%[4.tyFtv -2.tyFtv hs
+%%[4.tyFtv -2.tyFtv hs export(tyFtvMp,tyFtv)
 tyFtvMp :: Ty -> TvCatMp
 tyFtvMp ty
   =  let  t =  wrap_TyAGItf

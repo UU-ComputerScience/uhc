@@ -69,20 +69,28 @@ checkClNms :: HsNameS -> [Err]
 checkClNms s = if Set.null s then [] else [mkErr_NamesNotIntrod "class" (Set.toList s)]
 %%]
 
+%%[9 hs
+mkPrvErr :: CHRPredOccCnstrMp -> [Err]
+mkPrvErr m
+  = if Map.null m
+    then []
+    else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys m]
+%%]
+
 %%[9
 SEM AGItf
   | AGItf       loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then if Map.null @chrSolveMainRemCnstrMp
-                                                             then []
-                                                             else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys @chrSolveMainRemCnstrMp]
+                                                        then mkPrvErr @cannotProveCnstrMp
                                                         else if null @expr.gathPredL
                                                              then []
                                                              else [Err_NotProvenPreds $ map poPr $ @expr.gathPredL]
 
 SEM Decl
-  | Instance    loc         .   predNotPrfErrs      =   if null @supPrfArgPrOccL && null @prfArgPrOccL 
-                                                        then []
-                                                        else [Err_NotProvenPreds $ map poPr (@prfArgPrOccL ++ @supPrfArgPrOccL)]
+  | Instance    loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then mkPrvErr @cannotProveCnstrMp
+                                                        else if null @supPrfArgPrOccL && null @prfArgPrOccL 
+                                                             then []
+                                                             else [Err_NotProvenPreds $ map poPr (@prfArgPrOccL ++ @supPrfArgPrOccL)]
                             .   valNoSigErrs        =   let ns = gamKeys (gamTop @decls.patValGam) \\ gamKeys @tySigGam
                                                         in  if null ns
                                                             then []
@@ -94,8 +102,8 @@ SEM PrExpr
   | Class       loc         .   nmErrs              =   checkClNms @clMissNmS
 
 SEM Expr
-  | Let         loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts && not (Map.null @toAssumeNeverCnstrMp)
-                                                        then [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys @toAssumeNeverCnstrMp]
+  | Let         loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
+                                                        then mkPrvErr @cannotProveCnstrMp
                                                         else []
 %%]
 

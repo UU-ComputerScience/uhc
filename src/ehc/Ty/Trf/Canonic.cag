@@ -1,0 +1,58 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to eliminate 'Equal' types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Compute canonic form of type w.r.t. Eq and Ord.
+This matters at:
+- rows, where fields may be in arbitrary order
+
+This matters for:
+- comparing types, in particular within predicates during proving
+
+%%[10 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty})
+%%]
+
+%%[10 hs import(qualified Data.Set as Set)
+%%]
+
+%%[10.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
+WRAPPER TyAGItf
+%%]
+
+%%[10 hs 
+tyCanonic :: Ty -> Ty
+tyCanonic ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   repl_Syn_TyAGItf t
+%%]
+
+%%[10 hs export(predCanonic)
+predCanonic :: Pred -> Pred
+predCanonic pr
+  = case tyCanonic $ Ty_Pred pr of
+      Ty_Pred pr' -> pr'
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[10
+ATTR AllTyAndFlds [ | | repl: SELF ]
+ATTR TyAGItf  [ | | repl: Ty ]
+
+SEM Ty
+  | Ext             lhs     .   repl            =   if @isSpineRoot
+                                                    then let (row,exts) = tyRowExts @repl
+                                                             exts' = tyRowCanonOrder exts
+                                                         in  mkTyRow row exts'
+                                                    else @repl
+%%]
+

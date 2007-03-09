@@ -91,6 +91,7 @@ evidSubstUnresolved lkup ev
                    where mbev = lkup p
                  Evid_Proof p i es -> Evid_Proof p i $ map s es
                  Evid_Ambig p  ess -> Evid_Ambig p $ assocLMapElt (map s) ess
+                 _                 -> ev
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

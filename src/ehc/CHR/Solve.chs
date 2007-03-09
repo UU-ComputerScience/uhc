@@ -200,8 +200,10 @@ wlDeleteByKey keys wl@(WorkList {wlQueue = wlq, wlTrie = wlt})
 %%[9 export(SolveStep(..),SolveTrace)
 data SolveStep p i g s
   = SolveStep
-      { stepChr     :: CHR (Constraint p i) g s
-      , stepSubst   :: s
+      { stepChr     	:: CHR (Constraint p i) g s
+      , stepSubst   	:: s
+      , stepNewTodo 	:: [Constraint p i]
+      , stepNewDone 	:: [Constraint p i]
       }
   | SolveDbg
       { stepPP      :: PP_Doc
@@ -232,8 +234,8 @@ instance Show (SolveStep p i g s) where
   show _ = "SolveStep"
 
 instance (PP p, PP i, PP g) => PP (SolveStep p i g s) where
-  pp (SolveStep step _) = "STEP" >#< step
-  pp (SolveDbg  p     ) = "DBG"  >#< p
+  pp (SolveStep step _ todo done) = "STEP" >#< (step >-< "new todo:" >#< ppBracketsCommas todo >-< "new done:" >#< ppBracketsCommas done)
+  pp (SolveDbg  p               ) = "DBG"  >#< p
 %%]
 
 %%[9 export(chrSolveStateDoneConstraints,chrSolveStateTrace)
@@ -300,7 +302,7 @@ chrSolve'' env chrStore cnstrs prevState
                                          , wlScanned = [], wlQueue = wlQueue wl ++ wlScanned wl
                                          }
                               st' = st { stWorkList = wl'
-                                       , stTrace = SolveStep (subst `chrAppSubst` chr) subst : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
+                                       , stTrace = SolveStep (subst `chrAppSubst` chr) subst bTodo bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
                                        , stDoneCnstrs = bDone ++ (map workCnstr $ take simpSz works) ++ stDoneCnstrs st
                                        }
                               ppwork = "workkey" >#< ppTrieKey workHd >#< ":" >#< (ppBracketsCommas (map ppTrieKey workTl) >-< ppBracketsCommas (map ppTrieKey $ wlScanned wl))
