@@ -63,12 +63,19 @@ SEM Decl
 
 %%[9 hs
 simplify env chrStore heur toProveHereCnstrMp prevRes
-  = (chrSolveRemCnstrMp2,chrSolveEvidMp2,chrSolveEvidBindMp,chrSolveScopeBindMp,firstNotEmpty [chrSolveErrs,ambigErrs],chrSimplifyResult,chrSolveEvidCoreMp)
+  = (chrSolveRemCnstrMp2,chrSolveEvidMp2,chrSolveEvidBindMp,chrSolveScopeBindMp,cannotResCnstrMp,firstNotEmpty [chrSolveErrs,ambigErrs],chrSimplifyResult,chrSolveEvidCoreMp)
   where (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
-        env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMp}}
+%%[[9
+        toProveHereCnstrMp' = toProveHereCnstrMp
+%%][10
+        toProveHereCnstrMp' = Map.mapKeys mk toProveHereCnstrMp
+                            where mk (Prove p) = Prove $ p {cpoPr = predCanonic $ cpoPr p}
+                                  mk c         = c
+%%]]
+        env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMp'}}
         ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),chrSimplifyResult)
-          = chrSimplifyToEvidence (env' {fiUniq = u1}) chrStore heur toProveHereCnstrMp prevRes
-        (chrSolveRemCnstrMp2,chrSolveEvidMp2)
+          = chrSimplifyToEvidence (env' {fiUniq = u1}) chrStore heur toProveHereCnstrMp' prevRes
+        (chrSolveRemCnstrMp2,chrSolveEvidMp2,cannotResCnstrMp)
           = patchUnresolvedWithAssumption (env' {fiUniq = u2}) chrSolveRemCnstrMp chrSolveEvidMp
         (chrSolveEvidCoreMp,ambigEvids)
           = evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
@@ -88,10 +95,11 @@ debugInfo chrSimplifyResult
 SEM AGItf
   | AGItf       loc         .   toProveCnstrMp      =   @expr.tyCnstr `chrAppSubst` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
-                            .   (chrSolveMainRemCnstrMp,_,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
+                            .   (chrSolveMainRemCnstrMp,_,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,_,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq2}) @chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace)
                                                     =   debugInfo @chrSimplifyResult
+                            .   cannotProveCnstrMp	=	@chrSolveMainRemCnstrMp
 %%]
 
 %%[9
@@ -99,15 +107,16 @@ SEM Expr
   | Let         loc         .   toProveCnstrMp      =   @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
-                            .   (chrSolve1RemCnstrMp,chrSolve1EvidMp,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidCoreMp)
+                            .   (chrSolve1RemCnstrMp,chrSolve1EvidMp,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,cannotRes1CnstrMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace)
                                                     =   debugInfo @chrSimplifyResult1
 
                             .   (toAssumeNeverCnstrMp,_)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveFailure (Set.fromList @gTyTvL) $ cnstrPred k) @chrSolve1RemCnstrMp
+                            .   cannotProveCnstrMp	=	cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
-                            .   (chrSolve2RemCnstrMp,_,chrSolve2EvidBindMp,chrSolve2ScopeBindMp,chrSolve2Errs,chrSimplifyResult2,chrSolve2EvidCoreMp)
+                            .   (chrSolve2RemCnstrMp,_,chrSolve2EvidBindMp,chrSolve2ScopeBindMp,_,chrSolve2Errs,chrSimplifyResult2,chrSolve2EvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq4}) @lhs.chrStore (heurScopedEHC @chrFIIn) @quantCnstrMp
                                                         $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
                             .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace)
@@ -117,16 +126,21 @@ SEM Expr
 %%[9
 SEM Decl
   | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp,@chrCtxtAssumeCnstrMp,@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp]
-                            .   (chrSolveDeclsRemCnstrMp,_,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
+                            .   (chrSolveDeclsRemCnstrMp,_,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,cannotResDeclsCnstrMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
                                                     =   debugInfo @chrDeclsSimplifyResult
 
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
-                            .   (chrSolveSuperRemCnstrMp,_,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,chrSolveSuperErrs,chrSuperSimplifyResult,_)
+                            .   (chrSolveSuperRemCnstrMp,_,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,cannotResSuperCnstrMp,chrSolveSuperErrs,chrSuperSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveSuperCnstrMp emptySimplifyResult
                             .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace)
                                                     =   debugInfo @chrSuperSimplifyResult
+
+                            .   (toAssumeNeverCnstrMp,_)
+                                                    =   Map.partitionWithKey (\k _ -> isLetProveFailure Set.empty $ cnstrPred k)
+                                                        $ cnstrMpUnions [@chrSolveDeclsRemCnstrMp,@chrSolveSuperRemCnstrMp]
+                            .   cannotProveCnstrMp	=	cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotResDeclsCnstrMp,@cannotResSuperCnstrMp]
 %%]
 
 Interaction with existing impl:

@@ -13,6 +13,7 @@ Ty/Expand.cag
 Ty/InfuseDataTruncs.cag
 Ty/PrettyHTML.cag
 Ty/AnnCommon.cag
+Ty/Trf/Canonic.cag
 Ty/Trf/Instantiate.cag
 Ty/Trf/Quantify.cag
 Ty/Trf/MergePreds.cag

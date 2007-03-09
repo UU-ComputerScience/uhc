@@ -530,6 +530,9 @@ SEM CExpr
   | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
   | Tup Int Char
                 loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
+%%[[9
+  | HoleLet     loc         .   grExpr      =   @body.grExpr	-- when this occurs, there were no bindings for the possible (caused by implicit parameters) bindings encoded by HoleLet
+%%]]
 %%[[10
   | TupIns TupUpd TupDel
                 loc         .   grExpr      =   if @lhs.isTopTup
@@ -537,8 +540,11 @@ SEM CExpr
                                                 else  GrExpr_Unit GrVal_Empty
 %%]]
   | * - Let Case App Var Tup Int Char
+%%[[9
+    HoleLet
+%%]]                                      
 %%[[10
-                                      TupIns TupUpd TupDel
+    TupIns TupUpd TupDel
 %%]]                                      
                 loc         .   grExpr      =   GrExpr_Unit @grVal
 %%]

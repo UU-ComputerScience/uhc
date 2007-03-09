@@ -6,7 +6,7 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Error},{%{EH}Cnstr})
+%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}Cnstr})
 %%]
 
 %%[9 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
@@ -260,11 +260,15 @@ mkEvidence heur cnstrMp redGraph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(patchUnresolvedWithAssumption)
-patchUnresolvedWithAssumption :: FIIn -> CHRPredOccCnstrMp -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp)
+patchUnresolvedWithAssumption :: FIIn -> CHRPredOccCnstrMp -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp,CHRPredOccCnstrMp)
 patchUnresolvedWithAssumption env unresCnstrMp evidMp
-  = (cnstrMpFromList assumeCnstrs, evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp)
+  = (cnstrMpFromList assumeCnstrs, evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp, cannotResCnstrMp)
   where us = mkNewLevUIDL (Map.size unresCnstrMp) $ fiUniq env
-        assumeCnstrs  = concat $ zipWith mk (Map.toList unresCnstrMp) us
+        (unresCnstrMp',cannotResCnstrMp)
+                      = Map.partitionWithKey canRes unresCnstrMp
+                      where canRes (Prove p) _ = Map.null $ Map.filter tvCatIsFixed $ tyFtvMp $ predTy $ cpoPr p
+                            canRes _         _ = True
+        assumeCnstrs  = concat $ zipWith mk (Map.toList unresCnstrMp') us
                       where mk (Prove p,_) u = [mkAssumeConstraint (cpoPr p) u (cpoScope p)]
                             mk _           _ = []
         assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
