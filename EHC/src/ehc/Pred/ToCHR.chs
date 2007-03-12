@@ -152,7 +152,7 @@ mkClassSimplChrs env rules (context, head, infos)
     
         mapTrans done reds subClass
           = concatMap (transClosure done reds subClass)
-            . filter (\(_,x) -> rednodePred x `Set.notMember` done)
+            . filter (\(_,x) -> not (rednodePred x `Set.member` done))
     
         transClosure done reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
           = superRule : scopeRule1 : scopeRule2 : rules
