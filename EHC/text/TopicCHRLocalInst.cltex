@@ -1,0 +1,154 @@
+%%[abstract
+Haskell's class system provides a programmer with a mechanism to implicitly pass parameters to a function.
+A class predicate over some type variable in the type signature of a function corresponds to the obligation to implicitly
+pass an appropriate instance of the class to the function.
+Choosing which instance to pass is solely based on the instantiated type of the class predicate.
+The class system is programmed by providing class instances for concrete types,
+thereby in essence providing a unique mapping from types to instances.
+This mapping is used whenever an instance for a class predicate over some type is required.
+Although this mechanism has proved to be powerful enough for modelling overloading polymorphism and
+a plethora of other programming language concepts,
+it is still limited in the sense that multiple instances for a type cannot be defined.
+Usually one can program around this limitation by introducing additional types for additional instances,
+but this indirect way of allowing extra instances clutters a program and still is bound to
+the finite number of types statically available in a program.
+The latter restriction makes it impossible to dynamically construct instances,
+which, for example, depend on runtime program input.
+In this paper we lift these restrictions by means of local instances.
+Local instances allow us to shadow existing instances by new ones and to construct
+instances inside functions, using function arguments.
+We provide a translation of class and instances to constraint handling rules,
+making explicit the notion of ``scope of an instance'' and its role in context reduction for instances.
+%%]
+
+%%[introduction
+Configuration problem (i.e. how to propagate runtime input via class instance to body of functions).
+
+Different implementations of class.
+
+Local instance examples.
+%%]
+
+%%[problem
+Wadler \cite{wadler88how-ad-hoc-poly}: why local instances is a bad idea.
+
+Basic problem: choice
+%%]
+
+%%[ourApproach
+Basic solution: make choice explicit by separating generation of solution space from choice between solutions.
+
+We describe:
+
+\begin{Itemize}
+\item Translate class/instances to CHR
+\item CHR generates all possible reduction alternatives
+\item Choose heuristically between those
+\end{Itemize}
+
+We do not describe in detail:
+
+\begin{Itemize}
+\item Embedding in compiler.
+\item Code generation.
+\end{Itemize}
+
+Our contribution:
+
+\begin{Itemize}
+\item Different use of CHR compared to Sulzmann.
+\item Model scope for class predicates by means of CHR.
+\item Provide a framework for expressing design alternatives \cite{peytonjones97typecl-explore}.
+\end{Itemize}
+%%]
+
+%%[relatedWork
+Original \cite{wadler88how-ad-hoc-poly,kaes88parametric-overl,jones94phd-qual-types}.
+
+Based on Gerrit's thesis \cite{geest07cnstr-tycls-ext}.
+
+Typing H in H \cite{jones99thih}.
+
+Context of EHC \cite{dijkstra04ehc-web,dijkstra05phd}.
+
+CHR \cite{fruhwirth98theory-chr}
+work by Sulzmann \cite{stuckey02theory-overloading}.
+Difference: dealing with explicit signatures.
+
+TOP/Helium from Bastiaan \cite{heeren05class-direct,heeren05phd-errormsg,heeren05www-helium}.
+
+Named instances \cite{kahl01named-instance,scheffczyk01mth-namedinst}.
+
+Design alternatives, in particular for where context reduction takes place \cite{peytonjones97typecl-explore},
+here: heuristics to describe all variants.
+
+CHR also used for (e.g.) functional dependencies \cite{sulzmann07fundep-chr}.
+
+%%]
+
+%%[termsAndTypes
+%{
+%format t = sigma
+%format pr = pi
+%format dsig = "d_{sig}"
+%format dval = "d_{val}"
+\begin{TabularCenterFigure}{}{Terms and types}{chr-locinst-terms-types}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasic
+%%@AppxNotation.exprLetVecDecl
+%%@AppxNotation.exprLamIdent
+%%@AppxNotation.termSeparator
+%%@AppxNotation.declHeader
+%%@AppxNotation.declBasicTySigma1
+%%@AppxNotation.declBasicVal1
+%%@AppxNotation.declBasicValTySigma1
+%%@AppxNotation.declExplImplBasic1
+%%@AppxNotation.termSeparator
+%%@AppxNotation.typeHeader
+%%@AppxNotation.typeBasicMono
+%%@AppxNotation.typeSchemeMono
+%%@AppxNotation.termSeparator
+%%@AppxNotation.predHeader
+%%@AppxNotation.typredBasic1
+%%@AppxNotation.termSeparator
+%%@AppxNotation.identHeader
+%%@AppxNotation.identBasic
+\end{TabularCenterFigure}
+%}
+
+%%]
+
+%%[entailment1
+\rulerCmdUse{MiscRules.entailn.all}
+
+\rulerCmdUse{MiscRules.entailscn.all}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

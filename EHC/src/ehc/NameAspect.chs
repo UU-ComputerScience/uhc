@@ -2,17 +2,23 @@
 %%% Aspect of name, for use by HS -> EH
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}NameAspect} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH) export(IdAspect(..),iaspIsValSig,iaspIsFun)
+%%[1 module {%{EH}NameAspect} import({%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH)
+%%]
+
+%%[1 import(UU.Pretty,EH.Util.PPUtils)
 %%]
 
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
+%%]
+
+%%[8 import({%{EH}Base.CfgPP})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs
+%%[1 hs export(IdAspect(..))
 data IdAspect
   = IdAsp_Val_Var
   | IdAsp_Val_Pat       {iaspDecl   ::  EH.Decl                         }
@@ -48,13 +54,13 @@ data IdAspect
   | IdAsp_Any
 %%]
 
-%%[1 hs
+%%[1 hs export(iaspIsValSig)
 iaspIsValSig :: IdAspect -> Bool
 iaspIsValSig (IdAsp_Val_Sig _) = True
 iaspIsValSig _                 = False
 %%]
 
-%%[1 hs
+%%[1 hs export(iaspIsFun)
 iaspIsFun :: IdAspect -> Bool
 iaspIsFun (IdAsp_Val_Fun _ _ _) = True
 iaspIsFun _                     = False
@@ -139,3 +145,29 @@ instance PP IdDefOcc where
          >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
 %%]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ppIdOcc)
+-- intended for parsing
+ppIdOcc :: CfgPP x => x -> IdOcc -> PP_Doc
+ppIdOcc x o = ppCurlysCommas [cfgppHsName x (ioccNm o),pp (ioccKind o)]
+%%]
+
+%%[1.PP.IdOcc
+instance PP IdOcc where
+  pp o = ppCurlysCommas [pp (ioccNm o),pp (ioccKind o)]
+%%]
+
+%%[8 -1.PP.IdOcc
+instance PP IdOcc where
+  pp = ppIdOcc CfgPP_Plain
+%%]
+
+%%[20
+instance PPForHI IdOcc where
+  ppForHI = ppIdOcc CfgPP_HI
+%%]
+

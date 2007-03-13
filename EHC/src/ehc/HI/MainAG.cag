@@ -11,7 +11,10 @@
 %%[20 hs module {%{EH}HI.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
 %%]
 
-%%[20 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}GrinCode},{%{EH}GrinCode.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module})
+%%[20 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}GrinCode},{%{EH}GrinCode.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module},{%{EH}Base.CfgPP})
+%%]
+
+%%[20 hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,6 +54,7 @@ ATTR
       dataGam       USE {`gamUnion`}        {emptyGam}          : DataGam
       prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
       prElimTGam    USE {`prElimTGamUnion`} {Pr.emptyPrElimTGam}: {Pr.PrElimTGam}
+      chrStore      USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore
       arityMp       USE {`Map.union`}       {Map.empty}         : CArityMp
       inlMp         USE {`Map.union`}       {Map.empty}         : GrInlMp
    ]
@@ -72,8 +76,8 @@ SEM Binding
         lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty @ki)
     | DataCon
         lhs             .   dataGam     =   gamSingleton @nm (mkDGI @nm
-                													(assocLKeys @tags)
-                													(Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
+                                                                    (assocLKeys @tags)
+                                                                    (Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
                                                                                                           , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
                                                                                                           }
                                                                              )
@@ -85,6 +89,8 @@ SEM Binding
         lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
     | Instance
         lhs             .   prElimTGam  =   tgamSingleton basePrfCtxtId @nm (Pr.PrElimGamInfo @rules.rules)
+    | CHRStore
+        lhs             .   chrStore    =   chrStoreFromElems @chrs
 %%]
 
 %%[20

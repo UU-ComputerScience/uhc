@@ -57,6 +57,8 @@ DATA Binding
     | Instance
         nm                      : HsName
         rules                   : Rules
+    | CHRStore
+        chrs					: {[ScopedPredCHR]}
 
 TYPE Bindings                   = [ Binding ]
 

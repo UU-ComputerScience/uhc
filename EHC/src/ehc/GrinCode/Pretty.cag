@@ -5,21 +5,22 @@
 
 Pretty print GrinCode.
 
-Tricky (in version 12):
+Tricky (in version 20):
 Printing names depends on the printing context. ppGrNm factors this out, but for GrExpr's printed as part
 if .hi interface files ppGrExpr requires a parameterised variant which prints names as required for .hi files.
+20070310: this is now done via CfgPP
 
-%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Parser},{%{EH}Scanner.Common(grinScanOpts)})
+%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode})
 %%]
 
-%%[8 hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPatAlt,ppGrPatLam,ppGrTag)
+%%[8 hs import({%{EH}Base.CfgPP})
 %%]
 
 %%[8.WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
 
-%%[8 hs
+%%[8 hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPatAlt,ppGrPatLam,ppGrTag)
 ppGrModule :: GrModule -> PP_Doc
 ppGrModule cmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf cmod))
@@ -31,26 +32,26 @@ ppGrTag :: GrTag -> PP_Doc
 ppGrTag tg
   =  let  t = wrap_GrTag  (sem_GrTag tg)
                           (Inh_GrTag
-                             { ppGrNm_Inh_GrTag = ppGrNm
+                             { ppGrNm_Inh_GrTag = cfgppHsName CfgPP_Grin
                              })
      in   (pp_Syn_GrTag t)
 
-ppGrExpr' :: PPGrNm -> GrExpr -> PP_Doc
-ppGrExpr' ppGrNm tg
+ppGrExpr' :: CfgPP x => x -> GrExpr -> PP_Doc
+ppGrExpr' x tg
   =  let  t = wrap_GrExpr  (sem_GrExpr tg)
                            (Inh_GrExpr
-                             { ppGrNm_Inh_GrExpr = ppGrNm
+                             { ppGrNm_Inh_GrExpr = cfgppHsName x
                              })
      in   (pp_Syn_GrExpr t)
 
 ppGrExpr :: GrExpr -> PP_Doc
-ppGrExpr = ppGrExpr' ppGrNm
+ppGrExpr = ppGrExpr' CfgPP_Grin
 
 ppGrPatLam :: GrPatLam -> PP_Doc
 ppGrPatLam tg
   =  let  t = wrap_GrPatLam  (sem_GrPatLam tg)
                              (Inh_GrPatLam
-                                { ppGrNm_Inh_GrPatLam = ppGrNm
+                                { ppGrNm_Inh_GrPatLam = cfgppHsName CfgPP_Grin
                                 })
      in   (pp_Syn_GrPatLam t)
 
@@ -58,10 +59,18 @@ ppGrPatAlt :: GrPatAlt -> PP_Doc
 ppGrPatAlt tg
   =  let  t = wrap_GrPatAlt  (sem_GrPatAlt tg)
                              (Inh_GrPatAlt
-                                { ppGrNm_Inh_GrPatAlt = ppGrNm
+                                { ppGrNm_Inh_GrPatAlt = cfgppHsName CfgPP_Grin
                                 })
      in   (pp_Syn_GrPatAlt t)
 
+%%]
+
+%%[20 hs
+instance PP GrExpr where
+  pp = ppGrExpr' CfgPP_Plain
+
+instance PPForHI GrExpr where
+  ppForHI = ppGrExpr' CfgPP_HI
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,10 +81,10 @@ ppGrPatAlt tg
 ATTR AllWithName [ ppGrNm: PPGrNm | | ]
 
 SEM GrBind
-  | Bind        loc         .   ppGrNm      =   ppGrNm
+  | Bind        loc         .   ppGrNm      =   cfgppHsName CfgPP_Grin
 
 SEM GrGlobal
-  | Global      loc         .   ppGrNm      =   ppGrNm
+  | Global      loc         .   ppGrNm      =   cfgppHsName CfgPP_Grin
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,14 +97,11 @@ type PPGrNm = HsName -> PP_Doc
 ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = pp_block "{ " "} " "; " pL
 
-ppGrNm :: PPGrNm
-ppGrNm = ppHsnNonAlpha grinScanOpts
-
 ppEvApTagElt :: EvApTagElt -> PP_Doc
 ppEvApTagElt e
   =  case e of
         EvApTagTag t  -> ppGrTag t
-        EvApTagVar n  -> ppGrNm n
+        EvApTagVar n  -> cfgppHsName CfgPP_Grin n
         EvApTagUnit   -> pp "unit"
         EvApTagThrow  -> pp "throw"
 
@@ -108,20 +114,22 @@ ppEvApTagMp m
               m
         )      
 %%]
+ppGrNm :: PPGrNm
+ppGrNm = cfgppHsName CfgPP_Grin
 
 %%[8
 ATTR GrAGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
-  | Mod         lhs         .   pp          =   "module" >#< ppGrNm @moduleNm
+  | Mod         lhs         .   pp          =   "module" >#< cfgppHsName CfgPP_Grin @moduleNm
                                                 >-< ppCurlysSemisV @globalL.ppL
                                                 >-< ppCurlysSemisV @bindL.ppL
                                                 >-< "ctags"
                                                 >-< ppCurlysSemisV
                                                          (map  (\(tn,ts)
-                                                                    ->  ppGrNm tn >#< "="
+                                                                    ->  cfgppHsName CfgPP_Grin tn >#< "="
                                                                         >#< ( ppListSep "" "" " | "
-                                                                            . map  (\(n,CTag _ _ t a ma) -> ppGrNm n >#< t >#< a >#< ma)
+                                                                            . map  (\(n,CTag _ _ t a ma) -> cfgppHsName CfgPP_Grin n >#< t >#< a >#< ma)
                                                                             $ ts
                                                                             )
                                                                         >-< ""    
@@ -134,10 +142,10 @@ SEM GrModule
 
 
 SEM GrGlobal
-  | Global      lhs         .   pp          =   ppGrNm @nm >#< "<-" >#< "store" >#< @val.pp
+  | Global      lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< "<-" >#< "store" >#< @val.pp
 
 SEM GrBind
-  | Bind        lhs         .   pp          =   ppGrNm @nm >#< ppSpaced (map ppGrNm @argNmL) >-<
+  | Bind        lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) >-<
                                                     indent 2 ("=" >#< ppCurlysSemisV [@expr.pp])
   | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlysSemisV @bindL.ppL)
 
@@ -151,7 +159,7 @@ SEM GrExpr
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map @lhs.ppGrNm @argL) >#< ppCurlysSemisV @resTagL.ppL
   | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
-  | UpdateUnit  lhs         .   pp          =   "updateunit" >#< @val.pp >#< ppGrNm @nm
+  | UpdateUnit  lhs         .   pp          =   "updateunit" >#< @val.pp >#< @lhs.ppGrNm @nm
   | Store       lhs         .   pp          =   "store" >#< @val.pp
   | FetchNode   lhs         .   pp          =   "fetchnode"  >#<  @lhs.ppGrNm @nm 
   | FetchField  lhs         .   pp          =   "fetchfield" >#<  @lhs.ppGrNm @nm >#< pp @offset >#< maybe empty ppGrTag @mbTag

@@ -592,7 +592,8 @@ SEM Decl
                                                                                $ [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
                                                                           else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
                                                                                  (mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") (CExpr_Var n1)
-                                                                                    [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag)) (mkc (splitDTIs ctag dtis) (fArity - 1) n1s [n1subs ctag] altPrOccL)
+                                                                                    [ CAlt_Alt (mkCPatCon ctag (ctagArity ctag) (Just $ n1subs ctag))
+                                                                                               (mkc (splitDTIs ctag dtis) (fArity - 1) n1s [n1subs ctag] altPrOccL)
                                                                                     | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
                                                                                     ]
                                                                          )       )

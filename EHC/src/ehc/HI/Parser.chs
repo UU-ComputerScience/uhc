@@ -16,6 +16,9 @@
 %%[20 import({%{EH}HS.Parser}(pFixity),{%{EH}Core.Parser}(pCExpr),{%{EH}GrinCode.Parser}(pExprSeq),{%{EH}Ty.Parser})
 %%]
 
+%%[20 import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.CommonCHR})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,6 +36,74 @@ pAGItf
 pModule :: HIParser Module
 pModule
   = Module_Module <$ pMODULE <*> pDollNm <* pEQUAL <* pOCURLY <*> pListSep pSEMI pBinding <* pCCURLY
+
+pConstraint :: HIParser (Constraint CHRPredOcc RedHowAnnotation)
+pConstraint
+  =   Prove     <$ pKeyTk "Prove"     <* pOCURLY <*> pCHRPredOcc <* pCCURLY
+  <|> Assume    <$ pKeyTk "Assume"    <* pOCURLY <*> pCHRPredOcc <* pCCURLY
+  <|> Reduction <$ pKeyTk "Reduction" <* pOCURLY <*> pCHRPredOcc
+                                      <* pCOMMA  <*> pRedHowAnnotation
+                                      <* pCOMMA  <*> pCurlySemiBlock pCHRPredOcc
+                                      <* pCCURLY
+
+pLabelOffset :: HIParser LabelOffset
+pLabelOffset = pKeyTk "offset" *> (LabelOffset_Off <$> pInt <|> LabelOffset_Var <$> pUIDHI)
+
+pLabel :: HIParser Label
+pLabel = pKeyTk "label" *> (Label_Lab <$> pDollNm <|> Label_Var <$> pUIDHI)
+
+pPredScope :: HIParser PredScope
+pPredScope = pKeyTk "scope" *> (PredScope_Lev <$> pBracks_pCommas pInt <|> PredScope_Var <$> pUIDHI)
+
+pCHRPredOcc :: HIParser CHRPredOcc
+pCHRPredOcc = CHRPredOcc <$ pOCURLY <*> pPred <* pCOMMA <*> pPredScope <* pCCURLY
+
+pGuard :: HIParser Guard
+pGuard
+  =   (\[sc1,sc2,sc3] -> HasStrictCommonScope   sc1 sc2 sc3) <$ pKeyTk "HasStrictCommonScope"  <*> pCurlyCommaBlock pPredScope
+  <|> (\[sc1,sc2,sc3] -> IsStrictParentScope    sc1 sc2 sc3) <$ pKeyTk "IsStrictParentScope"   <*> pCurlyCommaBlock pPredScope
+  <|> (\[sc1,sc2]     -> IsVisibleInScope       sc1 sc2    ) <$ pKeyTk "IsVisibleInScope"      <*> pCurlyCommaBlock pPredScope
+  <|> (\[sc1,sc2]     -> NotEqualScope          sc1 sc2    ) <$ pKeyTk "NotEqualScope"         <*> pCurlyCommaBlock pPredScope
+  <|>                    NonEmptyRowLacksLabel               <$ pKeyTk "NonEmptyRowLacksLabel" <* pOCURLY <*> pTy
+                                                                                               <* pCOMMA  <*> pLabelOffset
+                                                                                               <* pCOMMA  <*> pTy
+                                                                                               <* pCOMMA  <*> pLabel
+                                                                                               <* pCCURLY
+
+pRedHowAnnotation :: HIParser RedHowAnnotation
+pRedHowAnnotation
+  =   RedHow_ByInstance   <$ pKeyTk "redhowinst"   <* pOCURLY <*> pDollNm
+                                                   <* pCOMMA  <*> pPred
+                                                   <* pCOMMA  <*> pPredScope
+                                                   <* pCCURLY
+  <|> RedHow_BySuperClass <$ pKeyTk "redhowsuper"  <* pOCURLY <*> pDollNm
+                                                   <* pCOMMA  <*> pInt
+                                                   <* pCOMMA  <*> pCTag
+                                                   <* pCCURLY
+  <|> RedHow_ProveObl     <$ pKeyTk "redhowprove"  <* pOCURLY <*> pUIDHI
+                                                   <* pCOMMA  <*> pPredScope
+                                                   <* pCCURLY
+  <|> RedHow_Assumption   <$ pKeyTk "redhowassume" <* pOCURLY <*> pUIDHI
+                                                   <* pCOMMA  <*> pDollNm
+                                                   <* pCOMMA  <*> pPredScope
+                                                   <* pCCURLY
+  <|> RedHow_ByScope      <$ pKeyTk "redhowscope"
+  <|> RedHow_ByLabel      <$ pKeyTk "redhowlabel"  <* pOCURLY <*> pLabel
+                                                   <* pCOMMA  <*> pLabelOffset
+                                                   <* pCOMMA  <*> pPredScope
+                                                   <* pCCURLY
+
+{-
+
+
+data RedHowAnnotation
+  =  RedHow_ByInstance    HsName  Pred  PredScope		-- inst name, for pred, in scope
+  |  RedHow_BySuperClass  HsName  Int   CTag			-- field name, offset, tag info of dict
+  |  RedHow_ProveObl      UID  PredScope
+  |  RedHow_Assumption    UID  HsName  PredScope
+  |  RedHow_ByScope
+  |  RedHow_ByLabel       Label LabelOffset PredScope
+-}
 
 pBinding :: HIParser Binding
 pBinding
@@ -64,6 +135,13 @@ pBinding
                        <*  pCCURLY
   <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pRule <* pCCURLY
   <|> Binding_Instance  <$> pNmIs "instance"    <* pOCURLY <*> pListSep pSEMI pRule <* pCCURLY
+  <|> Binding_CHRStore  <$  pNmIs "chrstore"    <*> pCurlySemiBlock
+                                                      (CHR <$ pOCURLY <*> pCurlySemiBlock pConstraint
+                                                           <* pSEMI   <*> pInt
+                                                           <* pSEMI   <*> pCurlySemiBlock pGuard
+                                                           <* pSEMI   <*> pCurlySemiBlock pConstraint
+                                                           <* pCCURLY
+                                                      )
 
 pRule :: HIParser Rule
 pRule

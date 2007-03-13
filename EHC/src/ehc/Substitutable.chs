@@ -23,7 +23,7 @@
 %%[4_2 export((|>>))
 %%]
 
-%%[9 import(qualified Data.Map as Map) export(fixTyVarsCnstr,tyFixTyVars)
+%%[9 import(qualified Data.Map as Map)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -128,15 +128,9 @@ instance Substitutable PredScope TyVarId Cnstr where
   ftv    (PredScope_Var v)    = [v]
   ftv    _                    = []
 
-instance Substitutable PredOccId UID Cnstr where
-  s |=>  i@(PredOccId_Var v) = maybe i id $ cnstrPoiLookup v s
-  s |=>  i                   = i
-  ftv    (PredOccId_Var v)   = [v]
-  ftv    _                   = []
-
 instance Substitutable PredOcc TyVarId Cnstr where
-  s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) (s |=> id) (s |=> sc)
-  ftv    (PredOcc pr id sc)  = unions [ftv pr,ftv id,ftv sc]
+  s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) id (s |=> sc)
+  ftv    (PredOcc pr id sc)  = unions [ftv pr,ftv sc]
 
 instance Substitutable CHRPredOcc TyVarId Cnstr where
   s |=>  (CHRPredOcc pr sc)  = CHRPredOcc (s |=> pr) (s |=> sc)
@@ -146,6 +140,12 @@ instance Substitutable Impls TyVarId Cnstr where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
   ftv    i  =  ftv (Ty_Impls i)
 %%]
+instance Substitutable PredOccId UID Cnstr where
+  s |=>  i@(PredOccId_Var v) = maybe i id $ cnstrPoiLookup v s
+  s |=>  i                   = i
+  ftv    (PredOccId_Var v)   = [v]
+  ftv    _                   = []
+
 
 %%[9
 instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
@@ -153,7 +153,6 @@ instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
                  CITy     t  -> CITy (s |=> t)
                  CIImpls  i  -> CIImpls (s |=> i)
                  CIPred   i  -> CIPred (s |=> i)
-                 CIPoi    i  -> CIPoi (s |=> i)
                  CIScope  sc -> CIScope (s |=> sc)
 %%[[10
                  CIExts   x  -> CIExts (s |=> x)
@@ -163,13 +162,14 @@ instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
                  CITy     t  -> ftv t
                  CIImpls  i  -> ftv i
                  CIPred   i  -> ftv i
-                 CIPoi    i  -> ftv i
                  CIScope  sc -> ftv sc
 %%[[10
                  CIExts   x  -> ftv x
                  ci          -> []
 %%]]
 %%]
+                 CIPoi    i  -> CIPoi (s |=> i)
+                 CIPoi    i  -> ftv i
 
 This is still/regretfully duplicated in Ty/Subst.cag, Ty/Ftv.cag
 
@@ -185,12 +185,17 @@ instance Substitutable RowExts TyVarId Cnstr where
 %%% Fixating free type vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
-fixTyVarsCnstr :: Ty -> Cnstr
-fixTyVarsCnstr = Cnstr . Map.fromList . map (\v -> (v,CITy (Ty_Var v TyVarCateg_Fixed))) . ftv
+%%[9 export(tyFixTyVars)
+fixTyVarsCnstr :: Ty -> (Cnstr,Cnstr)
+fixTyVarsCnstr t
+  = (mk TyVarCateg_Fixed fv,mk TyVarCateg_Plain fv)
+  where fv = ftv t
+        mk cat fv = Cnstr $ Map.fromList $ map (\v -> (v,CITy (Ty_Var v cat))) $ fv
 
-tyFixTyVars :: Ty -> Ty
-tyFixTyVars s = fixTyVarsCnstr s |=> s
+tyFixTyVars :: Ty -> (Ty,Cnstr)
+tyFixTyVars t
+  = (sTo |=> t, sFr)
+  where (sTo,sFr) = fixTyVarsCnstr t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

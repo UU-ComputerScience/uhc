@@ -162,7 +162,9 @@ SEM Decl
                             .   (toResolvePrOccL,derivAltsPrOcc)
                                                     =   case @instVariant of
                                                           InstDeriving
-                                                            -> (foCnstr foDt |=> concat altsPrOcc,altsPrOcc)
+                                                            -> ( foCnstr foDt |=> concat altsPrOcc
+                                                               , altsPrOcc
+                                                               )
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ tgiDataTy @derivDataTGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc

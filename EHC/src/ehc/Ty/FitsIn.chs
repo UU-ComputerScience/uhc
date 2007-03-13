@@ -165,7 +165,12 @@ instance Show FIEnv where
 
 %%[9
 instance PP FIEnv where
-  pp e = "FIEnv" >#< pp (fePrElimTGam e)
+  pp e = "FIEnv"
+         >#< (pp (fePrElimTGam e)
+%%[[11
+             >-< pp (feTyGam e)
+%%]]
+             )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1038,7 +1043,7 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[4.fitsIn.SetupAndResult
-            fo  = f fi ty1 ty2
+            fo  = ff fi ty1 ty2
 %%]
 
 %%[9

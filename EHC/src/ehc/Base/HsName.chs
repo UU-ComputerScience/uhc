@@ -322,17 +322,11 @@ instance PP IdOccKind where
 %%]]
 %%]
 
-%%[1 export(IdOcc(..),ppIdOcc)
+%%[1 export(IdOcc(..))
 data IdOcc
   = IdOcc { ioccNm :: HsName, ioccKind :: IdOccKind }
   deriving (Show,Eq,Ord)
 
--- intended for parsing
-ppIdOcc :: (HsName -> PP_Doc) -> IdOcc -> PP_Doc
-ppIdOcc pn o = ppCurlysCommas [pn (ioccNm o),pp (ioccKind o)]
-
-instance PP IdOcc where
-  pp = ppIdOcc pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

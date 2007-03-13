@@ -17,6 +17,9 @@ to avoid explosion of search space during resolution.
 %%[9 import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
 %%]
 
+%%[20 import({%{EH}Base.CfgPP})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR, derived structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,6 +56,17 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppL [x] = pp x
           ppL xs  = ppBracketsCommasV xs -- ppParensCommasBlock xs
           ppChr l = vlist l -- ppCurlysBlock
+%%]
+
+%%[20
+instance (PPForHI c, PPForHI g) => PPForHI (CHR c g s) where
+  ppForHI chr
+    = ppCurlysSemisBlock
+        [ ppCurlysSemisBlock $ map ppForHI $ chrHead   chr
+        , ppForHI                          $ chrSimpSz chr
+        , ppCurlysSemisBlock $ map ppForHI $ chrGuard  chr
+        , ppCurlysSemisBlock $ map ppForHI $ chrBody   chr
+        ]
 %%]
 
 %%[9
@@ -117,15 +131,6 @@ A Checkable participates in the reduction process as a guard, to be checked.
 class CHRCheckable x subst | x -> subst where
   chrCheck      :: x -> Maybe subst
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pretty printing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-%%]
-instance PP c => PP (CHR c g s) where
-  pp = pp . show
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction

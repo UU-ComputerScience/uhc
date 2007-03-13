@@ -103,10 +103,10 @@
 %%[8 export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
 %%]
 
-%%[8 hs export(ctag,ppCTag,ppCTag',ppCTagInt) 
+%%[8 hs export(ctag,ppCTag,ppCTagInt) 
 %%]
 
-%%[8 export(CTagsMp,ppCTagsMp)
+%%[8 export(CTagsMp)
 %%]
 
 %%[8 export(ppUID')
@@ -118,7 +118,7 @@
 %%[9 export(ppListV,ppAssocLV)
 %%]
 
-%%[9 export(PredOccId(..),mkPrId,poiHNm,ppPredOccId')
+%%[9 export(PredOccId(..),mkPrId,poiHNm)
 %%]
 
 %%[9 export(PrfCtxtId)
@@ -264,21 +264,16 @@ basePrfCtxtId = uidStart
 %%[9 hs
 data PredOccId
   = PredOccId {poiCxId :: PrfCtxtId, poiId :: UID}
-  | PredOccId_Var UID
   deriving (Show,Eq,Ord)
+%%]
+  | PredOccId_Var UID
 
+%%[9 hs
 mkPrId :: PrfCtxtId -> UID -> PredOccId
 mkPrId ci u = PredOccId ci u
 
 poiHNm :: PredOccId -> HsName
 poiHNm = uidHNm . poiId
-
-ppPredOccId' :: (UID -> PP_Doc) -> PredOccId -> PP_Doc
-ppPredOccId' ppi poi = ppCurlysCommas [ppi (poiCxId poi),ppi (poiId poi)]
-
-instance PP PredOccId where
-  pp (PredOccId_Var v) = "poi_" >|< v
-  pp poi               = "Poi" >|< ppPredOccId' pp poi
 %%]
 
 %%[9 export(mkPrIdCHR)
@@ -667,13 +662,6 @@ mkClassCTag n sz = CTag n n 0 sz sz
 ctag :: a -> (HsName -> HsName -> Int -> Int -> Int -> a) -> CTag -> a
 ctag n t tg = case tg of {CTag tn cn i a ma -> t tn cn i a ma; _ -> n}
 
--- intended for parsing
-ppCTag' :: (HsName -> PP_Doc) -> CTag -> PP_Doc
-ppCTag' ppNm t
-  = case t of
-      CTagRec                      -> ppCurly "Rec"
-      CTag ty nm tag arity mxarity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity, pp mxarity]
-
 ppCTag :: CTag -> PP_Doc
 ppCTag = ctag (pp "Rec") (\tn cn t a ma -> pp t >|< "/" >|< pp cn >|< "/" >|< pp a >|< "/" >|< pp ma)
 
@@ -701,11 +689,6 @@ data Unbox
 
 %%[8 hs
 type CTagsMp = AssocL HsName (AssocL HsName CTag)
-
-ppCTagsMp :: (HsName -> PP_Doc) -> CTagsMp -> PP_Doc
-ppCTagsMp pn
-  = mkl (mkl (ppCTag' pn))
-  where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> pn n >-< indent 1 ("=" >#< pe e))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

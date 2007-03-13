@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
+%%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
 %%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCxBindLMap,ppCBindL)
@@ -34,7 +34,7 @@ instance PP CExpr where
 
 %%[8 hs
 ppCNm :: HsName -> PP_Doc
-ppCNm = ppHsnNonAlpha coreScanOpts
+ppCNm = cfgppHsName CfgPP_Core
 %%]
 
 %%[9 hs
@@ -82,7 +82,7 @@ ppLit :: String -> String -> PP_Doc
 ppLit kind val = "#" >|< kind >|< pp (show val)
 
 ppTag :: CTag -> PP_Doc
-ppTag t = "#Tag" >|< ppCTag' ppCNm t
+ppTag t = "#Tag" >|< ppCTag' CfgPP_Core t
 %%]
 
 %%[8
@@ -92,7 +92,7 @@ ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
 SEM CModule
-  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >#< "=" >-< @expr.pp >-< "-- data type tag map:" >-< ppCTagsMp ppCNm @ctagsMp
+  | Mod         lhs         .   pp          =   "module" >#< ppCNm @moduleNm >#< "=" >-< @expr.pp >-< "-- data type tag map:" >-< ppCTagsMp CfgPP_Core @ctagsMp
 
 SEM CExpr
   | Int         loc         .   pp          =   ppLit "Int"    (show @int)
@@ -136,7 +136,7 @@ SEM CExpr
 SEM CBind
   | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >#< "=") (@expr.pp)
   | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
-                                                      ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg cfgPPTyHI @ty])
+                                                      ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 
 SEM CBindL
   | Nil         lhs         .   ppL         =   []

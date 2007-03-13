@@ -11,6 +11,9 @@
 %%[9 import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
+%%[20 import({%{EH}Base.CfgPP})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,6 +98,20 @@ cnstrRequiresSolve _                 = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP config for Constraint, to allow for different ways of PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(CfgPPForCnstr(..))
+class CfgPPForCnstr x fc where
+  cfgppForCnstr :: x -> fc -> PP_Doc
+%%]
+
+%%[20
+data CfgPPForCnstr_Plain = CfgPPForCnstr_Plain
+data CfgPPForCnstr_HI    = CfgPPForCnstr_HI
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -102,5 +119,13 @@ cnstrRequiresSolve _                 = True
 instance (PP p, PP info) => PP (Constraint p info) where
   pp (Prove     p     ) = "Prove"  >#< p
   pp (Assume    p     ) = "Assume" >#< p
-  pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppParensCommas ps
+  pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppBracketsCommas ps
 %%]
+
+%%[20
+instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
+  ppForHI (Prove     p     ) = "Prove"     >#< ppCurlysCommasBlock [ppForHI p]
+  ppForHI (Assume    p     ) = "Assume"    >#< ppCurlysCommasBlock [ppForHI p]
+  ppForHI (Reduction p i ps) = "Reduction" >#< ppCurlysCommasBlock [ppForHI p, ppForHI i, ppCurlysCommasBlock $ map ppForHI ps]
+%%]
+

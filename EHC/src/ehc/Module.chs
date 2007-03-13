@@ -12,7 +12,13 @@
 %%% Module adm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 module {%{EH}Module} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Error})
+%%[20 module {%{EH}Module} import({%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Common},{%{EH}Error},{%{EH}NameAspect})
+%%]
+
+%%[20 import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map)
+%%]
+
+%%[20 import(EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,qualified EH.Util.Rel as Rel)
 %%]
 
 %%[20 export(ModEnt(..),ModExp(..),ModEntSpec(..),ModEntSubSpec(..),ModImp(..),Mod(..),ModEntRel,ModEntDomMp,ModEntRngMp)
@@ -25,9 +31,6 @@
 %%]
 
 %%[20 import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
-%%]
-
-%%[20 export(ppModMp,ppModEntDomMp,ppModEntRel,ppModEntRel')
 %%]
 
 %%[99 export(modImpPrelude)
@@ -64,26 +67,39 @@ mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
 %%]
 
-%%[20
+%%[20 export(ppModMp)
 -- intended for parsing
-ppModEnt :: (HsName -> PP_Doc) -> ModEnt -> PP_Doc
-ppModEnt pn e
+ppModEnt :: CfgPP x => x -> ModEnt -> PP_Doc
+ppModEnt x e
   = ppCurlysCommasBlock (l1 ++ l2)
-  where l1 = [pp (mentKind e),ppIdOcc pn (mentIdOcc e)]
-        l2 = if Set.null (mentOwns e) then [] else [ppCurlysCommasBlock (map (ppModEnt pn) $ Set.toList $ mentOwns e)]
-
-instance PP ModEnt where
-  pp = ppModEnt pp
+  where l1 = [pp (mentKind e),ppIdOcc x (mentIdOcc e)]
+        l2 = if Set.null (mentOwns e) then [] else [ppCurlysCommasBlock (map (ppModEnt x) $ Set.toList $ mentOwns e)]
 
 -- intended for parsing
-ppModEntRel' :: (HsName -> PP_Doc) -> ModEntRel -> PP_Doc
-ppModEntRel' pn = ppCurlysAssocL pn (ppModEnt pn) . Rel.toList
+ppModEntRel' :: CfgPP x => x -> ModEntRel -> PP_Doc
+ppModEntRel' x = ppCurlysAssocL (cfgppHsName x) (ppModEnt x) . Rel.toList
 
 ppModEntRel :: ModEntRel -> PP_Doc
-ppModEntRel = ppModEntRel' pp
+ppModEntRel = ppModEntRel' CfgPP_Plain
 
+%%]
 ppModEntDomMp :: ModEntDomMp -> PP_Doc
 ppModEntDomMp = ppCurlysCommasBlock . map (\(a,b) -> pp a >|< "<>" >|< ppBracketsCommas b) . Map.toList
+
+%%[20
+instance PP ModEnt where
+  pp = ppModEnt CfgPP_Plain
+
+instance PP ModEntRel where
+  pp = ppModEntRel' CfgPP_Plain
+%%]
+
+%%[20
+instance PPForHI ModEnt where
+  ppForHI = ppModEnt CfgPP_HI
+
+instance PPForHI ModEntRel where
+  ppForHI = ppModEntRel' CfgPP_HI
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -182,7 +198,7 @@ modBuiltin
 %%[20
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
-         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "DEF" >#< ppModEntRel (modDefs m))
+         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "DEF" >#< pp (modDefs m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

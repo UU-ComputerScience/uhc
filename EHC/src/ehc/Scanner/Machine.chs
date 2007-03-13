@@ -172,10 +172,20 @@ scan opts pos input
 %%]
 %%[5
      | isOpsym c = let (name, s') = span isOpsym cs
-                       tok | isop name = reserved name p
-                           | c==':'    = valueToken TkConOp name p
-                           | otherwise = valueToken TkOp name p
-                   in tok : doScan (foldl adv p name) s'
+                       tok n p (c:_)
+                           | length suf' == 2 && isPairSym suf'
+                                       = (fst (tok pre p []) ++ [reserved suf' (advc (length pre) p)],1)
+                           where (pre,suf) = splitAt (length n - 1) n
+                                 suf'      = suf ++ [c]
+                       tok n p s
+                           | isop n    = ([reserved n p],0)
+                           | length suf == 2 && isPairSym suf
+                                       = (fst (tok pre p []) ++ [reserved suf (advc (length pre) p)],0)
+                           | c==':'    = ([valueToken TkConOp n p],0)
+                           | otherwise = ([valueToken TkOp n p],0)
+                           where (pre,suf) = splitAt (length n - 2) n
+                       (toks,drops) = tok name p s'
+                   in toks ++ doScan (advc drops $ foldl adv p name) (drop drops s')
 %%]
 %%[5.isDigit
      | isDigit c = let (tktype,number,width,s') = getNumber cs

@@ -647,7 +647,7 @@ If an expression types according to HM rules,
 we denote this by the following typing judgement,
 which types |e| in context |Gamma| with type |sigma|:
 \[
-\rulerCmdUse{TheoremRules.hm.scheme}
+\rulerCmdUse{MiscRules.hm.scheme}
 \]
 Similarly,
 \IxAsDef{System F typing} and \IxAsDef{EH typing} respectively type an expression |e| according to
@@ -656,9 +656,9 @@ type annotations for all expressions
 and the EH4 type inference algorithm described in this (and following chapters).
 \[
 \begin{array}{l}
-\rulerCmdUse{TheoremRules.sysf.scheme}
+\rulerCmdUse{MiscRules.sysf.scheme}
 \\
-\rulerCmdUse{TheoremRules.ehv.scheme}
+\rulerCmdUse{MiscRules.ehv.scheme}
 \end{array}
 \]
 |Transla| represents the translation of |e| with System F type annotations;
@@ -679,9 +679,9 @@ We intend EH's type system to be a conservative extension with respect to HM:
 All expressions |e| which type according to HM typing also type according to
 EH typing:
 \begin{eqnarray*}
-\rulerCmdUse{TheoremRules.hm.scheme}
+\rulerCmdUse{MiscRules.hm.scheme}
 &|=>|&
-\rulerCmdUse{TheoremRules.ehv.scheme}
+\rulerCmdUse{MiscRules.ehv.scheme}
 \end{eqnarray*}
 \end{Theorem}
 
@@ -694,9 +694,9 @@ If the expression |e| types according to EH typing, |sigma| and all types partic
 then its translation |Transl|
 types according to HM typing:
 \begin{eqnarray*}
-\rulerCmdUse{TheoremRules.ehv.scheme}
+\rulerCmdUse{MiscRules.ehv.scheme}
 &|=>|&
-\rulerCmdUse{TheoremRules.hmv.scheme}
+\rulerCmdUse{MiscRules.hmv.scheme}
 \end{eqnarray*}
 \end{Theorem}
 
@@ -708,9 +708,9 @@ For EH without restrictions we claim:
 If the expression |e| types according to EH typing then its translation |Transla| (type annotated |e|)
 types according to System F typing:
 \begin{eqnarray*}
-\rulerCmdUse{TheoremRules.ehv.scheme}
+\rulerCmdUse{MiscRules.ehv.scheme}
 &|=>|&
-\rulerCmdUse{TheoremRules.sysfv.scheme}
+\rulerCmdUse{MiscRules.sysfv.scheme}
 \end{eqnarray*}
 \end{Theorem}
 

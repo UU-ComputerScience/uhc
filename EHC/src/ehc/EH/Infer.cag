@@ -385,7 +385,123 @@ SEM Decl
                                                             , feTyGam = @lhs.tyGam
 %%]]
                                                             }
-                            .   fe2                 :=  emptyFE
+                            .   fe2                 =   emptyFE
+%%[[11
+                                                            { feTyGam = @lhs.tyGam }
+%%]]
+%%]
+
+%%[4.FIEnv
+SEM Expr
+  | *           loc         .   fe                  =   emptyFE
+%%]
+
+%%[7.FIEnv
+SEM RecExpr
+  | *           loc         .   fe                  =   emptyFE
+
+SEM DataFieldExpr
+  | *           loc         .   fe                  =   emptyFE
+%%]
+
+%%[9.FIEnv -(4.FIEnv 7.FIEnv)
+SEM Expr
+  | Let         loc         .   fe                  =   emptyFE
+                                                            { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+  | Lam AppTop
+%%[[12
+    LamImpl
+%%]]
+                loc         .   fe                  =   emptyFE
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+  | * - Lam AppTop Let
+%%[[12
+    LamImpl
+%%]]
+                loc         .   fe                  =   emptyFE
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+
+SEM RecExpr
+  | *           loc         .   fe                  =   emptyFE
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+
+SEM DataFieldExpr
+  | *           loc         .   fe                  =   emptyFE
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+%%]
+
+%%[4
+SEM PatExpr
+  | *           loc         .   fe                  =   emptyFE
+%%[[9
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[7
+SEM RecPatExpr
+  | *           loc         .   fe                  =   emptyFE
+%%[[9
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[7
+SEM DataFieldPatExpr
+  | *           loc         .   fe                  =   emptyFE
+%%[[9
+                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+                                                            }
+%%]]
+%%]
+
+%%[4
+SEM TyExpr
+  | *           loc         .   fe                  =   emptyFE
+%%]
+
+%%[9
+SEM PrExpr
+  | *           loc         .   fe2                 =   emptyFE
 %%[[11
                                                             { feTyGam = @lhs.tyGam }
 %%]]

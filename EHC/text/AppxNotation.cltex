@@ -185,10 +185,31 @@ Notation & Meaning \\
  \\
 %%]
 
+%%[declBasicTySigma1
+|dsig| & |::=| &
+|identv :: sigma|
+ & value type signature
+ \\
+%%]
+
+%%[declBasicVal1
+|dval| & |::=| &
+|identv = e|
+ & value binding
+ \\
+%%]
+
 %%[declBasicTySigma
 |d| & |::=| &
 |identv :: sigma|
  & value type signature
+ \\
+%%]
+
+%%[declBasicValTySigma1
+|d| & |::=| &
+|dsig || dval|
+ &
  \\
 %%]
 
@@ -213,15 +234,29 @@ Notation & Meaning \\
  \\
 %%]
 
-%%[declExplImpl
+%%[declExplImplBasic1
+& | || | &
+|class Vec(pr) => pr where Vec(dsig)|
+ & class
+ \\
+& | || | &
+|instance Vec(pr) => pr where Vec(dval)|
+ & class instance
+ \\
+%%]
+
+%%[declExplImplBasic
 & | || | &
 |class Vec(pr) => pr where Vec(d)|
  & class
  \\
 & | || | &
 |instance Vec(pr) => pr where Vec(d)|
- & introduced instance
+ & class instance
  \\
+%%]
+
+%%[declExplImplExtra
 & | || | &
 |instance identv <: Vec(pr) => pr where Vec(d)|
  & \emph{named introduced instance}
@@ -315,11 +350,21 @@ Notation & Meaning \\
  \\
 %%]
 
+%%[typredBasic1
+|pr| & |::=| &
+|identc ^^ t|
+ & class predicate
+ \\
+%%]
+
 %%[typredBasic
 |pr| & |::=| &
 |identc ^^ Vec(t)|
  & class predicate
  \\
+%%]
+
+%%[typredTrafo
 & | || | &
 |pr => pr|
  & predicate transformer/abstraction
@@ -359,6 +404,28 @@ Notation & Meaning \\
  \\
 %%]
 
+%%[typeBasicMono
+|tau| & |::=| &
+|Int || Char|
+ & literals
+ \\
+& | || | &
+|tvarv|
+ & variable
+ \\
+& | || | &
+|tau -> tau|
+ & abstraction
+ \\
+%%]
+
+%%[typeSchemeMono
+|sigma| & |::=| &
+|forall ^ tvarv . pi => tau|
+ & type scheme
+ \\
+%%]
+
 %%[typeBasic
 |sigma| & |::=| &
 |Int || Char|
@@ -388,7 +455,7 @@ Notation & Meaning \\
 %%[typePred
 & | || | &
 |pi => sigma|
- & implicit abstraction
+ & predicate abstraction
  \\
 %%]
 

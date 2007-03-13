@@ -10,7 +10,10 @@
 %%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}GrinCode},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
 %%]
 
-%%[20 hs import(qualified Data.Map as Map,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,{%{EH}Module})
+%%[20 hs import({%{EH}Module},{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
+%%]
+
+%%[20 hs import(qualified Data.Map as Map,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
 %%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
@@ -43,10 +46,11 @@ hiFromAllGams
      -> DataGam
      -> Pr.PrIntroGam
      -> Pr.PrElimTGam
+     -> ScopedPredStore
      -> CArityMp
      -> GrInlMp
      -> Seq.FastSeq Binding
-hiFromAllGams exps fg idg vg tg dg ig eg arityMp inlMp
+hiFromAllGams exps fg idg vg tg dg ig eg chrStore arityMp inlMp
   =          Seq.fromList [Binding_Export exps]
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
@@ -59,6 +63,7 @@ hiFromAllGams exps fg idg vg tg dg ig eg arityMp inlMp
                     ) dg
     Seq.:++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
     Seq.:++: hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) basePrfCtxtId eg
+    Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
   where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) (Pr.rulMkEvidHow r) ((Pr.rulId r) {poiCxId = basePrfCtxtId}) (Pr.rulCost r) []
 %%]
 

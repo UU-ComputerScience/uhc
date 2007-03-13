@@ -162,14 +162,16 @@ data CnstrInfo v
   | CIImpls Impls
   | CIScope PredScope
   | CIPred  Pred
-  | CIPoi   PredOccId
 %%[[10
   | CILabel  Label
   | CIOffset LabelOffset
   | CIExts   RowExts
 %%]]
   deriving (Eq,Show)
+%%]
+  | CIPoi   PredOccId
 
+%%[9
 type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
 
 instance Show Cnstr where
@@ -231,15 +233,12 @@ cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,th
 cnstrMapThrTy f = cnstrMapThr (\v i thr -> case i of {CITy t -> let (t',thr') = f v t thr in (CITy t,thr'); _ -> (i,thr)})
 %%]
 
-%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit,cnstrPredUnit,cnstrPoiUnit)
+%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit,cnstrPredUnit)
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (Map.fromList [(v,CIImpls i)])
 
 cnstrScopeUnit :: TyVarId -> PredScope -> Cnstr
 cnstrScopeUnit v sc = Cnstr (Map.fromList [(v,CIScope sc)])
-
-cnstrPoiUnit :: UID -> PredOccId -> Cnstr
-cnstrPoiUnit v sc = Cnstr (Map.fromList [(v,CIPoi sc)])
 
 cnstrPredUnit :: TyVarId -> Pred -> Cnstr
 cnstrPredUnit v p = Cnstr (Map.fromList [(v,CIPred p)])
@@ -247,6 +246,9 @@ cnstrPredUnit v p = Cnstr (Map.fromList [(v,CIPred p)])
 assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
 assocLToCnstrImpls = Cnstr . Map.fromList . assocLMapElt CIImpls
 %%]
+cnstrPoiUnit :: UID -> PredOccId -> Cnstr
+cnstrPoiUnit v sc = Cnstr (Map.fromList [(v,CIPoi sc)])
+
 
 %%[10 export(cnstrLabelUnit,cnstrOffsetUnit,cnstrExtsUnit)
 cnstrLabelUnit :: LabelVarId -> Label -> Cnstr
@@ -266,19 +268,19 @@ cnstrTailAddOcc o (Impls_Tail i os) = (t, cnstrImplsUnit i t)
 cnstrTailAddOcc _ x                 = (x,emptyCnstr)
 %%]
 
-%%[9 export(cnstrImplsLookup,cnstrScopeLookup,cnstrPredLookup,cnstrPoiLookup)
+%%[9 export(cnstrImplsLookup,cnstrScopeLookup,cnstrPredLookup)
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup = cnstrLookup' (\ci -> case ci of {CIImpls i -> Just i; _ -> Nothing})
 
 cnstrScopeLookup :: TyVarId -> Cnstr -> Maybe PredScope
 cnstrScopeLookup = cnstrLookup' (\ci -> case ci of {CIScope s -> Just s; _ -> Nothing})
 
-cnstrPoiLookup :: UID -> Cnstr -> Maybe PredOccId
-cnstrPoiLookup = cnstrLookup' (\ci -> case ci of {CIPoi p -> Just p; _ -> Nothing})
-
 cnstrPredLookup :: TyVarId -> Cnstr -> Maybe Pred
 cnstrPredLookup = cnstrLookup' (\ci -> case ci of {CIPred p -> Just p; _ -> Nothing})
 %%]
+cnstrPoiLookup :: UID -> Cnstr -> Maybe PredOccId
+cnstrPoiLookup = cnstrLookup' (\ci -> case ci of {CIPoi p -> Just p; _ -> Nothing})
+
 
 %%[10 export(cnstrLabelLookup,cnstrOffsetLookup,cnstrExtsLookup)
 cnstrLabelLookup :: LabelVarId -> Cnstr -> Maybe Label
@@ -354,7 +356,6 @@ instance PP v => PP (CnstrInfo v) where
   pp (CITy    t) = pp t
   pp (CIImpls i) = pp i
   pp (CIScope s) = pp s
-  pp (CIPoi   i) = pp i
   pp (CIPred  p) = pp p
 %%[[10
   pp (CILabel  x) = pp x
@@ -362,4 +363,5 @@ instance PP v => PP (CnstrInfo v) where
   pp (CIExts   x) = pp "exts" -- pp x
 %%]]
 %%]
+  pp (CIPoi   i) = pp i
 
