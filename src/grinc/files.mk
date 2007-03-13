@@ -74,7 +74,7 @@ $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRI
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_TOSILLY_DPDS_SRC_CAG))
 
 GRINC_AGGRINCODE_TOGBCODE_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,ToGrinByteCode)
-GRINC_AGGRINCODE_TOGBCODE_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TrfLocal/CommonFreeVar TrfLocal/CommonAliasAG)
+GRINC_AGGRINCODE_TOGBCODE_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TrfLocal/CommonFreeVar TrfLocal/CommonAliasAG TrfLocal/CommonIntroName)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_TOGBCODE_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_TOGBCODE_DPDS_SRC_CAG))
 
@@ -84,7 +84,7 @@ $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRI
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_POINTSTO_DPDS_SRC_CAG))
 
 GRINC_AGGRINCODE_FREEVARS_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,FreeVars)
-GRINC_AGGRINCODE_FREEVARS_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TrfLocal/CommonFreeVar TrfLocal/CommonAliasAG)
+GRINC_AGGRINCODE_FREEVARS_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TrfLocal/CommonFreeVar TrfLocal/CommonIntroName)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_FREEVARS_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_FREEVARS_DPDS_SRC_CAG))
 
@@ -94,7 +94,7 @@ $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRI
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG))
 
 GRINC_AGGRINCODE_ALLTRFLCL_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/TrfLocal/%.cag,AliasElim AliasRename FlattenSeq EvalElim Inline Unbox UnusedNameElim UnusedMetaInfoElim)
-GRINC_AGGRINCODE_ALLTRFLCL_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TrfLocal/CommonAliasAG TrfLocal/CommonRenameAG TrfLocal/CommonFreeVar TrfLocal/CommonWillEval)
+GRINC_AGGRINCODE_ALLTRFLCL_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag,TrfLocal/CommonAliasAG TrfLocal/CommonRenameAG TrfLocal/CommonFreeVar TrfLocal/CommonIntroName TrfLocal/CommonWillEval)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_ALLTRFLCL_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_ALLTRFLCL_DPDS_SRC_CAG))
 

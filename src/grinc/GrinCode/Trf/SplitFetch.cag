@@ -46,37 +46,51 @@ SEM GrModule
   | Mod  loc  .  nodeSizes = Map.fromList (map fst @evalTagMp)
 %%]
 
+
 %%%%%%%%%%%%%%%%%%
 %%% SplitFetch %%%
 %%%%%%%%%%%%%%%%%%
 
 %%[8.fetchInfo
 
+ATTR GrPatLam GrVarL GrVar [ | | mbTag : {Maybe GrTag} ]
+
+SEM GrPatLam
+ | VarNode   lhs . mbTag = @fldL.mbTag
+ | Var Empty lhs . mbTag = Nothing
+ 
+SEM GrVarL
+ | Cons   lhs . mbTag = @hd.mbTag
+ | Nil    lhs . mbTag = Nothing
+
+SEM GrVar
+ | KnownTag   lhs . mbTag = Just @tag.self
+ | Ignore Var lhs. mbTag  = Nothing
+
+
+
+ATTR AllGrTag GrVarL GrVar [ | | self:SELF ]
+
 SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
   | FetchNode     lhs  .  fetchPointer  =  Just @nm
   | * - FetchNode lhs  .  fetchPointer  =  Nothing
 
 
-SEM GrPat [ | | mbTagOrVar: {Maybe (Either GrTag HsName)} names: {[HsName]} ]
-  |     Tag Node         lhs  .  mbTagOrVar  =  Just (Left   @tag.grTrf )
-  |              VarNode lhs  .  mbTagOrVar  =  Just (Right (head @fldL))
-  | * - Tag Node VarNode lhs  .  mbTagOrVar  =  Nothing
-  | Node                 lhs  .  names  =  @fldL
-  | VarNode              lhs  .  names  =  tail @fldL
+SEM GrPatAlt [ | | mbTag: {Maybe GrTag} ]
+  |     Tag Node         lhs  .  mbTag  =  Just @tag.grTrf
+  | * - Tag Node         lhs  .  mbTag  =  Nothing
+
+
+SEM GrPatLam [ | |  names: {GrVarL} ]
+  | VarNode              lhs  .  names  =  @fldL.self
   | Var                  lhs  .  names  =  error "SplitFetch.ag: attempt to get names from GrPat_Var"
-  | Tag Empty  LitInt    lhs  .  names  =  []
-%%[[10
-  | NodeSplit            lhs  .  names  =  []   -- AD 20060526: avoid AGC error msg
-%%]]
+  | Empty                lhs  .  names  =  []
 
 SEM GrExpr
   | Seq   loc  .  fetches  = do { p  <- @expr.fetchPointer
-                                ; tv <- @pat.mbTagOrVar
-                                ; let (withTag, offset, tagInfo) = case tv of
-                                                                       Left  t  ->  (id  , 1, Just t )
-                                                                       Right n  ->  ((n:), 0, Nothing)
-                                      buildFetchInfo v l o  =  (v, GrExpr_FetchField p o tagInfo) : l (o+1)
-                                ; return $ foldr buildFetchInfo (const []) (withTag @pat.names) offset
+                                ; let buildFetchInfo (GrVar_Var v) l o  =  (v, GrExpr_FetchField p o @pat.mbTag) : l (o+1)
+                                      buildFetchInfo _             l o  =                                          l (o+1)
+                                ; return $ foldr buildFetchInfo (const []) @pat.names 0
                                 }
 %%]
 
@@ -102,7 +116,7 @@ SEM GrBind
   | Bind  expr  .  floatingFetches = Map.empty
 
 SEM GrExpr
-  | Seq  loc  .  isLit         = maybe False isTagLiteral @pat.mbTagOrVar
+  | Seq  loc  .  isLit         = isJust @pat.mbTag
               .  fetchesInfo   = do { p <- @expr.fetchPointer
                                     ; l <- @fetches
                                     ; let mbTag             = checkSingleTag @lhs.hptMap p
@@ -137,7 +151,7 @@ ATTR AllAlt [ mbFetches: {Maybe [(HsName, GrExpr)]} | | ]
 
 SEM GrAlt
   | Alt  loc  .  mbExprInfo  =  do { fetches <- @lhs.mbFetches
-                                   ; (Left tag) <- @pat.mbTagOrVar
+                                   ; tag     <- @pat.mbTag
                                    ; fetches <- return $ take (nodeSizeTag tag @lhs.nodeSizes) fetches
                                    ; return $  (foldr (specializeFetch' tag)
                                                       (@lhs.uniq, @lhs.renameMap, [])
@@ -191,30 +205,19 @@ type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 fromJust' s Nothing = error $ "fromJust':" ++ s
 fromJust' _ (Just v) = v
 
-nodeSize tv nodeSizes 
-  =  case tv of
-      Left t  -> nodeSizeTag t nodeSizes
-      Right v -> error "SplitFetch: nodesize of variable tag cannot be determined"
-
 nodeSizeTag t nodeSizes 
   =  (if grinStoreArity then 1 else 0) + Map.findWithDefault 1 t nodeSizes
 
-getTagName (GrVal_Var    v               )  =  v
---getTagName (GrVal_Tag   (GrTag_Var v)    )  =  v
---getTagName (GrVal_Node  (GrTag_Var v)  [])  =  v
+getTagName (GrVal_Var v) =  v
 getTagName v             = error $ "getName: value not a variable: '" ++ show v ++ "'"
 
 addFetchInfo ffm (v, unknownFetches) = if null unknownFetches
                                        then ffm
                                        else Map.insert v unknownFetches ffm
 
-isTagLiteral tv = case tv of
-                   Right v -> False
-                   Left  t -> True
-
 buildSeqs body = foldr buildSeq body
     where
-    buildSeq (v, e) b = GrExpr_Seq e (GrPat_Var v) b
+    buildSeq (v, e) b = GrExpr_Seq e (GrPatLam_Var v) b
 
 checkSingleTag hptMap p = if singleton nodes
                           then Just (fst $ head nodes)

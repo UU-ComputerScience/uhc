@@ -299,13 +299,7 @@ SEM GrAlt
 %%% Named value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- this is duplicated in GrinCode/TrfLocal/CommonAliasAG, should be shared
-%%[8
-ATTR AllGrPat [ | | introNmL USE {++} {[]}: {[HsName]} ]
-
-SEM GrPat
-  | Var         lhs         .   introNmL        =   [@nm]
-  | Node        lhs         .   introNmL        =   @fldL
+%%[8 import({GrinCode/TrfLocal/CommonIntroName})
 %%]
 
 %%[8 hs
@@ -316,12 +310,17 @@ data NmIntro
 %%]
 
 %%[8
-ATTR GrPat [ | | nmIntro: NmIntro ]
+ATTR GrPatAlt GrPatLam [ | | nmIntro: NmIntro ]
 
-SEM GrPat
-  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm
+SEM GrPatAlt
   | Node        lhs         .   nmIntro         =   NmIntro_Grp @tag.self @fldL
-  | * - Var Node
+  | * - Node
+                lhs         .   nmIntro         =   NmIntro_None
+
+SEM GrPatLam
+  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm
+  | VarNode     lhs         .   nmIntro         =   NmIntro_Grp (error "VarNode-grpHead") (tail @fldL.introNmL)
+  | * - Var VarNode
                 lhs         .   nmIntro         =   NmIntro_None
 %%]
 

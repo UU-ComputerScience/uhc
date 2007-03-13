@@ -45,8 +45,8 @@ SEM GrExpr
 %%]
 
 %%[8.tag
-ATTR GrPat [ | | tag: GrTag ]
-SEM GrPat 
+ATTR GrPatAlt [ | | tag: GrTag ]
+SEM GrPatAlt 
   | Tag           lhs  .  tag  =  @tag.grTrf
   | Node          lhs  .  tag  =  @tag.grTrf
   | * - Node Tag  lhs  .  tag  =  error "no supported tag in pattern alternative"

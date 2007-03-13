@@ -60,7 +60,7 @@ buildAlternative tag avs arity rhsElem unique uf vf tf =
 
         uniqHead        = unique + arity
         entrHead        = zip [unique..] args
-        codeHead        = GrAlt_Alt (GrPat_Node tag $ (if grinStoreArity then (wildcardNr:) else id) patNames)
+        codeHead        = GrAlt_Alt (GrPatAlt_Node tag $ (if grinStoreArity then (wildcardNr:) else id) patNames)
         
         (uniqBody,
          entrBody,
@@ -100,8 +100,8 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                        boundVar   = HNmNr u Nothing
                        -- wrap the newly created names for use in Grin-values and -patterns
                        boundVal   = GrVal_Var boundVar
-                       boundPat   = GrPat_Var boundVar
-                       emptyPat   = GrPat_Empty
+                       boundPat   = GrPatLam_Var boundVar
+                       emptyPat   = GrPatLam_Empty
                        -- get the abstract value for the function-result and exception-result of the called function
                        functAbsVal= getEnvVar hptMap (getNr functVar)
                        excepAbsVal= getEnvVar hptMap (getNr functVar + 1)
@@ -117,11 +117,11 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                                  throwVar   = HNmNr (u+1) Nothing
                                  catchVar   = HNmNr (u+2) Nothing
                                  noVar      = HNmNr 0 Nothing
-                                 noPat      = GrPat_Var noVar
+                                 noPat      = GrPatLam_Var noVar
                                  -- and wrap them for use in Grin
                                  throwVal   = GrVal_Var throwVar
                                  catchVal   = GrVal_Var catchVar
-                                 catchPat   = GrPat_Var catchVar
+                                 catchPat   = GrPatLam_Var catchVar
                                  -- create HPT entries for the new variables
                                  throwEntry = (getNr throwVar, excepAbsVal)
                                  catchEntry = (getNr catchVar, functAbsVal)
@@ -160,7 +160,7 @@ evalCode unique evalMap hptMap locatVar
        fetchVar      = HNmNr unique Nothing
        -- wrap the newly created names for use in Grin-values and -patterns
        fetchVal      = GrVal_Var fetchVar
-       fetchPat      = GrPat_Var fetchVar
+       fetchPat      = GrPatLam_Var fetchVar
        -- get the abstract value for the original location
        locatAbsVal   = absFetch hptMap locatVar
        -- create an HPT entry for the new variable
@@ -350,7 +350,7 @@ applyCodePart unique applyMap hptMap nodes appVar appArgs
                                                           (filter isPartialApplication $ getNodes resultAV)
                                                           newVar
                                                           restArgs
-            in (unique3, hptMap3, GrExpr_Seq code (GrPat_Var newVar) code2)
+            in (unique3, hptMap3, GrExpr_Seq code (GrPatLam_Var newVar) code2)
 
 
 

@@ -250,7 +250,7 @@ inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS)
 inlGrVar inlMp nmL
   = (foldr (.) id mks,Set.unions inls)
   where inl nm = case Map.lookup nm inlMp of
-                   Just (GrInl_CAF e) -> (GrExpr_Seq e (GrPat_Var nm),Set.singleton nm)
+                   Just (GrInl_CAF e) -> (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm)
                    _ -> (id,Set.empty)
         (mks,inls) = unzip $ map inl nmL
 

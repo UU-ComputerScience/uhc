@@ -39,7 +39,7 @@ TYPE GrBindL    =   [GrBind]
 
 DATA GrExpr
   | Seq         expr            : GrExpr
-                pat             : GrPat
+                pat             : GrPatLam
                 body            : GrExpr
   | Case        val             : GrVal
                 altL            : GrAltL
@@ -67,7 +67,7 @@ DATA GrExpr
                 handler         : GrExpr
 
 DATA GrAlt
-  | Alt         pat             : GrPat
+  | Alt         pat             : GrPatAlt
                 expr            : GrExpr
 
 TYPE GrAltL     =   [GrAlt]
@@ -88,30 +88,39 @@ DATA GrVal
 %%]]
 
 
+
 TYPE GrValL     =   [GrVal]
 
-DATA GrPat
-  | Empty
+DATA GrPatAlt
   | LitInt      int             : {Int}
   | Tag         tag             : GrTag
-  | Var         nm              : {HsName}
   | Node        tag             : GrTag
                 fldL            : {[HsName]}
-  | VarNode     fldL            : {[HsName]}
+  | Otherwise
 %%[[10
   | NodeSplit   tag             : GrTag
                 nm              : {HsName}
                 fldL            : GrSplitL
 %%]]
-  
 
-TYPE GrPatL     =   [GrPat]
+TYPE GrVarL     =   [GrVar]
+
+DATA GrVar
+  | Var         nm              : {HsName}
+  | KnownTag    tag             : GrTag
+  | Ignore
+
+DATA GrPatLam
+  | Empty
+  | Var         nm              : {HsName}
+  | VarNode     fldL            : GrVarL
+ 
 
 DATA GrTag
   | Lit         categ           : {GrTagCateg}
                 int             : {Int}
                 nm              : {HsName}
---  | Var         nm              : {HsName}         -- not necessary anymore; now part of GrVal_VarNode and GrPat_VarNode
+--  | Var         nm              : {HsName}         -- not necessary anymore; now part of GrVal_VarNode and GrPatLam_VarNode
   | Unboxed
   | Any
 
@@ -143,7 +152,7 @@ SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
 SET AllGrTag    =   GrTag GrTagL
 SET AllGrVal    =   GrVal GrValL
-SET AllGrPat    =   GrPat GrPatL
+SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
 SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
 SET AllWithName =   AllExpr
 %%[[10

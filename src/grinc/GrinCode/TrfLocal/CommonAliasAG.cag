@@ -1,5 +1,8 @@
+%%[8 import({GrinCode/TrfLocal/CommonIntroName})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Common stuff related to name introduction
+%%% Common stuff related to name aliasing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Name info is stored in a NmAlias, a representation of what a name stands for.
@@ -9,13 +12,16 @@ Name info is stored in a NmAlias, a representation of what a name stands for.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR GrPat [ | | nmAlias: NmAlias ]
+ATTR GrPatAlt GrPatLam [ | | nmAlias: NmAlias ]
 
-SEM GrPat
-  | Var         lhs         .   nmAlias         =   NmAlias_Nm @nm
+SEM GrPatAlt
   | Node        lhs         .   nmAlias         =   NmAlias_Grp hsnUnknown $ map NmAlias_Nm @fldL
-  | * - Var Node
-                lhs         .   nmAlias         =   NmAlias_None
+  | * - Node    lhs         .   nmAlias         =   NmAlias_None
+
+SEM GrPatLam
+  | Var         lhs         .   nmAlias         =   NmAlias_Nm @nm
+  | VarNode     lhs         .   nmAlias         =   NmAlias_Grp hsnUnknown $ map NmAlias_Nm (tail @fldL.introNmL)
+  | * - Var VarNode  lhs         .   nmAlias         =   NmAlias_None
 %%]
 
 %%[8
@@ -45,26 +51,4 @@ ATTR GrValL [ | | nmAliasL: {[NmAlias]} ]
 SEM GrValL
   | Cons        lhs         .   nmAliasL        =   @hd.nmAlias : @tl.nmAliasL
   | Nil         lhs         .   nmAliasL        =   []
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Introduced names
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR AllGrPat [ | | introNmL USE {++} {[]}: {[HsName]} ]
-
-SEM GrPat
-  | Var         lhs         .   introNmL        =   [@nm]
-  | Node        lhs         .   introNmL        =   @fldL
-%%[[10
-  | NodeSplit   lhs         .   introNmL        =   @nm : @fldL.introNmL
-%%]
-%%]
-
-%%[10
-ATTR AllSplit [ | | introNmL USE {++} {[]}: {[HsName]} ]
-
-SEM GrSplit
-  | Sel         lhs         .   introNmL        =   [@nm]
 %%]

@@ -31,10 +31,11 @@ ATTR GrAGItf AllNT  [ names: IdentNameMap | | ]
 SEM GrGlobal
   | Global  lhs  .  grTrf  =  GrGlobal_Global (getName' @lhs.names @nm) @val.grTrf
 
-SEM GrPat
-  | Node    lhs  .  grTrf  = GrPat_Node @tag.grTrf (map (getName' @lhs.names) @fldL)
-  | VarNode lhs  .  grTrf  = GrPat_VarNode         (map (getName' @lhs.names) @fldL)
-  | Var     lhs  .  grTrf  = GrPat_Var                  (getName' @lhs.names @nm)
+SEM GrPatAlt
+  | Node    lhs  .  grTrf  = GrPatAlt_Node @tag.grTrf (map (getName' @lhs.names) @fldL)
+
+SEM GrPatLam
+  | Var     lhs  .  grTrf  = GrPatLam_Var                  (getName' @lhs.names @nm)
 
 SEM GrBind
   | Bind  loc  .  bindName  = getName' @lhs.names @nm
@@ -43,6 +44,8 @@ SEM GrBind
 
 SEM GrVal
   | Var  lhs  .  grTrf  = GrVal_Var (getName' @lhs.names @nm)
+SEM GrVar
+  | Var  lhs  .  grTrf  = GrVar_Var (getName' @lhs.names @nm)
 
 SEM GrExpr
   | App Eval Call FetchNode FetchField Throw UpdateUnit

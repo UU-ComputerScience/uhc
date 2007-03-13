@@ -19,7 +19,7 @@
 %%[8 hs export(GrAGItf(..), GrModule(..))
 %%]
 
-%%[8 hs export(GrAlt(..), GrAltL, GrPat(..), GrPatL, GrVal(..), GrValL, GrTag(..), GrTagL)
+%%[8 hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
 %%]
 
 %%[10 hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
@@ -248,17 +248,17 @@ mkGrTagNode c t n vL
     then GrVal_Node (GrTag_Lit c t n) (GrVal_LitInt (length vL) : vL)
     else GrVal_Node (GrTag_Lit c t n)                             vL
 
-mkGrPatTagNode :: GrTagCateg -> Int -> HsName -> [HsName] -> GrPat
+mkGrPatTagNode :: GrTagCateg -> Int -> HsName -> [HsName] -> GrPatAlt
 mkGrPatTagNode c t n pL
  = if grinStoreArity
-    then GrPat_Node (GrTag_Lit c t n) (hsnWild : pL)
-    else GrPat_Node (GrTag_Lit c t n)            pL
+    then GrPatAlt_Node (GrTag_Lit c t n) (hsnWild : pL)
+    else GrPatAlt_Node (GrTag_Lit c t n)            pL
 %%]
 
 %%[10 hs
-mkGrPatTagSplit :: GrTagCateg -> Int -> HsName -> HsName -> GrSplitL -> GrPat
+mkGrPatTagSplit :: GrTagCateg -> Int -> HsName -> HsName -> GrSplitL -> GrPatAlt
 mkGrPatTagSplit c t n r sL
- = GrPat_NodeSplit (GrTag_Lit c t n) r sL
+ = GrPatAlt_NodeSplit (GrTag_Lit c t n) r sL
 
 %%]
 
@@ -274,10 +274,10 @@ mkGrRecNode xs
   = mkGrTagNode (GrTagCon $ mkGrTagAnn a a) 0 (hsnProd a) xs
   where a = length xs
 
-mkGrPatConNode :: GrTagAnn -> Int -> HsName -> [HsName] -> GrPat
+mkGrPatConNode :: GrTagAnn -> Int -> HsName -> [HsName] -> GrPatAlt
 mkGrPatConNode ann = mkGrPatTagNode (GrTagCon ann)
 
-mkGrPatRecNode :: [HsName] -> GrPat
+mkGrPatRecNode :: [HsName] -> GrPatAlt
 --mkGrPatRecNode  = mkGrPatTagNode GrTagRec 0 hsnRec
 mkGrPatRecNode xs
   = mkGrPatTagNode (GrTagCon $ mkGrTagAnn a a) 0 (hsnProd a) xs
@@ -286,17 +286,24 @@ mkGrPatRecNode xs
 mkGrBox :: HsName -> GrVal -> GrVal
 mkGrBox tyNm v = mkGrConNode (mkGrTagAnn 1 1) 0 tyNm [v]
 
-mkGrUnbox :: HsName -> HsName -> GrPat
-mkGrUnbox tyNm n = mkGrPatConNode (mkGrTagAnn 1 1) 0 tyNm [n]
+mkGrUnbox :: HsName -> HsName -> GrPatLam
+-- mkGrUnbox tyNm n = mkGrPatConNode (mkGrTagAnn 1 1) 0 tyNm [n]
+-- mkGrUnbox tyNm n = GrPatLam_VarNode [ hsnUnknown, n ]
+mkGrUnbox tyNm n = let tag = GrTag_Lit (GrTagCon (mkGrTagAnn 1 1)) 0 tyNm
+                   in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
 
-mkGrUnboxFFI :: HsName -> GrPat
-mkGrUnboxFFI n = GrPat_Node GrTag_Unboxed [n]
+mkGrUnboxFFI :: HsName -> GrPatLam
+-- mkGrUnboxFFI n = GrPat_Node GrTag_Unboxed [n]
+--mkGrUnboxFFI n = GrPatLam_VarNode [ hsnUnknown, n]
+mkGrUnboxFFI   n = let tag = GrTag_Unboxed
+                   in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
+
 %%]
 
 %%[10 hs
-mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPat
+mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPatAlt
 mkGrPatConSplit ann = mkGrPatTagSplit (GrTagCon ann)
 
-mkGrPatRecSplit :: HsName -> GrSplitL -> GrPat
+mkGrPatRecSplit :: HsName -> GrSplitL -> GrPatAlt
 mkGrPatRecSplit  = mkGrPatTagSplit GrTagRec 0 hsnRec
 %%]

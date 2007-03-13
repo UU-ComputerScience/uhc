@@ -67,7 +67,7 @@ isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
 
 %%[8
 ATTR AllNT  [     nodeSubst : {Map.Map HsName [HsName]} | | ]
-ATTR GrPat  [ | | nodeSubst : {Map.Map HsName [HsName]} varSubst : {Map.Map HsName GrVal}  ]
+ATTR GrPatLam  [ | | nodeSubst : {Map.Map HsName [HsName]} varSubst : {Map.Map HsName GrVal}  ]
 ATTR AllNT [ varSubst : {Map.Map HsName GrVal} | | ]
 
 
@@ -95,9 +95,9 @@ SEM GrBind
 
 
 -- In a lambda pattern  \n  , if HPT says that n refers to a node, replace it by  (\t x y) and add that fact to the varSubst
-SEM GrPat
+SEM GrPatLam
   | Var       loc . (uniq, names, newMap)           = newNames @lhs.hptMap @lhs.uniq @nm
-              loc . newPat      =  GrPat_VarNode @names
+              loc . newPat      =  GrPatLam_VarNode (map GrVar_Var @names)
               loc . newNode     =  GrVal_VarNode (map GrVal_Var @names)
               lhs . (nameMapping, grTrf, nodeSubst, varSubst) = if isSingleVar @lhs.hptMap @nm
                                                                  then (          @lhs.nameMapping, @loc.grTrf  ,                       @lhs.nodeSubst ,                             @lhs.varSubst )
@@ -132,7 +132,7 @@ SEM GrAlt
                                                      newNode  = GrVal_Node @pat.patTag (map snd mappings)
                                                  in  Map.fromList ((nm,newNode) : mappings)  `Map.union`  @lhs.varSubst
                                                  
-               lhs . grTrf  =  GrAlt_Alt (GrPat_Tag @pat.patTag) @expr.grTrf
+               lhs . grTrf  =  GrAlt_Alt (GrPatAlt_Tag @pat.patTag) @expr.grTrf
 
 
 -- Perform the variable substitution
@@ -156,9 +156,9 @@ SEM GrExpr
 
 %%[8
 -- return the fields of pattern and value to the Alternative node
-ATTR GrPat [ | | patFieldL: {[HsName]} patTag: GrTag ]
+ATTR GrPatAlt [ | | patFieldL: {[HsName]} patTag: GrTag ]
 
-SEM GrPat 
+SEM GrPatAlt
   | Node          lhs  . patFieldL   = @fldL
                   lhs  . patTag      = @tag.grTrf
   | Tag           lhs  . patFieldL   = []

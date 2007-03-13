@@ -37,7 +37,7 @@ SEM GrBind
 SEM GrExpr
   | Catch   loc  .  tag         =  GrTag_Var (HNmNr @handler.uniq Nothing)
                  .  vars        =  take @lhs.size (map (\n->HNmNr n Nothing) [@handler.uniq+1 ..])
-                 .  pattern     =  GrPat_Node @tag @vars
+                 .  pattern     =  GrPatLam_Node @tag @vars
                  .  value       =  GrVal_Node @tag (map GrVal_Var @vars)
                  .  appendUnit  =  GrExpr_Seq @grTrf @pattern (GrExpr_Unit @value)
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit

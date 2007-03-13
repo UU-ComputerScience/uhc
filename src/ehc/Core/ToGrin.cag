@@ -263,7 +263,7 @@ SEM CModule
                                                 in GrBind_Bind hsnGrEval
                                                                [n1]
                                                                (GrExpr_Seq (GrExpr_FetchNode n1)
-                                                                           (GrPat_Var n2)
+                                                                           (GrPatLam_Var n2)
                                                                            (GrExpr_Case (GrVal_Var n2)
                                                                                         (zipWith ($)
                                                                                                  (       (makeEvalBindEntryH n2)
@@ -371,7 +371,7 @@ makeEvalBindEntryF n1 (nm, arity) ui
        parameters = take arity names
    in  GrAlt_Alt (mkGrPatTagNode GrTagFun 0 nm parameters)
                  (GrExpr_Seq (GrExpr_Call nm (map GrVal_Var parameters))
-                             (GrPat_Var result)
+                             (GrPatLam_Var result)
                              (GrExpr_UpdateUnit n1 (GrVal_Var result))
                  )
 
@@ -400,7 +400,7 @@ mbMkStrict :: UID -> Bool -> GrVal -> GrExpr
 mbMkStrict u isStrict v
   = case v of
       GrVal_Node _ _ -> dflt
-      _ | isStrict   -> GrExpr_Seq (GrExpr_Unit v) (GrPat_Var n) (GrExpr_Eval n)
+      _ | isStrict   -> GrExpr_Seq (GrExpr_Unit v) (GrPatLam_Var n) (GrExpr_Eval n)
         | otherwise  -> dflt
         where n = uidHNm u
   where dflt = GrExpr_Unit v
@@ -417,7 +417,7 @@ mkNdApp :: HsName -> GrValL -> GrVal
 mkNdApp f argL = mkGrTagNode GrTagApp 0 hsnGrApply (GrVal_Var f : argL)
 
 mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
-mkSq e1 p e2 = GrExpr_Seq e1 (GrPat_Var p) e2
+mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
 %%[8 hs
@@ -437,6 +437,16 @@ simplArgL uniq arityMp vL
                  ([],id)
           $ zip nL vL
 
+saturateAltL :: UID -> GrExpr -> GrAltL -> GrAltL
+saturateAltL uniq dflt altL
+  =  case altL of
+       (GrAlt_Alt (GrPatAlt_LitInt _) _ : _)
+         | null [ a | a@(GrAlt_Alt (GrPatAlt_Otherwise) _) <- altL ]
+           -> altL ++ [GrAlt_Alt (GrPatAlt_Otherwise) dflt]
+       _   -> altL
+%%]
+
+%%[10 hs
 unboxArg :: UID -> HsName -> GrVal -> (GrVal,GrExpr->GrExpr)
 unboxArg uniq tyNm v
   =  case v of
@@ -454,15 +464,8 @@ unboxArgL uniq tyNm vL
                  )
                  ([],id)
           $ zip uL vL
-
-saturateAltL :: UID -> GrExpr -> GrAltL -> GrAltL
-saturateAltL uniq dflt altL
-  =  case altL of
-       (GrAlt_Alt (GrPat_LitInt _) _ : _)
-         | null [ a | a@(GrAlt_Alt (GrPat_Var _) _) <- altL ]
-           -> altL ++ [GrAlt_Alt (GrPat_Var (uidHNm uniq)) dflt]
-       _   -> altL
 %%]
+
 
 %%[8
 ATTR CExpr   [ | | grExpr: GrExpr ]
@@ -483,12 +486,12 @@ SEM CExpr
                                                                            . mkVs @binds.grBindL
                                                                            $ @body.grExpr
                                                                            where  h             = mkGrTagNode GrTagHole 0 hsnUnknown []
-                                                                                  mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPat_Var n) e) e nmL
+                                                                                  mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPatLam_Var n) e) e nmL
                                                                                   mkV b n n' e
-                                                                                                = GrExpr_Seq b (GrPat_Var n')
-                                                                                                    (GrExpr_Seq (GrExpr_FetchUpdate n' n) GrPat_Empty e)
+                                                                                                = GrExpr_Seq b (GrPatLam_Var n')
+                                                                                                    (GrExpr_Seq (GrExpr_FetchUpdate n' n) GrPatLam_Empty e)
                                                                                   mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) e) e bs
-                                                          _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPat_Var n) e)
+                                                          _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPatLam_Var n) e)
                                                                                   @body.grExpr @binds.grBindL
                                                       ,[]
                                                       ,@categ == CBindStrict
@@ -639,8 +642,9 @@ SEM CBind
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | @isUnboxed t -> mkGrPatConNode (mkGrTagAnn 1 1) 0 t [n]
-                                                            _                -> GrPat_Var n
+                                                            t | @isUnboxed t -> -- mkGrPatConNode (mkGrTagAnn 1 1) 0 t [n]
+                                                                                mkGrUnbox t n
+                                                            _                -> GrPatLam_Var n
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = @isUnboxed resTyNm
                                                      resTagL
@@ -709,13 +713,13 @@ SEM CPat
   | Undef       loc         .   patNm       =   hsnUnknown
 
 %%[8
-ATTR CPat    [ | | grPat: GrPat ]
-ATTR CPatL   [ | | grPatL: GrPatL ]
+ATTR CPat    [ | | grPat: GrPatAlt ]
+-- ATTR CPatL   [ | | grPatL: GrPatL ]    -- obsolete? (JF)
 
 SEM CPat
-  | Var         lhs         .   grPat       =   GrPat_Var @patNm
-  | Int         lhs         .   grPat       =   GrPat_LitInt @int
-  | Char        lhs         .   grPat       =   GrPat_LitInt (ord @char)
+  | Var         lhs         .   grPat       =   GrPatAlt_Otherwise   -- @patNm
+  | Int         lhs         .   grPat       =   GrPatAlt_LitInt @int
+  | Char        lhs         .   grPat       =   GrPatAlt_LitInt (ord @char)
   | Con         lhs         .   (grPat,grWrapCase)
                                             =   case @rest.self of
                                                    CPatRest_Empty
@@ -727,14 +731,16 @@ SEM CPat
                                                          in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t l) @tag r . zipWith ($) mkSL $ oL',wrO)
 %%]]                                                         
 
-SEM CPatL
-  | Cons        lhs         .   grPatL      =   @hd.grPat : @tl.grPatL
-  | Nil         lhs         .   grPatL      =   []
+
+--SEM CPatL   -- obsolete? (JF)
+--  | Cons        lhs         .   grPatL      =   @hd.grPat : @tl.grPatL
+--  | Nil         lhs         .   grPatL      =   []
 %%]
 
 %%[97
 SEM CPat
   | BoolExpr    lhs         .   grPat       =   GrPat_Empty -- transformed into explicit if-then-else
+                                                            -- TODO: replace this by something sensible in GrPatAlt, as GrPat_Empty is now GrPatLam_Empty
 %%]
 
 %%[8

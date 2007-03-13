@@ -39,8 +39,8 @@ newVar u = (HNmNr u Nothing, u+1)
 newVar' :: Bool -> Int -> (HsName, Int)
 newVar' b u = if b then newVar u else (undefined, u)
 
-newGrIdent :: HsName -> (GrVal, GrPat)
-newGrIdent n = (GrVal_Var n, GrPat_Var n)
+newGrIdent :: HsName -> (GrVal, GrPatLam)
+newGrIdent n = (GrVal_Var n, GrPatLam_Var n)
 %%]
 
 %%[8
@@ -128,7 +128,7 @@ SEM GrExpr [ | |  needsSimplePattern : Bool ]
 %%]
 
 %%[8.isSimplePattern
-SEM GrPat [ | | isSimplePattern: Bool ]
+SEM GrPatLam [ | | isSimplePattern: Bool ]
   | Var      loc . isSimplePattern  =  True
   | * - Var  loc . isSimplePattern  =  False
 %%]
@@ -155,7 +155,7 @@ This is actually something for the code generator, but it is easier to prepare t
 %%[8.catch
 SEM GrExpr
   | Catch   loc  .  var         =  HNmNr @handler.unique Nothing
-                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPat_Var @var) (GrExpr_Unit (GrVal_Var @var))
+                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPatLam_Var @var) (GrExpr_Unit (GrVal_Var @var))
             lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
                  .  unique      =  if @lhs.hasNext then @handler.unique else @handler.unique + 1
 %%]

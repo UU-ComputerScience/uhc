@@ -7,7 +7,7 @@ This transformation removes the boxing for unboxable values,
 allowing direct manipulation.
 
 Although designed with use by GrinByteCode in mind, the transformation is
-paremeterised with a function telling whether a node represents an unboxed value.
+parameterised with a function telling whether a node represents an unboxed value.
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
@@ -54,25 +54,26 @@ ATTR AllNT [ | | trf: SELF ]
 %%]
 
 %%[8
-SEM GrPat
-  | Node        lhs         .   trf             =   case (@fldL,@lhs.tagUnbox @tag.trf) of
-                                                      ([f],Unbox_FirstField)
-                                                        -> GrPat_Var f
-                                                      _ -> @trf
+SEM GrPatLam
+  | VarNode     lhs . trf   =   case @fldL.trf of
+                                  [GrVar_KnownTag t, GrVar_Var v]  -> case @lhs.tagUnbox t of
+                                                                        Unbox_FirstField -> GrPatLam_Var v
+                                                                        _                -> @trf                                  
+                                  _ -> @trf
 
 SEM GrVal
-  | Node        lhs         .   trf             =   case (@fldL.trf,@lhs.tagUnbox @tag.trf) of
-                                                      ([f],Unbox_FirstField)
-                                                        -> f
-                                                      ([],Unbox_Tag t)
-                                                        -> GrVal_LitInt t
-                                                      _ -> @trf
+  | Node        lhs . trf   =   case (@fldL.trf,@lhs.tagUnbox @tag.trf) of
+                                  ([f],Unbox_FirstField)
+                                    -> f
+                                  ([],Unbox_Tag t)
+                                    -> GrVal_LitInt t
+                                  _ -> @trf
 
 SEM GrExpr
-  | Store       lhs         .   trf             =   case @val.trf of
-                                                      GrVal_Node _ _        -> @trf
+  | Store       lhs . trf   =   case @val.trf of
+                                  GrVal_Node _ _        -> @trf
 %%[[10
-                                                      GrVal_NodeAdapt _ _   -> @trf
+                                  GrVal_NodeAdapt _ _   -> @trf
 %%]]
-                                                      v                     -> GrExpr_Unit v
+                                  v                     -> GrExpr_Unit v
 %%]

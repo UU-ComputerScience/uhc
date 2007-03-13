@@ -47,12 +47,12 @@ ATTR GrExpr [ | | isFetchTag: {Bool}
                   isCaseHavingUnboxies: {Bool} 
                   startsWithCaseHavingUnboxies: {Bool} 
                   getExpr: {GrExpr}
-                  getPat: {GrPat}
+                  getPat: {GrPatLam}
                   getBody: {GrExpr}
             ] 
             
-ATTR GrAlt GrAltL [ | | hasUnboxies USE {||} {False} : {Bool} ]
-ATTR GrPat GrTag  [ | | isUnboxy: {Bool} ]
+ATTR GrAlt    GrAltL [ | | hasUnboxies USE {||} {False} : {Bool} ]
+ATTR GrPatAlt GrTag  [ | | isUnboxy: {Bool} ]
 
 
 SEM GrExpr
@@ -66,12 +66,12 @@ SEM GrExpr
   | Seq            loc . original     =  GrExpr_Seq @expr.trf @pat.trf @body.trf
                    loc . newcase      =  \e -> let newName = HNmNr @lhs.uniq Nothing
                                                in  GrExpr_Case (GrVal_Var @expr.getName)
-                                                               [ GrAlt_Alt (GrPat_Tag GrTag_Unboxed) 
+                                                               [ GrAlt_Alt (GrPatAlt_Tag GrTag_Unboxed) 
                                                                            (GrExpr_Seq (GrExpr_FetchField @expr.getName 1 (Just GrTag_Unboxed))
-                                                                                       (GrPat_Var newName)
+                                                                                       (GrPatLam_Var newName)
                                                                                        (GrExpr_Unit (GrVal_Node GrTag_Unboxed [GrVal_Var newName]))
                                                                            )
-                                                               , GrAlt_Alt (GrPat_Tag GrTag_Any) 
+                                                               , GrAlt_Alt (GrPatAlt_Tag GrTag_Any) 
                                                                            (GrExpr_Seq @expr.trf @pat.trf e)
                                                                ]
                    lhs . trf          =  if @expr.isFetchTag && @body.startsWithCaseHavingUnboxies
@@ -100,7 +100,7 @@ SEM GrExpr
 SEM GrAlt
   | Alt            lhs . hasUnboxies = @pat.isUnboxy
  
-SEM GrPat          
+SEM GrPatAlt
   | Tag            lhs . isUnboxy = @tag.isUnboxy
   | * - Tag        lhs . isUnboxy = False
   
