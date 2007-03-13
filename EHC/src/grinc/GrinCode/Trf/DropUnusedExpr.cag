@@ -120,15 +120,16 @@ possible side effect is useless without that result. (The ones
 retained are update, throw and FFI)
 
 %%[8.removeUnusedSeqExpr
---ATTR GrTag GrPat [ | | isDead : Bool ]
-ATTR GrPat [ | | isDead : Bool ]
+ATTR GrPatLam [ | | isDead : Bool ]
+ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
 
-SEM GrPat
-  | Node    lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL)
-  | VarNode lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL)
+SEM GrVar
+  | Var  lhs. names = [ @nm ]
+
+SEM GrPatLam
+  | VarNode lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL.names)
   | Var     lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
-  | Tag     lhs  .  isDead  =  True
-  | * - Node Var Tag VarNode
+  | * - Var VarNode
             lhs  .  isDead  =  True
  
 SEM GrExpr [ | | sideEffect : Bool ]
@@ -147,12 +148,15 @@ Fields and tag variables in node patterns which are never used are replaced
 with wildcards.
 
 %%[8.removeUnusedNamedBinding
-SEM GrPat
-  | Node     lhs  .  grTrf  =  GrPat_Node @tag.grTrf (map (mkWildcard @lhs.usedVars) @fldL)
-  | VarNode  lhs  .  grTrf  =  GrPat_VarNode         (map (mkWildcard @lhs.usedVars) @fldL)
-  | Var      lhs  .  grTrf  =  GrPat_Var                  (mkWildcard @lhs.usedVars  @nm)
-  | Tag      lhs  .  grTrf  =  GrPat_Tag @tag.grTrf
+SEM GrPatLam
+  | Var      lhs  .  grTrf  =  GrPatLam_Var                  (mkWildcard @lhs.usedVars  @nm)
 
+SEM GrPatAlt
+  | Node     lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf (map (mkWildcard @lhs.usedVars) @fldL)
+
+SEM GrVar
+  | Var      lhs  .  grTrf  = if @nm `Set.member` @lhs.usedVars then GrVar_Var @nm else GrVar_Ignore
+  
 %%]
 
 %%[8.renameToWildcard hs
@@ -164,7 +168,3 @@ SEM GrExpr
   | Catch  loc  .  isUnused  =  isBottom (getEnvVar @lhs.hptMap (getNr @arg))
            lhs  .  grTrf     =  if @isUnused then @body.grTrf else @grTrf
 %%]
-
-%%[8.removeUnusedFormals
-%%]
-

@@ -142,7 +142,7 @@ buildCatchExpr [tryNm, handlerNm] = let  exceptNm = hsnPrefix "except_ptr@" hand
                                     in GrExpr_Catch (GrExpr_Eval tryNm)
                                                     exceptNm
                                                     (GrExpr_Seq (GrExpr_Eval handlerNm)
-                                                                (GrPat_Var evalNm)
+                                                                (GrPatLam_Var evalNm)
                                                                 (GrExpr_App evalNm [GrVal_Var exceptNm])
                                                     )
 %%]

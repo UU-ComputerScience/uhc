@@ -96,7 +96,7 @@ buildAppBinding unique size = let funcNr  = unique
                                   evalPartialApp            = HNmNr (maxArg + 1) Nothing
                                   code = GrBind_Bind funcName args body
                                   body = GrExpr_Seq (GrExpr_Eval partialApp)
-                                                    (GrPat_Var evalPartialApp)
+                                                    (GrPatLam_Var evalPartialApp)
                                                     (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
                               in (unique', origFuncName, funcName, code)
 

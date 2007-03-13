@@ -66,12 +66,23 @@ varCanbeUnboxed hptMap (HNmNr n _)
 
 
 %%[8
-SEM GrPat
+
+SEM GrVarL [ | | headCanbeUnboxed : {Bool} ]
+  | Nil lhs. headCanbeUnboxed = False
+  | Cons lhs.headCanbeUnboxed = @hd.varCanbeUnboxed
+SEM GrVar [ | | varCanbeUnboxed : {Bool} ]
+  | KnownTag  lhs.varCanbeUnboxed = tagCanbeUnboxed @lhs.hptMap @tag.trf
+  | Var       lhs.varCanbeUnboxed = varCanbeUnboxed @lhs.hptMap @nm
+  | Ignore    lhs.varCanbeUnboxed = False
+
+SEM GrPatAlt
   | Node    lhs . trf   =  if tagCanbeUnboxed @lhs.hptMap @tag.trf
-                            then GrPat_Node GrTag_Unboxed @fldL
+                            then GrPatAlt_Node GrTag_Unboxed @fldL
                             else @trf
-  | VarNode lhs . trf   =  if varCanbeUnboxed @lhs.hptMap (head @fldL)
-                            then GrPat_Node GrTag_Unboxed (tail @fldL)
+            
+SEM GrPatLam                
+  | VarNode lhs . trf   =  if @fldL.headCanbeUnboxed
+                            then GrPatLam_VarNode (GrVar_KnownTag GrTag_Unboxed :tail @fldL.trf)
                             else @trf
 
 SEM GrVal

@@ -35,7 +35,7 @@ WRAPPER GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR GrExpr [ | | trfL: {Seq.FastSeq (GrExpr,GrPat)}  trfLast: GrExpr ]
+ATTR GrExpr [ | | trfL: {Seq.FastSeq (GrExpr,GrPatLam)}  trfLast: GrExpr ]
 
 SEM GrExpr
   | Seq         lhs         .   trfL            =   @expr.trfL Seq.:++: Seq.singleton (@expr.trfLast,@pat.trf) Seq.:++: @body.trfL

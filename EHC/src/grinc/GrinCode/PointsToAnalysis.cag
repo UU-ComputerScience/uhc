@@ -151,16 +151,38 @@ SEM GrValL [ | | depVars: {[Maybe Int]}  ]
   | Cons     lhs . depVars = @hd.depVar : @tl.depVars
   | Nil      lhs . depVars = []
 
-SEM GrPat [ | | patInfo: {NodeInfo Int} ]
-  | Empty      lhs . patInfo = NodeVar (getNr wildcardNr)
+SEM GrPatAlt [ | | patInfo: {NodeInfo Int} ]
   | LitInt     lhs . patInfo = error "HPT: patInfo: literal"
   | Tag        lhs . patInfo = NodeDen @tag.tagName []
-  | Var        lhs . patInfo = NodeVar (getNr @nm)
   | Node       lhs . patInfo = NodeDen @tag.tagName (map getNr @fldL)
-  | VarNode    lhs . patInfo = error "HPT: patInfo: varnode"
+  | Otherwise  lhs . patInfo = error "HPT: patInfo: Otherwise"
 %%[[10
   | NodeSplit  lhs . patInfo = error "HPT: patInfo: nodesplit"
 %%]]
+
+SEM GrPatLam [ | | patInfo: {NodeInfo Int} ]
+  | Empty      lhs . patInfo = NodeVar (getNr wildcardNr)
+  | Var        lhs . patInfo = NodeVar (getNr @nm)
+  | VarNode    lhs . patInfo = NodeDen (@fldL.headTag) (map getNr (tail @fldL.names))
+
+ATTR GrVarL [ | | headTag : GrTag   names : {[HsName]} ]
+ATTR GrVar  [ | | tag : GrTag  name : {HsName} ]
+SEM GrVarL  
+  | Cons       lhs . headTag = @hd.tag
+  | Nil        lhs . headTag = error "GrVarL headtag"
+  
+SEM GrVarL
+  | Nil        lhs.names = []
+  | Cons       lhs.names = @hd.name : @tl.names  
+
+SEM GrVar
+  | KnownTag   lhs.tag = @tag.self
+  | * - KnownTag lhs.tag = error "GrVar tag"
+  | Var        lhs.name  = @nm
+  | * - Var    lhs.name  = error "GrVar name"
+
+
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%

@@ -3,10 +3,6 @@
 %include afp.fmt
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to Code's Java gen
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 Pretty print GrinCode.
 
 Tricky (in version 12):
@@ -16,11 +12,11 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 %%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Parser},{%{EH}Scanner.Common(grinScanOpts)})
 %%]
 
-%%[8 hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPat,ppGrTag)
+%%[8 hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPatAlt,ppGrPatLam,ppGrTag)
 %%]
 
 %%[8.WRAPPER ag import({GrinCode/AbsSyn})
-WRAPPER GrAGItf GrExpr GrPat GrTag
+WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
 
 %%[8 hs
@@ -50,13 +46,21 @@ ppGrExpr' ppGrNm tg
 ppGrExpr :: GrExpr -> PP_Doc
 ppGrExpr = ppGrExpr' ppGrNm
 
-ppGrPat :: GrPat -> PP_Doc
-ppGrPat tg
-  =  let  t = wrap_GrPat  (sem_GrPat tg)
-                          (Inh_GrPat
-                             { ppGrNm_Inh_GrPat = ppGrNm
-                             })
-     in   (pp_Syn_GrPat t)
+ppGrPatLam :: GrPatLam -> PP_Doc
+ppGrPatLam tg
+  =  let  t = wrap_GrPatLam  (sem_GrPatLam tg)
+                             (Inh_GrPatLam
+                                { ppGrNm_Inh_GrPatLam = ppGrNm
+                                })
+     in   (pp_Syn_GrPatLam t)
+
+ppGrPatAlt :: GrPatAlt -> PP_Doc
+ppGrPatAlt tg
+  =  let  t = wrap_GrPatAlt  (sem_GrPatAlt tg)
+                             (Inh_GrPatAlt
+                                { ppGrNm_Inh_GrPatAlt = ppGrNm
+                                })
+     in   (pp_Syn_GrPatAlt t)
 
 %%]
 
@@ -177,12 +181,10 @@ SEM GrAdapt
   | Del         lhs         .   pp          =   @off.pp >|< "-="
 %%]]
 
-SEM GrPat
-  | Empty       lhs         .   pp          =   pp "()"
+SEM GrPatAlt
+  | Otherwise   lhs         .   pp          =   pp "_"
   | LitInt      lhs         .   pp          =   pp @int
-  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
-  | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " (          map @lhs.ppGrNm @fldL)
 %%[[10
   | NodeSplit   lhs         .   pp          =   pp_parens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
@@ -190,6 +192,19 @@ SEM GrSplit
   | Sel         lhs         .   pp          =   @lhs.ppGrNm @nm >|< "=" >|< @off.pp
 %%]]
 
+SEM GrPatLam
+  | Empty       lhs         .   pp          =   pp "()"
+  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+  | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " @fldL.ppL
+
+SEM GrVarL
+  | Nil         lhs         .  pp           =   pp ""
+  | Cons        lhs         .  pp           =   @hd.pp >#< @tl.pp
+
+SEM GrVar
+  | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
+  | Ignore      lhs         .   pp          =   pp "_"
+  | KnownTag    lhs         .   pp          =   @tag.pp
 
 SEM GrTag
   | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
@@ -198,7 +213,7 @@ SEM GrTag
 %%]
 
 %%[8
-ATTR GrGlobalL GrBindL GrAltL GrTagL GrPatL GrValL [ | | ppL: {[PP_Doc]} ]
+ATTR GrGlobalL GrBindL GrAltL GrTagL GrValL GrVarL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrGlobalL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
@@ -216,11 +231,15 @@ SEM GrTagL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 
-SEM GrPatL
+--SEM GrPatL
+--  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+--  | Nil         lhs         .   ppL         =   []
+
+SEM GrValL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 
-SEM GrValL
+SEM GrVarL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 %%]

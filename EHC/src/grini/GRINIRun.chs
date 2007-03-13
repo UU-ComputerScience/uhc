@@ -65,6 +65,8 @@ data RunHeap = RunHeap {rhMem :: !(IOArray Int RunVal), rhSize :: !Int, rhFree :
 
 type RunEnv = Map.Map HsName RunVal
 
+type GrPat = Either GrPatLam GrPatAlt
+
 data RunState
   =  RunState
         {   rsNext          ::  !RunLoc
@@ -106,7 +108,7 @@ ppRunState rs
                   >-< indent 2
                         (h
                          >-< "ENV" >#< (ppFM . rsEnv $ rs)
-                         >-< "STK" >#< (vlist . map (\(p,rs,_) -> ppGrPat p >#< "->" >#< ppGrExpr rs) . rsStack $ rs)
+                         >-< "STK" >#< (vlist . map (\(p,rs,_) -> either ppGrPatLam ppGrPatAlt p >#< "->" >#< ppGrExpr rs) . rsStack $ rs)
                         ))
          }
 %%]
@@ -247,7 +249,7 @@ grEvalApp rs f aL
                                 }
                             where  n = hsnWild
                                    e = GrExpr_App n (drop ndMiss aL)
-                                   stk = (GrPat_Var n,e,rsEnv rs) : rsStack rs
+                                   stk = (Left $ GrPatLam_Var n,e,rsEnv rs) : rsStack rs
                                    rs' = rs {rsStack = stk, rsNext = Just e}
                     (RVCat NdPApp:RVInt ndMiss:ndF:ndAL) | aLSz == ndMiss
                         ->  do  {  ndF' <- rsDeref rs ndF
@@ -322,7 +324,7 @@ grEvalExpr rs e
           ->  let  upd rs n
                      =  let  n2 = hsnWild
                              e = GrExpr_UpdateUnit n (GrVal_Var n2)
-                             stk = (GrPat_Var n2,e,rsEnv rs) : rsStack rs
+                             stk = (Left $ GrPatLam_Var n2,e,rsEnv rs) : rsStack rs
                         in   rs {rsStack = stk, rsNext = Just e}
               in   do  {  n' <- rsVarDeref rs n
                        ;  case n' of
@@ -337,7 +339,7 @@ grEvalExpr rs e
                                           where  rs2 = upd rs n
                                                  n2 = hsnWild
                                                  nL@(nF:nAL) = take (length ndFAL) hsnLclSupply
-                                                 e = GrExpr_Seq (GrExpr_Eval nF) (GrPat_Var n2) (GrExpr_App n2 (map GrVal_Var nAL))
+                                                 e = GrExpr_Seq (GrExpr_Eval nF) (GrPatLam_Var n2) (GrExpr_App n2 (map GrVal_Var nAL))
                                                  re = Map.fromList (zip nL ndFAL) `Map.union` rsGlobEnv rs
                                                  rs3 = rs2 {rsNext = Just e, rsEnv = re}
                                     _ ->  return (rs,Just v)
@@ -353,11 +355,11 @@ grEvalExpr rs e
                   ->  case elems a of
                         (RVCat NdCon:RVInt ndTg:_)
                           ->  let  lookup t []    = Nothing
-                                   lookup t (GrAlt_Alt p@(GrPat_Node (GrTag_Lit _ t' _) _) e:aL)
-                                     | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+                                   lookup t (GrAlt_Alt p@(GrPatAlt_Node (GrTag_Lit _ t' _) _) e:aL)
+                                     | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd (Right p),e)
 %%[[10                                     
-                                   lookup t (GrAlt_Alt p@(GrPat_NodeSplit (GrTag_Lit _ t' _) _ _) e:aL)
-                                     | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+                                   lookup t (GrAlt_Alt p@(GrPatAlt_NodeSplit (GrTag_Lit _ t' _) _ _) e:aL)
+                                     | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd (Right p),e)
 %%]]                                     
                                    lookup t (_:aL)= lookup t aL
                               in   case lookup ndTg altL of
@@ -370,7 +372,7 @@ grEvalExpr rs e
                         (RVCat NdRec:_)
                           ->  return (rs',Nothing)
                               where  (GrAlt_Alt p e:_) = altL
-                                     re = grPatBind rs (rsEnv rs) nd p
+                                     re = grPatBind rs (rsEnv rs) nd (Right p)
                                      rs'= rs {rsEnv = re, rsNext = Just e}
                 nd@(RVInt v)
                   ->  case lookup v altL of
@@ -381,10 +383,10 @@ grEvalExpr rs e
                         Nothing
                           -> errNoAlt nd
                   where  lookup v []    = Nothing
-                         lookup v (GrAlt_Alt p@(GrPat_LitInt v') e : _)
+                         lookup v (GrAlt_Alt p@(GrPatAlt_LitInt v') e : _)
                            | v == v'    = Just (rsEnv,e)
-                         lookup v (GrAlt_Alt p@(GrPat_Var n) e : _)
-                                        = Just (\rs -> grPatBind rs (rsEnv rs) nd p,e)
+                         lookup v (GrAlt_Alt p@(GrPatAlt_Otherwise) e : _)
+                                        = Just (\rs -> grPatBind rs (rsEnv rs) nd (Right p),e)
                          lookup v (_:aL)= lookup v aL
           where  errNoAlt v
                    = do  { rs' <- halt rs ("No case alt for:" >#< pp v >-< indent 2 ("in:" >#< ppGrExpr e))
@@ -393,27 +395,41 @@ grEvalExpr rs e
 %%]
 
 %%[8
+
+fromGrVar_Var :: GrVar -> HsName
+fromGrVar_Var (GrVar_Var v) = v
+
 grPatBind :: RunState -> RunEnv -> RunVal -> GrPat -> RunEnv
 grPatBind rs re v p
   =  case p of
-        GrPat_Empty
+        Left   GrPatLam_Empty
           ->  re
-        GrPat_LitInt _
+        Right (GrPatAlt_LitInt _)
           ->  re
-        GrPat_Tag _
+        Right (GrPatAlt_Tag _)
           ->  re
-        GrPat_Var n
+        Left  (GrPatLam_Var n)
           ->  Map.insert n v re
-        GrPat_Node GrTag_Unboxed (pf:_)
+        Right (GrPatAlt_Otherwise)
+          ->  re
+        Right (GrPatAlt_Node GrTag_Unboxed (pf:_))
           ->  Map.insert pf v re
-        GrPat_Node _ pfL
+        Right (GrPatAlt_Node _ pfL)
           ->  case v of
                 RVNode a
                   ->  case elems a of
                         (RVCat _:_:_:vfL)
                           ->  Map.fromList (zip pfL vfL) `Map.union` re
+        Left  (GrPatLam_VarNode ((GrVar_KnownTag GrTag_Unboxed):(GrVar_Var pf:_)))
+          ->  Map.insert pf v re
+        Left  (GrPatLam_VarNode (_:pfL))
+          ->  case v of
+                RVNode a
+                  ->  case elems a of
+                        (RVCat _:_:_:vfL)
+                          ->  Map.fromList (zip (map fromGrVar_Var pfL) vfL) `Map.union` re
 %%[[10          
-        GrPat_NodeSplit _ rNm splL
+        Right (GrPatAlt_NodeSplit _ rNm splL)
           ->  case v of
                 RVNode a
                   ->  case elems a of
@@ -470,7 +486,7 @@ run1Step rs
                 ->  case e of
                       GrExpr_Seq e1 p e2
                           ->  run1Expr rs' e1
-                              where  stk = (p,e2,rsEnv rs) : rsStack rs
+                              where  stk = (Left p,e2,rsEnv rs) : rsStack rs
                                      rs' = rs {rsNext = Just e2, rsStack = stk, rsNrSteps = rsNrSteps rs + 1}
                       _   ->  run1Expr (rs {rsNrSteps = rsNrSteps rs + 1}) e
          }

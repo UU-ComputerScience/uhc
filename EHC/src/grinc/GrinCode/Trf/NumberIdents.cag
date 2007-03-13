@@ -109,14 +109,21 @@ SEM GrBind
 
 %%[8.GetDefinedNames
 
+ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
+SEM GrVar
+  | Var  lhs. names = [ @nm ]
+
+
 SEM GrGlobal
   | Global    loc   .  newName  = HNmNr @lhs.unique (Just (hsnPrefix rtsGlobalVarPrefix @nm))
               lhs   .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
 
-SEM GrPat
+SEM GrPatAlt
   | Node       loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL
-  | VarNode    loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL
+
+SEM GrPatLam
+  | VarNode    loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL.names
   | Var        lhs  .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
                loc  .  newName  = HNmNr @lhs.unique (Just @nm)
@@ -140,10 +147,11 @@ replacing every identifier with a number
 SEM GrGlobal
   | Global  lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
 
-SEM GrPat
-  | Node  lhs  .  grTrf  = GrPat_Node @tag.grTrf @newNames
-  | VarNode lhs  .  grTrf  = GrPat_VarNode @newNames
-  | Var   lhs  .  grTrf  = GrPat_Var  @newName
+SEM GrPatAlt
+  | Node  lhs  .  grTrf  = GrPatAlt_Node @tag.grTrf @newNames
+  
+SEM GrPatLam
+  | Var   lhs  .  grTrf  = GrPatLam_Var  @newName
 
 SEM GrBind
   | Bind  lhs  .  grTrf    = GrBind_Bind @bindName @newNames @newExpr
@@ -151,6 +159,8 @@ SEM GrBind
 
 SEM GrVal
   | Var  lhs  .  grTrf  = GrVal_Var (findNewVar @lhs.var2id @nm)
+SEM GrVar
+  | Var  lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.var2id @nm)
 
 SEM GrExpr
   | App Eval FetchNode FetchField Throw UpdateUnit

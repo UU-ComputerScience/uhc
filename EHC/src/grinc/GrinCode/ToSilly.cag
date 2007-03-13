@@ -73,8 +73,8 @@ ATTR GrBindL GrBind     [ | | functions    USE {++} {[]} : {Functions}    ]
 ATTR GrExpr             [ | | stats        USE {++} {[]} : {Statements}   ]
 ATTR GrAltL             [ | | alternatives               : {Alternatives} ]
 ATTR GrAlt              [ | | alternative                : {Alternative}  ]
-ATTR GrVal GrPat GrTag  [ | | value                      : {Value}        ]
-ATTR GrPat GrTag        [ | | constant                   : {Constant}     ]
+ATTR GrVal GrPatAlt GrTag  [ | | value                      : {Value}        ]
+ATTR GrPatAlt GrTag        [ | | constant                   : {Constant}     ]
 ATTR GrValL GrVal       [ | | values                     : {Values}       ]
 ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
                               names        USE {++} {[]} : {[HsName]}     ]
@@ -90,7 +90,7 @@ ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters
 ATTR GrTagL [ | | mbOnlyTagValue : {Maybe Value}  isEmpty : {Bool} ]
 
 ATTR GrAlt GrAltL [ | | hasAnies USE {||} {False} : {Bool} ]
-ATTR GrPat GrTag  [ | | isAny: {Bool} ]
+ATTR GrPatAlt GrTag  [ | | isAny: {Bool} ]
 ATTR GrTag GrVal  [ | | isUnboxed: {Bool} ]
 
 SEM GrTagL
@@ -114,7 +114,7 @@ SEM GrVal
   | Node           lhs . isUnboxed = @tag.isUnboxed
   | * - Node       lhs . isUnboxed = False
 
-SEM GrPat          
+SEM GrPatAlt
   | Tag            lhs . isAny = @tag.isAny
   | * - Tag        lhs . isAny = False
   
@@ -379,11 +379,12 @@ SEM GrTag
  | * - Lit Unboxed Any
            lhs.constant = error "GrTag:other constant"
 
-SEM GrPat
+SEM GrPatAlt
  | Tag     lhs.value    = @tag.value
            lhs.constant = @tag.constant
- | * - Tag lhs.value    = error "GrPat:other value"
-           lhs.constant = error "GrPat:other constant"
+ | * - Tag lhs.value    = error "GrPatAlt:other value"
+           lhs.constant = error "GrPatAlt:other constant"
+-- TODO: | LitInt = ...
 
 
 
@@ -404,7 +405,8 @@ SEM GrExpr
 %%[8
 
 ATTR AllGrExpr [ targets : {[HsName]} | | ]
-ATTR GrPat [ | |  patternNames: {[HsName]} ]
+ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]} ]
+ATTR GrVar [ | |  patternName: {HsName} ]
 
 SEM GrBind
   | Bind     expr . targets = []
@@ -413,12 +415,22 @@ SEM GrExpr
   | Seq      expr . targets = @pat.patternNames
              body . targets = @lhs.targets
 
-SEM GrPat
+SEM GrPatLam
   | Var     lhs  .  patternNames = [@nm]
-  | Node    lhs  .  patternNames = wildcardNr : @fldL
-  | VarNode lhs  .  patternNames = @fldL
-  | Tag     lhs  .  patternNames = [wildcardNr]
-  | * - Var Node VarNode Tag lhs  .  patternNames  =  []
+--  | Node    lhs  .  patternNames = wildcardNr : @fldL
+  | VarNode lhs  .  patternNames = @fldL.patternNames
+--  | Tag     lhs  .  patternNames = [wildcardNr]
+  | * - Var VarNode lhs  .  patternNames  =  []
+--  | * - Var Node VarNode Tag lhs  .  patternNames  =  []
+
+SEM GrVarL
+  | Nil   lhs.patternNames = []
+  | Cons  lhs.patternNames = @hd.patternName : @tl.patternNames
+  
+SEM GrVar
+  | Var      lhs.patternName = @nm
+  | KnownTag lhs.patternName = wildcardNr
+  | Ignore   lhs.patternName = wildcardNr
 
 %%]
 

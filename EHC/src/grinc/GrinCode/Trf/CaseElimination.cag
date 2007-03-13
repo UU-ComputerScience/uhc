@@ -55,6 +55,12 @@ case v of (Tag a1 an) -> e1   => unit v; \(Tag a1 ... an) -> e1
 %%[8.trivial
 ATTR AllAlt [ scrutinizer: GrVal | | count: Int newBody: GrExpr ]
 
+ATTR GrPatAlt [ | | lamPat : GrPatLam ]
+
+SEM GrPatAlt
+  | Node     lhs . lamPat    = GrPatLam_VarNode (GrVar_KnownTag @tag : map GrVar_Var @fldL)
+  | * - Node lhs . lamPat    = error "CaseElimination: lamPat of non-Node"
+
 SEM GrAltL
   | Cons  lhs  .  newBody  =  @hd.newBody
                .  count    =  @hd.count + @tl.count
@@ -62,7 +68,7 @@ SEM GrAltL
                .  count    = 0
 
 SEM GrAlt
-  | Alt   lhs  .  newBody  =  GrExpr_Seq (GrExpr_Unit @lhs.scrutinizer) @pat.grTrf @expr.grTrf
+  | Alt   lhs  .  newBody  =  GrExpr_Seq (GrExpr_Unit @lhs.scrutinizer) @pat.lamPat @expr.grTrf
                .  count    = 1
 
 SEM GrExpr

@@ -55,7 +55,7 @@ pEvApTagMp      =    pCurly_pSemics
                         )
 
 pExprSeq        ::   GRIParser GrExpr
-pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPat <* pKey "->") pExpr
+pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPatLam <* pKey "->") pExpr
 
 pExpr           ::   GRIParser GrExpr
 pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
@@ -86,7 +86,7 @@ pVal            ::   GRIParser GrVal
 pVal            =    pSVal
                 <|>  GrVal_Tag      <$> pTag
                 <|>  pParens
-                        (    GrVal_Node <$> (pTag {- <|> pTagVar -} ) <*> pSValL
+                        (    GrVal_Node <$> pTag <*> pSValL
 %%[[10                        
                         <|>  GrVal_NodeAdapt <$> pGrNm <* pKey "|" <*> pList1Sep pComma pAdapt
 %%]]                        
@@ -101,29 +101,31 @@ pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
 
 pAlt            ::   GRIParser GrAlt
-pAlt            =    GrAlt_Alt <$> pPat <* pKey "->" <*> pCurly pExprSeq
+pAlt            =    GrAlt_Alt <$> pPatAlt <* pKey "->" <*> pCurly pExprSeq
 
-pSPat           ::   GRIParser GrPat
-pSPat           =    GrPat_Var      <$> pGrNm
-                <|>  GrPat_LitInt   <$> pInt
-
-pPat            ::   GRIParser GrPat
-pPat            =    pSPat
-                <|>  GrPat_Tag      <$> pTag
+pPatLam         ::   GRIParser GrPatLam
+pPatLam         =    GrPatLam_Var      <$> pGrNm
                 <|>  pParens
-                        (    (pTag  {- <|> pTagVar  -} )
+                        (    GrPatLam_VarNode <$> ( (:) <$> (GrVar_Var <$> pGrNm <|> GrVar_KnownTag <$> pTag) <*> (map GrVar_Var <$> pGrNmL) )
+                        <|>  pSucceed GrPatLam_Empty
+                        )
+
+pPatAlt         ::   GRIParser GrPatAlt
+pPatAlt         =    GrPatAlt_LitInt   <$> pInt
+                <|>  GrPatAlt_Tag      <$> pTag
+                <|>  pParens
+                        (    pTag
                              <**>  (pGrNm
                                     <**>  (    
 %%[[10                                    
-                                               (\sL r t -> GrPat_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit <|>  
+                                               (\sL r t -> GrPatAlt_NodeSplit t r sL) <$ pKey "|" <*> pList1Sep pComma pSplit <|>  
 %%]]                                          
-                                               (\nL n t -> GrPat_Node t (n:nL)) <$> pGrNmL
+                                               (\nL n t -> GrPatAlt_Node t (n:nL)) <$> pGrNmL
                                           )
-                                   <|> pSucceed (flip GrPat_Node [])
+                                   <|> pSucceed (flip GrPatAlt_Node [])
                                    )
-                        <|>  GrPat_VarNode <$> ( (:) <$> pGrNm <*> pGrNmL )
-                        <|>  pSucceed GrPat_Empty
                         )
+
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
@@ -131,9 +133,6 @@ pTag            =    pKey "#"
                          <|> GrTag_Unboxed <$ pKey "U"
                          <|> GrTag_Any     <$ pKey "*"
                          )
-
--- pTagVar         ::   GRIParser GrTag
--- pTagVar         =    GrTag_Var <$> pGrNm
 
 pTagAnn         ::   GRIParser GrTagAnn
 pTagAnn         =    GrTagAnn       <$ pOCurly <*> pInt <* pComma <*> pInt <* pCCurly

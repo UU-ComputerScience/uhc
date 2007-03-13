@@ -17,28 +17,6 @@ type TargetNames = Maybe [HsName]
 type TargetName  = Maybe HsName
 %%]
 
--- %%[8.targetVars
-ATTR AllGrExpr [ targetNames : TargetNames | | ]
-ATTR GrPat GrPatL GrTag [ | |  patternNames: {[HsName]} ]
-
-SEM GrBind
-  | Bind     expr . targetNames = Nothing
-
-SEM GrExpr
-  | Seq      expr . targetNames = Just @pat.patternNames
-             body . targetNames = @lhs.targetNames
-
-SEM GrPat 
-  | Var   lhs  .  patternNames = [@nm]
-  | Node  lhs  .  patternNames = @tag.patternNames ++ @fldL
-  | * - Var Node Tag  lhs  .  patternNames  =  []
-
-SEM GrTag
-  | Var      lhs  .  patternNames  = [@nm]
-  | Unboxed  lhs  .  patternNames  = []
-  | * - Var Unboxed lhs  .  patternNames  = [wildcardNr]
--- %%]
-
 Last expression
 
 %%[8
