@@ -506,7 +506,8 @@ The features presented in \thischapt\ are part of the ninth version.
 %%@AppxNotation.declBasicTySigma
 %%@AppxNotation.declValIdent
 %%@AppxNotation.declDataType
-%%@AppxNotation.declExplImpl
+%%@AppxNotation.declExplImplBasic
+%%@AppxNotation.declExplImplExtra
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader
 %%@AppxNotation.identBasic

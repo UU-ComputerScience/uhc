@@ -10,7 +10,7 @@
 %%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,EH.Util.PPUtils)
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Trf.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Trf.Quantify},{%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils},{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
 %%[9 import({%{EH}Base.Debug})
@@ -587,10 +587,10 @@ data HowMkEvid
 instance Show HowMkEvid where
   show _ = "HowMkEvid"
 
-ppHowMkEvid :: (HsName -> PP_Doc) -> HowMkEvid -> PP_Doc
-ppHowMkEvid pn (MkEvidVar  n    ) = "var"  >#< pn n
-ppHowMkEvid pn (MkEvidCtxt n    ) = "ctxt" >#< pn n
-ppHowMkEvid pn (MkEvidSup  n o t) = "sup"  >#< pn n >#< pp o >#< ppCTag' pn t
+ppHowMkEvid :: CfgPP x => x -> HowMkEvid -> PP_Doc
+ppHowMkEvid x (MkEvidVar  n    ) = "var"  >#< cfgppHsName x n
+ppHowMkEvid x (MkEvidCtxt n    ) = "ctxt" >#< cfgppHsName x n
+ppHowMkEvid x (MkEvidSup  n o t) = "sup"  >#< cfgppHsName x n >#< pp o >#< ppCTag' x t
 
 mkEvid :: EHCOpts -> HowMkEvid -> [CExpr] -> CExpr
 mkEvid opts h

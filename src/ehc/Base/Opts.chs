@@ -129,6 +129,7 @@ data EHCOpts
 %%[[20
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
+      ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
 %%]]
 %%[[99
       ,  ehcProgName          ::  String			-- name of this program
@@ -208,6 +209,7 @@ defaultEHCOpts
 %%[[20
       ,  ehcOptCheckRecompile    =   True
       ,  ehcOptFullProgGRIN      =   False
+      ,  ehcDebugStopAtHIError   =   False
 %%]]
 %%[[99
       ,  ehcProgName          =   ""
@@ -243,7 +245,7 @@ ehcCmdLineOpts
 %%[[8
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
-                                                                              "switch on/off transformations"
+                                                                              "switch on/off core transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["dump-call-graph"]  (NoArg oDumpCallGraph)               "output grin call graph as dot file"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
@@ -262,6 +264,8 @@ ehcCmdLineOpts
 %%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
+     ,  Option ""   ["debug-stopat-hi-error"]
+                                         (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
@@ -404,6 +408,10 @@ optBoolean tr ms o
      Just "1"     -> tr o True
      _            -> o
 
+%%]
+
+%%[20
+oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -92,6 +92,11 @@
 
 %format Forall		= "{\nabla}"
 
+%format pred		= pi
+%format preds		= "\overline{" pi "}"
+
+%format subst		= S
+
 %format sigmak      = sigma "^{k}"
 %format sigman      = sigma "_{n}"
 %format sigmam      = sigma "_{m}"
@@ -357,6 +362,9 @@
 %format not		        = "not"
 %format ==		        = "=="
 %format frac(n)(d)		= "\frac{" n "}{" d "}"
+%format `supseteq`		= "\supseteq"
+%format supseteq		= "\supseteq"
+
 
 %format InstUnExists    = "inst^{" exists "}"
 

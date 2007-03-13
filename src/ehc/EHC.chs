@@ -62,7 +62,7 @@
 %%[20 import (qualified {%{EH}Core.Parser} as CorePrs)
 %%]
 
-%%[20 import (qualified {%{EH}Pred} as Pr,qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%[20 import (qualified {%{EH}Pred} as Pr,qualified {%{EH}HS.ModImpExp} as HSSemMod,{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -533,7 +533,7 @@ cpParsePrevHI modNm
               fpH     = fpathSetSuff "hi" fp
        ; lift $ putCompileMsg VerboseALot (ehcOptVerbosity opts) "Parsing" Nothing modNm fpH
        ; errs <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI fpH modNm
-       -- ; cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
+       ; when (ehcDebugStopAtHIError opts) $ cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
        ; return ()
        }
 %%]
@@ -798,6 +798,7 @@ cpFlowEHSem2 modNm
                             -- , EHSem.dataGam_Inh_AGItf    = EHSem.gathDataGam_Syn_AGItf    ehSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh -- now in cpFlowEHSem1
                             , EHSem.prIntroGam_Inh_AGItf = EHSem.gathPrIntroGam_Syn_AGItf ehSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
                             , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            , EHSem.chrStore_Inh_AGItf   = EHSem.gathChrStore_Syn_AGItf   ehSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
          ;  when (isJust (ecuMbEHSem ecu))
                  (put (cr {crStateInfo = crsi {crsiEHInh = ehInh'}}))
@@ -817,6 +818,7 @@ cpFlowHISem modNm
                             , EHSem.dataGam_Inh_AGItf    = HISem.dataGam_Syn_AGItf    hiSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.prIntroGam_Inh_AGItf = HISem.prIntroGam_Syn_AGItf hiSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
                             , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            , EHSem.chrStore_Inh_AGItf   = HISem.chrStore_Syn_AGItf   hiSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
@@ -1446,6 +1448,7 @@ cpOutputHI suff modNm
                               (EHSem.gathDataGam_Syn_AGItf          ehSem)
                               (EHSem.gathPrIntroGam_Syn_AGItf       ehSem)
                               (EHSem.gathPrElimTGam_Syn_AGItf       ehSem)
+                              (EHSem.gathChrStore_Syn_AGItf         ehSem)
                               (if ehcOptFullProgGRIN opts
                                then Map.empty
                                else Core2GrSem.gathArityMp_Syn_CodeAGItf   coreSem
@@ -1871,6 +1874,7 @@ doCompileRun fn opts
                                               , EHSem.prIntroGam_Inh_AGItf      = initPIGIGam
                                               , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
                                               , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
+                                              , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
                                               , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]
 %%[[95

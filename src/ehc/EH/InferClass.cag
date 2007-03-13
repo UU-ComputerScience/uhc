@@ -105,7 +105,8 @@ SEM Decl
   | Instance InstanceIntro
                 loc             .   instId          =   mkPrId @lhs.prfCtxtId @lUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
-                loc             .   prTyFix         =   tyFixTyVars . tyQuantifyRank [2..] $ @tyPrExpr.ty
+                loc             .   (prTyFix,unfixPrTyCnstr)
+                                                    =   tyFixTyVars $ tyQuantifyRank [2..] $ @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
@@ -126,7 +127,7 @@ SEM Decl
                                                                                 Ty_Con n | n == hsnStar
                                                                                   -> (mkTyPr $ Pred_Class $ predTyCon `mk1App` tv,uniq,[])
                                                                                 _ -> (Ty_Any,uniq,[Err_MalformedTy "kind" "automatic instance derivation" (tgiKi tgi)])
-                                                                  (cxDt,_,errs2)														-- for each type arg a context pred is made
+                                                                  (cxDt,_,errs2)                                                        -- for each type arg a context pred is made
                                                                     = foldr (\(k,t) (cx,u,e)
                                                                               -> let (cx',u',e') = ki2pr k u t
                                                                                  in  (cx' : cx, u', e' ++ e)
@@ -149,7 +150,7 @@ SEM Decl
                                                         in   tyArrowArgs . foTy $ fo
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
-                                .   recTy           =   tyFixTyVars $ tyQuantifyRank [2..] $ tyArrowRes $ @tyPrExpr.evTy
+                                .   recTy           =   fst $ tyFixTyVars $ tyQuantifyRank [2..] $ tyArrowRes $ @tyPrExpr.evTy
                                 .   recTyExts       =   snd $ tyRecExts $ @recTy
                                 .   dataDictNm      =   hsnClass2Dict @instClsNm -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'

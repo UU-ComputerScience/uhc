@@ -25,6 +25,9 @@ Derived from work by Gerrit vd Geest.
 %%[10 import({%{EH}Base.Builtin})
 %%]
 
+%%[20 import({%{EH}Base.CfgPP})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,23 +47,6 @@ instance CHRMatchable FIIn PredScope Cnstr where
   chrMatchTo _ (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyCnstr
   chrMatchTo _ _                  _                                  = Nothing
 
-instance CHRMatchable FIIn PredOccId Cnstr where
-  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 == v2  = Just emptyCnstr
-                                                         | otherwise = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ _                      (PredOccId_Var v2)             = Nothing
-  chrMatchTo _ (PredOccId_Var v1) sc2                                = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)             = Just emptyCnstr
---  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyCnstr
---  chrMatchTo _ _                  _                                 = Nothing
-
-instance CHRMatchable FIIn PredOcc Cnstr where
-  chrMatchTo fi po1 po2
-    = do { subst1 <- chrMatchTo fi (poPr po1) (poPr po2)
-         ; subst2 <- chrMatchTo fi (poPoi po1) (poPoi po2)
-         ; subst3 <- chrMatchTo fi (poScope po1) (poScope po2)
-         ; return $ subst3 |=> subst2 |=> subst1
-         }
-
 instance CHRMatchable FIIn CHRPredOcc Cnstr where
   chrMatchTo fi po1 po2
     = do { subst1 <- chrMatchTo fi (cpoPr po1) (cpoPr po2)
@@ -70,10 +56,6 @@ instance CHRMatchable FIIn CHRPredOcc Cnstr where
 
 instance CHREmptySubstitution Cnstr where
   chrEmptySubst = emptyCnstr
-
-instance CHRSubstitutable PredOcc TyVarId Cnstr where
-  chrFtv        x = Set.fromList (ftv x)
-  chrAppSubst s x = s |=> x
 
 instance CHRSubstitutable CHRPredOcc TyVarId Cnstr where
   chrFtv        x = Set.fromList (ftv x)
@@ -94,22 +76,40 @@ instance CHRSubstitutable Cnstr TyVarId Cnstr where
 instance CHRSubstitutable Guard TyVarId Cnstr where
   chrFtv        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
   chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
-  chrFtv        (IsVisibleInScope p1 p2     ) = Set.unions $ map ftvSet [p1,p2]
-  chrFtv        (NotEqualScope    p1 p2     ) = Set.unions $ map ftvSet [p1,p2]
+  chrFtv        (IsVisibleInScope       p1 p2   ) = Set.unions $ map ftvSet [p1,p2]
+  chrFtv        (NotEqualScope          p1 p2   ) = Set.unions $ map ftvSet [p1,p2]
 %%[[10
-  chrFtv        (NonEmptyRowLacksLabel r o t l) = Set.unions [ftvSet r,ftvSet o,ftvSet t,ftvSet l]
-  chrFtv        (IsEmptyRow                t  ) = ftvSet t
+  chrFtv        (NonEmptyRowLacksLabel  r o t l ) = Set.unions [ftvSet r,ftvSet o,ftvSet t,ftvSet l]
 %%]]
 
   chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s |=> p1) (s |=> p2) (s |=> p3)
   chrAppSubst s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s |=> p1) (s |=> p2) (s |=> p3)
-  chrAppSubst s (IsVisibleInScope p1 p2   ) = IsVisibleInScope (s |=> p1) (s |=> p2)
-  chrAppSubst s (NotEqualScope    p1 p2   ) = NotEqualScope    (s |=> p1) (s |=> p2)
+  chrAppSubst s (IsVisibleInScope       p1 p2   ) = IsVisibleInScope       (s |=> p1) (s |=> p2)
+  chrAppSubst s (NotEqualScope          p1 p2   ) = NotEqualScope          (s |=> p1) (s |=> p2)
 %%[[10
-  chrAppSubst s (NonEmptyRowLacksLabel r o t l) = NonEmptyRowLacksLabel (s |=> r) (s |=> o) (s |=> t) (s |=> l)
-  chrAppSubst s (IsEmptyRow                t  ) = IsEmptyRow                                (s |=> t)
+  chrAppSubst s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s |=> r)  (s |=> o)  (s |=> t)  (s |=> l)
 %%]]
 %%]
+instance CHRMatchable FIIn PredOccId Cnstr where
+  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 == v2  = Just emptyCnstr
+                                                         | otherwise = Just $ v1 `cnstrPoiUnit` sc2
+  chrMatchTo _ _                      (PredOccId_Var v2)             = Nothing
+  chrMatchTo _ (PredOccId_Var v1) sc2                                = Just $ v1 `cnstrPoiUnit` sc2
+  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)             = Just emptyCnstr
+--  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyCnstr
+--  chrMatchTo _ _                  _                                 = Nothing
+
+instance CHRMatchable FIIn PredOcc Cnstr where
+  chrMatchTo fi po1 po2
+    = do { subst1 <- chrMatchTo fi (poPr po1) (poPr po2)
+         ; subst2 <- chrMatchTo fi (poScope po1) (poScope po2)
+         ; return $ subst2 |=> subst1
+         }
+
+instance CHRSubstitutable PredOcc TyVarId Cnstr where
+  chrFtv        x = Set.fromList (ftv x)
+  chrAppSubst s x = s |=> x
+
 
 %%[9
 instance CHRSubstitutable RedHowAnnotation TyVarId Cnstr where
@@ -191,25 +191,35 @@ data Guard
   | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
 %%[[10
   | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
-  | IsEmptyRow    			Ty												-- is row empty?
 %%]]
 %%]
-  | IsParentScope       PredScope PredScope                             -- is parent scope?
+
+%%[9
+ppGuard :: Guard -> PP_Doc
+ppGuard (HasStrictCommonScope   sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< sc2,sc1 >#< "<=" >#< sc3]
+ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (sc1 >#< "==" >#< sc2 >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
+ppGuard (IsVisibleInScope       sc1 sc2    ) = sc1 >#< "`visibleIn`" >#< sc2
+ppGuard (NotEqualScope          sc1 sc2    ) = sc1 >#< "/=" >#< sc2
+%%[[10
+ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
+%%]]
+%%]
 
 %%[9
 instance Show Guard where
   show _ = "CHR Guard"
 
 instance PP Guard where
-  pp (HasStrictCommonScope   sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< sc2,sc1 >#< "<=" >#< sc3]
-  pp (IsStrictParentScope sc1 sc2 sc3) = ppParens (sc1 >#< "==" >#< sc2 >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
-  -- pp (IsParentScope sc1 sc2) = sc1 >#< "+ 1 ==" >#< sc2
-  pp (IsVisibleInScope sc1 sc2) = sc1 >#< "`visibleIn`" >#< sc2
-  pp (NotEqualScope    sc1 sc2) = sc1 >#< "/=" >#< sc2
-%%[[10
-  pp (NonEmptyRowLacksLabel r o t l) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
-  pp (IsEmptyRow                t  ) = t >#< "==" >#< hsnRowEmpty
-%%]]
+  pp = ppGuard
+%%]
+
+%%[20
+instance PPForHI Guard where
+  ppForHI (HasStrictCommonScope   sc1 sc2 sc3) = "HasStrictCommonScope"  >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
+  ppForHI (IsStrictParentScope    sc1 sc2 sc3) = "IsStrictParentScope"   >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
+  ppForHI (IsVisibleInScope       sc1 sc2    ) = "IsVisibleInScope"      >#< (ppCurlysCommas $ map ppForHI [sc1,sc2])
+  ppForHI (NotEqualScope          sc1 sc2    ) = "NotEqualScope"         >#< (ppCurlysCommas $ map ppForHI [sc1,sc2])
+  ppForHI (NonEmptyRowLacksLabel  r o t l    ) = "NonEmptyRowLacksLabel" >#<  ppCurlysCommas [ppForHI r, ppForHI o, pp t, ppForHI l]
 %%]
 
 %%[9

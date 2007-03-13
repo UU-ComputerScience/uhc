@@ -1,0 +1,143 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt"
+
+external ANY
+
+-------------------------------------------------------------------------
+-- Theorems
+-------------------------------------------------------------------------
+
+scheme hm =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."HM" e : sigma
+
+ruleset hm scheme hm "" =
+  rule dummy =
+    -
+    judge R : hm = Gamma :- e : ANY
+
+scheme hmv =
+  holes [ Transl: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."HM" Transl : sigma
+
+ruleset hmv scheme hmv "" =
+  rule dummy =
+    -
+    judge R : hmv = Gamma :- Transl : ANY
+
+scheme sysf =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."F" e : sigma
+
+ruleset sysf scheme sysf "" =
+  rule dummy =
+    -
+    judge R : sysf = Gamma :- e : ANY
+    
+scheme sysfv =
+  holes [ Transl.a: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."F" Transl.a : sigma
+
+ruleset sysfv scheme sysfv "" =
+  rule dummy =
+    -
+    judge R : sysfv = Gamma :- e : ANY
+    
+scheme eh4 =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty ]
+  judgespec Gamma :-.."EH" e : sigma
+
+ruleset eh4 scheme eh4 "" =
+  rule dummy =
+    -
+    judge R : eh4 = Gamma :- e : ANY
+
+scheme ehv =
+  holes [ e: Expr, Gamma: Gamma | | sigma: Ty, Transl: Expr, Transl.a: Expr ]
+  judgespec Gamma :-.."EH" e : sigma ~> Transl ; Transl.a
+
+ruleset ehv scheme ehv "" =
+  rule dummy =
+    -
+    judge R : ehv = Gamma :- e : ANY ~> e ; e
+    
+-------------------------------------------------------------------------
+-- Entailment
+-------------------------------------------------------------------------
+
+scheme entailn =
+  holes [ preds.1: Preds, preds.2: Preds ]
+  judgespec preds.1 ::-."e" preds.2
+
+ruleset entailn.all scheme entailn "Entailment" =
+  rule mono =
+    judge superSetOf = preds.1 >= preds.2
+    -
+    judge entailn = preds.1 ::- preds.2
+
+  rule trans =
+    judge entailn = preds.1 ::- preds.2
+    judge entailn = preds.2 ::- preds.3
+    -
+    judge entailn = preds.1 ::- preds.3
+
+  rule closed =
+    judge entailn = preds.1 ::- preds.2
+    -
+    judge entailn = subst preds.1 ::- subst preds.2
+
+  rule class =
+    judge classDef = preds.2 => pred.3
+    judge entailn = preds.1 ::- pred.3
+    -
+    judge entailn = preds.1 ::- preds.2
+    
+  rule inst =
+    judge instDef = preds.3 => pred.2
+    judge entailn = preds.1 ::- preds.3
+    -
+    judge entailn = preds.1 ::- pred.2
+    
+
+scheme entailscn =
+  holes [ preds.1.s: Preds, preds.2.t: Preds ]
+  judgespec preds.1.s ::-."e" preds.2.t
+
+ruleset entailscn.all scheme entailscn "Entailment (scoped)" =
+  rule inst =
+    judge instScDef = preds.3 => t, pred.2
+    judge entailn = preds.1 ::- preds.3
+    judge visibleIn = t <= s
+    -
+    judge entailscn = preds.1 ::- pred.2.s
+
+  rule scope =
+    judge entailscn = preds.1 ::- pred.2.t
+    judge visibleIn = t <= s
+    -
+    judge entailscn = preds.1 ::- pred.2.s
+
+relation superSetOf =
+  holes [ preds.1: Preds, preds.2: Preds ]
+  judgespec preds.1 >= preds.2
+  judgeuse tex preds.1 `supseteq` preds.2
+
+relation visibleIn =
+  holes [ sc.1: Scope, sc.2: Scope ]
+  judgespec sc.1 <= sc.2
+  judgeuse tex sc.1 `visibleIn` sc.2
+
+relation classDef =
+  holes [ preds.1: Preds, pred.2: Pred ]
+  judgespec preds.1 => pred.2
+  judgeuse tex "class" ^^ preds.1 => pred.2
+
+relation instDef =
+  holes [ preds.1: Preds, pred.2: Pred ]
+  judgespec preds.1 => pred.2
+  judgeuse tex "instance" ^^ preds.1 => pred.2
+
+relation instScDef =
+  holes [ preds.1: Preds, pred.2: Pred, sc: Scope ]
+  judgespec preds.1 => sc, pred.2
+  judgeuse tex "instance" ^^ preds.1 =>.(sc) pred.2
+

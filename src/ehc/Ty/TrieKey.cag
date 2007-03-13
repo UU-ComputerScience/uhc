@@ -49,10 +49,6 @@ instance Keyable PredScope where
   toKey (PredScope_Var v) = [TK_One TKK_Partial $ Key_UID v]
   toKey (PredScope_Lev l) = [TK_One TKK_Normal  $ Key_Str $ show l]
 
-instance Keyable PredOccId where
-  toKey (PredOccId_Var v) = [TK_One TKK_Partial $ Key_UID v]
-  toKey (PredOccId   _ i) = [TK_One TKK_Normal  $ Key_UID i]
-
 instance Keyable PredOcc where
   toKey po = toKey (poPr po)
 
@@ -62,6 +58,12 @@ instance Keyable CHRPredOcc where
     where (ppr,cpr) = toKeyParentChildren $ cpoPr po
 
 %%]
+
+%%[9 hs
+instance Keyable PredOccId where
+  toKey (PredOccId   _ i) = [TK_One TKK_Normal  $ Key_UID i]
+%%]
+  toKey (PredOccId_Var v) = [TK_One TKK_Partial $ Key_UID v]
 
 %%[10
 WRAPPER LabelAGItf

@@ -15,8 +15,8 @@
 ATTR NTPrf [ chrStore: ScopedPredStore | | ]
 %%]
 
-%%[9
-ATTR Expr AllDecl [ | | gathChrStore USE {`chrStoreUnion`} {emptyCHRStore}: ScopedPredStore ]
+%%[20
+ATTR AGItf [ chrStore: ScopedPredStore | | gathChrStore: ScopedPredStore ]
 %%]
 
 %%[9.initChrStore
@@ -24,15 +24,19 @@ SEM AGItf
   | AGItf       loc         .   initChrStore        =   initScopedPredStore
 %%]
 
+%%[20 -9.initChrStore
+SEM AGItf
+  | AGItf       loc         .   initChrStore        =   @lhs.chrStore
+%%]
+
 %%[9
 SEM AGItf
-  | AGItf       loc         .   chrStore            =   mkScopedCHR2 @chrFIIn (Seq.toList @expr.chrClassDeclSq) (Seq.toList @expr.chrInstDeclSq) @initChrStore
-
+  | AGItf       loc         .   (instsOuter,instsInner)
+                                                    =   partition (\(_,_,_,sc) -> sc == initPredScope) $ Seq.toList @expr.chrInstDeclSq
+                            .   (chrStoreOuterScope,gathChrStore)
+                                                    =   mkScopedCHR2 @chrFIIn (Seq.toList @expr.chrClassDeclSq) @instsOuter @initChrStore
+                            .   (chrStore,_)        =   mkScopedCHR2 @chrFIIn [] @instsInner @chrStoreOuterScope
 %%]
-SEM Expr
-  | Let         loc         .   chrStore            =   if @lhs.isFirstLet
-                                                        then mkScopedCHR2 @chrFIIn (Seq.toList @chrClassDeclSq) (Seq.toList @chrInstDeclSq) @lhs.chrStore
-                                                        else @lhs.chrStore
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scope
@@ -160,7 +164,8 @@ ATTR NTPrf [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRS
 
 %%[9
 SEM Decl
-  | Instance    loc         .   chrInstDecl         =   let (cx,hd) = tyArrowArgsRes @tyPrExpr.ty
+  | Instance    loc         .   chrInstDecl         =   let cx = @unfixPrTyCnstr |=> @ctxtPrTyFixL
+                                                            hd = @unfixPrTyCnstr |=> @hdPrTyFix
                                                             hdPr = tyPred hd
                                                         in  ( map tyPred cx
                                                             , hdPr

@@ -35,6 +35,11 @@ pInt = tokMkInt <$> pInteger10Tk
 
 %%]
 
+%%[20 export(pUIDHI)
+pUIDHI :: P UID
+pUIDHI = pKeyTk "uid" *> pUID
+%%]
+
 -- counterpart of ppCTag'
 %%[8 export(pCTag)
 pCTag :: P CTag
@@ -53,7 +58,7 @@ pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%[20 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
-  = PredOccId <$ pOCURLY <*> pUID <* pCOMMA <*> pUID <* pCCURLY
+  = PredOccId <$ pOCURLY <*> pUIDHI <* pCOMMA <*> pUIDHI <* pCCURLY
 %%]
 
 %%[20 export(pIdOcc)
@@ -100,7 +105,7 @@ pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(pCurlySemiBlock,pCurlys,pSemiBlock)
+%%[20 export(pCurlySemiBlock,pCurlys,pSemiBlock,pCurlyCommaBlock)
 pSemiBlock :: P p -> P [p]
 pSemiBlock p = pListSep pSEMI p
 
@@ -109,5 +114,8 @@ pCurlys p = pOCURLY *> p <* pCCURLY
 
 pCurlySemiBlock :: P p -> P [p]
 pCurlySemiBlock p = pCurlys (pListSep pSEMI p)
+
+pCurlyCommaBlock :: P p -> P [p]
+pCurlyCommaBlock p = pCurlys (pListSep pCOMMA p)
 %%]
 

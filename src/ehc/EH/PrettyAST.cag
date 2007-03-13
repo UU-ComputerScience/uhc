@@ -106,10 +106,11 @@ SEM Expr
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
   | CConst      lhs     .  ppAST    =   ppNest ["PatExpr","CConst"] [@pp] []
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2)
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_9)
                 loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
                         .  info_2   =   []
+                        .  info_9   =   []
   | VarAs       lhs     .  ppAST    =   ppNest ["PatExpr","VarAs"] [ppNm @nm] [@patExpr.ppAST]
   | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Con"] [ppNm @nm] [] (@info ++ @info_2 ++ @info_4)
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
@@ -526,6 +527,7 @@ SEM AGItf
 SEM Expr
   | Var         loc     .  info_9   :=  [ mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (foLCoeL @fo_))
                                         , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (foRCoeL @fo_))
+                                        , mkInfo1 "@fe" (pp @fe)
                                         ]
   | Let         loc     .  info_9   :=  [ mkInfo1 "toResolvePrOccL" (ppBracketsCommas @toResolvePrOccL)
                                         , mkInfo1 "toProveHereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveHereCnstrMp)
@@ -589,6 +591,12 @@ SEM Expr
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imTy+subst" (pp (@expr.tyCnstr |=> @imTy))
+                                        ]
+%%]
+
+%%[9
+SEM PatExpr
+  | Var         loc     .  info_9   :=  [ mkInfo1 "@fe" (pp @fe)
                                         ]
 %%]
 

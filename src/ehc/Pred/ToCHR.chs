@@ -29,9 +29,10 @@ Conversion from Pred to CHR.
 %%% Rule store
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(ScopedPredStore)
+%%[9 export(ScopedPredStore,ScopedPredCHR)
 type PredStore p g s info = CHRStore p info g s
 type ScopedPredStore = PredStore CHRPredOcc Guard Cnstr RedHowAnnotation
+type ScopedPredCHR   = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard Cnstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,7 +68,6 @@ Hence we can safely use non-unique variables.
 
 %%[9
 ([sc1,sc2,sc3]
- ,[poi1,poi2,poi3]
  ,[pr1,pr2,pr3]
 %%[[10
  ,[ty1,ty2]
@@ -76,7 +76,6 @@ Hence we can safely use non-unique variables.
 %%]]
  )
   = ( map PredScope_Var [u1,u2,u3]
-    , map PredOccId_Var [u4,u5,u6]
     , map Pred_Var [u7,u8,u9]
 %%[[10
     , map mkTyVar [u10,u11]
@@ -130,15 +129,16 @@ initScopedPredStore
 %%[9 export(mkScopedCHR2)
 mkScopedCHR2
   :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
-       -> ScopedPredStore -> ScopedPredStore
+       -> ScopedPredStore -> (ScopedPredStore,ScopedPredStore)
 mkScopedCHR2 env clsDecls insts prevStore
-  = stores
-  where  stores      = chrStoreUnions $ [store2,instStore] ++ simplStores
-         ucls        = mkNewLevUIDL (length clsDecls) $ fiUniq env
+  = (chrStoreUnions [store2,instSimplStore], chrStoreUnions [assumeStore,instSimplStore])
+  where  ucls        = mkNewLevUIDL (length clsDecls) $ fiUniq env
          ((assumeStore,assumePredOccs), (instStore,_))
                      = mkScopedChrs clsDecls insts
          store2      = chrStoreUnions [assumeStore,prevStore]
          simplStores = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) store2 (cx,h,i)) ucls clsDecls
+         instSimplStore
+         			 = chrStoreUnions $ instStore : simplStores
 
 mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)

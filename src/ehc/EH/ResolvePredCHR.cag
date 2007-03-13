@@ -125,7 +125,17 @@ SEM Expr
 
 %%[9
 SEM Decl
-  | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp,@chrCtxtAssumeCnstrMp,@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp]
+  | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions
+                                                            [ @chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp
+%%[[9
+                                                            , @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
+%%][95
+                                                            , case @instVariant of
+                                                                InstDeriving
+                                                                  -> gathPredLToProveCnstrMp @toResolvePrOccL
+                                                                _ -> @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
+%%]]
+                                                            ]
                             .   (chrSolveDeclsRemCnstrMp,_,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,cannotResDeclsCnstrMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)

@@ -60,6 +60,10 @@
 %%@main.articleDocumentClass
 %%]
 
+%%[24
+%%@main.articleDocumentClass
+%%]
+
 %%[77
 %%@main.articleDocumentClass
 %%]
@@ -525,6 +529,10 @@
 \SetSectionsForBook
 %%]
 
+%%[24
+\SetSectionsForArticle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -760,6 +768,20 @@ WWW home page:
 \author{Atze Dijkstra, Jeroen Fokker, \\ Arie Middelkoop and Doaitse Swierstra}
 %%]
 
+%%[24
+\title{Modelling Local Instances with Constraint Handling Rules}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and Gerrit van den Geest \and Bastiaan Heeren \and S. Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Universiteit Utrecht \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,doaitse,bastiaan\}@@cs.uu.nl, G.vandenGeest@@students.uu.nl}
+%else
+\author{Atze Dijkstra, Gerrit van den Geest, Bastiaan Heeren and S. Doaitse Swierstra}
+%endif
+%%]
+
 %%[12
 \title{Ruler manual \\
 {\normalsize
@@ -938,6 +960,10 @@ WWW home page:
 \maketitle
 %%]
 
+%%[24
+\maketitle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1090,6 +1116,12 @@ have been submitted to POPL2006 in a slighty extended form.
 %%[22
 \begin{abstract}
 %%@TopicGrinBytecode.abstract
+\end{abstract}
+%%]
+
+%%[24
+\begin{abstract}
+%%@TopicCHRLocalInst.abstract
 \end{abstract}
 %%]
 
@@ -1508,6 +1540,50 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 %%@TopicExplImpl.body
 %%@TopicExplImpl.conclusion
 %%@TopicExplImpl.close
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC ??: CHR & local instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[24
+\section{Introduction}
+
+%%@TopicCHRLocalInst.introduction
+
+\section{Local instances}
+\subsection{The problem}
+
+%%@TopicCHRLocalInst.problem
+
+\subsection{Our approach}
+
+%%@TopicCHRLocalInst.ourApproach
+
+\section{Related work}
+
+%%@TopicCHRLocalInst.relatedWork
+
+\section{Prerequisites}
+
+\subsection{Term, types and predicates}
+
+%%@TopicCHRLocalInst.termsAndTypes
+
+%%@TopicCHRLocalInst.entailment1
+
+\subsection{CHR language}
+
+\section{Mapping local instances to CHRs}
+\subsection{Plain instances, without scope}
+\subsection{Local instances, with scope}
+
+\section{Heuristics}
+
+\section{Discussion, future work}
+
+Functional dependencies...
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2710,7 +2786,8 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.declBasic
 %%@AppxNotation.declValPat
 %%@AppxNotation.declDataType
-%%@AppxNotation.declExplImpl
+%%@AppxNotation.declExplImplBasic
+%%@AppxNotation.declExplImplExtra
 %%@AppxNotation.termSeparator
 %%@AppxNotation.patexprHeader
 %%@AppxNotation.patexprBasic
@@ -2730,6 +2807,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@AppxNotation.termSeparator
 %%@AppxNotation.typredHeader
 %%@AppxNotation.typredBasic
+%%@AppxNotation.typredTrafo
 %%@AppxNotation.typredRecLacks
 %%@AppxNotation.termSeparator
 %%@AppxNotation.identHeader

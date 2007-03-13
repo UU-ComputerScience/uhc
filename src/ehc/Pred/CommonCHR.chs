@@ -21,6 +21,9 @@ This file exists to avoid module circularities.
 %%[9 import({%{EH}Ty})
 %%]
 
+%%[9 import({%{EH}Base.CfgPP})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reduction info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,6 +56,16 @@ instance PP RedHowAnnotation where
 %%[[10
   pp (RedHow_ByLabel      l o sc)  = "label" >#< l >|< "@" >|< o >|< sc
 %%]]
+%%]
+
+%%[20
+instance PPForHI RedHowAnnotation where
+  ppForHI (RedHow_ByInstance   s p sc)  = "redhowinst"   >#< ppCurlysCommasBlock [ppForHI s, ppForHI p, ppForHI sc]
+  ppForHI (RedHow_BySuperClass s o tg)  = "redhowsuper"  >#< ppCurlysCommasBlock [ppForHI s, pp o, ppForHI tg]
+  ppForHI (RedHow_ProveObl     i   sc)  = "redhowprove"  >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
+  ppForHI (RedHow_Assumption   i n sc)  = "redhowassume" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n, ppForHI sc]
+  ppForHI (RedHow_ByScope            )  = pp "redhowscope"
+  ppForHI (RedHow_ByLabel      l o sc)  = "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

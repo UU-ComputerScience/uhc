@@ -250,49 +250,6 @@ SEM PatExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gamma/Environment for fitting
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.FIEnv
-SEM PatExpr
-  | *           loc         .   fe                  =   emptyFE
-%%[[9
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
-                                                            , fePredScope = @lhs.predScope
-%%[[11
-                                                            , feTyGam = @lhs.tyGam
-%%]]
-                                                            }
-%%]]
-%%]
-
-%%[7.FIEnv
-SEM RecPatExpr
-  | *           loc         .   fe                  =   emptyFE
-%%[[9
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
-                                                            , fePredScope = @lhs.predScope
-%%[[11
-                                                            , feTyGam = @lhs.tyGam
-%%]]
-                                                            }
-%%]]
-%%]
-
-%%[7.FIEnv
-SEM DataFieldPatExpr
-  | *           loc         .   fe                  =   emptyFE
-%%[[9
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
-                                                            , fePredScope = @lhs.predScope
-%%[[11
-                                                            , feTyGam = @lhs.tyGam
-%%]]
-                                                            }
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
