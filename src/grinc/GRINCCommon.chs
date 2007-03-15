@@ -44,7 +44,7 @@ throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Location, Variable, AbstractValue(..), AbstractNode)
+%%[8 export(Location, Variable, AbstractValue(..), AbstractCall, AbstractCallList)
 %%]
 
 %%[8.AbstractValue
@@ -54,41 +54,43 @@ type Variable = Int
 
 
 data AbstractValue
-  = AV_Nothing
-  | AV_Basic
-  | AV_Locations (Set.Set Location)
-  | AV_Nodes (Map.Map GrTag [AbstractValue])
-  | AV_Tags  (Set.Set GrTag)
-  | AV_Error !String
+  = AbsBottom
+  | AbsBasic
+  | AbsTags  (Set.Set GrTag)
+  | AbsLocs  (Set.Set Location)
+  | AbsNodes (Map.Map GrTag [AbstractValue])
+  | AbsError !String
     deriving (Eq, Ord)
 
-type AbstractNode = (GrTag, [AbstractValue]) -- an AV_Nodes can not occur inside an AbstractNode
+
+type AbstractCall
+  = (Variable, [Maybe Variable])
+  
+type AbstractCallList
+  = [AbstractCall]
+
 
 instance Show AbstractValue where
     show av = case av of
-                  AV_Nothing      -> "BOT"
-                  AV_Basic        -> "BAS"
-                  AV_Locations ls -> "LOCS" ++ show (Set.elems ls)
-                  AV_Nodes     ns -> "NODS" ++ show (Map.assocs ns)
-                  AV_Tags      ts -> "TAGS" ++ show (Set.elems ts)
-                  AV_Error     s  -> "ERR: " ++ s
+                  AbsBottom   -> "BOT"
+                  AbsBasic    -> "BAS"
+                  AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
+                  AbsLocs  ls -> "LOCS" ++ show (Set.elems ls)
+                  AbsNodes ns -> "NODS" ++ show (Map.assocs ns)
+                  AbsError s  -> "ERR: " ++ s
 
 instance Monoid AbstractValue where
-    mempty  = AV_Nothing
-    mappend a          AV_Nothing = a
-    mappend AV_Nothing b          = b
-    mappend a          b          = case (a,b) of
-                                      (AV_Basic       , AV_Basic       ) -> AV_Basic
-                                      (AV_Locations al, AV_Locations bl) -> AV_Locations (Set.union al bl)
-                                      (AV_Nodes     an, AV_Nodes     bn) -> AV_Nodes (an `mergeNodes` bn)
-                                      (AV_Tags      at, AV_Tags      bt) -> AV_Tags (Set.union at bt)
-                                      (AV_Error     _ , _              ) -> a
-                                      (_              , AV_Error     _ ) -> b
-                                      (AV_Basic       , _              ) -> b   -- works, but is it correct? --JF
-                                      (_              , AV_Basic       ) -> a   -- works, but is it correct? --JF
-                                      otherwise                          -> AV_Error $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
+    mempty                                  =  AbsBottom
+    mappend  a                 AbsBottom    =  a
+    mappend    AbsBottom    b               =  b
+    mappend    AbsBasic        AbsBasic     =  AbsBasic
+    mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
+    mappend   (AbsLocs  al)   (AbsLocs  bl) =  AbsLocs (Set.union al bl)
+    mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (Map.unionWith (zipWith mappend) an bn)
+    mappend a@(AbsError _ ) _               =  a
+    mappend _               b@(AbsError _ ) =  b
+    mappend a               b               =  AbsError $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
 
-mergeNodes an bn = Map.unionWith (zipWith mappend) an bn
 
 -- (Ord GrTag) is needed for (Ord AbstractValue) which is needed for Map.unionWith in mergeNodes
 instance Ord GrTag where
@@ -107,22 +109,6 @@ instance Ord GrTag where
                                                                           EQ -> compare n1 n2
                                                                           a  -> a
 
-{-
--- obsolete abstract domain for Locations
-data AbstractHeapElement = AbstractHeapElement
-    { ahBaseSet    ::  !AbstractValue
-    , ahSharedSet  ::  !(Maybe AbstractValue)
-    }
-    deriving (Eq)
-
--- TODO: which should ahSharedSet hold: <value when shared> - <value when uniq> or <value when shared>
--- Note: ahSharedSet currently holds the former, Nothing means it the cell shared, Just means unique (and shared part is kept off the record)
-
-instance Show AbstractHeapElement where
-    show (AbstractHeapElement b s) =  "unique = "       ++ show b
-                                       ++ ";\tshared = "  ++ show s
--}
-
 %%]
 
 
@@ -130,23 +116,23 @@ instance Show AbstractHeapElement where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation(..), Equations, HeapEquation, HeapEquations, HeapEquationRhs, EvalMap, ApplyMap )
-
-type HeapEquation  = (Location, HeapEquationRhs)
-type Equations     = [Equation]
-type HeapEquations = [HeapEquation]
-
-type HeapEquationRhs = ((GrTag, [Maybe Variable]), Maybe Variable)
+%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, EvalMap, ApplyMap )
 
 data Equation
-  = EquationKnownToBe Variable !AbstractValue
-  | EquationShouldBe  Variable ![Variable]
-  | EquationEval      Variable Variable Variable
-  | EquationApply     Variable Variable [Variable] Variable
-  | EquationSelect    Variable Variable GrTag Int
-  | EquationTag       Variable GrTag [Maybe Variable] (Maybe Variable)
-  | EquationDynApp                      [Variable] Variable
+  = IsKnown               Variable  !AbstractValue
+  | IsEqual               Variable  ![Variable]
+  | IsEvaluation          Variable  Variable                   Variable
+  | IsApplication  (Maybe Variable) [Variable]                 Variable
+  | IsSelection           Variable  Variable GrTag Int
+  | IsConstruction        Variable  GrTag [Maybe Variable]     (Maybe Variable)
     deriving (Show, Eq)
+
+data HeapEquation
+  = WillStore             Location  GrTag [Maybe Variable]     (Maybe Variable)
+    deriving (Show, Eq)
+
+type Equations     = [Equation]
+type HeapEquations = [HeapEquation]
 
 type EvalMap     = AssocL GrTag Int
 type ApplyMap    = AssocL GrTag (Either GrTag Int)
@@ -178,41 +164,38 @@ showHptMap (ae, ah, aex)
              )
      
      
-
-
-
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar (ea,_,m) i  | snd (bounds ea) >= i = (ea ! i)
-                      | otherwise            = Map.findWithDefault (AV_Error $ "variable "++ show i ++ " not found") i m
+                      | otherwise            = Map.findWithDefault (AbsError $ "variable "++ show i ++ " not found") i m
                          
 getHeapLoc :: HptMap -> Int -> AbstractValue
 getHeapLoc (_,ha,_) i = ha ! i  -- ahBaseSet (ha ! i)
 
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
-                             AV_Locations l -> mconcat $ map (getHeapLoc a) (Set.toList l)
-                             AV_Nothing     -> AV_Nodes Map.empty
-                             AV_Error s     -> error $ "analysis error: " ++ s
-                             AV_Basic       -> error $ "variable " ++ show i ++ " is a basic value"
-                             AV_Nodes _     -> error $ "variable " ++ show i ++ "is a node variable"
+                             AbsLocs l -> mconcat $ map (getHeapLoc a) (Set.toList l)
+                             AbsBottom     -> AbsNodes Map.empty
+                             AbsError s     -> error $ "analysis error: " ++ s
+                             AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
+                             AbsNodes _     -> error $ "variable " ++ show i ++ "is a node variable"
 absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of
-                 AV_Tags  ts -> Set.toList ts
+                 AbsTags  ts -> Set.toList ts
                  _           -> map fst (getNodes av)
 
 getNodes av = case av of
-                  AV_Nodes n  -> Map.toAscList n
-                  AV_Nothing  -> []
-                  AV_Error s  -> error $ "analysis error: " ++  s
+                  AbsNodes n  -> Map.toAscList n
+                  AbsBottom   -> []
+                  AbsError s  -> error $ "analysis error: " ++  s
                   _           -> error $ "not a node: " ++ show av
 
 isBottom av = case av of
-                  AV_Nothing      ->  True
-                  AV_Locations l  ->  Set.null l
-                  AV_Nodes n      ->  Map.null n
-                  AV_Error s      ->  error $ "analysis error: " ++ s
-                  otherwise       ->  False
+                  AbsBottom   ->  True
+                  AbsLocs  l  ->  Set.null l
+                  AbsNodes n  ->  Map.null n
+                  AbsError s  ->  error $ "analysis error: " ++ s
+                  otherwise   ->  False
 
 addEnvVar :: HptMap -> Int -> AbstractValue -> HptMap
 addEnvVar (e,h,fm) i v = (e,h, Map.insert i v fm)

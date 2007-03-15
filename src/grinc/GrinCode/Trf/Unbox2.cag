@@ -57,7 +57,7 @@ tagCanbeUnboxed hptMap gt
 varCanbeUnboxed :: HptMap -> HsName -> Bool
 varCanbeUnboxed hptMap (HNmNr n _)
   =  case getEnvVar hptMap n of
-      AV_Tags set -> case Set.elems set of
+      AbsTags set -> case Set.elems set of
                         [tag] -> tagCanbeUnboxed hptMap tag
                         _     -> False
       _           -> False

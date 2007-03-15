@@ -139,9 +139,9 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
 
 
 
-isEmptyAbsVal AV_Nothing        = True
-isEmptyAbsVal (AV_Locations xs) = Set.null xs
-isEmptyAbsVal v                 = error $ "wrong content of exception variable of binding " ++ show v
+isEmptyAbsVal AbsBottom    = True
+isEmptyAbsVal (AbsLocs xs) = Set.null xs
+isEmptyAbsVal v            = error $ "wrong content of exception variable of binding " ++ show v
 
 
 
@@ -250,8 +250,8 @@ buildApplyAlt ((t, a, avL), rhs) appArgs hptMap u
                                 else []
                       val2av v = case v of
                                      GrVal_Var v -> getEnvVar hptMap (getNr v)
-                                     otherwise   -> AV_Basic
-                      absVal = AV_Nodes (Map.singleton t (avL ++ map val2av appArgs))
+                                     otherwise   -> AbsBasic
+                      absVal = AbsNodes (Map.singleton t (avL ++ map val2av appArgs))
                   in ( u
                      , hptData absVal
                      , GrExpr_Unit (GrVal_Node t (arit ++ map GrVal_Var args ++ appArgs))
