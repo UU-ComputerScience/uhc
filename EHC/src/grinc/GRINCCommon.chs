@@ -59,7 +59,7 @@ data AbstractValue
   | AbsTags  (Set.Set GrTag)
   | AbsLocs  (Set.Set Location)
   | AbsNodes (Map.Map GrTag [AbstractValue])
-  | AbsError !String
+  | AbsError String
     deriving (Eq, Ord)
 
 
@@ -119,23 +119,23 @@ instance Ord GrTag where
 %%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, EvalMap, ApplyMap )
 
 data Equation
-  = IsKnown               Variable  !AbstractValue
-  | IsEqual               Variable  ![Variable]
-  | IsEvaluation          Variable  Variable                   Variable
-  | IsApplication  (Maybe Variable) [Variable]                 Variable
-  | IsSelection           Variable  Variable GrTag Int
-  | IsConstruction        Variable  GrTag [Maybe Variable]     (Maybe Variable)
+  = IsKnown               Variable  AbstractValue
+  | IsEqual               Variable  [Variable]
+  | IsSelection           Variable  Variable Int GrTag
+  | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
+  | IsEvaluation          Variable  Variable                     Variable
+  | IsApplication  (Maybe Variable) [Variable]                   Variable
     deriving (Show, Eq)
 
 data HeapEquation
-  = WillStore             Location  GrTag [Maybe Variable]     (Maybe Variable)
+  = WillStore             Location  GrTag [Maybe Variable] (Maybe Variable)
     deriving (Show, Eq)
 
 type Equations     = [Equation]
 type HeapEquations = [HeapEquation]
 
-type EvalMap     = AssocL GrTag Int
-type ApplyMap    = AssocL GrTag (Either GrTag Int)
+type EvalMap     = Map.Map GrTag Variable
+type ApplyMap    = Map.Map GrTag (Either GrTag Variable)
 
 %%]
 

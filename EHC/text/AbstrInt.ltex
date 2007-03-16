@@ -1,0 +1,433 @@
+\documentclass[preprint,9pt]{sigplanconf}
+
+%include lhs2tex.fmt
+
+%format GrTag = "Tag"
+%format HsName = "Name"
+%format DATA = "\mathbf{DATA}"
+%format . = "."
+
+
+\usepackage{amsmath}
+
+\usepackage{natbib}
+\bibpunct();A{},
+\let\cite=\citep
+\bibliographystyle{plainnat}
+
+
+
+\begin{document}
+
+\conferenceinfo{ICFP '07}{September 30, Freiburg.} 
+\copyrightyear{2007} 
+\copyrightdata{[to be supplied]} 
+
+%\titlebanner{Working copy v.1}        % These are ignored unless
+%\preprintfooter{Working copy v.1}   % 'preprint' option specified.
+
+\title{%
+Avoiding Indirect Jumps
+% Efficient Case Selection
+through 
+Abstract Interpretation and Global Analysis
+}
+
+\subtitle{}
+
+\authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
+           {Utrecht University}
+           {jeroen at cs.uu.nl}
+
+\maketitle
+
+\begin{abstract}
+This is the text of the abstract.
+\end{abstract}
+
+%\category{CR-number}{subcategory}{third-level}
+
+%\terms
+%term1, term2
+
+%\keywords
+%keyword1, keyword2
+
+\section{Introduction}
+
+The text of the paper begins here.
+
+
+\section{Case selection and Indirect Jumps}
+
+Case distinction is the driving force in lazy languages
+
+Push/enter vs eval/apply
+
+Marlow\&Peyton Jones
+
+Boquist \cite{boquist}
+
+EHC
+
+
+
+
+\section{Tree walk methodology}
+
+Tree walks
+
+Generalized folds
+
+Attributes
+
+AG-system as preprocessor
+
+AG-rules
+
+Implicit AG-rules
+
+
+
+
+
+\section{The GRIN language}
+
+Grin as an intermediate language between Core and Silly
+
+Interpretation and compilation of Grin
+
+Overview
+
+Program is sequence of bindings
+
+Binding binds function name with parameters to expression
+
+Expression manipulates and returns values
+
+Value are nodes, variables, tags or constants
+
+Patterns come in two sorts: 
+Case (Lit, Tag, Node) 
+and Lambda (Empty, Var, VarNode)
+
+Details of expressions: 
+
+\begin{code}
+DATA GrExpr
+  | Seq         expr            : GrExpr
+                pat             : GrPatLam
+                body            : GrExpr
+  | Case        val             : GrVal
+                altL            : GrAltL
+  | Call        nm              : {HsName}
+                argL            : GrValL
+  | FFI         nm              : {String}
+                argL            : {[HsName]}
+                resTagL         : GrTagL
+  | App         nm              : {HsName}
+                argL            : GrValL
+  | Eval        nm              : {HsName}
+  | Unit        val             : GrVal
+  | UpdateUnit  nm              : {HsName}
+                val             : GrVal
+  | Store       val             : GrVal
+  | FetchNode   nm              : {HsName}
+  | FetchField  nm              : {HsName}
+                offset          : {Int}
+                mbTag           : {Maybe GrTag}
+  | FetchUpdate src             : {HsName}
+                dst             : {HsName}
+\end{code}
+
+Seq
+Unit
+Eval
+Apply
+Case
+Call
+FFI
+Store
+UpdateUnit
+FetchNode
+FetchField
+(Throw Catch?)
+
+
+
+
+
+\section{Abstract interpretation}
+
+
+\subsection{An abstract domain}
+
+Abstract domain for stack values: bottom, basic, tags, locations, nodes
+
+\begin{code}
+data AbstractValue
+  =  AbsBottom
+  |  AbsBasic
+  |  AbsTags   (Set.Set GrTag)
+  |  AbsLocs   (Set.Set Location)
+  |  AbsNodes  (Map.Map GrTag [AbstractValue])
+  |  AbsError  String
+\end{code}
+
+
+\subsection{A constraint language}
+
+\begin{code}
+data Equation
+  =  IsKnown          Variable  AbstractValue
+  |  IsEqual          Variable  [Variable]
+  |  IsSelection      Variable  Variable Int GrTag
+  |  IsConstruction   Variable  GrTag [Maybe Variable]
+  |  IsEvaluation     Variable  Variable
+  |  IsApplication    (Maybe Variable) [Variable]
+\end{code}
+
+
+Constraint specification as a treewalk
+
+
+\subsection{Gather constraints in a treewalk}
+
+
+Unit
+
+
+
+
+\begin{figure*}
+\begin{code}
+SEM GrExpr | Unit UpdateUnit
+
+loc.equations1 
+ =  case (@lhs.targetInfo, @val.valInfo) of
+    (Nothing                  ,  _                 )  -> []
+    (Just (InVar tvar)        ,  InVar svar        )  -> [IsEqual tvar [svar]]
+    (Just (InVar tvar)        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
+    (Just (InNode ttag tnms)  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
+    (Just (InNode ttag tnms)  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
+
+  | UpdateUnit loc . equations2 =  [ IsEqual (getNr @nm)  [getNr @nm,  getNr @val.getName] ]
+  | Unit       lhs . equations  =  @loc.equations1
+  | UpdateUnit lhs . equations  =  @loc.equations2 ++ @loc.equations1
+
+SEM GrExpr | Eval
+lhs.equations 
+ =  case @lhs.targetInfo of
+    Just (InVar n)  -> [ IsEvaluation n @loc.function @lhs.exceptVar ]
+\end{code}
+\caption{Constraints for various expression types}
+\end{figure*}
+
+
+
+\subsection{Solve the constraint equations}
+
+Create two arrays, initially storing |AbsBottom| for all variables and locations.
+Then do a fixpoint iteration on both sets of equations, usign two procedures
+that determine which values need to be updated.
+\begin{code}
+solveEquations ::  Int -> Int -> Equations -> HeapEquations 
+                   -> ApplyMap -> (Int,AbsHeap,AbsEnv)
+solveEquations lenEnv lenHeap eqs1 eqs2 applyMap
+=  runST $
+   do  { let lenEnv2 = lenEnv + Map.size applyMap
+       ; env   <- newArray (0, lenEnv2 - 1) AbsBottom
+       ; heap  <- newArray (0, lenHeap - 1) AbsBottom
+       ; let procEnv equat
+             = do  { cs  <- envChanges equat env heap applyMap
+                   ; bs  <- mapM (procChange env) cs
+                   ; return (or bs)
+                   }
+             procHeap equat
+             = do  { cs  <- heapChange equat env
+                   ; b   <- procChange heap cs
+                   ; return b
+                   }
+       ; count <- fixpoint eqs1 eqs2 procEnv procHeap
+       ; return (count, heap, env)
+       }
+\end{code}
+The fixpoint functions keeps processing equations while values change
+\begin{code}
+fixpoint eqs1 eqs2 proc1 proc2 
+=  fix 0
+   where  fix count 
+          =  do
+             {  let step1  b i  = proc1  i >>= return . (b||)
+             ;  let step2  b i  = proc2  i >>= return . (b||)
+             ;  changes1  <- foldM step1  False eqs1
+             ;  changes2  <- foldM step2  False eqs2
+             ;  if    changes1 || changes2
+                then  fix (count+1)
+                else  return count
+             }
+\end{code}
+Changing an array value:
+\begin{code}
+procChange arr (i,e1) =
+   do { e0 <- readArray arr i
+      ; let e2       =  e0 `mappend` e1
+            changed  =  e0 /= e2
+      ; when changed (writeArray arr i e2)
+      ; return changed
+      }
+\end{code}
+Selecting the change candiates for a heap equation
+\begin{code}
+heapChange ::  HeapEquation -> AbstractEnv s 
+               -> ST s (Location,AbstractValue)
+heapChange (WillStore locat tag args mbres) env 
+ = do  { absArgs  <- mapM getEnv args
+       ; absRes   <- getEnv mbres
+       ; let absNode = AbsNodes (Map.singleton tag absArgs)
+       ; return (locat, absNode `mappend` absRes)
+       }
+       where
+       getEnv    =  maybe  (return AbsBottom) 
+                           (\v -> readArray env v >>= return )
+\end{code}
+
+
+
+\begin{figure*}
+\begin{code}
+envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s [(Variable,AbstractValue)]
+envChanges equat env heap applyMap
+  = case equat of
+      IsKnown         d av         -> return [(d, av)]
+
+      IsEqual         d vs         -> do
+                                      {  rs <- mapM (readArray env) vs
+                                      ;  return [(d, mconcat rs)]
+                                      }
+      IsSelection     d v i t      -> do
+                                      {  av <- readArray env v
+                                      ;  let res = case av of
+                                                    AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
+                                                    AbsBottom     -> av
+                                                    AbsError _    -> av
+                                      ;  return [(d,res)]
+                                      }
+      IsConstruction  d t as       -> do
+                                      {  vars <- mapM (maybe (return AbsBasic) (readArray env)) as
+                                      ;  let res = AbsNodes (Map.singleton t vars)
+                                      ;  return [(d,res)]
+                                      }
+      IsEvaluation    d v          -> do
+                                      {  av <- readArray env v
+                                      ;  res <- absDeref av
+                                      ;  return [(d,res)]
+                                      }
+      IsApplication mbd (f:as)     -> do 
+                                      {  av         <-  readArray env f
+                                      ;  absFun     <-  case mbd of
+                                                         Nothing  -> absDeref av
+                                                         Just _   -> return av
+                                      ;  absArgs    <-  mapM (readArray env) as
+                                      ;  (sfx,res)  <-  absCall absFun absArgs
+                                      ;  return $ (maybe id (\d->((d,res):)) mbd) sfx
+                                      }
+      
+    where
+    absDeref av
+      = case av of
+          AbsLocs ls  ->  do { vs <- mapM (readArray heap) (Set.toList ls)
+                             ; return (mconcat (map (filterTaggedNodes isValueTag) vs))
+                             }
+          AbsBottom   ->  return av
+          AbsError _  ->  return av
+    absCall f args
+      = do  {  ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
+            ;  let (sfxs,avs) = unzip ts
+            ;  return (concat sfxs, mconcat avs)
+      	    }
+      where addArgs (tag@(GrTag_Lit (GrTagPApp needs) _ nm) , oldArgs) 
+              =  do 
+                 { let n        = length args
+                       newtag   = GrTag_Lit (GrTagPApp (needs-n)) 0 nm
+                       lasttag  = GrTag_Lit (GrTagPApp 1        ) 0 nm
+                       funnr    = either undefined id (fromJust $ Map.lookup lasttag applyMap)
+                       sfx      = zip  [funnr+2+needs-length args ..] (reverse args)
+                 ; res <-  if    n<needs
+                           then  return $ AbsNodes (Map.singleton newtag (oldArgs++args))
+                           else  readArray env funnr
+                 ; return (sfx, res)
+                 }
+\end{code}
+\caption{Selection of change candidates for variables}
+\end{figure*}
+
+
+
+
+
+
+
+
+\section{Discussion and future work}
+
+
+How to keep the number of alternatives limited: specialized versions
+
+Smart ordering of alternatives:
+binary tree, most frequently first, or combined: Huffmancode-style
+
+Which cases are frequent:
+cons more than nil; empirical gathering of data during test run, for use in subsequent compilations
+
+Return is also an indirect jump and can be avoided by a `came-from analysis'
+
+
+
+
+
+
+
+\acks
+
+Acknowledgments, if needed.
+
+\begin{thebibliography}{}
+
+\bibitem[Boquist 1999]{boquist}
+Boquist, Urban. 
+Code Optimisation Techniques for Lazy Functional Languages, 
+PhD Thesis Chalmers University, G\"oteborg March 1999.
+
+\bibitem[Dijkstra 2005]{dijkstra}
+Dijkstra, Atze.
+Stepping through Haskell,
+PhD Thesis Utrecht University, November 2005.
+
+\bibitem[Douma 2006]{douma}
+Douma, Christof.
+Exceptional GRIN, 
+Master's Thesis Utrecht University, April 2006.
+
+\bibitem[Marlow and Peyton Jones 2006]{marlow}
+Marlow, Simon and Peyton Jones, Simon.
+`Making a fast curry: push/enter vs.\ eval/apply for higher-order languages',
+JFP2006/ICFP2004.
+
+\bibitem[Peyton Jones 1992]{peytonjones}
+Peyton Jones, Simon.
+`Spineless Tagless G-machine',
+ JFP 1992.
+
+
+\end{thebibliography}
+
+\end{document}
+
+
+
+
+
+\begin{code}
+\end{code}
+
