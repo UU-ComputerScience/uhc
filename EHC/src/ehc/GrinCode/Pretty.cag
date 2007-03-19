@@ -156,7 +156,7 @@ SEM GrExpr
                                                     indent 2 (ppCurlysSemisV @altL.ppL)
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
-  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map @lhs.ppGrNm @argL) >#< ppCurlysSemisV @resTagL.ppL
+  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : map @lhs.ppGrNm @argL) >#< ppCurlysSemisV @tagL.ppL
   | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp
   | UpdateUnit  lhs         .   pp          =   "updateunit" >#< @val.pp >#< @lhs.ppGrNm @nm

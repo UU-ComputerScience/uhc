@@ -41,26 +41,26 @@ DATA GrExpr
   | Seq         expr            : GrExpr
                 pat             : GrPatLam
                 body            : GrExpr
+  | Unit        val             : GrVal
+  | UpdateUnit  nm              : {HsName}
+                val             : GrVal
   | Case        val             : GrVal
                 altL            : GrAltL
+  | FetchNode   nm              : {HsName}
+  | FetchUpdate src             : {HsName}
+                dst             : {HsName}
+  | FetchField  nm              : {HsName}
+                offset          : {Int}
+                mbTag           : {Maybe GrTag}
+  | Store       val             : GrVal
   | Call        nm              : {HsName}
                 argL            : GrValL
   | FFI         nm              : {String}
                 argL            : {[HsName]}
-                resTagL         : GrTagL
+                tagL            : GrTagL
+  | Eval        nm              : {HsName}
   | App         nm              : {HsName}
                 argL            : GrValL
-  | Eval        nm              : {HsName}
-  | Unit        val             : GrVal
-  | UpdateUnit  nm              : {HsName}
-                val             : GrVal
-  | Store       val             : GrVal
-  | FetchNode   nm              : {HsName}
-  | FetchField  nm              : {HsName}
-                offset          : {Int}
-                mbTag           : {Maybe GrTag}
-  | FetchUpdate src             : {HsName}
-                dst             : {HsName}
   | Throw       nm              : {HsName}
   | Catch       body            : GrExpr
                 arg             : {HsName}

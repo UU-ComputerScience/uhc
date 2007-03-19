@@ -223,7 +223,7 @@ SEM GrExpr
                          else internal1 "FFI" @lhs.targets @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
-           loc.callres = maybe id (:) @resTagL.mbOnlyTagValue $ [Value_Call @nm (map (Value_Var . mkVar) @argL)]
+           loc.callres = maybe id (:) @tagL.mbOnlyTagValue $ [Value_Call @nm (map (Value_Var . mkVar) @argL)]
 
 
  | Store   lhs.stats  = let ph = head @lhs.targets
