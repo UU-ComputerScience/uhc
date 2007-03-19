@@ -33,14 +33,14 @@ As an additional Int result, return the number of iterations that it took to sol
 heapPointsToAnalysis :: GrModule -> Int -> (Int,Int,HptMap)
 heapPointsToAnalysis grmod unique
   = let -- traverse the tree
-        inh = Inh_GrAGItf { heapPointer_Inh_GrAGItf = 0, unique_Inh_GrAGItf = unique  }
+        inh = Inh_GrAGItf { location_Inh_GrAGItf = 0, unique_Inh_GrAGItf = unique  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
 
         -- get four synthesized attributes
         equations = equations_Syn_GrAGItf syn
         heapEqs   = heapEqs_Syn_GrAGItf syn
         applyMap  = applyMap_Syn_GrAGItf syn
-        lenHeap   = heapPointer_Syn_GrAGItf syn
+        lenHeap   = location_Syn_GrAGItf syn
         
         -- now solve the equations
         (iterCount,hptMap) = solveEquations unique lenHeap equations heapEqs applyMap
@@ -69,24 +69,31 @@ ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [ | | equations  USE {++} {[]}
 {-
 The EvalMap (slightly rewritten) is passed down to all expressions, and passed up to the Module itself
 The ApplyMap (slightly rewritten) is passed up to the root
-A unique integer "heapPointer" is threaded through all expressions to number all Stores locations
+A unique integer "location" is threaded through all expressions to number all Stores locations
 The value "unique", the first unused variable number, is made available to the root
 -}
 
-ATTR                  AllGlobal AllBind AllGrExpr [ evalMap: {EvalMap} |                  |                       ]
-ATTR         GrModule                             [                    |                  | evalMap  : {EvalMap}  ]
-ATTR GrAGItf GrModule                             [                    |                  | applyMap : {ApplyMap} ]
-ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [                    | heapPointer: Int |                       ]
-ATTR GrAGItf GrModule                             [ unique: {Int}      |                  |                       ]
+ATTR                  AllGlobal AllBind AllGrExpr [ evalMap: {EvalMap} |               |                       ]
+ATTR         GrModule                             [                    |               | evalMap  : {EvalMap}  ]
+ATTR GrAGItf GrModule                             [                    |               | applyMap : {ApplyMap} ]
+ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [                    | location: Int |                       ]
+ATTR GrAGItf GrModule                             [ unique: {Int}      |               |                       ]
 
 SEM GrModule
-  | Mod     loc . evalMap  = Map.fromList [ (t, f) | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
-            loc . applyMap = let rewrite (EvApTagVar (HNmNr f _)) = Right f
-                                 rewrite (EvApTagTag t          ) = Left  t
-                             in Map.fromList [ (t, rewrite v) | ((t,_), v) <- @applyTagMp ]
+  | Mod     loc . applyList  =  let  rewrite (EvApTagVar (HNmNr f _)) = Right f
+                                     rewrite (EvApTagTag t          ) = Left  t
+                                in   [ (t, rewrite v)  | ((t,_), v) <- @applyTagMp ]
+            loc . evalList   =       [ (t, f)          | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
+            loc . evalMap    =  Map.fromList @loc.evalList
+            loc . applyMap   =  Map.fromList @loc.applyList
+
+            loc . partPar    =  let  f (u,        xss)  (_, Right n)  = (u+1, (n,(Just u):[]):xss )
+                                     f (u, (n,xs):xss)  (_, Left  _)  = (u+1, (n,(Just u):xs):xss )
+                                in   snd (foldl f (@lhs.unique, []) (Map.toAscList @loc.applyMap))
+
 
 SEM GrAGItf
-  | AGItf  module . heapPointer = 0
+  | AGItf  module . location = 0
 
 SEM GrAGItf
   | AGItf  lhs.equations = genDynApplyEqs @module.applyMap @module.evalMap @module.appPappNodes  
@@ -121,7 +128,7 @@ ATTR GrTag [ | | isAppPApp : {Bool}   ]
 
 
 SEM GrVal
-  |  Node   lhs . appPappNodes =  if @tag.isAppPApp then [ InNode @tag.self @fldL.depVars ] else []
+  |  Node   lhs . appPappNodes =  if @tag.isAppPApp then [ InNode @tag.self @fldL.vars ] else []
 
 SEM GrTag
   | Lit     lhs . isAppPApp  =  case @categ of
@@ -158,21 +165,26 @@ data NodeInfo a
   =  InVar   Variable 
   |  InNode  GrTag [a]
   deriving Show
+  
+fromInVar :: NodeInfo a -> Variable
+fromInVar (InVar v)  = v
+fromInVar _          = error "HPT: Apply arguments should all be variables"  
+
 %%]
 
 %%[8.valInfo
 
-ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe Variable) }  depVar : { Maybe Variable } ]
-ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  depVars: {[Maybe Variable]} ]
-ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }                              ]
-ATTR GrVar             [ | | tag     : GrTag                          name   : { HsName }         ]
-ATTR GrVarL            [ | | headTag : GrTag                          names  : {[HsName]}         ]
+ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe Variable) }  var   : { Maybe Variable } ]
+ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  vars  : {[Maybe Variable]} ]
+ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }                             ]
+ATTR GrVar             [ | | tag     : GrTag                          var   : { Variable }       ]
+ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[Variable]}       ]
 
 
 SEM GrVal
-  | Tag       lhs . valInfo = InNode  @tag.self []
-  | Var       lhs . valInfo = InVar   (getNr @nm)
-  | Node      lhs . valInfo = InNode  @tag.self @fldL.depVars
+  | Tag       lhs.valInfo  =  InNode  @tag.self []
+  | Var       lhs.valInfo  =  InVar   (getNr @nm)
+  | Node      lhs.valInfo  =  InNode  @tag.self @fldL.vars
   | Empty
     LitInt
     LitStr
@@ -180,48 +192,48 @@ SEM GrVal
 %%[[10
     NodeAdapt 
 %%]]
-              lhs . valInfo = error $ "HPT: valinfo: " ++ show @loc.self ++ " has no known tag"
+              lhs.valInfo  =  error $ "HPT: valinfo: " ++ show @loc.self ++ " has no known tag"
               
 
 SEM GrValL
-  | Cons      lhs . valsInfo = @hd.valInfo : @tl.valsInfo
-  | Nil       lhs . valsInfo = []
+  | Cons      lhs.valsInfo  =  @hd.valInfo : @tl.valsInfo
+  | Nil       lhs.valsInfo  =  []
 
 SEM GrVal
-  | Var      lhs . depVar = Just (getNr @nm)
-  | * - Var  lhs . depVar = Nothing
+  | Var      lhs.var  =  Just (getNr @nm)
+  | * - Var  lhs.var  =  Nothing
 
 SEM GrValL
-  | Cons     lhs . depVars = @hd.depVar : @tl.depVars
-  | Nil      lhs . depVars = []
+  | Cons     lhs.vars  =  @hd.var : @tl.vars
+  | Nil      lhs.vars  =  []
 
 SEM GrPatAlt
-  | LitInt     lhs . patInfo = error "HPT: patInfo: literal"
-  | Tag        lhs . patInfo = InNode @tag.self []
-  | Node       lhs . patInfo = InNode @tag.self (map getNr @fldL)
-  | Otherwise  lhs . patInfo = error "HPT: patInfo: Otherwise"
+  | LitInt     lhs.patInfo  =  error "HPT: patInfo: literal"
+  | Tag        lhs.patInfo  =  InNode @tag.self []
+  | Node       lhs.patInfo  =  InNode @tag.self (map getNr @fldL)
+  | Otherwise  lhs.patInfo  =  error "HPT: patInfo: Otherwise"
 %%[[10
-  | NodeSplit  lhs . patInfo = error "HPT: patInfo: nodesplit"
+  | NodeSplit  lhs.patInfo  =  error "HPT: patInfo: nodesplit"
 %%]]
 
 SEM GrPatLam
-  | Empty      lhs . patInfo = InVar (getNr wildcardNr)
-  | Var        lhs . patInfo = InVar (getNr @nm)
-  | VarNode    lhs . patInfo = InNode (@fldL.headTag) (map getNr (tail @fldL.names))
+  | Empty      lhs.patInfo  =  InVar (getNr wildcardNr)
+  | Var        lhs.patInfo  =  InVar (getNr @nm)
+  | VarNode    lhs.patInfo  =  InNode (@fldL.headTag) (tail @fldL.vars)
 
 SEM GrVarL  
-  | Cons         lhs.headTag = @hd.tag
-  | Nil          lhs.headTag = error "GrVarL headtag"
+  | Cons         lhs.headTag  =  @hd.tag
+  | Nil          lhs.headTag  =  error "GrVarL headtag"
   
 SEM GrVarL
-  | Nil          lhs.names = []
-  | Cons         lhs.names = @hd.name : @tl.names  
+  | Nil          lhs.vars  =  []
+  | Cons         lhs.vars  =  @hd.var : @tl.vars  
 
 SEM GrVar
-  | KnownTag     lhs.tag   = @tag.self
-  | * - KnownTag lhs.tag   = error "GrVar tag"
-  | Var          lhs.name  = @nm
-  | * - Var      lhs.name  = error "GrVar name"
+  | KnownTag     lhs.tag   =  @tag.self
+  | * - KnownTag lhs.tag   =  error "GrVar tag"
+  | Var          lhs.var   =  getNr @nm
+  | * - Var      lhs.var   =  error "GrVar name"
 
 %%]
 
@@ -237,18 +249,19 @@ Target information is either:
 - nothing (in the body of a Case and a Catch)
 -}
 
-ATTR AllGrExpr [ targetInfo: {Maybe (NodeInfo Variable)} | | ]
+ATTR AllGrExpr [ targetInfo: {NodeInfo Variable} | | ]
 
 SEM GrBind
-  | Bind  loc      . resultVar   = getNr @nm
-          expr     . targetInfo  = Just (InVar @resultVar)
+  | Bind  expr     . targetInfo  = InVar (getNr @nm)
 
 SEM GrExpr
-  | Seq    expr    . targetInfo  = Just @pat.patInfo
+  | Seq    expr    . targetInfo  = @pat.patInfo
            body    . targetInfo  = @lhs.targetInfo
-  | Case   altL    . targetInfo  = Nothing
-  | Catch  body    . targetInfo  = Nothing
-           handler . targetInfo  = Nothing
+
+
+-- The value of the scrutinee is passed down to all alternatives
+ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
+
 
 %%]
 
@@ -273,12 +286,11 @@ SEM GrExpr
   | Unit 
     UpdateUnit
                loc.equations1 = case (@lhs.targetInfo, @val.valInfo) of
-                                 (Nothing                  ,  _                 )  -> []
-                                 (Just (InVar tvar)        ,  InVar svar        )  -> [IsEqual tvar [svar]]
-                                 (Just (InVar tvar)        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
-                                 (Just (InNode ttag tnms)  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
-                                 (Just (InNode ttag tnms)  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
-  | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  [getNr @nm,  getNr @val.getName] ]
+                                 (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar [svar]]
+                                 (InVar tvar        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
+                                 (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
+                                 (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
+  | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  [fromJust @val.var] ]
   | Unit       lhs.equations  =  @loc.equations1
   | UpdateUnit lhs.equations  =  @loc.equations2 ++ @loc.equations1
 
@@ -316,44 +328,63 @@ An equation is generated, which states that the targetvariable is known to be as
 -}
 
 SEM GrExpr
-  | Store  lhs . heapPointer = @lhs.heapPointer + 1  
-           lhs . heapEqs     = case @val.valInfo of
-                                 InNode stag snms  -> [ WillStore @lhs.heapPointer stag snms (Map.lookup stag @lhs.evalMap) ]
-                                 _                 -> error "HPT: source of Store should be a node"
-           lhs . equations   = case (@val.valInfo, @lhs.targetInfo) of
-                                 (InNode stag snms, Just (InVar tvar))  -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.heapPointer))] 
-                                 _                                      -> error "HPT: destination of Store should be a variable, source a node"
+  | Store  lhs . location    =  @lhs.location + 1  
+           lhs . heapEqs     =  case @val.valInfo of
+                                  InNode stag snms  -> [ WillStore @lhs.location stag snms (Map.lookup stag @lhs.evalMap) ]
+                                  _                 -> error "HPT: source of Store should be a node"
+           lhs . equations   =  case (@val.valInfo, @lhs.targetInfo) of
+                                  (InNode stag snms, InVar tvar)  -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location))] 
+                                  _                               -> error "HPT: destination of Store should be a variable, source a node"
 
 {-
 A global definition is similar to a Store expression
 -}
 
 SEM GrGlobal
-  | Global lhs . heapPointer = @lhs.heapPointer + 1
-           lhs . heapEqs     = case @val.valInfo of
-                                 InNode stag snms  -> [ WillStore @lhs.heapPointer stag snms (Map.lookup stag @lhs.evalMap) ]
-                                 _                 -> error "HPT: source of Global should be a node"
-           loc . tvar        = getNr @nm
-           lhs . equations   = case @val.valInfo of
-                                 InNode stag snms  -> [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.heapPointer))]
-                                 _                 -> error "HPT: source of Global should be a node"
+  | Global lhs . location    =  @lhs.location + 1
+           lhs . heapEqs     =  case @val.valInfo of
+                                  InNode stag snms  -> [ WillStore @lhs.location stag snms (Map.lookup stag @lhs.evalMap) ]
+                                  _                 -> error "HPT: source of Global should be a node"
+           loc . tvar        =  getNr @nm
+           lhs . equations   =  case @val.valInfo of
+                                  InNode stag snms  -> [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.location))]
+                                  _                 -> error "HPT: source of Global should be a node"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%
+%% Case Alternative %%
+%%%%%%%%%%%%%%%%%%%%%%
+%%[8.alt
 
-%%%%%%%%%%
-%% Eval %%
-%%%%%%%%%%
-%%[8.eval
 {-
-A single equation is generated, associating the targetvariable with the evaluation result of the function
-The target cannot be a node; these have been simplified earlier by the NormForHPT transformation
+In every alternative,
+a select-equation is generated for each variable in the pattern: the values are selected from the scrutinee
+The scrutinee is always a variable because of earlier normalisation.
 -}
-SEM GrExpr
-  | Eval  loc . function  = getNr @nm 
-          lhs . equations = case @lhs.targetInfo of
-                              Just (InVar n)  -> [ IsEvaluation n @loc.function @lhs.exceptVar ]
-                              _               -> error "HPT: Eval target must be variable (NormForHPT should have made it so)"
+SEM GrAlt
+  | Alt  lhs . equations  =  case (@pat.patInfo, @lhs.valInfo) of
+                               (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
+                               _                               -> error "HPT: Alternative scrutinee must be a variable, pattern a node"
+                             ++ @expr.equations
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Fetch, Update, FetchUpdate %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8.fetch
+SEM GrExpr
+  | FetchNode    lhs . equations =  case @lhs.targetInfo of
+                                      InVar tvar  -> [ IsEqual tvar [getNr @nm] ]
+                                      _           -> error "HPT: FetchNode target should be a variable"
+  | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) [getNr @src] ]
+  | FetchField   lhs . equations =  case @lhs.targetInfo of
+                                      InVar tvar  ->  [ IsSelection tvar (getNr @nm) @offset (fromJust @mbTag) ]
+                                      _           -> error "HPT: FetchField target should be a variable"
+  
+%%]
+
+
+
 
 %%%%%%%%%%
 %% Call %%
@@ -364,70 +395,12 @@ If the target is a single variable, it is required to have the same value as the
 If the target is a node denotation, a select-equation is generated for each variable in the node.
 -}
 SEM GrExpr
-  | Call  loc  .  resultVar   =  getNr @nm
-               .  exceptions  =  @resultVar + 1 : @lhs.exceptions
-          lhs  .  equations   = case @lhs.targetInfo of
-                                 Just (InVar n)           -> [ IsEqual n [@resultVar] ]
-                                 Just (InNode tag names)  -> buildSelectEquations @resultVar tag names
+  | Call  loc  .  exceptions  =  getNr @nm + 1 : @lhs.exceptions
+          lhs  .  equations   =  case @lhs.targetInfo of
+                                   InVar  tvar       -> [ IsEqual tvar [getNr @nm] ]
+                                   InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%
-%% Case Alternative %%
-%%%%%%%%%%%%%%%%%%%%%%
-%%[8.alt
--- The value of the scrutinee is passed to all alternatives
-ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
-
-{-
-In every alternative,
-a select-equation is generated for each variable in the pattern: the values are selected from the scrutinee
-The scrutinee is always a variable because of earlier normalisation.
--}
-SEM GrAlt
-  | Alt  lhs . equations  = case (@pat.patInfo, @lhs.valInfo) of
-                              (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
-                              _                               -> error "HPT: Alternative scrutinee must be a variable, pattern a node"
-                            ++ @expr.equations
-%%]
-
-%%%%%%%%%%%%%%%%%%%%
-%% Case and Catch %%
-%%%%%%%%%%%%%%%%%%%%
-%%[8.case
-{-
-We collect all variables that appear in a Unit at the end of each alternative.
-Note that such a Unit is required to be a single variable, not a node-denotation.
--}
-ATTR GrExpr AllAlt [ | | altVars USE {++} {[]} : {[Variable]} ]
-
-SEM GrExpr
-  | * - Seq Unit Case
-           lhs   .  altVars     = []
-  | Seq    lhs   .  altVars     = @body.altVars
-  | Case   lhs   .  altVars     = @altL.altVars
-  | Unit   lhs   .  altVars     = case (@lhs.targetInfo, @val.valInfo) of
-                                    (Nothing  , InVar svar  ) -> [svar]
-                                    (Nothing  , _           ) -> error "HPT: Unit of alternative should be a variable"
-                                    (Just _   , _           ) -> []
-
-{-
-We generate a single equation for the destination variable: it can be equal to the variables collected from all alternatives.
-For a Catch we proceed similarly, the body and the handler being the two alternatives.
--}
-
-SEM GrExpr
-  | Case   loc   .  equat       =  case @lhs.targetInfo of
-                                     Just (InVar tvar)  -> [IsEqual tvar @altL.altVars]
-                                     Nothing            -> []
-                                     t                  -> error ("Destination of Case " ++ show @val.self ++ " should be a variable, " ++ show t ++ " is not.")
-           lhs   .  equations   =  @loc.equat ++ @altL.equations
-           
-  | Catch  loc   .  equat       =  case @lhs.targetInfo of
-                                     Just (InVar tvar)  -> IsEqual tvar (@body.altVars ++ @handler.altVars)
-                                     _                  -> error "result of Catch should be a variable"
-           lhs   .  equations   =  @loc.equat : @loc.exceptEq : @body.equations ++ @handler.equations
-
-%%]
 
 %%%%%%%%%%
 %% FFI %%%
@@ -441,15 +414,27 @@ avForArity = if grinStoreArity
 }
 
 SEM GrExpr
-  | FFI  loc . absVal     = Map.fromList ( case @resTagL.self of
-                                            (GrTag_Any:_)     -> error "FFI result type should be a datatype or an unboxable type"
-                                            (GrTag_Unboxed:_) -> [ (GrTag_Unboxed, [AbsBasic] )                       ]
-                                            constructors      -> [ (con          , avForArity ) | con <- constructors ]
-                                         )
-         lhs . equations = case @lhs.targetInfo of
-                             Just (InVar tvar)        -> [ IsKnown tvar (AbsNodes @loc.absVal) ]
-                             Just (InNode ttag tnms)  -> zipWith IsKnown tnms (fromJust (Map.lookup ttag @loc.absVal))
+  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else avForArity ) | con <- @tagL.self ] )
+         lhs . equations =  case @lhs.targetInfo of
+                              InVar tvar        -> [ IsKnown tvar (AbsNodes @loc.nodemap) ]
+                              InNode ttag tnms  -> zipWith IsKnown tnms (fromJust (Map.lookup ttag @loc.nodemap))
 %%]
+
+%%%%%%%%%%
+%% Eval %%
+%%%%%%%%%%
+%%[8.eval
+{-
+A single equation is generated, associating the targetvariable with the evaluation result of the function
+The target cannot be a node; these have been simplified earlier by the NormForHPT transformation
+-}
+SEM GrExpr
+  | Eval  lhs . equations = case @lhs.targetInfo of
+                              InVar tvar  -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
+                              _        -> error "HPT: Eval target must be variable (NormForHPT should have made it so)"
+%%]
+
+
 
 %%%%%%%%%%%
 %% Apply %%
@@ -457,29 +442,8 @@ SEM GrExpr
 %%[8.apply
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
-                             Just (InVar tvar) -> let argvar :: NodeInfo a -> Variable
-                                                      argvar (InVar v)  = v
-                                                      argvar _          = error "HPT: Apply arguments should all be variables"
-                                                  in  [ IsApplication (Just tvar) (getNr @nm : map argvar @argL.valsInfo) @lhs.exceptVar ]
-                             _                 -> error "HPT: Apply target should be a variable"
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Fetch, Update, FetchUpdate %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8.fetch
-SEM GrExpr
-  | FetchNode    lhs . equations =  case @lhs.targetInfo of
-                                      Just (InVar tvar)  -> [ IsEqual tvar [getNr @nm] ]
-                                      _                  -> error "HPT: Fetch target should be a variable"
-  | FetchField   lhs . equations =  error "FetchField found during HPT"
-  | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) [getNr @dst, getNr @src] ]
-  
-SEM GrVal [ | | getName : {HsName} ]
-  | Var      lhs.getName = @nm
-  | * - Var  lhs.getName = error "HPT: Update source should be a variable"
-
+                             InVar tvar -> [ IsApplication (Just tvar) (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
+                             _          -> error "HPT: Apply target should be a variable"
 %%]
 
 
@@ -490,8 +454,8 @@ SEM GrVal [ | | getName : {HsName} ]
 SEM GrExpr
   | Throw  loc     .  exceptions =  getNr @nm : @lhs.exceptions
            lhs     .  equations  =  case @lhs.targetInfo of
-                                      Just (InVar tvar)  -> [ IsKnown tvar AbsBottom ]
-                                      _                  -> []
+                                      InVar tvar  -> [ IsKnown tvar AbsBottom ]
+                                      _           -> []
 
   | Catch  body    . exceptions  =  []
                    . exceptVar   =  @handlerVar
@@ -500,12 +464,15 @@ SEM GrExpr
            loc     . exceptEq    =  IsEqual @handlerVar @body.exceptions
                    . handlerVar  =  getNr @arg
 
+SEM GrExpr
+  | Catch  lhs   .  equations   =   @loc.exceptEq : @body.equations ++ @handler.equations
+
 -- Exceptions not caught in the same binding, and support for exceptions which can only found while analysing (eval calls)
 ATTR AllGrExpr [ exceptVar: Variable | exceptions: {[Variable]} | ]
 
 SEM GrBind
   | Bind  expr    . exceptions  =  []
-          loc     . exceptVar   =  @loc.resultVar + 1
+          loc     . exceptVar   =  getNr @nm + 1
           loc     . exceptEq    =  IsEqual @exceptVar @expr.exceptions
 %%]
 
@@ -519,13 +486,6 @@ ATTR AllBind AllGrExpr [                                | | actualsEnv USE {.} {
 ATTR AllBind           [ allActuals: {AbstractCallList} | |                                                            ]
 
 
-
-SEM GrModule
-  | Mod     loc . partPar  = let  f (u,        xss) (_, EvApTagVar (HNmNr n _))  = (u+1, (n,(Just u):[]):xss )
-                                  f (u, (n,xs):xss) (_, EvApTagTag _          )  = (u+1, (n,(Just u):xs):xss )
-                             in snd (foldl f (@lhs.unique, []) @applyTagMp)
-
-
 SEM GrExpr
   | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = if grinStoreArity
                                                                       then tail mns -- first element is the size of the rest of the node
@@ -534,9 +494,9 @@ SEM GrExpr
                                                          actuals r = ((r, args) :)
                                                      in maybe id actuals resultVar
                 loc  .  actualsEnv   = case (@val.valInfo, @lhs.targetInfo) of
-                                           (InNode st snms, Just (InVar tn))  -> @fGenActuals st snms tn
-                                           _                                  -> id
-  | Call        loc  .  actualsEnv   = ((@loc.resultVar, @argL.depVars) :)
+                                           (InNode st snms, InVar tn)  -> @fGenActuals st snms tn
+                                           _                           -> id
+  | Call        loc  .  actualsEnv   = ((getNr @nm, @argL.vars) :)
 
 SEM GrModule
   | Mod       bindL  .  allActuals   = @bindL.actualsEnv @loc.partPar
@@ -544,7 +504,7 @@ SEM GrModule
 SEM GrBind
   | Bind      loc    .  bindActuals  = transpose [ actuals
                                                  | (resVar, actuals) <- @lhs.allActuals
-                                                 , resVar == @loc.resultVar
+                                                 , resVar == getNr @nm
                                                  ]
               loc    .  prune        = (@nm == evalNr) || (@nm == applyNr)
               loc    .  actualsEnv   = if @loc.prune then id else @expr.actualsEnv
