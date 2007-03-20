@@ -212,6 +212,17 @@ DATA Label
   | Lab			nm              : HsName
 %%]
 
+%%[13
+DATA Pred
+  | Arrow       args            : PredSeq
+                res             : Pred
+
+DATA PredSeq
+  | Cons        hd              : Pred
+                tl              : PredSeq
+  | Nil
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR specific
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,6 +231,21 @@ DATA Label
 DATA Pred
   | Var         pv              : TyVarId
 %%]
+
+%%[10
+DATA Label
+  | Var			lv              : LabelVarId		
+%%]
+
+%%[13
+DATA PredSeq
+  | Var         av              : TyVarId
+
+DATA Pred
+  | Preds       seq             : PredSeq
+%%]
+
+RowSplit is not used, but left in for now:
 
 %%[10
 DATA Pred
@@ -231,11 +257,6 @@ DATA Pred
 DATA RowExts										
   | Exts		exts			: {AssocL HsName Ty}
   | Var			ev              : UID
-%%]
-
-%%[10
-DATA Label
-  | Var			lv              : LabelVarId		
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,6 +282,9 @@ SET AllTy
 %%]]
 %%[[10
     RowExts
+%%]]
+%%[[13
+    PredSeq
 %%]]
 %%]
 

@@ -25,6 +25,9 @@ Conversion from Pred to CHR.
 %%[9 import(UU.Pretty,EH.Util.Utils)
 %%]
 
+%%[13 import({%{EH}Base.Builtin})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule store
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,6 +77,10 @@ Hence we can safely use non-unique variables.
  ,[lab1]
  ,[off1]
 %%]]
+%%[[13
+ ,[pr1v]
+ ,[pa1]
+%%]]
  )
   = ( map PredScope_Var [u1,u2,u3]
     , map Pred_Var [u7,u8,u9]
@@ -81,6 +88,10 @@ Hence we can safely use non-unique variables.
     , map mkTyVar [u10,u11]
     , map Label_Var [u12]
     , map LabelOffset_Var [u13]
+%%]]
+%%[[13
+    , [u7]
+    , map PredSeq_Var [u4]
 %%]]
     )
 %%[[9
@@ -97,6 +108,9 @@ initScopedPredStore
       [ scopeProve, scopeAssum
 %%[[10
       , labelProve1, labelProve2
+%%]]
+%%[[13
+      , instForall, predArrow, predSeq1, predSeq2
 %%]]
       ]
   where  p1s1         = mkCHRPredOcc pr1 sc1
@@ -118,13 +132,25 @@ initScopedPredStore
          labelProve2  = [Prove l3s1]
                           ==> [Reduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
 %%]]
+%%[[13
+         f1s1         = mkCHRPredOcc (tyPred $ mkTyQu TyQu_Forall [pr1v] $ mkTyPr pr1) sc1
+         f2s1         = mkCHRPredOcc pr1 sc1
+         instForall   = [Assume f1s1]
+                          ==> [Assume f2s1]
+         a1s1         = mkCHRPredOcc (Pred_Arrow pa1 pr1) sc1
+         a2s1         = mkCHRPredOcc pr1 sc1
+         a3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
+         predArrow    = [Assume a1s1, Prove a2s1]
+                          ==> [Prove a3s1, Reduction a2s1 (RedHow_ByInstance hsnUnknown pr1 sc1) [a1s1,a3s1]]
+         s1s1         = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
+         s2s1         = mkCHRPredOcc pr1 sc1
+         s3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
+         predSeq1     = [Prove s1s1]
+                          <==> [Prove s2s1, Prove s3s1]
+         predSeq2     = [Prove $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
+                          <==> []
+%%]]
 %%]
-         scopeProve   = [Prove p1s1, Prove p1s2] 
-                          ==> [Prove p1s3, Reduction p1s1 RedHow_ByScope [p1s3]]
-                           |> [HasStrictCommonScope sc3 sc1 sc2]
-         scopeAssum   = [Prove p1s1, Assume p1s2] 
-                          ==> [Reduction p1s1 RedHow_ByScope [p1s3]]
-                            |> [HasStrictCommonScope sc3 sc1 sc2]
 
 %%[9 export(mkScopedCHR2)
 mkScopedCHR2

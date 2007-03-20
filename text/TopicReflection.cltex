@@ -232,7 +232,7 @@ ordered steps.
 Although we feel that the chosen partitioning serves the explanation well,
 others are possible and perhaps better within different contexts. 
 
-\FigurePDF{t}{ag-ast-asp}{AST and aspects}{fig-ag-ast-asp}
+\FigurePDF{t}{1}{ag-ast-asp}{AST and aspects}{fig-ag-ast-asp}
 
 \figRef{fig-ag-ast-asp} intuitively illustrates where we have to make choices when we
 partition.

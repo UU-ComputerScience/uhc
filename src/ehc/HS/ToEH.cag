@@ -350,6 +350,10 @@ SEM Constructor
 %%]]
                                                 @fieldDeclarations.eh
 %%]
+%%[9
+	| Contexted
+		lhs			.	eh			=	@constructor.eh			-- for now: ignore
+%%]
 
 %%[7
 ATTR FieldDeclarations [ | | eh USE {:} {[]}: {[EH.DataField]} ]

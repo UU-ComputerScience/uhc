@@ -352,7 +352,7 @@ Notation & Meaning \\
 
 %%[typredBasic1
 |pr| & |::=| &
-|identc ^^ t|
+|identc ^^ tau|
  & class predicate
  \\
 %%]

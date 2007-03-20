@@ -254,6 +254,10 @@ SEM Constructor
     | Record
         loc         .   pp          =   @constructor >#< ppCurlysCommas' @fieldDeclarations.ppL
 %%]
+%%[9
+  	| Contexted
+  		loc			.	pp			=	@context.pp >#< "=>" >#< @constructor.pp
+%%]
 
 %%[7
 SEM FieldDeclaration

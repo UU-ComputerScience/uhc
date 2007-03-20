@@ -208,7 +208,7 @@ abbreviated by EH.
 The construction of these compilers and this thesis is accomplished by the use of several tools
 (\figRef{system-fig-overview}):
 
-\FigurePDF{th}{system-overview}{System overview}{system-fig-overview}
+\FigurePDF{th}{1}{system-overview}{System overview}{system-fig-overview}
 
 \begin{Itemize}
 \item

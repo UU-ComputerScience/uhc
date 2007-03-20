@@ -167,9 +167,11 @@ data CnstrInfo v
   | CIOffset LabelOffset
   | CIExts   RowExts
 %%]]
+%%[[13
+  | CIPredSeq PredSeq
+%%]]
   deriving (Eq,Show)
 %%]
-  | CIPoi   PredOccId
 
 %%[9
 type Cnstr  = Cnstr' TyVarId (CnstrInfo Ty)
@@ -261,6 +263,11 @@ cnstrExtsUnit :: UID -> RowExts -> Cnstr
 cnstrExtsUnit v l = Cnstr (Map.fromList [(v,CIExts l)])
 %%]
 
+%%[13 export(cnstrPredSeqUnit)
+cnstrPredSeqUnit :: TyVarId -> PredSeq -> Cnstr
+cnstrPredSeqUnit v l = Cnstr (Map.fromList [(v,CIPredSeq l)])
+%%]
+
 %%[9 hs export(cnstrTailAddOcc)
 cnstrTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,Cnstr)
 cnstrTailAddOcc o (Impls_Tail i os) = (t, cnstrImplsUnit i t)
@@ -291,6 +298,11 @@ cnstrOffsetLookup = cnstrLookup' (\ci -> case ci of {CIOffset l -> Just l; _ -> 
 
 cnstrExtsLookup :: UID -> Cnstr -> Maybe RowExts
 cnstrExtsLookup = cnstrLookup' (\ci -> case ci of {CIExts l -> Just l; _ -> Nothing})
+%%]
+
+%%[13 export(cnstrPredSeqLookup)
+cnstrPredSeqLookup :: TyVarId -> Cnstr -> Maybe PredSeq
+cnstrPredSeqLookup = cnstrLookup' (\ci -> case ci of {CIPredSeq a -> Just a; _ -> Nothing})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -362,6 +374,8 @@ instance PP v => PP (CnstrInfo v) where
   pp (CIOffset x) = pp x
   pp (CIExts   x) = pp "exts" -- pp x
 %%]]
+%%[[13
+  pp (CIPredSeq  x) = pp "predseq" -- pp x
+%%]]
 %%]
-  pp (CIPoi   i) = pp i
 

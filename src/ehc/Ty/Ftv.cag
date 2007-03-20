@@ -75,6 +75,11 @@ SEM RowExts
   | Exts			lhs		.	tvMp		=	Map.unions [ tyFtvMp t | (_,t) <- @exts ] 
 %%]
 
+%%[13
+SEM PredSeq
+  | Var  			lhs		.	tvMp		=	@av `Map.singleton` TyVarCateg_Plain
+%%]
+
 %%[50
 SEM Ty
   | Equal           lhs     .   tvs         =   [@tv] `union` @ty.tvs

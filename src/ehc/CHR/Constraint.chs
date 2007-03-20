@@ -98,20 +98,6 @@ cnstrRequiresSolve _                 = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PP config for Constraint, to allow for different ways of PP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20 export(CfgPPForCnstr(..))
-class CfgPPForCnstr x fc where
-  cfgppForCnstr :: x -> fc -> PP_Doc
-%%]
-
-%%[20
-data CfgPPForCnstr_Plain = CfgPPForCnstr_Plain
-data CfgPPForCnstr_HI    = CfgPPForCnstr_HI
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

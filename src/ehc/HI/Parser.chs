@@ -93,17 +93,9 @@ pRedHowAnnotation
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
 
-{-
-
-
-data RedHowAnnotation
-  =  RedHow_ByInstance    HsName  Pred  PredScope		-- inst name, for pred, in scope
-  |  RedHow_BySuperClass  HsName  Int   CTag			-- field name, offset, tag info of dict
-  |  RedHow_ProveObl      UID  PredScope
-  |  RedHow_Assumption    UID  HsName  PredScope
-  |  RedHow_ByScope
-  |  RedHow_ByLabel       Label LabelOffset PredScope
--}
+  <|> RedHow_Lambda       <$ pKeyTk "redhowlambda" <* pOCURLY <*> pUIDHI
+                                                   <* pCOMMA  <*> pPredScope
+                                                   <* pCCURLY
 
 pBinding :: HIParser Binding
 pBinding

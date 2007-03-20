@@ -20,7 +20,7 @@
 
 
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
-\ProvidesClass{sigplanconf}[2005/03/07 v0.93 ACM SIGPLAN Proceedings]
+\ProvidesClass{sigplanconf}[2007/03/13 v1.5 ACM SIGPLAN Proceedings]
 
 % The following few pages contain LaTeX programming extensions adapted
 % from the ZzTeX macro package.
@@ -77,7 +77,7 @@
 % A "predicate" is a macro that returns \@true or \@false as its value.
 % Such values are suitable for use with the \if conditional.  For example:
 %
-%   \if \oddp{\x} <then-clause> \else <else-clause> \fi
+%   \if \@oddp{\x} <then-clause> \else <else-clause> \fi
 
 % A predicate can be used with \@setflag as follows:
 %
@@ -88,69 +88,69 @@
 % other definitions in this module, but what the heck.
 % Some additional "obvious" predicates are defined.
 
-\def \eqlp   #1#2{\ifnum #1 = #2\@true \else \@false \fi}
-\def \neqlp  #1#2{\ifnum #1 = #2\@false \else \@true \fi}
-\def \lssp   #1#2{\ifnum #1 < #2\@true \else \@false \fi}
-\def \gtrp   #1#2{\ifnum #1 > #2\@true \else \@false \fi}
-\def \zerop  #1{\ifnum #1 = 0\@true \else \@false \fi}
-\def \onep   #1{\ifnum #1 = 1\@true \else \@false \fi}
-\def \posp   #1{\ifnum #1 > 0\@true \else \@false \fi}
-\def \negp   #1{\ifnum #1 < 0\@true \else \@false \fi}
-\def \oddp   #1{\ifodd #1\@true \else \@false \fi}
-\def \evenp  #1{\ifodd #1\@false \else \@true \fi}
-\def \rangep #1#2#3{\if \orp{\lssp{#1}{#2}}{\gtrp{#1}{#3}}\@false \else
+\def \@eqlp   #1#2{\ifnum #1 = #2\@true \else \@false \fi}
+\def \@neqlp  #1#2{\ifnum #1 = #2\@false \else \@true \fi}
+\def \@lssp   #1#2{\ifnum #1 < #2\@true \else \@false \fi}
+\def \@gtrp   #1#2{\ifnum #1 > #2\@true \else \@false \fi}
+\def \@zerop  #1{\ifnum #1 = 0\@true \else \@false \fi}
+\def \@onep   #1{\ifnum #1 = 1\@true \else \@false \fi}
+\def \@posp   #1{\ifnum #1 > 0\@true \else \@false \fi}
+\def \@negp   #1{\ifnum #1 < 0\@true \else \@false \fi}
+\def \@oddp   #1{\ifodd #1\@true \else \@false \fi}
+\def \@evenp  #1{\ifodd #1\@false \else \@true \fi}
+\def \@rangep #1#2#3{\if \@orp{\@lssp{#1}{#2}}{\@gtrp{#1}{#3}}\@false \else
                                                           \@true \fi}
-\def \tensp  #1{\rangep{#1}{10}{19}}
+\def \@tensp  #1{\@rangep{#1}{10}{19}}
 
-\def \dimeqlp   #1#2{\ifdim #1 = #2\@true \else \@false \fi}
-\def \dimneqlp  #1#2{\ifdim #1 = #2\@false \else \@true \fi}
-\def \dimlssp   #1#2{\ifdim #1 < #2\@true \else \@false \fi}
-\def \dimgtrp   #1#2{\ifdim #1 > #2\@true \else \@false \fi}
-\def \dimzerop  #1{\ifdim #1 = 0pt\@true \else \@false \fi}
-\def \dimposp   #1{\ifdim #1 > 0pt\@true \else \@false \fi}
-\def \dimnegp   #1{\ifdim #1 < 0pt\@true \else \@false \fi}
+\def \@dimeqlp   #1#2{\ifdim #1 = #2\@true \else \@false \fi}
+\def \@dimneqlp  #1#2{\ifdim #1 = #2\@false \else \@true \fi}
+\def \@dimlssp   #1#2{\ifdim #1 < #2\@true \else \@false \fi}
+\def \@dimgtrp   #1#2{\ifdim #1 > #2\@true \else \@false \fi}
+\def \@dimzerop  #1{\ifdim #1 = 0pt\@true \else \@false \fi}
+\def \@dimposp   #1{\ifdim #1 > 0pt\@true \else \@false \fi}
+\def \@dimnegp   #1{\ifdim #1 < 0pt\@true \else \@false \fi}
 
-\def \vmodep     {\ifvmode \@true \else \@false \fi}
-\def \hmodep     {\ifhmode \@true \else \@false \fi}
-\def \mathmodep  {\ifmmode \@true \else \@false \fi}
-\def \textmodep  {\ifmmode \@false \else \@true \fi}
-\def \innermodep {\ifinner \@true \else \@false \fi}
+\def \@vmodep     {\ifvmode \@true \else \@false \fi}
+\def \@hmodep     {\ifhmode \@true \else \@false \fi}
+\def \@mathmodep  {\ifmmode \@true \else \@false \fi}
+\def \@textmodep  {\ifmmode \@false \else \@true \fi}
+\def \@innermodep {\ifinner \@true \else \@false \fi}
 
-\long\def \codeeqlp #1#2{\if #1#2\@true \else \@false \fi}
+\long\def \@codeeqlp #1#2{\if #1#2\@true \else \@false \fi}
 
-\long\def \cateqlp #1#2{\ifcat #1#2\@true \else \@false \fi}
+\long\def \@cateqlp #1#2{\ifcat #1#2\@true \else \@false \fi}
 
-\long\def \tokeqlp  #1#2{\ifx #1#2\@true \else \@false \fi}
-\long\def \xtokeqlp #1#2{\expandafter\ifx #1#2\@true \else \@false \fi}
+\long\def \@tokeqlp  #1#2{\ifx #1#2\@true \else \@false \fi}
+\long\def \@xtokeqlp #1#2{\expandafter\ifx #1#2\@true \else \@false \fi}
 
-\long\def \definedp #1{%
+\long\def \@definedp #1{%
   \expandafter\ifx \csname \expandafter\@discardtok \string#1\endcsname
                    \relax \@false \else \@true \fi}
 
-\long\def \undefinedp #1{%
+\long\def \@undefinedp #1{%
   \expandafter\ifx \csname \expandafter\@discardtok \string#1\endcsname
                    \relax \@true \else \@false \fi}
 
-\def \emptydefp #1{\ifx #1\@empty \@true \else \@false \fi}%       {\name}
+\def \@emptydefp #1{\ifx #1\@empty \@true \else \@false \fi}%       {\name}
 
-\let \emptylistp = \emptydefp
+\let \@emptylistp = \@emptydefp
 
-\long\def \emptyargp #1{%                               {#n}
+\long\def \@emptyargp #1{%                               {#n}
   \@empargp #1\@empargq\@mark}
 \long\def \@empargp #1#2\@mark{%
   \ifx #1\@empargq \@true \else \@false \fi}
 \def \@empargq {\@empargq}
 
-\def \emptytoksp #1{%                                   {\tokenreg}
+\def \@emptytoksp #1{%                                   {\tokenreg}
   \expandafter\@emptoksp \the#1\@mark}
 
-\long\def \@emptoksp #1\@mark{\emptyargp{#1}}
+\long\def \@emptoksp #1\@mark{\@emptyargp{#1}}
 
-\def \voidboxp #1{\ifvoid #1\@true \else \@false \fi}
-\def \hboxp #1{\ifhbox #1\@true \else \@false \fi}
-\def \vboxp #1{\ifvbox #1\@true \else \@false \fi}
+\def \@voidboxp #1{\ifvoid #1\@true \else \@false \fi}
+\def \@hboxp #1{\ifhbox #1\@true \else \@false \fi}
+\def \@vboxp #1{\ifvbox #1\@true \else \@false \fi}
 
-\def \eofp #1{\ifeof #1\@true \else \@false \fi}
+\def \@eofp #1{\ifeof #1\@true \else \@false \fi}
 
 
 % Flags can also be used as predicates, as in:
@@ -160,21 +160,21 @@
 
 % Now here we have predicates for the common logical operators.
 
-\def \notp #1{\if #1\@false \else \@true \fi}
+\def \@notp #1{\if #1\@false \else \@true \fi}
 
-\def \andp #1#2{\if #1%
+\def \@andp #1#2{\if #1%
                   \if #2\@true \else \@false \fi
                 \else
                   \@false
                 \fi}
 
-\def \orp #1#2{\if #1%
+\def \@orp #1#2{\if #1%
                  \@true
                \else
                  \if #2\@true \else \@false \fi
                \fi}
 
-\def \xorp #1#2{\if #1%
+\def \@xorp #1#2{\if #1%
                   \if #2\@false \else \@true \fi
                 \else
                   \if #2\@true \else \@false \fi
@@ -196,9 +196,10 @@
 \@setflag \@explicitsize = \@false
 \@setflag \@mathtime = \@false
 \@setflag \@ninepoint = \@true
+\newcount{\@numheaddepth} \@numheaddepth = 3
 \@setflag \@onecolumn = \@false
 \@setflag \@preprint = \@false
-\newcount{\@numheaddepth} \@numheaddepth = 3
+\@setflag \@reprint = \@false
 \@setflag \@times = \@false
 
 % Note that all the dangerous article class options are trapped.
@@ -246,9 +247,11 @@
 
 \DeclareOption{numberedpars}{\@numheaddepth = 4}
 
-\DeclareOption{onecolumn}{\@setflag \@onecolumn = \@true}
+%%%\DeclareOption{onecolumn}{\@setflag \@onecolumn = \@true}
 
 \DeclareOption{preprint}{\@setflag \@preprint = \@true}
+
+\DeclareOption{reprint}{\@setflag \@reprint = \@true}
 
 \DeclareOption{times}{\@setflag \@times = \@true}
 
@@ -263,7 +266,7 @@
 \ProcessOptions
 
 \if \@onecolumn
-  \if \notp{\@explicitsize}%
+  \if \@notp{\@explicitsize}%
     \@setflag \@ninepoint = \@false
     \PassOptionsToClass{11pt}{article}%
   \fi
@@ -275,6 +278,13 @@
 
 \def \@unsupportedoption #1{%
   \ClassError{proc}{The standard '#1' option is not supported.}}
+
+% This can be used with the 'reprint' option to get the final folios.
+
+\def \setpagenumber #1{%
+  \setcounter{page}{#1}}
+
+\AtEndDocument{\label{sigplanconf@finalpage}}
 
 %                       Utilities
 %                       ---------
@@ -352,9 +362,9 @@
 
 % Margin paragraphs:
 
-\setlength{\marginparwidth}{0pt}
-\setlength{\marginparsep}{0pt}
-\setlength{\marginparpush}{0pt}
+\setlength{\marginparwidth}{36pt}
+\setlength{\marginparsep}{2pt}
+\setlength{\marginparpush}{8pt}
 
 
 \setlength{\skip\footins}{8pt plus 3pt minus 1pt}
@@ -501,11 +511,11 @@
 \def \@category #1#2#3[#4]{%
   {\let \and = \relax
    #1 [\textit{#2}]%
-   \if \emptyargp{#4}%
-     \if \notp{\emptyargp{#3}}: #3\fi
+   \if \@emptyargp{#4}%
+     \if \@notp{\@emptyargp{#3}}: #3\fi
    \else
      :\space
-     \if \notp{\emptyargp{#3}}#3---\fi
+     \if \@notp{\@emptyargp{#3}}#3---\fi
      \textrm{#4}%
    \fi}}
 
@@ -520,24 +530,33 @@
 
 \def \@copyrightspace {%
   \@float{copyrightbox}[b]%
-  \vbox to 1.25in{%
+  \vbox to 1in{%
     \vfill
-    \begin{center}%
-    \@toappear
-    \end{center}}%
+    \parbox[b]{20pc}{%
+      \scriptsize
+      \if \@preprint
+        [Copyright notice will appear here
+         once 'preprint' option is removed.]\par
+      \else
+        \@toappear
+      \fi
+      \if \@reprint
+        \noindent Reprinted from \@conferencename,
+        \@proceedings,
+        \@conferenceinfo,
+        pp.~\number\thepage--\pageref{sigplanconf@finalpage}.\par
+      \fi}}%
   \end@float}
 
 \long\def \toappear #1{%
-  \def \@toappear {\parbox[b]{20pc}{\scriptsize #1}}}
-
-%%%\def \toappearbox #1{%
-%%%  \def \@toappear {\raisebox{5pt}{\framebox[20pc]{\parbox[b]{19pc}{#1}}}}}
+  \def \@toappear {#1}}
 
 \toappear{%
   \noindent \@permission \par
   \vspace{2pt}
   \noindent \textsl{\@conferencename}\quad \@conferenceinfo \par
-  \@copyrightinfo}
+  \noindent Copyright \copyright\ \@copyrightyear\ ACM \@copyrightdata
+    \dots \$5.00\par}
 
 \newcommand{\permission}[1]{%
   \gdef \@permission {#1}}
@@ -551,10 +570,57 @@
   post on servers or to redistribute to lists, requires prior specific
   permission and/or a fee.}
 
-\def \@copyrightinfo {%
-  \if \notp{\emptydefp{\copyrightinfo}}%
-    Copyright \copyright\ \@copyrightyear\ ACM \@copyrightdata\dots \$5.00.
-  \fi}
+% Here we have some alternate permission statements and copyright lines:
+
+\newcommand{\ACMCanadapermission}{%
+  \permission{%
+    Copyright \@copyrightyear\ Association for Computing Machinery.
+    ACM acknowledges that
+    this contribution was authored or co-authored by an affiliate of the
+    National Research Council of Canada (NRC).
+    As such, the Crown in Right of
+    Canada retains an equal interest in the copyright, however granting
+    nonexclusive, royalty-free right to publish or reproduce this article,
+    or to allow others to do so, provided that clear attribution
+    is also given to the authors and the NRC.}}
+
+\newcommand{\ACMUSpermission}{%
+  \permission{%
+    Copyright \@copyrightyear\ Association for
+    Computing Machinery. ACM acknowledges that
+    this contribution was authored or co-authored
+    by a contractor or affiliate
+    of the U.S. Government. As such, the Government retains a nonexclusive,
+    royalty-free right to publish or reproduce this article,
+    or to allow others to do so, for Government purposes only.}}
+
+\newcommand{\authorpermission}{%
+  \permission{%
+    Copyright is held by the author/owner(s).}
+  \toappear{%
+    \noindent \@permission \par
+    \vspace{2pt}
+    \noindent \textsl{\@conferencename}\quad \@conferenceinfo \par
+    ACM \@copyrightdata.}}
+
+\newcommand{\Sunpermission}{%
+  \permission{%
+    Copyright is held by Sun Microsystems, Inc.}%
+  \toappear{%
+    \noindent \@permission \par
+    \vspace{2pt}
+    \noindent \textsl{\@conferencename}\quad \@conferenceinfo \par
+    ACM \@copyrightdata.}}
+
+\newcommand{\USpublicpermission}{%
+  \permission{%
+    This paper is authored by an employee(s) of the United States
+    Government and is in the public domain.}%
+  \toappear{%
+    \noindent \@permission \par
+    \vspace{2pt}
+    \noindent \textsl{\@conferencename}\quad \@conferenceinfo \par
+    ACM \@copyrightdata.}}
 
 %                       Enunciations
 %                       ------------
@@ -570,49 +636,8 @@
   \trivlist
   \item[%
     \hskip\labelsep \textsc{#1\ #2}%
-    \if \notp{\emptyargp{#3}}\nut (#3).\fi]%
+    \if \@notp{\@emptyargp{#3}}\nut (#3).\fi]%
   \itshape\selectfont
-  \ignorespaces}
-
-\@setflag \@qeddone = \@false
-
-\newenvironment{proof}{%
-  \global\@setflag \@qeddone = \@false
-  \@ifnextchar[{\@titledproof}{\@titledproof[]}}{%
-  \if \notp{\@qeddone}\qed \fi
-  \endtrivlist}
-
-\def \@titledproof [#1]{%
-  \trivlist
-  \item[\hskip \labelsep
-        \textsc{Proof%
-        \if \notp{\emptyargp{#1}}\space #1\fi
-        .}]%
-  \ignorespaces}
-
-\newcommand{\qed}{%
-  \unskip
-  \kern 6pt
-  {\linethickness{.5pt}\framebox(4,4){}}%
-  \global\@setflag \@qeddone = \@true}
-
-\newcommand{\newdef}[2]{%                            {type}{name}
-  \@withname\@ifdefinable {#1}{%
-    \@definecounter{#1}%
-    \@withname\xdef {the#1}{\@thmcounter{#1}}%
-    \global\@namedef{#1}{\@begindef{#1}{#2}}%
-    \global\@namedef{end#1}{\@endtheorem}}}
-
-\def \@begindef #1#2{%                                  {type}{name}
-  \refstepcounter{#1}%
-  \@ifnextchar[{\@titleddef{#1}{#2}}{\@titleddef{#1}{#2}[]}}
-
-\def \@titleddef #1#2[#3]{%                             {type}{name}[title]
-  \trivlist
-  \item[\hskip \labelsep
-        \itshape{#2%
-        \if \notp{\emptyargp{#3}}\space #3\fi
-        .}]%
   \ignorespaces}
 
 %                       Figures
@@ -628,7 +653,7 @@
     \vspace{4pt}
   \fi
   \setbox \@tempboxa = \hbox{\@setfigurenumber{#1.}\nut #2}%
-  \if \dimgtrp{\wd\@tempboxa}{\hsize}%
+  \if \@dimgtrp{\wd\@tempboxa}{\hsize}%
     \noindent \@setfigurenumber{#1.}\nut #2\par
   \else
     \centerline{\box\@tempboxa}%
@@ -705,6 +730,15 @@
     {-1em}%
     {\normalsize \bfseries \if \@times \itshape \fi}}
 
+\renewcommand{\subparagraph}{%
+  \@startsection%
+    {subparagraph}%
+    {4}%
+    {0pt}%
+    {\@paragraphaboveskip}
+    {-1em}%
+    {\normalsize \itshape}}
+
 % Standard headings:
 
 \newcommand{\acks}{\section*{Acknowledgments}}
@@ -721,6 +755,7 @@
 \def \@conferenceinfo {}
 \def \@copyrightyear {}
 \def \@copyrightdata {[to be supplied]}
+\def \@proceedings {[Unknown Proceedings]}
 
 
 \newcommand{\conferenceinfo}[2]{%
@@ -736,6 +771,9 @@
   \gdef \@copyrightdata {#1}}
 
 \let \crdata = \copyrightdata
+
+\newcommand{\proceedings}[1]{%
+  \gdef \@proceedings {#1}}
 
 %                       Lists
 %                       -----
@@ -749,11 +787,11 @@
 
 \setlength{\topsep}{\standardvspace}
 \if \@blockstyle
-  \setlength{\itemsep}{0pt}
-  \setlength{\parsep}{4pt}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parsep}{3pt}
 \else
-  \setlength{\itemsep}{2pt}
-  \setlength{\parsep}{0pt}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parsep}{3pt}
 \fi
 
 \renewcommand{\labelitemi}{{\small \centeroncapheight{\textbullet}}}
@@ -763,12 +801,16 @@
 
 \renewcommand{\@listi}{%
   \leftmargin = \leftmargini
-  \listparindent = \parindent}
+  \listparindent = 0pt}
+%%%  \itemsep = 1pt
+%%%  \parsep = 3pt}
+%%%  \listparindent = \parindent}
 
 \let \@listI = \@listi
 
 \renewcommand{\@listii}{%
   \leftmargin = \leftmarginii
+  \topsep = 1pt
   \labelwidth = \leftmarginii
   \advance \labelwidth by -\labelsep
   \listparindent = \parindent}
@@ -819,13 +861,27 @@
 %                       ------- ----- --- ----
 
 
+\def \@preprintfooter {}
+
+\newcommand{\preprintfooter}[1]{%
+  \gdef \@preprintfooter {#1}}
+
 \if \@preprint
 
 \def \ps@plain {%
   \let \@mkboth = \@gobbletwo
   \let \@evenhead = \@empty
-  \def \@evenfoot {%
-    \reset@font \@conferencename \hfil \thepage \hfil \@formatyear}%
+  \def \@evenfoot {\scriptsize \textit{\@preprintfooter}\hfil \thepage \hfil
+                   \textit{\@formatyear}}%
+  \let \@oddhead = \@empty
+  \let \@oddfoot = \@evenfoot}
+
+\else\if \@reprint
+
+\def \ps@plain {%
+  \let \@mkboth = \@gobbletwo
+  \let \@evenhead = \@empty
+  \def \@evenfoot {\scriptsize \hfil \thepage \hfil}%
   \let \@oddhead = \@empty
   \let \@oddfoot = \@evenfoot}
 
@@ -835,10 +891,17 @@
 \let \ps@headings = \ps@empty
 \let \ps@myheadings = \ps@empty
 
-\fi
+\fi\fi
 
 \def \@formatyear {%
   \number\year/\number\month/\number\day}
+
+%                       Special Characters
+%                       ------- ----------
+
+
+\DeclareRobustCommand{\euro}{%
+  \protect{\rlap{=}}{\sf \kern .1em C}}
 
 %                       Title Page
 %                       ----- ----
@@ -853,6 +916,8 @@
 
 \newcount{\@titlenotecount}
 \newtoks{\@titlenotetext}
+
+\def \@titlebanner {}
 
 \renewcommand{\title}[1]{%
   \gdef \@titletext {#1}}
@@ -870,6 +935,9 @@
   \@latex@error{The \string\author\space command is obsolete;
                 use \string\authorinfo}{}}
 
+\newcommand{\titlebanner}[1]{%
+  \gdef \@titlebanner {#1}}
+
 \renewcommand{\maketitle}{%
   \pagestyle{plain}%
   \if \@onecolumn
@@ -883,6 +951,7 @@
 
 \def \@maketitle {%
   \begin{center}
+  \@settitlebanner
   \let \thanks = \titlenote
   \noindent \LARGE \bfseries \@titletext \par
   \vskip 6pt
@@ -903,9 +972,9 @@
     \@titleauthors{i}{ii}{iii}\@titleauthors{iv}{v}{vi}%
                   \@titleauthors{vii}{viii}{ix}\or
     \@titleauthors{i}{ii}{iii}\@titleauthors{iv}{v}{vi}%
-                  \@titleauthors{vii}{viii}{ix}\@titleauthors{x}{}{}%
+                  \@titleauthors{vii}{viii}{ix}\@titleauthors{x}{}{}\or
     \@titleauthors{i}{ii}{iii}\@titleauthors{iv}{v}{vi}%
-                  \@titleauthors{vii}{viii}{ix}\@titleauthors{x}{xi}{}%
+                  \@titleauthors{vii}{viii}{ix}\@titleauthors{x}{xi}{}\or
     \@titleauthors{i}{ii}{iii}\@titleauthors{iv}{v}{vi}%
                   \@titleauthors{vii}{viii}{ix}\@titleauthors{x}{xi}{xii}%
   \else
@@ -914,10 +983,19 @@
   \vspace{1.75pc}
   \end{center}}
 
+\def \@settitlebanner {%
+  \if \@andp{\@preprint}{\@notp{\@emptydefp{\@titlebanner}}}%
+    \vbox to 0pt{%
+      \vskip -32pt
+      \noindent \textbf{\@titlebanner}\par
+      \vss}%
+    \nointerlineskip
+  \fi}
+
 \def \@titleauthors #1#2#3{%
-  \if \andp{\emptyargp{#2}}{\emptyargp{#3}}%
+  \if \@andp{\@emptyargp{#2}}{\@emptyargp{#3}}%
     \noindent \@setauthor{40pc}{#1}{\@false}\par
-  \else\if \emptyargp{#3}%
+  \else\if \@emptyargp{#3}%
     \noindent \@setauthor{17pc}{#1}{\@false}\hspace{3pc}%
               \@setauthor{17pc}{#2}{\@false}\par
   \else
@@ -928,7 +1006,7 @@
   \fi\fi
   \vspace{20pt}}
 
-\def \@setauthor #1#2#3{%
+\def \@setauthor #1#2#3{%                       {width}{text}{unused}
   \vtop{%
     \def \and {%
       \hspace{16pt}}
@@ -942,7 +1020,7 @@
     \textsf{\@name{\@authoremail#2}}\par}}
 
 \def \@maybetitlenote #1{%
-  \if \andp{#1}{\gtrp{\@authorcount}{3}}%
+  \if \@andp{#1}{\@gtrp{\@authorcount}{3}}%
     \titlenote{See page~\pageref{@addauthors} for additional authors.}%
   \fi}
 
@@ -970,7 +1048,7 @@
 
 \iffalse
 \def \additionalauthors {%
-  \if \gtrp{\@authorcount}{3}%
+  \if \@gtrp{\@authorcount}{3}%
     \section{Additional Authors}%
     \label{@addauthors}%
     \noindent
@@ -981,7 +1059,7 @@
        \@name{\@authoraffil\romannumeral\@authori},
        email: \@name{\@authoremail\romannumeral\@authori}.%
        \@increment \@authori
-     \if \notp{\gtrp{\@authori}{\@authorcount}} \repeat}%
+     \if \@notp{\@gtrp{\@authori}{\@authorcount}} \repeat}%
     \par
   \fi
   \global\@setflag \@addauthorsdone = \@true}
@@ -1033,7 +1111,7 @@
   \quad}
 
 \def \@seccntformata #1.#2\@mark{%
-  \if \emptyargp{#2}.\fi}
+  \if \@emptyargp{#2}.\fi}
 
 %                       Revision History
 %                       -------- -------
@@ -1057,7 +1135,7 @@
 %                               Change default to Times text.
 
 %  2004.12.14   PCA     0.8     Remove use of mathptm.sty; it cannot
-%                               coexist with latexym or amssymb.
+%                               coexist with latexsym or amssymb.
 
 %  2005.01.20   PCA     0.9     Rename class file to sigplanconf.cls.
 
@@ -1067,3 +1145,31 @@
 
 %  2005.03.07   PCA     0.93    The 'onecolumn' option defaults to '11pt',
 %                               and it uses the full type width.
+
+%  2005.03.15   PCA     0.94    Add at-signs to more macro names.
+%                               Allow margin paragraphs during review.
+
+%  2005.03.22   PCA     0.95    Implement \euro.
+%                               Remove proof and newdef environments.
+
+%  2005.05.06   PCA     1.0     Eliminate 'onecolumn' option.
+%                               Change footer to small italic and eliminate
+%                               left portion if no \preprintfooter.
+%                               Eliminate copyright notice if preprint.
+%                               Clean up and shrink copyright box.
+
+%  2005.05.30   PCA     1.1     Add alternate permission statements.
+
+%  2005.06.29   PCA     1.1     Publish final first edition of guide.
+
+%  2005.07.14   PCA     1.2     Add \subparagraph.
+%                               Use block paragraphs in lists, and adjust
+%                               spacing between items and paragraphs.
+
+%  2006.06.22   PCA     1.3     Add 'reprint' option and associated
+%                               commands.
+
+%  2006.08.24   PCA     1.4     Fix bug in \maketitle case command.
+
+%  2007.03.13   PCA     1.5     The title banner only display with the
+%                               'preprint' option.
