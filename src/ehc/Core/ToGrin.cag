@@ -311,7 +311,7 @@ SEM CModule
 %%[8 hs
 
 makeEvApKeyP (nm, arity, k)
- = ( GrTag_Lit (GrTagPApp k) 0 nm
+ = ( GrTag_PApp k nm
    , arity-k
    )
 
@@ -319,7 +319,7 @@ makeApplyMapEntryP x@(nm, arity, k)
  = ( makeEvApKeyP x
    , (if k==1
       then EvApTagVar nm
-      else EvApTagTag (GrTag_Lit (GrTagPApp (k-1)) 0 nm)
+      else EvApTagTag (GrTag_PApp (k-1) nm)
      )
    )
 
@@ -327,7 +327,7 @@ makeApplyBindEntryP na x@(nm, arity, k) ui
  = let names = map uidHNm (mkInfNewUIDL (uidChild ui))
        parameters = take (arity-k) names
        parameterList = map GrVal_Var (parameters ++ [na])
-   in  GrAlt_Alt (mkGrPatTagNode (GrTagPApp k) 0 nm parameters)
+   in  GrAlt_Alt (mkGrPatTagNode (GrTag_PApp k nm) parameters)
                  (if k==1
                   then GrExpr_Call nm parameterList
                   else GrExpr_Unit (mkNdPApp nm (k-1) parameterList)
@@ -339,28 +339,28 @@ makeEvalMapEntryP x
    )
 
 makeEvalMapEntryC (CTag tyNm nm tag arity mxarity)
- = ( ( GrTag_Lit (GrTagCon $ mkGrTagAnn arity mxarity) tag nm, arity)
+ = ( ( GrTag_Con (mkGrTagAnn arity mxarity) tag nm, arity )
    , EvApTagUnit
    )
 
 makeEvalMapEntryH
- = ( ( GrTag_Lit GrTagHole 0 hsnUnknown, 0)
+ = ( ( GrTag_Hole, 0 )
    , EvApTagUnit
    )
 
 makeEvalMapEntryF (nm, arity)
- = ( ( GrTag_Lit GrTagFun 0 nm, arity)
+ = ( ( GrTag_Fun nm, arity )
    , EvApTagVar nm
    )
 
 makeEvalBindEntryC n2 (CTag tyNm nm tag arity mxarity) ui
  = let names = repeat hsnWild
        parameters = take arity names
-   in  GrAlt_Alt (mkGrPatTagNode (GrTagCon $ mkGrTagAnn arity mxarity) tag nm parameters)
+   in  GrAlt_Alt (mkGrPatTagNode (GrTag_Con (mkGrTagAnn arity mxarity) tag nm) parameters)
                  (GrExpr_Unit (GrVal_Var n2))
 
 makeEvalBindEntryH n2 ui
- =     GrAlt_Alt (mkGrPatTagNode GrTagHole 0 hsnUnknown [])
+ =     GrAlt_Alt (mkGrPatTagNode GrTag_Hole [])
                  (GrExpr_Unit (GrVal_Var n2))
 
 
@@ -369,7 +369,7 @@ makeEvalBindEntryH n2 ui
 makeEvalBindEntryF n1 (nm, arity) ui
  = let (result:names) = map uidHNm (mkInfNewUIDL (uidChild ui))
        parameters = take arity names
-   in  GrAlt_Alt (mkGrPatTagNode GrTagFun 0 nm parameters)
+   in  GrAlt_Alt (mkGrPatTagNode (GrTag_Fun nm) parameters)
                  (GrExpr_Seq (GrExpr_Call nm (map GrVal_Var parameters))
                              (GrPatLam_Var result)
                              (GrExpr_UpdateUnit n1 (GrVal_Var result))
@@ -378,7 +378,7 @@ makeEvalBindEntryF n1 (nm, arity) ui
 makeEvalBindEntryP n2 (nm, arity, k) ui
  = let names = map uidHNm (mkInfNewUIDL (uidChild ui))
        parameters = take arity names
-   in  GrAlt_Alt (mkGrPatTagNode (GrTagPApp k) 0 nm parameters)
+   in  GrAlt_Alt (mkGrPatTagNode (GrTag_PApp k nm) parameters)
                  (GrExpr_Unit (GrVal_Var n2))
 
 %%]
@@ -411,10 +411,10 @@ retStrict isStrict = if isStrict then (\v->GrExpr_Unit v) else GrExpr_Store
 
 %%[8 hs
 mkNdPApp :: HsName -> Int -> GrValL -> GrVal
-mkNdPApp f nMiss argL = mkGrTagNode (GrTagPApp nMiss) 0 f argL
+mkNdPApp f nMiss argL = mkGrTagNode (GrTag_PApp nMiss f) argL
 
 mkNdApp :: HsName -> GrValL -> GrVal
-mkNdApp f argL = mkGrTagNode GrTagApp 0 hsnGrApply (GrVal_Var f : argL)
+mkNdApp f argL = mkGrTagNode (GrTag_App hsnGrApply) (GrVal_Var f : argL)
 
 mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
@@ -485,7 +485,7 @@ SEM CExpr
                                                           CBindRec     ->  mkSt (map (\(GrBind_Bind n _ _) -> n) @binds.grBindL)
                                                                            . mkVs @binds.grBindL
                                                                            $ @body.grExpr
-                                                                           where  h             = mkGrTagNode GrTagHole 0 hsnUnknown []
+                                                                           where  h             = mkGrTagNode GrTag_Hole []
                                                                                   mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPatLam_Var n) e) e nmL
                                                                                   mkV b n n' e
                                                                                                 = GrExpr_Seq b (GrPatLam_Var n')
@@ -516,13 +516,13 @@ SEM CExpr
                                                                           | arity == @appArity && @lhs.isStrict
                                                                               -> GrExpr_Call funNm argL'
                                                                           | arity == @appArity
-                                                                              -> GrExpr_Store (mkGrTagNode GrTagFun 0 funNm argL')
+                                                                              -> GrExpr_Store (mkGrTagNode (GrTag_Fun funNm) argL')
                                                                           | arity > @appArity
                                                                               -> mkE (mkNdPApp funNm (arity - @appArity) argL')
                                                                           | arity < @appArity && @lhs.isStrict
                                                                               -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
                                                                           | otherwise
-                                                                              -- -> mkSq (GrExpr_Store (mkGrTagNode GrTagFun 0 funNm (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                              -- -> mkSq (GrExpr_Store (mkGrTagNode (GrTag_Fun funNm) (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
                                                                               -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
                                                                         Nothing
                                                                           | @lhs.isStrict
@@ -650,7 +650,7 @@ SEM CBind
                                                      resTagL
                                                        = case dataGamTagsOfTy @resTy @lhs.dataGam of
                                                            Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
-                                                                               [ GrTag_Lit (GrTagCon $ mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                                               [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
                                                            _ | resIsUnboxed -> -- Result type is one of the unboxable types Int, Char, PackedString
                                                                                [ GrTag_Unboxed ]
                                                              | otherwise    -> -- Result type is any other type

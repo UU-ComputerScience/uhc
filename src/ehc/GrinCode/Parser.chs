@@ -129,7 +129,7 @@ pPatAlt         =    GrPatAlt_LitInt   <$> pInt
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
-                     *>  (   (\i c n -> GrTag_Lit c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
+                     *>  (   (\i c n -> c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
                          <|> GrTag_Unboxed <$ pKey "U"
                          <|> GrTag_Any     <$ pKey "*"
                          )
@@ -137,14 +137,14 @@ pTag            =    pKey "#"
 pTagAnn         ::   GRIParser GrTagAnn
 pTagAnn         =    GrTagAnn       <$ pOCurly <*> pInt <* pComma <*> pInt <* pCCurly
 
-pTagCateg       ::   GRIParser GrTagCateg
-pTagCateg       =    GrTagCon       <$ pKey "C" <*> pTagAnn
-                <|>  GrTagRec       <$ pKey "R"
-                <|>  GrTagHole      <$ pKey "H"
-                <|>  GrTagApp       <$ pKey "A"
-                <|>  GrTagFun       <$ pKey "F"
-                <|>  GrTagPApp      <$ pKey "P" <* pKey "/" <*> pInt
-                <|>  GrTagWorld     <$ pKey "W"
+pTagCateg       ::   GRIParser (Int -> HsName -> GrTag)
+pTagCateg       =    (        GrTag_Con   )    <$ pKey "C" <*> pTagAnn
+                <|>  (\i n -> GrTag_Rec   )    <$ pKey "R"
+                <|>  (\i n -> GrTag_Hole  )    <$ pKey "H"
+                <|>  (\i   -> GrTag_App   )    <$ pKey "A"
+                <|>  (\i   -> GrTag_Fun   )    <$ pKey "F"
+                <|>  (\i   -> GrTag_PApp  )    <$ pKey "P" <* pKey "/" <*> pInt
+                <|>  (\i n -> GrTag_World )    <$ pKey "W"
 
 pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm

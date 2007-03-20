@@ -51,8 +51,8 @@ typeCanbeUnboxed nm
 tagCanbeUnboxed :: HptMap -> GrTag -> Bool
 tagCanbeUnboxed hptMap gt
   = case gt of
-      GrTag_Lit (GrTagCon _) _ nm -> typeCanbeUnboxed nm
-      _                           -> False
+      GrTag_Con _ _ nm -> typeCanbeUnboxed nm
+      _                -> False
 
 varCanbeUnboxed :: HptMap -> HsName -> Bool
 varCanbeUnboxed hptMap (HNmNr n _)

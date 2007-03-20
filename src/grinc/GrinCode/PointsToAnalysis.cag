@@ -131,12 +131,11 @@ SEM GrVal
   |  Node   lhs . appPappNodes =  if @tag.isAppPApp then [ InNode @tag.self @fldL.vars ] else []
 
 SEM GrTag
-  | Lit     lhs . isAppPApp  =  case @categ of
-                                 GrTagPApp _ -> True
-                                 GrTagApp    -> True
-                                 _           -> False
-  | * - Lit lhs . isAppPApp  =  False
-  
+  | App     lhs . isAppPApp  = True
+  | PApp    lhs . isAppPApp  = True
+  | * - App PApp 
+            lhs . isAppPApp  = False
+ 
 
 %%]
 
@@ -144,14 +143,14 @@ SEM GrTag
 
 genDynApplyEqs applyMap evalMap appPappNodes 
   = [ IsApplication Nothing (map fromJust args) (fromJust (Map.lookup tag evalMap))
-    | (InNode tag@(GrTag_Lit GrTagApp x y) args) <- appPappNodes
+    | (InNode tag@(GrTag_App _) args) <- appPappNodes
     ]
     ++
     concat
-    [ let  lasttag = GrTag_Lit (GrTagPApp 1        ) 0 nm
+    [ let  lasttag = GrTag_PApp 1 nm
            funnr   = either undefined id (fromJust $ Map.lookup lasttag applyMap)
       in   zipWith IsEqual [funnr+1+needs+length args ..] (map ((:[]).fromJust) (reverse args))
-    | (InNode (GrTag_Lit (GrTagPApp needs) _ nm) args) <- appPappNodes
+    | (InNode (GrTag_PApp needs nm) args) <- appPappNodes
     ]
 
 %%]

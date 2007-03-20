@@ -21,7 +21,7 @@
 %format HsName    = "\mathit{Name}"
 %format getNr     = "\mathit{nr}"
 
-%format DATA = "\mathbf{data}"
+%format DATA = "\mathbf{DATA}"
 %format ATTR = "\mathbf{attr}"
 %format USE  = "\mathit{use}"
 %format SEM  = "\mathbf{sem}"
@@ -124,21 +124,84 @@ Overview
 
 Program is sequence of bindings
 
+begin{code}
+DATA Program
+  = Prog        prog            : GrModule
+DATA GrModule
+  = Mod         nm              : {HsName}
+                globalL         : GrGlobalL
+                bindL           : GrBindL
+                evalMap         : EvalMap
+                applyMap        : ApplyMap
+\end{code}
 Binding binds function name with parameters to expression
+\begin{code}
+DATA GrBind
+  = Bind        nm              : {HsName}
+                argNmL          : {[HsName]}
+                expr            : GrExpr
+DATA GrGlobal
+  = Global      nm              : {HsName}
+                val             : GrVal
+TYPE GrGlobalL  =   [GrGlobal]
+TYPE GrBindL    =   [GrBind]
+\end{code}
 
 Expression manipulates and returns values
 
 Value are nodes, variables, tags or constants
 
+\begin{code}
+DATA GrVal
+  = LitInt      int             : {Int}
+  | Tag         tag             : GrTag
+  | Var         nm              : {HsName}
+  | Node        tag             : GrTag
+                fldL            : GrValL
+  | VarNode     fldL            : GrValL
+TYPE GrValL     =   [GrVal]
+\end{code}
+
+Tags tag nodes, either a constructed value or a thunk:
+\begin{code}
+data GrTagCateg
+  =  GrTagCon		{grtgAnn	:: GrTagAnn	}
+  |  GrTagHole
+  |  GrTagRec
+  |  GrTagApp
+  |  GrTagFun
+  |  GrTagPApp 		{grtgNeeds  :: Int		}
+  |  GrTagWorld
+
+\end{code}
+
+
+
 Patterns come in two sorts: 
 Case (Lit, Tag, Node) 
 and Lambda (Empty, Var, VarNode)
-
+\begin{code}
+DATA GrPatAlt
+  = LitInt      int             : {Int}
+  | Tag         tag             : GrTag
+  | Node        tag             : GrTag
+                fldL            : {[HsName]}
+  | Otherwise
+DATA GrPatLam
+  = Empty
+  | Var         nm              : {HsName}
+  | VarNode     fldL            : GrVarL
+DATA GrVar
+  = Var         nm              : {HsName}
+  | KnownTag    tag             : GrTag
+  | Ignore
+TYPE GrVarL     =   [GrVar]
+\end{code}
 Details of expressions: 
 
 \begin{code}
 DATA GrExpr
-  | Seq         expr            : GrExpr
+  = Seq         expr            : GrExpr
                 pat             : GrPatLam
                 body            : GrExpr
   | Unit        val             : GrVal
@@ -162,22 +225,6 @@ DATA GrExpr
   | App         nm              : {HsName}
                 argL            : GrValL
 \end{code}
-
-Seq
-Unit
-Eval
-Apply
-Case
-Call
-FFI
-Store
-UpdateUnit
-FetchNode
-FetchField
-(Throw Catch?)
-
-
-
 
 
 \section{Abstract interpretation}

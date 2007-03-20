@@ -165,12 +165,12 @@ primMp
 grEvalTag :: RunState -> GrTag -> ([RunVal],Bool)
 grEvalTag rs t
   =  case t of
-        GrTag_Lit (GrTagCon _)       i _    ->  ([RVCat NdCon,RVInt i],szYes)
-        GrTag_Lit GrTagHole          _ _    ->  ([RVCat NdHole],szNo)
-        GrTag_Lit GrTagRec           _ _    ->  ([RVCat NdRec,RVInt 0],szYes)
-        GrTag_Lit GrTagFun           _ n    ->  ([RVCat NdFun,rsVar rs n],szNo)
-        GrTag_Lit GrTagApp           _ _    ->  ([RVCat NdApp],szNo)
-        GrTag_Lit (GrTagPApp nMiss)  _ n    ->  ([RVCat NdPApp,RVInt nMiss,rsVar rs n],szNo)
+        GrTag_Con       _ i _    ->  ([RVCat NdCon,RVInt i],szYes)
+        GrTag_Hole               ->  ([RVCat NdHole],szNo)
+        GrTag_Rec                ->  ([RVCat NdRec,RVInt 0],szYes)
+        GrTag_Fun           n    ->  ([RVCat NdFun,rsVar rs n],szNo)
+        GrTag_App           _    ->  ([RVCat NdApp],szNo)
+        GrTag_PApp nMiss    n    ->  ([RVCat NdPApp,RVInt nMiss,rsVar rs n],szNo)
   where  szNo   = False -- const []
          szYes  = True  -- (:[])
 %%]
@@ -355,10 +355,10 @@ grEvalExpr rs e
                   ->  case elems a of
                         (RVCat NdCon:RVInt ndTg:_)
                           ->  let  lookup t []    = Nothing
-                                   lookup t (GrAlt_Alt p@(GrPatAlt_Node (GrTag_Lit _ t' _) _) e:aL)
+                                   lookup t (GrAlt_Alt p@(GrPatAlt_Node (GrTag_Con _ t' _) _) e:aL)
                                      | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd (Right p),e)
 %%[[10                                     
-                                   lookup t (GrAlt_Alt p@(GrPatAlt_NodeSplit (GrTag_Lit _ t' _) _ _) e:aL)
+                                   lookup t (GrAlt_Alt p@(GrPatAlt_NodeSplit (GrTag_Con _ t' _) _ _) e:aL)
                                      | t == t'    = Just (\rs -> grPatBind rs (rsEnv rs) nd (Right p),e)
 %%]]                                     
                                    lookup t (_:aL)= lookup t aL

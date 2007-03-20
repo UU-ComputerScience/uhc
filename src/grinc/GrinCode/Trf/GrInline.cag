@@ -373,7 +373,7 @@ applyCode unique applyMap hptMap funVar appArgs
 %%]
 
 %%[8 hs
-isPartialApplication ((GrTag_Lit (GrTagPApp _) _ _), _) = True
+isPartialApplication ((GrTag_PApp _ _), _) = True
 isPartialApplication _ = False
 
 fromJust' s Nothing  = error $ "fromJust: " ++ s

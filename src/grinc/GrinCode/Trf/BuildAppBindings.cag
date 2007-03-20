@@ -58,8 +58,8 @@ SEM GrValL [ | | fieldCount: Int ]
   | Nil   lhs  .  fieldCount  =  0
 
 SEM GrTag [ | | isGenApplyTag : Bool ]
-  | Lit      lhs  .  isGenApplyTag  =  @categ == GrTagApp && @nm == HNm "!apply"
-  | * - Lit  lhs  .  isGenApplyTag  =  False
+  | App      lhs  .  isGenApplyTag  =  @nm == HNm "!apply"
+  | * - App  lhs  .  isGenApplyTag  =  False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,7 +100,7 @@ buildAppBinding unique size = let funcNr  = unique
                                                     (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
                               in (unique', origFuncName, funcName, code)
 
-size2tag size = GrTag_Lit GrTagApp 0 (HNm $ "app" ++ show size)
+size2tag size = GrTag_App (HNm $ "app" ++ show size)
 
 node2app size (unique, origNamesMap, evalMap, bindings) =
     let applyArgs = size - (if grinStoreArity then 2 else 1)

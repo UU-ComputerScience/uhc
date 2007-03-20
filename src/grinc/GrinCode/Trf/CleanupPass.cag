@@ -63,16 +63,15 @@ Also, replace F-Tags for constructorfunctions by C-tags
 %%[8.P0tag_TO_Ftag
 
 SEM GrTag
-  | Lit  lhs  .  grTrf  = GrTag_Lit
-                             (if   hsnIsConstructorName @nm && (@categ==GrTagFun || @categ==GrTagPApp 0)
-                              then GrTagCon $ emptyGrTagAnn -- panic "CleanupPass.GrTag.Lit.grTrf"
-                              else
-                              if   @categ == GrTagPApp 0
-                              then GrTagFun
-                              else @categ
-                             )
-                             @int
-                             @nm
+  | Fun  lhs . grTrf = if   hsnIsConstructorName @nm
+                       then GrTag_Con emptyGrTagAnn undefined @nm
+                       else @loc.grTrf
+  | PApp lhs . grTrf = if   @needs==0 
+                       then (if   hsnIsConstructorName @nm
+                             then GrTag_Con emptyGrTagAnn undefined @nm
+                             else GrTag_Fun @nm
+                            )
+                       else @loc.grTrf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,9 +106,9 @@ SEM GrModule
                                     buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (tag n) arity)
                                     tag n             =  let  ts = filter (\x -> n==ctagNm x) @allCTags
                                                          in   if null ts
-                                                              then GrTag_Lit GrTagFun 0 n
+                                                              then GrTag_Fun n
                                                               else let t = head ts
-                                                                   in  GrTag_Lit (GrTagCon $ mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) n
+                                                                   in  GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) n
                                     globalL           =  map buildGlobalVar
                                                              @cafNames
                                 in (if null @globalL.grTrf then globalL else @globalL.grTrf)

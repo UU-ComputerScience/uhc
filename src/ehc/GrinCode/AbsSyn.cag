@@ -87,9 +87,15 @@ DATA GrVal
 
 %%]]
 
+DATA GrVar
+  | Var         nm              : {HsName}
+  | KnownTag    tag             : GrTag
+  | Ignore
 
 
 TYPE GrValL     =   [GrVal]
+TYPE GrVarL     =   [GrVar]
+
 
 DATA GrPatAlt
   | LitInt      int             : {Int}
@@ -103,25 +109,24 @@ DATA GrPatAlt
                 fldL            : GrSplitL
 %%]]
 
-TYPE GrVarL     =   [GrVar]
-
-DATA GrVar
-  | Var         nm              : {HsName}
-  | KnownTag    tag             : GrTag
-  | Ignore
-
 DATA GrPatLam
   | Empty
   | Var         nm              : {HsName}
   | VarNode     fldL            : GrVarL
- 
+
 
 DATA GrTag
-  | Lit         categ           : {GrTagCateg}
-                int             : {Int}
-                nm              : {HsName}
---  | Var         nm              : {HsName}         -- not necessary anymore; now part of GrVal_VarNode and GrPatLam_VarNode
+  | Con           grtgAnn         : {GrTagAnn}
+                  int             : {Int}
+                  nm              : {HsName}
+  | Fun           nm              : {HsName}
+  | PApp          needs           : {Int}
+                  nm              : {HsName}
+  | App           nm              : {HsName}
   | Unboxed
+  | Hole
+  | Rec
+  | World
   | Any
 
 TYPE GrTagL     =   [GrTag]

@@ -48,15 +48,15 @@ heapChange (WillStore locat tag args mbres) env
 %%[8.envChanges
 
 isPAppTag :: GrTag -> Bool
-isPAppTag (GrTag_Lit (GrTagPApp _) _ _) = True
-isPAppTag _                             = False
+isPAppTag (GrTag_PApp _ _) = True
+isPAppTag _                = False
 
 isValueTag :: GrTag -> Bool
-isValueTag  GrTag_Any                    = True
-isValueTag  GrTag_Unboxed                = True
-isValueTag (GrTag_Lit (GrTagPApp _) _ _) = True
-isValueTag (GrTag_Lit (GrTagCon  _) _ _) = True
-isValueTag _                             = False
+isValueTag  GrTag_Any        = True
+isValueTag  GrTag_Unboxed    = True
+isValueTag (GrTag_PApp _ _)  = True
+isValueTag (GrTag_Con _ _ _) = True
+isValueTag _                 = False
 
 
 filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
@@ -123,11 +123,11 @@ envChanges equat env heap applyMap
            ; let (sfxs,avs) = unzip ts
            ; return (concat sfxs, mconcat avs)
       	   }
-      where addArgs (tag@(GrTag_Lit (GrTagPApp needs) _ nm) , oldArgs) 
+      where addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
               = do 
                 { let n        = length args
-                      newtag   = GrTag_Lit (GrTagPApp (needs-n)) 0 nm
-                      lasttag  = GrTag_Lit (GrTagPApp 1        ) 0 nm
+                      newtag   = GrTag_PApp (needs-n) nm
+                      lasttag  = GrTag_PApp 1         nm
                       funnr    = either undefined id (fromJust $ Map.lookup lasttag applyMap)
                       sfx      = zip  [funnr+2+needs-length args ..] (reverse args)
                 ; res <-  if    n<needs

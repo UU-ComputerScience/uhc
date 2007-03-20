@@ -368,16 +368,19 @@ SEM GrValL
  | Cons   lhs.values = @hd.value : @tl.values
 
 SEM GrTag
- | Lit     loc.constant = Constant_Alias (tagName @categ @nm)
+ | Con     loc.constant = Constant_Alias ("C" ++ hsnShowAlphanumeric @nm)
+ | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumeric @nm)
+ | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumeric @nm)
+ | Con Fun PApp
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
--- | Var     lhs.value    = Value_Var (mkVar @nm)
  | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
  | Any     lhs.value    = error "GrTag:Any value"
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
  | Any     lhs.constant = Constant_Alias "ANY"
- | * - Lit Unboxed Any
+ | * - Con Fun PApp Unboxed Any
            lhs.constant = error "GrTag:other constant"
+           lhs.value    = error "GrTag:other value"
 
 SEM GrPatAlt
  | Tag     lhs.value    = @tag.value
@@ -574,16 +577,15 @@ tagConstants2 cts
    in  concat (map ((zipWith f [0..]).snd) cts)
 
 
-showGrTagCateg :: GrTagCateg -> String
-showGrTagCateg (GrTagPApp need) = "P" ++ show need ++ "_"
-showGrTagCateg x = showGrTagCategLetter x
-
-
-tagName categ nm = showGrTagCateg categ ++ hsnShowAlphanumeric nm
-
 showGrTag :: GrTag -> String
-showGrTag (GrTag_Lit categ n nm) = tagName categ nm
+showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumeric nm
+showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumeric nm
+showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumeric nm
+showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
+showGrTag (GrTag_Rec) = "GrTag:Rec"
+showGrTag (GrTag_Hole) = "GrTag:hole"
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
 showGrTag (GrTag_Any    ) = "GrTag:Any"
+showGrTag (GrTag_World    ) = "GrTag:World"
 
 %%]

@@ -49,9 +49,6 @@ SEM GrBind
 SEM GrVal
   | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
 
---SEM GrTag
---  | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
-
 SEM GrExpr
   | FFI     lhs   .  usedVars  =  foldr Set.insert @lhs.usedVars @argL
   | App     argL  .  usedVars  =  Set.insert @nm @lhs.usedVars
