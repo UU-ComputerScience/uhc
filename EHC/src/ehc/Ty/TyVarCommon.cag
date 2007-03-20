@@ -247,7 +247,11 @@ SEM Impls
   | * - Cons	lhs			.	qOrphanTvS      =   Set.empty
 
 SEM Pred
-  | Var  		lhs			.	qOrphanTvS      =   Set.empty
+  | Var
+%%[[13
+    Preds
+%%]]
+  				lhs			.	qOrphanTvS      =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

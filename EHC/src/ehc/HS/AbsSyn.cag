@@ -508,6 +508,12 @@ DATA Constructor
         constructor              : Name
         fieldDeclarations        : FieldDeclarations
 %%]
+%%[9
+    | Contexted
+        range                    : Range
+        context                  : ContextItems
+        constructor              : Constructor
+%%]
 
 %%[5
 SET AllConstructor

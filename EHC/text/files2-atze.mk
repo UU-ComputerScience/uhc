@@ -175,7 +175,7 @@ text-variant-gbm:
 
 text-variant-icfp07-chr-locinst:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=storyCHRlocinst --set=acm --set=blockstyle --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyCHRlocinst --set=acm --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=24 \
 	  text-variant-dflt-bib
 

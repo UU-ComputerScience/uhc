@@ -57,11 +57,12 @@ enabling the elegant formulation of some forms of generic programming.
 
 \subsection{Introduction}
 
+%%[[bodyIntro1
 The Haskell class system, originally introduced by both Wadler and Blott \cite{wadler88how-ad-hoc-poly}
 and Kaes \cite{kaes88parametric-overl},
 offers a powerful abstraction mechanism
 for dealing with overloading (ad-hoc polymorphism).
-The basic idea is to restrict the polymorphism of a parameter by specifying
+The basic idea is to restrict a polymorphic parameter by specifying
 that some predicates have to be satisfied when the function is called:
 
 %%[[wrap=code defF
@@ -73,7 +74,7 @@ In this example the type signature for |f| specifies that values of
 any type |a| can be passed as arguments,
 provided the predicate |Eq a| can be satisfied.
 Such predicates are introduced by \IxAsDef{class declaration}s,
-as in the following version of Haskell's |Eq| class declaration:
+as in the following simplified version of Haskell's |Eq| class declaration:
 
 %%[[wrap=code classEq
 class Eq a where
@@ -81,7 +82,8 @@ class Eq a where
 %%]
 
 The presence of such a class predicate in a type requires the availability
-of a collection of functions and values which can only be used
+of a collection of functions and values (here a collection with just one element)
+which can only be used
 on a type |a| for which the class predicate holds.
 %if False
 For brevity, the given definition for class |Eq| omits the declaration for @/=@. 
@@ -96,25 +98,28 @@ instance Eq Int where
 
 instance Eq Char where
   x == y = primEqChar x y
-%%]
+%%]]
 
 Here the equality functions for |Int| and |Char| are implemented
 by the primitives |primEqInt| and |primEqChar|.
-One may look at this as if the compiler turns such instance declarations into records (dictionaries) containing the functions as fields,
-and thus an explicit version of this internal machinery reads:
+One may look at this as if the compiler turns such instance declarations into
+records (called dictionaries) containing the functions as fields,
+and thus an explicit version of the internal machinery reads:
 
 %%[[wrap=code
 %%[[translEqD
 data EqD a  = EqD ^^ {eqEqD :: a -> a -> Bool}  -- class Eq
 eqDInt      = EqD primEqInt                     -- Eq Int
 eqDChar     = EqD primEqChar                    -- Eq Char
-%%]
+%%]]
 
 %%[[translDefF
 f  ::         EqD a ->  a ->  a ->  Int
 f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
-%%]
-%%]
+%%]]
+%%]]
+
+%%]]
 
 Inside a function the elements of the predicate's dictionaries
 are available, as if they were defined as top-level variables.
@@ -145,10 +150,10 @@ which the language definition cannot infer automatically.
 For example, we may want to call |f| with an alternate instance for |Eq Int|,
 which implements a different equality on integers:
 
-%%[[wrap=code
+%%[[wrap=code instanceEqIntMod2
 instance Eq Int where
   x == y = primEqInt (x `mod` 2) (y `mod` 2)
-%%]
+%%]]
 
 Unfortunately such an extra instance declaration introduces an ambiguity,
 and is thus forbidden by the language definition;
@@ -162,7 +167,7 @@ Haskell does not treat instances as first class values to be passed to functions
 but Haskell\footnote{That is, GHC 6.4.1} allows the programmer to tag instances indirectly with a type.
 Because instances are defined for a particular type, we can use a value of such a type as an index into available instances:
 
-%%[[wrap=code
+%%[[wrap=code instanceEqIntWithExtraType
 class Eq' l a where eq' :: l -> a -> a -> Bool
 
 data Dflt
@@ -178,9 +183,9 @@ newtype W l a = W a
 f :: Eq' l a => W l a -> W l a -> Int
 f = \(W x :: W l a) (W y) -> if eq' (undefined::l) x y then 3 else 4
 
-v1 = f (W 2 :: W Dflt Int) (W 4)
-v2 = f (W 2 :: W Mod2 Int) (W 4)
-%%]
+v1 = f (W 2 :: W Dflt  Int) (W 4)
+v2 = f (W 2 :: W Mod2  Int) (W 4)
+%%]]
 
 By explicitly assigning the type |W Mod2 Int| to the first parameter of |f|,
 we also choose the instance |Eq' Mod2| of class |Eq'|.

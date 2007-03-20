@@ -150,26 +150,30 @@ instance Substitutable PredOccId UID Cnstr where
 %%[9
 instance Substitutable (CnstrInfo Ty) TyVarId Cnstr where
   s |=>  ci =  case ci of
-                 CITy     t  -> CITy (s |=> t)
-                 CIImpls  i  -> CIImpls (s |=> i)
-                 CIPred   i  -> CIPred (s |=> i)
-                 CIScope  sc -> CIScope (s |=> sc)
+                 CITy       t  -> CITy (s |=> t)
+                 CIImpls    i  -> CIImpls (s |=> i)
+                 CIPred     i  -> CIPred (s |=> i)
+                 CIScope    sc -> CIScope (s |=> sc)
+%%[[13
+                 CIPredSeq  x  -> CIPredSeq (s |=> x)
+%%]]
 %%[[10
-                 CIExts   x  -> CIExts (s |=> x)
-                 ci          -> ci
+                 CIExts     x  -> CIExts (s |=> x)
+                 ci            -> ci
 %%]]
   ftv    ci =  case ci of
-                 CITy     t  -> ftv t
-                 CIImpls  i  -> ftv i
-                 CIPred   i  -> ftv i
-                 CIScope  sc -> ftv sc
+                 CITy       t  -> ftv t
+                 CIImpls    i  -> ftv i
+                 CIPred     i  -> ftv i
+                 CIScope    sc -> ftv sc
+%%[[13
+                 CIPredSeq  x  -> ftv x
+%%]]
 %%[[10
-                 CIExts   x  -> ftv x
-                 ci          -> []
+                 CIExts     x  -> ftv x
+                 ci            -> []
 %%]]
 %%]
-                 CIPoi    i  -> CIPoi (s |=> i)
-                 CIPoi    i  -> ftv i
 
 This is still/regretfully duplicated in Ty/Subst.cag, Ty/Ftv.cag
 
@@ -179,6 +183,18 @@ instance Substitutable RowExts TyVarId Cnstr where
   s |=>    (RowExts_Exts x) = RowExts_Exts $ assocLMapElt (s |=>) x
   ftv      (RowExts_Var  v) = [v]
   ftv    _                  = []
+%%]
+
+And this too...
+
+%%[13
+instance Substitutable PredSeq TyVarId Cnstr where
+  s |=>  a@(PredSeq_Var  v  ) = maybe a id $ cnstrPredSeqLookup v s
+  s |=>    (PredSeq_Cons h t) = PredSeq_Cons (s |=> h) (s |=> t)
+  _ |=>    x                  = x
+  ftv      (PredSeq_Var  v  ) = [v]
+  ftv      (PredSeq_Cons h t) = unions [ftv h, ftv t]
+  ftv    _                    = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

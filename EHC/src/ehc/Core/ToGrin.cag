@@ -739,8 +739,8 @@ SEM CPat
 
 %%[97
 SEM CPat
-  | BoolExpr    lhs         .   grPat       =   GrPat_Empty -- transformed into explicit if-then-else
-                                                            -- TODO: replace this by something sensible in GrPatAlt, as GrPat_Empty is now GrPatLam_Empty
+  | BoolExpr    lhs         .   grPat       =   GrPatAlt_Otherwise -- transformed into explicit if-then-else
+                                                                   -- TODO: this is unfinished work, matching on literals does not work yet
 %%]
 
 %%[8

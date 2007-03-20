@@ -319,6 +319,11 @@
 
 \usepackage{graphicx} %%% needs: fancyvrb
 
+%if natbib
+\usepackage{natbib}
+\bibpunct();A{},
+\let\cite=\citep
+%endif
 %%]
 
 %%[2
@@ -769,14 +774,18 @@ WWW home page:
 %%]
 
 %%[24
-\title{Modelling Local Instances with Constraint Handling Rules}
+\title{Modelling Scoped Instances with Constraint Handling Rules}
 %if acm && useSigplanconfSty
+%if blinded
+\authorinfo{author info blinded}{--}{--}
+%else
 \authorinfo{Atze Dijkstra \and Gerrit van den Geest \and Bastiaan Heeren \and S. Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
   {\{atze,doaitse,bastiaan\}@@cs.uu.nl, G.vandenGeest@@students.uu.nl}
+%endif
 %else
 \author{Atze Dijkstra, Gerrit van den Geest, Bastiaan Heeren and S. Doaitse Swierstra}
 %endif
@@ -1547,43 +1556,81 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[24
+%{
+%include gvdgeest.fmt
+
 \section{Introduction}
 
 %%@TopicCHRLocalInst.introduction
 
+In the following \secRef{sec-chr-locinst} we first discuss what is problematic about scoped instances, and
+what the contribution of \thispaper\ is.
+\secRef{sec-chr-startingpoint} discusses previous work upon which we base ours,
+in \secRef{sec-chr-prerequisites} we provide the prerequisites for the technical part in
+\secRef{sec-chr-maptochr}, \secRef{sec-chr-maplocaltochr} and \secRef{sec-chr-heuristics}.
+We conclude in \secRef{sec-chr-relatedwork} with discussion, related work and future work.
+
 \section{Local instances}
+\label{sec-chr-locinst}
+A \IxAsDef{global instance} is a normal module level Haskell instance.
+A \IxAsDef{local instance} or \IxAsDef{non-global instance} is an instance declared in a nested expression,
+where nesting is defined by Haskell's normal nesting language constructs.
+The \IxAsDef{scope} of an instance uniquely defines the location within nested language constructs.
+Scopes can be compared for mutual visibility, to be defined more precisely later.
+A \IxAsDef{scoped instance} is either a global or a local instance, distinguishable on the basis of its scope.
+
 \subsection{The problem}
 
 %%@TopicCHRLocalInst.problem
 
-\subsection{Our approach}
+\subsection{Our contribution}
 
-%%@TopicCHRLocalInst.ourApproach
+%%@TopicCHRLocalInst.ourContribution
 
-\section{Related work}
+\section{Starting point}
+\label{sec-chr-startingpoint}
 
-%%@TopicCHRLocalInst.relatedWork
+%%@TopicCHRLocalInst.startingPointWork
 
-\section{Prerequisites}
-
-\subsection{Term, types and predicates}
+\section{Preliminaries}
+\label{sec-chr-prerequisites}
 
 %%@TopicCHRLocalInst.termsAndTypes
 
-%%@TopicCHRLocalInst.entailment1
+\section{Mapping classes and instances to CHR's}
+\label{sec-chr-maptochr}
 
-\subsection{CHR language}
+We discuss 
+\begin{itemize}
+\item How class and instance declarations are expressed as CHR's.
+\item How constraints arise from program text, are simplified and context reduced.
+\end{itemize}
+We start without taking scopes into account,
+showing the basic use of our constraint language,
+and pointing out where and why we differ from \cite{stuckey02theory-overloading}.
 
-\section{Mapping local instances to CHRs}
-\subsection{Plain instances, without scope}
-\subsection{Local instances, with scope}
+%%@TopicCHRLocalInst.toCHRplain
+
+\section{Mapping scoped instances to CHR's}
+\label{sec-chr-maplocaltochr}
+
+%%@TopicCHRLocalInst.toCHRscoped
 
 \section{Heuristics}
+\label{sec-chr-heuristics}
 
-\section{Discussion, future work}
+\section{Discussion, related and future work}
+\label{sec-chr-relatedwork}
+
+Formal properties:
+(1) we piggyback on \cite{stuckey02theory-overloading},
+(2) confluence is guaranteed by using propagation rules and reifying the notion of choice, dealing with this issue separately.
 
 Functional dependencies...
 
+Notation for heuristics
+
+%}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2299,6 +2346,8 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %if refToPDF
 %\bibliographystyle{uhcbook}
 \bibliographystyle{plain}
+%elif natbib
+\bibliographystyle{plainnat}
 %elif acm
 \bibliographystyle{abbrv}
 %else

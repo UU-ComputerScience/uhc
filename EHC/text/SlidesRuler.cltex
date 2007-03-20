@@ -145,7 +145,7 @@ It is hard to
 \frametitle{Ruler}
 \begin{itemize}
 \item A system for specifying type rules
-\FigCenterPDF{ruler-generates}
+\FigCenterPDF{1}{ruler-generates}
 \item But not: a proof system
 \end{itemize}
 }
@@ -372,13 +372,13 @@ then generate the implementation
 \frame<presentation>
 {
 \frametitle{Ruler within context of other tools}
-\FigCenterPDF{ruler-overview}
+\FigCenterPDF{1}{ruler-overview}
 }
 
 \frame<presentation>
 {
 \frametitle{Ruler within context of EHC}
-\FigCenterPDF{system-overview}
+\FigCenterPDF{1}{system-overview}
 }
 
 %%]
@@ -450,7 +450,7 @@ Aspects
 \frametitle{Ruler `dimensions'}
 \begin{itemize}
 \item In EHC:
-\FigCenterPDF{ag-ast-asp-ruler-only}
+\FigCenterPDF{1}{ag-ast-asp-ruler-only}
 \end{itemize}
 }
 

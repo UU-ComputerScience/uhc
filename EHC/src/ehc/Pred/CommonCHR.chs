@@ -38,6 +38,9 @@ data RedHowAnnotation
 %%[[10
   |  RedHow_ByLabel       Label LabelOffset PredScope
 %%]]
+%%[[13
+  |  RedHow_Lambda        UID PredScope
+%%]]
   deriving (Eq, Ord)
 %%]
 
@@ -56,6 +59,9 @@ instance PP RedHowAnnotation where
 %%[[10
   pp (RedHow_ByLabel      l o sc)  = "label" >#< l >|< "@" >|< o >|< sc
 %%]]
+%%[[13
+  pp (RedHow_Lambda       i   sc)  = "lambda" >#< i >#< sc
+%%]]
 %%]
 
 %%[20
@@ -66,6 +72,7 @@ instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_Assumption   i n sc)  = "redhowassume" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n, ppForHI sc]
   ppForHI (RedHow_ByScope            )  = pp "redhowscope"
   ppForHI (RedHow_ByLabel      l o sc)  = "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
+  ppForHI (RedHow_Lambda       i   sc)  = "redhowlambda" >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

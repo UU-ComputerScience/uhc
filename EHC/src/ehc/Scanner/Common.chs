@@ -255,11 +255,21 @@ hiScanOpts
         {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     , "True", "False"
+%%[[9
                                     , "chr", "chrstore"
                                     , "Assume", "Prove", "Reduction"
-                                    , "label", "offset", "scope"
-                                    , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "NotEqualScope", "NonEmptyRowLacksLabel"
-                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhowlabel"
+                                    , "scope"
+                                    , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "NotEqualScope"
+                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope"
+%%]]
+%%[[10
+                                    , "label", "offset"
+                                    , "NonEmptyRowLacksLabel"
+                                    , "redhowlabel"
+%%]]
+%%[[13
+                                    , "redhowlambda"
+%%]]
                                     ]
 %%[[20
                                     ++ tokKeywStrsHI6

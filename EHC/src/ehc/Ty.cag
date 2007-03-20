@@ -97,6 +97,9 @@
 %%[11 hs export(tyLamArgsRes)
 %%]
 
+%%[13 hs export(PredSeq(..))
+%%]
+
 %%[97 hs export(tyInteger) 
 %%]
 
@@ -887,6 +890,18 @@ predTy p
 %%]
 %%[10 hs
        Pred_Lacks    t _  -> t
+%%]
+
+%%[13 hs export(predSeqToList,predLFlatten)
+predSeqToList :: PredSeq -> [Pred]
+predSeqToList (PredSeq_Cons h t) = h : predSeqToList t
+predSeqToList _                  = []
+
+predLFlatten :: [Pred] -> [Pred]
+predLFlatten
+  = concatMap fl
+  where fl (Pred_Preds s) = predSeqToList s
+        fl p              = [p]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

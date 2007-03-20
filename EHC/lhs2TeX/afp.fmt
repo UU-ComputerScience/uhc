@@ -93,6 +93,8 @@
 %format Forall		= "{\nabla}"
 
 %format pred		= pi
+%format scope		= "\xi"
+%format predscope	= pred "^{" scope "}"
 %format preds		= "\overline{" pi "}"
 
 %format subst		= S
@@ -186,6 +188,9 @@
 %format tneedR			= tneed "_{r}"
 
 %format pvar        = "{\varpi}"
+%format varpi       = "\varpi"
+%format varpi1
+%format varpin      = varpi "_n"
 %format pivar       = p
 %format pempty      = emptyset
 
@@ -233,10 +238,13 @@
 %format =@= 			= "{\varparallel}"
 % format <=> 			= "\mathrel{\cong}"
 %format <=> 			= "\cong "
+%format <==>  			= "\Longleftrightarrow "
+%format  ==>  			= "\Longrightarrow "
 %format <+-> 			= "\mathrel{\vartriangle}\hspace{-.25em}\mathrel{\triangledown}"
 % format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
 %format <+> 			= "\mathrel{\vartriangle}"
 %format <-> 			= "\mathrel{\triangledown}"
+%format <-->    		= "\leftrightarrow"
 % format +	 			= ","
 % format ++	 			= ","
 %if asSlides
@@ -256,6 +264,8 @@
 %format isPre			= "{\div}"
 %format Pre				= "{\dotdiv}"
 %format Post			= "{\divdot}"
+
+%format isbydef			= "=_{def}"
 
 % format fiopt			= "{\xi}"
 %format fiopt			= "o"

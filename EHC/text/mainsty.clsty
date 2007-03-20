@@ -63,9 +63,9 @@
  \end{center}
 }
 
-\newcommand{\FigCenterPDF}[1]{%
+\newcommand{\FigCenterPDF}[2]{%
  \begin{center}
- \FigScaledPDF{1}{#1}
+ \FigScaledPDF{#1}{#2}
  \end{center}
 }
 
@@ -182,9 +182,9 @@
 }
 
 % Cmd for pdf (from xfig) in a figure
-\newcommand{\FigurePDF}[4]{%
-  \begin{PlainFigure}{#1}{#3}{#4}
-  \FigCenterPDF{#2}
+\newcommand{\FigurePDF}[5]{%
+  \begin{PlainFigure}{#1}{#4}{#5}
+  \FigCenterPDF{#2}{#3}
   \end{PlainFigure}
 }
 
@@ -625,4 +625,17 @@ Chapter~\myRef{#1}%
 #2
 %endif
 }
+%%]
+
+Anonymity
+
+%%[1
+%if blinded
+\newcommand{\blind}[1]{}
+%else
+\newcommand{\blind}[1]{#1}
+%endif
+
+\newcommand{\blindcite}[1]{\blind{\cite{#1}}}
+
 %%]

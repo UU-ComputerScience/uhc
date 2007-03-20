@@ -344,7 +344,7 @@ SEM TyAGItf
 
 %%[10
 SEM LabelAGItf
-  | AGItf       	loc     .   tnUniq      =   0
+  | AGItf           loc     .   tnUniq      =   0
                             .   tnMap       =   []
 %%]
 
@@ -532,11 +532,24 @@ SEM TyPlus
 %%[10
 SEM Pred
   | Lacks           lhs     .   pp      =   @ty.pp >|< "\\" >|< @lab.pp
-  | RowSplit		(_,lhs.pp)			=	ppExts @lhs.cfg @ty.appFunNm @ty.appFunPP @exts.appArgPPL
+  | RowSplit        (_,lhs.pp)          =   ppExts @lhs.cfg @ty.appFunNm @ty.appFunPP @exts.appArgPPL
 
 SEM Label
   | Lab             lhs     .   pp      =   cfgPPTyPPHsn @lhs.cfg @nm
   | Var             lhs     .   pp      =   maybe (mkDefaultTvNm @lhs.cfg "l" @lv) id (lookup @lv @lhs.tnMap)
+%%]
+
+%%[13
+ATTR PredSeq [ | | ppL: {[PP_Doc]} ]
+
+SEM PredSeq
+  | Cons            lhs     .   ppL     =   @hd.pp :  @tl.ppL
+  | Var             lhs     .   ppL     =   [maybe (mkDefaultTvNm @lhs.cfg "prsq" @av) id (lookup @av @lhs.tnMap)]
+  | Nil             lhs     .   ppL     =   []
+
+SEM Pred
+  | Arrow           lhs     .   pp      =   ppParensCommas @args.ppL >#< "=>" >#< @res.pp
+  | Preds           lhs     .   pp      =   ppParensCommas @seq.ppL
 %%]
 
 %%[11
@@ -624,8 +637,8 @@ SEM Ty
 
 %%[10
 SEM RowExts
-  | Exts			loc		.	appArgPPL	=	[ ppFld "::" Nothing l (pp l) (ppTyWithCfg @lhs.cfg t) | (l,t) <- @exts ]
-  | Var				loc		.	appArgPPL	=	[ maybe (mkDefaultTvNm @lhs.cfg "e" @ev) id (lookup @ev @lhs.tnMap) ]
+  | Exts            loc     .   appArgPPL   =   [ ppFld "::" Nothing l (pp l) (ppTyWithCfg @lhs.cfg t) | (l,t) <- @exts ]
+  | Var             loc     .   appArgPPL   =   [ maybe (mkDefaultTvNm @lhs.cfg "e" @ev) id (lookup @ev @lhs.tnMap) ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

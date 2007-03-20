@@ -53,6 +53,7 @@ instance (PP c,PP g) => PP (CHR c g s) where
     where ppGB g@(_:_) b@(_:_) = [ppL g, "|" >#< ppL b]
           ppGB g@(_:_) []      = [ppL g >#< "|"]
           ppGB []      b@(_:_) = [ppL b]
+          ppGB []      []      = []
           ppL [x] = pp x
           ppL xs  = ppBracketsCommasV xs -- ppParensCommasBlock xs
           ppChr l = vlist l -- ppCurlysBlock

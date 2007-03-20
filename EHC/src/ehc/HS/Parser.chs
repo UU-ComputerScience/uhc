@@ -362,8 +362,8 @@ pDeclarationKindSignature
 %%[5
 pDeclarationData :: HSParser Declaration
 pDeclarationData
-  =   pD pDATA    (Declaration_Data    . mkRange1) (pEQUAL *> pListSep pVBAR pConstructor <|> pSucceed [])
-  <|> pD pNEWTYPE (Declaration_Newtype . mkRange1) (pEQUAL *> pConstructor)
+  =   pD pDATA    (Declaration_Data    . mkRange1) (pEQUAL *> pListSep pVBAR pDCon <|> pSucceed [])
+  <|> pD pNEWTYPE (Declaration_Newtype . mkRange1) (pEQUAL *> pNCon)
   <?> "pDeclarationData"
   where pD pK sem pC
           = sem <$> pK
@@ -374,6 +374,12 @@ pDeclarationData
 %%[[95
             <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
 %%]]
+%%[[5
+        pDCon = pConstructor
+%%][9
+        pDCon = pContextedConstructor
+%%]]
+        pNCon = pConstructor
 %%]
 
 %%[95
@@ -396,6 +402,13 @@ pConstructor
   <|> (\l o r -> Constructor_Infix (mkRange1 o) l (tokMkQName o) r) <$> pT <*> conop <*> pT
   where pT  = pAnnotatedType pType
         pTB = pAnnotatedType pTypeBase
+%%]
+
+%%[9
+pContextedConstructor :: HSParser Constructor
+pContextedConstructor
+  =   Constructor_Contexted emptyRange <$> pContextItemsPrefix <*> pConstructor
+  <|> pConstructor
 %%]
 
 %%[7
@@ -706,7 +719,7 @@ pTypeContextPrefix
 %%[9
 pContextItemClass :: HSParser ContextItem
 pContextItemClass
-  =    mkRngNm ContextItem_Class <$> qconid <*> pList1 pType
+  =    mkRngNm ContextItem_Class <$> qconid <*> pList1 pTypeBase
 %%]
 
 %%[13

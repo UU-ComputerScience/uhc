@@ -132,6 +132,9 @@ evidMpToCore env evidMp
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( CExpr_Int o, sc )
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( caddint (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
 %%]]
+%%[[13
+        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `mkCExprLam` tcrCExpr body, sc )
+%%]]
         strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
         strip ev                                 = ev

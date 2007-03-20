@@ -109,6 +109,11 @@ SEM RowExts
   | Var             lhs     .   repl        =   maybe @repl id (cnstrExtsLookup @ev @lhs.cnstr)
 %%]
 
+%%[13
+SEM PredSeq
+  | Var				lhs		.	repl		=	maybe @repl id (cnstrPredSeqLookup @av @lhs.cnstr)
+%%]
+
 %%[50
 SEM Ty
   | Equal           lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
