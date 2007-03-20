@@ -58,7 +58,7 @@ ATTR AllAlt [ scrutinizer: GrVal | | count: Int newBody: GrExpr ]
 ATTR GrPatAlt [ | | lamPat : GrPatLam ]
 
 SEM GrPatAlt
-  | Node     lhs . lamPat    = GrPatLam_VarNode (GrVar_KnownTag @tag : map GrVar_Var @fldL)
+  | Node     lhs . lamPat    = GrPatLam_VarNode (GrVar_KnownTag @tag.grTrf : map GrVar_Var @fldL)
   | * - Node lhs . lamPat    = error "CaseElimination: lamPat of non-Node"
 
 SEM GrAltL

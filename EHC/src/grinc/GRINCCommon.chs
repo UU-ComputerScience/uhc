@@ -36,7 +36,7 @@ getNr (HNmNr i _) = i
 getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
 getNr a           = error $ "getNr tried on " ++ show a
 
-throwTag      =  GrTag_Lit GrTagFun   0 (HNm "rethrow")
+throwTag      =  GrTag_Fun (HNm "rethrow")
 %%]
 
 
@@ -93,21 +93,42 @@ instance Monoid AbstractValue where
 
 
 -- (Ord GrTag) is needed for (Ord AbstractValue) which is needed for Map.unionWith in mergeNodes
+
+
+conNumber :: GrTag -> Int
+conNumber GrTag_Hole     = 1
+conNumber GrTag_Rec      = 2
+conNumber GrTag_World    = 3
+conNumber GrTag_Unboxed  = 4
+conNumber GrTag_Any      = 5
+conNumber (GrTag_App _)     = 6
+conNumber (GrTag_Fun _)     = 7
+conNumber (GrTag_PApp _ _)  = 8
+conNumber (GrTag_Con _ _ _) = 9
+
+conName :: GrTag -> HsName
+conName (GrTag_App nm) = nm
+conName (GrTag_Fun nm) = nm
+conName (GrTag_PApp _ nm) = nm
+conName (GrTag_Con _ _ nm) = nm
+
+conInt :: GrTag -> Int
+conInt (GrTag_PApp i _ ) = i
+conInt (GrTag_Con _ i _ ) = i
+
 instance Ord GrTag where
-    compare t1 t2 = case t1 of
-                        GrTag_Any         -> case t2 of
-                                                 GrTag_Any         -> EQ
-                                                 otherwise         -> LT
-                        GrTag_Unboxed     -> case t2 of
-                                                 GrTag_Any         -> GT
-                                                 GrTag_Unboxed     -> EQ
-                                                 otherwise         -> LT
-                        GrTag_Lit c1 _ n1 -> case t2 of
-                                                 GrTag_Any         -> GT
-                                                 GrTag_Unboxed     -> GT
-                                                 GrTag_Lit c2 _ n2 -> case compare c1 c2 of
-                                                                          EQ -> compare n1 n2
-                                                                          a  -> a
+  compare t1 t2 = let x = conNumber t1
+                      y = conNumber t2
+                  in  case compare x y of 
+                        EQ -> if  x < 6
+                              then EQ
+                              else case compare (conName t1) (conName t2) of
+                                     EQ -> if  x<8
+                                           then EQ
+                                           else compare (conInt t1) (conInt t2)
+                                     a  -> a
+                        a  -> a
+
 
 %%]
 

@@ -215,7 +215,13 @@ SEM GrVar
   | KnownTag    lhs         .   pp          =   @tag.pp
 
 SEM GrTag
-  | Lit         lhs         .   pp          =   "#" >|< @int >|< "/" >|< pp @categ >|< "/" >|< @lhs.ppGrNm @nm
+  | Hole        lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "H" >|< "/" >|< "_"
+  | Rec         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "R" >|< "/" >|< "()"
+  | App         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "A" >|< "/" >|< @lhs.ppGrNm @nm
+  | Fun         lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "F" >|< "/" >|< @lhs.ppGrNm @nm
+  | PApp        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "P" >|< "/" >|< @needs >|< "/" >|< @lhs.ppGrNm @nm
+  | Con         lhs         .   pp          =   "#" >|< @int >|< "/" >|< "C" >|< show @grtgAnn >|< "/" >|< @lhs.ppGrNm @nm
+  | World       lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "W" >|< "/" >|< "_"
   | Unboxed     lhs         .   pp          =   pp "#U"
   | Any         lhs         .   pp          =   pp "#*"
 %%]

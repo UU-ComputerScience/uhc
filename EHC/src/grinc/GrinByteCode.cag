@@ -438,7 +438,7 @@ nrWord2Byte sz
 tagIsUnboxed :: GrTag -> Bool
 tagIsUnboxed gt
   = case gt of
-      GrTag_Lit (GrTagCon _) _ nm | nm == hsnInt || nm == hsnChar
+      GrTag_Con _ _ nm | nm == hsnInt || nm == hsnChar
         -> True
       GrTag_Unboxed
         -> True
@@ -451,7 +451,7 @@ tagUnbox gt
   = if tagIsUnboxed gt
     then Unbox_FirstField
     else case gt of
-           GrTag_Lit (GrTagCon ann) t nm | gtannMaxArity ann == 0
+           GrTag_Con ann t nm | gtannMaxArity ann == 0
              -> Unbox_Tag t
            _ -> Unbox_None
 %%]
@@ -664,21 +664,22 @@ load tag, yield stack increment and additional size to alloc
 tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,StackDepth,Bool)
 tag env modNmConstInx stkDepth gt sz
   = case gt of
-      GrTag_Lit categ tg nm
+      GrTag_Unboxed -> (Seq.empty,0,0,False)
+      GrTag_Any     -> (Seq.empty,0,0,False) 
+      _
         -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,allocInc,isEvaluated)
         where (needEval,categ',tg',tins,tinc,allocInc)
-                = case categ of
-                    GrTagCon _    -> (tgNeedEval_No ,0,tg,Seq.empty      ,0  ,0)
-                    GrTagHole     -> (tgNeedEval_BlH,0,tg,Seq.fromList [ldc 0],1  ,0)
-                    GrTagRec      -> (tgNeedEval_No ,0,tg,Seq.empty      ,0  ,0)
-                    GrTagApp      -> (tgNeedEval_Yes,1,tg,Seq.empty      ,0  ,0)
-                    GrTagFun      -> (tgNeedEval_Yes,0,tg,ins              ,inc,0)
-                                  where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
-                    GrTagPApp m   -> (tgNeedEval_No ,1,m ,ins              ,inc,0)
-                                  where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
+                = case gt of
+                    GrTag_Con _ tg nm    -> (tgNeedEval_No ,0,tg,Seq.empty      ,0  ,0)
+                    GrTag_Hole           -> (tgNeedEval_BlH,0, 0,Seq.fromList [ldc 0],1  ,0)
+                    GrTag_Rec            -> (tgNeedEval_No ,0, 0,Seq.empty      ,0  ,0)
+                    GrTag_App      nm    -> (tgNeedEval_Yes,1, 0,Seq.empty      ,0  ,0)
+                    GrTag_Fun      nm    -> (tgNeedEval_Yes,0, 0,ins            ,inc,0)
+                                         where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
+                    GrTag_PApp m   nm    -> (tgNeedEval_No ,1,m ,ins            ,inc,0)
+                                         where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
               tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
               isEvaluated = needEval == tgNeedEval_No
-      _ -> (Seq.empty,0,0,False)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

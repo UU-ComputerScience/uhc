@@ -6,10 +6,7 @@
 ATTR AllNTNoMod [ | | gathFviMp USE {`fviMpUnion`} {Map.empty}: FvInfoMp ]
 
 SEM GrTag
-  | Lit         lhs         .   gathFviMp       =   case @categ of
-                                                      GrTagFun    -> fviMpSingleton' FvUse_Val @nm
-                                                      GrTagPApp _ -> fviMpSingleton' FvUse_Val @nm
-                                                      _ -> Map.empty
+  | Fun PApp    lhs         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
 
 SEM GrVal
   | Var         lhs         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
