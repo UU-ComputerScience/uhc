@@ -137,11 +137,11 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, EvalMap, ApplyMap )
+%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations)
 
 data Equation
   = IsKnown               Variable  AbstractValue
-  | IsEqual               Variable  [Variable]
+  | IsEqual               Variable  Variable
   | IsSelection           Variable  Variable Int GrTag
   | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
   | IsEvaluation          Variable  Variable                     Variable
@@ -149,14 +149,11 @@ data Equation
     deriving (Show, Eq)
 
 data HeapEquation
-  = WillStore             Location  GrTag [Maybe Variable] (Maybe Variable)
+  = WillStore             Location  GrTag [Maybe Variable]
     deriving (Show, Eq)
 
 type Equations     = [Equation]
 type HeapEquations = [HeapEquation]
-
-type EvalMap     = Map.Map GrTag Variable
-type ApplyMap    = Map.Map GrTag (Either GrTag Variable)
 
 %%]
 

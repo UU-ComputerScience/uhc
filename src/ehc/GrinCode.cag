@@ -28,10 +28,10 @@
 %%[10 hs export(GrNodeAdapt(..), grRecTag)
 %%]
 
-%%[8 hs export(grinStoreArity,mkGrBox,mkGrTagNode,mkGrRecNode,mkGrConNode)
+%%[8 hs export(mkGrBox,mkGrRecNode,mkGrConNode)
 %%]
 
-%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrPatTagNode,mkGrUnbox,mkGrUnboxFFI)
+%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrUnbox,mkGrUnboxFFI)
 %%]
 
 %%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
@@ -207,47 +207,22 @@ grRecTag = GrTag_Rec
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+-- partial parametrizations of the GrVal_Node etc.
 
-grinStoreArity :: Bool
-grinStoreArity = False
-
-mkGrTagNode :: GrTag -> GrValL -> GrVal
-mkGrTagNode t vL
- = if grinStoreArity
-    then GrVal_Node t (GrVal_LitInt (length vL) : vL)
-    else GrVal_Node t                             vL
-
-mkGrPatTagNode :: GrTag -> [HsName] -> GrPatAlt
-mkGrPatTagNode t pL
- = if grinStoreArity
-    then GrPatAlt_Node t (hsnWild : pL)
-    else GrPatAlt_Node t            pL
-%%]
-
-%%[10 hs
-mkGrPatTagSplit :: GrTag -> HsName -> GrSplitL -> GrPatAlt
-mkGrPatTagSplit t r sL
- = GrPatAlt_NodeSplit t r sL
-
-%%]
-
-
-%%[8 hs
--- partial parametrizarions of the above
 mkGrConNode :: GrTagAnn -> Int -> HsName -> GrValL -> GrVal
-mkGrConNode ann i nm = mkGrTagNode (GrTag_Con ann i nm)
+mkGrConNode ann i nm = GrVal_Node (GrTag_Con ann i nm)
 
 mkGrRecNode ::  GrValL -> GrVal
 mkGrRecNode xs
-  = mkGrTagNode (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
+  = GrVal_Node (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
   where a = length xs
 
 mkGrPatConNode :: GrTagAnn -> Int -> HsName -> [HsName] -> GrPatAlt
-mkGrPatConNode ann i nm = mkGrPatTagNode (GrTag_Con ann i nm)
+mkGrPatConNode ann i nm = GrPatAlt_Node (GrTag_Con ann i nm)
 
 mkGrPatRecNode :: [HsName] -> GrPatAlt
 mkGrPatRecNode xs
-  = mkGrPatTagNode (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
+  = GrPatAlt_Node (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
   where a = length xs
 
 mkGrBox :: HsName -> GrVal -> GrVal
@@ -265,8 +240,8 @@ mkGrUnboxFFI   n = let tag = GrTag_Unboxed
 
 %%[10 hs
 mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPatAlt
-mkGrPatConSplit ann i nm = mkGrPatTagSplit (GrTag_Con ann i nm)
+mkGrPatConSplit ann i nm = GrPatAlt_NodeSplit (GrTag_Con ann i nm)
 
 mkGrPatRecSplit :: HsName -> GrSplitL -> GrPatAlt
-mkGrPatRecSplit  = mkGrPatTagSplit GrTag_Rec
+mkGrPatRecSplit  = GrPatAlt_NodeSplit GrTag_Rec
 %%]

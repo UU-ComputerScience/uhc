@@ -28,21 +28,23 @@ type AbstractHeap s = STArray s Location AbstractValue
 %%[8.heapChange
 
 heapChange :: HeapEquation -> AbstractEnv s -> ST s (Location,AbstractValue)
-heapChange (WillStore locat tag args mbres) env 
- = do{ absArgs  <- mapM getEnv args
-     ; absRes   <- getEnv mbres
-     ; absExc   <- getEnv (mbres >>= return . (+1))
-     ; let absNode = AbsNodes (Map.singleton tag absArgs)
-     ; let exceptNode  =  case absExc of
-                           AbsBottom                 -> AbsBottom
-                           AbsLocs ls | Set.null ls  -> AbsBottom
-                           otherwise                 -> AbsNodes (Map.singleton throwTag [AbsBasic, absExc])
-     ; return (locat, absNode `mappend` absRes `mappend` exceptNode)
-     }
-     where
-     getEnv    =  maybe (return AbsBottom) 
-                        (\v -> readArray env v >>= return )
-
+heapChange (WillStore locat tag args) env 
+ = do  { let mbres       =   tagFun tag
+       ; absArgs         <-  mapM getEnv args
+       ; absRes          <-  getEnv mbres
+       ; absExc          <-  getEnv (mbres >>= return . (+1))
+       ; let absNode     =   AbsNodes (Map.singleton tag absArgs)
+       ; let exceptNode  =   case absExc of
+                               AbsBottom                 -> AbsBottom
+                               AbsLocs ls | Set.null ls  -> AbsBottom
+                               otherwise                 -> AbsNodes (Map.singleton throwTag [AbsBasic, absExc])
+       ; return (locat, absNode `mappend` absRes `mappend` exceptNode)
+       }
+       where
+       getEnv Nothing   =  return AbsBottom
+       getEnv (Just v)  =  readArray env v
+       tagFun (GrTag_Fun nm)  =  Just (getNr nm)
+       tagFun _               =  Nothing
 %%]
 
 %%[8.envChanges
@@ -68,22 +70,18 @@ filterTaggedNodes p av               = av
 
 
 
-envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s [(Variable,AbstractValue)]
-envChanges equat env heap applyMap
+envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ST s [(Variable,AbstractValue)]
+envChanges equat env heap
   = case equat of
       IsKnown         d av         -> return [(d, av)]
 
-      IsEqual         d vs         -> do
-                                      {  rs <- mapM (readArray env) vs
-                                      ;  return [(d, mconcat rs)]
+      IsEqual         d v          -> do
+                                      {  av <- readArray env v
+                                      ;  return [(d, av)]
                                       }
       IsSelection     d v i t      -> do
                                       {  av <- readArray env v
-                                      ;  let res = case av of
-                                                    AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
-                                                    AbsBottom     -> av
-                                                    AbsError _    -> av
-                                                    _             -> AbsError "Variable passed to eval is not a node"
+                                      ;  let res = absSelect av i t
                                       ;  return [(d,res)]
                                       }
       IsConstruction  d t as   ev  -> do
@@ -104,11 +102,18 @@ envChanges equat env heap applyMap
                                                          Just _   -> return av
                                       ;  absArgs    <-  mapM (readArray env) as
                                       ;  (sfx,res)  <-  absCall absFun absArgs ev
-                                      ;  return $ (maybe id (\d->((d,res):)) mbd) sfx
+                                      ;  case mbd of
+                                           Nothing  ->  return sfx
+                                           Just d   ->  return ((d,res):sfx)
                                       }
       
     where
-        
+    absSelect av i t
+     = case av of
+         AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
+         AbsBottom     -> av
+         AbsError _    -> av
+         _             -> AbsError "Variable passed to eval is not a node"
     absDeref av
       = case av of
           AbsLocs ls  ->  do { vs <- mapM (readArray heap) (Set.toList ls)
@@ -124,22 +129,19 @@ envChanges equat env heap applyMap
            ; return (concat sfxs, mconcat avs)
       	   }
       where addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
-              = do 
-                { let n        = length args
-                      newtag   = GrTag_PApp (needs-n) nm
-                      lasttag  = GrTag_PApp 1         nm
-                      funnr    = either undefined id (fromJust $ Map.lookup lasttag applyMap)
-                      sfx      = zip  [funnr+2+needs-length args ..] (reverse args)
-                ; res <-  if    n<needs
-                          then  return $ AbsNodes (Map.singleton newtag (oldArgs++args))
-                          else  readArray env funnr
-                ; exc <-  if    n<needs
-                          then  return AbsBottom
-                          else  readArray env (funnr+1)
-                ; let excfx = (ev, exc)  
-                ; return (excfx:sfx, res)
-                }
-
+              = do { let n        = length args
+                         newtag   = GrTag_PApp (needs-n) nm
+                         funnr    = getNr nm
+                         sfx      = zip  [funnr+2+length oldArgs ..] args
+                   ; res <-  if    n<needs
+                             then  return $ AbsNodes (Map.singleton newtag (oldArgs++args))
+                             else  readArray env funnr
+                   ; exc <-  if    n<needs
+                             then  return AbsBottom
+                             else  readArray env (funnr+1)
+                   ; let excfx = (ev, exc)  
+                   ; return (excfx:sfx, res)
+                   }
 %%]
 
 %%[8
@@ -165,18 +167,17 @@ procChange arr (i,e1) =
       ; return changed
       }
 
-solveEquations :: Int -> Int -> Equations -> HeapEquations -> ApplyMap -> (Int,HptMap)
-solveEquations lenEnv lenHeap eqs1 eqs2 applyMap =
+solveEquations :: Int -> Int -> Equations -> HeapEquations -> (Int,HptMap)
+solveEquations lenEnv lenHeap eqs1 eqs2 =
     runST (
     do { 
    	    -- create arrays
-   	     let lenEnv2 = lenEnv + Map.size applyMap
-       ; env     <- newArray (0, lenEnv2 - 1) AbsBottom
-       ; heap    <- newArray (0, lenHeap - 1) AbsBottom
+       ; env     <- newArray (0, lenEnv   - 1) AbsBottom
+       ; heap    <- newArray (0, lenHeap  - 1) AbsBottom
 
        ; let procEnv equat
                 = do
-                  { cs <- envChanges equat env heap applyMap
+                  { cs <- envChanges equat env heap
                   ; bs <- mapM (procChange env) cs
                   ; return (or bs)
                   }
@@ -191,11 +192,10 @@ solveEquations lenEnv lenHeap eqs1 eqs2 applyMap =
        ; absHeap <- unsafeFreeze heap
        ; absEnv  <- unsafeFreeze env
     
-       --; trace (unlines ("APPLYMAP"      : map show applyMap))         $ return ()
        ; trace (unlines ("EQUATIONS"     : map show eqs1))        $ return ()
-       --; trace (unlines ("SOLUTION"      : map show (assocs absEnv)))  $ return ()
+       ; trace (unlines ("SOLUTION"      : map show (assocs absEnv)))  $ return ()
        ; trace (unlines ("HEAPEQUATIONS" : map show eqs2))          $ return ()
-       --; trace (unlines ("HEAPSOLUTION"  : map show (assocs absHeap))) $ return ()
+       ; trace (unlines ("HEAPSOLUTION"  : map show (assocs absHeap))) $ return ()
        
        ; return (count, (absEnv, absHeap, Map.empty))
        }

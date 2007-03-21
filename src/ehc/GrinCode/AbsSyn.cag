@@ -153,6 +153,7 @@ TYPE GrAdaptL   =   [GrAdapt]
 %%[8
 SET AllGlobal   =   GrGlobal GrGlobalL
 SET AllBind     =   GrBind GrBindL
+SET AllDef      =   AllGlobal AllBind
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
 SET AllGrTag    =   GrTag GrTagL

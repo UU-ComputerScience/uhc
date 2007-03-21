@@ -129,8 +129,8 @@ caLoad doParse = task_ VerboseNormal "Loading"
     ( do { when doParse caParseGrin
          ; caWriteGrin     True             "0-parsed"
          ; transformGrin   cleanupPass      "Cleanup pass"
-         ; transformTriple numberIdents     "Numbering identifiers"
          ; transformTriple buildAppBindings "Renaming lazy apply tags"
+         ; transformTriple numberIdents     "Numbering identifiers"
          ; caWriteGrin     True             "1-loaded"
          }
     )
@@ -283,9 +283,8 @@ caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrin
          ; unique  <- gets gcsUnique
-         ; let (iterCount,unique2,hptMap) = heapPointsToAnalysis code unique
+         ; let (iterCount,hptMap) = heapPointsToAnalysis code unique
          ; modify (gcsUpdateHptMap hptMap)
-         ; modify (gcsUpdateUnique unique2)
          ; return iterCount
          }
      ) (\i -> Just $ show i ++ " iteration(s)")
