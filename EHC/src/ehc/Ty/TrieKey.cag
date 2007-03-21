@@ -117,7 +117,7 @@ SEM Ty
                                                 =   if @isSpineRoot
                                                     then (@trieKeyFun, @trieKeyArgs :++: @trieKeyArgsNest)
                                                     else (empty,empty)
-  | Ext             lhs     .   (trieKey,trieKeyNest)
+  | Ext             loc     .   (trieKey,trieKeyNest)
                                                 =   if @isSpineRoot
                                                     then let (_,exts) = tyRowExts @self
                                                          in  ( singleton
@@ -148,7 +148,8 @@ SEM Ty
   | App             loc     .   trieKeyFun      =   @func.trieKeyFun
                             .   trieKeyArgs     =   @func.trieKeyArgs     :++: @arg.trieKeyFun
                             .   trieKeyArgsNest =   @func.trieKeyArgsNest :++: @arg.trieKeyNest
-  | Ext             loc     .   trieKeyArgs     =   @ty.trieKeyArgs     :++: @extTy.trieKeyFun
+  | Ext             loc     .   trieKeyFun      =   @trieKey
+                            .   trieKeyArgs     =   @ty.trieKeyArgs     :++: @extTy.trieKeyFun
                             .   trieKeyArgsNest =   @ty.trieKeyArgsNest :++: @extTy.trieKeyNest
 
 SEM Pred

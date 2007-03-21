@@ -93,7 +93,10 @@
 %format Forall		= "{\nabla}"
 
 %format pred		= pi
+%format predn		= pi "_n"
+%format pred1
 %format scope		= "\xi"
+%format scope'
 %format predscope	= pred "^{" scope "}"
 %format preds		= "\overline{" pi "}"
 

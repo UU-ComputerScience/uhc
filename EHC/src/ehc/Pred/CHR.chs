@@ -204,6 +204,7 @@ ppGuard (NotEqualScope          sc1 sc2    ) = sc1 >#< "/=" >#< sc2
 ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
 %%]]
 %%]
+ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
 
 %%[9
 instance Show Guard where

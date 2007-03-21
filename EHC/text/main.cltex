@@ -1576,7 +1576,7 @@ A \IxAsDef{global instance} is a normal module level Haskell instance.
 A \IxAsDef{local instance} or \IxAsDef{non-global instance} is an instance declared in a nested expression,
 where nesting is defined by Haskell's normal nesting language constructs.
 The \IxAsDef{scope} of an instance uniquely defines the location within nested language constructs.
-Scopes can be compared for mutual visibility, to be defined more precisely later.
+Scopes can be compared for visibility, to be defined more precisely later.
 A \IxAsDef{scoped instance} is either a global or a local instance, distinguishable on the basis of its scope.
 
 \subsection{The problem}
@@ -1616,11 +1616,26 @@ and pointing out where and why we differ from \cite{stuckey02theory-overloading}
 
 %%@TopicCHRLocalInst.toCHRscoped
 
-\section{Heuristics}
+\section{Heuristics over the reduction graph}
 \label{sec-chr-heuristics}
+
+%%@TopicCHRLocalInst.heuristics
+
+\section{Refinements}
+\label{sec-chr-refinements}
+
+%%@TopicCHRLocalInst.refinements
+
+\Paragraph{Pruning scope}
+
+\Paragraph{Class hierarchy}
 
 \section{Discussion, related and future work}
 \label{sec-chr-relatedwork}
+
+Design choice: lift scope to constraint, instead of only for pred: scoped constraints/chr?
+
+Design choice: backtracking yes/no? how to deal with improvements?
 
 Formal properties:
 (1) we piggyback on \cite{stuckey02theory-overloading},
