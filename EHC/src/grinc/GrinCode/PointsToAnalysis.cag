@@ -30,27 +30,19 @@ Also return it, possibly modified.
 As an additional Int result, return the number of iterations that it took to solve the equations.
 -}
 
-heapPointsToAnalysis :: GrModule -> Int -> (Int,Int,HptMap)
+heapPointsToAnalysis :: GrModule -> Int -> (Int,HptMap)
 heapPointsToAnalysis grmod unique
   = let -- traverse the tree
         inh = Inh_GrAGItf { location_Inh_GrAGItf = 0, unique_Inh_GrAGItf = unique  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
 
-        -- get four synthesized attributes
+        -- get three synthesized attributes
         equations = equations_Syn_GrAGItf syn
         heapEqs   = heapEqs_Syn_GrAGItf syn
-        applyMap  = applyMap_Syn_GrAGItf syn
         lenHeap   = location_Syn_GrAGItf syn
         
         -- now solve the equations
-        (iterCount,hptMap) = solveEquations unique lenHeap equations heapEqs applyMap
-        
-        -- no new variables were introduced in the tree traversal, 
-        -- but the equation-solver uses a variable for each applyMap-entry
-        unique2   = unique + Map.size applyMap
-        
-     in (iterCount, unique2, hptMap)
-     
+    in  solveEquations unique lenHeap equations heapEqs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -62,50 +54,41 @@ The overall goal is to collect equations that express
 what constraints variables and heaplocations satisfy.
 -}
 
-ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [ | | equations  USE {++} {[]} : {Equations}
-                                                        heapEqs    USE {++} {[]} : {HeapEquations}
-                                                  ]
+ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations  USE {++} {[]} : {Equations}
+                                             heapEqs    USE {++} {[]} : {HeapEquations}
+                                       ]
 
 {-
-The EvalMap (slightly rewritten) is passed down to all expressions, and passed up to the Module itself
-The ApplyMap (slightly rewritten) is passed up to the root
 A unique integer "location" is threaded through all expressions to number all Stores locations
 The value "unique", the first unused variable number, is made available to the root
 -}
 
-ATTR                  AllGlobal AllBind AllGrExpr [ evalMap: {EvalMap} |               |                       ]
-ATTR         GrModule                             [                    |               | evalMap  : {EvalMap}  ]
-ATTR GrAGItf GrModule                             [                    |               | applyMap : {ApplyMap} ]
-ATTR GrAGItf GrModule AllGlobal AllBind AllGrExpr [                    | location: Int |                       ]
-ATTR GrAGItf GrModule                             [ unique: {Int}      |               |                       ]
-
-SEM GrModule
-  | Mod     loc . applyList  =  let  rewrite (EvApTagVar (HNmNr f _)) = Right f
-                                     rewrite (EvApTagTag t          ) = Left  t
-                                in   [ (t, rewrite v)  | ((t,_), v) <- @applyTagMp ]
-            loc . evalList   =       [ (t, f)          | ((t,_), EvApTagVar (HNmNr f _)) <- @evalTagMp ]
-            loc . evalMap    =  Map.fromList @loc.evalList
-            loc . applyMap   =  Map.fromList @loc.applyList
-
-            loc . partPar    =  let  f (u,        xss)  (_, Right n)  = (u+1, (n,(Just u):[]):xss )
-                                     f (u, (n,xs):xss)  (_, Left  _)  = (u+1, (n,(Just u):xs):xss )
-                                in   snd (foldl f (@lhs.unique, []) (Map.toAscList @loc.applyMap))
-
+ATTR GrAGItf GrModule AllDef AllGrExpr [                    | location: Int |                       ]
+ATTR GrAGItf GrModule                  [ unique: {Int}      |               |                       ]
 
 SEM GrAGItf
   | AGItf  module . location = 0
 
 SEM GrAGItf
-  | AGItf  lhs.equations = genDynApplyEqs @module.applyMap @module.evalMap @module.appPappNodes  
-                           ++   filter nonTrivEq @module.equations
-%%]
-
-%%[8 hs
-
-nonTrivEq :: Equation -> Bool
-nonTrivEq (IsEqual _ []) = False
-nonTrivEq _              = True
-
+  | AGItf  lhs.equations = [ IsApplication Nothing (map fromJust args)             (getNr nm)
+                           | (InNode (GrTag_App nm) args) <- @module.fpaNodes
+                           ]
+                           ++
+                           [ IsEqual x y
+                           | (funnr, args) <- @module.allCalls
+                           , (x, Just y) <- zip [funnr + 2 ..] args
+                           ]
+                           ++
+                           [ IsEqual x y
+                           | (InNode (GrTag_Fun nm) args) <- @module.fpaNodes
+                           , (x, Just y) <- zip [getNr nm + 2 ..] args
+                           ]
+                           ++
+                           [ IsEqual x y
+                           | (InNode (GrTag_PApp needs nm) args) <- @module.fpaNodes
+                           , (x, Just y) <- zip [getNr nm + 2 ..] args
+                           ]
+                           ++  @module.equations
 %%]
 
 %%[8
@@ -119,41 +102,6 @@ ATTR AllGrVal
 
 
 
-%%[8
--- Collect all PApp and App nodes
-
-ATTR AllGrVal AllGrExpr AllBind AllGlobal GrModule [ | | appPappNodes USE {++} {[]} : {[NodeInfo (Maybe Variable)]} 
-                                                   ]
-ATTR GrTag [ | | isAppPApp : {Bool}   ]
-
-
-SEM GrVal
-  |  Node   lhs . appPappNodes =  if @tag.isAppPApp then [ InNode @tag.self @fldL.vars ] else []
-
-SEM GrTag
-  | App     lhs . isAppPApp  = True
-  | PApp    lhs . isAppPApp  = True
-  | * - App PApp 
-            lhs . isAppPApp  = False
- 
-
-%%]
-
-%%[8 hs
-
-genDynApplyEqs applyMap evalMap appPappNodes 
-  = [ IsApplication Nothing (map fromJust args) (fromJust (Map.lookup tag evalMap))
-    | (InNode tag@(GrTag_App _) args) <- appPappNodes
-    ]
-    ++
-    concat
-    [ let  lasttag = GrTag_PApp 1 nm
-           funnr   = either undefined id (fromJust $ Map.lookup lasttag applyMap)
-      in   zipWith IsEqual [funnr+1+needs+length args ..] (map ((:[]).fromJust) (reverse args))
-    | (InNode (GrTag_PApp needs nm) args) <- appPappNodes
-    ]
-
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% value and pattern nodes  %%
@@ -285,11 +233,11 @@ SEM GrExpr
   | Unit 
     UpdateUnit
                loc.equations1 = case (@lhs.targetInfo, @val.valInfo) of
-                                 (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar [svar]]
+                                 (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar svar]
                                  (InVar tvar        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
                                  (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
                                  (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
-  | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  [fromJust @val.var] ]
+  | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
   | Unit       lhs.equations  =  @loc.equations1
   | UpdateUnit lhs.equations  =  @loc.equations2 ++ @loc.equations1
 
@@ -308,7 +256,7 @@ buildUnifyEquations :: [Maybe Variable] -> [Variable] -> Equations
 buildUnifyEquations snms tnms
   = [ case mbSvar of
        Nothing    -> IsKnown tvar AbsBasic
-       Just svar  -> IsEqual tvar [svar]
+       Just svar  -> IsEqual tvar svar
     | (tvar,mbSvar) <- zip tnms snms
     , tvar /= getNr wildcardNr
     ]
@@ -329,7 +277,7 @@ An equation is generated, which states that the targetvariable is known to be as
 SEM GrExpr
   | Store  lhs . location    =  @lhs.location + 1  
            lhs . heapEqs     =  case @val.valInfo of
-                                  InNode stag snms  -> [ WillStore @lhs.location stag snms (Map.lookup stag @lhs.evalMap) ]
+                                  InNode stag snms  -> [ WillStore @lhs.location stag snms ]
                                   _                 -> error "HPT: source of Store should be a node"
            lhs . equations   =  case (@val.valInfo, @lhs.targetInfo) of
                                   (InNode stag snms, InVar tvar)  -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location))] 
@@ -342,7 +290,7 @@ A global definition is similar to a Store expression
 SEM GrGlobal
   | Global lhs . location    =  @lhs.location + 1
            lhs . heapEqs     =  case @val.valInfo of
-                                  InNode stag snms  -> [ WillStore @lhs.location stag snms (Map.lookup stag @lhs.evalMap) ]
+                                  InNode stag snms  -> [ WillStore @lhs.location stag snms ]
                                   _                 -> error "HPT: source of Global should be a node"
            loc . tvar        =  getNr @nm
            lhs . equations   =  case @val.valInfo of
@@ -373,9 +321,9 @@ SEM GrAlt
 %%[8.fetch
 SEM GrExpr
   | FetchNode    lhs . equations =  case @lhs.targetInfo of
-                                      InVar tvar  -> [ IsEqual tvar [getNr @nm] ]
+                                      InVar tvar  -> [ IsEqual tvar (getNr @nm) ]
                                       _           -> error "HPT: FetchNode target should be a variable"
-  | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) [getNr @src] ]
+  | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) (getNr @src) ]
   | FetchField   lhs . equations =  case @lhs.targetInfo of
                                       InVar tvar  ->  [ IsSelection tvar (getNr @nm) @offset (fromJust @mbTag) ]
                                       _           -> error "HPT: FetchField target should be a variable"
@@ -396,7 +344,7 @@ If the target is a node denotation, a select-equation is generated for each vari
 SEM GrExpr
   | Call  loc  .  exceptions  =  getNr @nm + 1 : @lhs.exceptions
           lhs  .  equations   =  case @lhs.targetInfo of
-                                   InVar  tvar       -> [ IsEqual tvar [getNr @nm] ]
+                                   InVar  tvar       -> [ IsEqual tvar (getNr @nm) ]
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
 %%]
 
@@ -406,14 +354,8 @@ SEM GrExpr
 %%%%%%%%%%
 %%[8.ffi
 
-{
-avForArity = if grinStoreArity
-              then [AbsBasic]
-              else []
-}
-
 SEM GrExpr
-  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else avForArity ) | con <- @tagL.self ] )
+  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- @tagL.self ] )
          lhs . equations =  case @lhs.targetInfo of
                               InVar tvar        -> [ IsKnown tvar (AbsNodes @loc.nodemap) ]
                               InNode ttag tnms  -> zipWith IsKnown tnms (fromJust (Map.lookup ttag @loc.nodemap))
@@ -460,11 +402,11 @@ SEM GrExpr
                    . exceptVar   =  @handlerVar
            handler . exceptions  =  @lhs.exceptions
            lhs     . exceptions  =  @handler.exceptions
-           loc     . exceptEq    =  IsEqual @handlerVar @body.exceptions
+           loc     . exceptEqs   =  [ IsEqual @handlerVar e | e <- @body.exceptions ]
                    . handlerVar  =  getNr @arg
 
 SEM GrExpr
-  | Catch  lhs   .  equations   =   @loc.exceptEq : @body.equations ++ @handler.equations
+  | Catch  lhs   .  equations   =   @loc.exceptEqs ++ @body.equations ++ @handler.equations
 
 -- Exceptions not caught in the same binding, and support for exceptions which can only found while analysing (eval calls)
 ATTR AllGrExpr [ exceptVar: Variable | exceptions: {[Variable]} | ]
@@ -472,7 +414,8 @@ ATTR AllGrExpr [ exceptVar: Variable | exceptions: {[Variable]} | ]
 SEM GrBind
   | Bind  expr    . exceptions  =  []
           loc     . exceptVar   =  getNr @nm + 1
-          loc     . exceptEq    =  IsEqual @exceptVar @expr.exceptions
+          loc     . exceptEqs   =  [ IsEqual @exceptVar e | e <- @expr.exceptions ]
+          lhs     . equations   =  @loc.exceptEqs ++ @expr.equations
 %%]
 
 
@@ -480,43 +423,26 @@ SEM GrBind
 %% Actuals %%
 %%%%%%%%%%%%%
 
-%%[8.actuals
-ATTR AllBind AllGrExpr [                                | | actualsEnv USE {.} {id} : {AbstractCallList -> AbstractCallList} ]
-ATTR AllBind           [ allActuals: {AbstractCallList} | |                                                            ]
+%%[8
+-- Collect all Fun, PApp and App nodes, and all Calls
 
+ATTR AllGrVal AllGrExpr AllDef GrModule [ | | fpaNodes USE {++} {[]} : {[NodeInfo (Maybe Variable)]} 
+                                              allCalls USE {++} {[]} : {AbstractCallList}
+                                        ]
+ATTR GrTag [ | | isfpa : {Bool}  ]
+
+
+SEM GrVal
+  |  Node   lhs . fpaNodes  =  if @tag.isfpa then [ InNode @tag.self @fldL.vars ] else []
 
 SEM GrExpr
-  | Store Unit  loc  .  fGenActuals  = \tag mns n -> let args      = if grinStoreArity
-                                                                      then tail mns -- first element is the size of the rest of the node
-                                                                      else      mns
-                                                         resultVar = Map.lookup tag @lhs.evalMap
-                                                         actuals r = ((r, args) :)
-                                                     in maybe id actuals resultVar
-                loc  .  actualsEnv   = case (@val.valInfo, @lhs.targetInfo) of
-                                           (InNode st snms, InVar tn)  -> @fGenActuals st snms tn
-                                           _                           -> id
-  | Call        loc  .  actualsEnv   = ((getNr @nm, @argL.vars) :)
+  | Call    lhs . allCalls  =  [ (getNr @nm, @argL.vars) ]
 
-SEM GrModule
-  | Mod       bindL  .  allActuals   = @bindL.actualsEnv @loc.partPar
 
-SEM GrBind
-  | Bind      loc    .  bindActuals  = transpose [ actuals
-                                                 | (resVar, actuals) <- @lhs.allActuals
-                                                 , resVar == getNr @nm
-                                                 ]
-              loc    .  prune        = (@nm == evalNr) || (@nm == applyNr)
-              loc    .  actualsEnv   = if @loc.prune then id else @expr.actualsEnv
-              lhs    .  equations    = @loc.exceptEq                                                  
-                                       :  [ IsEqual (getNr formal) [ actual | Just actual <- actuals]
-                                          | (formal, actuals) <- zip @argNmL ( if    null @bindActuals
-                                                                                then replicate (length @argNmL) []
-                                                                                else @bindActuals
-                                                                             )
-                                          ]
-                                       ++ @expr.equations
-
-              lhs    .  heapEqs      = if @prune 
-                                        then [] 
-                                        else @expr.heapEqs
+SEM GrTag
+  | Fun      lhs . isfpa  = True
+  | PApp     lhs . isfpa  = True
+  | App      lhs . isfpa  = True
+  | * - Fun PApp App
+             lhs . isfpa  = False
 %%]

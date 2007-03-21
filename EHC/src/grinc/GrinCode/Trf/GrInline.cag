@@ -51,16 +51,12 @@ buildAlternative
     , GrAlt                              -- code
     )
 
-buildAlternative tag avs arity rhsElem unique uf vf tf =
-    let args            = if grinStoreArity
-                           then tail avs  -- first element is the arity information (is always a basic abstract value)
-                           else avs
-                           
-        patNames        = map (\e -> HNmNr (fst e) Nothing) entrHead
+buildAlternative tag args arity rhsElem unique uf vf tf =
+    let patNames        = map (\e -> HNmNr (fst e) Nothing) entrHead
 
         uniqHead        = unique + arity
         entrHead        = zip [unique..] args
-        codeHead        = GrAlt_Alt (GrPatAlt_Node tag $ (if grinStoreArity then (wildcardNr:) else id) patNames)
+        codeHead        = GrAlt_Alt (GrPatAlt_Node tag patNames)
         
         (uniqBody,
          entrBody,
@@ -126,8 +122,7 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                                  throwEntry = (getNr throwVar, excepAbsVal)
                                  catchEntry = (getNr catchVar, functAbsVal)
                                  -- create a node for the exception
-                                 eArity     = if grinStoreArity  then (GrVal_LitInt 1 : ) else id
-                                 eNode      = GrVal_Node throwTag (eArity [throwVal])
+                                 eNode      = GrVal_Node throwTag [throwVal]
                                  -- generate code for handling the exception
                                  eCode      = GrExpr_Catch callExpr throwVar                        $
                                               GrExpr_Seq (GrExpr_UpdateUnit locatVar eNode) noPat  $
@@ -245,16 +240,13 @@ buildApplyAlt ((t, a, avL), rhs) appArgs hptMap u
                       , hptData absVal
                       , GrExpr_Call v (map GrVal_Var args ++ appArgs)
                       )
-    tf u args t = let arit   = if grinStoreArity
-                                then [GrVal_LitInt (a + length appArgs)]
-                                else []
-                      val2av v = case v of
+    tf u args t = let val2av v = case v of
                                      GrVal_Var v -> getEnvVar hptMap (getNr v)
                                      otherwise   -> AbsBasic
                       absVal = AbsNodes (Map.singleton t (avL ++ map val2av appArgs))
                   in ( u
                      , hptData absVal
-                     , GrExpr_Unit (GrVal_Node t (arit ++ map GrVal_Var args ++ appArgs))
+                     , GrExpr_Unit (GrVal_Node t (map GrVal_Var args ++ appArgs))
                      )
 
 

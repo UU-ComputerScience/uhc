@@ -21,10 +21,11 @@
 %format HsName    = "\mathit{Name}"
 %format getNr     = "\mathit{nr}"
 
-%format DATA = "\mathbf{DATA}"
+%format DATA = "\mathbf{syntax}"
+%format TYPE = "\mathbf{type}"
 %format ATTR = "\mathbf{attr}"
-%format USE  = "\mathit{use}"
 %format SEM  = "\mathbf{sem}"
+%format USE  = "\mathbf{use}"
 %format SYN  = "\mathbf{syn}"
 %format INH  = "\mathbf{inh}"
 %format .    = "."
@@ -60,7 +61,7 @@ Abstract Interpretation and Global Analysis
 
 \authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
            {Utrecht University}
-           {jeroen at cs.uu.nl}
+           {\{jeroen,doaitse\}@@cs.uu.nl}
 
 \maketitle
 
@@ -124,27 +125,26 @@ Overview
 
 Program is sequence of bindings
 
-begin{code}
+\begin{code}
 DATA Program
-  = Prog        prog            : GrModule
+  = Prog        mod             : GrModule
 DATA GrModule
-  = Mod         nm              : {HsName}
+  = Mod         nm              : HsName
                 globalL         : GrGlobalL
                 bindL           : GrBindL
-                evalMap         : EvalMap
-                applyMap        : ApplyMap
 \end{code}
 Binding binds function name with parameters to expression
 \begin{code}
 DATA GrBind
-  = Bind        nm              : {HsName}
-                argNmL          : {[HsName]}
+  = Bind        nm              : HsName
+                argNmL          : [HsName]
                 expr            : GrExpr
 DATA GrGlobal
-  = Global      nm              : {HsName}
+  = Global      nm              : HsName
                 val             : GrVal
 TYPE GrGlobalL  =   [GrGlobal]
 TYPE GrBindL    =   [GrBind]
+SET AllDef = GrGlobal GrGlobalL GrBind GrBindL
 \end{code}
 
 Expression manipulates and returns values
@@ -153,26 +153,26 @@ Value are nodes, variables, tags or constants
 
 \begin{code}
 DATA GrVal
-  = LitInt      int             : {Int}
-  | Tag         tag             : GrTag
-  | Var         nm              : {HsName}
-  | Node        tag             : GrTag
-                fldL            : GrValL
-  | VarNode     fldL            : GrValL
-TYPE GrValL     =   [GrVal]
+  =  LitInt      int             : Int
+  |  Tag         tag             : GrTag
+  |  Var         nm              : HsName
+  |  Node        tag             : GrTag
+                 fldL            : GrValL
+  |  VarNode     fldL            : GrValL
+TYPE GrValL   =  [GrVal]
+SET AllVal    =  GrVal GrValL
 \end{code}
 
 Tags tag nodes, either a constructed value or a thunk:
 \begin{code}
-data GrTagCateg
-  =  GrTagCon		{grtgAnn	:: GrTagAnn	}
-  |  GrTagHole
-  |  GrTagRec
-  |  GrTagApp
-  |  GrTagFun
-  |  GrTagPApp 		{grtgNeeds  :: Int		}
-  |  GrTagWorld
-
+DATA GrTag
+  |  Con           nm              : HsName
+  |  Fun           nm              : HsName
+  |  PApp          needs           : Int
+                   nm              : HsName
+  |  App           nm              : HsName
+  |  Unboxed       ^
+  |  Hole
 \end{code}
 
 
@@ -182,48 +182,56 @@ Case (Lit, Tag, Node)
 and Lambda (Empty, Var, VarNode)
 \begin{code}
 DATA GrPatAlt
-  = LitInt      int             : {Int}
-  | Tag         tag             : GrTag
-  | Node        tag             : GrTag
-                fldL            : {[HsName]}
-  | Otherwise
+  =  LitInt      int             : Int
+  |  Tag         tag             : GrTag
+  |  Node        tag             : GrTag
+                 fldL            : [HsName]
 DATA GrPatLam
-  = Empty
-  | Var         nm              : {HsName}
-  | VarNode     fldL            : GrVarL
+  =  Empty
+  |  Var         nm              : HsName
+  |  VarNode     fldL            : GrVarL
 DATA GrVar
-  = Var         nm              : {HsName}
-  | KnownTag    tag             : GrTag
-  | Ignore
+  =  Var         nm              : HsName
+  |  KnownTag    tag             : GrTag
 TYPE GrVarL     =   [GrVar]
 \end{code}
+
 Details of expressions: 
 
 \begin{code}
 DATA GrExpr
-  = Seq         expr            : GrExpr
-                pat             : GrPatLam
-                body            : GrExpr
-  | Unit        val             : GrVal
-  | UpdateUnit  nm              : {HsName}
-                val             : GrVal
-  | Case        val             : GrVal
-                altL            : GrAltL
-  | FetchNode   nm              : {HsName}
-  | FetchUpdate src             : {HsName}
-                dst             : {HsName}
-  | FetchField  nm              : {HsName}
-                offset          : {Int}
-                mbTag           : {Maybe GrTag}
-  | Store       val             : GrVal
-  | Call        nm              : {HsName}
-                argL            : GrValL
-  | FFI         nm              : {String}
-                argL            : {[HsName]}
-                tagL            : GrTagL
-  | Eval        nm              : {HsName}
-  | App         nm              : {HsName}
-                argL            : GrValL
+  =  Seq          expr            : GrExpr
+                  pat             : GrPatLam
+                  body            : GrExpr
+  |  Unit         val             : GrVal
+  |  UpdateUnit   nm              : HsName
+                  val             : GrVal
+  |  Case         val             : GrVal
+                  altL            : GrAltL
+  |  FetchNode    nm              : HsName
+  |  FetchUpdate  src             : HsName
+                  dst             : HsName
+  |  FetchField   nm              : HsName
+                  offset          : Int
+                  mbTag           : Maybe GrTag
+  |  Store        val             : GrVal
+  |  Call         nm              : HsName
+                  argL            : GrValL
+  |  FFI          nm              : String
+                  argL            : [HsName]
+                  tagL            : GrTagL
+  |  Eval         nm              : HsName
+  |  App          nm              : HsName
+                  argL            : GrValL
+                  
+DATA GrAlt
+  | Alt         pat             : GrPatAlt
+                expr            : GrExpr
+
+TYPE GrAltL     =   [GrAlt]
+
+SET AllExpr = GrExpr GrAlt GrAltL
+              GrPAtAlt GrPatLam GrVar GrVarL
 \end{code}
 
 
@@ -242,6 +250,11 @@ data AbstractValue
   |  AbsLocs   (Set.Set Location)
   |  AbsNodes  (Map.Map GrTag [AbstractValue])
   |  AbsError  String
+type AbstractEnv s  
+  =  STArray s Variable AbstractValue
+type AbstractHeap s 
+  =  STArray s Location AbstractValue
+  
 \end{code}
 
 
@@ -250,11 +263,15 @@ data AbstractValue
 \begin{code}
 data Equation
   =  IsKnown          Variable  AbstractValue
-  |  IsEqual          Variable  [Variable]
+  |  IsEqual          Variable  Variable
   |  IsSelection      Variable  Variable Int GrTag
   |  IsConstruction   Variable  GrTag [Maybe Variable]
   |  IsEvaluation     Variable  Variable
   |  IsApplication    (Maybe Variable) [Variable]
+data HeapEquation     ^
+  = WillStore         Location  GrTag [Maybe Variable]
+type Equations     = [Equation]
+type HeapEquations = [HeapEquation]
 \end{code}
 
 
@@ -267,17 +284,16 @@ Constraint specification as a treewalk
 Synthesized attributes for equations and heapequations
 
 \begin{code}
-ATTR GrModule AllGlobal AllBind AllExpr
-  SYN  equations  USE {++} {[]}  : {Equations}
-  SYN  heapEqs    USE {++} {[]}  : {HeapEquations}
+ATTR GrModule AllDef AllExpr
+  SYN  equations  USE (++) []  : Equations
+  SYN  heapEqs    USE (++) []  : HeapEquations
 \end{code}
-We need the |evalMap| in some expressions, so we pass it down.
 Heappointer is incremented every time it is used.
 \begin{code}
-ATTR AllGlobal AllBind AllExpr
-  INH  evalMap  :  {EvalMap}
-ATTR GrModule AllGlobal AllBind AllExpr
+ATTR Program GrModule AllDef AllExpr
   INH SYN  location  :  Int
+SEM Program | Prog
+  mod.location = 0
 \end{code}
 
 Nodes sometimes are sometimes refered to by a variable, sometimes they are enumerated in full.
@@ -286,24 +302,24 @@ This datatype distinguishes these two cases:
 data NodeInfo a 
   =  InVar   Variable 
   |  InNode  GrTag [a]
-  
+ 
 fromInVar :: NodeInfo a -> Variable
 fromInVar (InVar v)  = v
 \end{code}
 It is used in attributes that gather the nature of a value and a pattern, respectively:
 \begin{code}
-ATTR  GrVal     SYN valInfo : { NodeInfo (Maybe Variable) }
+ATTR  GrVal     SYN valInfo : NodeInfo (Maybe Variable)
 ATTR  GrPatAlt 
-      GrPatLam  SYN patInfo : { NodeInfo Variable  }
+      GrPatLam  SYN patInfo : NodeInfo Variable
 \end{code}
 A few auxiliary attributes are necessary to do the actual gathering:
 \begin{code}
-ATTR  GrVal   SYN  var      : { Maybe Variable }
-ATTR  GrValL  SYN  vars     : {[Maybe Variable]}
+ATTR  GrVal   SYN  var      : Maybe Variable
+ATTR  GrValL  SYN  vars     : [Maybe Variable]
 ATTR  GrVar   SYN  tag      : GrTag
-              SYN  var      : { Variable }
+              SYN  var      : Variable
 ATTR  GrVarL  SYN  hdTag    : GrTag 
-              SYN  vars     : {[Variable]}
+              SYN  vars     : [Variable]
 \end{code}
 The gathering is straightforward:
 \begin{code}
@@ -339,7 +355,7 @@ Every expression has a target, which is either the next pattern in a sequence,
 or the result of a binding.
 \begin{code}
 ATTR AllExpr 
-  INH targetInfo: {NodeInfo Variable}
+  INH targetInfo: NodeInfo Variable
 SEM GrBind | Bind  
   expr.targetInfo  =  InVar (getNr @nm)
 SEM GrExpr | Seq    
@@ -349,7 +365,7 @@ SEM GrExpr | Seq
 Inside a case-expression, we also need information about the scrutinee
 \begin{code}
 ATTR GrAlt GrAltL 
-  INH valInfo: {NodeInfo (Maybe Variable)}
+  INH valInfo: NodeInfo (Maybe Variable)
 \end{code}
 Two auxiliary functions are used to build a series of equations for matching a complete node:
 \begin{code}
@@ -357,7 +373,9 @@ buildSelectEquations
   :: Variable -> GrTag -> [Variable] -> Equations
 buildSelectEquations svar ttag tnms
   = [  IsSelection tvar svar i ttag
-    |  (tvar,i) <- zip tnms [0..]
+    |  (tvar,i) <- zip tnms [0..]                      funnr    = getNr nm
+                      sfx      = zip  [funnr+2+length oldArgs ..] args
+
     ,  tvar /= wildcard
     ]
 buildUnifyEquations 
@@ -365,61 +383,62 @@ buildUnifyEquations
 buildUnifyEquations snms tnms
   = [  case mbSvar of
          Nothing    -> IsKnown  tvar AbsBasic
-         Just svar  -> IsEqual  tvar [svar]
+         Just svar  -> IsEqual  tvar svar
     |  (tvar,mbSvar) <- zip tnms snms
     ,  tvar /= wildcard
     ]
 \end{code}
 The equations that are generated for each expression type are shown in figure~\ref{fig.equations}.
 
-If the program contains |App| or |PApp| nodes, evaluation of them might
-result in functions that were not statically visible.
-Therefore, we need more equations, which are generated in figure~\ref{fig.dynapp}
-But first, we gather all |App| and |PApp| nodes.
+To make a correspondence between formal and actual parameters,
+we need to collect all calls. 
+Not only the direct calls, but also the postboned ones hidden in |Fun|, |PApp| and |App| nodes.
+
 \begin{code}
-ATTR AllVal AllExpr AllBind AllGlobal GrModule 
-  SYN  appPappNodes USE {++} {[]} : {[NodeInfo (Maybe Variable)]} 
+ATTR AllVal AllExpr AllDef GrModule 
+  SYN allCalls USE (++) [] : AbstractCallList
+  SYN fpaNodes USE (++) [] : [NodeInfo (Maybe Variable)]
 ATTR GrTag 
-  SYN  isAppPApp USE {||} {False} : {Bool}
-SEM GrVal |  Node   
-  lhs.appPappNodes  =  if    @tag.isAppPApp 
-                       then  [ InNode @tag.self @fldL.vars ] 
-                       else  []
-SEM GrTag |  Lit
-  lhs.isAppPApp  =  case @categ of
-                      GrTagPApp _ -> True
-                      GrTagApp    -> True
-                      _           -> False
+  SYN isfpa : Bool
+SEM GrVal  |  Node   
+  lhs.fpaNodes  =  if    @tag.isfpa 
+                   then  [ InNode @tag @fldL.vars ] 
+                   else  []
+SEM GrExpr | Call    
+  lhs.allCalls  =  [ (getNr @nm, @argL.vars) ]
+SEM GrTag
+  | Fun      lhs . isfpa  = True
+  | PApp     lhs . isfpa  = True
+  | App      lhs . isfpa  = True
+  | * - Fun PApp App
+             lhs . isfpa  = False
 \end{code}
 
-
-\begin{figure*}
+The final set of equations is the combination of
+those that arose from calls, and the ones that were gathered in the treewal:
 \begin{code}
-genDynApplyEqs applyMap evalMap appPappNodes 
-  = [ IsApplication Nothing (map fromJust args) (fromJust (Map.lookup tag evalMap))
-    | (InNode tag@(GrTag_Lit GrTagApp x y) args) <- appPappNodes
-    ]
-    ++
-    concat
-    [ let  lasttag = GrTag_Lit (GrTagPApp 1        ) 0 nm
-           funnr   = either undefined id (fromJust $ Map.lookup lasttag applyMap)
-      in   zipWith IsEqual [funnr+1+needs+length args ..] (map ((:[]).fromJust) (reverse args))
-    | (InNode (GrTag_Lit (GrTagPApp needs) _ nm) args) <- appPappNodes
-    ]
+SEM Program  |  Prog
+  lhs.equations 
+   =  [  IsApplication Nothing (map fromJust args)
+      |  (InNode (GrTag_App nm) args) <- @mod.fpaNodes
+      ]
+      ++
+      [  IsEqual x y
+      |  (funnr, args) <- @mod.allCalls
+      ,  (x, Just y) <- zip [funnr + 2 ..] args
+      ]
+      ++
+      [  IsEqual x y
+      |  (InNode (GrTag_Fun nm) args) <- @mod.fpaNodes
+      ,  (x, Just y) <- zip [getNr nm + 2 ..] args
+      ]
+      ++
+      [  IsEqual x y
+      |  (InNode (GrTag_PApp needs nm) args) <- @mod.fpaNodes
+      ,  (x, Just y) <- zip [getNr nm + 2 ..] args
+      ]
+      ++  @mod.equations
 \end{code}
-\caption{Dynamic application equations}
-\label{fig.dynapp}
-\end{figure*}
-
-
-
-
-
-\begin{code}
-\end{code}
-
-
-
 
 
 
@@ -427,12 +446,12 @@ genDynApplyEqs applyMap evalMap appPappNodes
 \begin{code}
 SEM GrExpr | Unit UpdateUnit
   loc.equations1   = case (@lhs.targetInfo, @val.valInfo) of
-                       (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar [svar]]
+                       (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar svar]
                        (InVar tvar        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
                        (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
                        (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
 SEM GrExpr | UpdateUnit
-  loc.equations2   =  [ IsEqual (getNr @nm)  [getNr @val.getName] ]
+  loc.equations2   =  [ IsEqual (getNr @nm)  (getNr @val.getName) ]
 SEM GrExpr | Unit
   lhs.equations    =  @loc.equations1
 SEM GrExpr | UpdateUnit
@@ -444,9 +463,9 @@ SEM GrAlt | Alt
 
 SEM GrExpr | FetchNode
   lhs.equations    =  case @lhs.targetInfo of
-                        InVar tvar  ->  [ IsEqual  tvar         [getNr @nm]   ]
+                        InVar tvar  ->  [ IsEqual  tvar         (getNr @nm)   ]
 SEM GrExpr | FetchUpdate                ^          ^            ^             ^
-  lhs.equations    =                    [ IsEqual  (getNr @dst) [getNr @src]  ]
+  lhs.equations    =                    [ IsEqual  (getNr @dst) (getNr @src)  ]
 SEM GrExpr | FetchField
   lhs.equations    =  case @lhs.targetInfo of
                         InVar tvar  ->  [ IsSelection tvar (getNr @nm) @offset (fromJust @mbTag) ]
@@ -454,19 +473,19 @@ SEM GrExpr | FetchField
 SEM GrExpr | Store  
   lhs.location     =  @lhs.location + 1  
   lhs.heapEqs      =  case @val.valInfo of
-                        InNode stag snms  -> [ WillStore @lhs.location stag snms (Map.lookup stag @lhs.evalMap) ]
+                        InNode stag snms  -> [ WillStore @lhs.location stag snms ]
   lhs.equations    =  case (@val.valInfo, @lhs.targetInfo) of
                         (InNode stag snms, InVar tvar)  -> [ IsKnown tvar (AbsLocs (Set.singleton @lhs.location)) ] 
 SEM GrGlobal | Global 
   lhs.location     =  @lhs.location + 1
   lhs.heapEqs      =  case @val.valInfo of
-                        InNode stag snms  -> [ WillStore @lhs.location stag snms (Map.lookup stag @lhs.evalMap) ]
+                        InNode stag snms  -> [ WillStore @lhs.location stag snms ]
   lhs.equations    =  case @val.valInfo of
                         InNode stag snms  -> [ IsKnown (getNr @nm) (AbsLocs (Set.singleton @lhs.location)) ]
     
 SEM GrExpr | Call  
   lhs.equations    =  case @lhs.targetInfo of
-                        InVar  tvar       -> [ IsEqual tvar [getNr @nm] ]
+                        InVar  tvar       -> [ IsEqual tvar (getNr @nm) ]
                         InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
 
 SEM GrExpr | FFI
@@ -481,7 +500,7 @@ SEM GrExpr | Eval
 
 SEM GrExpr | App  
   lhs.equations    =  case @lhs.targetInfo of
-                        InVar tvar -> let  [ IsApplication (Just tvar) (getNr @nm : map fromInVar @argL.valsInfo) ]
+                        InVar tvar ->  [ IsApplication (Just tvar) (getNr @nm : map fromInVar @argL.valsInfo) ]
 \end{code}
 \caption{Constraints for various expression types}
 \label{fig.equations}
@@ -496,14 +515,13 @@ Then do a fixpoint iteration on both sets of equations, usign two procedures
 that determine which values need to be updated.
 \begin{code}
 solveEquations ::  Int -> Int -> Equations -> HeapEquations 
-                   -> ApplyMap -> (Int,AbsHeap,AbsEnv)
-solveEquations lenEnv lenHeap eqs1 eqs2 applyMap
+                   -> (Int,AbsHeap,AbsEnv)
+solveEquations lenEnv lenHeap eqs1 eqs2
 =  runST $
-   do  { let lenEnv2 = lenEnv + Map.size applyMap
-       ; env   <- newArray (0, lenEnv2 - 1) AbsBottom
-       ; heap  <- newArray (0, lenHeap - 1) AbsBottom
+   do  { env   <- newArray (0, lenEnv   - 1) AbsBottom
+       ; heap  <- newArray (0, lenHeap  - 1) AbsBottom
        ; let procEnv equat
-             = do  { cs  <- envChanges equat env heap applyMap
+             = do  { cs  <- envChanges equat env heap
                    ; bs  <- mapM (procChange env) cs
                    ; return (or bs)
                    }
@@ -545,17 +563,40 @@ Selecting the change candiates for a heap equation
 \begin{code}
 heapChange ::  HeapEquation -> AbstractEnv s 
                -> ST s (Location,AbstractValue)
-heapChange (WillStore locat tag args mbres) env 
- = do  { absArgs  <- mapM getEnv args
-       ; absRes   <- getEnv mbres
-       ; let absNode = AbsNodes (Map.singleton tag absArgs)
+heapChange (WillStore locat tag args) env 
+ = do  { let mbres       =   tagFun tag
+       ; absArgs         <-  mapM getEnv args
+       ; absRes          <-  getEnv mbres
+       ; let absNode     =   AbsNodes (Map.singleton tag absArgs)
        ; return (locat, absNode `mappend` absRes)
        }
        where
-       getEnv    =  maybe  (return AbsBottom) 
-                           (\v -> readArray env v >>= return )
+       getEnv Nothing   =  return AbsBottom
+       getEnv (Just v)  =  readArray env v
+       tagFun (GrTag_Fun nm)  =  Just (getNr nm)
+       tagFun _               =  Nothing
 \end{code}
+Auxiliary tests needed:
+\begin{code}
+isPAppTag :: GrTag -> Bool
+isPAppTag (GrTag_PApp _ _)    = True
+isPAppTag _                   = False
 
+isValueTag :: GrTag -> Bool
+isValueTag  GrTag_Any         = True
+isValueTag  GrTag_Unboxed     = True
+isValueTag (GrTag_PApp _ _)   = True
+isValueTag (GrTag_Con _)      = True
+isValueTag _                  = False
+
+filterTaggedNodes ::  (GrTag->Bool) 
+                      -> AbstractValue -> AbstractValue
+filterTaggedNodes p (AbsNodes nodes) 
+  = let  newNodes = Map.filterWithKey (const . p) nodes
+    in   AbsNodes newNodes
+filterTaggedNodes p av
+  = av
+\end{code}
 
 
 \begin{figure*}
@@ -565,60 +606,63 @@ envChanges equat env heap applyMap
   = case equat of
       IsKnown         d av         ->  return [(d, av)]
 
-      IsEqual         d vs         ->  do  {  rs <- mapM (readArray env) vs
-                                           ;  return [(d, mconcat rs)]
+      IsEqual         d v          ->  do  {  av <- readArray env v
+                                           ;  return [(d, av)]
                                            }
       IsSelection     d v i t      ->  do  {  av <- readArray env v
-                                           ;  let res =  case av of
-                                                          AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
-                                                          AbsBottom     -> av
-                                                          AbsError _    -> av
+                                           ;  let res = absSelect av i t
                                            ;  return [(d,res)]
                                            }
       IsConstruction  d t as       ->  do  {  vars <- mapM (maybe (return AbsBasic) (readArray env)) as
                                            ;  let res = AbsNodes (Map.singleton t vars)
                                            ;  return [(d,res)]
                                            }
-      IsEvaluation    d v          ->  do  {  av <- readArray env v
-                                           ;  res <- absDeref av
+      IsEvaluation    d v          ->  do  {  av   <- readArray env v
+                                           ;  res  <- absDeref av
                                            ;  return [(d,res)]
                                            }
       IsApplication mbd (f:as)     ->  do  {  av         <-  readArray env f
                                            ;  absFun     <-  case mbd of
-                                                              Nothing  -> absDeref av
-                                                              Just _   -> return av
+                                                               Nothing  -> absDeref av
+                                                               Just _   -> return av
                                            ;  absArgs    <-  mapM (readArray env) as
                                            ;  (sfx,res)  <-  absCall absFun absArgs
                                            ;  return $ (maybe id (\d->((d,res):)) mbd) sfx
                                            }
+\end{code}
+\begin{code}
     where
-    absDeref av
-      = case av of
-          AbsLocs ls  ->  do  { vs <- mapM (readArray heap) (Set.toList ls)
-                              ; return (mconcat (map (filterTaggedNodes isValueTag) vs))
-                              }
-          AbsBottom   ->  return av
-          AbsError _  ->  return av
-    absCall f args
-      = do  {  ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
-            ;  let (sfxs,avs) = unzip ts
-            ;  return (concat sfxs, mconcat avs)
-      	    }
-      where addArgs (tag@(GrTag_Lit (GrTagPApp needs) _ nm) , oldArgs) 
-              =  do 
-                 { let  n        =  length args
-                        newtag   =  GrTag_Lit (GrTagPApp (needs-n)) 0 nm
-                        lasttag  =  GrTag_Lit (GrTagPApp 1        ) 0 nm
-                        funnr    =  either undefined id (fromJust $ Map.lookup lasttag applyMap)
-                        sfx      =  zip  [funnr+2+needs-length args ..] (reverse args)
-                 ; res <-  if    n<needs
-                           then  return $ AbsNodes (Map.singleton newtag (oldArgs++args))
-                           else  readArray env funnr
-                 ; return (sfx, res)
-                 }
+    absSelect av i t   =  case av of
+                            AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
+                            AbsBottom     -> av
+                            AbsError _    -> av
+    absDeref av        =  case av of
+                            AbsLocs ls    ->  do  { vs <- mapM (readArray heap) (Set.toList ls)
+                                                  ; return (mconcat (map (filterTaggedNodes isValueTag) vs))
+                                                  }
+                            AbsBottom     ->  return av
+                            AbsError _    ->  return av
+    absCall f args     =  do {  ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
+                             ;  let (sfxs,avs) = unzip ts
+                             ;  return (concat sfxs, mconcat avs)
+      	                     }
+      where  addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
+               =  do  {  let  n        =  length args
+                              newtag   =  GrTag_PApp (needs-n) nm
+                              funnr    = getNr nm
+                              sfx      = zip  [funnr+2+length oldArgs ..] args
+                      ;  res  <-  if    n<needs
+                                  then  return $ AbsNodes (Map.singleton newtag (oldArgs++args))
+                                  else  readArray env funnr
+                      ;  return (sfx, res)
+                      }
+             getNodes av  =  case av of  
+                               AbsNodes n  -> Map.toAscList n
+                               AbsBottom   -> []
 \end{code}
 \caption{Selection of change candidates for variables}
 \end{figure*}
+
 
 
 

@@ -100,10 +100,7 @@ SEM GrBind
 
 
 SEM GrModule
-  | Mod  loc  .  newGlobals  =  let arity             =  if grinStoreArity
-                                                          then [GrVal_LitInt 0]
-                                                          else []
-                                    buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (tag n) arity)
+  | Mod  loc  .  newGlobals  =  let buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (tag n) [])
                                     tag n             =  let  ts = filter (\x -> n==ctagNm x) @allCTags
                                                          in   if null ts
                                                               then GrTag_Fun n

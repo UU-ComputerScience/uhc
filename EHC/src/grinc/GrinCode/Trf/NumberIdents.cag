@@ -17,6 +17,8 @@ Note: after each binding we skip one number (binding needs two number in the HPT
 
 %%[8 hs import({%{GRIN}Config})
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
@@ -36,7 +38,7 @@ numberIdents (code,unique,hptMap)
 %%[8.lookup hs
 type LookupList = Map.Map HsName HsName
 
-findNewVar fm e = Map.findWithDefault (error $ "undeclared variable " ++ show e) e fm
+findNewVar fm e = Map.findWithDefault (error $ "undeclared variable " ++ show e ++ " in " ++ show fm) e fm
 
 
 addMaybe :: Int -> LookupList -> Maybe HsName -> (LookupList, Int)
@@ -78,7 +80,7 @@ ATTR GrModule AllBind [ | bind2idFrag: LookupList | ]
 SEM GrAGItf
   | AGItf  module  .  bind2idFrag  = Map.empty
                    .  var2id       = Map.empty
-           loc     .  bind2id      = @module.bind2idFrag
+           loc     .  bind2id      = Map.insert hsnMain mainNr (Map.insert evalNm evalNr (Map.insert applyNm applyNr @module.bind2idFrag))
 
 %%]
 
@@ -133,12 +135,18 @@ SEM GrExpr
                         .  unique   = @body.unique + 1
                loc      .  newName  = HNmNr @body.unique (Just @arg)
 
+
+-- addList processes arguments back-to-front.
+-- because we need arguments to be numbered in increasing order, we first reverse them,
+-- and then reverse the resulting newNames back to the original order
+
 SEM GrBind
-  | Bind      loc   .  (var2id', newNames, unique'')  =  addList @unique' @lhs.var2id @argNmL
-              expr  .  var2id                         =  @var2id'
-                    .  unique                         =  @unique''
-              lhs   .  unique                         =  @expr.unique
-                    .  var2id                         =  @expr.var2id
+  | Bind      loc   .  (var2id', nn, unique'')  =  addList @unique' @lhs.var2id (reverse @argNmL)
+                    .  newNames                 =  reverse @nn
+              expr  .  var2id                   =  @var2id'
+                    .  unique                   =  @unique''
+              lhs   .  unique                   =  @expr.unique
+                    .  var2id                   =  @expr.var2id
 %%]
 
 replacing every identifier with a number
@@ -177,20 +185,40 @@ SEM GrExpr
   | Catch       lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
   | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL) @tagL.grTrf
 
+SEM GrTag
+  | Con Fun PApp App
+                loc  .  newName  =  findNewVar @lhs.bind2id @nm
+--  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @loc.newName           
+  | Fun         lhs  .  grTrf    =  GrTag_Fun @loc.newName           
+  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs @loc.newName           
+  | App         lhs  .  grTrf    =  GrTag_App @loc.newName           
+
+
+
 SEM GrModule
   | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
-         loc  . newEvalTagMp  = map (newMap @lhs.bind2id) @evalTagMp
-              . newAppTagMp   = map (newMap @lhs.bind2id) @applyTagMp
+         loc  . bind2idplus   = Map.insert hsnMain mainNr (Map.insert evalNm evalNr (Map.insert applyNm applyNr @lhs.bind2id))
+         loc  . newEvalTagMp  = map (newMap @loc.bind2idplus) @evalTagMp
+              . newAppTagMp   = map (newMap @loc.bind2idplus) @applyTagMp
 %%]
 
+
+
+
 %%[8 hs
-newMap mp (k, EvApTagVar nm)  =  let newNm = if applyNm == nm
-                                             then applyNr
-                                             else if evalNm == nm
-                                             then evalNr
-                                             else if hsnMain == nm
-                                             then mainNr
-                                             else findNewVar mp nm
-                                 in (k, EvApTagVar newNm)
-newMap mp x                   =  x
+newMap mp ((k,i), EvApTagVar nm)  =  ((substTag mp k,i), EvApTagVar (findNewVar mp nm))
+newMap mp ((k,i), EvApTagTag t)   =  ((substTag mp k,i), EvApTagTag (substTag mp t))                                 
+newMap mp ((k,i), EvApTagUnit)    =  ((substTag mp k,i), EvApTagUnit)                                 
+newMap mp ((k,i), EvApTagThrow)   =  ((            k,i), EvApTagThrow)                                 
+
+
+substTag mp (GrTag_Fun nm) = GrTag_Fun (findNewVar mp nm)
+substTag mp (GrTag_App nm) = GrTag_App (findNewVar mp nm)
+substTag mp (GrTag_PApp n nm) = GrTag_PApp n (findNewVar mp nm)
+--substTag mp (GrTag_Con a i nm) = GrTag_Con a i (findNewVar mp nm)
+substTag mp x = x
+
+
+
+
 %%]

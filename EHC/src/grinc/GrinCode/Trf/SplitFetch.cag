@@ -206,7 +206,7 @@ fromJust' s Nothing = error $ "fromJust':" ++ s
 fromJust' _ (Just v) = v
 
 nodeSizeTag t nodeSizes 
-  =  (if grinStoreArity then 1 else 0) + Map.findWithDefault 1 t nodeSizes
+  =  Map.findWithDefault 1 t nodeSizes
 
 getTagName (GrVal_Var v) =  v
 getTagName v             = error $ "getName: value not a variable: '" ++ show v ++ "'"
