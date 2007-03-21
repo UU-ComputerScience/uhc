@@ -562,6 +562,14 @@ parNeedApp :: HsName -> (ParNeed,ParNeedL)
 parNeedApp conNm
   =  let  pr  | hsnIsArrow  conNm   =  (ParNeededLow,[ParNotNeeded,ParNeeded])
               | hsnIsProd   conNm   =  (ParOverrideNeeded,repeat ParNotNeeded)
+%%[[5
+              | hsnIsList   conNm   =  (ParOverrideNeeded,[ParNotNeeded])
+%%]]
+%%[[7
+              | hsnIsRec    conNm   =  (ParOverrideNeeded,[ParNotNeeded])
+              | hsnIsSum    conNm   =  (ParOverrideNeeded,[ParNotNeeded])
+              | hsnIsRow    conNm   =  (ParOverrideNeeded,repeat ParNotNeeded)
+%%]]
               | otherwise           =  (ParNeeded,repeat ParNeededHigh)
      in   pr
 

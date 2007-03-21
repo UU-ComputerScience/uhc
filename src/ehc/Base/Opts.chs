@@ -121,6 +121,7 @@ data EHCOpts
       ,  ehcOptPrfCutOffAt    ::  Int				-- cut off limit for context reduction
       ,  ehcCfgClassViaRec    ::  Bool				-- instance representation via record instead of data
       ,  ehcCfgClassViaCHR    ::  Bool				-- use CHR based variant
+      ,  ehcCfgCHRInclScope   ::  Bool				-- include scoped CHR's (option is used only for paper writing)
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
@@ -201,6 +202,7 @@ defaultEHCOpts
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
       ,  ehcCfgClassViaCHR    =   False -- True
+      ,  ehcCfgCHRInclScope   =   True
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
@@ -261,6 +263,7 @@ ehcCmdLineOpts
 %%]]
 %%[[9
      ,  Option ""   ["cls-via-chr"]      (boolArg oClsViaCHR)                 "class predicate handling vir CHR's (default=off)"
+     ,  Option ""   ["chr-scoped"]       (boolArg oCHRscoped)                 "include scoped CHR's (default=on)"
 %%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
@@ -373,6 +376,7 @@ ehcCmdLineOpts
 %%]]
 %%[[9
          oClsViaCHR    o b =  o { ehcCfgClassViaCHR       = b }
+         oCHRscoped    o b =  o { ehcCfgCHRInclScope      = b }
 %%]]
 %%[[20
          oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }

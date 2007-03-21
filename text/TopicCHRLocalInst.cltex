@@ -167,13 +167,13 @@ and local instances makes it rather difficult to predict what combination of ins
 satisfy |Show [[[v1]]]| arising in the following example for some type variable |v1|:
 
 %%[[wrap=code
-instance Show Char                          -- showChar
-instance Show a =>  Show [a]                -- show[]
-instance Show [Char]                        -- show[Char]
+instance Show Char                          -- dShowChar
+instance Show a =>  Show [a]                -- dShowL
+instance Show [Char]                        -- dShowCharL
 
 showTable hdr tbl 
-  =  let  instance Show a =>  Show [[a]]    -- show[[]]
-     in   ... show (hdr : tbl) ...
+  =  let  instance Show a =>  Show [[a]]    -- dShowLL
+     in   show (map (\x -> x ++ x) hdr : tbl)
 
 main = showTable ["Name", "DOB"]  [["G", "19830511"]
                                   ,["A", "19830208"]]
@@ -190,7 +190,7 @@ showTable :: Show a        => [[a]] -> [[[a]]] -> [Char]
 
 \FigurePDF{t}{0.55}{redGraphShowTable}{Context reduction for showTable}{chr-redGraphShowTable}
 
-The first type opts for no context reduction at all, whereas the second only uses the local instance |show[[]]|, and
+The first type opts for no context reduction at all, whereas the second only uses the local instance |dShowLL|, and
 the third has several alternative paths available to arrive at |Show v1|.
 From the above problems we conclude the following:
 
@@ -368,12 +368,21 @@ type scope = [Int]
 Identifiers |{s, t}| are used to denote scopes |scope|.
 The |Int| elements of a scope uniquely identify a definition within an enclosing scope.
 A scope |s| is more deeply nested when longer.
-Two scopes have a common scope if they have a common prefix.
-Visibility of a scope |s| from a scope |t| is defined in terms of the standard Haskell function |isPrefixOf|:
+The common scope of two scopes is defined as their longest common prefix,
+which always exists because the global scope always is common.
+
+%%[[wrap=code
+commonScope :: scope -> scope -> scope
+commonScope (x:xs)  (y:ys)  | x == y     = x : commonScope xs ys
+                            | otherwise  = []
+commonScope _       _                    = []
+%%]]
+
+A scope |s| is visible from a scope |t| if their common scope equals |s|:
 
 %%[[wrap=code
 visibleIn :: scope -> scope -> Bool
-s `visibleIn` t = s `isPrefixOf` t
+s `visibleIn` t = s == s `commonScope` t
 %%]]
 
 Constraint satisfaction is defined in terms of entailment:
@@ -671,42 +680,203 @@ we first turn our attention to scoped instances and their CHR representation.
 %%]
 
 %%[toCHRscoped
-Scoped, or local, instances allow us to write:
+Scoped instances allow us to write:
 
 %%[[wrap=code classEq
 class Eq a where
   (==) :: a -> a -> Bool
   
-instance Eq Int where
+instance Eq Int where                                       ^^ -- (I1)
   x == y = primEqInt x y
 
 v1 =  3 == 5                                                ^^ -- False
-v2 =  let  instance Eq Int where
+v2 =  let  instance Eq Int where                            ^^ -- (I2)
              x == y = primEqInt (x `mod` 2) (y `mod` 2)
-      in   3 == 5                                           ^^ -- True
+      in   7 == 9                                           ^^ -- True
 %%]
 
-Both CHR's as well as constraints need to be aware of scope:
+Both CHR's as well as constraints reduced by those CHR's need to be aware of scope in order to obey the usual static scope rules:
+constraints arisen in scope |scope| can only be reduced by CHR's defined in |scope'|, where |scope'| is visible from |scope|.
+For example, the global scope in which (I1) is defined is |scope = []|, the scope in which (I2) is defined is |scope = [3]|.
+The constraint |Prove (Eq Int)| for expression |3 == 5| arises in scope |[]|, for expression |7 == 9| it arises in scope |[3]|.
+For the latter both (I1) and (I2) can be used for context reduction.
+This normally means an error because of overlapping instances,
+but by using scope information we can distinguish and choose between instances.
 
-\begin{itemize}
-\item A CHR can only be applied on constraint with a specific scope.
-\item A constraint originates from a certain program location with a specific scope.
-\end{itemize}
-
-Informally, we assign a scope |scope| to a program location as follows:
+We define the scope |scope| of a program location as follows:
 
 \begin{itemize}
 \item
   The global scope |scope isbydef []|.
 \item
-  The body of each |let| introduced binding in surrounding scope |scope'| has scope |scope isbydef scope' ++ [n]|,
-  where |n| is a unique |Int| value among all bindings in scope |scope'|.
+  The body of each |let| introduced binding has scope |scope isbydef scope' ++ [n]|,
+  where |n| is a unique |Int| value among all bindings in the surrounding scope |scope'|.
+\item
+  The body of a lambda expression for which the type signature (if any) specifies class predicates
+  has scope |scope isbydef scope' ++ [0]|
+  in the surrounding scope |scope'|.
 \end{itemize}
 
+The scope of both an instance and an arisen constraint is defined to be the scope of the program location where
+the instance is defined respectively a constraint arises.
+A class predicate |pi| in a constraint is annotated with this scope |scope|, so |varpi isbydef (pred,scope)|,
+alternatively denoted by |predscope|.
+The entailment relation is extended (in \figRef{MiscRules.entailscn.all}) with a rule for lifting a scoped class predicate
+to a more global scope.
+The rule for instances is restricted to apply to predicates of the same scope only.
+The class rule still applies to any predicate since classes are only defined globally.
+When the scope |scope| is omitted from |predscope|, |pred| ranges over any scope.
+
 \rulerCmdUse{MiscRules.entailscn.all}
+
+The scope rule is non-deterministic: it can be applied anywhere and reduce to any outer or equal scope.
+We make the rule deterministic by moving the check for visibility to the instance rule,
+see \figRef{MiscRules.entailscn.algo}.
+A reduction to scope |t| now only occurs when an instance is defined in scope |t|.
+The class rule remains unchanged as classes are global.
+
+\rulerCmdUse{MiscRules.entailscn.algo}
+
+%% \Paragraph{CHR's for instances}
+
+We change the translation of instances to CHR's accordingly, for |instance (pred1, .. , predn) => pred|, in scope |scope|
+we get:
+
+%%[[wrap=code
+Prove (pred, s)
+  ==>  scope `visibleIn` s 
+  |    Reduction (pred, s) (ByInstance instName scope) [(pred1, s), .. , (predn, s)]
+  ,    Prove (pred1, s), .. , Prove (predn, s)
+%%]]
+
+The |Reduction| constraint is annotated with both the name and the scope of the instance;
+we come back to |ByInstance| later when this annotation is used to choose between |Reduction|'s.
+For our current example we have:
+
+%%[[wrap=code
+Prove (Eq Int, s)
+  ==>  [] `visibleIn` s 
+  |    Reduction (Eq Int, s) (ByInstance "I1" []) []
+Prove (Eq Int, s)
+  ==>  [3] `visibleIn` s 
+  |    Reduction (Eq Int, s) (ByInstance "I2" [3]) []
+%%]]
+
+and the following derivation for |Prove (Eq Int, [3])| arising at |7 == 9|:
+
+%%[[wrap=code
+          ^^  {Prove (Eq Int, [3])}
+deriv(I1) ^^  {Prove (Eq Int, [3])
+              , Reduction (Eq Int, [3]) (ByInstance "I1" []) []}
+deriv(I2) ^^  {Prove (Eq Int, [3])
+              , Reduction (Eq Int, [3]) (ByInstance "I1" []) []
+              , Reduction (Eq Int, [3]) (ByInstance "I2" [3]) []}
+%%]]
+
+where the |Reduction|'s in the final constraint set correspond to the graph in \figRef{chr-redGraphEqIntTwice}.
+We still have overlapping instances, but we are now ready and prepared for making the choice.
+In \secRef{sec-chr-refinements} we refine the translation to CHR's to avoid too much scope related clutter in the
+final set of |Reduction| constraints.
+
+\FigurePDF{t}{0.55}{redGraphEqIntTwice}{Context reduction for scoped Eq Int}{chr-redGraphEqIntTwice}
+
+%% \Paragraph{CHR's for classes}
+
+
 %%]
 
-%%[XX
+%%[heuristics
+Starting with the final set of constraints a CHR solver leaves us with, we do the following:
+\begin{itemize}
+\item We extract all |Reduction| constraints.
+\item From these |Reduction| constraints we construct a reduction graph such as in \figRef{chr-redGraphEqIntTwice}.
+\item From the reduction graph we construct all possible alternative reductions.
+\item From alternative reductions we choose heuristically.
+\item From the chosen reduction we generate evidence, that is, a representation of the code required for constructing dictionaries.
+\end{itemize}
+
+We use the following, contrived running example, where \figRef{chr-redGraphEqOrdListTup} shows the reduction graph for |f|:
+
+%%[[wrap=code
+instance Eq Int                      -- dEqInt  
+instance Eq a => Eq [a]              -- dEqL    
+instance (Eq a,Eq b) => Eq (a,b)     -- dEqTup  
+instance Ord Int                     -- dOrdInt 
+instance Ord a => Ord [a]            -- dOrdL   
+instance (Ord a,Ord b) => Ord (a,b)  -- dOrdTup 
+
+f :: Ord a => (a,Int) -> [(a,Int)] -> Bool
+f x (y:ys) = x == y && x < y && [x] == ys && [y] < ys
+%%]]
+
+\FigurePDF{t}{0.5}{redGraphEqOrdListTup}{Reduction heuristics example}{chr-redGraphEqOrdListTup}
+
+We present these sequence of steps in Haskell.
+
+\Paragraph{Constraints}
+
+From the CHR solver we get the final set of constraints, where constraints are represented as:
+
+%%[[wrap=code
+data Constraint varpi info  =  Prove      varpi
+                            |  Assume     varpi
+                            |  Reduction  varpi info [varpi]
+                            deriving (Eq, Ord)
+%%]]
+
+\Paragraph{Reduction graph}
+
+From these constraints we construct the reduction graph,
+for which we use the inductive graph library \cite{erwig01inductive-graph} to encode an Annotated Graph (|AGraph|)
+for nodes |a| and edges |b|
+with the following interface:
+
+%%[[wrap=code
+emptyAGraph :: Ord a => AGraph a b
+
+insertEdge   :: Ord a =>    (a, a, b)    -> AGraph a b -> AGraph a b
+insertEdges  :: Ord a => [  (a, a, b)]   -> AGraph a b -> AGraph a b
+deleteEdge   :: Ord a =>    (a, a)       -> AGraph a b -> AGraph a b
+
+successors, predecessors :: Ord a => AGraph a b -> a -> [(b, a)]
+%%]]
+
+Nodes are predicates |varpi| from |Constraint|'s, edges are reductions labeled with |info|.
+Predicates |varpi| are wrapped in a |Node| so we can represent conjunction:
+
+%%[[wrap=code
+data Node varpi  =  Pred varpi
+                 |  And [varpi]
+                 deriving (Eq, Ord)
+
+instance Show varpi => Show (Node varpi) where
+  show (Pred p)    = show p
+  show (And [])    = "True"
+  show (And _ )    = "And"
+
+true  ::  Node varpi
+true  =   And []
+%%]]
+
+Disjunction is encoded by multiple outgoing edges in the graph structure.
+
+\Paragraph{Reduction alternatives}
+
+\Paragraph{Choosing heuristically}
+
+\Paragraph{Evidence generation}
+
+%%]
+
+%%[refinements
+----------------
+
+Although the rules in \figRef{MiscRules.entailscn.algo} (and omitted rules present in \figRef{MiscRules.entailn.all})
+are sufficient for entailment,
+they do not provide detailed enough information about when exactly scope related choices are made.
+More precisely, the rules do not make explicit when the scope changes take place: use of different scope is hidden inside
+the instance rule.
+We need this information to be explicit so we can make a choice between 'forgetting scope' and 'using an instance'.
 %%]
 
 %%[XX

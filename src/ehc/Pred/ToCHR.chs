@@ -104,52 +104,52 @@ Hence we can safely use non-unique variables.
 %%[9 export(initScopedPredStore)
 initScopedPredStore :: ScopedPredStore
 initScopedPredStore
-  = chrStoreFromElems
-      [ scopeProve, scopeAssum
+  = chrStoreFromElems $
+      [ scopeProve, scopeAssum ]
 %%[[10
-      , labelProve1, labelProve2
+      ++ [ labelProve1, labelProve2 ]
 %%]]
 %%[[13
-      , instForall, predArrow, predSeq1, predSeq2
+      ++ [ instForall, predArrow, predSeq1, predSeq2 ]
 %%]]
-      ]
-  where  p1s1         = mkCHRPredOcc pr1 sc1
-         p1s2         = mkCHRPredOcc pr1 sc2
-         p1s3         = mkCHRPredOcc pr1 sc3
-         scopeProve   = [Prove p1s1, Prove p1s2] 
-                          ==> [Reduction p1s2 RedHow_ByScope [p1s3]]
-                           |> [IsStrictParentScope sc3 sc1 sc2]
-         scopeAssum   = [Prove p1s1, Assume p1s2] 
-                          ==> [Reduction p1s1 RedHow_ByScope [p1s2]]
-                           |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
+  where p1s1         = mkCHRPredOcc pr1 sc1
+        p1s2         = mkCHRPredOcc pr1 sc2
+        p1s3         = mkCHRPredOcc pr1 sc3
+        scopeProve   = [Prove p1s1, Prove p1s2] 
+                         ==> [Reduction p1s2 RedHow_ByScope [p1s3]]
+                          |> [IsStrictParentScope sc3 sc1 sc2]
+        scopeAssum   = [Prove p1s1, Assume p1s2] 
+                         ==> [Reduction p1s1 RedHow_ByScope [p1s2]]
+                          |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
 %%[[10
-         l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
-         l2s1         = mkCHRPredOcc (Pred_Lacks ty2 lab1) sc1
-         l3s1         = mkCHRPredOcc (Pred_Lacks tyRowEmpty lab1) sc1
-         labelProve1  = [Prove l1s1]
-                          ==> [Prove l2s1, Reduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
-                           |> [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]
-         labelProve2  = [Prove l3s1]
-                          ==> [Reduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
+        l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
+        l2s1         = mkCHRPredOcc (Pred_Lacks ty2 lab1) sc1
+        l3s1         = mkCHRPredOcc (Pred_Lacks tyRowEmpty lab1) sc1
+        labelProve1  = [Prove l1s1]
+                         ==> [Prove l2s1, Reduction l1s1 (RedHow_ByLabel lab1 off1 sc1) [l2s1]]
+                          |> [NonEmptyRowLacksLabel ty2 off1 ty1 lab1]
+        labelProve2  = [Prove l3s1]
+                         ==> [Reduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
 %%]]
 %%[[13
-         f1s1         = mkCHRPredOcc (tyPred $ mkTyQu TyQu_Forall [pr1v] $ mkTyPr pr1) sc1
-         f2s1         = mkCHRPredOcc pr1 sc1
-         instForall   = [Assume f1s1]
-                          ==> [Assume f2s1]
-         a1s1         = mkCHRPredOcc (Pred_Arrow pa1 pr1) sc1
-         a2s1         = mkCHRPredOcc pr1 sc1
-         a3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
-         predArrow    = [Assume a1s1, Prove a2s1]
-                          ==> [Prove a3s1, Reduction a2s1 (RedHow_ByInstance hsnUnknown pr1 sc1) [a1s1,a3s1]]
-         s1s1         = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
-         s2s1         = mkCHRPredOcc pr1 sc1
-         s3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
-         predSeq1     = [Prove s1s1]
-                          <==> [Prove s2s1, Prove s3s1]
-         predSeq2     = [Prove $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
-                          <==> []
+        f1s1         = mkCHRPredOcc (tyPred $ mkTyQu TyQu_Forall [pr1v] $ mkTyPr pr1) sc1
+        f2s1         = mkCHRPredOcc pr1 sc1
+        instForall   = [Assume f1s1]
+                         ==> [Assume f2s1]
+        a1s1         = mkCHRPredOcc (Pred_Arrow pa1 pr1) sc1
+        a2s1         = mkCHRPredOcc pr1 sc1
+        a3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
+        predArrow    = [Assume a1s1, Prove a2s1]
+                         ==> [Prove a3s1, Reduction a2s1 (RedHow_ByInstance hsnUnknown pr1 sc1) [a1s1,a3s1]]
+        s1s1         = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
+        s2s1         = mkCHRPredOcc pr1 sc1
+        s3s1         = mkCHRPredOcc (Pred_Preds pa1) sc1
+        predSeq1     = [Prove s1s1]
+                         <==> [Prove s2s1, Prove s3s1]
+        predSeq2     = [Prove $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
+                         <==> []
 %%]]
+        -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]
 
 %%[9 export(mkScopedCHR2)
@@ -181,7 +181,7 @@ mkClassSimplChrs env rules (context, head, infos)
             . filter (\(_,x) -> not (rednodePred x `Set.member` done))
     
         transClosure done reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
-          = superRule : scopeRule1 : scopeRule2 : rules
+          = [superRule] ++ (if inclSc then [scopeRule1, scopeRule2] else []) ++ rules
           where super1     = mkCHRPredOcc super sc1
                 super2     = mkCHRPredOcc super sc2
                 super3     = mkCHRPredOcc super sc3
@@ -194,6 +194,7 @@ mkClassSimplChrs env rules (context, head, infos)
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = Reduction p info [par] : reds
                 rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)             
+        inclSc        = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 
 mkScopedChrs :: [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> (MkResN,MkResN)
 mkScopedChrs clsDecls insts
