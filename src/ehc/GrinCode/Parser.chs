@@ -138,13 +138,13 @@ pTagAnn         ::   GRIParser GrTagAnn
 pTagAnn         =    GrTagAnn       <$ pOCurly <*> pInt <* pComma <*> pInt <* pCCurly
 
 pTagCateg       ::   GRIParser (Int -> HsName -> GrTag)
-pTagCateg       =    (        GrTag_Con   )    <$ pKey "C" <*> pTagAnn
-                <|>  (\i n -> GrTag_Rec   )    <$ pKey "R"
-                <|>  (\i n -> GrTag_Hole  )    <$ pKey "H"
-                <|>  (\i   -> GrTag_App   )    <$ pKey "A"
-                <|>  (\i   -> GrTag_Fun   )    <$ pKey "F"
-                <|>  (\i   -> GrTag_PApp  )    <$ pKey "P" <* pKey "/" <*> pInt
-                <|>  (\i n -> GrTag_World )    <$ pKey "W"
+pTagCateg       =    (\a     -> GrTag_Con a   )    <$ pKey "C" <*> pTagAnn
+                <|>  (\  i n -> GrTag_Rec     )    <$ pKey "R"
+                <|>  (\  i n -> GrTag_Hole    )    <$ pKey "H"
+                <|>  (\  i   -> GrTag_App     )    <$ pKey "A"
+                <|>  (\  i   -> GrTag_Fun     )    <$ pKey "F"
+                <|>  (\x i   -> GrTag_PApp x  )    <$ pKey "P" <* pKey "/" <*> pInt
+                <|>  (\  i n -> GrTag_World   )    <$ pKey "W"
 
 pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm
