@@ -85,9 +85,8 @@ SEM GrExpr
                                           else @lhs.uniq
                                          
   | Seq            lhs . startsWithCaseHavingUnboxies = @expr.isCaseHavingUnboxies
-  | Case           loc . isCaseHavingUnboxies         = @altL.hasUnboxies
-                   lhs . startsWithCaseHavingUnboxies = @loc.isCaseHavingUnboxies
-  | * - Seq Case   lhs . startsWithCaseHavingUnboxies = False
+  | * - Seq        lhs . startsWithCaseHavingUnboxies = False
+  | Case           lhs . isCaseHavingUnboxies         = @altL.hasUnboxies
   | * - Case       loc . isCaseHavingUnboxies         = False
   
   | Seq            lhs . getExpr = @expr.trf
