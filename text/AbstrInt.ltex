@@ -23,6 +23,7 @@
 
 %format DATA = "\mathbf{syntax}"
 %format TYPE = "\mathbf{type}"
+%format SET  = "\mathbf{set}"
 %format ATTR = "\mathbf{attr}"
 %format SEM  = "\mathbf{sem}"
 %format USE  = "\mathbf{use}"
@@ -49,6 +50,10 @@
 
 %\titlebanner{Working copy v.1}        % These are ignored unless
 %\preprintfooter{Working copy v.1}   % 'preprint' option specified.
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+
 
 \title{%
 Avoiding Indirect Jumps
@@ -237,29 +242,144 @@ SET AllExpr = GrExpr GrAlt GrAltL
 
 \section{Abstract interpretation}
 
+In this section we describe an abstract interpretation
+algorithm for Grin programs.
+The algorithm does a fixpoint iteration for solving
+a set of constraints.
+The constraints are first collected by doing a tree walk
+over the Grin program.
+We start with a description of an abstract domain,
+and a language for specifying the constraints.
 
 \subsection{An abstract domain}
 
-Abstract domain for stack values: bottom, basic, tags, locations, nodes
+Grin programs consist of expressions, 
+which contain values, which can be variables.
+Although Grin is an untyped language,
+in code generated from a correct Haskell program
+variables always refer to values of the same type.
+We will use abstract interpretation to not only 
+infer these types, but also collect more detailed 
+information. 
 
+Running Grin programs maintain a heap of
+dynamically allocated nodes.
+More specific, execution of a |Store| expression
+allocates a new heap cell, as do bindings in
+a global |GrBind|.
+Our abstract interpretation algorithm will
+also determine, for each |Store| expression and
+each global |GrBind|, what type of node it can create.
+The abstraction of all heap cells that a particular
+|Store| of |GrBind| creates is known as a |Location|.
+Thus, each |Location| corresponds uniquely to
+a |Store| or |GrBind|. In our implementation we
+identify locations simply by consecutive numbers.
+\begin{code}
+type Location = Int
+\end{code}
+Grin variables are used to refer to four different
+types of values.
+They can store values of basic type (Char, Int etc.),
+or hold a single tag,
+or be a pointer to a heap location,
+of refer to a complete node.
+
+We introduce a data type |AbstractValue| which will
+be used as an abstract domain for our abstract interpretation.
+It distinguishes these four cases, with an added
+bottom and error case to form a complete lattice
+suitable for fixpoint iteration.
 \begin{code}
 data AbstractValue
   =  AbsBottom
   |  AbsBasic
-  |  AbsTags   (Set.Set GrTag)
-  |  AbsLocs   (Set.Set Location)
-  |  AbsNodes  (Map.Map GrTag [AbstractValue])
+  |  AbsTags   (Set GrTag)
+  |  AbsLocs   (Set Location)
+  |  AbsNodes  (Map GrTag [AbstractValue])
   |  AbsError  String
+\end{code}
+In the |AbsTags| case, abstract interpretation will reveal
+to what subset of all possible tags a variable can refer.
+Similary, for |AbsLocs| we determine to which locations
+a pointer can point.
+In the |AbsNodes| case, we not only determine the possible
+tags of the nodes, but for each of these also the abstract values
+of their parameters.
+In the Grin code of a correct program, abstract values
+of the parameters of a node in an |AbsNodes| mapping
+will never be |AbsNodes| themselves.
+  
+The fact that |AbstractValue| indeed forms a lattice
+is expressed by the following definition,
+which specifies how two abstract values can be merged into one.
+We state that |AbsBottom| is the identity of a |Monoid|
+\begin{code}  
+instance Monoid AbstractValue where
+    mempty                                  =  AbsBottom
+\end{code}
+That is, any abstract value remains unchanged when merging it with |AbsBottom|
+\begin{code}
+ ^  mappend  a          AbsBottom   =  a
+ ^  mappend  AbsBottom  b           =  b
+\end{code}
+Abstract values of each of the four types can be merged with others of the same type:
+\begin{code}
+ ^  mappend AbsBasic AbsBasic     
+ ^     =  AbsBasic
+ ^   mappend (AbsTags  at) (AbsTags  bt) 
+ ^     =  AbsTags (Set.union at bt)
+ ^   mappend (AbsLocs  al) (AbsLocs  bl) 
+ ^     =  AbsLocs (Set.union al bl)
+ ^   mappend (AbsNodes an) (AbsNodes bn) 
+ ^     =  AbsNodes (Map.unionWith (zipWith mappend) an bn)
+\end{code}
+Errors remain an error even when merged with other values:
+\begin{code}
+ ^   mappend a@(AbsError _ ) _  =  a
+ ^   mappend _ b@(AbsError _ )  =  b
+\end{code}
+And new errors originate from merging abstract values from incompatible types:
+\begin{code}
+ ^   mappend a b  
+ ^     =  AbsError (show a ++ " incompatible with " ++ show b)
+\end{code}  
+  
+  
+  
+  
+  
+The goal of the abstract interpretation algorithm is
+to determine the abstract value of each variable
+in the program, and likewise for eacht abstract heap |Location|.
+For efficiency reasons we represent these mappings with arrays:
+\begin{code}
 type AbstractEnv s  
   =  STArray s Variable AbstractValue
 type AbstractHeap s 
   =  STArray s Location AbstractValue
-  
+\end{code}
+Like a |Location|, each |Variable| is also represented by a number:
+\begin{code}
+type Variable = Int
+\end{code}
+A preprocessing stage uniquely numbers all variable names in a program
+(taking care of scoping when necessary),
+and makes the sequence number available through a function
+\begin{code}
+getNr :: HsName -> Variable
 \end{code}
 
 
 \subsection{A constraint language}
 
+By observing a Grin program, we can specify constraints
+which hold for variables and locations.
+Before doing so, we need a language to specify these constraints.
+We introduce the type |Equation| for describing six different
+types of constraints for the abstract value of variables.
+Likewise, we have |HeapEquation| for specifying constraints
+on the abstract values of abstract heap locations.
 \begin{code}
 data Equation
   =  IsKnown          Variable  AbstractValue
@@ -268,17 +388,64 @@ data Equation
   |  IsConstruction   Variable  GrTag [Maybe Variable]
   |  IsEvaluation     Variable  Variable
   |  IsApplication    (Maybe Variable) [Variable]
-data HeapEquation     ^
-  = WillStore         Location  GrTag [Maybe Variable]
-type Equations     = [Equation]
-type HeapEquations = [HeapEquation]
+\end{code}
+Five out of six constraint types specify a variable which
+is to fulfill certain properties.
+Only in the case of an |IsApplication| constraint, mentioning
+such a variable is optional.
+
+It is allowed to have more than one constraint for a particular variable.
+They complement each other. 
+If for example a constraint specifies that a variable is known
+to possibly have a particular abstract value, 
+and another constraint specifies that it is known to have
+another value, the abstract interpretation algorithm will
+conclude that this variable can have either of these two values.
+
+This example illustrates the semantics of the |IsKnown| constraint:
+|IsKnown v a| means that variable |v| can have abstract value |a|.
+The meaning of |IsEqual v w| is that variable |v| can have all 
+values that variable |w| has. Note that the constraint is
+not symmetrical: the solution for |w| will be a subset of 
+the solution for |v|, but not necessarily be the same.
+
+The meaning of |IsSelection v n i t| is that |v| can be the 
+selection of the |i|th component of any node tagged by |t|
+which can be the value of variable |n|.
+Dually, the meaning of |IsConstruction v t as| is that |v| can be
+a node with tag |t| and arguments |as|. Not all arguments need to be known.
+
+Next, the meaning if |IsEvaluation v w| is that |v| can be the
+evaluation result of any value of |w|.
+Finally, the meaning of |IsApplication v (f:as)| is that 
+|f| is a variable that refers to a function which is applied to
+values refered to by variables |as|,
+and that the result is a possible value of |v|.
+For this type of constraint, mentioning a variable |v| is optional.
+If it is lacking, the constraint still bears information
+on the possible values of parameters of |f|.
+
+For heap equations, there is only one constraint type:
+\begin{code}
+data HeapEquation
+  =  WillStore Location GrTag [Maybe Variable]
+\end{code}
+The meaing of |WillStore p t as| is that location |p|
+will hold a node with tag |t| and arguments |as|.
+Note that a heap cell always stores a complete node,
+not an isolated value of other type 
+(basic value, tag or pointer to another heap cell).
+
+The sets of constraints for variables and locations, respectively,
+are simply collected in lists, for which we define the following types:
+\begin{code}  
+type Equations      = [Equation]
+type HeapEquations  = [HeapEquation]
 \end{code}
 
 
-Constraint specification as a treewalk
 
-
-\subsection{Gather constraints in a treewalk}
+\subsection{Collect constraints in a treewalk}
 
 
 Synthesized attributes for equations and heapequations
