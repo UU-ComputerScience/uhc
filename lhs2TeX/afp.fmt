@@ -95,6 +95,8 @@
 %format pred		= pi
 %format predn		= pi "_n"
 %format pred1
+%format pred2
+%format pred3
 %format scope		= "\xi"
 %format scope'
 %format predscope	= pred "^{" scope "}"
@@ -144,10 +146,14 @@
 %format Cnstrp		= Cnstr "_{p}"
 %format Cnstrk		= Cnstr "^{k}"
 %format CnstrEq		= Cnstr "^{eq}"
+%format CnstrVarpi	= Cnstr "^{" varpi "}"
 %format `cnstrTyUnit`	= :->
 
 %format ICnstr      = "\mathbb{C}"
 %format ICnstrk		= ICnstr "^{k}"
+
+%format CHR				= "CHR"
+%format CHRorig			= CHR "^{i+c}"
 
 %format Qu          = "\mathcal{Q}"
 %format nQu         = "\neg" Qu
@@ -268,7 +274,7 @@
 %format Pre				= "{\dotdiv}"
 %format Post			= "{\divdot}"
 
-%format isbydef			= "=_{def}"
+%format isbydef			= "{=_{def}}"
 
 % format fiopt			= "{\xi}"
 %format fiopt			= "o"

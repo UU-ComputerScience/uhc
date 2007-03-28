@@ -212,7 +212,8 @@
 % #3: ruleset name
 % #4: view name
 \newenvironment{rulerRulesetFigure}[4]{%
-  \def\R@@Info{\ifx#4\empty #2\else #2 (#4)\fi}
+  \def\R@@Version{#4}
+  \def\R@@Info{\ifx\R@@Version\empty #2\else #2 (\R@@Version)\fi}
 %if not asSlides
   \begin{TabularCenterFigure}{}{\R@@Info}{#3}{p{0.95\linewidth}}
 %endif
@@ -627,15 +628,28 @@ Chapter~\myRef{#1}%
 }
 %%]
 
-Anonymity
+Anonymity, blinding things
 
 %%[1
+\newsavebox{\blindbox}
+\newlength{\blindboxwd}
+\newlength{\blindboxht}
+\newlength{\blindboxdp}
+\newcommand{\blindtext}[1]{%
+ \begin{lrbox}{\blindbox}#1\end{lrbox}%
+ \settowidth{\blindboxwd}{\usebox{\blindbox}}%
+ \settoheight{\blindboxht}{\usebox{\blindbox}}%
+ \settodepth{\blindboxdp}{\usebox{\blindbox}}%
+ \rule[-\blindboxdp]{\blindboxwd}{\blindboxht}%
+}
+
 %if blinded
-\newcommand{\blind}[1]{}
+\newcommand{\blind}[1]{\blindtext{#1}}
+\newcommand{\blindcite}[1]{\blindtext{XXX}}
 %else
 \newcommand{\blind}[1]{#1}
+\newcommand{\blindcite}[1]{\blind{\cite{#1}}}
 %endif
 
-\newcommand{\blindcite}[1]{\blind{\cite{#1}}}
 
 %%]

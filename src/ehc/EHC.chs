@@ -7,7 +7,10 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Utils,UU.Pretty,EH.Util.PPUtils,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, UU.Pretty,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%]
+
+%%[1 import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils,EH.Util.PPUtils)
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -50,7 +53,7 @@
 %%[9 import ({%{EH}Pred})
 %%]
 
-%%[20 import (qualified EH.Util.Rel as Rel, qualified EH.Util.FastSeq as Seq, qualified Data.Set as Set)
+%%[20 import (qualified EH.Util.Rel as Rel, qualified Data.Set as Set)
 %%]
 
 %%[20 import (System.Time, System.Directory)
@@ -282,7 +285,7 @@ instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
 
 instance CompileRunError Err () where
   crePPErrL                 = ppErrL
-  creMkNotFoundErrL _ fp sp = [Err_FileNotFound fp sp]
+  creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
   creAreFatal               = errLIsFatal
 
 instance CompileModName HsName where
@@ -449,7 +452,7 @@ cpParseOffside parser scanOpts store description modNm
       ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
       ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
       ; let (res,msgs) = parseOffsideToResMsgs parser tokens
-            errs       = map mkPPErr msgs
+            errs       = map (rngLift emptyRange mkPPErr) msgs
       ; cpUpdCU modNm (store res)
       ; cpSetLimitErrsWhen 5 description errs
       }
@@ -460,7 +463,7 @@ cpParsePlain' parser scanOpts store fp modNm
       ; (fn,fh) <- lift $ openFPath fp ReadMode
       ; tokens  <- lift $ scanHandle scanOpts fn fh
       ; let (res,msgs) = parseToResMsgs parser tokens
-            errs       = map mkPPErr msgs
+            errs       = map (rngLift emptyRange mkPPErr) msgs
       ; when (null errs)
              (cpUpdCU modNm (store res))
       ; return errs
@@ -1030,7 +1033,7 @@ cpTranslateHs2EH modNm
                  mbHsSem= ecuMbHSSem ecu
                  hsSem  = panicJust "cpTranslateHs2EH" mbHsSem
                  eh     = HSSem.eh_Syn_AGItf hsSem
-                 errs   = HSSem.errL_Syn_AGItf hsSem
+                 errs   = Seq.toList $ HSSem.errSq_Syn_AGItf hsSem
          ;  when (isJust mbHsSem)
                  (do { cpUpdCU modNm (ecuStoreEH eh)
                      ; cpSetLimitErrsWhen 5 "Dependency/name analysis" errs
@@ -1050,7 +1053,7 @@ cpTranslateEH2Core modNm
                  mbEHSem= ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  core   = EHSem.cmodule_Syn_AGItf ehSem
-                 errs   = EHSem.allErrL_Syn_AGItf ehSem
+                 errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
                  (do { cpUpdCU modNm (ecuStoreCore core)
                      ; cpSetLimitErrsWhen 5 "Type checking" errs
@@ -1778,7 +1781,7 @@ doCompileRun filename opts
                                                         (HSSem.Inh_AGItf
                                                           { HSSem.opts_Inh_AGItf = opts
                                                           })
-                                        ; putStrLn (disp (ppErrL $ HSSem.errL_Syn_AGItf $ wrRes) 1000 "")
+                                        ; putStrLn (disp (ppErrL $ Seq.toList $ HSSem.errSq_Syn_AGItf $ wrRes) 1000 "")
                                         ; when (ehcOptShowHS opts)
                                                (putStrLn (disp (HSSem.pp_Syn_AGItf wrRes) 1000 ""))
                                         ; return (HSSem.eh_Syn_AGItf wrRes)

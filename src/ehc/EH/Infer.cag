@@ -373,7 +373,12 @@ SEM Decl
 
 %%[11 -4.Decl.fe
 SEM Decl
-  | *           loc         .   fe                  =   emptyFE { feTyGam = @lhs.tyGam }
+  | *           loc         .   fe                  =   emptyFE
+                                                            { feTyGam = @lhs.tyGam
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
 %%]
 
 %%[9
@@ -384,10 +389,17 @@ SEM Decl
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
                                                             }
                             .   fe2                 =   emptyFE
 %%[[11
-                                                            { feTyGam = @lhs.tyGam }
+                                                            { feTyGam = @lhs.tyGam
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
 %%]]
 %%]
 
@@ -412,6 +424,9 @@ SEM Expr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
                                                             }
   | Lam AppTop
 %%[[12
@@ -422,6 +437,9 @@ SEM Expr
                                                             , fePredScope = @predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[99
+                                                            , feRange = @range
 %%]]
                                                             }
   | * - Lam AppTop Let
@@ -434,6 +452,9 @@ SEM Expr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
                                                             }
 
 SEM RecExpr
@@ -443,6 +464,9 @@ SEM RecExpr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
                                                             }
 
 SEM DataFieldExpr
@@ -451,6 +475,9 @@ SEM DataFieldExpr
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[99
+                                                            , feRange = @range
 %%]]
                                                             }
 %%]
@@ -463,6 +490,9 @@ SEM PatExpr
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[99
+                                                            , feRange = @range
 %%]]
                                                             }
 %%]]
@@ -477,6 +507,9 @@ SEM RecPatExpr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
                                                             }
 %%]]
 %%]
@@ -489,6 +522,9 @@ SEM DataFieldPatExpr
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[99
+                                                            , feRange = @range
 %%]]
                                                             }
 %%]]
@@ -519,17 +555,17 @@ SEM AGItf
 %%[7_2.initTyGam -1.initTyGam
 SEM AGItf
   | AGItf       loc         .   tyGam               :=  assocLToGam
-                                                          [ (hsnArrow,  mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
-                                                          , (hsnInt,    mkTGI tyInt kiStar)
-                                                          , (hsnChar,   mkTGI tyChar kiStar)
-                                                          , (hsnRow,    mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec,    mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum,    mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
-                                                          , (hsnRow,        mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec,        mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum,        mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnRowEmpty, mkTGI (Ty_Con hsnRowEmpty) kiRow)
+                                                          [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
+                                                          , (hsnInt         , mkTGI tyInt kiStar)
+                                                          , (hsnChar        , mkTGI tyChar kiStar)
+                                                          , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
+                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
+                                                          , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
+                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
                                                           ]
 %%]
 
@@ -950,28 +986,28 @@ SEM Expr
 ATTR Expr [ isFirstLet: Bool | | ]
 
 SEM CaseAlt
-  | Pat       	loc         .   isFirstLet          =   True
+  | Pat         loc         .   isFirstLet          =   True
 
 SEM DataFieldExpr
   | Expr Upd    loc         .   isFirstLet          =   True
 
 SEM Decl
   | InstanceIntro Val
-  				loc         .   isFirstLet          =   True
+                loc         .   isFirstLet          =   True
 
 SEM RecExpr
   | Expr Ext Upd
-  				loc         .   isFirstLet          =   True
+                loc         .   isFirstLet          =   True
 
 SEM AGItf
   | AGItf       loc         .   isFirstLet          =   True
 
 SEM Expr
-  | Let			loc			.	isFirstLet			=	False
+  | Let         loc         .   isFirstLet          =   False
 %%]
 
 %%[97
 SEM PatExpr
-  | Expr       	loc         .   isFirstLet          =   True
+  | Expr        loc         .   isFirstLet          =   True
 
 %%]

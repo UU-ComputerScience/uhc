@@ -34,7 +34,7 @@
 %%[1 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
 %%]
 
-%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2,rngLift)
+%%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
 %%]
 
 %%[1 export(assocLMapElt,assocLMapKey)
@@ -872,6 +872,16 @@ data Verbosity
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR scoped translation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(CHRScoped(..))
+data CHRScoped
+  = CHRScopedInstOnly | CHRScopedMutualSuper | CHRScopedAll
+  deriving (Eq,Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Optimisation level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -983,11 +993,23 @@ rngAdd r1 r2
       _ -> Range_Unknown
 %%]
 
-%%[1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting of Range
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.rngLift export(rngLift,RngLift)
+type RngLift x = x
+
 rngLift :: Range -> v -> v
 rngLift r v = v
 %%]
+
+%%[99 -1.rngLift export(rngLift,RngLift)
+type RngLift x = Range -> x
+
 rngLift :: Range -> (Range -> v) -> v
+rngLift r mkv = mkv r
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instance variant

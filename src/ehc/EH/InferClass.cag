@@ -126,7 +126,7 @@ SEM Decl
                                                                             = case ki of
                                                                                 Ty_Con n | n == hsnStar
                                                                                   -> (mkTyPr $ Pred_Class $ predTyCon `mk1App` tv,uniq,[])
-                                                                                _ -> (Ty_Any,uniq,[Err_MalformedTy "kind" "automatic instance derivation" (tgiKi tgi)])
+                                                                                _ -> (Ty_Any,uniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" (tgiKi tgi)])
                                                                   (cxDt,_,errs2)                                                        -- for each type arg a context pred is made
                                                                     = foldr (\(k,t) (cx,u,e)
                                                                               -> let (cx',u',e') = ki2pr k u t

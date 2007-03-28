@@ -17,7 +17,7 @@ SEM KiExpr
                                                                          in   (kgi,gamAdd @nm kgi @lhs.kiGam)
                                                           Just kgi   ->  (kgi,@lhs.kiGam)
   | Con         loc         .  (kgi,nmErrs)         =   case gamLookup @nm @lhs.kiGam of
-                                                          Nothing    ->  (KiGamInfo Ty_Any,[mkErr_NamesNotIntrod "kind" [@nm]])
+                                                          Nothing    ->  (KiGamInfo Ty_Any,[rngLift @range mkErr_NamesNotIntrod "kind" [@nm]])
                                                           Just kgi   ->  (kgi,[])
 %%]
 

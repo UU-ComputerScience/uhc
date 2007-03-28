@@ -67,8 +67,12 @@
 
 %%[9 hs
 ehIsDeclVal :: Decl -> Bool
-ehIsDeclVal (Decl_Val _ _) = True
-ehIsDeclVal _              = False
+%%[[1
+ehIsDeclVal (Decl_Val   _ _) = True
+%%][99
+ehIsDeclVal (Decl_Val _ _ _) = True
+%%]]
+ehIsDeclVal _                = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -123,15 +127,20 @@ mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe UID -> Expr
 mkIf'' (bn:tn:fn:_) r c t e i
 %%]]
   = case c of
-      Expr_Con n | n == tn -> t
-                 | n == fn -> e
+%%[[5
+      Expr_Con n
+%%][99
+      Expr_Con _ n
+%%]]
+          | n == tn -> t
+          | n == fn -> e
       _ -> mkCase' r
-             ( Expr_TypeAs (TyExpr_Con bn) c )
+             ( rngLift r Expr_TypeAs (rngLift r TyExpr_Con bn) c )
 %%[[8
              i False
 %%]]
-             [ mkAlt r (PatExpr_Con tn) t
-             , mkAlt r (PatExpr_Con fn) e
+             [ mkAlt r (rngLift r PatExpr_Con tn) t
+             , mkAlt r (rngLift r PatExpr_Con fn) e
              ]
 %%]
 
@@ -169,67 +178,101 @@ mkCase r c as
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construct some EH AST node, providing dummy initial extra args (position), if any
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkEH hs export(mkEH)
+mkEH :: x -> x
+mkEH = rngLift emptyRange
+%%]
+
+%%[99 -1.mkEH hs export(mkEH)
+mkEH :: (Range -> x) -> x
+mkEH = rngLift emptyRange
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SemApp class instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
 instance SemApp Expr where
-  semApp       = Expr_App
-  semAppTop    = Expr_AppTop
-  semCon       = Expr_Con . mkHNm
-  semParens    = Expr_Parens
+  semApp       = mkEH Expr_App
+  semAppTop    = mkEH Expr_AppTop
+  semCon       = mkEH Expr_Con . mkHNm
+  semParens    = mkEH Expr_Parens
+%%[[1
   mkRngCon _   = Expr_Con . mkHNm
   mkRngVar _   = Expr_Var . mkHNm
-%%]
-%%[7 hs
+%%][99
+  mkRngCon r   = Expr_Con r . mkHNm
+  mkRngVar r   = Expr_Var r . mkHNm
+%%]]
+%%[[7
   mkProdApp l
-    = Expr_Rec $ RecExpr_Empty `mkRow` l
-    where mkRow = foldl (\r e -> RecExpr_Ext r Nothing e)
+    = mkEH Expr_Rec $ mkEH RecExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> mkEH RecExpr_Ext r Nothing e)
+%%]]
 %%]
 
 
 %%[1 hs
 instance SemApp PatExpr where
-  semApp       = PatExpr_App
-  semAppTop    = PatExpr_AppTop
-  semCon       = PatExpr_Con . mkHNm
-  semParens    = PatExpr_Parens
+  semApp       = mkEH PatExpr_App
+  semAppTop    = mkEH PatExpr_AppTop
+  semCon       = mkEH PatExpr_Con . mkHNm
+  semParens    = mkEH PatExpr_Parens
+%%[[1
   mkRngCon _   = PatExpr_Con . mkHNm
   mkRngVar _   = PatExpr_Var . mkHNm
-%%]
-%%[7 hs
+%%][99
+  mkRngCon r   = PatExpr_Con r . mkHNm
+  mkRngVar r   = PatExpr_Var r . mkHNm
+%%]]
+%%[[7
   mkProdApp l
-    = PatExpr_Rec $ RecPatExpr_Empty `mkRow` l
-    where mkRow = foldl (\r e -> RecPatExpr_Ext r Nothing e)
+    = mkEH PatExpr_Rec $ mkEH RecPatExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> mkEH RecPatExpr_Ext r Nothing e)
+%%]]
 %%]
 
 %%[1 hs
 instance SemApp TyExpr where
-  semApp       = TyExpr_App
-  semAppTop    = TyExpr_AppTop
-  semCon       = TyExpr_Con . mkHNm
-  semParens    = TyExpr_Parens
+  semApp       = mkEH TyExpr_App
+  semAppTop    = mkEH TyExpr_AppTop
+  semCon       = mkEH TyExpr_Con . mkHNm
+  semParens    = mkEH TyExpr_Parens
+%%[[1
   mkRngCon _   = TyExpr_Con . mkHNm
-%%]
-%%[1.mkRngVar hs
+%%][99
+  mkRngCon r   = TyExpr_Con r . mkHNm
+%%]]
+%%[[1
   mkRngVar     = mkRngCon
-%%]
-%%[3 -1.mkRngVar hs
+%%][3
   mkRngVar _   = TyExpr_Var . mkHNm
-%%]
-%%[7 hs
+%%][99
+  mkRngVar r   = TyExpr_Var r . mkHNm
+%%]]
+%%[[7
   mkProdApp l
-    = TyExpr_Row $ RowTyExpr_Empty `mkRow` l
-    where mkRow = foldl (\r e -> RowTyExpr_Ext r Nothing e)
+    = mkEH TyExpr_Row $ mkEH RowTyExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> mkEH RowTyExpr_Ext r Nothing e)
+%%]]
 %%]
 
 %%[6 hs
 instance SemApp KiExpr where
-  semApp       = KiExpr_App
-  semAppTop    = KiExpr_AppTop
-  semCon       = KiExpr_Con . mkHNm
-  semParens    = KiExpr_Parens
+  semApp       = mkEH KiExpr_App
+  semAppTop    = mkEH KiExpr_AppTop
+  semCon       = mkEH KiExpr_Con . mkHNm
+  semParens    = mkEH KiExpr_Parens
+%%[[1
   mkRngCon _   = KiExpr_Con . mkHNm
   mkRngVar _   = KiExpr_Var . mkHNm
+%%][99
+  mkRngCon r   = KiExpr_Con r . mkHNm
+  mkRngVar r   = KiExpr_Var r . mkHNm
+%%]]
 %%]
 

@@ -14,7 +14,7 @@
 %%[1.dupErrs
 SEM Expr
   | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
-                                                        in   if null nms then [] else [Err_NamesDupIntrod nms]
+                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod nms]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,7 +26,7 @@ SEM Decl
   | Val         loc         .   sigMissErrs         =   @nmErrs
 %%]
 SEM Decl
-  | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [Err_MissingSig @patExpr.pp]
+  | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [rngLift @range Err_MissingSig @patExpr.pp]
 
 %%[2 -1.sigMissErrs
 %%]
@@ -41,69 +41,74 @@ SEM Decl
                                                              wrong tl = foHasErrs fo
                                                                       where fo = fitsInFold unifyFIOpts @fe uidStart $ map (tyArrowRes . vgiTy) $ tl
                                                              nms = [ f | (f,tl) <- ft, wrong tl ]
-                                                        in   if null nms then [] else [Err_InconsistentIntros "data field" nms]
+                                                        in   if null nms then [] else [rngLift @range Err_InconsistentIntros "data field" nms]
 
 SEM DataConstr
   | Constr      loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups @fields.fldSelGam
-                                                        in   if null nms then [] else [Err_NamesDupIntrod nms]
+                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod nms]
 %%]
 
 %%[7
 SEM Expr
   | DataFields  loc         .   fldMissErrs         =   case @dataFieldExpr.mbDti of
                                                           Just dti | not (Set.null m)
-                                                            -> [Err_MissingDataFields (Set.toList m) (dtiConNm dti)]
+                                                            -> [rngLift @range Err_MissingDataFields (Set.toList m) (dtiConNm dti)]
                                                             where m = Map.keysSet (dtiFldMp dti) `Set.difference` Set.fromList @fldL
-                                                          _ | null @dtiInFldL -> [Err_MissingAnyDataField @fldL (dgiTyNm @dgi)]
+                                                          _ | null @dtiInFldL -> [rngLift @range Err_MissingAnyDataField @fldL (dgiTyNm @dgi)]
                                                             | otherwise       -> []
                             .   fldDupErrs          =   let fs = [ f | (f:_:_) <- group @fldL ]
-                                                        in  if null fs then [] else [Err_DuplicateDataFields fs]
+                                                        in  if null fs then [] else [rngLift @range Err_DuplicateDataFields fs]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[9.checkClNms hs
 checkClNms :: HsNameS -> [Err]
 checkClNms s = if Set.null s then [] else [mkErr_NamesNotIntrod "class" (Set.toList s)]
 %%]
+%%[99 -9.checkClNms hs
+checkClNms :: Range -> HsNameS -> [Err]
+checkClNms r s = if Set.null s then [] else [mkErr_NamesNotIntrod r "class" (Set.toList s)]
+%%]
 
-%%[9 hs
+%%[9.mkPrvErr hs
 mkPrvErr :: CHRPredOccCnstrMp -> [Err]
-mkPrvErr m
-  = if Map.null m
-    then []
-    else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys m]
+mkPrvErr m = if Map.null m then [] else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys m]
+%%]
+%%[99 -9.mkPrvErr hs
+mkPrvErr :: Range -> CHRPredOccCnstrMp -> [Err]
+mkPrvErr r m = if Map.null m then [] else [Err_NotProvenPreds r $ map (cpoPr . cnstrPred) $ Map.keys m]
 %%]
 
 %%[9
 SEM AGItf
   | AGItf       loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then mkPrvErr @cannotProveCnstrMp
+                                                        then rngLift emptyRange mkPrvErr @cannotProveCnstrMp
                                                         else if null @expr.gathPredL
                                                              then []
-                                                             else [Err_NotProvenPreds $ map poPr $ @expr.gathPredL]
+                                                             else [rngLift emptyRange Err_NotProvenPreds $ map poPr $ @expr.gathPredL]
 
 SEM Decl
   | Instance    loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then mkPrvErr @cannotProveCnstrMp
+                                                        then rngLift @range mkPrvErr @cannotProveCnstrMp
                                                         else if null @supPrfArgPrOccL && null @prfArgPrOccL 
                                                              then []
-                                                             else [Err_NotProvenPreds $ map poPr (@prfArgPrOccL ++ @supPrfArgPrOccL)]
+                                                             else [rngLift @range Err_NotProvenPreds $ map poPr (@prfArgPrOccL ++ @supPrfArgPrOccL)]
                             .   valNoSigErrs        =   let ns = gamKeys (gamTop @decls.patValGam) \\ gamKeys @tySigGam
                                                         in  if null ns
                                                             then []
-                                                            else [Err_ValWithoutSig ns]
+                                                            else [rngLift @range Err_ValWithoutSig ns]
   | InstanceIntro
-                loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [Err_TyHasFreeTVars @prExpr.ty]
+                loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
 
 SEM PrExpr
-  | Class       loc         .   nmErrs              =   checkClNms @clMissNmS
+  | Class       loc         .   nmErrs              =   rngLift @range checkClNms @clMissNmS
 
 SEM Expr
   | Let         loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then mkPrvErr @cannotProveCnstrMp
+                                                        then rngLift @range mkPrvErr @cannotProveCnstrMp
                                                         else []
 %%]
 
@@ -119,7 +124,7 @@ SEM Expr
 
 %%[95
 SEM Decl
-  | Instance    loc         .   derivErrs           =   let mke m = [Err_NoDerivForData @derivHdDataTy @instClsNm m]
+  | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
                                                             hasFlds = any (\t -> ctagArity t > 0)
                                                         in  case ( Map.lookup @instClsNm @derivMp
                                                                  , @instVariant
@@ -127,7 +132,7 @@ SEM Decl
                                                                  )
                                                             of
                                                               (Nothing,InstDeriving,_)
-                                                                -> [Err_NoDerivFor @tyPrExpr.pp]
+                                                                -> [rngLift @range Err_NoDerivFor @tyPrExpr.pp]
                                                               (_,InstDeriving,[])
                                                                 -> mke "has no constructors"
                                                               (_,InstDeriving,ctags)

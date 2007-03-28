@@ -10,6 +10,9 @@
 %%[1 module {%{EH}Ty.FitsInCommon} import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Error}) export (FIOut(..), emptyFO, foHasErrs)
 %%]
 
+%%[1 import(qualified EH.Util.FastSeq as Seq)
+%%]
+
 %%[2 import({%{EH}Cnstr})
 %%]
 
@@ -34,6 +37,11 @@
 data FIOut  =   FIOut   { foTy     ::  Ty      ,  foErrL   ::  ErrL    }
 
 emptyFO     =   FIOut   { foTy     =   Ty_Any  ,  foErrL   =   []      }
+%%]
+
+%%[1 export(foErrSq)
+foErrSq :: FIOut -> ErrSq
+foErrSq = Seq.fromList . foErrL
 %%]
 
 %%[2.FIOut -1.FIOut

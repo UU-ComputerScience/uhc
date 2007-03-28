@@ -1597,13 +1597,13 @@ A \IxAsDef{scoped instance} is either a global or a local instance, distinguisha
 
 %%@TopicCHRLocalInst.termsAndTypes
 
-\section{Mapping classes and instances to CHR's}
+\section{Mapping classes and instances to CHRs}
 \label{sec-chr-maptochr}
 
-We discuss 
+In this section we discuss 
 \begin{itemize}
-\item How class and instance declarations are expressed as CHR's.
-\item How constraints arise from program text, are simplified and context reduced.
+\item How class and instance declarations are translated to CHRs.
+\item How constraints arise from program text, are simplified, and contexts are reduced.
 \end{itemize}
 We start without taking scopes into account,
 showing the basic use of our constraint language,
@@ -1611,7 +1611,7 @@ and pointing out where and why we differ from \cite{stuckey02theory-overloading}
 
 %%@TopicCHRLocalInst.toCHRplain
 
-\section{Mapping scoped instances to CHR's}
+\section{Mapping scoped instances to CHRs}
 \label{sec-chr-maplocaltochr}
 
 %%@TopicCHRLocalInst.toCHRscoped
@@ -1621,29 +1621,19 @@ and pointing out where and why we differ from \cite{stuckey02theory-overloading}
 
 %%@TopicCHRLocalInst.heuristics
 
-\section{Refinements}
-\label{sec-chr-refinements}
+%\section{Refinements}
+%\label{sec-chr-refinements}
 
-%%@TopicCHRLocalInst.refinements
+ %%@TopicCHRLocalInst.refinements
 
-\Paragraph{Pruning scope}
+%\Paragraph{Pruning scope}
 
-\Paragraph{Class hierarchy}
+%\Paragraph{Class hierarchy}
 
 \section{Discussion, related and future work}
 \label{sec-chr-relatedwork}
 
-Design choice: lift scope to constraint, instead of only for pred: scoped constraints/chr?
-
-Design choice: backtracking yes/no? how to deal with improvements?
-
-Formal properties:
-(1) we piggyback on \cite{stuckey02theory-overloading},
-(2) confluence is guaranteed by using propagation rules and reifying the notion of choice, dealing with this issue separately.
-
-Functional dependencies...
-
-Notation for heuristics
+%%@TopicCHRLocalInst.discussion
 
 %}
 %%]

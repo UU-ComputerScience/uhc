@@ -21,6 +21,9 @@ Conversion from Pred to CHR.
 %%[9 import({%{EH}Ty.FitsIn})
 %%]
 
+%%[10 import({%{EH}Ty.Trf.Canonic})
+%%]
+
 -- debug
 %%[9 import(UU.Pretty,EH.Util.Utils)
 %%]
@@ -160,12 +163,20 @@ mkScopedCHR2 env clsDecls insts prevStore
   = (chrStoreUnions [store2,instSimplStore], chrStoreUnions [assumeStore,instSimplStore])
   where  ucls        = mkNewLevUIDL (length clsDecls) $ fiUniq env
          ((assumeStore,assumePredOccs), (instStore,_))
-                     = mkScopedChrs clsDecls insts
+                     = mkScopedChrs clsDecls canonInsts
          store2      = chrStoreUnions [assumeStore,prevStore]
          simplStores = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) store2 (cx,h,i)) ucls clsDecls
          instSimplStore
          			 = chrStoreUnions $ instStore : simplStores
+%%[[9
+         canonInsts  = insts
+%%][10
+         canonInsts  = [ (map mkC cx,mkC hd,info,sc) | (cx,hd,info,sc) <- insts ]
+                     where mkC = predCanonic env
+%%]]
+%%]
 
+%%[9
 mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)
   = simps
@@ -181,7 +192,7 @@ mkClassSimplChrs env rules (context, head, infos)
             . filter (\(_,x) -> not (rednodePred x `Set.member` done))
     
         transClosure done reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
-          = [superRule] ++ (if inclSc then [scopeRule1, scopeRule2] else []) ++ rules
+          = [superRule] ++ (if ehcCfgCHRScoped opts >= CHRScopedMutualSuper then [scopeRule1, scopeRule2] else []) ++ rules
           where super1     = mkCHRPredOcc super sc1
                 super2     = mkCHRPredOcc super sc2
                 super3     = mkCHRPredOcc super sc3
@@ -193,8 +204,9 @@ mkClassSimplChrs env rules (context, head, infos)
                                ==> [Prove super3, Reduction super1 RedHow_ByScope [super3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = Reduction p info [par] : reds
-                rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)             
-        inclSc        = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
+                rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)
+
+        opts          = feEHCOpts $ fiEnv env
 
 mkScopedChrs :: [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope] -> (MkResN,MkResN)
 mkScopedChrs clsDecls insts

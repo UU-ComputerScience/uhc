@@ -147,6 +147,7 @@ infixr 8  ^, ^^, **
 infixl 7  *, /, `quot`, `rem`, `div`, `mod`, :%, %
 infixl 6  +, -
 --infixr 5  :    -- this fixity declaration is hard-wired into Hugs
+infixr 5  :    -- this fixity declaration is not hard-wired into EHC
 infixr 5  ++
 infix  4  ==, /=, <, <=, >=, >, `elem`, `notElem`
 infixr 3  &&
@@ -918,6 +919,7 @@ instance Ix Integer where
 -----------------------------}
 
 {-----------------------------
+-----------------------------}
 instance Enum Int where
     succ           = boundedSucc
     pred           = boundedPred
@@ -951,15 +953,15 @@ boundedEnumFromThenTo n n' m
  where
   delta = n'-n
   ns = iterate (+delta) n
------------------------------}
 
 {-----------------------------
+-----------------------------}
 -- takeWhile and one more
 takeWhile1 :: (a -> Bool) -> [a] -> [a]
 takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
------------------------------}
 
 {-----------------------------
+-----------------------------}
 instance Enum Integer where
     succ x         = x + 1
     pred x         = x - 1
@@ -986,7 +988,6 @@ numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
 
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
 iterate' f x = x : (iterate' f $! f x)
------------------------------}
 
 {-----------------------------
 primitive primShowsInt :: Int -> Int -> ShowS

@@ -523,7 +523,7 @@ valGamLookup = gamLookup
 valGamLookupTy :: HsName -> ValGam -> (Ty,ErrL)
 valGamLookupTy n g
   =  case valGamLookup n g of
-       Nothing    ->  (Ty_Any,[mkErr_NamesNotIntrod "value" [n]])
+       Nothing    ->  (Ty_Any,[rngLift emptyRange mkErr_NamesNotIntrod "value" [n]])
        Just vgi   ->  (vgiTy vgi,[])
 %%]
 
@@ -694,7 +694,7 @@ tyGamLookup nm g
 tyGamLookupErr :: HsName -> TyGam -> (TyGamInfo,ErrL)
 tyGamLookupErr n g
   = case tyGamLookup n g of
-      Nothing  -> (emtpyTGI,[mkErr_NamesNotIntrod "type" [n]])
+      Nothing  -> (emtpyTGI,[rngLift emptyRange mkErr_NamesNotIntrod "type" [n]])
       Just tgi -> (tgi,[])
 %%]
 

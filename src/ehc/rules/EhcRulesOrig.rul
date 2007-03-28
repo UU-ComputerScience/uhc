@@ -2496,7 +2496,7 @@ relation valGamLookupPatTy =
     judgespec pat :-> pty `elem` valGam
     judgeuse tex pat :-> pty `elem` valGam
     judgeuse ag  (pty,nmErrs)
-                    `=` ( let ^ ( e `=` [Err_MissingSig (pat).pp]
+                    `=` ( let ^ ( e `=` ["rngLift @range Err_MissingSig" (pat).pp]
                                 - l n `=` gamLookup n (valGam)
                                 )
                         - in case ^ ( ((pat).mbTopNm) of
@@ -3138,7 +3138,7 @@ relation chkProdArity =
     holes [ ty: Ty, tyl: TyL, pat: PatExpr, n: Int | | ]
     judgespec pat: ty, tyl, n
     judgeuse tex `|` tyl `|` ^^ === n
-    judgeuse ag (retain "loc.arityErrs") `=` (if length tyl == (pat).arity - then [] - else [Err_PatArity ty (pat).arity])
+    judgeuse ag (retain "loc.arityErrs") `=` (if length tyl == (pat).arity - then [] - else ["rngLift @range Err_PatArity" ty (pat).arity])
               | (pat).knTyL `=` reverse tyl
 
 -------------------------------------------------------------------------

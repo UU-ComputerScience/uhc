@@ -38,9 +38,13 @@ ppErr err =  let  r = wrap_Err (sem_Err err) (Inh_Err {nestDepth_Inh_Err=0})
              in   pp_Syn_Err r
 %%]
 
-%%[8 hs
+%%[8.mkPPErr hs
 mkPPErr :: PP a => a -> Err
 mkPPErr = Err_PP . pp
+%%]
+%%[99 -8.mkPPErr hs
+mkPPErr :: PP a => Range -> a -> Err
+mkPPErr r = Err_PP r . pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,6 +54,10 @@ mkPPErr = Err_PP . pp
 %%[1.ppMsgErr hs
 ppMsgErr :: PP msg => msg -> PP_Doc -> PP_Doc
 ppMsgErr msg err = msg  >|< ":" >-< indent 2 err
+%%]
+%%[99 -1.ppMsgErr hs
+ppMsgErr :: PP msg => msg -> PP_Doc -> Range -> PP_Doc
+ppMsgErr msg err r = r  >|< ":" >-< indent 2 (msg >|< ":" >-< indent 2 err)
 %%]
 
 %%[1.ppUnifyErr hs
@@ -61,11 +69,19 @@ ppUnifyErr msg t1 t2 t1d t2d
 %%]
 
 %%[4.ppUnifyErr -1.ppUnifyErr hs
+%%[[4
 ppUnifyErr :: PP msg => msg -> Ty -> Ty -> FIMode -> Ty -> Ty -> FIMode -> PP_Doc
 ppUnifyErr msg t1 t2 fim t1d t2d fimd
+%%][99
+ppUnifyErr :: PP msg => msg -> Ty -> Ty -> FIMode -> Ty -> Ty -> FIMode -> Range -> PP_Doc
+ppUnifyErr msg t1 t2 fim t1d t2d fimd r
+%%]]
   =  ppMsgErr msg    (    "failed to fit:"  >#< ppListSepFill "" "" (m fim)  [ppTy t1,ppTy t2]
                      >-<  "problem with :"  >#< ppListSepFill "" "" (m fimd) [ppTy t1d,ppTy t2d]
                      )
+%%[[99
+                     r
+%%]]
   where  m fim = " " ++ show fim ++ " "
 %%]
 
@@ -96,6 +112,9 @@ ATTR ErrL [ | | ppL: {[PP_Doc]} ]
 SEM Err
   | UnifyClash          lhs     .  pp   =   ppUnifyErr  "Type clash"
                                                         @ty1 @ty2 @ty1detail @ty2detail
+%%[[99
+                                                        @range
+%%]]
   | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (maybeHd
                                                           "Names not in scope"
                                                           (const (strCapitalize @kind ++ " names not in scope"))
@@ -105,14 +124,27 @@ SEM Err
                                                            [] -> ppListSep "" "" ", " $ map fst $ @nmL
                                                            _  -> vlist [ n >|< ":" >#< maybe empty vlist rs | (n,rs) <- @nmL ]
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    "Names introduced more than once"
                                                         (ppListSep "" "" ", " @nmL)
+%%[[99
+                                                        @range
+%%]]
   | PatArity            lhs     .  pp   =   ppMsgErr    "Known type has wrong arity for pattern"
                                                         ("type :" >#< ppTy @ty >-< "arity:" >#< @arity)
+%%[[99
+                                                        @range
+%%]]
   | NestedIn            loc     .  pp   =   let  h =  if @lhs.nestDepth == 1 && @errL.isNestPP
                                                       then (text "..." >#<)
                                                       else if @lhs.nestDepth <= 1 || @lhs.nestDepth >= 1 && not @errL.isNestPP
+%%[[1
                                                       then ppMsgErr ("In `" >|< @wher >|< "'")
+%%][99
+                                                      then \x -> ppMsgErr ("In `" >|< @wher >|< "'") x emptyRange
+%%]]
                                                       else id
                                             in   h (vlist @errL.ppL)
 
@@ -124,25 +156,40 @@ SEM ErrL
 %%[1.MissingSig
 SEM Err
   | MissingSig          lhs     .  pp   =   ppMsgErr    "Missing sig for" (@wher)
-%%]
+%%]%%[[99
+                                                        @range
+%%]]
+
 
 %%[1.HS
 SEM Err
   | Fixity              lhs     .  pp   =   ppMsgErr    "Fixity mismatch between" (ppListSep "" "" ", " [@op1,@op2])
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[2 -1.MissingSig
 SEM Err
   | UnifyOccurs         lhs     .  pp   =   ppUnifyErr  "Infinite type"
                                                         @ty1 @ty2 (mkTyVar @tvar) @ty2detail
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[4
 SEM Err
   | UnifyClash          lhs     .  pp   :=  ppUnifyErr  "Type clash"
                                                         @ty1 @ty2 @fiMode @ty1detail @ty2detail @fiModeD
+%%[[99
+                                                        @range
+%%]]
   | UnifyOccurs         lhs     .  pp   :=  ppUnifyErr  "Infinite type"
                                                         @ty1 @ty2 @fiMode (mkTyVar @tvar) @ty2detail @fiModeD
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[4_2
@@ -153,28 +200,52 @@ SEM Err
                                                          >-< "types   :" >#< vlist (map ppTy @tyL)
                                                          >-< "fit mode:" >#< text (show @fiMode)
                                                         )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[5
 SEM Err
   | Newtype             lhs     .  pp   =   ppMsgErr    ("Newtype must have exactly 1 constructor with 1 field")
                                                         ("Type:" >#< @tyNm)
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[7
 SEM Err
   | MissingDataFields   lhs     .  pp   =   ppMsgErr    ("Missing field(s) in data construction")
                                                         ("Field(s)   :" >#< ppCommas' @nmL >-< "Constructor:" >#< pp @con)
+%%[[99
+                                                        @range
+%%]]
   | MissingAnyDataField lhs     .  pp   =   ppMsgErr    ("No data constructor has all fields")
                                                         ("Field(s):" >#< ppCommas' @nmL >-< "Type    :" >#< pp @tyNm)
+%%[[99
+                                                        @range
+%%]]
   | DuplicateDataFields lhs     .  pp   =   ppMsgErr    ("Duplicate field(s) in data construction/update")
                                                         ("Field(s):" >#< ppCommas' @nmL)
+%%[[99
+                                                        @range
+%%]]
   | MissingRowLabels    lhs     .  pp   =   ppMsgErr    ("Missing label(s) in row")
                                                         ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
+%%[[99
+                                                        @range
+%%]]
   | TooManyRowLabels    lhs     .  pp   =   ppMsgErr    "Too many label(s) to fit in row"
                                                         ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
+%%[[99
+                                                        @range
+%%]]
   | InconsistentIntros  lhs     .  pp   =   ppMsgErr    ("Inconsistent " ++ @kind ++ " introductions for")
                                                         ("names:" >#< ppCommas' @nmL)
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[8
@@ -183,10 +254,16 @@ SEM Err
                                                         (    "file name         :" >#< @fileName
                                                          >-< "searched locations:" >#< vlist (map (text.show) @locations)
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | AmbiguousExport     lhs     .  pp   =   ppMsgErr    "Ambiguous export"
                                                         (    "name   :" >#< @name
                                                          >-< "exports:" >#< ppCommas @entities
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | PP                  lhs     .  pp   =   @pp
 %%]
 
@@ -196,30 +273,57 @@ SEM Err
                                                         (    "limit:" >#< pp @depth
                                                          >-< "pred :" >#< pp @pred
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
                                                         (    "preds:" >#< vlist @preds
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proof for predicates did overlap"
                                                         (    vlist . map (\(p,evs) -> p >#< ":" >#< ppBracketsCommas evs) $ @overl
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | TyHasFreeTVars      lhs     .  pp   =   ppMsgErr    "Type has free type vars (not allowed)"
                                                         (    "type:" >#< pp @ty
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | DeclsNotAllowed     lhs     .  pp   =   ppMsgErr    ("Declarations are not allowed " ++ @inside)
                                                         (vlist [ k >|< ":" >#< ppCommas ns | (k,ns) <- @decls ]
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | ValWithoutSig       lhs     .  pp   =   ppMsgErr    ("Instance members without corresponding signature from class")
                                                         (    "names:" >#< ppCommas @nmL
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | MalformedPred       lhs     .  pp   =   ppMsgErr    ("Type cannot be parsed as context")
                                                         (    "type:" >#< @pp
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | NoMostSpecificPred  lhs     .  pp   =   ppMsgErr    "No most specific predicate can be chosen between"
                                                         (    "preds:" >#< vlist [@pred1,@pred2]
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | EvidenceAltsLeft    lhs     .  pp   =   ppMsgErr    "Evidence alternatives left (TBD: more info)"
                                                         (    empty
                                                         )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[20
@@ -228,10 +332,16 @@ SEM Err
                                                         (    "filename        :" >#< @nmOfFile
                                                          >-< "name from source:" >#< @nmFromSrc
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | AmbiguousNameRef    lhs     .  pp   =   ppMsgErr    "Ambiguous name reference"
                                                         (    "name        :" >#< @nm
                                                          >-< "may refer to:" >#< vlist (map pp @nmAlts)
                                                         )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[95
@@ -239,14 +349,23 @@ SEM Err
   | MalformedTy         lhs     .  pp   =   ppMsgErr    ("Malformed " ++ @kind ++ " for " ++ @purpose)
                                                         (    @kind >|< ":" >#< ppTy @ty
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | NoDerivFor          lhs     .  pp   =   ppMsgErr    ("No deriving for")
                                                         (    "predicate:" >#< @pred
                                                         )
+%%[[99
+                                                        @range
+%%]]
   | NoDerivForData      lhs     .  pp   =   ppMsgErr    ("Data type has wrong structure for deriving")
                                                         (    "data type :" >#< @ty
                                                          >-< "class name:" >#< @clNm
                                                          >-< "because   :" >#< @reason
                                                         )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 
