@@ -51,10 +51,10 @@ instance Show RedHowAnnotation where
 
 %%[9
 instance PP RedHowAnnotation where
-  pp (RedHow_ByInstance   s p sc)  = "inst" >#< s >|< sc >#< "::" >#< p
+  pp (RedHow_ByInstance   s p sc)  = "inst" >#< ppParensCommas [pp s, pp sc]
   pp (RedHow_BySuperClass s _ _ )  = "super" >#< s
   pp (RedHow_ProveObl     i   sc)  = "prove" >#< i >#< sc
-  pp (RedHow_Assumption   _ n sc)  = "assume" >#< n >#< sc
+  pp (RedHow_Assumption   _ n sc)  = "assume" >#< ppParensCommas [pp n, pp sc]
   pp (RedHow_ByScope            )  = pp "scope"
 %%[[10
   pp (RedHow_ByLabel      l o sc)  = "label" >#< l >|< "@" >|< o >|< sc
@@ -63,6 +63,7 @@ instance PP RedHowAnnotation where
   pp (RedHow_Lambda       i   sc)  = "lambda" >#< i >#< sc
 %%]]
 %%]
+  pp (RedHow_ByInstance   s p sc)  = "inst" >#< s >|< sc >#< "::" >#< p
 
 %%[20
 instance PPForHI RedHowAnnotation where

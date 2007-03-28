@@ -324,7 +324,7 @@ checkMod expsOf inscp mod
     ++ if null missingModules
        then checkExpSpec inscp mod
             ++ [ err | (imp,Just exps) <- impSources, err <- checkImp exps imp ]
-       else [mkErr_NamesNotIntrod "module" missingModules]
+       else [rngLift emptyRange mkErr_NamesNotIntrod "module" missingModules]
   where Just modExports = expsOf (modName mod)
         impSources      = [ (imp,expsOf (mimpSource imp)) | imp <- modImpL mod ]
         missingModules  = nub [ mimpSource imp | (imp,Nothing) <- impSources ]
@@ -337,7 +337,7 @@ checkAmbigExps exps
   where isAmbig n = ambig n cons ++ ambig n other
                   where (cons,other) = partition mentIsCon (Rel.apply exps n)
         ambig n ents@(_:_:_) | not (null a)
-                             = [Err_AmbiguousExport n (map (pp . ioccNm . mentIdOcc) $ concat $ a)]
+                             = [rngLift emptyRange Err_AmbiguousExport n (map (pp . ioccNm . mentIdOcc) $ concat $ a)]
                              where a = [ l | l@(_:_:_) <- groupSortOn (ioccKind . mentIdOcc) ents ]
         ambig n _            = []
 %%]
@@ -392,10 +392,10 @@ checkExpSpec inscp mod
   where aliases = modName mod : mimpAs `map` modImpL mod
         chk (ModExpMod x)
           | x `elem` aliases = []
-          | otherwise        = [mkErr_NamesNotIntrod "module alias" [x]]
+          | otherwise        = [rngLift emptyRange mkErr_NamesNotIntrod "module alias" [x]]
         chk (ModExpEnt spec) = checkEntSpec False err1 err2 spec inscp
-        err1   x = mkErr_NamesNotIntrod ("export") [x]
-        err2 e x = mkErr_NamesNotIntrod ("subexport of export " ++ show e) [x]
+        err1   x = rngLift emptyRange mkErr_NamesNotIntrod ("export") [x]
+        err2 e x = rngLift emptyRange mkErr_NamesNotIntrod ("subexport of export " ++ show e) [x]
 %%]
 
 %%[20
@@ -404,8 +404,8 @@ checkImp exps imp
   = concatMap chk (mimpImpL imp)
   where src = mimpSource imp
         chk spec = checkEntSpec (mimpHiding imp) err1 err2 spec exps
-        err1   x = mkErr_NamesNotIntrod ("module " ++ show src ++ " import") [x]
-        err2 i x = mkErr_NamesNotIntrod ("module " ++ show src ++ " subimport of import " ++ show i) [x]
+        err1   x = rngLift emptyRange mkErr_NamesNotIntrod ("module " ++ show src ++ " import") [x]
+        err2 i x = rngLift emptyRange mkErr_NamesNotIntrod ("module " ++ show src ++ " subimport of import " ++ show i) [x]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

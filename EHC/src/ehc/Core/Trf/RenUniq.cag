@@ -75,22 +75,27 @@ type ARenMp = Map.Map HsName HsName
 mkUniq :: HsName -> HsName -> UID -> HsName
 mkUniq q n u
   = (if hsnIsQual n
-    then id
-    else hsnSetQual q) $ hsnSuffix n ("__" ++ show u)
+     then id
+     else hsnSetQual q
+    ) $ hsnSuffix n ("__" ++ show u)
 %%]
 
-%%[8.aRenAdd hs
-aRenAdd :: [HsName] -> UID -> ARenMp -> ARenMp
-aRenAdd nL u m
-  =  let  uL = mkNewUIDL (length nL) u
-     in   Map.fromList [ (n,hsnSuffix n ("__" ++ show u)) | (n,u) <- zip nL uL] `Map.union` m
-%%]
-
-%%[20 -8.aRenAdd hs
-aRenAdd :: HsName -> [HsName] -> UID -> ARenMp -> ARenMp
-aRenAdd q nL u m
-  =  let  uL = mkNewUIDL (length nL) u
-     in   Map.fromList [ (n,mkUniq q n u) | (n,u) <- zip nL uL] `Map.union` m
+%%[8 hs
+%%[[8
+aRenAdd :: Bool -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd isGlob nL u m
+%%][20
+aRenAdd :: Bool -> HsName -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd isGlob q nL u m
+%%]]
+  = Map.fromList [ (n,mkNm n u) | (n,u) <- zip nL uL ] `Map.union` m
+  where uL = mkNewUIDL (length nL) u
+        doChngNm n = not isGlob || n `Map.member` m
+%%[[8
+        mkNm n u = if doChngNm n then hsnSuffix n ("__" ++ show u) else n
+%%][20
+        mkNm n u = if doChngNm n then mkUniq q n u else n
+%%]]
 %%]
 
 %%[8 hs
@@ -121,27 +126,23 @@ SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CExpr
-  | Let         loc         .   aRenMp      =   if @lhs.lev == cLevModule
-                                                then @lhs.aRenMp
-                                                else aRenAdd @binds.nmL @lUniq @lhs.aRenMp
+  | Let         loc         .   aRenMp      =   aRenAdd (@lhs.lev == cLevModule) @binds.nmL @lUniq @lhs.aRenMp
                 binds       .   lev         =   @lhs.lev + 1
-  | Lam         loc         .   aRenMp      =   aRenAdd [@arg] @lUniq @lhs.aRenMp
+  | Lam         loc         .   aRenMp      =   aRenAdd False [@arg] @lUniq @lhs.aRenMp
                 body        .   lev         =   if @body.isLamBody then @lhs.lev + 1 else @lhs.lev
 
 SEM CAlt
-  | Alt         loc         .   aRenMp      =   aRenAdd @pat.nmL @lUniq @lhs.aRenMp
+  | Alt         loc         .   aRenMp      =   aRenAdd False @pat.nmL @lUniq @lhs.aRenMp
                 expr        .   lev         =   @lhs.lev + 1
 %%]
 
 %%[20
 SEM CExpr
-  | Let         loc         .   aRenMp      :=  if @lhs.lev == cLevModule
-                                                then @lhs.aRenMp
-                                                else aRenAdd @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
-  | Lam         loc         .   aRenMp      :=  aRenAdd @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
+  | Let         loc         .   aRenMp      :=  aRenAdd (@lhs.lev == cLevModule) @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
+  | Lam         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
 
 SEM CAlt
-  | Alt         loc         .   aRenMp      :=  aRenAdd @lhs.moduleNm @pat.nmL @lUniq @lhs.aRenMp
+  | Alt         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm @pat.nmL @lUniq @lhs.aRenMp
 %%]
 
 %%[8

@@ -421,7 +421,7 @@ Notation & Meaning \\
 
 %%[typeSchemeMono
 |sigma| & |::=| &
-|forall ^ tvarv . pi => tau|
+|forall ^ Vec(tvarv) . Vec(pi) => tau|
  & type scheme
  \\
 %%]

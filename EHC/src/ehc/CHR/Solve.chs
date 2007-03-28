@@ -216,17 +216,26 @@ type SolveTrace p i g s = [SolveStep p i g s]
 data SolveState p i g s
   = SolveState
       { stWorkList      :: WorkList p i
+      , stDoneCnstrSet  :: Set.Set (Constraint p i)
+      , stTrace         :: SolveTrace p i g s
+      }
+
+stDoneCnstrs :: SolveState p i g s -> [Constraint p i]
+stDoneCnstrs = Set.toList . stDoneCnstrSet
+
+emptySolveState :: SolveState p i g s
+emptySolveState = SolveState emptyWorkList Set.empty []
+%%]
+data SolveState p i g s
+  = SolveState
+      { stWorkList      :: WorkList p i
       , stDoneCnstrs    :: [Constraint p i]
       , stTrace         :: SolveTrace p i g s
       }
 
-emptySolveState :: SolveState p i g s
-emptySolveState = SolveState emptyWorkList [] []
-%%]
-
 %%[9 export(solveStateResetDone)
 solveStateResetDone :: SolveState p i g s -> SolveState p i g s
-solveStateResetDone s = s {stDoneCnstrs = []}
+solveStateResetDone s = s {stDoneCnstrSet = Set.empty}
 %%]
 
 %%[9
@@ -260,6 +269,7 @@ chrSolve
   :: ( CHRMatchable env p s, CHRCheckable g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
+     , Ord (Constraint p i)
      , PP g, PP i, PP p -- for debugging
      ) => env -> CHRStore p i g s -> [Constraint p i] -> [Constraint p i]
 chrSolve env chrStore cnstrs
@@ -270,6 +280,7 @@ chrSolve'
   :: ( CHRMatchable env p s, CHRCheckable g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
+     , Ord (Constraint p i)
      , PP g, PP i, PP p -- for debugging
      ) => env -> CHRStore p i g s -> [Constraint p i] -> ([Constraint p i],[Constraint p i],SolveTrace p i g s)
 chrSolve' env chrStore cnstrs
@@ -280,6 +291,7 @@ chrSolve''
   :: ( CHRMatchable env p s, CHRCheckable g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
+     , Ord (Constraint p i)
      , PP g, PP i, PP p -- for debugging
      ) => env -> CHRStore p i g s -> [Constraint p i] -> SolveState p i g s -> SolveState p i g s
 chrSolve'' env chrStore cnstrs prevState
@@ -303,7 +315,7 @@ chrSolve'' env chrStore cnstrs prevState
                                          }
                               st' = st { stWorkList = wl'
                                        , stTrace = SolveStep (subst `chrAppSubst` chr) subst bTodo bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
-                                       , stDoneCnstrs = bDone ++ (map workCnstr $ take simpSz works) ++ stDoneCnstrs st
+                                       , stDoneCnstrSet = Set.unions [Set.fromList bDone, Set.fromList $ map workCnstr $ take simpSz works, stDoneCnstrSet st]
                                        }
                               ppwork = "workkey" >#< ppTrieKey workHd >#< ":" >#< (ppBracketsCommas (map ppTrieKey workTl) >-< ppBracketsCommas (map ppTrieKey $ wlScanned wl))
                                          >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
@@ -358,7 +370,7 @@ chrSolve'' env chrStore cnstrs prevState
         isUsedByPropPart wlUsedIn (chr,(keys,_))
           = all fnd $ drop (storedSimpSz chr) keys
           where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup k wlUsedIn
-        initState st = st { stWorkList = wlInsert wlnew $ stWorkList st, stDoneCnstrs = done ++ stDoneCnstrs st }
+        initState st = st { stWorkList = wlInsert wlnew $ stWorkList st, stDoneCnstrSet = Set.unions [Set.fromList done, stDoneCnstrSet st] }
                      where (wlnew,done) = splitDone cnstrs
         splitDone  = partition (\x -> cnstrRequiresSolve x)
 %%]

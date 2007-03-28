@@ -122,7 +122,7 @@ opChainReArrange opChain
                | p1 == p2 -> case (f1,f2,lvariant,rvariant) of
                                (Fixity_Infixr,Fixity_Infixr,_,r) -> (r,rerr)
                                (Fixity_Infixl,Fixity_Infixl,l,_) -> (l,lerr)
-                               (Fixity_Infix ,_            ,l,_) -> (l,[rngLift pos1 Err_Fixity pp1 pp2] ++ lerr)
+                               (Fixity_Infix ,_            ,l,_) -> (l,[rngLift pos2 Err_Fixity pp1 pp2] ++ lerr)
                where (lrearr,lerr) = opChainReArrange (OpChain_Op op1 pp1 f1 p1 pos1 l1 l2)
                      lvariant = OpChain_Op op2 pp2 f2 p2 pos2 lrearr r2
                      rvariant = OpChain_Op op1 pp1 f1 p1 pos1 l1 (OpChain_Op op2 pp2 f2 p2 pos2 l2 r2)

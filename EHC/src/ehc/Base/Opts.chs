@@ -121,7 +121,7 @@ data EHCOpts
       ,  ehcOptPrfCutOffAt    ::  Int				-- cut off limit for context reduction
       ,  ehcCfgClassViaRec    ::  Bool				-- instance representation via record instead of data
       ,  ehcCfgClassViaCHR    ::  Bool				-- use CHR based variant
-      ,  ehcCfgCHRInclScope   ::  Bool				-- include scoped CHR's (option is used only for paper writing)
+      ,  ehcCfgCHRScoped      ::  CHRScoped			-- how to gen scoped CHR's (option is used only for paper writing + experimenting)
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
@@ -201,8 +201,8 @@ defaultEHCOpts
       ,  ehcCfgInstFldHaveSelf=   False
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
-      ,  ehcCfgClassViaCHR    =   False -- True
-      ,  ehcCfgCHRInclScope   =   True
+      ,  ehcCfgClassViaCHR    =   True
+      ,  ehcCfgCHRScoped      =   CHRScopedAll
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
@@ -262,8 +262,8 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
 %%]]
 %%[[9
-     ,  Option ""   ["cls-via-chr"]      (boolArg oClsViaCHR)                 "class predicate handling vir CHR's (default=off)"
-     ,  Option ""   ["chr-scoped"]       (boolArg oCHRscoped)                 "include scoped CHR's (default=on)"
+     ,  Option ""   ["cls-via-chr"]      (boolArg oClsViaCHR)                 "class predicate handling vir CHR's (default=on)"
+     ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
 %%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
@@ -376,7 +376,13 @@ ehcCmdLineOpts
 %%]]
 %%[[9
          oClsViaCHR    o b =  o { ehcCfgClassViaCHR       = b }
-         oCHRscoped    o b =  o { ehcCfgCHRInclScope      = b }
+         oCHRScoped    s o =  o { ehcCfgCHRScoped       =
+                                    case s of
+                                      "0" -> CHRScopedInstOnly
+                                      "1" -> CHRScopedMutualSuper
+                                      "2" -> CHRScopedAll
+                                      _   -> CHRScopedAll
+                                }
 %%]]
 %%[[20
          oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }

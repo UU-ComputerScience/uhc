@@ -179,3 +179,9 @@ text-variant-icfp07-chr-locinst:
 	  TEXT_SHUFFLE_VARIANT=24 \
 	  text-variant-dflt-bib
 
+text-variant-icfp07-chr-locinst-blind:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyCHRlocinst --set=acm --set=blockstyle --set=asArticle --set=blinded" \
+	  TEXT_SHUFFLE_VARIANT=24 \
+	  text-variant-dflt-bib
+

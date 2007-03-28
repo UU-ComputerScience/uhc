@@ -535,7 +535,7 @@ mkUseOccGam idGam names kind asp rng
                 idUseOccGam = gamUnit occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
                 errs        = case mbDef of
                                 Just d | isJust (doccNmAlts d) && length alts > 1
-                                  -> [Err_AmbiguousNameRef name alts]
+                                  -> [rngLift rng Err_AmbiguousNameRef name alts]
                                   where alts = fromJust (doccNmAlts d)
                                 _ -> []
 %%]
@@ -1082,7 +1082,7 @@ mergeFunDefL ds
   = case ds of
       [_] -> (ds,[])
       (d:_:_)
-          -> ([d],[Err_NamesDupIntrod [ioccNm $ doccOcc $ d]])
+          -> ([d],[rngLift emptyRange Err_NamesDupIntrod [ioccNm $ doccOcc $ d]])
       _   -> ([],[])
 %%]
 

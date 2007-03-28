@@ -12,7 +12,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
 								gbm \
 								uniqueness slides-uniqueness \
-								icfp07-chr-locinst
+								icfp07-chr-locinst icfp07-chr-locinst-blind
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \

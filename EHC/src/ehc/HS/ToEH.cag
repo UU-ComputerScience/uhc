@@ -95,10 +95,10 @@ SEM Declaration
 %%]
 %%[5
     | Data
-        loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map EH.TyVar_Var @simpletype.typevariables) @constructors.eh
+        loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @simpletype.typevariables) @constructors.eh
         lhs         .   eh          =   [@eh]
     | Newtype
-        loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map EH.TyVar_Var @simpletype.typevariables) [@constructors.eh]
+        loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map (rngLift @range EH.TyVar_Var) @simpletype.typevariables) [@constructors.eh]
         lhs         .   eh          =   [@eh]
 %%]
 %%[6
@@ -116,7 +116,7 @@ SEM Declaration
 %%[9
     | Class
         loc         .   (eh,ehInst) =   let h = rngLift @range EH.TyExpr_Pred
-                                                $ rngLift @range EH.PrExpr_Class @classrefname (map EH.TyExpr_Var @simpletype.typevariables)
+                                                $ rngLift @range EH.PrExpr_Class @classrefname (map (rngLift @range EH.TyExpr_Var) @simpletype.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                             a = mkArrow c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
@@ -165,7 +165,7 @@ ATTR AllDeriving [ ehDataTyExpr: {EH.TyExpr} | | ]
 
 SEM Declaration
     | Data Newtype
-        derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map EH.TyExpr_Var @simpletype.typevariables)
+        derivings   .   ehDataTyExpr=   mkApp (rngLift @range EH.TyExpr_Con @typerefname : map (rngLift @range EH.TyExpr_Var) @simpletype.typevariables)
 
 SEM Deriving
     | Deriving
@@ -202,10 +202,15 @@ SEM Kind
 %%% Types           
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 hs
+%%[7.ehTyExprArg hs
 ehTyExprArg :: EH.TyExpr -> EH.TyExpr
 ehTyExprArg (EH.TyExpr_App  _ a) = a
 ehTyExprArg (EH.TyExpr_AppTop e) = ehTyExprArg e
+%%]
+%%[99 -7.ehTyExprArg hs
+ehTyExprArg :: EH.TyExpr -> EH.TyExpr
+ehTyExprArg (EH.TyExpr_App  _ _ a) = a
+ehTyExprArg (EH.TyExpr_AppTop _ e) = ehTyExprArg e
 %%]
 
 %%[1
@@ -223,10 +228,10 @@ SEM Type
     | InfixApplication
         loc         .   (eh,ctxtFormErrs)
                                     =   if @operator.isPrArrow && not @lhs.isAsPred
-                                        then let t = foldr mk1Arrow @rightType.eh [ EH.TyExpr_Pred pr | (Just pr) <- @leftType.ehMbAsPrL ]
+                                        then let t = foldr mk1Arrow @rightType.eh [ rngLift @range EH.TyExpr_Pred pr | (Just pr) <- @leftType.ehMbAsPrL ]
                                              in  if all isJust @leftType.ehMbAsPrL
                                                  then (t, [])
-                                                 else (t, [Err_MalformedPred @leftType.pp])
+                                                 else (t, [rngLift @range Err_MalformedPred @leftType.pp])
                                         else (mkRngApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
 %%]
     | Constructor
@@ -307,7 +312,7 @@ SEM ContextItem
 %%[10
 SEM ContextItem
     | RowLacksLabel
-        loc         .   eh          =   rngLift @range EH.PrExpr_Lacks (EH.RowTyExpr_Var @rowvariable) @name
+        loc         .   eh          =   rngLift @range EH.PrExpr_Lacks (rngLift @range EH.RowTyExpr_Var @rowvariable) @name
 %%]
 
 %%[5
@@ -416,7 +421,7 @@ ehExpLitInt :: Range -> Int -> String -> Int -> [HsName] -> EH.Expr
 ehExpLitInt r b s sign litrefnames
   | sign < 0  = mk (\e -> ehExpVarApp r (litrefnames !! 1) [e])
   | otherwise = mk id
-  where mk neg = neg $ ehExpVarApp r (litrefnames !! 0) [EH.Expr_IIConst (intDenot2Integer b s)]
+  where mk neg = neg $ ehExpVarApp r (litrefnames !! 0) [rngLift r EH.Expr_IIConst (intDenot2Integer b s)]
 
 ehExpLitFloat :: Range -> String -> Int -> [HsName] -> EH.Expr
 ehExpLitFloat r s sign litrefnames
@@ -424,14 +429,14 @@ ehExpLitFloat r s sign litrefnames
   | otherwise = mk id
   where (n,d) = floatDenot2NomDenom s
         mk neg = neg $ ehExpVarApp r (litrefnames !! 1)
-                     $ [rngLift r EH.Expr_Parens $ ehExpVarApp r (litrefnames !! 0) [EH.Expr_IIConst n,EH.Expr_IIConst d]]
+                     $ [rngLift r EH.Expr_Parens $ ehExpVarApp r (litrefnames !! 0) [rngLift r EH.Expr_IIConst n,rngLift r EH.Expr_IIConst d]]
 %%]
 
 %%[1 hs
 ehExpApp' :: (EH.Expr -> a -> EH.Expr) -> Range -> EH.Expr -> [a] -> EH.Expr
 ehExpApp' app r f as
   = rngLift r EH.Expr_AppTop
-    $ foldl (rngLift r app) (ehExpUnTop f) as
+    $ foldl app (ehExpUnTop f) as
 
 ehExpConApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
 ehExpConApp r n as
@@ -442,8 +447,12 @@ ehExpVarApp r n as
   = mkRngApp r (rngLift r EH.Expr_Var n : as)
 
 ehExpUnTop :: EH.Expr -> EH.Expr
-ehExpUnTop (EH.Expr_AppTop e) = e
-ehExpUnTop e                  = e
+%%[[1
+ehExpUnTop (EH.Expr_AppTop   e) = e
+%%][99
+ehExpUnTop (EH.Expr_AppTop _ e) = e
+%%]]
+ehExpUnTop e                    = e
 %%]
 
 %%[1.ehExpProd hs
@@ -515,7 +524,7 @@ SEM Expression
 %%]
 %%[4
     | ImpredicativeApplication
-        loc         .   eh          =   ehExpApp' EH.Expr_AppImpred @range @function.eh @arguments.eh
+        loc         .   eh          =   ehExpApp' (rngLift @range EH.Expr_AppImpred) @range @function.eh @arguments.eh
 %%]
 %%[5
     | If
@@ -528,7 +537,7 @@ SEM Expression
         loc         .   eh          =   EH.mkCase' @range @expression.eh (Just @caseId) False @alternatives.eh
 %%]]
     | List
-        loc         .   eh          =   foldr (\l r -> ehExpConApp @range (@refnames !! 0) [l,r]) (EH.Expr_Con (@refnames !! 1)) @expressions.eh
+        loc         .   eh          =   foldr (\l r -> ehExpConApp @range (@refnames !! 0) [l,r]) (rngLift @range EH.Expr_Con (@refnames !! 1)) @expressions.eh
     | Enum
         loc         .   enumNm      =   case (@from.eh,@then.eh,@to.eh) of
                                           (fr,Just th,Just to) -> hsnEnumFromThenTo
@@ -563,7 +572,7 @@ SEM Expression
 %%]
 %%[12
     | ImplicitApplication
-        loc         .   eh          =   ehExpApp' (\f (e,p) -> EH.Expr_AppImpl f p e) @range @function.eh @arguments.eh
+        loc         .   eh          =   ehExpApp' (\f (e,p) -> rngLift @range EH.Expr_AppImpl f p e) @range @function.eh @arguments.eh
     | ImplicitLambda
         loc         .   eh          =   foldr (\(p,c) e -> rngLift @range EH.Expr_LamImpl c p e) @expression.eh @patterns.eh
 %%]
@@ -589,7 +598,7 @@ ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr
 ehGenerator r p mkRes fail e
   = EH.mkLet r
       (Just
-        [EH.Decl_Val
+        [rngLift r EH.Decl_Val
            (rngLift r EH.PatExpr_Var ok)
            (rngLift r EH.Expr_Lam
              (rngLift r EH.PatExpr_Var x)
@@ -682,42 +691,62 @@ SEM RecordExpressionBinding
 ehRowRecExprUpd :: Range -> nm -> (EH.RecExpr -> nm -> EH.Expr -> EH.RecExpr) -> EH.Expr -> EH.Expr -> EH.Expr
 ehRowRecExprUpd rng nm mk updE recE
   = case recE of
+%%[[7
       EH.Expr_Rec r
+%%][99
+      EH.Expr_Rec _ r
+%%]]
         -> mkUpd  r
       _ -> mkUpd (r2e recE)
   where r2e     = rngLift rng EH.RecExpr_Expr
-        mkUpd r = rngLift rng EH.Expr_Rec (rngLift rng mk r nm updE)
+        mkUpd r = rngLift rng EH.Expr_Rec (mk r nm updE)
 
 ehRowRecPatExprUpd :: Range -> nm -> (EH.RecPatExpr -> nm -> EH.PatExpr -> EH.RecPatExpr) -> EH.PatExpr -> EH.PatExpr -> EH.PatExpr
 ehRowRecPatExprUpd rng nm mk updE recE
   = case recE of
+%%[[7
       EH.PatExpr_Rec r
+%%][99
+      EH.PatExpr_Rec _ r
+%%]]
         -> mkUpd  r
       _ -> mkUpd (r2e recE)
   where r2e     = rngLift rng EH.RecPatExpr_Expr
-        mkUpd r = rngLift rng EH.PatExpr_Rec (rngLift rng mk r nm updE)
+        mkUpd r = rngLift rng EH.PatExpr_Rec (mk r nm updE)
 %%]
 
 %%[7.ehRowRowTyExprUpd hs
 ehRowRowTyExprUpd :: Range -> nm -> (EH.RowTyExpr -> nm -> EH.TyExpr -> EH.RowTyExpr) -> EH.TyExpr -> EH.TyExpr -> EH.TyExpr
 ehRowRowTyExprUpd rng nm mk updE recE
   = case recE of
+%%[[7
       EH.TyExpr_Row r
+%%][99
+      EH.TyExpr_Row _ r
+%%]]
         -> mkUpd  r
       _ -> mkUpd (rngLift rng EH.RowTyExpr_Empty)
-  where mkUpd r = rngLift rng EH.TyExpr_Row (rngLift rng mk r nm updE)
+  where mkUpd r = rngLift rng EH.TyExpr_Row (mk r nm updE)
 %%]
 
 %%[9.ehRowRowTyExprUpd -7.ehRowRowTyExprUpd hs
 ehRowRowTyExprUpd :: Range -> nm -> (EH.RowTyExpr -> nm -> EH.TyExpr -> EH.RowTyExpr) -> EH.TyExpr -> EH.TyExpr -> EH.TyExpr
 ehRowRowTyExprUpd rng nm mk updE recE
   = case recE of
+%%[[9
       EH.TyExpr_Row r
+%%][99
+      EH.TyExpr_Row _ r
+%%]]
         -> mkUpd  r
+%%[[9
       EH.TyExpr_Var v
+%%][99
+      EH.TyExpr_Var _ v
+%%]]
         -> mkUpd (rngLift rng EH.RowTyExpr_Var v)
       _ -> mkUpd (rngLift rng EH.RowTyExpr_Empty)
-  where mkUpd r = rngLift rng EH.TyExpr_Row (rngLift rng mk r nm updE)
+  where mkUpd r = rngLift rng EH.TyExpr_Row (mk r nm updE)
 %%]
 
 %%[7
@@ -727,9 +756,9 @@ ATTR RowRecordExpressionUpdate [ | | eh: {EH.Expr -> EH.Expr} ]
 
 SEM RowRecordExpressionUpdate
     | Extends
-        lhs         .   eh          =   ehRowRecExprUpd @range @name EH.RecExpr_Ext @expression.eh
+        lhs         .   eh          =   ehRowRecExprUpd @range @name (rngLift @range EH.RecExpr_Ext) @expression.eh
     | Update
-        lhs         .   eh          =   ehRowRecExprUpd @range @name EH.RecExpr_Upd @expression.eh
+        lhs         .   eh          =   ehRowRecExprUpd @range @name (rngLift @range EH.RecExpr_Upd) @expression.eh
 
 ATTR RowRecordPatternBindings [ | | eh USE {:} {[]}: {[EH.PatExpr -> EH.PatExpr]} ]
 
@@ -737,7 +766,7 @@ ATTR RowRecordPatternBinding [ | | eh: {EH.PatExpr -> EH.PatExpr} ]
 
 SEM RowRecordPatternBinding
     | Binding
-        lhs         .   eh          =   ehRowRecPatExprUpd @range @name EH.RecPatExpr_Ext @pattern.eh
+        lhs         .   eh          =   ehRowRecPatExprUpd @range @name (rngLift @range EH.RecPatExpr_Ext) @pattern.eh
 
 ATTR RowTypeUpdates [ | | eh USE {:} {[]}: {[EH.TyExpr -> EH.TyExpr]} ]
 
@@ -745,7 +774,7 @@ ATTR RowTypeUpdate [ | | eh: {EH.TyExpr -> EH.TyExpr} ]
 
 SEM RowTypeUpdate
     | Extends
-        lhs         .   eh          =   ehRowRowTyExprUpd @range @name EH.RowTyExpr_Ext @type.eh
+        lhs         .   eh          =   ehRowRowTyExprUpd @range @name (rngLift @range EH.RowTyExpr_Ext) @type.eh
 %%]
 
 %%[7

@@ -1,6 +1,9 @@
 %format Hi				= "H_i"
+%format Hn				= "H_n"
 %format Gj				= "G_j"
+%format Gn				= "G_n"
 %format Bk				= "B_k"
+%format Bn				= "B_n"
 
 %format PiAssume = "\Pi_{assume}"
 %format PiProve  = "\Pi_{prove}"
@@ -24,3 +27,6 @@
 %format notinsign  = "\notin"
 
 %format deriv(x) = "\longrightarrow_{" x "}"
+
+%format <<		= "\texttt{<}"
+%format >>		= "\texttt{>}"

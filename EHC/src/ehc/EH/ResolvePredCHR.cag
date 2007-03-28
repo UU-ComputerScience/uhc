@@ -69,7 +69,7 @@ simplify env chrStore heur toProveHereCnstrMp prevRes
         toProveHereCnstrMp' = toProveHereCnstrMp
 %%][10
         toProveHereCnstrMp' = Map.mapKeys mk toProveHereCnstrMp
-                            where mk (Prove p) = Prove $ p {cpoPr = predCanonic $ cpoPr p}
+                            where mk (Prove p) = Prove $ p {cpoPr = predCanonic env $ cpoPr p}
                                   mk c         = c
 %%]]
         env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMp'}}
@@ -81,7 +81,12 @@ simplify env chrStore heur toProveHereCnstrMp prevRes
           = evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
         (chrSolveEvidBindMp,chrSolveScopeBindMp)
           = evidKeyCoreMpToBinds chrSolveEvidCoreMp
-        ambigErrs = if null ambigEvids then [] else [Err_OverlapPreds [ (cpoPr $ ambigevidPredOcc a,map pp $ ambigevidInfos a) | a <- ambigEvids]]
+        ambigErrs = if null ambigEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ ambigevidPredOcc a,map pp $ ambigevidInfos a) | a <- ambigEvids]]
+%%[[9
+        range = emptyRange
+%%][99
+        range = feRange $ fiEnv env
+%%]]
 
 fixedFtv mp = ftv $ map cnstrPred $ Map.keys mp
 

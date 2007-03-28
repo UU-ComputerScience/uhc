@@ -14,10 +14,13 @@ This matters at:
 This matters for:
 - comparing types, in particular within predicates during proving
 
-%%[10 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty})
+%%[10 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsIn})
 %%]
 
 %%[10 hs import(qualified Data.Set as Set)
+%%]
+
+%%[11 hs import({%{EH}Base.Opts})
 %%]
 
 %%[10.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -25,19 +28,32 @@ WRAPPER TyAGItf
 %%]
 
 %%[10 hs 
-tyCanonic :: Ty -> Ty
-tyCanonic ty
+tyCanonic :: FIIn -> Ty -> Ty
+tyCanonic fi ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf)
+                 (Inh_TyAGItf
+%%[[11
+                   { fi_Inh_TyAGItf = fi
+                   }
+%%]]
+                 )
      in   repl_Syn_TyAGItf t
 %%]
 
 %%[10 hs export(predCanonic)
-predCanonic :: Pred -> Pred
-predCanonic pr
-  = case tyCanonic $ Ty_Pred pr of
+predCanonic :: FIIn -> Pred -> Pred
+predCanonic fi pr
+  = case tyCanonic fi $ Ty_Pred pr of
       Ty_Pred pr' -> pr'
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11
+ATTR TyAGItf AllTy [ fi: FIIn | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,4 +71,13 @@ SEM Ty
                                                          in  mkTyRow row exts'
                                                     else @repl
 %%]
+
+%%[11
+SEM Ty
+  | App             lhs     .   repl            =   if @isSpineRoot
+                                                    then tyBetaRedFull @lhs.fi @repl
+                                                    else @repl
+  | Con             lhs     .   repl            =   tyBetaRedFull @lhs.fi @repl
+%%]
+
 

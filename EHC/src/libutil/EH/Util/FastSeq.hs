@@ -1,15 +1,18 @@
 module EH.Util.FastSeq
   ( FastSeq((:++:),(::+:),(:+::))
+  , isEmpty, null
   , empty
   , singleton
   , toList, fromList
   , map
   , union, unions
+  , firstNotEmpty
   )
   where
 
-import Prelude hiding (map)
+import Prelude hiding (null,map)
 import qualified Data.List as L
+import qualified EH.Util.Utils as U
 
 -------------------------------------------------------------------------
 -- Fast sequence, i.e. delayed concat 'trick'
@@ -30,6 +33,21 @@ empty :: FastSeq a
 empty = FSeqNil
 
 -------------------------------------------------------------------------
+-- Observations
+-------------------------------------------------------------------------
+
+isEmpty, null :: FastSeq a -> Bool
+isEmpty FSeqNil      = True
+isEmpty (FSeqL x   ) = L.null x
+isEmpty (FSeq  _   ) = False
+isEmpty (x1 :++: x2) = isEmpty x1 && isEmpty x2
+isEmpty (x1 :+:: x2) = False
+isEmpty (x1 ::+: x2) = False
+-- isEmpty sq           = L.null $ toList sq
+
+null = isEmpty
+
+-------------------------------------------------------------------------
 -- Construction
 -------------------------------------------------------------------------
 
@@ -41,7 +59,8 @@ singleton = FSeq
 -------------------------------------------------------------------------
 
 fromList :: [a] -> FastSeq a
-fromList = FSeqL
+fromList [] = FSeqNil
+fromList l  = FSeqL l
 
 toList :: FastSeq a -> [a]
 toList s
@@ -70,7 +89,17 @@ map f (x1 ::+: x2) = map f x1 ::+:     f x2
 -------------------------------------------------------------------------
 
 union :: FastSeq a -> FastSeq a -> FastSeq a
-union = (:++:)
+union FSeqNil FSeqNil = FSeqNil
+union FSeqNil s2      = s2
+union s1      FSeqNil = s1
+union s1      s2      = s1 :++: s2
 
 unions :: [FastSeq a] -> FastSeq a
 unions = foldr (:++:) FSeqNil
+
+-------------------------------------------------------------------------
+-- Misc
+-------------------------------------------------------------------------
+
+firstNotEmpty :: [FastSeq x] -> FastSeq x
+firstNotEmpty = U.maybeHd empty id . filter (not . isEmpty)

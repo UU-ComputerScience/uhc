@@ -144,6 +144,9 @@ data FIEnv
 %%[[11
         ,   feTyGam         ::  TyGam
 %%]]
+%%[[99
+        ,   feRange         ::  Range
+%%]]
         }
 %%]]
 
@@ -155,6 +158,9 @@ emptyFE
         ,   fePredScope     =   initPredScope
 %%[[11
         ,   feTyGam         =   emptyGam
+%%]]
+%%[[99
+        ,   feRange         =   emptyRange
 %%]]
         }
 %%]]
@@ -313,12 +319,17 @@ fitsInFI fi ty1 ty2
 %%[[9
             globOpts                =  feEHCOpts $ fiEnv fi
 %%]]
+%%[[1
+            range                   =  emptyRange
+%%][99
+            range                   =  feRange $ fiEnv fi
+%%]]
             res fi t                =  emptyFO  { foUniq = fiUniq fi, foTy = t
                                                 , foAppSpineL = asGamLookup appSpineGam (tyConNm t)}
             err    e                =  emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e}
-            errClash fi t1 t2       =  err [Err_UnifyClash ty1 ty2 (fioMode (fiFIOpts fi)) t1 t2 (fioMode (fiFIOpts fi))]
+            errClash fi t1 t2       =  err [rngLift range Err_UnifyClash ty1 ty2 (fioMode (fiFIOpts fi)) t1 t2 (fioMode (fiFIOpts fi))]
             occurBind fi v t
-                | v `elem` ftv t    =  err [Err_UnifyOccurs ty1 ty2 (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
+                | v `elem` ftv t    =  err [rngLift range Err_UnifyOccurs ty1 ty2 (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
                 | otherwise         =  bind fi v t
 %%]
 
@@ -546,18 +557,18 @@ fitsInFI fi ty1 ty2
                          where  (fi2,rv) = mkTv fi
                        fR fi r1@(Ty_Con n1) _ _ _ e2@(_:_)
                          | n1 == hsnRowEmpty && isRec
-                         = err [Err_MissingRowLabels (assocLKeys e2) tr1]
+                         = err [rngLift range Err_MissingRowLabels (assocLKeys e2) tr1]
                        fR fi _ r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isRec
                          =  if null (fioNoRLabElimFor (fiFIOpts fi) `List.intersect` assocLKeys e1)
                             then fR fi r2 r2 [] e12 e2
-                            else err [Err_TooManyRowLabels (assocLKeys e1) tr2]
+                            else err [rngLift range Err_TooManyRowLabels (assocLKeys e1) tr2]
                        fR fi r1@(Ty_Con n1) _ e1 e12 e2@(_:_)
                          | n1 == hsnRowEmpty && isSum
                          = fR fi r1 r1 e1 e12 []
                        fR fi r1 r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isSum
-                         = err [Err_MissingRowLabels (assocLKeys e1) tr2]
+                         = err [rngLift range Err_MissingRowLabels (assocLKeys e1) tr2]
                        fR fi r1 r2 e1 e12@(_:_) e2
                          = foR
                          where (e1L,e2L) = unzip e12
@@ -1123,7 +1134,7 @@ prfPredsDbg u fe prOccL
           overl                         = [ (pr,map (\e -> case Map.lookup e (prvgIdNdMp gOr) of {Just (ProvenAnd _ _ _ _ ev) -> pp ev; _ -> pp $ mkCExprPrHole defaultEHCOpts e}) es)
                                           | (ProvenOr pr es _) <- Map.elems (prvgIdNdMp gOr)
                                           ]
-          overlErrs                     = if null overl then [] else [Err_OverlapPreds overl]
+          overlErrs                     = if null overl then [] else [rngLift emptyRange Err_OverlapPreds overl]
           prfFrPoiCxBindLM              = prvgCxBindLMap gPrune
           prfIntroCBindL                = prvgIntroBindL poiIsGlob topSort gPrune
                                         where poiIsGlob poi = tgamIsInScope (fePrfCtxtId fe) (poiCxId poi) (fePrElimTGam fe)
@@ -1179,7 +1190,7 @@ prfOneStep fe prOcc@(PredOcc pr prPoi _) st@(ProofState g@(ProvenGraph _ p2i _ _
                       ->  prf pr
                     _ ->  st
           | otherwise
-              ->  st { prfs2ErrL = [Err_PrfCutOffReached prOcc depth] ++ errL }
+              ->  st { prfs2ErrL = [rngLift emptyRange Err_PrfCutOffReached prOcc depth] ++ errL }
           where  prf pr
                    =  case pr of
                         Pred_Class  _    ->  prfOneStepClass  fe prOcc depth st
@@ -1270,7 +1281,7 @@ prfOneStepLacks :: FIEnv -> PredOcc -> Int -> ProofState -> ProofState
 prfOneStepLacks  fe prOcc@(PredOcc pr@(Pred_Lacks r (Label_Lab l)) prPoi _) depth
                  st@(ProofState g@(ProvenGraph i2n p2i p2oi p2fi) u _ _ _ errL)
   =  case tyRowExtr l r of
-       Just _ ->  st {prfs2ErrL = [Err_TooManyRowLabels [l] r] ++ errL}
+       Just _ ->  st {prfs2ErrL = [rngLift emptyRange Err_TooManyRowLabels [l] r] ++ errL}
        _      ->  let  (row,exts) = tyRowExts r
                        offset = tyExtsOffset l . tyRowCanonOrder $ exts
                   in   case row of
@@ -1502,7 +1513,7 @@ fitPredToEvid u prTy g
                              -> let (u',u1,u2) = mkNewLevUID2 u
                                     fo = fitsIn fOpts emptyFE u1 (pigiPrToEvidTy pigi) ([prTy] `mkArrow` mkTyVar u2)
                                 in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
-                           _ -> emptyFO {foErrL = [mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
+                           _ -> emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
                  Ty_Pred (Pred_Pred t)
                     ->  let  (aL,r) = tyArrowArgsRes t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
@@ -1557,3 +1568,11 @@ tyBetaRed :: TyGam -> Ty -> [Ty]
 tyBetaRed tyGam = unfoldr (fmap (\t -> (t,t)) . tyBetaRed1 tyGam)
 %%]
 
+%%[11 export(tyBetaRedFull)
+tyBetaRedFull :: FIIn -> Ty -> Ty
+tyBetaRedFull fi ty
+  = last
+    $ take (ehcOptTyBetaRedCutOffAt $ feEHCOpts env)
+    $ ty : tyBetaRed (feTyGam env) ty
+  where env = fiEnv fi
+%%]

@@ -6,7 +6,7 @@
 SEM Module
     | Module
         loc             .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @body.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
-                                            in  (if null ns then [] else [mkErr_NamesNotIntrod' "" ns])
+                                            in  (if null ns then [] else [rngLift @range mkErr_NamesNotIntrod' "" ns])
 %%]
 
 %%[9 hs
@@ -15,7 +15,7 @@ idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]
 idDefOccGamCheckAllowedKind m ks g
   = case idDefOccGamPartitionByKind ks g of
       (_,[]) -> []
-      (_,ds) -> [Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
+      (_,ds) -> [rngLift @range Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
 
 %%[9
 %%]
@@ -29,7 +29,7 @@ SEM Module
     | Module
         loc             .   errModName  =   case @name of
                                               Just n | n /= @lhs.moduleNm && not @lhs.isTopMod
-                                                -> [Err_ModNameMismatch @lhs.moduleNm n]
+                                                -> [rngLift @range Err_ModNameMismatch @lhs.moduleNm n]
                                               _ -> []
 %%]
 
@@ -42,10 +42,13 @@ SEM Declaration
     | Newtype
         loc             .   errNewtype  =   case @constructors.eh of
                                               EH.DataConstr_Constr _
+%%[[99
+                                                                   _
+%%]]
 %%[[95
                                                                    _
 %%]]
                                                                    [_]
                                                 -> []
-                                              _ -> [Err_Newtype @simpletype.name]
+                                              _ -> [rngLift @range Err_Newtype @simpletype.name]
 %%]

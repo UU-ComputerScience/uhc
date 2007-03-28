@@ -8,6 +8,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wildcard extensions: Range, as first field
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+DATA AllNT
+  | *               range           : Range
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -301,7 +310,7 @@ DATA Expr
                     alts            : CaseAlts
 %%[[8
                     mbCaseId        : {Maybe UID}
-                    isTupOfArg		: {Bool}
+                    isTupOfArg      : {Bool}
 %%]]
 %%]
 
@@ -389,7 +398,7 @@ DATA PatExpr
 
 %%[97
 DATA PatExpr
-  | Expr            expr         	: Expr
+  | Expr            expr            : Expr
 %%]
 
 %%[1.AllPatExpr
@@ -427,7 +436,7 @@ DATA DataConstr
 DATA DataConstr
   | Constr          conNm           : {HsName}
 %%[[95
-                    mbFixityPrio    : {Maybe Int}		-- Nothing: not infix
+                    mbFixityPrio    : {Maybe Int}       -- Nothing: not infix
 %%]]
                     fields          : DataFields
 %%]
