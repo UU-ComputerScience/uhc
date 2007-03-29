@@ -107,13 +107,7 @@ Temporary, as the CHR solution does not require CSubst.
 
 %%[9 hs export(cSubstOptApp)
 cSubstOptApp :: CSubstitutable a => EHCOpts -> CSubst -> a -> a
-cSubstOptApp opts
-  = cSubstApp
-{-
-  = if ehcCfgClassViaCHR opts
-    then \_ x -> x
-    else cSubstApp
--}
+cSubstOptApp opts = cSubstApp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

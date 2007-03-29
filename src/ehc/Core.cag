@@ -25,7 +25,7 @@
 %%[8 hs export(CaseFailSubst)
 %%]
 
-%%[9 hs import(Data.Maybe) export(CxBindLMap(..), emptyCxBindLMap, mkCxBindLForPoiL, mkCxBindLForPoiL', plusCxBM, cxbmDpdPoiS, cxbmIntroPoiL)
+%%[9 hs import(Data.Maybe)
 %%]
 
 %%[9 hs export(cbindLNub)
@@ -201,6 +201,7 @@ cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+%%]
 newtype CxBindLMap = CxBindLMap (Map.Map PredOccId [(CBind,PredOccId,Set.Set PredOccId)])
 
 emptyCxBindLMap = CxBindLMap Map.empty
@@ -215,22 +216,21 @@ cxbmDpdPoiS (CxBindLMap m) poi = maybe Set.empty (Set.unions . map thd) (Map.loo
 
 cxbmIntroPoiL :: CxBindLMap -> [PredOccId]
 cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- Map.elems m, (_,i,_) <- l ]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings using a pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
+%%]
 mkCxBindLForPoiL' :: (PredOccId -> Bool) -> CxBindLMap -> [PredOccId] -> CBindL
 mkCxBindLForPoiL' isAvailPoi (CxBindLMap m) inclPoiL
   = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (Map.lookup i m), (b,_,dpd) <- bs, all isAvailPoi . Set.toList $ dpd ]
-%%]
 
 %%[9 hs
+%%]
 mkCxBindLForPoiL :: Set.Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
 mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`Set.member` availPoiS)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name of a pattern var/con
@@ -445,7 +445,7 @@ type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 
 %%[9 hs export(mkCExprPrHole,mkCExprHole)
 mkCExprHole :: EHCOpts -> UID -> CExpr
-mkCExprHole opts = if ehcCfgClassViaCHR opts then CExpr_Var . mkHNm else CExpr_Hole
+mkCExprHole opts = CExpr_Var . mkHNm
 
 mkCExprPrHole :: EHCOpts -> PredOccId -> CExpr
 mkCExprPrHole opts = mkCExprHole opts . poiId

@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
-%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCxBindLMap,ppCBindL)
+%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCBindL)
 %%]
 
 %%[8.WRAPPER ag import({Core/AbsSyn})
@@ -48,6 +48,7 @@ ppHole i = "<" >|< pp i >|< ">"
 %%]
 
 %%[9 hs
+%%]
 ppCxBindLMap :: CxBindLMap -> PP_Doc
 ppCxBindLMap (CxBindLMap m)
   =  ppAssocLV
@@ -56,7 +57,6 @@ ppCxBindLMap (CxBindLMap m)
             -> ppAssocL . map (\(CBind_Bind n v,i,dpds) -> (n,pp v >-< (ppBracketsCommas . Set.toList $ dpds) >#< "->" >#< pp i)) $ cbs
         )
   .  Map.toList $ m
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code

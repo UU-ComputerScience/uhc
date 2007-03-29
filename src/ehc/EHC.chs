@@ -800,7 +800,7 @@ cpFlowEHSem2 modNm
                             , EHSem.kiGam_Inh_AGItf      = EHSem.gathKiGam_Syn_AGItf      ehSem `gamUnion` EHSem.kiGam_Inh_AGItf      ehInh
                             -- , EHSem.dataGam_Inh_AGItf    = EHSem.gathDataGam_Syn_AGItf    ehSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh -- now in cpFlowEHSem1
                             , EHSem.prIntroGam_Inh_AGItf = EHSem.gathPrIntroGam_Syn_AGItf ehSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            -- , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             , EHSem.chrStore_Inh_AGItf   = EHSem.gathChrStore_Syn_AGItf   ehSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
          ;  when (isJust (ecuMbEHSem ecu))
@@ -820,7 +820,7 @@ cpFlowHISem modNm
                             , EHSem.tyGam_Inh_AGItf      = HISem.tyGam_Syn_AGItf      hiSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
                             , EHSem.dataGam_Inh_AGItf    = HISem.dataGam_Syn_AGItf    hiSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.prIntroGam_Inh_AGItf = HISem.prIntroGam_Syn_AGItf hiSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
+                            -- , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             , EHSem.chrStore_Inh_AGItf   = HISem.chrStore_Syn_AGItf   hiSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
                  hsInh  = crsiHSInh crsi
@@ -1450,7 +1450,6 @@ cpOutputHI suff modNm
                               (EHSem.gathTyGam_Syn_AGItf            ehSem)
                               (EHSem.gathDataGam_Syn_AGItf          ehSem)
                               (EHSem.gathPrIntroGam_Syn_AGItf       ehSem)
-                              (EHSem.gathPrElimTGam_Syn_AGItf       ehSem)
                               (EHSem.gathChrStore_Syn_AGItf         ehSem)
                               (if ehcOptFullProgGRIN opts
                                then Map.empty
@@ -1875,8 +1874,8 @@ doCompileRun fn opts
                                               , EHSem.tyGam_Inh_AGItf           = initTyGam
                                               , EHSem.kiGam_Inh_AGItf           = initKiGam
                                               , EHSem.prIntroGam_Inh_AGItf      = initPIGIGam
-                                              , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
-                                              , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
+                                              -- , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
+                                              -- , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
                                               , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
                                               , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]

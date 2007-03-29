@@ -96,11 +96,6 @@ pModEntRel
   = Rel.fromList <$> pAssocL pDollNm pModEnt
 %%]
 
-%%[20 export(pProofCost)
-pProofCost :: P Pr.ProofCost
-pProofCost = (Pr.PCost <$ pOCURLY <*> pInt <* pCOMMA <*> pInt <* pCOMMA <*> pInt <* pCCURLY)
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

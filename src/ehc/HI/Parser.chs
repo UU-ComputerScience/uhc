@@ -96,7 +96,9 @@ pRedHowAnnotation
   <|> RedHow_Lambda       <$ pKeyTk "redhowlambda" <* pOCURLY <*> pUIDHI
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
+%%]
 
+%%[20
 pBinding :: HIParser Binding
 pBinding
   =   Binding_Fixity    <$> pNmIs "fixity"   <* pOCURLY <*> pInt    <* pSEMI <*> pFixity  <* pCCURLY
@@ -125,8 +127,7 @@ pBinding
                              )
                        <*  pSEMI <*> pBool
                        <*  pCCURLY
-  <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pRule <* pCCURLY
-  <|> Binding_Instance  <$> pNmIs "instance"    <* pOCURLY <*> pListSep pSEMI pRule <* pCCURLY
+  <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pDollNm <* pCCURLY
   <|> Binding_CHRStore  <$  pNmIs "chrstore"    <*> pCurlySemiBlock
                                                       (CHR <$ pOCURLY <*> pCurlySemiBlock pConstraint
                                                            <* pSEMI   <*> pInt
@@ -134,19 +135,5 @@ pBinding
                                                            <* pSEMI   <*> pCurlySemiBlock pConstraint
                                                            <* pCCURLY
                                                       )
-
-pRule :: HIParser Rule
-pRule
-  = (\n t ev id c -> Rule_Rule n t ev id c [])
-    <$> pNmIs "rule"
-    <*  pOCURLY
-    <*> pTy <* pSEMI
-    <*> (   Pr.MkEvidVar  <$ pKeyTk "var"  <*> pDollNm
-        <|> Pr.MkEvidCtxt <$ pKeyTk "ctxt" <*> pDollNm
-        <|> Pr.MkEvidSup  <$ pKeyTk "sup"  <*> pDollNm <*> pInt <*> pCTag
-        ) <* pSEMI
-    <*> pPredOccId <* pSEMI
-    <*> pProofCost
-    <*  pCCURLY
 %%]
 

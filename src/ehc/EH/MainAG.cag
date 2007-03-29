@@ -141,41 +141,6 @@ SEM Expr
   | * - Let     lhs         .   gathPrIntroGam      =   emptyGam
 %%]
 
-%%[9
-ATTR Expr [ | | gathPrElimTGam: PrElimTGam ]
-ATTR Expr [ gathPrfCtxtId: PrfCtxtId | | ]
-
-SEM AGItf
-  | AGItf       loc         .   gathPrfCtxtId       =   basePrfCtxtId
-
-SEM CaseAlt
-  | Pat         loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
-
-SEM RecExpr
-  | Expr Ext Upd
-                loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
-
-SEM DataFieldExpr
-  | Expr Upd    loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
-
-SEM Decl
-  | InstanceIntro Val
-                loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
-
-SEM Expr
-  | Let         lhs         .   gathPrElimTGam      =   peTGamUnion2 @prfCtxtId @lhs.gathPrfCtxtId @decls.patPrElimTGam @body.gathPrElimTGam
-  | * - Let     lhs         .   gathPrElimTGam      =   emptyTGam @lhs.gathPrfCtxtId
-%%]
-
-%%[97
-SEM PatExpr
-  | Expr        loc         .   gathPrfCtxtId       =   @lhs.prfCtxtId
-%%]
-
-%%[20
-ATTR AGItf [ | | gathPrElimTGam: PrElimTGam ]
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is toplevel mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

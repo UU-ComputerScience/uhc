@@ -49,7 +49,7 @@ $(AGPRIMER_AG_EXPR_BLD_EXEC): $(AGPRIMER_AG_EXPR_DRV_HS)
 	$(GHC) --make $(GHC_OPTS) -i$(SRC_AGPRIMER_PREFIX) $< -o $@
 
 $(AGPRIMER_AG_EXPR_DRV_HS) $(AGPRIMER_AG_REPM_DRV_HS) : %.hs : %.ag
-	$(AGC) -csdfr -P$(SRC_AGPRIMER_PREFIX) $<
+	$(AGC) -csdfr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_AGPRIMER_PREFIX) $<
 
 $(AGPRIMER_HS_REPM_DRV_HS): %.hs : %.chs $(SHUFFLE)
 	$(SHUFFLE_HS) --gen=1 --base=Main --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@

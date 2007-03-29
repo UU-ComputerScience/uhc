@@ -54,7 +54,27 @@ SEM Decl
                                                             , u
                                                             , d
                                                             )
-               lhs         .   gathCnstrMp         =   Map.empty
+               lhs          .   gathCnstrMp         =   Map.empty
+%%[[9
+               loc          .	toProveGathCnstrMp	=	@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
+%%][95
+               loc          .   (toProveGathCnstrMp,derivAltsPrOcc)
+                                                    =   case @instVariant of
+                                                          InstDeriving
+                                                            -> ( gathPredLToProveCnstrMp $ foCnstr foDt |=> concat altsPrOcc
+                                                               , altsPrOcc
+                                                               )
+                                                            where ([dataTy],dataAltTy) = tyArrowArgsRes $ tgiDataTy @derivDataTGI
+                                                                  alts = tyRecExts2 dataAltTy
+                                                                  altsPrOcc
+                                                                       = [ [ mkPredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId basePrfCtxtId u2) @predScope
+                                                                           | ((_,t),u2) <- zip a1 (mkNewUIDL (length a1) u1)
+                                                                           ]
+                                                                         | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
+                                                                         ]
+                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq9 dataTy @derivHdDataTy
+                                                          _ -> (@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp,[])
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,17 +150,7 @@ SEM Expr
 
 %%[9
 SEM Decl
-  | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions
-                                                            [ @chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp
-%%[[9
-                                                            , @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
-%%][95
-                                                            , case @instVariant of
-                                                                InstDeriving
-                                                                  -> gathPredLToProveCnstrMp @toResolvePrOccL
-                                                                _ -> @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
-%%]]
-                                                            ]
+  | Instance    loc         .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp, @toProveGathCnstrMp]
                             .   (chrSolveDeclsRemCnstrMp,_,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,cannotResDeclsCnstrMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrFIIn) @toProveDeclsCnstrMp emptySimplifyResult
                             .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
@@ -162,9 +172,7 @@ Interaction with existing impl:
 
 %%[9
 SEM Expr
-  | Let         loc         .   quantPrOccL         =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then [ mkPredOcc (cpoPr o) (mkPrIdCHR i) sc | (Assume o,[RedHow_Assumption i _ sc]) <- Map.toList @chrSolve1RemCnstrMp ]
-                                                        else @prfArgPrOccL
+  | Let         loc         .   quantPrOccL         =   [ mkPredOcc (cpoPr o) (mkPrIdCHR i) sc | (Assume o,[RedHow_Assumption i _ sc]) <- Map.toList @chrSolve1RemCnstrMp ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

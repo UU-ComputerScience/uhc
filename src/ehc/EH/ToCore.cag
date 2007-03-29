@@ -57,7 +57,7 @@ SEM AGItf
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   extraCBindL :=  if ehcCfgClassViaCHR @lhs.opts then [(CBindRec,@chrScopeMainBindL)] else []
+  | AGItf       loc         .   extraCBindL :=  [(CBindRec,@chrScopeMainBindL)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,9 +105,7 @@ SEM Expr
                             .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
 %%[9
 SEM Expr
-  | Let         loc         .   letCBindL   :=  if ehcCfgClassViaCHR @lhs.opts
-                                                then [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
-                                                else [ (@howToBind,@decls.cbindL ++ (@cSubst `cSubstApp` (@prfIntroCBindL ++ @bodyPrfIntroCBindL))) ]
+  | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
   | App AppImpred
 %%[[12
     AppImpl
@@ -536,7 +534,7 @@ SEM Decl
                                                              else id
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
-                                                       where nDflt = rulNmEvid . pigiRule $ @pigi
+                                                       where nDflt = pigiRuleNmEvid @pigi
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
@@ -573,9 +571,7 @@ SEM Decl
                                                                                   (mkCExprApp (CExpr_Tup @dictTag)
                                                                                       (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
                                                                                ++ (cSubstOptApp @lhs.opts @cSubst
-                                                                                    (if ehcCfgClassViaCHR @lhs.opts
-                                                                                     then @chrScopeDeclsBindL ++ @chrAssumeDeclsInstBindL
-                                                                                     else {- @supPrfIntroCBindL ++ -} @prfIntroCBindL)))
+                                                                                    (@chrScopeDeclsBindL ++ @chrAssumeDeclsInstBindL)))
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
@@ -627,25 +623,19 @@ SEM Decl
 %%]]
                                                      mkNormalD bindL
                                                        = dD
-                                                       where nDflt = rulNmEvid . pigiRule $ @pigi
+                                                       where nDflt = pigiRuleNmEvid @pigi
                                                              nStrictDflt = hsnSuffix nDflt "!"
                                                              nR = @dictBuildNm
                                                              nStrictR = hsnSuffix nR "!"
                                                              dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
                                                                        (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL
-                                                                                                   (if ehcCfgClassViaCHR @lhs.opts
-                                                                                                    then map CExpr_Var @chrSuperProveNmL
-                                                                                                    else @supPrfEvidL)))
-                                                             dD = mkCExprLam (if ehcCfgClassViaCHR @lhs.opts
-                                                                              then @chrCtxtArgNmL
-                                                                              else @ctxtArgNmL)
+                                                                                                   (map CExpr_Var @chrSuperProveNmL)))
+                                                             dD = mkCExprLam @chrCtxtArgNmL
                                                                     (mkCExprLetRec
                                                                         ([CBind_Bind nR
                                                                             (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d bindL))]
                                                                          ++ (cSubstOptApp @lhs.opts @cSubst
-                                                                               $ (if ehcCfgClassViaCHR @lhs.opts
-                                                                                  then @chrAssumeSuperBindL ++ @chrAssumeDeclsInstBindL ++ @chrAssumeDeclsCtxtBindL ++ @chrScopeSuperBindL ++ @chrScopeDeclsBindL
-                                                                                  else @supPrfIntroCBindL ++ @prfIntroCBindL)))
+                                                                               $ (@chrAssumeSuperBindL ++ @chrAssumeDeclsInstBindL ++ @chrAssumeDeclsCtxtBindL ++ @chrScopeSuperBindL ++ @chrScopeDeclsBindL)))
                                                                         (CExpr_Var nR)
                                                                     )
                                                 in   [CBind_Bind @dictNm (cSubstOptApp @lhs.opts @cSubst d)]

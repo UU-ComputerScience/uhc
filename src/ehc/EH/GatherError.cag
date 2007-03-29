@@ -210,9 +210,7 @@ SEM Decl
 %%[[95
                                                   , Seq.unions $ map Seq.fromList [@cxSplitErrs, @derivErrs]
 %%]]
-                                                  , if ehcCfgClassViaCHR @lhs.opts
-                                                    then Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolveSuperErrs, @chrSolveDeclsErrs]
-                                                    else Seq.unions $ map Seq.fromList [@predNotPrfErrs, @supPrfErrs, @prfErrs]
+                                                  , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolveSuperErrs, @chrSolveDeclsErrs]
                                                   ]
                             .   errInstPP   =   ppErrsSq @lErrSq
                             .   errDeclsPP  =   ppErrsSq @decls.errSq
@@ -224,16 +222,12 @@ SEM Decl
 
 SEM Expr
   | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs
-                                                           , (if ehcCfgClassViaCHR @lhs.opts
-                                                              then Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolve1Errs, @chrSolve2Errs]
-                                                              else Seq.unions $ map Seq.fromList [@prfErrs, @bodyPrfErrs])
+                                                           , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolve1Errs, @chrSolve2Errs]
                                                            ]
 
 SEM AGItf
   | AGItf       loc         .   lErrSq      =   Seq.unions [ Seq.fromList @predNotPrfErrs
-                                                           , (if ehcCfgClassViaCHR @lhs.opts
-                                                              then Seq.fromList @chrSolveMainErrs
-                                                              else Seq.empty)
+                                                           , Seq.fromList @chrSolveMainErrs
                                                            ]
                             .   errTopPP    :=  ppErrsSq @lErrSq
 %%]
