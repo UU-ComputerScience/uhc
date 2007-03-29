@@ -59,31 +59,19 @@ SEM Binding
     | Ty
         lhs         .   pp          =   hiNV "type" @nm [ppForHI @ty,ppForHI @ki]
     | Class
-        lhs         .   pp          =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ki,@rule.pp]
-    | Instance
-        lhs         .   pp          =   hiNV "instance" @nm @rules.ppL
+        lhs         .   pp          =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ki,ppForHI @ruleTy,ppForHI @nmEvid]
     | CHRStore
     	lhs			.	pp			=	hiNV' "chrstore" hsnUnknown $ ppCurlysSemisBlock $ map ppForHI @chrs
 %%]
-
-%%[20
-SEM Rule
-    | Rule
-        lhs         .   pp          =   hiNV "rule" @nm [ppForHI @ty,Pr.ppHowMkEvid CfgPP_HI @mkEvid,ppForHI @uid,Pr.ppProofCost' @cost]
-%%]
+    | Instance
+        lhs         .   pp          =   hiNV "instance" @nm @rules.ppL
 
 %%[20
 ATTR
-  Bindings Rules
+  Bindings
     [ | | ppL: {[PP_Doc]} ]
 
 SEM Bindings
-    | Cons
-        lhs         .   ppL         =   @hd.pp : @tl.ppL
-    | Nil
-        lhs         .   ppL         =   []
-
-SEM Rules
     | Cons
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil

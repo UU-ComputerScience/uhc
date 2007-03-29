@@ -53,13 +53,13 @@ DATA Binding
         nm                      : HsName
         prToEvidTy              : Ty
         ki                      : Ty
-        rule                    : Rule
-    | Instance
-        nm                      : HsName
-        rules                   : Rules
+        ruleTy                  : Ty
+        nmEvid                  : HsName
     | CHRStore
         chrs					: {[ScopedPredCHR]}
+%%]
 
+%%[20
 TYPE Bindings                   = [ Binding ]
 
 SET AllBinding
@@ -67,22 +67,6 @@ SET AllBinding
 %%]
 
 %%[20
-DATA Rule
-    | Rule
-        nm                      : HsName
-        ty                      : Ty
-        mkEvid                  : {Pr.HowMkEvid}
-        uid                     : PredOccId
-        cost                    : {Pr.ProofCost}
-        fundeps                 : {[([HsName],[HsName])]}
-
-TYPE Rules                      = [ Rule ]
-
-SET AllRule
-  = Rule Rules
-%%]
-
-%%[20
 SET AllNT
-  = AllBinding AllRule Module
+  = AllBinding Module
 %%]

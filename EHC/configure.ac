@@ -86,6 +86,20 @@ AC_ARG_WITH(ghc-ehc-options,
 [ ghcEhcOptions="$withval" ],)
 AC_SUBST(GHC_EHC_OPTIONS, "$ghcEhcOptions")
 
+### 'with' option for uuagc options
+AC_ARG_WITH(uuagc-options,
+[AC_HELP_STRING([--with-uuagc-options=<AG compiler options for compiling ehc>],
+                [Additional options to pass to UUAGC when compiling EHC.])],
+[ uuagcOptions="$withval" ],)
+AC_SUBST(UUAGC_OPTIONS, "$uuagcOptions")
+
+### 'with' option for cabal config options
+AC_ARG_WITH(cabal-config-options,
+[AC_HELP_STRING([--with-cabal-config-options=<cabal configure options for compiling ehc>],
+                [Additional options to pass to cabal's ./setup configure when compiling EHC.])],
+[ cabalConfigureOptions="$withval" ],)
+AC_SUBST(CABAL_CONFIGURE_OPTIONS, "$cabalConfigureOptions")
+
 ### 'with' option for ghc
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],

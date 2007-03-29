@@ -16,7 +16,7 @@
 %%[20 hs import(qualified Data.Map as Map,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
-%%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings,Rule(..),Rules)
+%%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings)
 %%]
 
 %%[20 ag import({HI/AbsSyn})
@@ -34,9 +34,6 @@
 hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> Seq.FastSeq Binding
 hiFromGam mk g = Seq.fromList [ mk n v | (n,v) <- gamToAssocL g ]
 
-hiFromTGam :: (HsName -> v -> Binding) -> PrfCtxtId -> TreeGam PrfCtxtId HsName v -> Seq.FastSeq Binding
-hiFromTGam mk cx g = Seq.fromList [ mk n v | (n,v) <- tgamToAssocL cx g ]
-
 hiFromAllGams 
   :: ModEntRel
      -> FixityGam
@@ -45,12 +42,11 @@ hiFromAllGams
      -> TyGam
      -> DataGam
      -> Pr.PrIntroGam
-     -> Pr.PrElimTGam
      -> ScopedPredStore
      -> CArityMp
      -> GrInlMp
      -> Seq.FastSeq Binding
-hiFromAllGams exps fg idg vg tg dg ig eg chrStore arityMp inlMp
+hiFromAllGams exps fg idg vg tg dg ig chrStore arityMp inlMp
   =          Seq.fromList [Binding_Export exps]
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
@@ -61,10 +57,8 @@ hiFromAllGams exps fg idg vg tg dg ig eg chrStore arityMp inlMp
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
                                 in  Binding_DataCon n (assocLMapElt mkt $ dgiConstrTagAssocL dgi) (dgiIsNewtype dgi)
                     ) dg
-    Seq.:++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (mkr $ Pr.pigiRule pigi)) ig
-    Seq.:++: hiFromTGam (\n pegi -> Binding_Instance n (map mkr $ Pr.pegiRuleL pegi)) basePrfCtxtId eg
+    Seq.:++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (Pr.pigiRuleTy pigi) (Pr.pigiRuleNmEvid pigi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
-  where mkr r = Rule_Rule (Pr.rulNmEvid r) (Pr.rulRuleTy r) (Pr.rulMkEvidHow r) ((Pr.rulId r) {poiCxId = basePrfCtxtId}) (Pr.rulCost r) []
 %%]
 
 

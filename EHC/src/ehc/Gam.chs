@@ -73,12 +73,6 @@
 %%[9 import({%{EH}Ty.Trf.MergePreds})
 %%]
 
-%%[9 export(TreeGam,emptyTGam,tgamSingleton,tgamLookup,tgamLookupAll,tgamLookupAllEmp,tgamElts,tgamMap,tgamPushNew,tgamAddGam,tgamPushGam,tgamAdd,tgamPop,tgamUpdAdd,tgamUpd,tgamMbUpd,tgamInScopes,tgamIsInScope,tgamToAssocL)
-%%]
-
-%%[9 export(ppTGam)
-%%]
-
 %%[9 export(idDefOccGamPartitionByKind)
 %%]
 
@@ -476,6 +470,52 @@ tgamInScopes i = tgamFoldr1 i (\i _ _ r -> i : r) []
 tgamElts :: Ord i => i -> TreeGam i k v -> [v]
 tgamElts i = assocLElts . tgamToAssocL i
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level Gam, a Gam with entries having a level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+data LGamElt v
+  = LGamElt
+      { lgeLev		:: Int
+      , lgeVal		:: v
+      }
+
+data LGam k v
+  = LGam
+      { lgLev		:: Int
+      , lgMap		:: Map.Map k [LGamElt v]
+      }
+
+emptyLGam :: LGam k v
+emptyLGam = LGam 0 Map.empty
+%%]
+
+%%[9
+%%]
+mapFilterMapWithKey :: (Ord k') => (k -> v -> acc -> Bool) -> (k -> v -> acc -> (k',v',acc)) (k -> v -> acc -> acc) -> acc -> Map.Map k v -> (Map.Map k' v',acc)
+mapFilterMapWithKey p fyes fno a m
+  = Map.foldWithKey (\k v (m,a)
+                      -> if p k v a
+                         then let (k',v',a') = fyes k v a
+                              in  (Map.insert k' v' m,a')
+                         else (m,fno k v a)
+                    ) (Map.empty,a) m
+
+%%[9
+lgamSingleton :: Ord k => k -> v -> LGam k v
+lgamSingleton k v = LGam 0 (Map.singleton k [LGamElt 0 v])
+
+lgamUnion :: Ord k => LGam k v -> LGam k v -> LGam k v
+lgamUnion g1@(LGam {lgMap = m1}) g2@(LGam {lgLev = l2, lgMap = m2})
+  = g2 {lgMap = Map.unionWith (++) m1' m2}
+  where m1' = Map.map (\(e:_) -> [e {lgeLev = l2}]) $ Map.filter (\es -> not (null es)) m1
+
+%%]
+lgamPartitionWithKey :: Ord k => (k -> LGamElt v -> Bool) -> LGam k v -> (LGam k v,LGam k v)
+lgamPartitionWithKey p m
+  = mapFilterMapWithKey (\k es _ -> ) () () Map.empty m
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Error" gam

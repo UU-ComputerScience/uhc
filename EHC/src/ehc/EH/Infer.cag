@@ -346,7 +346,7 @@ SEM Expr
                             .   gSubsTyGam          =   @decls.kiCnstr |=> @tyGam_g_
                             .   gKiTvL              =   ftv @gSubsTyGam
                             .   lQuTyGam            =   tyGamInst1Exists @lUniq3 . tyGamQuantify @gKiTvL $ @lSubsTyGam
-                body        .   tyGam               =   gamPushGam @lQuTyGam @gSubsTyGam
+                body        .   tyGam               =   gamAddGam @lQuTyGam @gSubsTyGam
 
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
@@ -384,7 +384,7 @@ SEM Decl
 %%[9
 SEM Decl
   | Instance    loc         .   fe                  :=  emptyFE
-                                                            { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -419,7 +419,7 @@ SEM DataFieldExpr
 %%[9.FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
   | Let         loc         .   fe                  =   emptyFE
-                                                            { fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -433,7 +433,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   fe                  =   emptyFE
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -447,7 +447,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   fe                  =   emptyFE
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -459,7 +459,7 @@ SEM Expr
 
 SEM RecExpr
   | *           loc         .   fe                  =   emptyFE
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -471,7 +471,7 @@ SEM RecExpr
 
 SEM DataFieldExpr
   | *           loc         .   fe                  =   emptyFE
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -486,7 +486,7 @@ SEM DataFieldExpr
 SEM PatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -502,7 +502,7 @@ SEM PatExpr
 SEM RecPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -518,7 +518,7 @@ SEM RecPatExpr
 SEM DataFieldPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
-                                                            { fePrElimTGam = @lhs.prElimTGam, fePrfCtxtId = @lhs.prfCtxtId, feEHCOpts = @lhs.opts
+                                                            { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
@@ -912,39 +912,6 @@ SEM Expr
 SEM Decl
   | DynVal      expr        .  fiOpts               =   strongFIOpts
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicate env, for elim of predicates
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-ATTR AllDecl [ | patPrElimTGam: PrElimTGam | ]
-%%]
-
-%%[9
-SEM Expr
-  | Let         decls       .   patPrElimTGam       =   emptyTGam @prfCtxtId
-%%]
-
-%%[9
-ATTR NTPrf [ | prElimTGam: PrElimTGam | ]
-%%]
-
-%%[9.initPrElimTGam
-SEM AGItf
-  | AGItf       loc         .   prElimTGam          =   tgamPushNew basePrfCtxtId @prfCtxtId @expr.gathPrElimTGam
-%%]
-  | AGItf       loc         .   prElimTGam          =   emptyTGam @prfCtxtId
-
-%%[20 -9.initPrElimTGam
-ATTR AGItf [ prElimTGam: PrElimTGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   prElimTGam          =   peTGamUnion2 basePrfCtxtId @prfCtxtId @expr.gathPrElimTGam
-                                                            (tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam)
-%%]
-  | AGItf       loc         .   prElimTGam          =   tgamPushGam basePrfCtxtId @lhs.prfCtxtId @prfCtxtId @expr.gathPrElimTGam @lhs.prElimTGam
-  | AGItf       loc         .   prElimTGam          =   tgamPushNew @lhs.prfCtxtId @prfCtxtId @lhs.prElimTGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate env, for intro of predicates

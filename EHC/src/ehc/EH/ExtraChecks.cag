@@ -84,18 +84,10 @@ mkPrvErr r m = if Map.null m then [] else [Err_NotProvenPreds r $ map (cpoPr . c
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then rngLift emptyRange mkPrvErr @cannotProveCnstrMp
-                                                        else if null @expr.gathPredL
-                                                             then []
-                                                             else [rngLift emptyRange Err_NotProvenPreds $ map poPr $ @expr.gathPredL]
+  | AGItf       loc         .   predNotPrfErrs      =   rngLift emptyRange mkPrvErr @cannotProveCnstrMp
 
 SEM Decl
-  | Instance    loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then rngLift @range mkPrvErr @cannotProveCnstrMp
-                                                        else if null @supPrfArgPrOccL && null @prfArgPrOccL 
-                                                             then []
-                                                             else [rngLift @range Err_NotProvenPreds $ map poPr (@prfArgPrOccL ++ @supPrfArgPrOccL)]
+  | Instance    loc         .   predNotPrfErrs      =   rngLift @range mkPrvErr @cannotProveCnstrMp
                             .   valNoSigErrs        =   let ns = gamKeys (gamTop @decls.patValGam) \\ gamKeys @tySigGam
                                                         in  if null ns
                                                             then []
@@ -107,9 +99,7 @@ SEM PrExpr
   | Class       loc         .   nmErrs              =   rngLift @range checkClNms @clMissNmS
 
 SEM Expr
-  | Let         loc         .   predNotPrfErrs      =   if ehcCfgClassViaCHR @lhs.opts
-                                                        then rngLift @range mkPrvErr @cannotProveCnstrMp
-                                                        else []
+  | Let         loc         .   predNotPrfErrs      =   rngLift @range mkPrvErr @cannotProveCnstrMp
 %%]
 
 %%[12

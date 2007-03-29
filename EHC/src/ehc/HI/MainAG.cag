@@ -38,9 +38,9 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 hs
+%%]
 prElimTGamUnion :: Pr.PrElimTGam -> Pr.PrElimTGam -> Pr.PrElimTGam
 prElimTGamUnion = Pr.peTGamUnion basePrfCtxtId basePrfCtxtId
-%%]
 
 %%[20
 ATTR
@@ -53,7 +53,6 @@ ATTR
       tyGam         USE {`gamUnion`}        {emptyGam}          : TyGam
       dataGam       USE {`gamUnion`}        {emptyGam}          : DataGam
       prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
-      prElimTGam    USE {`prElimTGamUnion`} {Pr.emptyPrElimTGam}: {Pr.PrElimTGam}
       chrStore      USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore
       arityMp       USE {`Map.union`}       {Map.empty}         : CArityMp
       inlMp         USE {`Map.union`}       {Map.empty}         : GrInlMp
@@ -86,44 +85,10 @@ SEM Binding
                                                                     False
                                                              )
     | Class
-        lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @rule.rule)
-    | Instance
-        lhs             .   prElimTGam  =   tgamSingleton basePrfCtxtId @nm (Pr.PrElimGamInfo @rules.rules)
+        lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @ruleTy @nmEvid)
     | CHRStore
         lhs             .   chrStore    =   chrStoreFromElems @chrs
 %%]
-
-%%[20
-ATTR Rule [ | | rule: {Pr.Rule} ]
-ATTR Rules [ | | rules: {[Pr.Rule]} ]
-
-SEM Rule
-    | Rule
-        lhs             .   rule        =   Pr.emptyRule
-                                              { Pr.rulRuleTy      = @ty
-                                              , Pr.rulMkEvid      = Pr.mkEvid @lhs.opts @mkEvid
-                                              , Pr.rulMkEvidHow   = @mkEvid
-                                              , Pr.rulNmEvid      = @nm
-                                              , Pr.rulId          = @uid
-                                              , Pr.rulCost        = @cost
-%%[[15
-                                              , Pr.rulFuncDeps    = []
-%%]]
-                                              }
-
-SEM Rules
-    | Cons
-        lhs             .   rules       =   @hd.rule : @tl.rules
-    | Nil
-        lhs             .   rules       =   []
-
-%%]
-
-%%[20
-%%]
-SEM AGItf
-    | AGItf
-        lhs             .   idGam       =   [ | (n,me) <- Rel.toList @module.exportRel ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Valid version?

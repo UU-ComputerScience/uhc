@@ -8,10 +8,11 @@ HELIUM_MKF             := $(patsubst %,$(SRC_HELIUM_PREFIX)%.mk,files)
 
 # Helium sources
 
+
 LIB_HELIUM_AG_DAT_SRC = \
     $(SRC_HELIUM_PREFIX)Syntax/UHA.ag \
     $(SRC_HELIUM_PREFIX)StaticAnalysis/Directives/TS.ag \
-    $(SRC_HELIUM_PREFIX)StaticAnalysis/Directives/TS_Core.ag \
+    $(SRC_HELIUM_PREFIX)StaticAnalysis/Directives/TS_Core.ag
 
 LIB_HELIUM_AG_SEM_SRC = \
     $(SRC_HELIUM_PREFIX)Syntax/UHA_Pretty.ag \
@@ -25,6 +26,7 @@ LIB_HELIUM_AG_SEM_SRC = \
     $(SRC_HELIUM_PREFIX)StaticAnalysis/Directives/TS_Analyse.ag \
     $(SRC_HELIUM_PREFIX)StaticAnalysis/Directives/TS_ToCore.ag \
     $(SRC_HELIUM_PREFIX)CodeGeneration/CodeGeneration.ag
+
 
 LIB_HELIUM_AG_DEP_SRC = \
     $(SRC_HELIUM_PREFIX)Syntax/UHA_Syntax.ag \
@@ -53,6 +55,7 @@ LIB_HELIUM_AG_DEP_SRC = \
     $(SRC_HELIUM_PREFIX)CodeGeneration/ToCoreModule.ag \
     $(SRC_HELIUM_PREFIX)CodeGeneration/ToCoreName.ag \
     $(SRC_HELIUM_PREFIX)CodeGeneration/ToCorePat.ag
+
 
 
 LIB_HELIUM_HS_SRC = \
@@ -126,6 +129,7 @@ LIB_HELIUM_HS_SRC = \
     $(SRC_HELIUM_PREFIX)Compiler/PhaseKindInferencer.hs
 
 
+
 # all sources have a counterpart in the build directory
 LIB_HELIUM_HS_DRV_HS	    := $(patsubst $(SRC_HELIUM_PREFIX)%,$(BLD_LIBHELIUM_PREFIX)%,$(LIB_HELIUM_HS_SRC)    )
 LIB_HELIUM_AG_DAT_DRV_AG	:= $(patsubst $(SRC_HELIUM_PREFIX)%,$(BLD_LIBHELIUM_PREFIX)%,$(LIB_HELIUM_AG_DAT_SRC))
@@ -139,11 +143,6 @@ LIB_HELIUM_AG_SEM_DRV_HS	:= $(patsubst $(SRC_HELIUM_PREFIX)%.ag,$(BLD_LIBHELIUM_
 
 # all Haskell files that will be part of the library: copied from HS sources and generated from (copied) AG sources
 LIB_HELIUM_ALL_DRV_HS       := $(LIB_HELIUM_HS_DRV_HS) $(LIB_HELIUM_AG_DAT_DRV_HS) $(LIB_HELIUM_AG_SEM_DRV_HS)
-
-
-
-
-
 
 
 # lib/cabal config
@@ -186,13 +185,11 @@ $(LIB_HELIUM_ALL_DRV_COPIED): $(BLD_LIBHELIUM_PREFIX)%: $(SRC_HELIUM_PREFIX)%
 
 # Rule how to compile an AG data unit to Haskell
 $(LIB_HELIUM_AG_DAT_DRV_HS): %.hs: %.ag $(LIB_HELIUM_AG_DEP_DRV_AG)
-	$(AGC) -dr -P$(@D) $<
+	$(AGC) -dr $(UUAGC_OPTS_WHEN_EHC) -P$(@D) $<
 
 # Rule how to compile an AG semantics unit to Haskell
 $(LIB_HELIUM_AG_SEM_DRV_HS): %.hs: %.ag $(LIB_HELIUM_AG_DEP_DRV_AG)
-	$(AGC) -cfspr -P$(@D) $<
-
-	
+	$(AGC) -cfspr $(UUAGC_OPTS_WHEN_EHC) -P$(@D) $<
 
 $(LIB_HELIUM_SETUP_HS_DRV): $(HELIUM_MKF)
 	mkdir -p $(@D)
