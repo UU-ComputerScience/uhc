@@ -229,7 +229,7 @@ SEM Declaration
 %%]
 %%[88
     | ForeignExport -- ??
-        loc             .   idOccDefGam =   gamUnit @idOccDef (mkIdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
+        loc             .   idOccDefGam =   gamSingleton @idOccDef (mkIdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
 %%]
 
 %%[1
@@ -287,8 +287,8 @@ SEM Kind
 SEM Body
     | Body
         loc             .   idOccDefGamMain
-                                        =   gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
-                                            `gamUnion` gamUnit @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
+                                        =   gamSingleton @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
+                                            `gamUnion` gamSingleton @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
 %%]
 
 %%[13
@@ -508,7 +508,7 @@ mkUseOccGam idGam names@(fstName:_) kind asp rng
           = idUseOccGam
           where idOccUse    = IdOcc name kind
                 mbDef       = gamLookup idOccUse idGam
-                idUseOccGam = gamUnit idOccUse (IdUseOcc idOccUse asp rng (doccForUse mbDef))
+                idUseOccGam = gamSingleton idOccUse (IdUseOcc idOccUse asp rng (doccForUse mbDef))
 %%]
 
 %%[20 -1.mkUseOccGam hs
@@ -532,7 +532,7 @@ mkUseOccGam idGam names kind asp rng
                                 Just d -> ioccNm $ doccOcc d
                                 _      -> name
                 occOfDef    = idOccUse {ioccNm = nmOfDef}
-                idUseOccGam = gamUnit occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
+                idUseOccGam = gamSingleton occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
                 errs        = case mbDef of
                                 Just d | isJust (doccNmAlts d) && length alts > 1
                                   -> [rngLift rng Err_AmbiguousNameRef name alts]

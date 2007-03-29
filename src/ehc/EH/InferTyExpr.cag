@@ -61,9 +61,9 @@ SEM TyExpr
 SEM TyExpr
   | Quant       loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,TyGamInfo t)
-                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi_) @lhs.tyGam @tyExpr.tyGam
+                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamSingleton` @tgi_) @lhs.tyGam @tyExpr.tyGam
 %%]
-                tyExpr      .   tyGam               =   gamPushNew (gamPushGam (@tyVar `gamUnit` @tgi_) @lhs.tyGam)
+                tyExpr      .   tyGam               =   gamPushNew (gamPushGam (@tyVar `gamSingleton` @tgi_) @lhs.tyGam)
                 lhs         .   tyGam               =   let  (l,g) = gamPop @tyExpr.tyGam
                                                         in   gamAddGam l @lhs.tyGam 
 
@@ -83,7 +83,7 @@ SEM TyVar
 SEM PrExpr
   | Forall      loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
-                (prExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi_) @lhs.tyGam @prExpr.tyGam
+                (prExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamSingleton` @tgi_) @lhs.tyGam @prExpr.tyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,7 +198,7 @@ SEM RowTyExpr
 SEM TyExpr
   | Lam         loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
-                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamUnit` @tgi_) @lhs.tyGam @tyExpr.tyGam
+                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamSingleton` @tgi_) @lhs.tyGam @tyExpr.tyGam
                 loc         .   ki                  =   [@tyExpr.kiCnstr |=> tgiKi @tgi_] `mkArrow` @tyExpr.ki
 %%]
 

@@ -36,7 +36,7 @@ format ag def  (c1 | Cnstr, ICnstr) (c2 | Cnstr, ICnstr) (c3 | Cnstr, ICnstr) (c
 -- Gam
 format ag def  (g1 | ValGam, TyGam) +  (g2 | ValGam, TyGam) = (gamAddGam (g1) (g2) | ValGam, TyGam)
 format ag def  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) = (gamPushGam (g1) (g2) | ValGam, TyGam)
-format ag def  (i :-> (t|Ty)) = (gamUnit i (ValGamInfo (t)) | ValGam, TyGam)
+format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam)
 
 format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
 

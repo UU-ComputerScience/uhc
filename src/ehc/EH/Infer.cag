@@ -607,7 +607,7 @@ ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 %%[5.gamSigTyGath
 SEM Decl
   | TySig       loc         .   gamSigTy            =   @tyExpr.ty
-                            .   gathTySigGam        =   @nm `gamUnit` ValGamInfo @gamSigTy
+                            .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
 %%]
 SEM Expr
   | Let         decls       .   gathTySigGam        =   emptyGam
@@ -673,7 +673,7 @@ SEM Decl
 %%[8
 SEM Decl
   | FFI         loc         .   ty_sig_             =   tyQuantifyClosed @tyExpr.ty
-                lhs         .   gathTySigGam        =   @nm `gamUnit` ValGamInfo @ty_sig_
+                lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

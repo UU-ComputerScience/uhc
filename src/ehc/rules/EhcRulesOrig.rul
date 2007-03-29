@@ -36,7 +36,7 @@ format ag def  (c1 | Cnstr, ICnstr) (c2 | Cnstr, ICnstr) (c3 | Cnstr, ICnstr) (c
 -- Gam
 format ag def  (g1 | ValGam, TyGam) +  (g2 | ValGam, TyGam) = (gamAddGam (g1) (g2) | ValGam, TyGam)
 format ag def  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) = (gamPushGam (g1) (g2) | ValGam, TyGam)
-format ag def  (i :-> (t|Ty)) = (gamUnit i (ValGamInfo (t)) | ValGam, TyGam)
+format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam)
 
 format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
 
@@ -2483,7 +2483,7 @@ relation tyGamLookupOrNewId =
     judgeuse tex nm :-> ty `elem` tyGam ^^ || ^^ tyGam.i === (nm :-> tvarv) && ty === tvarv && tvarv (text "fresh")
     judgeuse ag  (tgi,tyGam.i) `=` case ( tyGamLookup nm tyGam of
                                         - Nothing    ->  ( let  t `=` TyGamInfo (mkTyVar unique)
-                                                         - in   (t,gamUnit nm t)
+                                                         - in   (t,gamSingleton nm t)
                                                          )
                                         - Just t     ->  (t,emptyGam)
                                         )
@@ -2580,7 +2580,7 @@ relation bind1ValIdToTy =
   view E =
     holes [ nm: Nm, ty: Ty | | valGam: ValGam ]
     judgespec valGam === [nm :-> ty]
-    judgeuse ag  valGam `=` gamUnit (nm) (ValGamInfo (ty))
+    judgeuse ag  valGam `=` gamSingleton (nm) (ValGamInfo (ty))
 
 relation bind1TyIdToTy =
   view I1 =
@@ -2588,7 +2588,7 @@ relation bind1TyIdToTy =
     judgespec tyGam, tgi === nm, ty
     judgeuse tex tyGam === [nm :-> ty]
     judgeuse ag  (retain tgi) `=` TyGamInfo (ty)
-              |  tyGam        `=` gamUnit (nm) (tgi)
+              |  tyGam        `=` gamSingleton (nm) (tgi)
 
 relation bind1PatIdToTy =
   view E =
@@ -2596,7 +2596,7 @@ relation bind1PatIdToTy =
     judgespec valGam === [nm :-> ty]
     judgeuse ag  (retain valGam)
                         `=` ( if "@lhs.inclVarBind" && nm /= hsnWild
-                            - then  gamUnit nm (ValGamInfo ty)
+                            - then  gamSingleton nm (ValGamInfo ty)
                             - else  emptyGam
                             )
 
