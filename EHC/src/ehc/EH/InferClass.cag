@@ -127,7 +127,7 @@ SEM Decl
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   tyGam           =   @lhs.tyGam
-                                .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamUnit` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
+                                .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
                                 .   patValGam       =   @lhs.patValGam
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty

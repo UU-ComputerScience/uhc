@@ -7,7 +7,7 @@
 %%% Gamma (aka Assumptions, Environment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamUnit, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, assocLToGam, assocDupLToGam,gamKeys)
+%%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, assocLToGam, assocDupLToGam,gamKeys)
 %%]
 
 %%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
@@ -64,10 +64,10 @@
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
 %%]
 
-%%[8 import({%{EH}Core}) export(gamUpd)
+%%[8 import({%{EH}Core})
 %%]
 
-%%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamUpdAdd,gamLookupAll,gamSubstTop,gamElts)
+%%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamElts)
 %%]
 
 %%[9 import({%{EH}Ty.Trf.MergePreds})
@@ -88,24 +88,25 @@ newtype Gam k v     =   Gam [AssocL k v]  deriving Show
 %%]
 
 %%[9.Base.type -1.Base.type
-type Gam k v        =   TreeGam Int k v
+type Gam k v        =   LGam k v
 %%]
+type Gam k v        =   TreeGam Int k v
 
 %%[1.Base.sigs
 emptyGam            ::            Gam k v
-gamUnit             ::            k -> v        -> Gam k v
+gamSingleton        ::            k -> v        -> Gam k v
 gamLookup           ::  Ord k =>  k -> Gam k v  -> Maybe v
 gamToAssocL         ::            Gam k v       -> AssocL k v
 gamPushNew          ::            Gam k v       -> Gam k v
 gamPushGam          ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
-gamPop              ::            Gam k v       -> (Gam k v,Gam k v)
+gamPop              ::  Ord k =>  Gam k v       -> (Gam k v,Gam k v)
 gamAddGam           ::  Ord k =>  Gam k v       -> Gam k v -> Gam k v
 gamAdd              ::  Ord k =>  k -> v        -> Gam k v -> Gam k v
 %%]
 
 %%[1.Base.funs
 emptyGam                            = Gam [[]]
-gamUnit         k v                 = Gam [[(k,v)]]
+gamSingleton    k v                 = Gam [[(k,v)]]
 gamLookup       k (Gam ll)          = foldr  (\l mv -> maybe mv Just (lookup k l))
                                              Nothing ll
 gamToAssocL     (Gam ll)            = concat ll
@@ -113,23 +114,23 @@ gamPushNew      (Gam ll)            = Gam ([]:ll)
 gamPushGam      g1 (Gam ll2)        = Gam (gamToAssocL g1 : ll2)
 gamPop          (Gam (l:ll))        = (Gam [l],Gam ll)
 gamAddGam       g1 (Gam (l2:ll2))   = Gam ((gamToAssocL g1 ++ l2):ll2)
-gamAdd          k v g               = gamAddGam (k `gamUnit` v) g
+gamAdd          k v g               = gamAddGam (k `gamSingleton` v) g
 %%]
 
 %%[9.Base.funs -1.Base.funs
-emptyGam                            = emptyTGam 1 
-gamUnit                             = tgamSingleton 1
-gamLookup       k g                 = tgamLookup (tgamSize1 g) k g
-gamToAssocL     g                   = tgamToAssocL (tgamSize1 g) g
-gamPushNew      g                   = let sz = tgamSize1 g in tgamPushNew sz (sz+1) g
-gamPushGam      g1 g2               = let sz = tgamSize1 g2 in tgamPushGam (tgamSize1 g1) sz (sz+1) g1 g2
-gamPop          g                   = let (g1,_,g2) = tgamPop (tgamSize1 g) 1 g in (g1,g2)
-gamAddGam       g1 g2               = tgamAddGam (tgamSize1 g1) (tgamSize1 g2) g1 g2
-gamAdd          k v g               = tgamAdd (tgamSize1 g) k v g
+emptyGam                            = emptyLGam
+gamSingleton                        = lgamSingleton
+gamLookup       k g                 = lgamLookup k g
+gamToAssocL     g                   = lgamToAssocL g
+gamPushNew      g                   = lgamPushNew g
+gamPushGam      g1 g2               = lgamPushGam g1 g2
+gamPop          g                   = lgamPop g
+gamAddGam       g1 g2               = lgamUnion g1 g2
+gamAdd          k v g               = lgamUnion (lgamSingleton k v) g
 %%]
 
 %%[1.Rest.sigs
-gamTop              ::            Gam k v     -> Gam k v
+gamTop              ::  Ord k =>  Gam k v     -> Gam k v
 assocLToGam         ::  Ord k =>  AssocL k v  -> Gam k v
 %%]
 
@@ -140,7 +141,7 @@ assocLToGam     l                   = Gam [l]
 
 %%[9.Rest.funs -1.Rest.funs
 gamTop                              = fst . gamPop
-assocLToGam                         = assocLToTGam 1 
+assocLToGam                         = lgamFromAssocL
 %%]
 
 %%[1.assocDupLToGam
@@ -150,7 +151,7 @@ assocDupLToGam = assocLToGam . concat . map (\(k,vs) -> zip (repeat k) vs)
 
 %%[9 -1.assocDupLToGam
 assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
-assocDupLToGam = assocDupLToTGam 1
+assocDupLToGam = lgamFromAssocDupL
 %%]
 
 %%[1.gamToAssocDupL
@@ -160,7 +161,7 @@ gamToAssocDupL = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupS
 
 %%[9 -1.gamToAssocDupL
 gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
-gamToAssocDupL g = tgamToAssocDupL (tgamSize1 g) g
+gamToAssocDupL g = lgamToAssocDupL g
 %%]
 
 %%[1.gamToOnlyDups export(gamToOnlyDups)
@@ -175,7 +176,7 @@ gamNoDups (Gam ll) = Gam (map (nubBy (\(k1,_) (k2,_) -> k1 == k2)) ll)
 
 %%[9 -1.gamNoDups
 gamNoDups :: Ord k => Gam k v -> Gam k v
-gamNoDups g = tgamMap2 (tgamSize1 g) (\(k,v:_) -> (k,[v])) g
+gamNoDups g = lgamNoDups g
 %%]
 
 %%[1.gamMap
@@ -185,7 +186,7 @@ gamMap f (Gam ll) = Gam (map (map f) ll)
 
 %%[9.gamMap -1.gamMap
 gamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
-gamMap f g = tgamMap (tgamSize1 g) f g
+gamMap f g = lgamMapEltWithKey (\k e -> let (k',v') = f (k,lgeVal e) in (k',e {lgeVal = v'})) g
 %%]
 
 %%[3.gamMapElts
@@ -203,7 +204,7 @@ gamPartition f (Gam ll)
 
 %%[9 -3.gamPartition
 gamPartition :: Ord k => (k -> v -> Bool) -> Gam k v -> (Gam k v,Gam k v)
-gamPartition = tgamPartition
+gamPartition = lgamPartitionWithKey
 %%]
 
 %%[4.gamMapThr
@@ -223,33 +224,7 @@ gamMapThr f thr (Gam ll)
 
 %%[9.gamMapThr -4.gamMapThr
 gamMapThr :: (Ord k,Ord k') => ((k,v) -> t -> ((k',v'),t)) -> t -> Gam k v -> (Gam k' v',t)
-gamMapThr f thr g = tgamMapThr (tgamSize1 g) (\k v t -> let ((k',v'),t') = f (k,v) t in (k',v',t')) thr g
-%%]
-
-%%[8.gamMbUpd
-gamMbUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Maybe (Gam k v)
-gamMbUpd k upd (Gam ll)
-  =  let u ((kv@(k',v):ls):lss)
-             | k' == k    = Just (((k',upd k v):ls):lss)
-             | otherwise  = maybe Nothing (\(ls:lss) -> Just ((kv:ls):lss)) (u (ls:lss))
-         u ([]:lss)       = maybe Nothing (\lss -> Just ([] : lss)) (u lss)
-         u []             = Nothing
-     in  fmap Gam (u ll)
-%%]
-
-%%[9.gamMbUpd -8.gamMbUpd
-gamMbUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Maybe (Gam k v)
-gamMbUpd k upd g = tgamMbUpd (tgamSize1 g) k upd g
-%%]
-
-%%[8.gamUpd
-gamUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpd k upd = panicJust "gamUpd" . gamMbUpd k upd
-%%]
-
-%%[9.gamUpd -8.gamUpd
-gamUpd :: Ord k => k -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpd k upd g = tgamUpd (tgamSize1 g) k upd g
+gamMapThr f thr g = lgamFilterMapEltAccumWithKey (\_ _ -> True) (\k e thr -> let ((k',v'),thr') = f (k,lgeVal e) thr in (k',e {lgeVal = v'},thr')) undefined thr g
 %%]
 
 %%[1
@@ -262,11 +237,6 @@ gamElts :: Ord k => Gam k v -> [v]
 gamElts = assocLElts . gamToAssocL
 %%]
 
-%%[9
-gamLookupAll :: Ord k => k -> Gam k v -> [v]
-gamLookupAll k g = tgamLookupAll (tgamSize1 g) k g
-%%]
-
 %%[1.gamLookupDup
 gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
 gamLookupDup k (Gam ll) = foldr (\l mv -> case filter ((==k) . fst) l of {[] -> mv; lf -> Just (assocLElts lf)}) Nothing ll
@@ -274,12 +244,7 @@ gamLookupDup k (Gam ll) = foldr (\l mv -> case filter ((==k) . fst) l of {[] -> 
 
 %%[9 -1.gamLookupDup
 gamLookupDup :: Ord k => k -> Gam k v -> Maybe [v]
-gamLookupDup k g = tgamLookupDup (tgamSize1 g) k g
-%%]
-
-%%[9
-gamUpdAdd :: Ord k => k -> v -> (k -> v -> v) -> Gam k v -> Gam k v
-gamUpdAdd k v upd g = tgamUpdAdd (tgamSize1 g) k v upd g
+gamLookupDup k g = lgamLookupDup k g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -287,9 +252,6 @@ gamUpdAdd k v upd g = tgamUpdAdd (tgamSize1 g) k v upd g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-gamSingleton :: k -> v -> Gam k v
-gamSingleton = gamUnit
-
 gamInsert :: Ord k => k -> v -> Gam k v -> Gam k v
 gamInsert = gamAdd
 
@@ -301,174 +263,6 @@ gamUnions = foldr1 gamUnion
 
 gamFromAssocL ::  Ord k =>  AssocL k v  -> Gam k v
 gamFromAssocL = assocLToGam
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tree Gam, a Gam with multiple (search) entry points
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-data TreeGam i k v
-  =  TreeGam
-        { tgamEntriesOf :: Map.Map i (Maybe i,Map.Map k [v])
-        }
-
-instance Show (TreeGam i k v) where
-  show _ = "TreeGam"
-
-emptyTGam1 :: TreeGam i k v
-emptyTGam1 = TreeGam Map.empty
-
-emptyTGam :: Ord i => i -> TreeGam i k v
-emptyTGam i = TreeGam (i `Map.singleton` (Nothing,Map.empty))
-
-tgamSize1 :: TreeGam i k v -> Int
-tgamSize1 = Map.size . tgamEntriesOf
-
-tgamPartition :: (Ord i,Ord k) => (k -> v -> Bool) -> TreeGam i k v -> (TreeGam i k v,TreeGam i k v)
-tgamPartition f g
-  = (g {tgamEntriesOf = Map.unions ms1},g {tgamEntriesOf = Map.unions ms2})
-  where (ms1,ms2)
-          = unzip $ map (\(i,(mi,m)) -> let (ms1,ms2) = xx m in (mk i mi ms1,mk i mi ms2)) $ Map.toList $ tgamEntriesOf g
-          where mk i mi m = Map.singleton i (mi,Map.unions m)
-        xx m = unzip [ (mk k vs1,mk k vs2) | (k,vs) <- Map.toList m, let (vs1,vs2) = yy k vs ]
-             where mk k l = if null l then Map.empty else Map.singleton k l
-        yy k = partition (f k)
-
-tgamSingleton :: i -> k -> v -> TreeGam i k v
-tgamSingleton i k v = TreeGam (i `Map.singleton` (Nothing,k `Map.singleton` [v]))
-
-tgamFoldr1 :: Ord i => i -> (i -> Maybe i -> Map.Map k [v] -> r -> r) -> r -> TreeGam i k v -> r
-tgamFoldr1 i fr r g
-  =  case Map.lookup i (tgamEntriesOf g) of
-        Just (n,e)  -> fr i n e (maybe r (\i' -> tgamFoldr1 i' fr r g) n)
-        Nothing     -> r
-
-tgamFoldr2 :: Ord i => i -> (k -> [v] -> r -> r) -> r -> TreeGam i k v -> r
-tgamFoldr2 i fr r g = tgamFoldr1 i (\_ _ e r -> Map.foldWithKey fr r e) r g
-
-tgamFoldr :: Ord i => i -> (k -> v -> r -> r) -> r -> TreeGam i k v -> r
-tgamFoldr i fr r g = tgamFoldr2 i (\k (v:_) r -> fr k v r) r g
-
-tgamMapThr1 :: Ord i => i -> (Map.Map k [v] -> t -> (Map.Map k' [v'],t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
-tgamMapThr1 i f thr
-  =  tgamFoldr1 i  (\i n e (g,t) ->  let  (e',t') = f e t
-                                     in   (g {tgamEntriesOf = Map.insert i (n,e') (tgamEntriesOf g)},t')
-                   )
-                   (emptyTGam1,thr)
-
-tgamMapThr2 :: (Ord i,Ord k') => i -> (k -> [v] -> t -> (k',[v'],t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
-tgamMapThr2 i f
-  =  tgamMapThr1 i  (\e t -> Map.foldWithKey (\k vs (e,t) -> let (k',vs',t') = f k vs t in (Map.insert k' vs' e,t'))
-                                             (Map.empty,t) e
-                    )
-
-tgamMapThr :: (Ord i,Ord k') => i -> (k -> v -> t -> (k',v',t)) -> t -> TreeGam i k v -> (TreeGam i k' v',t)
-tgamMapThr i f = tgamMapThr2 i (\k (v:vs) t -> let (k',v',t') = f k v t in (k',(v':map (\v -> snd3 (f k v t)) vs),t'))
-
-tgamMap2 :: (Ord i,Ord k') => i -> ((k,[v]) -> (k',[v'])) -> TreeGam i k v -> TreeGam i k' v'
-tgamMap2 i f = fst . tgamMapThr2 i (\k vs _ -> let (k',vs') = f (k,vs) in (k',vs',())) ()
-
-tgamMap :: (Ord i,Ord k') => i -> ((k,v) -> (k',v')) -> TreeGam i k v -> TreeGam i k' v'
-tgamMap i f = fst . tgamMapThr i (\k v _ -> let (k',v') = f (k,v) in (k',v',())) ()
-
-tgamUnzip :: (Ord i,Ord k) => i -> TreeGam i k (v1,v2) -> (TreeGam i k v1,TreeGam i k v2)
-tgamUnzip i
-  =  tgamFoldr1 i  (\i n e (g1,g2)
-                        ->  let (e1,e2) = Map.foldWithKey (\k ((v1,v2):_) (e1,e2) -> (Map.insert k [v1] e1,Map.insert k [v2] e2)) (Map.empty,Map.empty) e
-                            in  (g1 {tgamEntriesOf = Map.insert i (n,e1) (tgamEntriesOf g1)}
-                                ,g2 {tgamEntriesOf = Map.insert i (n,e2) (tgamEntriesOf g2)}
-                                )
-                   )
-                   (emptyTGam1,emptyTGam1)
-
-tgamLookupAllDupEmp :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [[v]]
-tgamLookupAllDupEmp i k g = tgamFoldr1 i (\_ _ e r -> maybe ([]:r) (:r) (Map.lookup k e)) [] g
-
-tgamLookupAllDup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [[v]]
-tgamLookupAllDup i k = filter (not . null) . tgamLookupAllDupEmp i k
-
-tgamLookupAllEmp :: (Ord i,Ord k) => i -> k -> v -> TreeGam i k v -> [v]
-tgamLookupAllEmp i k v = map (\l -> if null l then v else head l) . tgamLookupAllDupEmp i k
-
-tgamLookupAll :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> [v]
-tgamLookupAll i k = map head . tgamLookupAllDup i k
-
-tgamLookupDup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe [v]
-tgamLookupDup i k g = tgamFoldr1 i (\_ _ e r -> maybe r Just (Map.lookup k e)) Nothing g
-
-tgamLookup :: (Ord i,Ord k) => i -> k -> TreeGam i k v -> Maybe v
-tgamLookup i k = fmap head . tgamLookupDup i k
-
-tgamToFM1 :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k [v]
-tgamToFM1 i = tgamFoldr1 i (\_ _ e e' -> e `Map.union` e') Map.empty
-
-tgamToFM :: (Ord i,Ord k) => i -> TreeGam i k v -> Map.Map k v
-tgamToFM i = Map.map (\(v:_) -> v) . tgamToFM1 i
-
-tgamToAssocDupL :: Ord i => i -> TreeGam i k v -> AssocL k [v]
-tgamToAssocDupL i = tgamFoldr2 i (\k vs kvs -> (k,vs) : kvs) []
-
-tgamToAssocL :: Ord i => i -> TreeGam i k v -> AssocL k v
-tgamToAssocL i = tgamFoldr i (\k v kvs -> (k,v) : kvs) []
-
-assocLToTGam :: Ord k => i -> AssocL k v -> TreeGam i k v
-assocLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList . assocLMapElt (:[]) $ l))
-
-assocDupLToTGam :: Ord k => i -> AssocL k [v] -> TreeGam i k v
-assocDupLToTGam i l = TreeGam (i `Map.singleton` (Nothing,Map.fromList l))
-
-tgamPushNew :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
-tgamPushNew i iNew g
-  | i /= iNew = g {tgamEntriesOf = Map.insert iNew (Just i,Map.empty) (tgamEntriesOf g)}
-  | otherwise = g
-
-tgamAddGam :: (Ord i,Ord k) => i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
-tgamAddGam i2 i1 g2 g1
-  =  case Map.lookup i1 (tgamEntriesOf g1) of
-        Just (n,e)  -> g1 {tgamEntriesOf = Map.insert i1 (n,Map.unionWith (++) (tgamToFM1 i2 g2) e) (tgamEntriesOf g1)}
-        Nothing     -> g1
-
-tgamPushGam :: (Ord i,Ord k) => i -> i -> i -> TreeGam i k v -> TreeGam i k v -> TreeGam i k v
-tgamPushGam i1 i2 iNew g1 g2 = tgamAddGam i1 iNew g1 (tgamPushNew i2 iNew g2)
-
-tgamAdd :: (Ord i,Ord k) => i -> k -> v -> TreeGam i k v -> TreeGam i k v
-tgamAdd i k v g = tgamAddGam i i (tgamSingleton i k v) g
-
-tgamPop :: Ord i => i -> i -> TreeGam i k v -> (TreeGam i k v,Maybe i,TreeGam i k v)
-tgamPop i iPop g
-  =  case Map.lookup i (tgamEntriesOf g) of
-        Just (n,e)  ->  (TreeGam (iPop `Map.singleton` (Nothing,e))
-                        ,n
-                        ,g {tgamEntriesOf = Map.delete i (tgamEntriesOf g)}
-                        )
-        Nothing     ->  (emptyTGam iPop,Nothing,g)
-
-tgamTop :: Ord i => i -> i -> TreeGam i k v -> TreeGam i k v
-tgamTop i iTop g = let (g',_,_) = tgamPop i iTop g in g'
-
-tgamMbUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> Maybe (TreeGam i k v)
-tgamMbUpd i k f g
-  =  tgamFoldr1 i  (\i n e mg -> case Map.lookup k e of
-                                   Just (v:_)   -> Just (g {tgamEntriesOf = Map.insert i (n,Map.insert k [f k v] e) (tgamEntriesOf g)})
-                                   Nothing      -> mg
-                   )
-                   Nothing g
-
-tgamUpd :: (Ord i,Ord k) => i -> k -> (k -> v -> v) -> TreeGam i k v -> TreeGam i k v
-tgamUpd i k f = panicJust "tgamUpd" . tgamMbUpd i k f
-
-tgamUpdAdd :: (Ord i,Ord k) => i -> k -> v -> (k -> v -> v) -> TreeGam i k v -> TreeGam i k v
-tgamUpdAdd i k v upd g = maybe (tgamAdd i k v g) id (tgamMbUpd i k upd g)
-
-tgamIsInScope :: Ord i => i -> i -> TreeGam i k v -> Bool
-tgamIsInScope i iQuery g = iQuery `elem` tgamInScopes i g
-
-tgamInScopes :: Ord i => i -> TreeGam i k v -> [i]
-tgamInScopes i = tgamFoldr1 i (\i _ _ r -> i : r) []
-
-tgamElts :: Ord i => i -> TreeGam i k v -> [v]
-tgamElts i = assocLElts . tgamToAssocL i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -490,32 +284,99 @@ data LGam k v
 
 emptyLGam :: LGam k v
 emptyLGam = LGam 0 Map.empty
+
+instance Show (LGam k v) where
+  show _ = "LGam"
 %%]
 
 %%[9
+lgamFilterMapEltAccumWithKey
+  :: (Ord k')
+       => (k -> LGamElt v -> Bool)
+          -> (k -> LGamElt v -> acc -> (k',LGamElt v',acc))
+          -> (k -> LGamElt v -> acc -> acc)
+          -> acc -> LGam k v -> (LGam k' v',acc)
+lgamFilterMapEltAccumWithKey p fyes fno a g
+  = (g {lgMap = m'},a')
+  where (m',a') = Map.foldWithKey
+                    (\k es ma@(m,a)
+                      -> foldr (\e (m,a)
+                                 -> if p k e
+                                    then let (k',e',a') = fyes k e a
+                                         in  (Map.insertWith (++) k' [e'] m,a')
+                                    else (m,fno k e a)
+                               ) ma es
+                    ) (Map.empty,a) (lgMap g)
 %%]
-mapFilterMapWithKey :: (Ord k') => (k -> v -> acc -> Bool) -> (k -> v -> acc -> (k',v',acc)) (k -> v -> acc -> acc) -> acc -> Map.Map k v -> (Map.Map k' v',acc)
-mapFilterMapWithKey p fyes fno a m
-  = Map.foldWithKey (\k v (m,a)
-                      -> if p k v a
-                         then let (k',v',a') = fyes k v a
-                              in  (Map.insert k' v' m,a')
-                         else (m,fno k v a)
-                    ) (Map.empty,a) m
 
 %%[9
-lgamSingleton :: Ord k => k -> v -> LGam k v
+lgamSingleton :: k -> v -> LGam k v
 lgamSingleton k v = LGam 0 (Map.singleton k [LGamElt 0 v])
 
 lgamUnion :: Ord k => LGam k v -> LGam k v -> LGam k v
 lgamUnion g1@(LGam {lgMap = m1}) g2@(LGam {lgLev = l2, lgMap = m2})
   = g2 {lgMap = Map.unionWith (++) m1' m2}
-  where m1' = Map.map (\(e:_) -> [e {lgeLev = l2}]) $ Map.filter (\es -> not (null es)) m1
+  -- where m1' = Map.map (\(e:_) -> [e {lgeLev = l2}]) $ Map.filter (\es -> not (null es)) m1
+  where m1' = Map.map (map (\e -> e {lgeLev = l2})) $ Map.filter (\es -> not (null es)) m1
 
+lgamUnions :: Ord k => [LGam k v] -> LGam k v
+lgamUnions [] = emptyLGam
+lgamUnions l  = foldr1 lgamUnion l
+
+lgamPartitionEltWithKey :: Ord k => (k -> LGamElt v -> Bool) -> LGam k v -> (LGam k v,LGam k v)
+lgamPartitionEltWithKey p g
+  = (g1, LGam (lgLev g1) m2)
+  where (g1,m2) = lgamFilterMapEltAccumWithKey p (\k e a -> (k,e,a)) (\k e a -> Map.insertWith (++) k [e] a) Map.empty g
+
+lgamPartitionWithKey :: Ord k => (k -> v -> Bool) -> LGam k v -> (LGam k v,LGam k v)
+lgamPartitionWithKey p = lgamPartitionEltWithKey (\k e -> p k (lgeVal e))
+
+lgamUnzip :: Ord k => LGam k (v1,v2) -> (LGam k v1,LGam k v2)
+lgamUnzip g
+  = (g1, g1 {lgMap = m2})
+  where (g1,m2) = lgamFilterMapEltAccumWithKey (\_ _ -> True) (\k e@(LGamElt {lgeVal = (v1,v2)}) m -> (k,e {lgeVal = v1},Map.insertWith (++) k [e {lgeVal = v2}] m)) undefined Map.empty g
+
+lgamMapEltWithKey :: (Ord k,Ord k') => (k -> LGamElt v -> (k',LGamElt v')) -> LGam k v -> LGam k' v'
+lgamMapEltWithKey f g
+  = g'
+  where (g',_) = lgamFilterMapEltAccumWithKey (\_ _ -> True) (\k e a -> let (k',e') = f k e in (k',e',a)) undefined () g
+
+lgamPop :: Ord k => LGam k v -> (LGam k v,LGam k v)
+lgamPop g
+  = (lgamMapEltWithKey (\k e -> (k,e {lgeLev = 0})) (g1 {lgLev = 0}),g2 {lgLev = max 0 (lgLev g - 1)})
+  where (g1,g2) = lgamPartitionEltWithKey (\_ e -> lgeLev e == lgLev g) g
+
+lgamPushNew :: LGam k v -> LGam k v
+lgamPushNew g = g {lgLev = lgLev g + 1}
+
+lgamPushGam :: Ord k => LGam k v -> LGam k v -> LGam k v
+lgamPushGam g1 g2 = lgamUnions [g1,lgamPushNew g2]
+
+lgamLookupDup :: Ord k => k -> LGam k v -> Maybe [v]
+lgamLookupDup k = fmap (map lgeVal) . Map.lookup k . lgMap
+
+lgamLookup :: Ord k => k -> LGam k v -> Maybe v
+lgamLookup k = fmap head . lgamLookupDup k
+
+lgamToAssocDupL :: LGam k v -> AssocL k [v]
+lgamToAssocDupL = Map.toList . Map.map (map lgeVal) . lgMap
+
+lgamToAssocL :: LGam k v -> AssocL k v
+lgamToAssocL g = [ (k,v) | (k,(v:_)) <- lgamToAssocDupL g ]
+
+lgamFromAssocDupL :: Ord k => AssocL k [v] -> LGam k v
+lgamFromAssocDupL l
+  = LGam 0 m
+  where m = Map.map (map (LGamElt 0)) $ Map.fromList l
+
+lgamFromAssocL :: Ord k => AssocL k v -> LGam k v
+lgamFromAssocL = lgamUnions . map (uncurry lgamSingleton)
+
+lgamNoDups :: LGam k v -> LGam k v
+lgamNoDups g
+  = g {lgMap = m}
+  where m = Map.map (\(e:_) -> [e]) $ lgMap g
 %%]
-lgamPartitionWithKey :: Ord k => (k -> LGamElt v -> Bool) -> LGam k v -> (LGam k v,LGam k v)
-lgamPartitionWithKey p m
-  = mapFilterMapWithKey (\k es _ -> ) () () Map.empty m
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Error" gam
@@ -623,7 +484,7 @@ gamUnzip (Gam ll)
 
 %%[9.gamUnzip -6.gamUnzip
 gamUnzip :: Ord k => Gam k (v1,v2) -> (Gam k v1,Gam k v2)
-gamUnzip g = tgamUnzip (tgamSize1 g) g
+gamUnzip g = lgamUnzip g
 %%]
 
 %%[9.valGamQuantify -3.valGamQuantify
@@ -1006,10 +867,10 @@ instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k su
   ftv   (Gam ll)    =   unions . map ftv . map snd . concat $ ll
 %%]
 
-%%[9.Substitutable.TreeGam -2.Substitutable.Gam
-instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (TreeGam i tk vv) k subst where
-  s |=> g    =   g {tgamEntriesOf = Map.map (\(n,e) -> (n,Map.map (s |=>) e)) (tgamEntriesOf g)}
-  ftv   g    =   unions . map (ftv . map head . Map.elems . snd) . Map.elems . tgamEntriesOf $ g
+%%[9.Substitutable.LGam -2.Substitutable.Gam
+instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k subst where
+  s |=> g    =   gamMapElts (s |=>) g
+  ftv   g    =   unions $ map ftv $ gamElts g
 %%]
 
 %%[2.Substitutable.inst.ValGamInfo
@@ -1035,11 +896,11 @@ instance Substitutable TyGamInfo TyVarId Cnstr where
 %%]
 
 %%[9
+%%]
 gamSubstTop :: (Ord k,Substitutable vv k subst) => subst -> Gam k vv -> Gam k vv
 gamSubstTop s g
   =  let  (h,t) = gamPop g
      in   gamPushGam (s |=> h) t
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
@@ -1056,9 +917,9 @@ ppGamDup g = ppAssocL $ map (\(k,v) -> (k,ppBracketsCommas v)) $ gamToAssocDupL 
 %%]
 
 %%[9.ppTGam
+%%]
 ppTGam :: (Ord i, PP k, PP v) => i -> TreeGam i k v -> PP_Doc
 ppTGam i g = ppAssocL (tgamToAssocL i g)
-%%]
 
 %%[1.PP.Gam
 instance (PP k, PP v) => PP (Gam k v) where
@@ -1066,11 +927,9 @@ instance (PP k, PP v) => PP (Gam k v) where
 %%]
 
 %%[9.PP.Gam -1.PP.Gam
-instance (PP i, PP k, PP v) => PP (TreeGam i k v) where
-  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . Map.toList $ e)) . Map.toList . tgamEntriesOf $ g
+instance (PP k, PP v) => PP (LGam k v) where
+  pp g = ppGam g
 %%]
-  pp g = ppAssocLV . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . Map.toList $ e)) . Map.toList . tgamEntriesOf $ g
-  pp g = ppAssocL . assocLMapElt (\(n,e) -> pp n >|< ":" >|< (ppAssocL . Map.toList $ e)) . Map.toList . tgamEntriesOf $ g
 
 %%[1.PP.ValGamInfo
 instance PP ValGamInfo where

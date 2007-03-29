@@ -171,7 +171,7 @@ relation tyGamLookupOrNewId =
     judgeuse tex nm :-> ty `elem` tyGam ^^ || ^^ tyGam.i === (nm :-> tvarv) && ty === tvarv && tvarv (text "fresh")
     judgeuse ag  (tgi,tyGam.i) `=` case ( tyGamLookup nm tyGam of
                                         - Nothing    ->  ( let  t `=` TyGamInfo (mkTyVar unique)
-                                                         - in   (t,gamUnit nm t)
+                                                         - in   (t,gamSingleton nm t)
                                                          )
                                         - Just t     ->  (t,emptyGam)
                                         )
@@ -268,7 +268,7 @@ relation bind1ValIdToTy =
   view E =
     holes [ nm: Nm, ty: Ty | | valGam: ValGam ]
     judgespec valGam === [nm :-> ty]
-    judgeuse ag  valGam `=` gamUnit (nm) (ValGamInfo (ty))
+    judgeuse ag  valGam `=` gamSingleton (nm) (ValGamInfo (ty))
 
 relation bind1TyIdToTy =
   view I1 =
@@ -276,7 +276,7 @@ relation bind1TyIdToTy =
     judgespec tyGam, tgi === nm, ty
     judgeuse tex tyGam === [nm :-> ty]
     judgeuse ag  (retain tgi) `=` TyGamInfo (ty)
-              |  tyGam        `=` gamUnit (nm) (tgi)
+              |  tyGam        `=` gamSingleton (nm) (tgi)
 
 relation bind1PatIdToTy =
   view E =
@@ -284,7 +284,7 @@ relation bind1PatIdToTy =
     judgespec valGam === [nm :-> ty]
     judgeuse ag  (retain valGam)
                         `=` ( if "@lhs.inclVarBind" && nm /= hsnWild
-                            - then  gamUnit nm (ValGamInfo ty)
+                            - then  gamSingleton nm (ValGamInfo ty)
                             - else  emptyGam
                             )
 
