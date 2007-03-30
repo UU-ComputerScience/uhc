@@ -153,7 +153,7 @@ defaultOptim = Optim Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compilation unit
+%%% State of compilation unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -188,13 +188,17 @@ data EHCompileUnitState
   deriving (Show,Eq)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compilation unit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
 data EHCompileUnit
   = EHCompileUnit
-      { ecuFilePath          :: FPath
-      , ecuGrpNm             :: HsName
-      , ecuModNm             :: HsName
-      , ecuImpNmL            :: [HsName]
+      { ecuFilePath          :: !FPath
+      , ecuGrpNm             :: !HsName
+      , ecuModNm             :: !HsName
+      , ecuImpNmL            :: ![HsName]
       , ecuMbHSSem           :: (Maybe HSSem.Syn_AGItf)
       , ecuMbEHSem           :: (Maybe EHSem.Syn_AGItf)
       , ecuMbCoreSem         :: (Maybe Core2GrSem.Syn_CodeAGItf)
@@ -203,21 +207,19 @@ data EHCompileUnit
       , ecuMbCore            :: (Maybe Core.CModule)
       , ecuMbGrin            :: (Maybe Grin.GrModule)
       , ecuMbGrinBC          :: (Maybe GrinBC.Module)
-      , ecuState             :: EHCompileUnitState
+      , ecuState             :: !EHCompileUnitState
 %%[[20
-      , ecuIsTopMod          :: Bool
-      , ecuMbHSTime          :: (Maybe ClockTime)
-      , ecuMbHITime          :: (Maybe ClockTime)
-      , ecuMbCoreTime        :: (Maybe ClockTime)
+      , ecuIsTopMod          :: !Bool
+      , ecuMbHSTime          :: !(Maybe ClockTime)
+      , ecuMbHITime          :: !(Maybe ClockTime)
+      , ecuMbCoreTime        :: !(Maybe ClockTime)
       , ecuMbHSSemMod        :: (Maybe HSSemMod.Syn_AGItf)
       , ecuMod               :: Mod
-      -- , ecuMbPrevCore        :: Maybe Core.CModule
       , ecuMbPrevHISem       :: (Maybe HISem.Syn_AGItf)
       , ecuMbPrevHI          :: (Maybe HI.AGItf)
-      , ecuMbOptim           :: (Maybe Optim)
-%%]
+      , ecuMbOptim           :: !(Maybe Optim)
+%%]]
       }
-
 %%]
 
 %%[8
@@ -244,11 +246,31 @@ emptyECU
       , ecuMbCoreTime        = Nothing
       , ecuMbHSSemMod        = Nothing
       , ecuMod               = emptyMod
-      -- , ecuMbPrevCore        = Nothing
       , ecuMbPrevHISem       = Nothing
       , ecuMbPrevHI          = Nothing
       , ecuMbOptim           = Nothing
+%%]]
+      }
 %%]
+
+%%[99
+ecuResetForGC1 :: EHCompileUnit -> EHCompileUnit
+ecuResetForGC1 e
+  = e { ecuMbHS              = Nothing
+      }
+
+ecuResetForGC2 :: EHCompileUnit -> EHCompileUnit
+ecuResetForGC2 e
+  = e { ecuMbEH              = Nothing
+      }
+
+ecuResetForGC3 :: EHCompileUnit -> EHCompileUnit
+ecuResetForGC3 e
+  = e { ecuMbHSSem           = Nothing
+      , ecuMbEHSem           = Nothing
+      , ecuMbCoreSem         = Nothing
+      , ecuMbHSSemMod        = Nothing
+      , ecuMbPrevHI          = Nothing
       }
 %%]
 
@@ -644,7 +666,11 @@ cpFoldEH modNm
                  mbEH   = ecuMbEH ecu
                  ehSem  = foldEH (crsiHSInh crsi) (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
          ;  when (isJust mbEH)
-                 (cpUpdCU modNm (ecuStoreEHSem ehSem))
+                 (do { cpUpdCU modNm (ecuStoreEHSem ehSem)
+%%[[99
+                     ; cpCleanup2 modNm
+%%]]
+                     })
          }
 
 cpFoldHs :: HsName -> EHCompilePhase ()
@@ -654,7 +680,11 @@ cpFoldHs modNm
                  mbHS   = ecuMbHS ecu
                  hsSem  = foldHs (crsiHSInh crsi) modNm ecu crsi (panicJust "cpFoldHs" mbHS)
          ;  when (isJust mbHS)
-                 (cpUpdCU modNm (ecuStoreHSSem hsSem))
+                 (do { cpUpdCU modNm (ecuStoreHSSem hsSem)
+%%[[99
+                     ; cpCleanup1 modNm
+%%]]
+                     })
          }
 %%]
 
@@ -798,9 +828,7 @@ cpFlowEHSem2 modNm
                             { EHSem.valGam_Inh_AGItf     = EHSem.gathValGam_Syn_AGItf     ehSem `gamUnion` EHSem.valGam_Inh_AGItf     ehInh
                             , EHSem.tyGam_Inh_AGItf      = EHSem.gathTyGam_Syn_AGItf      ehSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
                             , EHSem.kiGam_Inh_AGItf      = EHSem.gathKiGam_Syn_AGItf      ehSem `gamUnion` EHSem.kiGam_Inh_AGItf      ehInh
-                            -- , EHSem.dataGam_Inh_AGItf    = EHSem.gathDataGam_Syn_AGItf    ehSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh -- now in cpFlowEHSem1
                             , EHSem.prIntroGam_Inh_AGItf = EHSem.gathPrIntroGam_Syn_AGItf ehSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            -- , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (EHSem.gathPrElimTGam_Syn_AGItf ehSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             , EHSem.chrStore_Inh_AGItf   = EHSem.gathChrStore_Syn_AGItf   ehSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
          ;  when (isJust (ecuMbEHSem ecu))
@@ -820,7 +848,6 @@ cpFlowHISem modNm
                             , EHSem.tyGam_Inh_AGItf      = HISem.tyGam_Syn_AGItf      hiSem `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
                             , EHSem.dataGam_Inh_AGItf    = HISem.dataGam_Syn_AGItf    hiSem `gamUnion` EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.prIntroGam_Inh_AGItf = HISem.prIntroGam_Syn_AGItf hiSem `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            -- , EHSem.prElimTGam_Inh_AGItf = Pr.peTGamUnion basePrfCtxtId (EHSem.prfCtxtId_Inh_AGItf ehInh) (HISem.prElimTGam_Syn_AGItf hiSem) (EHSem.prElimTGam_Inh_AGItf ehInh)
                             , EHSem.chrStore_Inh_AGItf   = HISem.chrStore_Syn_AGItf   hiSem `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
                  hsInh  = crsiHSInh crsi
@@ -1089,15 +1116,10 @@ cpOptimizeGrin modNm
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOptimizeGrin" mbGrin
                  optGrin   = ( grUnusedNameElim   
-
                              . grAliasElim   
-
                              . grEvalElim   
-
                              . grAliasElim   
-
                              . grFlattenSeq   
-
                              ) grin 
 
          ;  when (  ehcOptOptimise opts >= OptimiseNormal
@@ -1507,6 +1529,21 @@ cpStopAt atPhase
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: cleanup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+cpCleanup1 :: HsName -> EHCompilePhase ()
+cpCleanup1 modNm = cpUpdCU modNm ecuResetForGC1
+
+cpCleanup2 :: HsName -> EHCompilePhase ()
+cpCleanup2 modNm = cpUpdCU modNm ecuResetForGC2
+
+cpCleanup3 :: HsName -> EHCompilePhase ()
+cpCleanup3 modNm = cpUpdCU modNm ecuResetForGC2
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: compilation of module(s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1722,6 +1759,9 @@ cpCompileOrderedCUs
                    ECUSHaskell HSAllSem   -> flowSem
                    ECUSHaskell HSAllSemHI -> cpFlowHISem m
                    _                      -> return ()
+%%[[99
+               ; cpCleanup3 m
+%%]]
                }
           where flowSem = cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m,cpFlowOptim m]
         core mL
@@ -1874,8 +1914,6 @@ doCompileRun fn opts
                                               , EHSem.tyGam_Inh_AGItf           = initTyGam
                                               , EHSem.kiGam_Inh_AGItf           = initKiGam
                                               , EHSem.prIntroGam_Inh_AGItf      = initPIGIGam
-                                              -- , EHSem.prElimTGam_Inh_AGItf      = emptyTGam basePrfCtxtId
-                                              -- , EHSem.prfCtxtId_Inh_AGItf       = basePrfCtxtId
                                               , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
                                               , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]

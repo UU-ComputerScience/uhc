@@ -43,8 +43,8 @@
 %%[20
 data ModEnt
   = ModEnt
-      { mentKind    :: IdOccKind
-      , mentIdOcc   :: IdOcc
+      { mentKind    :: !IdOccKind
+      , mentIdOcc   :: !IdOcc
       , mentOwns    :: Set.Set ModEnt
       }
   deriving (Show)
@@ -109,11 +109,11 @@ instance PPForHI ModEntRel where
 %%[20
 data ModExp
   = ModExpEnt ModEntSpec
-  | ModExpMod HsName
+  | ModExpMod !HsName
   deriving (Show)
 
 data ModEntSpec
-  = ModEntSpec HsName (Maybe ModEntSubSpec)
+  = ModEntSpec !HsName (Maybe ModEntSubSpec)
   deriving (Show)
 
 data ModEntSubSpec
@@ -123,10 +123,10 @@ data ModEntSubSpec
 
 data ModImp
   = ModImp
-      { mimpQualified   :: Bool
-      , mimpSource      :: HsName
-      , mimpAs          :: HsName
-      , mimpHiding      :: Bool
+      { mimpQualified   :: !Bool
+      , mimpSource      :: !HsName
+      , mimpAs          :: !HsName
+      , mimpHiding      :: !Bool
       , mimpImpL        :: [ModEntSpec]
       }
   deriving (Show)
@@ -174,8 +174,8 @@ instance PP ModImp where
 %%[20
 data Mod
   = Mod
-      { modName         :: HsName
-      , modNameInSrc    :: Maybe HsName
+      { modName         :: !HsName
+      , modNameInSrc    :: !(Maybe HsName)
       , modExpL         :: Maybe [ModExp]
       , modImpL         :: [ModImp]
       , modDefs         :: ModEntRel

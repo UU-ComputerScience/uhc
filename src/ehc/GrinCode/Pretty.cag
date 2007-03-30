@@ -95,7 +95,7 @@ SEM GrGlobal
 type PPGrNm = HsName -> PP_Doc
 
 ppCurlysSemisV :: [PP_Doc] -> PP_Doc
-ppCurlysSemisV pL = pp_block "{ " "} " "; " pL
+ppCurlysSemisV pL = ppBlock "{ " "} " "; " pL
 
 ppEvApTagElt :: EvApTagElt -> PP_Doc
 ppEvApTagElt e

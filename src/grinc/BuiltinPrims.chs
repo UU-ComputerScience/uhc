@@ -56,7 +56,7 @@ prims
                                     , (BackendGrinByteCode	, GbPrim 2 (mkGbInsOp InsOp_TyOp_Quot)	)
                                     ] )
 
-      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\o env m d [a] -> gviLd' o env m d a)	) ] )
+      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\o env m d [a] -> gviLd o env m d a)	) ] )
 
       , ( "primGtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator ">" )) ] )
       , ( "primLtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "<" )) ] )

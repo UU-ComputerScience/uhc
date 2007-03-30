@@ -46,14 +46,14 @@ instance PP HsName where
 
 %%[7.HsName.type -1.HsName.type
 data HsName
-  =   HNm String
-  |   HNPos Int
+  =   HNm   !String
+  |   HNPos !Int
 %%]
 %%[8
-  |   HNmNr Int (Maybe HsName)
+  |   HNmNr !Int !(Maybe HsName)
 %%]
 %%[20
-  |   HNmQ [HsName]
+  |   HNmQ  ![HsName]
 %%]
 %%[7
   deriving (Eq,Ord)
@@ -324,7 +324,7 @@ instance PP IdOccKind where
 
 %%[1 export(IdOcc(..))
 data IdOcc
-  = IdOcc { ioccNm :: HsName, ioccKind :: IdOccKind }
+  = IdOcc { ioccNm :: !HsName, ioccKind :: !IdOccKind }
   deriving (Show,Eq,Ord)
 
 %%]

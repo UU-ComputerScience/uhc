@@ -209,8 +209,8 @@ instance Show TyHardness where
 
 %%[10 hs export(LabelOffset(..))
 data LabelOffset
-  = LabelOffset_Off Int
-  | LabelOffset_Var UID
+  = LabelOffset_Off !Int
+  | LabelOffset_Var !UID
   deriving (Eq,Ord)
 %%]
 
@@ -226,8 +226,8 @@ instance Show LabelOffset where
 
 %%[9 hs export(PredScope(..),initPredScope)
 data PredScope
-  = PredScope_Lev [Int]
-  | PredScope_Var TyVarId
+  = PredScope_Lev ![Int]
+  | PredScope_Var !TyVarId
   deriving (Eq,Ord)
 
 initPredScope :: PredScope
@@ -289,8 +289,8 @@ Hence we need to remember all required info except the yet unknown predicate.
 %%[9 hs export(ImplsProveOcc(..),mkImplsProveOcc)
 data ImplsProveOcc
   = ImplsProveOcc
-      { ipoId		:: UID
-      , ipoScope	:: PredScope
+      { ipoId		:: !UID
+      , ipoScope	:: !PredScope
       }
   deriving (Eq,Show,Ord)
 
@@ -305,9 +305,9 @@ mkImplsProveOcc = ImplsProveOcc
 %%[9 hs export(PredOcc(..),poId,mkPredOcc)
 data PredOcc
   =  PredOcc
-       { poPr               :: Pred
-       , poPoi              :: PredOccId
-       , poScope			:: PredScope
+       { poPr               :: !Pred
+       , poPoi              :: !PredOccId
+       , poScope			:: !PredScope
        }
   deriving (Show,Eq,Ord)
 
@@ -335,8 +335,8 @@ poUpdPoiSc poi sc po = po {poPoi = poi, poScope = sc}
 %%[9 hs export(CHRPredOcc(..),mkCHRPredOcc)
 data CHRPredOcc
   =  CHRPredOcc
-       { cpoPr               :: Pred
-       , cpoScope			 :: PredScope
+       { cpoPr               :: !Pred
+       , cpoScope			 :: !PredScope
        }
   deriving (Show,Eq,Ord)
 

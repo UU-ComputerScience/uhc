@@ -46,10 +46,10 @@ instance PP ClsFuncDep where
 %%[9
 data PrIntroGamInfo
   =  PrIntroGamInfo
-       { pigiPrToEvidTy     :: Ty
-       , pigiKi             :: Ty
-       , pigiRuleTy         :: Ty
-       , pigiRuleNmEvid     :: HsName
+       { pigiPrToEvidTy     :: !Ty
+       , pigiKi             :: !Ty
+       , pigiRuleTy         :: !Ty
+       , pigiRuleNmEvid     :: !HsName
        } deriving Show
 
 type PrIntroGam     = Gam HsName PrIntroGamInfo

@@ -503,6 +503,7 @@ SEM GrExpr
                                                         -> case gbprimMk gbPrim GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
                                                                -> (ins, inc, False)
+                                                             _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @nm)
                                                       _ -> case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
                                                                -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.callc @mbDebugStrInx inc], 1, False)

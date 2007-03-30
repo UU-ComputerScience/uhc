@@ -164,6 +164,9 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 		mp_set_memory_functions( gb_Alloc_GMP, gb_ReAlloc_GMP, gb_Free_GMP ) ;
 #	endif
 %%]]
+%%[[98
+	gb_chan_initstd() ;
+%%]]
 	gb_checkInterpreterAssumptions() ;
 	gb_Initialize() ;
 	

@@ -361,6 +361,11 @@ void gb_Node_Finalize( void* p, void* cd )
 			case GB_NodeTag_Intl_Malloc :
 				free( n->content.ptr ) ;
 				break ;
+%%[[98
+			case GB_NodeTag_Intl_Chan :
+				fclose( n->content.chan.file ) ;
+				break ;
+%%]]
 		}
 	}
 }
@@ -416,6 +421,28 @@ GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz )
   		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %x\n", *pn ););
 	}
 	return *pn ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO Channels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+GB_NodePtr gb_chan_stdin ;
+GB_NodePtr gb_chan_stdout ;
+GB_NodePtr gb_chan_stderr ;
+
+void gb_chan_initstd()
+{
+	GB_NodeFixAlloc_Chan_In(gb_chan_stdin) ;
+	gb_chan_stdin->content.chan.file = stdin ;
+
+	GB_NodeFixAlloc_Chan_In(gb_chan_stdout) ;
+	gb_chan_stdin->content.chan.file = stdout ;
+
+	GB_NodeFixAlloc_Chan_In(gb_chan_stderr) ;
+	gb_chan_stdin->content.chan.file = stderr ;
 }
 %%]
 

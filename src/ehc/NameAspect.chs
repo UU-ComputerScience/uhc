@@ -114,12 +114,12 @@ instance PP IdAspect where
 %%[1 hs
 data IdDefOcc
   = IdDefOcc
-      { doccOcc     :: IdOcc
-      , doccAsp     :: IdAspect
-      , doccLev     :: NmLev
-      , doccRange   :: Range
+      { doccOcc     :: !IdOcc
+      , doccAsp     :: !IdAspect
+      , doccLev     :: !NmLev
+      , doccRange   :: !Range
 %%[[20
-      , doccNmAlts  :: Maybe [HsName]
+      , doccNmAlts  :: !(Maybe [HsName])
 %%]
       }
   deriving (Show)

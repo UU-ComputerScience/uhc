@@ -20,6 +20,11 @@ ppListSep o c s pps
         l (p:ps)  = pp p >|< map (s >|<) ps
 -}
 
+ppBlock :: PP a => String -> String -> String -> [a] -> PP_Doc
+ppBlock o c s []     = o >|< c
+ppBlock o c s [a]    = o >|< a >|< c
+ppBlock o c s (a:as) = o >|< a >-< (vlist $ map (s >|<) as) >-< c
+
 ppCommas :: PP a => [a] -> PP_Doc
 ppCommas = ppListSep "" "" ","
 
@@ -30,19 +35,19 @@ ppSpaces :: PP a => [a] -> PP_Doc
 ppSpaces = ppListSep "" "" " "
 
 ppCurlysBlock :: PP a => [a] -> PP_Doc
-ppCurlysBlock = pp_block "{ " "}" "  " . map pp
+ppCurlysBlock = ppBlock "{ " "}" "  " . map pp
 
 ppCurlysSemisBlock :: PP a => [a] -> PP_Doc
-ppCurlysSemisBlock = pp_block "{ " "}" "; " . map pp
+ppCurlysSemisBlock = ppBlock "{ " "}" "; " . map pp
 
 ppCurlysCommasBlock :: PP a => [a] -> PP_Doc
-ppCurlysCommasBlock = pp_block "{ " "}" ", " . map pp
+ppCurlysCommasBlock = ppBlock "{ " "}" ", " . map pp
 
 ppParensSemisBlock :: PP a => [a] -> PP_Doc
-ppParensSemisBlock = pp_block "( " ")" "; " . map pp
+ppParensSemisBlock = ppBlock "( " ")" "; " . map pp
 
 ppParensCommasBlock :: PP a => [a] -> PP_Doc
-ppParensCommasBlock = pp_block "( " ")" ", " . map pp
+ppParensCommasBlock = ppBlock "( " ")" ", " . map pp
 
 ppBracketsCommas :: PP a => [a] -> PP_Doc
 ppBracketsCommas = ppListSep "[" "]" ","

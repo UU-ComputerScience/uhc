@@ -140,7 +140,7 @@ assocLToGam     l                   = Gam [l]
 %%]
 
 %%[9.Rest.funs -1.Rest.funs
-gamTop                              = fst . gamPop
+gamTop                              = lgamTop
 assocLToGam                         = lgamFromAssocL
 %%]
 
@@ -342,9 +342,21 @@ lgamMapEltWithKey f g
   where (g',_) = lgamFilterMapEltAccumWithKey (\_ _ -> True) (\k e a -> let (k',e') = f k e in (k',e',a)) undefined () g
 
 lgamPop :: Ord k => LGam k v -> (LGam k v,LGam k v)
+lgamPop g@(LGam {lgMap = m, lgLev = l})
+  = (LGam 0 $ mk ts, LGam (max 0 (l-1)) $ mk rs)
+  where (ts,rs) = unzip [ ((k,t),(k,r)) | (k,es) <- Map.toList m, let (t,r) = span (\e -> l <= lgeLev e) es ]
+        mk = Map.filter (not . null) . Map.fromList
+{-
+lgamPop :: Ord k => LGam k v -> (LGam k v,LGam k v)
 lgamPop g
   = (lgamMapEltWithKey (\k e -> (k,e {lgeLev = 0})) (g1 {lgLev = 0}),g2 {lgLev = max 0 (lgLev g - 1)})
   where (g1,g2) = lgamPartitionEltWithKey (\_ e -> lgeLev e == lgLev g) g
+-}
+
+-- gamTop = fst . gamPop
+lgamTop :: Ord k => LGam k v -> LGam k v
+lgamTop g@(LGam {lgMap = m, lgLev = l})
+  = LGam 0 $ Map.fromList [ (k,t) | (k,es) <- Map.toList m, let t = takeWhile (\e -> l <= lgeLev e) es, not (null t) ]
 
 lgamPushNew :: LGam k v -> LGam k v
 lgamPushNew g = g {lgLev = lgLev g + 1}
@@ -692,14 +704,14 @@ type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%[7 export(DataGam,DataGamInfo(..),mkDGI,emptyDataGamInfo)
 data DataGamInfo
   = DataGamInfo
-      { dgiTyNm      		:: HsName
+      { dgiTyNm      		:: !HsName
 %%[[20
-      , dgiConstrNmL 		:: [HsName]
+      , dgiConstrNmL 		:: ![HsName]
 %%]]
       , dgiConstrTagMp 		:: DataConstrTagMp
 %%[[8
       , dgiFldInConstrMp	:: DataFldInConstrMp
-      , dgiIsNewtype 		:: Bool
+      , dgiIsNewtype 		:: !Bool
 %%]]
       }
 
