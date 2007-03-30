@@ -2097,7 +2097,24 @@ type FilePath = String  -- file pathnames are represented by strings
 {-----------------------------
 primitive primbindIO             :: IO a -> (a -> IO b) -> IO b
 primitive primretIO              :: a -> IO a
+-----------------------------}
 
+primIO :: (() -> a) -> IO a
+primIO f
+  = IO (\_ -> letstrict x = f () in IOResult x)
+
+primbindIO :: IO a -> (a -> IO b) -> IO b
+primbindIO (IO io) f
+  = IO (\_ -> case io () of
+                IOResult x -> case f x of
+                                IO fx -> fx ()
+       )
+
+primretIO :: a -> IO a
+primretIO x
+  = IO (\_ -> IOResult x)
+
+{-----------------------------
 ioError :: IOError -> IO a
 ioError e = IO (\ s -> throw (IOException e))
 
@@ -2189,10 +2206,18 @@ readFile name    = openFile name ReadMode >>= hGetContents
 
 interact  :: (String -> String) -> IO ()
 interact f = getContents >>= (putStr . f)
+-----------------------------}
 
+{-----------------------------
 primitive stdin       :: Handle
 primitive stdout      :: Handle
 primitive stderr      :: Handle
+-----------------------------}
+foreign import ccall "primStdin"  stdin  :: Handle
+foreign import ccall "primStdout" stdout :: Handle
+foreign import ccall "primStderr" stderr :: Handle
+
+{-----------------------------
 primitive openFile    :: FilePath -> IOMode -> IO Handle
 primitive hClose      :: Handle -> IO ()
 primitive hGetContents :: Handle -> IO String
@@ -2202,11 +2227,13 @@ primitive hPutStr     :: Handle -> String -> IO ()
 
 instance Functor IO where
     fmap f x = x >>= (return . f)
+-----------------------------}
 
 instance Monad IO where
     (>>=)  = primbindIO
     return = primretIO
     
+{-----------------------------
     fail s = ioError (userError s)
 -----------------------------}
 
@@ -2237,7 +2264,7 @@ instance Eq Handle where (==) = primEqHandle
 {-----------------------------
 primitive primEqHandle :: Handle -> Handle -> Bool
 -----------------------------}
-foreign import ccall "primEqInt" primEqHandle :: Handle -> Handle -> Bool
+foreign import ccall "primEqChan" primEqHandle :: Handle -> Handle -> Bool
 
 {-----------------------------
 instance Show Handle where
@@ -2247,13 +2274,20 @@ instance Show Handle where
         2 -> showString "<stderr>"
         _ -> showString "<handle>"
 -----------------------------}
+instance Show Handle where
+    showsPrec _ h
+      = if      n == 0 then showString "<stdin>"
+        else if n == 1 then showString "<stdout>"
+        else if n == 2 then showString "<stderr>"
+        else                showString "<handle>"
+      where n = primGetHandleNumber h
 
 {-----------------------------
 primitive primGetHandleNumber :: Handle -> Int
 
 primitive unsafeCoerce "primUnsafeCoerce" :: a -> b
 -----------------------------}
-foreign import ccall "primUnsafeId" primGetHandleNumber :: Handle -> Int -- for now
+foreign import ccall "primChanNumber" primGetHandleNumber :: Handle -> Int
 foreign import ccall "primUnsafeId" unsafeCoerce :: a -> b
 
 {-----------------------------
@@ -2283,7 +2317,7 @@ fromObj = unsafeCoerce
 {-----------------------------
 newtype IO a = IO ((a -> IOResult) -> IOResult)
 -----------------------------}
-newtype IO a = IO a
+newtype IO a = IO (() -> IOResult a)
 
 {-----------------------------
 data IOResult 
@@ -2294,7 +2328,10 @@ data IOResult
   | Hugs_YieldThread IOResult
   | Hugs_Return      Obj
   | Hugs_BlockThread (Obj -> IOResult) ((Obj -> IOResult) -> IOResult) 
+-----------------------------}
+data IOResult a = IOResult a
 
+{-----------------------------
 data IOFinished a
   = Finished_ExitWith Int
   | Finished_Return   a

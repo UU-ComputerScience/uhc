@@ -43,7 +43,7 @@ pConstraint
   <|> Assume    <$ pKeyTk "Assume"    <* pOCURLY <*> pCHRPredOcc <* pCCURLY
   <|> Reduction <$ pKeyTk "Reduction" <* pOCURLY <*> pCHRPredOcc
                                       <* pCOMMA  <*> pRedHowAnnotation
-                                      <* pCOMMA  <*> pCurlySemiBlock pCHRPredOcc
+                                      <* pCOMMA  <*> pCurlyCommaBlock pCHRPredOcc
                                       <* pCCURLY
 
 pLabelOffset :: HIParser LabelOffset

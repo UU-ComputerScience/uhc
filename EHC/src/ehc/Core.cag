@@ -47,21 +47,21 @@ data RAlt
   = RAlt_Alt			{ rcaPats :: [RPat], raaExpr :: CExpr }
 
 data RPat
-  = RPat_Var			{ rcpPNm :: RPatNm }
-  | RPat_Con			{ rcpPNm :: RPatNm, rcpTag :: CTag, rcpBinds :: RPatConBind }
-  | RPat_Int			{ rcpPNm :: RPatNm, rcpInt :: Int }
-  | RPat_Char			{ rcpPNm :: RPatNm, rcpChar :: Char }
-  | RPat_Irrefutable	{ rcpPNm :: RPatNm, rcpCBindL :: [CBind] }
+  = RPat_Var			{ rcpPNm :: !RPatNm }
+  | RPat_Con			{ rcpPNm :: !RPatNm, rcpTag :: !CTag, rcpBinds :: !RPatConBind }
+  | RPat_Int			{ rcpPNm :: !RPatNm, rcpInt :: !Int }
+  | RPat_Char			{ rcpPNm :: !RPatNm, rcpChar :: !Char }
+  | RPat_Irrefutable	{ rcpPNm :: !RPatNm, rcpCBindL :: ![CBind] }
 %%[[97
-  | RPat_BoolExpr		{ rcpPNm :: RPatNm, rcpExpr :: CExpr }
+  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpExpr :: !CExpr }
 %%]]
 
 data RPatConBind
-  = RPatConBind_One		{ rpcbRest :: CPatRest, rpcbBinds :: [RPatBind] }
-  | RPatConBind_Many	{ rpcbConBinds :: [RPatConBind] }
+  = RPatConBind_One		{ rpcbRest :: !CPatRest, rpcbBinds :: ![RPatBind] }
+  | RPatConBind_Many	{ rpcbConBinds :: ![RPatConBind] }
 
 data RPatBind
-  = RPatBind_Bind		{ rpbLbl :: HsName, rpbOffset :: CExpr, rpbNm :: HsName, rpbPat :: RPat }
+  = RPatBind_Bind		{ rpbLbl :: !HsName, rpbOffset :: !CExpr, rpbNm :: !HsName, rpbPat :: !RPat }
 %%]
 
 %%[8 hs export(rcaPat,raltLPatNms)
@@ -238,8 +238,8 @@ mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`Set.member` availPoiS)
 
 %%[8 hs
 data RPatNm
-  = RPatNmOrig {rpatNmNm :: HsName}
-  | RPatNmUniq {rpatNmNm :: HsName}
+  = RPatNmOrig {rpatNmNm :: !HsName}
+  | RPatNmUniq {rpatNmNm :: !HsName}
   deriving (Ord,Eq)
 
 instance Show RPatNm where
@@ -459,7 +459,7 @@ mkCExprLetHole i b = i `CExpr_HoleLet` b
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLamLetCoe, mkLetRecCoe)
-data Coe = CoeId | Coe (CExpr -> CExpr) | CoeC CExpr | CoeImplApp ImplsVarId | CoeImplLam ImplsVarId
+data Coe = CoeId | Coe !(CExpr -> CExpr) | CoeC !CExpr | CoeImplApp !ImplsVarId | CoeImplLam !ImplsVarId
 
 coeId :: Coe
 coeId = CoeC CExpr_CoeArg

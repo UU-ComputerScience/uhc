@@ -42,6 +42,16 @@ typedef uint8_t  GB_Byte ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO Channel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+typedef struct GB_Chan {
+  FILE*		file ;
+} GB_Chan ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Node structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -165,6 +175,10 @@ typedef GB_Word GB_NodeHeader ;
 #endif
 %%]
 
+%%[98
+#define GB_NodeTag_Intl_Chan			5			// Internal node: GB_Chan
+%%]
+
 %%[8
 typedef struct GB_Node {
   GB_NodeHeader	header ;
@@ -179,6 +193,9 @@ typedef struct GB_Node {
 #if USE_GMP
     mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
 #endif
+%%]]
+%%[[98
+    GB_Chan			chan ;				/* when GB_NodeTag_Intl_Chan */
 %%]]
   } content ;
 } GB_Node, *GB_NodePtr ;
@@ -259,6 +276,11 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_mpz)
 #define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_intl)
 #endif
+%%]
+
+%%[98
+#define GB_NodeChanSize						(EntierUpDivBy(sizeof(GB_Chan),sizeof(GB_Word)) + 1)
+#define GB_MkChanHeader						GB_MkHeader(GB_NodeChanSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Chan)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -399,6 +421,8 @@ Assume that sizeof(GrWord) == sizeof(GB_Word).
 This should be ok and merged later on, but a check in it is currently part of the sanity check.
 Size must be minimal 2 words to ensure enough space for an indirection pointer (plus the usual header in front).
 
+The 'Fix' variants allocate non-collectable.
+
 %%[8
 #if USE_BOEHM_GC
 #define GB_HeapAlloc_Words(nWords)		GB_HeapAlloc_Bytes(nWords * sizeof(GB_Word))
@@ -421,6 +445,7 @@ extern void* gb_Dummy_Finalization_cd ;
 #define GB_NodeAlloc_In(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
 #define GB_NodeFixAlloc_In(nWords,n)		{ (n) = Cast(GB_NodePtr,GB_HeapFixAlloc_Words(nWords)) ; }
 #define GB_NodeAlloc_Hdr_In(nWords,h,n)		{ GB_NodeAlloc_In(nWords,n) ; (n)->header = (h) ; }
+#define GB_NodeFixAlloc_Hdr_In(nWords,h,n)	{ GB_NodeFixAlloc_In(nWords,n) ; (n)->header = (h) ; }
 %%]
 
 For finalizers boehm's gc is assumed!!!!
@@ -428,11 +453,15 @@ This breaks when compiled without bgc.
 
 %%[95
 #if USE_BOEHM_GC
+#define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
+#endif
+%%]
+
+%%[95
 #define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
 											  (n)->content.ptr = malloc(nBytes) ; \
-											  GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, (n)->content.ptr, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd) ; \
+											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
 											}
-#endif
 %%]
 
 %%[97
@@ -447,6 +476,13 @@ extern void* gb_Alloc_GMP( size_t nBytes ) ;
 extern void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes ) ;
 extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #endif
+%%]
+
+%%[98
+#define GB_NodeFixAlloc_Chan_In(n)			{ GB_NodeFixAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; }
+#define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
+											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
+											}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -694,6 +730,18 @@ extern void gb_setPC( GB_BytePtr c ) ;
 %%[96
 extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
 extern GB_Word gb_intl_primThrowException( GB_Word exc ) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO Channels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+extern GB_NodePtr gb_chan_stdin ;
+extern GB_NodePtr gb_chan_stdout ;
+extern GB_NodePtr gb_chan_stderr ;
+
+extern void gb_chan_initstd() ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -263,10 +263,9 @@ basePrfCtxtId = uidStart
 
 %%[9 hs
 data PredOccId
-  = PredOccId {poiCxId :: PrfCtxtId, poiId :: UID}
+  = PredOccId {poiCxId :: !PrfCtxtId, poiId :: !UID}
   deriving (Show,Eq,Ord)
 %%]
-  | PredOccId_Var UID
 
 %%[9 hs
 mkPrId :: PrfCtxtId -> UID -> PredOccId
@@ -367,43 +366,6 @@ mkRngProdOpt :: SemApp e => Range -> [e] -> e
 mkRngProdOpt r [e] = e
 mkRngProdOpt r es  = mkRngProd r es
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Building specific structures
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.MkConApp
-%%]
-type MkConApp t = (HsName -> t,t -> t -> t,t -> t,t -> t)
-
-%%[1.mkApp.Base
-%%]
-mkApp :: SemApp t => [t] -> t
-mkApp ts
-  =  case ts of
-       [t]  ->  t
-       _    ->  semAppTop (foldl1 semApp ts)
-
-%%[1.mkApp.mkConApp
-%%]
-mkConApp :: SemApp t => HsName -> [t] -> t
-mkConApp c ts = mkApp (semCon c : ts)
-
-%%[1.mkApp.mkProdApp
-%%]
-mkProdApp :: SemApp t => [t] -> t
-mkProdApp ts = mkConApp (hsnProd (length ts)) ts
-
-%%[7 -1.mkApp.mkProdApp
-%%]
-
-%%[1.mkApp.mkArrow
-%%]
-mk1Arrow :: SemApp t => t -> t -> t
-mk1Arrow a r = mkApp [semCon hsnArrow,a,r]
-
-mkArrow :: SemApp t => [t] -> t -> t
-mkArrow = flip (foldr mk1Arrow)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
@@ -624,8 +586,8 @@ instance PP Belowness where
 %%]
 data CTagAnn
   = CTagAnn
-      { gtannArity 		:: Int
-      , gtannMaxArity 	:: Int
+      { gtannArity 		:: !Int
+      , gtannMaxArity 	:: !Int
       }
   deriving (Eq,Ord)
 
@@ -647,7 +609,7 @@ emptyCTagAnn = mkCTagAnn 0 0
 %%[8 hs
 data CTag
   = CTagRec
-  | CTag {ctagTyNm :: HsName, ctagNm :: HsName, ctagTag' :: Int, ctagArity :: Int, ctagMaxArity :: Int}
+  | CTag {ctagTyNm :: !HsName, ctagNm :: !HsName, ctagTag' :: !Int, ctagArity :: !Int, ctagMaxArity :: !Int}
   deriving (Show,Eq,Ord)
 
 ctagTag :: CTag -> Int
@@ -687,7 +649,7 @@ instance PP CTag where
 %%[8 hs export(Unbox(..))
 data Unbox
   = Unbox_FirstField
-  | Unbox_Tag Int
+  | Unbox_Tag         !Int
   | Unbox_None
 %%]
 
@@ -718,7 +680,7 @@ ppAssocL' :: (PP k, PP v) => ([PP_Doc] -> PP_Doc) -> AssocL k v -> PP_Doc
 ppAssocL' ppL al = ppL (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
 
 ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL = ppAssocL' (pp_block "[" "]" ",")
+ppAssocL = ppAssocL' (ppBlock "[" "]" ",")
 
 ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocLV = ppAssocL' vlist
@@ -949,7 +911,7 @@ instance Ord Pos where
 
 %%[1
 data Range
-  = Range_Range    Pos Pos
+  = Range_Range    !Pos !Pos
   | Range_Unknown
   | Range_Builtin
 

@@ -43,7 +43,7 @@ SEM CmmSize
   | Many            loc . pp    = pp_brackets empty
 
 SEM CmmInitString
-  | List            loc . pp    = pp_block "{ " " }" ", " @elements.pps
+  | List            loc . pp    = ppBlock "{ " " }" ", " @elements.pps
   | String          loc . pp    = ppString @string
   | UnicodeString   loc . pp    = "unicode" >#< ppString @string
 

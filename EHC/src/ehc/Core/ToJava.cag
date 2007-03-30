@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.ToJava} import(UU.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
+%%[8 hs module {%{EH}Core.ToJava} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
 %%]
 
 %%[8.WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
@@ -68,7 +68,7 @@ jvBody cl f as d1 d2 b
   where as' = jvArgs as
 
 jvArgs :: [PP_Doc] -> PP_Doc
-jvArgs = pp_block "(" ")" ","
+jvArgs = ppBlock "(" ")" ","
 
 jvCall :: PP a => a -> [PP_Doc] -> PP_Doc
 jvCall f as = let as' = jvArgs as
@@ -94,7 +94,7 @@ jvApp f as
           else jvCall (jvCast "Eval" f >|< ".applyN") [jvTupApp as]
 
 jvTupApp :: [PP_Doc] -> PP_Doc
-jvTupApp as = "new Object[]" >-< jvInd (pp_block "{" "}" "," as)
+jvTupApp as = "new Object[]" >-< jvInd (ppBlock "{" "}" "," as)
 
 jvLam :: HsName -> [HsName] -> PP_Doc -> PP_Doc
 jvLam fNm as b

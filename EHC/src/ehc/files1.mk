@@ -90,11 +90,31 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_EH_
 # Regenerate derived makefiles
 $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk : $(SRC_EHC_PREFIX)/files-ag-s.dep $(SHUFFLE) $(EHC_AG_S_ODPDS_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
-	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-s.dep --dep --depnameprefix=EHC_ --depsrcvar=SRC_EHC_PREFIX --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX --depmainvar=EHC_AG_S_MAIN_SRC_CAG --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG --depbase=$(SRC_EHC_PREFIX) --depterm="EHRulerRules>" --depign="EHRulerRules EHRulerRules.cag" > $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
+	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-s.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_S_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_S_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_S_ODPDS_SRC_CAG \
+	  --depbase=$(SRC_EHC_PREFIX) \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
 
 $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk : $(SRC_EHC_PREFIX)/files-ag-d.dep $(SHUFFLE) $(EHC_AG_D_ODPDS_SRC_CAG) $(EHC_AG_D_MAIN_SRC_CAG)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
-	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-d.dep --dep --depnameprefix=EHC_ --depsrcvar=SRC_EHC_PREFIX --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX --depmainvar=EHC_AG_D_MAIN_SRC_CAG --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG --depbase=$(SRC_EHC_PREFIX) --depterm="EHRulerRules>" --depign="EHRulerRules EHRulerRules.cag" > $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
+	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-d.dep --dep \
+	  --depnameprefix=EHC_ \
+	  --depsrcvar=SRC_EHC_PREFIX \
+	  --depdstvar=EHC_BLD_LIB_HS_VARIANT_PREFIX \
+	  --depmainvar=EHC_AG_D_MAIN_SRC_CAG \
+	  --depdpdsvar=EHC_AG_D_DPDS_SRC_CAG \
+	  --deporigdpdsvar=EHC_AG_D_ODPDS_SRC_CAG \
+	  --depbase=$(SRC_EHC_PREFIX) \
+	  --depterm="EHRulerRules>" \
+	  --depign="EHRulerRules EHRulerRules.cag" \
+	    > $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
 
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
@@ -244,13 +264,13 @@ $(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%
 	touch $@
 
 $(EHC_AG_D_MAIN_DRV_HS) $(LIB_EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -dr $(UUAGC_OPTS_WHEN_EHC) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	$(AGC) -dr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
 
 $(EHC_AG_S_MAIN_DRV_HS) $(LIB_EHC_AG_S_MAIN_DRV_HS): %.hs: %.ag
 	$(AGC) -cfspr $(UUAGC_OPTS_WHEN_EHC) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
 
 $(EHC_AG_DS_MAIN_DRV_HS) $(LIB_EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -dcfspr $(UUAGC_OPTS_WHEN_EHC) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	$(AGC) -dcfspr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
 
 $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 	@(echo "module $(LIB_EHC_PKG_NAME).$(EHC_HS_SIG_MAIN) where" ; \

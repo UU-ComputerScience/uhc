@@ -641,3 +641,37 @@ PRIM GB_Word gb_primExitWith( GB_Word e )
 	return e ; // for now
 }
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO Channels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+PRIM GB_NodePtr gb_primStdin()
+{
+  	return gb_chan_stdin ;
+}
+
+PRIM GB_NodePtr gb_primStdout()
+{
+  	return gb_chan_stdout ;
+}
+
+PRIM GB_NodePtr gb_primStderr()
+{
+  	return gb_chan_stderr ;
+}
+
+PRIM GB_Word gb_primEqChan( GB_NodePtr c1, GB_NodePtr c2 )
+{
+	if ( fileno(c1->content.chan.file) == fileno(c2->content.chan.file) )
+		return Cast(GB_Word,gb_True) ;
+  	return Cast(GB_Word,gb_False) ;
+}
+
+PRIM GB_Word gb_primChanNumber( GB_NodePtr c )
+{
+	return GB_Int2GBInt( fileno(c->content.chan.file) ) ;
+}
+
+%%]
