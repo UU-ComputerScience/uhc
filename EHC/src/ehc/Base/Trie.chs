@@ -31,6 +31,9 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[9 import(UU.Pretty hiding (empty),EH.Util.PPUtils)
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Key into Trie
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +48,7 @@ data TrieKeyKind = TKK_Partial | TKK_Normal
   deriving (Eq, Ord)
 
 data TrieKey k
-  = TK_One      { tkKind :: TrieKeyKind, tkKey :: k }
+  = TK_One      { tkKind :: !TrieKeyKind, tkKey :: !k }
   deriving (Eq, Ord)
 
 mkTrieKeys :: [k] -> [TrieKey k]
@@ -98,7 +101,6 @@ type SubTrie k v = Map.Map k (Trie k v)
 data Trie k v
   = Trie
       { trieMbVal       :: Maybe v                  -- value
-      -- , trieMbPartial   :: Maybe (k,Trie k v)       -- partial match continuation
       , triePartSubs    :: SubTrie k v              -- partial search continuation
       , trieSubs        :: SubTrie k v              -- normal search continuation
       }
@@ -133,8 +135,6 @@ instance (PP k, PP v) => PP (Trie k v) where
 ppTrieKey :: PP k => [TrieKey k] -> PP_Doc
 ppTrieKey k = ppBracketsCommas k
 %%]
-instance PP a => PP (TrieKey a) where
-  pp = pp . show
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conversion
@@ -240,65 +240,6 @@ lookup keys = lookupByKey $ mkTrieKeys keys
 lookupResultToList :: ([v],Maybe v) -> [v]
 lookupResultToList (vs,mv) = maybeToList mv ++ vs
 %%]
-        lp subs mkRes ks     = concat [ lookupResultToList $ lookupPartialByKey' mkRes trieLookup ks psub | psub <- psubs, ks <- kss ]
-                             where kss = if List.null ks then [[]] else [[],ks]
-                                   psubs = Map.elems subs
-                                   mkRes' ks v = if List.null ks then mkResP k ks v else 
-
-lookupPartialByKey' :: Ord k => ([TrieKey k] -> v -> v') -> TrieLookup -> [TrieKey k] -> Trie k v -> ([v'],Maybe v')
-lookupPartialByKey' mkRes trieLookup keys trie
-  = l keys
-  where l  []                = ([],fmap (mkRes []) $ trieMbVal trie)
-        l  (kk@(TK_One TKK_Partial k) : ks) | trieLookup == TrieLookup_StopAtPartial
-                             = (map (\(ks,v) -> mkRes (TK_One TKK_Normal k:ks) v) $ Seq.toList $ toFastSeq True trie,Nothing)
-        l  (kk@(TK_One knd k) : ks)
-                             = case Map.lookup k $ trieSubs trie of
-                                 Just trie'
-                                   -> case trieLookup of
-                                        TrieLookup_Partial -> (lp mkRes' ks ++ p, m)
-                                        _                  -> ([], m)
-                                   where (p,m) = lookupPartialByKey' mkRes' trieLookup ks trie'
-                                 _ -> case trieLookup of
-                                        TrieLookup_Partial -> (lp mkRes' ks, Nothing)
-                                        _                  -> ([], Nothing)
-                             where mkRes' ks v = mkRes (kk : ks) v
-        lp mkRes ks          = case (trieMbPartial trie,ks) of
-                                 (Just (_,pt),[]) -> lp' [[]] pt
-                                 (Just (_,pt),_ ) -> lp' [[],ks] pt
-                                 _ -> []
-                             where lp' kss pt = concat [ lookupResultToList r | ks <- kss, let r = lookupPartialByKey' mkRes trieLookup ks pt ]
-
-lookupPartialByKey :: Ord k => Bool -> [TrieKey k] -> Trie k v -> ([v],Maybe v)
-lookupPartialByKey stopAtPartialKey keys trie
-  = l keys
-  where l  []                = ([],trieMbVal trie)
-        l  (TK_One TKK_Partial k : ks) | stopAtPartialKey
-                             = (map snd $ Seq.toList $ toFastSeq False trie,Nothing)
-        l  (TK_One _ k : ks) = case Map.lookup k $ trieSubs trie of
-                                 Just trie'
-                                   -> (lp ks ++ p, m)
-                                   where (p,m) = lookupPartialByKey stopAtPartialKey ks trie'
-                                 _ -> (lp ks, Nothing)
-        lp ks                = case (trieMbPartial trie,ks) of
-                                 (Just (_,pt),[]) -> lp' [[]] pt
-                                 (Just (_,pt),_ ) -> lp' [[],ks] pt
-                                 _ -> []
-                             where lp' kss pt = concat [ maybeToList m ++ p | ks <- kss, let (p,m) = lookupPartialByKey stopAtPartialKey ks pt ]
-
-lookupPartialByKey :: Ord k => [TrieKey k] -> Trie k v -> ([v],Maybe v)
-lookupPartialByKey keys trie
-  = l keys
-  where l  []                = ([],trieMbVal trie)
-        l  (TK_One _ k : ks) = case Map.lookup k $ trieSubs trie of
-                                 Just trie'
-                                   -> (lp ks ++ p, m)
-                                   where (p,m) = lookupPartialByKey ks trie'
-                                 _ -> (lp ks, Nothing)
-        lp ks                = case (trieMbPartial trie,ks) of
-                                 (Just (_,pt),[]) -> lp' [[]] pt
-                                 (Just (_,pt),_ ) -> lp' [[],ks] pt
-                                 _ -> []
-                             where lp' kss pt = concat [ maybeToList m ++ p | ks <- kss, let (p,m) = lookupPartialByKey ks pt ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Observation
@@ -399,13 +340,6 @@ deleteByKey keys trie
                     TKK_Normal  -> (trieSubs t,trieUpdSubs)
                     TKK_Partial -> (triePartSubs t,trieUpdPartSubs)
 %%]
-        d [TK_One TKK_Partial k] t@(Trie {trieMbPartial = Just (k',t')}) | k == k'
-          = t {trieMbPartial = Nothing}
-        d (TK_One TKK_Partial k : ks) t@(Trie {trieMbPartial = Just (k',t')}) | k == k'
-          = t {trieMbPartial = p}
-          where t'' = d ks t'
-                p   = if null t'' then Nothing else Just (k,t'')
-        d _ t = t
 
 %%[9
 deleteListByKey :: Ord k => [[TrieKey k]] -> Trie k v -> Trie k v
@@ -413,6 +347,18 @@ deleteListByKey keys trie = foldl (\t k -> deleteByKey k t) trie keys
 
 delete :: Ord k => [k] -> Trie k v -> Trie k v
 delete keys = deleteByKey $ mkTrieKeys keys
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance (ForceEval k, ForceEval v) => ForceEval (Trie k v) where
+  forceEval x = forceEval (trieMbVal x) `seq` forceEval (triePartSubs x) `seq` forceEval (trieSubs x) `seq` x
+
+instance ForceEval k => ForceEval (TrieKey k) where
+  forceEval x = forceEval (tkKey x) `seq` x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

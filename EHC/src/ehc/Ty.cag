@@ -458,7 +458,7 @@ instance SemApp Ty where
 
 %%[1.mkTyCon hs
 mkTyCon :: String -> Ty
-mkTyCon n = semCon (HNm n)
+mkTyCon n = semCon (hsnFromString n)
 %%]
 
 %%[2.mkTyVar hs

@@ -24,22 +24,25 @@ This file exists to avoid module circularities.
 %%[9 import({%{EH}Base.CfgPP})
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reduction info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(RedHowAnnotation(..))
 data RedHowAnnotation
-  =  RedHow_ByInstance    HsName  Pred  PredScope		-- inst name, for pred, in scope
-  |  RedHow_BySuperClass  HsName  Int   CTag			-- field name, offset, tag info of dict
-  |  RedHow_ProveObl      UID  PredScope
-  |  RedHow_Assumption    UID  HsName  PredScope
+  =  RedHow_ByInstance    !HsName  Pred  PredScope		-- inst name, for pred, in scope
+  |  RedHow_BySuperClass  !HsName  !Int   !CTag			-- field name, offset, tag info of dict
+  |  RedHow_ProveObl      !UID  PredScope
+  |  RedHow_Assumption    !UID  !HsName  PredScope
   |  RedHow_ByScope
 %%[[10
   |  RedHow_ByLabel       Label LabelOffset PredScope
 %%]]
 %%[[13
-  |  RedHow_Lambda        UID PredScope
+  |  RedHow_Lambda        !UID PredScope
 %%]]
   deriving (Eq, Ord)
 %%]
@@ -107,3 +110,16 @@ gathPredLToAssumeCnstrMp :: [PredOcc] -> CHRPredOccCnstrMp
 gathPredLToAssumeCnstrMp l = cnstrMpFromList [ mkAssumeConstraint (poPr po) (poId po) (poScope po) | po <- l ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance ForceEval RedHowAnnotation where
+  forceEval x@(RedHow_ByInstance   _ p sc)  = forceEval p `seq` forceEval sc `seq` x
+  forceEval x@(RedHow_ProveObl     _   sc)  = forceEval sc `seq` x
+  forceEval x@(RedHow_Assumption   _ _ sc)  = forceEval sc `seq` x
+  forceEval x@(RedHow_ByLabel      l o sc)  = forceEval l `seq` forceEval o `seq` forceEval sc `seq` x
+  forceEval x@(RedHow_Lambda       _   sc)  = forceEval sc `seq` x
+  forceEval x                               = x
+%%]

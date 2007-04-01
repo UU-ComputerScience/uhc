@@ -11,17 +11,20 @@
 %%[9 import({%{EH}Ty.Pretty})
 %%]
 
+%%[99 import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Key
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(Key(..))
 data Key
-  = Key_HNm     HsName			-- type constant, its name
-  | Key_UID     UID				-- type variable, its id, used with TKK_Partial
-  | Key_Str     String			-- arbitrary string
-  | Key_TyQu    TyQu			-- quantified type, used with TKK_Partial
-  | Key_Ty      Ty				-- catchall for the rest, used with TKK_Partial
+  = Key_HNm     !HsName			-- type constant, its name
+  | Key_UID     !UID			-- type variable, its id, used with TKK_Partial
+  | Key_Str     !String			-- arbitrary string
+  | Key_TyQu    !TyQu			-- quantified type, used with TKK_Partial
+  | Key_Ty      !Ty				-- catchall for the rest, used with TKK_Partial
   deriving (Eq,Ord)
 %%]
 
@@ -41,14 +44,12 @@ instance PP Key where
 class Keyable k where
   toKey               :: k -> [TrieKey Key]						-- the key of ...
   toKeyParentChildren :: k -> ([TrieKey Key],[TrieKey Key])		-- split up into (p,c), where key = p ++ c
-  -- toKeyUniqify        :: k -> [TrieKey Key]						-- optional additional key making toKey unique
 
   -- minimal def, mutually recursive
   toKey               x = let (p,c) = toKeyParentChildren x in p ++ c
   toKeyParentChildren x = case toKey x of
                             (h:t) -> ([h],t)
                             _     -> ([],[])
-  -- toKeyUniqify        x = []
 %%]
 
 %%[9
@@ -57,10 +58,12 @@ instance Keyable x => TrieKeyable x Key where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pretty printing
+%%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[99
+instance ForceEval Key where
+  forceEval x@(Key_Ty t) = forceEval t `seq` x
+  forceEval x            = x
 %%]
-instance PP Key where
-  pp = pp . show
+

@@ -158,13 +158,13 @@ cnstrTyLookup tv (Cnstr s) = lookup tv s
 
 %%[9 -(2.Cnstr.Base 2.cnstrTyLookup)
 data CnstrInfo v
-  = CITy v
-  | CIImpls Impls
-  | CIScope PredScope
-  | CIPred  Pred
+  = CITy     v
+  | CIImpls  Impls
+  | CIScope  !PredScope
+  | CIPred   !Pred
 %%[[10
-  | CILabel  Label
-  | CIOffset LabelOffset
+  | CILabel  !Label
+  | CIOffset !LabelOffset
   | CIExts   RowExts
 %%]]
 %%[[13
@@ -365,14 +365,14 @@ instance PP Cnstr where
 
 %%[9
 instance PP v => PP (CnstrInfo v) where
-  pp (CITy    t) = pp t
-  pp (CIImpls i) = pp i
-  pp (CIScope s) = pp s
-  pp (CIPred  p) = pp p
+  pp (CITy       t) = pp t
+  pp (CIImpls    i) = pp i
+  pp (CIScope    s) = pp s
+  pp (CIPred     p) = pp p
 %%[[10
-  pp (CILabel  x) = pp x
-  pp (CIOffset x) = pp x
-  pp (CIExts   x) = pp "exts" -- pp x
+  pp (CILabel    x) = pp x
+  pp (CIOffset   x) = pp x
+  pp (CIExts     x) = pp "exts" -- pp x
 %%]]
 %%[[13
   pp (CIPredSeq  x) = pp "predseq" -- pp x

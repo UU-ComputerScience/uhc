@@ -153,7 +153,7 @@ pGrNm           ::   GRIParser HsName
 pGrNm           =    mkHNm <$> pVarid
 
 pGrKey          ::   HsName -> GRIParser HsName
-pGrKey k        =    HNm <$> pKey (show k)
+pGrKey k        =    hsnFromString <$> pKey (show k)
 
 pId             ::   GRIParser String
 pId             =    pConid <|> pVarid

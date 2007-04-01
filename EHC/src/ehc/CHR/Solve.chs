@@ -20,6 +20,9 @@ Assumptions (to be documented further)
 %%[9 import(UU.Pretty,EH.Util.PPUtils)
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 -- For debug
 %%[9 import(EH.Util.Utils)
 %%]
@@ -34,10 +37,10 @@ type UsedByKey = (CHRKey,Int)
 
 data StoredCHR p i g s
   = StoredCHR
-      { storedChr       :: CHR (Constraint p i) g s     -- the CHR
-      , storedKeyedInx  :: Int                          -- index of constraint for which is keyed into store
-      , storedKeys      :: [Maybe CHRKey]               -- keys of all constraints; at storedKeyedInx: Nothing
-      , storedIdent     :: UsedByKey                    -- the identification of a CHR, used for propagation rules (see remark at begin)
+      { storedChr       :: !(CHR (Constraint p i) g s)   	-- the CHR
+      , storedKeyedInx  :: !Int                          	-- index of constraint for which is keyed into store
+      , storedKeys      :: ![Maybe CHRKey]               	-- keys of all constraints; at storedKeyedInx: Nothing
+      , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
 
 storedSimpSz :: StoredCHR p i g s -> Int
@@ -138,18 +141,18 @@ type WorkUsedInMap = Map.Map CHRKey (Set.Set UsedByKey)
 
 data Work p i
   = Work
-      { workCnstr   :: Constraint p i           -- the constraint to be reduced
+      { workCnstr   :: !(Constraint p i)           -- the constraint to be reduced
       -- , workUsedIn  :: Set.Set WorkKey          -- marked with the propagation rules already applied to it
       }
 
 data WorkList p i
   = WorkList
-      { wlTrie      :: Trie.Trie Key (Work p i)
-      , wlDoneSet   :: Set.Set WorkKey                  -- accumulative store of all keys added, set semantics, thereby avoiding double entry
-      , wlQueue     :: [CHRKey]
+      { wlTrie      :: !(Trie.Trie Key (Work p i))
+      , wlDoneSet   :: !(Set.Set WorkKey)                  -- accumulative store of all keys added, set semantics, thereby avoiding double entry
+      , wlQueue     :: ![CHRKey]
       -- , wlQueueSet  :: Set.Set CHRKey                    -- for fast membership test
-      , wlScanned   :: [CHRKey]                         -- tried but could not solve, so retry when other succeeds
-      , wlUsedIn    :: WorkUsedInMap                    -- which work items are used in which propagation constraints
+      , wlScanned   :: ![CHRKey]                         -- tried but could not solve, so retry when other succeeds
+      , wlUsedIn    :: !WorkUsedInMap                    -- which work items are used in which propagation constraints
       }
 
 emptyWorkList = WorkList Trie.empty Set.empty [] {- Set.empty -} [] Map.empty
@@ -206,7 +209,7 @@ data SolveStep p i g s
       , stepNewDone 	:: [Constraint p i]
       }
   | SolveDbg
-      { stepPP      :: PP_Doc
+      { stepPP      	:: PP_Doc
       }
 
 type SolveTrace p i g s = [SolveStep p i g s]
@@ -215,8 +218,8 @@ type SolveTrace p i g s = [SolveStep p i g s]
 %%[9 export(SolveState,emptySolveState)
 data SolveState p i g s
   = SolveState
-      { stWorkList      :: WorkList p i
-      , stDoneCnstrSet  :: Set.Set (Constraint p i)
+      { stWorkList      :: !(WorkList p i)
+      , stDoneCnstrSet  :: !(Set.Set (Constraint p i))
       , stTrace         :: SolveTrace p i g s
       }
 
@@ -226,12 +229,6 @@ stDoneCnstrs = Set.toList . stDoneCnstrSet
 emptySolveState :: SolveState p i g s
 emptySolveState = SolveState emptyWorkList Set.empty []
 %%]
-data SolveState p i g s
-  = SolveState
-      { stWorkList      :: WorkList p i
-      , stDoneCnstrs    :: [Constraint p i]
-      , stTrace         :: SolveTrace p i g s
-      }
 
 %%[9 export(solveStateResetDone)
 solveStateResetDone :: SolveState p i g s -> SolveState p i g s
@@ -391,3 +388,16 @@ chrSolve'' env chrStore cnstrs prevState
                   = case match chr (map workCnstr works) of
                       r@(Just s) -> Just (chr,kw,s)
                       _          -> cont
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
+  forceEval x = forceEval (storedChr x) `seq` forceEval (storedKeys x) `seq` forceEval (storedIdent x) `seq` x
+
+instance ForceEval (StoredCHR p i g s) => ForceEval (CHRStore p i g s) where
+  forceEval x = forceEval (chrstoreTrie x) `seq` x
+%%]
+

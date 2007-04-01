@@ -44,7 +44,7 @@ WRAPPER GrAGItf
 %%[8 hs
 data IsEval
   = IsEval_Eval
-  | IsEval_Apply    HsName GrValL
+  | IsEval_Apply    !HsName !GrValL
   | IsEval_None
   deriving Eq
 

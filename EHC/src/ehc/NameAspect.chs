@@ -14,6 +14,9 @@
 %%[8 import({%{EH}Base.CfgPP})
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,7 +25,7 @@
 data IdAspect
   = IdAsp_Val_Var
   | IdAsp_Val_Pat       {iaspDecl   ::  EH.Decl                         }
-  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: UID}
+  | IdAsp_Val_Fun       {iaspPatL   :: [EH.PatExpr], iaspBody :: EH.Expr, iaspUniq :: !UID}
   | IdAsp_Val_Sig       {iaspDecl   ::  EH.Decl                         }
   | IdAsp_Val_Fix
   | IdAsp_Val_Con
@@ -48,7 +51,7 @@ data IdAspect
   | IdAsp_Class_Class
   | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst :: EH.Decl}
   | IdAsp_Inst_Inst
-  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: HsName }
+  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName }
   | IdAsp_Dflt_Def      {iaspDecl   ::  EH.Decl                         }
 %%]]
   | IdAsp_Any
@@ -144,6 +147,11 @@ instance PP IdDefOcc where
 %%[[20
          >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
 %%]
+%%]
+
+%%[99
+instance ForceEval IdDefOcc where
+  forceEval x = forceEval (doccNmAlts x) `seq` x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

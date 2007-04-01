@@ -28,6 +28,9 @@ Derived from work by Gerrit vd Geest.
 %%[20 import({%{EH}Base.CfgPP})
 %%]
 
+%%[99 import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,12 +240,6 @@ instance CHRCheckable Guard Cnstr where
            then return $ vDst `cnstrScopeUnit` scDst
            else Nothing
          }
-{-
-  chrCheck (IsParentScope (PredScope_Var vDst) sc1)
-    = do { scDst <- pscpParent sc1
-         ; return $ vDst `cnstrScopeUnit` scDst
-         }
--}
   chrCheck (NotEqualScope sc1 sc2) | isJust c
     = if fromJust c /= EQ then return emptyCnstr else Nothing
     where c = pscpCmp sc1 sc2
@@ -275,5 +272,19 @@ isLetProveFailure :: (Ord v, CHRSubstitutable x v s) => Set.Set v -> x -> Bool
 isLetProveFailure glob x
   = Set.null fv
   where fv = chrFtv x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance ForceEval Guard where
+  forceEval x@(HasStrictCommonScope   sc1 sc2 sc3) = forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` x
+  forceEval x@(IsStrictParentScope    sc1 sc2 sc3) = forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` x
+  forceEval x@(IsVisibleInScope       sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
+  forceEval x@(NotEqualScope          sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
+  forceEval x@(NonEmptyRowLacksLabel  r o t l    ) = forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` x
+
 %%]
 

@@ -20,6 +20,9 @@ to avoid explosion of search space during resolution.
 %%[20 import({%{EH}Base.CfgPP})
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR, derived structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,10 +30,10 @@ to avoid explosion of search space during resolution.
 %%[9 export(CHR(..))
 data CHR cnstr guard subst
   = CHR
-      { chrHead     	:: [cnstr]
-      , chrSimpSz       :: Int			-- length of the part of the head which is the simplification part
-      , chrGuard        :: [guard] 		-- subst -> Maybe subst
-      , chrBody         :: [cnstr]
+      { chrHead     	:: ![cnstr]
+      , chrSimpSz       :: !Int				-- length of the part of the head which is the simplification part
+      , chrGuard        :: ![guard] 		-- subst -> Maybe subst
+      , chrBody         :: ![cnstr]
       }
 
 emptyCHRGuard :: [a]
@@ -149,3 +152,11 @@ hs  ==>  bs = CHR hs 0 emptyCHRGuard bs
 chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
+  forceEval x = forceEval (chrHead x) `seq` forceEval (chrGuard x) `seq` forceEval (chrBody x) `seq` x
+%%]

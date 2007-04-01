@@ -43,17 +43,6 @@ posIs1stColumn p = column p == 1
 -- PP of parse errors
 -------------------------------------------------------------------------
 
-{-
-instance (Eq s, Show s, Show p, Position p) => PP (Message s p) where
-  pp (Msg expecting position action)  
-    = ppErr ("",position)
-            (   "Expecting  :" >#< (fillblock 120 . intersperse (pp " ") . map pp $ showExp)
-                               >#< (if null omitExp then empty else pp "...")
-            >-< "Repaired by:" >#< show action
-            )
-    where (showExp,omitExp) = splitAt 20 . words $ show expecting
--}
-
 instance Position p => Position (Maybe p) where
   line   = maybe (line   noPos) line
   column = maybe (column noPos) column
@@ -73,17 +62,17 @@ instance PP Pos where
 
 data ScanOpts
   =  ScanOpts
-        {   scoKeywordsTxt      ::  [String]
-        ,   scoKeywordsOps      ::  [String]
-        ,   scoSpecChars        ::  String
-        ,   scoOpChars          ::  String
-        ,   scoSpecPairs        ::  [String]
-        ,   scoDollarIdent      ::  Bool
-        ,   scoOffsideTrigs     ::  [String]
-        ,   scoOffsideModule    ::  String
-        ,   scoOffsideOpen      ::  String
-        ,   scoOffsideClose     ::  String
-        ,   scoLitmode          ::  Bool
+        {   scoKeywordsTxt      ::  ![String]
+        ,   scoKeywordsOps      ::  ![String]
+        ,   scoSpecChars        ::  !String
+        ,   scoOpChars          ::  !String
+        ,   scoSpecPairs        ::  ![String]
+        ,   scoDollarIdent      ::  !Bool
+        ,   scoOffsideTrigs     ::  ![String]
+        ,   scoOffsideModule    ::  !String
+        ,   scoOffsideOpen      ::  !String
+        ,   scoOffsideClose     ::  !String
+        ,   scoLitmode          ::  !Bool
         }
 
 defaultScanOpts :: ScanOpts

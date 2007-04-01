@@ -41,16 +41,16 @@ type PredScopeToCBindMap = Map.Map PredScope [CBind]
 
 data ToCoreState p info
   = ToCoreState
-      { tcsMp       :: Map.Map UID ToCoreRes
-      , tcsEvMp     :: Map.Map (Evidence p info) ToCoreRes
-      , tcsUniq     :: UID
+      { tcsMp       :: !(Map.Map UID ToCoreRes)
+      , tcsEvMp     :: !(Map.Map (Evidence p info) ToCoreRes)
+      , tcsUniq     :: !UID
       }
 
 data ToCoreRes
   = ToCoreRes
-      { tcrCExpr    :: CExpr
-      , tcrUsed     :: Set.Set (UID,PredScope)
-      , tcrScope    :: PredScope
+      { tcrCExpr    :: !CExpr
+      , tcrUsed     :: !(Set.Set (UID,PredScope))
+      , tcrScope    :: !PredScope
       }
 %%]
 

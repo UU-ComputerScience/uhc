@@ -133,6 +133,9 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,7 +236,7 @@ ppUID' (UID ls) = ppCurlysCommas ls
 
 %%[7
 uidHNm :: UID -> HsName
-uidHNm = HNm . show
+uidHNm = hsnFromString . show
 %%]
 
 %%[7
@@ -577,30 +580,6 @@ instance PP Belowness where
   pp NotBelow     = pp "B-"
   pp UnknownBelow = pp "B?"
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tag annotation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-data CTagAnn
-  = CTagAnn
-      { gtannArity 		:: !Int
-      , gtannMaxArity 	:: !Int
-      }
-  deriving (Eq,Ord)
-
-instance Show CTagAnn where
-  show (CTagAnn a ma) = "{" ++ show a ++ "," ++ show ma ++ "}"
-
-ppCTagAnn :: CTagAnn -> PP_Doc
-ppCTagAnn = pp . show
-
-mkCTagAnn :: Int -> Int -> CTagAnn
-mkCTagAnn = CTagAnn
-
-emptyCTagAnn = mkCTagAnn 0 0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tags (of data)
@@ -1019,7 +998,7 @@ tokMkStr = genTokVal
 
 %%[1.tokMkQName hs
 tokMkQName :: Token -> HsName
-tokMkQName = HNm . genTokVal
+tokMkQName = hsnFromString . genTokVal
 %%]
 
 %%[7 -1.tokMkQName hs
@@ -1050,7 +1029,7 @@ hsnLclSupplyWith :: HsName -> [HsName]
 hsnLclSupplyWith n = map (\i -> hsnSuffix n $ "_" ++ show i) [1..]
 
 hsnLclSupply :: [HsName]
-hsnLclSupply = hsnLclSupplyWith (HNm "")
+hsnLclSupply = hsnLclSupplyWith (hsnFromString "")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1073,5 +1052,18 @@ data Backend
   = BackendGrinByteCode
   | BackendSilly
   deriving (Eq, Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance ForceEval HsName
+instance ForceEval CTag
+instance ForceEval IdOcc
+
+instance ForceEval UID where
+  forceEval x@(UID l) = forceEval l `seq` x
 %%]
 

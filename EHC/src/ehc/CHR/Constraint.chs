@@ -14,15 +14,18 @@
 %%[20 import({%{EH}Base.CfgPP})
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(Constraint(..))
 data Constraint p info
-  = Prove      		{ cnstrPred :: p }														-- proof obligation
-  | Assume     		{ cnstrPred :: p }														-- assumed
-  | Reduction  		{ cnstrPred :: p, cnstrInfo :: info, cnstrFromPreds :: [p] }			-- 'side effect', residual info used by (e.g.) codegeneration
+  = Prove      		{ cnstrPred :: !p }														-- proof obligation
+  | Assume     		{ cnstrPred :: !p }														-- assumed
+  | Reduction  		{ cnstrPred :: !p, cnstrInfo :: !info, cnstrFromPreds :: ![p] }			-- 'side effect', residual info used by (e.g.) codegeneration
   deriving (Eq, Ord, Show)
 %%]
 
@@ -114,4 +117,16 @@ instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
   ppForHI (Assume    p     ) = "Assume"    >#< ppCurlysCommasBlock [ppForHI p]
   ppForHI (Reduction p i ps) = "Reduction" >#< ppCurlysCommasBlock [ppForHI p, ppForHI i, ppCurlysCommasBlock $ map ppForHI ps]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
+  forceEval x@(Prove     p     ) = forceEval p `seq` x
+  forceEval x@(Assume    p     ) = forceEval p `seq` x
+  forceEval x@(Reduction p i ps) = forceEval p `seq` forceEval i `seq` forceEval ps `seq` x
+%%]
+
 

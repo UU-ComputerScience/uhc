@@ -27,15 +27,15 @@
 %%[1
 data Version
   = Version
-      { verSvn              :: String
-      , verMajor            :: String
-      , verMinor            :: String
-      , verMinorMinor       :: String
-      , verQuality          :: String
-      , verProg             :: String
+      { verSvn              :: !String
+      , verMajor            :: !String
+      , verMinor            :: !String
+      , verMinorMinor       :: !String
+      , verQuality          :: !String
+      , verProg             :: !String
 %%[[20
-      , verTimestamp        :: String
-      , verSig              :: String
+      , verTimestamp        :: !String
+      , verSig              :: !String
 %%]
       }
 %%]

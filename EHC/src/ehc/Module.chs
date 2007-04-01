@@ -45,7 +45,7 @@ data ModEnt
   = ModEnt
       { mentKind    :: !IdOccKind
       , mentIdOcc   :: !IdOcc
-      , mentOwns    :: Set.Set ModEnt
+      , mentOwns    :: !(Set.Set ModEnt)
       }
   deriving (Show)
 
@@ -127,7 +127,7 @@ data ModImp
       , mimpSource      :: !HsName
       , mimpAs          :: !HsName
       , mimpHiding      :: !Bool
-      , mimpImpL        :: [ModEntSpec]
+      , mimpImpL        :: ![ModEntSpec]
       }
   deriving (Show)
 
@@ -176,10 +176,10 @@ data Mod
   = Mod
       { modName         :: !HsName
       , modNameInSrc    :: !(Maybe HsName)
-      , modExpL         :: Maybe [ModExp]
-      , modImpL         :: [ModImp]
-      , modDefs         :: ModEntRel
-      , modInstNmL      :: [HsName]
+      , modExpL         :: !(Maybe [ModExp])
+      , modImpL         :: ![ModImp]
+      , modDefs         :: !ModEntRel
+      , modInstNmL      :: ![HsName]
       }
   deriving (Show)
 

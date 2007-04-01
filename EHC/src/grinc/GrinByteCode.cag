@@ -53,9 +53,9 @@ Constants
 
 %%[8 hs export(Const(..))
 data Const
-  = Const_Str           { constInx :: Int }
-  | Const_CFunction     { constCFunNm :: String }
-  | Const_CallInfo      { constCINm :: String }		-- used only in ToC
+  = Const_Str           { constInx    :: !Int    }
+  | Const_CFunction     { constCFunNm :: !String }
+  | Const_CallInfo      { constCINm   :: !String }		-- used only in ToC
 %%[[20
   | Const_ImpNode
 %%]]
@@ -82,8 +82,8 @@ data LinkTbl
 
 data Link
   = Link
-      { linkTbl :: LinkTbl
-      , linkVal :: Int
+      { linkTbl :: !LinkTbl
+      , linkVal :: !Int
       }
   deriving Show
 %%]
@@ -136,8 +136,8 @@ type MbStrInx = Maybe Int
 
 data CallInfo
   = CallInfo
-      { ciKind			:: CallInfoKind
-      , ciMbNmStrInx	:: MbStrInx					-- index of string, if any
+      { ciKind			:: !CallInfoKind
+      , ciMbNmStrInx	:: !MbStrInx					-- index of string, if any
       }
   deriving(Eq,Ord,Show)
 
@@ -173,7 +173,7 @@ mkCIApply = mkCI CallInfoKind_Apply
 %%[8 hs export(OptimCtxt(..),defaultOptimCtxt)
 data OptimCtxt
   = OptimCtxt
-      { ocxOmitTOSLd        :: Bool
+      { ocxOmitTOSLd        :: !Bool
       }
 
 defaultOptimCtxt :: OptimCtxt
@@ -251,10 +251,10 @@ nmEnvLookup nm env
 %%[8 hs export(LoadSrc(..))
 data LoadSrc
   = LoadSrc_TOS
-  | LoadSrc_Imm         { ldsrcImm      :: Integer      }
-  | LoadSrc_Imm_Int     { ldsrcImm      :: Integer      }
-  | LoadSrc_TOS_Rel     { ldsrcOff      :: StackDepth   }
-  | LoadSrc_Reg_Rel     { ldsrcOff      :: StackDepth   }
+  | LoadSrc_Imm         { ldsrcImm      :: !Integer      }
+  | LoadSrc_Imm_Int     { ldsrcImm      :: !Integer      }
+  | LoadSrc_TOS_Rel     { ldsrcOff      :: !StackDepth   }
+  | LoadSrc_Reg_Rel     { ldsrcOff      :: !StackDepth   }
   deriving (Show)
 
 ldsrc2ins' :: (Instr -> Instr) -> LoadSrc -> (InsSeq,StackDepth)
@@ -273,9 +273,9 @@ ldsrc2ins = ldsrc2ins' id
 %%[8 hs export(Load(..))
 data Load
   = Load
-      { ldPreIns        :: InsSeq
-      , ldPreStackInc   :: StackDepth
-      , ldPreLoc        :: LoadSrc
+      { ldPreIns        :: !InsSeq
+      , ldPreStackInc   :: !StackDepth
+      , ldPreLoc        :: !LoadSrc
       }
 %%]
 
@@ -328,10 +328,10 @@ nmLd optim env modNmConstInx stkDepth nm
 
 %%[8 hs export(GrValIntro(..),GrValIntroAlt(..))
 data GrValIntro
-  = GrValIntro_Nm    HsName
-  | GrValIntro_Int   Integer
-  | GrValIntro_Str   String Link
-  | GrValIntro_Grp   GrTag [GrValIntro]
+  = GrValIntro_Nm    !HsName
+  | GrValIntro_Int   !Integer
+  | GrValIntro_Str   !String !Link
+  | GrValIntro_Grp   !GrTag ![GrValIntro]
   | GrValIntro_None
 
 data GrValIntroAlt
