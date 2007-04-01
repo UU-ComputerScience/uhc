@@ -13,7 +13,7 @@
 %%[20 hs import({%{EH}Module},{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
 %%]
 
-%%[20 hs import(qualified Data.Map as Map,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
+%%[20 hs import(qualified Data.Map as Map,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
 %%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings)
@@ -22,15 +22,57 @@
 %%[20 ag import({HI/AbsSyn})
 %%]
 
+%%[99 hs import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% HI info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 hs export(HIInfo(..), emptyHIInfo)
+data HIInfo
+  = HIInfo
+      { hiiModEntRel		:: !ModEntRel
+      , hiiFixityGam		:: !FixityGam
+      , hiiIdDefOccGam		:: !IdDefOccGam
+      , hiiValGam			:: !ValGam
+      , hiiTyGam			:: !TyGam
+      , hiiDataGam			:: !DataGam
+      , hiiPrIntroGam		:: !Pr.PrIntroGam
+      , hiiCHRStore			:: !ScopedPredStore
+      , hiiCArityMp			:: !CArityMp
+      , hiiGrInlMp			:: !GrInlMp
+      }
+
+emptyHIInfo :: HIInfo
+emptyHIInfo = HIInfo Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs export(hiFromAllGams)
+%%[20 hs export(hiFromHIInfo)
+hiFromHIInfo :: HIInfo -> Seq.FastSeq Binding
+hiFromHIInfo i
+  = hiFromAllGams
+      (hiiModEntRel 	i)
+      (hiiFixityGam 	i)
+      (hiiIdDefOccGam 	i)
+      (hiiValGam	 	i)
+      (hiiTyGam	 		i)
+      (hiiDataGam	 	i)
+      (hiiPrIntroGam 	i)
+      (hiiCHRStore	 	i)
+      (hiiCArityMp	 	i)
+      (hiiGrInlMp	 	i)
+%%]
+
+%%[20 hs
 hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> Seq.FastSeq Binding
 hiFromGam mk g = Seq.fromList [ mk n v | (n,v) <- gamToAssocL g ]
 
@@ -59,6 +101,14 @@ hiFromAllGams exps fg idg vg tg dg ig chrStore arityMp inlMp
                     ) dg
     Seq.:++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (Pr.pigiRuleTy pigi) (Pr.pigiRuleNmEvid pigi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs
+instance ForceEval HIInfo
 %%]
 
 

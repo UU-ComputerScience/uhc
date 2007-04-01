@@ -30,6 +30,21 @@
 %%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Alternative impl via 
+
+--------
+qualified Data.ByteString.Char8 as BS
+
+  =   HNm   !BS.ByteString
+
+hsnFromString :: String -> HsName
+hsnFromString = HNm . BS.pack
+
+hsnHNmFldToString :: BS.ByteString -> String
+hsnHNmFldToString = BS.unpack
+--------
+is not faster
+
 %%[1.HsName.type
 data HsName
   =   HNm String
@@ -39,6 +54,16 @@ instance Show HsName where
   show (HNm s) = s
 %%]
 
+%%[1.hsnFromString export(hsnFromString)
+hsnFromString :: String -> HsName
+hsnFromString = HNm
+%%]
+
+%%[1.hsnHNmFldToString export(hsnHNmFldToString)
+hsnHNmFldToString :: String -> String
+hsnHNmFldToString = id
+%%]
+
 %%[1
 instance PP HsName where
   pp h = pp (show h)
@@ -46,7 +71,9 @@ instance PP HsName where
 
 %%[7.HsName.type -1.HsName.type
 data HsName
+%%[[7
   =   HNm   !String
+%%]]
   |   HNPos !Int
 %%]
 %%[8
@@ -61,10 +88,10 @@ data HsName
 
 %%[7
 hsnShow :: String -> HsName -> String
-hsnShow _   (HNm s    )  = s
+hsnShow _   (HNm s    )  = hsnHNmFldToString s
 hsnShow _   (HNPos p  )  = show p
 %%[[8
-hsnShow _ (HNmNr n _)  = "x_" ++ show n
+hsnShow _   (HNmNr n _)  = "x_" ++ show n
 %%]]
 %%[[20
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
@@ -87,7 +114,9 @@ hsnToList :: HsName -> [HsName]
 hsnToList (HNmQ ns) = ns
 %%]
 hsnToList n         = [n]
+%%]
 
+%%[5
 hsnInitLast :: HsName -> ([HsName],HsName)
 hsnInitLast = maybe (panic "hsnInitLast") id . initlast . hsnToList
 %%]
@@ -96,12 +125,12 @@ hsnInitLast = maybe (panic "hsnInitLast") id . initlast . hsnToList
 hsnPrefix                           ::  String -> HsName -> HsName
 hsnPrefix   p   hsn
   = case hsnInitLast hsn of
-      (ns,n) -> mkHNm (ns,HNm (p ++ show n))
+      (ns,n) -> mkHNm (ns,hsnFromString (p ++ show n))
 
 hsnSuffix                           ::  HsName -> String -> HsName
 hsnSuffix       hsn   p
   = case hsnInitLast hsn of
-      (ns,n) -> mkHNm (ns,HNm (show n ++ p))
+      (ns,n) -> mkHNm (ns,hsnFromString (show n ++ p))
 
 mkHNmPrefix :: HSNM x => String -> x -> HsName
 mkHNmPrefix p = hsnPrefix p . mkHNm
@@ -153,20 +182,23 @@ charAlphanumeric  c  | isDigit c = [c]
                      | otherwise = error ("no alphanumeric representation for " ++ show c)
 
 %%[8
-
 dontStartWithDigit :: String -> String
 dontStartWithDigit xs | isDigit(head xs) = "y"++xs
                       | otherwise        = xs
 
 hsnAlphanumeric :: HsName -> HsName
-hsnAlphanumeric (HNm s) = HNm (dontStartWithDigit(stringAlphanumeric s))
-hsnAlphanumeric (HNPos p) = HNm ("y"++show p)
---hsnAlphanumeric (HNmNr n mbOrig) = HNm ("x"++show n)
-hsnAlphanumeric (HNmNr n Nothing) = HNm ("x"++show n)
+%%[[8
+hsnAlphanumeric (HNm s) = hsnFromString (dontStartWithDigit(stringAlphanumeric s))
+%%][99
+hsnAlphanumeric (HNm s) = hsnFromString (dontStartWithDigit(stringAlphanumeric $ hsnHNmFldToString s))
+%%]]
+hsnAlphanumeric (HNPos p) = hsnFromString ("y"++show p)
+--hsnAlphanumeric (HNmNr n mbOrig) = hsnFromString ("x"++show n)
+hsnAlphanumeric (HNmNr n Nothing) = hsnFromString ("x"++show n)
 hsnAlphanumeric (HNmNr n (Just orig)) = hsnAlphanumeric orig
 %%]
 %%[20
-hsnAlphanumeric (HNmQ ns) = HNm $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)
+hsnAlphanumeric (HNmQ ns) = hsnFromString $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)
 %%]
 
 %%[8
@@ -182,7 +214,7 @@ instance FPATH HsName where
 -- replace this by something better, taking into account qualifiers
 %%[10
 hsnConcat                           ::  HsName -> HsName -> HsName
-hsnConcat       h1    h2            =   HNm (show h1 ++ show h2)
+hsnConcat       h1    h2            =   hsnFromString (show h1 ++ show h2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -242,13 +274,13 @@ instance HSNM Int where
 
 %%[1.HSNM.String
 instance HSNM String where
-  mkHNm s = HNm s
+  mkHNm s = hsnFromString s
 %%]
 
 %%[8.HSNM.String -1.HSNM.String
 instance HSNM String where
   mkHNm s
-    = mkHNm $ map HNm $ ws'
+    = mkHNm $ map hsnFromString $ ws'
     where ws  = wordsBy (=='.') s
           ws' = case initlast2 ws of
                   Just (ns,"","") -> ns ++ ["."]
@@ -261,7 +293,7 @@ instance HSNM ([HsName],HsName) where
 
 instance HSNM [HsName] where
   mkHNm [n] = n
-  mkHNm []  = HNm "" -- ????, or empty alternative of HsName
+  mkHNm []  = hsnFromString "" -- ????, or empty alternative of HsName
 %%[[20
   mkHNm ns  = HNmQ ns
 %%]

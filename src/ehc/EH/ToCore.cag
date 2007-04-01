@@ -232,7 +232,7 @@ SEM Expr
                                                                           | dti <- @dtiInFldL
                                                                           ]
                                                                    err = [CBind_Bind en (cerror @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
-                                                                   en = HNm "_upd_error"
+                                                                   en = mkHNm "_upd_error"
                             .   cexpr       =   @dfexpr
 %%]
 
@@ -283,7 +283,7 @@ ATTR AllDataConstr [ dataAltTy: Ty | | ]
 
 SEM DataConstr
   | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
-                                                    nms = map (\i -> HNm ("x" ++ show i)) [1..len]
+                                                    nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
                                                 in  if @lhs.isNewtype
                                                     then [ CBind_Bind @conNm (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts) ]
                                                     else [ CBind_Bind @conNm
@@ -523,7 +523,7 @@ cdictOffset n r = tyRecOffset n $ r
 
 %%[9
 SEM Decl
-  | Class       lhs         .   cbindL      =   let  x = HNm "x"
+  | Class       lhs         .   cbindL      =   let  x = mkHNm "x"
                                                      vx = CExpr_Var x
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict

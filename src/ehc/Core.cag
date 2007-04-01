@@ -44,7 +44,7 @@ DERIVING *     : Show, Eq
 
 %%[8 hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
 data RAlt
-  = RAlt_Alt			{ rcaPats :: [RPat], raaExpr :: CExpr }
+  = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !CExpr }
 
 data RPat
   = RPat_Var			{ rcpPNm :: !RPatNm }
@@ -197,42 +197,6 @@ cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bindings using a pred
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 hs
-%%]
-newtype CxBindLMap = CxBindLMap (Map.Map PredOccId [(CBind,PredOccId,Set.Set PredOccId)])
-
-emptyCxBindLMap = CxBindLMap Map.empty
-
-infixr `plusCxBM`
-
-plusCxBM :: CxBindLMap -> CxBindLMap -> CxBindLMap
-plusCxBM (CxBindLMap m1) (CxBindLMap m2) = CxBindLMap (m2 `Map.union` m1)
-
-cxbmDpdPoiS :: CxBindLMap -> PredOccId -> Set.Set PredOccId
-cxbmDpdPoiS (CxBindLMap m) poi = maybe Set.empty (Set.unions . map thd) (Map.lookup poi m) `Set.union` Set.singleton poi
-
-cxbmIntroPoiL :: CxBindLMap -> [PredOccId]
-cxbmIntroPoiL (CxBindLMap m) = nub [ i | l <- Map.elems m, (_,i,_) <- l ]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bindings using a pred
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 hs
-%%]
-mkCxBindLForPoiL' :: (PredOccId -> Bool) -> CxBindLMap -> [PredOccId] -> CBindL
-mkCxBindLForPoiL' isAvailPoi (CxBindLMap m) inclPoiL
-  = cbindLNub [ b | i <- inclPoiL, bs <- maybeToList (Map.lookup i m), (b,_,dpd) <- bs, all isAvailPoi . Set.toList $ dpd ]
-
-%%[9 hs
-%%]
-mkCxBindLForPoiL :: Set.Set PredOccId -> CxBindLMap -> [PredOccId] -> CBindL
-mkCxBindLForPoiL availPoiS = mkCxBindLForPoiL' (`Set.member` availPoiS)
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name of a pattern var/con
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -278,7 +242,7 @@ mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_V
 
 %%[8 hs
 mkCMod :: CExpr -> CModule
-mkCMod e = CModule_Mod (HNm "") e []
+mkCMod e = CModule_Mod (hsnFromString "") e []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

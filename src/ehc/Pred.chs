@@ -28,6 +28,9 @@
 %%[15 export(ClsFuncDep(..))
 %%]
 
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,5 +72,9 @@ initPIGIGam
   = assocLToGam
       [ (hsnPrArrow,    emptyPIGI)
       ]
+%%]
+
+%%[99
+instance ForceEval PrIntroGamInfo
 %%]
 

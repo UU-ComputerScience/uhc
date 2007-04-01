@@ -30,9 +30,9 @@ import Directory
 
 data FPath
   = FPath
-      { fpathMbDir      :: Maybe String
-      , fpathBase       ::       String
-      , fpathMbSuff     :: Maybe String
+      { fpathMbDir      :: !(Maybe  String)
+      , fpathBase       ::         !String
+      , fpathMbSuff     :: !(Maybe  String)
       }
     deriving (Show,Eq,Ord)
 

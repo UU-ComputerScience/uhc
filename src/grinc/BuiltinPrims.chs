@@ -21,7 +21,7 @@ Ideally, these tables should be merged.
 
 data Primitive
   = GbPrim    
-      { gbprimNrArgs        :: Int
+      { gbprimNrArgs        :: !Int
       , gbprimMk            :: OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
       }
   | SillyPrim 

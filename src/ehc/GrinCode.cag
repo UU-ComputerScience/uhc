@@ -52,8 +52,8 @@ DERIVING *     : Show, Eq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-hsnGrApply  = HNm "!apply"
-hsnGrEval   = HNm "!eval"
+hsnGrApply  = mkHNm "!apply"
+hsnGrEval   = mkHNm "!eval"
 
 grBuiltinTyNmL opts = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames opts ] ++ map hsnProd (0:[2..10])
 %%]
@@ -245,3 +245,5 @@ mkGrPatConSplit ann i nm = GrPatAlt_NodeSplit (GrTag_Con ann i nm)
 mkGrPatRecSplit :: HsName -> GrSplitL -> GrPatAlt
 mkGrPatRecSplit  = GrPatAlt_NodeSplit GrTag_Rec
 %%]
+
+

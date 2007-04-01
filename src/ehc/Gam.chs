@@ -79,6 +79,9 @@
 %%[20 export(idDefOccGamByKind)
 %%]
 
+%%[99 import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -403,7 +406,7 @@ type ErrGam = Gam HsName ErrL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-data FixityGamInfo = FixityGamInfo { fgiPrio :: Int, fgiFixity :: Fixity } deriving Show
+data FixityGamInfo = FixityGamInfo { fgiPrio :: !Int, fgiFixity :: !Fixity } deriving Show
 
 defaultFixityGamInfo = FixityGamInfo fixityMaxPrio Fixity_Infixl
 %%]
@@ -647,7 +650,7 @@ tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
 data DataFldInfo
   = DataFldInfo
 %%[[8
-      { dfiOffset 	:: Int
+      { dfiOffset 	:: !Int
       }
 %%]]
       deriving Show
@@ -665,12 +668,12 @@ emptyDataFldInfo
 data DataTagInfo
   = DataTagInfo
       { dtiFldMp    		:: DataFldMp
-      , dtiConNm			:: HsName
+      , dtiConNm			:: !HsName
 %%[[8
-      , dtiCTag 			:: CTag
+      , dtiCTag 			:: !CTag
 %%]]
 %%[[95
-      , dtiMbFixityPrio 	:: Maybe Int
+      , dtiMbFixityPrio 	:: !(Maybe Int)
 %%]]
       } deriving Show
 
@@ -907,13 +910,6 @@ instance Substitutable TyGamInfo TyVarId Cnstr where
   ftv   tgi         =   ftv (tgiKi tgi)
 %%]
 
-%%[9
-%%]
-gamSubstTop :: (Ord k,Substitutable vv k subst) => subst -> Gam k vv -> Gam k vv
-gamSubstTop s g
-  =  let  (h,t) = gamPop g
-     in   gamPushGam (s |=> h) t
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -927,11 +923,6 @@ ppGam g = ppAssocL (gamToAssocL g)
 ppGamDup :: (Ord k,PP k, PP v) => Gam k v -> PP_Doc
 ppGamDup g = ppAssocL $ map (\(k,v) -> (k,ppBracketsCommas v)) $ gamToAssocDupL $ g
 %%]
-
-%%[9.ppTGam
-%%]
-ppTGam :: (Ord i, PP k, PP v) => i -> TreeGam i k v -> PP_Doc
-ppTGam i g = ppAssocL (tgamToAssocL i g)
 
 %%[1.PP.Gam
 instance (PP k, PP v) => PP (Gam k v) where
@@ -956,6 +947,42 @@ instance PP TyGamInfo where
 %%[6.PP.TyGamInfo -4.PP.TyGamInfo
 instance PP TyGamInfo where
   pp tgi = ppTy (tgiTy tgi) >|< "/" >|< ppTy (tgiKi tgi)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+instance ForceEval v => ForceEval (LGamElt v) where
+  forceEval x = lgeLev x `seq` forceEval (lgeVal x) `seq` x
+
+instance (ForceEval k, ForceEval v) => ForceEval (LGam k v) where
+  forceEval x = lgLev x `seq` forceEval (lgMap x) `seq` x
+%%]
+
+%%[99
+instance ForceEval ValGamInfo where
+  forceEval x = forceEval (vgiTy x) `seq` x
+
+instance ForceEval KiGamInfo where
+  forceEval x = forceEval (kgiKi x) `seq` x
+
+instance ForceEval TyGamInfo where
+  forceEval x = forceEval (tgiTy x) `seq` forceEval (tgiKi x) `seq` forceEval (tgiDataTy x) `seq` x
+
+instance ForceEval DataFldInfo
+
+instance ForceEval DataTagInfo where
+  forceEval x = forceEval (dtiFldMp x) `seq` forceEval (dtiMbFixityPrio x) `seq` x
+
+instance ForceEval DataFldInConstr where
+  forceEval x = forceEval (dficInTagMp x) `seq` x
+
+instance ForceEval DataGamInfo where
+  forceEval x = forceEval (dgiConstrNmL x) `seq` forceEval (dgiConstrTagMp x) `seq` forceEval (dgiFldInConstrMp x) `seq` x
+
+instance ForceEval FixityGamInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

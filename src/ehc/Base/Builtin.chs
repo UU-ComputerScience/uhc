@@ -60,21 +60,25 @@ hsnProdArity                        ::  HsName -> Int
 %%]
 
 %%[1.HsName.Base.impl
-hsnArrow                            =   HNm "->"
-hsnUnknown                          =   HNm "??"
-hsnInt                              =   HNm "Int"
-hsnChar                             =   HNm "Char"
-hsnWild                             =   HNm "_"
+hsnArrow                            =   hsnFromString "->"
+hsnUnknown                          =   hsnFromString "??"
+hsnInt                              =   hsnFromString "Int"
+hsnChar                             =   hsnFromString "Char"
+hsnWild                             =   hsnFromString "_"
 strProd         i                   =   ',' : show i
-hsnProd                             =   HNm . strProd
+hsnProd                             =   hsnFromString . strProd
 
 hsnIsArrow, hsnIsProd               ::  HsName -> Bool
 hsnIsArrow      hsn                 =   hsn == hsnArrow
 
-hsnIsProd       (HNm (',':_))       =   True
+hsnIsProd       (HNm s)             =   case hsnHNmFldToString s of
+                                          (',':_) -> True
+                                          _       -> False
 hsnIsProd       _                   =   False
 
-hsnProdArity    (HNm (_:ar))        =   read ar
+hsnProdArity    (HNm s)             =   case hsnHNmFldToString s of
+                                          (_:ar) -> read ar
+                                          _      -> 0
 %%]
 
 %%[3.strHiddenPrefix export(hsnStrHiddenPrefix)
@@ -100,7 +104,7 @@ strFldUpd                           =   hsnStrHiddenPrefix ++ "upd_"
 
 %%[3.hsnUn
 hsnUn                               ::  HsName -> HsName
-hsnUn           nm                  =   HNm (strUn ++ show nm)
+hsnUn           nm                  =   hsnFromString (strUn ++ show nm)
 %%]
 
 %%[20 -3.hsnUn
@@ -110,31 +114,31 @@ hsnUn           nm                  =   strUn `hsnPrefix` nm
 
 %%[3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
-hsnIsUn         (HNm s)             =   isPrefixOf strUn s
+hsnIsUn         (HNm s)             =   isPrefixOf strUn $ hsnHNmFldToString s
 %%]
 
 %%[20 -3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         hsn
   = case hsnInitLast hsn of
-      (_,HNm s) -> isPrefixOf strUn s
+      (_,HNm s) -> isPrefixOf strUn $ hsnHNmFldToString s
 %%]
 
 %%[3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
-hsnUnUn         (HNm s)             =   HNm (drop (length strUn) s)
+hsnUnUn         (HNm s)             =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
 %%]
 
 %%[20 -3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
-      (ns,HNm s) -> mkHNm (ns,HNm (drop (length strUn) s))
+      (ns,HNm s) -> mkHNm (ns,hsnFromString $ drop (length strUn) $ hsnHNmFldToString s)
 %%]
 
 %%[7.hsnFldUpd
 hsnFldUpd                           ::  HsName -> HsName
-hsnFldUpd       nm                  =   HNm (strFldUpd ++ show nm)
+hsnFldUpd       nm                  =   hsnFromString (strFldUpd ++ show nm)
 %%]
 
 %%[20 -7.hsnFldUpd
@@ -147,25 +151,25 @@ hsnIsList       hsn                 =   hsn == hsnDataList
 %%]
 
 %%[6
-hsnStar                             =   HNm "*"
+hsnStar                             =   hsnFromString "*"
 %%]
 
-hsnORow                             =   HNm "(|"
-hsnCRow                             =   HNm "|)"
-hsnOSum                             =   HNm "(<"
-hsnCSum                             =   HNm ">)"
+hsnORow                             =   hsnFromString "(|"
+hsnCRow                             =   hsnFromString "|)"
+hsnOSum                             =   hsnFromString "(<"
+hsnCSum                             =   hsnFromString ">)"
 %%[7
-hsnORow                             =   HNm "{|"
-hsnCRow                             =   HNm "|}"
-hsnOSum                             =   HNm "{<"
-hsnCSum                             =   HNm ">}"
-hsnORec                             =   HNm "("
-hsnCRec                             =   HNm ")"
+hsnORow                             =   hsnFromString "{|"
+hsnCRow                             =   hsnFromString "|}"
+hsnOSum                             =   hsnFromString "{<"
+hsnCSum                             =   hsnFromString ">}"
+hsnORec                             =   hsnFromString "("
+hsnCRec                             =   hsnFromString ")"
 
-hsnRow                              =   HNm (hsnStrSpecialPrefix ++ "Row")
-hsnRec                              =   HNm (hsnStrSpecialPrefix ++ "Rec")
-hsnSum                              =   HNm (hsnStrSpecialPrefix ++ "Var")
-hsnRowEmpty                         =   HNm (show hsnORow ++ show hsnCRow)
+hsnRow                              =   hsnFromString (hsnStrSpecialPrefix ++ "Row")
+hsnRec                              =   hsnFromString (hsnStrSpecialPrefix ++ "Rec")
+hsnSum                              =   hsnFromString (hsnStrSpecialPrefix ++ "Var")
+hsnRowEmpty                         =   hsnFromString (show hsnORow ++ show hsnCRow)
 
 hsnIsRec, hsnIsSum, hsnIsRow        ::  HsName -> Bool
 hsnIsRec        hsn                 =   hsn == hsnRec
@@ -177,7 +181,7 @@ positionalFldNames                  =   map HNPos [1..]
 %%]
 
 %%[8
-hsnMain                             =   HNm "main"
+hsnMain                             =   hsnFromString "main"
 %%]
 
 %%[8
@@ -189,7 +193,8 @@ constructorInitial '(' = True
 constructorInitial c   = isUpper c
 
 hsnIsConstructorName :: HsName -> Bool
-hsnIsConstructorName (HNm (x:xs)) = constructorInitial x
+hsnIsConstructorName (HNm s  ) = case hsnHNmFldToString s of
+                                   (x:xs) -> constructorInitial x
 hsnIsConstructorName (HNPos n) = False
 %%]
 %%[20
@@ -203,12 +208,12 @@ hsnIsConstructorName (HNmQ hs) = hsnIsConstructorName (last hs)
 
 
 
-hsnOImpl                            =   HNm "(!"
-hsnCImpl                            =   HNm "!)"
+hsnOImpl                            =   hsnFromString "(!"
+hsnCImpl                            =   hsnFromString "!)"
 %%[9
-hsnOImpl                            =   HNm "{!"
-hsnCImpl                            =   HNm "!}"
-hsnPrArrow                          =   HNm "=>"
+hsnOImpl                            =   hsnFromString "{!"
+hsnCImpl                            =   hsnFromString "!}"
+hsnPrArrow                          =   hsnFromString "=>"
 
 hsnIsPrArrow                        ::  HsName -> Bool
 hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
@@ -216,11 +221,11 @@ hsnIsUnknown                        =   (==hsnUnknown)
 %%]
 
 %%[10 export(hsnDynVar)
-hsnDynVar                           =   HNm "?"
+hsnDynVar                           =   hsnFromString "?"
 %%]
 
 %%[97 export(hsnInteger)
-hsnInteger                          =   HNm "Integer"
+hsnInteger                          =   hsnFromString "Integer"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,8 +233,8 @@ hsnInteger                          =   HNm "Integer"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(hsnEval,hsnApply)
-hsnEval     = HNm "!eval"
-hsnApply    = HNm "!apply"
+hsnEval     = hsnFromString "!eval"
+hsnApply    = hsnFromString "!apply"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,12 +243,12 @@ hsnApply    = HNm "!apply"
 
 %%[1.mkRV
 mkRV :: String -> HsName
-mkRV = HNm
+mkRV = hsnFromString
 %%]
 
 %%[99 -1.mkRV
 mkRV :: HsName -> String -> HsName
-mkRV m = hsnSetQual m . HNm
+mkRV m = hsnSetQual m . hsnFromString
 %%]
 
 %%[1 export(hsnNegate)
@@ -429,7 +434,7 @@ hsnModBuiltin                       =   mkHNm "#Builtin"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(hsnIsInPrelude)
-hsnEHC                              =   HNm "EHC"
+hsnEHC                              =   hsnFromString "EHC"
 
 hsnIsInPrelude :: HsName -> Bool
 hsnIsInPrelude n
@@ -439,14 +444,14 @@ hsnIsInPrelude n
 %%]
 
 %%[99 export(hsnModPrelude)
-hsnModIntlBase                          =   hsnPrefixQual hsnEHC (HNm "Base")
-hsnModIntlEnum                          =   hsnPrefixQual hsnEHC (HNm "Enum")
-hsnModIntlNum                           =   hsnPrefixQual hsnEHC (HNm "Num")
-hsnModIntlReal                          =   hsnPrefixQual hsnEHC (HNm "Real")
-hsnModIntlShow                          =   hsnPrefixQual hsnEHC (HNm "Show")
-hsnModIntlRead                          =   hsnPrefixQual hsnEHC (HNm "Read")
-hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (HNm "Prelude")
-hsnModPrelude                           =                         HNm "Prelude"
+hsnModIntlBase                          =   hsnPrefixQual hsnEHC (hsnFromString "Base")
+hsnModIntlEnum                          =   hsnPrefixQual hsnEHC (hsnFromString "Enum")
+hsnModIntlNum                           =   hsnPrefixQual hsnEHC (hsnFromString "Num")
+hsnModIntlReal                          =   hsnPrefixQual hsnEHC (hsnFromString "Real")
+hsnModIntlShow                          =   hsnPrefixQual hsnEHC (hsnFromString "Show")
+hsnModIntlRead                          =   hsnPrefixQual hsnEHC (hsnFromString "Read")
+hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (hsnFromString "Prelude")
+hsnModPrelude                           =                         hsnFromString "Prelude"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

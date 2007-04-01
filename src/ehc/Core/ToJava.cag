@@ -119,12 +119,12 @@ jvInx ar i = pp ar >|< pp_brackets (pp i)
 jvCAF :: (PP a, PP b) => a -> b -> PP_Doc
 jvCAF stats body = jvBody "new Apply0()" "void evalSet" [] empty (pp stats) (jvCall "setValue" [pp body] >#< ";")
 
-jvSelNm   = HNm "_sel"
-jvSel1Nm  = HNm "_sel1"
-jvUpdNm   = HNm "_upd"
-jvUpd1Nm  = HNm "_upd1"
-jvInsNm   = HNm "_ins"
-jvIns1Nm  = HNm "_ins1"
+jvSelNm   = mkHNm "_sel"
+jvSel1Nm  = mkHNm "_sel1"
+jvUpdNm   = mkHNm "_upd"
+jvUpd1Nm  = mkHNm "_upd1"
+jvInsNm   = mkHNm "_ins"
+jvIns1Nm  = mkHNm "_ins1"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,25 +138,25 @@ ATTR CodeAGItf CModule [ | | jvBasename: String ]
 
 SEM CModule
   | Mod         loc         .   jvBasename  =   jvNm @moduleNm
-                expr        .   jvBuiltin   =   let primCmpIntNm = HNm "primCmpInt"
+                expr        .   jvBuiltin   =   let primCmpIntNm = mkHNm "primCmpInt"
                                                 in  jvBind "Function2" jvSelNm
-                                                        (jvLam jvSelNm [HNm "tup",HNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets (jvForceInt "off"))))
+                                                        (jvLam jvSelNm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets (jvForceInt "off"))))
                                                     >-< jvBind "Function2" jvSel1Nm
-                                                        (jvLam jvSel1Nm [HNm "tup",HNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets ("1+" >|< jvForceInt "off"))))
+                                                        (jvLam jvSel1Nm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets ("1+" >|< jvForceInt "off"))))
                                                     >-< jvBind "Function3" jvUpdNm
-                                                        (jvLam jvUpdNm [HNm "tup",HNm "off",HNm "val"]
-                                                            (   jvBind "Object[]" (HNm "_t") (jvForceCast "Object[]" "tup")
-                                                            >-< jvBind "Object[]" (HNm "_nt") ("new Object[_t.length]")
-                                                            >-< jvBind "int" (HNm "_o") (jvForceInt "off")
+                                                        (jvLam jvUpdNm [mkHNm "tup",mkHNm "off",mkHNm "val"]
+                                                            (   jvBind "Object[]" (mkHNm "_t") (jvForceCast "Object[]" "tup")
+                                                            >-< jvBind "Object[]" (mkHNm "_nt") ("new Object[_t.length]")
+                                                            >-< jvBind "int" (mkHNm "_o") (jvForceInt "off")
                                                             >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","0","_nt","0","_t.length"]) >#< ";"
                                                             >-< "_nt[_o] = val ;"
                                                             >-< jvRet (pp "_nt")
                                                             ))
                                                     >-< jvBind "Function3" jvInsNm
-                                                        (jvLam jvInsNm [HNm "tup",HNm "off",HNm "val"]
-                                                            (   jvBind "Object[]" (HNm "_t") (jvForceCast "Object[]" "tup")
-                                                            >-< jvBind "Object[]" (HNm "_nt") ("new Object[_t.length + 1]")
-                                                            >-< jvBind "int" (HNm "_o") (jvForceInt "off")
+                                                        (jvLam jvInsNm [mkHNm "tup",mkHNm "off",mkHNm "val"]
+                                                            (   jvBind "Object[]" (mkHNm "_t") (jvForceCast "Object[]" "tup")
+                                                            >-< jvBind "Object[]" (mkHNm "_nt") ("new Object[_t.length + 1]")
+                                                            >-< jvBind "int" (mkHNm "_o") (jvForceInt "off")
                                                             >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","0","_nt","0","_o"]) >#< ";"
                                                             >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","_o","_nt","_o+1","_t.length - _o"]) >#< ";"
                                                             >-< "_nt[_o] = val ;"
@@ -164,9 +164,9 @@ SEM CModule
                                                             ))
                                                     >-< jvBind "Object" hsnUndefined "null"
                                                     >-< jvBind "Function2" primCmpIntNm
-                                                            (jvLam primCmpIntNm [HNm "i1",HNm "i2"]
-                                                                (   jvBind "int" (HNm "_i1") (jvForceInt "i1")
-                                                                >-< jvBind "int" (HNm "_i2") (jvForceInt "i2")
+                                                            (jvLam primCmpIntNm [mkHNm "i1",mkHNm "i2"]
+                                                                (   jvBind "int" (mkHNm "_i1") (jvForceInt "i1")
+                                                                >-< jvBind "int" (mkHNm "_i2") (jvForceInt "i2")
                                                                 >-< "if (_i1 < _i2) return new Object[]{new Int(2)} ; else if (_i1 > _i2) return new Object[]{new Int(1)}; else return new Object[]{new Int(0)} ;"
                                                                 ))
                 lhs         .   jvSrc       =   "import uu.jazy.core.* ;"
@@ -213,9 +213,9 @@ SEM CExpr
                                                     )
                                                     (jvNmPP @jvCaseResult)
                             .   jvCaseScrutinee
-                                            =   HNm (show @expr.varNm ++ "_scrutinee")
+                                            =   mkHNm (show @expr.varNm ++ "_scrutinee")
                             .   jvCaseResult
-                                            =   HNm (show @expr.varNm ++ "_result")
+                                            =   mkHNm (show @expr.varNm ++ "_result")
   | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\_ _ t _ _ -> jvTupApp ["new Int" >|< pp_parens (pp t)]) @tag
   | TupDel      loc         .   jvSrc       =   empty
   | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
@@ -345,11 +345,11 @@ SEM CExpr
 %%[8 hs
 primToJavaMp :: AssocL String HsName
 primToJavaMp
-  =  [ ( "primAddInt", HNm "uu.jazy.prelude.Int.add" )
-     , ( "primDivInt", HNm "uu.jazy.prelude.Int.div" )
-     , ( "primMulInt", HNm "uu.jazy.prelude.Int.mul" )
-     , ( "primSubInt", HNm "uu.jazy.prelude.Int.sub" )
-     , ( "primCmpInt", HNm "primCmpInt" )
+  =  [ ( "primAddInt", hsnFromString "uu.jazy.prelude.Int.add" )
+     , ( "primDivInt", hsnFromString "uu.jazy.prelude.Int.div" )
+     , ( "primMulInt", hsnFromString "uu.jazy.prelude.Int.mul" )
+     , ( "primSubInt", hsnFromString "uu.jazy.prelude.Int.sub" )
+     , ( "primCmpInt", hsnFromString "primCmpInt" )
      ]
 %%]
 

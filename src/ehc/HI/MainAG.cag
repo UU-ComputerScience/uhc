@@ -21,7 +21,7 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 ag import({HI/AbsSyn},{HI/Pretty},{HI/Uniq})
+%%[20 ag import({HI/AbsSyn},{HI/Pretty})
 WRAPPER AGItf
 %%]
 
@@ -36,11 +36,6 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reconstruction of original info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20 hs
-%%]
-prElimTGamUnion :: Pr.PrElimTGam -> Pr.PrElimTGam -> Pr.PrElimTGam
-prElimTGamUnion = Pr.peTGamUnion basePrfCtxtId basePrfCtxtId
 
 %%[20
 ATTR

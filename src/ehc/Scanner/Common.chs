@@ -438,7 +438,7 @@ pV :: (IsParser p Token) => p Token -> p String
 pV p = tokGetVal <$> p
 
 pHNm :: (IsParser p Token) => p Token -> p HsName
-pHNm p = (HNm . tokGetVal) <$> p
+pHNm p = (hsnFromString . tokGetVal) <$> p
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

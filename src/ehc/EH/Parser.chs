@@ -92,8 +92,8 @@ pParenProd pE
 %%[1.scanWrappers
 pChr            =    head <$> pChar
 pInt            =    read <$> pInteger
-pCon            =    HNm <$> pConid
-pVar            =    HNm <$> pVarid
+pCon            =    hsnFromString <$> pConid
+pVar            =    hsnFromString <$> pVarid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -22,7 +22,7 @@ Ideally, these tables should be merged.
 %%[96
 data Primitive
   = Prim    
-      { primArgNeedEval     :: [Bool]  		-- default: True
+      { primArgNeedEval     :: ![Bool]  		-- default: True
       }
 
 lookupPrim :: {- Backend -> -} String -> Maybe Primitive

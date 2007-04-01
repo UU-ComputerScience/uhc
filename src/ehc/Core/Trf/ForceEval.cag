@@ -1,0 +1,86 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to forceEval on Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs module {%{EH}Core.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Ty},{%{EH}Core})
+%%]
+
+%%[99.WRAPPER ag import({Core/AbsSyn})
+WRAPPER CModule CExpr
+%%]
+
+%%[99 hs
+cmodForceEval :: CModule -> CModule
+cmodForceEval cmod
+  = trf_Syn_CModule t `seq` cmod
+  where t = wrap_CModule (sem_CModule cmod)
+            $ Inh_CModule
+
+cexprForceEval :: CExpr -> CExpr
+cexprForceEval e
+  = trf_Syn_CExpr `seq` e
+  where t = wrap_CExpr (sem_CExpr e)
+            $ Inh_CExpr
+%%]
+
+%%[99 hs
+instance ForceEval CModule where
+  forceEval = cmodForceEval
+
+instance ForceEval CExpr where
+  forceEval = cexprForceEval
+
+instance ForceEval CBindCateg
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval over structore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR AllCodeNT [ | | trf USE {`seq`} {()}: {()} ]
+
+SEM CModule
+  | Mod				lhs		.	trf 		=	forceEval @ctagsMp `seq` forceEval @moduleNm `seq` @expr.trf
+
+SEM CExpr
+  | Let				lhs		.	trf 		=	forceEval @categ `seq` @binds.trf `seq` @body.trf
+  | Lam				lhs		.	trf 		=	forceEval @arg `seq` @body.trf
+  | Var				lhs		.	trf 		=	forceEval' @nm
+  | Int				lhs		.	trf 		=	forceEval' @int
+  | Integer			lhs		.	trf 		=	forceEval' @integer
+  | String			lhs		.	trf 		=	forceEval' @str
+  | Tup				lhs		.	trf 		=	forceEval' @tag
+  | TupDel			lhs		.	trf 		=	forceEval @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf
+  | TupIns TupUpd	lhs		.	trf 		=	forceEval @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf `seq` @fldExpr.trf
+  | CaseAltFail		lhs		.	trf 		=	forceEval' @caseId
+  | Hole			lhs		.	trf 		=	forceEval' @uid
+  | HoleLet			lhs		.	trf 		=	forceEval @bindsUid `seq` @body.trf
+  | ImplsLam		lhs		.	trf 		=	forceEval @uid `seq` @body.trf
+  | ImplsApp		lhs		.	trf 		=	forceEval @uid `seq` @func.trf
+
+SEM CBind
+  | Bind			lhs		.	trf 		=	forceEval @nm `seq` @expr.trf
+  | FFI				lhs		.	trf 		=	forceEval @callconv `seq` forceEval @safety `seq` forceEval @impEnt
+  												`seq` forceEval @nm `seq` forceEval' @ty
+
+SEM CPat
+  | Var				lhs		.	trf 		=	forceEval' @pnm
+  | Con				lhs		.	trf 		=	forceEval @tag `seq` forceEval @pnm `seq` @rest.trf
+  | Int				lhs		.	trf 		=	forceEval @pnm `seq` forceEval' @int
+  | Char			lhs		.	trf 		=	forceEval @pnm `seq` forceEval' @char
+  | BoolExpr		lhs		.	trf 		=	forceEval @pnm `seq` forceEval' @cexpr
+
+SEM CPatRest
+  | Var				lhs		.	trf 		=	forceEval' @nm
+
+SEM CPatBind
+  | Bind			lhs		.	trf 		=	forceEval @lbl `seq` forceEval @nm `seq` @offset.trf `seq` @pat.trf
+
+%%]
+
