@@ -2,8 +2,19 @@
 
 %include lhs2tex.fmt
 
+\def\spacecorrection{\;}
+\def\isspacecorrection{\spacecorrection}
+\def\allowforspacecorrection#1{%
+  \gdef\temp{#1}%
+  \ifx\isspacecorrection\temp
+    \let\next=\empty
+  \else
+    \let\next=\temp
+  \fi
+  \next}
 
 
+%format GrModule  = "\mathit{Module}"
 %format GrGlobalL = "\mathit{GlobalL}"
 %format GrGlobal  = "\mathit{Global}"
 %format GrBindL   = "\mathit{BindL}"
@@ -20,6 +31,12 @@
 %format GrTag     = "\mathit{Tag}"
 %format HsName    = "\mathit{Name}"
 %format getNr     = "\mathit{nr}"
+%format GrTag_Con     = "\mathit{Tag\_Con}"
+%format GrTag_Fun     = "\mathit{Tag\_Fun}"
+%format GrTag_PApp    = "\mathit{Tag\_PApp}"
+%format GrTag_App     = "\mathit{Tag\_App}"
+%format GrTag_Unboxed = "\mathit{Tag\_Unboxed}"
+%format GrTag_Any     = "\mathit{Tag\_Any}"
 
 %format DATA = "\mathbf{syntax}"
 %format TYPE = "\mathbf{type}"
@@ -31,6 +48,15 @@
 %format INH  = "\mathbf{inh}"
 %format .    = "."
 %format ^    = " "
+%format ^@    = "@"
+
+%format @ = "\spacecorrection @"
+%format [          = "[\mskip1.5mu\allowforspacecorrection "
+%format (          = "(\allowforspacecorrection "
+%subst fromto b e t     = "\fromto{" b "}{" e "}{{}\allowforspacecorrection " t "{}}'n"
+
+
+
 
 
 \usepackage{amsmath}
@@ -102,7 +128,7 @@ EHC
 
 
 
-\section{Tree walk methodology}
+\section{Tree walk methodology}\label{sec.ag}
 
 Tree walks
 
@@ -120,7 +146,7 @@ Implicit AG-rules
 
 
 
-\section{The GRIN language}
+\section{The Grin language}\label{sec.lang}
 
 Grin as an intermediate language between Core and Silly
 
@@ -132,21 +158,21 @@ Program is sequence of bindings
 
 \begin{code}
 DATA Program
-  = Prog        mod             : GrModule
+  = Prog        mod             :: GrModule
 DATA GrModule
-  = Mod         nm              : HsName
-                globalL         : GrGlobalL
-                bindL           : GrBindL
+  = Mod         nm              :: HsName
+                globalL         :: GrGlobalL
+                bindL           :: GrBindL
 \end{code}
 Binding binds function name with parameters to expression
 \begin{code}
 DATA GrBind
-  = Bind        nm              : HsName
-                argNmL          : [HsName]
-                expr            : GrExpr
+  = Bind    nm              :: HsName
+            argNmL          :: [HsName]
+            expr            :: GrExpr
 DATA GrGlobal
-  = Global      nm              : HsName
-                val             : GrVal
+  = Global  nm              :: HsName
+            val             :: GrVal
 TYPE GrGlobalL  =   [GrGlobal]
 TYPE GrBindL    =   [GrBind]
 SET AllDef = GrGlobal GrGlobalL GrBind GrBindL
@@ -158,25 +184,25 @@ Value are nodes, variables, tags or constants
 
 \begin{code}
 DATA GrVal
-  =  LitInt      int             : Int
-  |  Tag         tag             : GrTag
-  |  Var         nm              : HsName
-  |  Node        tag             : GrTag
-                 fldL            : GrValL
-  |  VarNode     fldL            : GrValL
-TYPE GrValL   =  [GrVal]
-SET AllVal    =  GrVal GrValL
+  =  LitInt    int    :: Int
+  |  Tag       tag    :: GrTag
+  |  Var       nm     :: HsName
+  |  Node      tag    :: GrTag
+               fldL   :: GrValL
+  |  VarNode   fldL   :: GrValL
+TYPE GrValL  =  [GrVal]
+SET AllVal   =  GrVal GrValL
 \end{code}
 
 Tags tag nodes, either a constructed value or a thunk:
 \begin{code}
 DATA GrTag
-  |  Con           nm              : HsName
-  |  Fun           nm              : HsName
-  |  PApp          needs           : Int
-                   nm              : HsName
-  |  App           nm              : HsName
-  |  Unboxed       ^
+  |  Con   nm        :: HsName
+  |  Fun   nm        :: HsName
+  |  PApp  needs     :: Int
+           nm        :: HsName
+  |  App   nm        :: HsName
+  |  Unboxed
   |  Hole
 \end{code}
 
@@ -187,17 +213,17 @@ Case (Lit, Tag, Node)
 and Lambda (Empty, Var, VarNode)
 \begin{code}
 DATA GrPatAlt
-  =  LitInt      int             : Int
-  |  Tag         tag             : GrTag
-  |  Node        tag             : GrTag
-                 fldL            : [HsName]
+  =  LitInt      int             :: Int
+  |  Tag         tag             :: GrTag
+  |  Node        tag             :: GrTag
+                 fldL            :: [HsName]
 DATA GrPatLam
   =  Empty
-  |  Var         nm              : HsName
-  |  VarNode     fldL            : GrVarL
+  |  Var         nm              :: HsName
+  |  VarNode     fldL            :: GrVarL
 DATA GrVar
-  =  Var         nm              : HsName
-  |  KnownTag    tag             : GrTag
+  =  Var         nm              :: HsName
+  |  KnownTag    tag             :: GrTag
 TYPE GrVarL     =   [GrVar]
 \end{code}
 
@@ -205,33 +231,33 @@ Details of expressions:
 
 \begin{code}
 DATA GrExpr
-  =  Seq          expr            : GrExpr
-                  pat             : GrPatLam
-                  body            : GrExpr
-  |  Unit         val             : GrVal
-  |  UpdateUnit   nm              : HsName
-                  val             : GrVal
-  |  Case         val             : GrVal
-                  altL            : GrAltL
-  |  FetchNode    nm              : HsName
-  |  FetchUpdate  src             : HsName
-                  dst             : HsName
-  |  FetchField   nm              : HsName
-                  offset          : Int
-                  mbTag           : Maybe GrTag
-  |  Store        val             : GrVal
-  |  Call         nm              : HsName
-                  argL            : GrValL
-  |  FFI          nm              : String
-                  argL            : [HsName]
-                  tagL            : GrTagL
-  |  Eval         nm              : HsName
-  |  App          nm              : HsName
-                  argL            : GrValL
+  =  Seq          expr            :: GrExpr
+                  pat             :: GrPatLam
+                  body            :: GrExpr
+  |  Unit         val             :: GrVal
+  |  UpdateUnit   nm              :: HsName
+                  val             :: GrVal
+  |  Case         val             :: GrVal
+                  altL            :: GrAltL
+  |  FetchNode    nm              :: HsName
+  |  FetchUpdate  src             :: HsName
+                  dst             :: HsName
+  |  FetchField   nm              :: HsName
+                  offset          :: Int
+                  mbTag           :: Maybe GrTag
+  |  Store        val             :: GrVal
+  |  Call         nm              :: HsName
+                  argL            :: GrValL
+  |  FFI          nm              :: String
+                  argL            :: [HsName]
+                  tagL            :: GrTagL
+  |  Eval         nm              :: HsName
+  |  App          nm              :: HsName
+                  argL            :: GrValL
                   
 DATA GrAlt
-  | Alt         pat             : GrPatAlt
-                expr            : GrExpr
+  | Alt         pat             :: GrPatAlt
+                expr            :: GrExpr
 
 TYPE GrAltL     =   [GrAlt]
 
@@ -244,8 +270,8 @@ SET AllExpr = GrExpr GrAlt GrAltL
 
 In this section we describe an abstract interpretation
 algorithm for Grin programs.
-The algorithm does a fixpoint iteration for solving
-a set of constraints.
+The algorithm solves a set of constraints by doing a
+fixpoint iteration.
 The constraints are first collected by doing a tree walk
 over the Grin program.
 We start with a description of an abstract domain,
@@ -253,42 +279,44 @@ and a language for specifying the constraints.
 
 \subsection{An abstract domain}
 
-Grin programs consist of expressions, 
-which contain values, which can be variables.
+Grin programs consist largely of bindings,
+which bind expressions to function names.
+Expressions in turn consist in 
+part of values.
+One of the possible value forms is a single variable.
 Although Grin is an untyped language,
 in code generated from a correct Haskell program
 variables always refer to values of the same type.
-We will use abstract interpretation to not only 
-infer these types, but also collect more detailed 
+We will use abstract interpretation not only 
+to infer these types, but also to collect more detailed 
 information. 
 
 Running Grin programs maintain a heap of
 dynamically allocated nodes.
-More specific, execution of a |Store| expression
-allocates a new heap cell, as do bindings in
-a global |GrBind|.
+More specifically, execution of a |Store| expression
+allocates a new heap cell, as do |Global| variable definitions.
 Our abstract interpretation algorithm will
 also determine, for each |Store| expression and
-each global |GrBind|, what type of node it can create.
+each |Global| definition, what type of node it can create.
 The abstraction of all heap cells that a particular
-|Store| of |GrBind| creates is known as a |Location|.
+|Store| or |Global| creates is known as a |Location|.
 Thus, each |Location| corresponds uniquely to
-a |Store| or |GrBind|. In our implementation we
+a |Store| or |Global|. In our implementation we
 identify locations simply by consecutive numbers.
 \begin{code}
 type Location = Int
 \end{code}
-Grin variables are used to refer to four different
-types of values.
-They can store values of basic type (Char, Int etc.),
-or hold a single tag,
-or be a pointer to a heap location,
-of refer to a complete node.
+Grin variables refer to four different
+types of values:
+values of basic type (Char, Int etc.),
+standalone tags,
+pointers to a heap location,
+or complete nodes.
 
-We introduce a data type |AbstractValue| which will
-be used as an abstract domain for our abstract interpretation.
-It distinguishes these four cases, with an added
-bottom and error case to form a complete lattice
+We introduce a data type |AbstractValue| which we use
+as an abstract domain for the abstract interpretation.
+It distinguishes these four cases, with added
+bottom and error cases to form a complete lattice
 suitable for fixpoint iteration.
 \begin{code}
 data AbstractValue
@@ -300,15 +328,17 @@ data AbstractValue
   |  AbsError  String
 \end{code}
 In the |AbsTags| case, abstract interpretation will reveal
-to what subset of all possible tags a variable can refer.
+to which subset of all possible tags a variable can refer.
 Similary, for |AbsLocs| we determine to which locations
 a pointer can point.
 In the |AbsNodes| case, we not only determine the possible
-tags of the nodes, but for each of these also the abstract values
+tags of the nodes, but for each of these also a list of the abstract values
 of their parameters.
-In the Grin code of a correct program, abstract values
-of the parameters of a node in an |AbsNodes| mapping
-will never be |AbsNodes| themselves.
+When generating Grin code from earlier representations,
+we make sure that parameters of a node 
+never are |AbsNodes| themselves.
+If nested nodes are needed, node parameters can refer to
+heap locations, which in turn can store the inner node.
   
 The fact that |AbstractValue| indeed forms a lattice
 is expressed by the following definition,
@@ -320,29 +350,29 @@ instance Monoid AbstractValue where
 \end{code}
 That is, any abstract value remains unchanged when merging it with |AbsBottom|
 \begin{code}
- ^  mappend  a          AbsBottom   =  a
- ^  mappend  AbsBottom  b           =  b
+    mappend  a          AbsBottom   =  a
+    mappend  AbsBottom  b           =  b
 \end{code}
 Abstract values of each of the four types can be merged with others of the same type:
 \begin{code}
- ^  mappend AbsBasic AbsBasic     
- ^     =  AbsBasic
- ^   mappend (AbsTags  at) (AbsTags  bt) 
- ^     =  AbsTags (Set.union at bt)
- ^   mappend (AbsLocs  al) (AbsLocs  bl) 
- ^     =  AbsLocs (Set.union al bl)
- ^   mappend (AbsNodes an) (AbsNodes bn) 
- ^     =  AbsNodes (Map.unionWith (zipWith mappend) an bn)
+    mappend AbsBasic AbsBasic     
+       =  AbsBasic
+     mappend (AbsTags  at) (AbsTags  bt) 
+       =  AbsTags (Set.union at bt)
+     mappend (AbsLocs  al) (AbsLocs  bl) 
+       =  AbsLocs (Set.union al bl)
+     mappend (AbsNodes an) (AbsNodes bn) 
+       =  AbsNodes (Map.unionWith (zipWith mappend) an bn)
 \end{code}
 Errors remain an error even when merged with other values:
 \begin{code}
- ^   mappend a@(AbsError _ ) _  =  a
- ^   mappend _ b@(AbsError _ )  =  b
+     mappend a^@(AbsError _ ) _  =  a
+     mappend _ b^@(AbsError _ )  =  b
 \end{code}
 And new errors originate from merging abstract values from incompatible types:
 \begin{code}
- ^   mappend a b  
- ^     =  AbsError (show a ++ " incompatible with " ++ show b)
+     mappend a b  
+       =  AbsError (show a ++ " incompatible with " ++ show b)
 \end{code}  
   
   
@@ -351,8 +381,8 @@ And new errors originate from merging abstract values from incompatible types:
   
 The goal of the abstract interpretation algorithm is
 to determine the abstract value of each variable
-in the program, and likewise for eacht abstract heap |Location|.
-For efficiency reasons we represent these mappings with arrays:
+in the program, and likewise for each abstract heap |Location|.
+For efficiency reasons we represent these mappings by arrays:
 \begin{code}
 type AbstractEnv s  
   =  STArray s Variable AbstractValue
@@ -364,17 +394,17 @@ Like a |Location|, each |Variable| is also represented by a number:
 type Variable = Int
 \end{code}
 A preprocessing stage uniquely numbers all variable names in a program
-(taking care of scoping when necessary),
+(taking care of scoping where necessary),
 and makes the sequence number available through a function
 \begin{code}
 getNr :: HsName -> Variable
 \end{code}
 
 
-\subsection{A constraint language}
+\subsection{A constraint language}\label{sec.constraintlang}
 
-By observing a Grin program, we can specify constraints
-which hold for variables and locations.
+By observing a Grin program, we can deduce equations
+which constrain variables and locations.
 Before doing so, we need a language to specify these constraints.
 We introduce the type |Equation| for describing six different
 types of constraints for the abstract value of variables.
@@ -389,49 +419,53 @@ data Equation
   |  IsEvaluation     Variable  Variable
   |  IsApplication    (Maybe Variable) [Variable]
 \end{code}
-Five out of six constraint types specify a variable which
-is to fulfill certain properties.
+Five out of six cases constrain a variable to fulfill certain properties.
 Only in the case of an |IsApplication| constraint, mentioning
 such a variable is optional.
 
-It is allowed to have more than one constraint for a particular variable.
-They complement each other. 
-If for example a constraint specifies that a variable is known
-to possibly have a particular abstract value, 
+A variable may be constrained by more than one equation.
+These equations are cumulative. 
+If for example one constraint specifies that a variable `is known'
+to have a particular abstract value, 
 and another constraint specifies that it is known to have
 another value, the abstract interpretation algorithm will
-conclude that this variable can have either of these two values.
+conclude that this variable can refer to either value.
 
-This example illustrates the semantics of the |IsKnown| constraint:
+
+Below we describe informally the semantics of the six equation types.
+A formal description is given in figure~\ref{fig.envChanges},
+which is discussed in section~\ref{sec.solution}.
+First, an equation
 |IsKnown v a| means that variable |v| can have abstract value |a|.
 The meaning of |IsEqual v w| is that variable |v| can have all 
-values that variable |w| has. Note that the constraint is
-not symmetrical: the solution for |w| will be a subset of 
-the solution for |v|, but not necessarily be the same.
+values that variable |w| has. Note that the equation is
+not symmetrical: the solution for |w| is a subset of 
+the solution for |v|, but not necessarily equal to it.
+An |IsEqual| equation should thus be understood as `is possibly equal to'.
 
-The meaning of |IsSelection v n i t| is that |v| can be the 
+The equation |IsSelection v n i t| expresses that |v| can be the 
 selection of the |i|th component of any node tagged by |t|
 which can be the value of variable |n|.
 Dually, the meaning of |IsConstruction v t as| is that |v| can be
 a node with tag |t| and arguments |as|. Not all arguments need to be known.
 
-Next, the meaning if |IsEvaluation v w| is that |v| can be the
-evaluation result of any value of |w|.
+Next, the meaning if |IsEvaluation v w| is that |v| can refer to the
+evaluation result of any possible value of |w|.
 Finally, the meaning of |IsApplication v (f:as)| is that 
 |f| is a variable that refers to a function which is applied to
-values refered to by variables |as|,
+values referred to by variables |as|,
 and that the result is a possible value of |v|.
 For this type of constraint, mentioning a variable |v| is optional.
-If it is lacking, the constraint still bears information
+If it is lacking, the equation still bears information
 on the possible values of parameters of |f|.
 
-For heap equations, there is only one constraint type:
+For heap equations, we have only one constraint type:
 \begin{code}
 data HeapEquation
   =  WillStore Location GrTag [Maybe Variable]
 \end{code}
-The meaing of |WillStore p t as| is that location |p|
-will hold a node with tag |t| and arguments |as|.
+The meaning of |WillStore p t as| is that location |p|
+stores a node with tag |t| and arguments |as|.
 Note that a heap cell always stores a complete node,
 not an isolated value of other type 
 (basic value, tag or pointer to another heap cell).
@@ -445,26 +479,67 @@ type HeapEquations  = [HeapEquation]
 
 
 
-\subsection{Collect constraints in a treewalk}
+\subsection{Collect constraints in a tree walk}\label{sec.collect}
 
+In this subsection we describe a tree walk over a Grin program
+that collects constraints on the program variables that need to hold.
+The tree walk is implemented using the attribute grammar (AG) based
+language described in section~\ref{sec.ag}, that can be used
+as a preprocessor to Haskell.
 
-Synthesized attributes for equations and heapequations
-
-\begin{code}
-ATTR GrModule AllDef AllExpr
-  SYN  equations  USE (++) []  : Equations
-  SYN  heapEqs    USE (++) []  : HeapEquations
-\end{code}
-Heappointer is incremented every time it is used.
+The goal of the tree walk is to synthesize |equations| stating
+the constraints for program variables, and |heapEqs| stating
+the constraints for locations (abstract results of store expressions
+and global definitions).
 \begin{code}
 ATTR Program GrModule AllDef AllExpr
-  INH SYN  location  :  Int
+  SYN  equations  USE (++) []  :: Equations
+  SYN  heapEqs    USE (++) []  :: HeapEquations
+\end{code}
+The declarations above specify that both type of equations
+are not only synthesized for the whole program, but also
+the intermediate levels of the program tree that have to do
+with definitions and expressions. No equations are synthesized
+on the levels that have to do with values and variables.
+The |USE| clause in the declaration of the attributes
+expresses that the default way to synthesize
+equations is just to concatenate the equations synthesized on
+underlying levels. We will redefine the |equations| and
+|heapEqs| attributes later for the tree positions where
+equations are introduced.
+
+But first we have to set up some auxiliary attributes.
+First, we need to uniquely number all abstract locations,
+as we represent locations by integers.
+For this purpose we have both a synthesized and
+an inherited attribute |location| for all relevant 
+positions in the tree.
+With a semantic rule, value 0 is inserted for this
+attribute at the top of the tree.
+\begin{code}
+ATTR Program GrModule AllDef AllExpr
+  INH SYN  location  ::  Int
 SEM Program | Prog
   mod.location = 0
 \end{code}
+The AG preprocessor makes sure that the inherited attributes are
+passed unchanged down the tree, and the synthesized values are passed up,
+unless there is a AG rule which specifies that a modified value should
+be passed.
+Indeed, in figure~\ref{fig.equations} we have rules that increment
+the location counter when locations need to be numbered,
+viz.\ at |Store| expressions and |Global| definitions.
 
-Nodes sometimes are sometimes refered to by a variable, sometimes they are enumerated in full.
-This datatype distinguishes these two cases:
+Before we explain the rest of the rules in figure~\ref{fig.equations},
+we need to define an auxiliary datastructure that is
+used as the type of some attributes to come.
+Nodes sometimes are referred to by a variable, 
+sometimes they are enumerated in full.
+The following datatype distinguishes these two cases, 
+where the polymorphic type variable |a| is the type of additional
+information that we may want to express for the parameters of the node.
+Function |fromInVar| can be used to retrieve the variable from
+a |NodeInfo| that is known to be a |InVar| case.
 \begin{code}
 data NodeInfo a 
   =  InVar   Variable 
@@ -473,22 +548,27 @@ data NodeInfo a
 fromInVar :: NodeInfo a -> Variable
 fromInVar (InVar v)  = v
 \end{code}
-It is used in attributes that gather the nature of a value and a pattern, respectively:
+This datatype is used in attributes that gather the nature 
+of a value and a pattern, respectively:
 \begin{code}
-ATTR  GrVal     SYN valInfo : NodeInfo (Maybe Variable)
+ATTR  GrVal     SYN valInfo :: NodeInfo (Maybe Variable)
 ATTR  GrPatAlt 
-      GrPatLam  SYN patInfo : NodeInfo Variable
+      GrPatLam  SYN patInfo :: NodeInfo Variable
 \end{code}
-A few auxiliary attributes are necessary to do the actual gathering:
+A few auxiliary attributes are necessary to do the gathering:
 \begin{code}
-ATTR  GrVal   SYN  var      : Maybe Variable
-ATTR  GrValL  SYN  vars     : [Maybe Variable]
-ATTR  GrVar   SYN  tag      : GrTag
-              SYN  var      : Variable
-ATTR  GrVarL  SYN  hdTag    : GrTag 
-              SYN  vars     : [Variable]
+ATTR  GrVal   SYN  var      :: Maybe Variable
+ATTR  GrValL  SYN  vars     :: [Maybe Variable]
+ATTR  GrVar   SYN  tag      :: GrTag
+              SYN  var      :: Variable
+ATTR  GrVarL  SYN  hdTag    :: GrTag 
+              SYN  vars     :: [Variable]
 \end{code}
-The gathering is straightforward:
+The actual gathering is straightforward.
+It is described by the following AG rules
+(remember that the |SEM| construct specifies semantics,
+that is attribute values, for various constructors
+of a the datatypes that were introduced in section~\ref{sec.lang}).
 \begin{code}
 SEM GrVal
 | Tag        lhs.valInfo  =  InNode  @tag []
@@ -517,34 +597,66 @@ SEM GrVar
 | KnownTag   lhs.tag      =  @tag
 | Var        lhs.var      =  getNr @nm
 \end{code}
-
-Every expression has a target, which is either the next pattern in a sequence,
-or the result of a binding.
+The |patInfo| attribute defined above is used
+to determine the target of each expression.
+For most expressions, the target is the next
+pattern in the sequence. For the last expression in a
+sequence that is the body of a function, the target
+is the function name bound in a |Bind| binding,
+and passed all the way through the |Seq| spine.
+This is expressed in the semantic rules that specify
+the |targetInfo| attribute:
 \begin{code}
 ATTR AllExpr 
-  INH targetInfo: NodeInfo Variable
+  INH targetInfo :: NodeInfo Variable
 SEM GrBind | Bind  
   expr.targetInfo  =  InVar (getNr @nm)
 SEM GrExpr | Seq    
   expr.targetInfo  =  @pat.patInfo
   body.targetInfo  =  @lhs.targetInfo
 \end{code}
-Inside a case-expression, we also need information about the scrutinee
+The |valInfo| attribute defined earlier is used in the semantics rules 
+for various expression forms in figure~\ref{fig.equations}.
+The |valInfo| attribute value synthesized by the scrutinee value
+of a |Case| expression is also needed in the alternatives
+of that |Case| expression.
+It is therefore passed down as an inherited attribute
+to the alternatives: 
 \begin{code}
 ATTR GrAlt GrAltL 
-  INH valInfo: NodeInfo (Maybe Variable)
+  INH valInfo :: NodeInfo (Maybe Variable)
 \end{code}
-Two auxiliary functions are used to build a series of equations for matching a complete node:
+No explicit semantic rules are needed here, as the AG system automatically
+routes the value synthesized by the first child of
+a |Case| expression (the scrutinee) as the value
+of the inherited attribute with the same name of its second 
+child (the list of alternatives).
+
+We are now ready to discuss the twelve syntactic positions where
+equations originate, as defined in figure~\ref{fig.equations}.
+In the case of a |Unit| or |UpdateUnit| we distinguish
+the four combinations of target pattern (variable or node)
+and source value (variable or node). When both are variables, the
+target is constrained to be able hold the same value as the source;
+when the target is a variable and the source is a node, 
+the target should be able to hold that node. If, on the contrary, the
+target is a node with explicit arguments, and the source is a
+variable, all the arguments of the node that are not wildcards should be projections of the source
+variable.
+These constraints are generated by the following auxiliary function:
 \begin{code}
 buildSelectEquations 
   :: Variable -> GrTag -> [Variable] -> Equations
 buildSelectEquations svar ttag tnms
   = [  IsSelection tvar svar i ttag
-    |  (tvar,i) <- zip tnms [0..]                      funnr    = getNr nm
-                      sfx      = zip  [funnr+2+length oldArgs ..] args
-
+    |  (tvar,i) <- zip tnms [0..]
     ,  tvar /= wildcard
     ]
+\end{code}
+Finally, when both target and source are full nodes,
+corresponding arguments should unify.
+This is handled by another auxiliary function:
+\begin{code}
 buildUnifyEquations 
   :: [Maybe Variable] -> [Variable] -> Equations
 buildUnifyEquations snms tnms
@@ -555,60 +667,135 @@ buildUnifyEquations snms tnms
     ,  tvar /= wildcard
     ]
 \end{code}
-The equations that are generated for each expression type are shown in figure~\ref{fig.equations}.
+In the case of an |UpdateUnit| expression there is one
+more constraint, setting the destination variable of the
+update equal to that of the source variable.
 
-To make a correspondence between formal and actual parameters,
-we need to collect all calls. 
-Not only the direct calls, but also the postboned ones hidden in |Fun|, |PApp| and |App| nodes.
+The situation arising from an alternative in a |Case| expression
+is very much like the third subcase of a |Unit| expression:
+the fields of the target node (which come from the pattern in
+each alternative) are projections of the value of the
+scrutinee variable, that we so carefully passed down in
+the tree before.
 
+We now turn to the three variants of |Fetch| expressions.
+When a complete node is fetched, the target variable should be
+equal to the value fetched.
+For a |FetchNode| the target is the inherited target
+(i.e., the next |Seq| pattern or result of a function |Bind|ing),
+for a |FetchUpdate| the target is specified in the expression.
+In case of a |FetchField| of a single field, that field should
+be a projection from the source.
+
+The seventh case, still in figure~\ref{fig.equations},
+states that for a |Store| expression we need a new uniquely
+numbered location.
+A heap equation is generated that states that this location indeed
+stores the value, and a normal equation is generated
+that states that the target variable is a pointer to this location.
+
+The situation for a |Global| variable definition is quite the same,
+which is why we define these situations adjacently in
+figure~\ref{fig.equations} (the AG preprocessor allows to handle
+the cases |Expr| non-contiguously, which we
+happily use here to group similar rules).
+
+In the case of a |Call| to a Grin function or an |FFI| call
+to a foreign function we distinguish the cases 
+that the target is a variable or a complete node.
+The final two cases in figure~\ref{fig.equations}
+state that |Eval| and |App| expressions give rise to
+corresponding constraints.
+
+What is not handled in the cases discussed above,
+is that actual parameters should agree to formal parameters.
+The |Call| expression handled in figure~\ref{fig.equations} only
+matched the result, not the arguments.
+Function calls can either occur directly in a |Call| expression,
+or be postponed by way of a thunk node.
+Thunk nodes are recognizible by their tag, which is either
+|Fun|, |PApp| or |App| (but not |Con| or one of the
+other special tags).
+
+
+We define a tree walk that collects the relevant calls and
+tagged nodes. Conceptually this is a separate tree walk,
+but it is merged by the AG preprocessor with the tree walk
+defined earlier.
+We declare synthesized attributes to collect |allCalls| and
+|fpaNodes| (nodes with tags that indicate a thunk)
+for nearly all syntactical positions,
+because nodes are introduced at many places,
+and the collections need to be passed up the tree:
 \begin{code}
 ATTR AllVal AllExpr AllDef GrModule 
-  SYN allCalls USE (++) [] : AbstractCallList
-  SYN fpaNodes USE (++) [] : [NodeInfo (Maybe Variable)]
-ATTR GrTag 
-  SYN isfpa : Bool
+  SYN allCalls  USE (++) [] :: AbstractCallList
+  SYN fpaNodes  USE (++) [] :: [NodeInfo (Maybe Variable)]
+
+\end{code}
+Thanks to the |USE| clause, we only need to specify the
+locations where calls and nodes are actually introduced:
+\begin{code}  
+SEM GrExpr | Call    
+  lhs.allCalls  =  [ (getNr @nm, @argL.vars) ]
 SEM GrVal  |  Node   
   lhs.fpaNodes  =  if    @tag.isfpa 
                    then  [ InNode @tag @fldL.vars ] 
                    else  []
-SEM GrExpr | Call    
-  lhs.allCalls  =  [ (getNr @nm, @argL.vars) ]
-SEM GrTag
-  | Fun      lhs . isfpa  = True
-  | PApp     lhs . isfpa  = True
-  | App      lhs . isfpa  = True
-  | * - Fun PApp App
-             lhs . isfpa  = False
 \end{code}
-
-The final set of equations is the combination of
-those that arose from calls, and the ones that were gathered in the treewal:
+An auxiliary attribute is used to decide which nodes are relevant
+to collect:
+\begin{code}
+ATTR GrTag 
+  SYN isfpa :: Bool
+SEM GrTag
+  | Fun PApp App      lhs.isfpa  = True
+  | Con Hole Unboxed  lhs.isfpa  = False
+\end{code}
+Now the final set of equations is the combination of
+constraints that were gathered in the tree walk
+(that is, the synthesized |equations| from the entire module |mod|),
+and those that arise from direct calls, |Fun|, |PApp| and |App| thunk nodes:
 \begin{code}
 SEM Program  |  Prog
   lhs.equations 
-   =  [  IsApplication Nothing (map fromJust args)
-      |  (InNode (GrTag_App nm) args) <- @mod.fpaNodes
-      ]
-      ++
-      [  IsEqual x y
-      |  (funnr, args) <- @mod.allCalls
-      ,  (x, Just y) <- zip [funnr + 2 ..] args
-      ]
-      ++
-      [  IsEqual x y
-      |  (InNode (GrTag_Fun nm) args) <- @mod.fpaNodes
-      ,  (x, Just y) <- zip [getNr nm + 2 ..] args
-      ]
-      ++
-      [  IsEqual x y
-      |  (InNode (GrTag_PApp needs nm) args) <- @mod.fpaNodes
-      ,  (x, Just y) <- zip [getNr nm + 2 ..] args
-      ]
-      ++  @mod.equations
+   = @mod.equations
+     ++
+     [  IsEqual x y
+     |  (funnr, args) <- @mod.allCalls
+     ,  (x, Just y) <- zip [funnr + 1 ..] args
+     ]
+     ++
+     [  IsEqual x y
+     |  (InNode (GrTag_Fun nm) args) 
+            <- @mod.fpaNodes
+     ,  (x, Just y) <- zip [getNr nm + 1 ..] args
+     ]
+     ++
+     [  IsEqual x y
+     |  (InNode (GrTag_PApp needs nm) args) 
+            <- @mod.fpaNodes
+     ,  (x, Just y) <- zip [getNr nm + 1 ..] args
+     ]
+     ++ 
+     [  IsApplication Nothing (map fromJust args)
+     |  (InNode (GrTag_App nm) args) 
+            <- @mod.fpaNodes
+     ]
 \end{code}
+Note that we exploit the fact that the function and its arguments
+are numbered consecutively: the arguments are numbered from
+one more than the function number onwards.
+Without this convention, the correspondance between the
+number of a function and those of its parameters
+could have been established as a mapping 
+that could have been defined as yet another synthesized
+attribute of bindings.
 
-
-
+The trickiest equations are generated in the fifth concatenated list:
+it states that the arguments of an |App| node represent an 
+application, although it is not statically known where the
+result is stored.
 \begin{figure*}
 \begin{code}
 SEM GrExpr | Unit UpdateUnit
@@ -641,14 +828,13 @@ SEM GrExpr | Store
   lhs.location     =  @lhs.location + 1  
   lhs.heapEqs      =  case @val.valInfo of
                         InNode stag snms  -> [ WillStore @lhs.location stag snms ]
-  lhs.equations    =  case (@val.valInfo, @lhs.targetInfo) of
-                        (InNode stag snms, InVar tvar)  -> [ IsKnown tvar (AbsLocs (Set.singleton @lhs.location)) ] 
+  lhs.equations    =  case @lhs.targetInfo of
+                        InVar tvar        -> [ IsKnown tvar (AbsLocs (Set.singleton @lhs.location)) ] 
 SEM GrGlobal | Global 
   lhs.location     =  @lhs.location + 1
   lhs.heapEqs      =  case @val.valInfo of
-                        InNode stag snms  -> [ WillStore @lhs.location stag snms ]
-  lhs.equations    =  case @val.valInfo of
-                        InNode stag snms  -> [ IsKnown (getNr @nm) (AbsLocs (Set.singleton @lhs.location)) ]
+                        InNode stag snms  ->  [ WillStore @lhs.location stag snms ]
+  lhs.equations    =                          [ IsKnown (getNr @nm) (AbsLocs (Set.singleton @lhs.location)) ]
     
 SEM GrExpr | Call  
   lhs.equations    =  case @lhs.targetInfo of
@@ -675,14 +861,33 @@ SEM GrExpr | App
 
 
 
-\subsection{Solve the constraint equations}
 
-Create two arrays, initially storing |AbsBottom| for all variables and locations.
-Then do a fixpoint iteration on both sets of equations, usign two procedures
-that determine which values need to be updated.
+
+\subsection{Solve the constraint equations}\label{sec.solution}
+
+Now we've collected all equations,
+we can proceed to solve them.
+The solution process is wrapped in function |solveEquations|.
+It takes the two lists of equations that were collected in the tree walk,
+and two integers that are the number of |Variable|s and |Location|s.
+These were determined in an earlier stage where
+variables are numbered (trivial, not shown in this paper),
+and as synthesized attribute |location| in the tree walk.
+
+The |solution| function starts with creating two arrays,
+initially holding only |AbsBottom| values, to store the
+abstract values of all variables and locations, respectively.
+Then a fixpoint iteration is done, processing in each step
+all constraints from both sets of equations.
+The fixpoint function is parameterized not only by the two
+sets of equations, but also by two procedures that process
+an equation.
+These procedures call function |envChanges| or |heapChange|
+respectively, to obtain the changes on the variables or locations
+that need to be made.
 \begin{code}
 solveEquations ::  Int -> Int -> Equations -> HeapEquations 
-                   -> (Int,AbsHeap,AbsEnv)
+                   -> (AbsEnv,AbsHeap,Int)
 solveEquations lenEnv lenHeap eqs1 eqs2
 =  runST $
    do  { env   <- newArray (0, lenEnv   - 1) AbsBottom
@@ -698,10 +903,31 @@ solveEquations lenEnv lenHeap eqs1 eqs2
                    ; return b
                    }
        ; count <- fixpoint eqs1 eqs2 procEnv procHeap
-       ; return (count, heap, env)
+       ; return (env, heap, count)
        }
 \end{code}
-The fixpoint functions keeps processing equations while values change
+In the processing procedures, the change candidates obtained
+(exactly one in the case of an |heapEquation|, 
+possibly more in the case of an |Equation|)
+are fed into function |procChange| to apply the change.
+It can be generically used for either an environment variable
+or a heap location.
+This function only changes the array (environment or heap)
+when an element (variable or location) is actually changed,
+and returns the a boolean that indicates whether there was a change:
+\begin{code}
+procChange arr (i,e1) =
+   do { e0 <- readArray arr i
+      ; let e2       =  e0 `mappend` e1
+            changed  =  e0 /= e2
+      ; when changed (writeArray arr i e2)
+      ; return changed
+      }
+\end{code}
+The fixpoint function uses these booleans to decide whether to
+stop or continue processing all equations again:
+as long as one of the equations results in a change, the
+iteration is continued.
 \begin{code}
 fixpoint eqs1 eqs2 proc1 proc2 
 =  fix 0
@@ -716,17 +942,25 @@ fixpoint eqs1 eqs2 proc1 proc2
                 else  return count
              }
 \end{code}
-Changing an array value:
-\begin{code}
-procChange arr (i,e1) =
-   do { e0 <- readArray arr i
-      ; let e2       =  e0 `mappend` e1
-            changed  =  e0 /= e2
-      ; when changed (writeArray arr i e2)
-      ; return changed
-      }
-\end{code}
-Selecting the change candiates for a heap equation
+What remains to be done is to describe how change candidates
+are selected for each equation.
+This is implemented in function |heapChange| below and
+function |envChanges| if figure~\ref{fig.envChanges}.
+
+We start with the changes for heap locations.
+Function |heapChange| disects an |HeapEquation|,
+that states that at some location a node with given tag
+and argument variables is stored.
+If the node is a function thunk, i.e.\ the tag is |GrTag_Fun|,
+the location can later be updated with the function result.
+Possible nodes that this location can point to are therefore
+all function results for this function.
+We therefore consult the environment to obtain the `abstract result'
+for this function.
+Regardless of the value of the tag, the location mentioned in the equation
+certainly points initially to the node that is constructed.
+An `abstract node' is therefore constructed by creating a singleton
+map from the node to the abstractly evaluated arguments.
 \begin{code}
 heapChange ::  HeapEquation -> AbstractEnv s 
                -> ST s (Location,AbstractValue)
@@ -734,28 +968,58 @@ heapChange (WillStore locat tag args) env
  = do  { let mbres       =   tagFun tag
        ; absArgs         <-  mapM getEnv args
        ; absRes          <-  getEnv mbres
-       ; let absNode     =   AbsNodes (Map.singleton tag absArgs)
+       ; let absNode     =   AbsNodes 
+                               (Map.singleton tag absArgs)
        ; return (locat, absNode `mappend` absRes)
        }
        where
-       getEnv Nothing   =  return AbsBottom
-       getEnv (Just v)  =  readArray env v
        tagFun (GrTag_Fun nm)  =  Just (getNr nm)
        tagFun _               =  Nothing
+       getEnv Nothing         =  return AbsBottom
+       getEnv (Just v)        =  readArray env v
 \end{code}
-Auxiliary tests needed:
+The changes of the abstract variables that arise from
+processing an |Equation| are determined by function |envChanges|
+in figure~\ref{fig.envChanges}, which we will now discuss.
+First, note that this function returns a list of changes,
+unlike function |heapChange| above, which returns only a single change.
+For five out of six possible equation types this list 
+is a singleton, however.
+Only for the |IsApplication| case of an equation, multiple changes
+may arise from one equation.
+
+For the first equation type |IsKnown|, where a variable is known 
+to (possibly) have some abstract value, 
+the variable is simply tupled with that abstract value to indicate
+a necessary change.
+For the second equation type |IsEqual|, where a variable |d| possibly
+can be equal to another variable |v|, 
+the current approximation of |v| is looked up in the abstract environment,
+and designated as a needed change for |d| as well.
+For an |IsSelection| equation, the variable |v| is abstractly evaluated
+to obtain an abstract node. From that abstract node the desired field
+is abstractly selected.
+The case of an |IsConstruction| equation is similar to 
+the |WillStore| heap equation discussed above, in that 
+an abstract node is created from the known tag and the abstractly 
+evaluated argument variables.
+
+The fifth equation type is |IsEvaluation d v|, 
+which states that |d| may be used to hold the evaluation result of 
+thunk nodes pointed to by |v|.
+Here, we first abstractly evaluate |v| to obtain the abstract pointers.
+These pointers are then abstractly dereferenced, 
+that is looked up in the abstract heap.
+This results in all abstract nodes the locations can point to.
+By the design of the processing of heap equations, 
+this is not only the thunk node, but also the possible
+evaluation results of it.
+As the |IsEvaluation| equation is supposed obtain the evaluation
+results only, the list of all abstract nodes the locations can point
+to is filtered such that only those with a value tag (like |GrTag_Con|)
+remain, and those with thunk tag (like |GrTag_Fun|) are discarded.
+The filtering is done by an auxiliary function:
 \begin{code}
-isPAppTag :: GrTag -> Bool
-isPAppTag (GrTag_PApp _ _)    = True
-isPAppTag _                   = False
-
-isValueTag :: GrTag -> Bool
-isValueTag  GrTag_Any         = True
-isValueTag  GrTag_Unboxed     = True
-isValueTag (GrTag_PApp _ _)   = True
-isValueTag (GrTag_Con _)      = True
-isValueTag _                  = False
-
 filterTaggedNodes ::  (GrTag->Bool) 
                       -> AbstractValue -> AbstractValue
 filterTaggedNodes p (AbsNodes nodes) 
@@ -763,8 +1027,52 @@ filterTaggedNodes p (AbsNodes nodes)
     in   AbsNodes newNodes
 filterTaggedNodes p av
   = av
+isValueTag, isPAppTag :: GrTag -> Bool
+isValueTag  (GrTag_Fun _)      = False
+isValueTag  (GrTag_App _)      = False
+isValueTag  _                  = True
+isPAppTag   (GrTag_PApp _ _)   = True
+isPAppTag   _                  = False
 \end{code}
+The last equation type, |IsApplication|, is the trickiest.
+Remember that is was introduced in section~\ref{sec.collect} in two situations:
+(1) at every |App| expression in the Grin program, 
+where the |Maybe Variable| destination is |Just| a variable name,
+and 
+(2) at every constructed node in the Grin program with |App| tag,
+where the destination is |Nothing|.
 
+Also remember from section~\ref{sec.constraintlang} 
+that |IsApplication mbv (f:as)| means that |f| is a variable
+which refers to a function which is applied to
+values referred to by variables |as|
+(and the result may be stored in variable |v| if |mbv| is |Just v|).
+
+The first thing that needs to be done is therefore to
+evaluate |f| and |as| abstractly.
+If the equation was introduced from situation (2),
+the function variable also needs to be dereferenced abstractly.
+This gives us an abstract function |absFun| and abstract arguments |absArgs|.
+Function |absCall| now can abstractly apply the former to the latter.
+
+Doing an abstract call amounts to filtering the partial-application thunk nodes
+from the possible nodes that can represent the function, 
+and adding the extra arguments by way of function |addArgs|.
+If, after adding the new parameters, the function is still not fully saturated,
+a new abstract node is constructed, having a |PApp| tag with lower |needs|
+than the original one. 
+If the function happens to be fully saturated, the possible results are read from the environment.
+The resulting nodes (either the newly constructed, or those read)
+is tupled with the destination variable to indicate a necessary change,
+at least in situation (1) where such a variable exists.
+
+But there are other changes that need to be taken in account as well.
+In the abstract call, new associations are made between arguments and
+formal parameters, that are not otherwise detected.
+This is why the |absCall| and |addArgs| functions, in addition to the function result,
+also return changes that take care of new possible abstract values for argument variables.
+It is because of these `side effects' (designated |sfx| in figure~\ref{fig.envChanges})
+that function |envChanges| sometimes returns more than one change.
 
 \begin{figure*}
 \begin{code}
@@ -828,6 +1136,7 @@ envChanges equat env heap applyMap
                                AbsBottom   -> []
 \end{code}
 \caption{Selection of change candidates for variables}
+\label{fig.envChanges}
 \end{figure*}
 
 
@@ -899,4 +1208,3 @@ Peyton Jones, Simon.
 
 \begin{code}
 \end{code}
-
