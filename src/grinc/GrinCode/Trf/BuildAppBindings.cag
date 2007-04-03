@@ -1,8 +1,14 @@
-The input gives us A/apply tags with a variable number of fields. We should
-make the tag unique for each such field. eg a node with 4 fields should be named A/apply2.
+The input contains nodes with an A/apply tags and a variable number of fields. 
+The first field always represents the function to be applied, the other fields are arguments for this function.
+This transformation replaces the tag with a tag that also encodes the number of arguments.
+Examples:
+  (A/apply f a1 a2 a3)  ==>  (A/app3 f a1 a2 a3)
+  (A/apply f a1 a2)     ==>  (A/app2 f a1 a2)
+  (A/apply f a1)        ==>  (A/app1 f a1)
 
-each A/applyN should be mapped to a appN function which evals the first field
-of the node and applys all (N) other arguments.
+The transformation also builds new functions app1, app2, app3 ...
+for all number of arguments for which A tags exist.
+
 
 %%[0
 %include lhs2TeX.fmt
@@ -66,12 +72,6 @@ SEM GrTag [ | | isGenApplyTag : Bool ]
 %%% Replace A/apply wit A/appN %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-A node contains always the size field. the generic form of an apply node is:
-(A/appN size partApp arg1 .. argN)
-
-thus the fieldCount is numberOfArgsToApply + 2.
-
-A 'tag only value' A/apply should never occur. If it does, it will now become A/app-2.
 
 %%[8.replaceApplyTags
 SEM GrVal
