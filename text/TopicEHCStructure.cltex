@@ -1,22 +1,86 @@
 %%[abstract
 Haskell compilers are complex programs.
-Testimony to this observation is the GHC (Glasgow Haskell compiler)
-and the Essential Haskell compiler is no exception.
+Testimony to this observation is the Glasgow Haskell compiler (GHC),
+which simultaneously incorporates many novel features, is used as a reliable workhorse for many a
+functional programmer, and offers a research platform for language designers.
+As a result, modifying GHC requires involves a steep learning curve in order to become acquainted 
+with GHC's internals.
+In this experience report we describe the structure of the Essential Haskell Compiler (EHC),
+which also becomes increasingly complex as its grows beyond the essentials towards a full Haskell compiler.
+Our approach partitions both language and its implementation into smaller, more manageable steps,
+and uses compiler domain specific tools to generate parts of the compiler from higher level descriptions.
 %%]
 
-%%[XX
+%%[introduction
+Haskell is a perfect example of a programming language which offers many features improving programming efficiency while
+at the same time offering a sophisticated type system to protect against many programming errors.
+As such it is an answer for the programmer looking for a programming language which does as much as possible of the programmer's job while
+at the same time guaranteeing particular program properties like ``well-typed programs don't crash''.
+However, the consequence is that a programming language implementation is burdened by these responsibilities,
+and becomes complex as a consequence.
+
+In \thispaper\ we show how we deal with this compiler complexity, in particular the following issues:
+\begin{Itemize}
+\item \textbf{Language features.} (\secRef{sec-ehcstruct-complexity-design})
+  Language features usually are experimented with in isolation.
+  We also describe their implementation in isolation, as a sequence of language variants building on top
+  of eachother.
+\item \textbf{Maintenance.} (\secRef{sec-ehcstruct-complexity-maintenance})
+  Actual compiler source, its documentation and specification tend to become inconsistent over time.
+  We deal with inconsistencies by avoiding its main cause: duplication.
+  Whenever two artefacts have to be consistent, we generate these from a common description.
+\item \textbf{Description complexity.} (\secRef{sec-ehcstruct-complexity-formalisation})
+  The specification of parts of the implementation itself can become complex because low-level details
+  are visible.
+  We use domain specific languages which factor out low-level details which can be automatically generated.
+\end{Itemize}
+
+We focus on the overall organisation and discuss the benefits and drawbacks of it.
+However, we omit explanation, discussion and literature reference relating to specific language concepts,
+as we believe this is not the intention of an experience report.
 %%]
 
-%%[XX
+%%[complexityDesign
+\figRef{fig-ehcstruct-langs} shows some of the language variants together with relevant artefacts.
+\figRef{fig-ehcstruct-alllangvariant} shows a complete list, mentioning only which language concept is introduced in which 
+EH step.
+
+For example, the first language in the first column of \figRef{fig-ehcstruct-langs} introduces the starting point
+for subsequent languages.
+It features the simply typed |lambda|-calculus, where all defined values require an accompanying type signature,
+demonstrated by the example.
+For the description of the corresponding compiler we require the semantics of all language constructs,
+its implementation and documentation.
+The semantics is defined in terms of type rules and the implementation in terms of attribute grammars.
+
+{
+%%@Poster.exportedMacros
+\begin{figure*}[t]
+\newcommand{\Nw}{}
+\begin{tabular}{l@@{}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
+%%@Poster.langSeries
+\end{tabular}
+\caption{Languages design steps}
+\label{fig-ehcstruct-langs}
+\end{figure*}
+}
+
+\begin{CenterFigure}{t}{EH all language variants}{fig-ehcstruct-alllangvariant}
+%%@SlidesIntro.ehVariantsTable
+\end{CenterFigure}
+
 %%]
 
-%%[XX
+%%[complexityMaintenance
+
+\FigurePDF{t}{0.35}{toolchain}{EHC toolchain}{ehcstruct-toolchain}
+
 %%]
 
-%%[XX
+%%[complexityFormalisation
 %%]
 
-%%[XX
+%%[experiences
 %%]
 
 %%[XX

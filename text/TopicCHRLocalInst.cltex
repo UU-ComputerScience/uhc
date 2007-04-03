@@ -1223,7 +1223,7 @@ We need this information to be explicit so we can make a choice between 'forgett
 %%[discussion
 \Paragraph{Related work}
 
-There seems not to be done much work related to scoped instances.
+It appears as if not much work related to scoped instances has been done.
 In the discussion of previous work (\secRef{sec-chr-startingpoint}) we observed that named instances
 \cite{kahl01named-instance,scheffczyk01mth-namedinst}
 are closely related to scoped instances because referring by name to an instance clearly disambiguates between alternative instances.

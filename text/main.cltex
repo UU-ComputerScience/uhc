@@ -794,12 +794,12 @@ WWW home page:
 %%]
 
 %%[25
-\title{Experience Report: The Structure of the Essential Haskell Compiler}
+\title{Experience Report: The Structure of the Essential Haskell Compiler, coping with Compiler Complexity}
 %if acm && useSigplanconfSty
 %if blinded
 \authorinfo{author info removed for reviewing}{--}{--}
 %else
-\authorinfo{Atze Dijkstra, Jeroen Fokker \and S. Doaitse Swierstra}
+\authorinfo{Atze Dijkstra \and Jeroen Fokker \and S. Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
@@ -892,6 +892,9 @@ WWW home page:
 %elif storyEhcBook
 \newcommand{\thispaper}{this book}
 \newcommand{\thischapt}{this chapter}
+%elif storyEHCstruct
+\newcommand{\thispaper}{this experience report}
+\newcommand{\thischapt}{this experience report}
 %elif truu
 \newcommand{\thispaper}{this report}
 \newcommand{\thischapt}{this report}
@@ -1668,14 +1671,34 @@ and pointing out where and why we differ from \cite{stuckey02theory-overloading}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% EHC ??: Experience Report: EHC structure
+%%% Experience Report: EHC structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[25
 \section{Introduction}
-\section{The results}
-\section{The structure}
-\section{The tools}
+
+%%@TopicEHCStructure.introduction
+
+\section{Coping with design complexity: stepwise grow a language}
+\label{sec-ehcstruct-complexity-design}
+
+%%@TopicEHCStructure.complexityDesign
+
+\section{Coping with maintenance complexity: generate, generate and generate}
+\label{sec-ehcstruct-complexity-maintenance}
+
+%%@TopicEHCStructure.complexityMaintenance
+
+\section{Coping with formalisation complexity: domain specific languages}
+\label{sec-ehcstruct-complexity-formalisation}
+
+%%@TopicEHCStructure.complexityFormalisation
+
+\section{Experiences}
+\label{sec-ehcstruct-experiences}
+
+%%@TopicEHCStructure.experiences
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

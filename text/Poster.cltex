@@ -5,8 +5,10 @@
 \newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
 \newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
 \newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
+%%[[exportedMacros
 \newcommand{\NTitle}[1]{{\Large\textbf{#1}}}
 \newcommand{\Dots}{\NTitle{...}}
+%%]]
 \let\NL=\\
 \noindent
 \begin{tikzpicture}
@@ -47,6 +49,7 @@
 \begin{tabular}{l@@{}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
 \multicolumn{5}{c}{\NTitle{Coping with design complexity: stepwise grow a language (Haskell in particular)}}
 \\
+%%[[langSeries
 \textbf{Feature:}
 &
 Simply typed |lambda| calculus
@@ -61,18 +64,18 @@ Higher ranked types
 &
 %%[[wrap=boxcode{.12}
 %%@[file:test/1/demo2.eh%%]
-%%]
+%%]]
 &
 %%[[wrap=boxcode{.12}
 let  id = \x -> x
 in   (id 3,id 'x')
-%%]
+%%]]
 %yields
 %|id :: %%3(let id = \x -> x in id%%)|
 &
 %%[[wrap=boxcode{.15}
 %%@[file:test/4/demo2.eh%%]
-%%]
+%%]]
 &
 \Dots
 \\
@@ -104,6 +107,7 @@ in   (id 3,id 'x')
 &
 \multicolumn{4}{l}{\Dots}
 \\
+%%]]
 \end{tabular}
 };
 
