@@ -604,6 +604,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \frame<presentation>
 {
 \frametitle{EHC versions}
+%%[[ehVariantsTable
 \begin{tabular}{lp{.4\linewidth}p{.42\linewidth}}
 \hline
  & \textbf{Haskell} & \textbf{extensions} \\
@@ -630,13 +631,14 @@ infers kind @Eq :: Forall a . a -> a -> *@
   & extensible records
   \\
 \hline
-11-12 &  type synonyms, modules
+11 ... &  type synonyms, modules
   &
   \\
-... & Integer, Float, deriving, IO, ...
+  & Integer, Float, deriving, IO, ...
   &
   \\
 \end{tabular}{}
+%%]]
 }
 %%]
 

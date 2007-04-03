@@ -349,7 +349,7 @@ cpHandleErr
                                 ; m
                                 ; hFlush stderr
                                 }
-        failOrNot es = if creAreFatal es then lift exitFailure else return ()
+        failOrNot es = if creAreFatal es then lift exitFailure else cpSetOk
 
 cpHandle1 :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
 cpHandle1 rest first
