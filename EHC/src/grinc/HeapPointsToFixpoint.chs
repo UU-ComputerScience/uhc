@@ -53,12 +53,12 @@ isPAppTag :: GrTag -> Bool
 isPAppTag (GrTag_PApp _ _) = True
 isPAppTag _                = False
 
-isValueTag :: GrTag -> Bool
-isValueTag  GrTag_Any        = True
-isValueTag  GrTag_Unboxed    = True
-isValueTag (GrTag_PApp _ _)  = True
-isValueTag (GrTag_Con _ _ _) = True
-isValueTag _                 = False
+isFinalTag :: GrTag -> Bool
+isFinalTag  GrTag_Any        = True
+isFinalTag  GrTag_Unboxed    = True
+isFinalTag (GrTag_PApp _ _)  = True
+isFinalTag (GrTag_Con _ _ _) = True
+isFinalTag _                 = False
 
 
 filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
@@ -117,7 +117,7 @@ envChanges equat env heap
     absDeref av
       = case av of
           AbsLocs ls  ->  do { vs <- mapM (readArray heap) (Set.toList ls)
-                             ; return (mconcat (map (filterTaggedNodes isValueTag) vs))
+                             ; return (mconcat (map (filterTaggedNodes isFinalTag) vs))
                              }
           AbsBottom   ->  return av
           AbsError _  ->  return av
