@@ -299,7 +299,6 @@ cpUpdCU modNm upd
        ; let cu = (maybe (upd cuDefault) upd (crMbCU modNm cr))
        ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
        }
-
 {-
 cpUpdCU modNm upd
  = cpUpdCUM modNm (return . upd)
@@ -312,10 +311,9 @@ cpSeq (a:as) = cpHandle1 (do { cpSetOk
                              })
                          a
 
-cpHandle1 :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
-cpHandle1 rest first
-  = do { _ <- first
-       ; cr <- get
+cpHandleErr :: CompileRunError e p => CompilePhase n u i e ()
+cpHandleErr
+  = do { cr <- get
        ; case crState cr of
            CRSFailErrL about es (Just lim)
              -> do { let (showErrs,omitErrs) = splitAt lim es
@@ -334,7 +332,7 @@ cpHandle1 rest first
                      else lift (do { hFlush stdout
                                    ; hPutPPLn stderr (about >#< "found errors" >-< e)
                                    })
-                   ; if not (null is) then cpSetFail else rest
+                   ; if not (null is) then lift exitFailure else return ()
                    }
              where e = empty -- if doPrint then crePPErrL is else empty
            CRSFail
@@ -343,18 +341,24 @@ cpHandle1 rest first
            CRSStop
              -> do { lift $ exitWith ExitSuccess
                    }
-           CRSStopAllSeq
-             -> cpSetStopAllSeq
-           CRSStopSeq
-             -> cpSetOk
-           CRSOk
-             -> rest
+           _ -> return ()
        }
   where putErr' m e   = if null e
                         then return ()
-                        else
-                             do { hPutPPLn stderr (crePPErrL e)
+                        else do { hPutPPLn stderr (crePPErrL e)
                                 ; m
                                 ; hFlush stderr
                                 }
-        failOrNot es = if creAreFatal es then cpSetFail else rest
+        failOrNot es = if creAreFatal es then lift exitFailure else return ()
+
+cpHandle1 :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
+cpHandle1 rest first
+  = do { _ <- first
+       ; cpHandleErr
+       ; cr <- get
+       ; case crState cr of
+           CRSOk         -> rest
+           CRSStopSeq    -> cpSetOk
+           CRSStopAllSeq -> cpSetStopAllSeq
+           _             -> return ()
+       }

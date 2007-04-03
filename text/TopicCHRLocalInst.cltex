@@ -17,7 +17,7 @@ which, for example, depend on runtime program input.
 In this paper we lift these restrictions by means of local instances.
 Local instances allow us to shadow existing instances by new ones and to construct
 instances inside functions, using function arguments.
-We provide a translation of class and instance definitions to constraint handling rules,
+We provide a translation of class and instance definitions to Constraint Handling Rules,
 making explicit the notion of ``scope of an instance'' and its role in context reduction for instances.
 We deal with the ambiguity for choosing between instances
 by using a framework for heuristically choosing between otherwise overlapping instances.
@@ -37,7 +37,8 @@ For the purpose of \thispaper, the key design choices of this mechanism are:
 \begin{itemize}
 \item The class system chooses which instance is used to satisfy a predicate, and consequently which dictionary to pass implicitly.
 \item The class system makes its choice based on the type(s) over which a class predicate ranges.
-\item The only way a programmer can steer the class system is by providing class and instance declarations.
+\item The only way a programmer can steer the class system is by providing class and instance declarations,
+  and explicit type signatures for let-bound identifiers.
 \end{itemize}
 
 These design choices have led to, often ingenious, type level programming and class system extensions to support this,
@@ -141,14 +142,20 @@ f x y =  let  instance Eq Int       -- now used!
          in   x == y && x == 3
 %%]]
 
-In '|x == y && x == 3|'\footnote{We ignore the fact that 3 also gives rise to a |Num| predicate.}
+In '|x == y && x == 3|'\footnote{We ignore the fact that 3 gives rise to a |Num| predicate.}
 the need for |Eq Int| arises within the scope of the local |Eq Int| instance, and its satisfaction
 thus must take the presence of this instance into account.
 In terms of a solution for scoped instances, this means that the obligation to prove a predicate like |Eq Int|,
 has to be annotated with the scope in which that happens.
+And, although we lose principal typing, our solution for dealing with scoped instances offers a mechanism to
+steer context reduction for the qualified part of an inferred type.
+Therefore, scoped instances, when combined with type signatures (more about this later),
+in practice offer a way to explicitly deal with
+the consequence of the loss of principal typing.
 
 \Paragraph{Location}
-The above observation complicates matters, as demonstrated by the following example:
+The above observation complicates matters, as demonstrated by the following example;
+|y|'s type is not generalized over in function |g| because it still is free in |g|'s enclosing environment:
 
 %%[[wrap=code
 f x =  let  g y =  let  instance Eq Int     ^
@@ -160,15 +167,19 @@ We only get to know the type of |y| together with |f|'s parameter |x|,
 which means that context reduction for the |Eq| predicate
 over that type arising at (*) has to be done together with context reduction for |f|,
 on a more global level.
-The proving machinery then still has to know about the local instance declaration.
+There we find out that both |y| and |x| are of type |Int|, and that the nested |Eq Int| instance can be used.
+Context reduction then still has to know about the local instance declaration, even for proofs on a more global level.
 
 \Paragraph{Instances with context}
 
 The combination of instances requiring other instances in their context, overlapping instances,
 and local instances makes it rather difficult to predict what combination of instances is used to
-satisfy |Show [[[v1]]]| arising in the following example for some type variable |v1|:
+satisfy |Show [[[v1]]]|, arising in |showTable|, in the following example for some type variable |v1|:
 
 %%[[wrap=code
+class Show a where
+  show :: a -> [Char]
+
 instance Show Char                          -- dShowChar
 instance Show a =>  Show [a]                -- dShowL
 instance Show [Char]                        -- dShowCharL
@@ -378,7 +389,7 @@ which always exists because the global scope always is common:
 
 %%[[wrap=code
 commonScope :: scope -> scope -> scope
-commonScope (x:xs)  (y:ys)  | x == y     = x : commonScope xs ys
+commonScope (s:ss)  (t:ts)  | s == t     = s : commonScope ss ts
                             | otherwise  = []
 commonScope _       _                    = []
 %%]]
@@ -394,9 +405,9 @@ s `visibleIn` t = s == s `commonScope` t
 
 \begin{Definition}[Constraint solution |Theta|]
 A \emph{constraint solution} |Theta| is a pair |(CHR,Cnstr)|,
-where |CHR| is a set of constraint handling rules (defined later) and
+where |CHR| is a set of Constraint Handling Rules (defined later) and
 |Cnstr| is a set of |Assume| constraints.
-|CHRorig| denotes the instance and class declarations from which |CHR| is derived,
+|CHRorig| denotes the instance and class declarations which induce |CHR|,
 |CnstrVarpi| denotes the |varpi|'s of |Cnstr|
 \end{Definition}
 
@@ -414,9 +425,11 @@ An \emph{Assume} is satisfied if the assumed |varpi| is an element of |Cnstr|.
 A \emph{Reduction} is trivially satisfied.
 \end{Definition}
 
+For now, for \figRef{MiscRules.entailn.all} we take |varpi isbydef pred|.
+
 \Paragraph{Constraint Handling Rules}
 
-A constraint handling rule (CHR) declaratively specifies how to rewrite a constraint for
+A Constraint Handling Rule (CHR) declaratively specifies how to rewrite a constraint for
 a particular problem domain \cite{fruhwirth98theory-chr}.
 Each such CHR must be of a specific form:
 
@@ -491,8 +504,8 @@ deriv(C3) ^^  {Prove(Real v1)}
 %%]]
 
 All rules but (C23) directly correspond to a class or instance declaration.
-In order to guarantee confluence it is necessary to
-explicitly represent the
+In order to guarantee confluence \cite{fruhwirth98theory-chr}
+it is necessary to explicitly represent the
 transitive closure of the class hierarchy by a set of rules.
 Were rule (C23) is not available,
 the following derivation becomes possible:
@@ -722,8 +735,8 @@ class Eq a where
 instance Eq Int where                                       ^ -- (I1)
   x == y = primEqInt x y
 
-v1 =  3 == 5                                                ^ -- (e1), False
-v2 =  let  instance Eq Int where                            ^ -- (I2)
+e1 =  3 == 5                                                ^ -- (e1), False
+e2 =  let  instance Eq Int where                            ^ -- (I2)
              x == y = primEqInt  (x `mod` 2)
                                  (y `mod` 2)                ^
       in   3 == 5                                           ^ -- (e2), True
@@ -759,7 +772,7 @@ but by using scope information we can disambiguate.
 
 The entailment relation is extended (in \figRef{MiscRules.entailscn.all}) with a rule for lifting a scoped class predicate
 to a more global scope.
-The rule for instances is restricted to apply to predicates of the same scope only.
+The rule for instances is restricted to apply to predicates of the same or more local scope only.
 The class rule still applies to any predicate since classes are only defined globally.
 
 \rulerCmdUse{MiscRules.entailscn.all}
@@ -1208,6 +1221,18 @@ We need this information to be explicit so we can make a choice between 'forgett
 %%]
 
 %%[discussion
+\Paragraph{Related work}
+
+There seems not to be done much work related to scoped instances.
+In the discussion of previous work (\secRef{sec-chr-startingpoint}) we observed that named instances
+\cite{kahl01named-instance,scheffczyk01mth-namedinst}
+are closely related to scoped instances because referring by name to an instance clearly disambiguates between alternative instances.
+Although the desirability of scoped instances is noted in literature
+\cite{kiselyov04impl-config,shields01first-class-mod},
+loss of principal typing and coherence turn out to be major stumbling blocks.
+However, we feel that by offering mechanisms to explicitly deal with these issues,
+the severity of it is mitigated.
+
 \Paragraph{Explicitly dealing with otherwise implicit choices}
 
 With our framework we now are able to be explicit in the choices made during context reduction,
