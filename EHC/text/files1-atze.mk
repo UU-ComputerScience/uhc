@@ -12,7 +12,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
 								gbm \
 								uniqueness slides-uniqueness \
-								icfp07-chr-locinst icfp07-chr-locinst-blind
+								icfp07-chr-locinst icfp07-chr-locinst-blind \
+								icfp07-ehcstruct icfp07-ehcstruct-blind
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -23,6 +24,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								ToolDocShuffle ToolDocRuler \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
+								TopicEHCStructure \
 								AppxNotation FrontMatter OldText \
 								Poster \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
@@ -56,6 +58,10 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 22: grin bytecode design
 # 23: slides status
 # 24: paper "chr & local instances"
+# 25: experience report "ehc structure"
+# 26: acm paper: base (share)
 # 77: scratch (article format)
 
-TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, 1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, 18 < 21, 1 < 22, 18 < 23, 1 < 24
+TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, \
+								1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, \
+								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25

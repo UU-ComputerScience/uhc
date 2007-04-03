@@ -1,0 +1,16 @@
+digraph fgl {
+        1 [label = "(Ord c1, [1])", color = "red", fontcolor="red"]
+        2 [label = "(Eq  c1, [1])", color = "red", fontcolor="red"]
+        3 [label = "(Ord c1, [])", color = "white", fontcolor="white"]
+        4 [label = "(Eq  c1, [])", color = "white", fontcolor="white"]
+        5 [label = "True", color = "white", fontcolor="white"]
+
+        1 -> 3 [label = "scope", color = "white", fontcolor="white"]
+        2 -> 4 [label = "scope", color = "white", fontcolor="white"]
+        4 -> 3 [label = "eqOrd", color = "white", fontcolor="white"]
+        2 -> 1 [label = "eqOrd", color = "white", fontcolor="white"]
+        3 -> 5 [label = "assumption", color = "white", fontcolor="white"]
+
+        {rank = same; 1 2 }
+        {rank = same; 3 4 5 }
+}

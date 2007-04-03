@@ -1,0 +1,55 @@
+:- use_module( library(chr)).
+
+handler typeclasses.
+
+constraints eq/2, ord/2, assume/1, cons/2, proved/2, ent/2.
+
+%% class Eq, remove duplicates
+eq(A, N), eq(A, M) <=> eq(A, cons(r1, fork(N, M))).
+
+%% instances Eq Int, Eq Bool, Eq List
+eq(int, N)     <=> proved(r2, N).
+eq(char, N)    <=> proved(r3, N).
+eq(list(A), N) <=> eq(A, cons(r4, N)).
+
+%% class Ord, subclass Eq, remove duplicates
+ord(A, N), eq(A, M)  <=> ord(A, cons(r5, fork(N, M))).
+ord(A, N), ord(A, M) <=> ord(A, cons(r6, fork(N, M))).
+
+
+
+ord(int, N)     <=> proved(r7, N).
+ord(char, N)    <=> proved(r8, N).
+ord(list(A), N) <=> ord(A, cons(r9, N)).
+
+
+%% assume(ord(v1, 2)), ord(list(char), 1), eq(v1, 3), ord(v1, 4), ord(v1, 5), ord(list(v1), 6), ord(list(v1), 7), ord(list(v1), 8)
+
+
+:- use_module( library(chr)).
+
+handler typeclasses.
+
+constraints eq/2, ord/2, assume/1, cons/2, proved/2, ent/2.
+
+%% class Eq, remove duplicates
+eq(A, N), eq(A, M) <=> eq(A, cons(r1, fork(N, M))).
+
+%% instances Eq Int, Eq Bool, Eq List
+eq(int, N)     <=> proved(r2, N).
+eq(char, N)    <=> proved(r3, N).
+eq(list(A), N) <=> eq(A, cons(r4, N)).
+
+%% class Ord, subclass Eq, remove duplicates
+ord(A, N), eq(A, M)  <=> ord(A, cons(r5, fork(N, M))).
+ord(A, N), ord(A, M) <=> ord(A, cons(r6, fork(N, M))).
+
+ord(int, N)     <=> proved(r7, N).
+ord(char, N)    <=> proved(r8, N).
+ord(list(A), N) <=> ord(A, cons(r9, N)).
+
+assume(ord(A, N)), ord(A, M) <=> assume(ord(A, N)), ent(N, ord(A, M)).
+assume(ord(A, N)), eq(A, M) <=> assume(ord(A, N)), ent(N, eq(A, M)).
+
+ent(N, ord(A, O)), ent(N, ord(A, P)) <=> ent(N, ord(A, cons(r6, fork(O, P)))).
+ent(N, ord(A, O)), ent(N, eq(A, P)) <=> ent(N, ord(A, cons(r5, fork(O, P)))).

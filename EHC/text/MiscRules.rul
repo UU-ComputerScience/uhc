@@ -102,7 +102,7 @@ scheme entailscn =
   holes [ preds.1.s: Preds, preds.2.t: Preds ]
   judgespec preds.1.s ::-."e" preds.2.t
 
-ruleset entailscn.all scheme entailscn "Entailment (scoped)" =
+ruleset entailscn.all scheme entailscn "Entailment (scoped, nondeterministic)" =
   rule class =
     judge classDef = preds.2 => pred.3
     judge entailscn = preds.1 ::- pred.3.s
@@ -110,7 +110,8 @@ ruleset entailscn.all scheme entailscn "Entailment (scoped)" =
     judge entailscn = preds.1 ::- preds.2.s
     
   rule inst =
-    judge instScDef = preds.3 => s, pred.2
+    judge instScDef = preds.3 => t, pred.2
+    judge visibleIn = t <= s
     judge entailscn = preds.1 ::- preds.3.s
     -
     judge entailscn = preds.1 ::- pred.2.s

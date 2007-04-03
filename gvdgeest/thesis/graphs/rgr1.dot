@@ -1,0 +1,28 @@
+digraph fgl {
+
+        1 [label = "Ord (Int, c1)"]
+        2 [label = "Eq  [(Int, c1)]"]
+        3 [label = "Ord c1"]
+        4 [label = "True"]
+        5 [label = "And"]
+        6 [label = "Ord Int"]
+        7 [label = "Eq (Int, c1)"]
+        8 [label = "And"]
+        9 [label = "Eq Int"]
+        10 [label = "Eq c1"]
+        3 -> 4 [label = "a1"]
+        1 -> 5 [label = "ordTuple"]
+        5 -> 6 [label = ""]
+        5 -> 3 [label = ""]
+        2 -> 7 [label = "eqList"]
+        7 -> 1 [label = "eqOrd"]
+        7 -> 8 [label = "eqTuple"]
+        8 -> 9 [label = ""]
+        8 -> 10 [label = ""]
+        9 -> 6 [label = "eqOrd"]
+        10 -> 3 [label = "eqOrd"]
+        6 -> 4 [label = "ordInt"]
+        9 -> 4 [label = "eqInt"]
+          
+
+}

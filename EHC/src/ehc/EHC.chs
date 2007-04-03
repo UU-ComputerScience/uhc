@@ -703,7 +703,7 @@ cpFoldEH modNm
                  mbEH   = ecuMbEH ecu
                  ehSem  = foldEH (crsiHSInh crsi) (crsiEHInh crsi) ecu crsi (panicJust "cpFoldEH" mbEH)
          ;  when (isJust mbEH)
-                 (cpUpdCU modNm (ecuStoreEHSem ehSem))
+                 (cpUpdCU modNm $! ecuStoreEHSem $! ehSem)
          }
 
 cpFoldHs :: HsName -> EHCompilePhase ()
@@ -713,7 +713,7 @@ cpFoldHs modNm
                  mbHS   = ecuMbHS ecu
                  hsSem  = foldHs (crsiHSInh crsi) modNm ecu crsi (panicJust "cpFoldHs" mbHS)
          ;  when (isJust mbHS)
-                 (cpUpdCU modNm (ecuStoreHSSem hsSem))
+                 (cpUpdCU modNm $! ecuStoreHSSem $! hsSem)
          }
 %%]
 
@@ -725,7 +725,7 @@ cpFoldHsMod modNm
                  mbHS       = ecuMbHS ecu
                  hsSemMod   = foldHsMod (crsiHSModInh crsi) modNm ecu crsi (panicJust "cpFoldHsMod" mbHS)
          ;  when (isJust mbHS)
-                 (cpUpdCU modNm (ecuStoreHSSemMod hsSemMod))
+                 (cpUpdCU modNm $! ecuStoreHSSemMod $! hsSemMod)
          }
 %%]
 
@@ -799,7 +799,7 @@ cpFlowHsSem1 modNm
          ;  when (isJust (ecuMbHSSem ecu))
                  (do { put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'}})
                      ; cpUpdCU modNm $! ecuStoreHIInfo $! forceEval hii'
-                     ; lift $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
+                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
          -- ;  lift $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
          }
@@ -866,7 +866,7 @@ cpFlowEHSem1 modNm
                                                    }})
 %%[[20
                      ; cpUpdCU modNm $! ecuStoreHIInfo $! forceEval hii'
-                     ; lift $ putStrLn (forceEval hii' `seq` "cpFlowEHSem1")
+                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowEHSem1")
 %%]]
                      })
          }
@@ -944,7 +944,7 @@ cpFlowCoreSem1 modNm
          ;  when (isJust (ecuMbCoreSem ecu))
                  (do { put (cr {crStateInfo = crsi {crsiCoreInh = coreInh'}})
                      ; cpUpdCU modNm $! ecuStoreHIInfo $! forceEval hii'
-                     ; lift $ putStrLn (forceEval hii' `seq` "cpFlowCoreSem1")
+                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowCoreSem1")
                      })
          }
 %%]
@@ -984,7 +984,7 @@ cpFlowOptim modNm
          ;  when (isJust (ecuMbOptim ecu))
                  (do { put (cr {crStateInfo = crsi {crsiOptim = optim'}})
                      ; cpUpdCU modNm $! ecuStoreHIInfo $! forceEval hii'
-                     ; lift $ putStrLn (forceEval hii' `seq` "cpFlowOptim")
+                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowOptim")
                      })
          }
 %%]
@@ -1445,7 +1445,7 @@ cpProcessHs modNm
           ]
 
 cpProcessEH :: HsName -> EHCompilePhase ()
-cpProcessEH modNm 
+cpProcessEH modNm
   = cpSeq [ cpFoldEH modNm
           , cpFlowEHSem1 modNm
           , cpTranslateEH2Core modNm

@@ -1,0 +1,41 @@
+digraph fgl {        
+        0 [label = "(Ord c1, [1])"]
+        1 [label = "True"]
+        3 [label = "(Eq [c1], [1,1])"]
+        4 [label = "(Ord [c1], [1,2])"]
+        5 [label = "(Ord [c1], [1])"]
+        6 [label = "(Ord c1, [1,2])"]
+        7 [label = "(Ord [c1], [])"]
+        8 [label = "(Ord c1, [])"]
+        9 [label = "(Eq [c1], [1])"]
+        10 [label = "(Eq c1, [1,1])"]
+        11 [label = "(Eq [c1], [])"]
+        12 [label = "(Eq c1, [1])"]
+        13 [label = "(Eq c1, [])"]
+        0 -> 8 [label = "scope"]
+        0 -> 1 [label = "a3"]
+        3 -> 10 [label = "eqList"]
+        3 -> 9 [label = "scope"]
+        4 -> 6 [label = "ordList"]
+        4 -> 5 [label = "scope"]
+        5 -> 0 [label = "ordList"]
+        5 -> 7 [label = "scope"]
+        6 -> 0 [label = "scope"]
+        7 -> 8 [label = "ordList"]
+        9 -> 12 [label = "eqList"]
+        9 -> 11 [label = "scope"]
+        9 -> 5 [label = "eqOrd"]
+        10 -> 12 [label = "scope"]
+        11 -> 13 [label = "eqList"]
+        11 -> 7 [label = "eqOrd"]
+        12 -> 13 [label = "scope"]
+        12 -> 0 [label = "eqOrd"]
+        13 -> 8 [label = "eqOrd"]
+        
+        {rank = same; 3 4 }
+        {rank = same; 6 10 }
+        {rank = same; 0 12}
+        {rank = same; 5 9}                
+        {rank = same; 8 13 1}
+        {rank = same; 7 11}
+}

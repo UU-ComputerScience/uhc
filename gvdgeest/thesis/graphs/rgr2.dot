@@ -1,0 +1,24 @@
+digraph fgl {
+
+        nodesep = "1" 
+
+        a1 [label = "Ord v1"]
+        a2 [label = "Eq [v1]"]
+        a3 [label = "Eq v1"]
+        a2 -> a3 [label = "eqList"]
+        a3 -> a1 [label = "eqOrd"]
+
+        b1 [label = "Ord v1"]
+        b3 [label = "True"]
+        b1 -> b3 [label = "a1"]
+
+        c1 [label = "Ord v1"]
+        c2 [label = "Eq [v1]"]
+        c3 [label = "True"]
+        c1 -> c3 [label = "a2"]
+        c2 -> c3 [label = "a3"]
+
+        {rank = same; a2 c2}
+        {rank = same; a1 b3 c3}
+
+}

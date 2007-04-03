@@ -60,7 +60,7 @@
 %%@main.articleDocumentClass
 %%]
 
-%%[24
+%%[26
 %%@main.articleDocumentClass
 %%]
 
@@ -534,7 +534,7 @@
 \SetSectionsForBook
 %%]
 
-%%[24
+%%[26
 \SetSectionsForArticle
 %%]
 
@@ -644,6 +644,8 @@
 \toappear{Submitted to the International Conference onf Functional Programming 2005 (ICFP 2005), September 26-28, Tallin, Estonia}
 %elif icfp06
 \toappear{Submitted to the International Conference onf Functional Programming 2006 (ICFP 2006), September xx-xx, xx, USA}
+%elif icfp07
+\toappear{Submitted to the ICFP 2007: International Conference on Functional Programming, Freiburg, Germany, 1Ð3 October 2007}
 %elif hw05
 \toappear{In preparation for the Haskell Workshop 2005 (HW2005), September 30, Tallin, Estonia}
 %elif hw06
@@ -777,17 +779,35 @@ WWW home page:
 \title{Modelling Scoped Instances with Constraint Handling Rules}
 %if acm && useSigplanconfSty
 %if blinded
-\authorinfo{author info blinded}{--}{--}
+\authorinfo{author info removed for reviewing}{--}{--}
 %else
 \authorinfo{Atze Dijkstra \and Gerrit van den Geest \and Bastiaan Heeren \and S. Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
-  {\{atze,doaitse,bastiaan\}@@cs.uu.nl, G.vandenGeest@@students.uu.nl}
+  {\{atze,ggeest,bastiaan,doaitse\}@@cs.uu.nl}
 %endif
 %else
 \author{Atze Dijkstra, Gerrit van den Geest, Bastiaan Heeren and S. Doaitse Swierstra}
+%endif
+%%]
+
+%%[25
+\title{Experience Report: The Structure of the Essential Haskell Compiler}
+%if acm && useSigplanconfSty
+%if blinded
+\authorinfo{author info removed for reviewing}{--}{--}
+%else
+\authorinfo{Atze Dijkstra, Jeroen Fokker \and S. Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Universiteit Utrecht \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,jeroen,doaitse\}@@cs.uu.nl}
+%endif
+%else
+\author{Atze Dijkstra, Jeroen Fokker and S. Doaitse Swierstra}
 %endif
 %%]
 
@@ -969,7 +989,7 @@ WWW home page:
 \maketitle
 %%]
 
-%%[24
+%%[26
 \maketitle
 %%]
 
@@ -1131,6 +1151,12 @@ have been submitted to POPL2006 in a slighty extended form.
 %%[24
 \begin{abstract}
 %%@TopicCHRLocalInst.abstract
+\end{abstract}
+%%]
+
+%%[25
+\begin{abstract}
+%%@TopicEHCStructure.abstract
 \end{abstract}
 %%]
 
@@ -1578,6 +1604,9 @@ where nesting is defined by Haskell's normal nesting language constructs.
 The \IxAsDef{scope} of an instance uniquely defines the location within nested language constructs.
 Scopes can be compared for visibility, to be defined more precisely later.
 A \IxAsDef{scoped instance} is either a global or a local instance, distinguishable on the basis of its scope.
+Note that in literature ``local'' sometimes means ``per module''.
+However, as per module instances are exported globally anyway in Haskell,
+we consider such instances to be global instances.
 
 \subsection{The problem}
 
@@ -1636,6 +1665,17 @@ and pointing out where and why we differ from \cite{stuckey02theory-overloading}
 %%@TopicCHRLocalInst.discussion
 
 %}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC ??: Experience Report: EHC structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[25
+\section{Introduction}
+\section{The results}
+\section{The structure}
+\section{The tools}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
