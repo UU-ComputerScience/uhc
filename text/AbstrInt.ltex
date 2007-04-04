@@ -14,6 +14,31 @@
   \next}
 
 
+
+\newcounter{enumctr}
+\newenvironment{enumate}{%
+\begin{list}{\arabic{enumctr}}{
+\usecounter{enumctr}
+\parsep  = 0pt
+\parskip = 0pt
+\topsep  = 0pt
+\itemsep = 0pt
+}}{\end{list}}
+\newenvironment{itize}%
+{\begin{list}%
+  {$\bullet$%
+  }%
+  {\parsep  = 0pt%
+   \parskip = 0pt%
+   \topsep  = 0pt%
+   \itemsep = 0pt%
+  }%
+}%
+{\end{list}%
+}
+
+
+
 %format GrModule  = "\mathit{Module}"
 %format GrGlobalL = "\mathit{GlobalL}"
 %format GrGlobal  = "\mathit{Global}"
@@ -48,6 +73,7 @@
 %format INH  = "\mathbf{inh}"
 %format .    = "."
 %format ^    = " "
+%format ^^    = "\;"
 %format ^@    = "@"
 %format LET  = "\mathbf{let}"
 %format IN   = "\mathbf{in}"
@@ -83,14 +109,8 @@
 \setlength{\parskip}{3pt}
 
 
-\title{%
-Avoiding Indirect Jumps
-% Efficient Case Selection
-through 
-Abstract Interpretation and Global Analysis
-}
-
-\subtitle{}
+\title{Abstract Interpretation to Avoid Indirect Jumps}
+\subtitle{an Attribute Grammar Approach}
 
 \authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
            {Utrecht University}
@@ -117,13 +137,18 @@ The text of the paper begins here.
 
 \section{Case selection and Indirect Jumps}
 
+
+
+
+
+
 Case distinction is the driving force in lazy languages
 
 Push/enter vs eval/apply
 
 Marlow\&Peyton Jones
 
-Boquist \cite{boquist}
+Boquist \cite{boquist1996} \cite{boquist1999}
 
 EHC
 
@@ -132,18 +157,254 @@ EHC
 
 \section{Tree walk methodology}\label{sec.ag}
 
-Tree walks
+\subsection{Ways to define semantics}
 
-Generalized folds
+% If a single phenomenon needed to be nominated as the
+% most fundamental aspect of computer science, it would
+% be the ability to generalize from specific instances
+% through abstraction and parameterization.
+% Every programming language has a way to define 
+% subroutines, procedures, functions, methods, or other
+% manifestations of abstraction, and to call them with
+% appropriate parameters.
 
-Attributes
+Functional languages are famous for their ability to 
+parameterize functions not only with numbers and data structures,
+but also with functions and operators.
+The standard textbook example involves the functions |sum| and |product|,
+which can be defined separately by tedious inductive definitions:
+\begin{code}
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+product  []      = 1
+product  (x:xs)  = x * product xs
+\end{code}
+but, once this pattern has been generalized in a function |foldr|
+that takes as additional parameters the base value and the operator to apply
+in the inductive case:
+\begin{code}
+foldr op e []      = e
+foldr op e (x:xs)  = x `op` foldr op e xs
+\end{code}
+could easily have been defined as specializations of the general case:
+\begin{code}
+sum      = foldr (+)  0
+product  = foldr (*)  1
+\end{code}
+Indeed, good generalizations might have unexpected applications in other domains:
+\begin{code}
+concat     =  foldr (++) []
+sort       =  foldr insert []
+transpose  =  foldr (zipWith (:)) (repeat [])
+\end{code}
+The idea that underlies the definition of |foldr|, i.e.\ to capture the pattern
+of an inductive definition by adding a function parameter for each constructor of
+the data structure, can also be used for other data types, and even for
+multiple mutually recursive data types.
+Functions that can be expressed in this way were called {\em catamorphisms}
+by Bird, and the collective extra parameters to |foldr|-like functions 
+an {\em algebra} \cite{bird}. 
+Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
+In fact, every algebra defines a {\em semantics} of the data structure.
+When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
+such as |((:),[])| for lists, we have the identity function.
+Such an algebra is said to define the `initial' semantics.
 
-AG-system as preprocessor
+Outside circles of functional programmers and category theorists, an
+algebra is simply known as a `tree walk'.
+In compiler construction, algebras could be very useful to define
+a semantics of a language, or bluntly said to define tree walks over the parse tree.
+The fact that this is not widely done, is due to the following problems:
 
-AG-rules
+\begin{enumate}
+\item Unlike lists, which have a standard function |foldr|, in a compiler we deal with
+      (many) custom data structures to describe the abstract syntax of a language, 
+      so we have to invest in writing a custom |fold|
+      function first. Morover, whenever we change the abstract syntax,
+      we need to change the |fold| function, and every algebra.
+\item Data structures for abstract syntax tend to have many alternatives,
+      so algebras end up to be clumsy tuples containing dozens of functions.
+\item Generated code can be described as a semantics of the language, but often
+      we need additional semantices: pretty-printed listings, warning messages,
+      and various derived structures for internal use (symbol tables etc.).
+      This can be done by having the semantic functions in the algebra return
+      tuples, but this makes the algebras even clumsier.
+\item In practice, information not only flows bottom-up in the parse tree,
+      but also top-down. E.g., symbol tables with global definitions need
+      to be distributed to the leafs of the parse tree to be able to evaluate them.
+      This can be done by having the semantic functions in the algebra take
+      additional parameters, but this pushes handling algebras beyond human control.
+\item Much of the work is just passing values up and down the tree.
+      The essense of a semantics is sparsely present in the algebra,
+      and obscured by lots of boilerplate.
+\end{enumate}
 
-Implicit AG-rules
+Many compiler writers thus end up writing ad hoc recursive functions
+instead of defining the semantics by a nice algebra,
+or even resort to non-functional techniques.
+Others succeed in giving a concise definition of a semantics,
+often using proof rules of some kind, but thereby loose the executability.
+For the implementation they still need conventional techniques,
+and an issue arises whether the program soundly implements
+the specified semantics.
 
+To save the nice idea of using an algebra for defining a semantics,
+we use a preprocessor for Haskell that overcomes the abovementioned problems \cite{agsyst}.
+It is not a separate language; we can still use Haskell for writing
+auxiliary functions, and use all abstraction techniques and libraries available.
+The preprocessor just allows a few additional constructs, which are translated
+into a custom |fold| function and algebras.
+
+
+\subsection{An Attribute Grammar based preprocessor for Haskell}
+
+We describe the main features of the preprocessor here, and why it overcomes
+the five problems mentioned above.
+To start with, the abstract syntax of the language is defined in a |DATA| declaration,
+which is like a Haskell {\bf data} declaration with named fields.
+The difference is that we don't have to write braces and commas,
+and that constructor function names need not to be unique.
+As an example, we define a fragment of a typical imperative language:
+\begin{code}
+DATA Stat
+  =  Assign  dest   :: String  ^^ ^^  src   :: Expr
+  |  While   cond   :: Expr    ^^ ^^  body  :: Stat
+  |  Group   elems  :: [Stat]
+DATA Expr
+  =  Const   num   :: Int
+  |  Var     name  :: String
+  |  Add     left  :: Expr     ^^ ^^  right  :: Expr
+  |  Call    name  :: String   ^^ ^^  args   :: [Expr]
+\end{code}
+The preprocessor generates corresponding {\bf data} declarations
+(making the constructors unique by prepending the type name, like |Expr_Const|),
+and more importantly, generates a custom |fold| function. This overcomes problem 1.
+
+For any desired value we wish to compute over a tree, we can declare a `synthesized attribute'.
+Attributes can be defined for one or more data types.
+For example, we can define that both statements and expressions need to 
+synthesize bytecode as well as pretty-printed listing, and that expressions
+can be evaluated to an integer value:
+\begin{code}
+ATTR Expr Stat  SYN bytecode  :: [Instr]
+                SYN listing   :: String
+ATTR Expr       SYN value     :: Int
+\end{code}
+The preprocessor will ensure that the semantic functions will return appropriate
+tuples, but in our program we can simply refer to the attributes by name.
+This overcomes problem 3.
+
+The value of each attribute needs to be defined for 
+every constructor of every data type which has the attribute.
+As this defines the semantics of the language, these definitions
+are known as `semantic rules', and start with keyword |SEM|.
+An example is:
+\begin{code}
+SEM Stat | Assign
+  @lhs.listing =  @dest.listing ++ ":=" ++ 
+                  @src.listing ++ ";"
+\end{code}
+This states that the synthesized |listing| attribute
+of an assignment statement can be constructed
+by combining the |listing| attributes of its |dest| and |src| children
+and some fixed strings.
+The |@| symbol in this context should be read as `attribute',
+not to be confused with Haskell `as-patterns'.
+At the left of the |=| symbol, the attribute to be defined is mentioned;
+at the right, any Haskell expression can be given.
+The |@| symbol may be omitted in the destination attribute,
+as is done in the next example. 
+This example shows that it is indeed useful that any Haskell expression,
+with embedded occurrences of child attributes, can be used in the definition.
+Also, it shows that the value of terminal symbols can be used (|@num| in the example),
+and that multiple semantic rules can be grouped under a single |SEM| header:
+\begin{code}
+SEM Stat | While
+  lhs.bytecode =  let  k = length @cond.bytecode
+                       n = length @body.bytecode
+                  in   @cond.bytecode
+                       ++ [BEQ (n+1)]
+                       ++ @body.bytecode
+                       ++ [BRA (-(n+k+2))]
+SEM Expr
+  | Const  lhs.value = @num
+  | Add    lhs.value = @left.value + @right.value
+\end{code}
+The preprocessor collects and orders all definitions into a single algebra,
+replacing the attribute references by suitable selections from the results 
+of the recursive tree walk on the children. 
+This overcomes problem 2.
+
+To be able to pass information downward during a tree walk,
+we can define `inherited' attributes
+(the terminology goes back to \cite{knuth}).
+As an example, it can be used to pass an environment,
+i.e.\ a lookup table that associates variables to values,
+which is needed to evaluate expressions:
+\begin{code}
+TYPE Env = [(String,Int)]
+ATTR Expr INH env::Env
+SEM Expr | Var
+  lhs.value = fromJust (lookup @lhs.env @name)
+\end{code}
+The value to use for the inherited attributes can be defined
+in semantic rules higher up the tree:
+\begin{code}
+SEM Stat | Assign
+  src.env = [ ("x",37), ("y",42) ]
+\end{code}
+The preprocessor translates inherited attributes into
+extra parameters for the semantic functions in the algebra.
+This overcomes problem 4.
+
+In the example above, an environment with two variables was just made up.
+In reality, a |Stat| construct probably inherited the environment
+from even higher constructs, say a procedure declaration.
+This means that the only thing that needs to be done at the |Stat| level,
+is to pass the inherited environment down to the children.
+This can be quite tedious to do:
+\begin{code}
+SEM Stat
+  |  Assign  dest.env  = lhs.env
+             src.env   = lhs.env
+  |  While   cond.env  = lhs.env
+             body.env  = lhs.env
+\end{code}
+Luckily, the preprocessor has a convention that, 
+unless stated otherwise, attributes with the same name
+are automatically copied. So, the attribute |env| that
+a |Stat| inherited from its parent, is automatically copied
+to the children which also inherit an |env|, and the tedious rules
+above can be omitted.
+A similar automated copying is done for synthesized attributes,
+so if they need to be passed unchanged up the tree, this needs
+not to be explicitly coded.
+
+When more than one child offers a candidate to be copied,
+normally the last one is taken.
+But if we wish that a combination of the copy candidates
+is to be used, we can specify so in the attribute declaration.
+An example is:
+\begin{code}
+ATTR Expr Stat
+  SYN listing USE (++) []
+\end{code}
+which specifies that by default, the synthesized
+attribute |listing| is the concatenation of the |listing|s of
+all children that have one, or the empty list if no child has one.
+This defines a useful default rule, which can be overridden
+when extra symbols need to be interspersed, as for example in
+the definition of |listing| for assignment statements given earlier.
+
+It is allowed to define both an inherited and a synthesized attribute
+with the same name. In combination with the copying mechanisms,
+this enables us to silently thread a value through the entire
+tree, updating it when necessary. See section~\ref{sec.collect}
+where this is used to maintain, in attribute |location|,
+a unique counter during the tree walk.
+
+The preprocessor automatically generates semantic rules
+in the standard situations described, and this overcomes problem 5.
 
 
 
@@ -151,10 +412,10 @@ Implicit AG-rules
 \section{The Grin language}\label{sec.lang}
 
 The Grin language (Graph Reduction Intermediate Notation)
-was proposed in \cite{boquist} as an intermediate language
+was proposed by Boquist as an intermediate language
 between the Core language that is used
 in Haskell compilers to describe a desugared program,
-and an imperative backend.
+and an imperative backend \cite{boquist1999}.
 
 We describe a slightly modified version here, which is
 more explicit than Boquist's original description
@@ -164,16 +425,14 @@ language by means of Haskell datatype declarations
 (or rather |DATA| declarations for the AG preprocessor).
 The advantage of this approach is that this makes explicit
 the types and names of child constructs of each nonterminal symbols.
-Also it is part of our endeavour to make this paper not only
-an easy to read specification of the language and a semantics for it,
-but at the same time an executable implementation of an
-interpretation algorithm.
+Also it is part of our endeavour to make the description to be
+both specification and implementation of the abstract semantics of the language.
 
 The semantics/interpretation that is treated in this paper
 is an abstract interpretation needed for analysis of the program.
 In the same style we are able to present other semantices.
-In our compiler we implement a translation to bytecode that
-is executable by a simple graph machine, and a translation
+In our compiler \cite{ehc} we implement a translation to bytecode that
+is executable by a simple interpreter, and a translation
 to a generic imperative language that can in turn be translated
 to various backend languages.
 
@@ -256,7 +515,7 @@ For implementing lazy evaluation we have a |Fun| tag, which is needed
 to construct function `thunks', i.e.\ function applications of which the evaluation is postponed.
 Nodes with |Fun| tag are always fully saturated.
 If partial parameterization is desired, a |PApp| tag is used instead,
-which apart from the function name also specifies the nummer of missing 
+which, apart from the function name, also specifies the nummer of missing 
 parameters it still |needs|.
 
 The other three tags are an extension to those proposed by Boquist.
@@ -300,7 +559,7 @@ DATA GrExpr
                   argL            :: GrTermL
 \end{code}
 We give an informal description of the semantics of these constructions,
-that is their evaluation result and side effects.
+that is their runtime evaluation result and side effects.
 A formal description would be a Grin interpreter, which is not the focus of this paper.
 
 An expression |Unit val| simply evaluates to a known value |val|.
@@ -383,8 +642,8 @@ define abbreviations for some groups of nonterminal symbols,
 which in the next section facilitates the definition
 of attributes that are needed for all of them:
 \begin{code}
-SET AllTerm   =  GrTerm GrTermL
 SET AllDef    =  GrGlobal GrGlobalL GrBind GrBindL
+SET AllTerm   =  GrTerm GrTermL
 SET AllExpr   =  GrExpr GrAlt GrAltL
                  GrPatAlt GrPatLam GrVar GrVarL
 \end{code}
@@ -1063,7 +1322,7 @@ envChanges equat env heap applyMap
                                AbsNodes n  -> Map.toAscList n
                                AbsBottom   -> []
 \end{code}
-\caption{Selection of change candidates for variables (discussed in section~\ref{sec.solution})}
+\caption{Selection of change candidates for the abstract environment during fixpoint iteration (discussed in section~\ref{sec.solution})}
 \label{fig.envChanges}
 \end{figure*}
 
@@ -1295,16 +1554,37 @@ Return is also an indirect jump and can be avoided by a `came-from analysis'
 
 \acks
 
-Acknowledgments, if needed.
+The authors thank Christof Douma for
+writing an initial version of the algorithm
+described in this work.
+
+
 
 \begin{thebibliography}{}
 
-\bibitem[Boquist 1999]{boquist}
+
+
+
+\bibitem[Bird 1984]{bird}
+Bird, Richard S.
+`Using Circular Programs to Eliminate Multiple Traversals of Data',
+Acta Informatica {\bf 21}, 239--250.
+
+
+
+\bibitem[Boquist and Johnsson 1996]{boquist1996}
+Boquist, Urban and Thomas Johnsson.
+`The GRIN Project: A Highly Optimising Back End For Lazy Functional Languages', 
+Workshop on Implementation of Functional Languages, IFL 1996.
+Springer LNCS 1268. 
+
+
+\bibitem[Boquist 1999]{boquist1999}
 Boquist, Urban. 
 Code Optimisation Techniques for Lazy Functional Languages, 
 PhD Thesis Chalmers University, G\"oteborg March 1999.
 
-\bibitem[Dijkstra 2005]{dijkstra}
+\bibitem[Dijkstra 2005]{ehc}
 Dijkstra, Atze.
 Stepping through Haskell,
 PhD Thesis Utrecht University, November 2005.
@@ -1314,15 +1594,36 @@ Douma, Christof.
 Exceptional GRIN, 
 Master's Thesis Utrecht University, April 2006.
 
+
+\bibitem[Jones 1999]{thih}
+Jones, Mark P.
+`Typing Haskell in Haskell',
+Haskell Workshop 1999.
+
+\bibitem[Knuth 1968]{knuth}
+Knuth, D.E.
+`Semantics of Context-free Languages'.
+Mathematical Systems Theory {\bf 2}, 127--145.
+
+
 \bibitem[Marlow and Peyton Jones 2006]{marlow}
-Marlow, Simon and Peyton Jones, Simon.
+Marlow, Simon and Simon Peyton Jones.
 `Making a fast curry: push/enter vs.\ eval/apply for higher-order languages',
 JFP2006/ICFP2004.
+
 
 \bibitem[Peyton Jones 1992]{peytonjones}
 Peyton Jones, Simon.
 `Spineless Tagless G-machine',
  JFP 1992.
+
+\bibitem[Swierstra et al. 1998]{agsyst}
+Swierstra, S.\ Doaitse,
+Pablo R.\ Azero Alocer,
+and Jo\~ao Sariava.
+`Designing and Implementing Combinator Languages'.
+In: Advanced functional programming, AFP98.
+Springer LNCS 1608.
 
 
 \end{thebibliography}
