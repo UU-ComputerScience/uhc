@@ -102,6 +102,13 @@
 %format predscope	= pred "^{" scope "}"
 %format preds		= "\overline{" pi "}"
 
+%format predschemes1	= preds
+%format predschemes2	= preds
+%format predschemes1sc	= preds "^{" scope "}"
+%format predschemes2sc	= preds "^{" scope "}"
+
+%format prenv		= Gamma
+
 %format subst		= S
 
 %format sigmak      = sigma "^{k}"
@@ -146,7 +153,9 @@
 %format Cnstrp		= Cnstr "_{p}"
 %format Cnstrk		= Cnstr "^{k}"
 %format CnstrEq		= Cnstr "^{eq}"
-%format CnstrVarpi	= Cnstr "^{" varpi "}"
+%format CnstrAss	= Cnstr "^A"
+%format CnstrVarpi(x)	= varpi "(" x ")"
+% format CnstrVarpi	= Cnstr "^{" varpi "}"
 %format `cnstrTyUnit`	= :->
 
 %format ICnstr      = "\mathbb{C}"

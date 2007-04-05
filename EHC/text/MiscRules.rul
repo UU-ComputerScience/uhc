@@ -65,99 +65,99 @@ ruleset ehv scheme ehv "" =
 -------------------------------------------------------------------------
 
 scheme entailn =
-  holes [ preds.1: Preds, preds.2: Preds ]
-  judgespec preds.1 ::-."e" preds.2
+  holes [ prenv: PrEnv, predschemes1: Preds, predschemes2: Preds ]
+  judgespec prenv; predschemes1 ::-."e" predschemes2
 
 ruleset entailn.all scheme entailn "Entailment" =
   rule mono =
     judge superSetOf = preds.1 >= preds.2
     -
-    judge entailn = preds.1 ::- preds.2
+    judge entailn = prenv; preds.1 ::- preds.2
 
   rule trans =
-    judge entailn = preds.1 ::- preds.2
-    judge entailn = preds.2 ::- preds.3
+    judge entailn = prenv; preds.1 ::- preds.2
+    judge entailn = prenv; preds.2 ::- preds.3
     -
-    judge entailn = preds.1 ::- preds.3
+    judge entailn = prenv; preds.1 ::- preds.3
 
   rule closed =
-    judge entailn = preds.1 ::- preds.2
+    judge entailn = prenv; preds.1 ::- preds.2
     -
-    judge entailn = subst preds.1 ::- subst preds.2
+    judge entailn = prenv; subst preds.1 ::- subst preds.2
 
   rule class =
-    judge classDef = preds.2 => pred.3
-    judge entailn = preds.1 ::- pred.3
+    judge classDef = prenv; preds.2 => pred.3
+    judge entailn = prenv; preds.1 ::- pred.3
     -
-    judge entailn = preds.1 ::- preds.2
+    judge entailn = prenv; preds.1 ::- preds.2
     
   rule inst =
-    judge instDef = preds.3 => pred.2
-    judge entailn = preds.1 ::- preds.3
+    judge instDef = prenv; preds.3 => pred.2
+    judge entailn = prenv; preds.1 ::- preds.3
     -
-    judge entailn = preds.1 ::- pred.2
+    judge entailn = prenv; preds.1 ::- pred.2
     
 
 scheme entailscn =
-  holes [ preds.1.s: Preds, preds.2.t: Preds ]
-  judgespec preds.1.s ::-."e" preds.2.t
+  holes [ prenv: PrEnv, predschemes1sc: Preds, predschemes2sc: Preds ]
+  judgespec prenv; predschemes1sc ::-."e" predschemes2sc
 
-ruleset entailscn.all scheme entailscn "Entailment (scoped, nondeterministic)" =
+ruleset entailscn.all scheme entailscn "Entailment (scoped, declarative)" =
   rule class =
-    judge classDef = preds.2 => pred.3
-    judge entailscn = preds.1 ::- pred.3.s
+    judge classDef = prenv; preds.2 => pred.3
+    judge entailscn = prenv; preds.1 ::- pred.3.s
     -
-    judge entailscn = preds.1 ::- preds.2.s
+    judge entailscn = prenv; preds.1 ::- preds.2.s
     
   rule inst =
-    judge instScDef = preds.3 => t, pred.2
+    judge instScDef = prenv; preds.3 => t, pred.2
     judge visibleIn = t <= s
-    judge entailscn = preds.1 ::- preds.3.s
+    judge entailscn = prenv; preds.1 ::- preds.3.s
     -
-    judge entailscn = preds.1 ::- pred.2.s
+    judge entailscn = prenv; preds.1 ::- pred.2.s
 
   rule scope =
-    judge entailscn = preds.1 ::- pred.2.t
+    judge entailscn = prenv; preds.1 ::- pred.2.t
     judge visibleIn = t <= s
     -
-    judge entailscn = preds.1 ::- pred.2.s
+    judge entailscn = prenv; preds.1 ::- pred.2.s
 
-ruleset entailscn.algo scheme entailscn "Entailment (scoped, deterministic)" =
+ruleset entailscn.algo scheme entailscn "Entailment (scoped, CHR suitable)" =
   rule class1 =
-    judge classDef = preds.2 => pred.3
-    judge entailscn = preds.1 ::- pred.3.s
+    judge classDef = prenv; preds.2 => pred.3
+    judge entailscn = prenv; preds.1 ::- pred.3.s
     -
-    judge entailscn = preds.1 ::- preds.2.s
+    judge entailscn = prenv; preds.1 ::- preds.2.s
     
   rule class2 =
-    judge classDef = preds.2 => pred.3
+    judge classDef = prenv; preds.2 => pred.3
     judge notVisibleIn = s </ t
     judge commonScope = t' <= s, t
-    judge entailscn = preds.1 ::- pred.3.t'
+    judge entailscn = prenv; preds.1 ::- pred.3.t'
     -
-    judge entailscn = preds.1 ::- (pred.3.s, preds.2.t)
+    judge entailscn = prenv; preds.1 ::- (pred.3.s, preds.2.t)
     
   rule class3 =
-    judge classDef = preds.2 => pred.3
+    judge classDef = prenv; preds.2 => pred.3
     judge notVisibleIn = t </ s
     judge commonScope = t' <= s, t
-    judge entailscn = preds.1 ::- pred.2.t'
+    judge entailscn = prenv; preds.1 ::- pred.2.t'
     -
-    judge entailscn = preds.1 ::- (pred.3.s, preds.2.t)
+    judge entailscn = prenv; preds.1 ::- (pred.3.s, preds.2.t)
     
   rule inst =
-    judge instScDef = preds.3 => t, pred.2
-    judge entailscn = preds.1 ::- preds.3.s
+    judge instScDef = prenv; preds.3 => t, pred.2
+    judge entailscn = prenv; preds.1 ::- preds.3.s
     judge visibleIn = t <= s
     -
-    judge entailscn = preds.1 ::- pred.2.s
+    judge entailscn = prenv; preds.1 ::- pred.2.s
 
   rule scope =
-    judge entailscn = preds.1 ::- pred.2.t
+    judge entailscn = prenv; preds.1 ::- pred.2.t
     judge visibleIn = t <= s
     judge notEqualScope = s /= t
     -
-    judge entailscn = preds.1 ::- (pred.2.s, pred.2.t)
+    judge entailscn = prenv; preds.1 ::- (pred.2.s, pred.2.t)
 
 relation superSetOf =
   holes [ preds.1: Preds, preds.2: Preds ]
@@ -185,17 +185,17 @@ relation notEqualScope =
   judgeuse tex sc.1 /= sc.2
 
 relation classDef =
-  holes [ preds.1: Preds, pred.2: Pred ]
-  judgespec preds.1 => pred.2
-  judgeuse tex "class" ^^ preds.1 => pred.2
+  holes [ prenv: PrEnv, preds.1: Preds, pred.2: Pred ]
+  judgespec prenv; preds.1 => pred.2
+  judgeuse tex "class" ^^ preds.1 => pred.2 `elem` prenv
 
 relation instDef =
-  holes [ preds.1: Preds, pred.2: Pred ]
-  judgespec preds.1 => pred.2
-  judgeuse tex "instance" ^^ preds.1 => pred.2
+  holes [ prenv: PrEnv, preds.1: Preds, pred.2: Pred ]
+  judgespec prenv; preds.1 => pred.2
+  judgeuse tex "instance" ^^ preds.1 => pred.2 `elem` prenv
 
 relation instScDef =
-  holes [ preds.1: Preds, pred.2: Pred, sc: Scope ]
-  judgespec preds.1 => sc, pred.2
-  judgeuse tex "instance" ^^ preds.1 =>.(sc) pred.2
+  holes [ prenv: PrEnv, preds.1: Preds, pred.2: Pred, sc: Scope ]
+  judgespec prenv; preds.1 => sc, pred.2
+  judgeuse tex ("instance" ^^ preds.1 => pred.2, sc) `elem` prenv
 
