@@ -186,13 +186,13 @@ text-variant-icfp07-chr-locinst-blind:
 	  text-variant-dflt-bib
 
 text-variant-icfp07-ehcstruct:
-	$(MAKE) TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyEHCstruct --set=acm --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib
 
 text-variant-icfp07-ehcstruct-blind:
-	$(MAKE) TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyEHCstruct --set=acm --set=blockstyle --set=asArticle --set=blinded" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib

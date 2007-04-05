@@ -20,7 +20,7 @@ module EH.Util.CompileRun
   , cpUpdCU
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
-  , cpSeq
+  , cpSeq, (>->), cpEmpty 
   , cpFindFileForFPath
   , cpImportGather
   , cpPP, cpPPMsg
@@ -303,6 +303,14 @@ cpUpdCU modNm upd
 cpUpdCU modNm upd
  = cpUpdCUM modNm (return . upd)
 -}
+
+cpEmpty :: CompilePhase n u i e ()
+cpEmpty = return ()
+
+infixr 2 >->
+
+(>->) :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
+this >-> next = cpHandle1 next this
 
 cpSeq :: CompileRunError e p => [CompilePhase n u i e ()] -> CompilePhase n u i e ()
 cpSeq []     = return ()

@@ -46,6 +46,10 @@
 \draw (10.5,22) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 \renewcommand{\arraystretch}{1.5}
 \newcommand{\Nw}{\hspace{\tabcolsep}}
+\def\Line{}
+\def\Impl{Implementation}
+\def\Sem{Semantics}
+\def\Doc{Documentation}
 \begin{tabular}{l@@{}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
 \multicolumn{5}{c}{\NTitle{Coping with design complexity: stepwise grow a language (Haskell in particular)}}
 \\
@@ -59,7 +63,7 @@ Polymorphic type inference
 Higher ranked types
 &
 \Dots
-\\
+\\ \Line
 \textbf{Example:}
 &
 %%[[wrap=boxcode{.12}
@@ -79,7 +83,7 @@ in   (id 3,id 'x')
 &
 \Dots
 \\
-\textbf{Semantics:}
+\textbf{\Sem:}
 &
 \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
 &
@@ -89,7 +93,7 @@ in   (id 3,id 'x')
 &
 \Dots
 \\
-\textbf{Implementation:}
+\textbf{\Impl:}
 &
 {\tiny
 %%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
@@ -103,7 +107,7 @@ in   (id 3,id 'x')
 &
 \Dots
 \\
-\textbf{Documentation:}
+\textbf{\Doc:}
 &
 \multicolumn{4}{l}{\Dots}
 \\

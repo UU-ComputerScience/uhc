@@ -1,25 +1,29 @@
 %%[abstract
 Haskell's class system provides a programmer with a mechanism to implicitly pass parameters to a function.
-A class predicate over some type variable in the type signature of a function induces the obligation to implicitly
+A class predicate over some type variable in the type signature of a function induces the obligation for the caller
+to implicitly
 pass an appropriate instance of the class to the function.
 The class system is programmed by providing class instances for concrete types,
 thus providing, for each class, a unique mapping from types to instances.
 This mapping is used whenever an instance for a class predicate over some type is required.
 Choosing which instance to pass is solely based on the instantiated type of the class predicate.
+
 Although this mechanism has proved to be powerful enough for modelling overloading and
 a plethora of other programming language concepts,
-it is still limited in the sense that multiple instances for a type cannot be defined.
-Usually one can program around this limitation by introducing dummy types which act as a key to map to additional instances,
+it is still limited in the sense that multiple instances for a type cannot exist at the same time.
+Usually one can program around this limitation by introducing dummy types,
+which act as a key to map to additional instances;
 but this indirect way of allowing extra instances clutters a program and still is bound to
 the finite number of types statically available in a program.
 The latter restriction makes it impossible to dynamically construct instances,
-which, for example, depend on runtime program input.
+which, for example, depend on runtime values.
+
 In this paper we lift these restrictions by means of local instances.
 Local instances allow us to shadow existing instances by new ones and to construct
 instances inside functions, using function arguments.
 We provide a translation of class and instance definitions to Constraint Handling Rules,
 making explicit the notion of ``scope of an instance'' and its role in context reduction for instances.
-We deal with the ambiguity for choosing between instances
+We deal with the ambiguity of choosing between instances
 by using a framework for heuristically choosing between otherwise overlapping instances.
 %%]
 
@@ -32,7 +36,7 @@ satisfied by the instance declaration for |Eq Int|.
 Additionally, an evidence based translation implicitly passes a dictionary
 for each predicate occurring in the type of the function: |f 3 4| translates to |f eqDInt 3 4|.
 
-For the purpose of \thispaper, the key design choices of this mechanism are:
+For the purpose of \thispaper, the key design choices of the type class mechanism are:
 
 \begin{itemize}
 \item The class system chooses which instance is used to satisfy a predicate, and consequently which dictionary to pass implicitly.
@@ -50,21 +54,34 @@ For example, suppose we need to compare two |Int|s modulo 2 and still want to us
 %%@TopicExplImpl.instanceEqIntMod2
 
 How do we instruct the class system to use this instance declaration instead of the previous, default, one?
-We can't, at least not without modifying the class |Eq| and its instances.
+We can't, at least not without modifying the class |Eq| and its instances,
+or modifying the encoding of the |Int| value passed to |(==)|.
+We further explore alternate |Int| encodings by means of a wrapper data type.
 Although both instances satisfy the predicate |Eq Int|, we have to choose between two dictionaries,
 without a means of making the choice: we have overlapping instances.
-We can avoid this by changing the classes and instances for |Eq| in such a way that enough additional type
-information is provided to make this choice:
+We can avoid this by providing enough additional type information to make a choice:
 
-%%@TopicExplImpl.instanceEqIntWithExtraType
+%%[[wrap=code instanceEqIntWithExtraType
+data Default   = Default
+data Mod2      = Mod2
+data Wrap l a  = W l a
 
-The price we pay for this flexibility is cluttered and incompatible code,
-and one has to plan in advance for such disambiguation.
-One can choose to live with cluttered code, but one cannot live with incompatible code because yet established code,
-like libraries,
-is unlikely to be adapted accordingly.
+instance Eq a => Eq (Wrap Default a) where
+  W _ x == W _ y = x == y
 
-Instead we propose to use scoped, or local, instances:
+instance Eq (Wrap Mod2 Int) where
+  W _ x == W _ y = (x `mod` 2) == (y `mod` 2)
+
+f :: Eq a => a -> a -> Int
+f = \x y -> if x == y then 3 else 4
+
+v1 = f (W Default  (2::Int))  (W Default  4)
+v2 = f (W Mod2     (2::Int))  (W Mod2     4)
+%%]]
+
+We wrap the |Int| value in the |Wrap| data type together with a value |Mod2| of which the type determines
+to use instance |Eq (Wrap Mod2 Int)|.
+If we use local instances instead, the above clutter is avoided:
 
 %%[[wrap=code
 f' p q =  let  instance Eq Int where
@@ -76,11 +93,46 @@ Function |f'| invokes |f| within the context of an overriding instance for |Eq I
 The static nesting structure of |let| expressions provides the additional information for the class system
 to choose between the default |Eq Int| instance at the global level, and the local |`mod` 2| based |Eq Int| instance.
 
-This approach also allows us to tackle the so-called configuration problem \cite{kiselyov04impl-config}
+Local instances also allow us to tackle the so-called configuration problem \cite{kiselyov04impl-config}
 more directly.
 Configuration means the parameterization of code with additional data,
 without this being visible in the form of additional parameters in the configured code.
-For our example this means that we want to test for equality |`mod` n| for arbitrary |n| instead of fixed |`mod` 2|:
+For our example this means that we want to test for equality |`mod` n| for arbitrary |n| instead of fixed |`mod` 2|,
+and solved for our |Wrap| example by:
+
+%%[[wrap=code
+data ModN  n    = ModN n
+
+instance Eq (Wrap (ModN Int) Int) where
+  W (ModN n) x == W _ y = (x `mod` n) == (y `mod` n)
+
+f' n = f (W (ModN n) (2::Int)  )  (W (ModN n) 4)
+%%]]
+
+However, Kiselyov's solution \cite{kiselyov04impl-config} differs from ours
+because of their use of phantom types, that is, data types with type parameters without a corresponding runtime value.
+For our |Wrap| example we then have:
+
+%%[[wrap=code instanceEqIntWithExtraType
+data Mod2
+data Wrap'  l a  = W' a
+
+instance Eq (Wrap' Mod2 Int) where
+  W' x == W' y = (x `mod` 2) == (y `mod` 2)
+
+v2 = f (W' 2 :: Wrap' Mod2 Int)  (W' 4)
+%%]]
+
+We get rid of the |l| typed field in |Wrap'|, |data Mod2| no longer needs a constructor,
+and we pass type information via a type annotation instead of a value.
+Taking this route further, one can hide much of this mechanism with clever type level programming.
+However, the drawback is that we no longer can use |ModN| to pass additional data,
+because we no longer pass any runtime data along with the type:
+the resulting solution has become purely type based.
+This is a closed world, and as a result we then cannot take (for example) a commandline parameter and turn it into
+a configuration for the program.
+
+Our solution using a local instance is as follows:
 
 %%[[wrap=code
 f' n p q =  let  instance Eq Int where
@@ -88,19 +140,46 @@ f' n p q =  let  instance Eq Int where
             in   f p q
 %%]]
 
-Besides our first two objections against type based solutions for additional instances, that is clutteredness and incompatibility,
-this example points to a third objection: a Haskell program is a closed world with respect to
-instances because the set of types is statically determined,
-hence the instances indexed by types too.
-Scoped instances allow us to take a runtime input value and turn this into an instance, thus configuring the program at runtime.
+The bottomline is that additional information must be passed to a function,
+and to solve this we either:
+
+\begin{Itemize}
+  \item wrap normal parameters with extra type related information steering the choice of an instance,
+        possibly also including additional runtime available data;
+  \item use phantom types instead to only pass type related information (\cite{kiselyov04impl-config}, not further explained here);
+  \item override directly by means of a local instance.
+\end{Itemize}
+
+A solution without local instances always becomes cluttered because of the indirect way an instance is chosen via a type,
+whereas local instances circumvent such an indirection.
+This then is our motivation for looking into local instances.
 
 %%]
+
+%%[defLocalInst
+A \IxAsDef{scope} is a program location, distinguishable on the basis of its lexical nesting position.
+A \IxAsDef{scoped instance} is an instance for which we know its defining scope.
+We distinguish between \IxAsDef{global scope} as the lexically outermost scope;
+\IxAsDef{local scope} is defined as non-global scope.
+In Haskell a normal module level instance corresponds to a globally scoped instance, or just global instance.
+
+%%]
+A \IxAsDef{global instance} is a normal module level Haskell instance.
+A \IxAsDef{local instance} or \IxAsDef{non-global instance} is an instance declared in a nested expression,
+where nesting is defined by Haskell's normal nesting language constructs.
+The \IxAsDef{scope} of an instance uniquely defines the location within nested language constructs.
+Scopes can be compared for visibility, to be defined more precisely later.
+A \IxAsDef{scoped instance} is either a global or a local instance, distinguishable on the basis of its scope.
+Note that in literature ``local'' sometimes means ``per module''.
+However, as per module instances are exported globally anyway in Haskell,
+we consider such instances to be global instances.
 
 %%[problem
 Although the idea of scoped (or local) instances already exists for some time
 and is available in a limited form known as ``implicit parameters'' \cite{lewis00implicit-param},
 to our knowledge scoped instances are neither available nor described previously.
-We can see the following areas where the interaction with scope is problematic:
+We can see the following areas where the interaction between scoped instances, context reduction,
+and type inference is problematic:
 \begin{itemize}
 \item Principal typing.
 \item The location in the program where the need to prove a predicate arises.
@@ -108,8 +187,20 @@ We can see the following areas where the interaction with scope is problematic:
 \item Interaction with type signatures.
 \end{itemize}
 
+Before proceeding, we point out that 
+all these areas share the same problem with instances: how to choose between them.
+Such a choice already is an issue for `normal' overlapping instances.
+The main underlying idea of \thispaper\ is to take this choice away from the language definition
+because it cannot be made unambiguously anyway,
+and to put it in the hands of the programmer.
+Naturally, default situations still can be handled without programmer intervention,
+but when necessary the programmer can specify exactly what a language tries to do automatically,
+without burdening the programmer with known default situations.
+
+We now further discuss the list of problems mentioned above.
+
 \Paragraph{Principal typing}
-Wadler observed \cite{wadler88how-ad-hoc-poly} that allowing the following program led to loss of principal typing:
+Wadler \& Blott observed \cite{wadler88how-ad-hoc-poly} that allowing the following program led to loss of principal typing:
 
 %%[[wrap=code
 f =  let  instance Eq Int
@@ -125,7 +216,7 @@ However, |(==)| does not even use the corresponding dictionaries, so this intera
 Part of the problem lies with
 a check for satisfiability when the type of a value is established, usually as part of a generalization step for |let| bindings.
 Such a check also conflicts with modularity because later additional instances may be defined,
-and therefore is usually omitted.
+and therefore this check is usually omitted.
 Even for the following variant the two instances play no role and could well have been omitted:
 
 %%[[wrap=code
@@ -142,9 +233,9 @@ f x y =  let  instance Eq Int       -- now used!
          in   x == y && x == 3
 %%]]
 
-In '|x == y && x == 3|'\footnote{We ignore the fact that 3 gives rise to a |Num| predicate.}
+In |x == y && x == 3|
 the need for |Eq Int| arises within the scope of the local |Eq Int| instance, and its satisfaction
-thus must take the presence of this instance into account.
+thus must take the presence of this instance into account.\footnote{We ignore the fact that 3 gives rise to a |Num| predicate.}
 In terms of a solution for scoped instances, this means that the obligation to prove a predicate like |Eq Int|,
 has to be annotated with the scope in which that happens.
 And, although we lose principal typing, our solution for dealing with scoped instances offers a mechanism to
@@ -229,15 +320,15 @@ f x =  let  instance Eq Int
 
 Although currently not allowed
 \cite{peytonjones03has98-rev-rep},
-the type signature for |e2| means that the decision which |Eq Int| to use is delayed until |e2| is called:
+the type signature for |e2| implies that the decision which |Eq Int| to use is delayed until |e2| is called:
 in |f| the local instance is used for |e2|, the global one for |e1|.
-The presence of a class predicate in a type signatures for |e2| introduces a scoped instance for the body |e2|.
+The presence of a class predicate in the type signature for |e2| introduces a scoped instance for the body |e2|.
 Without local instances this makes no difference, because only one |Eq Int| is present.
 %%]
 
 %%[ourContribution
 The awareness of scope and complexity of choice leads us to a solution which does not attempt to do the impossible,
-that is making the right choice between instances automatically.
+which is always automatically making the right choice between instances.
 Instead we aim for a design where ultimately the programmer has complete control over which instances are to be used.
 In \thispaper\ we therefore propose a three stage process for dealing with making choices for local instances separately:
 
@@ -248,10 +339,15 @@ In \thispaper\ we therefore propose a three stage process for dealing with makin
 \item Choose between solution alternatives by means of a separate framework.
 \end{Itemize}
 
-We focus on the translation to CHRs and the choice between solution alternatives as we feel that there lies the novelty
+We focus on the translation to CHRs and the choice between solution alternatives as we feel that this is the novelty
 of our approach.
-We present part of our work in terms of Haskell, much in the spirit of \cite{jones99thih}.
-A prototype system has been built [..], more extensively described by \blind{van den Geest [..]},
+We do \emph{not} deal with a type system in which our solution is to be embedded,
+nor make claims about formal properties of our solution,
+although we will point out what needs to be done in this area (\secRef{sec-chr-relatedwork}).
+We emphasize that our solution should be seen as a proposed solution,
+not as the proven correct solution within a theoretical framework.
+We present part of our work in terms of Haskell, much in the spirit of ``Typing Haskell in Haskell'' \cite{jones99thih}.
+A prototype system has been built and more extensively described by \blindcite{geest07cnstr-tycls-ext},
 and has been integrated into the \blind{Essential Haskell (EH)} compiler
 \blindcite{dijkstra04ehc-web,dijkstra05phd}.
 
@@ -265,7 +361,7 @@ which are already CHR based \cite{sulzmann98hm-constr,stuckey02theory-overloadin
 In summary, our contribution is:
 
 \begin{Itemize}
-\item Model scope for class predicates by means of CHR, and provide a different translation to CHRs as compared to Sulzmann e.a. .
+\item Model scope for class predicates by means of CHR, and provide a different translation to CHRs as compared to Sulzmann et al. .
 \item Provide a framework for expressing different context reduction strategies, applied to scoped instances in particular.
 \item A prototype for the above, integrated in a Haskell compiler.
 \end{Itemize}
@@ -278,7 +374,7 @@ which is investigated at greater length in \blindcite{geest07cnstr-tycls-ext}:
 
 \begin{itemize}
 \item
-  CHRs \cite{fruhwirth98theory-chr} as used by Sulzmann e.a. \cite{sulzmann98hm-constr,stuckey02theory-overloading}
+  CHRs \cite{fruhwirth98theory-chr,fruhwirth03essence-constrprog} as used by Sulzmann et al. \cite{sulzmann98hm-constr,stuckey02theory-overloading}
   to describe and formalize Haskell's type system.
   Our use of CHRs for the class system is slightly different because we postpone any decision
   making for instances to a later stage.
@@ -290,16 +386,16 @@ which is investigated at greater length in \blindcite{geest07cnstr-tycls-ext}:
   Their solution first solves constraints and then uses a representation of the solution to produce error messages;
   we use similar techniques to separately deal with choosing between instances.
 \item
-  We describe part of our work as an executable specification in Haskell, in the spirit of \cite{jones99thih}.
+  We describe part of our work as an executable specification in Haskell.
 \item
   Design alternatives for a class system, in particular context reduction,
-  were explored in \cite{peytonjones97typecl-explore}.
+  were explored by Peyton Jones et al. \cite{peytonjones97typecl-explore}.
   Our framework for choices between instances allows to express such alternative context reduction strategies.
 \item
   GHC \cite{www04ghc} allows some form of programming the predicate proving machinery by means of pragmas,
   for example for choosing the most specific instance in case of overlapping instances.
 \item
-  Named instances \cite{kahl01named-instance,scheffczyk01mth-namedinst} allow explicit named reference to instances.
+  Named instances \cite{kahl01named-instance,scheffczyk01mth-namedinst} allow explicit named references to instances.
   This is a natural extension for being explicit in the choice between multiple instances,
   also experimented with in \blindcite{dijkstra04ehc-web,dijkstra05phd}.
 \end{itemize}
@@ -317,9 +413,12 @@ we come back to this later (\secRef{sec-chr-relatedwork}).
 \Paragraph{Terms, types and predicates}
 
 \figRef{chr-locinst-terms-types} shows the standard term and type language we assume for our discussion of scoped instances.
+We have included \figRef{chr-locinst-terms-types} to clarify the minimal expected context of our work,
+but we will not explicitly use it any further after this section.
 Although the syntax allows nested classes, we inhibit this.
+We see no reason to inhibit instances nested within instances.
 For simplicity we only consider single parameter type classes.
-Overbar notation |Vec(x)| denotes (possibly empty) sequences of |x|'s,
+Overbar notation |Vec(x)| denotes (possibly empty) sequences of |x|'s, comma denotes concatenation,
 |identv| lowercase variables, and |identc| uppercase constructors.
 
 %{
@@ -349,10 +448,6 @@ Overbar notation |Vec(x)| denotes (possibly empty) sequences of |x|'s,
 \end{TabularCenterFigure}
 %}
 
-Entailment on predicates, shown in \figRef{MiscRules.entailn.all}, is standard \cite{jones94phd-qual-types}.
-
-\rulerCmdUse{MiscRules.entailn.all}
-
 \Paragraph{Constraints}
 
 We use the following forms of constraint |Cnstr|, parameterized with predicate |varpi| and |info| used to postprocess and choose
@@ -364,26 +459,29 @@ Cnstr   ::=     Prove       varpi
         |       Reduction   varpi info ^^ {varpi1, ... , varpin}
 %%]]
 
-A |Prove varpi| constraint means a proof obligation for |varpi|,
+A |Prove varpi| constraint indicates a proof obligation for |varpi|,
 an |Assume varpi| corresponds to an assumption for |varpi| introduced by a type signature,
 and a |Reduction| corresponds to a reduction step from the ordered sequence |{varpi1, ... , varpin}| to |varpi|.
 Depending on the problem at hand, |varpi| instantiates differently.
-For our initial solution without scopes we instantiate |varpi| by: |varpi isbydef pred|;
-for our solution with scopes: |varpi isbydef (pred,scope)|, also
-denoted by |predscope|.
+For our initial solution without scopes we instantiate |varpi| by: |varpi isbydef pred|.
+%for our solution with scopes: |varpi isbydef (pred,scope)|, also
+%denoted by |predscope|.
+%Whenever we use |pred| where a |predscope| is expected, scope is irrelevant.
 % A set of constraints is referred to by a constraint as well.
+|CnstrVarpi(Cnstr)| denotes the |varpi| of a constraint |Cnstr|.
 The empty set of constraints represents |True|.
 
 \Paragraph{Scope}
 
-A scope |scope| is defined as a sequence of |Int|s:
+A scope |scope| is defined as a sequence of |Int|s,
+where longer sequences represent more deeply nested scopes,
+and later elements uniquely identify nested scopes within the enclosing scope,
+represented by the prefix of such an element:
 %%[[wrap=code
 type scope = [Int]
 %%]]
 Identifiers |{s, t}| are used to denote scopes |scope|.
 Scope constants are denoted between |<...>| to avoid confusion with other uses of |[...]|
-The |Int| elements of a scope uniquely identify a definition within an enclosing scope.
-A scope |s| is more deeply nested when longer.
 The common scope of two scopes is defined as their longest common prefix,
 which always exists because the global scope always is common:
 
@@ -403,34 +501,37 @@ s `visibleIn` t = s == s `commonScope` t
 
 \Paragraph{Constraints and entailment}
 
+Entailment on predicates, shown in \figRef{MiscRules.entailn.all}, is standard \cite{jones94phd-qual-types}.
+|prenv| holds the environment of class and instance definitions.
+We allow ourselves notational looseness by allowing |pred| to denote a singleton whenever |preds| is expected.
+
+\rulerCmdUse{MiscRules.entailn.all}
+
 \begin{Definition}[Constraint solution |Theta|]
-A \emph{constraint solution} |Theta| is a pair |(CHR,Cnstr)|,
+A \emph{constraint solution} |Theta| is a pair |(CHR,CnstrAss)|,
 where |CHR| is a set of Constraint Handling Rules (defined later) and
-|Cnstr| is a set of |Assume| constraints.
-|CHRorig| denotes the instance and class declarations which induce |CHR|,
-|CnstrVarpi| denotes the |varpi|'s of |Cnstr|
+|CnstrAss| is a set of |Assume| constraints.
+|CHRorig isbydef prenv| denotes the instance and class declarations which induce |CHR|,
 \end{Definition}
 
 Constraint satisfaction is defined in terms of entailment:
 
 \begin{Definition}[Constraint Satisfaction |solves|]
-Let |Theta| be a constraint solution |(CHR,Cnstr)|.
+Let |Theta| be a constraint solution |(CHR,CnstrAss)|.
 A \emph{Prove} constraint is satisfied if the corresponding |varpi| is entailed by |Theta|.
 %%[[wrap=code
-Theta solves Prove          varpi                                  ^^   isdef     ^^    CHRorig,CnstrVarpi entails varpi
-Theta solves Assume         varpi                                  ^^   isdef     ^^    Assume varpi insign Cnstr
+Theta solves Prove          varpi                                  ^^   isdef     ^^    CHRorig;CnstrVarpi(CnstrAss) entails varpi
+Theta solves Assume         varpi                                  ^^   isdef     ^^    Assume varpi insign CnstrAss
 Theta solves Reduction      varpi info ^^ {varpi1, ... , varpin}   ^^   isdef     ^^    True
 %%]]
-An \emph{Assume} is satisfied if the assumed |varpi| is an element of |Cnstr|.
+An \emph{Assume} is satisfied if the assumed |varpi| is an element of |CnstrAss|.
 A \emph{Reduction} is trivially satisfied.
 \end{Definition}
-
-For now, for \figRef{MiscRules.entailn.all} we take |varpi isbydef pred|.
 
 \Paragraph{Constraint Handling Rules}
 
 A Constraint Handling Rule (CHR) declaratively specifies how to rewrite a constraint for
-a particular problem domain \cite{fruhwirth98theory-chr}.
+a particular problem domain \cite{fruhwirth98theory-chr,fruhwirth03essence-constrprog}.
 Each such CHR must be of a specific form:
 
 %%[[wrap=code
@@ -441,8 +542,8 @@ H1, ... , Hi  ==>  G1, ... , Gj ^^ | ^^ B1, ... , Bk      ^^  (propagation)
 %%]]
 
 The set of constraints |(H1, ..., Hi)| is the \IxAsDef{head} of a CHR,
-the set of conditions |(G1, ..., Gj)| form the \IxAsDef{guard} of a CHR, and the constraints |(B1, ..., Bk)| are the \IxAsDef{body} of a CHR.
-The empty constraint set is abbreviated with |True|.
+the set of conditions |(G1, ..., Gj)| form the \IxAsDef{guard} of a CHR, and the constraints |(B1, ..., Bk)| form
+the \IxAsDef{body} of a CHR.
 
 Operationally, CHRs modify a working set of constraints:
 a simplification rule replaces the set of constraints matching
@@ -456,11 +557,11 @@ by applying a propagation rule only once
 to every constraint in the constraint set.
 Duplicate constraints are considered redundant, that is, we use set semantics for sets of constraints.
 
-CHRs can be given a declarative semantics \cite{fruhwirth98theory-chr}.
+CHRs can be given a declarative semantics \cite{fruhwirth98theory-chr,fruhwirth03essence-constrprog}.
 A simplification is a logical equivalence if the guards are satisfied:
 %%[[wrap=code
 forall ^ Vec(x) forall ^ Vec(y)  ((G1 && ... && Gj)
-                                 -> (H1 && ... && Hi <--> exists ^ Vec(z) (B1 && ... && Bk))
+                                 -> (H1 && ... && Hi <--> exists ^ Vec(z) (B1 && ... && Bk)))
 %%]]
 Similarly, a propagation is an implication if the guards are satisfied:
 %%[[wrap=code
@@ -493,8 +594,7 @@ Prove(Eq a)    , Prove(Real a)   <==> Prove(Real a)   ^^ ^^ -- (C23)
 Prove(Eq [a])                    <==> Prove(Eq a)     ^^ ^^ -- (I1)
 %%]]
 
-When applied to the constraint set |{Prove(Eq [v1]),| |Prove(Ord v1),| |Prove(Real v1)}|
-we obtain the following derivation:
+A possible derivation using these rules is:
 
 %%[[wrap=code
           ^^  {Prove(Eq [v1])  , Prove(Ord v1), Prove(Real v1)}
@@ -503,12 +603,12 @@ deriv(C2) ^^  {Prove(Ord v1)   , Prove(Real v1)}
 deriv(C3) ^^  {Prove(Real v1)}
 %%]]
 
-All rules but (C23) directly correspond to a class or instance declaration.
-In order to guarantee confluence \cite{fruhwirth98theory-chr}
+All rules but C23 directly correspond to a class or instance declaration.
+In order to guarantee confluence \cite{fruhwirth98theory-chr,fruhwirth03essence-constrprog}
 it is necessary to explicitly represent the
 transitive closure of the class hierarchy by a set of rules.
-Were rule (C23) is not available,
-the following derivation becomes possible:
+Were rule C23 is not available,
+the following derivation for the same initial constraint set is possible:
 
 %%[[wrap=code
           ^^  {Prove(Eq [v1])  , Prove(Ord v1), Prove(Real v1)}
@@ -516,7 +616,10 @@ deriv(C3) ^^  {Prove(Eq [v1])  , Prove(Real v1)}
 deriv(I1) ^^  {Prove(Eq v1)    , Prove(Real v1)}
 %%]]
 
-The absence of rule (C23) now prevents us to conclude |Prove(Real v1)|.
+This derivation follows a different path of applied CHRs
+but does not lead to the same final constraint set:
+without rule C23 the CHRs are not confluent
+and we cannot conclude with |Prove(Real v1)|.
 
 \Paragraph{Interaction with type inference}
 %\Paragraph{|Assume| constraints and type inference}
@@ -532,8 +635,9 @@ f (x:xs)  =   xs  ==  []                    --  Prove(Eq [v1])
 
 Constraint solving is done for |f|'s binding group, after all information about |v1| is
 reconstructed,
-and then leaves us with an unsatisfied |Prove(Real v1)|,
-which we only can satisfy if we have a corresponding assumption |Assume(Real v1)| and can use the following rule:
+and then leaves us with an unsatisfied |Prove(Real v1)|.
+We only can satisfy this constraint
+if we have a corresponding assumption |Assume(Real v1)| using the following rule:
 
 %%[[wrap=code
 Prove p, Assume p <==> Assume p ^^ ^^ -- (E)
@@ -543,7 +647,7 @@ An |Assume(Real v1)| can be introduced in two ways:
 
 \begin{itemize}
 \item
-  The type inferencer decides to generalize over class predicate |Real v1| and construct the following type for |f|:
+  The type inferencer decides to generalize over class predicate |Real v1| and constructs the following type for |f|:
 %%[[wrap=code
 f :: Real a => [a] -> Bool
 %%]]
@@ -558,13 +662,13 @@ f :: Real a => [a] -> Bool
   and the body yields |{Prove(Eq [c1]),| |Prove(Ord c1),| |Prove(Real c1)}|.
 \end{itemize}
 
-Note that here we differ from the `standard' CHR \cite{stuckey02theory-overloading} way of dealing with type signatures
-by encoding their entailment check as rule (E) combined with a richer constraint language which includes |Assume|.
+Here we differ from the `standard' CHR \cite{stuckey02theory-overloading} way of dealing with type signatures
+by encoding their entailment check as rule E combined with a richer constraint language which includes an |Assume|.
 We also expect the type inferencer to be capable of using a type signature in such a way that fixed type variables introduced
 by the signature end up in |Prove| constraints via their binding from program variables;
 this is usually accomplished by a combination of type inference and type checking
 \cite{peytonjones04pract-inf-rank,vytiniotis06boxy-impred,dijkstra05phd}.
-We need such explicit assumptions when dealing with scopes and alternate entailment solutions.
+Such explicit assumptions will come to good use when dealing with scopes and alternate entailment solutions.
 
 %\Paragraph{|Prove| constraints and type inference}
 
@@ -585,10 +689,11 @@ f :: Eq a => [a] -> Bool
 However, providing a type signature |f :: Real a => [a] -> Bool|
 may leave us with unresolved constraints, unless we add the class hierarchy
 induced rules for |Assume|
-constraints  as well:
+constraints  as well.
 Otherwise we get stuck at |{Prove(Eq c1),| |Assume(Real c1)}| because there are no rules to simplify to
 |{Prove(Eq c1),| |Assume(Eq c1)}|.
-By adding propagation rules for |Assume| constraints corresponding to the class hierarchy:
+Once again,
+by adding propagation rules for |Assume| constraints corresponding to the class hierarchy:
 
 %%[[wrap=code
 Assume(Ord a)    ==> Assume(Eq a)  ^^ ^^  -- (CA2)
@@ -628,7 +733,7 @@ From (I2) we now also have the rule:
 Prove(Eq [Int])                    <==> True     ^^ ^^ -- (I2)
 %%]]
 
-Solving |Prove(Eq [Int])| either leads to |Prove(Eq Int)| (via (I1)) or to |True| (via (I2)).
+Solving |Prove(Eq [Int])| either leads to |Prove(Eq Int)| via (I1) or to |True| via (I2).
 A solution to this ambiguity may be to add guards \cite{stuckey02theory-overloading}:
 
 %%[[wrap=code
@@ -650,6 +755,7 @@ so we can deal with those choices separately.
 For these reasons we will avoid simplification rules and use propagation rules instead.
 A direct consequence is that we have confluence because no constraint is ever removed from the working set of a solver,
 and every matching propagation rule is used once for matching constraints.
+
 A more subtle consequence of this design choice is that the interaction with a constraint solver becomes slightly different:
 entailment does no longer follow from the absence of |Prove| constraints in the final set of solved constraints,
 but non-entailment follows from a |Prove| constraint \emph{not} being propagated from by any rule.
@@ -658,12 +764,12 @@ We come back to this later (\secRef{sec-chr-heuristics}).
 \Paragraph{Making choice explicit: derivation tracing}
 
 The given rules describe how to solve constraints, but leave no trace of how this is done, do not indicate solution alternatives,
-and do not give enough information to proceed with code generation.
+and do not give enough information when proceeding with code generation.
 We therefore let each rule also generate a |Reduction| constraint,
-encoding a derivation trace.
+thus encoding a derivation trace.
 Note that such traces are also generated for derivations which lead to unsatisfiable constraint sets;
 choosing between alternate reductions later will prune away such traces, or pick the best of these,
-depending the strategy for making such choices.
+depending on the strategy for making such choices.
 Consider again the following instance declarations:
 
 %%[[wrap=code
@@ -707,14 +813,14 @@ holding the superclass dictionary:
 
 %%[[wrap=code
 Assume(Num a)
-  ==>  Assume(Eq    a)
-  ,    Reduction (Eq    a) "eqOfNum"     {Num a}
+  ==>  Assume(Eq a)
+  ,    Reduction (Eq a)    "eqOfNum"     ^^ {Num a}
   ,    Assume(Show  a)
-  ,    Reduction (Show  a) "showOfNum"   {Num a}
-Prove(Eq    a), Prove(Num a)
-  ==>  Reduction (Eq    a) "eqOfNum"     {Num a}
-Prove(Show  a), Prove(Num a)
-  ==>  Reduction (Show  a) "showOfNum"   {Num a}
+  ,    Reduction (Show a)  "showOfNum"   ^^ {Num a}
+Prove(Eq a), Prove(Num a)
+  ==>  Reduction (Eq a)    "eqOfNum"     ^^ {Num a}
+Prove(Show a), Prove(Num a)
+  ==>  Reduction (Show a)  "showOfNum"   ^^ {Num a}
 %%]]
 
 The reduction steps now tell us whether a class predicate |pi| is entailed;
@@ -735,11 +841,11 @@ class Eq a where
 instance Eq Int where                                       ^ -- (I1)
   x == y = primEqInt x y
 
-e1 =  3 == 5                                                ^ -- (e1), False
+e1 =  3 == 5                                                ^ -- result: False
 e2 =  let  instance Eq Int where                            ^ -- (I2)
              x == y = primEqInt  (x `mod` 2)
                                  (y `mod` 2)                ^
-      in   3 == 5                                           ^ -- (e2), True
+      in   3 == 5                                           ^ -- result: True
 %%]
 
 Both CHRs and constraints reduced by those CHRs must be annotated with scope:
@@ -748,13 +854,13 @@ We define the scope |scope| of a program location as follows:
 
 \begin{itemize}
 \item
-  The global scope |scope isbydef << >>|.
+  The global scope |scope isbydef ^^ << >>|.
 \item
   The body of each |let| introduced binding has scope |scope isbydef scope' ++ [n]|,
   where |n| is a unique |Int| value among all bindings in the surrounding scope |scope'|.
-\item
-  The body of a lambda expression in scope |scope'| for which the type signature (if any) specifies class predicates
-  has scope |scope isbydef scope' ++ [0]|.
+%\item
+%  The body of a lambda expression in scope |scope'| for which the type signature (if any) specifies class predicates
+%  has scope |scope isbydef scope' ++ [0]|.
 \end{itemize}
 
 The scope of both an instance and an induced constraint is defined to be the scope of the program location where
@@ -762,49 +868,59 @@ the instance is defined or the constraint arises, respectively.
 A class predicate |pi| in a constraint is annotated with this scope |scope|, so |varpi isbydef (pred,scope)|,
 alternatively denoted by |predscope|.
 When the scope |scope| is omitted from |predscope|, |pred| ranges over any scope.
+For instance declarations we need to know their scope,
+so |prenv| from now on holds pairs |(instance ^^ Vec(pred) => pred,scope)|.
 
 For example, the global scope in which (I1) is defined is |scope = << >>|, the scope in which (I2) is defined is |scope = <<3>>|,
 where the |3| is arbitrary.
-The constraint |Prove (Eq Int)| for expression (e1) arises in scope |<< >>|, for expression (e2) it arises in scope |<<3>>|.
+The constraint |Prove (Eq Int)| for expression |e1| arises in scope |<< >>|, for expression |e2| it arises in scope |<<3>>|.
 For the latter both (I1) and (I2) can be used for context reduction.
 This normally implies an error because instances overlap,
 but by using scope information we can disambiguate.
 
-The entailment relation is extended (in \figRef{MiscRules.entailscn.all}) with a rule for lifting a scoped class predicate
-to a more global scope.
+The entailment relation is extended (in \figRef{MiscRules.entailscn.all}) with a rule for
+making a global scoped predicate locally available.
 The rule for instances is restricted to apply to predicates of the same or more local scope only.
 The class rule still applies to any predicate since classes are only defined globally.
 
 \rulerCmdUse{MiscRules.entailscn.all}
 
 The scope rule is non-deterministic: it can be applied anywhere and reduce to any outer or equal scope.
-We make the rules deterministic by using rules which yield a simplification:
+In principle, this does not matter because we postpone making choices anyway.
+However, in practice we introduce many intermediate reduction steps which clutter the reduction graph.
+Therefore we make the rules \IxAsDef{CHR suitable} by modifying the rules such that every rule contributes
+a step in the right direction, that is strictly more global scope, fewer predicates to proof, or both:
 \begin{itemize}
 \item Rules for class and instances are as usual, but preserve scope.
 \item Scope reducing rules are for combinations of predicates of which scopes strictly differ,
   and lead to a simplification with a strictly more global scope.
 \end{itemize}
 
-For entailment induced by instance declarations,
-in \figRef{MiscRules.entailscn.algo},
-we copy the scope visibility check into \ruleRef{inst}.
-We automatically get scope reduction for instances without context.
+In \ruleRef{inst} of \figRef{MiscRules.entailscn.algo}
+we already automatically get scope reduction for instances without context.
 For instances with context, the scope is propagated to the context.
-For scope reductions the \ruleRef{scope} now only reduces for two predicates simultaneously which only
+For scope reductions the \ruleRef{scope} now only reduces two predicates simultaneously which only
 differ in their scope.
 The \ruleRef{class1} is the same as the previous \ruleRef{class}
-but is incomplete on its own because two different predicates with different scope in a superclass relationship are
+but is incomplete on its own because two predicates with different scope in a superclass relationship are
 not reduced.
 The previous version of \ruleRef{scope} did `spontaneously' reduce predicates to the required scope for \ruleRef{class1},
 but now we require additional rules \textRL{class2} and \textRL{class3} to take care of this combination.
 The overbar notation in these rules should be read as a rule for each predicate related by the superclass relation.
 
+We have not proven soundness and completeness of the rules in
+\figRef{MiscRules.entailscn.algo} relative to \figRef{MiscRules.entailscn.all}.
+The intuition is that both sets of rules in \figRef{MiscRules.entailscn.all} independently reduce via instances (and classes) and via scopes.
+The rules in \figRef{MiscRules.entailscn.algo} do this in a syntax directed manner by letting the set
+of the to be proven predicates determine which rule applies.
+
 \rulerCmdUse{MiscRules.entailscn.algo}
 
 \Paragraph{CHRs for instances}
 
-We change the translation of instances to CHRs accordingly, for |instance (pred1, .. , predn) => pred|, in scope |scope|
-we get:
+We change the translation of instances to CHRs accordingly,
+for the declaration |instance (pred1, .. , predn) => pred|,
+in scope |scope| we get:
 
 %%[[wrap=code
 Prove (pred, s)
@@ -846,8 +962,7 @@ We still have overlapping instances, but we are prepared for making the choice.
 
 %\FigurePDF{t}{0.5}{redGraphSuperScopeNo}{Missing: scoped superclass reduction}{chr-redGraphSuperScopeNo}
 
-For classes we generate for each pair |(pred2, pred3)|, where |pred2| is a superclass of |pred3|,
-the following rules.
+For classes we generate rules for each pair |(pred2, pred3)|, where |pred2| is a (transitive) superclass of |pred3|.
 These CHRs correspond to \ruleRef{class2} and \ruleRef{class3}, respectively:
 
 %%[[wrap=code
@@ -865,6 +980,9 @@ Prove (pred3, s), Prove (pred2, t)
                    (ByScope (commonScope s t))
                    {(pred2, commonScope s t)}
 %%]]
+
+\RuleRef{class1} differs from \ruleRef{class} only in the scope, which is irrelevant for classes.
+Scope is simply propagated; we therefore omit further discussion.
 
 \Paragraph{CHRs for scoped predicate pairs}
 
@@ -891,13 +1009,13 @@ The CHR solver leaves us with a final set of constraints, for which:
 
 \begin{itemize}
 \item We extract all |Reduction| constraints.
-\item From these |Reduction| constraints we construct a reduction graph such as in \figRef{chr-redGraphEqIntTwice}.
-\item From the reduction graph we construct all possible alternative reductions.
+\item From these |Reduction| constraints we construct a reduction graph such as in \figRef{chr-redGraphEqIntTwice},
+      and consider all possible alternative reductions.
 \item From alternative reductions we choose heuristically.
 \item From the chosen reduction we generate evidence, that is, a representation of the code required for constructing dictionaries.
 \end{itemize}
 
-We use the following, contrived running example, where \figRef{chr-redGraphEqOrdListTup} shows the reduction graph for |f|:
+We use the following running example, where \figRef{chr-redGraphEqOrdListTup} shows the reduction graph for |f|:
 
 %%[[wrap=code
 instance Eq Int                      -- dEqInt  
@@ -911,7 +1029,7 @@ f :: Ord a => (Int,a) -> [(Int,a)] -> Bool
 f x (y:ys) = x == y && x < y && [x] == ys && [y] < ys
 %%]]
 
-\FigurePDF{t}{0.5}{redGraphEqOrdListTup}{Reduction heuristics example}{chr-redGraphEqOrdListTup}
+\FigurePDF{t}{0.5}{redGraphEqOrdListTup}{A reduction graph}{chr-redGraphEqOrdListTup}
 
 We present this sequence of steps in Haskell.
 We omit the glue for all code fragments, and only show the essentials;
@@ -933,7 +1051,7 @@ The |info| parameter is defined to be:
 
 %%[[wrap=code
 data Annotation
-  =  ByInstance    String pred scope     -- instance name + ...
+  =  ByInstance    String pred scope     -- instance name, pred, scope
   |  BySuper       String                -- superclass field name
   |  ProveObl      String                -- evidence name
   |  Assumption    String                -- assumed instance name
@@ -948,7 +1066,7 @@ Later we define various orderings on |Annotation|s to be used by heuristics to m
 \Paragraph{Reduction graph}
 
 From these constraints we construct the reduction graph,
-for which we use the inductive graph library \cite{erwig01inductive-graph} to encode an Annotated Graph (|AGraph|)
+for which we use the inductive graph library \cite{erwig01inductive-graph} to encode a graph (Annotated Graph, |AGraph|)
 for nodes |a| and edges |b|
 with the following interface:
 
@@ -962,7 +1080,8 @@ deleteEdge   :: Ord a =>    (a, a)       -> AGraph a b -> AGraph a b
 successors, predecessors :: Ord a => AGraph a b -> a -> [(b, a)]
 %%]]
 
-Nodes are predicates |varpi| from constraints, edges are reductions labeled with an |Annotation|.
+Nodes correspond to predicates |CnstrVarpi(Cnstr)| from constraints |Cnstr|,
+and edges are reductions labeled with an |Annotation|.
 Predicates |varpi| are wrapped in a |Node| so we can represent conjunction:
 
 %%[[wrap=code
@@ -989,7 +1108,7 @@ Assume  (Ord  c1           ,<<5,0>>)  :->  {Assumption  "a1"}
 %%]]
 
 Note that each constraint maps to multiple |Annotation|s since a constraint may arise many times.
-However, in our example we only have one |Annotation| per constraint.
+In our example however we only have one |Annotation| per constraint.
 
 From these constraints, together with the class and instance CHRs,
 the CHR solver produces the following |Reduction| constraints which lead to the reduction graph
@@ -1102,15 +1221,15 @@ Function |binChoice| computes the preferred |Annotation| given an ordering on |A
 amongst reductions.
 
 This is also the point where we get to know which constraints are unresolved;
-sooner is not possible because which constraints are unresolved depend on the choices we make between reductions.
+sooner is not possible because which constraints are unresolved depends on the choices we make between reductions.
 From this point onwards we also assume that neither unresolved nor ambiguous reductions occur in
-the reduction graph, either because it has been reported as an error, or because unresolved reductions
+the reduction graph, either because they have been reported as an error, or because they
 have been replaced by assumptions.
 Ambiguous reductions occur when a heuristic can not make a unique choice,
 usually leading to ``overlapping instance'' errors.
 The latter is done by type inferencing as part of the generalization step.
 As a consequence, these functions have to be used twice, first to detect unresolvedness and ambiguity,
-second to produce the actual evidence.
+and subsequently to produce the actual evidence.
 
 For the current example (\figRef{chr-redGraphEqOrdListTup}) the Haskell98 heuristic prefers reduction by |dEqL|
 for |(Eq [(Int,c1)],<<5,0>>)|, fully ignoring scope information.
@@ -1142,7 +1261,8 @@ The most notable difference between the heuristics of Haskell98 and GHC
 is the way predicates are reduced using instance declarations:
 Haskell98 requires predicates to be reduced first with instance declarations, whereas GHC
 reduces predicates only with instance declarations if there is no other
-alternative left. The reason that this is possible is that GHC allows
+alternative left.
+This is possible because GHC allows
 arbitrary contexts in type signatures. Were GHC to first reduce using
 instances, possibly no assumptions introduced by type
 signatures would be found. GHC uses another heuristic when there are still |Unresolved|
@@ -1159,8 +1279,8 @@ ghcReduce = localChoice ghcLocalReduce
 %%]]
 
 This heuristic only reduces a predicate using the class hierarchy.
-Context reduction is stopped if context reduction using the class hierarchy
-is not possible even when there are other alternatives.
+Context reduction stops the class hierarchy
+does not enable reductions, even when there are other alternatives.
 We introduce the |try| combinator to combine both heuristics:
 
 %%[[wrap=code
@@ -1181,11 +1301,14 @@ We assume function |specificness| which orders two class predicates accordingly.
 We adapt |ghcBinSolve| as an example:
 
 %%[[wrap=code
-specificness :: pi -> pi -> Ordering    ^ -- p > q when more specific
+specificness :: pi -> pi -> Ordering    ^ -- p \texttt{>} q when more specific
 specificness p q = ...                  ^ -- error when equal
 
 ghcBinSolve :: Annotation -> Annotation -> Ordering
-...
+ghcBinSolve (Assumption         _)  _                     = GT
+ghcBinSolve _                       (Assumption       _)  = LT
+ghcBinSolve (BySuper            _)  _                     = GT
+ghcBinSolve _                       (BySuper          _)  = LT
 ghcBinSolve (ByInstance    _ p  _)  (ByInstance  _ q  _)  = cmp
   where cmp = specificness p q
 ghcBinSolve (ByInstance    _ _  _)  _                     = GT
@@ -1221,6 +1344,23 @@ We need this information to be explicit so we can make a choice between 'forgett
 %%]
 
 %%[discussion
+\Paragraph{Theoretical aspects}
+
+The contribution of \thispaper\ is a proposal and an implementation, both of practical nature.
+Theoretical work has to be done for the following:
+
+\begin{Itemize}
+\item
+  Proof of soundness and completeness of the rules in \figRef{MiscRules.entailscn.algo}
+  relative to \figRef{MiscRules.entailscn.all}.
+\item
+  Embedding in a type system.
+\item
+  Formalisation of the heuristics.
+\end{Itemize}
+
+We expect the last of these to be the most difficult.
+
 \Paragraph{Related work}
 
 It appears as if not much work related to scoped instances has been done.
@@ -1231,12 +1371,12 @@ Although the desirability of scoped instances is noted in literature
 \cite{kiselyov04impl-config,shields01first-class-mod},
 loss of principal typing and coherence turn out to be major stumbling blocks.
 However, we feel that by offering mechanisms to explicitly deal with these issues,
-the severity of it is mitigated.
+the severity of this is mitigated.
 
 \Paragraph{Explicitly dealing with otherwise implicit choices}
 
 With our framework we now are able to be explicit in the choices made during context reduction,
-and thereby be free from the choices usually made deep inside the bowels of a compiler: context reduction now programmable.
+and thereby be free from the choices usually made deep inside the bowels of a compiler: context reduction is now programmable.
 Different varieties of context reduction \cite{peytonjones97typecl-explore} can be chosen from by means
 of compiler options, pragmas, or via a heuristics language and compiler plugins.
 We feel that separating proof machinery from solution choice provides a good starting point
@@ -1245,7 +1385,7 @@ for making this part of the compilation process fully steerable by a programmer.
 \Paragraph{Backtracking or choosing between reduction alternatives?}
 
 Our CHRs generate a reduction graph which represents reduction alternatives from which we heuristically choose.
-Alternatively, a backtracking CHR version \cite{fruhwirth98theory-chr} could be used instead.
+Alternatively, a backtracking CHR version \cite{fruhwirth98theory-chr,fruhwirth03essence-constrprog} could be used instead.
 Consequently, choices between alternatives then are expressed as part of CHRs.
 It is unclear whether implicitly enforcing choices offers enough or better expressability compared to a Haskell program dealing
 explicitly with reduction alternatives.
@@ -1260,11 +1400,6 @@ Consequently, such substitutions, which we do not model, need to be carried alon
 
 
 %%]
-Design choice: lift scope to constraint, instead of only for pred: scoped constraints/chr?
-
-Formal properties:
-(1) we piggyback on \cite{stuckey02theory-overloading},
-(2) confluence is guaranteed by using propagation rules and reifying the notion of choice, dealing with this issue separately.
 
 %%[XX
 %%]

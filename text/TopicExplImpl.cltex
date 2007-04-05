@@ -66,8 +66,8 @@ The basic idea is to restrict a polymorphic parameter by specifying
 that some predicates have to be satisfied when the function is called:
 
 %%[[wrap=code defF
-f  ::    Eq a =>  a ->  a ->  Int
-f  =   \          x     y ->  if x == y then 3 else 4
+f  ::  Eq a => a -> a -> Int
+f  =   \x y -> if x == y then 3 else 4
 %%]
 
 In this example the type signature for |f| specifies that values of
@@ -114,8 +114,8 @@ eqDChar     = EqD primEqChar                    -- Eq Char
 %%]]
 
 %%[[translDefF
-f  ::         EqD a ->  a ->  a ->  Int
-f  =   \  ^^  dEq       x     y ->  if (eqEqD dEq) x y then 3 else 4
+f  ::  EqD a -> a -> a -> Int
+f  =   \dEq x y -> if (eqEqD dEq) x y then 3 else 4
 %%]]
 %%]]
 

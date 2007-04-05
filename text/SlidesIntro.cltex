@@ -637,6 +637,9 @@ infers kind @Eq :: Forall a . a -> a -> *@
   & Integer, Float, deriving, IO, ...
   &
   \\
+... & 
+  & 
+  \\
 \end{tabular}{}
 %%]]
 }

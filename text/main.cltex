@@ -794,7 +794,7 @@ WWW home page:
 %%]
 
 %%[25
-\title{Experience Report: The Structure of the Essential Haskell Compiler, coping with Compiler Complexity}
+\title{Experience Report: The Structure of the Essential Haskell Compiler, or Coping with Compiler Complexity}
 %if acm && useSigplanconfSty
 %if blinded
 \authorinfo{author info removed for reviewing}{--}{--}
@@ -1592,24 +1592,16 @@ this has been moved to \chapterRef{ehc-partial-sig-quant-guess}.
 
 %%@TopicCHRLocalInst.introduction
 
-In the following \secRef{sec-chr-locinst} we first discuss what is problematic about scoped instances, and
+In the next \secRef{sec-chr-locinst} we discuss what is problematic about scoped instances, and
 what the contribution of \thispaper\ is.
 \secRef{sec-chr-startingpoint} discusses previous work upon which we base ours,
 in \secRef{sec-chr-prerequisites} we provide the prerequisites for the technical part in
-\secRef{sec-chr-maptochr}, \secRef{sec-chr-maplocaltochr} and \secRef{sec-chr-heuristics}.
+Sections~\myRef{sec-chr-maptochr},~\myRef{sec-chr-maplocaltochr}, and~\myRef{sec-chr-heuristics}.
 We conclude in \secRef{sec-chr-relatedwork} with discussion, related work and future work.
 
 \section{Local instances}
 \label{sec-chr-locinst}
-A \IxAsDef{global instance} is a normal module level Haskell instance.
-A \IxAsDef{local instance} or \IxAsDef{non-global instance} is an instance declared in a nested expression,
-where nesting is defined by Haskell's normal nesting language constructs.
-The \IxAsDef{scope} of an instance uniquely defines the location within nested language constructs.
-Scopes can be compared for visibility, to be defined more precisely later.
-A \IxAsDef{scoped instance} is either a global or a local instance, distinguishable on the basis of its scope.
-Note that in literature ``local'' sometimes means ``per module''.
-However, as per module instances are exported globally anyway in Haskell,
-we consider such instances to be global instances.
+%%@TopicCHRLocalInst.defLocalInst
 
 \subsection{The problem}
 
@@ -1632,14 +1624,14 @@ we consider such instances to be global instances.
 \section{Mapping classes and instances to CHRs}
 \label{sec-chr-maptochr}
 
-In this section we discuss 
+In this section we discuss:
 \begin{itemize}
 \item How class and instance declarations are translated to CHRs.
-\item How constraints arise from program text, are simplified, and contexts are reduced.
+\item How constraints that arise from program text are simplified, and how contexts are reduced.
 \end{itemize}
 We start without taking scopes into account,
 showing the basic use of our constraint language,
-and pointing out where and why we differ from \cite{stuckey02theory-overloading}.
+and pointing out where and why we differ from the `standard' \cite{stuckey02theory-overloading}.
 
 %%@TopicCHRLocalInst.toCHRplain
 
@@ -1693,6 +1685,11 @@ and pointing out where and why we differ from \cite{stuckey02theory-overloading}
 \label{sec-ehcstruct-complexity-formalisation}
 
 %%@TopicEHCStructure.complexityFormalisation
+
+\section{Coping with internal complexity: transformations}
+\label{sec-ehcstruct-complexity-internal}
+
+%%@TopicEHCStructure.complexityTransformations
 
 \section{Experiences}
 \label{sec-ehcstruct-experiences}

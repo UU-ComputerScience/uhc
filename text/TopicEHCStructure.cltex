@@ -3,28 +3,33 @@ Haskell compilers are complex programs.
 Testimony to this observation is the Glasgow Haskell compiler (GHC),
 which simultaneously incorporates many novel features, is used as a reliable workhorse for many a
 functional programmer, and offers a research platform for language designers.
-As a result, modifying GHC requires involves a steep learning curve in order to become acquainted 
+As a result, modifying GHC requires a steep learning curve for getting acquainted 
 with GHC's internals.
-In this experience report we describe the structure of the Essential Haskell Compiler (EHC),
-which also becomes increasingly complex as its grows beyond the essentials towards a full Haskell compiler.
-Our approach partitions both language and its implementation into smaller, more manageable steps,
+In this experience report we describe the structure of the Essential Haskell Compiler (EHC)
+and how we manage complexity,
+despite its growth beyond the essentials towards a full Haskell compiler.
+Our approach partitions both language and its implementation into smaller, manageable steps,
 and uses compiler domain specific tools to generate parts of the compiler from higher level descriptions.
+As major parts of EHC have been written in Haskell both its implementation and use are reported about.
 %%]
 
 %%[introduction
-Haskell is a perfect example of a programming language which offers many features improving programming efficiency while
-at the same time offering a sophisticated type system to protect against many programming errors.
-As such it is an answer for the programmer looking for a programming language which does as much as possible of the programmer's job while
-at the same time guaranteeing particular program properties like ``well-typed programs don't crash''.
+Haskell is a perfect example of a programming language which offers many features improving programming efficiency by
+offering a sophisticated type system.
+As such it is an answer for the programmer looking for a programming language which does as much as possible of the programmer's job,
+while at the same time guaranteeing program properties like ``well-typed programs don't crash''.
 However, the consequence is that a programming language implementation is burdened by these responsibilities,
-and becomes complex as a consequence.
+and becomes complex as a result.
 
-In \thispaper\ we show how we deal with this compiler complexity, in particular the following issues:
+In \thispaper\ we show how we deal with this compiler complexity
+in the context of the Essential Haskell (EH) Compiler (EHC)
+\cite{dijkstra04ehc-web,dijkstra05phd},
+and in particular the following issues:
 \begin{Itemize}
 \item \textbf{Language features.} (\secRef{sec-ehcstruct-complexity-design})
   Language features usually are experimented with in isolation.
-  We also describe their implementation in isolation, as a sequence of language variants building on top
-  of eachother.
+  We describe their implementation in isolation, as a sequence of language variants, building on top
+  of each other.
 \item \textbf{Maintenance.} (\secRef{sec-ehcstruct-complexity-maintenance})
   Actual compiler source, its documentation and specification tend to become inconsistent over time.
   We deal with inconsistencies by avoiding its main cause: duplication.
@@ -32,32 +37,58 @@ In \thispaper\ we show how we deal with this compiler complexity, in particular 
 \item \textbf{Description complexity.} (\secRef{sec-ehcstruct-complexity-formalisation})
   The specification of parts of the implementation itself can become complex because low-level details
   are visible.
-  We use domain specific languages which factor out low-level details which can be automatically generated.
+  We use domain specific languages which factor out those low-level details which can be dealt with automatically.
+\item \textbf{Implementation complexity.} (\secRef{sec-ehcstruct-complexity-internal})
+  The amount of work a compiler has to do is a source of complexity as well.
+  We use a dataflow through many relatively small transformations, between various internal representations.
+  Although not novel
+  \cite{peytonjones92ghc-overview,peytonjones94trafo-ghc,peytonjones96hs-transf},
+  we mention it for completeness.
 \end{Itemize}
 
-We focus on the overall organisation and discuss the benefits and drawbacks of it.
-However, we omit explanation, discussion and literature reference relating to specific language concepts,
-as we believe this is not the intention of an experience report.
+We focus on the overall organisation and discuss the benefits and drawbacks of it,
+leaving out references to well known tools and concepts.
 %%]
 
 %%[complexityDesign
-\figRef{fig-ehcstruct-langs} shows some of the language variants together with relevant artefacts.
-\figRef{fig-ehcstruct-alllangvariant} shows a complete list, mentioning only which language concept is introduced in which 
-EH step.
+To cope with the many features of Haskell,
+EHC is designed as a sequence of compilers,
+each of which adds new features.
+This enables us to experiment with
+non-standard features.
+\figRef{fig-ehcstruct-alllangvariant} shows all 11 language variants we currently recognize,
+with the standard and experimental features they introduce.
+The subdivision reflects a didactical choice
+of increasingly complex features; it is not
+the development history of the project.
+Every compiler in the series can actually be built out of the repository.
 
-For example, the first language in the first column of \figRef{fig-ehcstruct-langs} introduces the starting point
+For each compiler in the series, various artefacts
+are created:
+a definition of the semantics, an implementation,
+example programs, documentation, etcetera.
+\figRef{fig-ehcstruct-langs} shows some instances.
+The language in the first column introduces the starting point
 for subsequent languages.
 It features the simply typed |lambda|-calculus, where all defined values require an accompanying type signature,
 demonstrated by the example.
-For the description of the corresponding compiler we require the semantics of all language constructs,
-its implementation and documentation.
+For the description of the corresponding compiler we require the static semantics of all language constructs,
+their implementation and documentation.
 The semantics is defined in terms of type rules and the implementation in terms of attribute grammars.
+
+\begin{CenterFigure}{t}{EH all language variants}{fig-ehcstruct-alllangvariant}
+%%@SlidesIntro.ehVariantsTable
+\end{CenterFigure}
 
 {
 %%@Poster.exportedMacros
 \begin{figure*}[t]
 \newcommand{\Nw}{}
-\begin{tabular}{l@@{}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
+\def\Line{\hline}
+\def\Impl{Impl.}
+\def\Sem{Sem.}
+\def\Doc{Doc.}
+\begin{tabular}{l||l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
 %%@Poster.langSeries
 \end{tabular}
 \caption{Languages design steps}
@@ -65,25 +96,232 @@ The semantics is defined in terms of type rules and the implementation in terms 
 \end{figure*}
 }
 
-\begin{CenterFigure}{t}{EH all language variants}{fig-ehcstruct-alllangvariant}
-%%@SlidesIntro.ehVariantsTable
-\end{CenterFigure}
+The next two columns in \figRef{fig-ehcstruct-langs} show the incorporation of polymorphic type inference
+and higher ranked types, respectively.
+Actually, part of the latter related to the propagation of quantified types
+is experimented with as separate variant
+\cite{dijkstra06exploit-tyann-tr},
+but is shown here to demonstrate the increase in complexity
+of both the type rules and the corresponding implementation.
+
+The tool architecture was designed in such a way that the description
+for each language variant |n| consists of the delta with respect to language |(n-1)|.
+Usually this delta is a pure addition, but there is interaction between subsequent variants when:
+
+\begin{Itemize}
+\item Language features interact.
+\item The overall implementation and individual increments interact: an increment is described
+  in the context of the implementation of preceding variants,
+  whereas such a context must anticipate later changes.
+\end{Itemize}
+
+Conventional compiler building tools are neither aware of partitioning into increments nor their interaction.
+We use a separate tool, called |Shuffle|, to take care of such issues.
+We describe |Shuffle| in the next section.
 
 %%]
+EH thus consists of a sequence of languages, each with its own compiler.
+Each language variant is described, and implemented, as an increment on top of the previous variant.
+Each increment describes one language feature, or a group of related language features.
+Subsequent increments ideally are independent,
+but in practice interact because:
 
 %%[complexityMaintenance
+For any large programming project the greatest challenge is not to make the first version,
+but to be able to make subsequent versions.
+One must be prepared for change, and in order to facilitate change, the object of change should
+be isolated and encapsulated.
+Although many programming languages support encapsulation,
+this is not enough for the construction of a compiler,
+because one language feature influences not only different parts of a compiler
+(parser, structure of abstract syntax tree, type system, code generation, runtime system)
+but also other artefacts such as specification, documentation and test suites.
+Encapsulation of a language feature in a compiler therefore is difficult, if not impossible, to achieve.
 
-\FigurePDF{t}{0.35}{toolchain}{EHC toolchain}{ehcstruct-toolchain}
+We mitigate the above problems by using |Shuffle|,
+a separate preprocessor.
+In all source files, we annotate to which
+language variants the text is relevant.
+|Shuffle| preprocesses all source files by selecting
+and reordering those fragments (called |chunk|s)
+that are needed for a particular language variant.
+Source files can be (chunked) Haskell code,
+(chunked) \LaTeX\ text, but also code in other
+languages we use (see \figRef{fig-ehcstruct-toolchain}).
+
+|Shuffle| behaves similar to literate programming \cite{knuth92litprog} tools
+in that it generates program source code.
+The key difference is that with the literate programming style program source code is generated out of a file containing
+program text plus documentation,
+whereas |Shuffle| combines chunks for different variants from different files into either program source code or documentation.
+
+|Shuffle| offers a different functionality than version management: version management offers historical versions,
+whereas |Shuffle| offers the simultaneous handling of different variants from one source.
+
+For example, for language variant |2| and |3| (on top of |2|) a different Haskell wrapper function |mkTyVar| for
+the construction of the compiler internal representation of a type variable is required.
+In variant |2|, |mkTyVar| is equivalent to the constructor |Ty_Var|:
+
+%%@EHTy.2.mkTyVar wrap=code
+
+However, version |3| introduces polymorphism as a language variant,
+which requires additional information for a type variable, which defaults to |TyVarCateg_Plain|
+(we do not further explain this):
+
+%%@EHTy.3.mkTyVar wrap=code
+
+These two Haskell fragments are generated from the following |Shuffle| description:
+
+%%[[wrap=tt
+%%%[2.mkTyVar
+%%@EHTy.2.mkTyVar
+%%%]
+
+%%%[3.mkTyVar -2.mkTyVar
+%%@EHTy.3.mkTyVar
+%%%]
+%%]]
+
+The notation @%%[2.mkTyVar@ begins a chunk for variant |2| with name |mkTyVar|, ended by @%%]@.
+The chunk for @3.mkTyVar@ explicitly specifies to override @2.mkTyVar@ for variant |3|.
+Although the type signature can be factored out, we refrain from doing so for small definitions.
+
+In summary, |Shuffle|:
+\begin{Itemize}
+\item uses notation @%%[ ... %%]@ to delimit and name text chunks;
+\item names chunks by a variant number and (optional) additional naming;
+\item allows overriding of chunks based on their name;
+\item combines chunks upto an externally specified variant, using an also externally specified variant ordering.
+\end{Itemize}
+
+\FigurePDF{t}{0.35}{toolchain}{EHC toolchain}{fig-ehcstruct-toolchain}
 
 %%]
 
 %%[complexityFormalisation
+|Shuffle| deals with the compiler organisation and logistics of many different language features.
+For the description and implementation of individual features we use the following domain specific languages:
+\begin{Itemize}
+\item \textbf{Attribute Grammar (AG).}
+  For specifying abstract syntax trees (AST) and tree walks over ASTs
+  \cite{swierstra99comb-lang,dijkstra04thag,baars04ag-www,dijkstra05phd}.
+\item \textbf{Ruler.}
+  For specifying type rules
+  \cite{dijkstra06ruler}.
+\end{Itemize}
+
+Both |AG| and |Ruler| have their place in \figRef{fig-ehcstruct-toolchain}.
+|Ruler| also is aware of language variants in order to be able to render type rules taking into account differences
+between language variants; hence it precedes |Shuffle| in the tool pipeline.
+
+Both |AG| and |Ruler| earn their place in our toolchain because we can't do without.
+With |AG| we specify --in essence-- folds over data types, without the need to specify boilerplate plumbing as well.
+With |Ruler| we specify type rules in such a way that both |AG| and \LaTeX\ can be generated;
+we do not get lost in inconsistencies between semantics specification and compiler implementation, and \LaTeX\ obscurities.
+
+Both |AG| and |Ruler| also support growing definitions, or aspects.
+We demonstrate this for |AG|,
+by showing the additional AG fragments for the code generation aspect of variant 8 in
+\figRef{fig-ehcstruct-alllangvariant}:
+
+%%[[wrap=code
+DATA Expr
+  | App             func            : Expr
+                    arg             : Expr
+
+ATTR Expr [ | | cexpr: CExpr ]
+
+SEM Expr
+  | App         lhs         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
+%%]]
+
+From EH abstract syntax |Expr| (see \figRef{fig-ehcstruct-dataflow}) we generate Core abstract syntax |CExpr|
+for function application.
+We omit further explanation of this fragment, but point out that this fragment independently of other |AG|
+fragments specifies how to compute the code generation aspect |cexpr| for function applications.
+The |AG| compiler then combines such separate specifications and builds one fold function,
+to be used on EH abstract syntax.
+
+%%]
+
+%%[complexityTransformations
+The many jobs a compiler has to do usually can be organised into a pipeline of internal representations and
+transformations.
+\figRef{fig-ehcstruct-dataflow} shows EHC's pipeline,
+with its major intermediate representations:
+
+\begin{figure*}
+\raisebox{-50mm}[50mm][0mm]{\FigScaledPDF{0.65}{ehc-dataflow}}
+\caption{EHC toolchain}
+\label{fig-ehcstruct-dataflow}
+\end{figure*}
+
+\begin{Itemize}
+\item \textbf{Haskell}
+  A representation of the concrete program text, used for
+  desugaring, name and dependency analysis, and the regrouping of definitions accordingly.
+\item \textbf{Essential Haskell}
+  A simplified and desugared representation,
+  used for type analysis, code generation, and code expansion of class system related constructs.
+\item \textbf{Core}
+  An untyped |lambda|-calculus representation,
+  used for lambda-lifting.
+\item \textbf{GRIN}
+  A GRIN representation \cite{boquist99phd-optim-lazy},
+  representing an almost imperative program, used for global program analysis.
+\item \textbf{Silly}
+  A simple imperative language abstraction,
+  used to generate C or any other imperative language such as input for LLVM \cite{lattner07www-llvm}.
+\end{Itemize}
+
+Most of the intermediate representations can be pretty printed and parsed again, thus facilitating both debugging and experimenting.
+In \figRef{fig-ehcstruct-dataflow} the vertical arrows indicate this.
 %%]
 
 %%[experiences
-%%]
+\Paragraph{Development and debugging}
 
-%%[XX
+The partitioning into variants is helpful for both development and debugging.
+It is always clear to which variant code contributes,
+and if a problem arises one can go a variant back in order to isolate the problem.
+Experimentation also benefits because one can pick a suitable variant to build upon,
+without being hindered by subsequent variants.
+
+However, on the downside, there are builtin system wide assumptions, for example about how type checking is done.
+We are currently investigating this issue in the context of |Ruler|.
+
+\Paragraph{Improvements}
+
+Although our approach to cope with complexity indeed leads to the advocated benefits,
+there is room for improvement:
+
+\begin{Itemize}
+\item \textbf{Ruler and type rules.}
+  With |Ruler| we generate both AG and \LaTeX.
+  |Ruler| notation, AG, and \LaTeX\ have a similar structure.
+  Consequently |Ruler| does not hide as much of
+  the implementation as we would like.
+  We are investigating a more declarative notation for |Ruler|.
+\item \textbf{Loss of information while transforming.}
+  With a transformational approach to different intermediate representations,
+  the relation of later stages to earlier available information becomes unclear.
+  For example, by desugaring to a simpler (Essential) Haskell representation,
+  sourcecode gets reshuffled and their original source location has to be propagated correctly
+  as part of the AST.
+  Such information flow patterns are not yet automated.
+\item \textbf{High level description and efficiency.}
+  Using a high level description usually also provides opportunities to optimise at a low level.
+  For attribute grammars a large body of optimisations are available,
+  of which some are finding their way into our AG system.
+\end{Itemize}
+
+\Paragraph{Status and plans}
+
+We are working towards a release as a Haskell compiler: the last variant of the whole sequence.
+Compilation of a Prelude succeeds, and we run programs with a GRIN based bytecode interpreter.
+We intend to work on AG optimisations, use LLVM \cite{lattner07www-llvm} as a backend,
+and GRIN global transformations.
+
 %%]
 
 %%[XX
