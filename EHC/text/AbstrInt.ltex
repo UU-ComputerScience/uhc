@@ -63,6 +63,7 @@
 %format GrTag_Unboxed = "\mathit{Tag\_Unboxed}"
 %format GrTag_Any     = "\mathit{Tag\_Any}"
 
+%format Data = "\mathbf{data}"
 %format DATA = "\mathbf{syntax}"
 %format TYPE = "\mathbf{type}"
 %format SET  = "\mathbf{set}"
@@ -112,38 +113,43 @@
 \title{Abstract Interpretation to Avoid Indirect Jumps}
 \subtitle{A Complete Description based on Attribute Grammars}
 
-\authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
-           {Utrecht University}
-           {\{jeroen,doaitse\}@@cs.uu.nl}
+% \authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
+%            {Utrecht University}
+%            {\{jeroen,doaitse\}@@cs.uu.nl}
+
+\authorinfo{XXXXXXXXXXXXX\and YYYYYYYYYYYYYY}
+           {ZZZZZZZZZZZZ University}
+           {\{xxxxxxx,yyyyyyy\}@@zzzzzzzz}
+
 
 \maketitle
 
 \begin{abstract}
-Implementations of lazy functional languages often use closures,
-that is heap cells denoting postponed function calls.
-When a closure is forced to evaluation, the function code is called.
-The usual implementation involves an indirect jump to this code
-at evaluation points.
-Indirect jumps are expensive on pipelined architecture processors
-and should therefore be avoided.
-An alternative implementation evaluates closures by case analysis
-on the possible functions it represents. 
-To keep the number of cases small, for each evaluation point
-the possible contents of the closure needs to be known.
-This paper describes the abstract interpretation algorithm
-that precisely determines the possible contents of all variables.
+Implementations of lazy functional languages often use 
+closures, that is heap cells denoting postponed function 
+calls. When a closure is forced to evaluation, the function 
+code is called. The usual implementation involves an 
+indirect jump to this code at evaluation points. Indirect 
+jumps are expensive on pipelined architecture processors and 
+should therefore be avoided. An alternative implementation 
+evaluates closures by case analysis on the possible 
+functions it represents. To keep the number of cases small, 
+for each evaluation point the possible contents of the 
+closure needs to be known. This paper describes the abstract 
+interpretation algorithm that precisely determines 
+the possible contents of all variables.
 
-The algorithm does a tree walk over the program, collecting
-constraints on program variables. The set of constraints is then
-solved with a fixpoint iteration.
-The description of the algorithm is a complete implementation,
-with no details left out. As such, it is a case study of
-the possibility to do so within the limits of a short paper.
-We use many abstraction mechanisms of Haskell to keep
-the description concise. On top of that, we use a preprocessor
-to be able to describe the algorithm in terms of
-catamorphisms and algebras.
-A description of this attribute grammar based preprocessor is also included.
+The algorithm does a tree walk over the program, collecting 
+constraints on program variables. The set of constraints is 
+then solved with fixpoint iteration. The description of the 
+algorithm is a complete implementation, with no details left 
+out. As such, it is a case study of the possibility to do so 
+within the limits of a short paper. We use many abstraction 
+mechanisms of Haskell to keep the description concise. On 
+top of that, we use a preprocessor to be able to describe 
+the algorithm in terms of catamorphisms and algebras.
+A description of this attribute grammar based preprocessor 
+is also included.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -203,7 +209,7 @@ This way, evaluation amounts to a few tests and conditional jumps,
 and indirect jumps are avoided completely.
 Branch prediction schemes that are built in in pipelined processors
 can deal with the conditional jumps efficiently.
-Also, the conditional jumps are very local, and are likely to target
+Also, the conditional jumps are very local, and are likely to have their target
 within the instruction cache.
 
 To be able to do the pruning, 
@@ -227,7 +233,7 @@ A problem of mathematical notation is that it lacks sophisticated
 data structures.
 We feel it is paradoxical that for describing, 
 e.g., the subtleties of the Haskell type system, 
-often a mathematical notation is used which itself is almost untyped.
+one often uses mathematical notation which itself is almost untyped.
 So, where a mathematical description ought to be more abstract
 than an implementation, sometimes it is cluttered with low-level
 encodings of data structures in terms of lists and tuples.
@@ -341,7 +347,7 @@ The fact that this is not widely done, is due to the following problems:
       but also top-down. E.g., symbol tables with global definitions need
       to be distributed to the leafs of the parse tree to be able to evaluate them.
       This can be done by making the semantic functions in the algebra
-      return functions, but this pushes handling algebras beyond human control.
+      higher order functions, but this pushes handling algebras beyond human control.
 \item Much of the work is just passing values up and down the tree.
       The essense of a semantics is sparsely present in the algebra,
       and obscured by lots of boilerplate.
@@ -366,25 +372,25 @@ into a custom |fold| function and algebras.
 
 \subsection{An Attribute Grammar based preprocessor for Haskell}
 
-We describe the main features of the preprocessor here, and explain why it overcomes
+We describe the main features of the preprocessor here, and explain why they overcome
 the five problems mentioned above.
 To start with, the abstract syntax of the language is defined in a |DATA| declaration,
-which is like a Haskell {\bf data} declaration with named fields.
+which is like a Haskell |Data| declaration with named fields.
 The difference is that we don't have to write braces and commas,
 and that constructor function names need not to be unique.
 As an example, we define a fragment of a typical imperative language:
 \begin{code}
 DATA Stat
-  =  Assign  dest   :: String  ^^ ^^  src   :: Expr
-  |  While   cond   :: Expr    ^^ ^^  body  :: Stat
+  =  Assign  dest   :: String  ^^  ^^  ^^  ^^  src   :: Expr
+  |  While   cond   :: Expr    ^^  ^^  ^^  ^^  body  :: Stat
   |  Group   elems  :: [Stat]
 DATA Expr
   =  Const   num   :: Int
   |  Var     name  :: String
-  |  Add     left  :: Expr     ^^ ^^  right  :: Expr
-  |  Call    name  :: String   ^^ ^^  args   :: [Expr]
+  |  Add     left  :: Expr     ^^  ^^  ^^  ^^  right  :: Expr
+  |  Call    name  :: String   ^^  ^^  ^^  ^^  args   :: [Expr]
 \end{code}
-The preprocessor generates corresponding {\bf data} declarations
+The preprocessor generates corresponding |Data| declarations
 (making the constructors unique by prepending the type name, like |Expr_Const|),
 and more importantly, generates a custom |fold| function. This overcomes problem 1.
 
@@ -424,8 +430,8 @@ The |@| symbol may be omitted in the destination attribute,
 as is done in the next example. 
 This example shows that it is indeed useful that any Haskell expression,
 with embedded occurrences of child attributes, can be used in the definition.
-Also, it shows that the value of terminal symbols can be used (|@num| in the example),
-and that multiple semantic rules can be grouped under a single |SEM| header:
+Also, it shows how to use the value of terminal symbols (|@num| in the example),
+and how to group multiple semantic rules under a single |SEM| header:
 \begin{code}
 SEM Stat | While
   lhs.bytecode =  let  k = length @cond.bytecode
@@ -446,7 +452,7 @@ This overcomes problem 3.
 To be able to pass information downward during a tree walk,
 we can define `inherited' attributes
 (the terminology goes back to \cite{knuth}).
-As an example, it can be used to pass an environment,
+As an example, it can serve to pass an environment,
 i.e.\ a lookup table that associates variables to values,
 which is needed to evaluate expressions:
 \begin{code}
@@ -504,14 +510,14 @@ This defines a useful default rule, which can be overridden
 when extra symbols need to be interspersed, as for example in
 the definition of |listing| for assignment statements given earlier.
 
-It is allowed to define both an inherited and a synthesized attribute
+It is allowed to declare both an inherited and a synthesized attribute
 with the same name. In combination with the copying mechanisms,
 this enables us to silently thread a value through the entire
 tree, updating it when necessary. See section~\ref{sec.collect}
-where this is used to maintain, in attribute |location|,
+which maintains, in attribute |location|,
 a unique counter during the tree walk.
-This captures the pattern for which otherwise |Reader| and
-|Writer| monads are often introduced \cite{thih}.
+This captures a pattern for which often |Reader| and
+|Writer| monads are introduced \cite{thih}.
 
 The preprocessor automatically generates semantic rules
 in the standard situations described, and this overcomes problem 5.
@@ -523,8 +529,7 @@ in the standard situations described, and this overcomes problem 5.
 
 The Grin language (Graph Reduction Intermediate Notation)
 was proposed by Boquist as an intermediate language sitting
-between the Core language that is used
-in Haskell compilers to describe a desugared program,
+between the Core language (that in Haskell compilers describes a desugared program)
 and an imperative backend \cite{boquist1999}.
 
 We describe a slightly modified version here, which is
@@ -546,11 +551,11 @@ is executable by a simple interpreter, and a translation
 to a generic imperative language that can in turn be translated
 to various backend languages.
 
-In our presentation of the language we do not provide
+In the presentation of the language we do not provide
 a concrete syntax for the language, as normally is implicitly
 done in a BNF description.
 One reason for this is that a concrete syntax is unnecessary,
-as Grin programs are only used as an intermediate representation
+as Grin programs are only an intermediate representation
 in the compilation process, and technically are merely data structures.
 Another reason is that the mental parsing and unparsing involved
 when reading the semantics description in later sections could
@@ -606,7 +611,17 @@ if they are desired, the field list should contain
 variables that point to heap cells storing the inner nodes.
 
 Tags label nodes.
-Six different tags are possible:
+Six different tags are possible.
+Most tags are |Con| tags, which label nodes
+that build up data structures in Grin.
+They correspond to constructor functions in the Haskell source program,
+but unlike constructor functions, nodes with a |Con| tag are always fully saturated.
+For implementing lazy evaluation we have a |Fun| tag, which is needed
+to construct function `thunks', i.e.\ function applications of which the evaluation is postponed.
+Nodes with a |Fun| tag are always fully saturated functions.
+For unsaturated functions (partial parameterization), a |PApp| tag is used,
+which, apart from the function name, also specifies the number of 
+parameters it still |needs| to become fully saturated.
 \begin{code}
 DATA GrTag
   |  Con   nm        :: HsName
@@ -617,23 +632,13 @@ DATA GrTag
   |  Unboxed
   |  Hole
 \end{code}
-most tags are |Con| tags, which label nodes
-that build up data structures in Grin.
-They correspond to constructor functions in the Haskell source program,
-but unlike constructor functions, nodes with a |Con| tag are always fully saturated.
-For implementing lazy evaluation we have a |Fun| tag, which is needed
-to construct function `thunks', i.e.\ function applications of which the evaluation is postponed.
-Nodes with a |Fun| tag are always fully saturated functions.
-For unsaturated functions (partial parameterization), a |PApp| tag is used,
-which, apart from the function name, also specifies the nummer of 
-parameters it still |needs| to become fully saturated.
 
 The other three tags are an extension to those proposed by Boquist.
 When a lazy call is needed to a function of which the name is not statically known,
 a special thunk node is used. It has tag |App|;
 the first field of the node represents the function,
 the other fields the arguments to which the function is applied when the thunk is forced to evaluate.
-The |Unboxed| tag is used as a mockup tag for constructs that conceptually are nodes,
+The |Unboxed| tag is a mockup tag for constructs that conceptually are nodes,
 but in reality are implemented as unboxed values.
 Finally, the |Hole| tag is used in the implementation of recursive definitions,
 but plays no special role in the analysis described in this paper.
@@ -724,7 +729,7 @@ DATA GrPatAlt
                  fldL            :: [HsName]
 \end{code}
 A pattern in a case alternative is quite different from
-a lambda pattern that is used in a |Seq| expression.
+a lambda pattern in a |Seq| expression.
 A lambda pattern is often just a variable name.
 Two other possibilities are |Empty|, to be able to match
 for the empty result value of the |FetchUpdate| expression that
@@ -744,12 +749,12 @@ We assume the existence of a special name
 \begin{code}
 wildcard :: HsName
 \end{code}
-that can be used as a wildcard variable name
-(`don't care variable') in a lambda pattern.
+which can serve as a
+`don't care variable' in a lambda pattern.
 
 To complete our exposition of the Grin language, we
 define abbreviations for some groups of nonterminal symbols,
-which in the next section facilitates the definition
+which will facilitate the definition
 of attributes that are needed for all of them:
 \begin{code}
 SET AllDef    =  GrGlobal GrGlobalL GrBind GrBindL
@@ -773,8 +778,8 @@ and a language for specifying the constraints.
 
 \subsection{An abstract domain}
 
-Grin programs largely consist of bindings,
-which bind Grin expressions to function names.
+Grin programs largely consist of bindings
+from Grin expressions to function names.
 Expressions in turn are built from terms,
 of which a possible form is a single variable.
 Although Grin is an untyped language,
@@ -808,8 +813,8 @@ standalone tags,
 pointers to a heap location,
 or complete nodes.
 
-We introduce a data type |AbstractValue| which we use
-as the abstract domain in the abstract interpretation.
+We introduce a data type |AbstractValue| to describe
+the abstract domain in the abstract interpretation.
 It distinguishes four cases for the five different kinds of value (both the empty value and integers are regarded as `basic'), 
 with added bottom and error cases to form a complete lattice
 suitable for fixpoint iteration.
@@ -843,20 +848,20 @@ instance Monoid AbstractValue where
 \end{code}
 That is, any abstract value remains unchanged when merging it with |AbsBottom|
 \begin{code}
-   ^  mappend  a          AbsBottom   =  a
-      mappend  AbsBottom  b           =  b
+   ^^  mappend  a          AbsBottom   =  a
+       mappend  AbsBottom  b           =  b
 \end{code}
 Abstract values of each of the four types can be merged with others of the same type:
 \begin{code}
-   ^  mappend AbsBasic AbsBasic     
-        =  AbsBasic
-      mappend (AbsTags  at) (AbsTags  bt) 
-        =  AbsTags (Set.union at bt)
-      mappend (AbsLocs  al) (AbsLocs  bl) 
-        =  AbsLocs (Set.union al bl)
-      mappend (AbsNodes an) (AbsNodes bn) 
-        =  AbsNodes  (Map.unionWith 
-                       (zipWith mappend) an bn)
+   ^^  mappend AbsBasic AbsBasic     
+         =  AbsBasic
+       mappend (AbsTags  at) (AbsTags  bt) 
+         =  AbsTags (Set.union at bt)
+       mappend (AbsLocs  al) (AbsLocs  bl) 
+         =  AbsLocs (Set.union al bl)
+       mappend (AbsNodes an) (AbsNodes bn) 
+         =  AbsNodes  (Map.unionWith 
+                        (zipWith mappend) an bn)
 \end{code}
 Errors remain errors even when merged with other values:
 \begin{code}
@@ -913,7 +918,7 @@ data Equation
   |  IsEvaluation     Variable  Variable
   |  IsApplication    (Maybe Variable) [Variable]
 \end{code}
-Five out of the six equation types constrain a variable to fulfill certain properties.
+Five out of the six equation types constrain a variable to fulfil certain properties.
 Only in the case of an |IsApplication| equation, 
 the variable that is constrained appears |Maybe|, i.e.\ is optional.
 
@@ -929,26 +934,32 @@ conclude that this variable can refer to either value.
 Below we informally describe the semantics of the six equation types.
 A formal description is given in figure~\ref{fig.envChanges},
 which is discussed in section~\ref{sec.solution}.
-First, an equation
+\begin{enumate}
+\item 
+An equation
 |IsKnown v a| means that variable |v| can have abstract value |a|.
+\item
 The meaning of |IsSuperset v w| is that variable |v| can have all 
 values that variable |w| has. 
-
+\item
 The equation |IsSelection v n i t| expresses that |v| can be the 
 selection of the |i|th component of any node tagged by |t|
 which can be the value of variable |n|.
-Dually, the meaning of |IsConstruction v t as| is that |v| can be
+\item
+The meaning of |IsConstruction v t as| is that |v| can be
 a node with tag |t| and arguments |as|. Not all arguments need to be known.
-
-Next, the meaning of |IsEvaluation v w| is that |v| can refer to the
+\item
+The meaning of |IsEvaluation v w| is that |v| can refer to the
 evaluation result of any possible value of |w|.
-Finally, the meaning of |IsApplication v (f:as)| is that 
+\item
+The meaning of |IsApplication v (f:as)| is that 
 |f| is a variable that refers to a function which is applied to
 values referred to by variables |as|,
 and that the result is a possible value of |v|.
 For this type of constraint, mentioning a variable |v| is optional.
 If it is lacking, the equation still bears information
 on the possible values of parameters of |f|.
+\end{enumate}
 
 For heap equations, we have only one constraint type:
 \begin{code}
@@ -987,7 +998,7 @@ ATTR Program GrModule AllDef AllExpr
   SYN  heapEqs    USE (++) []  :: HeapEquations
 \end{code}
 The declarations above specify that both type of equations
-are not only synthesized for the whole program, but also
+are not only synthesized for the whole program, but also for
 the intermediate levels of the program tree that have to do
 with definitions and expressions. No equations are synthesized
 on the levels that have to do with values and variables.
@@ -1014,21 +1025,21 @@ SEM Program | Prog
 \end{code}
 The AG preprocessor ensures that the inherited attributes are
 passed unchanged down the tree, and the synthesized values are passed up,
-unless there is a AG rule which specifies that a modified value should
+unless there is a semantic rule which specifies that a modified value should
 be passed.
 Indeed, in figure~\ref{fig.equations} we have rules that increment
 the location counter when locations need to be numbered,
 viz.\ at |Store| expressions and |Global| definitions.
 
 Before we explain the rest of the rules in figure~\ref{fig.equations},
-we define an auxiliary data structure that is
-used as the type of some attributes to come.
+we define an auxiliary data structure needed
+as the type of some attributes to come.
 Nodes sometimes are indirectly referred to by a variable, 
 sometimes they are directly enumerated in full.
 The following data type distinguishes these two cases, 
 where the polymorphic type variable |a| is the type of additional
 information that we may want to express for the parameters of the node.
-Function |fromInVar| can be used to retrieve the variable from
+Function |fromInVar| retrieves the variable from
 a |NodeInfo| that is known to be a |InVar| case.
 \begin{code}
 data NodeInfo a 
@@ -1038,7 +1049,7 @@ data NodeInfo a
 fromInVar :: NodeInfo a -> Variable
 fromInVar (InVar v)  = v
 \end{code}
-This data type is used in attributes |termInfo| and |patInfo|
+This data type is the type of attributes |termInfo| and |patInfo|
 that summarize whether terms and patterns are denoted indirectly through 
 a variable, or directly as a node with tag and fields:
 \begin{code}
@@ -1055,11 +1066,7 @@ ATTR  GrVar    SYN  tag      :: GrTag
 ATTR  GrVarL   SYN  hdTag    :: GrTag 
                SYN  vars     :: [Variable]
 \end{code}
-The semantic rules for these attributes are straightforward.
-It is described by the following AG rules
-(remember that the |SEM| construct specifies semantics,
-that is attribute values, for various constructors
-of a the data types that were introduced in section~\ref{sec.lang}).
+The semantic rules for these attributes are straightforward:
 \begin{code}
 SEM GrTerm
 | Tag        lhs.termInfo  =  InNode  @tag []
@@ -1088,15 +1095,14 @@ SEM GrVar
 | KnownTag   lhs.tag       =  @tag
 | Var        lhs.var       =  getNr @nm
 \end{code}
-The |patInfo| attribute defined above is used
-to determine the target of each expression.
+The |patInfo| attribute defined above 
+determines the target of each expression.
 For most expressions, the target is the next
 pattern in the sequence. For the last expression in a
 sequence that is the body of a function, the target
 is the function name bound in a |Bind| binding,
 and passed all the way through the |Seq| spine.
-This is expressed in the semantic rules that specify
-the |targetInfo| attribute:
+This is expressed in the following semantic rule:
 \begin{code}
 ATTR AllExpr 
   INH targetInfo :: NodeInfo Variable
@@ -1106,7 +1112,7 @@ SEM GrExpr | Seq
   expr.targetInfo  =  @pat.patInfo
   body.targetInfo  =  @lhs.targetInfo
 \end{code}
-The |termInfo| attribute defined earlier is used in the semantics rules 
+The |termInfo| attribute defined earlier occurs in the semantics rules 
 for various expression forms in figure~\ref{fig.equations}.
 The |termInfo| attribute value synthesized by the scrutinee term
 of a |Case| expression is also needed in the alternatives
@@ -1226,8 +1232,10 @@ buildUnifyEquations snms tnms
 In the case of an |UpdateUnit| expression there is one
 more constraint, setting the destination variable of the
 update equal to that of the source variable.
+In the semantic rules, AG keyword |loc| is used to 
+define a local attribute common to |Unit| and |UpdateUnit|.
 
-The situation arising from an alternative in a |Case| expression
+The situation arising from an alternative |Alt| in a |Case| expression
 is very much like the third subcase of a |Unit| expression:
 the fields of the target node (which come from the pattern in
 each alternative) are projections of the value of the
@@ -1299,11 +1307,10 @@ SEM GrTerm  |  Node
                    then  [ InNode @tag @fldL.vars ] 
                    else  []
 \end{code}
-An auxiliary attribute is used to decide which nodes are relevant
+An auxiliary attribute decides which nodes are relevant
 to collect:
 \begin{code}
-ATTR GrTag 
-  SYN isfpa :: Bool
+ATTR GrTag SYN isfpa :: Bool
 SEM GrTag
   | Fun PApp App      lhs.isfpa  = True
   | Con Hole Unboxed  lhs.isfpa  = False
@@ -1434,7 +1441,12 @@ envChanges equat env heap applyMap
 \label{fig.envChanges}
 \end{figure*}
 
-The |solution| function starts with creating two arrays,
+\begin{code}
+solveEquations ::  Int -> Int 
+                   -> Equations -> HeapEquations 
+                   -> (AbsEnv,AbsHeap,Int)
+\end{code}
+The |solveQuations| function starts with creating two arrays,
 initially holding only |AbsBottom| values, to store the
 abstract values of all variables and locations, respectively.
 Then a fixpoint iteration is done, processing in each step
@@ -1445,10 +1457,11 @@ an equation.
 These procedures call function |envChanges| or |heapChange|
 respectively, to obtain the changes on the variables or locations
 that need to be made.
-\begin{code}
-solveEquations ::  Int -> Int 
-                   -> Equations -> HeapEquations 
-                   -> (AbsEnv,AbsHeap,Int)
+In the processing procedures, the change candidates obtained
+(exactly one in the case of an |heapEquation|, 
+possibly more in the case of an |Equation|)
+are fed into function |procChange| to apply the change.
+\begin{code}                   
 solveEquations lenEnv lenHeap eqs1 eqs2
 =  runST $
    do  { env   <- newArray (0, lenEnv   - 1) AbsBottom
@@ -1467,11 +1480,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2
        ; return (env, heap, count)
        }
 \end{code}
-In the processing procedures, the change candidates obtained
-(exactly one in the case of an |heapEquation|, 
-possibly more in the case of an |Equation|)
-are fed into function |procChange| to apply the change.
-It can be generically used for either an environment variable
+Function |procChange| can be generically used for either an environment variable
 or a heap location.
 This function only changes the array (environment or heap)
 when an element (variable or location) is actually changed,
@@ -1506,7 +1515,7 @@ fixpoint eqs1 eqs2 proc1 proc2
 What remains to be done is to describe how change candidates
 are selected for each equation.
 This is implemented in function |heapChange| below and
-function |envChanges| if figure~\ref{fig.envChanges}.
+function |envChanges| in figure~\ref{fig.envChanges}.
 
 
 
@@ -1553,10 +1562,9 @@ may arise from one equation.
 
 For the first equation type |IsKnown|, where a variable is known 
 to (possibly) have some abstract value, 
-the variable is simply tupled with that abstract value to indicate
+the variable is simply paired with that abstract value to indicate
 a necessary change.
-For the second equation type |IsSuperset|, where a variable |d| possibly
-can be equal to another variable |v|, 
+For the second equation type |IsSuperset d v|, 
 the current approximation of |v| is looked up in the abstract environment,
 and designated as a needed change for |d| as well.
 For an |IsSelection| equation, the variable |v| is abstractly evaluated
@@ -1568,7 +1576,7 @@ an abstract node is created from the known tag and the abstractly
 evaluated argument variables.
 
 The fifth equation type is |IsEvaluation d v|, 
-which states that |d| may be used to hold the evaluation result of 
+which states that |d| may hold the evaluation result of 
 thunk nodes pointed to by |v|.
 Here, we first abstractly evaluate |v| to obtain the abstract pointers.
 These pointers are then abstractly dereferenced, 
@@ -1596,15 +1604,14 @@ isFinalTag  _                  = True
 isPAppTag   (GrTag_PApp _ _)   = True
 isPAppTag   _                  = False
 \end{code}
-The last equation type, |IsApplication|, is the trickiest.
-Remember that it was introduced in section~\ref{sec.collect} in two situations:
+The last equation type in figure~\ref{fig.envChanges}, |IsApplication|, is the trickiest.
+It was introduced in section~\ref{sec.collect} in two situations:
 (1) at every |App| expression in the Grin program, 
 where the |Maybe Variable| destination is |Just| a variable name,
 and 
 (2) at every constructed node in the Grin program with |App| tag,
 where the destination is |Nothing|.
-
-Also remember from section~\ref{sec.constraintlang} 
+Remember from section~\ref{sec.constraintlang} 
 that |IsApplication mbv (f:as)| means that |f| is a variable
 which refers to a function which is applied to
 values referred to by variables |as|
@@ -1649,9 +1656,8 @@ for each variable the possible contents it can have at run time.
 In particular, this reveals the possible functions a closure can
 represent.
 This information can be used to replace the indirect jump
-that is used for closure evaluation
-by a small case analysis.
-It is vital that the back end which translates the case analysis
+in a closure evaluation by a small case analysis.
+It is vital that the back end which translates the case distinction to machine code
 does not use a jump table to implement it, as that
 would waste all our efforts to avoid indirect jumps.
 Instead, the case analysis should be translated to 
@@ -1666,7 +1672,6 @@ Another approach would be to test for the most probable case first.
 If the occurence probabilities are known, we can organize the
 binary search in a Huffman tree, minimizing the expected number of
 comparisons.
-
 Determining which cases occur most frequently is hard to detect 
 statically, as this depends on the dynamic behaviour of a program.
 A interesting optimization opportunity is to gather such information
@@ -1744,18 +1749,19 @@ Springer LNCS 1268.
 
 \bibitem[Boquist 1999]{boquist1999}
 Urban Boquist.
-{\em Code optimisation techniques for lazy functional languages}
+{\em Code optimisation techniques for lazy functional languages}.
 PhD Thesis Chalmers University, G\"oteborg March 1999.
 
-\bibitem[Dijkstra 2005]{ehc}
-Atze Dijkstra.
-{\em Stepping through Haskell}
-PhD Thesis Utrecht University, November 2005.
+% \bibitem[Dijkstra 2005]{ehc}
+% Atze Dijkstra.
+% {\em Stepping through Haskell}.
+% PhD Thesis Utrecht University, November 2005.
 
 \bibitem[Douma 2006]{douma}
 Christof Douma.
-{\em Exceptional GRIN}
-Master's Thesis Utrecht University, April 2006.
+{\em Exceptional GRIN}.
+% Master's Thesis Utrecht University, April 2006.
+Master's Thesis Zzzzzzz University, April 2006.
 
 \bibitem[Hughes 1982]{hughes}
 R.J.M.\ Hughes.
@@ -1785,7 +1791,7 @@ Semantics of context-free languages.
 \bibitem[Marlow and Peyton Jones 2006]{marlow}
 Simon Marlow and Simon Peyton Jones.
 Making a fast curry: push/enter vs.\ eval/apply for higher-order languages.
-{\em J.\ Functional Programming} {\bf 16}: 415--449.
+{\em J.\ Functional Progr.} {\bf 16}: 415--449.
 
 
 \bibitem[de Moor et al. 1999]{moor}
@@ -1803,15 +1809,18 @@ Implementing lazy functional languages on stock hardware: the Spineless Tagless 
 \bibitem[Swierstra et al. 1998]{agsyst}
 S.\ Doaitse Swierstra,
 Pablo R.\ Azero Alocer,
-and Jo\~ao Sariava.
+and Jo\~ao Saraiva.
 Designing and implementing combinator languages.
-In: {\em Advanced functional programming} AFP98.
+In: {\em Advanced functional programming} AFP'98.
 Springer LNCS 1608.
 
 \bibitem[Turner 1979]{turner}
 D.A.\ Turner.
-A new implementation technique for applicative languages.
-{\em Software -- practice and experience} {\bf 9}: 31--49.
+A new implementation technique for ap\-plicative languages.
+{\em Softw.\ practice and experience} {\bf 9}: 31--49.
+
+\bibitem[We 200x]{ehc}
+(Details of reference to a description of our compiler left out for blind review)
 
 \end{thebibliography}
 
