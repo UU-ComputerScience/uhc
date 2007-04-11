@@ -20,6 +20,9 @@
 %%[20 hs import({%{EH}Core(HsName2OffsetMpMp)})
 %%]
 
+%%[99 hs import({%{EH}Base.ForceEval})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Configuration like constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,8 +123,8 @@ lrefIsLabel (LocRef_Label _) = True
 lrefIsLabel _                = False
 
 data LocRef
-  = LocRef_CodeEntry    Int                         -- resolved at initialization runtime, translates to
-  | LocRef_Label        { lrefId :: LabelId }       -- resolved before runtime, translates to offsets
+  = LocRef_CodeEntry    !Int                         -- resolved at initialization runtime, translates to
+  | LocRef_Label        { lrefId :: !LabelId }       -- resolved before runtime, translates to offsets
   deriving (Eq,Ord)
 %%]
 
@@ -639,7 +642,7 @@ meta :: PP a => a -> Instr
 meta a = Instr_Meta $ Meta_CmtHeader $ pp a
 
 ann :: PP a => a -> Instr -> Instr
-ann a = Instr_Ann $ pp a
+ann a = Instr_Ann $ showPP a
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -691,4 +694,14 @@ halt :: Instr
 halt = Instr_Halt
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs
+instance ForceEval Const
+instance ForceEval Link
+instance ForceEval LocRef
+instance ForceEval CallInfo
+%%]
 

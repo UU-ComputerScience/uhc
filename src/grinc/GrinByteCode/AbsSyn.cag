@@ -86,7 +86,7 @@ DATA Instr
   				locSrc			: InsOp_LocOSrc
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
-  | Ann			ann				: PP_Doc
+  | Ann			ann				: String
   				instr			: Instr
   | Halt
   | Meta		meta			: Meta

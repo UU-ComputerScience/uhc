@@ -501,6 +501,7 @@ The features presented in \thischapt\ are part of the ninth version.
 \begin{TabularCenterFigure}{}{EH terms (emphasized ones explained throughout the text)}{exim-eh-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamIdent

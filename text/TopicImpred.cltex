@@ -247,12 +247,14 @@ in   v
 \begin{TabularCenterFigure}{}{Expression language}{eh4-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetValDecl
 %%@AppxNotation.exprLetValTyDecl
 %%@AppxNotation.exprLamIdent
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasicIntChar
 %%@AppxNotation.tyexprBasic
 %%@AppxNotation.tyexprTyVar
 %%@AppxNotation.tyexprForall
@@ -335,6 +337,7 @@ we have omitted the rules for comparing type constants.
 \begin{TabularCenterFigure}{}{EH terms}{eh4-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLamPat
 %%@AppxNotation.termSeparator
@@ -346,6 +349,7 @@ we have omitted the rules for comparing type constants.
 %%@AppxNotation.patexprBasic
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasicIntChar
 %%@AppxNotation.tyexprBasic
 %%@AppxNotation.tyexprTuple
 %%@AppxNotation.tyexprTyVar
@@ -2613,6 +2617,7 @@ Repeat some motivating examples \cite{shan04sexy-types,peytonjones04pract-inf-ra
 \begin{TabularCenterFigure}{}{EH terms}{eh-impred-lang-terms}
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamPat

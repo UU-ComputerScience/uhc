@@ -275,14 +275,14 @@ gamFromAssocL = assocLToGam
 %%[9
 data LGamElt v
   = LGamElt
-      { lgeLev		:: Int
-      , lgeVal		:: v
+      { lgeLev		:: !Int
+      , lgeVal		:: !v
       }
 
 data LGam k v
   = LGam
-      { lgLev		:: Int
-      , lgMap		:: Map.Map k [LGamElt v]
+      { lgLev		:: !Int
+      , lgMap		:: Map.Map k [LGamElt v]		-- strictness has negative mem usage effect. Why??
       }
 
 emptyLGam :: LGam k v
@@ -425,7 +425,9 @@ fixityGamLookup nm fg = maybe defaultFixityGamInfo id $ gamLookup nm fg
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.ValGam.Base
-data ValGamInfo = ValGamInfo { vgiTy :: Ty } deriving Show
+data ValGamInfo
+  = ValGamInfo { vgiTy :: Ty }		-- strictness has negative mem usage effect. Why??
+  deriving Show
 
 type ValGam = Gam HsName ValGamInfo
 %%]
@@ -585,7 +587,13 @@ emtpyTGI = mkTGI Ty_Any kiStar
 %%]
 
 %%[7.TyGamInfo -6.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty, tgiDataTy :: Ty } deriving Show
+data TyGamInfo
+  = TyGamInfo
+      { tgiTy 		:: !Ty
+      , tgiKi 		:: Ty			-- strictness causes loop
+      , tgiDataTy 	:: Ty			-- strictness causes loop
+      }
+  deriving Show
 %%]
 
 %%[7 -6.mkTGIData
@@ -667,7 +675,7 @@ emptyDataFldInfo
 %%[7 export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
 data DataTagInfo
   = DataTagInfo
-      { dtiFldMp    		:: DataFldMp
+      { dtiFldMp    		:: !DataFldMp
       , dtiConNm			:: !HsName
 %%[[8
       , dtiCTag 			:: !CTag
@@ -698,7 +706,7 @@ dtiOffsetOfFld fldNm dti = dfiOffset $ panicJust "dtiOffsetOfFld" $ Map.lookup f
 %%[8 export(DataFldInConstr(..),DataFldInConstrMp)
 data DataFldInConstr
   = DataFldInConstr
-      { dficInTagMp	:: Map.Map CTag Int
+      { dficInTagMp	:: !(Map.Map CTag Int)
       }
 
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
@@ -711,9 +719,9 @@ data DataGamInfo
 %%[[20
       , dgiConstrNmL 		:: ![HsName]
 %%]]
-      , dgiConstrTagMp 		:: DataConstrTagMp
+      , dgiConstrTagMp 		:: !DataConstrTagMp
 %%[[8
-      , dgiFldInConstrMp	:: DataFldInConstrMp
+      , dgiFldInConstrMp	:: !DataFldInConstrMp
       , dgiIsNewtype 		:: !Bool
 %%]]
       }
@@ -955,32 +963,32 @@ instance PP TyGamInfo where
 
 %%[99
 instance ForceEval v => ForceEval (LGamElt v) where
-  forceEval x = lgeLev x `seq` forceEval (lgeVal x) `seq` x
+  forceEval x@(LGamElt l v) = forceEval v `seq` x
 
 instance (ForceEval k, ForceEval v) => ForceEval (LGam k v) where
-  forceEval x = lgLev x `seq` forceEval (lgMap x) `seq` x
+  forceEval x@(LGam l m) = forceEval m `seq` x
 %%]
 
 %%[99
 instance ForceEval ValGamInfo where
-  forceEval x = forceEval (vgiTy x) `seq` x
+  forceEval x@(ValGamInfo t) = forceEval t `seq` x
 
 instance ForceEval KiGamInfo where
-  forceEval x = forceEval (kgiKi x) `seq` x
+  forceEval x@(KiGamInfo k) = forceEval k `seq` x
 
 instance ForceEval TyGamInfo where
-  forceEval x = forceEval (tgiTy x) `seq` forceEval (tgiKi x) `seq` forceEval (tgiDataTy x) `seq` x
+  forceEval x@(TyGamInfo t k d) = forceEval t `seq` forceEval k `seq` forceEval d `seq` x
 
 instance ForceEval DataFldInfo
 
 instance ForceEval DataTagInfo where
-  forceEval x = forceEval (dtiFldMp x) `seq` forceEval (dtiMbFixityPrio x) `seq` x
+  forceEval x@(DataTagInfo m n t p) = forceEval m `seq` forceEval p `seq` x
 
 instance ForceEval DataFldInConstr where
-  forceEval x = forceEval (dficInTagMp x) `seq` x
+  forceEval x@(DataFldInConstr m) = forceEval m `seq` x
 
 instance ForceEval DataGamInfo where
-  forceEval x = forceEval (dgiConstrNmL x) `seq` forceEval (dgiConstrTagMp x) `seq` forceEval (dgiFldInConstrMp x) `seq` x
+  forceEval x@(DataGamInfo n nl tm cm nt) = forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` x
 
 instance ForceEval FixityGamInfo
 %%]

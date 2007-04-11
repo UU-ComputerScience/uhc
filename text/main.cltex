@@ -1611,7 +1611,7 @@ We conclude in \secRef{sec-chr-relatedwork} with discussion, related work and fu
 
 %%@TopicCHRLocalInst.ourContribution
 
-\section{Starting point}
+\section{Related work}
 \label{sec-chr-startingpoint}
 
 %%@TopicCHRLocalInst.startingPointWork
@@ -2885,6 +2885,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \begin{tabular}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprTup
@@ -2912,6 +2913,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 \begin{tabular}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasicIntChar
 %%@AppxNotation.tyexprBasic
 %%@AppxNotation.tyexprTuple
 %%@AppxNotation.tyexprTyVar

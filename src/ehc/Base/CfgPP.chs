@@ -29,6 +29,9 @@ As class variations on PP
 %%[8 import(UU.Pretty,EH.Util.PPUtils)
 %%]
 
+%%[20 import(qualified EH.Util.SPDoc as SP)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CfgPP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,10 +136,17 @@ instance PPForHI CTag where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 export(PPForHI(..))
-class PP x => PPForHI x where
+class (PP x) => PPForHI x where
   ppForHI :: x -> PP_Doc
+
   ppForHI = pp
 %%]
+class (SP.SP x, PP x) => PPForHI x where
+  ppForHI :: x -> PP_Doc
+  spForHI :: x -> SP.SPDoc
+
+  ppForHI = pp . spForHI
+  spForHI = SP.sp . ppForHI
 
 %%[20
 instance PPForHI UID where

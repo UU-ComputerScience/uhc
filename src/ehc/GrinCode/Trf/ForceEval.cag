@@ -24,26 +24,30 @@ grmodForceEval grmod
 %%]
 
 %%[99 hs
-instance ForceEval GrModule where
+instance ForceEval GrModule {- where
   forceEval x = trf_Syn_GrModule t `seq` x
               where t = wrap_GrModule (sem_GrModule x)
                         $ Inh_GrModule
+-}
 
-instance ForceEval GrExpr where
+instance ForceEval GrExpr {- where
   forceEval x = trf_Syn_GrExpr `seq` x
               where t = wrap_GrExpr (sem_GrExpr x)
                         $ Inh_GrExpr
+-}
 
-instance ForceEval GrTag where
+instance ForceEval GrTag {- where
   forceEval x = trf_Syn_GrTag `seq` x
               where t = wrap_GrTag (sem_GrTag x)
                         $ Inh_GrTag
+-}
 %%]
 
 %%[99 hs
-instance ForceEval GrInl where
+instance ForceEval GrInl {- where
   forceEval i@(GrInl_Call a e) = forceEval a `seq` forceEval e `seq` i
   forceEval i@(GrInl_CAF    e) = forceEval e `seq` i
+-}
 
 instance ForceEval EvApTagElt
 %%]

@@ -29,11 +29,13 @@ cexprForceEval e
 %%]
 
 %%[99 hs
-instance ForceEval CModule where
+instance ForceEval CModule {- where
   forceEval = cmodForceEval
+-}
 
-instance ForceEval CExpr where
+instance ForceEval CExpr {- where
   forceEval = cexprForceEval
+-}
 
 instance ForceEval CBindCateg
 %%]
@@ -49,20 +51,21 @@ SEM CModule
   | Mod				lhs		.	trf 		=	forceEval @ctagsMp `seq` forceEval @moduleNm `seq` @expr.trf
 
 SEM CExpr
-  | Let				lhs		.	trf 		=	forceEval @categ `seq` @binds.trf `seq` @body.trf
-  | Lam				lhs		.	trf 		=	forceEval @arg `seq` @body.trf
+  | Let				lhs		.	trf 		=	forceEval  @categ `seq` @binds.trf `seq` @body.trf
+  | Lam				lhs		.	trf 		=	forceEval  @arg `seq` @body.trf
   | Var				lhs		.	trf 		=	forceEval' @nm
   | Int				lhs		.	trf 		=	forceEval' @int
+  | Char			lhs		.	trf 		=	forceEval' @char
   | Integer			lhs		.	trf 		=	forceEval' @integer
   | String			lhs		.	trf 		=	forceEval' @str
   | Tup				lhs		.	trf 		=	forceEval' @tag
-  | TupDel			lhs		.	trf 		=	forceEval @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf
-  | TupIns TupUpd	lhs		.	trf 		=	forceEval @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf `seq` @fldExpr.trf
+  | TupDel			lhs		.	trf 		=	forceEval  @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf
+  | TupIns TupUpd	lhs		.	trf 		=	forceEval  @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf `seq` @fldExpr.trf
   | CaseAltFail		lhs		.	trf 		=	forceEval' @caseId
   | Hole			lhs		.	trf 		=	forceEval' @uid
-  | HoleLet			lhs		.	trf 		=	forceEval @bindsUid `seq` @body.trf
-  | ImplsLam		lhs		.	trf 		=	forceEval @uid `seq` @body.trf
-  | ImplsApp		lhs		.	trf 		=	forceEval @uid `seq` @func.trf
+  | HoleLet			lhs		.	trf 		=	forceEval  @bindsUid `seq` @body.trf
+  | ImplsLam		lhs		.	trf 		=	forceEval  @uid `seq` @body.trf
+  | ImplsApp		lhs		.	trf 		=	forceEval  @uid `seq` @func.trf
 
 SEM CBind
   | Bind			lhs		.	trf 		=	forceEval @nm `seq` @expr.trf
@@ -71,10 +74,10 @@ SEM CBind
 
 SEM CPat
   | Var				lhs		.	trf 		=	forceEval' @pnm
-  | Con				lhs		.	trf 		=	forceEval @tag `seq` forceEval @pnm `seq` @rest.trf
-  | Int				lhs		.	trf 		=	forceEval @pnm `seq` forceEval' @int
-  | Char			lhs		.	trf 		=	forceEval @pnm `seq` forceEval' @char
-  | BoolExpr		lhs		.	trf 		=	forceEval @pnm `seq` forceEval' @cexpr
+  | Con				lhs		.	trf 		=	forceEval  @tag `seq` forceEval @pnm `seq` @rest.trf
+  | Int				lhs		.	trf 		=	forceEval  @pnm `seq` forceEval' @int
+  | Char			lhs		.	trf 		=	forceEval  @pnm `seq` forceEval' @char
+  | BoolExpr		lhs		.	trf 		=	forceEval  @pnm `seq` forceEval' @cexpr
 
 SEM CPatRest
   | Var				lhs		.	trf 		=	forceEval' @nm

@@ -15,33 +15,42 @@ WRAPPER Ty Label Pred
 %%]
 
 %%[99 hs
-instance ForceEval Ty where
+instance ForceEval Ty {- where
   forceEval x = repl_Syn_Ty t `seq` x
               where t = wrap_Ty (sem_Ty x) (Inh_Ty)
 
-instance ForceEval Pred where
+-}
+instance ForceEval Pred {- where
   forceEval x = repl_Syn_Pred t `seq` x
               where t = wrap_Pred (sem_Pred x) (Inh_Pred)
 
-instance ForceEval Label where
+-}
+instance ForceEval Label {- where
   forceEval x = repl_Syn_Label t `seq` x
               where t = wrap_Label (sem_Label x) (Inh_Label)
 
-instance ForceEval PredScope where
+-}
+instance ForceEval PredScope {- where
   forceEval x@(PredScope_Lev l) = forceEval l `seq` x
   forceEval x@(PredScope_Var v) = forceEval v `seq` x
 
-instance ForceEval LabelOffset where
+-}
+instance ForceEval LabelOffset {- where
   forceEval x@(LabelOffset_Off o) = forceEval o `seq` x
   forceEval x@(LabelOffset_Var v) = forceEval v `seq` x
 
-instance ForceEval CHRPredOcc where
+-}
+instance ForceEval CHRPredOcc {- where
   forceEval x = forceEval (cpoPr x) `seq` forceEval (cpoScope x) `seq` x
+
+-}
+instance ForceEval PredOccId
+instance ForceEval ImplsProveOcc
 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval over structore
+%%% ForceEval over structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
@@ -53,9 +62,18 @@ SEM Ty
   | Quant			lhs		.	repl		=	forceEval @tv `seq` forceEval @qu.repl `seq` @ty.repl
   | Lam				lhs		.	repl		=	forceEval @tv `seq` @ty.repl
   | Ext				lhs		.	repl		=	forceEval @nm `seq` forceEval @extTy.repl `seq` @ty.repl
+  | Pred			lhs		.	repl		=	forceEval' @pr.repl						-- not necessary... ??
+  | Impls			lhs		.	repl		=	forceEval' @impls.repl					-- not necessary... ??
 
 SEM Pred
   | Var				lhs		.	repl		=	forceEval' @pv
+  | Pred			lhs		.	repl		=	forceEval' @ty.repl						-- not necessary... ??
+  | Class			lhs		.	repl		=	forceEval' @ty.repl						-- not necessary... ??
+  | Preds			lhs		.	repl		=	forceEval' @seq.repl					-- not necessary... ??
+
+SEM Impls
+  | Tail			lhs		.	repl		=	forceEval @iv `seq` forceEval' @proveOccs
+  | Cons			lhs		.	repl		=	forceEval @iv `seq` forceEval @pv `seq` forceEval @proveOccs `seq` @pr.repl `seq` @tl.repl
 
 SEM Label
   | Lab				lhs		.	repl		=	forceEval' @nm

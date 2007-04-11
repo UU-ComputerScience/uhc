@@ -1,5 +1,6 @@
 module EH.Util.FastSeq
   ( FastSeq((:++:),(::+:),(:+::))
+  , Seq
   , isEmpty, null
   , empty
   , singleton
@@ -28,6 +29,8 @@ data FastSeq a
   | FSeq    a
   | FSeqL   [a]
   | FSeqNil
+
+type Seq a = FastSeq a
 
 empty :: FastSeq a
 empty = FSeqNil

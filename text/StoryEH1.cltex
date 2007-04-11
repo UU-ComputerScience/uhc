@@ -59,6 +59,7 @@ translation from the abstract to the concrete representation is done by a pretty
 \begin{TabularCenterFigure}{t}{EH1 terms}{eh1-lang-terms}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamPat
@@ -75,6 +76,7 @@ translation from the abstract to the concrete representation is done by a pretty
 %%@AppxNotation.identBasic
 %%@AppxNotation.termSeparator
 %%@AppxNotation.tyexprHeader
+%%@AppxNotation.tyexprBasicIntChar
 %%@AppxNotation.tyexprBasic
 %%@AppxNotation.tyexprTuple
 \end{TabularCenterFigure}
