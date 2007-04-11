@@ -23,6 +23,9 @@
 %%[10 export(hsnConcat)
 %%]
 
+%%[20 import(qualified EH.Util.SPDoc as SP)
+%%]
+
 %%[20 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
 %%]
 
@@ -331,27 +334,33 @@ data IdOccKind
 %%[[20
   | IdOcc_Data
 %%]]
-  deriving (Show,Eq,Ord)
+  deriving (Eq,Ord)
+%%]
+
+%%[1
+-- intended for parsing
+instance Show IdOccKind where
+  show IdOcc_Val      = "Value"
+  show IdOcc_Pat      = "Pat"
+  show IdOcc_Type     = "Type"
+%%[[6
+  show IdOcc_Kind     = "Kind"
+%%]]
+%%[[9
+  show IdOcc_Class    = "Class"
+  show IdOcc_Inst     = "Instance"
+  show IdOcc_Dflt     = "Default"
+%%]]
+  show IdOcc_Any      = "Any"
+%%[[20
+  show IdOcc_Data     = "Data"
+%%]]
 %%]
 
 %%[1
 -- intended for parsing
 instance PP IdOccKind where
-  pp IdOcc_Val      = pp "Value"
-  pp IdOcc_Pat      = pp "Pat"
-  pp IdOcc_Type     = pp "Type"
-%%[[6
-  pp IdOcc_Kind     = pp "Kind"
-%%]]
-%%[[9
-  pp IdOcc_Class    = pp "Class"
-  pp IdOcc_Inst     = pp "Instance"
-  pp IdOcc_Dflt     = pp "Default"
-%%]]
-  pp IdOcc_Any      = pp "Any"
-%%[[20
-  pp IdOcc_Data     = pp "Data"
-%%]]
+  pp = text . show
 %%]
 
 %%[1 export(IdOcc(..))
@@ -378,6 +387,19 @@ type HsNameMp = Map.Map HsName HsName
 
 hsnRepl :: HsNameMp -> HsName -> HsName
 hsnRepl m n = Map.findWithDefault n n m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance SP.SP HsName where
+  sp = SP.sp . show
+
+instance SP.SP IdOccKind where
+  sp = SP.sp . show
+
 %%]
 
 

@@ -1,0 +1,61 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to forceEval on GrinByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs module {%{GRIN}GrinByteCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{GRIN}GrinByteCode})
+%%]
+
+%%[99 hs import(UU.Pretty)
+%%]
+
+%%[99.WRAPPER ag import({GrinByteCode/AbsSyn})
+WRAPPER Module
+%%]
+
+%%[99 hs
+grmodForceEval :: Module -> Module
+grmodForceEval grmod
+  = trf_Syn_Module t `seq` grmod
+  where t = wrap_Module (sem_Module grmod)
+            $ Inh_Module
+
+%%]
+
+%%[99 hs
+instance ForceEval Module {- where
+  forceEval x = trf_Syn_Module t `seq` x
+              where t = wrap_Module (sem_Module x)
+                        $ Inh_Module
+-}
+%%]
+
+%%[99 hs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval over structore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
+
+SEM Module
+  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @allImpModNmL `seq` forceEval @impModNmL `seq` forceEval @expEntryL
+  												`seq` forceEval @stringL `seq` forceEval @constL `seq` forceEval @cafEntryL
+  												`seq` @instrs.trf
+
+SEM Instr
+  | LdGlobal		lhs		.	trf			=	forceEval @link `seq` @locDst.trf
+  | Link 			lhs		.	trf			=	forceEval' @link
+  | Call Eval Apply	lhs		.	trf			=	forceEval @callInfo `seq` @locSrc.trf
+  | CallC			lhs		.	trf			=	forceEval @callInfo `seq` @nArgSz.trf `seq` @nArg.trf
+  | Label LabelRef 	lhs		.	trf			=	forceEval' @locRef
+  | Ann 			lhs		.	trf			=	forceEval @ann `seq` @instr.trf
+
+%%]
+

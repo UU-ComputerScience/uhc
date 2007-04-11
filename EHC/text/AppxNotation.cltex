@@ -60,11 +60,21 @@ Notation & Meaning \\
 \multicolumn{4}{l}{} \\
 %%]
 
-%%[exprBasic
+%%[exprBasicIntChar
 |e| & |::=| &
 |int || char |
  & literals
  \\
+%%]
+
+%%[exprBasicInt
+|e| & |::=| &
+|int|
+ & literals
+ \\
+%%]
+
+%%[exprBasic
 & | || | &
 |ident|
  & program variable
@@ -304,11 +314,21 @@ Notation & Meaning \\
  \\
 %%]
 
-%%[tyexprBasic
+%%[tyexprBasicInt
+|t| & |::=| &
+|Int|
+ & type constants
+ \\
+%%]
+
+%%[tyexprBasicIntChar
 |t| & |::=| &
 |Int || Char |
  & type constants
  \\
+%%]
+
+%%[tyexprBasic
 & | || | &
 |t -> t|
  & function type
@@ -404,11 +424,21 @@ Notation & Meaning \\
  \\
 %%]
 
-%%[typeBasicMono
+%%[typeBasicMonoIntChar
 |tau| & |::=| &
 |Int || Char|
  & literals
  \\
+%%]
+ 
+%%[typeBasicMonoInt
+|tau| & |::=| &
+|Int|
+ & literals
+ \\
+%%]
+ 
+%%[typeBasicMono
 & | || | &
 |tvarv|
  & variable

@@ -440,6 +440,7 @@ f  =   \  ^^  dEq x y -> if dEq.eq x y then 3 else 4
 \item core (|lambda|-calculus) of Haskell\\
 \begin{tabular}%
 %%@AppxNotation.termTableFormat
+%%@AppxNotation.exprBasicIntChar
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamIdent

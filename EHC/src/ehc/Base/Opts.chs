@@ -115,6 +115,7 @@ data EHCOpts
       ,  ehcOptOptimise       ::  Optimise			-- optimisation level
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
+      ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
@@ -128,7 +129,6 @@ data EHCOpts
 %%]]
 %%[[20
       ,  ehcOptCheckRecompile ::  Bool
-      ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
 %%]]
 %%[[99
@@ -182,6 +182,7 @@ defaultEHCOpts
       ,  ehcOptTrf            =   []
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
       ,  ehcOptEmitLLVM       =   False
+      ,  ehcOptFullProgGRIN   =   False
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
@@ -208,7 +209,6 @@ defaultEHCOpts
 %%]]
 %%[[20
       ,  ehcOptCheckRecompile    =   True
-      ,  ehcOptFullProgGRIN      =   False
       ,  ehcDebugStopAtHIError   =   False
 %%]]
 %%[[99
@@ -323,18 +323,16 @@ ehcCmdLineOpts
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just m | m `elem` ["exe","exec"]
                                              -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True
-%%[[20
-                                                  , ehcOptFullProgGRIN    = True
-%%]]
+                                                  , ehcOptFullProgGRIN = True
                                                   }
                                 Just m | m `elem` ["bexe","bexec"]
                                              -> o { ehcOptEmitExecBC   = True, ehcOptEmitGrinBC = True }
-                                Just "llvm"  -> o { ehcOptEmitLLVM     = True      }
+                                Just "llvm"  -> o { ehcOptEmitLLVM     = True
+                                                  , ehcOptFullProgGRIN = True
+                                                  }
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True
-%%[[20
-                                                  , ehcOptFullProgGRIN    = True
-%%]]
+                                                  , ehcOptFullProgGRIN = True
                                                   }
                                 _            -> o
          oTrf        s   o =  o { ehcOptTrf           = opt s   }

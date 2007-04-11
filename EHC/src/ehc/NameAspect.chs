@@ -14,6 +14,9 @@
 %%[8 import({%{EH}Base.CfgPP})
 %%]
 
+%%[20 import(qualified EH.Util.SPDoc as SP)
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -37,21 +40,21 @@ data IdAspect
   | IdAsp_Type_Var
 %%]]
 %%[[5
-  | IdAsp_Type_Def      {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Type_Def      {iaspDecl   :: !EH.Decl                         }
 %%]]
 %%[[6
-  | IdAsp_Type_Sig      {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Type_Sig      {iaspDecl   :: !EH.Decl                         }
   | IdAsp_Kind_Con
   | IdAsp_Kind_Var
 %%]]
 %%[[8
-  | IdAsp_Val_FFI       {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Val_FFI       {iaspDecl   :: !EH.Decl                         }
 %%]]
 %%[[9
   | IdAsp_Class_Class
   | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst :: EH.Decl}
   | IdAsp_Inst_Inst
-  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName }
+  | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
   | IdAsp_Dflt_Def      {iaspDecl   ::  EH.Decl                         }
 %%]]
   | IdAsp_Any
@@ -179,3 +182,11 @@ instance PPForHI IdOcc where
   ppForHI = ppIdOcc CfgPP_HI
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance SP.SP IdOcc where
+  sp o = SP.spCurlysCommasBlock [SP.sp (ioccNm o),SP.sp (ioccKind o)]
+%%]

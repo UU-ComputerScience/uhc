@@ -363,49 +363,51 @@ In summary, our contribution is:
 \begin{Itemize}
 \item Model scope for class predicates by means of CHR, and provide a different translation to CHRs as compared to Sulzmann et al. .
 \item Provide a framework for expressing different context reduction strategies, applied to scoped instances in particular.
+      The intention is to make the use of this framework available to the programmer, but this has not been done yet.
 \item A prototype for the above, integrated in a Haskell compiler.
 \end{Itemize}
 
 %%]
 
 %%[startingPointWork
-We use the following as the direct starting point for our work,
-which is investigated at greater length in \blindcite{geest07cnstr-tycls-ext}:
 
-\begin{itemize}
-\item
   CHRs \cite{fruhwirth98theory-chr,fruhwirth03essence-constrprog} as used by Sulzmann et al. \cite{sulzmann98hm-constr,stuckey02theory-overloading}
   to describe and formalize Haskell's type system.
   Our use of CHRs for the class system is slightly different because we postpone any decision
   making for instances to a later stage.
   We also have to be more precise in dealing with type signatures.
   As we focus on the class system exclusively, we ignore the use of CHRs for the underlying type system itself.
-\item
+
   Techniques for improving type and class error messages are also constraint based
   \cite{heeren05class-direct,heeren05phd-errormsg,heeren05www-helium}.
   Their solution first solves constraints and then uses a representation of the solution to produce error messages;
   we use similar techniques to separately deal with choosing between instances.
-\item
-  We describe part of our work as an executable specification in Haskell.
-\item
+
   Design alternatives for a class system, in particular context reduction,
   were explored by Peyton Jones et al. \cite{peytonjones97typecl-explore}.
   Our framework for choices between instances allows to express such alternative context reduction strategies.
-\item
+
   GHC \cite{www04ghc} allows some form of programming the predicate proving machinery by means of pragmas,
   for example for choosing the most specific instance in case of overlapping instances.
-\item
+
   Named instances \cite{kahl01named-instance,scheffczyk01mth-namedinst} allow explicit named references to instances.
   This is a natural extension for being explicit in the choice between multiple instances,
   also experimented with in \blindcite{dijkstra04ehc-web,dijkstra05phd}.
-\end{itemize}
+
+Closest to our work are modular type classes \cite{dreyer07mod-tyclass}.
+Module signatures correspond to classes, modules to class instances:
+the class system is built on top of the module system.
+Their scoping mechanism is bound to an explicit import (|using|) mechanism for modules,
+similar to naming instances.
+Only explicitly imported instances partake in context reduction.
+Our work differs in that the notion of scope participates in choosing between otherwise overlapping instances;
+more information is taken into account, and we aim at programmability of the decision process between instances.
 
 Furthermore, there is a large body of work on type classes
 \cite{jones93constr-class,jones00class-fundep,lewis00implicit-param,chakravarty04assoc-tp-class,chakravarty05assoc-ty-syn},
 some of which is described in terms of CHRs
 \cite{sulzmann98hm-constr,stuckey02theory-overloading,stuckey04exist-tycls,sulzmann06tycls-inf-multi-par,sulzmann07fundep-chr}.
-Most of these are relatively independent of scoped instances;
-we come back to this later (\secRef{sec-chr-relatedwork}).
+Most of these are relatively independent of scoped instances.
 
 %%]
 
@@ -415,7 +417,7 @@ we come back to this later (\secRef{sec-chr-relatedwork}).
 \figRef{chr-locinst-terms-types} shows the standard term and type language we assume for our discussion of scoped instances.
 We have included \figRef{chr-locinst-terms-types} to clarify the minimal expected context of our work,
 but we will not explicitly use it any further after this section.
-Although the syntax allows nested classes, we inhibit this.
+Although the syntax allows local classes, we inhibit this.
 We see no reason to inhibit instances nested within instances.
 For simplicity we only consider single parameter type classes.
 Overbar notation |Vec(x)| denotes (possibly empty) sequences of |x|'s, comma denotes concatenation,
@@ -429,6 +431,7 @@ Overbar notation |Vec(x)| denotes (possibly empty) sequences of |x|'s, comma den
 \begin{TabularCenterFigure}{}{Terms and types}{chr-locinst-terms-types}%
 %%@AppxNotation.termTableFormat
 %%@AppxNotation.exprHeader
+%%@AppxNotation.exprBasicInt
 %%@AppxNotation.exprBasic
 %%@AppxNotation.exprLetVecDecl
 %%@AppxNotation.exprLamIdent
@@ -440,6 +443,7 @@ Overbar notation |Vec(x)| denotes (possibly empty) sequences of |x|'s, comma den
 %%@AppxNotation.declExplImplBasic1
 %%@AppxNotation.termSeparator
 %%@AppxNotation.typeHeader
+%%@AppxNotation.typeBasicMonoInt
 %%@AppxNotation.typeBasicMono
 %%@AppxNotation.typeSchemeMono
 %%@AppxNotation.termSeparator
@@ -470,34 +474,6 @@ For our initial solution without scopes we instantiate |varpi| by: |varpi isbyde
 % A set of constraints is referred to by a constraint as well.
 |CnstrVarpi(Cnstr)| denotes the |varpi| of a constraint |Cnstr|.
 The empty set of constraints represents |True|.
-
-\Paragraph{Scope}
-
-A scope |scope| is defined as a sequence of |Int|s,
-where longer sequences represent more deeply nested scopes,
-and later elements uniquely identify nested scopes within the enclosing scope,
-represented by the prefix of such an element:
-%%[[wrap=code
-type scope = [Int]
-%%]]
-Identifiers |{s, t}| are used to denote scopes |scope|.
-Scope constants are denoted between |<...>| to avoid confusion with other uses of |[...]|
-The common scope of two scopes is defined as their longest common prefix,
-which always exists because the global scope always is common:
-
-%%[[wrap=code
-commonScope :: scope -> scope -> scope
-commonScope (s:ss)  (t:ts)  | s == t     = s : commonScope ss ts
-                            | otherwise  = []
-commonScope _       _                    = []
-%%]]
-
-A scope |s| is visible from a scope |t| if their common scope equals |s|:
-
-%%[[wrap=code
-visibleIn :: scope -> scope -> Bool
-s `visibleIn` t = s == s `commonScope` t
-%%]]
 
 \Paragraph{Constraints and entailment}
 
@@ -572,6 +548,8 @@ where |Vec(x) = fv ^ ((Vec(G)))|, |Vec(y) = fv ^ ((Vec(H))) \\ Vec(x)| and |Vec(
 are the free variables of the guard, head and body respectively.
 Although we omit the quantifiers, rules still should be read as if quantified as above.
 
+We introduce scopes in \secRef{sec-chr-maplocaltochr},
+where they are required for the first time.
 %%]
 
 %%[toCHRplain
@@ -756,6 +734,10 @@ For these reasons we will avoid simplification rules and use propagation rules i
 A direct consequence is that we have confluence because no constraint is ever removed from the working set of a solver,
 and every matching propagation rule is used once for matching constraints.
 
+However, the final constraint set yielded by a solver now contains all possible solutions, because we never get rid of
+constraints anymore. We have pushed the decision making problem ahead, and this is where our framework for heuristically making
+choices comes into play (\secRef{sec-chr-heuristics}).
+
 A more subtle consequence of this design choice is that the interaction with a constraint solver becomes slightly different:
 entailment does no longer follow from the absence of |Prove| constraints in the final set of solved constraints,
 but non-entailment follows from a |Prove| constraint \emph{not} being propagated from by any rule.
@@ -847,6 +829,32 @@ e2 =  let  instance Eq Int where                            ^ -- (I2)
                                  (y `mod` 2)                ^
       in   3 == 5                                           ^ -- result: True
 %%]
+
+A scope |scope| is defined as a sequence of |Int|s,
+where longer sequences represent more deeply nested scopes,
+and later elements uniquely identify nested scopes within the enclosing scope,
+represented by the prefix of such an element:
+%%[[wrap=code
+type scope = [Int]
+%%]]
+Identifiers |s, t| are used to denote scopes |scope|.
+Scope constants are denoted between |<...>| to avoid confusion with other uses of |[...]|
+The common scope of two scopes is defined as their longest common prefix,
+which always exists because the global scope always is common:
+
+%%[[wrap=code
+commonScope :: scope -> scope -> scope
+commonScope (s:ss)  (t:ts)  | s == t     = s : commonScope ss ts
+                            | otherwise  = []
+commonScope _       _                    = []
+%%]]
+
+A scope |s| is visible from a scope |t| if their common scope equals |s|:
+
+%%[[wrap=code
+visibleIn :: scope -> scope -> Bool
+s `visibleIn` t = s == commonScope s t
+%%]]
 
 Both CHRs and constraints reduced by those CHRs must be annotated with scope:
 constraints arisen in scope |scope| can only be reduced by instances defined in |scope'|, where |scope'| is visible from |scope|.
@@ -1361,6 +1369,7 @@ Theoretical work has to be done for the following:
 
 We expect the last of these to be the most difficult.
 
+%if False
 \Paragraph{Related work}
 
 It appears as if not much work related to scoped instances has been done.
@@ -1372,6 +1381,7 @@ Although the desirability of scoped instances is noted in literature
 loss of principal typing and coherence turn out to be major stumbling blocks.
 However, we feel that by offering mechanisms to explicitly deal with these issues,
 the severity of this is mitigated.
+%endif
 
 \Paragraph{Explicitly dealing with otherwise implicit choices}
 

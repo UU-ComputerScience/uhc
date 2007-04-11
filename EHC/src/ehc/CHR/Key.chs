@@ -63,7 +63,11 @@ instance Keyable x => TrieKeyable x Key where
 
 %%[99
 instance ForceEval Key where
-  forceEval x@(Key_Ty t) = forceEval t `seq` x
-  forceEval x            = x
+  forceEval x@(Key_Ty   y) = forceEval y `seq` x
+  forceEval x@(Key_UID  y) = forceEval y `seq` x
+  forceEval x@(Key_Str  y) = forceEval y `seq` x
+  -- forceEval x@(Key_TyQu y) = forceEval y `seq` x
+  forceEval x@(Key_HNm  y) = forceEval y `seq` x
+  forceEval x              = x
 %%]
 

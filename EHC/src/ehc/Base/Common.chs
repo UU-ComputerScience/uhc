@@ -133,6 +133,9 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
+%%[20 import(qualified EH.Util.SPDoc as SP)
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -484,7 +487,7 @@ ppListV = vlist . map pp
 putCompileMsg :: Verbosity -> Verbosity -> String -> Maybe String -> HsName -> FPath -> IO ()
 putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
   = if optsVerbosity >= v
-    then do { putStrLn (strBlankPad 30 msg ++ " " ++ strBlankPad 22 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
+    then do { hPutStrLn stdout (strBlankPad 30 msg ++ " " ++ strBlankPad 22 (show modNm) ++ " (" ++ fpathToStr fNm ++ maybe "" (\m -> ", " ++ m) mbMsg2 ++ ")")
             ; hFlush stdout
             }
     else return ()
@@ -1052,6 +1055,19 @@ data Backend
   = BackendGrinByteCode
   | BackendSilly
   deriving (Eq, Ord)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance SP.SP UID where
+  sp = SP.sp . pp
+
+instance SP.SP CTag where
+  sp = SP.sp . pp
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

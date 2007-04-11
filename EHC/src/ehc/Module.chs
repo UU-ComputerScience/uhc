@@ -415,9 +415,9 @@ checkImp exps imp
 %%[20 export(ModMpInfo(..),ModMp,emptyModMpInfo,mkModMpInfo)
 data ModMpInfo
   = ModMpInfo
-      { mmiInscps   :: ModEntRel
-      , mmiExps     :: ModEntRel
-      , mmiNmOffMp  :: HsName2OffsetMp
+      { mmiInscps   :: !ModEntRel
+      , mmiExps     :: !ModEntRel
+      , mmiNmOffMp  :: !HsName2OffsetMp
       }
 
 instance Show ModMpInfo where

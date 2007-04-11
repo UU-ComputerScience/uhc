@@ -20,10 +20,13 @@ ppListSep o c s pps
         l (p:ps)  = pp p >|< map (s >|<) ps
 -}
 
+ppBlock' :: PP a => String -> String -> String -> [a] -> [PP_Doc]
+ppBlock' o c s []     = [o >|< c]
+ppBlock' o c s [a]    = [o >|< a >|< c]
+ppBlock' o c s (a:as) = [o >|< a] ++ map (s >|<) as ++ [pp c]
+
 ppBlock :: PP a => String -> String -> String -> [a] -> PP_Doc
-ppBlock o c s []     = o >|< c
-ppBlock o c s [a]    = o >|< a >|< c
-ppBlock o c s (a:as) = o >|< a >-< (vlist $ map (s >|<) as) >-< c
+ppBlock o c s = vlist . ppBlock' o c s
 
 ppCommas :: PP a => [a] -> PP_Doc
 ppCommas = ppListSep "" "" ","

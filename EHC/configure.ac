@@ -100,6 +100,13 @@ AC_ARG_WITH(uuagc-ehc-ast-options,
 [ uuagcEhcAstOptions="$withval" ],)
 AC_SUBST(UUAGC_EHC_AST_OPTIONS, "$uuagcEhcAstOptions")
 
+### 'with' option for uuagc options, specifically for EHC's semantics
+AC_ARG_WITH(uuagc-ehc-sem-options,
+[AC_HELP_STRING([--with-uuagc-ehc-sem-options=<AG compiler options for compiling ehc's semantics>],
+                [Additional options to pass to UUAGC when compiling EHC's AST semantics.])],
+[ uuagcEhcSemOptions="$withval" ],)
+AC_SUBST(UUAGC_EHC_SEM_OPTIONS, "$uuagcEhcSemOptions")
+
 ### 'with' option for cabal config options
 AC_ARG_WITH(cabal-config-options,
 [AC_HELP_STRING([--with-cabal-config-options=<cabal configure options for compiling ehc>],
