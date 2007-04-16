@@ -21,23 +21,23 @@ SEM Expr
   | Int             lhs     .   pp          =   pp @int
   | StrText StrAsIs lhs     .   pp          =   pp @str
   | Named           lhs     .   pp          =   @expr.pp
-  | Cnstr           lhs     .   pp          =   pp_braces (@expr.pp >|< "|" >|< @cnstr.pp)
+  | Cnstr           lhs     .   pp          =   ppCurlys (@expr.pp >|< "|" >|< @cnstr.pp)
   | Uniq            lhs     .   pp          =   pp "?uniq?"
   | Undefined       lhs     .   pp          =   pp "_"
 SEM Expr
   | Sel             lhs     .   pp          =   exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp >|< cfgStrSel >|< @selMbExpr.pp
   | Var             lhs     .   pp          =   pp @nm
-  | Paren           lhs     .   pp          =   {-pp_parens-} @expr.pp
+  | Paren           lhs     .   pp          =   {-ppParens-} @expr.pp
   | AppTop          lhs     .   pp          =   @expr.pp
 {-
 -}
 {-
 SEM Expr
-  | Sel             lhs     .   pp          =   pp_brackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< cfgStrSel >|< @selMbExpr.pp
-  | Var             lhs     .   pp          =   pp_brackets ("VAR" >#< pp @nm)
-  | AVar            lhs     .   pp          =   pp_brackets ("AVR" >#< @anm.pp)
-  | Paren           lhs     .   pp          =   pp_brackets ("PAR" >#< @expr.pp)
-  | AppTop          lhs     .   pp          =   pp_brackets ("TOP" >#< @expr.pp)
+  | Sel             lhs     .   pp          =   ppBrackets ("SEL" >#< exprNeedPar ParCtxtOther nmUnk @expr.self @expr.pp) >|< cfgStrSel >|< @selMbExpr.pp
+  | Var             lhs     .   pp          =   ppBrackets ("VAR" >#< pp @nm)
+  | AVar            lhs     .   pp          =   ppBrackets ("AVR" >#< @anm.pp)
+  | Paren           lhs     .   pp          =   ppBrackets ("PAR" >#< @expr.pp)
+  | AppTop          lhs     .   pp          =   ppBrackets ("TOP" >#< @expr.pp)
 -}
 
 SEM ECnstr

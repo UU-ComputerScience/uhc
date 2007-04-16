@@ -16,7 +16,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import(qualified Data.Map as Map)
 %%]
 
-%%[9 import(EH.Util.AGraph,UU.Pretty,EH.Util.PPUtils) export(module EH.Util.AGraph)
+%%[9 import(EH.Util.AGraph,EH.Util.Pretty) export(module EH.Util.AGraph)
 %%]
 
 %%[9 import(Data.Graph.Inductive.Graph)

@@ -8,7 +8,7 @@
 %%[1 hs export (module Gam, AtDefdGam, AtDefdGam', adGamUnion, ppADGam, CrOrdGam, arlElimCopyRule)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, UU.Pretty, Common, Expr.Expr, ARule.ARule, Gam)
+%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, EH.Util.Pretty, Common, Expr.Expr, ARule.ARule, Gam)
 %%]
 
 %%[1 ag import ({Expr/AbsSynAG}, {ARule/AbsSynAG}, {Expr/SelfAG}, {ARule/SelfAG})

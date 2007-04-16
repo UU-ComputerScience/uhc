@@ -2,7 +2,7 @@
 %%% Haskell names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.HsName} import(EH.Util.Utils,UU.Pretty, EH.Util.PPUtils,Data.List)
+%%[1 module {%{EH}Base.HsName} import(EH.Util.Utils,EH.Util.Pretty, Data.List)
 %%]
 
 %%[1 import(UU.Scanner.Position) export(HSNM(..),HsName(..))

@@ -19,7 +19,7 @@
 %%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
 %%]
 
-%%[1 import(UU.Pretty,EH.Util.PPUtils,{%{EH}Ty.Pretty}) export(ppGam,ppGamDup)
+%%[1 import(EH.Util.Pretty,{%{EH}Ty.Pretty}) export(ppGam,ppGamDup)
 %%]
 
 %%[1 export(gamSingleton,gamInsert,gamUnion,gamUnions,gamFromAssocL)

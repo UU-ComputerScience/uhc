@@ -8,7 +8,7 @@
 %%[1 hs export (module Gam, WrKindInfo(..), WrKindGam, wrKindGam)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, UU.Pretty, Common, Gam)
+%%[1 hs import (qualified Data.Map as Map, EH.Util.Pretty, Common, Gam)
 %%]
 
 -------------------------------------------------------------------------

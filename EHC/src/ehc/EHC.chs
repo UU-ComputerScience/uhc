@@ -7,10 +7,10 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, UU.Pretty,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Pretty,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
-%%[1 import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils,EH.Util.PPUtils)
+%%[1 import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
 %%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.Parser} as HSPrs, qualified {%{EH}HS.MainAG} as HSSem)
@@ -847,27 +847,6 @@ cpFlowEHSem1 modNm
 %%]
 
 %%[20
-cpFlowEHSem2 :: HsName -> EHCompilePhase ()
-cpFlowEHSem2 modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
-                 ehSem  = panicJust "cpFlowEHSem2.ehSem" $ ecuMbEHSem ecu
-                 ehInh  = crsiEHInh crsi
-                 hsSem  = panicJust "cpFlowEHSem2.hsSem" $ ecuMbHSSem ecu
-                 hsInh  = crsiHSInh crsi
-                 ehInh' = ehInh
-                            {- EHSem.valGam_Inh_AGItf     = prepFlow (EHSem.gathValGam_Syn_AGItf     ehSem) `gamUnion` EHSem.valGam_Inh_AGItf     ehInh
-                            , EHSem.tyGam_Inh_AGItf      = prepFlow (EHSem.gathTyGam_Syn_AGItf      ehSem) `gamUnion` EHSem.tyGam_Inh_AGItf      ehInh
-                            , EHSem.kiGam_Inh_AGItf      = prepFlow (EHSem.gathKiGam_Syn_AGItf      ehSem) `gamUnion` EHSem.kiGam_Inh_AGItf      ehInh
-                            , EHSem.prIntroGam_Inh_AGItf = prepFlow (EHSem.gathPrIntroGam_Syn_AGItf ehSem) `gamUnion` EHSem.prIntroGam_Inh_AGItf ehInh
-                            , EHSem.chrStore_Inh_AGItf   = prepFlow (EHSem.gathChrStore_Syn_AGItf   ehSem) `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
-                            -}
-         ;  when (isJust (ecuMbEHSem ecu))
-                 (put (cr {crStateInfo = crsi {crsiEHInh = ehInh'}}))
-         }
-%%]
-
-%%[20
 cpFlowHISem :: HsName -> EHCompilePhase ()
 cpFlowHISem modNm
   =  do  {  cr <- get
@@ -1542,9 +1521,9 @@ cpProcessGrinAll modNm
 %%[8
 cpProcessGrinAll' :: HsName -> EHCompilePhase ()
 cpProcessGrinAll' modNm 
-  = cpSeq [ cpOptimiseGrinLocal modNm
+  = cpSeq [ cpOutputGrin "grin2" modNm
+          , cpOptimiseGrinLocal modNm
           , cpTranslateGrin2ByteCode modNm
-          , cpOutputGrin "grin2" modNm
           -- , cpOptimizeGrin modNm
           , cpOutputGrin "grin3" modNm
           , cpTranslateGrin modNm
@@ -1571,12 +1550,12 @@ cpProcessGrinFullProg modNm
 %%[20
 cpProcessGrinModOnly' :: HsName -> EHCompilePhase ()
 cpProcessGrinModOnly' modNm 
-  = cpSeq [ cpOptimiseGrinLocal modNm
+  = cpSeq [ cpOutputGrin "grin2" modNm
+          , cpOptimiseGrinLocal modNm
           , cpTranslateGrin2ByteCode modNm
 %%[[20
           , cpFlowOptim modNm
 %%]]
-          , cpOutputGrin "grin2" modNm
 %%[[99
           , cpCleanupGrin modNm
 %%]]
@@ -2039,7 +2018,7 @@ cpCompileOrderedCUs
                ; cpCleanupFlow m
 %%]]
                }
-          where flowSem = cpSeq [cpFlowHsSem2 m,cpFlowEHSem2 m,cpFlowCore2GrSem m]
+          where flowSem = cpSeq [cpFlowHsSem2 m, {- cpFlowEHSem2 m, -} cpFlowCore2GrSem m]
         core mL
           = cpSeq [cpGetPrevCore m | m <- mL]
         biggrin opts mL (mImpL,mMain)

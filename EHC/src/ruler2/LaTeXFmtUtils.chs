@@ -10,7 +10,7 @@
 %%[1 hs export (mkCmdNmDef, mkCmdNmUse, ppNmLaTeX, ppSelLaTeX, ppWrapShuffle)
 %%]
 
-%%[1 hs import (EH.Util.Utils, UU.Pretty, EH.Util.PPUtils, Common, Expr.Expr)
+%%[1 hs import (EH.Util.Utils, EH.Util.Pretty, Common, Expr.Expr)
 %%]
 
 %%[1 hs
@@ -35,7 +35,7 @@ ppDest k isDest mbDstWd mbPrevNdStr dstPre srcPre n
                 _ -> mkPre dstPre n
          else "@" >|< mkPre srcPre n
   where mkPre s n = if null s then pp n else s >|< "." >|< pp n
-        tr x = x -- (pp k >|< pp_braces x)
+        tr x = x -- (pp k >|< ppCurlys x)
 
 -------------------------------------------------------------------------
 -- Need for parenthesis
@@ -50,15 +50,15 @@ exprNeedPar ctxt opNm e
   = case e of
       Expr_Paren e
         -> case (t e,ctxt) of
-             (Expr_Op    _ _ _ _,ParCtxtAppL) -> pp_parens
-             (Expr_Op    _ _ _ _,ParCtxtAppR) -> pp_parens
-             (Expr_Op    _ _ _ _,ParCtxtOpL ) -> pp_parens
-             (Expr_Op    _ _ _ _,ParCtxtOpR ) -> pp_parens
+             (Expr_Op    _ _ _ _,ParCtxtAppL) -> ppParens
+             (Expr_Op    _ _ _ _,ParCtxtAppR) -> ppParens
+             (Expr_Op    _ _ _ _,ParCtxtOpL ) -> ppParens
+             (Expr_Op    _ _ _ _,ParCtxtOpR ) -> ppParens
              (Expr_Op    n _ _ _,_          )
-               | n == nmComma -> pp_parens
-             (Expr_App   _ _    ,ParCtxtAppR) -> pp_parens
-             (Expr_Paren _      ,_          ) -> pp_parens
-             _ | opNm == nmSp1 -> pp_parens
+               | n == nmComma -> ppParens
+             (Expr_App   _ _    ,ParCtxtAppR) -> ppParens
+             (Expr_Paren _      ,_          ) -> ppParens
+             _ | opNm == nmSp1 -> ppParens
                | otherwise     -> id
       _ -> id
   where t = exprStrip StripBasicNoPar

@@ -5,7 +5,7 @@
 %%[9 module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie})
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty)
 %%]
 
 %%[9 import(qualified Data.Set as Set,qualified Data.Map as Map)

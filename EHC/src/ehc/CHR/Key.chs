@@ -5,7 +5,7 @@
 %%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.Trie})
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty)
 %%]
 
 %%[9 import({%{EH}Ty.Pretty})

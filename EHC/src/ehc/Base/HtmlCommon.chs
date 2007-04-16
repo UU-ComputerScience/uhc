@@ -3,7 +3,7 @@ Utility functions for HTML generation
 %%[1 hs module {%{EH}Base.HtmlCommon}
 %%]
 
-%%[7_2 hs import({%{EH}Base.Common}, EH.Util.ParseUtils, EH.Util.PPUtils, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UU.Pretty, Data.List(sortBy))
+%%[7_2 hs import({%{EH}Base.Common}, EH.Util.ParseUtils,  {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), EH.Util.Pretty, Data.List(sortBy))
 %%]
 
 %%[7_2 hs

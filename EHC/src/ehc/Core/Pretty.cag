@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
+%%[8 hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
 %%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCBindL)
@@ -102,8 +102,8 @@ SEM CExpr
   | Integer     loc         .   pp          =   ppLit "Integer" (show @integer)
 %%]
   | Var         loc         .   pp          =   ppCNm @nm
-  | App         loc         .   pp          =   let args = reverse $ map pp_parens $ @appArgPPL
-                                                    fun  = pp_parens @appFunPP
+  | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
+                                                    fun  = ppParens @appFunPP
                                                 in  ppOr (ppDef fun (vlist args))
                                                          (fun >#< (ppSpaces args))
   | Let         loc         .   ppCateg     =   case @categ of
@@ -116,9 +116,9 @@ SEM CExpr
                                                       ("\\" >|< ppSpaces @lamArgPPL >#< "->" >#< @lamBodyPP)
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of" >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [ppDef "default" @dflt.pp])
   | Tup         loc         .   pp          =   ppTag @tag
-  | TupDel      loc         .   pp          =   ppDef (pp_parens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
-  | TupIns      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (pp_parens @fldExpr.pp))
-  | TupUpd      loc         .   pp          =   ppDef (pp_parens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (pp_parens @fldExpr.pp))
+  | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
+  | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
+  | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
   | CaseAltFail loc			.	pp			=	pp "FAIL" >#< @caseId
 
 SEM CExpr
@@ -173,7 +173,7 @@ SEM CPatBindL
   | Undef       lhs         .   pp          =   pp hsnUnknown
 
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
-                                                >|< pp_parens (@pat.pp >|< "|">|< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
+                                                >|< ppParens (@pat.pp >|< "|">|< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
 %%[9
 SEM CExpr

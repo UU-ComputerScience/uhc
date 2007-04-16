@@ -5,10 +5,10 @@
 %%[1 hs module (Main1AG)
 %%]
 
-%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, UU.Pretty)
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Pretty)
 %%]
 
-%%[1 hs import (EH.Util.FPath, EH.Util.Utils, Err, Common, Opts, EH.Util.PPUtils, LaTeXFmtUtils, Expr.Utils)
+%%[1 hs import (EH.Util.FPath, EH.Util.Utils, Err, Common, Opts, LaTeXFmtUtils, Expr.Utils)
 %%]
 
 %%[1 hs import (ARule.Utils, ViewSel.Utils, Config( cfgStrSel, cfgFmFmtCmdAsc ), FmGam, RwExprGam, ECnstrGam)

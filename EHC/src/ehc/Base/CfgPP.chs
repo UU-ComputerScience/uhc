@@ -26,7 +26,7 @@ As class variations on PP
 %%[8 import(Data.Char)
 %%]
 
-%%[8 import(UU.Pretty,EH.Util.PPUtils)
+%%[8 import(EH.Util.Pretty)
 %%]
 
 %%[20 import(qualified EH.Util.SPDoc as SP)
@@ -42,6 +42,12 @@ class CfgPP x where
   cfgppConHsName 	:: x -> HsName -> PP_Doc
   cfgppUID    		:: x -> UID    -> PP_Doc
   cfgppVarHsName 	:: x -> Maybe HsName -> Maybe UID -> Maybe Int -> PP_Doc
+%%[[20
+  cfgspHsName 		:: x -> HsName -> SP.SPDoc
+  cfgspConHsName 	:: x -> HsName -> SP.SPDoc
+  cfgspUID    		:: x -> UID    -> SP.SPDoc
+  cfgspVarHsName 	:: x -> Maybe HsName -> Maybe UID -> Maybe Int -> SP.SPDoc
+%%]]
   cfgppFollowAST    :: x -> Bool
 
   cfgppHsName    _              = pp
@@ -50,6 +56,14 @@ class CfgPP x where
   cfgppVarHsName x _ _ (Just i) = cfgppHsName x $ mkHNm $ tnUniqRepr i
   cfgppVarHsName x (Just n) _ _ = cfgppHsName x n
   cfgppVarHsName x _ (Just u) _ = cfgppUID x u
+%%[[20
+  cfgspHsName    _              = SP.sp
+  cfgspConHsName _              = spCon
+  cfgspUID       _              = SP.sp
+  cfgspVarHsName x _ _ (Just i) = cfgspHsName x $ mkHNm $ tnUniqRepr i
+  cfgspVarHsName x (Just n) _ _ = cfgspHsName x n
+  cfgspVarHsName x _ (Just u) _ = cfgspUID x u
+%%]]
   cfgppFollowAST _              = False
 %%]
 
@@ -78,16 +92,33 @@ instance CfgPP CfgPP_HI where
   cfgppConHsName x n            = if n == hsnRowEmpty then hsnORow >#< hsnCRow else cfgppHsName x n
   cfgppVarHsName x _ (Just u) _ = cfgppUID x u
   cfgppUID       _ u            = "uid" >#< ppUID' u
+%%[[20
+  cfgspHsName   _ n
+    = case n of
+        HNPos i
+          -> SP.sp i
+        _ -> spHsnNonAlpha hiScanOpts n
+  cfgspConHsName x n            = if n == hsnRowEmpty then hsnORow SP.>#< hsnCRow else cfgspHsName x n
+  cfgspVarHsName x _ (Just u) _ = cfgspUID x u
+  cfgspUID       _ u            = "uid" SP.>#< spUID' u
+%%]]
   cfgppFollowAST _              = True
 %%]
 
 %%[8
 instance CfgPP CfgPP_Core where
   cfgppHsName    _ = ppHsnNonAlpha coreScanOpts
+%%[[20
+  cfgspHsName    _ = spHsnNonAlpha coreScanOpts
+%%]]
+%%]
 
+%%[8
 instance CfgPP CfgPP_Grin where
   cfgppHsName    _ = ppHsnNonAlpha grinScanOpts
-
+%%[[20
+  cfgspHsName    _ = spHsnNonAlpha grinScanOpts
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

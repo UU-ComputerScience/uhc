@@ -5,10 +5,9 @@ module EH.Util.ParseErrPrettyPrint
   where
 
 import Data.List
-import UU.Pretty
+import EH.Util.Pretty
 import UU.Parsing
 import UU.Scanner.Position( noPos, Pos, Position(..) )
-import EH.Util.PPUtils
 
 -------------------------------------------------------------------------
 -- PP of parse errors
@@ -46,7 +45,7 @@ ppTr = ppMsg "TRACE" ("",noPos)
 instance (Eq s, Show s, Show p, Position p) => PP (Message s p) where
   pp (Msg expecting position action)  
     = ppErr ("",position)
-            (   "Expecting  :" >#< (fillblock 120 . intersperse (pp " ") . map pp $ showExp)
+            (   "Expecting  :" >#< (hlist $ intersperse (pp " ") $ map pp $ showExp)
                                >#< (if null omitExp then empty else pp "...")
             >-< "Repaired by:" >#< show action
             )

@@ -5,7 +5,7 @@
 %%[1 hs module {%{EH}Annotations.BelownessSolver}
 %%]
 
-%%[7_2 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UU.Pretty)
+%%[7_2 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), EH.Util.Pretty)
 %%]
 
 %%[7_2 import({%{EH}Annotations.Constraints}, {%{EH}Annotations.ConstraintSolver})

@@ -10,7 +10,7 @@
 %%]
 
 
-%%[8 hs module {%{GRIN}GrinCode.GenLlc} import(UU.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config}) export(grin2llc)
+%%[8 hs module {%{GRIN}GrinCode.GenLlc} import(EH.Util.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config}) export(grin2llc)
 
 grin2llc :: HsName -> GrModule -> Bool -> PP_Doc
 grin2llc e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))

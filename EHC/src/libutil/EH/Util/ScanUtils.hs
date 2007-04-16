@@ -7,11 +7,10 @@ module EH.Util.ScanUtils
 
 import IO
 import Data.List
-import UU.Pretty
+import EH.Util.Pretty
 import UU.Parsing
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
-import EH.Util.PPUtils
 
 -------------------------------------------------------------------------
 -- Utils for GenToken

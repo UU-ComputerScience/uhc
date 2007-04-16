@@ -41,7 +41,7 @@ to a loop.
 %%]
 
 -- for debugging:
-%%[8 hs import(UU.Pretty,EH.Util.Utils)
+%%[8 hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[8 hs import({%{GRIN}GrinCode.TrfLocal.AliasRename})

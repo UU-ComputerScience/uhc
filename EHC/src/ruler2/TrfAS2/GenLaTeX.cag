@@ -17,7 +17,7 @@
 %%[1 hs import (AbsSyn.AbsSyn2, Admin, Utils)
 %%]
 
-%%[1 hs import (UU.Pretty, EH.Util.PPUtils)
+%%[1 hs import (EH.Util.Pretty)
 %%]
 
 -------------------------------------------------------------------------

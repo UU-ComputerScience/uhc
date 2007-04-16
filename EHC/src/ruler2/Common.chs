@@ -20,9 +20,6 @@
 %%[1 hs export (module EH.Util.FPath)
 %%]
 
-%%[1 hs export (module EH.Util.PPUtils)
-%%]
-
 %%[1 hs export (module AttrProps)
 %%]
 
@@ -47,10 +44,10 @@
 %%[1 hs export (nmFunMkUniq, nmIsOver, FmKind(..), fmAS2Fm, ScKind(..), ScDeriv(..))
 %%]
 
-%%[1 hs import (Data.Maybe, Data.Char, IO, UU.Pretty)
+%%[1 hs import (Data.Maybe, Data.Char, IO, EH.Util.Pretty)
 %%]
 
-%%[1 hs import (Scanner( SPos, emptySPos ), EH.Util.FPath, EH.Util.PPUtils)
+%%[1 hs import (Scanner( SPos, emptySPos ), EH.Util.FPath)
 %%]
 
 %%[1 hs import (EH.Util.ParseErrPrettyPrint, EH.Util.ScanUtils, EH.Util.Nm)
@@ -174,6 +171,6 @@ data ScDeriv
   deriving (Show,Eq,Ord)
 
 instance PP ScDeriv where
-  pp (ScList n) = pp_brackets (pp n)
+  pp (ScList n) = ppBrackets (pp n)
 
 %%]

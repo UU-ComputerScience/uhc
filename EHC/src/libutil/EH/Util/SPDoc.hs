@@ -14,15 +14,21 @@ module EH.Util.SPDoc
   
   , spHList, spVList
   , spBlock
-  , spCurlysBlock, spCurlysSemisBlock, spCurlysCommasBlock
-  , spParensSemisBlock, spParensCommasBlock
+  , spListSep, spList
+  , spCurlysCommas, spCurlysCommasBlock
+  , spCurlysBlock
+  , spCurlysSemisBlock
+  , spParensSemisBlock
+  , spParensCommas, spParensCommasBlock
+  , spBracketsCommas
+  , spPacked, spParens
   
   , hSPPut
   )
   where
 
 import IO
-import qualified UU.Pretty as P
+import qualified EH.Util.Pretty as P
 
 -------------------------------------------------------------------------
 -- Doc structure
@@ -84,10 +90,25 @@ spHList = foldr (>|<) empty
 spVList :: SP a => [a] -> SPDoc
 spVList = foldr (>-<) empty
 
-spBlock :: SP a => String -> String -> String -> [a] -> SPDoc
-spBlock o c s []     = o >|< c
-spBlock o c s [a]    = o >|< a >|< c
-spBlock o c s (a:as) = o >|< a >-< (spVList $ map (s >|<) as) >-< c
+spPacked :: (SP o, SP c, SP x) => o -> c -> x -> SPDoc
+spPacked o c x = o >|< x >|< c
+
+spParens :: SP x => x -> SPDoc
+spParens = spPacked "(" ")"
+
+spBlock' :: (SP o, SP c, SP a, SP s) => (SPDoc -> SPDoc -> SPDoc) -> o -> c -> s -> [a] -> SPDoc
+spBlock' _     o c s []     = o >|< c
+spBlock' _     o c s [a]    = o >|< a >|< c
+spBlock' aside o c s (a:as) = aside (o >|< a) $ aside (spVList $ map (s >|<) as) $ sp c
+
+spBlock :: (SP o, SP c, SP a, SP s) => o -> c -> s -> [a] -> SPDoc
+spBlock = spBlock' (>-<)
+
+spListSep :: (SP o, SP c, SP a, SP s) => o -> c -> s -> [a] -> SPDoc
+spListSep = spBlock' (>|<)
+
+spList :: SP a => [a] -> SPDoc
+spList = spListSep "" "" ""
 
 spCurlysBlock :: SP a => [a] -> SPDoc
 spCurlysBlock = spBlock "{ " "}" "  " . map sp
@@ -98,11 +119,20 @@ spCurlysSemisBlock = spBlock "{ " "}" "; " . map sp
 spCurlysCommasBlock :: SP a => [a] -> SPDoc
 spCurlysCommasBlock = spBlock "{ " "}" ", " . map sp
 
+spCurlysCommas :: SP a => [a] -> SPDoc
+spCurlysCommas = spListSep "{ " "}" ", " . map sp
+
+spParensCommas :: SP a => [a] -> SPDoc
+spParensCommas = spListSep "(" ")" "," . map sp
+
 spParensSemisBlock :: SP a => [a] -> SPDoc
 spParensSemisBlock = spBlock "( " ")" "; " . map sp
 
 spParensCommasBlock :: SP a => [a] -> SPDoc
 spParensCommasBlock = spBlock "( " ")" ", " . map sp
+
+spBracketsCommas :: SP a => [a] -> SPDoc
+spBracketsCommas = spListSep "[" "]" "," . map sp
 
 -------------------------------------------------------------------------
 -- Semantics: direct IO

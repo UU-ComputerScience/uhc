@@ -8,7 +8,7 @@
 %%[1 hs export (ppViewSel, ppViewSels)
 %%]
 
-%%[1 hs import (UU.Pretty, EH.Util.Nm, ViewSel.ViewSel)
+%%[1 hs import (EH.Util.Pretty, EH.Util.Nm, ViewSel.ViewSel)
 %%]
 
 %%[1 ag import ({ViewSel/AbsSynAG})

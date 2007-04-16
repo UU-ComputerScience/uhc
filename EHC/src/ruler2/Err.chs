@@ -8,7 +8,7 @@
 %%[1 hs export (Err(..), mkPPErr, ppErrPPL, errLIsFatal, errFirst, mkTr)
 %%]
 
-%%[1 hs import (UU.Pretty, EH.Util.PPUtils, EH.Util.Utils)
+%%[1 hs import (EH.Util.Pretty, EH.Util.Utils)
 %%]
 
 %%[1 hs import (Scanner( SPos, emptySPos ))

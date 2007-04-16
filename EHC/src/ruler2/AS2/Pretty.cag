@@ -65,7 +65,7 @@ SEM RlDecl
                                                 >-< indent 2 (@preJds.pp >-< "---" >-< @postJds.pp)
 
 SEM Jd
-  | Ats             lhs     .   pp          =   @nm >#< pp_parens (pp @scNm) >|< ":" >#< @ats.pp
+  | Ats             lhs     .   pp          =   @nm >#< ppParens (pp @scNm) >|< ":" >#< @ats.pp
 
 SEM JdAt
   | At              lhs     .   pp          =   @nm >#< "=" >#< @expr.pp
@@ -79,7 +79,7 @@ SEM JdAt
 SEM AttrAGDecl
   | Attr            lhs     .   pp          =   let mka g = ppListSep "" "" "  " [ n >|< ":" >#< t | (n,t) <- g ]
                                                 in  "ATTR" >#< @ndNm
-                                                    >#< pp_brackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
+                                                    >#< ppBrackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
 %%]
 
 -------------------------------------------------------------------------
@@ -97,7 +97,7 @@ SEM DataAGAlt
   | Alt             lhs     .   pp          =   "|" >#< strPad @nmStr @lhs.mxAltWd >|< @flds.pp
 
 SEM DataAGFld
-  | Fld             lhs     .   pp          =   strPad @nmStr @lhs.mxFldWd >|< ":" >#< (if @tyIsData then id else pp_braces) (pp @ty)
+  | Fld             lhs     .   pp          =   strPad @nmStr @lhs.mxFldWd >|< ":" >#< (if @tyIsData then id else ppCurlys) (pp @ty)
 
 ATTR AllDtAlt AllDtFld [ mxFldWd: Int | | gathMxFldWd USE {`max`} {0} : Int ] 
 ATTR AllDtAlt  [ mxAltWd: Int | | gathMxAltWd USE {`max`} {0} : Int ]

@@ -24,7 +24,7 @@ SEM Expr
                                         >-< "in" >#< @body.pp
                                         >-< @errBodyPP
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
-  | Parens      loc     .   pp      =   pp_parens @expr.pp
+  | Parens      loc     .   pp      =   ppParens @expr.pp
   | TypeAs      loc     .   pp      =   @expr.pp >#< "::" >#< @tyExpr.pp
 %%]
 
@@ -49,14 +49,14 @@ SEM PatExpr
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
   | AppTop      loc     .   pp      =   ppAppTop  (@patExpr.appFunNm,@patExpr.appFunPP)
                                                   @patExpr.appArgPPL @patExpr.pp
-  | Parens      loc     .   pp      =   pp_parens @patExpr.pp
+  | Parens      loc     .   pp      =   ppParens @patExpr.pp
 
 SEM TyExpr
   | Con         loc     .   pp      =   ppCon @nm
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
   | AppTop      loc     .   pp      =   ppAppTop  (@tyExpr.appFunNm,@tyExpr.appFunPP)
                                                   @tyExpr.appArgPPL @tyExpr.pp
-  | Parens      loc     .   pp      =   pp_parens @tyExpr.pp
+  | Parens      loc     .   pp      =   ppParens @tyExpr.pp
 
 SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp >-< @errPP >-< @tl.pp
@@ -142,7 +142,7 @@ SEM KiExpr
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
   | AppTop      loc     .   pp      =   ppAppTop  (@kiExpr.appFunNm,@kiExpr.appFunPP)
                                                   @kiExpr.appArgPPL @kiExpr.pp
-  | Parens      loc     .   pp      =   pp_parens @kiExpr.pp
+  | Parens      loc     .   pp      =   ppParens @kiExpr.pp
 
 SEM Decl
   | KiSig       loc     .   pp      =   @nm >#< "::" >#< @kiExpr.pp

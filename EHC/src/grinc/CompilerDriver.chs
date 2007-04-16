@@ -14,7 +14,7 @@
 %%]
 %%[8 import(Debug.Trace)
 %%]
-%%[8 import( UU.Parsing, UU.Pretty, EH.Util.CompileRun, EH.Util.FPath )
+%%[8 import( UU.Parsing, EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath )
 %%]
 %%[8 import( EH.Util.CompileRun, EH.Util.FPath )
 %%]

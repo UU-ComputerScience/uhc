@@ -5,7 +5,7 @@
 %%[8 hs module {%{GRIN}GrinCode.ToGrinByteCode}
 %%]
 
-%%[8 hs import(Data.Maybe,Data.List,UU.Pretty,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[8 hs import(Data.Maybe,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
 %%[8 hs import({%{EH}GrinCode.Pretty},{%{EH}Base.Builtin},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{GRIN}BuiltinPrims})

@@ -12,7 +12,7 @@ This file exists to avoid module circularities.
 %%[9 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty)
 %%]
 
 %%[9 import({%{EH}Base.Common})

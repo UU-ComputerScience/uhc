@@ -12,7 +12,7 @@
 %%]
 
 -- for debugging:
-%%[8 hs import(UU.Pretty,EH.Util.Utils)
+%%[8 hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})

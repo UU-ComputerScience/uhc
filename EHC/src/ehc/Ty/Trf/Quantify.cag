@@ -10,7 +10,7 @@
 %%[3 hs module {%{EH}Ty.Trf.Quantify} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
 %%]
 
-%%[4 hs import({%{EH}Base.Debug},UU.Pretty)
+%%[4 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List)
@@ -23,7 +23,7 @@ WRAPPER TyAGItf
 %%[6 hs export(kiQuantify)
 %%]
 
-%%[9 hs import(Data.Maybe,EH.Util.Utils,UU.Pretty) export(tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
+%%[9 hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

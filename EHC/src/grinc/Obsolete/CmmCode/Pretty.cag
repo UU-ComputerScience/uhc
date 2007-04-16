@@ -7,7 +7,7 @@
 %%% C-- pretty printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}CmmCode.Pretty} import(Data.Char,UU.Pretty,EH.Util.PPUtils,{%{GRIN}GRINCCommon},{%{GRIN}CmmCode}) export(ppCmmUnit)
+%%[8 hs module {%{GRIN}CmmCode.Pretty} import(Data.Char,EH.Util.Pretty,{%{GRIN}GRINCCommon},{%{GRIN}CmmCode}) export(ppCmmUnit)
 %%]
 
 %%[8.WRAPPER import({CmmCode/AbsSyn})
@@ -28,10 +28,10 @@ instance PP CmmUnit where
 ATTR All [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM CmmToplevel
-  | Section         lhs . pp    = "section" >#< (ppString @name) >#< pp_braces @body.pp
+  | Section         lhs . pp    = "section" >#< (ppString @name) >#< ppCurlys @body.pp
 
 SEM CmmSectionElement
-  | Span            loc . pp    = "span" >#< @key.pp >#< @value.pp >#< pp_braces @body.pp
+  | Span            loc . pp    = "span" >#< @key.pp >#< @value.pp >#< ppCurlys @body.pp
 
 SEM CmmDatum
   | Label           loc . pp    = pp @name >|< ":"
@@ -39,8 +39,8 @@ SEM CmmDatum
   | Reserve         loc . pp    = pp @type >|< @size.pp >#< @init.pp >|< ";"
 
 SEM CmmSize
-  | Sized           loc . pp    = pp_brackets @size.pp
-  | Many            loc . pp    = pp_brackets empty
+  | Sized           loc . pp    = ppBrackets @size.pp
+  | Many            loc . pp    = ppBrackets empty
 
 SEM CmmInitString
   | List            loc . pp    = ppBlock "{ " " }" ", " @elements.pps
@@ -57,37 +57,37 @@ SEM CmmDeclaration
   | Target          loc . pp    = pp @targetSpec >|< ";"
 
 SEM CmmProcedure
-  | Procedure       loc . pp    = ppCallConv @callConv >|< pp @name >|< pp_parens (ppListComma ppFormal @args) >-< pp_braces @body.pp
+  | Procedure       loc . pp    = ppCallConv @callConv >|< pp @name >|< ppParens (ppListComma ppFormal @args) >-< ppCurlys @body.pp
 
 SEM CmmBodyElement
-  | StackData       loc . pp    = "stackdata" >#< pp_braces @data.pp
+  | StackData       loc . pp    = "stackdata" >#< ppCurlys @data.pp
 
 SEM CmmStatement
   | Nop             loc . pp    = pp ";"
-  | If              loc . pp    = "if" >#< @condition.pp >-< pp_braces @body.pp
-  | IfElse          loc . pp    = "if ">#< @condition.pp >-< pp_braces @ifbody.pp >-< "else" >-< pp_braces @elsebody.pp
-  | Switch          loc . pp    = "switch" >#< @expr.pp >-< pp_braces @alts.pp
-  | Span            loc . pp    = "span" >#< @key.pp >#< @value.pp >-< pp_braces @body.pp
+  | If              loc . pp    = "if" >#< @condition.pp >-< ppCurlys @body.pp
+  | IfElse          loc . pp    = "if ">#< @condition.pp >-< ppCurlys @ifbody.pp >-< "else" >-< ppCurlys @elsebody.pp
+  | Switch          loc . pp    = "switch" >#< @expr.pp >-< ppCurlys @alts.pp
+  | Span            loc . pp    = "span" >#< @key.pp >#< @value.pp >-< ppCurlys @body.pp
   | Assign          loc . pp    = @lvals.pp >#< "=" >#< ppListComma id @expressions.pps              >|< ";"
   | Call            loc . ppLHS = ppListComma ppReciever @recievers
-                    loc . ppRHS = ppCallConv @callConv >|< @fun.pp >|< pp_parens @args.pp >#< @flow.pp >|< ";"
+                    loc . ppRHS = ppCallConv @callConv >|< @fun.pp >|< ppParens @args.pp >#< @flow.pp >|< ";"
                     loc . pp    = if null @recievers then @ppRHS else @ppLHS >#< "=" >#< @ppRHS
-  | TailCall        loc . pp    = ppCallConv @callConv >|< "jump" >#< @fun.pp >|< pp_parens @args.pp >|< ";"
-  | Return          loc . pp    = ppCallConv @callConv >|< "return" >#< pp_parens @args.pp           >|< ";"
+  | TailCall        loc . pp    = ppCallConv @callConv >|< "jump" >#< @fun.pp >|< ppParens @args.pp >|< ";"
+  | Return          loc . pp    = ppCallConv @callConv >|< "return" >#< ppParens @args.pp           >|< ";"
   | Label           loc . pp    = pp @name >|< ":"
   | GoTo            loc . pp    = "goto" >#< pp @target                                              >|< ";"
-  | CutTo           loc . pp    = "cut to" >#< @cont.pp >|< pp_parens @args.pp  >#< @flow.pp         >|< ";"
-  | Continuation    loc . pp    = "continuation" >#< pp @name >|< pp_parens (ppListComma ppReciever @args) >|< ":"
+  | CutTo           loc . pp    = "cut to" >#< @cont.pp >|< ppParens @args.pp  >#< @flow.pp         >|< ";"
+  | Continuation    loc . pp    = "continuation" >#< pp @name >|< ppParens (ppListComma ppReciever @args) >|< ":"
 
 SEM CmmExpression
   | Int             loc . pp    = pp   @val >|< ppTypeAnn @type
   | Float           loc . pp    = error "CmmExpression_Float: no pp" -- pp   @val >|< ppTypeAnn @type
   | Char            loc . pp    = show @val >|< ppTypeAnn @type
   | Var             loc . pp    = pp @name
-  | MemRef          loc . pp    = pp @type >#< pp_brackets @location.pp
-  | Parens          loc . pp    = pp_parens @expr.pp
+  | MemRef          loc . pp    = pp @type >#< ppBrackets @location.pp
+  | Parens          loc . pp    = ppParens @expr.pp
   | Not             loc . pp    = "~" >#< @expr.pp
-  | Primitive       loc . pp    = "%" >|< pp @name >|< pp_parens @args.pp
+  | Primitive       loc . pp    = "%" >|< pp @name >|< ppParens @args.pp
 
 SEM CmmExpressions [ | | pps : {[PP_Doc]} ]
   | Cons            loc . pps    = @hd.pp : @tl.pps
@@ -104,10 +104,10 @@ SEM CmmLValues
 
 SEM CmmLValue
   | Var             loc . pp    = pp @name
-  | MemRef          loc . pp    = pp @type >#< pp_brackets @location.pp
+  | MemRef          loc . pp    = pp @type >#< ppBrackets @location.pp
 
 SEM CmmAlternative
-  | Alt             loc . pp    = "case" >#< @ranges.pp >#< ":" >-< pp_braces @body.pp
+  | Alt             loc . pp    = "case" >#< @ranges.pp >#< ":" >-< ppCurlys @body.pp
 
 SEM CmmRanges
   | Cons            loc . pp    = @hd.pp >|< "," >|< @tl.pp

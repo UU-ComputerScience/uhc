@@ -17,7 +17,7 @@
 %%[2 module {%{EH}Cnstr} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(Cnstr'(..), Cnstr, emptyCnstr, cnstrTyUnit, cnstrTyLookup)
 %%]
 
-%%[2 import(UU.Pretty, {%{EH}Ty.Pretty}) export(ppCnstrV)
+%%[2 import(EH.Util.Pretty, {%{EH}Ty.Pretty}) export(ppCnstrV)
 %%]
 
 %%[4 export(cnstrFilterTy,cnstrDel,(|\>) ,cnstrPlus)
@@ -158,17 +158,17 @@ cnstrTyLookup tv (Cnstr s) = lookup tv s
 
 %%[9 -(2.Cnstr.Base 2.cnstrTyLookup)
 data CnstrInfo v
-  = CITy     v
-  | CIImpls  Impls
-  | CIScope  !PredScope
-  | CIPred   !Pred
+  = CITy      !v
+  | CIImpls   !Impls
+  | CIScope   !PredScope
+  | CIPred    !Pred
 %%[[10
-  | CILabel  !Label
-  | CIOffset !LabelOffset
-  | CIExts   RowExts
+  | CILabel   !Label
+  | CIOffset  !LabelOffset
+  | CIExts    !RowExts
 %%]]
 %%[[13
-  | CIPredSeq PredSeq
+  | CIPredSeq !PredSeq
 %%]]
   deriving (Eq,Show)
 %%]

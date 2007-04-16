@@ -5,7 +5,7 @@
 %%[1 module {%{EH}NameAspect} import({%{EH}Base.Common},{%{EH}Base.Builtin},qualified {%{EH}EH} as EH)
 %%]
 
-%%[1 import(UU.Pretty,EH.Util.PPUtils)
+%%[1 import(EH.Util.Pretty)
 %%]
 
 %%[1 export(IdDefOcc(..),emptyIdDefOcc,mkIdDefOcc)
