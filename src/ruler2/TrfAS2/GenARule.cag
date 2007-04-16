@@ -17,7 +17,7 @@
 %%[1 hs import (ECnstrGam, AbsSyn.AbsSyn2, Admin, Utils( sc2DATA ))
 %%]
 
-%%[1 hs import (UU.Pretty, EH.Util.PPUtils)
+%%[1 hs import (EH.Util.Pretty)
 %%]
 
 -------------------------------------------------------------------------

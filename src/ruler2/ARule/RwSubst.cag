@@ -8,7 +8,7 @@
 %%[1 hs export (exprSubst, exprElimCnstr, exprRewrite', exprRewrite, arlSubst, nmSubst, MtOut(..), exprMatch, fmNmUniq, fmNmFmtCmd)
 %%]
 
-%%[1 hs import (Data.List, qualified Data.Set as Set, qualified Data.Map as Map, UU.Pretty)
+%%[1 hs import (Data.List, qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Pretty)
 %%]
 
 %%[1 hs import (EH.Util.Utils, Common, Opts, Expr.Expr, Expr.IsRw, Expr.ToAEqn, ARule.ARule)

@@ -13,7 +13,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.AGraph,EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty,EH.Util.AGraph)
 %%]
 
 %%[9 import({%{EH}Base.Common})

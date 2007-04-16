@@ -16,7 +16,7 @@ MergePreds gets a set of predicates and places those predicates
 %%[9 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
-%%[9 hs import(UU.Pretty)
+%%[9 hs import(EH.Util.Pretty)
 %%]
 
 %%[9 ag import({Ty/AbsSyn},{Ty/CommonAG},{Ty/TyVarCommon})

@@ -10,7 +10,7 @@
 %%[99 hs module {%{GRIN}GrinByteCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{GRIN}GrinByteCode})
 %%]
 
-%%[99 hs import(UU.Pretty)
+%%[99 hs import(EH.Util.Pretty)
 %%]
 
 %%[99.WRAPPER ag import({GrinByteCode/AbsSyn})

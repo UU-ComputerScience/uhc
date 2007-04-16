@@ -7,7 +7,7 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}Silly.PrettyS} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils, qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyS)
+%%[8 hs module {%{GRIN}Silly.PrettyS} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyS)
 %%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
@@ -115,6 +115,7 @@ SEM SilModule
                                 >-< text ""
                                 >-< comment ["Function definitions"]
                                 >-< @loc.silMain1
+
                                     >-< text ""
                                     >-< @functions.prettyS
                                 >-< text ""
@@ -126,6 +127,7 @@ SEM SilModule
                                 >-< instruction2 "subl" (immediate (16::Int)) esp
                                 
                                 >-< callSillyFunctionFromC 1 "initialize"
+
                                 >-< callSillyFunctionFromC 2 "fun_main"
                                 
                                 >-< instruction2 "movl" (indirectOffset (-4::Int) esp) eax
@@ -141,8 +143,10 @@ SEM SilModule
                                 >-< instruction0 "leave"
                                 >-< instruction0 "ret"
                                 
+
                                 
                 loc.constantMap = Map.fromList (("UNBOXED",1) : ("ANY",0) : @constants)
+
 
 
 SEM Function

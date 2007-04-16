@@ -7,7 +7,7 @@
 %%% Prettyprint Silly program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}Silly.Pretty} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils, qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(pretty)
+%%[8 hs module {%{GRIN}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(pretty)
 %%]
 %%[8 hs import({%{EH}Base.Common})
 %%]

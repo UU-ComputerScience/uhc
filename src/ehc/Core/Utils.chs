@@ -112,12 +112,15 @@ mkCExprStrictSatCase env eNm e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRes
   | dgiIsNewtype dgi
   = mkCExprLet CBindPlain [CBind_Bind pnm e] ae
   where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
-mkCExprStrictSatCase env eNm e (alt:alts)
+mkCExprStrictSatCase env eNm e alts
   = case eNm of
-      Just n  -> mkCExprStrictIn n e mk
-      Nothing -> mk e
-  where (alt',altOffBL) = caltOffsetL alt
-        mk n = mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
+      Just n  -> mkCExprStrictIn n e $ mk alts
+      Nothing -> mk alts e
+  where mk (alt:alts) n
+          = mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
+          where (alt',altOffBL) = caltOffsetL alt
+        mk [] n
+          = CExpr_Case n [] (rceCaseCont env) -- dummy case
 %%]
 
 %%[8 export(mkCExprSelCase,mkCExprSatSelCase)

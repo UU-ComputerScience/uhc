@@ -30,7 +30,7 @@ SEM Decl
   | ShpJudge        lhs     .   pp          =   "judgeshape"    >#< @expr.pp
   | ShpDel          lhs     .   pp          =   "judgeshape"    >#< "-" >#< ppCommas' @fmKinds
   | Attr            lhs     .   pp          =   "holes"         >#< @intros.pp
-  | Explain         lhs     .   pp          =   "explain"       >#< @mbNm >#< "=" >#< pp_parens @expr.pp
+  | Explain         lhs     .   pp          =   "explain"       >#< @mbNm >#< "=" >#< ppParens @expr.pp
 
 SEM RuleJudgeIntro
   | PrePost			lhs     .   pp          =   @pre.pp >-< "---" >-< @post.pp

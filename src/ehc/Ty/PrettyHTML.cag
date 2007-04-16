@@ -5,7 +5,7 @@
 %%[1 hs module {%{EH}Ty.PrettyHTML}
 %%]
 
-%%[7_2 hs import({%{EH}Base.Common},{%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), UU.Pretty)
+%%[7_2 hs import({%{EH}Base.Common},{%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), EH.Util.Pretty)
 %%]
 
 %%[7_2 hs import({%{EH}Base.HtmlCommon})

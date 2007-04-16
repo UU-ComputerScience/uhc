@@ -14,7 +14,7 @@ Assume that each lambda has no free variables, other than the globally available
 %%]
 
 -- for debug
-%%[8 hs import({%{EH}Base.Debug},UU.Pretty)
+%%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})

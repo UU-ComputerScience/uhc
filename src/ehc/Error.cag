@@ -10,7 +10,7 @@
 %%[1 hs module {%{EH}Error} import({%{EH}Base.Common},{%{EH}Ty}) export(Err(..), ErrL)
 %%]
 
-%%[1 hs import(UU.Pretty,qualified EH.Util.FastSeq as Seq)
+%%[1 hs import(EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
 %%]
 
 %%[1 ag import({Error/AbsSyn})

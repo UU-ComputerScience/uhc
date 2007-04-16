@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.ToJava} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
+%%[8 hs module {%{EH}Core.ToJava} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
 %%]
 
 %%[8.WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
@@ -75,10 +75,10 @@ jvCall f as = let as' = jvArgs as
               in  pp f >-< jvInd as'
 
 jvCast :: String -> PP_Doc -> PP_Doc
-jvCast c o = pp_parens (pp_parens (pp c) >|< o)
+jvCast c o = ppParens (ppParens (pp c) >|< o)
 
 jvForceEval :: PP a => a -> PP_Doc
-jvForceEval e = "eval" >|< pp_parens (pp e)
+jvForceEval e = "eval" >|< ppParens (pp e)
 
 jvForceCast :: PP a => String -> a -> PP_Doc
 jvForceCast c e = jvCast c (jvForceEval e)
@@ -114,7 +114,7 @@ jvBind :: PP a => String -> HsName -> a -> PP_Doc
 jvBind jvtp nm val = "final" >#< jvtp >-< jvInd (jvAssign nm (pp val))
 
 jvInx :: (PP a,PP i) => a -> i -> PP_Doc
-jvInx ar i = pp ar >|< pp_brackets (pp i)
+jvInx ar i = pp ar >|< ppBrackets (pp i)
 
 jvCAF :: (PP a, PP b) => a -> b -> PP_Doc
 jvCAF stats body = jvBody "new Apply0()" "void evalSet" [] empty (pp stats) (jvCall "setValue" [pp body] >#< ";")
@@ -140,9 +140,9 @@ SEM CModule
   | Mod         loc         .   jvBasename  =   jvNm @moduleNm
                 expr        .   jvBuiltin   =   let primCmpIntNm = mkHNm "primCmpInt"
                                                 in  jvBind "Function2" jvSelNm
-                                                        (jvLam jvSelNm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets (jvForceInt "off"))))
+                                                        (jvLam jvSelNm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< ppBrackets (jvForceInt "off"))))
                                                     >-< jvBind "Function2" jvSel1Nm
-                                                        (jvLam jvSel1Nm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< pp_brackets ("1+" >|< jvForceInt "off"))))
+                                                        (jvLam jvSel1Nm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< ppBrackets ("1+" >|< jvForceInt "off"))))
                                                     >-< jvBind "Function3" jvUpdNm
                                                         (jvLam jvUpdNm [mkHNm "tup",mkHNm "off",mkHNm "val"]
                                                             (   jvBind "Object[]" (mkHNm "_t") (jvForceCast "Object[]" "tup")
@@ -180,13 +180,13 @@ SEM CModule
 
 %%[8
 SEM CExpr
-  | Int         loc         .   jvSrc       =   "new Int" >|< pp_parens (pp @int)
-  | Char        loc         .   jvSrc       =   "new Char" >|< pp_parens (pp (show @char))
+  | Int         loc         .   jvSrc       =   "new Int" >|< ppParens (pp @int)
+  | Char        loc         .   jvSrc       =   "new Char" >|< ppParens (pp (show @char))
   | String      loc         .   jvSrc       =   pp (show @str)
   | Var         loc         .   jvSrc       =   jvNmPP @nm
   | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
   												in   case @func.mbTupApp of
-  												       Just (CTag _ l t _ _)  -> jvTupApp (("new Int" >|< pp_parens (pp t)) : as)
+  												       Just (CTag _ l t _ _)  -> jvTupApp (("new Int" >|< ppParens (pp t)) : as)
   												       Just CTagRec           -> jvTupApp (as)
   												       Nothing                -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
@@ -200,12 +200,12 @@ SEM CExpr
                                                     (    jvBind "Object[]" @jvCaseScrutinee (jvCast "Object[]" @expr.jvSrc)
                                                      >-< jvDeclare "Object" @jvCaseResult
                                                      >-< "switch"
-                                                     >|< pp_parens
+                                                     >|< ppParens
                                                             (if @alts.tagSz > 0
                                                              then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) (0::Int))
                                                              else ppCTagInt CTagRec
                                                             )
-                                                     >-< pp_braces
+                                                     >-< ppCurlys
                                                             (   @alts.jvSrc
                                                             >-< "default :"
                                                             >-< jvAssign @jvCaseResult @dflt.jvSrc
@@ -216,7 +216,7 @@ SEM CExpr
                                             =   mkHNm (show @expr.varNm ++ "_scrutinee")
                             .   jvCaseResult
                                             =   mkHNm (show @expr.varNm ++ "_result")
-  | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\_ _ t _ _ -> jvTupApp ["new Int" >|< pp_parens (pp t)]) @tag
+  | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\_ _ t _ _ -> jvTupApp ["new Int" >|< ppParens (pp t)]) @tag
   | TupDel      loc         .   jvSrc       =   empty
   | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
   | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
@@ -265,7 +265,7 @@ SEM CExpr
 
 %%[97
 SEM CExpr
-  | Integer     loc         .   jvSrc       =   "new Int" >|< pp_parens (pp (show @integer))
+  | Integer     loc         .   jvSrc       =   "new Int" >|< ppParens (pp (show @integer))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -11,7 +11,7 @@
 %%]
 
 -- for debug
-%%[8 hs import({%{EH}Base.Debug},UU.Pretty)
+%%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})

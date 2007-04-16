@@ -91,14 +91,14 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        loc         .   pp          =   "class" >#< pp_parens @context.pp >#< "=>" >#< @simpletype.pp
+        loc         .   pp          =   "class" >#< ppParens @context.pp >#< "=>" >#< @simpletype.pp
 %%[[15
                                         >#< "|" >#< @dependencies.pp
 %%]]
                                         >-< indent 2 @where.pp
     | Instance
         loc         .   pp          =   "instance" >|< ppInstNm @useimplicitly @maybeinstancename
-                                        >#< pp_parens @context.pp >#< "=>" >#< @name >#< ppSpaces @types.ppL
+                                        >#< ppParens @context.pp >#< "=>" >#< @name >#< ppSpaces @types.ppL
                                         >-< indent 2 @where.pp
     | InstanceUseImplicitly
         loc         .   pp          =   "instance" >#< @expression.pp >#< "<:" >#< @name >#< ppSpaces @types.ppL
@@ -138,7 +138,7 @@ SEM Kind
     | Constructor
         loc         .   pp          =   ppCon @name
     | Parenthesized
-        loc         .   pp          =   pp_parens @kind.pp
+        loc         .   pp          =   ppParens @kind.pp
     | Variable
         loc         .   pp          =   pp @name
     | Forall
@@ -161,7 +161,7 @@ SEM Type
     | Constructor
         loc         .   pp          =   ppCon @name
     | Parenthesized
-        loc         .   pp          =   pp_parens @type.pp
+        loc         .   pp          =   ppParens @type.pp
 %%]
 %%[2
     | Wildcard
@@ -282,7 +282,7 @@ SEM Expression
     | Constructor
         loc         .   pp          =   ppCon @name
     | Parenthesized
-        loc         .   pp          =   pp_parens @expression.pp
+        loc         .   pp          =   ppParens @expression.pp
     | NormalApplication
         loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
                                                   @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
@@ -293,7 +293,7 @@ SEM Expression
                                                   (Just l ,Nothing) -> l >#< @operator.pp
                                                   (Nothing,Just r ) ->       @operator.pp >#< r
                                                   (Nothing,Nothing) ->       @operator.pp
-                                        in  pp_parens e
+                                        in  ppParens e
     | Lambda
         loc         .   pp          =   "\\" >|< ppSpaces @patterns.ppL >#< "->" >#< @expression.pp
     | Let
@@ -323,12 +323,12 @@ SEM Expression
         loc         .   pp          =   ppBracketsCommas @expressions.ppL
     | Enum
         loc         .   pp          =   case (@from.pp,@then.ppMb,@to.ppMb) of
-                                          (fr,Just th,Just to) -> pp_brackets (fr >|< ","  >#< th >#< ".." >#< to)
-                                          (fr,Just th,Nothing) -> pp_brackets (fr >|< ","  >#< th >#< ".."       )
-                                          (fr,Nothing,Just to) -> pp_brackets (fr >#< ".." >#< to                )
-                                          (fr,Nothing,Nothing) -> pp_brackets (fr >#< ".."                       )
+                                          (fr,Just th,Just to) -> ppBrackets (fr >|< ","  >#< th >#< ".." >#< to)
+                                          (fr,Just th,Nothing) -> ppBrackets (fr >|< ","  >#< th >#< ".."       )
+                                          (fr,Nothing,Just to) -> ppBrackets (fr >#< ".." >#< to                )
+                                          (fr,Nothing,Nothing) -> ppBrackets (fr >#< ".."                       )
     | Comprehension
-        loc         .   pp          =   pp_brackets (@expression.pp >#< "|" >#< ppCommas' @qualifiers.ppL)
+        loc         .   pp          =   ppBrackets (@expression.pp >#< "|" >#< ppCommas' @qualifiers.ppL)
 %%]
 %%[7
     | RecordConstruction
@@ -453,7 +453,7 @@ SEM LeftHandSide
     | Infix
         loc         .   pp          =   @leftPattern.pp >#< @operator >#< @rightPattern.pp
     | Parenthesized
-        loc         .   pp          =   pp_parens @lefthandside.pp >#< ppSpaces @patterns.ppL
+        loc         .   pp          =   ppParens @lefthandside.pp >#< ppSpaces @patterns.ppL
 %%]
 
 %%[1
@@ -477,7 +477,7 @@ SEM Pattern
     | Constructor
         loc         .   pp          =   @name >#< ppSpaces @patterns.ppL
     | Parenthesized
-        loc         .   pp          =   pp_parens @pattern.pp
+        loc         .   pp          =   ppParens @pattern.pp
     | Tuple
         loc         .   pp          =   ppParensCommas' $ @patterns.ppL
     | As

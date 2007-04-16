@@ -8,7 +8,7 @@
 %%[1 hs import (System, IO, Control.Monad.State, qualified Data.Map as Map)
 %%]
 
-%%[1 hs import (System.Console.GetOpt, UU.Pretty, EH.Util.Utils( panicJust ))
+%%[1 hs import (System.Console.GetOpt, EH.Util.Pretty, EH.Util.Utils( panicJust ))
 %%]
 
 %%[1 hs import (EH.Util.ParseUtils, EH.Util.ParseErrPrettyPrint, EH.Util.CompileRun)

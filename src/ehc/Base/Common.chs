@@ -16,7 +16,7 @@
 %%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
 %%]
 
-%%[1 import(UU.Pretty, EH.Util.PPUtils,Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
+%%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
 %%[1 export(SemApp(..),mkRngProdOpt)
@@ -25,7 +25,7 @@
 %%[1 export(assocLElts,assocLKeys)
 %%]
 
-%%[1 export(ParNeed(..), ParNeedL, parNeedApp, ppParNeed)
+%%[1 export(ParNeed(..), ParNeedL, parNeedApp)
 %%]
 
 %%[1 export(Fixity(..))
@@ -160,6 +160,16 @@ ppHsnNonAlpha scanOpts
                          in  pp ('$':s)
 %%]
 
+%%[20 export(spHsnNonAlpha)
+spHsnNonAlpha :: ScanOpts -> HsName -> SP.SPDoc
+spHsnNonAlpha scanOpts
+  = p
+  where escapeeChars = hsnEscapeeChars scanOpts
+        p n = let name = show n
+                  s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
+              in  SP.sp ('$':s)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unique id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -235,6 +245,11 @@ instance PP UID where
 %%[8
 ppUID' :: UID -> PP_Doc
 ppUID' (UID ls) = ppCurlysCommas ls
+%%]
+
+%%[20 export(spUID')
+spUID' :: UID -> SP.SPDoc
+spUID' (UID ls) = SP.spCurlysCommas ls
 %%]
 
 %%[7
@@ -399,18 +414,38 @@ ppAppTop (conNm,con) args dflt
                                 else  dflt
 %%]
 
--- ppListSep to EH.Util
-ppListSep :: (PP s, PP c, PP o, PP a) => o -> c -> s -> [a] -> PP_Doc
-ppListSep o c s pps = o >|< hlist (intersperse (pp s) (map pp pps)) >|< c
+%%[20 export(spAppTop)
+spAppTop :: SP.SP arg => (HsName,arg) -> [arg] -> SP.SPDoc -> SP.SPDoc
+spAppTop (conNm,con) args dflt
+  =  if       hsnIsArrow conNm
+              || hsnIsPrArrow conNm
+                                then  SP.spListSep "" "" (" " SP.>|< con SP.>|< " ") args
+     else if  hsnIsProd  conNm  then  SP.spParensCommas args
+     else if  hsnIsList  conNm  then  SP.spBracketsCommas args
+     else if  hsnIsRec   conNm  then  SP.spListSep (hsnORec SP.>|< con) hsnCRec "," args
+     else if  hsnIsSum   conNm  then  SP.spListSep (hsnOSum SP.>|< con) hsnCSum "," args
+     else if  hsnIsRow   conNm  then  SP.spListSep (hsnORow SP.>|< con) hsnCRow "," args
+                                else  dflt
+%%]
 
 %%[1.PP.NeededByExpr
 ppCon :: HsName -> PP_Doc
 ppCon nm =  if    hsnIsProd nm
-            then  pp_parens (text (replicate (hsnProdArity nm - 1) ','))
+            then  ppParens (text (replicate (hsnProdArity nm - 1) ','))
             else  pp nm
 
 ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
+%%]
+
+%%[20 export(spCon,spCmt)
+spCon :: HsName -> SP.SPDoc
+spCon nm =  if    hsnIsProd nm
+            then  SP.spParens (text (replicate (hsnProdArity nm - 1) ','))
+            else  SP.sp nm
+
+spCmt :: SP.SPDoc -> SP.SPDoc
+spCmt = SP.spPacked "{-" "-}"
 %%]
 
 -- ppCommaList now in EH.Util lib
@@ -446,13 +481,22 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
      else (funNmPP,funPPL ++ [argPP])
 %%]
 
-%%[4
-%%]
-instance PP a => PP (Maybe a) where
-  pp m = maybe (pp "?") pp m
+%%[20 export(spFld,mkSPAppFun,mkExtAppSP)
+spFld :: String -> Maybe HsName -> HsName -> SP.SPDoc -> SP.SPDoc -> SP.SPDoc
+spFld sep positionalNm nm nmSP f
+  = case positionalNm of
+      Just pn | pn == nm -> f
+      _                  -> nmSP SP.>#< sep SP.>#< f
 
-instance PP Bool where
-  pp b = pp (show b)
+mkSPAppFun :: HsName -> SP.SPDoc -> SP.SPDoc
+mkSPAppFun c p = if c == hsnRowEmpty then SP.empty else p SP.>|< "|"
+
+mkExtAppSP :: (HsName,SP.SPDoc,[SP.SPDoc]) -> (HsName,SP.SPDoc,[SP.SPDoc],SP.SPDoc) -> (SP.SPDoc,[SP.SPDoc])
+mkExtAppSP (funNm,funNmSP,funSPL) (argNm,argNmSP,argSPL,argSP)
+  =  if hsnIsRec funNm || hsnIsSum funNm
+     then (mkSPAppFun argNm argNmSP,argSPL)
+     else (funNmSP,funSPL ++ [argSP])
+%%]
 
 %%[9
 instance (PP a, PP b) => PP (a,b) where
@@ -461,7 +505,7 @@ instance (PP a, PP b) => PP (a,b) where
 
 %%[8
 ppPair :: (PP a, PP b) => (a,b) -> PP_Doc
-ppPair (x,y) = pp_parens (pp x >|< "," >|< pp y)
+ppPair (x,y) = ppParens (pp x >|< "," >|< pp y)
 %%]
 
 %%[8
@@ -540,11 +584,20 @@ parNeedApp conNm
 %%]]
               | otherwise           =  (ParNeeded,repeat ParNeededHigh)
      in   pr
+%%]
 
+%%[1 export(ppParNeed)
 ppParNeed :: PP p => ParNeed -> ParNeed -> p -> PP_Doc
 ppParNeed locNeed globNeed p
   = par (pp p)
-  where par = if globNeed > locNeed then pp_parens else id
+  where par = if globNeed > locNeed then ppParens else id
+%%]
+
+%%[20 export(spParNeed)
+spParNeed :: SP.SP p => ParNeed -> ParNeed -> p -> SP.SPDoc
+spParNeed locNeed globNeed p
+  = par (SP.sp p)
+  where par = if globNeed > locNeed then SP.spParens else id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,6 +1,6 @@
 module EH.Util.Utils where
 
-import UU.Pretty
+import EH.Util.Pretty
 import Data.Char
 import Data.List
 import qualified Data.Set as Set

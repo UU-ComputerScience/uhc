@@ -25,7 +25,7 @@ Conversion from Pred to CHR.
 %%]
 
 -- debug
-%%[9 import(UU.Pretty,EH.Util.Utils)
+%%[9 import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[13 import({%{EH}Base.Builtin})

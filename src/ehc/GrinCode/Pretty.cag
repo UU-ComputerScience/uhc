@@ -10,10 +10,13 @@ Printing names depends on the printing context. ppGrNm factors this out, but for
 if .hi interface files ppGrExpr requires a parameterised variant which prints names as required for .hi files.
 20070310: this is now done via CfgPP
 
-%%[8 hs module {%{EH}GrinCode.Pretty} import(UU.Pretty,EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}GrinCode})
+%%[8 hs module {%{EH}GrinCode.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode})
 %%]
 
 %%[8 hs import({%{EH}Base.CfgPP})
+%%]
+
+%%[20 hs import(qualified EH.Util.SPDoc as SP)
 %%]
 
 %%[8.WRAPPER ag import({GrinCode/AbsSyn})
@@ -71,6 +74,11 @@ instance PP GrExpr where
 
 instance PPForHI GrExpr where
   ppForHI = ppGrExpr' CfgPP_HI
+%%]
+
+%%[20 hs
+instance SP.SP GrExpr where		-- !!!! dummy, for now
+  sp = SP.sp . pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +175,7 @@ SEM GrExpr
   | Throw       lhs         .   pp          =   "throw" >#< @lhs.ppGrNm @nm
   | Catch       lhs         .   pp          =   "try" >-<
                                                 indent 2 (ppCurlysSemisV [@body.pp]) >-<
-                                                "catch" >|< pp_parens (@lhs.ppGrNm @arg) >-<
+                                                "catch" >|< ppParens (@lhs.ppGrNm @arg) >-<
                                                 indent 2 (ppCurlysSemisV [@handler.pp])
 
 SEM GrAlt
@@ -181,7 +189,7 @@ SEM GrVal
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : @fldL.ppL)
   | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " (          @fldL.ppL)
 %%[[10
-  | NodeAdapt   lhs         .   pp          =   pp_parens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
+  | NodeAdapt   lhs         .   pp          =   ppParens (@lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
 SEM GrAdapt
   | Upd         lhs         .   pp          =   @off.pp >|< ":=" >|< @val.pp
@@ -194,7 +202,7 @@ SEM GrPatAlt
   | LitInt      lhs         .   pp          =   pp @int
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp : map @lhs.ppGrNm @fldL)
 %%[[10
-  | NodeSplit   lhs         .   pp          =   pp_parens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
+  | NodeSplit   lhs         .   pp          =   ppParens (@tag.pp >#< @lhs.ppGrNm @nm >|< "|" >|< (ppListSep "" "" "," @fldL.ppL))
 
 SEM GrSplit
   | Sel         lhs         .   pp          =   @lhs.ppGrNm @nm >|< "=" >|< @off.pp

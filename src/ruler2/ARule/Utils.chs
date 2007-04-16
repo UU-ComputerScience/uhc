@@ -14,7 +14,7 @@
 %%[1 hs export (exprFmtTeXSubst)
 %%]
 
-%%[1 hs import (UU.Pretty, Common, Opts, FmGam, Expr.Expr, Expr.LaTeX)
+%%[1 hs import (EH.Util.Pretty, Common, Opts, FmGam, Expr.Expr, Expr.LaTeX)
 %%]
 
 %%[1 hs import (ARule.ARule, ARule.PatternUniq, ARule.RwSubst, ARule.AVarRename)

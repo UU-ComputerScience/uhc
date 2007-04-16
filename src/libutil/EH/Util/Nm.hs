@@ -4,10 +4,9 @@ where
 import Data.Maybe
 import Data.Char
 import Data.List
-import UU.Pretty
+import EH.Util.Pretty
 import EH.Util.FPath(FPATH(mkFPath))
 import EH.Util.Utils
-import EH.Util.PPUtils
 
 -------------------------------------------------------------------------
 -- Names (for use in Shuffle, Ruler)

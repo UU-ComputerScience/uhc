@@ -33,10 +33,9 @@ import Control.Monad
 import Control.Monad.State
 import IO
 import qualified Data.Map as Map
-import UU.Pretty
+import EH.Util.Pretty
 import UU.DData.Scc as Scc
 import EH.Util.Utils( panicJust )
-import EH.Util.PPUtils
 import EH.Util.FPath
 
 

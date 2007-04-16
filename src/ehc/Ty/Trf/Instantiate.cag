@@ -16,7 +16,7 @@
 %%[4.tyInst -3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable})
 %%]
 
-%%[4 hs import({%{EH}Base.Debug},UU.Pretty)
+%%[4 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%[4 hs import(Data.List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)

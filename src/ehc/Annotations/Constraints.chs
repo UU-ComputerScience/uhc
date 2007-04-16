@@ -1,7 +1,7 @@
 %%[1 hs module {%{EH}Annotations.Constraints}
 %%]
 
-%%[7_2 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}Ty.AnnCommon}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), Data.Tree(Tree(..)), UU.Pretty, {%{EH}Ty.Pretty})
+%%[7_2 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}Ty.AnnCommon}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), Data.Tree(Tree(..)), EH.Util.Pretty, {%{EH}Ty.Pretty})
 %%]
 
 %%[7_2 import(Data.List(transpose, nub, nubBy, intersect, partition), Debug.Trace(trace), Data.Graph, qualified Data.Graph.Inductive as G, Control.Monad.State)

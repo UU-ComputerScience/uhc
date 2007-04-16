@@ -14,7 +14,7 @@
 %%]
 
 -- debugging
-%%[1 import(EH.Util.Utils, UU.Pretty)
+%%[1 import(EH.Util.Utils, EH.Util.Pretty)
 %%]
 
 %%[20 export(pFixity, pAGItfImport, HSParser')

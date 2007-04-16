@@ -9,7 +9,8 @@ LIB_EH_UTIL_QUAL				:= EH.Util
 LIB_EH_UTIL_QUAL_PREFIX			:= $(LIB_EH_UTIL_QUAL).
 LIB_EH_UTIL_PKG_NAME			:= $(subst .,-,$(LIB_EH_UTIL_QUAL))
 LIB_EH_UTIL_HS_PREFIX			:= $(SRC_LIBUTIL_PREFIX)$(subst .,$(PATH_SEP),$(LIB_EH_UTIL_QUAL_PREFIX))
-LIB_EH_UTIL_HS_SRC				:= $(wildcard $(LIB_EH_UTIL_HS_PREFIX)*.hs)
+LIB_EH_UTIL_HS_SRC				:= $(wildcard $(LIB_EH_UTIL_HS_PREFIX)*.hs) $(wildcard $(LIB_EH_UTIL_HS_PREFIX)*/*.hs)
+LIB_EH_UTIL_HS_MOD				:= $(subst $(PATH_SEP),.,$(patsubst $(LIB_EH_UTIL_HS_PREFIX)%.hs,%,$(LIB_EH_UTIL_HS_SRC)))
 LIB_EH_UTIL_INS_FLAG			:= $(INSABS_FLAG_PREFIX)$(LIB_EH_UTIL_PKG_NAME)
 
 # derived stuff
@@ -34,7 +35,7 @@ $(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 		, mtl \
 		,  \
 		, General purpose utilities for EH \
-		, $(addprefix $(LIB_EH_UTIL_QUAL_PREFIX),$(basename $(notdir $(LIB_EH_UTIL_HS_SRC)))) \
+		, $(patsubst %,$(LIB_EH_UTIL_QUAL_PREFIX)%,$(LIB_EH_UTIL_HS_MOD)) \
 	) > $@
 
 $(LIB_EH_UTIL_HS_DRV): $(BLD_LIBUTIL_PREFIX)%.hs: $(SRC_LIBUTIL_PREFIX)%.hs

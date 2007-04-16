@@ -53,7 +53,7 @@
 %%[9 import(EH.Util.Utils)
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,UU.Pretty,{%{EH}Core.Pretty},{%{EH}Pred},{%{EH}Core},{%{EH}Core.Subst})
+%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Pred},{%{EH}Core},{%{EH}Core.Subst})
 %%]
 
 %%[9 import({%{EH}Pred.CommonCHR})

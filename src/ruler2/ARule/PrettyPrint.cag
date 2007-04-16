@@ -8,7 +8,7 @@
 %%[1 hs export (ppARule, ppExpr, ppECGam)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, EH.Util.Utils, UU.Pretty, EH.Util.PPUtils, Common, LaTeXFmtUtils)
+%%[1 hs import (qualified Data.Map as Map, EH.Util.Utils, EH.Util.Pretty, Common, LaTeXFmtUtils)
 %%]
 
 %%[1 hs import (Expr.Expr, ARule.ARule, ECnstrGam, Config( cfgStrSel ))

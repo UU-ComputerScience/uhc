@@ -43,7 +43,7 @@
 %%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
-%%[1 hs import (EH.Util.Utils, EH.Util.PPUtils, UU.Pretty, qualified UU.DData.Scc as Scc, Common, Gam, FmGam, JdShpGam)
+%%[1 hs import (EH.Util.Utils, EH.Util.Pretty, qualified UU.DData.Scc as Scc, Common, Gam, FmGam, JdShpGam)
 %%]
 
 %%[1 hs import (Expr.Utils, Ty.Utils)

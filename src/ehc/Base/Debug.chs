@@ -7,7 +7,7 @@
 %%% Tracing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Debug} import(Debug.Trace,UU.Pretty) export(tr,trm,trPP)
+%%[1 module {%{EH}Base.Debug} import(Debug.Trace,EH.Util.Pretty) export(tr,trm,trPP)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

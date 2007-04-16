@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[3 module DemoUtils import(Data.List,UU.Pretty)
+%%[3 module DemoUtils import(Data.List,EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

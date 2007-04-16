@@ -7,7 +7,7 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), UU.Pretty, EH.Util.PPUtils, qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyC)
+%%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyC)
 %%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
@@ -83,26 +83,37 @@ SEM SilModule
                                 >-< comment ["Function definitions"]
                                 >-< if @loc.optOwn>=3
                                      then  @loc.silMain1
+
                                            >-< text ""
                                            >-< @functions.prettyC
                                            >-< @loc.silMain2
+
                                      else  @functions.protoC
                                            >-< text ""
                                            >-< @loc.silMain1
+
                                            >-< @loc.silMain2
+
                                            >-< text ""
                                            >-< @functions.prettyC
                                 >-< text ""
                 loc.silMain1 =  text "int silly_main()"
+
                                 >-< text "{"
                                 >-< ppWhen (@loc.optOwn>=4) (text "register GrWord* SP asm (\"%esp\");")
+
                                 -- >-< ppWhen (@loc.optOwn>=4) (text "register GrWord  auxPtr asm (\"%ecx\");")
+
                                 >-< indent 4 (    callSillyFunctionFromC @loc.optOwn 1 "initialize"
+
                                              >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_main"
                                              >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
                                              >-<  "return 0;"
+
                                              )
+
                 loc.silMain2 =  text "}"
+
 
 SEM Function
   | Function    lhs.prettyC   = methodHeader @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)

@@ -17,7 +17,7 @@ Assumptions (to be documented further)
 %%[9 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty)
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})

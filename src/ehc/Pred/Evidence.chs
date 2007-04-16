@@ -13,7 +13,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.PPUtils,EH.Util.Utils)
+%%[9 import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

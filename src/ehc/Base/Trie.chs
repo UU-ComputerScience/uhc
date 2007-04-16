@@ -28,7 +28,7 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[9 import(qualified EH.Util.FastSeq as Seq,qualified Data.List as List)
 %%]
 
-%%[9 import(UU.Pretty hiding (empty),EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty hiding (empty))
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})

@@ -5,7 +5,7 @@
 %%[1 hs module {%{EH}Annotations.ConstraintSolver}
 %%]
 
-%%[7_2 import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.AnnCommon}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), Data.Tree(Tree(..)), UU.Pretty, {%{EH}Ty.Pretty})
+%%[7_2 import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.AnnCommon}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), Data.Tree(Tree(..)), EH.Util.Pretty, {%{EH}Ty.Pretty})
 %%]
 
 %%[7_2 import({%{EH}Annotations.Constraints}, {%{EH}Ty.Expand}, {%{EH}Ty.AnnInferKind}, {%{EH}EH.ConstrInferTy}, {%{EH}Gam})

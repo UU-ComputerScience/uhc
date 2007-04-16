@@ -10,7 +10,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import(Data.List(nub, maximumBy, partition),Data.Maybe)
 %%]
 
-%%[9 import(UU.Pretty,EH.Util.AGraph,EH.Util.Utils,EH.Util.PPUtils)
+%%[9 import(EH.Util.Pretty,EH.Util.AGraph,EH.Util.Utils)
 %%]
 
 %%[9 export(Heuristic,SHeuristic)

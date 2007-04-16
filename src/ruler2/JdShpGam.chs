@@ -8,7 +8,7 @@
 %%[1 hs export (JdShpInfo(..), JdShpGam, jdshpgUnionShadow)
 %%]
 
-%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, UU.Pretty, EH.Util.PPUtils, Common, Gam, FmGam)
+%%[1 hs import (qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Pretty, Common, Gam, FmGam)
 %%]
 
 -------------------------------------------------------------------------

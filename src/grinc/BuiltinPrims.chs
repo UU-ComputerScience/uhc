@@ -12,7 +12,7 @@ Ideally, these tables should be merged.
 %%[8 import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.Builtin},{%{GRIN}GrinByteCode})
 %%]
 
-%%[8 import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, UU.Pretty)
+%%[8 import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty)
 %%]
 
 %%[8 export(Backend(..), Primitive(..), lookupPrim)

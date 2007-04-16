@@ -11,7 +11,7 @@
 %%[1 hs import (Data.Set)
 %%]
 
-%%[1 hs import (UU.Pretty)
+%%[1 hs import (EH.Util.Pretty)
 %%]
 
 %%[1 hs
