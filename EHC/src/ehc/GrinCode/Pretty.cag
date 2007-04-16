@@ -16,9 +16,6 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 %%[8 hs import({%{EH}Base.CfgPP})
 %%]
 
-%%[20 hs import(qualified EH.Util.SPDoc as SP)
-%%]
-
 %%[8.WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
@@ -74,11 +71,6 @@ instance PP GrExpr where
 
 instance PPForHI GrExpr where
   ppForHI = ppGrExpr' CfgPP_HI
-%%]
-
-%%[20 hs
-instance SP.SP GrExpr where		-- !!!! dummy, for now
-  sp = SP.sp . pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -14,7 +14,7 @@ import System.Console.GetOpt
 import EH.Util.ParseUtils
 import EH.Util.DependencyGraph
 import EH.Util.FPath
-import UU.Pretty
+import EH.Util.Pretty
 import Common
 import MainAG
 import ChunkParser

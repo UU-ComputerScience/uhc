@@ -3,8 +3,9 @@
 -------------------------------------------------------------------------
 
 module EH.Util.Pretty
-  ( module UU.Pretty
+  ( -- module UU.Pretty
     -- module EH.Util.Chitil.Pretty
+    module EH.Util.PrettySimple
   
   , PP_DocL
   
@@ -35,8 +36,9 @@ module EH.Util.Pretty
   )
   where
 
-import UU.Pretty
+-- import UU.Pretty
 -- import EH.Util.Chitil.Pretty
+import EH.Util.PrettySimple
 import IO
 import Data.List
 
@@ -203,8 +205,17 @@ instance PP Bool where
 -- PP printing to file
 -------------------------------------------------------------------------
 
+hPutLn :: Handle -> Int -> PP_Doc -> IO ()
+{-
+hPutLn h w pp
+  = do hPut h pp w
+       hPutStrLn h ""
+-}
+hPutLn h w pp
+  = hPutStrLn h (disp pp w "")
+
 hPutWidthPPLn :: Handle -> Int -> PP_Doc -> IO ()
-hPutWidthPPLn h w pp = hPutStrLn h (disp pp w "")
+hPutWidthPPLn h w pp = hPutLn h w pp
 
 putWidthPPLn :: Int -> PP_Doc -> IO ()
 putWidthPPLn = hPutWidthPPLn stdout
@@ -217,8 +228,8 @@ putPPLn = hPutPPLn stdout
 
 hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid
-  =  do  {  hPutStrLn h (disp pp wid "")
-         }
+  = hPutLn h wid pp
+    
 
 putPPFile :: String -> PP_Doc -> Int -> IO ()
 putPPFile fn pp wid

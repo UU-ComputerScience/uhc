@@ -133,9 +133,6 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
-%%[20 import(qualified EH.Util.SPDoc as SP)
-%%]
-
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -158,16 +155,6 @@ ppHsnNonAlpha scanOpts
                    else -} 
                         let s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
                          in  pp ('$':s)
-%%]
-
-%%[20 export(spHsnNonAlpha)
-spHsnNonAlpha :: ScanOpts -> HsName -> SP.SPDoc
-spHsnNonAlpha scanOpts
-  = p
-  where escapeeChars = hsnEscapeeChars scanOpts
-        p n = let name = show n
-                  s = foldr (\c r -> if c `Set.member` escapeeChars then '$':c:r else c:r) [] name
-              in  SP.sp ('$':s)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,11 +232,6 @@ instance PP UID where
 %%[8
 ppUID' :: UID -> PP_Doc
 ppUID' (UID ls) = ppCurlysCommas ls
-%%]
-
-%%[20 export(spUID')
-spUID' :: UID -> SP.SPDoc
-spUID' (UID ls) = SP.spCurlysCommas ls
 %%]
 
 %%[7
@@ -414,20 +396,6 @@ ppAppTop (conNm,con) args dflt
                                 else  dflt
 %%]
 
-%%[20 export(spAppTop)
-spAppTop :: SP.SP arg => (HsName,arg) -> [arg] -> SP.SPDoc -> SP.SPDoc
-spAppTop (conNm,con) args dflt
-  =  if       hsnIsArrow conNm
-              || hsnIsPrArrow conNm
-                                then  SP.spListSep "" "" (" " SP.>|< con SP.>|< " ") args
-     else if  hsnIsProd  conNm  then  SP.spParensCommas args
-     else if  hsnIsList  conNm  then  SP.spBracketsCommas args
-     else if  hsnIsRec   conNm  then  SP.spListSep (hsnORec SP.>|< con) hsnCRec "," args
-     else if  hsnIsSum   conNm  then  SP.spListSep (hsnOSum SP.>|< con) hsnCSum "," args
-     else if  hsnIsRow   conNm  then  SP.spListSep (hsnORow SP.>|< con) hsnCRow "," args
-                                else  dflt
-%%]
-
 %%[1.PP.NeededByExpr
 ppCon :: HsName -> PP_Doc
 ppCon nm =  if    hsnIsProd nm
@@ -436,16 +404,6 @@ ppCon nm =  if    hsnIsProd nm
 
 ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
-%%]
-
-%%[20 export(spCon,spCmt)
-spCon :: HsName -> SP.SPDoc
-spCon nm =  if    hsnIsProd nm
-            then  SP.spParens (text (replicate (hsnProdArity nm - 1) ','))
-            else  SP.sp nm
-
-spCmt :: SP.SPDoc -> SP.SPDoc
-spCmt = SP.spPacked "{-" "-}"
 %%]
 
 -- ppCommaList now in EH.Util lib
@@ -479,23 +437,6 @@ mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
   =  if hsnIsRec funNm || hsnIsSum funNm
      then (mkPPAppFun argNm argNmPP,argPPL)
      else (funNmPP,funPPL ++ [argPP])
-%%]
-
-%%[20 export(spFld,mkSPAppFun,mkExtAppSP)
-spFld :: String -> Maybe HsName -> HsName -> SP.SPDoc -> SP.SPDoc -> SP.SPDoc
-spFld sep positionalNm nm nmSP f
-  = case positionalNm of
-      Just pn | pn == nm -> f
-      _                  -> nmSP SP.>#< sep SP.>#< f
-
-mkSPAppFun :: HsName -> SP.SPDoc -> SP.SPDoc
-mkSPAppFun c p = if c == hsnRowEmpty then SP.empty else p SP.>|< "|"
-
-mkExtAppSP :: (HsName,SP.SPDoc,[SP.SPDoc]) -> (HsName,SP.SPDoc,[SP.SPDoc],SP.SPDoc) -> (SP.SPDoc,[SP.SPDoc])
-mkExtAppSP (funNm,funNmSP,funSPL) (argNm,argNmSP,argSPL,argSP)
-  =  if hsnIsRec funNm || hsnIsSum funNm
-     then (mkSPAppFun argNm argNmSP,argSPL)
-     else (funNmSP,funSPL ++ [argSP])
 %%]
 
 %%[9
@@ -591,13 +532,6 @@ ppParNeed :: PP p => ParNeed -> ParNeed -> p -> PP_Doc
 ppParNeed locNeed globNeed p
   = par (pp p)
   where par = if globNeed > locNeed then ppParens else id
-%%]
-
-%%[20 export(spParNeed)
-spParNeed :: SP.SP p => ParNeed -> ParNeed -> p -> SP.SPDoc
-spParNeed locNeed globNeed p
-  = par (SP.sp p)
-  where par = if globNeed > locNeed then SP.spParens else id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1108,19 +1042,6 @@ data Backend
   = BackendGrinByteCode
   | BackendSilly
   deriving (Eq, Ord)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20
-instance SP.SP UID where
-  sp = SP.sp . pp
-
-instance SP.SP CTag where
-  sp = SP.sp . pp
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

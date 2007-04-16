@@ -23,9 +23,6 @@
 %%[10 export(hsnConcat)
 %%]
 
-%%[20 import(qualified EH.Util.SPDoc as SP)
-%%]
-
 %%[20 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
 %%]
 
@@ -387,19 +384,6 @@ type HsNameMp = Map.Map HsName HsName
 
 hsnRepl :: HsNameMp -> HsName -> HsName
 hsnRepl m n = Map.findWithDefault n n m
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20
-instance SP.SP HsName where
-  sp = SP.sp . show
-
-instance SP.SP IdOccKind where
-  sp = SP.sp . show
-
 %%]
 
 
