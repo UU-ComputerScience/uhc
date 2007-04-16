@@ -74,7 +74,9 @@ hsnIsArrow      hsn                 =   hsn == hsnArrow
 hsnIsProd       (HNm s)             =   case hsnHNmFldToString s of
                                           (',':_) -> True
                                           _       -> False
+%%[[7
 hsnIsProd       _                   =   False
+%%]]
 
 hsnProdArity    (HNm s)             =   case hsnHNmFldToString s of
                                           (_:ar) -> read ar

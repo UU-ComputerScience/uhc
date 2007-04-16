@@ -28,6 +28,8 @@ module EH.Util.Chitil.FPretty
 
 import qualified EH.Util.Chitil.Dequeue as Dequeue
 
+-- import Debug.Trace
+
 infixr 6 <>,<+>
 infixr 5 <$>,<$$>,</>,<//>
 

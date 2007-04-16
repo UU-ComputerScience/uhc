@@ -14,9 +14,6 @@
 %%[8 import({%{EH}Base.CfgPP})
 %%]
 
-%%[20 import(qualified EH.Util.SPDoc as SP)
-%%]
-
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -182,11 +179,3 @@ instance PPForHI IdOcc where
   ppForHI = ppIdOcc CfgPP_HI
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20
-instance SP.SP IdOcc where
-  sp o = SP.spCurlysCommasBlock [SP.sp (ioccNm o),SP.sp (ioccKind o)]
-%%]

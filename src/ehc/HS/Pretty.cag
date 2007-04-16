@@ -316,7 +316,7 @@ SEM Expression
 %%]
 %%[5
     | If
-        loc         .   pp          =   pp_ite "if" "then" "else" "" @guardExpression.pp @thenExpression.pp @elseExpression.pp
+        loc         .   pp          =   "if" >#< @guardExpression.pp >-< "then" >#< @thenExpression.pp >-< "else" >#< @elseExpression.pp
     | Case
         loc         .   pp          =   "case" >#< @expression.pp >#< "of" >-< indent 2 @alternatives.pp
     | List

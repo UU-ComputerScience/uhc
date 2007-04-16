@@ -7,7 +7,7 @@ module Common
   , module Data.Char
   , module EH.Util.Nm
   , module EH.Util.FPath
-  , module EH.Util.PPUtils
+  , module EH.Util.Pretty
   , Err(..), ErrM, ppErr, showUndef
   , openURI
   , Opts(..), defaultOpts, optsHasNoVerOrder
@@ -32,10 +32,9 @@ import Network.URI
 import IO
 import System.Directory
 import System.Console.GetOpt
-import UU.Pretty
+import EH.Util.Pretty
 import EH.Util.FPath
 import EH.Util.Utils
-import EH.Util.PPUtils
 import EH.Util.Nm
 
 -------------------------------------------------------------------------

@@ -71,8 +71,8 @@ ppDef' n v   = ppOr (n >-< indent 1 v) (n >#< v)
 -- ppDef' n v   = ppDef n v
 
 ppOr :: (PP a, PP b) => a -> b -> PP_Doc
-ppOr a b   = join (a >//< b)
--- ppOr a b   = pp a
+-- ppOr a b   = join (a >//< b)
+ppOr a b   = pp a
 
 ppOr' :: (PP a, PP b) => a -> b -> PP_Doc
 -- ppOr' a b   = ppOr a b
