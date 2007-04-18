@@ -235,7 +235,8 @@ SEM Expr
 %%[5.Lam
 SEM Expr
   | Lam         loc         .   lamKnTyCnstr        =   @lhs.tyCnstr
-                            .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy (@lamKnTyCnstr |=> @lhs.knTy)
+                            .   knTySubs            =   @lamKnTyCnstr |=> @lhs.knTy
+                            .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @funTy @knTySubs
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
 %%]
 
@@ -254,7 +255,7 @@ SEM Expr
                             .   imprTy              =   [@imprBodyTyCnstr |=> @arg.ty] `mkArrow` (@imprTyCnstr_elim_ |=> @body.imprTy)
                 lhs         .   imprTyCnstr         =   @imprBodyTyCnstr
   | Lam         loc         .   lamKnTyCnstr        :=  @imprTyCnstr_elim_ |=> @arg.tyCnstr |=> @lhs.tyCnstr
-                            .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) (@lamKnTyCnstr |=> @lhs.knTy)
+                            .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 (@lamKnTyCnstr |=> @funTy) @knTySubs
                                                         in   fo {foTy = foCnstr fo |=> @funTy}
                 body        .   tyCnstr             =   foCnstr @fo_fitF_ |=> @lamKnTyCnstr
 %%]
@@ -305,7 +306,8 @@ SEM Expr
 SEM Expr
   | AppTop      loc         .   resTy               =   let  [i,r] = mkNewUIDL 2 @lUniq
                                                         in   [mkImplsVar i] `mkArrow` mkTyVar r
-                            .   foKnRes             =   let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @resTy (@lhs.tyCnstr |=> @lhs.knTy)
+                            .   knTySubs            =   @lhs.tyCnstr |=> @lhs.knTy
+                            .   foKnRes             =   let  fo = fitsIn @lhs.fiOpts @fe @lUniq2 @resTy @knTySubs
                                                         in   fo {foTy = foCnstr fo |=> @resTy}
                             .   (imTy,knTy)         :=  tyArrowArgRes (foTy @foKnRes)
                 expr        .   tyCnstr             =   foCnstr @foKnRes |=> @lhs.tyCnstr

@@ -64,7 +64,7 @@ SEM Decl
                                                             -> ( gathPredLToProveCnstrMp $ foCnstr foDt |=> concat altsPrOcc
                                                                , altsPrOcc
                                                                )
-                                                            where ([dataTy],dataAltTy) = tyArrowArgsRes $ tgiDataTy @derivDataTGI
+                                                            where ([dataTy],dataAltTy) = tyArrowArgsRes $ dgiDataTy @derivDataDGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc
                                                                        = [ [ mkPredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId basePrfCtxtId u2) @predScope

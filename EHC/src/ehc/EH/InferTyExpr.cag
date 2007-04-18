@@ -30,12 +30,15 @@ SEM TyExpr
 
 -- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
 %%[5.tvGathFlow hs
-tvGathFlow :: TyGam -> TyGam -> TyGam -> (TyGam,TyGam)
-tvGathFlow newG lhsG insideG
-  = (insideG',lhsG')
-  where  insideG'  = gamPushNew (gamPushGam newG lhsG)
-         (l,g)     = gamPop insideG
+
+tvGathFlowOut :: TyGam -> TyGam -> TyGam
+tvGathFlowOut lhsG insideG
+  = lhsG'
+  where  (l,g)     = gamPop insideG
          lhsG'     = gamAddGam l lhsG
+
+tvGathFlowIn :: TyGam -> TyGam -> TyGam
+tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarGather
@@ -61,7 +64,8 @@ SEM TyExpr
 SEM TyExpr
   | Quant       loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,TyGamInfo t)
-                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamSingleton` @tgi_) @lhs.tyGam @tyExpr.tyGam
+                tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
 %%]
                 tyExpr      .   tyGam               =   gamPushNew (gamPushGam (@tyVar `gamSingleton` @tgi_) @lhs.tyGam)
                 lhs         .   tyGam               =   let  (l,g) = gamPop @tyExpr.tyGam
@@ -83,7 +87,8 @@ SEM TyVar
 SEM PrExpr
   | Forall      loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
-                (prExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamSingleton` @tgi_) @lhs.tyGam @prExpr.tyGam
+                prExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @prExpr.tyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,7 +203,8 @@ SEM RowTyExpr
 SEM TyExpr
   | Lam         loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t t)
-                (tyExpr.tyGam,lhs.tyGam)            =   tvGathFlow (@tyVar `gamSingleton` @tgi_) @lhs.tyGam @tyExpr.tyGam
+                tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
                 loc         .   ki                  =   [@tyExpr.kiCnstr |=> tgiKi @tgi_] `mkArrow` @tyExpr.ki
 %%]
 
@@ -361,8 +367,8 @@ SEM Decl
                                                                 (@tyExpr.ki)
                                                                 (@tyExpr.kiCnstr |=> (tgiKi @typeTgi))
                 lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
-                            .   tyGam               =   @lhs.tyGam
 %%]
+                            .   tyGam               =   @lhs.tyGam
 
 
 SEM Decl

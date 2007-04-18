@@ -10,6 +10,12 @@
 WRAPPER GrAGItf
 %%]
 
+Should be checked later:
+
+%%[8
+PRAGMA nocycle
+%%]
+
 %%[8 hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
 lowerGrin :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)

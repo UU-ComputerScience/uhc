@@ -72,10 +72,20 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   predScope           =   @lhs.predScope
+%%]
 
+This seems to influence uuagc cycle check:
+- when dependent on @imSubsTy, cycles are (correctly) reported
+- when like below, infinite loop
+- when commented out, i.e. replaced by False, less infinite loop, takes approx. 1 min
+
+%%[9
 SEM Expr
-  | Lam AppTop  loc         .   implsIsEmpty        =   implsIsEmpty $ tyImpls @imSubsTy
+  | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @knTySubs
+%%]
+  | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @knTySubs
 
+%%[9
 SEM Decl
   | Class Instance
                 decls       .   predSameScopeCounter=   0

@@ -13,6 +13,12 @@ TODO: drop global variables
 WRAPPER GrAGItf
 %%]
 
+Should be checked later:
+
+%%[8
+PRAGMA nocycle novisit
+%%]
+
 %%[8 hs module {%{GRIN}GrinCode.Trf.DropUnusedExpr} import(qualified Data.Set as Set)
 %%]
 

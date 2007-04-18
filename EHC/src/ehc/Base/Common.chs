@@ -1057,3 +1057,12 @@ instance ForceEval UID where
   forceEval x@(UID l) = forceEval l `seq` x
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fake AG dependency: first param is not used, only introduces an AG dependency
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(agFakeDependOn)
+agFakeDependOn :: a -> b -> b
+agFakeDependOn _ x = x
+%%]
+

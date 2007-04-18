@@ -119,6 +119,7 @@ SEM CPatBind
 
 SEM CPat
   | Var Con     loc         .   nm          =   @pnm
+                loc         .   nm          :   HsName
   | Var         lhs         .   nmL         =   [@nm]
   | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
 

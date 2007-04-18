@@ -22,7 +22,12 @@ tyPrLToSupNmL = zipWith (\i p -> hsnSuffix (tyPredNm p) (show i)) [1..]
 
 %%[9
 SEM Decl
-  | Class       tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
+  | Class       loc             .   pigi1           =   let  k =  mkNewTyVar @lUniq
+                                                             n =  maybe (uidHNm @lUniq) id @mbDefaultInstNm
+                                                        in   PrIntroGamInfo Ty_Any k Ty_Any n
+                lhs             .   patPrIntroGam1  =   gamAdd @clsNm @pigi1 @lhs.patPrIntroGam1
+                tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
+                                .   prIntroGam      =   @lhs.patPrIntroGam2
                 loc             .   (ctxtPrTyL,hdPrTy)
                                                     =   tyArrowArgsRes @tyPrExpr.ty
                                 .   clsNm           =   tyPredMatchNm @hdPrTy
@@ -33,19 +38,18 @@ SEM Decl
                                 .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigDictGam)
                                 .   clsAllFldL      =   @clsFldL ++ zip @supClsNmL (repeat Ty_Any)
                                 .   clsTyRec        =   mkTyRec @clsAllFldL
-                                .   dataDictNm      =   hsnClass2Dict @clsNm -- only used when `not ehcCfgClassViaRec'
-                                .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL) -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictNm      =   hsnClass2Dict @clsNm                                -- only used when `not ehcCfgClassViaRec'
+                                .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL)        -- only used when `not ehcCfgClassViaRec'
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   pigi            =   let  k =  mkNewTyVar @lUniq
-                                                             n =  maybe (uidHNm @lUniq) id @mbDefaultInstNm
-                                                        in   PrIntroGamInfo (tyQuantifyClosed ([@hdPrTy] `mkArrow` @clsTyRec)) k (tyQuantifyClosed @tyPrExpr.ty) n
+                                .   pigi2           =   @pigi1 { pigiPrToEvidTy = tyQuantifyClosed $ [@hdPrTy] `mkArrow` @clsTyRec
+                                                               , pigiRuleTy     = tyQuantifyClosed @tyPrExpr.ty
+                                                               }
                 lhs             .   patTyGam        =   @lhs.patTyGam
-                                .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
-                                .   patPrIntroGam   =   gamAdd @clsNm @pigi @lhs.patPrIntroGam
+                                .   patPrIntroGam2  =   gamAdd @clsNm @pigi2 @lhs.patPrIntroGam2
                                 .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
                                                         then @lhs.gathDataGam
-                                                        else let dgi = mkDGI @dataDictNm [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
+                                                        else let dgi = mkDGI @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
                                                              in  gamAdd @dataDictNm dgi @lhs.gathDataGam
 %%]
 
@@ -79,14 +83,16 @@ SEM Decl
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
 %%][95
-                                .   (ctxtPrTyFixL,hdPrTyFix,derivHdPrTyCon,derivHdDataTy,derivDataTGI,cxSplitErrs)
+                                .   (ctxtPrTyFixL,hdPrTyFix,derivHdPrTyCon,derivHdDataTy,derivDataTGI,derivDataDGI,cxSplitErrs)
                                                     =   case @instVariant of
                                                           InstDeriving
-                                                            -> (cx ++ cxDt, hd, predTyCon, dataTy, tgi, errs1++errs2)
+                                                            -> (cx ++ cxDt, hd, predTyCon, dataTy, tgi, dgi, errs1++errs2++errs3)
                                                             where (cx,hd@(Ty_Pred (Pred_Class predTy))) = tyArrowArgsRes @prTyFix       -- encoding of pred
                                                                   (predTyCon,[dataTy]) = tyAppFunArgs predTy                            -- data ty for which we derive (only 1)
                                                                   (dataTyCon,dataTyArgs) = tyAppFunArgs dataTy                          -- extract tycon + args
-                                                                  (tgi,errs1) = tyGamLookupErr (tyConNm dataTyCon) @lhs.tyGam           -- lookup for kind signature
+                                                                  tyNm = tyConNm dataTyCon
+                                                                  (tgi,errs1) = tyGamLookupErr   tyNm @lhs.tyGam                        -- lookup for kind signature
+                                                                  (dgi,errs2) = dataGamLookupErr tyNm @lhs.dataGam                      -- lookup for structure info
                                                                   ki2pr ki uniq tv                                                      -- make pred from kind and tvar
                                                                     = mk r tv
                                                                     where (a,r) = tyArrowArgsRes ki
@@ -95,14 +101,14 @@ SEM Decl
                                                                                 Ty_Con n | n == hsnStar
                                                                                   -> (mkTyPr $ Pred_Class $ predTyCon `mk1App` tv,uniq,[])
                                                                                 _ -> (Ty_Any,uniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" (tgiKi tgi)])
-                                                                  (cxDt,_,errs2)                                                        -- for each type arg a context pred is made
+                                                                  (cxDt,_,errs3)                                                        -- for each type arg a context pred is made
                                                                     = foldr (\(k,t) (cx,u,e)
                                                                               -> let (cx',u',e') = ki2pr k u t
                                                                                  in  (cx' : cx, u', e' ++ e)
                                                                             )
                                                                             ([],@lUniq,[])
                                                                             (zip (tyArrowArgs $ tgiKi tgi) dataTyArgs)
-                                                          _ -> (cx,hd,Ty_Any,Ty_Any,emtpyTGI,[])
+                                                          _ -> (cx,hd,Ty_Any,Ty_Any,emtpyTGI,emptyDGI,[])
                                                             where (cx,hd) = tyArrowArgsRes @prTyFix
 %%]]
                                 .   instClsNm       =   tyPredMatchNm @hdPrTyFix
@@ -126,7 +132,6 @@ SEM Decl
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo $ @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
-                                .   tyGam           =   @lhs.tyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
                                 .   patValGam       =   @lhs.patValGam
   | InstanceIntro
@@ -135,6 +140,7 @@ SEM Decl
                 loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.prIntroGam
                 expr            .   knTy            =   foTy @foPr
 %%]
+                                .   tyGam           =   @lhs.tyGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Deriving info: which class and which field, with info for codegen. A bit hackerish...

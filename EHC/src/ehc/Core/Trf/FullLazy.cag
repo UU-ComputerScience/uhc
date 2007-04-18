@@ -17,6 +17,42 @@
 WRAPPER CodeAGItf
 %%]
 
+We have cycles, but they are there by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute levMp
+            and synthesized attribute levOfMp of nonterminal CBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           CExpr.Let, inherited attribute binds.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 9, column 35))
+           CBindL.Cons, inherited attribute lhs.levMp
+           CBindL.Cons, inherited attribute hd.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CBind.Bind, inherited attribute lhs.levMp
+           CBind.Bind, inherited attribute expr.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.App, inherited attribute lhs.levMp
+           CExpr.App, inherited attribute arg.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.Case, inherited attribute lhs.levMp
+           CExpr.Case, inherited attribute dflt.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.Lam, inherited attribute lhs.levMp
+           CExpr.Lam, local attribute levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 45, column 33))
+           CExpr.Lam, synthesized attribute lhs.levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.Case, synthesized attribute dflt.levOf
+           CExpr.Case, local attribute levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 41, column 33))
+           CExpr.Case, synthesized attribute lhs.levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.App, synthesized attribute arg.levOf
+           CExpr.App, local attribute levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 40, column 33))
+           CExpr.App, synthesized attribute lhs.levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CBind.Bind, synthesized attribute expr.levOf
+           CBind.Bind, synthesized attribute lhs.levOfMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 54, column 33))
+           CBindL.Cons, synthesized attribute hd.levOfMp
+           CBindL.Cons, synthesized attribute lhs.levOfMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 51, column 20))
+           CExpr.Let, synthesized attribute binds.levOfMp
+           CExpr.Let, inherited attribute binds.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 9, column 35))
+
+%%[8
+PRAGMA nocycle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

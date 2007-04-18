@@ -51,6 +51,40 @@ grinMod2ByteCodeMod opts allImpNmL impNmOffMpMp expNmOffMp gmod
 WRAPPER GrAGItf
 %%]
 
+There is a cyclic dependency:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute
+            stkDepth and synthesized attribute i of nonterminal GrAltL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           GrExpr.Case, inherited attribute altL.stkDepth ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 158, column 33))
+           GrAltL.Cons, inherited attribute lhs.stkDepth
+           GrAltL.Cons, inherited attribute hd.stkDepth ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 147, column 20))
+           GrAlt.Alt, inherited attribute lhs.stkDepth
+           GrAlt.Alt, local attribute stkDepth ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 166, column 33))
+           GrAlt.Alt, inherited attribute expr.stkDepth ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 147, column 20))
+           GrExpr.App, inherited attribute lhs.stkDepth
+           GrExpr.App, local attribute retIns ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 442, column 33))
+           GrExpr.App, synthesized attribute lhs.i ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 483, column 33))
+           GrAlt.Alt, synthesized attribute expr.i
+           GrAlt.Alt, synthesized attribute lhs.i ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 487, column 33))
+           GrAltL.Cons, synthesized attribute hd.i
+           GrAltL.Cons, synthesized attribute lhs.i ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 476, column 30))
+           GrExpr.Case, synthesized attribute altL.i
+           GrExpr.Case, local attribute scrutineeStkInc ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 380, column 61))
+           GrExpr.Case, inherited attribute altL.stkDepth ("build/8/lib-grinc/GRIN8/GrinCode/ToGrinByteCode.ag"(line 158, column 33))
+
+but tearing apart the culprit definition hides the connection between these:
+
+  | Case        loc         .   (valIns,valStkInc,retIsDone,scrutineeStkInc)
+
+perhaps later...
+
+%%[8
+PRAGMA nocycle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

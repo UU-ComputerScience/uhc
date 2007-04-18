@@ -46,7 +46,9 @@ infixr 2 >-<
 l >|< r = pp l <> pp r
 
 (>-<) :: (PP a, PP b) => a -> b -> PP_Doc
-l >-< r = pp l <$> pp r	-- pp l <$$> pp r
+l >-< r = align (group (pp l) <> hardbreak <> group (pp r))
+-- l >-< r = pp l <$> pp r
+-- pp l <$$> pp r
 
 (>#<) :: (PP a, PP b) => a -> b -> PP_Doc
 l >#< r  =  l >|< " " >|< r

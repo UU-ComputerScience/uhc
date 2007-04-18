@@ -905,7 +905,7 @@ predLFlatten
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Destruction for implicits
+%%% Deconstruction for implicits
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIds)
@@ -954,6 +954,15 @@ implsTailVar _                = panic "implsTailVar"
 implsIsEmpty :: Impls -> Bool
 implsIsEmpty (Impls_Cons _ _ _ _ _) = False
 implsIsEmpty _                      = True
+%%]
+
+%%[9 hs export(tyIsPredicated)
+tyIsPredicated :: Ty -> Bool
+tyIsPredicated (Ty_Impls i) = not $ implsIsEmpty i
+tyIsPredicated t            = isPr a
+                            where a = tyArrowArgs t
+                                  isPr (Ty_Pred p:_) = True
+                                  isPr _             = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

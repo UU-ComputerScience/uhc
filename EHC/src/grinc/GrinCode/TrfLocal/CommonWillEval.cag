@@ -29,12 +29,12 @@ SEM GrAlt
 SEM GrGlobal
   | Global      loc         .   willEval        =   False
 
-SEM GrBind
-  | Bind        expr        .   willEval        =   False
-
 SEM GrValL
   | Cons        hd          .   willEval        =   False
 %%]
+SEM GrBind
+  | Bind        expr        .   willEval        =   False
+
 
 %%[10
 SEM GrAdapt

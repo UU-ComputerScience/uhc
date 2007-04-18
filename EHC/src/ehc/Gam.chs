@@ -563,7 +563,7 @@ data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
 %%]
 
 %%[6.TyGamInfo -1.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
+data TyGamInfo = TyGamInfo { tgiTy :: !Ty, tgiKi :: Ty } deriving Show
 %%]
 
 %%[6.mkTGIData
@@ -586,20 +586,20 @@ emtpyTGI :: TyGamInfo
 emtpyTGI = mkTGI Ty_Any kiStar
 %%]
 
-%%[7.TyGamInfo -6.TyGamInfo
+%%[7.TyGamInfo
+%%]
 data TyGamInfo
   = TyGamInfo
       { tgiTy 		:: !Ty
       , tgiKi 		:: Ty			-- strictness causes loop
-      , tgiDataTy 	:: Ty			-- strictness causes loop
+      , tgiDataTy 	:: Ty			-- strictness causes loop -- 20070417, this has been moved to DataGamInfo, is obsolete (will be removed later)
       }
   deriving Show
-%%]
 
-%%[7 -6.mkTGIData
+%%[7
+%%]
 mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
 mkTGIData t k d = TyGamInfo t k d
-%%]
 
 %%[1.TyGam
 type TyGam = Gam HsName TyGamInfo
@@ -712,10 +712,11 @@ data DataFldInConstr
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%]
 
-%%[7 export(DataGam,DataGamInfo(..),mkDGI,emptyDataGamInfo)
+%%[7 export(DataGam,DataGamInfo(..),mkDGI)
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName
+      , dgiDataTy 			:: !Ty
 %%[[20
       , dgiConstrNmL 		:: ![HsName]
 %%]]
@@ -731,10 +732,10 @@ type DataGam = Gam HsName DataGamInfo
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
-mkDGI :: HsName -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
-mkDGI tyNm cNmL m nt
+mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
+mkDGI tyNm dty cNmL m nt
   = DataGamInfo
-      tyNm
+      tyNm dty
 %%[[20
       cNmL
 %%]]
@@ -744,9 +745,12 @@ mkDGI tyNm cNmL m nt
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
 %%]]
+%%]
 
-emptyDataGamInfo :: DataGamInfo
-emptyDataGamInfo = mkDGI hsnUnknown [] Map.empty False
+%%[7 export(emptyDataGamInfo,emptyDGI)
+emptyDataGamInfo, emptyDGI :: DataGamInfo
+emptyDataGamInfo = mkDGI hsnUnknown Ty_Any [] Map.empty False
+emptyDGI = emptyDataGamInfo
 %%]
 
 %%[20 export(dgiConstrTagAssocL)
@@ -759,7 +763,7 @@ dgiDtiOfCon :: HsName -> DataGamInfo -> DataTagInfo
 dgiDtiOfCon conNm dgi = panicJust "dgiDtiOfCon" $ Map.lookup conNm $ dgiConstrTagMp dgi
 %%]
 
-%%[7 export(dataGamLookup)
+%%[7 export(dataGamLookup,dataGamLookupErr)
 dataGamLookup :: HsName -> DataGam -> Maybe DataGamInfo
 dataGamLookup nm g
   =  case gamLookup nm g of
@@ -768,6 +772,12 @@ dataGamLookup nm g
                  -> Just emptyDataGamInfo
        Just dgi  -> Just dgi
        _         -> Nothing
+
+dataGamLookupErr :: HsName -> DataGam -> (DataGamInfo,ErrL)
+dataGamLookupErr n g
+  = case dataGamLookup n g of
+      Nothing  -> (emptyDGI,[rngLift emptyRange mkErr_NamesNotIntrod "data" [n]])
+      Just tgi -> (tgi,[])
 %%]
 
 %%[7 export(dataGamDgiOfTy)
@@ -977,7 +987,7 @@ instance ForceEval KiGamInfo where
   forceEval x@(KiGamInfo k) = forceEval k `seq` x
 
 instance ForceEval TyGamInfo where
-  forceEval x@(TyGamInfo t k d) = forceEval t `seq` forceEval k `seq` forceEval d `seq` x
+  forceEval x@(TyGamInfo t k) = forceEval t `seq` forceEval k `seq` x
 
 instance ForceEval DataFldInfo
 
@@ -988,7 +998,7 @@ instance ForceEval DataFldInConstr where
   forceEval x@(DataFldInConstr m) = forceEval m `seq` x
 
 instance ForceEval DataGamInfo where
-  forceEval x@(DataGamInfo n nl tm cm nt) = forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` x
+  forceEval x@(DataGamInfo n t nl tm cm nt) = forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` x
 
 instance ForceEval FixityGamInfo
 %%]
