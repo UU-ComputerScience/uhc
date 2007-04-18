@@ -43,6 +43,7 @@ DATA Binding
         ty                      : Ty
     | DataCon
         nm                      : HsName
+        ty                      : Ty
         tags                    : {[(HsName,(CTag,[(HsName,Int)]))]}
         isNewtype               : Bool
     | Ty

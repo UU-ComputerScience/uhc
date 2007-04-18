@@ -34,6 +34,11 @@ SEM Ty
                 lhs         .   appFunNm        =   hsnUnknown
 %%]
 
+%%[99
+SEM Ty
+  | Ext App     loc         .   appFunNm        :   HsName
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Which type con
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,6 +54,12 @@ SEM Ty
 SEM Ty
   | App         loc         .   appIsRecOrSum   =   hsnIsSum @func.appFunNm || hsnIsRec @func.appFunNm
                             .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
+%%]
+
+%%[99
+SEM Ty
+  | App         loc         .   appIsLikeProd   :   Bool
+                loc         .   appIsArrow      :   Bool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,6 +81,11 @@ SEM Ty
 %%[7_1
 SEM TyL
   | Cons        hd          .   isRow           =   False
+%%]
+
+%%[99
+SEM Ty
+  | App     	loc         .   argIsRow   		:   Bool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -158,6 +174,13 @@ SEM Ty
                 lhs         .   isPred          =   False
 %%]
 
+%%[99
+SEM Ty
+  | App         loc         .   isArrowArg      :   Bool
+                loc         .   isSpineRoot     :   Bool
+                loc         .   isArrowRoot     :   Bool
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Introduced ty vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -170,6 +193,11 @@ SEM Ty
 %%]]
                 loc         .   introTVarL      =   [@tv]
                             .   introTVarS      =   Set.singleton @tv
+%%]
+
+%%[99
+SEM Ty
+  | Lam Quant   loc         .   introTVarS      :   TyVarIdS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

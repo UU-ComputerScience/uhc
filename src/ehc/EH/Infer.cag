@@ -183,7 +183,7 @@ SEM AGItf
   | AGItf       expr        .   finTyGam            =   emptyGam
 
 SEM Expr
-  | Let         loc         .   finTyGam            =   @lhs.finKiCnstr |=> @decls.tyGam
+  | Let         loc         .   finTyGam            =   @lhs.finKiCnstr |=> @decls.patTyGam
 
 %%]
 
@@ -310,14 +310,13 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.tyGam
-ATTR AllDecl [ | tyGam: TyGam | ]
-ATTR AllExpr [ tyGam: TyGam | | ]
+ATTR AllDecl AllExpr [ tyGam: TyGam | | ]
 %%]
 
 %%[3
+%%]
 SEM Decl
   | TySig       lhs         .   tyGam               =   @lhs.tyGam
-%%]
 
 %%[4
 ATTR AllPatExpr [ | tyGam: TyGam | ]
@@ -552,7 +551,12 @@ SEM AGItf
   | AGItf       loc         .   tyGam               =   initTyGam
 %%]
 
-%%[7_2.initTyGam -1.initTyGam
+%%[2.initTyGam -1.initTyGam
+SEM AGItf
+  | AGItf       loc         .   tyGam               =   agFakeDependOn @expr.gUniq initTyGam		-- fake dependency for uuagc --cycle
+%%]
+
+%%[7_2.initTyGam -2.initTyGam
 SEM AGItf
   | AGItf       loc         .   tyGam               :=  assocLToGam
                                                           [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
@@ -569,7 +573,7 @@ SEM AGItf
                                                           ]
 %%]
 
-%%[20 -1.initTyGam
+%%[20 -2.initTyGam
 ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
@@ -588,7 +592,7 @@ SEM AGItf
 
 %%[6.initKiGam
 SEM AGItf
-  | AGItf       loc         .   kiGam               =   initKiGam
+  | AGItf       loc         .   kiGam               =   agFakeDependOn @expr.gUniq initKiGam		-- fake dependency for uuagc --cycle
 %%]
 
 %%[20 -6.initKiGam
@@ -918,7 +922,7 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-ATTR AllDecl [ | patPrIntroGam: PrIntroGam | ]
+ATTR AllDecl [ | patPrIntroGam1: PrIntroGam  patPrIntroGam2: PrIntroGam | ]
 ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ prIntroGam: PrIntroGam | | ]
 %%]
 
@@ -933,8 +937,9 @@ ATTR AGItf [ prIntroGam: PrIntroGam | | ]
 
 %%[9
 SEM Expr
-  | Let         decls       .   patPrIntroGam       =   gamPushNew @lhs.prIntroGam
-                loc         .   (lPrIGam,gPrIGam)   =   gamPop @decls.patPrIntroGam
+  | Let         decls       .   patPrIntroGam1      =   gamPushNew @lhs.prIntroGam
+                            .   patPrIntroGam2      =   @decls.patPrIntroGam1
+                loc         .   (lPrIGam,gPrIGam)   =   gamPop $ gamNoDups @decls.patPrIntroGam2
                 decls       .   prIntroGam          =   gamPushGam @lPrIGam @lhs.prIntroGam
                 loc         .   lSubsPrIGam         =   @decls.kiCnstr |=> @lPrIGam
                             .   gSubsPrIGam         =   @decls.kiCnstr |=> @gPrIGam
@@ -978,3 +983,4 @@ SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
 %%]
+

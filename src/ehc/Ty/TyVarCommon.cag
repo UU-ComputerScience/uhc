@@ -61,6 +61,14 @@ SEM Impls
   | Cons        lhs         .   frTvSL      =   @pr.frTvSL ++ @tl.frTvSL
 %%]
 
+%%[99
+SEM Ty
+  | Pred Var App
+                loc         .   frTvS       :   TyVarIdS
+  | App         loc         .   frRowTvS    :   TyVarIdS
+                loc         .   frTvSL		: 	{[TyVarIdS]}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine co- contravariance of place in type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,11 +87,6 @@ SEM Ty
 %%][9
                 loc         .   cocoArrowRes=   if @func.isPred then @lhs.coco else CoVariant
 %%]]
-%%]
-
-%%[4
-SEM TyAGItf
-  | AGItf       ty          .   coco        =   CoVariant
 %%]
 
 %%[9
@@ -147,6 +150,12 @@ SEM Ty
   | Pred        loc         .   isQuLoc     =   @lhs.coco == CoVariant
 %%]
 
+%%[99
+SEM Ty
+  | App Pred Var
+                loc         .   isQuLoc     :   Bool
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Candidate free type variables to be quantified over 'here', as Set
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,6 +213,12 @@ SEM Ty
                                                           else  @frTvS
                                                     else  Set.empty
   | Pred        loc         .   qHereTvS        =   @frTvS `Set.difference` @pr.qInsideTvS
+%%]
+
+%%[99
+SEM Ty
+  | App         loc         .   qHereTvS        :   TyVarIdS
+                loc         .   qOrphanTvS      :   TyVarIdS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

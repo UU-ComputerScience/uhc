@@ -17,6 +17,70 @@ WRAPPER CodeAGItf
 %%[20 hs import(qualified Data.Set as Set)
 %%]
 
+We have cycles, but they are there by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute nmMp
+            and synthesized attribute bindNmMp of nonterminal CBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           CExpr.Let, inherited attribute binds.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CBindL.Cons, inherited attribute lhs.nmMp
+           CBindL.Cons, inherited attribute hd.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CBind.Bind, inherited attribute lhs.nmMp
+           CBind.Bind, inherited attribute expr.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.App, inherited attribute lhs.nmMp
+           CExpr.App, inherited attribute arg.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Case, inherited attribute lhs.nmMp
+           CExpr.Case, inherited attribute dflt.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Lam, inherited attribute lhs.nmMp
+           CExpr.Lam, inherited attribute body.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Let, inherited attribute lhs.nmMp
+           CExpr.Let, local attribute nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 56, column 33))
+           CExpr.Let, inherited attribute body.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.TupDel, inherited attribute lhs.nmMp
+           CExpr.TupDel, inherited attribute offset.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.TupIns, inherited attribute lhs.nmMp
+           CExpr.TupIns, inherited attribute fldExpr.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.TupUpd, inherited attribute lhs.nmMp
+           CExpr.TupUpd, inherited attribute fldExpr.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Var, inherited attribute lhs.nmMp
+           CExpr.Var, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 83, column 33))
+           CExpr.TupUpd, synthesized attribute fldExpr.cTrf
+           CExpr.TupUpd, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupUpd, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupIns, synthesized attribute fldExpr.cTrf
+           CExpr.TupIns, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupIns, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupDel, synthesized attribute offset.cTrf
+           CExpr.TupDel, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupDel, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Let, synthesized attribute body.cTrf
+           CExpr.Let, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Let, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 80, column 33))
+           CExpr.Lam, synthesized attribute body.cTrf
+           CExpr.Lam, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Lam, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Case, synthesized attribute dflt.cTrf
+           CExpr.Case, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Case, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.App, synthesized attribute arg.cTrf
+           CExpr.App, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.App, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CBind.Bind, synthesized attribute expr.cTrf
+           CBind.Bind, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CBind.Bind, synthesized attribute lhs.bindNmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 70, column 34))
+           CBindL.Cons, synthesized attribute hd.bindNmMp
+           CBindL.Cons, synthesized attribute lhs.bindNmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 66, column 20))
+           CExpr.Let, synthesized attribute binds.bindNmMp
+           CExpr.Let, local attribute nmMpNew ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 38, column 33))
+           CExpr.Let, local attribute nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 56, column 33))
+           CExpr.Let, inherited attribute binds.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+
+%%[8
+PRAGMA nocycle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

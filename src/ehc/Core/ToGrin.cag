@@ -97,6 +97,9 @@ SEM CBind
 SEM CPatBind
   | Bind        offset      .   isStrict    =   True
                             .   isLamBody   =   False
+
+SEM CExpr
+  | Let			binds		.	isStrict	=	@lhs.lev == cLevModule || @categ == CBindStrict
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -472,14 +475,12 @@ ATTR CExpr   [ | | grExpr: GrExpr ]
 ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CExpr
-  | Let         (loc.grExpr,lhs.grBindL,binds.isStrict)
-                                            =   if @lhs.lev == cLevModule
+  | Let         (loc.grExpr,lhs.grBindL)    =   if @lhs.lev == cLevModule
                                                 then  (emptyGrExpr
                                                       ,let
                                                        in   case @categ of
                                                               CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
                                                               _            ->  @binds.grBindL ++ @body.grBindL
-                                                      ,True
                                                       )
                                                 else  (case @categ of
                                                           CBindRec     ->  mkSt (map (\(GrBind_Bind n _ _) -> n) @binds.grBindL)
@@ -494,7 +495,6 @@ SEM CExpr
                                                           _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPatLam_Var n) e)
                                                                                   @body.grExpr @binds.grBindL
                                                       ,[]
-                                                      ,@categ == CBindStrict
                                                       )
   | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase
                                                      (sel,w2) = @alts.grWrapCaseSel @expr.grVal

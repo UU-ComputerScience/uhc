@@ -64,7 +64,8 @@ SEM Binding
         lhs         .   ppSq        =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t),pp (ctagMaxArity t)]
                                             ppFldMp fm = [ ppForHI f >#< "=" >#< pp o | (f,o) <- fm ]
                                         in  hiNV "data" @nm
-                                              [ ppCurlysSemisBlock
+                                              [ ppForHI @ty
+                                              , ppCurlysSemisBlock
                                                 $ map (\(n,(t,fm)) -> ppForHI n >#< "=" >#< ppCurlysSemisBlock (ppCTag t : ppFldMp fm))
                                                 $ @tags
                                               , pp @isNewtype

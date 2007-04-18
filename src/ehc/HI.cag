@@ -97,7 +97,7 @@ hiFromAllGams exps fg idg vg tg dg ig chrStore arityMp inlMp
     Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
-                                in  Binding_DataCon n (assocLMapElt mkt $ dgiConstrTagAssocL dgi) (dgiIsNewtype dgi)
+                                    in  Binding_DataCon n (dgiDataTy dgi) (assocLMapElt mkt $ dgiConstrTagAssocL dgi) (dgiIsNewtype dgi)
                     ) dg
     Seq.:++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (Pr.pigiRuleTy pigi) (Pr.pigiRuleNmEvid pigi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]

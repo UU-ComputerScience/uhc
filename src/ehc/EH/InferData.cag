@@ -9,11 +9,9 @@
 
 %%[5.tyGam
 SEM Decl
-  | Data        tyVars      .   tyGam               =   gamPushNew @lhs.patTyGam
-                loc         .   (tyGam_l_,tyGam_g_) =   gamPop @tyVars.tyGam
+  | Data        tyVars      .   tyGam               =   emptyGam
                 lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
-                constrs     .   tyGam               =   gamPushGam @tyGam_l_ @lhs.tyGam
-                lhs         .   tyGam               =   @lhs.tyGam
+                constrs     .   tyGam               =   gamPushGam @tyVars.tyGam @lhs.tyGam
 %%]
 
 %%[6
@@ -26,7 +24,7 @@ SEM Decl
                                                                 (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
-                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyGam_l_))
+                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyVars.tyGam))
                                                                     @lhs.tyGam
 %%]
 
@@ -86,7 +84,7 @@ ATTR AGItf [ dataGam: DataGam | | ]
 ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM Decl
-  | Data        loc         .   dgi                 =   mkDGI @tyNm @constrs.dataConstrNmL @constrs.dataConstrTagMp @isNewtype
+  | Data        loc         .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp @isNewtype
                 lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
 %%]
 
@@ -126,10 +124,11 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL
 %%]
-                            .   dataUnConTy         =   [@lhs.dataTy] `mkArrow` @dataConProdTy
-                            .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
-                                                             fvU = ftv @dataUnConTy
-                                                        in   mkTyQu TyQu_Forall fvD . mkTyQu TyQu_Exists (fvU \\ fvD) $ @dataUnConTy
+
+%%[7
+SEM Decl
+  | Data        loc         .   dataTy              :=  agFakeDependOn @dataAltTy $ @tyNm `mkConApp` @tyVars.tyL
+%%]
 
 %%[7
 SEM Decl
@@ -147,11 +146,11 @@ SEM DataConstr
   | Constr      loc         .   dataConTy           :=  assocLElts @fields.fldTyL `mkArrow` @lhs.dataTy
                             .   dataConProdTy       :=  let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
                                                         in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL)
-                lhs         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
+                loc         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
-                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) ([@dataTy] `mkArrow` @dataAltTy)
+                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
 %%]
 
 !!!!! Fix following w.r.t. dataUnConTy
@@ -161,6 +160,8 @@ SEM DataConstr
                             .   eqEqCnstr           =   assocLToCnstr . map (\(v,t) -> (v,Ty_Equal v t)) . cnstrToAssocTyL $ @eqs.eqTyCnstr
                             .   dataUnConTy         :=  [@eqEqCnstr |=> @lhs.dataTy] `mkArrow` (@eqs.eqTyCnstr |=> @dataConProdTy)
 %%]
+
+agFakeDependOn
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Equal constraints for constructors

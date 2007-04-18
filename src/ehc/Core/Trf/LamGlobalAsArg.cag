@@ -21,6 +21,54 @@ Later, these lambda expressions can then be lifted globally.
 WRAPPER CodeAGItf
 %%]
 
+We have cycles, but they are there by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute levMp
+            and synthesized attribute levOfMp of nonterminal CBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           CExpr.Let, inherited attribute binds.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 9, column 35))
+           CBindL.Cons, inherited attribute lhs.levMp
+           CBindL.Cons, inherited attribute hd.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CBind.Bind, inherited attribute lhs.levMp
+           CBind.Bind, inherited attribute expr.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.App, inherited attribute lhs.levMp
+           CExpr.App, inherited attribute arg.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.Case, inherited attribute lhs.levMp
+           CExpr.Case, inherited attribute dflt.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.HoleLet, inherited attribute lhs.levMp
+           CExpr.HoleLet, inherited attribute body.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.ImplsApp, inherited attribute lhs.levMp
+           CExpr.ImplsApp, inherited attribute func.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.ImplsLam, inherited attribute lhs.levMp
+           CExpr.ImplsLam, inherited attribute body.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.Lam, inherited attribute lhs.levMp
+           CExpr.Lam, local attribute levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 45, column 33))
+           CExpr.Lam, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.ImplsLam, synthesized attribute body.levOf
+           CExpr.ImplsLam, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.ImplsApp, synthesized attribute func.levOf
+           CExpr.ImplsApp, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.HoleLet, synthesized attribute body.levOf
+           CExpr.HoleLet, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.Case, synthesized attribute dflt.levOf
+           CExpr.Case, local attribute levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 41, column 33))
+           CExpr.Case, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.App, synthesized attribute arg.levOf
+           CExpr.App, local attribute levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 40, column 33))
+           CExpr.App, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CBind.Bind, synthesized attribute expr.levOf
+           CBind.Bind, synthesized attribute lhs.levOfMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 54, column 33))
+           CBindL.Cons, synthesized attribute hd.levOfMp
+           CBindL.Cons, synthesized attribute lhs.levOfMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 51, column 20))
+           CExpr.Let, synthesized attribute binds.levOfMp
+           CExpr.Let, inherited attribute binds.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 9, column 35))
+
+%%[9
+PRAGMA nocycle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,6 +90,10 @@ ATTR AllCodeNT [ | gUniq: Int | ]
 
 SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
+
+SEM CBind
+  | Bind        expr		.	gUniq		=	@lhs.gUniq + Map.size @argMp
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,16 +289,13 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBind
-  | Bind        (expr.gUniq,loc.argMp,lhs.cTrf,loc.bindLamArgMp)
+  | Bind        loc			.	(argNewL,argMp,bindLamArgMp)
                                             =   if @expr.isLam
                                                 then  let  argLevL = fvLAsArg @lhs.introLevMp $ panicJust "CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
-                                                      in   ( @lhs.gUniq + length argOL
-                                                           , argONMp
-                                                           , CBind_Bind @nm (mkCExprLam argNL @expr.cTrf)
-                                                           , @nm `Map.singleton` argOL
-                                                           )
-                                                else  ( @lhs.gUniq, Map.empty, @cTrf, Map.empty )
+                                                      in   (argNL, argONMp, @nm `Map.singleton` argOL)
+                                                else  ([],Map.empty, Map.empty)
+  | Bind        lhs			.	cTrf        =   CBind_Bind @nm $ mkCExprLam @argNewL @expr.cTrf
   | FFI         loc         .   bindVarBindL=   [@cTrf]
 %%]
 

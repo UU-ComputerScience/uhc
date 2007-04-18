@@ -91,14 +91,19 @@ ppUnifyErr msg t1 t2 fim t1d t2d fimd r
 
 %%[1
 ATTR Err ErrL [ nestDepth: Int | | isNestPP USE {`const`} {False}: Bool ]
+ATTR ErrL [ | | isEmpty: Bool ]
 
 SEM Err
-  | NestedIn            errL    .   nestDepth   =   case @errL.ppL of {[_] -> @lhs.nestDepth+1; _ -> 0}
+  | NestedIn            errL    .   nestDepth   =   if @errL.isEmpty then 0 else @lhs.nestDepth+1
                         lhs     .   isNestPP    =   True
 
 SEM ErrL
   | Nil                 lhs     .   isNestPP    =   True
   | Cons                lhs     .   isNestPP    =   @hd.isNestPP && @tl.isNestPP
+
+SEM ErrL
+  | Nil                 lhs     .   isEmpty     =   True
+  | Cons                lhs     .   isEmpty     =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

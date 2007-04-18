@@ -329,12 +329,15 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+ATTR PatExpr [ | | cpNm: RPatNm ]
+
 SEM PatExpr
   | Var VarAs AppTop Rec DataFields Con IConst CConst SConst Irrefutable
 %%[[97
     Expr
 %%]]
                 loc         .   cpNm        =   maybe (RPatNmUniq @topNm) RPatNmOrig @mbTopNm
+  | App			loc			.	cpNm		=	@arg.cpNm
 %%]
 
 %%[8
@@ -534,7 +537,7 @@ SEM Decl
                                                              else id
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
-                                                       where nDflt = pigiRuleNmEvid @pigi
+                                                       where nDflt = pigiRuleNmEvid @pigi2
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
@@ -716,10 +719,10 @@ SEM PatExpr
 ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
-  | App         arg         .   ceParentNm  =   rpatNmNm (rcpPNm @arg.rpat)
+  | App         arg         .   ceParentNm  =   rpatNmNm @arg.cpNm
 
 SEM RecPatExpr
-  | Ext         patExpr     .   ceParentNm  =   rpatNmNm (rcpPNm @patExpr.rpat)
+  | Ext         patExpr     .   ceParentNm  =   rpatNmNm @patExpr.cpNm
 
 SEM Decl
   | Val         patExpr     .   ceParentNm  =   @patExpr.topNm

@@ -146,6 +146,11 @@ SEM Ty
   | * - Quant       loc         .   allow       =   False
 %%]
 
+%%[99
+SEM Ty
+  | Quant           loc         .   allow       :   Bool
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,6 +182,11 @@ SEM Ty
                     ty          .   gathSubst   =   if @allow
                                                     then  (@tv `cnstrTyUnit` @lhs.howToInst @qu.repl @tvNew) `cnstrPlus` @lhs.gathSubst
                                                     else  (@lhs.gathSubst)
+%%]
+
+%%[99
+SEM Ty
+  | Quant           loc         .   tvNew       :   UID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

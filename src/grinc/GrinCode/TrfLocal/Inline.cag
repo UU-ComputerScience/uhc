@@ -77,6 +77,31 @@ grInline expNmS inlMp grmod
 WRAPPER GrAGItf
 %%]
 
+There is a cyclic dependency, but it is by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute inlMp
+            and synthesized attribute gathInlMp of nonterminal GrBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           GrModule.Mod, inherited attribute bindL.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 92, column 33))
+           GrBindL.Cons, inherited attribute lhs.inlMp
+           GrBindL.Cons, inherited attribute hd.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 54, column 26))
+           GrBind.Bind, inherited attribute lhs.inlMp
+           GrBind.Bind, inherited attribute expr.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 54, column 26))
+           GrExpr.App, inherited attribute lhs.inlMp
+           GrExpr.App, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 152, column 22))
+           GrBind.Bind, synthesized attribute expr.trf
+           GrBind.Bind, synthesized attribute lhs.gathInlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 57, column 22))
+           GrBindL.Cons, synthesized attribute hd.gathInlMp
+           GrBindL.Cons, synthesized attribute lhs.gathInlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 53, column 20))
+           GrModule.Mod, synthesized attribute bindL.gathInlMp
+           GrModule.Mod, inherited attribute bindL.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 92, column 33))
+
+%%[8
+PRAGMA nocycle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globally used vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,6 +130,15 @@ ATTR AllBind [ fviMp: FvInfoMp | | ]
 
 SEM GrModule
   | Mod         bindL       .   fviMp           =   @bindL.gathFviMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Will eval defined here because could not be factored out
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM GrBind
+  | Bind        expr        .   willEval        =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

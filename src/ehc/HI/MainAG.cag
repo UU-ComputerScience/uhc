@@ -73,7 +73,7 @@ SEM Binding
         lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty @ki)
     | DataCon
         lhs             .   dataGam     =   gamSingleton @nm (mkDGI @nm
-                                                                    (assocLKeys @tags)
+                                                                    @ty (assocLKeys @tags)
                                                                     (Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
                                                                                                           , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
                                                                                                           }

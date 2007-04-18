@@ -20,7 +20,7 @@
 
 
 module EH.Util.Chitil.FPretty 
-  (Doc,empty,text,line,linebreak,softline,softbreak
+  (Doc,empty,text,line,linebreak,softline,softbreak,hardbreak
   ,(<>),(<+>),(<$>),(<$$>),(</>),(<//>)
   ,group,nest,align,hang,hsep,vsep,fillSep,sep,hcat,vcat,fillCat,cat
   , pretty
@@ -41,6 +41,9 @@ softline = group line
 
 softbreak :: Doc
 softbreak = group linebreak
+
+hardbreak :: Doc
+hardbreak = Line 500  (take 500 (repeat ' '))
 
 hang :: Int -> Doc -> Doc
 hang i x = align (nest i x)

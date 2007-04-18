@@ -49,10 +49,10 @@ data IdAspect
 %%]]
 %%[[9
   | IdAsp_Class_Class
-  | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst :: EH.Decl}
+  | IdAsp_Class_Def     {iaspDecl   :: !EH.Decl, iaspDeclInst :: !EH.Decl}
   | IdAsp_Inst_Inst
   | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
-  | IdAsp_Dflt_Def      {iaspDecl   ::  EH.Decl                         }
+  | IdAsp_Dflt_Def      {iaspDecl   :: !EH.Decl                         }
 %%]]
   | IdAsp_Any
 %%]
@@ -149,9 +149,20 @@ instance PP IdDefOcc where
 %%]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[99
+instance ForceEval IdAspect where
+  forceEval x@(IdAsp_Val_Pat d    ) = d `seq` x
+  forceEval x@(IdAsp_Val_Fun p d i) = p `seq` d `seq` forceEval i `seq` x
+  forceEval x@(IdAsp_Val_Sig d    ) = d `seq` x
+  forceEval x@(IdAsp_Inst_Def d n ) = d `seq` x
+  forceEval x                       = x
+
 instance ForceEval IdDefOcc where
-  forceEval x = forceEval (doccNmAlts x) `seq` x
+  forceEval x@(IdDefOcc o a l r as) = forceEval a `seq` forceEval as `seq` x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
