@@ -129,7 +129,9 @@ caLoad doParse = task_ VerboseNormal "Loading"
     ( do { when doParse caParseGrin
          ; caWriteGrin     True             "0-parsed"
          ; transformGrin   cleanupPass      "Cleanup pass"
+         ; caWriteGrin     True             "0a-cleaned"
          ; transformTriple buildAppBindings "Renaming lazy apply tags"
+         ; caWriteGrin     True             "0b-renamed"
          ; transformTriple numberIdents     "Numbering identifiers"
          ; caWriteGrin     True             "1-loaded"
          }

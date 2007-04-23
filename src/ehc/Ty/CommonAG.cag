@@ -36,7 +36,7 @@ SEM Ty
 
 %%[99
 SEM Ty
-  | Ext App     loc         .   appFunNm        :   HsName
+  | Ext App     loc         .   appFunNm        :   {HsName}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
