@@ -84,13 +84,19 @@ SEM Imm
   | Int         lhs         .   cLoc        =   @lhs.cLoc + @sz
 
 SEM Instr
-  | Link        loc         .   linkCLoc    =   @lhs.cLoc
-  | LdGlobal    loc         .   linkCLoc    =   @lhs.cLoc + 1
-  | Label       loc         .   labelCLoc   =   @lhs.cLoc
-  | LabelRef    loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
-  | Call Eval Apply
+  | Link        loc         .   linkCLoc    :   Int
+                loc         .   linkCLoc    =   @lhs.cLoc
+  | LdGlobal    loc         .   linkCLoc    :   Int
                 loc         .   linkCLoc    =   @lhs.cLoc + 1
-  | CallC       loc         .   linkCLoc    =   @nArg.cLoc
+  | Label       loc         .   labelCLoc   :   Int
+                loc         .   labelCLoc   =   @lhs.cLoc
+  | LabelRef    loc         .   labelCLocAft:   Int
+                loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
+  | Call Eval Apply
+                loc         .   linkCLoc    :   Int
+                loc         .   linkCLoc    =   @lhs.cLoc + 1
+  | CallC       loc         .   linkCLoc    :   Int
+                loc         .   linkCLoc    =   @nArg.cLoc
 
 SEM Instr
   | Ld St       imm         .   cLoc        =   @lhs.cLoc + 1

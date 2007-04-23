@@ -38,7 +38,8 @@ numberIdents (code,unique,hptMap)
 %%[8.lookup hs
 type LookupList = Map.Map HsName HsName
 
-findNewVar fm e = Map.findWithDefault (error $ "undeclared variable " ++ show e ++ " in " ++ show fm) e fm
+findNewVar _  e@(HNmNr nr orig) = e
+findNewVar fm e                 = Map.findWithDefault (error $ "undeclared variable " ++ show e ++ " in " ++ show fm) e fm
 
 
 addMaybe :: Int -> LookupList -> Maybe HsName -> (LookupList, Int)
@@ -97,16 +98,35 @@ addMbToMap fm mbk mbv = maybe fm id mbMap
 
 %%[8.bindings
 SEM GrBind
-  | Bind  loc  .  (bindName, unique')  =  if @nm == applyNm
-                                          then (applyNr              , @lhs.unique  )
-                                          else if @nm == evalNm
-                                          then (evalNr               , @lhs.unique  )
-                                          else if @nm == hsnMain
-                                          then (mainNr               , @lhs.unique  )
-                                          else (HNmNr @lhs.unique (Just (hsnPrefix "fun_" @nm)), @lhs.unique+2)
-               .  bind2idFrag          = if isSpecialBind @nm
-                                         then @lhs.bind2idFrag
-                                         else Map.insert @nm @bindName @lhs.bind2idFrag
+  | Bind  loc . bindName    :  HsName
+          loc . bindName    =  if      @nm == applyNm
+                               then applyNr
+                               else if @nm == evalNm
+                               then evalNr
+                               else if @nm == hsnMain
+                               then mainNr
+                               else case @nm of
+                                     HNmNr nr (Just orig) -> @nm
+                                     _                    -> HNmNr @lhs.unique (Just (hsnPrefix "fun_" @nm))
+          loc . unique2     :  Int
+          loc . unique2     =  if      @nm == applyNm
+                               then @lhs.unique
+                               else if @nm == evalNm
+                               then @lhs.unique
+                               else if @nm == hsnMain
+                               then @lhs.unique
+                               else case @nm of
+                                     HNmNr nr (Just orig) -> @lhs.unique
+                                     _                    -> @lhs.unique + 2
+          loc . bind2idFrag =  if      @nm == applyNm
+                               then @lhs.bind2idFrag
+                               else if @nm == evalNm
+                               then @lhs.bind2idFrag
+                               else if @nm == hsnMain
+                               then @lhs.bind2idFrag
+                               else case @nm of
+                                     HNmNr nr (Just orig) -> Map.insert orig @nm @lhs.bind2idFrag
+                                     _                    -> Map.insert @nm @bindName @lhs.bind2idFrag
 %%]
 
 %%[8.GetDefinedNames
@@ -117,7 +137,8 @@ SEM GrVar
 
 
 SEM GrGlobal
-  | Global    loc   .  newName  = HNmNr @lhs.unique (Just (hsnPrefix rtsGlobalVarPrefix @nm))
+  | Global    loc   .  newName  : HsName
+              loc   .  newName  = HNmNr @lhs.unique (Just (hsnPrefix rtsGlobalVarPrefix @nm))
               lhs   .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
 
@@ -128,11 +149,13 @@ SEM GrPatLam
   | VarNode    loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL.names
   | Var        lhs  .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
+               loc  .  newName  : HsName
                loc  .  newName  = HNmNr @lhs.unique (Just @nm)
 
 SEM GrExpr
   | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
                         .  unique   = @body.unique + 1
+               loc      .  newName  : HsName
                loc      .  newName  = HNmNr @body.unique (Just @arg)
 
 
@@ -141,10 +164,10 @@ SEM GrExpr
 -- and then reverse the resulting newNames back to the original order
 
 SEM GrBind
-  | Bind      loc   .  (var2id', nn, unique'')  =  addList @unique' @lhs.var2id (reverse @argNmL)
+  | Bind      loc   .  (var2id2, nn, unique3)   =  addList @loc.unique2 @lhs.var2id (reverse @argNmL)
                     .  newNames                 =  reverse @nn
-              expr  .  var2id                   =  @var2id'
-                    .  unique                   =  @unique''
+              expr  .  var2id                   =  @loc.var2id2
+                    .  unique                   =  @loc.unique3
               lhs   .  unique                   =  @expr.unique
                     .  var2id                   =  @expr.var2id
 %%]

@@ -163,8 +163,12 @@ ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CBind
   | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
-  | FFI         loc         .   (argTyL,resTy)
-                                            =   tyArrowArgsRes @ty
+  | FFI         
+                loc         .   argTyLresTy :   ( TyL, Ty )
+                loc         .   argTyLresTy =   tyArrowArgsRes @ty
+                loc         .   argTyL      :   TyL
+                loc         .   argTyL      =   fst @loc.argTyLresTy
+                loc         .   resTy       =   snd @loc.argTyLresTy
                 lhs         .   bindArityMp =   @nm `Map.singleton` length @argTyL
 %%]
 ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: CArityMp ]
