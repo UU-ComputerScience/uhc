@@ -1565,7 +1565,10 @@ cpOutputHI :: String -> HsName -> EHCompilePhase ()
 cpOutputHI suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 binds  = Seq.toList $ HI.hiFromHIInfo $ ecuHIInfo ecu
+                 binds  = Seq.toList $ HI.hiFromHIInfo
+                          $ ((ecuHIInfo ecu)
+                               { HI.hiiModEntRel = mmiExps $ panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
+                               })
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
                               (HI.AGItf_AGItf $ HI.Module_Module modNm

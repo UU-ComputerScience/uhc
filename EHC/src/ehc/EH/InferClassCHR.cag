@@ -60,13 +60,12 @@ SEM AGItf
 
 SEM Expr
   | Let         decls       .   predSameScopeCounter=   if @lhs.isFirstLet then 0 else @lhs.predSameScopeCounter
-  | Lam AppTop
-%%[[12
-    LamImpl
-%%]]
-                (_,loc.predScope)                   =   if @implsIsEmpty
+  | Lam AppTop  loc         .   (_,predScope)       =   if @implsIsEmpty
                                                         then (0,@lhs.predScope)
                                                         else pscpEnter 0 @lhs.predScope
+%%[[12
+  | LamImpl     loc         .   (_,predScope)       =   pscpEnter 0 @lhs.predScope
+%%]]
   | * - Lam AppTop
 %%[[12
     LamImpl
@@ -97,9 +96,9 @@ SEM Decl
 %%]
 
 %%[12
+%%]
 SEM Expr
   | LamImpl     loc         .   implsIsEmpty        =   null @knPrL
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scopes of introduced bindings

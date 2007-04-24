@@ -17,9 +17,11 @@
 -----------------------------------------------------------------------------
 -----------------------------}
 
-module Prelude (
-
+module Prelude
+  ( module EHC.Prelude )
 {-----------------------------
+  (
+
     -- * Standard types, classes and related functions
 
     -- ** Basic data types
@@ -143,9 +145,10 @@ module Prelude (
     readFile, writeFile, appendFile, readIO, readLn,
     -- ** Exception handling in the I\/O monad
     IOError, ioError, userError, catch
------------------------------}
 
-  ) where
+  )
+-----------------------------}
+  where
 
 import EHC.Prelude
 

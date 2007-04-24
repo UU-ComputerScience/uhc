@@ -11,6 +11,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+PRIM GB_Word gb_Unit
+	= GB_MkConEnumNodeAsTag( 0 ) ;
+
 PRIM GB_Word gb_False
 	= GB_MkConEnumNodeAsTag( 0 ) ;
 PRIM GB_Word gb_True
@@ -525,24 +528,24 @@ PRIM GB_Word gb_primCharIsLower( GB_Int x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-GB_NodePtr gb_primCString2String1Char( char* s, GB_Int goff )
+GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
   	GB_NodePtr n, n2 ;
-  	IF_GB_TR_ON(3,printf("gb_primCString2String1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
+  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
-		GB_MkCFunNode2In(n2,&gb_primCString2String1Char,s,GB_Int_Add(goff,GB_Int1)) ;
+		GB_MkCFunNode2In(n2,&gb_primCStringToString1Char,s,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;
 	}
-  	IF_GB_TR_ON(3,printf("gb_primCString2String1Char2 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char2 n %x\n", n ););
   	return n ;
 }
 
-PRIM GB_NodePtr gb_primCString2String( char* s )
+PRIM GB_NodePtr gb_primCStringToString( char* s )
 {
-  	return gb_primCString2String1Char( s, GB_Int0 ) ;
+  	return gb_primCStringToString1Char( s, GB_Int0 ) ;
 }
 %%]
 
@@ -553,13 +556,14 @@ In the following function GB_List_Iterate causes a Bus error when:
   Sigh...
 
 %%[8
+
 PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 {
 	char buf[100] ;
 	int bufInx = 0 ;
 	int sz = 99 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
-	gb_listForceEval( &n, sz ) ;
+	gb_listForceEval( &n, &sz ) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
@@ -571,26 +575,56 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Show
+%%% Byte array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[95
-GB_NodePtr gb_primMallocCString2String1Char( GB_NodePtr mn, GB_Int goff )
+GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 {
-	char* s = Cast(char*,mn->content.ptr) ;
-	char c = s[ GB_GBInt2Int(goff) ] ;
+	char* s = Cast(char*,mn->content.bytearray.ptr) ;
+	int   igoff = GB_GBInt2Int(goff) ;
+	char  c = s[ igoff ] ;
   	GB_NodePtr n, n2 ;
-  	IF_GB_TR_ON(3,printf("gb_primMallocCString2String1Char %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
-	if ( c ) {
-		GB_MkCFunNode2In(n2,&gb_primMallocCString2String1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
+  	IF_GB_TR_ON(3,printf("gb_primByteArrayToString1Char %x:'%s'[%d]\n", s, s, igoff ););
+	if ( igoff < mn->content.bytearray.size && c ) {
+		GB_MkCFunNode2In(n2,&gb_primByteArrayToString1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;
 	}
-  	IF_GB_TR_ON(3,printf("gb_primMallocCString2String1Char n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primByteArrayToString1Char n %x\n", n ););
   	return n ;
 }
 
+PRIM GB_NodePtr gb_primByteArrayToString( GB_Word a )
+{
+	GB_NodePtr n = Cast( GB_NodePtr, gb_eval( a ) ) ;
+  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
+}
+
+PRIM GB_Word gb_primByteArrayLength( GB_Word a )
+{
+	GB_NodePtr n = Cast( GB_NodePtr, gb_eval( a ) ) ;
+  	return GB_Int2GBInt(n->content.bytearray.size) ;
+}
+
+PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
+{
+	GB_NodePtr n2 ;
+	int bufInx = 0 ;
+	gb_listForceEval( &n, &sz ) ;
+	GB_NodeAlloc_Malloc2_In( sz, n2 ) ;
+	char* s = Cast(char*,n2->content.bytearray.ptr) ;
+	GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
+	return n2 ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Show
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
 PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 {
 	char buf[sizeof(GB_Word)*10] ;
@@ -611,10 +645,10 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
   	IF_GB_TR_ON(3,printf("gb_primShowInt s(%d) %s\n", strlen(buf), buf ););
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ;
-	GB_NodeAlloc_Malloc_In( sz, n ) ;
-	memcpy( n->content.ptr, buf, sz ) ;
+	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	memcpy( n->content.bytearray.ptr, buf, sz ) ;
 	
-  	return gb_primMallocCString2String1Char( n, GB_Int0 ) ;
+  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
 }
 %%]
 
@@ -675,3 +709,23 @@ PRIM GB_Word gb_primChanNumber( GB_NodePtr c )
 }
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO Actions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+PRIM GB_Word gb_primFlushChan( GB_NodePtr c )
+{
+	fflush( c->content.chan.file ) ;
+	return Cast(GB_Word,gb_Unit) ;
+}
+
+PRIM GB_Word gb_primWriteChan( GB_NodePtr c, GB_NodePtr a )
+{
+	fwrite( a->content.bytearray.ptr, 1, a->content.bytearray.size, c->content.chan.file ) ;
+	return Cast(GB_Word,gb_Unit) ;
+}
+
+%%]
+
