@@ -313,6 +313,22 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 
 %%]
 
+%%[99
+%%]
+GB_Byte gb_code_Startup[] =
+  { GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08), 0
+  , GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08), 8
+  , GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08), 0
+  , GB_Ins_Eval(GB_InsOp_LocB_TOS)
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_Ext, GB_InsExt_Halt
+  } ;
+
+#define GB_InitPatch_gb_code_Startup				*Cast(GB_Ptr,&gb_code_Startup[3]         ) = Cast(GB_Word,&gb_callinfo_EvalWrap)
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GMP memory allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -360,6 +376,9 @@ void gb_Node_Finalize( void* p, void* cd )
 		{
 			case GB_NodeTag_Intl_Malloc :
 				free( n->content.ptr ) ;
+				break ;
+			case GB_NodeTag_Intl_Malloc2 :
+				free( n->content.bytearray.ptr ) ;
 				break ;
 %%[[98
 			case GB_NodeTag_Intl_Chan :
@@ -409,17 +428,28 @@ Bool gb_listNull( GB_NodePtr n )
 {
 	return GB_List_IsNull(n) ;
 }
+%%]
 
-GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz )
+Force evaluation of a list upto *psz list nodes, without evaluating the elements.
+On return:
+  *psz holds actual nr of evaluated nodes
+  *pn  holds the first list node.
+  returns the first list node after the last evaluated list node.
+
+%%[8
+GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
 {
-	while ( sz-- && ! GB_List_IsNull( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) )
+	int sz = 0 ;
+	while ( sz < *psz && ! GB_List_IsNull( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) )
 	{
-  		IF_GB_TR_ON(3,printf("gb_listForceEval1 sz %d, n %x: ", sz, *pn ););
+  		IF_GB_TR_ON(3,printf("gb_listForceEval1 *psz %d, sz %d, n %x: ", *psz, sz, *pn ););
   		IF_GB_TR_ON(3,gb_prWord(Cast(GB_Word,*pn)););
   		IF_GB_TR_ON(3,printf("\n" ););
 		pn = GB_List_TailPtr(*pn) ;
   		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %x\n", *pn ););
+  		sz++ ;
 	}
+	*psz = sz ;
 	return *pn ;
 }
 %%]
@@ -1351,6 +1381,9 @@ void gb_Initialize()
 	GB_InitPatch_gb_code_ExcHdl_EvalValue ;
 	GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler ;
 	GB_InitPatch_gb_code_ExcHdl_ThrowReturn ;
+%%]]
+%%[[99
+	// GB_InitPatch_gb_code_Startup ;
 %%]]
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;

@@ -87,8 +87,8 @@ WRAPPER AGItf
 For now, because of uuagc bug...
 
 %%[9
-PRAGMA nocycle
 %%]
+PRAGMA nocycle
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info: options, module name, name mapping, fixity (for deriving)

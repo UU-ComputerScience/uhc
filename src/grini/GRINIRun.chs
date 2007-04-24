@@ -141,7 +141,7 @@ primMp
             ,\rs [RVInt i1,RVInt i2]    ->  let  c = case i1 == i2 of {False->0; True->1}
                                             in   return (rs,Just (mkRN [RVCat NdCon,RVInt c,RVInt 0]))
           )
-        , ("primCString2String"
+        , ("primCStringToString"
             ,\rs [v@(RVStr _)]    ->  return (rs,Just v)
           )
         , ("primTraceStringExit"

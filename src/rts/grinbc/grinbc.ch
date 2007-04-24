@@ -42,6 +42,17 @@ typedef uint8_t  GB_Byte ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Byte array
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
+typedef struct GB_ByteArray {
+  GB_Word	size ;
+  void* 	ptr	;
+} GB_ByteArray ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% IO Channel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -161,22 +172,23 @@ typedef GB_Word GB_NodeHeader ;
 
 %%[95
 #define GB_NodeTag_Intl_Malloc			0			// Internal node: A malloc'ed ptr, requiring finalisation
+#define GB_NodeTag_Intl_Malloc2			1			// Internal node: A malloc'ed ptr with length info, requiring finalisation
 %%]
 
 %%[97
-#define GB_NodeTag_Intl_Float			1			// Internal node: Float
-#define GB_NodeTag_Intl_Double			2			// Internal node: Double
+#define GB_NodeTag_Intl_Float			2			// Internal node: Float
+#define GB_NodeTag_Intl_Double			3			// Internal node: Double
 %%]
 
 %%[97
 #if USE_GMP
-#define GB_NodeTag_Intl_GMP_mpz			3			// Internal node: A GMP mpz_t 
-#define GB_NodeTag_Intl_GMP_intl		4			// Internal node: GMP internal allocated 
+#define GB_NodeTag_Intl_GMP_mpz			4			// Internal node: A GMP mpz_t 
+#define GB_NodeTag_Intl_GMP_intl		5			// Internal node: GMP internal allocated 
 #endif
 %%]
 
 %%[98
-#define GB_NodeTag_Intl_Chan			5			// Internal node: GB_Chan
+#define GB_NodeTag_Intl_Chan			6			// Internal node: GB_Chan
 %%]
 
 %%[8
@@ -185,7 +197,8 @@ typedef struct GB_Node {
   union {
     GB_Word 		fields[1] ;			/* size 1 is ok for a CAF, but not for other static node initializers */
 %%[[95
-    void*			ptr ;				/* when GB_NodeTag_Intl_Malloc */
+    void*			ptr ;				/* when GB_NodeTag_Intl_Malloc */ /* will be replaced by following */
+    GB_ByteArray	bytearray ;			/* when GB_NodeTag_Intl_Malloc2 */
 %%]]
 %%[[97
     float			flt ;				/* when GB_NodeTag_Intl_Float */
@@ -224,6 +237,7 @@ typedef struct GB_Node {
 #define GB_MkCFunHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_CFun, 0)
 #define GB_MkCAFHeader						GB_MkFunHeader(0)
 #define GB_MkConHeader(sz,tg)				GB_MkHeader((sz)+1, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
+#define GB_MkAppHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_App, 0)
 
 #define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
 #define GB_MkConEnumNodeAsTag(tg)			GB_Int2GBInt(tg)
@@ -253,13 +267,19 @@ typedef struct GB_Node {
 #define GB_MkCFunNode1In(n,f,x1)			{GB_NodeAlloc_In(3,n); GB_FillCFunNode1(n,f,x1); }
 #define GB_MkCFunNode2In(n,f,x1,x2)			{GB_NodeAlloc_In(4,n); GB_FillCFunNode2(n,f,x1,x2); }
 
+#define GB_FillAppNode1(n,f,x1)				{GB_NodeHeader _h = GB_MkAppHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
+
+#define GB_MkAppNode1In(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillAppNode1(n,f,x1); }
+
 extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%]
 
 %%[95
 #define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
+#define GB_NodeMallocSize2					(EntierUpDivBy(sizeof(GB_ByteArray),sizeof(GB_Word)) + 1)
 
 #define GB_MkMallocHeader					GB_MkHeader(GB_NodeMallocSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc)
+#define GB_MkMallocHeader2					GB_MkHeader(GB_NodeMallocSize2, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc2)
 %%]
 
 %%[97
@@ -310,7 +330,7 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 extern GB_NodePtr gb_listTail( GB_NodePtr n ) ;
 extern GB_Word gb_listHead( GB_NodePtr n ) ;
 extern Bool gb_listNull( GB_NodePtr n ) ;
-extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int sz ) ;
+extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -461,6 +481,11 @@ This breaks when compiled without bgc.
 #define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
 											  (n)->content.ptr = malloc(nBytes) ; \
 											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
+											}
+#define GB_NodeAlloc_Malloc2_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize2,GB_MkMallocHeader2,n) ; \
+											  (n)->content.bytearray.size = nBytes ; \
+											  (n)->content.bytearray.ptr = malloc(nBytes) ; \
+											  GB_Register_Finalizer(n,&((n)->content.bytearray.ptr)) ; \
 											}
 %%]
 
@@ -722,6 +747,10 @@ extern void gb_interpretLoopWith( GB_BytePtr initPC ) ;
 extern void gb_unlinkSP() ;
 extern void gb_setPC( GB_BytePtr c ) ;
 %%]
+
+%%[99
+%%]
+extern GB_Byte gb_code_Startup[] ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Exception

@@ -210,6 +210,11 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 %%[8
 int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 {
+%%[[99
+	GB_NodePtr initCAFApp ;
+	GB_MkAppNode1In( initCAFApp, initCAF, Cast(GB_NodePtr,GB_Int0) ) ;
+	initCAF = initCAFApp ;
+%%]]
 	gb_push( initCAF ) ;
 #	if TIMING
 		clockStart = clock() ;

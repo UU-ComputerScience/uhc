@@ -68,18 +68,25 @@ module EHC.Prelude (
     Dynamic(..), TypeRep(..), Key(..), TyCon(..), Obj,
 
     IOMode(..),
+-----------------------------}
     stdin, stdout, stderr,
+{-----------------------------
     openFile,
     hClose,
     hGetContents, hGetChar, hGetLine,
-    hPutChar, hPutStr,
+    hPutChar,
+-----------------------------}
+    hPutStr,
+    hFlush,
 
+{-----------------------------
     Bool(False, True),
     Maybe(Nothing, Just),
     Either(Left, Right),
     Ordering(LT, EQ, GT),
     Char, String, Int, Integer, Float, Double, Rational, IO,
 -----------------------------}
+    
 --  List type: []((:), [])
 {-----------------------------
     (:),
@@ -117,7 +124,9 @@ module EHC.Prelude (
     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
               encodeFloat, exponent, significand, scaleFloat, isNaN,
               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
+-----------------------------}
     Monad((>>=), (>>), return, fail),
+{-----------------------------
     Functor(fmap),
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
@@ -130,13 +139,13 @@ module EHC.Prelude (
 -----------------------------}
 
 {-----------------------------
+-----------------------------}
     boundedSucc,
     boundedPred,
     boundedEnumFrom,
     boundedEnumFromTo,
     boundedEnumFromThen,
     boundedEnumFromThenTo
------------------------------}
   ) where
 
 -- Standard value bindings {Prelude} ----------------------------------------
@@ -2099,8 +2108,8 @@ primitive primbindIO             :: IO a -> (a -> IO b) -> IO b
 primitive primretIO              :: a -> IO a
 -----------------------------}
 
-primIO :: (() -> a) -> IO a
-primIO f
+ioFromPrim :: (() -> a) -> IO a
+ioFromPrim f
   = IO (\_ -> letstrict x = f () in IOResult x)
 
 primbindIO :: IO a -> (a -> IO b) -> IO b
@@ -2224,7 +2233,17 @@ primitive hGetContents :: Handle -> IO String
 primitive hGetChar    :: Handle -> IO Char
 primitive hPutChar    :: Handle -> Char -> IO ()
 primitive hPutStr     :: Handle -> String -> IO ()
+-----------------------------}
+foreign import ccall primWriteChan :: Handle -> ByteArray -> ()
+foreign import ccall primFlushChan :: Handle -> ()
 
+hPutStr     :: Handle -> String -> IO ()
+hPutStr h s = ioFromPrim (\_ -> primWriteChan h (primStringToByteArray s 1000))
+
+hFlush     :: Handle -> IO ()
+hFlush h = ioFromPrim (\_ -> primFlushChan h)
+
+{-----------------------------
 instance Functor IO where
     fmap f x = x >>= (return . f)
 -----------------------------}
@@ -2236,6 +2255,14 @@ instance Monad IO where
 {-----------------------------
     fail s = ioError (userError s)
 -----------------------------}
+
+-- ByteArray -----------------------------------------------------
+
+data ByteArray
+
+foreign import ccall primByteArrayLength :: ByteArray -> Int
+foreign import ccall primByteArrayToString :: ByteArray -> String
+foreign import ccall primStringToByteArray :: String -> Int -> ByteArray
 
 -- Hooks for primitives: -----------------------------------------------------
 -- Do not mess with these!
