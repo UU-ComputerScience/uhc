@@ -47,6 +47,7 @@ data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
 cmdLineTrfs :: AssocL String String
 cmdLineTrfs
   = [ ("CER"    , "Core Eta Reduction")
+    , ("CETA"   , "Core Eliminate Trivial Applications")
     , ("CCP"    , "Core Constant Propagation (simple ones introduced by frontend)")
     , ("CRU"    , "Core Rename Unique (all identifiers)")
     , ("CLU"    , "Core Let Unrec (remove unnecessary recursive defs)")
@@ -54,6 +55,7 @@ cmdLineTrfs
     , ("CFL"    , "Core Full Laziness (give names to all expressions and float them outwards)")
     , ("CLL"    , "Core Lambda Lift")
     , ("CLGA"   , "Core Lambda Global as Arg")
+    , ("CCGA"   , "Core CAF Global as Arg")
     , ("CLFG"   , "Core Lambda Float to Global")
     ]
 

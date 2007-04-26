@@ -36,11 +36,12 @@ Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag
 Core/Trf/FullLazy.cag
 Core/Trf/InlineLetAlias.cag
-Core/Trf/LamLift.cag
 Core/Trf/LamGlobalAsArg.cag
+Core/Trf/CAFGlobalAsArg.cag
 Core/Trf/LamFloatGlobal.cag
 Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 Core/Trf/ForceEval.cag
+Core/Trf/ElimTrivApp.cag
 GrinCode/Pretty.cag
 GrinCode/Trf/ForceEval.cag

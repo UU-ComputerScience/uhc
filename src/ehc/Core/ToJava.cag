@@ -10,6 +10,9 @@
 %%[8 hs module {%{EH}Core.ToJava} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
 %%]
 
+%%[8 hs import(Data.Maybe)
+%%]
+
 %%[8.WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]

@@ -92,8 +92,8 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-startFvSLamMp :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
-startFvSLamMp bLamS lamS varS fvm bFvm
+fvsClosure :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
+fvsClosure bLamS lamS varS fvm bFvm
   =  let  bFvm2    =  Map.filterWithKey (\n _ -> n `Set.member` bLamS) bFvm
           fvlam  s =  lamS `Set.intersection` s
           fvvar  s =  varS `Set.intersection` s
@@ -101,19 +101,19 @@ startFvSLamMp bLamS lamS varS fvm bFvm
                         (Set.unions $ map (\n -> Map.findWithDefault Set.empty n fvm) $ Set.toList $ fvlam $ s)
      in   (Map.map fv bFvm2,Map.map (`Set.intersection` bLamS) bFvm2)
 
-iterFvSLamMp :: FvSMp -> FvSMp -> FvSMp
-iterFvSLamMp frLamMp frVarMp
+fvsTransClosure :: FvSMp -> FvSMp -> FvSMp
+fvsTransClosure frLamMp frVarMp
   =  let  frVarMp2 = Map.mapWithKey
                        (\n s -> s `Set.union` (Set.unions
-                                               $ map (\n -> panicJust "iterFvSLamMp.1" $ Map.lookup n $ frVarMp)
+                                               $ map (\n -> panicJust "fvsTransClosure.1" $ Map.lookup n $ frVarMp)
                                                $ Set.toList
-                                               $ panicJust "iterFvSLamMp.2"
+                                               $ panicJust "fvsTransClosure.2"
                                                $ Map.lookup n frLamMp
                        )                      )
                        frVarMp
           sz = sum . map Set.size . Map.elems
      in   if sz frVarMp2 > sz frVarMp
-          then iterFvSLamMp frLamMp frVarMp2
+          then fvsTransClosure frLamMp frVarMp2
           else frVarMp
 %%]
 
@@ -124,9 +124,9 @@ SEM CodeAGItf
   | AGItf       module      .   fvSLamMp    =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   fvSLamMp    =   (let  start varS = startFvSLamMp @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp $ @binds.fvSMp
+  | Let         loc         .   fvSLamMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp $ @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindRec  ->  iterFvSLamMp lm m
+                                                        CBindRec  ->  fvsTransClosure lm m
                                                                   where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
                                                         _         ->  m
                                                                   where (m,_)   = start @lhs.varS

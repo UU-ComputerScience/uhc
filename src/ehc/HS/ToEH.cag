@@ -939,6 +939,14 @@ SEM Expression
     | Case
         loc         .   caseId      =   @lUniq
 
+SEM FunctionBinding
+    | FunctionBinding
+        loc         .   caseId      =   @lUniq
+
+SEM Declaration
+    | PatternBinding
+        loc         .   caseId      =   @lUniq
+
 SEM Body
     | Body
         loc         .   caseId      =   uidStart

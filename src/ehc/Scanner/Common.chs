@@ -270,6 +270,9 @@ hiScanOpts
 %%[[13
                                     , "redhowlambda"
 %%]]
+%%[[20
+                                    , "visibleno", "visibleyes"
+%%]]
                                     ]
 %%[[20
                                     ++ tokKeywStrsHI6

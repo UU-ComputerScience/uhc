@@ -223,7 +223,7 @@ SEM Expr
                                                              -> mkCExprLet CBindPlain @dataFieldExpr.dfeCBindL
                                                                   (mkTup (dgiDtiOfCon conNm @dgi) (const $ cundefined @lhs.opts) @dataFieldExpr.dfeCExpr @dataFieldExpr.fuCExprL)
                                                            _ -> mkCExprLet CBindPlain (err ++  @dataFieldExpr.dfeCBindL)
-                                                                  (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
+                                                                  (mkCExprSatSelsCases (rceUpdEnv (CExpr_Var en) @rceEnv) (Just $ mkHNm @lUniq) @dataFieldExpr.dfeCExpr alts)
                                                              where alts = [ ( dtiCTag dti
                                                                             , [ (f,f,dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
                                                                             , Nothing
@@ -307,7 +307,7 @@ SEM Decl
                                                          ] ]
                                                     else [ [ CBind_Bind f
                                                                (mkCExprLam [xn1]
-                                                                 (mkCExprSatSelsCases (@rceEnv {rceCaseCont = CExpr_Var en}) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
+                                                                 (mkCExprSatSelsCases (rceUpdEnv (CExpr_Var en) @rceEnv) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
                                                            , CBind_Bind en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
                                                            ]
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -850,10 +850,9 @@ rceMatch env args alts
            ->  case e of
                   CExpr_Var _
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
-                  _  ->  mkCExprLet CBindPlain [CBind_Bind nc e] ce'
+                  _  ->  mkCExprLet CBindPlain [CBind_Bind nc e]
+                         $ rceMatchSplits (rceUpdEnv (CExpr_Var nc) env) args alts
                      where nc  = hsnPrefix "_casecont_" (rpatNmNm . rcpPNm . rcaPat . head $ alts)
-                           ce' = rceMatchSplits (rceUpdEnv vc env) args alts
-                           vc  = CExpr_Var nc
         )
         (rceCaseCont env)
      $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar

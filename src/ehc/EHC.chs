@@ -22,7 +22,7 @@
 %%[8 import ({%{EH}Core.ToJava},{%{EH}Core.Pretty})
 %%]
 
-%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamGlobalAsArg},{%{EH}Core.Trf.LamFloatGlobal},{%{EH}Core.Trf.LamLift},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed})
+%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamGlobalAsArg},{%{EH}Core.Trf.CAFGlobalAsArg},{%{EH}Core.Trf.LamFloatGlobal},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed},{%{EH}Core.Trf.ElimTrivApp})
 %%]
 
 %%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
@@ -698,7 +698,7 @@ cpFoldHI modNm
          ;  when (isJust mbHI && HISem.isValidVersion_Syn_AGItf hiSem)
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
-                           mmi'   = mkModMpInfo (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem)
+                           mmi'   = mkModMpInfo (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem) (HISem.exportHideRel_Syn_AGItf hiSem)
                      ; put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm mmi' mm}})
                      ; cpUpdCU modNm (ecuStorePrevHISem hiSem)
                      })
@@ -1065,7 +1065,7 @@ cpGetCheckEhMod modNm
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              mm     = crsiModMp crsi
-             mod    = Mod modNm Nothing Nothing [] Rel.empty []
+             mod    = Mod modNm Nothing Nothing [] Rel.empty Rel.empty []
        ; cpUpdCU modNm (ecuStoreMod mod)
        ; put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm emptyModMpInfo mm}})
        }
@@ -1370,6 +1370,7 @@ cpCore1Trf modNm trfNm
                  u1     = uidChild $ crsiHereUID $ crsi
                  core2  = ( case trfNm of
                               "CER"     -> cmodTrfEtaRed
+                              "CETA"    -> cmodTrfElimTrivApp opts
                               "CCP"     -> cmodTrfConstProp opts
                               "CRU"     -> cmodTrfRenUniq
                               "CLU"     -> cmodTrfLetUnrec
@@ -1379,6 +1380,7 @@ cpCore1Trf modNm trfNm
 %%]]
                               "CFL"     -> cmodTrfFullLazy u1
                               "CLGA"    -> cmodTrfLamGlobalAsArg
+                              "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfLamFloatGlobal
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id
@@ -1435,7 +1437,7 @@ cpProcessCoreBasic modNm
   = cpSeq [ cpTransformCore
               modNm
               -- [ "CER", "CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL", "CLU" ]
-              [ "CER", "CRU", "CLU", "CILA", "CCP", "CILA", "CFL", {- "CLL", -} "CLGA", "CLU", "CFL", "CLFG" {- , "CFL", "CLU" -} ]
+              [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", {- "CLL", -} "CLGA", "CCGA", "CLU", "CFL", "CLFG" {- , "CFL", "CLU" -} ]
           , cpOutputCore "core" modNm
           ]
           
@@ -1565,9 +1567,11 @@ cpOutputHI :: String -> HsName -> EHCompilePhase ()
 cpOutputHI suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  binds  = Seq.toList $ HI.hiFromHIInfo
                           $ ((ecuHIInfo ecu)
-                               { HI.hiiModEntRel = mmiExps $ panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
+                               { HI.hiiExps       = mmiExps       mmi
+                               , HI.hiiHiddenExps = mmiHiddenExps mmi
                                })
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
@@ -1584,7 +1588,7 @@ cpOutputHI suff modNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% XXX
+%%% XXX periments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99

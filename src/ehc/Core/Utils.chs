@@ -10,7 +10,7 @@
 %%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) 
 %%]
 
-%%[8 import(Data.List,EH.Util.Utils)
+%%[8 import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -226,13 +226,63 @@ fuReorder opts nL fuL
 %%]
 
 %%[10 export(fuMkCExpr)
-
 fuMkCExpr :: EHCOpts -> UID -> FieldUpdateL CExpr -> CExpr -> CExpr
 fuMkCExpr opts u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
           (oL,fuL') = fuReorder opts nL fuL
           bL = CBind_Bind n r : oL
      in   mkCExprLet CBindStrict bL $ foldl (\r (_,(f,_)) -> f r) (CExpr_Var n) $ fuL'
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var closure, and other utils used by Trf/...GlobalAsArg transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(fvsClosure,fvsTransClosure)
+fvsClosure :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
+fvsClosure newS lamOuterS varOuterS fvmOuter fvmNew
+  =  let  fvmNew2  =  Map.filterWithKey (\n _ -> n `Set.member` newS) fvmNew
+          fvlam  s =  lamOuterS `Set.intersection` s
+          fvvar  s =  varOuterS `Set.intersection` s
+          fv     s =  fvvar s `Set.union` s'
+                   where s' = Set.unions $ map (\n -> Map.findWithDefault Set.empty n fvmOuter) $ Set.toList $ fvlam $ s
+     in   (Map.map fv fvmNew2,Map.map (`Set.intersection` newS) fvmNew2)
+
+fvsTransClosure :: FvSMp -> FvSMp -> FvSMp
+fvsTransClosure frLamMp frVarMp
+  =  let  frVarMp2 = Map.mapWithKey
+                       (\n s -> s `Set.union` (Set.unions
+                                               $ map (\n -> panicJust "fvsTransClosure.1" $ Map.lookup n $ frVarMp)
+                                               $ Set.toList
+                                               $ panicJust "fvsTransClosure.2"
+                                               $ Map.lookup n frLamMp
+                       )                      )
+                       frVarMp
+          sz = sum . map Set.size . Map.elems
+     in   if sz frVarMp2 > sz frVarMp
+          then fvsTransClosure frLamMp frVarMp2
+          else frVarMp
+%%]
+
+%%[8 export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
+fvLAsArg :: LevMp -> FvS -> AssocL HsName Int
+fvLAsArg levMp fvS
+  =  sortOn snd
+     $ filter (\(_,l) -> l > cLevModule)
+     $ map (\n -> (n,fvLev levMp n))
+     $ Set.toList fvS
+
+mkFvNm :: Int -> HsName -> HsName
+mkFvNm i n = hsnSuffix n ("~" ++ show i)
+
+fvLArgRepl :: Int -> AssocL HsName Int -> ([HsName],[HsName],Map.Map HsName HsName)
+fvLArgRepl uniq argLevL
+  =  let  argOL = assocLKeys argLevL
+          argNL = zipWith (\u n -> mkFvNm u n) [uniq..] argOL
+     in   (argOL,argNL,Map.fromList (zip argOL argNL))
+
+fvVarRepl :: Map.Map HsName HsName -> HsName -> CExpr
+fvVarRepl nMp n = maybe (CExpr_Var n) CExpr_Var $ Map.lookup n nMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -114,7 +114,7 @@ pBinding
                                              <* pSEMI   <*> pString
                                              <* pSEMI   <*> (read <$> pInteger)
                                              <* pCCURLY
-  <|> Binding_Export    <$  pNmIs "export"              <*> pModEntRel
+  <|> Binding_Export    <$  pNmIs "export"   <* pOCURLY <*> (VisibleNo <$ pKeyTk "visibleno" <|> VisibleYes <$ pKeyTk "visibleyes") <* pSEMI <*> pModEntRel  <* pCCURLY
   <|> Binding_Ty        <$> pNmIs "type"     <* pOCURLY <*> pTy      <* pSEMI <*> pTy     <* pCCURLY
   <|> (\tn ty cs -> Binding_DataCon tn ty (map (\f -> f tn) cs))
       <$> pNmIs "data" <*  pOCURLY

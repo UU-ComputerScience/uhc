@@ -11,7 +11,7 @@ data Ordering = LT | EQ | GT
 
 -- type String = [Char]
 
-foreign import ccall "primCString2String" packedString2String :: PackedString -> [Char]
+foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
 foreign import ccall "primTraceStringExit" traceStringExit :: [Char] -> [Char]
 
 foreign import ccall "primAddInt" (+) :: Int -> Int -> Int

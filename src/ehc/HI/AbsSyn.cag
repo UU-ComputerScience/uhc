@@ -27,6 +27,7 @@ DATA Binding
         compileFlags            : String
         hash                    : Integer
     | Export
+        visible                 : {Visible}
         exports                 : ModEntRel
     | Fixity
         nm                      : HsName

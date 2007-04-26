@@ -501,11 +501,13 @@ SEM AGItf
 
 %%[9
 SEM Expr
-  | Var         loc     .  info_9   :=  [ mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (foLCoeL @fo_))
+  | Var         loc     .  info_9   :=  [ mkInfo1 "foGathCnstrMp @fo_" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ foGathCnstrMp @fo_)
+                                        , mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (foLCoeL @fo_))
                                         , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (foRCoeL @fo_))
                                         , mkInfo1 "@fe" (pp @fe)
                                         ]
-  | Let         loc     .  info_9   :=  [ mkInfo1 "toProveHereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveHereCnstrMp)
+  | Let         loc     .  info_9   :=  [ mkInfo1 "decls.gathCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @decls.gathCnstrMp)
+                                        , mkInfo1 "toProveHereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveHereCnstrMp)
                                         , mkInfo1 "toProveElsewhereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveElsewhereCnstrMp)
                                         -- , mkInfo1 "chrSolveWorkConstraints" (ppBracketsCommasV @chrSolveWorkConstraints)
                                         , mkInfo1 "predScope" (pp @predScope)

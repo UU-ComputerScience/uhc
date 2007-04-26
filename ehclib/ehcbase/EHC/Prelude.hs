@@ -86,6 +86,9 @@ module EHC.Prelude (
     Ordering(LT, EQ, GT),
     Char, String, Int, Integer, Float, Double, Rational, IO,
 -----------------------------}
+
+    packedStringToString,
+    packedString2Integer,
     
 --  List type: []((:), [])
 {-----------------------------
@@ -749,6 +752,8 @@ primitive primEqInteger  :: Integer -> Integer -> Bool
 primitive primCmpInteger :: Integer -> Integer -> Ordering
 -----------------------------}
 
+foreign import ccall primGtInt      :: Int -> Int -> Bool
+foreign import ccall primLtInt      :: Int -> Int -> Bool
 foreign import ccall primEqInt      :: Int -> Int -> Bool
 foreign import ccall primEqInteger  :: Integer -> Integer -> Bool
 foreign import ccall primCmpInt     :: Int -> Int -> Ordering
@@ -2256,6 +2261,13 @@ instance Monad IO where
     fail s = ioError (userError s)
 -----------------------------}
 
+-- PackedString -----------------------------------------------------
+
+data PackedString
+
+foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+foreign import ccall "primCString2Integer" packedString2Integer :: PackedString -> Integer
+
 -- ByteArray -----------------------------------------------------
 
 data ByteArray
@@ -2356,7 +2368,7 @@ data IOResult
   | Hugs_Return      Obj
   | Hugs_BlockThread (Obj -> IOResult) ((Obj -> IOResult) -> IOResult) 
 -----------------------------}
-data IOResult a = IOResult a
+newtype IOResult a = IOResult a
 
 {-----------------------------
 data IOFinished a

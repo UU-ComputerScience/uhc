@@ -469,10 +469,10 @@ void gb_chan_initstd()
 	gb_chan_stdin->content.chan.file = stdin ;
 
 	GB_NodeFixAlloc_Chan_In(gb_chan_stdout) ;
-	gb_chan_stdin->content.chan.file = stdout ;
+	gb_chan_stdout->content.chan.file = stdout ;
 
 	GB_NodeFixAlloc_Chan_In(gb_chan_stderr) ;
-	gb_chan_stdin->content.chan.file = stderr ;
+	gb_chan_stderr->content.chan.file = stderr ;
 }
 %%]
 
@@ -1387,6 +1387,8 @@ void gb_Initialize()
 %%]]
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;
+	
+	GB_MkConNodeN(gb_Unit,0,0) ;
 }
 
 %%]

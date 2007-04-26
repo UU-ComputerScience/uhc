@@ -132,13 +132,15 @@ SEM MaybeExports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 hs
-mkInstDefsRel :: Bool -> HsName -> Maybe HsName -> IdOcc -> IdOcc -> ModEntRel
+mkInstDefsRel :: Bool -> HsName -> Maybe HsName -> IdOcc -> IdOcc -> (ModEntRel,ModEntRel)
 mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
-  = (if useimplicitly
-     then Rel.singleton instancename (ModEnt IdOcc_Inst idOccDef Set.empty)
-     else Rel.empty)
-    `Rel.union`
-    maybe (Rel.empty) (\_ -> Rel.singleton instancename (ModEnt IdOcc_Val idOccDefVal Set.empty)) maybeinstancename
+  = ( (if useimplicitly then i else Rel.empty)
+      `Rel.union`
+      maybe (Rel.empty) (const v) maybeinstancename
+    , v
+    )
+  where v = Rel.singleton instancename (ModEnt IdOcc_Val idOccDefVal Set.empty)
+        i = Rel.singleton instancename (ModEnt IdOcc_Inst idOccDef Set.empty)
 %%]
 
 %%[20
@@ -147,7 +149,9 @@ ATTR
 %%[[95
   AllDeriving
 %%]]
-    [ | | modDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel ]
+    [ | | modDefsRel     USE {`Rel.union`} {Rel.empty}: ModEntRel
+          modHideDefsRel USE {`Rel.union`} {Rel.empty}: ModEntRel
+    ]
 
 SEM Declaration
     | TypeSignature FunctionBindings PatternBinding ForeignImport -- ForeignExport
@@ -173,7 +177,8 @@ SEM Declaration
                                             `Rel.union`
                                             Rel.fromList [ (hsnQualified $ ioccNm $ mentIdOcc e,e) | e <- @modEntsSub ]
     | Instance
-        lhs             .   modDefsRel  =   mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
+        lhs             .   (modDefsRel,modHideDefsRel)
+                                        =   mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
     | InstanceUseImplicitly
         lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
 %%]
@@ -185,8 +190,9 @@ SEM Body
 
 %%[95
 SEM Deriving
-	| Deriving
-		lhs				.	modDefsRel	=	mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
+    | Deriving
+        lhs             .   (modDefsRel,modHideDefsRel)
+                                        =   mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -199,7 +205,8 @@ ATTR Module AGItf [ | | mod: Mod ]
 SEM Module
     | Module
         lhs             .   mod         =   Mod @lhs.moduleNm @name
-                                                @exports.modExpsMb @modImpL @body.modDefsRel
+                                                @exports.modExpsMb @modImpL
+                                                @body.modDefsRel @body.modHideDefsRel
                                                 (reverse @body.topInstanceNmL)
 %%]
 

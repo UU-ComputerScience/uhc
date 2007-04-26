@@ -212,8 +212,8 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 {
 %%[[99
 	GB_NodePtr initCAFApp ;
-	GB_MkAppNode1In( initCAFApp, initCAF, Cast(GB_NodePtr,GB_Int0) ) ;
-	initCAF = initCAFApp ;
+	GB_MkAppNode1In( initCAFApp, initCAF, gb_Unit ) ;
+	initCAF = Cast(GB_Word,initCAFApp) ;
 %%]]
 	gb_push( initCAF ) ;
 #	if TIMING

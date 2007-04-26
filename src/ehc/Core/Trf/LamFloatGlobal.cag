@@ -13,6 +13,9 @@ Assume that each lambda has no free variables, other than the globally available
 %%[8 hs module {%{EH}Core.Trf.LamFloatGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamFloatGlobal)
 %%]
 
+%%[8 hs import(Data.Maybe)
+%%]
+
 -- for debug
 %%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -48,7 +51,7 @@ SEM CExpr
 
 %%[8
 ATTR AllCodeNT [ | | cTrf: SELF  cFloatedBinds USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (CBindCateg,Seq.FastSeq CBind)} ]
-ATTR AllBind [ | | cLamBinds, cOtherBinds USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq CBind} ]
+ATTR AllBind   [ | | cLamBinds, cOtherBinds USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq CBind} ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBind

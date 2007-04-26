@@ -170,7 +170,7 @@ SEM GrBind
                                                       _ | not @isCAF
                                                           && (  @expr.isFFIWrapper                  -- wrappers are inlined
                                                              || @expr.isConWrapper
-                                                             || @expr.inlineCost <= 6               -- and low cost values as well
+                                                             || @expr.inlineCost <= 10              -- and low cost values as well
                                                              )
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)
                                                         | otherwise
