@@ -3,8 +3,11 @@
 %include afp.fmt
 %%]
 
-Pass all free variables of lambda expressions explicitly.
-Later, these lambda expressions can then be lifted globally.
+Pass all free variables of the following let bound expressions explicitly:
+- lambda expressions
+- other non function application, except the strictly evaluated ones
+
+Later, these expressions (lambda or CAF) can then be lifted globally.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals as args
@@ -13,11 +16,14 @@ Later, these lambda expressions can then be lifted globally.
 %%[8 hs module {%{EH}Core.Trf.LamGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamGlobalAsArg)
 %%]
 
+%%[8 hs import({%{EH}Core.Utils})
+%%]
+
 -- for debug
 %%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
 WRAPPER CodeAGItf
 %%]
 
@@ -97,74 +103,8 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-SEM CExpr
-  | Let         binds       .   lev         =   @lhs.lev + 1
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Which id's are functions resp values
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {Set.empty}: FvS ]
-
-SEM CBind
-  | Bind        lhs         .   (bindVarS,bindLamS)
-                                            =   if @expr.isLam
-                                                then (Set.empty,Set.singleton @nm)
-                                                else (Set.singleton @nm,Set.empty)
-  | FFI         lhs         .   bindVarS    =   Set.singleton @nm
-%%]
-
-%%[8
-ATTR AllCodeNT [ varS, lamS: FvS | | ]
-
-SEM CodeAGItf
-  | AGItf       module      .   varS        =   Set.empty
-                            .   lamS        =   Set.empty
-
-SEM CExpr
-  | Let         loc         .   varS        =   @lhs.varS `Set.union` @binds.bindVarS
-                            .   lamS        =   @lhs.lamS `Set.union` @binds.bindLamS
-  | Lam         loc         .   varS        =   @arg `Set.insert` @lhs.varS
-
-SEM CAlt
-  | Alt         expr        .   varS        =   @lhs.varS `Set.union` Set.fromList @pat.nmL
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Free var of lam's for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-startFvSLamMp :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
-startFvSLamMp bLamS lamS varS fvm bFvm
-  =  let  bFvm2    =  Map.filterWithKey (\n _ -> n `Set.member` bLamS) bFvm
-          fvlam  s =  lamS `Set.intersection` s
-          fvvar  s =  varS `Set.intersection` s
-          fv     s =  fvvar s `Set.union`
-                        (Set.unions $ map (\n -> Map.findWithDefault Set.empty n fvm) $ Set.toList $ fvlam $ s)
-     in   (Map.map fv bFvm2,Map.map (`Set.intersection` bLamS) bFvm2)
-
-iterFvSLamMp :: FvSMp -> FvSMp -> FvSMp
-iterFvSLamMp frLamMp frVarMp
-  =  let  frVarMp2 = Map.mapWithKey
-                       (\n s -> s `Set.union` (Set.unions
-                                               $ map (\n -> panicJust "iterFvSLamMp.1" $ Map.lookup n $ frVarMp)
-                                               $ Set.toList
-                                               $ panicJust "iterFvSLamMp.2"
-                                               $ Map.lookup n frLamMp
-                       )                      )
-                       frVarMp
-          sz = sum . map Set.size . Map.elems
-     in   if sz frVarMp2 > sz frVarMp
-          then iterFvSLamMp frLamMp frVarMp2
-          else frVarMp
-%%]
 
 %%[8
 ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
@@ -173,41 +113,15 @@ SEM CodeAGItf
   | AGItf       module      .   fvSLamMp    =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   fvSLamMp    =   (let  start varS = startFvSLamMp @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp $ @binds.fvSMp
+  | Let         loc         .   fvSLamMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindRec  ->  iterFvSLamMp lm m
+                                                        CBindRec  ->  fvsTransClosure lm m
                                                                   where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
                                                         _         ->  m
                                                                   where (m,_)   = start @lhs.varS
                                                 )
                                                 `Map.union` @lhs.fvSLamMp
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is expr a let?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-ATTR CExpr [ | | isLet: Bool ]
-
-SEM CExpr
-  | Let         lhs         .   isLet       =   True
-  | * - Let     lhs         .   isLet       =   False
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Has a strictness?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-ATTR CExpr [ | | hasStrict: Bool ]
-
-SEM CExpr
-  | TupIns TupDel Case
-                lhs         .   hasStrict   =   True
-  | * - TupIns TupDel Case
-                lhs         .   hasStrict   =   False
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Mapping of argument names
@@ -247,6 +161,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 ATTR AllCodeNT [ mutRecMp: LevMp | | ]
 
 SEM CodeAGItf
@@ -257,32 +172,10 @@ SEM CExpr
                                                  then Map.fromList (zip @binds.nmL (repeat @lhs.lev)) `Map.union` @lhs.mutRecMp
                                                  else @lhs.mutRecMp
                                                 )
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-fvLAsArg :: LevMp -> FvS -> AssocL HsName Int
-fvLAsArg levMp fvS
-  =  sortOn snd
-     $ filter (\(_,l) -> l > cLevModule)
-     $ map (\n -> (n,fvLev levMp n))
-     $ Set.toList fvS
-
-mkFvNm :: Int -> HsName -> HsName
-mkFvNm i n = hsnSuffix n ("~" ++ show i)
-
-fvLArgRepl :: Int -> AssocL HsName Int -> ([HsName],[HsName],Map.Map HsName HsName)
-fvLArgRepl uniq argLevL
-  =  let  argOL = assocLKeys argLevL
-          argNL = zipWith (\u n -> mkFvNm u n) [uniq..] argOL
-     in   (argOL,argNL,Map.fromList (zip argOL argNL))
-
-varRepl :: Map.Map HsName HsName -> HsName -> CExpr
-varRepl nMp n = maybe (CExpr_Var n) CExpr_Var $ Map.lookup n nMp
-%%]
 
 %%[8
 ATTR AllCodeNT [ | | cTrf: SELF ]
@@ -290,18 +183,19 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBind
   | Bind        loc			.	(argNewL,argMp,bindLamArgMp)
-                                            =   if @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.introLevMp $ panicJust "CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+                                            =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
+                                                then  let  argLevL = fvLAsArg @lhs.introLevMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
                                                       in   (argNL, argONMp, @nm `Map.singleton` argOL)
                                                 else  ([],Map.empty, Map.empty)
-  | Bind        lhs			.	cTrf        =   CBind_Bind @nm $ mkCExprLam @argNewL @expr.cTrf
-  | FFI         loc         .   bindVarBindL=   [@cTrf]
 %%]
 
 %%[8
+SEM CBind
+  | Bind        lhs			.	cTrf        =   CBind_Bind @nm $ mkCExprLam @argNewL @expr.cTrf
+
 SEM CExpr
-  | Var         lhs         .   cTrf        =   let  r n = varRepl @lhs.argSubst n
+  | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argSubst n
                                                      v1 = r @nm
                                                      v2 = maybe v1 (mkCExprApp v1 . map r) $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2

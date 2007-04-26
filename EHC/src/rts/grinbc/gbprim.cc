@@ -11,8 +11,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-PRIM GB_Word gb_Unit
-	= GB_MkConEnumNodeAsTag( 0 ) ;
+PRIM GB_NodePtr gb_Unit ;
 
 PRIM GB_Word gb_False
 	= GB_MkConEnumNodeAsTag( 0 ) ;
@@ -688,6 +687,7 @@ PRIM GB_NodePtr gb_primStdin()
 
 PRIM GB_NodePtr gb_primStdout()
 {
+  	IF_GB_TR_ON(3,printf("gb_primStdout\n" ););
   	return gb_chan_stdout ;
 }
 
@@ -723,6 +723,7 @@ PRIM GB_Word gb_primFlushChan( GB_NodePtr c )
 
 PRIM GB_Word gb_primWriteChan( GB_NodePtr c, GB_NodePtr a )
 {
+  	IF_GB_TR_ON(3,printf("gb_primWriteChan sz %d\n", a->content.bytearray.size ););
 	fwrite( a->content.bytearray.ptr, 1, a->content.bytearray.size, c->content.chan.file ) ;
 	return Cast(GB_Word,gb_Unit) ;
 }

@@ -209,7 +209,7 @@ SEM DataFieldPatExpr
 %%[8
 SEM Expr
   | Undefined   loc     .   pp      =   pp "..."
-  | CaseAltFail loc     .   pp      =   pp "FAIL"
+  | CaseAltFail loc     .   pp      =   pp "FAIL" >#< @caseId
 
 SEM Decl
   | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp

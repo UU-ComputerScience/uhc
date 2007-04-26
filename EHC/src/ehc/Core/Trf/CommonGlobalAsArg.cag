@@ -1,0 +1,44 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG code for transformations to `passing globals as args'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+  | Let         binds       .   lev         =   @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Which id's are functions resp values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {Set.empty}: FvS ]
+
+SEM CBind
+  | Bind        lhs         .   (bindVarS,bindLamS)
+                                            =   if @expr.isLam
+                                                then (Set.empty,Set.singleton @nm)
+                                                else (Set.singleton @nm,Set.empty)
+  | FFI         lhs         .   bindVarS    =   Set.singleton @nm
+%%]
+
+%%[8
+ATTR AllCodeNT [ varS, lamS: FvS | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   varS        =   Set.empty
+                            .   lamS        =   Set.empty
+
+SEM CExpr
+  | Let         loc         .   varS        =   @lhs.varS `Set.union` @binds.bindVarS
+                            .   lamS        =   @lhs.lamS `Set.union` @binds.bindLamS
+  | Lam         loc         .   varS        =   @arg `Set.insert` @lhs.varS
+
+SEM CAlt
+  | Alt         expr        .   varS        =   @lhs.varS `Set.union` Set.fromList @pat.nmL
+%%]
+

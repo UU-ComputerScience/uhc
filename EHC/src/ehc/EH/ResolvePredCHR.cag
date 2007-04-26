@@ -11,11 +11,10 @@ SEM Expr
   | App         lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToProveCnstrMp $ @prOccL, @func.gathCnstrMp, @arg.gathCnstrMp]
   | TypeAs      lhs         .   gathCnstrMp         =   cnstrMpUnions [foGathCnstrMp @fo_, foGathCnstrMp @fo_fitDown, @expr.gathCnstrMp]
   | Let         loc         .   gathCnstrMp         =   cnstrMpUnions [@toProveElsewhereCnstrMp,@body.gathCnstrMp] -- for now
-  | Lam
+  | Lam         lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToAssumeCnstrMp @knPrL,@arg.gathCnstrMp,@body.gathCnstrMp]
 %%[[12
-    LamImpl
+  | LamImpl     lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToAssumeCnstrMp @knPrL,@arg.gathCnstrMp,@body.gathCnstrMp]
 %%]]
-                lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToAssumeCnstrMp @knPrL,@body.gathCnstrMp]
   | AppTop      lhs         .   gathCnstrMp         =   cnstrMpUnions [gathPredLToAssumeCnstrMp @knPrL,@expr.gathCnstrMp]
 %%]
 

@@ -179,11 +179,12 @@ data Mod
       , modExpL         :: !(Maybe [ModExp])
       , modImpL         :: ![ModImp]
       , modDefs         :: !ModEntRel
+      , modHiddenExps   :: !ModEntRel
       , modInstNmL      :: ![HsName]
       }
   deriving (Show)
 
-emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty []
+emptyMod = Mod hsnUnknown Nothing Nothing [] Rel.empty Rel.empty []
 
 modBuiltin
   = emptyMod
@@ -198,7 +199,7 @@ modBuiltin
 %%[20
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
-         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "DEF" >#< pp (modDefs m))
+         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "HID" >#< pp (modHiddenExps m) >-< "DEF" >#< pp (modDefs m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -415,27 +416,30 @@ checkImp exps imp
 %%[20 export(ModMpInfo(..),ModMp,emptyModMpInfo,mkModMpInfo)
 data ModMpInfo
   = ModMpInfo
-      { mmiInscps   :: !ModEntRel
-      , mmiExps     :: !ModEntRel
-      , mmiNmOffMp  :: !HsName2OffsetMp
+      { mmiInscps   		:: !ModEntRel
+      , mmiExps     		:: !ModEntRel
+      , mmiHiddenExps     	:: !ModEntRel
+      , mmiNmOffMp  		:: !HsName2OffsetMp
       }
 
 instance Show ModMpInfo where
   show _ = "ModMpInfo"
 
 instance PP ModMpInfo where
-  pp i =   "In scp:" >#< (ppAssocL $ Rel.toList $ mmiInscps i)
-       >-< "Exps  :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
+  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps i)
+       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
+       >-< "Hidden Exps:" >#< (ppAssocL $ Rel.toList $ mmiHiddenExps   i)
 
 emptyModMpInfo :: ModMpInfo
-emptyModMpInfo = mkModMpInfo Rel.empty Rel.empty
+emptyModMpInfo = mkModMpInfo Rel.empty Rel.empty Rel.empty
 
-mkModMpInfo :: ModEntRel -> ModEntRel -> ModMpInfo
-mkModMpInfo i e
+mkModMpInfo :: ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
+mkModMpInfo i e he
   = ModMpInfo
-      { mmiInscps   = i
-      , mmiExps     = e
-      , mmiNmOffMp  = expsNmOffMp e
+      { mmiInscps   		= i
+      , mmiExps     		= e
+      , mmiHiddenExps     	= he
+      , mmiNmOffMp  		= expsNmOffMp $ e `Rel.union` he
       }
 
 type ModMp = Map.Map HsName ModMpInfo
@@ -453,8 +457,9 @@ expsNmOffMp exps
     $ flip zip [0..]
     $ sortByOn rowLabCmp hsnQualified
     $ nub
-    $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val || mentKind e == IdOcc_Inst ]
+    $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val ]
 %%]
+    $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val || mentKind e == IdOcc_Inst ]
 
 %%[20 export(modMpCombine)
 modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
@@ -463,7 +468,7 @@ modMpCombine ms mp
   where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
         rels            = modInsOuts (expsOf mp) ms
         (inscps,exps)   = unzip rels
-        newMp           = (Map.fromList $ zipWith3 (\n i o -> (n,mkModMpInfo i o)) (map modName ms) inscps exps)
+        newMp           = (Map.fromList $ zipWith4 (\n i o ho -> (n,mkModMpInfo i o ho)) (map modName ms) inscps exps (map modHiddenExps ms))
                            `Map.union` mp
         errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
 %%]

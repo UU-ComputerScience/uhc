@@ -10,6 +10,9 @@
 %%[8 hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
 %%]
 
+%%[8 hs import(Data.Maybe)
+%%]
+
 %%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]

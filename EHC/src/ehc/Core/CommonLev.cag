@@ -51,6 +51,28 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr otherwise (apart from isLam) a candidate for making a closure out of it?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CExpr [ | | isClosurable: Bool ]
+
+SEM CExpr
+  | Case TupDel TupIns TupUpd Let
+                lhs         .   isClosurable    =   True
+  | * - Case TupDel TupIns TupUpd Let
+                lhs         .   isClosurable    =   False
+%%]
+
+%%[8
+SEM CBind
+  | Bind        loc         .   isClosurable    =   @lhs.letBindCateg /= CBindStrict
+                                                    && @expr.isClosurable
+                                                    && isNothing @expr.mbTupApp
+                                                    
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is expr a var?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -58,8 +80,19 @@ SEM CExpr
 ATTR CExpr [ | | mbVar: {Maybe HsName} ]
 
 SEM CExpr
-  | Var         lhs         .   mbVar       =   Just @nm
+  | Var         loc         .   mbVar       =   Just @nm
   | * - Var     lhs         .   mbVar       =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllBind [ letBindCateg: CBindCateg | | ]
+
+SEM CExpr
+  | Let         loc         .   letBindCateg    =   @categ
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

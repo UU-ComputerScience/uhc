@@ -70,7 +70,7 @@ instance CHRSubstitutable PredScope TyVarId Cnstr where
 
 instance CHRSubstitutable CHRPredOccCnstrMp TyVarId Cnstr where
   chrFtv        x = Set.unions [ chrFtv k | k <- Map.keys x ]
-  chrAppSubst s x = Map.mapKeys (chrAppSubst s) x
+  chrAppSubst s x = Map.mapKeysWith (++) (chrAppSubst s) x
 
 instance CHRSubstitutable Cnstr TyVarId Cnstr where
   chrFtv        x = Set.empty

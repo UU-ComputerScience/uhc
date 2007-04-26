@@ -51,7 +51,7 @@ SEM Binding
     | Fixity
         lhs         .   ppSq        =   hiNV "fixity" @nm [pp @prio,pp @fixity]
     | Export
-        lhs         .   ppSq        =   hiNV' "export" hsnUnknown (ppForHI @exports)
+        lhs         .   ppSq        =   hiNV "export" hsnUnknown [pp (show @visible),ppForHI @exports]
     | Ids
         lhs         .   ppSq        =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppForHI o,ppForHI d]) @idOccs)
     | Arities

@@ -19,6 +19,9 @@
 %%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings)
 %%]
 
+%%[20 hs export(Visible(..))
+%%]
+
 %%[20 ag import({HI/AbsSyn})
 %%]
 
@@ -29,6 +32,16 @@
 %%% Additional defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 hs
+data Visible
+  = VisibleNo | VisibleYes
+  deriving Eq
+
+instance Show Visible where
+  show VisibleNo  = "visibleno"
+  show VisibleYes = "visibleyes"
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% HI info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,20 +49,21 @@
 %%[20 hs export(HIInfo(..), emptyHIInfo)
 data HIInfo
   = HIInfo
-      { hiiModEntRel		:: !ModEntRel
-      , hiiFixityGam		:: !FixityGam
-      , hiiIdDefOccGam		:: !IdDefOccGam
-      , hiiValGam			:: !ValGam
-      , hiiTyGam			:: !TyGam
-      , hiiDataGam			:: !DataGam
-      , hiiPrIntroGam		:: !Pr.PrIntroGam
-      , hiiCHRStore			:: !ScopedPredStore
-      , hiiCArityMp			:: !CArityMp
-      , hiiGrInlMp			:: !GrInlMp
+      { hiiExps             :: !ModEntRel
+      , hiiHiddenExps       :: !ModEntRel
+      , hiiFixityGam        :: !FixityGam
+      , hiiIdDefOccGam      :: !IdDefOccGam
+      , hiiValGam           :: !ValGam
+      , hiiTyGam            :: !TyGam
+      , hiiDataGam          :: !DataGam
+      , hiiPrIntroGam       :: !Pr.PrIntroGam
+      , hiiCHRStore         :: !ScopedPredStore
+      , hiiCArityMp         :: !CArityMp
+      , hiiGrInlMp          :: !GrInlMp
       }
 
 emptyHIInfo :: HIInfo
-emptyHIInfo = HIInfo Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
+emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,16 +74,17 @@ emptyHIInfo = HIInfo Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam empt
 hiFromHIInfo :: HIInfo -> Seq.FastSeq Binding
 hiFromHIInfo i
   = hiFromAllGams
-      (hiiModEntRel 	i)
-      (hiiFixityGam 	i)
-      (hiiIdDefOccGam 	i)
-      (hiiValGam	 	i)
-      (hiiTyGam	 		i)
-      (hiiDataGam	 	i)
-      (hiiPrIntroGam 	i)
-      (hiiCHRStore	 	i)
-      (hiiCArityMp	 	i)
-      (hiiGrInlMp	 	i)
+      (hiiExps          i)
+      (hiiHiddenExps    i)
+      (hiiFixityGam     i)
+      (hiiIdDefOccGam   i)
+      (hiiValGam        i)
+      (hiiTyGam         i)
+      (hiiDataGam       i)
+      (hiiPrIntroGam    i)
+      (hiiCHRStore      i)
+      (hiiCArityMp      i)
+      (hiiGrInlMp       i)
 %%]
 
 %%[20 hs
@@ -78,6 +93,7 @@ hiFromGam mk g = Seq.fromList [ mk n v | (n,v) <- gamToAssocL g ]
 
 hiFromAllGams 
   :: ModEntRel
+     -> ModEntRel
      -> FixityGam
      -> IdDefOccGam
      -> ValGam
@@ -88,8 +104,9 @@ hiFromAllGams
      -> CArityMp
      -> GrInlMp
      -> Seq.FastSeq Binding
-hiFromAllGams exps fg idg vg tg dg ig chrStore arityMp inlMp
-  =          Seq.fromList [Binding_Export exps]
+hiFromAllGams exps hiddenExps fg idg vg tg dg ig chrStore arityMp inlMp
+  =          Seq.fromList [Binding_Export VisibleYes exps]
+    Seq.:++: Seq.fromList [Binding_Export VisibleNo hiddenExps]
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
     Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]

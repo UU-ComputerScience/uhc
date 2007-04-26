@@ -44,21 +44,25 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 ATTR
   AllNT AGItf
     [ | |
-      exportRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel
-      fixityGam     USE {`gamUnion`}        {emptyGam}          : FixityGam
-      idGam         USE {`gamUnion`}        {emptyGam}          : IdDefOccGam
-      valGam        USE {`gamUnion`}        {emptyGam}          : ValGam
-      tyGam         USE {`gamUnion`}        {emptyGam}          : TyGam
-      dataGam       USE {`gamUnion`}        {emptyGam}          : DataGam
-      prIntroGam    USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}
-      chrStore      USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore
-      arityMp       USE {`Map.union`}       {Map.empty}         : CArityMp
-      inlMp         USE {`Map.union`}       {Map.empty}         : GrInlMp
+      exportRel         USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- explicit exports
+      exportHideRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- implicit exports (instances)
+      fixityGam         USE {`gamUnion`}        {emptyGam}          : FixityGam					-- fixity info for identifiers
+      idGam             USE {`gamUnion`}        {emptyGam}          : IdDefOccGam				-- all identifiers which can be used, both explicit or implicit (including instances)
+      valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used
+      tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with kinds
+      dataGam           USE {`gamUnion`}        {emptyGam}          : DataGam					-- additional structural info for datatypes
+      prIntroGam        USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}			-- classes
+      chrStore          USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore			-- CHR
+      arityMp           USE {`Map.union`}       {Map.empty}         : CArityMp					-- arities of identifiers, used for GRIN
+      inlMp             USE {`Map.union`}       {Map.empty}         : GrInlMp					-- inline info, used by GrinByteCode
    ]
 
 SEM Binding
     | Export
-        lhs             .   exportRel   =   @exports
+        lhs             .   (exportRel,exportHideRel)
+                                        =   case @visible of
+                                              VisibleNo  -> (Rel.empty,@exports)
+                                              VisibleYes -> (@exports,Rel.empty)
     | Ids
         lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
     | Arities

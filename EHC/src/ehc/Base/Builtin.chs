@@ -331,7 +331,7 @@ mkRV m = hsnSetQual m . hsnFromString
       (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
 %%]]
       [ "undefined"
-      , "PackedString", "packedString2String"
+      , "PackedString", "packedStringToString"
       , "id"
       , "primAddInt", "primGtInt"
 %%[[97

@@ -16,11 +16,11 @@ SEM GrGlobal
   | Global      val         .   nmAliasMp       =   Map.empty
 
 SEM GrExpr
-  | Seq         loc			.	patAliasMp		=	mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
+  | Seq         loc         .   patAliasMp      =   mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
 
 SEM GrAlt
-  | Alt         loc			.	patAliasMp		=	mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
-  				            .   nmAliasMp       =   @patAliasMp `Map.union` @lhs.nmAliasMp
+  | Alt         loc         .   patAliasMp      =   mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
+                            .   nmAliasMp       =   @patAliasMp `Map.union` @lhs.nmAliasMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,3 +70,9 @@ SEM GrVal
   | NodeAdapt   lhs         .   trf             =   GrVal_NodeAdapt (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
 %%]]
 %%]
+
+%%[10
+SEM GrSplit
+  | Sel         lhs         .   trf             =   GrSplit_Sel (nmAliasRepl @lhs.nmAliasMp @nm) @off.trf
+%%]
+

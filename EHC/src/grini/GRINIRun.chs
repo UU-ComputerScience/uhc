@@ -7,13 +7,13 @@
 %%% Run GRI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module GRINIRun import(EH.Util.PPUtils,{%{EH}Base.Common},{%{EH}Base.Builtin},GRINICommon,{%{EH}GrinCode},{%{EH}GrinCode.Pretty})
+%%[8 module GRINIRun import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},GRINICommon,{%{EH}GrinCode},{%{EH}GrinCode.Pretty})
 %%]
 
 %%[8 import(qualified Data.Map as Map,Data.Maybe,Data.Array,Data.Array.IO)
 %%]
 
-%%[8 import(UU.Pretty) export(ppRunState)
+%%[8 export(ppRunState)
 %%]
 
 %%[8 export(RunState(..),RunHeap(..),RunVal(..),RunLoc,RunEnv,run1Step,mkRN,NdCat(..),rvHole)
@@ -462,7 +462,7 @@ run1Expr rs e
                   ->  do  {  v' <- rsDeref rs v
                           ;  halt rs  ("Terminate ("
                                       >|< rsNrSteps rs >#< "steps,"
-                                      >#< rhFree (rsHeap rs) >|< (pp_parens . pp . rhSize . rsHeap $ rs) >#< "nodes) with:"
+                                      >#< rhFree (rsHeap rs) >|< (ppParens . pp . rhSize . rsHeap $ rs) >#< "nodes) with:"
                                       >-< indent 2 (pp v')
                                       )
                           }
