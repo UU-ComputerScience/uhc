@@ -23,6 +23,10 @@ module EHC.Prelude (
     reads, shows, read, lex,
     showChar, showString, readParen, showParen,
 -----------------------------}
+    ShowS,
+    Show(show, showsPrec, showList),
+    shows,
+    showChar, showString,
 --  module PreludeIO,
 {-----------------------------
     FilePath, IOError, ioError, userError, catch,
@@ -30,14 +34,17 @@ module EHC.Prelude (
     getChar, getLine, getContents, interact,
     readFile, writeFile, appendFile, readIO, readLn,
 -----------------------------}
+    putStr, putStrLn, print,
 --  module Ix,
 {-----------------------------
     Ix(range, index, unsafeIndex, inRange, rangeSize),
 -----------------------------}
 --  module Char,
 {-----------------------------
+-----------------------------}
     isSpace, isUpper, isLower,
     isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum,
+{-----------------------------
     readLitChar, showLitChar, lexLitChar,
 -----------------------------}
 --  module Numeric
@@ -51,7 +58,6 @@ module EHC.Prelude (
     Ratio((:%)), (%), numerator, denominator,
 -----------------------------}
 --  Non-standard exports
-{-----------------------------
     IO(..), IOResult(..),
     IOException(..), IOErrorType(..),
     Exception(..),
@@ -62,6 +68,7 @@ module EHC.Prelude (
     Int8, Int16, Int32, Int64,
     Word8, Word16, Word32, Word64,
     Handle, Object,
+{-----------------------------
     basicIORun, blockIO, IOFinished(..),
     threadToIOResult,
     catchException, throw,
@@ -76,24 +83,24 @@ module EHC.Prelude (
     hGetContents, hGetChar, hGetLine,
     hPutChar,
 -----------------------------}
-    hPutStr,
+    hPutStr, hPutStrLn,
     hFlush,
 
 {-----------------------------
+-----------------------------}
     Bool(False, True),
     Maybe(Nothing, Just),
     Either(Left, Right),
     Ordering(LT, EQ, GT),
     Char, String, Int, Integer, Float, Double, Rational, IO,
------------------------------}
 
     packedStringToString,
-    packedString2Integer,
+    packedStringToInteger,
     
 --  List type: []((:), [])
 {-----------------------------
-    (:),
 -----------------------------}
+    ''[]''(..),
 --  Tuple types: (,), (,,), etc.
 {-----------------------------
 -----------------------------}
@@ -103,12 +110,12 @@ module EHC.Prelude (
 --  Functions: (->)
 {-----------------------------
     Rec, emptyRec, EmptyRow, -- non-standard, should only be exported if TREX
+-----------------------------}
     Eq((==), (/=)),
     Ord(compare, (<), (<=), (>=), (>), max, min),
     Enum(succ, pred, toEnum, fromEnum, enumFrom, enumFromThen,
          enumFromTo, enumFromThenTo),
     Bounded(minBound, maxBound),
------------------------------}
 --  Num((+), (-), (*), negate, abs, signum, fromInteger),
 {-----------------------------
 -----------------------------}
@@ -1830,11 +1837,13 @@ lexLitChar (c:s)
 
    table = ('\DEL',"DEL") : asciiTab
    prefix c (t,s) = (c:t, s)
+-----------------------------}
 
 isOctDigit c  =  c >= '0' && c <= '7'
 isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
                            || c >= 'a' && c <= 'f'
 
+{-----------------------------
 lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
 lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
 lexmatch xs     ys               =  (xs,ys)
@@ -2162,10 +2171,12 @@ putChar    = hPutChar stdout
 
 putStr    :: String -> IO ()
 putStr     = hPutStr stdout
+-----------------------------}
 
 print     :: Show a => a -> IO ()
 print      = putStrLn . show
 
+{-----------------------------
 putStrLn  :: String -> IO ()
 putStrLn s = do putStr s
                 putChar '\n'
@@ -2249,11 +2260,16 @@ primitive hPutStr     :: Handle -> String -> IO ()
 foreign import ccall primWriteChan :: Handle -> ByteArray -> ()
 foreign import ccall primFlushChan :: Handle -> ()
 
-hPutStr     :: Handle -> String -> IO ()
-hPutStr h s = ioFromPrim (\_ -> primWriteChan h (primStringToByteArray s 1000))
+hPutStr, hPutStrLn     :: Handle -> String -> IO ()
+hPutStr   h s = ioFromPrim (\_ -> primWriteChan h (primStringToByteArray s 1000))
+hPutStrLn h s = do {hPutStr h s ; hPutStr h "\n"}
 
 hFlush     :: Handle -> IO ()
 hFlush h = ioFromPrim (\_ -> primFlushChan h)
+
+putStr, putStrLn     :: String -> IO ()
+putStr   = hPutStr   stdout
+putStrLn = hPutStrLn stdout
 
 {-----------------------------
 instance Functor IO where
@@ -2272,14 +2288,14 @@ instance Monad IO where
 
 data PackedString
 
-foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
-foreign import ccall "primCString2Integer" packedString2Integer :: PackedString -> Integer
+foreign import ccall "primCStringToString"  packedStringToString  :: PackedString -> [Char]
+foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
 
 -- ByteArray -----------------------------------------------------
 
 data ByteArray
 
-foreign import ccall primByteArrayLength :: ByteArray -> Int
+foreign import ccall primByteArrayLength   :: ByteArray -> Int
 foreign import ccall primByteArrayToString :: ByteArray -> String
 foreign import ccall primStringToByteArray :: String -> Int -> ByteArray
 
@@ -2494,5 +2510,5 @@ emptyRec = EmptyRec
 
 -- End of Hugs standard prelude ----------------------------------------------
 
-main = 3
+-- main = 3
 
