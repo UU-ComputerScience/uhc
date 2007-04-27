@@ -600,7 +600,7 @@ fitsInFI fi ty1 ty2
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnSuffix rn "!") r CTagRec n n (mkCExprHole globOpts u) Nothing
                                  mkLPred' r l u
-                                   =  let  r' = maybe Ty_Any fst . tyRowExtr l $ r
+                                   =  let  r' = maybe Ty_Any fst $ tyRowExtr l r
                                       in   (mkPredOcc (Pred_Lacks r' (Label_Lab l)) (mkPrId basePrfCtxtId u) predScope,r')
                                  mkLPred r l u = fst (mkLPred' r l u)
                                  rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
@@ -628,7 +628,7 @@ fitsInFI fi ty1 ty2
                                              )
                                              ([],[],tr1s,u3) (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
                             in   case r2 of
-                                   Ty_Con n2 | n2 == hsnRowEmpty
+                                   Ty_Con n2 | n2 == hsnRowEmpty && not (null fBldL)
                                      ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))]
                                              ,  foPredOccL = prBldL ++ foPredOccL fo
                                              ,  foGathCnstrMp = gathPredLToProveCnstrMp prBldL `cnstrMpUnion` foGathCnstrMp fo

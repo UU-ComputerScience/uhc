@@ -607,6 +607,11 @@ ATTR AGItf [ kiGam: KiGam | | ]
 ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 %%]
 
+%%[1
+SEM Decls
+  | Cons		lhs			.	gathTySigGam		= 	agFakeDependOn @lhs.opts $ @hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
+%%]
+
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
 %%[5.gamSigTyGath
 SEM Decl
