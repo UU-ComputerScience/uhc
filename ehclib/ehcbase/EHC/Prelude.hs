@@ -5,6 +5,7 @@ The EHC prelude is copied/adapted from the Hugs prelude.
 module EHC.Prelude (
 --  module PreludeList,
 {-----------------------------
+-----------------------------}
     map, (++), concat, filter,
     head, last, tail, init, null, length, (!!),
     foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
@@ -14,7 +15,6 @@ module EHC.Prelude (
     any, all, elem, notElem, lookup,
     sum, product, maximum, minimum, concatMap, 
     zip, zip3, zipWith, zipWith3, unzip, unzip3,
------------------------------}
 --  module PreludeText, 
 {-----------------------------
     ReadS, ShowS,
@@ -111,9 +111,9 @@ module EHC.Prelude (
 -----------------------------}
 --  Num((+), (-), (*), negate, abs, signum, fromInteger),
 {-----------------------------
+-----------------------------}
     Num((+), (-), (*), negate, abs, signum, fromInteger, fromInt),
     Real(toRational),
------------------------------}
 --  Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
 {-----------------------------
     Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
@@ -130,16 +130,18 @@ module EHC.Prelude (
 -----------------------------}
     Monad((>>=), (>>), return, fail),
 {-----------------------------
+-----------------------------}
     Functor(fmap),
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
     (&&), (||), not, otherwise,
+{-----------------------------
     subtract, even, odd, gcd, lcm, (^), (^^), 
     fromIntegral, realToFrac,
+-----------------------------}
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
     asTypeOf, error, undefined,
     seq, ($!),
------------------------------}
 
 {-----------------------------
 -----------------------------}
