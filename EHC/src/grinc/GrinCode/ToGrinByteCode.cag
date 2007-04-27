@@ -5,10 +5,16 @@
 %%[8 hs module {%{GRIN}GrinCode.ToGrinByteCode}
 %%]
 
-%%[8 hs import(Data.Maybe,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[8 hs import(Data.Maybe,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{EH}GrinCode.Pretty},{%{EH}Base.Builtin},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{GRIN}BuiltinPrims})
+%%[8 hs import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin})
+%%]
+
+%%[8 hs import({%{EH}Error})
+%%]
+
+%%[8 hs import({%{EH}GrinCode.Pretty},qualified {%{GRIN}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{GRIN}BuiltinPrims})
 %%]
 
 %%[8 hs export(grinMod2ByteCodeMod)
@@ -25,17 +31,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.grinMod2ByteCodeMod hs
-grinMod2ByteCodeMod :: EHCOpts -> GrModule -> GB.Module
+grinMod2ByteCodeMod :: EHCOpts -> GrModule -> (GB.Module,[Err])
 grinMod2ByteCodeMod opts gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
                                {opts_Inh_GrAGItf = opts
                                })
-     in   gbMod_Syn_GrAGItf t
+     in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
 
 %%[20 -8.grinMod2ByteCodeMod hs
-grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> GB.Module
+grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
 grinMod2ByteCodeMod opts allImpNmL impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
@@ -44,7 +50,7 @@ grinMod2ByteCodeMod opts allImpNmL impNmOffMpMp expNmOffMp gmod
                                , allImpNmL_Inh_GrAGItf = allImpNmL
                                , opts_Inh_GrAGItf = opts
                                })
-     in   gbMod_Syn_GrAGItf t
+     in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
 
 %%[8 import({GrinCode/AbsSyn})
@@ -421,6 +427,23 @@ SEM GrModule
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
 %%]]
                                                       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra check whether all used names are defined
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf GrModule [ | | errs: {[Err]} ]
+
+SEM GrModule
+  | Mod         loc         .   errs            =   let undefNms = (Map.keysSet @bindL.gathFviMp `Set.difference` Map.keysSet @vaGam)
+%%[[20
+                                                                     `Set.difference` offMpMpKeysSet @lhs.impNmOffMpMp
+%%]]
+                                                    in  if Set.null undefNms
+                                                        then []
+                                                        else [rngLift emptyRange mkErr_NamesNotIntrod "(Internal) GRIN ByteCode location" $ Set.toList undefNms]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -293,7 +293,7 @@ cgtint opts e i = CExpr_Var (ehbnPrimGtInt $ ehcOptBuiltinNames opts) `mkCExprAp
 
 %%[8 hs export(cstring)
 cstring :: EHCOpts -> String -> CExpr
-cstring opts m = CExpr_Var (ehbnPackedString2String $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
+cstring opts m = CExpr_Var (ehbnPackedStringToString $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -302,7 +302,7 @@ cstring opts m = CExpr_Var (ehbnPackedString2String $ ehcOptBuiltinNames opts) `
 
 %%[97 hs export(cinteger)
 cinteger :: EHCOpts -> Integer -> CExpr
-cinteger opts i = CExpr_Var (ehbnPackedString2Integer $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String $ show $ i]
+cinteger opts i = CExpr_Var (ehbnPackedStringToInteger $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String $ show $ i]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -401,6 +401,11 @@ arityMpFilterCaf = Map.filter (==0)
 %%[20 hs export(HsName2OffsetMp,HsName2OffsetMpMp)
 type HsName2OffsetMp = Map.Map HsName Int
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
+%%]
+
+%%[20 hs export(offMpMpKeysSet)
+offMpMpKeysSet :: HsName2OffsetMpMp -> Set.Set HsName
+offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
