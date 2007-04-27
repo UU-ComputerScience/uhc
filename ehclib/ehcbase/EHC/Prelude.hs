@@ -761,7 +761,10 @@ foreign import ccall primCmpInteger :: Integer -> Integer -> Ordering
 
 instance Eq  Int     where (==)    = primEqInt
 instance Eq  Integer where (==)    = primEqInteger
-instance Ord Int     where compare = primCmpInt
+instance Ord Int     where
+  compare = primCmpInt
+  (<)     = primLtInt
+  (>)     = primGtInt
 instance Ord Integer where compare = primCmpInteger
 {-----------------------------
 -----------------------------}
@@ -2120,7 +2123,9 @@ ioFromPrim f
 primbindIO :: IO a -> (a -> IO b) -> IO b
 primbindIO (IO io) f
   = IO (\_ -> case io () of
-                IOResult x -> case f x of
+                IOResult x
+                  -> letstrict x' = x
+                     in       case f x' of
                                 IO fx -> fx ()
        )
 
