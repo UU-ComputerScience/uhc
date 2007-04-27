@@ -315,13 +315,13 @@ mkRV m = hsnSetQual m . hsnFromString
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnPackedString2String,hsnPackedString,hsnPrelId,hsnPrimAddInt)
+%%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId,hsnPrimAddInt)
 [hsnUndefined
- , hsnPackedString, hsnPackedString2String
+ , hsnPackedString, hsnPackedStringToString
  , hsnPrelId
  , hsnPrimAddInt, hsnPrimGtInt
 %%[[97
- , hsnPackedString2Integer
+ , hsnPackedStringToInteger
 %%]]
  ]
   = map
@@ -335,7 +335,7 @@ mkRV m = hsnSetQual m . hsnFromString
       , "id"
       , "primAddInt", "primGtInt"
 %%[[97
-      , "packedString2Integer"
+      , "packedStringToInteger"
 %%]]
       ]
 %%]
@@ -477,7 +477,7 @@ data EHBuiltinNames
       , ehbnUndefined               :: HsName
       , ehbnError                   :: HsName
       , ehbnPackedString            :: HsName
-      , ehbnPackedString2String     :: HsName
+      , ehbnPackedStringToString    :: HsName
       , ehbnPrimAddInt              :: HsName
       , ehbnPrimGtInt               :: HsName
 %%[[11
@@ -518,7 +518,7 @@ data EHBuiltinNames
       , ehbnClassBoundedFldMaxBound :: HsName
 %%]]
 %%[[97
-      , ehbnPackedString2Integer    :: HsName
+      , ehbnPackedStringToInteger   :: HsName
 %%]]
       }
 
@@ -529,7 +529,7 @@ mkEHBuiltinNames f
       , ehbnUndefined               = f IdOcc_Val  		hsnUndefined
       , ehbnError                   = f IdOcc_Val  		hsnError
       , ehbnPackedString            = f IdOcc_Type 		hsnPackedString
-      , ehbnPackedString2String     = f IdOcc_Val  		hsnPackedString2String
+      , ehbnPackedStringToString    = f IdOcc_Val  		hsnPackedStringToString
       , ehbnPrimAddInt              = f IdOcc_Val  		hsnPrimAddInt
       , ehbnPrimGtInt               = f IdOcc_Val  		hsnPrimGtInt
 %%[[11
@@ -570,7 +570,7 @@ mkEHBuiltinNames f
       , ehbnClassBoundedFldMaxBound = f IdOcc_Val   	hsnClassBoundedFldMaxBound
 %%]]
 %%[[97
-      , ehbnPackedString2Integer    = f IdOcc_Val  		hsnPackedString2Integer
+      , ehbnPackedStringToInteger   = f IdOcc_Val  		hsnPackedStringToInteger
 %%]]
       }
 %%]

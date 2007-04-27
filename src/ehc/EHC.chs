@@ -1140,7 +1140,8 @@ cpTranslateGrin2ByteCode modNm
                         = crsiExpNmOffMp modNm crsi
                  optim  = crsiOptim crsi
 %%]]
-                 bc     = grinMod2ByteCodeMod opts
+                 (bc,errs)
+                        = grinMod2ByteCodeMod opts
 %%[[20
                             (if ecuIsTopMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
                             (crsiModOffMp crsi)
@@ -1151,6 +1152,7 @@ cpTranslateGrin2ByteCode modNm
                  (do { cpUpdCU modNm $! ecuStoreGrinBC bc
                      ; lift $ putPPFile (fpathToStr $ fpathSetSuff "grin-bc" $ fp) (ppGrModule grin) 400
                      })
+         ;  cpSetLimitErrsWhen 5 "Grin to ByteCode" errs
          }
 %%]
 

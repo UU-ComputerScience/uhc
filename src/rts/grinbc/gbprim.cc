@@ -120,7 +120,7 @@ PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
 	return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
 }
 
-PRIM GB_NodePtr gb_primCString2Integer( char* s )
+PRIM GB_NodePtr gb_primCStringToInteger( char* s )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_In(n) ;
