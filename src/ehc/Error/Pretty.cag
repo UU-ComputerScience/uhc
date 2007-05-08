@@ -287,6 +287,12 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+  | AmbigPreds          lhs     .  pp   =   ppMsgErr    "Predicates leading to ambiguous type"
+                                                        (    "preds:" >#< vlist @preds
+                                                        )
+%%[[99
+                                                        @range
+%%]]
   | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proof for predicates did overlap"
                                                         (    vlist . map (\(p,evs) -> p >#< ":" >#< ppBracketsCommas evs) $ @overl
                                                         )

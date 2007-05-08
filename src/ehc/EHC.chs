@@ -1152,7 +1152,8 @@ cpTranslateGrin2ByteCode modNm
                  (do { cpUpdCU modNm $! ecuStoreGrinBC bc
                      ; lift $ putPPFile (fpathToStr $ fpathSetSuff "grin-bc" $ fp) (ppGrModule grin) 400
                      })
-         ;  cpSetLimitErrsWhen 5 "Grin to ByteCode" errs
+         ;  when (ehcOptErrAboutGrinBC opts)
+                 (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
          }
 %%]
 

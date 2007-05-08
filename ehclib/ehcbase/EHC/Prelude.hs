@@ -97,6 +97,8 @@ module EHC.Prelude (
     packedStringToString,
     packedStringToInteger,
     
+    primAddInt,
+    
 --  List type: []((:), [])
 {-----------------------------
 -----------------------------}
@@ -123,8 +125,8 @@ module EHC.Prelude (
     Real(toRational),
 --  Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
 {-----------------------------
-    Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
 -----------------------------}
+    Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
 --  Fractional((/), recip, fromRational),
 {-----------------------------
     Fractional((/), recip, fromRational, fromDouble),
@@ -142,8 +144,8 @@ module EHC.Prelude (
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
     (&&), (||), not, otherwise,
+    subtract, even, odd, gcd, lcm, {- (^), (^^), -}
 {-----------------------------
-    subtract, even, odd, gcd, lcm, (^), (^^), 
     fromIntegral, realToFrac,
 -----------------------------}
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
@@ -350,25 +352,25 @@ even n           =  n `rem` 2 == 0
 odd              =  not . even
 
 gcd            :: Integral a => a -> a -> a
-{-----------------------------
-gcd            :: Integral a => a -> a -> a
 gcd 0 0         = error "Prelude.gcd: gcd 0 0 is undefined"
 gcd x y         = gcd' (abs x) (abs y)
                   where gcd' x 0 = x
                         gcd' x y = gcd' y (x `rem` y)
------------------------------}
+{-----------------------------
+gcd            :: Integral a => a -> a -> a
 gcd x y | x == y && x == 0
                 = error "Prelude.gcd: gcd 0 0 is undefined"
         | True  = gcd' (abs x) (abs y)
                   where gcd' x y | y == 0 = x
                                  | True   = gcd' y (x `rem` y)
 
-{-----------------------------
+-----------------------------}
 lcm            :: (Integral a) => a -> a -> a
 lcm _ 0         = 0
 lcm 0 _         = 0
 lcm x y         = abs ((x `quot` gcd x y) * y)
 
+{-----------------------------
 (^)            :: (Num a, Integral b) => a -> b -> a
 x ^ 0           = 1
 x ^ n  | n > 0  = f x (n-1) x

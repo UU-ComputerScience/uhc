@@ -222,7 +222,7 @@ SEM Decl
 
 SEM Expr
   | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs
-                                                           , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolve1Errs, @chrSolve2Errs]
+                                                           , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @predAmbigErrs, @chrSolve1Errs, @chrSolve2Errs]
                                                            ]
 
 SEM AGItf

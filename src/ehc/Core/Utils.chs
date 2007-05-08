@@ -25,10 +25,11 @@ data RCEEnv
       , rceCaseFailSubst    :: CaseFailSubst
       , rceCaseId           :: UID
       , rceCaseCont         :: CExpr
+      , rceEHCOpts          :: EHCOpts
       }
 
 emptyRCEEnv :: EHCOpts -> RCEEnv
-emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty uidStart (cundefined opts)
+emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty uidStart (cundefined opts) opts
 %%]
 
 %%[8

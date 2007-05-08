@@ -14,20 +14,20 @@ This matters at:
 This matters for:
 - comparing types, in particular within predicates during proving
 
-%%[10 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsIn})
+%%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsIn})
 %%]
 
-%%[10 hs import(qualified Data.Set as Set)
+%%[9 hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
 %%[11 hs import({%{EH}Base.Opts})
 %%]
 
-%%[10.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
+%%[9.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
 
-%%[10 hs 
+%%[9 hs 
 tyCanonic :: FIIn -> Ty -> Ty
 tyCanonic fi ty
   =  let  t =  wrap_TyAGItf
@@ -41,7 +41,7 @@ tyCanonic fi ty
      in   repl_Syn_TyAGItf t
 %%]
 
-%%[10 hs export(predCanonic)
+%%[9 hs export(predCanonic)
 predCanonic :: FIIn -> Pred -> Pred
 predCanonic fi pr
   = case tyCanonic fi $ Ty_Pred pr of
@@ -57,13 +57,46 @@ ATTR TyAGItf AllTy [ fi: FIIn | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Possible preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+type MbPredL = Maybe [Pred]
+
+mbPredLCmb :: MbPredL -> MbPredL -> MbPredL
+mbPredLCmb Nothing Nothing = Nothing
+mbPredLCmb m1      m2      = Just $ concat $ maybeToList m1 ++ maybeToList m2
+%%]
+
+%%[9
+ATTR Ty Impls Pred [ | | mbPredL USE {`mbPredLCmb`} {Nothing}: MbPredL ]
+
+SEM Impls
+  | Tail            lhs     .   mbPredL         =   Just []
+
+SEM Pred
+  | *               lhs     .   mbPredL         =   Just [@repl]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[10
+%%[9
 ATTR AllTyAndFlds [ | | repl: SELF ]
 ATTR TyAGItf  [ | | repl: Ty ]
+%%]
 
+%%[9
+SEM Ty
+  | App             loc     .   replNoImplNil   =   case @func.mbPredL of
+                                                      Nothing | @func.isPred
+                                                        -> @arg.repl
+                                                      _ -> @repl
+                    lhs     .   repl            =   @replNoImplNil
+%%]
+
+%%[10
 SEM Ty
   | Ext             lhs     .   repl            =   if @isSpineRoot
                                                     then let (row,exts) = tyRowExts @repl
@@ -74,9 +107,9 @@ SEM Ty
 
 %%[11
 SEM Ty
-  | App             lhs     .   repl            =   if @isSpineRoot
-                                                    then tyBetaRedFull @lhs.fi @repl
-                                                    else @repl
+  | App             lhs     .   repl            :=  if @isSpineRoot
+                                                    then tyBetaRedFull @lhs.fi @replNoImplNil
+                                                    else @replNoImplNil
   | Con             lhs     .   repl            =   tyBetaRedFull @lhs.fi @repl
 %%]
 

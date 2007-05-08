@@ -245,6 +245,18 @@ mkCMod :: CExpr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
 %%]
 
+%%[97 hs export(mkCIf)
+mkCIf :: EHCOpts -> HsName -> CExpr -> CExpr -> CExpr -> CExpr
+mkCIf opts cn c t f
+  = mkCExprStrictIn cn c
+    $ (\c -> CExpr_Case c
+               [ CAlt_Alt (CPat_Con hsnUnknown (ctagFalse opts) CPatRest_Empty []) f
+               , CAlt_Alt (CPat_Con hsnUnknown (ctagTrue  opts) CPatRest_Empty []) t
+               ]
+               (cundefined opts)
+      )
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inspection/deconstruction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -329,6 +341,12 @@ cpatConTag (CPat_Char _ _    )  = ctagChar
 
 caltTag :: CAlt -> CTag
 caltTag (CAlt_Alt p _) = cpatConTag p
+%%]
+
+%%[97 hs export(ctagTrue, ctagFalse)
+ctagTrue, ctagFalse :: EHCOpts -> CTag
+ctagTrue  opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolTrue  $ ehcOptBuiltinNames opts) 1 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ ehcOptBuiltinNames opts) 0 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
