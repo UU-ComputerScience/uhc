@@ -109,6 +109,17 @@ instance PP Float where
   pp = text . show
 
 -------------------------------------------------------------------------
+-- Observation
+-------------------------------------------------------------------------
+
+isEmpty :: PP_Doc -> Bool
+isEmpty Emp         = True
+isEmpty (Ver d1 d2) = isEmpty d1 && isEmpty d2
+isEmpty (Hor d1 d2) = isEmpty d1 && isEmpty d2
+isEmpty (Ind _  d ) = isEmpty d
+isEmpty _           = False
+
+-------------------------------------------------------------------------
 -- Rendering
 -------------------------------------------------------------------------
 
@@ -126,8 +137,10 @@ disp d _ s
               Hor d1 d2        -> (r1,p2)
                                where (r1,p1) = put p  d1 r2
                                      (r2,p2) = put p1 d2 s
-              Ver Emp d2       -> put p d2 s
-              Ver d1 Emp       -> put p d1 s
+              Ver d1 d2 | isEmpty d1
+                               -> put p d2 s
+              Ver d1 d2 | isEmpty d2
+                               -> put p d1 s
               Ver d1 d2        -> (r1,p2)
                                where (r1,p1) = put p d1 $ "\n" ++ ind ++ r2
                                      (r2,p2) = put p d2 s
@@ -146,8 +159,10 @@ hPut h d _
                                      put (p+i) d h
               Hor d1 d2        -> do p' <- put p d1 h
                                      put p' d2 h
-              Ver Emp d2       -> put p d2 h
-              Ver d1 Emp       -> put p d1 h
+              Ver d1 d2 | isEmpty d1
+                               -> put p d2 h
+              Ver d1 d2 | isEmpty d2
+                               -> put p d1 h
               Ver d1 d2        -> do _ <- put p d1 h
                                      hPutStr h $ "\n" ++ replicate p ' '
                                      put p d2 h

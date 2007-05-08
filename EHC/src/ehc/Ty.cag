@@ -103,9 +103,6 @@
 %%[97 hs export(tyInteger) 
 %%]
 
-%%[97 hs export(tyBool) 
-%%]
-
 %%[1 ag import({Ty/AbsSyn})
 DERIVING *     : Show, Eq, Ord
 %%]
@@ -574,10 +571,6 @@ tySumEmpty  = mkTySum []
 
 %%[97 hs
 tyInteger   = Ty_Con hsnInteger
-%%]
-
-%%[97 hs
-tyBool      = Ty_Con hsnBool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

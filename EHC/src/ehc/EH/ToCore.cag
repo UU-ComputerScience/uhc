@@ -130,7 +130,7 @@ SEM Expr
 
 %%[97
 SEM PatExpr
-  | Expr        loc         .   cexprBaseEq =   CExpr_Var hsnClassEqFldEq
+  | Expr        loc         .   cexprBaseEq =   CExpr_Var @eqFldNm
                             .   cexpr       =   mkCExprApp (foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
                                                            [@expr.cexpr]
 %%]
@@ -780,7 +780,7 @@ rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatN
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
   = mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
-  where remMatch  = rceMatch env args' [RAlt_Alt remPats e | (RAlt_Alt (RPat_Var n : remPats) e) <- alts]
+  where remMatch  = rceMatch env args' [RAlt_Alt remPats e | (RAlt_Alt (RPat_Var _ : remPats) e) <- alts]
 
 rceMatchIrrefutable :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchIrrefutable env (arg:args') [RAlt_Alt (RPat_Irrefutable n b : remPats) e]
@@ -815,8 +815,9 @@ rceMatchCon env (arg:args) alts
 
 rceMatchConMany :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConMany env (arg:args) [RAlt_Alt (RPat_Con n t (RPatConBind_Many bs) : ps) e]
-  = mkCExprStrictIn arg' (CExpr_Var arg) (\_ -> foldr (\mka e -> rceMatch env [arg'] (mka e)) (rceMatch env (arg':args) altslast) altsinit)
-  where arg' = hsnSuffix arg "!"
+  = mkCExprStrictIn arg' (CExpr_Var arg)
+                    (\_ -> foldr (\mka e -> rceMatch env [arg'] (mka e)) (rceMatch env (arg':args) altslast) altsinit)
+  where arg'     = hsnSuffix arg "!"
         altsinit = [ \e -> [RAlt_Alt (RPat_Con n t b     : []) e] | b <- bsinit ]
         altslast =         [RAlt_Alt (RPat_Con n t blast : ps) e]
         (bsinit,blast) = panicJust "rceMatchConMany" $ initlast bs
@@ -852,7 +853,7 @@ rceMatch env args alts
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
                   _  ->  mkCExprLet CBindPlain [CBind_Bind nc e]
                          $ rceMatchSplits (rceUpdEnv (CExpr_Var nc) env) args alts
-                     where nc  = hsnPrefix "_casecont_" (rpatNmNm . rcpPNm . rcaPat . head $ alts)
+                     where nc  = hsnPrefix "_casecont_" (rpatNmNm $ rcpPNm $ rcaPat $ head $ alts)
         )
         (rceCaseCont env)
      $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar
@@ -873,9 +874,15 @@ rceUpdEnv e env
 %%]
 
 %%[97 hs
--- for now
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
-rceMatchBoolExpr env (arg:args) alts = rceCaseCont env
+rceMatchBoolExpr env (arg:args) alts
+  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) n c t f) (rceCaseCont env) m
+  where m = [ ( hsnSuffix arg $ "!" ++ show u
+              , mkCExprApp b [CExpr_Var arg]
+              , rceMatch env args [RAlt_Alt remPats e]
+              )
+            | (u,RAlt_Alt (RPat_BoolExpr _ b : remPats) e) <- zip [0..] alts
+            ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

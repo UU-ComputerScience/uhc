@@ -518,6 +518,7 @@ data EHBuiltinNames
       , ehbnClassBoundedFldMaxBound :: HsName
 %%]]
 %%[[97
+      , ehbnDataBool   				:: HsName
       , ehbnPackedStringToInteger   :: HsName
 %%]]
       }
@@ -570,6 +571,7 @@ mkEHBuiltinNames f
       , ehbnClassBoundedFldMaxBound = f IdOcc_Val   	hsnClassBoundedFldMaxBound
 %%]]
 %%[[97
+      , ehbnDataBool                = f IdOcc_Type  	hsnBool
       , ehbnPackedStringToInteger   = f IdOcc_Val  		hsnPackedStringToInteger
 %%]]
       }

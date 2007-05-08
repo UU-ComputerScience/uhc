@@ -132,9 +132,6 @@ SEM Expr
 %%% Type of PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.valGam
-ATTR AllPatExpr [ | valGam: ValGam | ]
-%%]
 -- generated from ruler rules into EHRulerRules, was 1.xxx
 %%[5.xxx
 SEM PatExpr
@@ -227,12 +224,14 @@ SEM PatExpr
 
 %%[97
 SEM PatExpr
-  | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnClassEqFldEq @lhs.valGam
+  | Expr        loc         .   eqFldNm             =   ehbnClassEqFldEq $ ehcOptBuiltinNames @lhs.opts
+                            .   (eqTy,nmErrs)       =   valGamLookupTy @eqFldNm @lhs.valGam
                             .   knExprTy            =   mkTyVar @lUniq
                             .   fo_                 =   fitsIn strongFIOpts @fe @lUniq2
                                                             (@lhs.tyCnstr |=> @eqTy)
-                                                            ([@knExprTy,@lhs.knTy] `mkArrow` tyBool)
+                                                            ([@knExprTy,@lhs.knTy] `mkArrow` (semCon $ ehbnDataBool $ ehcOptBuiltinNames @lhs.opts))
                 expr        .   knTy                =   @knExprTy
+                            .   tyCnstr             =   foCnstr @fo_ |=> @lhs.tyCnstr
 %%]
 SEM PatExpr
   | Expr        loc         .   (eqTy,nmErrs)       =   valGamLookupTy hsnClassEqFldEq @lhs.valGam

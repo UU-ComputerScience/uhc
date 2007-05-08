@@ -47,7 +47,7 @@ SEM Expr
 ATTR AllCase [ knTy: Ty | | ty: Ty ]
 
 SEM Expr
-  | Case        expr        .   knTy                =   Ty_Any
+  | Case        expr        .   knTy                =   mkTyVar @lUniq2
                 alts        .   knTy                =   @lhs.knTy
 
 SEM CaseAlt

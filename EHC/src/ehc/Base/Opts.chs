@@ -118,6 +118,7 @@ data EHCOpts
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
+      ,  ehcOptErrAboutGrinBC ::  Bool				-- report when Grin ByteCode errors occur
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
@@ -192,12 +193,14 @@ defaultEHCOpts
       ,  ehcOptEmitExecBC     =   False
       ,  ehcOptEmitGrinBC     =   False
       ,  ehcOptGenCmt         =   True
+      ,  ehcOptErrAboutGrinBC =   False
 %%][99
       ,  ehcOptEmitLlc        =   False -- True
       ,  ehcOptEmitExec       =   False -- True
       ,  ehcOptEmitExecBC     =   True
       ,  ehcOptEmitGrinBC     =   True
       ,  ehcOptGenCmt         =   False
+      ,  ehcOptErrAboutGrinBC =   True
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf=   False
