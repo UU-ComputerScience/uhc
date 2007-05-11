@@ -231,4 +231,59 @@ instance PP Coe where
   pp c = "<" >|< pp (c `coeEvalOn` CExpr_CoeArg) >|< ">"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercion for lamda
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A LRCoe represents a coercion in a much more finegrained manner:
+- a right Coe list, a list of coercions for building the rhs side of a subsumption, which must be the lambda
+- a left Coe list a list of coercions for building the lhs side of a subsumption, which must be an application or other expr using the args of the left Coe
+
+%%[9 hs export(LRCoeKind(..),LRCoe(..))
+data LRCoeKind = LRCoeId | LRCoeOther
+
+data LRCoe
+  = LRCoe
+      { lrcoeKind		:: LRCoeKind
+      , lrcoeLeftL		:: [Coe]
+      , lrcoeRighttL	:: [Coe]
+      }
+%%]
+
+%%[9 hs
+lrcoeMkTyApp :: EHCOpts -> UID -> CSubst -> LRCoe -> LRCoe -> LRCoe
+lrcoeMkTyApp opts uniq csubst f (LRCoe ka la ra)
+  = LRCoe k (l:la) (r:ra)
+  where n = uidHNm uniq
+        r = mkCoe (CExpr_Lam n)
+        (k,l)
+          = case f of
+              LRCoe LRCoeOther lf rf
+                -> (LRCoeOther, l)
+                where l = mkCoe (flip CExpr_App w)
+                      w = coeWipeWeave opts emptyCnstr csubst lf rf `coeEvalOn` CExpr_Var n
+              LRCoe LRCoeId _ _
+                -> (LRCoeId, l)
+                where l = mkCoe (flip CExpr_App $ CExpr_Var n)
+
+%%]
+
+arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
+arrowAppSpineVertebraeInfoL
+  = [ AppSpineVertebraeInfo ContraVariant fioMkStrong
+          dfltFOUpdCoe
+    , AppSpineVertebraeInfo CoVariant id
+          (\opts [ffo,afo]
+              -> let (u',u1) = mkNewUID (foUniq afo)
+                     n = uidHNm u1
+                     r = mkCoe (\e ->  CExpr_Lam n e)
+                     l = mkCoe (\e ->  CExpr_App e
+                                         (coeWipeWeave opts emptyCnstr (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
+                                           `coeEvalOn` CExpr_Var n)
+                               )
+                 in  afo { foRCoeL = r : foRCoeL afo, foLCoeL = l : foLCoeL afo
+                         , foUniq = u'
+                         }
+          )
+    ]
 

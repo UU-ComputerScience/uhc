@@ -140,6 +140,13 @@ DATA Err
   | EvidenceAltsLeft
 %%]
 
+%%[11
+DATA Err
+  | TyBetaRedLimit      ty         : {Ty}
+                        tyTo       : {Ty}
+                        limit      : {Int}
+%%]
+
 %%[20
 DATA Err
   | ModNameMismatch     nmOfFile   : HsName

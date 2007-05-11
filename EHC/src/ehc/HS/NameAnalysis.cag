@@ -1100,7 +1100,8 @@ mergeFunDefL ds
                 b = EH.mkCase'
                       (doccRange od) (mkRngProdOpt (doccRange od) $ map (rngLift (doccRange od) EH.Expr_Var) $ xNmL)
 %%[[8
-                      (Just uniq) (length xNmL > 1)
+                      (Just $ Set.fromList $ map (iaspUniq . doccAsp) ds)
+                      (length xNmL > 1)
 %%]]
                     $ zipWith (EH.mkAlt (doccRange od))
                        [ mkRngProdOpt (doccRange od) $ tail $ iaspPatL $ doccAsp $ d | d <- ds ]

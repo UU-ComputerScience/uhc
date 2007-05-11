@@ -262,12 +262,12 @@ SEM TyAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR Ty [ | | appSpineInfoL: {[AppSpineInfo]} ]
+ATTR Ty [ | | appSpineInfoL: {[AppSpineVertebraeInfo]} ]
 
 SEM Ty
-  | Con             lhs     .   appSpineInfoL       =   asGamLookup appSpineGam @nm
+  | Con             lhs     .   appSpineInfoL       =   asgiSpine $ asGamLookup @nm appSpineGam
   | App             (loc.asi,lhs.appSpineInfoL)     =   hdAndTl @func.appSpineInfoL
-  | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineInfoL
+  | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineVertebraeInfoL
 
 SEM Ty
   | App             arg     .   fio                 =   fioSwapCoCo (asCoCo @asi) @lhs.fio

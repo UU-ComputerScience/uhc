@@ -256,9 +256,9 @@ emptySimplifyResult = SimplifyResult emptySolveState emptyRedGraph
 
 %%[9 export(simplifyResultResetForAdditionalWork)
 simplifyResultResetForAdditionalWork :: Ord p => SimplifyResult p i g s -> SimplifyResult p i g s
-simplifyResultResetForAdditionalWork r = r {simpresSolveState = solveStateResetDone $ simpresSolveState r}
-%%]
 simplifyResultResetForAdditionalWork r = r {simpresRedGraph = emptyRedGraph}
+%%]
+simplifyResultResetForAdditionalWork r = r {simpresSolveState = solveStateResetDone $ simpresSolveState r}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Evidence construction from Constraint reduction graph
@@ -326,6 +326,22 @@ chrSimplifyToEvidence
           -> SimplifyResult p i g s
           -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SimplifyResult p i g s)
 chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
+  = (mkEvidence heur cnstrInfoMpAll redGraph,SimplifyResult solveState redGraph)
+  where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
+        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+        cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
+        redGraph
+          = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
+            $ addToRedGraphFromAssumes cnstrInfoMpAll
+            $ simpresRedGraph prevRes
+%%]
+  = (mkEvidence heur cnstrInfoMpAll redGraph,SimplifyResult solveState redGraph)
+            $ addToRedGraphFromAssumes cnstrInfoMpAll
+        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
+  = (mkEvidence heur cnstrInfoMp $ trp "ZZ" (ppRedGraph redGraph) $ redGraph,solveState)
+
+
+chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
   = (mkEvidence heur cnstrInfoMp redGraph,SimplifyResult solveState redGraph)
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
         solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp) (simpresSolveState prevRes)
@@ -334,9 +350,3 @@ chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
           = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
             $ addToRedGraphFromAssumes cnstrInfoMp
             $ simpresRedGraph prevRes
-%%]
-  = (mkEvidence heur cnstrInfoMpAll redGraph,SimplifyResult solveState redGraph)
-            $ addToRedGraphFromAssumes cnstrInfoMpAll
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
-  = (mkEvidence heur cnstrInfoMp $ trp "ZZ" (ppRedGraph redGraph) $ redGraph,solveState)
-

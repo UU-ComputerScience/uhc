@@ -47,6 +47,7 @@ module EHC.Prelude (
 {-----------------------------
     readLitChar, showLitChar, lexLitChar,
 -----------------------------}
+    showLitChar,
 --  module Numeric
 {-----------------------------
     readSigned, readInt,
@@ -144,7 +145,7 @@ module EHC.Prelude (
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
     (&&), (||), not, otherwise,
-    subtract, even, odd, gcd, lcm, {- (^), (^^), -}
+    subtract, even, odd, gcd, lcm, (^), (^^),
 {-----------------------------
     fromIntegral, realToFrac,
 -----------------------------}
@@ -371,6 +372,7 @@ lcm 0 _         = 0
 lcm x y         = abs ((x `quot` gcd x y) * y)
 
 {-----------------------------
+-----------------------------}
 (^)            :: (Num a, Integral b) => a -> b -> a
 x ^ 0           = 1
 x ^ n  | n > 0  = f x (n-1) x
@@ -382,7 +384,6 @@ _ ^ _           = error "Prelude.^: negative exponent"
 
 (^^)           :: (Fractional a, Integral b) => a -> b -> a
 x ^^ n          = if n >= 0 then x ^ n else recip (x^(-n))
------------------------------}
 
 fromIntegral   :: (Integral a, Num b) => a -> b
 fromIntegral    = fromInteger . toInteger
@@ -623,6 +624,7 @@ instance Read Char where
 -----------------------------}
 
 {-----------------------------
+-----------------------------}
 instance Show Char where
     showsPrec p '\'' = showString "'\\''"
     showsPrec p c    = showChar '\'' . showLitChar c . showChar '\''
@@ -631,7 +633,6 @@ instance Show Char where
                     where showl ""       = showChar '"'
                           showl ('"':cs) = showString "\\\"" . showl cs
                           showl (c:cs)   = showLitChar c . showl cs
------------------------------}
 
 {-----------------------------
 -----------------------------}
@@ -1849,6 +1850,7 @@ isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
 lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
 lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
 lexmatch xs     ys               =  (xs,ys)
+-----------------------------}
 
 asciiTab = zip ['\NUL'..' ']
            ["NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL",
@@ -1857,6 +1859,7 @@ asciiTab = zip ['\NUL'..' ']
             "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US",
             "SP"]
 
+{-----------------------------
 readLitChar            :: ReadS Char
 readLitChar ('\\':s)    = readEsc s
  where
@@ -1887,6 +1890,7 @@ readLitChar (c:s)       = [(c,s)]
 -----------------------------}
 
 {-----------------------------
+-----------------------------}
 showLitChar               :: Char -> ShowS
 showLitChar c | c > '\DEL' = showChar '\\' .
                              protectEsc isDigit (shows (fromEnum c))
@@ -1906,7 +1910,6 @@ showLitChar c              = showString ('\\' : snd (asciiTab!!fromEnum c))
 protectEsc p f             = f . cont
  where cont s@(c:_) | p c  = "\\&" ++ s
        cont s              = s
------------------------------}
 
 {-----------------------------
 -- Unsigned readers for various bases

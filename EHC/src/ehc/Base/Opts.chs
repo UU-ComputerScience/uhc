@@ -210,7 +210,7 @@ defaultEHCOpts
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
-                              =   20
+                              =   10
 %%]]
 %%[[20
       ,  ehcOptCheckRecompile    =   True
@@ -277,6 +277,9 @@ ehcCmdLineOpts
      ,  Option "P"  ["search-path"]      (ReqArg oSearchPath "path")          "search path for all files, path separators=';', appended to previous"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
+     ,  Option ""   ["limit-tysyn-expand"]
+                                         (intArg oLimitTyBetaRed)             "type synonym expansion limit"
+     ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
 %%]]
      ]
 %%]
@@ -391,12 +394,21 @@ ehcCmdLineOpts
          oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
          oNoPrelude      o =  o { ehcOptUseAssumePrelude        = False   }
          oCPP            o =  o { ehcOptCPP                     = True    }
+         oLimitTyBetaRed o l = o { ehcOptTyBetaRedCutOffAt = l }
+         oLimitCtxtRed   o l = o { ehcOptPrfCutOffAt       = l }
 %%]]
+%%]
+
+%%[99
+intArg  tr = ReqArg (optInt tr) "<nr>"
+
+optInt :: (EHCOpts -> Int -> EHCOpts) -> String -> EHCOpts -> EHCOpts
+optInt tr s o
+ = tr o $ read s
 %%]
 
 %%[8
 boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
-
 
 oGrinDebug           o   = o { ehcOptGrinDebug      = True }
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
@@ -405,6 +417,7 @@ optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 
+optBoolean :: (EHCOpts -> Bool -> EHCOpts) -> Maybe String -> EHCOpts -> EHCOpts
 optBoolean tr ms o
  = case ms of
      Just "-"     -> tr o False

@@ -108,6 +108,9 @@ ATTR TyExprs [ | | ppL: {[PP_Doc]} ]
 SEM Expr
   | SConst      loc     .   pp      =   pp (show @str)
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
+%%[[8
+                                                -- >#< maybe empty (ppCmt . pp . show) @mbCaseIds
+%%]]
                                                 >-< indent 2 (vlist @alts.ppL)
                                                 >-< @ppExtra
                         .   ppExtra =   empty

@@ -7,7 +7,7 @@
 %%% Substituting fail place holder for case expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Core}) export(cSubstCaseAltFail)
+%%[8 hs module {%{EH}Core.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Core}) export(cSubstCaseAltFail)
 %%]
 
 %%[8 hs import(qualified Data.Map as Map)
@@ -23,11 +23,22 @@ WRAPPER CExpr
 
 %%[8 hs
 -- Substitute failRepl for CaseAltFail in ce
-cSubstCaseAltFail :: CaseFailSubst -> CExpr -> CExpr
-cSubstCaseAltFail caseFailSubst ce
-  =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {caseFailSubst_Inh_CExpr = caseFailSubst})
-     in   (cRepl_Syn_CExpr t)
+cSubstCaseAltFail :: EHCOpts -> CaseFailSubst -> CExpr -> CExpr
+cSubstCaseAltFail opts caseFailSubst ce
+  = cRepl_Syn_CExpr t
+  where t = wrap_CExpr (sem_CExpr ce)
+                       (Inh_CExpr
+                          { caseFailSubst_Inh_CExpr = caseFailSubst
+                          , opts_Inh_CExpr          = opts
+                          })
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +51,7 @@ ATTR AllCodeNT CodeAGItf [ caseFailSubst: CaseFailSubst | | cRepl: SELF ]
 SEM CExpr
   | CaseAltFail lhs         .   cRepl       =   case Map.lookup @caseId @lhs.caseFailSubst of
                                                   Just ce -> ce
-                                                  Nothing -> @cRepl
+                                                  Nothing -> @cRepl -- cerror @lhs.opts ("FAIL " ++ show @caseId)
 %%]
 
 

@@ -40,7 +40,7 @@
 %%[4 import({%{EH}Base.Opts},{%{EH}Ty.Trf.Instantiate}) export(valGamInst1Exists)
 %%]
 
-%%[4 import({%{EH}Ty.FitsInCommon}) export(AppSpineGam, appSpineGam, asGamLookup)
+%%[4 import({%{EH}Ty.FitsInCommon})
 %%]
 
 %%[4 export(gamMapThr)
@@ -563,7 +563,7 @@ data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
 %%]
 
 %%[6.TyGamInfo -1.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: !Ty, tgiKi :: Ty } deriving Show
+data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
 %%]
 
 %%[6.mkTGIData
@@ -818,29 +818,28 @@ valDataGamLookup nm vg dg
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.AppSpineGam
-data AppSpineGamInfo = AppSpineGamInfo { asgiInfoL :: [AppSpineInfo] }
+%%[4.AppSpineGam export(AppSpineGam, asGamLookup)
+type AppSpineGam = Gam HsName AppSpineInfo
 
-type AppSpineGam = Gam HsName AppSpineGamInfo
+asGamLookup :: HsName -> AppSpineGam -> AppSpineInfo
+asGamLookup nm g
+  = case gamLookup nm g of
+      Just ccgi                ->  ccgi
+      Nothing | hsnIsProd nm   ->  emptyAppSpineInfo {asgiVertebraeL = take (hsnProdArity nm) prodAppSpineVertebraeInfoL}
+      _                        ->  emptyAppSpineInfo
 
-asGamLookup :: AppSpineGam -> HsName -> [AppSpineInfo]
-asGamLookup g nm
-  =  case gamLookup nm g of
-        Just ccgi                ->  asgiInfoL ccgi
-        Nothing | hsnIsProd nm   ->  take (hsnProdArity nm) prodAppSpineInfoL
-        _                        ->  unknownAppSpineInfoL
 %%]
 
-%%[4.appSpineGam
+%%[4.appSpineGam export(appSpineGam)
 appSpineGam :: AppSpineGam
-appSpineGam =  assocLToGam [(hsnArrow, AppSpineGamInfo arrowAppSpineInfoL)]
+appSpineGam =  assocLToGam [(hsnArrow, emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})]
 %%]
 
-%%[7.appSpineGam -4.appSpineGam
+%%[7.appSpineGam -4.appSpineGam export(appSpineGam)
 appSpineGam :: AppSpineGam
 appSpineGam =  assocLToGam
-                 [ (hsnArrow,    AppSpineGamInfo arrowAppSpineInfoL)
-                 , (hsnRec,      AppSpineGamInfo (take 1 prodAppSpineInfoL))
+                 [ (hsnArrow,    emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})
+                 , (hsnRec,      emptyAppSpineInfo {asgiVertebraeL = take 1 prodAppSpineVertebraeInfoL})
                  ]
 %%]
 

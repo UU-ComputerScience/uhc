@@ -40,6 +40,9 @@
 %%[7_2 hs export(AnnDtMonoRestrictions, AnnDtMonoRestrict(..))
 %%]
 
+%%[8 hs import(qualified Data.Set as Set)
+%%]
+
 %%[8 hs export(mkLet',mkIf'')
 %%]
 
@@ -123,7 +126,7 @@ mkStr r s
 mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
 mkIf' (bn:tn:fn:_) r c t e
 %%][8
-mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe UID -> Expr
+mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe (Set.Set UID) -> Expr
 mkIf'' (bn:tn:fn:_) r c t e i
 %%]]
   = case c of
@@ -168,7 +171,7 @@ mkCase' r c as = rngLift r Expr_Case c as
 %%]
 
 %%[8 -5.mkCase hs
-mkCase' :: Range -> Expr  -> Maybe UID -> Bool -> [CaseAlt] -> Expr
+mkCase' :: Range -> Expr  -> Maybe (Set.Set UID) -> Bool -> [CaseAlt] -> Expr
 mkCase' r c id istup as
   = rngLift r Expr_Case c as id istup
 

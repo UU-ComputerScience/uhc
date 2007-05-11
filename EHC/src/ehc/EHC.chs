@@ -22,7 +22,7 @@
 %%[8 import ({%{EH}Core.ToJava},{%{EH}Core.Pretty})
 %%]
 
-%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamGlobalAsArg},{%{EH}Core.Trf.CAFGlobalAsArg},{%{EH}Core.Trf.LamFloatGlobal},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed},{%{EH}Core.Trf.ElimTrivApp})
+%%[8 import ({%{EH}Core.Trf.RenUniq},{%{EH}Core.Trf.FullLazy},{%{EH}Core.Trf.InlineLetAlias},{%{EH}Core.Trf.LetUnrec},{%{EH}Core.Trf.LamGlobalAsArg},{%{EH}Core.Trf.CAFGlobalAsArg},{%{EH}Core.Trf.FloatToGlobal},{%{EH}Core.Trf.ConstProp},{%{EH}Core.Trf.EtaRed},{%{EH}Core.Trf.ElimTrivApp})
 %%]
 
 %%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
@@ -624,13 +624,13 @@ cpFoldCore modNm
 cpFoldEH :: HsName -> EHCompilePhase ()
 cpFoldEH modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbEH   = ecuMbEH ecu
                  ehSem  = EHSem.wrap_AGItf (EHSem.sem_AGItf $ panicJust "cpFoldEH" mbEH)
                                            ((crsiEHInh crsi)
                                                   { EHSem.moduleNm_Inh_AGItf         = ecuModNm ecu
                                                   , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
-                                                  , EHSem.opts_Inh_AGItf             = crsiOpts crsi
+                                                  , EHSem.opts_Inh_AGItf             = opts
 %%[[20
                                                   , EHSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
 %%]]
@@ -1107,7 +1107,11 @@ cpTranslateEH2Core modNm
                             (lift $ putPPFile (fpathToStr (fpathSetSuff "eh2" fp)) (EHSem.pp_Syn_AGItf ehSem) 1000)
                      ; when (ehcOptShowEH opts)
                             (lift $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
+%%[[8
                      ; when (ehcOptShowAst opts)
+%%][99
+                     ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
+%%]]
                             (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
                      }
                  )
@@ -1384,7 +1388,7 @@ cpCore1Trf modNm trfNm
                               "CFL"     -> cmodTrfFullLazy u1
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
-                              "CLFG"    -> cmodTrfLamFloatGlobal
+                              "CLFG"    -> cmodTrfFloatToGlobal
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id
                           ) core
