@@ -44,6 +44,8 @@ SEM Expression
   | Case
  	 	(expression.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
 %%]
+  | Let
+ 	 	(declarations.gUniq,loc.lUniq)	=   mkNewLevUID @lhs.gUniq
 
 %%[9
 SEM Declaration

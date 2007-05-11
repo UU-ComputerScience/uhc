@@ -23,13 +23,13 @@ data RCEEnv
       { rceValGam           :: ValGam
       , rceDataGam          :: DataGam
       , rceCaseFailSubst    :: CaseFailSubst
-      , rceCaseId           :: UID
+      , rceCaseIds          :: Set.Set UID
       , rceCaseCont         :: CExpr
       , rceEHCOpts          :: EHCOpts
       }
 
 emptyRCEEnv :: EHCOpts -> RCEEnv
-emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty uidStart (cundefined opts) opts
+emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (cundefined opts) opts
 %%]
 
 %%[8

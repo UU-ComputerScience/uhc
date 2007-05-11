@@ -337,6 +337,18 @@ SEM Err
 %%]]
 %%]
 
+%%[11
+SEM Err
+  | TyBetaRedLimit      lhs     .  pp   =   ppMsgErr    "Type synonym expansion limit reached"
+                                                        (    "limit          :" >#< pp @limit
+                                                         >-< "type           :" >#< pp @ty
+                                                         >-< "last expansion :" >#< pp @tyTo
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+%%]
+
 %%[20
 SEM Err
   | ModNameMismatch     lhs     .  pp   =   ppMsgErr    "Module names do not match"

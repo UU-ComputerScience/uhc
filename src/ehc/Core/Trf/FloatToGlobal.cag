@@ -1,0 +1,83 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+Float all lambda's to global level.
+Assume that each lambda has no free variables, other than the globally available ones.
+
+Also: float all non apply CAFs to global level, also assuming no globals are referred to anymore.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Float lambda's to global level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFloatToGlobal)
+%%]
+
+%%[8 hs import(Data.Maybe)
+%%]
+
+-- for debug
+%%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+WRAPPER CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cmodTrfFloatToGlobal :: CModule -> CModule
+cmodTrfFloatToGlobal cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf)
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+  | Let         binds       .   lev         =   @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR CodeAGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF
+                     cFloatedBinds USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CBindCateg,Seq.FastSeq CBind)}
+               ]
+ATTR AllBind   [ | | cLamBinds, cCAFBinds, cOtherBinds USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind} ]
+
+SEM CBind
+  | Bind        lhs         .   (cOtherBinds,cLamBinds,cCAFBinds)
+                                            =   if @expr.isLam										-- lam lift
+                                                then (Seq.empty,Seq.singleton @cTrf,Seq.empty)
+                                                else if @expr.isClosurable							-- CAF lift
+                                                then (Seq.empty,Seq.empty,Seq.singleton @cTrf)
+                                                else (Seq.singleton @cTrf,Seq.empty,Seq.empty)
+  | FFI         lhs         .   cOtherBinds =   Seq.singleton @cTrf
+
+SEM CExpr
+  | Let         lhs         .   (cTrf,cFloatedBinds)
+                                            =   if @lhs.lev == cLevModule
+                                                then ( foldr (\(c,b) e -> mkCExprLet c (Seq.toList b) e) @body.cTrf
+                                                       $ Seq.toList
+                                                       $ @binds.cFloatedBinds `Seq.union` Seq.singleton (@categ,Seq.unions [@binds.cLamBinds, @binds.cCAFBinds, @binds.cOtherBinds])
+                                                     , Seq.empty
+                                                     )
+                                                else let (flCAFs,nonflCAFS) = if @categ == CBindStrict then (Seq.empty,@binds.cCAFBinds) else (@binds.cCAFBinds,Seq.empty)
+                                                     in  ( mkCExprLet @categ (Seq.toList $ nonflCAFS `Seq.union` @binds.cOtherBinds) @body.cTrf
+                                                         , Seq.unions [Seq.singleton (@categ,@binds.cLamBinds `Seq.union` flCAFs), @binds.cFloatedBinds, @body.cFloatedBinds]
+                                                         )
+%%]
+

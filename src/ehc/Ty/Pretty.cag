@@ -128,7 +128,8 @@ instance PP LabelOffset where
 
 %%[20 hs
 instance PPForHI Ty where
-  ppForHI = ppTyWithCfg' CfgPP_HI
+  -- ppForHI = ppTyWithCfg' CfgPP_HI
+  ppForHI = ppTyWithCfg (cfgPPTyExtraForHI $ cfgPPTy CfgPP_HI)
 
 instance PPForHI Pred where
   ppForHI p = ppForHI (Ty_Pred p)
@@ -178,6 +179,7 @@ data CfgPPTy
       { cfgPPTyPPHsn        :: HsName -> PP_Doc
       , cfgPPTyPPCon        :: CfgPPTy -> HsName -> PP_Doc
       , cfgPPTyPPVar        :: CfgPPTy -> UID -> Int -> PP_Doc
+      , cfgPPTyPPVarDflt    :: CfgPPTy -> String -> UID -> PP_Doc
 %%[[9
       , cfgPPTyCtxt         :: TyCtxt
 %%]]
@@ -205,6 +207,7 @@ cfgPPTyDflt
       { cfgPPTyPPHsn        = pp
       , cfgPPTyPPCon        = \_ -> ppCon
       , cfgPPTyPPVar        = \c _ i -> ppTnUniq c i
+      , cfgPPTyPPVarDflt    = \cfg pre tv -> cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 %%[[9
       , cfgPPTyCtxt         = TyCtxt_Ty
 %%]]
@@ -218,6 +221,13 @@ cfgPPTyPred :: CfgPPTy
 cfgPPTyPred
   = cfgPPTyDflt
       { cfgPPTyCtxt         = TyCtxt_Pred
+      }
+%%]
+
+%%[20 hs
+cfgPPTyExtraForHI :: CfgPPTy -> CfgPPTy
+cfgPPTyExtraForHI c
+  = c { cfgPPTyPPVarDflt    = \cfg pre tv -> cfgPPTyPPVar cfg cfg tv 0
       }
 %%]
 
@@ -414,7 +424,7 @@ SEM Ty
 
 %%[8.Var -3.Var
 SEM Ty
-  | Var             loc     .   pp      :=  maybe (mkDefaultTvNmPP @lhs.cfg (tvCategPrefix @categ.self) @tv) id (tnLookupPP @tv @lhs.tnMap)
+  | Var             loc     .   pp      :=  maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg (tvCategPrefix @categ.self) @tv) id (tnLookupPP @tv @lhs.tnMap)
 %%]
 
 %%[3.Quant
@@ -511,14 +521,14 @@ SEM Ty
                                             else cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
 
 SEM Impls
-  | Tail Cons       loc     .   ppIv    =   maybe (mkDefaultTvNmPP @lhs.cfg "i" @iv) id (tnLookupPP @iv @lhs.tnMap) >|< ppBracketsCommas @proveOccs
+  | Tail Cons       loc     .   ppIv    =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "i" @iv) id (tnLookupPP @iv @lhs.tnMap) >|< ppBracketsCommas @proveOccs
   | Tail            lhs     .   pp      =   @ppIv
-  | Cons            loc     .   ppPv    =   maybe (mkDefaultTvNmPP @lhs.cfg "p" (poiId @pv)) id (tnLookupPP @iv @lhs.tnMap)
+  | Cons            loc     .   ppPv    =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "p" (poiId @pv)) id (tnLookupPP @iv @lhs.tnMap)
                     lhs     .   pp      =   @ppIv >|< "=" >|< @pr.pp >|< "/" >|< @ppPv >|< "," >|< @tl.pp
   | Nil             lhs     .   pp      =   pp "_"
 
 SEM Pred
-  | Var             lhs     .   pp      =   maybe (mkDefaultTvNmPP @lhs.cfg "p" @pv) id (tnLookupPP @pv @lhs.tnMap)
+  | Var             lhs     .   pp      =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "p" @pv) id (tnLookupPP @pv @lhs.tnMap)
 %%]
 
 %%[9_1
@@ -533,7 +543,7 @@ SEM Pred
 
 SEM Label
   | Lab             lhs     .   pp      =   cfgPPTyPPHsn @lhs.cfg @nm
-  | Var             lhs     .   pp      =   maybe (mkDefaultTvNmPP @lhs.cfg "l" @lv) id (tnLookupPP @lv @lhs.tnMap)
+  | Var             lhs     .   pp      =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "l" @lv) id (tnLookupPP @lv @lhs.tnMap)
 %%]
 
 %%[13
@@ -541,7 +551,7 @@ ATTR PredSeq [ | | ppL: {[PP_Doc]} ]
 
 SEM PredSeq
   | Cons            lhs     .   ppL     =   @hd.pp :  @tl.ppL
-  | Var             lhs     .   ppL     =   [maybe (mkDefaultTvNmPP @lhs.cfg "prsq" @av) id (tnLookupPP @av @lhs.tnMap)]
+  | Var             lhs     .   ppL     =   [maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "prsq" @av) id (tnLookupPP @av @lhs.tnMap)]
   | Nil             lhs     .   ppL     =   []
 
 SEM Pred
@@ -557,7 +567,7 @@ SEM Ty
 
 %%[50
 SEM Ty
-  | Equal           loc     .   pp      =   ppParens (maybe (mkDefaultTvNmPP @lhs.cfg "e" @tv) id (tnLookupPP @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
+  | Equal           loc     .   pp      =   ppParens (maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "e" @tv) id (tnLookupPP @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -640,7 +650,7 @@ SEM Ty
 %%[10
 SEM RowExts
   | Exts            loc     .   appArgPPL   =   [ ppFld "::" Nothing l (pp l) (ppTyWithCfg @lhs.cfg t) | (l,t) <- @exts ]
-  | Var             loc     .   appArgPPL   =   [ maybe (mkDefaultTvNmPP @lhs.cfg "e" @ev) id (tnLookupPP @ev @lhs.tnMap) ]
+  | Var             loc     .   appArgPPL   =   [ maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "e" @ev) id (tnLookupPP @ev @lhs.tnMap) ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

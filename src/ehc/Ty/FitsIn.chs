@@ -306,7 +306,7 @@ fitsInFI fi ty1 ty2
             range                   =  feRange $ fiEnv fi
 %%]]
             res fi t                =  emptyFO  { foUniq = fiUniq fi, foTy = t
-                                                , foAppSpineL = asGamLookup appSpineGam (tyConNm t)}
+                                                , foAppSpineInfo = asGamLookup (tyConNm t) appSpineGam}
             err    e                =  emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e}
             errClash fi t1 t2       =  err [rngLift range Err_UnifyClash ty1 ty2 (fioMode (fiFIOpts fi)) t1 t2 (fioMode (fiFIOpts fi))]
             occurBind fi v t
@@ -438,7 +438,7 @@ fitsInFI fi ty1 ty2
 %%[4.fitsIn.foCmb
             foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foCnstr afo |=> foTy ffo) (foTy afo)}
             foCmbCnstr   ffo afo  = afo {foCnstr = foCnstr afo |=> foCnstr ffo}
-            foCmbCoCon   ffo afo  = afo {foAppSpineL = tail (foAppSpineL ffo)}
+            foCmbCoCon   ffo afo  = afo {foAppSpineInfo = asgiShift1SpinePos $ foAppSpineInfo ffo}
 %%]
 
 %%[9
@@ -668,10 +668,15 @@ fitsInFI fi ty1 ty2
             ff fi t1 t2
               = case filter (not . foHasErrs) tries of
                   (f:_) -> f
-                  _     -> head tries
+                  _     -> case (drop limit rt1, drop limit rt2) of
+                             ((t:_),_) -> err [rngLift range Err_TyBetaRedLimit t1 t limit]
+                             (_,(t:_)) -> err [rngLift range Err_TyBetaRedLimit t2 t limit]
+                             _         -> head tries
               where limit = ehcOptTyBetaRedCutOffAt globOpts
                     reduc = tyBetaRed (feTyGam $ fiEnv fi)
-                    tries = take limit $ try (t1 : reduc t1) (t2 : reduc t2)
+                    rt1   = reduc t1
+                    rt2   = reduc t2
+                    tries = take (limit+1) $ try (t1 : rt1) (t2 : rt2)
                           where try (t1:ts1@(_:_)) (t2:ts2@(_:_)) = f fi t1 t2 : try ts1 ts2
                                 try ts1@[t1]       (t2:ts2@(_:_)) = f fi t1 t2 : try ts1 ts2
                                 try (t1:ts1@(_:_)) ts2@[t2]       = f fi t1 t2 : try ts1 ts2
@@ -995,8 +1000,8 @@ fitsInFI fi ty1 ty2
                 = manyFO [ffo,afo,foCmbApp ffo afo]
                 where  ffo  = f fi tf1 tf2
                        fs   = foCnstr ffo
-                       (as:_) = foAppSpineL ffo
-                       fi'  = fi  { fiFIOpts  = asFIO as . fioSwapCoCo (asCoCo as) . fiFIOpts $ fi
+                       (as:_) = asgiSpine $ foAppSpineInfo ffo
+                       fi'  = fi  { fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts $ fi
                                   , fiUniq    = foUniq ffo }
                        afo  = f fi' (fs |=> ta1) (fs |=> ta2)
 %%]
@@ -1006,11 +1011,11 @@ fitsInFI fi ty1 ty2
                 = manyFO [ffo,afo,rfo]
                 where  ffo  = f fi tf1 tf2
                        fs   = foCnstr ffo
-                       (as:_) = foAppSpineL ffo
-                       fi'  = fi  { fiFIOpts  = asFIO as . fioSwapCoCo (asCoCo as) . fiFIOpts $ fi
+                       (as:_) = asgiSpine $ foAppSpineInfo ffo
+                       fi'  = fi  { fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts $ fi
                                   , fiUniq    = foUniq ffo }
                        afo  = ff fi' (fs |=> ta1) (fs |=> ta2)
-                       rfo  = asFOUpdCoe as globOpts ffo . foCmbApp ffo $ afo
+                       rfo  = asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
 %%]
 
 %%[7.fitsIn.Ext
@@ -1169,8 +1174,16 @@ tyBetaRed tyGam = unfoldr (fmap (\t -> (t,t)) . tyBetaRed1 tyGam)
 %%[11 export(tyBetaRedFull)
 tyBetaRedFull :: FIIn -> Ty -> Ty
 tyBetaRedFull fi ty
-  = last
-    $ take (ehcOptTyBetaRedCutOffAt $ feEHCOpts env)
-    $ ty : tyBetaRed (feTyGam env) ty
+  = red ty
   where env = fiEnv fi
+        lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
+        redl ty = take lim $ tyBetaRed (feTyGam env) ty
+        -- red  ty = reda $ choose ty $ redl ty
+        red  ty = choose ty $ redl ty
+        reda ty
+            = if all null as' then ty else mk f (zipWith choose as as')
+            where (f,as,mk) = tyAppFunArgs' ty
+                  as' = map redl as
+        choose a [] = a
+        choose a as = last as
 %%]

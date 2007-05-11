@@ -91,7 +91,7 @@ SEM Expr
   | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
   | Undefined   loc         .   cexpr       =   cundefined @lhs.opts
-  | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId
+  | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId (cerror @lhs.opts ("FAIL " ++ show @caseId))
 %%]
   | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
 
@@ -826,7 +826,7 @@ rceMatchConst :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConst env (arg:args) alts
   = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindPlain (rceRebinds arg alts) (CExpr_Case n alts' (rceCaseCont env)))
   where arg' = hsnSuffix arg "!"
-        alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e) <- alts ]
+        alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e) <- alts ]
 
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
@@ -843,7 +843,7 @@ rceMatch :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
 rceMatch env [] alts  
   =  case [ e | (RAlt_Alt [] e) <- alts ] of
-       (e:_)  -> cSubstCaseAltFail (rceCaseFailSubst env) e
+       (e:_)  -> cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e
        _      -> rceCaseCont env
 rceMatch env args alts
   =  foldr
@@ -853,7 +853,7 @@ rceMatch env args alts
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
                   _  ->  mkCExprLet CBindPlain [CBind_Bind nc e]
                          $ rceMatchSplits (rceUpdEnv (CExpr_Var nc) env) args alts
-                     where nc  = hsnPrefix "_casecont_" (rpatNmNm $ rcpPNm $ rcaPat $ head $ alts)
+                     where nc  = hsnPrefix "_casecont_" (rpatNmNm $ rcpPNm $ rcaPat $ head alts)
         )
         (rceCaseCont env)
      $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar
@@ -868,10 +868,16 @@ rceMatch env args alts
 
 rceUpdEnv :: CExpr -> RCEEnv -> RCEEnv
 rceUpdEnv e env
-  = env { rceCaseFailSubst = Map.insert (rceCaseId env) e (rceCaseFailSubst env)
-        , rceCaseCont = e
+  = env { rceCaseFailSubst = Map.union (Map.fromList [ (i,e) | i <- Set.toList (rceCaseIds env) ])
+                             $ rceCaseFailSubst env
+        , rceCaseCont      = e
         }
 %%]
+rceUpdEnv :: CExpr -> RCEEnv -> RCEEnv
+rceUpdEnv e env
+  = env { rceCaseFailSubst = (\v -> trp "XX" (e >#< pp (show v)) v) $ Map.insert (rceCaseId env) e $ rceCaseFailSubst env
+        , rceCaseCont = e
+        }
 
 %%[97 hs
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
@@ -886,6 +892,15 @@ rceMatchBoolExpr env (arg:args) alts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Id of case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Expr
+  | Case        loc         .   caseIds     =   maybe (Set.singleton uidStart) id @mbCaseIds
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% RCEEnv
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -897,8 +912,8 @@ SEM Expr
 %%]]
                 loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
   | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
-                                                            { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam
-                                                            , rceCaseId = maybe uidStart id @mbCaseId
+                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam
+                                                            , rceCaseIds = @caseIds
                                                             }
 %%]
 

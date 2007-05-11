@@ -309,7 +309,7 @@ DATA Expr
   | Case            expr            : Expr
                     alts            : CaseAlts
 %%[[8
-                    mbCaseId        : {Maybe UID}
+                    mbCaseIds       : {Maybe (Set.Set UID)}
                     isTupOfArg      : {Bool}
 %%]]
 %%]

@@ -629,6 +629,18 @@ tyAppFunArgs
                 _               -> (t,as)
 %%]
 
+%%[11 hs export(tyAppFunArgs')
+tyAppFunArgs'    :: Ty -> (Ty, TyL, Ty -> TyL -> Ty)
+tyAppFunArgs'
+  =  extr []
+  where  extr as t
+           =  case t of
+                Ty_Quant q v t  -> (f,as,\f as -> Ty_Quant q v $ mk f as)
+                                where (f,as,mk) = tyAppFunArgs' t
+                Ty_App f a      -> extr (a:as) f
+                _               -> (t,as,\f as -> mkApp (f:as))
+%%]
+
 %%[1.unMkTy.funs hs
 tyArrowArgs  = fst . tyArrowArgsRes
 tyArrowRes   = snd . tyArrowArgsRes
@@ -727,6 +739,13 @@ tyLamArgsRes
                 Ty_Lam a r  -> (a:as',r')
                             where (as',r') = extr r
                 _           -> ([],t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping through Ty_App structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11 hs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
