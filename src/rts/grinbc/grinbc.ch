@@ -334,6 +334,24 @@ extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ByteCode dump
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+typedef struct GB_ByteCodeDumpEntry {
+  GB_BytePtr	bcLoc ;
+  GB_Byte		bcSize ;
+  char*			bc ;
+} GB_ByteCodeDumpEntry ;
+%%]
+
+%%[8
+#if TRACE || DUMP_INTERNALS
+extern void gb_prByteCodeDumpEntry( GB_ByteCodeDumpEntry* e ) ;
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PackedString
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -138,6 +138,8 @@ DATA Err
   | NoMostSpecificPred  pred1      : {Pred}
                         pred2      : {Pred}
   | EvidenceAltsLeft
+  | NoCoerceDerivation  func       : {Ty}
+                        arg        : {Ty}
 %%]
 
 %%[11

@@ -270,6 +270,7 @@ SEM Module
                             .   ppNmACallInfo           =   @ppNm @strNmcallInfo
                             .   ppNmACAF                =   @ppNm "caf"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
+                            .   ppNmByteCodeDumpTbl     =   @ppNm "bytecodeDump"
                             .   ppNmConstTbl            =   @ppNm "constants"
                             .   ppNmLinkEntriesTbl      =   @ppNm "linkEntries"
                             .   ppNmGlobEntriesTbl      =   @ppNm "globalEntries"
@@ -305,6 +306,10 @@ SEM Module
                                                     extraConstL = [ Const_CallInfo (@moduleNmPre ++ n) | (n,_) <- callinfoNmL ]
                                                     consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmAString) (@constL ++ extraConstL))
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
+                                                    bcodedump   = ppTbl' "GB_ByteCodeDumpEntry" @ppNmByteCodeDumpTbl
+                                                                    (map (\(l,sz,c) -> ppCurlysCommasBlock [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
+                                                                     $ @instrs.bcTrL
+                                                                    )
                                                     linkL   = Seq.toList @instrs.links
                                                     links   = ppTbl' "GB_LinkEntry" @ppNmLinkEntriesTbl
                                                                 (map (\(l,c)
@@ -380,6 +385,7 @@ SEM Module
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
 %%]]
+                                                                                  ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{printf(\"module" >#< @moduleNm >|< "\\n\");" >#< "int d; for (d=0; d<" >|< length @instrs.bcTrL >|< "; d++) {gb_prByteCodeDumpEntry(&" >|< @ppNmByteCodeDumpTbl >|< "[d]);}" >#< "});"] else [])
                                                                                   ++ [ "main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
                                                                                      , pp "return main_GB_Exit( argc, argv) ;"
                                                                                      ]
@@ -405,6 +411,7 @@ SEM Module
                                                 in  ( vlist
                                                       $  [ top ]
                                                       ++ bcode
+                                                      ++ (if ehcOptGenTrace @lhs.opts then bcodedump else [])
                                                       ++ strings
                                                       ++ callinfos
                                                       ++ consts
@@ -483,6 +490,20 @@ SEM Instrs
   | Cons        lhs         .   ppL         =   if @hd.hasCode
                                                 then (ppCmtC @lhs.opts (@lhs.cLoc >|< ":" >#< @hd.mn) >|< @lhs.ppExtra >-< indent 3 @hd.pp) : @tl.ppL
                                                 else @tl.ppL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Symbolic bytecode table (for trace, debug)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Instrs [ | | bcTrL : {[(Int,Int,PP_Doc)]} ]
+
+SEM Instrs
+  | Nil         lhs         .   bcTrL       =   []
+  | Cons        lhs         .   bcTrL       =   if @hd.hasCode
+                                                then (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas [@hd.mn,@lhs.ppExtra]) : @tl.bcTrL
+                                                else @tl.bcTrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

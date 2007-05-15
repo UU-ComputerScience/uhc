@@ -216,7 +216,7 @@ SEM GrVar
 
 SEM GrTag
   | Hole        lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "H" >|< "/" >|< "_"
-  | Rec         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "R" >|< "/" >|< "()"
+  | Rec         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "R" >|< "/" >|< @lhs.ppGrNm (mkHNm "()")
   | App         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "A" >|< "/" >|< @lhs.ppGrNm @nm
   | Fun         lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "F" >|< "/" >|< @lhs.ppGrNm @nm
   | PApp        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "P" >|< "/" >|< @needs >|< "/" >|< @lhs.ppGrNm @nm

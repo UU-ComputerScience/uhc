@@ -265,7 +265,7 @@ SEM TyAGItf
 ATTR Ty [ | | appSpineInfoL: {[AppSpineVertebraeInfo]} ]
 
 SEM Ty
-  | Con             lhs     .   appSpineInfoL       =   asgiSpine $ asGamLookup @nm appSpineGam
+  | Con             lhs     .   appSpineInfoL       =   asgiSpine $ panicJust "ElimAlts.Ty.Con.asGamLookup: not dealt with nonpresence" $ asGamLookup @nm appSpineGam
   | App             (loc.asi,lhs.appSpineInfoL)     =   hdAndTl @func.appSpineInfoL
   | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineVertebraeInfoL
 

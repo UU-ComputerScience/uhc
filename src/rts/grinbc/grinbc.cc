@@ -522,6 +522,26 @@ int gb_Opt_TraceSteps = True ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#if TRACE || DUMP_INTERNALS
+void gb_prByteCodeDumpEntry( GB_ByteCodeDumpEntry* e )
+{
+	int i ;
+#	if USE_64_BITS
+		printf( "0x%lx: "
+#	else
+		printf( "0x%x: "
+#	endif
+	      , e->bcLoc ) ;
+	for ( i = 0 ; i < e->bcSize ; i++ )
+	{
+		printf("%0.2x ", e->bcLoc[i]) ;
+	}
+	printf( " : %s\n", e->bc ) ;
+}
+#endif
+%%]
+
+%%[8
 void gb_prCallInfo( GB_CallInfo* ci )
 {
 	printf( "ci=%x", ci ) ;
@@ -1438,24 +1458,29 @@ void gb_InitTables
 		{
 			case GB_LinkTbl_EntryKind_CodeEntry :
 				*p = Cast(GB_Word,globalEntries[ linkEntries[i].linkVal ]) ;
+				IF_GB_TR_ON(3,{printf("link CodeEntry p %x v %x", p, globalEntries[ linkEntries[i].linkVal ]) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode :
 				*p = linkEntries[i].linkVal ;
+				IF_GB_TR_ON(3,{printf("link PatchCode p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref1 :
 				*p = GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)) ;
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref1 p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref2 :
 				*p = GB_Deref(Cast(GB_Ptr,GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)))) ;
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref2 p %x v %x", p, GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal))) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchOffsets :
 				for ( j = 0 ; j < linkEntries[i].linkVal ; j++ )
 				{
 					p[j] = Cast(GB_Word,&p[j+1]) + p[j] ;
+					IF_GB_TR_ON(3,{printf("link PatchOffsets i %d p %x v %x", j, &p[j], Cast(GB_Word,&p[j+1]) + p[j]) ; printf("\n");}) ;
 				}
 				break ;
 
@@ -1463,6 +1488,7 @@ void gb_InitTables
 			case GB_LinkTbl_EntryKind_ImpEntry :
 				// *p = (*impNode)->content.fields[ linkEntries[i].linkVal ] ;
 				*p = Cast(GB_Word,*(modTbl[ linkEntries[i].linkVal ].expNode)) ;
+				IF_GB_TR_ON(3,{printf("link ImpEntry p %x v %x", p, *(modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
 				break ;
 %%]]
 
@@ -1473,6 +1499,7 @@ void gb_InitTables
 	for ( i = 0 ; i < expNodeSz ; i++ )
 	{
 		expNode->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
+		IF_GB_TR_ON(3,{printf("link exp p %x v %x", &expNode->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
 	}
 %%]]
 	

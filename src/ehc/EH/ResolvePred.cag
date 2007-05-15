@@ -84,11 +84,13 @@ SEM Expr
 SEM Expr
   | App AppImpred
                 loc         .   appImplsCoeL        =   (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL) ++ [CoeImplApp $ ipoId @imPrvOcc]
+                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
 %%]
 
 %%[12
 SEM Expr
   | AppImpl     loc         .   appImplsCoeL        =   []
+                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
 %%]
 
 %%[9

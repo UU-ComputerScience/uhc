@@ -41,7 +41,7 @@ format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam
 format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
 
 -- Coercion
-format ag def  (coe | Coe) (transl | TranslExpr) = (foAppCoe' "@lhs.opts" (coe) "@lhs.finTyCnstr" "@lhs.cSubst" (transl) | TranslExpr)
+format ag def  (coe | Coe) (transl | TranslExpr) = (foAppLRCoe' "@lhs.opts" (coe) "@lhs.finTyCnstr" "@lhs.cSubst" (transl) | TranslExpr)
 
 -- Nm
 format ag def `|` (nm | Nm) `|` = (hsnProdArity (nm) | Int)
@@ -81,7 +81,7 @@ external
   fioJoinY fioMeetY fioFitY
   fioDontBind
   emptyFO
-  foCSubst foLCoeL foRCoeL
+  foCSubst foLRCoe
 
 format tex howToMatch = <=>
 format ag  fiopt = fiOpts
@@ -2393,7 +2393,7 @@ relation fit =
     judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (lty) (rty)
            | ty `=` foTy fo
            | cnstr `=` foCnstr (fo)
-           | coe `=` (foCSubst (fo),foLCoeL (fo),foRCoeL (fo))
+           | coe `=` (foCSubst (fo),foLRCoe (fo))
     explain coe = (Coercion (from |lty| to |rty| values) required for | <= | to hold)
 
 ruleset fit scheme fit viewsel K - * "Fitting of types" =

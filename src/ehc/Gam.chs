@@ -821,12 +821,12 @@ valDataGamLookup nm vg dg
 %%[4.AppSpineGam export(AppSpineGam, asGamLookup)
 type AppSpineGam = Gam HsName AppSpineInfo
 
-asGamLookup :: HsName -> AppSpineGam -> AppSpineInfo
+asGamLookup :: HsName -> AppSpineGam -> Maybe AppSpineInfo
 asGamLookup nm g
   = case gamLookup nm g of
-      Just ccgi                ->  ccgi
-      Nothing | hsnIsProd nm   ->  emptyAppSpineInfo {asgiVertebraeL = take (hsnProdArity nm) prodAppSpineVertebraeInfoL}
-      _                        ->  emptyAppSpineInfo
+      j@(Just _)             -> j
+      Nothing | hsnIsProd nm -> Just $ emptyAppSpineInfo {asgiVertebraeL = take (hsnProdArity nm) prodAppSpineVertebraeInfoL}
+      _                      -> Nothing
 
 %%]
 
@@ -837,10 +837,11 @@ appSpineGam =  assocLToGam [(hsnArrow, emptyAppSpineInfo {asgiVertebraeL = arrow
 
 %%[7.appSpineGam -4.appSpineGam export(appSpineGam)
 appSpineGam :: AppSpineGam
-appSpineGam =  assocLToGam
-                 [ (hsnArrow,    emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})
-                 , (hsnRec,      emptyAppSpineInfo {asgiVertebraeL = take 1 prodAppSpineVertebraeInfoL})
-                 ]
+appSpineGam
+  = assocLToGam
+      [ (hsnArrow,    emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})
+      , (hsnRec,      emptyAppSpineInfo {asgiVertebraeL = take 1 prodAppSpineVertebraeInfoL})
+      ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

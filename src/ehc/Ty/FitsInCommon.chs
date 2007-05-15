@@ -54,12 +54,12 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foCnstr  
 
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
 data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
-                        ,  foUniq            ::  UID                 ,  foAppSpineInfo    ::  AppSpineInfo
+                        ,  foUniq            ::  UID                 ,  foMbAppSpineInfo  ::  Maybe AppSpineInfo
                         ,  foErrL            ::  ErrL  
 %%]
 %%[9
                         ,  foCSubst          ::  CSubst              ,  foPredOccL        ::  [PredOcc]
-                        ,  foLCoeL           ::  [Coe]               ,  foRCoeL           ::  [Coe]
+                        ,  foLRCoe           ::  LRCoe
                         ,  foGathCnstrMp     ::  CHRPredOccCnstrMp
 %%]
 %%[10
@@ -74,12 +74,12 @@ data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy    
 
 %%[4.emptyFO
 emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
-                        ,  foUniq            =   uidStart            ,  foAppSpineInfo    =   emptyAppSpineInfo
+                        ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []         
 %%]
 %%[9
                         ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
-                        ,  foLCoeL           =   []                  ,  foRCoeL           =   []
+                        ,  foLRCoe           =   emptyLRCoe
                         ,  foGathCnstrMp     =   emptyCnstrMp
 %%]
 %%[10
@@ -95,6 +95,11 @@ emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy    
 %%[1.foHasErrs
 foHasErrs :: FIOut -> Bool
 foHasErrs = not . null . foErrL
+%%]
+
+%%[4 export(foAppSpineInfo)
+foAppSpineInfo :: FIOut -> AppSpineInfo
+foAppSpineInfo fo = maybe emptyAppSpineInfo id $ foMbAppSpineInfo fo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,15 +143,8 @@ arrowAppSpineVertebraeInfoL
     , AppSpineVertebraeInfo CoVariant id
           (\opts [ffo,afo]
               -> let (u',u1) = mkNewUID (foUniq afo)
-                     n = uidHNm u1
-                     r = mkCoe (\e ->  CExpr_Lam n e)
-                     l = mkCoe (\e ->  CExpr_App e
-                                         (coeWipeWeave opts emptyCnstr (foCSubst afo) (foLCoeL ffo) (foRCoeL ffo)
-                                           `coeEvalOn` CExpr_Var n)
-                               )
-                 in  afo { foRCoeL = r : foRCoeL afo, foLCoeL = l : foLCoeL afo
-                         , foUniq = u'
-                         }
+                     c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
+                 in  afo { foLRCoe = c, foUniq = u' }
           )
     ]
 

@@ -109,7 +109,7 @@ relation fit =
     judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (lty) (rty)
            | ty `=` foTy fo
            | cnstr `=` foCnstr (fo)
-           | coe `=` (foCSubst (fo),foLCoeL (fo),foRCoeL (fo))
+           | coe `=` (foCSubst (fo),foLRCoe (fo))
     explain coe = (Coercion (from |lty| to |rty| values) required for | <= | to hold)
 
 -------------------------------------------------------------------------

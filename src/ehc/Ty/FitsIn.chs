@@ -69,17 +69,17 @@
 %%% Coercion application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(foAppCoe)
-foAppCoe :: EHCOpts -> FIOut -> Cnstr -> CSubst -> CExpr -> CExpr
-foAppCoe opts fo c cs ce = foAppCoe' opts (foCSubst fo,foLCoeL fo,foRCoeL fo) c cs ce
+%%[9 export(foAppLRCoe)
+foAppLRCoe :: EHCOpts -> FIOut -> Cnstr -> CSubst -> CExpr -> CExpr
+foAppLRCoe opts fo c cs ce = foAppLRCoe' opts (foCSubst fo,foLRCoe fo) c cs ce
 %%]
 
 -- for use by Ruler
-%%[9 export(foAppCoe')
-foAppCoe' :: EHCOpts -> (CSubst,[Coe],[Coe]) -> Cnstr -> CSubst -> CExpr -> CExpr
-foAppCoe' opts (fCS,fLC,fRC) c cs ce
+%%[9 export(foAppLRCoe')
+foAppLRCoe' :: EHCOpts -> (CSubst,LRCoe) -> Cnstr -> CSubst -> CExpr -> CExpr
+foAppLRCoe' opts (fCS,fLRCoe) c cs ce
   =  let  s = cs `cSubstApp` fCS
-     in   cSubstApp s (coeWipeWeave opts c s fLC fRC `coeEvalOn` ce)
+     in   cSubstApp s (lrcoeWipeWeave opts c s fLRCoe `coeEvalOn` ce)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -306,7 +306,7 @@ fitsInFI fi ty1 ty2
             range                   =  feRange $ fiEnv fi
 %%]]
             res fi t                =  emptyFO  { foUniq = fiUniq fi, foTy = t
-                                                , foAppSpineInfo = asGamLookup (tyConNm t) appSpineGam}
+                                                , foMbAppSpineInfo = asGamLookup (tyConNm t) appSpineGam}
             err    e                =  emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e}
             errClash fi t1 t2       =  err [rngLift range Err_UnifyClash ty1 ty2 (fioMode (fiFIOpts fi)) t1 t2 (fioMode (fiFIOpts fi))]
             occurBind fi v t
@@ -438,7 +438,7 @@ fitsInFI fi ty1 ty2
 %%[4.fitsIn.foCmb
             foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foCnstr afo |=> foTy ffo) (foTy afo)}
             foCmbCnstr   ffo afo  = afo {foCnstr = foCnstr afo |=> foCnstr ffo}
-            foCmbCoCon   ffo afo  = afo {foAppSpineInfo = asgiShift1SpinePos $ foAppSpineInfo ffo}
+            foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 %%]
 
 %%[9
@@ -477,9 +477,7 @@ fitsInFI fi ty1 ty2
                         pr                  = tyPred prTy
                    in   (fi { fiEnv = e {fePredScope = assumePredScope} },gathPredLToAssumeCnstrMp [mkPredOcc pr i assumePredScope])
             foUpdErrs e fo = fo {foErrL = e ++ foErrL fo}
-            foUpdLCoe l fo = fo {foLCoeL = l : foLCoeL fo}
-            foUpdRCoe r fo = fo {foRCoeL = r : foRCoeL fo}
-            foUpdLRCoe l r = foUpdLCoe l . foUpdRCoe r
+            foUpdLRCoe lrcoe fo = fo {foLRCoe = lrcoe `lrcoeUnion` foLRCoe fo}
             foUpdCnstrMp m fo = fo {foGathCnstrMp = m `cnstrMpUnion` foGathCnstrMp fo}
             foUpdPrL prL prMp fo = foUpdCnstrMp prMp $ fo {foPredOccL = prL ++ foPredOccL fo}
             foUpdCSubst s fo = fo {foCSubst = cSubstOptApp globOpts s (foCSubst fo)}
@@ -487,8 +485,8 @@ fitsInFI fi ty1 ty2
                             = foUpdCnstr (iv `cnstrImplsUnit` (foCnstr fo |=> im))
                             $ foUpdTy ([foCnstr fo |=> tpr] `mkArrow` foTy fo)
                             $ fo
-            foUpdImplExplCoe iv im tpr lCoe rCoe fo
-                            = foUpdImplExpl iv im tpr . foUpdLRCoe lCoe rCoe $ fo
+            foUpdImplExplCoe iv im tpr lrcoe fo
+                            = foUpdImplExpl iv im tpr . foUpdLRCoe lrcoe $ fo
 %%]
 
 %%[4
@@ -560,11 +558,11 @@ fitsInFI fi ty1 ty2
                                foRes = (\fo -> foldr foCmbPrfRes fo foL)
 %%]
 %%[10
-                                       . foUpdRecFldsCoe eKeys foL tr1
+                                       $ foUpdRecFldsCoe eKeys foL tr1
 %%]
 %%[7
-                                       . foUpdTy (foTy fo `mkTyRow` eL)
-                                       . foUpdCnstr fCnstr $ fo
+                                       $ foUpdTy (foTy fo `mkTyRow` eL)
+                                       $ foUpdCnstr fCnstr fo
 %%]
 
 %%[7.fitsIn.fRow.fRFinal
@@ -577,7 +575,7 @@ fitsInFI fi ty1 ty2
                          | tvCatIsFixed cat && n2 == hsnRowEmpty && isRec
                          = res fi r2
                        fR fi r1 r2 [] [] []
-                         = (f fi r1 r2) {foLCoeL = [], foRCoeL = []}
+                         = (f fi r1 r2) {foLRCoe = emptyLRCoe}
 %%]
 
 %%[7.fitsIn.fRow.Final1
@@ -603,58 +601,65 @@ fitsInFI fi ty1 ty2
                                    =  let  r' = maybe Ty_Any fst $ tyRowExtr l r
                                       in   (mkPredOcc (Pred_Lacks r' (Label_Lab l)) (mkPrId basePrfCtxtId u) predScope,r')
                                  mkLPred r l u = fst (mkLPred' r l u)
-                                 rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo), not (coeIsId c) ]
+                                 rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo) {-, not (coeIsId c) -} ]
                                  (fuUpdL,prUpdL,tr1s',_)
                                    =  foldr  (\(l,c) (fuL,prL,r,u)
-                                                ->  ((l,(CExpr_TupUpd (cundefined globOpts) CTagRec l (mkCExprHole globOpts u) (c `coeEvalOn` mkLSel l u),Nothing)):fuL
-                                                    ,mkLPred r l u : prL,r,uidNext u
+                                                ->  ( (l,(CExpr_TupUpd (cundefined globOpts) CTagRec l (mkCExprHole globOpts u) (c `coeEvalOn` mkLSel l u),Nothing)) : fuL
+                                                    , mkLPred r l u : prL,r,uidNext u
                                                     )
                                              )
                                              ([],[],tr1s,u2) rowCoeL
                                  (fuDelL,prDelL,_,_)
                                    =  foldl  (\(fuL,prL,r,u) l
                                                   ->  let  (pr,r') = mkLPred' r l u
-                                                      in   ((l,(CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (mkCExprHole globOpts u),Nothing)):fuL
-                                                           ,pr:prL,r',uidNext u
+                                                      in   ( (l,(CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (mkCExprHole globOpts u),Nothing)) : fuL
+                                                           , pr:prL,r',uidNext u
                                                            )
                                              )
                                              ([],[],tr1s',u3) (sortBy rowLabCmp (assocLKeys e1))
                                  fuL = fuUpdL ++ reverse fuDelL
                                  (fBldL,prBldL,_,_)
                                    =  foldr  (\l (fL,prL,r,u)
-                                                ->  ((maybe id coeEvalOn (lookup l rowCoeL) $ mkLSel l u):fL
-                                                    ,mkLPred r l u : prL,r,uidNext u
+                                                ->  ( (maybe id coeEvalOn (lookup l rowCoeL) $ mkLSel l u) : fL
+                                                    , mkLPred r l u : prL,r,uidNext u
                                                     )
                                              )
                                              ([],[],tr1s,u3) (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
                             in   case r2 of
-                                   Ty_Con n2 | n2 == hsnRowEmpty && not (null fBldL)
-                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))]
+                                   Ty_Con n2
+                                     | n2 == hsnRowEmpty && null fuUpdL && null e2
+                                     ->  fo  {  foLRCoe = emptyLRCoe }
+                                     | n2 == hsnRowEmpty && not (null fBldL)
+                                     ->  fo  {  foLRCoe = lrcoeLSingleton coe
                                              ,  foPredOccL = prBldL ++ foPredOccL fo
                                              ,  foGathCnstrMp = gathPredLToProveCnstrMp prBldL `cnstrMpUnion` foGathCnstrMp fo
                                              ,  foUniq = u'
                                              }
-                                   Ty_Var _ cat | tvCatIsFixed cat && not (null fuL)
-                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuL r))]
+                                     where coe = Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))
+                                   Ty_Var _ cat
+                                     | tvCatIsFixed cat && not (null fuL)
+                                     ->  fo  {  foLRCoe = lrcoeLSingleton coe
                                              ,  foPredOccL = prUpdL ++ prDelL ++ foPredOccL fo
                                              ,  foGathCnstrMp = gathPredLToProveCnstrMp (prUpdL ++ prDelL) `cnstrMpUnion` foGathCnstrMp fo
                                              ,  foUniq = u'
                                              }
+                                     where coe = Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuL r))
                                    _ |  not (null fuUpdL)
-                                     ->  fo  {  foLCoeL = [Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuUpdL r))]
+                                     ->  fo  {  foLRCoe = lrcoeLSingleton coe
                                              ,  foPredOccL = prUpdL ++ foPredOccL fo
                                              ,  foGathCnstrMp = gathPredLToProveCnstrMp prUpdL `cnstrMpUnion` foGathCnstrMp fo
                                              ,  foUniq = u'
                                              }
                                      |  otherwise
-                                     ->  fo  {  foLCoeL = [] }
+                                     ->  fo  {  foLRCoe = emptyLRCoe }
+                                     where coe = Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuUpdL r))
 %%]
 
 %%[10.fitsIn.fRow.Coe
                        foUpdRecFldsCoe eKeys foL tr1 foR
                          =  let cL =   [  (l,c)
                                        |  (l,fo) <- zip eKeys foL
-                                       ,  let c = coeWipeWeave globOpts (foCnstr foR) (foCSubst foR) (foLCoeL fo) (foRCoeL fo)
+                                       ,  let c = lrcoeWipeWeave globOpts (foCnstr foR) (foCSubst foR) (foLRCoe fo)
                                        ,  not (coeIsId c)
                                        ]
                             in  foR {foRowCoeL = cL}
@@ -875,18 +880,18 @@ fitsInFI fi ty1 ty2
                             =  if foHasErrs pfo
                                then Nothing
                                else Just  ( foUpdTy ([foCnstr fo |=> foTy pfo] `mkArrow` foTy fo)
-                                          $ foUpdLRCoe (mkAppCoe [CExpr_Var n]) (mkLamCoe n)
+                                          $ foUpdLRCoe (mkIdLRCoe n)
                                           $ fo)
                             where  pfo   = f (fi2 {fiFIOpts = predFIOpts}) tpr2 tpr1
                                    n     = uidHNm u2
                                    fo    = ff (fi2 {fiUniq = foUniq pfo}) (foCnstr pfo |=> tr1) (foCnstr pfo |=> tr2)
                        fP tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2 ipo2))
-                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId basePrfCtxtId u2) ipo2 im2) tpr1 (mkAppCoe [CExpr_Var n]) (mkLamCoe n) fo)
+                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId basePrfCtxtId u2) ipo2 im2) tpr1 (mkIdLRCoe n) fo)
                             where  im2   = Impls_Tail u1 ipo2
                                    n     = uidHNm u2
                                    fo    = f fi2 tr1 ([Ty_Impls im2] `mkArrow` tr2)
                        fP (Ty_Impls (Impls_Tail iv1 ipo1)) tpr2@(Ty_Pred pr2)
-                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId basePrfCtxtId u2) ipo1 im1) tpr2 (mkAppCoe [CExpr_Var n]) (mkLamCoe n) fo)
+                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId basePrfCtxtId u2) ipo1 im1) tpr2 (mkIdLRCoe n) fo)
                             where  im1   = Impls_Tail u1 ipo1
                                    n     = uidHNm u2
                                    fo    = f fi2 ([Ty_Impls im1] `mkArrow` tr1) tr2
@@ -895,7 +900,7 @@ fitsInFI fi ty1 ty2
                        fP (Ty_Impls (Impls_Nil))   tpr2@(Ty_Impls im2@(Impls_Tail iv2 _))
                             =  Just (foUpdImplExpl iv2 Impls_Nil (Ty_Impls Impls_Nil) (f fi2 tr1 tr2))
                        fP (Ty_Impls (Impls_Tail iv1 ipo1)) (Ty_Impls im2@(Impls_Tail iv2 ipo2))
-                            =  Just (foUpdImplExplCoe iv1 im2' (Ty_Impls im2') (CoeImplApp iv2) (CoeImplLam iv2) (f fi2 tr1 tr2))
+                            =  Just (foUpdImplExplCoe iv1 im2' (Ty_Impls im2') (mkLRCoe (CoeImplApp iv2) (CoeImplLam iv2)) (f fi2 tr1 tr2))
                             where im2' = Impls_Tail iv2 (ipo1 ++ ipo2)
                        fP (Ty_Impls Impls_Nil)          (Ty_Impls Impls_Nil)
                             =  Just (f fi2 tr1 tr2)
@@ -931,10 +936,10 @@ fitsInFI fi ty1 ty2
                             =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) fo)
                             where fo = f fi2 t1 tr2
                        fP (Ty_Impls (Impls_Cons _ pr2 pv2 _ im2))
-                            =  Just (foUpdRCoe rCoe . foUpdTy (mkPrTy pr2 fo) $ fo)
+                            =  Just (foUpdLRCoe (lrcoeRSingleton rCoe) $ foUpdTy (mkPrTy pr2 fo) $ fo)
                             where (fo,rCoe) = fSub pv2 pr2 ([Ty_Impls im2] `mkArrow` tr2)
                        fP (Ty_Pred pr2)  | fioAllowRPredElim (fiFIOpts fi)
-                            =  Just (foUpdRCoe rCoe . foUpdTy (mkPrTy pr2 fo) $ fo)
+                            =  Just (foUpdLRCoe (lrcoeRSingleton rCoe) $ foUpdTy (mkPrTy pr2 fo) $ fo)
                             where (fo,rCoe) = fSub (mkPrId basePrfCtxtId u1) pr2 tr2
                        fP _ =  Nothing
             f fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
@@ -956,10 +961,10 @@ fitsInFI fi ty1 ty2
                        fP (Ty_Impls (Impls_Tail iv1 _))
                             =  Just (foUpdCnstr (iv1 `cnstrImplsUnit` Impls_Nil) (f fi2 tr1 t2))
                        fP (Ty_Impls (Impls_Cons _ pr1 pv1 _ im1))
-                            =  Just (foUpdPrL [] cnstrMp $ foUpdLCoe lCoe $ fo)
+                            =  Just (foUpdPrL [] cnstrMp $ foUpdLRCoe (lrcoeLSingleton lCoe) $ fo)
                             where (fo,lCoe,cnstrMp) = fSub pv1 prfPredScope pr1 ([Ty_Impls im1] `mkArrow` tr1)
                        fP (Ty_Pred pr1)
-                            =  Just (foUpdPrL [] cnstrMp $ foUpdLCoe lCoe $ fo)
+                            =  Just (foUpdPrL [] cnstrMp $ foUpdLRCoe (lrcoeLSingleton lCoe) $ fo)
                             where (fo,lCoe,cnstrMp) = fSub (mkPrId basePrfCtxtId u1) prfPredScope pr1 tr1
                        fP _ =  Nothing
 %%]
@@ -968,7 +973,7 @@ fitsInFI fi ty1 ty2
                             =  Just (foUpdTy ([im2] `mkArrow` foTy fo) $ fo)
                             where fo = f fi2 t1 tr2
                        fP (Ty_Impls (Impls_Tail iv2 _))
-                            =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) . foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
+                            =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
                             where fo = f fi2 t1 tr2
 
 %%[7
@@ -1015,7 +1020,10 @@ fitsInFI fi ty1 ty2
                        fi'  = fi  { fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts $ fi
                                   , fiUniq    = foUniq ffo }
                        afo  = ff fi' (fs |=> ta1) (fs |=> ta2)
-                       rfo  = asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
+                       rfo  = case foMbAppSpineInfo ffo of
+                                Nothing | not $ lrcoeIsId $ foLRCoe afo
+                                  -> err [rngLift range Err_NoCoerceDerivation (foTy ffo) (foTy afo)]
+                                _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
 %%]
 
 %%[7.fitsIn.Ext

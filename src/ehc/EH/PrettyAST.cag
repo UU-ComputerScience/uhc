@@ -502,8 +502,8 @@ SEM AGItf
 %%[9
 SEM Expr
   | Var         loc     .  info_9   :=  [ mkInfo1 "foGathCnstrMp @fo_" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ foGathCnstrMp @fo_)
-                                        , mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (foLCoeL @fo_))
-                                        , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (foRCoeL @fo_))
+                                        , mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (lrcoeLeftL  $ foLRCoe @fo_))
+                                        , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (lrcoeRightL $ foLRCoe @fo_))
                                         , mkInfo1 "@fe" (pp @fe)
                                         ]
   | Let         loc     .  info_9   :=  [ mkInfo1 "decls.gathCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @decls.gathCnstrMp)
