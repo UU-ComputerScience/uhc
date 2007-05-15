@@ -446,7 +446,7 @@ mkCExprLetHole i b = i `CExpr_HoleLet` b
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLamLetCoe, mkLetRecCoe)
-data Coe = CoeId | Coe !(CExpr -> CExpr) | CoeC !CExpr | CoeImplApp !ImplsVarId | CoeImplLam !ImplsVarId
+data Coe = Coe !(CExpr -> CExpr) | CoeC !CExpr | CoeImplApp !ImplsVarId | CoeImplLam !ImplsVarId
 
 coeId :: Coe
 coeId = CoeC CExpr_CoeArg
@@ -472,6 +472,70 @@ mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
 
 instance Show Coe where
   show _ = "COE"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercion for lamda
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A LRCoe represents a coercion in a much more finegrained manner:
+- a right Coe list, a list of coercions for building the rhs side of a subsumption, which must be the lambda
+- a left Coe list a list of coercions for building the lhs side of a subsumption, which must be an application or other expr using the args of the left Coe
+
+%%[9 hs export(LRCoeKind(..),lrcoeKindOfCoe)
+data LRCoeKind = LRCoeId | LRCoeOther deriving Eq
+
+lrcoeKindAnd :: LRCoeKind -> LRCoeKind -> LRCoeKind
+lrcoeKindAnd LRCoeId LRCoeId = LRCoeId
+lrcoeKindAnd _       _       = LRCoeOther
+
+lrcoeKindOfCoe :: Coe -> LRCoeKind
+lrcoeKindOfCoe c = if coeIsId c then LRCoeId else LRCoeOther
+%%]
+
+%%[9 hs export(LRCoe(..),emptyLRCoe)
+data LRCoe
+  = LRCoe
+      { lrcoeKind		:: LRCoeKind
+      , lrcoeLeftL		:: [Coe]
+      , lrcoeRightL 	:: [Coe]
+      }
+
+emptyLRCoe :: LRCoe
+emptyLRCoe = LRCoe LRCoeId [] []
+%%]
+
+%%[9 hs export(lrcoeIsId)
+lrcoeIsId :: LRCoe -> Bool
+lrcoeIsId c = lrcoeKind c == LRCoeId
+%%]
+
+%%[9 hs export(mkLRCoe,mkIdLRCoe,lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)
+mkLRCoe :: Coe -> Coe -> LRCoe
+mkLRCoe l r = LRCoe LRCoeOther [l] [r]
+
+mkIdLRCoe' :: Coe -> Coe -> LRCoe
+mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
+
+mkIdLRCoe :: HsName -> LRCoe
+mkIdLRCoe n = mkIdLRCoe' (mkAppCoe [CExpr_Var n]) (mkLamCoe n)
+
+lrcoeLFromList :: [Coe] -> LRCoe
+lrcoeLFromList c = LRCoe LRCoeOther c []
+
+lrcoeRFromList :: [Coe] -> LRCoe
+lrcoeRFromList c = LRCoe LRCoeOther [] c
+
+lrcoeLSingleton :: Coe -> LRCoe
+lrcoeLSingleton c = LRCoe (lrcoeKindOfCoe c) [c] []
+
+lrcoeRSingleton :: Coe -> LRCoe
+lrcoeRSingleton c = LRCoe (lrcoeKindOfCoe c) [] [c]
+%%]
+
+%%[9 hs export(lrcoeUnion)
+lrcoeUnion :: LRCoe -> LRCoe -> LRCoe
+lrcoeUnion (LRCoe k1 l1 r1) (LRCoe k2 l2 r2) = LRCoe (lrcoeKindAnd k1 k2) (l1 ++ l2) (r1 ++ r2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -120,7 +120,7 @@ SEM Expr
 %%]]
                 loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
   | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppCoe @lhs.opts @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
 %%]
 
 %%[10
@@ -131,7 +131,7 @@ SEM Expr
 %%[97
 SEM PatExpr
   | Expr        loc         .   cexprBaseEq =   CExpr_Var @eqFldNm
-                            .   cexpr       =   mkCExprApp (foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
+                            .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
                                                            [@expr.cexpr]
 %%]
 

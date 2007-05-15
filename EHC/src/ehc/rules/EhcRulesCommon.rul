@@ -41,7 +41,7 @@ format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam
 format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
 
 -- Coercion
-format ag def  (coe | Coe) (transl | TranslExpr) = (foAppCoe' "@lhs.opts" (coe) "@lhs.finTyCnstr" "@lhs.cSubst" (transl) | TranslExpr)
+format ag def  (coe | Coe) (transl | TranslExpr) = (foAppLRCoe' "@lhs.opts" (coe) "@lhs.finTyCnstr" "@lhs.cSubst" (transl) | TranslExpr)
 
 -- Nm
 format ag def `|` (nm | Nm) `|` = (hsnProdArity (nm) | Int)
@@ -81,7 +81,7 @@ external
   fioJoinY fioMeetY fioFitY
   fioDontBind
   emptyFO
-  foCSubst foLCoeL foRCoeL
+  foCSubst foLRCoe
 
 format tex howToMatch = <=>
 format ag  fiopt = fiOpts
