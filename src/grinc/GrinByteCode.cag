@@ -169,6 +169,19 @@ mkCIEval  = mkCI CallInfoKind_Eval
 mkCIApply = mkCI CallInfoKind_Apply
 %%]
 
+Entry point info
+
+%%[8 hs export(EntryInfo(..))
+data EntryInfo
+  = EntryInfo
+      { eiNm			:: !HsName
+      , eiEntryNr		:: !Int
+      , eiIsCAF			:: !Bool
+      , eiNmStrConst	:: !Const
+      }
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Optimisation info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -703,5 +716,6 @@ instance ForceEval Const
 instance ForceEval Link
 instance ForceEval LocRef
 instance ForceEval CallInfo
+instance ForceEval EntryInfo
 %%]
 

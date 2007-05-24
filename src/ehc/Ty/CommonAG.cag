@@ -34,7 +34,7 @@ SEM Ty
                 lhs         .   appFunNm        =   hsnUnknown
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | Ext App     loc         .   appFunNm        :   {HsName}
 %%]
@@ -56,7 +56,7 @@ SEM Ty
                             .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | App         loc         .   appIsLikeProd   :   Bool
                 loc         .   appIsArrow      :   Bool
@@ -83,7 +83,7 @@ SEM TyL
   | Cons        hd          .   isRow           =   False
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | App     	loc         .   argIsRow   		:   Bool
 %%]
@@ -174,7 +174,7 @@ SEM Ty
                 lhs         .   isPred          =   False
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | App         loc         .   isArrowArg      :   Bool
                 loc         .   isSpineRoot     :   Bool
@@ -195,9 +195,13 @@ SEM Ty
                             .   introTVarS      =   Set.singleton @tv
 %%]
 
-%%[99
+%%[9
 SEM Ty
-  | Lam Quant   loc         .   introTVarS      :   TyVarIdS
+  | Quant
+%%[[11
+    Lam
+%%]]
+                loc         .   introTVarS      :   TyVarIdS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

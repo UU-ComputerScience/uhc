@@ -162,6 +162,7 @@ data CnstrInfo v
   | CIImpls   !Impls
   | CIScope   !PredScope
   | CIPred    !Pred
+  | CIAssNm   !AssumeName
 %%[[10
   | CILabel   !Label
   | CIOffset  !LabelOffset
@@ -235,7 +236,7 @@ cnstrMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> Cnstr -> (Cnstr,th
 cnstrMapThrTy f = cnstrMapThr (\v i thr -> case i of {CITy t -> let (t',thr') = f v t thr in (CITy t,thr'); _ -> (i,thr)})
 %%]
 
-%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit,cnstrPredUnit)
+%%[9 export(cnstrImplsUnit,assocLToCnstrImpls,cnstrScopeUnit,cnstrPredUnit,cnstrAssNmUnit)
 cnstrImplsUnit :: ImplsVarId -> Impls -> Cnstr
 cnstrImplsUnit v i = Cnstr (Map.fromList [(v,CIImpls i)])
 
@@ -244,6 +245,9 @@ cnstrScopeUnit v sc = Cnstr (Map.fromList [(v,CIScope sc)])
 
 cnstrPredUnit :: TyVarId -> Pred -> Cnstr
 cnstrPredUnit v p = Cnstr (Map.fromList [(v,CIPred p)])
+
+cnstrAssNmUnit :: TyVarId -> AssumeName -> Cnstr
+cnstrAssNmUnit v p = Cnstr (Map.fromList [(v,CIAssNm p)])
 
 assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
 assocLToCnstrImpls = Cnstr . Map.fromList . assocLMapElt CIImpls
@@ -275,7 +279,7 @@ cnstrTailAddOcc o (Impls_Tail i os) = (t, cnstrImplsUnit i t)
 cnstrTailAddOcc _ x                 = (x,emptyCnstr)
 %%]
 
-%%[9 export(cnstrImplsLookup,cnstrScopeLookup,cnstrPredLookup)
+%%[9 export(cnstrImplsLookup,cnstrScopeLookup,cnstrPredLookup,cnstrAssNmLookup)
 cnstrImplsLookup :: ImplsVarId -> Cnstr -> Maybe Impls
 cnstrImplsLookup = cnstrLookup' (\ci -> case ci of {CIImpls i -> Just i; _ -> Nothing})
 
@@ -284,6 +288,9 @@ cnstrScopeLookup = cnstrLookup' (\ci -> case ci of {CIScope s -> Just s; _ -> No
 
 cnstrPredLookup :: TyVarId -> Cnstr -> Maybe Pred
 cnstrPredLookup = cnstrLookup' (\ci -> case ci of {CIPred p -> Just p; _ -> Nothing})
+
+cnstrAssNmLookup :: TyVarId -> Cnstr -> Maybe AssumeName
+cnstrAssNmLookup = cnstrLookup' (\ci -> case ci of {CIAssNm p -> Just p; _ -> Nothing})
 %%]
 cnstrPoiLookup :: UID -> Cnstr -> Maybe PredOccId
 cnstrPoiLookup = cnstrLookup' (\ci -> case ci of {CIPoi p -> Just p; _ -> Nothing})

@@ -108,7 +108,7 @@ Hence we can safely use non-unique variables.
 initScopedPredStore :: ScopedPredStore
 initScopedPredStore
   = chrStoreFromElems $
-      [ scopeProve, scopeAssum ]
+      [ scopeProve, scopeAssum1, scopeAssum2 ]
 %%[[10
       ++ [ labelProve1, labelProve2 ]
 %%]]
@@ -121,7 +121,10 @@ initScopedPredStore
         scopeProve   = [Prove p1s1, Prove p1s2] 
                          ==> [Reduction p1s2 RedHow_ByScope [p1s3]]
                           |> [IsStrictParentScope sc3 sc1 sc2]
-        scopeAssum   = [Prove p1s1, Assume p1s2] 
+        scopeAssum1  = [Prove p1s1, Assume p1s2] 
+                         ==> [Reduction p1s1 RedHow_EqScope [{- p1s2 -}]]
+                          |> [EqualScope sc1 sc2]
+        scopeAssum2  = [Prove p1s1, Assume p1s2] 
                          ==> [Reduction p1s1 RedHow_ByScope [p1s2]]
                           |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
 %%[[10

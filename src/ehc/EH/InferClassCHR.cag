@@ -82,7 +82,7 @@ This seems to influence uuagc cycle check:
 SEM Expr
   | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @knTySubs
 %%]
-  | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @knTySubs
+  | AppTop Lam  loc         .   implsIsEmpty        =   False -- otherwise AG depends on @knTySubs, creating a cycle
 
 %%[9
 SEM Decl

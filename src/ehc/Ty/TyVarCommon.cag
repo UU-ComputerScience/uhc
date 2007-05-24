@@ -61,12 +61,12 @@ SEM Impls
   | Cons        lhs         .   frTvSL      =   @pr.frTvSL ++ @tl.frTvSL
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | Pred Var App
                 loc         .   frTvS       :   TyVarIdS
-  | App         loc         .   frRowTvS    :   TyVarIdS
-                loc         .   frTvSL		: 	{[TyVarIdS]}
+  | App         loc         .   frTvSL		: 	{[TyVarIdS]}
+                loc         .   frRowTvS    :   TyVarIdS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -150,7 +150,7 @@ SEM Ty
   | Pred        loc         .   isQuLoc     =   @lhs.coco == CoVariant
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | App Pred Var
                 loc         .   isQuLoc     :   Bool
@@ -215,7 +215,7 @@ SEM Ty
   | Pred        loc         .   qHereTvS        =   @frTvS `Set.difference` @pr.qInsideTvS
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | App         loc         .   qHereTvS        :   TyVarIdS
                 loc         .   qOrphanTvS      :   TyVarIdS

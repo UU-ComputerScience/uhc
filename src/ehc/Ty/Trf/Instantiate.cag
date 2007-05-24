@@ -146,7 +146,7 @@ SEM Ty
   | * - Quant       loc         .   allow       =   False
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | Quant           loc         .   allow       :   Bool
 %%]
@@ -184,7 +184,7 @@ SEM Ty
                                                     else  (@lhs.gathSubst)
 %%]
 
-%%[99
+%%[9
 SEM Ty
   | Quant           loc         .   tvNew       :   UID
 %%]

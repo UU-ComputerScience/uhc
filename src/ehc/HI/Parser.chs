@@ -64,11 +64,18 @@ pGuard
   <|> (\[sc1,sc2,sc3] -> IsStrictParentScope    sc1 sc2 sc3) <$ pKeyTk "IsStrictParentScope"   <*> pCurlyCommaBlock pPredScope
   <|> (\[sc1,sc2]     -> IsVisibleInScope       sc1 sc2    ) <$ pKeyTk "IsVisibleInScope"      <*> pCurlyCommaBlock pPredScope
   <|> (\[sc1,sc2]     -> NotEqualScope          sc1 sc2    ) <$ pKeyTk "NotEqualScope"         <*> pCurlyCommaBlock pPredScope
+  <|> (\[sc1,sc2]     -> EqualScope             sc1 sc2    ) <$ pKeyTk "EqualScope"            <*> pCurlyCommaBlock pPredScope
   <|>                    NonEmptyRowLacksLabel               <$ pKeyTk "NonEmptyRowLacksLabel" <* pOCURLY <*> pTy
                                                                                                <* pCOMMA  <*> pLabelOffset
                                                                                                <* pCOMMA  <*> pTy
                                                                                                <* pCOMMA  <*> pLabel
                                                                                                <* pCCURLY
+
+pAssumeName :: HIParser AssumeName
+pAssumeName
+  =   AssumeName <$ pKeyTk "assumename" <*  pOCURLY <*> pUIDHI <* pCOMMA <*> pDollNm <* pCCURLY
+  <|> AssumeUID  <$ pKeyTk "assumeuid"  <*> pUIDHI
+  <|> AssumeVar  <$ pKeyTk "assumevar"  <*> pUIDHI
 
 pRedHowAnnotation :: HIParser RedHowAnnotation
 pRedHowAnnotation
@@ -88,6 +95,7 @@ pRedHowAnnotation
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
   <|> RedHow_ByScope      <$ pKeyTk "redhowscope"
+  <|> RedHow_EqScope      <$ pKeyTk "redhoweqscope"
   <|> RedHow_ByLabel      <$ pKeyTk "redhowlabel"  <* pOCURLY <*> pLabel
                                                    <* pCOMMA  <*> pLabelOffset
                                                    <* pCOMMA  <*> pPredScope
