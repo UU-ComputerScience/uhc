@@ -477,6 +477,15 @@ void gb_chan_initstd()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+static GB_ModEntry* 	gb_AllMod ;
+static GB_Word 			gb_AllModSize ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% C interface to internals
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -523,7 +532,7 @@ int gb_Opt_TraceSteps = True ;
 
 %%[8
 #if TRACE || DUMP_INTERNALS
-void gb_prByteCodeDumpEntry( GB_ByteCodeDumpEntry* e )
+void gb_prByteCodeInstrEntry( GB_ByteCodeInstrEntry* e )
 {
 	int i ;
 #	if USE_64_BITS
@@ -537,6 +546,39 @@ void gb_prByteCodeDumpEntry( GB_ByteCodeDumpEntry* e )
 		printf("%0.2x ", e->bcLoc[i]) ;
 	}
 	printf( " : %s\n", e->bc ) ;
+}
+
+void gb_prByteCodeModule( GB_ByteCodeModule* m )
+{
+	printf("*** module %s\n",m->bcModNm);
+	int e, i;
+	for ( e = 0 ; e < m->bcEntrySize ; e++ )
+	{
+		GB_ByteCodeEntryPoint* ep = &m->bcEntry[e] ;
+		printf("  *** entry %s\n", ep->nm);
+		if ( ep->bcInstr != NULL )
+		{
+			for ( i = 0 ; i < ep->bcInstrSize ; i++ )
+			{
+				printf("    ");
+				gb_prByteCodeInstrEntry(&ep->bcInstr[i]) ;
+			}
+		}
+	}
+}
+
+#endif
+%%]
+
+%%[20
+#if TRACE || DUMP_INTERNALS
+void gb_prModEntries( GB_ModEntry* modTbl )
+{
+	int i ;
+	for ( i = 0 ; modTbl[i].bcModule != NULL ; i++ )
+	{
+		gb_prByteCodeModule(modTbl[i].bcModule) ;
+	}
 }
 #endif
 %%]
@@ -652,6 +694,15 @@ void gb_prState( char* msg, int maxStkSz )
 	}
 %%]]
 	printf( "\n" ) ;
+%%[[20
+	GB_ByteCodeModule* bcm ;
+	GB_ByteCodeEntryPoint* bce ;
+	GB_ByteCodeInstrEntry* bci ;
+	if ( gb_lookupInfoForPC( pc, &bcm, &bce, &bci ) )
+	{
+		printf( "%s.%s: %s\n", bcm->bcModNm, bce->nm, bci->bc ) ;
+	}
+%%]]
 	gb_prStack( maxStkSz ) ;
 }
 
@@ -1413,6 +1464,14 @@ void gb_Initialize()
 
 %%]
 
+%%[20
+void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz )
+{
+	gb_AllMod 		= modTbl ;
+	gb_AllModSize 	= modTblSz ;
+}
+%%]
+
 %%[8
 void gb_InitTables
 	( int byteCodesSz
@@ -1559,7 +1618,58 @@ GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
 		gb_panic2( "module lookup", modNm ) ;
 	return modTbl ;
 }
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debug info lookup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+static int gb_CmpEntryPoint( const void* x, const void* y )
+{
+	GB_BytePtr pc = Cast(GB_BytePtr,x) ;
+	GB_ByteCodeEntryPoint* e = Cast(GB_ByteCodeEntryPoint*,y) ;
+	GB_ByteCodeInstrEntry* i1 = e->bcInstr ;
+	GB_ByteCodeInstrEntry* i2 = &e->bcInstr[e->bcInstrSize - 1] ;
+	if ( pc < i1->bcLoc )
+		return -1 ;
+	else if ( pc >= i2->bcLoc + i2->bcSize )
+		return 1 ;
+	else
+		return 0 ;
+}
+
+static int gb_CmpInstrEntry( const void* x, const void* y )
+{
+	GB_BytePtr pc = Cast(GB_BytePtr,x) ;
+	GB_ByteCodeInstrEntry* i = Cast(GB_ByteCodeInstrEntry*,y) ;
+	if ( pc < i->bcLoc )
+		return -1 ;
+	if ( pc >= i->bcLoc + i->bcSize )
+		return 1 ;
+	else
+		return 0 ;
+}
+
+int gb_lookupInfoForPC( GB_BytePtr pc, GB_ByteCodeModule** m, GB_ByteCodeEntryPoint** e, GB_ByteCodeInstrEntry** i )
+{
+	int mc, ec, ic ;
+	for ( mc = 0 ; mc < gb_AllModSize ; mc++ )
+	{
+		*m = gb_AllMod[mc].bcModule ;
+		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize )
+		{
+			*e = Cast( GB_ByteCodeEntryPoint*, bsearch( pc, (*m)->bcEntry, (*m)->bcEntrySize, sizeof(GB_ByteCodeEntryPoint), gb_CmpEntryPoint ) ) ;
+			if ( *e && (*e)->bcInstr )
+			{
+				*i = Cast( GB_ByteCodeInstrEntry*, bsearch( pc, (*e)->bcInstr, (*e)->bcInstrSize, sizeof(GB_ByteCodeInstrEntry), gb_CmpInstrEntry ) ) ;
+				if ( *i )
+					return True ;
+			}
+		}
+	}
+	return False ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

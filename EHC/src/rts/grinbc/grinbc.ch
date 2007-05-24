@@ -334,20 +334,35 @@ extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ByteCode dump
+%%% Debug/symbolic/trace info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef struct GB_ByteCodeDumpEntry {
-  GB_BytePtr	bcLoc ;
-  GB_Byte		bcSize ;
-  char*			bc ;
-} GB_ByteCodeDumpEntry ;
+typedef struct GB_ByteCodeInstrEntry {
+  GB_BytePtr				bcLoc ;
+  GB_Byte					bcSize ;
+  char*						bc ;
+} GB_ByteCodeInstrEntry ;
+
+typedef struct GB_ByteCodeEntryPoint {
+  char*						nm ;
+  GB_ByteCodeInstrEntry*	bcInstr ;
+  GB_Word					bcInstrSize ;
+} GB_ByteCodeEntryPoint ;
+
+typedef struct GB_ByteCodeModule {
+  char*						bcModNm ;
+  GB_ByteCodeEntryPoint*	bcEntry ;
+  GB_Word					bcEntrySize ;
+  GB_BytePtr				bcLoc ;
+  GB_Word				 	bcSize ;
+} GB_ByteCodeModule ;
 %%]
 
 %%[8
 #if TRACE || DUMP_INTERNALS
-extern void gb_prByteCodeDumpEntry( GB_ByteCodeDumpEntry* e ) ;
+extern void gb_prByteCodeInstrEntry( GB_ByteCodeInstrEntry* e ) ;
+extern void gb_prByteCodeModule( GB_ByteCodeModule* e ) ;
 #endif
 %%]
 
@@ -392,12 +407,20 @@ Module info
 
 %%[20
 typedef struct GB_ModEntry {
-  char*			name ;
-  GB_NodePtr	*expNode ;
+  char*						name ;
+  GB_NodePtr*				expNode ;
+  GB_ByteCodeModule*		bcModule ;
 } GB_ModEntry ;
 
 extern GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
 
+%%]
+
+%%[20
+extern int gb_lookupInfoForPC( GB_BytePtr pc, GB_ByteCodeModule** m, GB_ByteCodeEntryPoint** e, GB_ByteCodeInstrEntry** i ) ;
+#if TRACE || DUMP_INTERNALS
+extern void gb_prModEntries( GB_ModEntry* modTbl ) ;
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -813,6 +836,10 @@ extern void gb_InitTables
 	, GB_ModEntry* modTbl
 %%]]
 	) ;
+%%]
+
+%%[20
+extern void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

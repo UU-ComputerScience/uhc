@@ -1066,3 +1066,30 @@ agFakeDependOn :: a -> b -> b
 agFakeDependOn _ x = x
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substitutable name (used for CHR)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 export(AssumeName(..),asnmNm)
+data AssumeName
+  = AssumeName	{ asnnmId :: !UID, asnnmNm' :: !HsName }
+  | AssumeUID	{ asnnmId :: !UID }
+  | AssumeVar	!UID
+  deriving (Eq, Ord)
+
+asnmNm :: AssumeName -> HsName
+asnmNm (AssumeName _ n) = n
+asnmNm (AssumeUID  i  ) = mkHNm i
+asnmNm _                = panic "Common.assnmNm"
+%%]
+
+%%[9
+instance Show AssumeName where
+  show (AssumeName _ n) = show n
+  show (AssumeUID  i  ) = show i
+  show (AssumeVar  i  ) = show i
+
+instance PP AssumeName where
+  pp a = pp $ show a
+%%]
+

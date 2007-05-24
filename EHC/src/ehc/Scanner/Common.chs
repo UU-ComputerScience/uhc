@@ -259,8 +259,9 @@ hiScanOpts
                                     , "chr", "chrstore"
                                     , "Assume", "Prove", "Reduction"
                                     , "scope"
-                                    , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "NotEqualScope"
-                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope"
+                                    , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
+                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqscope"
+                                    , "assumename", "assumeuid", "assumevar"
 %%]]
 %%[[10
                                     , "label", "offset"

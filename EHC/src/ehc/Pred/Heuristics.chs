@@ -233,6 +233,8 @@ heurGHC env
 anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped env ann1 ann2
   = case (ann1,ann2) of
+      (HeurRed RedHow_EqScope              _, _                                    )  ->  P_GT
+      (_                                    , HeurRed RedHow_EqScope              _)  ->  P_LT
       (HeurRed (RedHow_Assumption   _ _ _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_Assumption   _ _ _) _)  ->  P_LT
       (HeurRed (RedHow_ByInstance  _ p  s) _, HeurRed (RedHow_ByInstance  _ q  t) _)  ->  case pscpCmpByLen s t of

@@ -123,11 +123,23 @@ SEM Instr
 %%% Labels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+type LocRefLoc = (LocRef,Int)
+%%]
+
 %%[8
-ATTR AllInstr [ | | locRefs USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (LocRef,Int)} ]
+ATTR AllInstr [ | | locRefs USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq LocRefLoc} ]
 
 SEM Instr
   | Label       lhs         .   locRefs     =   Seq.singleton (@locRef,@labelCLoc)
+%%]
+
+%%[8
+ATTR Instr [ | | isEntry: Bool ]
+
+SEM Instr
+  | Label		lhs			.	isEntry		=	case @locRef of {LocRef_CodeEntry _ -> True; _ -> False}
+  | * - Label	lhs			.	isEntry		=	False
 %%]
 
 %%[8 hs
@@ -266,11 +278,15 @@ SEM Module
   | Mod         loc         .   moduleNmPre             =   mkPre @moduleNm
                             .   ppNm                    =   \n -> @moduleNmPre >|< n
                             .   strNmcallInfo           =   "callinfo"
+                            .   strNmByteCodeModule     =   "bytecodeModule"
+                            .   strNmByteCodeEntry   	=   "bytecodeEntries"
                             .   ppNmAString             =   \i -> @ppNm "string" >|< i
                             .   ppNmACallInfo           =   @ppNm @strNmcallInfo
                             .   ppNmACAF                =   @ppNm "caf"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
-                            .   ppNmByteCodeDumpTbl     =   @ppNm "bytecodeDump"
+                            .   ppNmByteCodeTraceTbl    =   @ppNm "bytecodeInstrEntries"
+                            .   ppNmByteCodeModule      =   @ppNm @strNmByteCodeModule
+                            .   ppNmByteCodeEntry       =   @ppNm @strNmByteCodeEntry
                             .   ppNmConstTbl            =   @ppNm "constants"
                             .   ppNmLinkEntriesTbl      =   @ppNm "linkEntries"
                             .   ppNmGlobEntriesTbl      =   @ppNm "globalEntries"
@@ -305,11 +321,27 @@ SEM Module
                                                     callinfos   = nl : [ "GB_CallInfo" >#< @ppNm n >#< "=" >#< def >#< ";" | (n,def) <- callinfoNmL ]
                                                     extraConstL = [ Const_CallInfo (@moduleNmPre ++ n) | (n,_) <- callinfoNmL ]
                                                     consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @ppNmAString) (@constL ++ extraConstL))
+                                                    bcTrL   = tail @instrs.bcTrL
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
-                                                    bcodedump   = ppTbl' "GB_ByteCodeDumpEntry" @ppNmByteCodeDumpTbl
-                                                                    (map (\(l,sz,c) -> ppCurlysCommasBlock [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
-                                                                     $ @instrs.bcTrL
-                                                                    )
+                                                    bcodetrace
+                                                            = ppTbl' "GB_ByteCodeInstrEntry" @ppNmByteCodeTraceTbl
+                                                                (map (\(l,sz,c) -> ppCurlysCommasBlock [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
+                                                                 $ concat bcTrL
+                                                                )
+                                                    bcodeentries
+                                                            = ppTbl' "GB_ByteCodeEntryPoint" @ppNmByteCodeEntry
+                                                                (zipWith3 (\i l e
+                                                                            -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (ppAddrArrAt @ppNmByteCodeTraceTbl i, length l) else (pp "NULL",0)
+                                                                               in  ppCurlysCommasBlock
+                                                                                     [ (@ppNmAString $ constInx $ eiNmStrConst e) >#< ppCmtC @lhs.opts (eiNm e)
+                                                                                     , bc, pp bcs
+                                                                                     ]
+                                                                          ) [0::Int ..] bcTrL @allEntryL
+                                                                )
+                                                    bcodemodtrace
+                                                            = "GB_ByteCodeModule" >#< @ppNmByteCodeModule >#< "="
+                                                               >-< indent 2
+                                                                     (ppCurlysCommasBlock [ppStr @moduleNm,@ppNmByteCodeEntry,pp $ length @allEntryL,@ppNmByteCodeTbl,pp @instrs.cLoc] >#< ";")
                                                     linkL   = Seq.toList @instrs.links
                                                     links   = ppTbl' "GB_LinkEntry" @ppNmLinkEntriesTbl
                                                                 (map (\(l,c)
@@ -384,8 +416,9 @@ SEM Module
                                                                                   ++ [ mkPre m >|< @strNmInitF >|< ppParens @ppNmModEntriesTbl >#< ";"
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
+                                                                                  ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{gb_prModEntries" >|< ppParens @ppNmModEntriesTbl >#< ";});"] else [])
+                                                                                  ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp $ length @allImpModNmL] >#< ";" ]
 %%]]
-                                                                                  ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{printf(\"module" >#< @moduleNm >|< "\\n\");" >#< "int d; for (d=0; d<" >|< length @instrs.bcTrL >|< "; d++) {gb_prByteCodeDumpEntry(&" >|< @ppNmByteCodeDumpTbl >|< "[d]);}" >#< "});"] else [])
                                                                                   ++ [ "main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
                                                                                      , pp "return main_GB_Exit( argc, argv) ;"
                                                                                      ]
@@ -397,22 +430,27 @@ SEM Module
 %%[[20
                                                     expnd   = ppLine $ "GB_NodePtr" >#< @ppNmExpNode >#< ";"
                                                                        >-< "static int" >#< @ppNmExpNodeOffs >|< "[] ="
-                                                                       >-< ppArr [ o >#< ppCmtC @lhs.opts n | (n,o) <- @expEntryL ]
+                                                                       >-< ppArr [ eiEntryNr e >#< ppCmtC @lhs.opts (eiNm e) | e <- @expEntryL ]
                                                                        >-< "int" >#< @ppNmExpNodeSz >#< "=" >#< length @expEntryL >#< ";"
                                                     externs = nl : map (\(_,m) -> "extern void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*)" >#< ";"
                                                                                       >-< "extern GB_NodePtr" >#< mkPre m >|< @strNmExpNode >#< ";"
                                                                                       >-< "extern int" >#< mkPre m >|< @strNmExpNodeSz >#< ";"
+                                                                                      >-< "extern GB_ByteCodeModule" >#< mkPre m >|< @strNmByteCodeModule >#< ";"
                                                                        ) @allImpModNmL
                                                     mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
-                                                                ( [ ppCurlysCommasBlock [pp $ show m,ppAddrOf $ mkPre m >|< @strNmExpNode] | (_,m) <- @allImpModNmL]
-                                                                  ++ [ppCurlysCommasBlock (replicate 2 $ pp $ "NULL")]
+                                                                ( [ ppCurlysCommasBlock [ pp $ show m, ppAddrOf $ mkPre m >|< @strNmExpNode, ppAddrOf $ mkPre m >|< @strNmByteCodeModule  ]
+                                                                  | (_,m) <- @allImpModNmL
+                                                                  ]
+                                                                  ++ [ppCurlysCommasBlock (replicate 3 $ pp $ "NULL")]
                                                                 )
 %%]]
                                                 in  ( vlist
                                                       $  [ top ]
-                                                      ++ bcode
-                                                      ++ (if ehcOptGenTrace @lhs.opts then bcodedump else [])
                                                       ++ strings
+                                                      ++ bcode
+                                                      ++ (if ehcOptGenTrace @lhs.opts then bcodetrace else [])
+                                                      ++ bcodeentries
+                                                      ++ [bcodemodtrace]
                                                       ++ callinfos
                                                       ++ consts
                                                       ++ cafs
@@ -445,6 +483,9 @@ SEM Module
 %%[8 hs
 ppStringAsHex :: String -> PP_Doc
 ppStringAsHex s = ppCurlysCommasBlock [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
+
+ppStr :: String -> PP_Doc
+ppStr s = pp $ show s
 
 ppLink :: (Integral c) => Int -> c -> PP_Doc
 ppLink sz = ppHexL . ppHex' (Just 2) (sz * 2)
@@ -496,14 +537,20 @@ SEM Instrs
 %%% Symbolic bytecode table (for trace, debug)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+type BCTrL = [(Int,Int,PP_Doc)]
+%%]
+
 %%[8
-ATTR Instrs [ | | bcTrL : {[(Int,Int,PP_Doc)]} ]
+ATTR Instrs [ | | bcTrL: {[BCTrL]} ]
 
 SEM Instrs
-  | Nil         lhs         .   bcTrL       =   []
+  | Nil         lhs         .   bcTrL       =   [[]]
   | Cons        lhs         .   bcTrL       =   if @hd.hasCode
-                                                then (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas [@hd.mn,@lhs.ppExtra]) : @tl.bcTrL
-                                                else @tl.bcTrL
+                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas [@hd.mn,@lhs.ppExtra])
+                                                     in  case @tl.bcTrL of
+                                                           (l:ls) -> (i:l) : ls
+                                                else if @hd.isEntry then [] : @tl.bcTrL else @tl.bcTrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

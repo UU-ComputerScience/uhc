@@ -81,6 +81,7 @@ instance CHRSubstitutable Guard TyVarId Cnstr where
   chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
   chrFtv        (IsVisibleInScope       p1 p2   ) = Set.unions $ map ftvSet [p1,p2]
   chrFtv        (NotEqualScope          p1 p2   ) = Set.unions $ map ftvSet [p1,p2]
+  chrFtv        (EqualScope             p1 p2   ) = Set.unions $ map ftvSet [p1,p2]
 %%[[10
   chrFtv        (NonEmptyRowLacksLabel  r o t l ) = Set.unions [ftvSet r,ftvSet o,ftvSet t,ftvSet l]
 %%]]
@@ -89,6 +90,7 @@ instance CHRSubstitutable Guard TyVarId Cnstr where
   chrAppSubst s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s |=> p1) (s |=> p2) (s |=> p3)
   chrAppSubst s (IsVisibleInScope       p1 p2   ) = IsVisibleInScope       (s |=> p1) (s |=> p2)
   chrAppSubst s (NotEqualScope          p1 p2   ) = NotEqualScope          (s |=> p1) (s |=> p2)
+  chrAppSubst s (EqualScope             p1 p2   ) = EqualScope             (s |=> p1) (s |=> p2)
 %%[[10
   chrAppSubst s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s |=> r)  (s |=> o)  (s |=> t)  (s |=> l)
 %%]]
@@ -113,6 +115,14 @@ instance CHRSubstitutable PredOcc TyVarId Cnstr where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 
+
+%%[9
+instance CHRSubstitutable AssumeName TyVarId Cnstr where
+  chrFtv          (AssumeVar i)  = Set.singleton i
+  chrFtv          _              = Set.empty
+  chrAppSubst s a@(AssumeVar i)  = maybe a id $ cnstrAssNmLookup i s
+  chrAppSubst s a                = a
+%%]
 
 %%[9
 instance CHRSubstitutable RedHowAnnotation TyVarId Cnstr where
@@ -191,6 +201,7 @@ data Guard
   = HasStrictCommonScope    PredScope PredScope PredScope                   -- have strict/proper common scope?
   | IsVisibleInScope        PredScope PredScope                             -- is visible in 2nd scope?
   | NotEqualScope           PredScope PredScope                             -- scopes are unequal
+  | EqualScope              PredScope PredScope                             -- scopes are equal
   | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
 %%[[10
   | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
@@ -203,6 +214,7 @@ ppGuard (HasStrictCommonScope   sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< 
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (sc1 >#< "==" >#< sc2 >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
 ppGuard (IsVisibleInScope       sc1 sc2    ) = sc1 >#< "`visibleIn`" >#< sc2
 ppGuard (NotEqualScope          sc1 sc2    ) = sc1 >#< "/=" >#< sc2
+ppGuard (EqualScope             sc1 sc2    ) = sc1 >#< "==" >#< sc2
 %%[[10
 ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
 %%]]
@@ -223,6 +235,7 @@ instance PPForHI Guard where
   ppForHI (IsStrictParentScope    sc1 sc2 sc3) = "IsStrictParentScope"   >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
   ppForHI (IsVisibleInScope       sc1 sc2    ) = "IsVisibleInScope"      >#< (ppCurlysCommas $ map ppForHI [sc1,sc2])
   ppForHI (NotEqualScope          sc1 sc2    ) = "NotEqualScope"         >#< (ppCurlysCommas $ map ppForHI [sc1,sc2])
+  ppForHI (EqualScope             sc1 sc2    ) = "EqualScope"            >#< (ppCurlysCommas $ map ppForHI [sc1,sc2])
   ppForHI (NonEmptyRowLacksLabel  r o t l    ) = "NonEmptyRowLacksLabel" >#<  ppCurlysCommas [ppForHI r, ppForHI o, pp t, ppForHI l]
 %%]
 
@@ -242,6 +255,9 @@ instance CHRCheckable Guard Cnstr where
          }
   chrCheck (NotEqualScope sc1 sc2) | isJust c
     = if fromJust c /= EQ then return emptyCnstr else Nothing
+    where c = pscpCmp sc1 sc2
+  chrCheck (EqualScope sc1 sc2) | isJust c
+    = if fromJust c == EQ then return emptyCnstr else Nothing
     where c = pscpCmp sc1 sc2
   chrCheck (IsVisibleInScope (PredScope_Var vDst) sc1)
     = return $ vDst `cnstrScopeUnit` sc1
@@ -284,6 +300,7 @@ instance ForceEval Guard where
   forceEval x@(IsStrictParentScope    sc1 sc2 sc3) = forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` x
   forceEval x@(IsVisibleInScope       sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
   forceEval x@(NotEqualScope          sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
+  forceEval x@(EqualScope             sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
   forceEval x@(NonEmptyRowLacksLabel  r o t l    ) = forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` x
 
 %%]

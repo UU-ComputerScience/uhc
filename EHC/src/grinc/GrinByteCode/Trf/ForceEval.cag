@@ -45,7 +45,7 @@ instance ForceEval Module {- where
 ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM Module
-  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @allImpModNmL `seq` forceEval @impModNmL `seq` forceEval @expEntryL
+  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @allImpModNmL `seq` forceEval @impModNmL `seq` forceEval @expEntryL `seq` forceEval @allEntryL
   												`seq` forceEval @stringL `seq` forceEval @constL `seq` forceEval @cafEntryL
   												`seq` @instrs.trf
 

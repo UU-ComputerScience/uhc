@@ -23,8 +23,9 @@ DATA Module
 %%[[20
                 allImpModNmL	: {AssocL HsName String}
                 impModNmL		: {AssocL HsName String}
-                expEntryL		: {AssocL HsName Int}
+                expEntryL		: {[EntryInfo]}
 %%]]
+                allEntryL		: {[EntryInfo]}
                 instrs          : Instrs
                 stringL			: {[String]}
                 constL			: {[Const]}
