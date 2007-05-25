@@ -71,11 +71,11 @@ pGuard
                                                                                                <* pCOMMA  <*> pLabel
                                                                                                <* pCCURLY
 
-pAssumeName :: HIParser AssumeName
-pAssumeName
-  =   AssumeName <$ pKeyTk "assumename" <*  pOCURLY <*> pUIDHI <* pCOMMA <*> pDollNm <* pCCURLY
-  <|> AssumeUID  <$ pKeyTk "assumeuid"  <*> pUIDHI
-  <|> AssumeVar  <$ pKeyTk "assumevar"  <*> pUIDHI
+pVarUIDHsName :: HIParser VarUIDHsName
+pVarUIDHsName
+  =   VarUIDHs_Name <$ pKeyTk "varuidnmname" <*  pOCURLY <*> pUIDHI <* pCOMMA <*> pDollNm <* pCCURLY
+  <|> VarUIDHs_UID  <$ pKeyTk "varuidnmuid"  <*> pUIDHI
+  <|> VarUIDHs_Var  <$ pKeyTk "varuidnmvar"  <*> pUIDHI
 
 pRedHowAnnotation :: HIParser RedHowAnnotation
 pRedHowAnnotation
@@ -90,12 +90,10 @@ pRedHowAnnotation
   <|> RedHow_ProveObl     <$ pKeyTk "redhowprove"  <* pOCURLY <*> pUIDHI
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
-  <|> RedHow_Assumption   <$ pKeyTk "redhowassume" <* pOCURLY <*> pUIDHI
-                                                   <* pCOMMA  <*> pDollNm
+  <|> RedHow_Assumption   <$ pKeyTk "redhowassume" <* pOCURLY <*> pVarUIDHsName
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
   <|> RedHow_ByScope      <$ pKeyTk "redhowscope"
-  <|> RedHow_EqScope      <$ pKeyTk "redhoweqscope"
   <|> RedHow_ByLabel      <$ pKeyTk "redhowlabel"  <* pOCURLY <*> pLabel
                                                    <* pCOMMA  <*> pLabelOffset
                                                    <* pCOMMA  <*> pPredScope

@@ -42,16 +42,23 @@ SEM Decl
                                                             (usc,uss) = splitAt lc us
                                                             lc = length @ctxtPrFixL
                                                             ls = length @supPrTyL
-                                                            d = case @instVariant of {InstDefault -> @dictSelfNm ; _ -> @dictBuildNm}
-                                                        in  ( cnstrMpFromList $ zipWith (\p u -> mkAssumeConstraint p u @predScope) @ctxtPrFixL            usc
-                                                            , cnstrMpFromList $ zipWith (\p u -> mkProveConstraint  p u @predScope) (map tyPred @supPrTyL) uss
-                                                            , cnstrMpFromList [mkAssumeConstraint' (tyPred @hdPrTyFix) u d @predScope]
-                                                            , usc
-                                                            , map mkHNm usc
-                                                            , uss
-                                                            , map mkHNm uss
-                                                            , u
-                                                            , d
+                                                            mka p u = mkAssumeConstraint p u @predScope
+                                                            mkp p u = mkProveConstraint  p u @predScope
+                                                            (dNm,toAssume,toProve)
+                                                               = case @instVariant of
+                                                                   InstDefault -> ( @dictSelfNm
+                                                                                  , emptyCnstrMp
+                                                                                  , emptyCnstrMp -- cnstrMpFromList $ zipWith mkp @ctxtPrFixL            usc
+                                                                                  )
+                                                                   _           -> ( @dictBuildNm
+                                                                                  , cnstrMpFromList $ zipWith mka @ctxtPrFixL            usc
+                                                                                  , cnstrMpFromList $ zipWith mkp (map tyPred @supPrTyL) uss
+                                                                                  )
+                                                        in  ( toAssume, toProve
+                                                            , cnstrMpFromList [mkAssumeConstraint' (tyPred @hdPrTyFix) u dNm @predScope]
+                                                            , usc, map mkHNm usc
+                                                            , uss, map mkHNm uss
+                                                            , u, dNm
                                                             )
                lhs          .   gathCnstrMp         =   Map.empty
 %%[[9
@@ -173,8 +180,8 @@ Interaction with existing impl:
 
 %%[9
 SEM Expr
-  | Let         loc         .   quantPrOccL         =   [ mkPredOcc (cpoPr o) (mkPrIdCHR i) sc
-                                                        | (Assume o,[RedHow_Assumption i _ sc])
+  | Let         loc         .   quantPrOccL         =   [ mkPredOcc (cpoPr o) (mkPrIdCHR $ vunmId i) sc
+                                                        | (Assume o,[RedHow_Assumption i sc])
                                                             <- Map.toList $ @chrSolve1RemCnstrMp `Map.difference` @cannotProveCnstrMp
                                                         ]
 %%]
@@ -239,8 +246,9 @@ SEM Expr
 %%[9 hs
 mkScopeBindings :: Bool -> PredScope -> PredScopeToCBindMap -> [CBind]
 mkScopeBindings alsoOuter sc mp
-  = concatMap f $ (if alsoOuter then sc : pscpParents sc else [sc])
+  = concatMap f scs
   where f sc = Map.findWithDefault [] sc mp
+        scs  = if alsoOuter then sc : pscpParents sc else [sc]
 %%]
 
 %%[9

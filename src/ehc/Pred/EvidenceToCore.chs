@@ -95,7 +95,8 @@ evidMpToCore env evidMp
                             (u',evk,insk,evnm,uses)
                                             = case info of
                                                 RedHow_ProveObl   i   _ -> (u,choosek i,True,choosen $ mkHNm i,Set.empty)
-                                                RedHow_Assumption i n s -> (u,choosek i,False,choosen n,Set.singleton (i,s))
+                                                RedHow_Assumption vun s -> (u,choosek i,False,choosen (vunmNm vun),Set.singleton (i,s))
+                                                                        where i = vunmId vun
                                                 _                       -> (u1,choosek u2,True,choosen $ mkHNm u2,Set.empty)
                                                                         where (u1,u2) = mkNewUID u
                             choosek k = maybe k id mbevk
@@ -120,7 +121,7 @@ evidMpToCore env evidMp
                             vc c c' = case c of
                                         CExpr_Var _ -> c
                                         _           -> c'
-        ann (RedHow_Assumption   _ n sc) _     = ( mknm n, sc )
+        ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
         ann (RedHow_ByInstance   n _ sc) ctxt  = ( mknm n `mkCExprApp` map tcrCExpr ctxt, maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = ( mkCExprSatSelsCase
                                                      (emptyRCEEnv $ feEHCOpts $ fiEnv env)

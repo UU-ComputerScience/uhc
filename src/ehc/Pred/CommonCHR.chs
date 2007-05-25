@@ -36,9 +36,8 @@ data RedHowAnnotation
   =  RedHow_ByInstance    !HsName  Pred  PredScope		-- inst name, for pred, in scope
   |  RedHow_BySuperClass  !HsName  !Int   !CTag			-- field name, offset, tag info of dict
   |  RedHow_ProveObl      !UID  PredScope
-  |  RedHow_Assumption    !UID  !HsName  PredScope
+  |  RedHow_Assumption    !VarUIDHsName  PredScope
   |  RedHow_ByScope
-  |  RedHow_EqScope
 %%[[10
   |  RedHow_ByLabel       Label LabelOffset PredScope
 %%]]
@@ -58,9 +57,8 @@ instance PP RedHowAnnotation where
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< ppParensCommas [pp s, pp sc]
   pp (RedHow_BySuperClass s _ _ )  =    "super"  >#< s
   pp (RedHow_ProveObl     i   sc)  =    "prove"  >#< i >#< sc
-  pp (RedHow_Assumption   _ n sc)  =    "assume" >#< ppParensCommas [pp n, pp sc]
+  pp (RedHow_Assumption   vun sc)  =    "assume" >#< ppParensCommas [pp vun, pp sc]
   pp (RedHow_ByScope            )  = pp "scope"
-  pp (RedHow_EqScope            )  = pp "eq"
 %%[[10
   pp (RedHow_ByLabel      l o sc)  =    "label"  >#< l >|< "@" >|< o >|< sc
 %%]]
@@ -75,9 +73,8 @@ instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_ByInstance   s p sc)  =    "redhowinst"   >#< ppCurlysCommasBlock [ppForHI s, ppForHI p, ppForHI sc]
   ppForHI (RedHow_BySuperClass s o tg)  =    "redhowsuper"  >#< ppCurlysCommasBlock [ppForHI s, pp o, ppForHI tg]
   ppForHI (RedHow_ProveObl     i   sc)  =    "redhowprove"  >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
-  ppForHI (RedHow_Assumption   i n sc)  =    "redhowassume" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n, ppForHI sc]
+  ppForHI (RedHow_Assumption   vun sc)  =    "redhowassume" >#< ppCurlysCommasBlock [ppForHI vun, ppForHI sc]
   ppForHI (RedHow_ByScope            )  = pp "redhowscope"
-  ppForHI (RedHow_EqScope            )  = pp "redhoweqscope"
   ppForHI (RedHow_ByLabel      l o sc)  =    "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
   ppForHI (RedHow_Lambda       i   sc)  =    "redhowlambda" >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
 %%]
@@ -90,11 +87,14 @@ instance PPForHI RedHowAnnotation where
 mkProveConstraint :: Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
 mkProveConstraint pr i sc =  (Prove (mkCHRPredOcc pr sc),RedHow_ProveObl i sc)
 
+mkAssumeConstraint'' :: Pred -> VarUIDHsName -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
+mkAssumeConstraint'' pr vun sc =  (Assume (mkCHRPredOcc pr sc),RedHow_Assumption vun sc)
+
 mkAssumeConstraint' :: Pred -> UID -> HsName -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
-mkAssumeConstraint' pr i n sc =  (Assume (mkCHRPredOcc pr sc),RedHow_Assumption i n sc)
+mkAssumeConstraint' pr i n sc =  mkAssumeConstraint'' pr (VarUIDHs_Name i n) sc
 
 mkAssumeConstraint :: Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
-mkAssumeConstraint pr i sc =  mkAssumeConstraint' pr i (mkHNm i) sc
+mkAssumeConstraint pr i sc =  mkAssumeConstraint'' pr (VarUIDHs_UID i) sc
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,12 +118,12 @@ gathPredLToAssumeCnstrMp l = cnstrMpFromList [ mkAssumeConstraint (poPr po) (poI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-instance ForceEval AssumeName
+instance ForceEval VarUIDHsName
 
 instance ForceEval RedHowAnnotation where
   forceEval x@(RedHow_ByInstance   _ p sc)  = forceEval p `seq` forceEval sc `seq` x
   forceEval x@(RedHow_ProveObl     _   sc)  = forceEval sc `seq` x
-  forceEval x@(RedHow_Assumption   _ _ sc)  = forceEval sc `seq` x
+  forceEval x@(RedHow_Assumption   _   sc)  = forceEval sc `seq` x
   forceEval x@(RedHow_ByLabel      l o sc)  = forceEval l `seq` forceEval o `seq` forceEval sc `seq` x
   forceEval x@(RedHow_Lambda       _   sc)  = forceEval sc `seq` x
   forceEval x                               = x

@@ -117,20 +117,22 @@ instance CHRSubstitutable PredOcc TyVarId Cnstr where
 
 
 %%[9
-instance CHRSubstitutable AssumeName TyVarId Cnstr where
-  chrFtv          (AssumeVar i)  = Set.singleton i
-  chrFtv          _              = Set.empty
-  chrAppSubst s a@(AssumeVar i)  = maybe a id $ cnstrAssNmLookup i s
-  chrAppSubst s a                = a
+instance CHRSubstitutable VarUIDHsName TyVarId Cnstr where
+  chrFtv          (VarUIDHs_Var i)  = Set.singleton i
+  chrFtv          _                 = Set.empty
+  chrAppSubst s a@(VarUIDHs_Var i)  = maybe a id $ cnstrAssNmLookup i s
+  chrAppSubst s a                   = a
 %%]
 
 %%[9
 instance CHRSubstitutable RedHowAnnotation TyVarId Cnstr where
+  chrFtv        (RedHow_Assumption   vun sc)  = Set.unions [chrFtv vun,chrFtv sc]
 %%[[10
   chrFtv        (RedHow_ByLabel      l o sc)  = Set.unions [chrFtv l,chrFtv o,chrFtv sc]
 %%]]
   chrFtv        _                             = Set.empty
 
+  chrAppSubst s (RedHow_Assumption   vun sc)  = RedHow_Assumption (chrAppSubst s vun) (chrAppSubst s sc)
 %%[[10
   chrAppSubst s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (chrAppSubst s l) (chrAppSubst s o) (chrAppSubst s sc)
 %%]]
