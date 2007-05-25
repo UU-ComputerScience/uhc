@@ -174,6 +174,10 @@ cmpSpecificness env p q =
                   Just _   -> P_EQ
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell98 heuristics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 export(heurHaskell98)
 anncmpHaskell98 :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpHaskell98 env ann1 ann2
@@ -185,8 +189,8 @@ anncmpHaskell98 env ann1 ann2
       (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
       (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
-      (RedHow_Assumption   _ _ _, _                        )  ->  P_GT
-      (_                        , RedHow_Assumption   _ _ _)  ->  P_LT
+      (RedHow_Assumption     _ _, _                        )  ->  P_GT
+      (_                        , RedHow_Assumption     _ _)  ->  P_LT
       (RedHow_ByScope           , _                        )  ->  P_GT
       (_                        , RedHow_ByScope           )  ->  P_LT
       (RedHow_ProveObl       _ _, _                        )  ->  P_GT
@@ -196,12 +200,16 @@ heurHaskell98 :: FIIn -> Heuristic p RedHowAnnotation
 heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GHC heuristics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 export(heurGHC)
 anncmpGHCBinSolve :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpGHCBinSolve env ann1 ann2
   = case (ann1,ann2) of
-      (RedHow_Assumption   _ _ _, _                        )  ->  P_GT
-      (_                        , RedHow_Assumption   _ _ _)  ->  P_LT
+      (RedHow_Assumption     _ _, _                        )  ->  P_GT
+      (_                        , RedHow_Assumption     _ _)  ->  P_LT
       (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
       (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
@@ -229,17 +237,21 @@ heurGHC env
               ghcReduce
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC heuristics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[9 export(heurScopedEHC)
 anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped env ann1 ann2
   = case (ann1,ann2) of
-      (HeurRed RedHow_EqScope              _, _                                    )  ->  P_GT
-      (_                                    , HeurRed RedHow_EqScope              _)  ->  P_LT
-      (HeurRed (RedHow_Assumption   _ _ _) _, _                                    )  ->  P_GT
-      (_                                    , HeurRed (RedHow_Assumption   _ _ _) _)  ->  P_LT
+      (HeurRed (RedHow_Assumption     _ _) _, _                                    )  ->  P_GT
+      (_                                    , HeurRed (RedHow_Assumption     _ _) _)  ->  P_LT
       (HeurRed (RedHow_ByInstance  _ p  s) _, HeurRed (RedHow_ByInstance  _ q  t) _)  ->  case pscpCmpByLen s t of
                                                                                             EQ   -> cmpSpecificness env p q
                                                                                             ord  -> toPartialOrdering ord
+      (HeurRed (RedHow_ByInstance  _ _  s) _, HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen s (cpoScope q)
+      (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed (RedHow_ByInstance  _ _  t) _)  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) t
       (HeurRed (RedHow_ByInstance  _ _  _) _, _                                    )  ->  P_GT
       (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
 %%[[10
@@ -254,19 +266,6 @@ anncmpEHCScoped env ann1 ann2
 heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
 heurScopedEHC env = toHeuristic $ contextBinChoice (anncmpEHCScoped env)
 %%]
-anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
-anncmpEHCScoped env ann1 ann2
-  = case (ann1,ann2) of
-      (HeurRed (RedHow_ByInstance  _ p  s) _, HeurRed (RedHow_ByInstance  _ q  t) _)  ->  case pscpCmpByLen s t of
-                                                                                            EQ   -> cmpSpecificness env p q
-                                                                                            ord  -> toPartialOrdering ord
-      (HeurRed (RedHow_ByInstance  _ _  _) _, _                                    )  ->  P_GT
-      (_                                    , HeurRed (RedHow_ByInstance  _ _  _) _)  ->  P_LT
-      (HeurRed (RedHow_BySuperClass _ _ _) _, _                                    )  ->  P_GT
-      (_                                    , HeurRed (RedHow_BySuperClass _ _ _) _)  ->  P_LT
-      (HeurRed (RedHow_Assumption   _ _ _) _, _                                    )  ->  P_GT
-      (_                                    , HeurRed (RedHow_Assumption   _ _ _) _)  ->  P_LT
-      (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
 
 %%[9
 btHeuristic :: Heuristic p RedHowAnnotation

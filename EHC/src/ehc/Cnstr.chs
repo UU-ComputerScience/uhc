@@ -162,7 +162,7 @@ data CnstrInfo v
   | CIImpls   !Impls
   | CIScope   !PredScope
   | CIPred    !Pred
-  | CIAssNm   !AssumeName
+  | CIAssNm   !VarUIDHsName
 %%[[10
   | CILabel   !Label
   | CIOffset  !LabelOffset
@@ -246,7 +246,7 @@ cnstrScopeUnit v sc = Cnstr (Map.fromList [(v,CIScope sc)])
 cnstrPredUnit :: TyVarId -> Pred -> Cnstr
 cnstrPredUnit v p = Cnstr (Map.fromList [(v,CIPred p)])
 
-cnstrAssNmUnit :: TyVarId -> AssumeName -> Cnstr
+cnstrAssNmUnit :: TyVarId -> VarUIDHsName -> Cnstr
 cnstrAssNmUnit v p = Cnstr (Map.fromList [(v,CIAssNm p)])
 
 assocLToCnstrImpls :: AssocL ImplsVarId Impls -> Cnstr
@@ -289,7 +289,7 @@ cnstrScopeLookup = cnstrLookup' (\ci -> case ci of {CIScope s -> Just s; _ -> No
 cnstrPredLookup :: TyVarId -> Cnstr -> Maybe Pred
 cnstrPredLookup = cnstrLookup' (\ci -> case ci of {CIPred p -> Just p; _ -> Nothing})
 
-cnstrAssNmLookup :: TyVarId -> Cnstr -> Maybe AssumeName
+cnstrAssNmLookup :: TyVarId -> Cnstr -> Maybe VarUIDHsName
 cnstrAssNmLookup = cnstrLookup' (\ci -> case ci of {CIAssNm p -> Just p; _ -> Nothing})
 %%]
 cnstrPoiLookup :: UID -> Cnstr -> Maybe PredOccId

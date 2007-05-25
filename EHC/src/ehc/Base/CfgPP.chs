@@ -151,9 +151,9 @@ instance PPForHI Int
 %%]
 
 %%[20
-instance PPForHI AssumeName where
-  ppForHI (AssumeName i n) = "assumename" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n]
-  ppForHI (AssumeUID  i  ) = "assumeuid"  >#< ppForHI i
-  ppForHI (AssumeVar  i  ) = "assumevar"  >#< ppForHI i
+instance PPForHI VarUIDHsName where
+  ppForHI (VarUIDHs_Name i n) = "varuidnmname" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n]
+  ppForHI (VarUIDHs_UID  i  ) = "varuidnmuid"  >#< ppForHI i
+  ppForHI (VarUIDHs_Var  i  ) = "varuidnmvar"  >#< ppForHI i
 %%]
 

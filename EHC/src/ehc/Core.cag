@@ -468,7 +468,8 @@ mkLamLetCoe :: HsName -> UID -> Coe
 mkLamLetCoe n i = mkCoe (\e -> n `CExpr_Lam` mkCExprLetHole i e)
 
 mkLetRecCoe :: CBindL -> Coe
-mkLetRecCoe b = mkCoe (\e -> mkCExprLet CBindRec b e)
+mkLetRecCoe [] = coeId
+mkLetRecCoe b  = mkCoe (\e -> mkCExprLet CBindRec b e)
 
 instance Show Coe where
   show _ = "COE"

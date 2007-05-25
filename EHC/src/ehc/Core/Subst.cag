@@ -212,7 +212,10 @@ mkPoiLLamCoe onLast poiL
        l@(_:_)  ->  let  h = init l
                          t = last l
                     in   h ++ [t `coeCompose` onLast]
-       _        ->  []
+       _ | coeIsId onLast
+                ->  []
+         | otherwise
+                ->  [onLast]
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)

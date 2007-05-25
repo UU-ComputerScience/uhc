@@ -541,6 +541,8 @@ SEM Expr
                                         , mkInfo1 "impls2KnHd" (pp @impls2KnHd)
                                         , mkInfo1 "impls2KnTl" (pp @impls2KnTl)
                                         , mkInfo1 "poiL" (ppBracketsCommas @poiL)
+                                        , mkInfo1 "predScope" (pp @predScope)
+                                        , mkInfo1 "lhs.chrScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @lhs.chrScopeBindMp)
                                         ]
   | AppTop      loc     .  info_9   :=  [ mkInfo1 "resTy" (pp @resTy)
                                         , mkInfo1 "foCnstr @foKnRes" (pp (foCnstr @foKnRes))

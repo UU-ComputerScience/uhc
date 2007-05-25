@@ -65,10 +65,10 @@ SEM AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules
-  | IConst      loc         .   cexpr       =   CExpr_Int @int
+  | IConst      loc         .   cexpr       =   CExpr_Int  @int
   | CConst      loc         .   cexpr       =   CExpr_Char @char
-  | Var         loc         .   cexpr       =   CExpr_Var @nm
-  | Con         loc         .   cexpr       =   CExpr_Var @nm
+  | Var         loc         .   cexpr       =   CExpr_Var  @nm
+  | Con         loc         .   cexpr       =   CExpr_Var  @nm
 %%[8
 ATTR Expr [ | | cexpr: CExpr ]
 

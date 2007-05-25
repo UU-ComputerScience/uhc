@@ -1067,29 +1067,29 @@ agFakeDependOn _ x = x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Substitutable name (used for CHR)
+%%% Substitutable name (used by CHR)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(AssumeName(..),asnmNm)
-data AssumeName
-  = AssumeName	{ asnnmId :: !UID, asnnmNm' :: !HsName }
-  | AssumeUID	{ asnnmId :: !UID }
-  | AssumeVar	!UID
+%%[9 export(VarUIDHsName(..),vunmNm)
+data VarUIDHsName
+  = VarUIDHs_Name		{ vunmId :: !UID, vunmNm' :: !HsName }
+  | VarUIDHs_UID		{ vunmId :: !UID }
+  | VarUIDHs_Var		!UID
   deriving (Eq, Ord)
 
-asnmNm :: AssumeName -> HsName
-asnmNm (AssumeName _ n) = n
-asnmNm (AssumeUID  i  ) = mkHNm i
-asnmNm _                = panic "Common.assnmNm"
+vunmNm :: VarUIDHsName -> HsName
+vunmNm (VarUIDHs_Name _ n) = n
+vunmNm (VarUIDHs_UID  i  ) = mkHNm i
+vunmNm _                   = panic "Common.assnmNm"
 %%]
 
 %%[9
-instance Show AssumeName where
-  show (AssumeName _ n) = show n
-  show (AssumeUID  i  ) = show i
-  show (AssumeVar  i  ) = show i
+instance Show VarUIDHsName where
+  show (VarUIDHs_Name _ n) = show n
+  show (VarUIDHs_UID  i  ) = show i
+  show (VarUIDHs_Var  i  ) = show i
 
-instance PP AssumeName where
+instance PP VarUIDHsName where
   pp a = pp $ show a
 %%]
 
