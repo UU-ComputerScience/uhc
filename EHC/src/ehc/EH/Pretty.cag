@@ -456,7 +456,7 @@ SEM Expr
 
 %%[6
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam @lQuTyGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
 %%]
 
 %%[8
@@ -466,8 +466,9 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt  (    ppGam @lQuTyGam   >-< ppGam (@lhs.finTyCnstr |=> @quValGam_ex_)
-                                                   >-<  ppGam @lQuPrIGam
+  | Let         loc     .   ppExtra     :=  ppCmt  (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
+                                                   >-<  ppGam (@lhs.finTyCnstr |=> @quValGam_ex_)
+                                                   >-<  ppGam @lClGam
                                                    )
 %%]
 

@@ -127,8 +127,16 @@ SEM Expr
 ATTR AGItf Expr [ | | gathTyGam: TyGam ]
 
 SEM Expr
-  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
+  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @tyGam_l_
   | * - Let     lhs         .   gathTyGam           =   emptyGam
+%%]
+
+%%[20
+ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
+
+SEM Expr
+  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam 
+  | * - Let     lhs         .   gathTyKiGam         =   emptyGam
 %%]
 
 %%[20
@@ -140,11 +148,11 @@ SEM Expr
 %%]
 
 %%[20
-ATTR AGItf Expr [ | | gathPrIntroGam: PrIntroGam ]
+ATTR AGItf Expr [ | | gathClGam: ClGam ]
 
 SEM Expr
-  | Let         lhs         .   gathPrIntroGam      =   @body.gathPrIntroGam `gamUnion` @lQuPrIGam
-  | * - Let     lhs         .   gathPrIntroGam      =   emptyGam
+  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGam
+  | * - Let     lhs         .   gathClGam           =   emptyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

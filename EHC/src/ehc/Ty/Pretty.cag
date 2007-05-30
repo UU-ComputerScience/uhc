@@ -97,6 +97,11 @@ ppPredOccId :: PredOccId -> PP_Doc
 ppPredOccId poi = "Poi" >|< ppPredOccId' CfgPP_Plain poi
 %%]
 
+%%[6 hs
+instance PP TyKiKey where
+  pp = pp . show
+%%]
+
 %%[9 hs
 instance PP Pred where
   pp p = ppTyWithCfg cfgPPTyPred (Ty_Pred p)
@@ -136,6 +141,10 @@ instance PPForHI Pred where
 
 instance PPForHI PredOccId where
   ppForHI = ppPredOccId' CfgPP_HI
+
+instance PPForHI TyKiKey where
+  ppForHI (TyKiKey_Name  n) = ppForHI n
+  ppForHI (TyKiKey_TyVar v) = ppForHI v
 
 instance PPForHI CHRPredOcc where
   ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoScope po)]

@@ -55,15 +55,16 @@ data HIInfo
       , hiiIdDefOccGam      :: !IdDefOccGam
       , hiiValGam           :: !ValGam
       , hiiTyGam            :: !TyGam
+      , hiiTyKiGam          :: !TyKiGam
       , hiiDataGam          :: !DataGam
-      , hiiPrIntroGam       :: !Pr.PrIntroGam
+      , hiiClGam            :: !Pr.ClGam
       , hiiCHRStore         :: !ScopedPredStore
       , hiiCArityMp         :: !CArityMp
       , hiiGrInlMp          :: !GrInlMp
       }
 
 emptyHIInfo :: HIInfo
-emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
+emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,8 +81,9 @@ hiFromHIInfo i
       (hiiIdDefOccGam   i)
       (hiiValGam        i)
       (hiiTyGam         i)
+      (hiiTyKiGam       i)
       (hiiDataGam       i)
-      (hiiPrIntroGam    i)
+      (hiiClGam         i)
       (hiiCHRStore      i)
       (hiiCArityMp      i)
       (hiiGrInlMp       i)
@@ -98,25 +100,27 @@ hiFromAllGams
      -> IdDefOccGam
      -> ValGam
      -> TyGam
+     -> TyKiGam
      -> DataGam
-     -> Pr.PrIntroGam
+     -> Pr.ClGam
      -> ScopedPredStore
      -> CArityMp
      -> GrInlMp
      -> Seq.FastSeq Binding
-hiFromAllGams exps hiddenExps fg idg vg tg dg ig chrStore arityMp inlMp
+hiFromAllGams exps hiddenExps fg idg vg tg tkg dg ig chrStore arityMp inlMp
   =          Seq.fromList [Binding_Export VisibleYes exps]
     Seq.:++: Seq.fromList [Binding_Export VisibleNo hiddenExps]
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
     Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
+    Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
     Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
     Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
-    Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi) (tgiKi tgi)) tg
+    Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
                                     in  Binding_DataCon n (dgiDataTy dgi) (assocLMapElt mkt $ dgiConstrTagAssocL dgi) (dgiIsNewtype dgi)
                     ) dg
-    Seq.:++: hiFromGam  (\n pigi -> Binding_Class n (Pr.pigiPrToEvidTy pigi) (Pr.pigiKi pigi) (Pr.pigiRuleTy pigi) (Pr.pigiRuleNmEvid pigi)) ig
+    Seq.:++: hiFromGam  (\n clgi -> Binding_Class n (Pr.clgiPrToEvidTy clgi) (Pr.clgiRuleTy clgi) (Pr.clgiDfltDictNm clgi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
 %%]
 

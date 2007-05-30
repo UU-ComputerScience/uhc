@@ -52,7 +52,7 @@
 %%[4_2 export(valGamQuantifyWithCnstr,valGamInst1ExistsWithCnstr)
 %%]
 
-%%[6 export(tyGamQuantify, tyGamInst1Exists,gamUnzip)
+%%[6 export(gamUnzip)
 %%]
 
 %%[6 export(KiGam, KiGamInfo(..),initKiGam)
@@ -555,51 +555,27 @@ valGamTyOfDataFld fldNm g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% "Kind of type" gam
+%%% "Type of type" and "Kind of type" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.TyGamInfo
 data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
 %%]
 
-%%[6.TyGamInfo -1.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty, tgiKi :: Ty } deriving Show
-%%]
-
 %%[6.mkTGIData
-mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
-mkTGIData t k _ = TyGamInfo t k
+mkTGIData :: Ty -> Ty -> TyGamInfo
+mkTGIData t _ = TyGamInfo t
 %%]
 
 %%[6
-mkTGI :: Ty -> Ty -> TyGamInfo
-mkTGI t k = mkTGIData t k Ty_Any
+mkTGI :: Ty -> TyGamInfo
+mkTGI t = mkTGIData t Ty_Any
 %%]
 
 %%[1.emtpyTGI export(emtpyTGI)
 emtpyTGI :: TyGamInfo
 emtpyTGI = TyGamInfo Ty_Any
 %%]
-
-%%[6 -1.emtpyTGI export(emtpyTGI)
-emtpyTGI :: TyGamInfo
-emtpyTGI = mkTGI Ty_Any kiStar
-%%]
-
-%%[7.TyGamInfo
-%%]
-data TyGamInfo
-  = TyGamInfo
-      { tgiTy 		:: !Ty
-      , tgiKi 		:: Ty			-- strictness causes loop
-      , tgiDataTy 	:: Ty			-- strictness causes loop -- 20070417, this has been moved to DataGamInfo, is obsolete (will be removed later)
-      }
-  deriving Show
-
-%%[7
-%%]
-mkTGIData :: Ty -> Ty -> Ty -> TyGamInfo
-mkTGIData t k d = TyGamInfo t k d
 
 %%[1.TyGam
 type TyGam = Gam HsName TyGamInfo
@@ -628,8 +604,7 @@ tyGamLookup nm g
   =  case gamLookup nm g of
        Nothing
          |  hsnIsProd nm
-                 -> Just (TyGamInfo  (Ty_Con nm)
-                                     (replicate (hsnProdArity nm) kiStar `mkArrow` kiStar))
+                 -> Just (TyGamInfo (Ty_Con nm))
        Just tgi  -> Just tgi
        _         -> Nothing
 %%]
@@ -639,15 +614,68 @@ tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup = gamLookup
 %%]
 
-%%[6.tyGamQuantify
-tyGamQuantify :: TyVarIdL -> TyGam -> TyGam
-tyGamQuantify globTvL
-  = gamMap (\(n,k) -> (n,k {tgiKi = kiQuantify (`elem` globTvL) (tgiKi k)}))
+%%[6 export(tyKiGamQuantify)
+tyKiGamQuantify :: TyVarIdL -> TyKiGam -> TyKiGam
+tyKiGamQuantify globTvL
+  = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`elem` globTvL) (tkgiKi k)}))
 %%]
 
-%%[6
-tyGamInst1Exists :: UID -> TyGam -> TyGam
-tyGamInst1Exists = gamInst1Exists (tgiKi,(\tgi k -> tgi {tgiKi=k}))
+%%[6 export(tyKiGamInst1Exists)
+tyKiGamInst1Exists :: UID -> TyKiGam -> TyKiGam
+tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% "Kind of type variable/name" gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6 export(TyKiGamInfo(..),TyKiGam,emptyTKGI)
+data TyKiGamInfo = TyKiGamInfo { tkgiKi :: Ty } deriving Show
+
+emptyTKGI :: TyKiGamInfo
+emptyTKGI = TyKiGamInfo kiStar
+
+type TyKiGam = Gam TyKiKey TyKiGamInfo
+%%]
+
+%%[6 export(tyKiGamLookup,tyKiGamLookupByName)
+tyKiGamLookupByName :: HsName -> TyKiGam -> Maybe TyKiGamInfo
+tyKiGamLookupByName n g = gamLookup (TyKiKey_Name n) g
+
+tyKiGamLookup :: Ty -> TyKiGam -> Maybe TyKiGamInfo
+tyKiGamLookup t g
+  = case tyMbVar t of
+      Just v  -> gamLookup (TyKiKey_TyVar v) g
+      Nothing -> case tyMbCon t of
+                   Just n -> tyKiGamLookupByName n g
+                   _      -> Nothing
+%%]
+
+%%[6 export(tyKiGamLookupErr,tyKiGamLookupByNameErr)
+tyKiGamLookupErr :: Ty -> TyKiGam -> (TyKiGamInfo,ErrL)
+tyKiGamLookupErr t g
+  = case tyKiGamLookup t g of
+      Nothing -> (emptyTKGI,[rngLift emptyRange mkErr_NamesNotIntrod "kind" [mkHNm $ show t]])
+      Just i  -> (i,[])
+
+tyKiGamLookupByNameErr :: HsName -> TyKiGam -> (TyKiGamInfo,ErrL)
+tyKiGamLookupByNameErr n g = tyKiGamLookupErr (semCon n) g
+%%]
+
+%%[6 export(tyKiGamNameSingleton,tyKiGamSingleton,tyKiGamVarSingleton)
+tyKiGamNameSingleton :: HsName -> TyKiGamInfo -> TyKiGam
+tyKiGamNameSingleton n k = gamSingleton (TyKiKey_Name n) k
+
+tyKiGamVarSingleton :: TyVarId -> TyKiGamInfo -> TyKiGam
+tyKiGamVarSingleton v k = gamSingleton (TyKiKey_TyVar v) k
+
+tyKiGamSingleton :: Ty -> TyKiGamInfo -> TyKiGam
+tyKiGamSingleton t k
+  = case tyMbVar t of
+      Just v  -> tyKiGamVarSingleton v k
+      Nothing -> case tyMbCon t of
+                   Just n -> tyKiGamNameSingleton n k
+                   _      -> panic "Gam.tyKiGamSingleton"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -908,24 +936,14 @@ instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k
 
 %%[2.Substitutable.inst.ValGamInfo
 instance Substitutable ValGamInfo TyVarId Cnstr where
-%%]
-%%[9 -2.Substitutable.inst.ValGamInfo
-instance Substitutable ValGamInfo TyVarId Cnstr where
-%%]
-%%[2
   s |=> vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
   ftv   vgi         =   ftv (vgiTy vgi)
 %%]
 
-%%[6.Substitutable.inst.TyGamInfo
-instance Substitutable TyGamInfo TyVarId Cnstr where
-%%]
-%%[9 -6.Substitutable.inst.TyGamInfo
-instance Substitutable TyGamInfo TyVarId Cnstr where
-%%]
-%%[6
-  s |=> tgi         =   tgi { tgiKi = s |=> tgiKi tgi }
-  ftv   tgi         =   ftv (tgiKi tgi)
+%%[6.Substitutable.inst.TyKiGamInfo
+instance Substitutable TyKiGamInfo TyVarId Cnstr where
+  s |=> tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
+  ftv   tkgi         =   ftv (tkgiKi tkgi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -964,7 +982,12 @@ instance PP TyGamInfo where
 
 %%[6.PP.TyGamInfo -4.PP.TyGamInfo
 instance PP TyGamInfo where
-  pp tgi = ppTy (tgiTy tgi) >|< "/" >|< ppTy (tgiKi tgi)
+  pp tgi = ppTy (tgiTy tgi)
+%%]
+
+%%[6
+instance PP TyKiGamInfo where
+  pp i = ppTy (tkgiKi i)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -986,8 +1009,13 @@ instance ForceEval ValGamInfo where
 instance ForceEval KiGamInfo where
   forceEval x@(KiGamInfo k) = forceEval k `seq` x
 
+instance ForceEval TyKiGamInfo where
+  forceEval x@(TyKiGamInfo k) = forceEval k `seq` x
+
+instance ForceEval TyKiKey
+
 instance ForceEval TyGamInfo where
-  forceEval x@(TyGamInfo t k) = forceEval t `seq` forceEval k `seq` x
+  forceEval x@(TyGamInfo t) = forceEval t `seq` x
 
 instance ForceEval DataFldInfo
 
@@ -1021,19 +1049,44 @@ initTyGam
 initTyGam :: TyGam
 initTyGam
   = assocLToGam
-      [ (hsnArrow,      mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
-      , (hsnInt,        mkTGI tyInt kiStar)
-      , (hsnChar,       mkTGI tyChar kiStar)
+      [ (hsnArrow,      mkTGI (Ty_Con hsnArrow))
+      , (hsnInt,        mkTGI tyInt)
+      , (hsnChar,       mkTGI tyChar)
 %%[[7
-      , (hsnRow,        mkTGI (Ty_Con hsnUnknown) kiRow)
-      , (hsnRec,        mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-      , (hsnSum,        mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+      , (hsnRow,        mkTGI (Ty_Con hsnUnknown))
+      , (hsnRec,        mkTGI (Ty_Con hsnRec))
+      , (hsnSum,        mkTGI (Ty_Con hsnSum))
 %%]]
 %%[[9
-      , (hsnPrArrow,    mkTGI (Ty_Con hsnPrArrow) ([kiStar,kiStar] `mkArrow` kiStar))
+      , (hsnPrArrow,    mkTGI (Ty_Con hsnPrArrow))
 %%]]
 %%[[97
-      , (hsnInteger,    mkTGI tyInteger kiStar)
+      , (hsnInteger,    mkTGI tyInteger)
+%%]]
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of tyKiGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6 export(initTyKiGam)
+initTyKiGam :: TyKiGam
+initTyKiGam
+  = gamUnions
+      [ (tyKiGamNameSingleton hsnArrow      (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
+      , (tyKiGamNameSingleton hsnInt        (TyKiGamInfo kiStar))
+      , (tyKiGamNameSingleton hsnChar       (TyKiGamInfo kiStar))
+%%[[7
+      , (tyKiGamNameSingleton hsnRow        (TyKiGamInfo kiRow))
+      , (tyKiGamNameSingleton hsnRec        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
+      , (tyKiGamNameSingleton hsnSum        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
+%%]]
+%%[[9
+      , (tyKiGamNameSingleton hsnPrArrow    (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
+%%]]
+%%[[97
+      , (tyKiGamNameSingleton hsnInteger    (TyKiGamInfo kiStar))
 %%]]
       ]
 %%]

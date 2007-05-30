@@ -50,11 +50,11 @@ DATA Binding
     | Ty
         nm                      : HsName
         ty                      : Ty
-        ki                      : Ty
+    | TyKinds
+        tyKinds                 : {AssocL TyKiKey Ty}
     | Class
         nm                      : HsName
         prToEvidTy              : Ty
-        ki                      : Ty
         ruleTy                  : Ty
         nmEvid                  : HsName
     | CHRStore

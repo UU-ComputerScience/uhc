@@ -1111,7 +1111,7 @@ fitPredIntoPred fi pr1 pr2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(fitPredToEvid)
-fitPredToEvid :: UID -> Ty -> PrIntroGam -> FIOut
+fitPredToEvid :: UID -> Ty -> ClGam -> FIOut
 fitPredToEvid u prTy g
   =  case prTy of
        Ty_Any  ->  emptyFO
@@ -1120,9 +1120,9 @@ fitPredToEvid u prTy g
             =  case prTy of
                  Ty_Pred p@(Pred_Class _)
                     ->  case gamLookup (predMatchNm p) g of
-                           Just pigi
+                           Just clgi
                              -> let (u',u1,u2) = mkNewLevUID2 u
-                                    fo = fitsIn fOpts emptyFE u1 (pigiPrToEvidTy pigi) ([prTy] `mkArrow` mkTyVar u2)
+                                    fo = fitsIn fOpts emptyFE u1 (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
                                 in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
                            _ -> emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
                  Ty_Pred (Pred_Pred t)

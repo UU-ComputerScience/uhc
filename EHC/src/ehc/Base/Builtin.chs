@@ -466,6 +466,11 @@ hsnClass2Dict :: HsName -> HsName
 hsnClass2Dict = hsnPrefix "Dict-"
 %%]
 
+%%[9 export(hsnClass2Kind)
+hsnClass2Kind :: HsName -> HsName
+hsnClass2Kind = hsnPrefix "ClassKind-"
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Builtin names used without direct access from source code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

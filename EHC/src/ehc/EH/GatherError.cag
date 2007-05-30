@@ -103,6 +103,7 @@ SEM Expr
 SEM TyExpr
   | App         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@func.errSq, @arg.errSq, foErrSq @fo_]
   | AppTop      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExpr.errSq]
+  | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList $ firstNotEmpty [@nmErrs,@nmErrs2]]
 
 SEM Decl
   | TySig       lhs         .   errSq       =   rngLift @range mkNestErr' @tyExpr.pp [@tyExpr.errSq, foErrSq @fo_]

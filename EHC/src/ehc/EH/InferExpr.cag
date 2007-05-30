@@ -201,7 +201,7 @@ SEM Expr
                                                     =   case @knImpls of
                                                             (a:r)  -> (a,r)
                                                             []     -> (Ty_Any,[])
-                            .   foPr                =   fitPredToEvid @lUniq @knArgImpl @lhs.prIntroGam
+                            .   foPr                =   fitPredToEvid @lUniq @knArgImpl @lhs.clGam
                 arg         .   knTy                =   @func.tyCnstr |=> foTy @foPr
                             .   tyCnstr             =   foCnstr @foPr |=> @func.tyCnstr
                 loc         .   ty                  =   @arg.tyCnstr |=> (@knResImpls `mkArrow` @ty_)
@@ -289,7 +289,7 @@ SEM Expr
                             .   (knImpls,ty_)       =   tyArrowImplsRes (foTy @fo_fitF_)
                             .   (knArgImpl,knResImpls)
                                                     =   hdAndTl @knImpls
-                            .   foPr                =   fitPredToEvid @lUniq4 @knArgImpl @lhs.prIntroGam
+                            .   foPr                =   fitPredToEvid @lUniq4 @knArgImpl @lhs.clGam
                 arg         .   knTy                =   foTy @foPr
                             .   tyCnstr             =   foCnstr @foPr |=> foCnstr @fo_fitF_ |=> @lhs.tyCnstr
                 body        .   knTy                =   @knResImpls `mkArrow` @ty_

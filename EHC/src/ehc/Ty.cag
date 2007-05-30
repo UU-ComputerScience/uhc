@@ -34,7 +34,7 @@
 %%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
 %%]
 
-%%[4_2 hs export(tyMbQu,tyIsQu,tyIsVar,tyMbVar,tyIsAlts) 
+%%[4_2 hs export(tyMbQu,tyIsQu,tyIsVar,tyIsAlts) 
 %%]
 
 %%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
@@ -655,7 +655,7 @@ tyProdArgs   = tyAppArgs
 tyLHdAndTl   = hdAndTl' Ty_Any
 %%]
 
-%%[4.unMkTy.tyConNm hs
+%%[4.unMkTy.tyConNm hs export(tyMbCon)
 tyMbCon :: Ty -> Maybe HsName
 tyMbCon t = case t of {Ty_Con nm -> Just nm ; _ -> Nothing}
 
@@ -663,7 +663,7 @@ tyConNm :: Ty -> HsName
 tyConNm = maybe hsnUnknown id . tyMbCon
 %%]
 
-%%[3.unMkTy.tyMbVar hs
+%%[3.unMkTy.tyMbVar hs export(tyMbVar)
 tyMbVar :: Ty -> Maybe TyVarId
 tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
 %%]
@@ -886,7 +886,7 @@ predMatchNm :: Pred -> HsName
 predMatchNm p
   =  case p of
        Pred_Class t    -> tyAppFunConNm t
-       Pred_Pred  t    -> predMatchNm . snd . tyPrArrowArgsRes $ t
+       Pred_Pred  t    -> predMatchNm $ snd $ tyPrArrowArgsRes t
 %%]
 %%[10 hs
        Pred_Lacks _ (Label_Lab l)  -> hsnPrefix "_Lab_" l
@@ -975,6 +975,27 @@ tyIsPredicated t            = isPr a
                             where a = tyArrowArgs t
                                   isPr (Ty_Pred p:_) = True
                                   isPr _             = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Key into TyKiGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6 hs export(TyKiKey(..))
+data TyKiKey
+  = TyKiKey_Name 	!HsName
+  | TyKiKey_TyVar	!TyVarId
+  deriving (Eq,Ord)
+
+instance Show TyKiKey where
+  show (TyKiKey_Name  n) = show n
+  show (TyKiKey_TyVar v) = show v
+%%]
+
+%%[6 hs export(tyKiKeyIsName)
+tyKiKeyIsName :: TyKiKey -> Bool
+tyKiKeyIsName (TyKiKey_Name _) = True
+tyKiKeyIsName _                = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
