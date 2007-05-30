@@ -48,10 +48,11 @@ ATTR
       exportHideRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- implicit exports (instances)
       fixityGam         USE {`gamUnion`}        {emptyGam}          : FixityGam					-- fixity info for identifiers
       idGam             USE {`gamUnion`}        {emptyGam}          : IdDefOccGam				-- all identifiers which can be used, both explicit or implicit (including instances)
-      valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used
-      tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with kinds
+      valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used (name -> type)
+      tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with types (name -> type)
+      tyKiGam           USE {`gamUnion`}        {emptyGam}          : TyKiGam					-- all types with kinds (type -> kind)
       dataGam           USE {`gamUnion`}        {emptyGam}          : DataGam					-- additional structural info for datatypes
-      prIntroGam        USE {`gamUnion`}        {emptyGam}          : {Pr.PrIntroGam}			-- classes
+      clGam             USE {`gamUnion`}        {emptyGam}          : {Pr.ClGam}    			-- classes
       chrStore          USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore			-- CHR
       arityMp           USE {`Map.union`}       {Map.empty}         : CArityMp					-- arities of identifiers, used for GRIN
       inlMp             USE {`Map.union`}       {Map.empty}         : GrInlMp					-- inline info, used by GrinByteCode
@@ -74,7 +75,9 @@ SEM Binding
     | Val
         lhs             .   valGam      =   gamSingleton @nm (ValGamInfo @ty)
     | Ty
-        lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty @ki)
+        lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty)
+    | TyKinds
+        lhs             .   tyKiGam     =   gamFromAssocL [(t,TyKiGamInfo k) | (t,k) <- @tyKinds]
     | DataCon
         lhs             .   dataGam     =   gamSingleton @nm (mkDGI @nm
                                                                     @ty (assocLKeys @tags)
@@ -87,7 +90,7 @@ SEM Binding
                                                                     False
                                                              )
     | Class
-        lhs             .   prIntroGam  =   gamSingleton @nm (Pr.PrIntroGamInfo @prToEvidTy @ki @ruleTy @nmEvid)
+        lhs             .   clGam       =   gamSingleton @nm (Pr.ClGamInfo @prToEvidTy @ruleTy @nmEvid)
     | CHRStore
         lhs             .   chrStore    =   chrStoreFromElems @chrs
 %%]

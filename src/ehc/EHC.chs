@@ -785,22 +785,25 @@ cpFlowEHSem1 modNm
                  dg       = prepFlow $! EHSem.gathDataGam_Syn_AGItf    ehSem
                  vg       = prepFlow $! EHSem.gathValGam_Syn_AGItf     ehSem
                  tg       = prepFlow $! EHSem.gathTyGam_Syn_AGItf      ehSem
+                 tkg      = prepFlow $! EHSem.gathTyKiGam_Syn_AGItf    ehSem
                  kg       = prepFlow $! EHSem.gathKiGam_Syn_AGItf      ehSem
-                 pg       = prepFlow $! EHSem.gathPrIntroGam_Syn_AGItf ehSem
+                 pg       = prepFlow $! EHSem.gathClGam_Syn_AGItf      ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
                  ehInh'   = ehInh
-                              { EHSem.dataGam_Inh_AGItf    = dg `gamUnionFlow` EHSem.dataGam_Inh_AGItf    ehInh
-                              , EHSem.valGam_Inh_AGItf     = vg `gamUnionFlow` EHSem.valGam_Inh_AGItf     ehInh
-                              , EHSem.tyGam_Inh_AGItf      = tg `gamUnionFlow` EHSem.tyGam_Inh_AGItf      ehInh
-                              , EHSem.kiGam_Inh_AGItf      = kg `gamUnionFlow` EHSem.kiGam_Inh_AGItf      ehInh
-                              , EHSem.prIntroGam_Inh_AGItf = pg `gamUnionFlow` EHSem.prIntroGam_Inh_AGItf ehInh
-                              , EHSem.chrStore_Inh_AGItf   = cs `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
+                              { EHSem.dataGam_Inh_AGItf    = dg  `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
+                              , EHSem.valGam_Inh_AGItf     = vg  `gamUnionFlow`  EHSem.valGam_Inh_AGItf     ehInh
+                              , EHSem.tyGam_Inh_AGItf      = tg  `gamUnionFlow`  EHSem.tyGam_Inh_AGItf      ehInh
+                              , EHSem.tyKiGam_Inh_AGItf    = tkg `gamUnionFlow`  EHSem.tyKiGam_Inh_AGItf    ehInh
+                              , EHSem.kiGam_Inh_AGItf      = kg  `gamUnionFlow`  EHSem.kiGam_Inh_AGItf      ehInh
+                              , EHSem.clGam_Inh_AGItf      = pg  `gamUnionFlow`  EHSem.clGam_Inh_AGItf ehInh
+                              , EHSem.chrStore_Inh_AGItf   = cs  `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                               }
                  hii'     = hii
                               { HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
+                              , HI.hiiTyKiGam     	= tkg
                               , HI.hiiDataGam       = dg
-                              , HI.hiiPrIntroGam    = pg
+                              , HI.hiiClGam         = pg
                               , HI.hiiCHRStore      = cs
                               }
 %%]]
@@ -835,8 +838,9 @@ cpFlowHISem modNm
                  ehInh' = ehInh
                             { EHSem.valGam_Inh_AGItf     = (prepFlow $! HISem.valGam_Syn_AGItf     hiSem) `gamUnionFlow` EHSem.valGam_Inh_AGItf     ehInh
                             , EHSem.tyGam_Inh_AGItf      = (prepFlow $! HISem.tyGam_Syn_AGItf      hiSem) `gamUnionFlow` EHSem.tyGam_Inh_AGItf      ehInh
+                            , EHSem.tyKiGam_Inh_AGItf    = (prepFlow $! HISem.tyKiGam_Syn_AGItf    hiSem) `gamUnionFlow` EHSem.tyKiGam_Inh_AGItf    ehInh
                             , EHSem.dataGam_Inh_AGItf    = (prepFlow $! HISem.dataGam_Syn_AGItf    hiSem) `gamUnionFlow` EHSem.dataGam_Inh_AGItf    ehInh
-                            , EHSem.prIntroGam_Inh_AGItf = (prepFlow $! HISem.prIntroGam_Syn_AGItf hiSem) `gamUnionFlow` EHSem.prIntroGam_Inh_AGItf ehInh
+                            , EHSem.clGam_Inh_AGItf      = (prepFlow $! HISem.clGam_Syn_AGItf      hiSem) `gamUnionFlow` EHSem.clGam_Inh_AGItf      ehInh
                             , EHSem.chrStore_Inh_AGItf   = (prepFlow $! HISem.chrStore_Syn_AGItf   hiSem) `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
                  hsInh  = crsiHSInh crsi
@@ -2079,7 +2083,7 @@ doCompileRun fn opts
                                               , HSSem.idGam_Inh_AGItf           = HSSem.tyGam2IdDefOccGam initTyGam
                                                                                     `gamUnion` HSSem.kiGam2IdDefOccGam initKiGam
 %%[[9
-                                                                                    `gamUnion` HSSem.pigiGam2IdDefOccGam initPIGIGam
+                                                                                    `gamUnion` HSSem.clGam2IdDefOccGam initClGam
 %%]]
                                               , HSSem.gUniq_Inh_AGItf           = uidStart
 %%[[20
@@ -2099,8 +2103,9 @@ doCompileRun fn opts
                                               , EHSem.valGam_Inh_AGItf          = emptyGam
                                               , EHSem.dataGam_Inh_AGItf         = emptyGam
                                               , EHSem.tyGam_Inh_AGItf           = initTyGam
+                                              , EHSem.tyKiGam_Inh_AGItf         = initTyKiGam
                                               , EHSem.kiGam_Inh_AGItf           = initKiGam
-                                              , EHSem.prIntroGam_Inh_AGItf      = initPIGIGam
+                                              , EHSem.clGam_Inh_AGItf           = initClGam
                                               , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
                                               , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]

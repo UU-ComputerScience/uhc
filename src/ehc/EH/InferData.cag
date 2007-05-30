@@ -16,16 +16,19 @@ SEM Decl
 
 %%[6
 SEM Decl
-  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
+  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm)
+                            .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
+                            .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
+                                                                      else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
                                                                 (@lhs.patKiCnstr |=> (@tyVars.kiL `mkArrow` kiStar))
-                                                                (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
+                                                                (@lhs.patKiCnstr |=> (tkgiKi @dataTkgi))
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
-                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyVars.tyGam))
-                                                                    @lhs.tyGam
+                constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyVars.tyKiGam))
+                                                                    @lhs.tyKiGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -150,7 +153,7 @@ SEM DataConstr
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
-                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
+                            .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
 %%]
 
 !!!!! Fix following w.r.t. dataUnConTy

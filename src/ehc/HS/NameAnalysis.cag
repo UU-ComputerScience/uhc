@@ -29,8 +29,8 @@ kiGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Kind)
 %%]]
 
 %%[[9
-pigiGam2IdDefOccGam :: PrIntroGam -> IdDefOccGam
-pigiGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Class)
+clGam2IdDefOccGam :: ClGam -> IdDefOccGam
+clGam2IdDefOccGam = gamMap (\(n,_) -> mkBuiltinIdDefOcc n IdOcc_Class)
 %%]]
 %%]
 
@@ -332,7 +332,7 @@ SEM AGItf
 %%]]
 %%[[9
                                             `gamUnion`
-                                            pigiGam2IdDefOccGam initPIGIGam
+                                            clGam2IdDefOccGam initClGam
 %%]]
 %%]
 

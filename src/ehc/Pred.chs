@@ -19,7 +19,7 @@
 %%[9 import({%{EH}Error})
 %%]
 
-%%[9 export(PrIntroGamInfo(..),PrIntroGam,emptyPIGI)
+%%[9 export(ClGamInfo(..),ClGam,emptyCLGI)
 %%]
 
 %%[9 import({%{EH}Ty.Ftv})
@@ -47,34 +47,29 @@ instance PP ClsFuncDep where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-data PrIntroGamInfo
-  =  PrIntroGamInfo
-       { pigiPrToEvidTy     :: !Ty
-       , pigiKi             :: !Ty
-       , pigiRuleTy         :: !Ty
-       , pigiRuleNmEvid     :: !HsName
+data ClGamInfo
+  =  ClGamInfo
+       { clgiPrToEvidTy     :: !Ty
+       , clgiRuleTy         :: !Ty
+       , clgiDfltDictNm     :: !HsName
        } deriving Show
 
-type PrIntroGam     = Gam HsName PrIntroGamInfo
+type ClGam     = Gam HsName ClGamInfo
 
-emptyPIGI = PrIntroGamInfo Ty_Any Ty_Any Ty_Any hsnUnknown
+emptyCLGI = ClGamInfo Ty_Any Ty_Any hsnUnknown
 
-instance PP PrIntroGamInfo where
-  pp pigi = pp (pigiRuleNmEvid pigi) >#< "::" >#< ppTy (pigiRuleTy pigi) >#< "::" >#< ppTy (pigiPrToEvidTy pigi) >#< ":::" >#< ppTy (pigiKi pigi)
-
-instance Substitutable PrIntroGamInfo TyVarId Cnstr where
-  s |=> pigi        =   pigi { pigiKi = s |=> pigiKi pigi }
-  ftv   pigi        =   ftv (pigiKi pigi)
+instance PP ClGamInfo where
+  pp clgi = pp (clgiDfltDictNm clgi) >#< "::" >#< ppTy (clgiRuleTy clgi) >#< "::" >#< ppTy (clgiPrToEvidTy clgi)
 %%]
 
-%%[9 export(initPIGIGam)
-initPIGIGam
+%%[9 export(initClGam)
+initClGam
   = assocLToGam
-      [ (hsnPrArrow,    emptyPIGI)
+      [ (hsnPrArrow,    emptyCLGI)
       ]
 %%]
 
 %%[99
-instance ForceEval PrIntroGamInfo
+instance ForceEval ClGamInfo
 %%]
 

@@ -49,6 +49,9 @@ pConstraint
 pLabelOffset :: HIParser LabelOffset
 pLabelOffset = pKeyTk "offset" *> (LabelOffset_Off <$> pInt <|> LabelOffset_Var <$> pUIDHI)
 
+pTyKiKey :: HIParser TyKiKey
+pTyKiKey = TyKiKey_Name <$> pDollNm <|> TyKiKey_TyVar <$> pUIDHI
+
 pLabel :: HIParser Label
 pLabel = pKeyTk "label" *> (Label_Lab <$> pDollNm <|> Label_Var <$> pUIDHI)
 
@@ -111,6 +114,9 @@ pBinding
   <|> Binding_Ids       <$  pNmIs "iddef"    <* pOCURLY
                                              <*> pListSep pSEMI ((,) <$ pOCURLY <*> pIdOcc <* pSEMI <*> pIdOcc <* pCCURLY)
                                              <* pCCURLY
+  <|> Binding_TyKinds   <$  pNmIs "tykind"   <* pOCURLY
+                                             <*> pListSep pSEMI ((,) <$ pOCURLY <*> pTyKiKey <* pSEMI <*> pTy <* pCCURLY)
+                                             <* pCCURLY
   <|> Binding_Arities   <$  pNmIs "arity"    <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
   <|> Binding_GrInlines <$  pNmIs "grInline" <*> pCurlySemiBlock ((\n a g -> (n,(a,g))) <$ pOCURLY <*> pDollNm <* pSEMI <*> pCurlySemiBlock pDollNm <* pSEMI <*> pCurlys pExprSeq <* pCCURLY)
   <|> Binding_Val       <$> pNmIs "value"    <* pOCURLY <*> pTy <* pCCURLY
@@ -121,7 +127,7 @@ pBinding
                                              <* pSEMI   <*> (read <$> pInteger)
                                              <* pCCURLY
   <|> Binding_Export    <$  pNmIs "export"   <* pOCURLY <*> (VisibleNo <$ pKeyTk "visibleno" <|> VisibleYes <$ pKeyTk "visibleyes") <* pSEMI <*> pModEntRel  <* pCCURLY
-  <|> Binding_Ty        <$> pNmIs "type"     <* pOCURLY <*> pTy      <* pSEMI <*> pTy     <* pCCURLY
+  <|> Binding_Ty        <$> pNmIs "type"     <* pOCURLY <*> pTy <* pCCURLY
   <|> (\tn ty cs -> Binding_DataCon tn ty (map (\f -> f tn) cs))
       <$> pNmIs "data" <*  pOCURLY
                        <*> pTy <* pSEMI
@@ -134,7 +140,7 @@ pBinding
                              ) <* pSEMI
                        <*> pBool
                        <*  pCCURLY
-  <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pDollNm <* pCCURLY
+  <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pDollNm <* pCCURLY
   <|> Binding_CHRStore  <$  pNmIs "chrstore"    <*> pCurlySemiBlock
                                                       (CHR <$ pOCURLY <*> pCurlySemiBlock pConstraint
                                                            <* pSEMI   <*> pInt

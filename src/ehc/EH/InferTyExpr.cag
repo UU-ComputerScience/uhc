@@ -18,26 +18,62 @@ ATTR AllTyExpr [ | | tyGam: TyGam ]
 -- generated from ruler rules into EHRulerRules, was 1.check
 %%[5.check
 SEM TyExpr
+  | Con         loc         .   (tgi_,nmErrs)       =   tyGamLookupErr @nm @lhs.tyGam
+%%]
   | Con         loc         .  (tgi_,nmErrs)        =   case tyGamLookup @nm @lhs.tyGam of
                                                           Nothing    ->  (TyGamInfo Ty_Any
                                                                          ,[rngLift @range mkErr_NamesNotIntrod "type" [@nm]])
                                                           Just tgi   ->  (tgi,[])
+
+%%[6
+SEM TyExpr
+  | Con         loc         .   (tgi_,nmErrs)       :=  tyGamLookupErr @nm @lhs.tyGam
+                loc         .   (tkgi_,nmErrs2)     =   let (i,e) = tyKiGamLookupByNameErr @nm @lhs.tyKiGam in (@lhs.kiCnstr |=> i,e)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyKiGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+ATTR AllTyVar AllTyExpr [ | tyKiGam: TyKiGam | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ty var gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[6 hs
+tyGamLookupOrAdd :: UID -> HsName -> TyGam -> (TyGamInfo,TyGam)
+tyGamLookupOrAdd uniq nm tyGam
+  =  case tyGamLookup nm tyGam of
+       Nothing    ->  let  t    =  mkNewTyVar uniq
+                           tgi  =  mkTGI t
+                      in   (tgi,gamAdd nm tgi tyGam)
+       Just tgi   ->  (tgi,tyGam)
+%%]
+
+Type 't' is assumed to be a Ty_Con or Ty_Var.
+Should only be used on result from tyGamLookupOrAdd.
+
+%%[6 hs
+tyKiGamLookupOrAdd :: Cnstr -> Ty -> TyKiGam -> (TyKiGamInfo,TyKiGam)
+tyKiGamLookupOrAdd cnstr t tyKiGam
+  =  case tyKiGamLookup t tyKiGam of
+       Nothing    ->  (tkgi,tyKiGamSingleton t tkgi `gamUnion` tyKiGam)
+                  where tkgi  =  TyKiGamInfo t
+       Just tkgi  ->  (cnstr |=> tkgi,tyKiGam)
+%%]
+
 -- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
 %%[5.tvGathFlow hs
-
-tvGathFlowOut :: TyGam -> TyGam -> TyGam
+tvGathFlowOut :: Ord k => Gam k v -> Gam k v -> Gam k v
 tvGathFlowOut lhsG insideG
   = lhsG'
   where  (l,g)     = gamPop insideG
          lhsG'     = gamAddGam l lhsG
 
-tvGathFlowIn :: TyGam -> TyGam -> TyGam
+tvGathFlowIn :: Ord k => Gam k v -> Gam k v -> Gam k v
 tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 %%]
 
@@ -46,6 +82,12 @@ tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
                             .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+%%]
+
+%%[6
+SEM TyExpr
+  | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t
+                            .   tkgi_               =   TyKiGamInfo (tgiTy @tgi_)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyVarGather
@@ -59,6 +101,12 @@ SEM TyExpr
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
 %%]
 
+%%[6
+SEM TyExpr
+  | Var VarWild (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm @lhs.tyGam
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd @lhs.kiCnstr (tgiTy @tgi_) @lhs.tyKiGam
+%%]
+
 -- generated from ruler rules into EHRulerRules, was 4.tyVarGather
 %%[5.tyVarGather
 SEM TyExpr
@@ -66,10 +114,15 @@ SEM TyExpr
                                                         in   (@lUniq,TyGamInfo t)
                 tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
 %%]
-                tyExpr      .   tyGam               =   gamPushNew (gamPushGam (@tyVar `gamSingleton` @tgi_) @lhs.tyGam)
-                lhs         .   tyGam               =   let  (l,g) = gamPop @tyExpr.tyGam
-                                                        in   gamAddGam l @lhs.tyGam 
+
+%%[6
+SEM TyExpr
+  | Quant       loc         .   (tv,tgi_,tkgi_)     :=  let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo t)
+%%]
 
 %%[5.tyVarGather
 ATTR AllTyVar [ | tyGam: TyGam | ]
@@ -83,12 +136,36 @@ SEM TyVar
                 loc         .   tv                  =   tyVar . tgiTy $ @tgi_
 %%]
 
+%%[6
+SEM TyVar
+  | Var         (loc.tgi_,lhs.tyGam)                := 	tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam)
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd emptyCnstr (tgiTy @tgi_) @lhs.tyKiGam
+%%]
+
 %%[9.tyVarGather
 SEM PrExpr
-  | Forall      loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
-                                                        in   (@lUniq,mkTGI t t)
+  | Forall      loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo t)
                 prExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @prExpr.tyGam
+                prExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @prExpr.tyKiGam
+%%]
+
+%%[9
+SEM RowTyExpr
+  | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd @lhs.kiCnstr (tgiTy @tgi_) @lhs.tyKiGam
+%%]
+
+%%[11
+SEM TyExpr
+  | Lam         loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo t)
+                tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,49 +202,31 @@ SEM TyExpr
 %%% Kind inferencing for TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6 hs
-tyGamLookupOrAdd :: UID -> Cnstr -> HsName -> TyGam -> (TyGamInfo,TyGam)
-tyGamLookupOrAdd uniq cnstr nm tyGam
-  =  case tyGamLookup nm tyGam of
-       Nothing    ->  let  t    =  mkNewTyVar uniq
-                           tgi  =  mkTGI t t
-                      in   (tgi,gamAdd nm tgi tyGam)
-       Just tgi   ->  (cnstr |=> tgi,tyGam)
-%%]
-
 %%[6
 ATTR AllTyExpr [ | kiCnstr: Cnstr | ]
 ATTR TyExpr TyVar [ | | ki: Ty ]
 ATTR TyExprs TyVars [ | | kiL: TyL ]
+%%]
 
+%%[6
 SEM TyExpr
-  | Var VarWild
-                (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
-                loc         .   ki                  =   tgiKi @tgi_
-  | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t t
-                            .   ki                  =   tgiKi @tgi_
-  | Con         loc         .   (tgi_,nmErrs)       :=  let (tgi,e) = tyGamLookupErr @nm @lhs.tyGam
-                                                        in  (@lhs.kiCnstr |=> tgi,e)
-                loc         .   ki                  =   tgiKi @tgi_
-  | Quant       loc         .   (tv,tgi_)           :=  let  t = mkTyVar @lUniq
-                                                        in   (@lUniq,mkTGI t t)
+  | Var VarWild loc         .   ki                  =   tkgiKi @tkgi_
+  | Wild        loc         .   ki                  =   tkgiKi @tkgi_
+  | Con         loc         .   ki                  =   tkgiKi @tkgi_
   | App         loc         .   knFunKi             =   [@arg.ki] `mkArrow` mkNewTyVar @lUniq
                             .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (@arg.kiCnstr |=> @func.ki) @knFunKi
                             .   fKi                 =   foTy @fo_
                             .   (_,ki)              =   tyArrowArgRes @fKi
                 lhs         .   kiCnstr             =   foCnstr @fo_ |=> @arg.kiCnstr
+%%]
 
+%%[6
 SEM TyExprs
   | Nil         lhs         .   kiL                 =   []
   | Cons        lhs         .   kiL                 =   @hd.ki : @tl.kiL
 
 SEM TyVar
-  | Var         (loc.tgi_,lhs.tyGam)                :=  case tyGamLookup @nm (gamTop @lhs.tyGam) of
-                                                          Nothing    ->  let  t    =  Ty_Var @lUniq TyVarCateg_Plain
-                                                                              tgi  =  mkTGI t t
-                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
-                                                          Just tgi   ->  (tgi,@lhs.tyGam)
-                loc         .   ki                  =   tgiKi @tgi_
+  | Var         loc         .   ki                  =   tkgiKi @tkgi_
 
 SEM TyVars
   | Nil         lhs         .   kiL                 =   []
@@ -187,25 +246,22 @@ SEM RowTyExpr
 %%[9
 SEM TyExpr
   | Impls       loc         .   implsVarId          =   @lUniq
-                            .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId [])) kiStar
-                            .   ki                  =   tgiKi @tgi_
-  | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil) kiStar
-                            .   ki                  =   tgiKi @tgi_
+                            .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId []))
+                            .   tkgi_               =   TyKiGamInfo kiStar
+                            .   ki                  =   tkgiKi @tkgi_
+  | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil)
+                            .   tkgi_               =   TyKiGamInfo kiStar
+                            .   ki                  =   tkgiKi @tkgi_
 
 SEM RowTyExpr
-  | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @lhs.kiCnstr @nm @lhs.tyGam
-                loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (tgiKi @tgi_) kiRow
+  | Var         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (tkgiKi @tkgi_) kiRow
                             .   ki                  =   foTy @fo_
                 lhs         .   kiCnstr             =   foCnstr @fo_ |=> @lhs.kiCnstr
 %%]
 
 %%[11
 SEM TyExpr
-  | Lam         loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
-                                                        in   (@lUniq,mkTGI t t)
-                tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
-                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
-                loc         .   ki                  =   [@tyExpr.kiCnstr |=> tgiKi @tgi_] `mkArrow` @tyExpr.ki
+  | Lam         loc         .   ki                  =   [@tyExpr.kiCnstr |=> tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 %%]
 
 %%[9
@@ -216,7 +272,7 @@ SEM PrExpr
   | Class       loc         .   fo_                 =   if @nmIsDef
                                                         then fitsIn weakFIOpts emptyFE @lUniq
                                                                 (@tyExprs.kiCnstr |=> (@tyExprs.kiL `mkArrow` kiStar))
-                                                                (@tyExprs.kiCnstr |=> pigiKi @pigi)
+                                                                (@tyExprs.kiCnstr |=> tkgiKi @tkgi_)
                                                         else emptyFO
                 lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExprs.kiCnstr
 %%]
@@ -361,31 +417,13 @@ SEM PrExprs
 
 %%[11
 SEM Decl
-  | Type        loc         .   typeTgi             =   mkTGI @tyExpr.ty (tyEnsureNonAny @lUniq @knKi)
+  | Type        loc         .   typeTgi             =   mkTGI @tyExpr.ty
+                            .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
+                            .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
                                                                 (@tyExpr.ki)
-                                                                (@tyExpr.kiCnstr |=> (tgiKi @typeTgi))
+                                                                (@tyExpr.kiCnstr |=> (tkgiKi @typeTkgi))
                 lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
 %%]
-                            .   tyGam               =   @lhs.tyGam
-
-
-SEM Decl
-  | Data        tyVars      .   tyGam               =   gamPushNew @lhs.patTyGam
-                loc         .   (tyGam_l_,tyGam_g_) =   gamPop @tyVars.tyGam
-                lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
-                constrs     .   tyGam               =   gamPushGam @tyGam_l_ @lhs.tyGam
-                lhs         .   tyGam               =   @lhs.tyGam
-SEM Decl
-  | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm) (tyEnsureNonAny @lUniq @knKi)
-                lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
-                                                                      else gamAdd @tyNm @dataTgi @lhs.patTyGam
-                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
-                                                                (@lhs.patKiCnstr |=> (@tyVars.kiL `mkArrow` kiStar))
-                                                                (@lhs.patKiCnstr |=> (tgiKi @dataTgi))
-                            .   dataKi              =   foTy @fo_
-                lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
-                constrs     .   tyGam               :=  gamPushGam  (tyGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyGam_l_))
-                                                                    @lhs.tyGam
 

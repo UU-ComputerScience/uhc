@@ -537,7 +537,7 @@ SEM Decl
                                                              else id
                                                      dDflt
                                                        = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
-                                                       where nDflt = pigiRuleNmEvid @pigi2
+                                                       where nDflt = clgiDfltDictNm @clgi2
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
@@ -626,7 +626,7 @@ SEM Decl
 %%]]
                                                      mkNormalD bindL
                                                        = dD
-                                                       where nDflt = pigiRuleNmEvid @pigi
+                                                       where nDflt = clgiDfltDictNm @clgi
                                                              nStrictDflt = hsnSuffix nDflt "!"
                                                              nR = @dictBuildNm
                                                              nStrictR = hsnSuffix nR "!"

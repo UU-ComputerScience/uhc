@@ -71,9 +71,11 @@ SEM Binding
                                               , pp @isNewtype
                                               ]
     | Ty
-        lhs         .   ppSq        =   hiNV "type" @nm [ppForHI @ty,ppForHI @ki]
+        lhs         .   ppSq        =   hiNV "type" @nm [ppForHI @ty]
+    | TyKinds
+        lhs         .   ppSq        =   hiNV "tykind" hsnUnknown [ppCurlysSemisBlock [ppForHI t,ppForHI k] | (t,k) <- @tyKinds]
     | Class
-        lhs         .   ppSq        =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ki,ppForHI @ruleTy,ppForHI @nmEvid]
+        lhs         .   ppSq        =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ruleTy,ppForHI @nmEvid]
     | CHRStore
         lhs         .   ppSq        =   hiNV' "chrstore" hsnUnknown $ ppCurlysSemisBlock $ map ppForHI @chrs
 %%]

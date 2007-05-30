@@ -255,6 +255,7 @@ hiScanOpts
         {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
                                     , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                     , "True", "False"
+                                    , "tykind", "tykinm", "tykivar"
 %%[[9
                                     , "chr", "chrstore"
                                     , "Assume", "Prove", "Reduction"
