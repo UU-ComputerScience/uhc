@@ -10,7 +10,8 @@
 -- generated from ruler rules into EHRulerRules, was 1.Let
 %%[5.Let
 SEM Expr
-  | Let         decls       .   patValGam           =   gamPushGam @decls.gathTySigGam @lhs.valGam
+  | Let         loc         .   gathTySigGam_l_     =   @decls.gathTySigGam
+                decls       .   patValGam           =   gamPushGam @gathTySigGam_l_ @lhs.valGam
                 loc         .   (valGam_l_,valGam_g_)
                                                     =   gamPop @decls.patValGam
                 decls       .   valGam              =   @decls.patValGam
@@ -37,8 +38,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 4.Let
 %%[5.Let
 SEM Expr
-  | Let         decls       .   patValGam           :=  gamPushGam  (valGamInst1Exists @lUniq @decls.gathTySigGam)
-                                                                    @lhs.valGam
+  | Let         loc         .   gathTySigGam_l_     :=  valGamInst1Exists @lUniq @decls.gathTySigGam
                 loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam_
                             .   quValGam_           :=  emptyGam
                 body        .   valGam              :=  gamPushGam @quValGam_ex_ @gSubsValGam_
@@ -80,6 +80,8 @@ SEM Expr
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tmpoTyCnstr         =   foldr (\tmpo c -> tmpoImplsCnstr tmpo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
+                decls       .   patValGam           :=  agFakeDependOn @decls.clGam $ gamPushGam @gathTySigGam_l_ @lhs.valGam
+                decls       .   tyCnstr             :=  agFakeDependOn @decls.predSameScopeCounter $ @decls.patTyCnstr
 
 %%[50
 %%]
@@ -1087,6 +1089,7 @@ SEM PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+%%]
 ATTR TyExpr PrExpr [ | | mbConNm USE {`const`} {Nothing}: {Maybe HsName} ]
 
 SEM PrExpr
@@ -1096,4 +1099,39 @@ SEM TyExpr
   | Con			lhs			.	mbConNm				=	Just @nm
   | App			lhs			.	mbConNm				=	@func.mbConNm
   | Var			lhs			.	mbConNm				=	Nothing
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional fake dependencies
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Decls
+  | Cons        hd          .   gUniq               =   agFakeDependOn @hd.predSameScopeCounter @lhs.gUniq
+%%]
+  | Cons        hd          .   predSameScopeCounter=   agFakeDependOn @hd.gUniq @lhs.predSameScopeCounter
+                            .   dataGam             =   agFakeDependOn @hd.predSameScopeCounter @lhs.dataGam
+                            .   clGam               =   agFakeDependOn @hd.patValGam @lhs.clGam
+                            .   tyGam               =   agFakeDependOn @hd.kiCnstr @lhs.tyGam
+                            .   kiCnstr             =   agFakeDependOn @hd.patTyGam @lhs.kiCnstr
+
+%%[9
+SEM CaseAlts
+  | Cons        hd          .   kiCnstr             =   agFakeDependOn @hd.gathDataGam @lhs.kiCnstr
+%%]
+
+%%[9
+SEM TyExprs
+  | Cons        hd          .   clGam               =   agFakeDependOn @hd.tyVarWildL @lhs.clGam
+%%]
+
+%%[9
+%%]
+SEM DataConstrs
+  | Cons        lhs         .   kiCnstr             =   agFakeDependOn @lhs.dataTy @tl.kiCnstr
+
+%%[9
+SEM DataFieldPatExpr
+  | Ext         dataFieldPatExpr
+                            .   kiCnstr             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiCnstr
+
 %%]

@@ -269,13 +269,17 @@ ATTR PrExpr [ | | ki: Ty ]
 
 SEM PrExpr
   | *           lhs         .   ki                  =   kiStar
+  | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
+                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq
+                                                          (@tyExprs.kiCnstr |=> (@tyExprs.kiL `mkArrow` kiStar))
+                                                          (@tyExprs.kiCnstr |=> tkgiKi @tkgi_)
+                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExprs.kiCnstr
+%%]
   | Class       loc         .   fo_                 =   if @nmIsDef
                                                         then fitsIn weakFIOpts emptyFE @lUniq
                                                                 (@tyExprs.kiCnstr |=> (@tyExprs.kiL `mkArrow` kiStar))
                                                                 (@tyExprs.kiCnstr |=> tkgiKi @tkgi_)
                                                         else emptyFO
-                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExprs.kiCnstr
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of TyExpr, TyVar

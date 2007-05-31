@@ -152,7 +152,7 @@ SEM RowTyExpr
   | Var         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
 
 SEM PrExpr
-  | Class       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExprs.errSq, Seq.fromList @nmErrs, foErrSq @fo_]
+  | Class       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExprs.errSq, Seq.fromList $ firstNotEmpty [@nmErrs,@clKiNmErrs], foErrSq @fo_]
 
 SEM Expr
   | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]

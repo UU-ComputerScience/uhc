@@ -41,7 +41,7 @@ SEM DataConstr
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq
                                                                  (@fldsKiCnstr |=> @fields.kiL)
                                                                  (repeat kiStar)
-                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @fldsKiCnstr
+                lhs         .   kiCnstr             =   agFakeDependOn @lhs.dataTy $ foCnstr @fo_ |=> @fldsKiCnstr
 %%]
 
 %%[50
