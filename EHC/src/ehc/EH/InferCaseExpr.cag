@@ -31,6 +31,11 @@ SEM CaseAlts
   | Cons        tl          .   knPatTy             =   @hd.patTyCnstr |=> @lhs.knPatTy
 %%]
 
+%%[9
+SEM Expr
+  | Case        alts        .   patTyCnstr          :=  agFakeDependOn @alts.kiCnstr @expr.tyCnstr
+%%]
+
 %%[5_1
 SEM Expr
   | Case        loc         .   (ebTy,ebCnstr,ebErrs,_)
@@ -77,3 +82,11 @@ SEM CaseAlt
                 lhs         .   tyCnstr             :=  cnstrDel (cnstrKeys @patExpr.tyEqCnstr) @expr.tyCnstr
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional fake dependencies
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+%%]
+SEM Expr
+  | Cons        hd          .   tyCnstr             =   agFakeDependOn @hd.predSameScopeCounter @lhs.tyCnstr

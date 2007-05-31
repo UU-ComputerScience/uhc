@@ -559,7 +559,7 @@ valGamTyOfDataFld fldNm g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: Ty } deriving Show
+data TyGamInfo = TyGamInfo { tgiTy :: !Ty } deriving Show
 %%]
 
 %%[6.mkTGIData
@@ -630,7 +630,7 @@ tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6 export(TyKiGamInfo(..),TyKiGam,emptyTKGI)
-data TyKiGamInfo = TyKiGamInfo { tkgiKi :: Ty } deriving Show
+data TyKiGamInfo = TyKiGamInfo { tkgiKi :: !Ty } deriving Show
 
 emptyTKGI :: TyKiGamInfo
 emptyTKGI = TyKiGamInfo kiStar

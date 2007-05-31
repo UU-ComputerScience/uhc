@@ -12,6 +12,28 @@ ATTR AllFuncDep [ | tyGam: TyGam | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inferencing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Decl
+  | Class       decls           .   patTyKiGam      =   emptyGam
+                                .   patKiCnstr      =   emptyCnstr
+                lhs             .   patTyKiGam      =   tyKiGamNameSingleton (hsnClass2Kind @clsNm) (TyKiGamInfo $ mkNewTyVar @lUniq) `gamUnion` @lhs.patTyKiGam
+                                .   patKiCnstr      =   @lhs.patKiCnstr
+%%]
+  | Class       tyPrExpr        .   tyKiGam         =   gamPushNew @lhs.patTyKiGam
+                                .   kiCnstr         =   @lhs.patKiCnstr
+
+%%[9
+SEM Decl
+  | Instance    decls           .   patTyKiGam      =   emptyGam
+                                .   patKiCnstr      =   emptyCnstr
+                lhs             .   patTyKiGam      =   @lhs.patTyKiGam
+                                .   patKiCnstr      =   @lhs.patKiCnstr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -25,9 +47,9 @@ SEM Decl
   | Class       loc             .   clgi1           =   ClGamInfo Ty_Any Ty_Any $ maybe (uidHNm @lUniq) id @mbDefaultInstNm
                                 .   clsNm           =   tyPredMatchNm @hdPrTy
                 lhs             .   patClGam1       =   gamAdd @clsNm @clgi1 @lhs.patClGam1
-                                .   patTyKiGam      =   tyKiGamNameSingleton (hsnClass2Kind @clsNm) (TyKiGamInfo $ mkNewTyVar @lUniq) `gamUnion` @lhs.patTyKiGam
                 tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                                 .   clGam           =   @lhs.patClGam2
+                decls           .   clGam           =   @lhs.patClGam2
                 loc             .   (ctxtPrTyL,hdPrTy)
                                                     =   tyArrowArgsRes @tyPrExpr.ty
                                 .   lSigGam         =   @decls.gathTySigGam
@@ -51,7 +73,6 @@ SEM Decl
                                                         else let dgi = mkDGI @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
                                                              in  gamAdd @dataDictNm dgi @lhs.gathDataGam
 %%]
-                                .   clsNm           =   panicJust "Decl.Class.clsNm" $ @tyPrExpr.mbConNm
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functional dependency
@@ -133,7 +154,6 @@ SEM Decl
                                 .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo $ @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
-                                .   patTyKiGam      =   @lhs.patTyKiGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
                                 .   patValGam       =   @lhs.patValGam
   | InstanceIntro
@@ -165,7 +185,6 @@ SEM PrExpr
                                                     =   case gamLookup @nm @lhs.clGam of
                                                             Just p   -> (p          ,Set.singleton @nm  ,Set.empty          )
                                                             Nothing  -> (emptyCLGI  ,Set.empty          ,Set.singleton @nm  )
-                                .   tkgi_           =   maybe emptyTKGI id $ tyKiGamLookupByName (hsnClass2Kind @nm) @lhs.tyKiGam
                                 .   nmIsDef         =   Set.null @clMissNmS
                 lhs             .   clNmS           =   @clNmS      `Set.union`  @tyExprs.clNmS
                                 .   clMissNmS       =   @clMissNmS  `Set.union`  @tyExprs.clMissNmS
@@ -181,7 +200,7 @@ ATTR TyExpr PrExpr [ | | evTy: Ty ]
 SEM PrExpr
   | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftv @ty}) @fe2 @lUniq3
                                                                           (clgiPrToEvidTy @clgi) ([@ty] `mkArrow` mkNewTyVar @lUniq2)
-                                                        in   snd (tyArrowArgRes (foTy fo))
+                                                        in   snd $ tyArrowArgRes $ foTy fo
   | Arrow       lhs             .   evTy            =   [@arg.evTy] `mkArrow` @res.evTy
 
 SEM TyExpr
