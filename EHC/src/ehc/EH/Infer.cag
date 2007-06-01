@@ -80,8 +80,6 @@ SEM Expr
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tmpoTyCnstr         =   foldr (\tmpo c -> tmpoImplsCnstr tmpo |=> c) emptyCnstr (gamElts @tqoGam)
 %%]
-                decls       .   patValGam           :=  agFakeDependOn @decls.clGam $ gamPushGam @gathTySigGam_l_ @lhs.valGam
-                decls       .   tyCnstr             :=  agFakeDependOn @decls.predSameScopeCounter $ @decls.patTyCnstr
 
 %%[50
 %%]
@@ -364,7 +362,7 @@ ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
 %%[6
-ATTR AllDecl AllExpr [ tyKiGam: TyKiGam | | ]
+ATTR AllDecl AllExpr AllDataConstr AllCase [ tyKiGam: TyKiGam | | ]
 ATTR
   AllPatExpr
 %%[[7
@@ -374,8 +372,6 @@ ATTR
 %%]
 
 %%[6
-ATTR AllDataConstr AllCase [ tyKiGam: TyKiGam | | ]
-
 ATTR AllDecl [ | patTyKiGam: TyKiGam | ]
 %%]
 
@@ -665,6 +661,9 @@ SEM AGItf
 
 %%[20 -6.initKiGam
 ATTR AGItf [ kiGam: KiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   kiGam               =   agFakeDependOn @expr.gUniq @lhs.kiGam		-- fake dependency for uuagc --cycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -786,14 +785,13 @@ SEM Decl
 20070529: Not finished
 
 %%[6
-ATTR AllDecl [ tyKiSigGam: TyKiGam | gathTyKiSigGam: TyKiGam | ]
+ATTR AllDecl [ tyKiSigGam: TyKiGam | | gathTyKiSigGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
 
 SEM Decl
-  | KiSig       lhs         .   gathTyKiSigGam      =   tyKiGamNameSingleton @nm (TyKiGamInfo @sigKi) `gamUnion` @lhs.gathTyKiSigGam
+  | KiSig       lhs         .   gathTyKiSigGam      =   tyKiGamNameSingleton @nm (TyKiGamInfo @sigKi)
 
 SEM Expr
-  | Let         decls       .   gathTyKiSigGam      =   emptyGam
-                            .   tyKiSigGam          =   @decls.gathTyKiSigGam
+  | Let         decls       .   tyKiSigGam          =   @decls.gathTyKiSigGam
 %%]
 
 %%[6
@@ -1108,13 +1106,8 @@ SEM TyExpr
 SEM Decls
   | Cons        hd          .   gUniq               =   agFakeDependOn @hd.predSameScopeCounter @lhs.gUniq
 %%]
-  | Cons        hd          .   predSameScopeCounter=   agFakeDependOn @hd.gUniq @lhs.predSameScopeCounter
-                            .   dataGam             =   agFakeDependOn @hd.predSameScopeCounter @lhs.dataGam
-                            .   clGam               =   agFakeDependOn @hd.patValGam @lhs.clGam
-                            .   tyGam               =   agFakeDependOn @hd.kiCnstr @lhs.tyGam
-                            .   kiCnstr             =   agFakeDependOn @hd.patTyGam @lhs.kiCnstr
 
-%%[9
+%%[7
 SEM CaseAlts
   | Cons        hd          .   kiCnstr             =   agFakeDependOn @hd.gathDataGam @lhs.kiCnstr
 %%]
@@ -1124,12 +1117,7 @@ SEM TyExprs
   | Cons        hd          .   clGam               =   agFakeDependOn @hd.tyVarWildL @lhs.clGam
 %%]
 
-%%[9
-%%]
-SEM DataConstrs
-  | Cons        lhs         .   kiCnstr             =   agFakeDependOn @lhs.dataTy @tl.kiCnstr
-
-%%[9
+%%[7
 SEM DataFieldPatExpr
   | Ext         dataFieldPatExpr
                             .   kiCnstr             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiCnstr

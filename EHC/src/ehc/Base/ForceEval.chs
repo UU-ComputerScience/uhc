@@ -15,7 +15,8 @@
 %%[99 export(ForceEval(..))
 class ForceEval a where
   forceEval :: a -> a
-  forceEval x = x `seq` x
+  forceEval x | x `seq` False = undefined
+              | otherwise     = x
 %%]
 
 %%[99 export(forceEval')
@@ -43,13 +44,17 @@ instance ForceEval Char
 instance ForceEval ()
 
 instance (ForceEval a) => ForceEval (Maybe a) where
-  forceEval x = fmap forceEval x `seq` x
+  forceEval j@(Just x) = forceEval x `seq` j
+  forceEval Nothing    = Nothing
+  -- forceEval x = fmap forceEval x `seq` x
 
 instance (ForceEval a,ForceEval b) => ForceEval (a,b) where
   forceEval x@(a,b) = forceEval a `seq` forceEval b `seq` x
 
 instance ForceEval a => ForceEval [a] where
-  forceEval x = foldl' (\l e -> forceEval e `seq` l) () x `seq` x
+  forceEval [] = []
+  forceEval (x:xs) = forceEval x `seq` forceEval xs
+  -- forceEval x = foldl' (\l e -> forceEval e `seq` l) () x `seq` x
 
 instance (Ord a, ForceEval a) => ForceEval (Set.Set a) where
   forceEval x = forceEval (Set.toList x) `seq` x

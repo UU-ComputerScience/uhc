@@ -20,10 +20,6 @@ ATTR AllTyExpr [ | | tyGam: TyGam ]
 SEM TyExpr
   | Con         loc         .   (tgi_,nmErrs)       =   tyGamLookupErr @nm @lhs.tyGam
 %%]
-  | Con         loc         .  (tgi_,nmErrs)        =   case tyGamLookup @nm @lhs.tyGam of
-                                                          Nothing    ->  (TyGamInfo Ty_Any
-                                                                         ,[rngLift @range mkErr_NamesNotIntrod "type" [@nm]])
-                                                          Just tgi   ->  (tgi,[])
 
 %%[6
 SEM TyExpr
@@ -82,12 +78,14 @@ tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
                             .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+                loc         .   tgi_                :   TyGamInfo
 %%]
 
 %%[6
 SEM TyExpr
   | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t
                             .   tkgi_               =   TyKiGamInfo (tgiTy @tgi_)
+                loc         .   tkgi_               :   TyKiGamInfo
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyVarGather
@@ -99,6 +97,7 @@ SEM TyExpr
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   tgi_                :   TyGamInfo
 %%]
 
 %%[6
@@ -133,6 +132,7 @@ SEM TyVar
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   tgi_                :   TyGamInfo
                 loc         .   tv                  =   tyVar . tgiTy $ @tgi_
 %%]
 
@@ -419,15 +419,34 @@ SEM PrExprs
 %%% Type declaration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Type
+
 %%[11
 SEM Decl
-  | Type        loc         .   typeTgi             =   mkTGI @tyExpr.ty
-                            .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
+  | Type        tyExpr      .   tyGam               =   @lhs.patTyGam
+                loc         .   typeTgi             =   mkTGI @tyExpr.ty
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
-                            .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
-                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
+%%]
+SEM Decl
+  | Type        loc         .   typeTgi             =   mkTGI (mkTyVar @lUniq)
+                lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
+                loc         .   foTy_               =   fitsIn  strongFIOpts @fe @lUniq3
+                                                                (@tyExpr.ty)
+                                                                (@tyExpr.tyCnstr |=> (tgiTy @typeTgi))
+                lhs         .   tyCnstr             =   foCnstr @foTy_ |=> @tyExpr.tyCnstr
+SEM Decl
+  | Type        loc         .   typeTgi             =   mkTGI @tyExpr.ty
+                lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
+
+Kind
+
+%%[11
+SEM Decl
+  | Type        loc         .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
+                lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
+                loc         .   foKi_               =   fitsIn  strongFIOpts emptyFE @lUniq2
                                                                 (@tyExpr.ki)
                                                                 (@tyExpr.kiCnstr |=> (tkgiKi @typeTkgi))
-                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
+                lhs         .   kiCnstr             =   foCnstr @foKi_ |=> @tyExpr.kiCnstr
 %%]
 

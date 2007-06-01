@@ -41,6 +41,7 @@ SEM DataConstr
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq
                                                                  (@fldsKiCnstr |=> @fields.kiL)
                                                                  (repeat kiStar)
+				loc			.	fo_					:	FIOut
                 lhs         .   kiCnstr             =   agFakeDependOn @lhs.dataTy $ foCnstr @fo_ |=> @fldsKiCnstr
 %%]
 
@@ -111,7 +112,8 @@ ATTR AllDataConstr [ | patValGam: ValGam | ]
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
                             .   dataConProdTy       =   mkProdApp @fields.tyL
-                            .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
+                loc         .   dataConProdTy       :   Ty
+                loc         .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
                                                              fvU = ftv @dataConProdTy
                                                         in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
                 lhs         .   patValGam           =   gamUnions
@@ -163,8 +165,6 @@ SEM DataConstr
                             .   eqEqCnstr           =   assocLToCnstr . map (\(v,t) -> (v,Ty_Equal v t)) . cnstrToAssocTyL $ @eqs.eqTyCnstr
                             .   dataUnConTy         :=  [@eqEqCnstr |=> @lhs.dataTy] `mkArrow` (@eqs.eqTyCnstr |=> @dataConProdTy)
 %%]
-
-agFakeDependOn
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Equal constraints for constructors
@@ -231,6 +231,7 @@ SEM DataConstr
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @fields.fldTyL
                             .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity @lhs.maxArity
+     			loc			.	ctag				: 	CTag
 %%]]
 %%]
 
@@ -259,6 +260,7 @@ SEM DataField
   | Field       loc         .   fldTyL              =   case @mbLabels of
                                                           Just ls -> zipWith (\l t -> (Just l,t)) ls (repeat @tyExpr.ty)
                                                           _       -> [(Nothing,@tyExpr.ty)]
+				loc			.	fldTyL				:	FldTyL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
