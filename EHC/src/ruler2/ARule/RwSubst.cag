@@ -400,3 +400,27 @@ SEM Expr
                             .   ecElimGam   =   ecGamInsert @expr.replEc @cnstr.replEc @expr.ecElimGam
 
 %%]
+
+-------------------------------------------------------------------------
+-- Disable case-optimizations of the AG system for this AG file
+--
+-- Required:
+--  * exprElimCnstr emulates an higher-order Expr attribute, of an Expr,
+--    which effectively constructs an infintely-deep nested tree (normally
+--    not in practice, because depending on a stop-criterium, none of the
+--    synthesized attributes of this higher-order attribute are used, which
+--    effectively stops the iteration process.
+--  * it has two synthesized attributes, the 'eliminated' expr, and some
+--    environment varEcGam.
+--  * the function mkRwExpr contains the stop criterium. It is parameterized
+--    with the environment of the next iteration, but will not touch it if
+--    the stop-criterium applies: in that case it used an empty environment.
+--  * unfortunately, the case-optimizations puts the environment varEcGam as
+--    scrutenee of a case expression and it is forced during evaluation
+--    (which is wrong). It subsequently triggers the evaluation of the next
+--    iteration, bypassing the stop criterium, and causing an infinite loop.
+-------------------------------------------------------------------------
+
+%%[1 ag
+PRAGMA nocase
+%%]
