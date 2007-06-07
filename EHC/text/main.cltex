@@ -73,6 +73,11 @@
 \documentclass[10pt,headexclude,footexclude]{article}
 %%]
 
+%%[27
+%\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
+\documentclass[10pt,headexclude,footexclude]{article}
+%%]
+
 %%[18
 \documentclass[ignorenonframetext]{beamer}
 %%]
@@ -99,6 +104,11 @@
 \setlength{\paperheight}{240mm}
 
 %%[13
+\setlength{\paperwidth}{210mm}
+\setlength{\paperheight}{297mm}
+%%]
+
+%%[27
 \setlength{\paperwidth}{210mm}
 \setlength{\paperheight}{297mm}
 %%]
@@ -335,6 +345,11 @@
 \pagestyle{empty}
 %%]
 
+%%[27
+\setlength\parindent{0pt}
+\pagestyle{empty}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beamer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -376,6 +391,10 @@
 %%]
 
 %%[13
+\usepackage{tikz}
+%%]
+
+%%[27
 \usepackage{tikz}
 %%]
 
@@ -913,6 +932,10 @@ WWW home page:
 %%]
 
 %%[13
+\tolerance=400
+%%]
+
+%%[27
 \tolerance=400
 %%]
 
@@ -2133,6 +2156,11 @@ To be done ...
 %%[13
 %%@Poster.poster
 %%]
+
+%%[27
+%%@PosterLDL.posterLDL
+%%]
+
 \TPGrid[10mm,10mm]{100}{100}
 \TPMargin{.5ex}
 %\textblockcolour{yellow}

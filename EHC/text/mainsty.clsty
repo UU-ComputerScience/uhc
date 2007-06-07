@@ -53,6 +53,10 @@
  \includegraphics[scale=#1]{#2.pdf}
 }
 
+\newcommand{\FigScaledJPEG}[2]{%
+ \includegraphics[scale=#1]{#2.jpg}
+}
+
 \newcommand{\FigPDF}[1]{%
  \FigScaledPDF{1}{#1}
 }
