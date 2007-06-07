@@ -298,12 +298,12 @@ isLetProveFailure glob x
 
 %%[99
 instance ForceEval Guard where
-  forceEval x@(HasStrictCommonScope   sc1 sc2 sc3) = forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` x
-  forceEval x@(IsStrictParentScope    sc1 sc2 sc3) = forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` x
-  forceEval x@(IsVisibleInScope       sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
-  forceEval x@(NotEqualScope          sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
-  forceEval x@(EqualScope             sc1 sc2    ) = forceEval sc1 `seq` forceEval sc2 `seq` x
-  forceEval x@(NonEmptyRowLacksLabel  r o t l    ) = forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` x
+  forceEval x@(HasStrictCommonScope   sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
+  forceEval x@(IsStrictParentScope    sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
+  forceEval x@(IsVisibleInScope       sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
+  forceEval x@(NotEqualScope          sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
+  forceEval x@(EqualScope             sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
+  forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
 
 %%]
 

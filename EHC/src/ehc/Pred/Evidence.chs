@@ -22,9 +22,9 @@ Derived from work by Gerrit vd Geest.
 
 %%[9 export(Evidence(..))
 data Evidence  p info
-  =  Evid_Unresolved p
-  |  Evid_Proof      p  info  [Evidence p info]
-  |  Evid_Ambig      p        [(info,[Evidence p info])]
+  =  Evid_Unresolved !p
+  |  Evid_Proof      !p  !info  ![Evidence p info]
+  |  Evid_Ambig      !p         ![(info,[Evidence p info])]
 %%]
 
 %%[9

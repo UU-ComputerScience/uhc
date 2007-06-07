@@ -337,22 +337,25 @@ ecuStoreCore :: EcuUpdater Core.CModule
 %%[[8
 ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 %%][99
-ecuStoreCore x ecu = ecu { ecuMbCore = Just $! forceEval x }
+ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
+ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
 
 ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
-ecuStoreGrin x ecu = ecu { ecuMbGrin = Just $! forceEval x }
+ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
+ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
 
 ecuStoreGrinBC :: EcuUpdater GrinBC.Module
 %%[[8
 ecuStoreGrinBC x ecu = ecu { ecuMbGrinBC = Just x }
 %%][99
-ecuStoreGrinBC x ecu = ecu { ecuMbGrinBC = Just $! forceEval x }
+ecuStoreGrinBC x ecu | forceEval x `seq` True = ecu { ecuMbGrinBC = Just x }
 %%]]
+ecuStoreGrinBC x ecu | x `seq` True = ecu { ecuMbGrinBC = Just x }
 
 ecuStoreGrinBCSem :: EcuUpdater PP_Doc
 ecuStoreGrinBCSem x ecu = ecu { ecuMbGrinBCSem = Just x }
@@ -722,7 +725,7 @@ prepFlow :: ForceEval a => a -> a
 prepFlow = forceEval
 
 gamUnionFlow :: (Ord k, ForceEval (Gam k v)) => Gam k v -> Gam k v -> Gam k v
-gamUnionFlow g1 g2 = forceEval g1 `seq` gamUnion g1 g2
+gamUnionFlow g1 g2 | forceEval g1 `seq` True = gamUnion g1 g2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1103,20 +1106,29 @@ cpTranslateEH2Core modNm
                  mbEHSem= ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  core   = EHSem.cmodule_Syn_AGItf ehSem
+%%[[8
                  errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
+%%][101
+                 errs   = []
+%%]]
          ;  when (isJust mbEHSem)
-                 (do { cpUpdCU modNm $! ecuStoreCore $! core
+                 (do { cpUpdCU modNm (ecuStoreCore core)
                      ; cpSetLimitErrsWhen 5 "Type checking" errs
+%%[[8
+%%][101
+%%]]
                      ; when (ehcOptEmitEH opts)
                             (lift $ putPPFile (fpathToStr (fpathSetSuff "eh2" fp)) (EHSem.pp_Syn_AGItf ehSem) 1000)
                      ; when (ehcOptShowEH opts)
                             (lift $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
 %%[[8
                      ; when (ehcOptShowAst opts)
+                            (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
 %%][99
                      ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
-%%]]
                             (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+%%][100
+%%]]
                      }
                  )
          }

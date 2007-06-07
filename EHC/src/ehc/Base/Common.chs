@@ -939,7 +939,9 @@ rngLift r v = v
 type RngLift x = Range -> x
 
 rngLift :: Range -> (Range -> v) -> v
-rngLift r mkv = mkv r
+rngLift r mkv
+  = x `seq` x
+  where x = mkv r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1049,12 +1051,27 @@ data Backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-instance ForceEval HsName
-instance ForceEval CTag
+instance ForceEval HsName where
+  forceEval x@(HNm     s) | forceEval s `seq` True = x
+  forceEval x@(HNmNr _ n) | forceEval n `seq` True = x
+  forceEval x@(HNmQ    l) | forceEval l `seq` True = x
+  forceEval x                                      = x
+
+instance ForceEval CTag where
+  forceEval x@(CTag tn n t a ma) | forceEval tn `seq` forceEval n `seq` True = x
+  forceEval x = x
+
+instance ForceEval Range where
+  forceEval x@(Range_Range b e) | forceEval b `seq` forceEval e `seq` True = x
+  forceEval x = x
+
+instance ForceEval Pos where
+  forceEval x@(Pos l c f) | forceEval l `seq` forceEval c `seq` forceEval f `seq` True = x
+
 instance ForceEval IdOcc
 
 instance ForceEval UID where
-  forceEval x@(UID l) = forceEval l `seq` x
+  forceEval x@(UID l) | forceEval l `seq` True = x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

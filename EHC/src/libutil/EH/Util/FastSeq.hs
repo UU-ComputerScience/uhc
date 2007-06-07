@@ -23,11 +23,11 @@ infixr 5 :++:, :+::
 infixl 5 ::+:
 
 data FastSeq a
-  = FastSeq a :++: FastSeq a
-  |         a :+:: FastSeq a
-  | FastSeq a ::+:         a
-  | FSeq    a
-  | FSeqL   [a]
+  = !(FastSeq a) :++: !(FastSeq a)
+  |          !a  :+:: !(FastSeq a)
+  | !(FastSeq a) ::+:          !a
+  | FSeq    !a
+  | FSeqL   ![a]
   | FSeqNil
 
 type Seq a = FastSeq a
@@ -98,7 +98,7 @@ union s1      FSeqNil = s1
 union s1      s2      = s1 :++: s2
 
 unions :: [FastSeq a] -> FastSeq a
-unions = foldr (:++:) FSeqNil
+unions = L.foldl' (flip (:++:)) FSeqNil
 
 -------------------------------------------------------------------------
 -- Misc

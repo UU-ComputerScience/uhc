@@ -26,6 +26,10 @@ WRAPPER TyAGItf
 %%[9 hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
 %%]
 
+%%[99
+%%]
+PRAGMA nostrictcase
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell importable interface to Ty quantify
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

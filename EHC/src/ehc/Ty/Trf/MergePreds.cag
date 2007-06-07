@@ -120,7 +120,7 @@ SEM Ty
   | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvS @lhs.prLL
   | App         (loc.herePrL,func.prLL,arg.prLL)        =   if @isSpineRoot
                                                             then  if @appIsArrow
-                                                                  then  let  (h,r) = prLLArrowSplit (@arrArgTvS `Set.union` @lhs.qSurrTvS) @lhs.prLL
+                                                                  then  let  (h,r) = prLLArrowSplit (@frTvSL !! 1 `Set.union` @lhs.qSurrTvS) @lhs.prLL
                                                                         in   (h,[],r)
                                                                   else  let  (h,_) = prLLArrowSplit (@frTvS `Set.union` @lhs.qSurrTvS) @lhs.prLL
                                                                         in   (h,[],[])

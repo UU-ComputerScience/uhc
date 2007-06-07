@@ -279,8 +279,6 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllDataConstr [ dataAltTy: Ty | | ]
-
 SEM DataConstr
   | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
                                                     nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
@@ -450,6 +448,45 @@ SEM RecPatExpr
 %%[10
 SEM RecPatExpr
   | Ext         loc         .   offset      :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercions resulting from pred usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Expr
+  | App AppImpred
+                loc         .   appImplsCoeL        =   (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL) ++ [CoeImplApp $ ipoId @imPrvOcc]
+                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     loc         .   appImplsCoeL        =   []
+                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
+%%]
+
+%%[9
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   lamBodyCoeL         =   mkLamBodyCoe
+                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e]))
+                                                            @body.appArgCoeL
+%%]
+
+%%[9
+SEM Expr
+  | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
+  | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
+%%]
+
+%%[12
+SEM Expr
+  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -889,47 +926,5 @@ rceMatchBoolExpr env (arg:args) alts
               )
             | (u,RAlt_Alt (RPat_BoolExpr _ b : remPats) e) <- zip [0..] alts
             ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Id of case
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-SEM Expr
-  | Case        loc         .   caseIds     =   maybe (Set.singleton uidStart) id @mbCaseIds
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% RCEEnv
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-SEM Expr
-  | Lam Sel DataFields
-%%[[12
-    LamImpl
-%%]]
-                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
-                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam
-                                                            , rceCaseIds = @caseIds
-                                                            }
-%%]
-
-%%[8
-SEM PatExpr
-  | AppTop Rec DataFields
-                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-%%]
-
-%%[8
-SEM Decl
-  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-%%]
-
-%%[95
-SEM Decl
-  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 

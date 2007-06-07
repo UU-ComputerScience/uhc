@@ -15,11 +15,11 @@
 %%[95 export(DerivClsFld(..),DerivClsMp)
 data DerivClsFld
   = DerivClsFld
-      { dcfNm                       :: HsName                                   -- name of field
-      , dcfTy                       :: Ty                                       -- type of field
-      , dcfInitialArgL              :: [HsName]                                 -- initial arguments for function, passed to dcfFoldSubsCExpr
+      { dcfNm                       :: !HsName                                  -- name of field
+      , dcfTy                       :: !Ty                                      -- type of field
+      , dcfInitialArgL              :: ![HsName]                                -- initial arguments for function, passed to dcfFoldSubsCExpr
       , dcfInitialSubArgL           :: DataTagInfo -> [CExpr]                   -- initial arguments for constituents
-      , dcfNrOmitTailArg            :: Int                                      -- nr of args not passed, i.e. how much to omit for partial app
+      , dcfNrOmitTailArg            :: !Int                                     -- nr of args not passed, i.e. how much to omit for partial app
       , dcfFoldSubsCExpr            :: UID										-- construct out of constituents
                                        -> RCEEnv
                                        -> DataTagInfo							-- this tag info
@@ -29,8 +29,8 @@ data DerivClsFld
                                        -> CExpr
       , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]					-- all tag info + subs
                                        -> CExpr                                 -- when class member takes no args
-      , dcfAllTagLtCExpr            :: CExpr                                    -- when tags are < previous
-      , dcfAllTagGtCExpr            :: CExpr                                    -- when tags are > previous
+      , dcfAllTagLtCExpr            :: !CExpr                                   -- when tags are < previous
+      , dcfAllTagGtCExpr            :: !CExpr                                   -- when tags are > previous
       }
 
 type DerivClsMp = Map.Map HsName (AssocL HsName DerivClsFld)

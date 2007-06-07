@@ -144,9 +144,15 @@ SEM GrGlobal
 
 SEM GrPatAlt
   | Node       loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL
+  			   loc  .  var2id                     :  LookupList
+  			        .  newNames                   :  {[HsName]}
+  			        .  unique                     :  Int
 
 SEM GrPatLam
   | VarNode    loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL.names
+  			   loc  .  var2id                     :  LookupList
+  			        .  newNames                   :  {[HsName]}
+  			        .  unique                     :  Int
   | Var        lhs  .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
                loc  .  newName  : HsName
@@ -166,6 +172,9 @@ SEM GrExpr
 SEM GrBind
   | Bind      loc   .  (var2id2, nn, unique3)   =  addList @loc.unique2 @lhs.var2id (reverse @argNmL)
                     .  newNames                 =  reverse @nn
+  			  loc   .  var2id2                  :  LookupList
+  			        .  nn                       :  {[HsName]}
+  			        .  unique3                  :  Int
               expr  .  var2id                   =  @loc.var2id2
                     .  unique                   =  @loc.unique3
               lhs   .  unique                   =  @expr.unique

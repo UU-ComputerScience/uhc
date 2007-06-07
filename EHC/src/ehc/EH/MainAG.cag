@@ -62,8 +62,26 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 ag import({EH/AbsSyn},{EH/Pretty},{EH/PrettyAST},EHRulerRules,{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/ExtraChecks},{EH/GatherError},{EH/Range})
+%%[1 ag import({EH/AbsSyn},EHRulerRules,{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/Range})
 WRAPPER AGItf
+%%]
+
+%%[1.PrettyAST ag import({EH/PrettyAST})
+%%]
+
+%%[100 -1.PrettyAST
+%%]
+
+%%[1.GatherError ag import({EH/GatherError},{EH/ExtraChecks})
+%%]
+
+%%[101 -1.GatherError
+%%]
+
+%%[1.Pretty ag import({EH/Pretty})
+%%]
+
+%%[10101 -1.Pretty
 %%]
 
 %%[2 ag import({EH/Uniq})
@@ -78,7 +96,7 @@ WRAPPER AGItf
 %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
 %%]
 
-%%[8 ag import({EH/ToCore})
+%%[8.ToCore ag import({EH/ToCore})
 %%]
 
 %%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
@@ -86,7 +104,8 @@ WRAPPER AGItf
 
 For now, because of uuagc bug...
 
-%%[9
+%%[99
+PRAGMA strictcase
 %%]
 PRAGMA nocycle
 

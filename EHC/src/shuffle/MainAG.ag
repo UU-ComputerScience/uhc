@@ -164,7 +164,7 @@ voAllLE_4 opts
         vm = Map.fromList $ zip (sortBy (cmpByVersionOrder vo) vs) [1..]
 
 voDefault :: VersionOrder
-voDefault = [take 100 (map VRef [1..])]
+voDefault = [take 1000 (map VRef [1..])]
 
 isAllowedCompilerVersion :: CompilerRestriction -> [Int] -> Bool
 isAllowedCompilerVersion (Restricted mLower mUpper) v

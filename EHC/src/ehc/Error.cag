@@ -19,6 +19,9 @@
 %%[9 hs import({%{EH}Core})
 %%]
 
+%%[99 hs import({%{EH}Base.ForceEval})
+%%]
+
 %%[9
 DERIVING *     : Show
 %%]
@@ -67,8 +70,8 @@ mkNestErr' :: Range -> PP_Doc -> [ErrSq] -> ErrSq
 mkNestErr' r wher errs = Seq.fromList $ mkNestErr r wher $ Seq.toList $ Seq.unions errs
 
 mkNestErr :: Range -> PP_Doc -> ErrL -> ErrL
-mkNestErr r wher errL | null errL = []
-                      | otherwise = [Err_NestedIn r wher errL]
+mkNestErr r wher errL | null (forceEval errL) = []
+                      | otherwise             = [Err_NestedIn r wher errL]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,4 +91,12 @@ mkErr_NamesNotIntrod' r m ns = Err_NamesNotIntrod r m (assocLMapKey pp ns)
 
 mkErr_NamesNotIntrod :: Range -> String -> [HsName] -> Err
 mkErr_NamesNotIntrod r m ns = mkErr_NamesNotIntrod' r m (zip (map pp ns) (repeat Nothing))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Force eval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs
+instance ForceEval Err
 %%]

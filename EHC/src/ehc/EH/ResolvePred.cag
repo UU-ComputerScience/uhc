@@ -77,45 +77,6 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Coercions resulting from pred usage
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-SEM Expr
-  | App AppImpred
-                loc         .   appImplsCoeL        =   (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL) ++ [CoeImplApp $ ipoId @imPrvOcc]
-                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
-%%]
-
-%%[12
-SEM Expr
-  | AppImpl     loc         .   appImplsCoeL        =   []
-                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
-%%]
-
-%%[9
-SEM Expr
-  | Lam
-%%[[12
-    LamImpl
-%%]]
-                loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e]))
-                                                            @body.appArgCoeL
-%%]
-
-%%[9
-SEM Expr
-  | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
-  | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
-%%]
-
-%%[12
-SEM Expr
-  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings for preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

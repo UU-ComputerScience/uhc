@@ -108,17 +108,17 @@ instance PPForHI ModEntRel where
 
 %%[20
 data ModExp
-  = ModExpEnt ModEntSpec
+  = ModExpEnt !ModEntSpec
   | ModExpMod !HsName
   deriving (Show)
 
 data ModEntSpec
-  = ModEntSpec !HsName (Maybe ModEntSubSpec)
+  = ModEntSpec !HsName !(Maybe ModEntSubSpec)
   deriving (Show)
 
 data ModEntSubSpec
   = ModEntSubAll
-  | ModEntSubs [HsName]
+  | ModEntSubs ![HsName]
   deriving (Show)
 
 data ModImp

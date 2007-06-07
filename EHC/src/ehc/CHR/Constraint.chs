@@ -124,9 +124,9 @@ instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
 
 %%[99
 instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
-  forceEval x@(Prove     p     ) = forceEval p `seq` x
-  forceEval x@(Assume    p     ) = forceEval p `seq` x
-  forceEval x@(Reduction p i ps) = forceEval p `seq` forceEval i `seq` forceEval ps `seq` x
+  forceEval x@(Prove     p     ) | forceEval p `seq` True = x
+  forceEval x@(Assume    p     ) | forceEval p `seq` True = x
+  forceEval x@(Reduction p i ps) | forceEval p `seq` forceEval i `seq` forceEval ps `seq` True = x
 %%]
 
 

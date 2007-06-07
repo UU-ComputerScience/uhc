@@ -65,8 +65,8 @@ instance PP ToCoreRes where
 %%[9 export(AmbigEvid(..))
 data AmbigEvid
   = AmbigEvid
-      { ambigevidPredOcc 	:: CHRPredOcc
-      , ambigevidInfos   	:: [RedHowAnnotation]
+      { ambigevidPredOcc 	:: !CHRPredOcc
+      , ambigevidInfos   	:: ![RedHowAnnotation]
       }
 %%]
 

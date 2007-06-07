@@ -79,7 +79,10 @@ data EHCOpts
   = EHCOpts
       {  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+%%[[1
       ,  ehcOptShowAst        ::  Bool              -- show decorated EH AST on stdout
+%%][100
+%%]]
       ,  ehcOptShowTopTyPP    ::  Bool              -- show EH type of expression
       ,  ehcOptHelp           ::  Bool              -- print help
       ,  ehcOptVersion        ::  Bool              -- print version info
@@ -153,7 +156,10 @@ defaultEHCOpts
 %%][99
       ,  ehcOptShowEH         =   False
 %%]]
+%%[[1
       ,  ehcOptShowAst        =   False
+%%][100
+%%]]
       ,  ehcOptShowTopTyPP    =   False
       ,  ehcOptHelp           =   False
       ,  ehcOptVersion        =   False
@@ -291,7 +297,10 @@ ehcCmdLineOpts
                                 Just "hs"    -> o { ehcOptShowHS       = True      }
                                 Just "eh"    -> o { ehcOptShowEH       = True      }
                                 Just "pp"    -> o { ehcOptShowEH       = True      }
+%%[[1
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
+%%][100
+%%]]
 %%[[8
                                 Just "grin"  -> o { ehcOptShowGrin     = True      }
 %%]]
@@ -302,7 +311,10 @@ ehcCmdLineOpts
          oHelp           o =  o { ehcOptHelp          = True    }
          oVersion        o =  o { ehcOptVersion       = True    }
          oDebug          o =  o { ehcOptDebug         = True
+%%[[1
                                 , ehcOptShowAst       = True
+%%][100
+%%]]
                                 }
          oStopAt       s o =  o { ehcStopAtPoint       =
                                     case s of

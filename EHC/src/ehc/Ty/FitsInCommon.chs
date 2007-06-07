@@ -53,20 +53,20 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foCnstr  
 %%]
 
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
-data FIOut  =  FIOut    {  foCnstr           ::  Cnstr               ,  foTy              ::  Ty
-                        ,  foUniq            ::  UID                 ,  foMbAppSpineInfo  ::  Maybe AppSpineInfo
-                        ,  foErrL            ::  ErrL  
+data FIOut  =  FIOut    {  foCnstr           :: !Cnstr               ,  foTy              :: !Ty
+                        ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
+                        ,  foErrL            :: !ErrL  
 %%]
 %%[9
-                        ,  foCSubst          ::  CSubst              ,  foPredOccL        ::  [PredOcc]
-                        ,  foLRCoe           ::  LRCoe
-                        ,  foGathCnstrMp     ::  CHRPredOccCnstrMp
+                        ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
+                        ,  foLRCoe           :: !LRCoe
+                        ,  foGathCnstrMp     :: !CHRPredOccCnstrMp
 %%]
 %%[10
-                        ,  foRowCoeL         ::  AssocL HsName Coe
+                        ,  foRowCoeL         :: !(AssocL HsName Coe)
 %%]
 %%[50
-                        ,  foEqCnstr         ::  Cnstr
+                        ,  foEqCnstr         :: !Cnstr
 %%]
 %%[4.FIOut.tl
                         }

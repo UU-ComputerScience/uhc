@@ -395,9 +395,9 @@ chrSolve'' env chrStore cnstrs prevState
 
 %%[99
 instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
-  forceEval x@(StoredCHR c i ks id) = forceEval c `seq` forceEval ks `seq` forceEval id `seq` x
+  forceEval x@(StoredCHR c i ks id) | forceEval c `seq` forceEval ks `seq` forceEval id `seq` True = x
 
 instance ForceEval (StoredCHR p i g s) => ForceEval (CHRStore p i g s) where
-  forceEval x@(CHRStore t) = forceEval t `seq` x
+  forceEval x@(CHRStore t) | forceEval t `seq` True = x
 %%]
 
