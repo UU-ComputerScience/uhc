@@ -590,6 +590,48 @@ SEM PrExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Id of case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Expr
+  | Case        loc         .   caseIds     =   maybe (Set.singleton uidStart) id @mbCaseIds
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% RCEEnv (primarily for ToCore)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Expr
+  | Lam Sel DataFields
+%%[[12
+    LamImpl
+%%]]
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
+                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam
+                                                            , rceCaseIds = @caseIds
+                                                            }
+%%]
+
+%%[8
+SEM PatExpr
+  | AppTop Rec DataFields
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%[8
+SEM Decl
+  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%[95
+SEM Decl
+  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1099,6 +1141,98 @@ SEM TyExpr
   | Var			lhs			.	mbConNm				=	Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The XX_App function name of a XX, if any
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Expr.ConNm
+ATTR Expr [ | | appFunNm: HsName ]
+
+SEM Expr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - Con App
+                lhs     .   appFunNm    =   hsnUnknown
+%%]
+
+%%[4
+SEM Expr
+  | AppImpred   lhs     .   appFunNm    :=  @func.appFunNm
+%%]
+
+%%[7
+ATTR RecExpr [ | | extNm: HsName ]
+
+SEM RecExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext Upd
+                lhs     .   extNm       =   hsnUnknown
+
+SEM Expr
+  | Rec         loc     .   appFunNm    :=  @recExpr.extNm
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
+%%]
+
+%%[1
+ATTR TyExpr [ | | appFunNm: HsName ]
+
+SEM TyExpr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - App Con
+                lhs     .   appFunNm    =   hsnUnknown
+
+%%]
+
+%%[7
+ATTR RowTyExpr [ | | extNm: HsName ]
+
+SEM RowTyExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .   extNm       =   hsnUnknown
+
+SEM TyExpr
+  | Row         lhs     .   appFunNm    :=  @rowTyExpr.extNm
+%%]
+
+%%[1.PatExpr
+ATTR PatExpr [ | | appFunNm: HsName ]
+
+SEM PatExpr
+  | Con         loc     .   appFunNm    =   @nm
+  | AppTop      loc     .   appFunNm    =   @patExpr.appFunNm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - App Con
+                lhs     .   appFunNm    =   hsnUnknown
+%%]
+
+%%[7
+ATTR RecPatExpr [ | | extNm: HsName ]
+
+SEM RecPatExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .   extNm       =   hsnUnknown
+
+SEM PatExpr
+  | Rec         loc     .   appFunNm    :=  @recPatExpr.extNm
+%%]
+
+%%[6
+ATTR KiExpr [ | | appFunNm: HsName ]
+
+SEM KiExpr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - Con App
+                lhs     .   appFunNm    =   hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional fake dependencies
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1123,3 +1257,4 @@ SEM DataFieldPatExpr
                             .   kiCnstr             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiCnstr
 
 %%]
+

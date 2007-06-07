@@ -158,6 +158,10 @@ SEM Decl
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
 %%]
 
+%%[8
+ATTR AllDataConstr [ dataAltTy: Ty | | ]
+%%]
+
 !!!!! Fix following w.r.t. dataUnConTy
 %%[50
 SEM DataConstr

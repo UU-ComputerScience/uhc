@@ -51,7 +51,6 @@ SEM Ty
                                                 then hdAndTl (reverse @arg.frTvSL)
                                                 else (Set.empty,@arg.frTvSL ++ @func.frTvSL)
                 loc         .   frTvS       :=  Set.unions (@frRowTvS : @frTvSL)
-                            .   arrArgTvS   =   @frTvSL !! 1
   | Pred        loc         .   frTvS       =   Set.unions @pr.frTvSL
   | Impls       loc         .   frTvS       =   Set.unions @impls.frTvSL
   | Pred Impls  lhs         .   frTvSL      =   [@frTvS]

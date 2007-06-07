@@ -12,42 +12,39 @@
 
 %%[99.WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrModule GrExpr GrTag
+
+PRAGMA strictcase
 %%]
 
 %%[99 hs
 grmodForceEval :: GrModule -> GrModule
-grmodForceEval grmod
-  = trf_Syn_GrModule t `seq` grmod
+grmodForceEval grmod | trf_Syn_GrModule t `seq` True = grmod
   where t = wrap_GrModule (sem_GrModule grmod)
             $ Inh_GrModule
 
 %%]
 
 %%[99 hs
-instance ForceEval GrModule {- where
-  forceEval x = trf_Syn_GrModule t `seq` x
+instance ForceEval GrModule where
+  forceEval x | trf_Syn_GrModule t `seq` True = x
               where t = wrap_GrModule (sem_GrModule x)
                         $ Inh_GrModule
--}
 
-instance ForceEval GrExpr {- where
-  forceEval x = trf_Syn_GrExpr `seq` x
+instance ForceEval GrExpr where
+  forceEval x | trf_Syn_GrExpr `seq` True = x
               where t = wrap_GrExpr (sem_GrExpr x)
                         $ Inh_GrExpr
--}
 
-instance ForceEval GrTag {- where
-  forceEval x = trf_Syn_GrTag `seq` x
+instance ForceEval GrTag where
+  forceEval x | trf_Syn_GrTag `seq` True = x
               where t = wrap_GrTag (sem_GrTag x)
                         $ Inh_GrTag
--}
 %%]
 
 %%[99 hs
-instance ForceEval GrInl {- where
-  forceEval i@(GrInl_Call a e) = forceEval a `seq` forceEval e `seq` i
-  forceEval i@(GrInl_CAF    e) = forceEval e `seq` i
--}
+instance ForceEval GrInl where
+  forceEval i@(GrInl_Call a e) | forceEval a `seq` forceEval e `seq` True = i
+  forceEval i@(GrInl_CAF    e) | forceEval e `seq` True = i
 
 instance ForceEval EvApTagElt
 %%]

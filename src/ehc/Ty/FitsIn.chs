@@ -87,9 +87,9 @@ foAppLRCoe' opts (fCS,fLRCoe) c cs ce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.FIIn export(FIIn(..))
-data FIIn   =  FIIn     {  fiFIOpts          ::  FIOpts              ,  fiUniq            ::  UID
+data FIIn   =  FIIn     {  fiFIOpts          :: !FIOpts              ,  fiUniq            :: !UID
 %%[[9
-                        ,  fiEnv             ::  FIEnv
+                        ,  fiEnv             :: !FIEnv
 %%]]
                         }
 %%]
@@ -119,14 +119,14 @@ fiUpdOpts upd fi = fi {fiFIOpts = upd (fiFIOpts fi)}
 data FIEnv
   =   FIEnv
 %%[[9
-        {   feEHCOpts       ::  EHCOpts
-        ,   feDontBind      ::  TyVarIdS
-        ,   fePredScope     ::  PredScope
+        {   feEHCOpts       :: !EHCOpts
+        ,   feDontBind      :: !TyVarIdS
+        ,   fePredScope     :: !PredScope
 %%[[11
-        ,   feTyGam         ::  TyGam
+        ,   feTyGam         :: !TyGam
 %%]]
 %%[[99
-        ,   feRange         ::  Range
+        ,   feRange         :: !Range
 %%]]
         }
 %%]]

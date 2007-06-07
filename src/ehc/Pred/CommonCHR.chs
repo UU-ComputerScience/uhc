@@ -33,16 +33,16 @@ This file exists to avoid module circularities.
 
 %%[9 export(RedHowAnnotation(..))
 data RedHowAnnotation
-  =  RedHow_ByInstance    !HsName  Pred  PredScope		-- inst name, for pred, in scope
-  |  RedHow_BySuperClass  !HsName  !Int   !CTag			-- field name, offset, tag info of dict
-  |  RedHow_ProveObl      !UID  PredScope
-  |  RedHow_Assumption    !VarUIDHsName  PredScope
+  =  RedHow_ByInstance    !HsName  !Pred  !PredScope		-- inst name, for pred, in scope
+  |  RedHow_BySuperClass  !HsName  !Int   !CTag				-- field name, offset, tag info of dict
+  |  RedHow_ProveObl      !UID  !PredScope
+  |  RedHow_Assumption    !VarUIDHsName  !PredScope
   |  RedHow_ByScope
 %%[[10
-  |  RedHow_ByLabel       Label LabelOffset PredScope
+  |  RedHow_ByLabel       !Label !LabelOffset !PredScope
 %%]]
 %%[[13
-  |  RedHow_Lambda        !UID PredScope
+  |  RedHow_Lambda        !UID !PredScope
 %%]]
   deriving (Eq, Ord)
 %%]
@@ -118,13 +118,16 @@ gathPredLToAssumeCnstrMp l = cnstrMpFromList [ mkAssumeConstraint (poPr po) (poI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-instance ForceEval VarUIDHsName
+instance ForceEval VarUIDHsName where
+  forceEval x@(VarUIDHs_Name i n) | forceEval i `seq` forceEval n `seq` True = x
+  forceEval x@(VarUIDHs_UID  i  ) | forceEval i `seq` True = x
+  forceEval x@(VarUIDHs_Var  i  ) | forceEval i `seq` True = x
 
 instance ForceEval RedHowAnnotation where
-  forceEval x@(RedHow_ByInstance   _ p sc)  = forceEval p `seq` forceEval sc `seq` x
-  forceEval x@(RedHow_ProveObl     _   sc)  = forceEval sc `seq` x
-  forceEval x@(RedHow_Assumption   _   sc)  = forceEval sc `seq` x
-  forceEval x@(RedHow_ByLabel      l o sc)  = forceEval l `seq` forceEval o `seq` forceEval sc `seq` x
-  forceEval x@(RedHow_Lambda       _   sc)  = forceEval sc `seq` x
+  forceEval x@(RedHow_ByInstance   _ p sc)  | forceEval p `seq` forceEval sc `seq` True = x
+  forceEval x@(RedHow_ProveObl     _   sc)  | forceEval sc `seq` True = x
+  forceEval x@(RedHow_Assumption   _   sc)  | forceEval sc `seq` True = x
+  forceEval x@(RedHow_ByLabel      l o sc)  | forceEval l `seq` forceEval o `seq` forceEval sc `seq` True = x
+  forceEval x@(RedHow_Lambda       _   sc)  | forceEval sc `seq` True = x
   forceEval x                               = x
 %%]

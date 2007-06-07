@@ -996,37 +996,37 @@ instance PP TyKiGamInfo where
 
 %%[99
 instance ForceEval v => ForceEval (LGamElt v) where
-  forceEval x@(LGamElt l v) = forceEval v `seq` x
+  forceEval x@(LGamElt l v) | forceEval v `seq` True = x
 
 instance (ForceEval k, ForceEval v) => ForceEval (LGam k v) where
-  forceEval x@(LGam l m) = forceEval m `seq` x
+  forceEval x@(LGam l m) | forceEval m `seq` True = x
 %%]
 
 %%[99
 instance ForceEval ValGamInfo where
-  forceEval x@(ValGamInfo t) = forceEval t `seq` x
+  forceEval x@(ValGamInfo t) | forceEval t `seq` True = x
 
 instance ForceEval KiGamInfo where
-  forceEval x@(KiGamInfo k) = forceEval k `seq` x
+  forceEval x@(KiGamInfo k) | forceEval k `seq` True = x
 
 instance ForceEval TyKiGamInfo where
-  forceEval x@(TyKiGamInfo k) = forceEval k `seq` x
+  forceEval x@(TyKiGamInfo k) | forceEval k `seq` True = x
 
 instance ForceEval TyKiKey
 
 instance ForceEval TyGamInfo where
-  forceEval x@(TyGamInfo t) = forceEval t `seq` x
+  forceEval x@(TyGamInfo t) | forceEval t `seq` True = x
 
 instance ForceEval DataFldInfo
 
 instance ForceEval DataTagInfo where
-  forceEval x@(DataTagInfo m n t p) = forceEval m `seq` forceEval p `seq` x
+  forceEval x@(DataTagInfo m n t p) | forceEval m `seq` forceEval p `seq` True = x
 
 instance ForceEval DataFldInConstr where
-  forceEval x@(DataFldInConstr m) = forceEval m `seq` x
+  forceEval x@(DataFldInConstr m) | forceEval m `seq` True = x
 
 instance ForceEval DataGamInfo where
-  forceEval x@(DataGamInfo n t nl tm cm nt) = forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` x
+  forceEval x@(DataGamInfo n t nl tm cm nt) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
 
 instance ForceEval FixityGamInfo
 %%]

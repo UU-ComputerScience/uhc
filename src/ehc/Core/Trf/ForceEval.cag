@@ -12,33 +12,22 @@
 
 %%[99.WRAPPER ag import({Core/AbsSyn})
 WRAPPER CModule CExpr
+
+PRAGMA strictcase
 %%]
 
 %%[99 hs
-cmodForceEval :: CModule -> CModule
-cmodForceEval cmod
-  = trf_Syn_CModule t `seq` cmod
-  where t = wrap_CModule (sem_CModule cmod)
-            $ Inh_CModule
+instance ForceEval CModule where
+  forceEval x | trf_Syn_CModule t `seq` True = x
+    where t = wrap_CModule (sem_CModule x) Inh_CModule
 
-cexprForceEval :: CExpr -> CExpr
-cexprForceEval e
-  = trf_Syn_CExpr `seq` e
-  where t = wrap_CExpr (sem_CExpr e)
-            $ Inh_CExpr
-%%]
-
-%%[99 hs
-instance ForceEval CModule {- where
-  forceEval = cmodForceEval
--}
-
-instance ForceEval CExpr {- where
-  forceEval = cexprForceEval
--}
+instance ForceEval CExpr where
+  forceEval x | trf_Syn_CExpr t `seq` True = x
+    where t = wrap_CExpr (sem_CExpr x) Inh_CExpr
 
 instance ForceEval CBindCateg
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ForceEval over structore

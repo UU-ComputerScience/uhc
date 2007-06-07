@@ -19,19 +19,19 @@ WRAPPER Module
 
 %%[99 hs
 grmodForceEval :: Module -> Module
-grmodForceEval grmod
-  = trf_Syn_Module t `seq` grmod
+grmodForceEval grmod | trf_Syn_Module t `seq` True
+  = grmod
   where t = wrap_Module (sem_Module grmod)
             $ Inh_Module
 
 %%]
 
 %%[99 hs
-instance ForceEval Module {- where
-  forceEval x = trf_Syn_Module t `seq` x
+instance ForceEval Module where
+  forceEval x | trf_Syn_Module t `seq` True
+              = x
               where t = wrap_Module (sem_Module x)
                         $ Inh_Module
--}
 %%]
 
 %%[99 hs

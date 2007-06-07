@@ -23,9 +23,9 @@ WRAPPER CExpr
 
 %%[9 hs export(CSubst,emptyCSubst)
 data CSubstInfo
-	=  CSIExpr      {csiRepl    ::  CExpr                                           }
-    |  CSIImpls     {csiAppCoeL ::  [Coe]       , csiLamCoeL    ::  [Coe]           }
-    |  CSIBinds     {csiBindL   ::  CBindL                                          }
+	=  CSIExpr      {csiRepl    :: !CExpr                                           }
+    |  CSIImpls     {csiAppCoeL :: ![Coe]       , csiLamCoeL    :: ![Coe]           }
+    |  CSIBinds     {csiBindL   :: !CBindL                                          }
     deriving Show
 
 type CSubst = Map.Map UID CSubstInfo

@@ -70,6 +70,7 @@ initClGam
 %%]
 
 %%[99
-instance ForceEval ClGamInfo
+instance ForceEval ClGamInfo where
+  forceEval x@(ClGamInfo e r n) | forceEval e `seq` forceEval r `seq` forceEval n `seq` True = x
 %%]
 

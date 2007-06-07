@@ -20,12 +20,12 @@
 %%[8 export(RCEEnv(..),emptyRCEEnv)
 data RCEEnv
   = RCEEnv
-      { rceValGam           :: ValGam
-      , rceDataGam          :: DataGam
-      , rceCaseFailSubst    :: CaseFailSubst
-      , rceCaseIds          :: Set.Set UID
-      , rceCaseCont         :: CExpr
-      , rceEHCOpts          :: EHCOpts
+      { rceValGam           :: !ValGam
+      , rceDataGam          :: !DataGam
+      , rceCaseFailSubst    :: !CaseFailSubst
+      , rceCaseIds          :: !(Set.Set UID)
+      , rceCaseCont         :: !CExpr
+      , rceEHCOpts          :: !EHCOpts
       }
 
 emptyRCEEnv :: EHCOpts -> RCEEnv
@@ -292,8 +292,8 @@ fvVarRepl nMp n = maybe (CExpr_Var n) CExpr_Var $ Map.lookup n nMp
 
 %%[8 export(FldOffset(..),foffMkOff,foffLabel)
 data FldOffset
-  = FldKnownOffset      { foffLabel'     :: HsName, foffOffset   :: Int      }
-  | FldComputeOffset    { foffLabel'     :: HsName, foffCExpr    :: CExpr    }
+  = FldKnownOffset      { foffLabel'     :: !HsName, foffOffset   :: !Int      }
+  | FldComputeOffset    { foffLabel'     :: !HsName, foffCExpr    :: !CExpr    }
   | FldImplicitOffset
 
 instance Eq FldOffset where

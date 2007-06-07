@@ -155,14 +155,14 @@ instance PP IdDefOcc where
 
 %%[99
 instance ForceEval IdAspect where
-  forceEval x@(IdAsp_Val_Pat d    ) = d `seq` x
-  forceEval x@(IdAsp_Val_Fun p d i) = p `seq` d `seq` forceEval i `seq` x
-  forceEval x@(IdAsp_Val_Sig d    ) = d `seq` x
-  forceEval x@(IdAsp_Inst_Def d n ) = d `seq` x
+  forceEval x@(IdAsp_Val_Pat d    ) | d `seq` True = x
+  forceEval x@(IdAsp_Val_Fun p d i) | p `seq` d `seq` forceEval i `seq` True = x
+  forceEval x@(IdAsp_Val_Sig d    ) | d `seq` True = x
+  forceEval x@(IdAsp_Inst_Def d n ) | d `seq` True = x
   forceEval x                       = x
 
 instance ForceEval IdDefOcc where
-  forceEval x@(IdDefOcc o a l r as) = forceEval a `seq` forceEval as `seq` x
+  forceEval x@(IdDefOcc o a l r as) | forceEval a `seq` forceEval as `seq` forceEval r `seq` True = x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

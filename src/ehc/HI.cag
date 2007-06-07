@@ -119,7 +119,7 @@ hiFromAllGams exps hiddenExps fg idg vg tg tkg dg ig chrStore arityMp inlMp
     Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
                                     in  Binding_DataCon n (dgiDataTy dgi) (assocLMapElt mkt $ dgiConstrTagAssocL dgi) (dgiIsNewtype dgi)
-                    ) dg
+                        ) dg
     Seq.:++: hiFromGam  (\n clgi -> Binding_Class n (Pr.clgiPrToEvidTy clgi) (Pr.clgiRuleTy clgi) (Pr.clgiDfltDictNm clgi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
 %%]
@@ -129,7 +129,23 @@ hiFromAllGams exps hiddenExps fg idg vg tg tkg dg ig chrStore arityMp inlMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 hs
-instance ForceEval HIInfo
+instance ForceEval HIInfo where
+  forceEval x@(HIInfo
+				  { hiiExps             = e
+				  , hiiHiddenExps       = he
+				  , hiiFixityGam        = fg
+				  , hiiIdDefOccGam      = idg
+				  , hiiValGam           = vg
+				  , hiiTyGam            = tg
+				  , hiiTyKiGam          = tkg
+				  , hiiDataGam          = dg
+				  , hiiClGam            = cg
+				  , hiiCHRStore         = cs
+				  , hiiCArityMp         = am
+				  , hiiGrInlMp          = im
+				  }
+              )
+              = x
 %%]
 
 
