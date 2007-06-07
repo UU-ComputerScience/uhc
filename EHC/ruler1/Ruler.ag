@@ -10,8 +10,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import EH.Util.FPath
 import EH.Util.Utils
-import EH.Util.PPUtils
-import UU.Pretty
+import EH.Util.Pretty
 import UU.Parsing
 import UU.Scanner
 import UU.Scanner.Position( initPos, Pos )
