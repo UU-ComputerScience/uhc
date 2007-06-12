@@ -72,5 +72,8 @@ initClGam
 %%[99
 instance ForceEval ClGamInfo where
   forceEval x@(ClGamInfo e r n) | forceEval e `seq` forceEval r `seq` forceEval n `seq` True = x
+%%[[101
+  fevCount (ClGamInfo e r n) = cm1 "ClGamInfo" `cmUnion` fevCount e `cmUnion` fevCount r `cmUnion` fevCount n
+%%]]
 %%]
 

@@ -174,6 +174,7 @@ $(LIB_HELIUM_CABAL_DRV): $(HELIUM_MKF) $(LIB_HELIUM_ALL_DRV_HS)
 	, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
 	, Helium library \
 	, $(subst $(PATH_SEP),.,$(patsubst $(BLD_LIBHELIUM_PREFIX)%.hs,$(LIB_HELIUM_QUAL_PREFIX)%, $(LIB_HELIUM_ALL_DRV_HS) )) \
+	, \
 	) > $@
 
 

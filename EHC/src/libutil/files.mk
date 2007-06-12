@@ -36,6 +36,7 @@ $(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 		,  \
 		, General purpose utilities for EH \
 		, $(patsubst %,$(LIB_EH_UTIL_QUAL_PREFIX)%,$(LIB_EH_UTIL_HS_MOD)) \
+		, \
 	) > $@
 
 $(LIB_EH_UTIL_HS_DRV): $(BLD_LIBUTIL_PREFIX)%.hs: $(SRC_LIBUTIL_PREFIX)%.hs

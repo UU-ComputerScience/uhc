@@ -127,6 +127,11 @@ instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
   forceEval x@(Prove     p     ) | forceEval p `seq` True = x
   forceEval x@(Assume    p     ) | forceEval p `seq` True = x
   forceEval x@(Reduction p i ps) | forceEval p `seq` forceEval i `seq` forceEval ps `seq` True = x
+%%[[101
+  fevCount (Prove     p     ) = cm1 "Prove"     `cmUnion` fevCount p
+  fevCount (Assume    p     ) = cm1 "Assume"    `cmUnion` fevCount p
+  fevCount (Reduction p i ps) = cm1 "Reduction" `cmUnion` fevCount p `cmUnion` fevCount i `cmUnion` fevCount ps
+%%]]
 %%]
 
 

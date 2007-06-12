@@ -122,6 +122,11 @@ instance ForceEval VarUIDHsName where
   forceEval x@(VarUIDHs_Name i n) | forceEval i `seq` forceEval n `seq` True = x
   forceEval x@(VarUIDHs_UID  i  ) | forceEval i `seq` True = x
   forceEval x@(VarUIDHs_Var  i  ) | forceEval i `seq` True = x
+%%[[101
+  fevCount (VarUIDHs_Name i n) = cm1 "VarUIDHs_Name" `cmUnion` fevCount i `cmUnion` fevCount n
+  fevCount (VarUIDHs_UID  i  ) = cm1 "VarUIDHs_UID"  `cmUnion` fevCount i
+  fevCount (VarUIDHs_Var  i  ) = cm1 "VarUIDHs_Var"  `cmUnion` fevCount i
+%%]]
 
 instance ForceEval RedHowAnnotation where
   forceEval x@(RedHow_ByInstance   _ p sc)  | forceEval p `seq` forceEval sc `seq` True = x
@@ -130,4 +135,13 @@ instance ForceEval RedHowAnnotation where
   forceEval x@(RedHow_ByLabel      l o sc)  | forceEval l `seq` forceEval o `seq` forceEval sc `seq` True = x
   forceEval x@(RedHow_Lambda       _   sc)  | forceEval sc `seq` True = x
   forceEval x                               = x
+%%[[101
+  fevCount (RedHow_ByInstance   s p sc)  = cm1 "RedHow_ByInstance"     `cmUnion` fevCount s `cmUnion` fevCount p `cmUnion` fevCount sc
+  fevCount (RedHow_BySuperClass s o tg)  = cm1 "RedHow_BySuperClass"    `cmUnion` fevCount s `cmUnion` fevCount o `cmUnion` fevCount tg
+  fevCount (RedHow_ProveObl     i   sc)  = cm1 "RedHow_ProveObl"        `cmUnion` fevCount i `cmUnion` fevCount sc
+  fevCount (RedHow_Assumption   vun sc)  = cm1 "RedHow_Assumption"      `cmUnion` fevCount vun `cmUnion` fevCount sc
+  fevCount (RedHow_ByScope            )  = cm1 "RedHow_ByScope"
+  fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
+  fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
+%%]]
 %%]

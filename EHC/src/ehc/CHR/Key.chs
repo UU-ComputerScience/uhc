@@ -69,5 +69,12 @@ instance ForceEval Key where
   -- forceEval x@(Key_TyQu y) | forceEval y `seq` True = x
   forceEval x@(Key_HNm  y) | forceEval y `seq` True = x
   forceEval x              = x
+%%[[101
+  fevCount (Key_Ty   y) = cm1 "Key_Ty"   `cmUnion` fevCount y
+  fevCount (Key_UID  y) = cm1 "Key_UID"  `cmUnion` fevCount y
+  fevCount (Key_Str  y) = cm1 "Key_Str"  `cmUnion` fevCount y
+  fevCount (Key_TyQu y) = cm1 "Key_TyQu" `cmUnion` fevCount y
+  fevCount (Key_HNm  y) = cm1 "Key_HNm"  `cmUnion` fevCount y
+%%]]
 %%]
 

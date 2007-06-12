@@ -356,9 +356,15 @@ delete keys = deleteByKey $ mkTrieKeys keys
 %%[99
 instance (ForceEval k, ForceEval v) => ForceEval (Trie k v) where
   forceEval x | forceEval (trieMbVal x) `seq` forceEval (triePartSubs x) `seq` forceEval (trieSubs x) `seq` True = x
+%%[[101
+  fevCount x = cm1 "Trie" `cmUnion` fevCount (trieMbVal x) `cmUnion` fevCount (triePartSubs x) `cmUnion` fevCount (trieSubs x)
+%%]]
 
 instance ForceEval k => ForceEval (TrieKey k) where
   forceEval x | forceEval (tkKey x) `seq` True = x
+%%[[101
+  fevCount x = cm1 "TrieKey" `cmUnion` fevCount (tkKey x)
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

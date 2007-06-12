@@ -159,4 +159,7 @@ chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%[99
 instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
   forceEval x@(CHR h sz g b) | forceEval h `seq` forceEval g `seq` forceEval b `seq` True = x
+%%[[101
+  fevCount (CHR h sz g b) = cm1 "CHR" `cmUnion` fevCount h `cmUnion` fevCount sz `cmUnion` fevCount g `cmUnion` fevCount b
+%%]]
 %%]

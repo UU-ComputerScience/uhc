@@ -7,6 +7,8 @@ TOP_MKF						:= $(patsubst %,$(SRC_TOP_PREFIX)%.mk,files)
 
 # Top sources
 
+
+
 LIB_TOP_HS_SRC = \
 	$(SRC_TOP_PREFIX)Constraint/Equality.hs \
 	$(SRC_TOP_PREFIX)Constraint/Information.hs \
@@ -58,6 +60,7 @@ LIB_TOP_HS_SRC = \
 	$(SRC_TOP_PREFIX)Util/Option.hs
 
 
+
 # lib/cabal config
 LIB_TOP_QUAL				:= Top
 LIB_TOP_QUAL_PREFIX			:= $(LIB_TOP_QUAL).
@@ -88,6 +91,7 @@ $(LIB_TOP_CABAL_DRV): $(TOP_MKF) $(LIB_TOP_HS_SRC)
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
 		, Typing Our Programs library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(SRC_TOP_PREFIX)%.hs,$(LIB_TOP_QUAL_PREFIX)%, $(LIB_TOP_HS_SRC) )) \
+		, \
 	) > $@
 
 $(LIB_TOP_HS_DRV): $(BLD_TOP_PREFIX)Top/%.hs: $(SRC_TOP_PREFIX)%.hs
