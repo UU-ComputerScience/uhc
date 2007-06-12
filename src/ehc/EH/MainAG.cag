@@ -81,7 +81,7 @@ WRAPPER AGItf
 %%[1.Pretty ag import({EH/Pretty})
 %%]
 
-%%[10101 -1.Pretty
+%%[101 -1.Pretty
 %%]
 
 %%[2 ag import({EH/Uniq})
@@ -181,4 +181,15 @@ SEM Expr
 %%[20
 ATTR AGItf [ isTopMod: Bool | | ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% For mem retainment experiments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[101
+%%]
+ATTR AGItf [ | | dummy: Int ]
+
+SEM AGItf
+  | AGItf		lhs			.	dummy				=	1
 

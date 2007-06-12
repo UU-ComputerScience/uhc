@@ -62,6 +62,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Gam/Utils \
 													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
 													Base/HtmlCommon \
+													Debug/HighWaterMark \
 											)
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 
@@ -69,6 +70,11 @@ EHC_HS_UTILCPP_SRC_CHS					:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													ConfigDefines \
 											)
 EHC_HS_UTILCPP_DRV_HS					:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTILCPP_SRC_CHS))
+
+EHC_HS_UTIL_SRC_CC						:= $(patsubst %,$(SRC_EHC_PREFIX)%.cc,\
+													Debug/mblocks \
+											)
+EHC_HS_UTIL_DRV_C						:= $(patsubst $(SRC_EHC_PREFIX)%.cc,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.c,$(EHC_HS_UTIL_SRC_CC))
 
 EHC_HS_ALL_SRC_CHS						:= $(EHC_HS_MAIN_SRC_CHS) $(EHC_HS_UTIL_SRC_CHS) $(EHC_HS_UTILCPP_SRC_CHS)
 EHC_HS_ALL_DRV_HS_NO_MAIN				:= $(EHC_HS_UTIL_DRV_HS) $(EHC_HS_UTILCPP_DRV_HS)
@@ -206,7 +212,7 @@ INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_L
 INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 
 # all dependents for a variant to kick of building
-EHC_ALL_DPDS_NO_MAIN					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)
+EHC_ALL_DPDS_NO_MAIN					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS) $(EHC_HS_UTIL_DRV_C)
 EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)
 
 EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefines.hs, ,$(EHC_ALL_DPDS))
@@ -236,6 +242,7 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
 		, Part of EH$(EHC_VARIANT) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,$(shell $(FILTER_NONEMP_FILES) $(EHC_HS_UTIL_DRV_HS) $(EHC_HS_UTILCPP_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)))) \
+		, $(patsubst $(EHC_BLD_LIBEHC_VARIANT_PREFIX)%,%,$(EHC_HS_UTIL_DRV_C)) \
 	) > $@
 
 $(LIB_EHC_SETUP_HS_DRV): $(EHC_MKF)
@@ -290,6 +297,11 @@ $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(S
 $(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	touch $@
+
+$(EHC_HS_UTIL_DRV_C): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.c: $(SRC_EHC_PREFIX)%.cc $(SHUFFLE)
+	mkdir -p $(@D)
+	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)

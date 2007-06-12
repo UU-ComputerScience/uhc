@@ -357,13 +357,13 @@ SEM Expr
 ATTR DataFieldExpr [ dgi: DataGamInfo | | ]
 
 SEM Expr
-  | DataFields  loc         .   (dgi,isUpd)         =   let dgiOf t = maybe emptyDataGamInfo id $ dataGamDgiOfTy t @lhs.dataGam
+  | DataFields  loc         .   dgi                 =   let dgiOf t = maybe emptyDataGamInfo id $ dataGamDgiOfTy t @lhs.dataGam
                                                         in  case (@dataFieldExpr.mbConNm,@fldL) of
                                                               (Just c,_)
-                                                                -> (dgiOf t,False)
+                                                                -> dgiOf t
                                                                 where (_,t,_) = valGamTyOfDataCon c @lhs.valGam
                                                               (_,(f:_))
-                                                                -> (dgiOf t,True)
+                                                                -> dgiOf t
                                                                 where (_,t,_) = valGamTyOfDataFld f @lhs.valGam
                                                               _ -> panic "Expr.DataFields.dgi"
                             .   dtiL                =   Map.elems $ dgiConstrTagMp @dgi

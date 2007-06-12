@@ -74,6 +74,9 @@
 %%[99 import ({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.CommonCHR})
 %%]
 
+%%[101 import ({%{EH}Core.Trf.Strip},{%{EH}Debug.HighWaterMark})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main, compiling
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,6 +203,8 @@ data EHCompileUnit
       , ecuMbHSSem           :: !(Maybe HSSem.Syn_AGItf)
       , ecuMbEH              :: !(Maybe EH.AGItf)
       , ecuMbEHSem           :: !(Maybe EHSem.Syn_AGItf)
+%%[[101
+%%]]
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
@@ -220,6 +225,7 @@ data EHCompileUnit
 %%]]
       }
 %%]
+      , ecuMbEHSem2          :: !(Maybe EHSem.Syn_AGItf)
 
 %%[8
 emptyECU :: EHCompileUnit
@@ -233,6 +239,8 @@ emptyECU
       , ecuMbHSSem           = Nothing
       , ecuMbEH              = Nothing
       , ecuMbEHSem           = Nothing
+%%[[101
+%%]]
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
       , ecuMbGrin            = Nothing
@@ -253,6 +261,7 @@ emptyECU
 %%]]
       }
 %%]
+      , ecuMbEHSem2          = Nothing
 
 %%[8
 instance CompileUnitState EHCompileUnitState where
@@ -398,7 +407,11 @@ ecuStoreOptim :: EcuUpdater Optim
 ecuStoreOptim x ecu = ecu { ecuMbOptim = Just x }
 
 ecuStoreHIInfo :: EcuUpdater HI.HIInfo
+%%[[8
 ecuStoreHIInfo x ecu = ecu { ecuHIInfo = x }
+%%][99
+ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -465,6 +478,20 @@ fileSuffMpHs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Show sizes, mem usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[101
+showSizeCore :: Core.CModule -> String
+showSizeCore x = fevShow "Core" x
+
+%%]
+showSizeCU :: EHCompileUnit -> [String]
+showSizeCU cu
+  = [ fevShow "ecuMbEHSem.valGam_Inh_AGItf" $ EHSem.valGam_Inh_AGItf $ fromJust $ ecuMbEHSem cu
+    ]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: message
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -482,6 +509,7 @@ cpMsg' modNm v m mbInfo fp
        ; let (_,_,opts,_) = crBaseInfo modNm cr
        ; lift $ putCompileMsg v (ehcOptVerbosity opts) m mbInfo modNm fp
        -- ; lift $ putStrLn "XX"
+       ; cpMemUsage
        }
 %%]
 
@@ -766,7 +794,7 @@ cpFlowHsSem1 modNm
 %%]]
          ;  when (isJust (ecuMbHSSem ecu))
                  (do { put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'}})
-                     ; cpUpdCU modNm $! ecuStoreHIInfo $! prepFlow hii'
+                     ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
          -- ;  lift $ putWidthPPLn 120 (ppGam $ EHSem.idQualGam_Inh_AGItf $ ehInh')
@@ -778,13 +806,12 @@ cpFlowHsSem1 modNm
 cpFlowEHSem1 :: HsName -> EHCompilePhase ()
 cpFlowEHSem1 modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  ehSem    = panicJust "cpFlowEHSem1.ehSem" $ ecuMbEHSem ecu
                  ehInh    = crsiEHInh crsi
                  coreSem  = panicJust "cpFlowEHSem1.coreSem" $ ecuMbCoreSem ecu
                  coreInh  = crsiCoreInh crsi
 %%[[20
-                 hii      = ecuHIInfo ecu
                  dg       = prepFlow $! EHSem.gathDataGam_Syn_AGItf    ehSem
                  vg       = prepFlow $! EHSem.gathValGam_Syn_AGItf     ehSem
                  tg       = prepFlow $! EHSem.gathTyGam_Syn_AGItf      ehSem
@@ -792,13 +819,16 @@ cpFlowEHSem1 modNm
                  kg       = prepFlow $! EHSem.gathKiGam_Syn_AGItf      ehSem
                  pg       = prepFlow $! EHSem.gathClGam_Syn_AGItf      ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
+%%]]
+%%[[20
+                 hii      = ecuHIInfo ecu
                  ehInh'   = ehInh
                               { EHSem.dataGam_Inh_AGItf    = dg  `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
                               , EHSem.valGam_Inh_AGItf     = vg  `gamUnionFlow`  EHSem.valGam_Inh_AGItf     ehInh
                               , EHSem.tyGam_Inh_AGItf      = tg  `gamUnionFlow`  EHSem.tyGam_Inh_AGItf      ehInh
                               , EHSem.tyKiGam_Inh_AGItf    = tkg `gamUnionFlow`  EHSem.tyKiGam_Inh_AGItf    ehInh
                               , EHSem.kiGam_Inh_AGItf      = kg  `gamUnionFlow`  EHSem.kiGam_Inh_AGItf      ehInh
-                              , EHSem.clGam_Inh_AGItf      = pg  `gamUnionFlow`  EHSem.clGam_Inh_AGItf ehInh
+                              , EHSem.clGam_Inh_AGItf      = pg  `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
                               , EHSem.chrStore_Inh_AGItf   = cs  `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                               }
                  hii'     = hii
@@ -824,12 +854,31 @@ cpFlowEHSem1 modNm
 %%]]
                                                    }})
 %%[[20
-                     ; cpUpdCU modNm $! ecuStoreHIInfo $! prepFlow hii'
+                     ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowEHSem1")
+%%]]
+%%[[101
+                     ; when (ehcOptVerbosity opts >= VerboseDebug)
+                            (do { lift $ putStrLn $ fevShow "gathDataGam" dg
+                                ; lift $ putStrLn $ fevShow "gathValGam" vg
+                                ; lift $ putStrLn $ fevShow "gathTyGam" tg
+                                ; lift $ putStrLn $ fevShow "gathTyKiGam" tkg
+                                ; lift $ putStrLn $ fevShow "gathKiGam" kg
+                                ; lift $ putStrLn $ fevShow "gathClGam" pg
+                                ; lift $ putStrLn $ fevShow "gathChrStore" cs
+                                ; lift $ putStrLn $ fevShow "cmodule" $ EHSem.cmodule_Syn_AGItf   ehSem
+                                })
 %%]]
                      })
          }
 %%]
+                 dg       = emptyGam
+                 vg       = emptyGam
+                 tg       = emptyGam
+                 tkg      = emptyGam
+                 kg       = emptyGam
+                 pg       = emptyGam
+                 cs       = emptyCHRStore
 
 %%[20
 cpFlowHISem :: HsName -> EHCompilePhase ()
@@ -1041,8 +1090,11 @@ cpCheckMods' modL
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              (mm,e) = modMpCombine modL (crsiModMp crsi)
+%%[[20
        ; when (ehcOptVerbosity (crsiOpts crsi) >= VerboseDebug)
               (lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm)) -- debug
+%%][99
+%%]]
        ; put (cr {crStateInfo = crsi {crsiModMp = mm}})
        ; cpSetLimitErrsWhen 5 "Module analysis" e
        }
@@ -1109,18 +1161,19 @@ cpTranslateEH2Core modNm
 %%[[8
                  errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
 %%][101
+                 -- core   = Core.CModule_Mod modNm (Core.CExpr_Int 1) []
                  errs   = []
 %%]]
          ;  when (isJust mbEHSem)
                  (do { cpUpdCU modNm (ecuStoreCore core)
                      ; cpSetLimitErrsWhen 5 "Type checking" errs
 %%[[8
-%%][101
-%%]]
                      ; when (ehcOptEmitEH opts)
                             (lift $ putPPFile (fpathToStr (fpathSetSuff "eh2" fp)) (EHSem.pp_Syn_AGItf ehSem) 1000)
                      ; when (ehcOptShowEH opts)
                             (lift $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
+%%][101
+%%]]
 %%[[8
                      ; when (ehcOptShowAst opts)
                             (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
@@ -1405,13 +1458,22 @@ cpCore1Trf modNm trfNm
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
+%%[[101
+                              "CS"      -> cmodTrfStrip
+%%]]
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id
                           ) core
          ;  cpMsg' modNm VerboseALot "Transforming" (lookup trfNm cmdLineTrfs) fp
+%%[[101
+%%]]
          ;  cpUpdCU modNm $! ecuStoreCore $! core2
          }
+%%]
+         ;  cpMsg  modNm VerboseDebug ("Core sz1: " ++ showSizeCore core)
+         ;  cpMsg  modNm VerboseDebug ("Core sz2: " ++ showSizeCore core2)
 
+%%[8
 cpTransformCore :: HsName -> [String] -> EHCompilePhase ()
 cpTransformCore modNm trfNmL
   =  do  {  cr <- get
@@ -1459,8 +1521,12 @@ cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = cpSeq [ cpTransformCore
               modNm
-              -- [ "CER", "CCP", "CRU", "CLU", "CILA", "CFL", "CLL", "CFL", "CLU" ]
-              [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", {- "CLL", -} "CLGA", "CCGA", "CLU", "CFL", "CLFG" {- , "CFL", "CLU" -} ]
+                (
+%%[[101
+                  -- [ "CS" ] ++
+%%]]
+                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", "CLGA", "CCGA", "CLU", "CFL", "CLFG" ]
+                )
           , cpOutputCore "core" modNm
           ]
           
@@ -1743,6 +1809,25 @@ cpCleanupFlow modNm
                , ecuMbPrevHISem       = Nothing
                }
       )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: debug info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+cpMemUsage :: EHCompilePhase ()
+cpMemUsage
+%%[[8
+  = return ()
+%%][101
+  = do { cr <- get
+       ; let (crsi,opts) = crBaseInfo' cr
+       ; size <- lift $ megaBytesAllocated
+       ; when (ehcOptVerbosity opts >= VerboseDebug)
+              (lift $ putStrLn ("Mem: " ++ show size ++ "M"))
+       }
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

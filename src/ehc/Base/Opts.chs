@@ -57,8 +57,13 @@ cmdLineTrfs
     , ("CLGA"   , "Core Lambda Global as Arg")
     , ("CCGA"   , "Core CAF Global as Arg")
     , ("CLFG"   , "Core Lambda Float to Global")
+%%[[101
+    , ("CS"     , "Core Strip (debug)")
+%%]]
     ]
+%%]
 
+%%[8
 trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool
 trfOptOverrides opts trf
   =  ovr opts

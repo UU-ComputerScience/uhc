@@ -7,6 +7,8 @@ LVM_MKF						:= $(patsubst %,$(SRC_LVM_PREFIX)%.mk,files)
 
 # LVM sources
 
+
+
 LIB_LVM_HS_SRC = \
 	  $(SRC_LVM_PREFIX)Common/Id.hs \
 	  $(SRC_LVM_PREFIX)Common/IdMap.hs \
@@ -49,6 +51,7 @@ LIB_LVM_HS_SRC = \
 	  $(SRC_LVM_PREFIX)Core/CoreSaturate.hs
 
 
+
 # lib/cabal config
 LIB_LVM_QUAL				:= Lvm
 LIB_LVM_QUAL_PREFIX			:= $(LIB_LVM_QUAL).
@@ -79,6 +82,7 @@ $(LIB_LVM_CABAL_DRV): $(LVM_MKF) $(LIB_LVM_HS_SRC)
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
 		, Lazy Virtual Machine library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(SRC_LVM_PREFIX)%.hs,$(LIB_LVM_QUAL_PREFIX)%, $(LIB_LVM_HS_SRC) )) \
+		, \
 	) > $@
 
 $(LIB_LVM_HS_DRV): $(BLD_LVM_PREFIX)Lvm/%.hs: $(SRC_LVM_PREFIX)%.hs

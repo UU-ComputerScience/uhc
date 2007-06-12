@@ -25,7 +25,7 @@
 %%[20 ag import({HI/AbsSyn})
 %%]
 
-%%[99 hs import({%{EH}Base.ForceEval})
+%%[99 hs import({%{EH}Base.ForceEval},{%{EH}GrinCode.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,6 +130,7 @@ hiFromAllGams exps hiddenExps fg idg vg tg tkg dg ig chrStore arityMp inlMp
 
 %%[99 hs
 instance ForceEval HIInfo where
+%%[[99
   forceEval x@(HIInfo
 				  { hiiExps             = e
 				  , hiiHiddenExps       = he
@@ -146,6 +147,37 @@ instance ForceEval HIInfo where
 				  }
               )
               = x
+%%][101
+  fevCount  (HIInfo
+                { hiiExps             = e
+                , hiiHiddenExps       = he
+                , hiiFixityGam        = fg
+                , hiiIdDefOccGam      = idg
+                , hiiValGam           = vg
+                , hiiTyGam            = tg
+                , hiiTyKiGam          = tkg
+                , hiiDataGam          = dg
+                , hiiClGam            = cg
+                , hiiCHRStore         = cs
+                , hiiCArityMp         = am
+                , hiiGrInlMp          = im
+                }
+            )
+            = cmUnions [cm1 "HIInfo"
+                       ,fevCount e
+                       ,fevCount he
+                       ,fevCount fg
+                       ,fevCount idg
+                       ,fevCount vg
+                       ,fevCount tg
+                       ,fevCount tkg
+                       ,fevCount dg
+                       ,fevCount cg
+                       ,fevCount cs
+                       ,fevCount am
+                       ,fevCount im
+                       ]
+%%]]
 %%]
 
 

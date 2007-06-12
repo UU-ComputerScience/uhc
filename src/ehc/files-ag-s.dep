@@ -43,5 +43,6 @@ Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 Core/Trf/ForceEval.cag
 Core/Trf/ElimTrivApp.cag
+Core/Trf/Strip.cag
 GrinCode/Pretty.cag
 GrinCode/Trf/ForceEval.cag
