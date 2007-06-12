@@ -48,7 +48,7 @@
 % research
 \draw (10.5,21.1) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\large
-\NTitle{Research:}
+\NTitle{Research: how to cope with this complexity}
 \begin{itemize}
 \item Generate an efficient implementation from a high-level specification
 \item Generate documentation from the high-level specification
@@ -76,14 +76,42 @@
 % type rule column
 \draw (3.7,13.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
 {\large
-\NTitle{Type rules:}
+\NTitle{Specification:}
 }
 
   \vspace{1cm}
   
   {\tiny
-  \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+%%[[wrap=safecode
+scheme expr "Expr" =
+  view E =
+    holes  [ node e: Expr, valGam: ValGam, tyGam: TyGam
+           , kiGam: KiGam,  ty: Ty ]
+  view K =
+    holes [ knTy: Ty | | retain ty: Ty ]
+
+rule e.app "App" =
+    view E =
+      judge F : expr
+        | e = eFun
+        | ty = ty.a -> (ty|Ty)
+      judge A : expr
+        | e  = eArg
+        | ty = ty.a
+      ---
+      judge R : expr
+        | e  = eFun eArg
+        | ty = ty
+    view K =
+      judge F : expr
+          | knTy = ANY -> knTy
+      judge A : expr
+          | knTy = ty.a
+          | ty = _
+%%]
   }
+  
+  \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
 };
 
 % attribute grammars
@@ -101,12 +129,10 @@
 % naive implementation
 \draw (17.3,13.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
 {\large
-\NTitle{Naive Haskell implementation:}
+\NTitle{Naive Haskell:}
 }
-
 {\tiny
-%%[[wrap=safecode
-
+%%[[wrap=boxcode{0.95}
 sem_Expr_App func_ arg_ =
   (\ _lhsIfinTyCnstr _lhsIgUniq _lhsIknTy _lhsIopts->
     (let _funcOknTy = [ mkTyVar _uniq1 ] `mkArrow` _lhsIknTy
@@ -128,10 +154,27 @@ sem_Expr_App func_ arg_ =
 % efficient implementation
 \draw (17.3,8.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
 {\large
-\NTitle{Efficient Haskell implementation:}
+\NTitle{Efficient Haskell:}
 }
-
-  bladiebla
+{\tiny
+%%[[wrap=boxcode{0.95}
+sem_Expr_App_1 func_1 arg_1 =
+  (\ _lhsIknTy _lhsItyCnstr ->
+    (case (_lhsItyGam) of
+     { _funcOtyGam | _funcOtyGam `seq` True ->
+      (case (_lhsItyCnstr) of
+       { _funcOtyCnstr | _funcOtyCnstr `seq` True ->
+        (case ([ mkTyVar _uniq1 ] `mkArrow` _lhsIknTy) of
+         { _funcOknTy | _funcOknTy `seq` True ->
+          (let internalCps_ (#  _argIty,_argItyCnstr,arg_2 #) =
+           (case (_argItyCnstr |=> _ty_) of
+            { _ty | _ty `seq` True ->
+             (case ((sem_Expr_App_2 _ty _funcIty _lhsItyCnstr)) of
+              { ( sem_Expr_2) ->
+                (#  _lhsOty,_lhsOtyCnstr,sem_Expr_2 #) }) }) }) }) })
+           in  (internalCps_ (arg_1 _argOknTy _argOtyCnstr)))
+%%]
+}
 };
 
 
