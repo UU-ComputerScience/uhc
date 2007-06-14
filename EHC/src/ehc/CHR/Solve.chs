@@ -17,7 +17,7 @@ Assumptions (to be documented further)
 %%[9 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
-%%[9 import(EH.Util.Pretty)
+%%[9 import(EH.Util.Pretty as Pretty)
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})
@@ -311,15 +311,21 @@ chrSolve'' env chrStore cnstrs prevState
                                          , wlScanned = [], wlQueue = wlQueue wl ++ wlScanned wl
                                          }
                               st' = st { stWorkList = wl'
+%%[[9
                                        , stTrace = SolveStep (subst `chrAppSubst` chr) subst bTodo bDone : {- SolveDbg (ppwork >-< ppdbg) : -} stTrace st
+%%][100
+%%]]
                                        , stDoneCnstrSet = Set.unions [Set.fromList bDone, Set.fromList $ map workCnstr $ take simpSz works, stDoneCnstrSet st]
                                        }
+%%[[9
                               ppwork = "workkey" >#< ppTrieKey workHd >#< ":" >#< (ppBracketsCommas (map ppTrieKey workTl) >-< ppBracketsCommas (map ppTrieKey $ wlScanned wl))
                                          >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl
                                          >-< "schr" >#< schr
                                          >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
                                          >-< "usedin'" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
+%%][100
+%%]]
                       expandMatch st _ 
                         = iter st
               _ -> iter {- $ trp "XX" ppwork $ -} st'
@@ -329,16 +335,25 @@ chrSolve'' env chrStore cnstrs prevState
         iter st
           = st
         workMatches st@(SolveState {stWorkList = WorkList {wlQueue = (workHd:_), wlTrie = wlTrie, wlUsedIn = wlUsedIn}})
-          = (r5, pp2 >-< pp2b >-< pp2c >-< pp3)
+          = ( r5
+%%[[9
+            , pp2 >-< pp2b >-< pp2c >-< pp3
+%%][100
+            , Pretty.empty
+%%]]
+            )
           where -- results
                 r2 = concat $ lookupResultToList $ lookupPartialByKey TrieLookup_Partial workHd $ chrstoreTrie chrStore
                 r3 = concatMap (\c -> zip (repeat c) (map unzip $ combine' $ candidate c)) $ r2
                 r4 = filter (not . isUsedByPropPart wlUsedIn) r3
                 r5 = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ match chr (map workCnstr works)) r4
+%%[[9
                 pp2 = "lookups" >#< ("for" >#< ppTrieKey workHd >-< ppBracketsCommasV r2)
                 pp2b = "cand1" >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppTrieKey k >#< w)) . candidate) r2)
                 pp2c = "cand2" >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV) . combine' . candidate) r2)
                 pp3 = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
+%%][100
+%%]]
                 -- util functions
                 candidate (StoredCHR {storedIdent = chrId, storedKeys = ks, storedChr = chr@(CHR {chrSimpSz = simpSz})})
                   = cand lkup sks ++ cand (\h k -> lkup h k) pks

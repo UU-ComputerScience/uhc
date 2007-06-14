@@ -102,10 +102,10 @@ WRAPPER AGItf
 %%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
 %%]
 
-For now, because of uuagc bug...
-
 %%[99
 PRAGMA strictcase
+PRAGMA strictsem
+PRAGMA localcps
 %%]
 PRAGMA nocycle
 
