@@ -342,10 +342,11 @@ SEM PatExpr
 SEM PatExpr
   | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @ty_r_
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
-                                                     dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi:" ++ show (tyConNm c))
+                                                     dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show (tyConNm c))
                                                               $ dataGamLookup (tyConNm c) $ @lhs.dataGam
-                                                in   panicJust "PatExpr.{AppTop,Con}.tag"
-                                                     $ fmap dtiCTag $ Map.lookup @appFunNm $ dgiConstrTagMp dgi
+                                                in   dtiCTag
+                                                     $ panicJust ("PatExpr.{AppTop,Con}.tag: " ++ show (tyConNm c) ++ "." ++ show @appFunNm)
+                                                     $ Map.lookup @appFunNm $ dgiConstrTagMp dgi
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
