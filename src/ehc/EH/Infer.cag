@@ -21,15 +21,15 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.Let
 %%[5.Let
 SEM Expr
-  | Let         decls       .   patTyCnstr          =   @lhs.tyCnstr
-                            .   tyCnstr             =   @decls.patTyCnstr
+  | Let         decls       .   patTyVarMp          =   @lhs.tyVarMp
+                            .   tyVarMp             =   @decls.patTyVarMp
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Let
 %%[5.Let
 SEM Expr
-  | Let         loc         .   lSubsValGam_        =   @decls.tyCnstr |=> @valGam_l_
-                            .   gSubsValGam_        =   @decls.tyCnstr |=> @valGam_g_
+  | Let         loc         .   lSubsValGam_        =   @decls.tyVarMp |=> @valGam_l_
+                            .   gSubsValGam_        =   @decls.tyVarMp |=> @valGam_g_
                             .   gTyTvL              =   ftv @gSubsValGam_
                             .   quValGam_           =   valGamQuantify @gTyTvL @lSubsValGam
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
@@ -45,31 +45,31 @@ SEM Expr
 %%]
 
 %%[4_2 hs
-valElimExprAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> Cnstr -> ValGam -> (ValGam,Cnstr,ErrGam)
+valElimExprAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> VarMp -> ValGam -> (ValGam,VarMp,ErrGam)
 valElimExprAlts fio fe globTvL u c g
   = (g',c'',eg)
   where  (g',c',eg) = valGamElimAlts fio fe globTvL u c g
-         c'' = cnstrDelAlphaRename c'
+         c'' = varmpDelAlphaRename c'
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Let
 %%[90.Let
 SEM Expr
-  | Let         decls       .   tySigTyCnstr        =   emptyCnstr
-                loc         .   (_,lExSigTyCnstr)   =   valGamInst1ExistsWithCnstr @decls.tySigTyCnstr @lUniq @decls.gathTySigGam
-                            .   lExplTyCnstr        =   @lExSigTyCnstr |=> @decls.tySigTyCnstr
+  | Let         decls       .   tySigTyVarMp        =   emptyVarMp
+                loc         .   (_,lExSigTyVarMp)   =   valGamInst1ExistsWithVarMp @decls.tySigTyVarMp @lUniq @decls.gathTySigGam
+                            .   lExplTyVarMp        =   @lExSigTyVarMp |=> @decls.tySigTyVarMp
                 decls       .   patValGam           :=  gamPushGam @decls.gathTySigGam @lhs.valGam
-                            .   patTyCnstr          :=  @lExplTyCnstr
-                            .   imprTyCnstr         =   @decls.patTyCnstr |=> @lhs.imprTyCnstr
-                loc         .   (_,imprTyCnstr_elim_,_)
-                                                    =   valElimExprAlts joinFIOpts @fe (ftv @valGam_g_) @lUniq4 @decls.imprTyCnstr @valGam_l_
-                decls       .   tyCnstr             :=  @imprTyCnstr_elim_ |=> @decls.patTyCnstr |=> @lhs.tyCnstr
-                loc         .   (quValGam_ex_,lQuTyCnstr)
-                                                    :=  let  (g1,c1) = valGamQuantifyWithCnstr @decls.tyCnstr @gTyTvL @valGam_l_
-                                                             (g2,c2) = valGamInst1ExistsWithCnstr (c1 |=> @decls.tyCnstr) @lUniq2 g1
+                            .   patTyVarMp          :=  @lExplTyVarMp
+                            .   imprTyVarMp         =   @decls.patTyVarMp |=> @lhs.imprTyVarMp
+                loc         .   (_,imprTyVarMp_elim_,_)
+                                                    =   valElimExprAlts joinFIOpts @fe (ftv @valGam_g_) @lUniq4 @decls.imprTyVarMp @valGam_l_
+                decls       .   tyVarMp             :=  @imprTyVarMp_elim_ |=> @decls.patTyVarMp |=> @lhs.tyVarMp
+                loc         .   (quValGam_ex_,lQuTyVarMp)
+                                                    :=  let  (g1,c1) = valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvL @valGam_l_
+                                                             (g2,c2) = valGamInst1ExistsWithVarMp (c1 |=> @decls.tyVarMp) @lUniq2 g1
                                                         in   (g2,c2 |=> c1)
-                body        .   imprTyCnstr         =   @imprTyCnstr_elim_ |=> @decls.imprTyCnstr
-                            .   tyCnstr             :=  @lQuTyCnstr |=> @decls.tyCnstr
+                body        .   imprTyVarMp         =   @imprTyVarMp_elim_ |=> @decls.imprTyVarMp
+                            .   tyVarMp             :=  @lQuTyVarMp |=> @decls.tyVarMp
                             .   valGam              :=  @decls.patValGam
 %%]
 
@@ -78,13 +78,13 @@ SEM Expr
   | Let         loc         .   (quValGam_ex_,tqoGam)
                                                     :=  let  (vg,tqog) = valGamQuantify @gTyTvL @quantPrOccL @lSubsValGam_
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .   tmpoTyCnstr         =   foldr (\tmpo c -> tmpoImplsCnstr tmpo |=> c) emptyCnstr (gamElts @tqoGam)
+                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
 %%[50
 %%]
 SEM Expr
-  | Let         loc         .   lElimEqualValGam    =   valGamElimEqual (@decls.tyCnstr |=> @valGam_l_)
+  | Let         loc         .   lElimEqualValGam    =   valGamElimEqual (@decls.tyVarMp |=> @valGam_l_)
                             .   lSubsValGam_        :=  @lElimEqualValGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,10 +133,10 @@ SEM Decl
 
 %%[2.finValGam
 ATTR AllDecl [ finValGam: ValGam | | ]
-ATTR AllNT [ finTyCnstr: Cnstr | | ]
+ATTR AllNT [ finTyVarMp: VarMp | | ]
 
 SEM Expr
-  | Let         loc         .   finValGamDecls      =   @lhs.finTyCnstr |=> (gamTop @decls.patValGam)
+  | Let         loc         .   finValGamDecls      =   @lhs.finTyVarMp |=> (gamTop @decls.patValGam)
                 decls       .   finValGam           =   @finValGamDecls
 
 SEM Decl
@@ -144,22 +144,22 @@ SEM Decl
                                                         $ valGamLookup @nm $ @lhs.finValGam
 
 SEM AGItf
-  | AGItf       expr        .   finTyCnstr          =   @expr.tyCnstr
+  | AGItf       expr        .   finTyVarMp          =   @expr.tyVarMp
 %%]
 
 %%[3.finValGam
 SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyCnstr |=> @quValGam_
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_
 %%]
 
 %%[4.finValGam
 SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyCnstr |=> @quValGam_ex_
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc         .   finTyCnstr          =   @tmpoTyCnstr |=> @lhs.finTyCnstr
+  | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp
 %%]
 
 %%[1010
@@ -173,10 +173,10 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7.finTyGam
-ATTR AllNT [ finKiCnstr: Cnstr | | ]
+ATTR AllNT [ finKiVarMp: VarMp | | ]
 
 SEM AGItf
-  | AGItf       expr        .   finKiCnstr          =   @expr.kiCnstr
+  | AGItf       expr        .   finKiVarMp          =   @expr.kiVarMp
 %%]
 
 %%[7
@@ -187,7 +187,7 @@ SEM AGItf
   | AGItf       expr        .   finTyGam            =   emptyGam
 
 SEM Expr
-  | Let         loc         .   finTyGam            =   @lhs.finKiCnstr |=> @decls.patTyGam
+  | Let         loc         .   finTyGam            =   @lhs.finKiVarMp |=> @decls.patTyGam
 
 %%[7
 ATTR AllNT [ finTyKiGam: TyKiGam |  | ]
@@ -196,7 +196,7 @@ SEM AGItf
   | AGItf       expr        .   finTyKiGam          =   emptyGam
 
 SEM Expr
-  | Let         loc         .   finTyKiGam          =   @lhs.finKiCnstr |=> @decls.patTyKiGam
+  | Let         loc         .   finTyKiGam          =   @lhs.finKiVarMp |=> @decls.patTyKiGam
 
 %%]
 
@@ -248,79 +248,79 @@ SEM Decl
                 expr        .   valGam              =   @lhs.valGam
 %%]
 
-%%[2.tyCnstr
-ATTR AllDecl [ | tyCnstr: Cnstr  patTyCnstr: Cnstr | ]
+%%[2.tyVarMp
+ATTR AllDecl [ | tyVarMp: VarMp  patTyVarMp: VarMp | ]
 
 SEM AGItf
-  | AGItf       expr        .   tyCnstr             =   emptyCnstr
+  | AGItf       expr        .   tyVarMp             =   emptyVarMp
 %%]
 
 %%[5
-ATTR AllCase [ | tyCnstr: Cnstr | ]
+ATTR AllCase [ | tyVarMp: VarMp | ]
 %%]
 
--- generated from ruler rules into EHRulerRules, was 2.tyCnstr.Val
-%%[5.tyCnstr.Val
+-- generated from ruler rules into EHRulerRules, was 2.tyVarMp.Val
+%%[5.tyVarMp.Val
 SEM Decl
-  | Val         patExpr     .   tyCnstr             =   @lhs.patTyCnstr
-                lhs         .   patTyCnstr          =   @patExpr.tyCnstr
-                expr        .   tyCnstr             =   @lhs.tyCnstr
+  | Val         patExpr     .   tyVarMp             =   @lhs.patTyVarMp
+                lhs         .   patTyVarMp          =   @patExpr.tyVarMp
+                expr        .   tyVarMp             =   @lhs.tyVarMp
 %%]
 
 %%[4_2
-ATTR AllDecl AllExpr [ | imprTyCnstr: Cnstr | ]
+ATTR AllDecl AllExpr [ | imprTyVarMp: VarMp | ]
 
 SEM AGItf
-  | AGItf       expr        .   imprTyCnstr         =   emptyCnstr
+  | AGItf       expr        .   imprTyVarMp         =   emptyVarMp
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Val
 %%[90.Val
 SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@expr.imprTyCnstr |=> @patExpr.ty) @expr.imprTy
-                lhs         .   imprTyCnstr         =   foCnstr @imprFO |=> @expr.imprTyCnstr
+  | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@expr.imprTyVarMp |=> @patExpr.ty) @expr.imprTy
+                lhs         .   imprTyVarMp         =   foVarMp @imprFO |=> @expr.imprTyVarMp
 %%]
 SEM AGItf
-  | AGItf       expr        .   tyCnstr             :=  emptyCnstr
+  | AGItf       expr        .   tyVarMp             :=  emptyVarMp
 
 SEM AGItf
-  | AGItf       loc         .   (exprTyCnstr1,ambTvS)
-                                                    =   cnstrElimForgetAlts @expr.imprTyCnstr
-                            .   exprTyCnstr         =   let (eC,(vC,_))
-                                                              =  cnstrMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
+  | AGItf       loc         .   (exprTyVarMp1,ambTvS)
+                                                    =   cnstrElimForgetAlts @expr.imprTyVarMp
+                            .   exprTyVarMp         =   let (eC,(vC,_))
+                                                              =  varmpMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
                                                                                                      (t',c') = tyFreshVar (`Set.member` @ambTvS) u1 c t
                                                                                                 in   (t',(c',u'))
                                                                                 )
-                                                                                (emptyCnstr,@lUniq)
-                                                                 @exprTyCnstr1
+                                                                                (emptyVarMp,@lUniq)
+                                                                 @exprTyVarMp1
                                                         in  eC
-                expr        .   tyCnstr             :=  emptyCnstr
+                expr        .   tyVarMp             :=  emptyVarMp
 
 SEM AGItf
-  | AGItf       loc         .   (exprTyCnstr1,ambTvS)
-                                                    =   cnstrElimForgetAlts @expr.imprTyCnstr
-                            .   exprTyCnstr         =   let (eC,(vC,_))
-                                                              =  cnstrMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
+  | AGItf       loc         .   (exprTyVarMp1,ambTvS)
+                                                    =   cnstrElimForgetAlts @expr.imprTyVarMp
+                            .   exprTyVarMp         =   let (eC,(vC,_))
+                                                              =  varmpMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
                                                                                                      (t',c') = tyFreshVar (`Set.member` @ambTvS) u1 c t
                                                                                                 in   (t',(c',u'))
                                                                                 )
-                                                                                (emptyCnstr,@lUniq)
-                                                                 @exprTyCnstr1
+                                                                                (emptyVarMp,@lUniq)
+                                                                 @exprTyVarMp1
                                                         in  eC
-                expr        .   tyCnstr             :=  @exprTyCnstr1
+                expr        .   tyVarMp             :=  @exprTyVarMp1
 
-                            .   exprTyCnstr         =   fst
-                                                        .  cnstrMapThrTy (\v t u -> let (u',u1) = mkNewLevUID u in (tyFreshVar (const True) u1 t,u')) @lUniq
-                                                        $  @exprTyCnstr1
+                            .   exprTyVarMp         =   fst
+                                                        .  varmpMapThrTy (\v t u -> let (u',u1) = mkNewLevUID u in (tyFreshVar (const True) u1 t,u')) @lUniq
+                                                        $  @exprTyVarMp1
 
 %%[5_2
-ATTR AllCase [ | imprTyCnstr: Cnstr | ]
+ATTR AllCase [ | imprTyVarMp: VarMp | ]
 %%]
 
 %%[50
 SEM Decl
-  | Val         loc         .   (_,elimEqCnstr)     =   tyElimEqual @expr.ty
-                lhs         .   tyCnstr             =   @elimEqCnstr |=> @expr.tyCnstr
+  | Val         loc         .   (_,elimEqVarMp)     =   tyElimEqual @expr.ty
+                lhs         .   tyVarMp             =   @elimEqVarMp |=> @expr.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -376,23 +376,23 @@ ATTR AllDecl [ | patTyKiGam: TyKiGam | ]
 %%]
 
 %%[6
-ATTR AllExpr AllPatExpr AllData AllCase AllDecl [ | kiCnstr: Cnstr | ]
-ATTR AllDecl [ | patKiCnstr: Cnstr | ]
+ATTR AllExpr AllPatExpr AllData AllCase AllDecl [ | kiVarMp: VarMp | ]
+ATTR AllDecl [ | patKiVarMp: VarMp | ]
 %%]
 
 %%[6
 SEM Expr
   | Let         decls       .   patTyGam            :=  gamPushGam @decls.gathKiSigGam @lhs.tyGam
                             .   patTyKiGam          =   gamPushGam @decls.gathTyKiSigGam @lhs.tyKiGam
-                            .   patKiCnstr          =   @lhs.kiCnstr
+                            .   patKiVarMp          =   @lhs.kiVarMp
                 loc         .   (tyGam_l_,tyGam_g_) =   gamPop @decls.patTyGam
                             .   (tyKiGam_l_,tyKiGam_g_)
                             						=   gamPop @decls.patTyKiGam
                 decls       .   tyGam               :=  gamPushGam @tyGam_l_ @lhs.tyGam
                             .   tyKiGam             =   gamPushGam @tyKiGam_l_ @lhs.tyKiGam
-                            .   kiCnstr             =   @decls.patKiCnstr
-                loc         .   lSubsTyKiGam        =   @decls.kiCnstr |=> @tyKiGam_l_
-                            .   gSubsTyKiGam        =   @decls.kiCnstr |=> @tyKiGam_g_
+                            .   kiVarMp             =   @decls.patKiVarMp
+                loc         .   lSubsTyKiGam        =   @decls.kiVarMp |=> @tyKiGam_l_
+                            .   gSubsTyKiGam        =   @decls.kiVarMp |=> @tyKiGam_g_
                             .   gKiTvL              =   ftv @gSubsTyKiGam
                             .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 . tyKiGamQuantify @gKiTvL $ @lSubsTyKiGam
                 body        .   tyGam               =   gamAddGam @tyGam_l_ @tyGam_g_
@@ -405,7 +405,7 @@ SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
                 loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @tyExpr.ki kiStar
-                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -693,7 +693,7 @@ ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 
 %%[6
 SEM AGItf
-  | AGItf       loc         .   kiCnstr             =   emptyCnstr
+  | AGItf       loc         .   kiVarMp             =   emptyVarMp
 %%]
 
 %%[6.initKiGam
@@ -760,21 +760,21 @@ SEM Decl
 %%]
 
 %%[4_2
-ATTR AllDecl [ | tySigTyCnstr: Cnstr | ]
+ATTR AllDecl [ | tySigTyVarMp: VarMp | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.TySig
 %%[90
 SEM Decl
-  | TySig       loc         .   (gamSigTy,gamSigCnstr)
-                                                    :=  tyAsCnstr @lUniq @ty_sig_
-                lhs         .   tySigTyCnstr        =   @gamSigCnstr |=> @lhs.tySigTyCnstr
+  | TySig       loc         .   (gamSigTy,gamSigVarMp)
+                                                    :=  tyAsVarMp @lUniq @ty_sig_
+                lhs         .   tySigTyVarMp        =   @gamSigVarMp |=> @lhs.tySigTyVarMp
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Let.tySigGam
 %%[90.Let.tySigGam
 SEM Expr
-  | Let         decls       .   tySigGam            :=  @decls.tySigTyCnstr |=> @decls.gathTySigGam
+  | Let         decls       .   tySigGam            :=  @decls.tySigTyVarMp |=> @decls.gathTySigGam
 %%]
 
 %%[6
@@ -1243,7 +1243,7 @@ SEM Decls
 
 %%[7
 SEM CaseAlts
-  | Cons        hd          .   kiCnstr             =   agFakeDependOn @hd.gathDataGam @lhs.kiCnstr
+  | Cons        hd          .   kiVarMp             =   agFakeDependOn @hd.gathDataGam @lhs.kiVarMp
 %%]
 
 %%[9
@@ -1254,7 +1254,7 @@ SEM TyExprs
 %%[7
 SEM DataFieldPatExpr
   | Ext         dataFieldPatExpr
-                            .   kiCnstr             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiCnstr
+                            .   kiVarMp             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiVarMp
 
 %%]
 

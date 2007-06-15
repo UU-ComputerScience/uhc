@@ -30,8 +30,8 @@ SEM RecPatExpr
 SEM Expr
   | App AppImpred
                 loc         .   imPrvOcc            =   mkImplsProveOcc @lUniq3 @lhs.predScope
-                            .   (implsPrvOccTl,prvOccTlCnstr)
-                                                    =   cnstrTailAddOcc @imPrvOcc @implsTl
+                            .   (implsPrvOccTl,prvOccTlVarMp)
+                                                    =   varmpTailAddOcc @imPrvOcc @implsTl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,7 +41,7 @@ SEM Expr
 %%[9
 SEM Expr
   | AppTop      loc         .   imSubsTy            =   @imTy
-  | Lam         loc         .   imSubsTy            =   foCnstr @fo_fitF_ |=> @imTy
+  | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
 %%]
 
 %%[9
@@ -51,7 +51,7 @@ SEM Expr
 
 %%[12
 SEM Expr
-  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyCnstr |=>) $ @knArgImpl
+  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp |=>) $ @knArgImpl
                             .   knPrUid             =   mkPrId basePrfCtxtId @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
 %%]
@@ -72,7 +72,7 @@ SEM Decl
 SEM Expr
   | Let         loc         .   cSubst              =   cSubstApp @lhs.cSubst
                                                         $ cSubstApp @prvArgCSubst
-                                                        $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyCnstr)
+                                                        $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
                                                         $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
 %%]
 
@@ -83,7 +83,7 @@ SEM Expr
 %%[9
 SEM Expr
   | Lam AppTop  loc         .   impls2KnHd          =   tyImpls @imSubsTy
-                            .   impls2KnTl          =   @lhs.finTyCnstr |=> @knImplsTl
+                            .   impls2KnTl          =   @lhs.finTyVarMp |=> @knImplsTl
                             .   poiLKnTl            =   implsPrIds @impls2KnTl
                             .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
 %%]

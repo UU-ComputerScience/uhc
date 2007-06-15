@@ -7,7 +7,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Cnstr},{%{EH}Core.Pretty},{%{EH}Core.FvS})
+%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}VarMp},{%{EH}Core.Pretty},{%{EH}Core.FvS})
 %%]
 
 %%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkPoisAppCoe,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
@@ -52,11 +52,11 @@ poiCExprLToCSubst = uidCExprLToCSubst . assocLMapKey poiId
 uidImplsLToCSubst :: AssocL UID ([Coe],[Coe]) -> CSubst
 uidImplsLToCSubst = Map.fromList . assocLMapElt (uncurry CSIImpls)
 
-cnstrImplsToCSubst :: EHCOpts -> Cnstr -> CSubst
+cnstrImplsToCSubst :: EHCOpts -> VarMp -> CSubst
 cnstrImplsToCSubst opts c
   =  uidImplsLToCSubst
         [ (iv,(mkImplsAppCoe opts i,mkImplsLamCoe coeId i))
-        | (iv,CIImpls i) <- cnstrToAssocL c, let (_,mbTl) = implsPredsMbTail i, isNothing mbTl
+        | (iv,VMIImpls i) <- varmpToAssocL c, let (_,mbTl) = implsPredsMbTail i, isNothing mbTl
         ]
 %%]
 
@@ -139,16 +139,16 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-coeImplsAppLCnstr :: EHCOpts -> Cnstr -> Coe -> [Coe]
-coeImplsAppLCnstr opts c coe
+coeImplsAppLVarMp :: EHCOpts -> VarMp -> Coe -> [Coe]
+coeImplsAppLVarMp opts c coe
   =  case coe of
-       CoeImplApp i  -> maybe [coe] (mkImplsAppCoe opts) (cnstrImplsLookup i c)
+       CoeImplApp i  -> maybe [coe] (mkImplsAppCoe opts) (varmpImplsLookup i c)
        _             -> [coe]
 
-coeImplsAppRCnstr :: Cnstr -> Coe -> [Coe]
-coeImplsAppRCnstr c coe
+coeImplsAppRVarMp :: VarMp -> Coe -> [Coe]
+coeImplsAppRVarMp c coe
   =  case coe of
-       CoeImplLam i  -> maybe [coe] (mkImplsLamCoe coeId) (cnstrImplsLookup i c)
+       CoeImplLam i  -> maybe [coe] (mkImplsLamCoe coeId) (varmpImplsLookup i c)
        _             -> [coe]
 
 coeEvalOn :: Coe -> CExpr -> CExpr
@@ -164,10 +164,10 @@ coeCompose :: Coe -> Coe -> Coe
 coeCompose c1 c2
   =  mkCoe (\e -> c1 `coeEvalOn` (c2 `coeEvalOn` e))
 
-coeWipeWeave :: EHCOpts -> Cnstr -> CSubst -> [Coe] -> [Coe] -> Coe
+coeWipeWeave :: EHCOpts -> VarMp -> CSubst -> [Coe] -> [Coe] -> Coe
 coeWipeWeave opts c cs lCoeL rCoeL
   =  let  (lCoeL',rCoeL')
-            = coeWipe cs (concatMap (coeImplsAppLCnstr opts c) lCoeL) (concatMap (coeImplsAppRCnstr c) rCoeL)
+            = coeWipe cs (concatMap (coeImplsAppLVarMp opts c) lCoeL) (concatMap (coeImplsAppRVarMp c) rCoeL)
      in   CoeC (coeWeaveOn cs lCoeL' rCoeL' CExpr_CoeArg)
 
 coeWeaveOn :: CSubst -> [Coe] -> [Coe] -> CExpr -> CExpr
@@ -239,7 +239,7 @@ instance PP Coe where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs export(lrcoeWipeWeave,lrcoeForLamTyApp)
-lrcoeWipeWeave :: EHCOpts -> Cnstr -> CSubst -> LRCoe -> Coe
+lrcoeWipeWeave :: EHCOpts -> VarMp -> CSubst -> LRCoe -> Coe
 lrcoeWipeWeave opts cnstr csubst (LRCoe LRCoeId _ _) = coeId
 lrcoeWipeWeave opts cnstr csubst lrcoe               = coeWipeWeave opts cnstr csubst (lrcoeLeftL lrcoe) (lrcoeRightL lrcoe)
 
@@ -253,7 +253,7 @@ lrcoeForLamTyApp opts uniq csubst f a
               lr@(LRCoe LRCoeOther _ _)
                 -> (lrcoeKindOfCoe c, l)
                 where l = mkAppCoe [c `coeEvalOn` CExpr_Var n]
-                      c = lrcoeWipeWeave opts emptyCnstr csubst lr
+                      c = lrcoeWipeWeave opts emptyVarMp csubst lr
               LRCoe LRCoeId _ _
                 -> (LRCoeId, l)
                 where l = mkAppCoe [CExpr_Var n]

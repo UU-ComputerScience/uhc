@@ -18,19 +18,19 @@ ATTR AllFuncDep [ | tyGam: TyGam  tyKiGam: TyKiGam | ]
 %%[9
 SEM Decl
   | Class       decls           .   patTyKiGam      =   emptyGam
-                                .   patKiCnstr      =   emptyCnstr
+                                .   patKiVarMp      =   emptyVarMp
                 lhs             .   patTyKiGam      =   tyKiGamNameSingleton (hsnClass2Kind @clsNm) (TyKiGamInfo $ mkNewTyVar @lUniq) `gamUnion` @lhs.patTyKiGam
-                                .   patKiCnstr      =   @lhs.patKiCnstr
+                                .   patKiVarMp      =   @lhs.patKiVarMp
 %%]
   | Class       tyPrExpr        .   tyKiGam         =   gamPushNew @lhs.patTyKiGam
-                                .   kiCnstr         =   @lhs.patKiCnstr
+                                .   kiVarMp         =   @lhs.patKiVarMp
 
 %%[9
 SEM Decl
   | Instance    decls           .   patTyKiGam      =   emptyGam
-                                .   patKiCnstr      =   emptyCnstr
+                                .   patKiVarMp      =   emptyVarMp
                 lhs             .   patTyKiGam      =   @lhs.patTyKiGam
-                                .   patKiCnstr      =   @lhs.patKiCnstr
+                                .   patKiVarMp      =   @lhs.patKiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,7 +98,7 @@ SEM Decl
   | Instance InstanceIntro
                 loc             .   instId          =   mkPrId basePrfCtxtId @lUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
-                loc             .   (prTyFix,unfixPrTyCnstr)
+                loc             .   (prTyFix,unfixPrTyVarMp)
                                                     =   tyFixTyVars $ tyQuantifyRank [2..] $ @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)

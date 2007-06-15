@@ -4,7 +4,7 @@
 %%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}EH.AbsSyn}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
 %%]
 
-%%[7_2 hs import({%{EH}Ty.AnnInferKind}, {%{EH}Cnstr}, {%{EH}Ty.Trf.Subst}, {%{EH}Substitutable}, {%{EH}Gam.Utils}, {%{EH}Ty.FitsIn}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, {%{EH}Annotations.Constraints}, {%{EH}Ty.Trf.InfuseAnn}, {%{EH}Ty.InferExposedAnns})
+%%[7_2 hs import({%{EH}Ty.AnnInferKind}, {%{EH}VarMp}, {%{EH}Ty.Trf.Subst}, {%{EH}Substitutable}, {%{EH}Gam.Utils}, {%{EH}Ty.FitsIn}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, {%{EH}Annotations.Constraints}, {%{EH}Ty.Trf.InfuseAnn}, {%{EH}Ty.InferExposedAnns})
 %%]
 
 %%[7_2 hs import(Debug.Trace)

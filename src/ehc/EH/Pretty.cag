@@ -452,29 +452,29 @@ SEM Expr
 
 %%[2
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> (gamTop @decls.patValGam)))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
 %%]
 
 %%[3
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_))
 %%]
 
 %%[4
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
 %%[6
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyCnstr |=> @quValGam_ex_))
+  | Let         loc     .   ppExtra     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
 %%[9
 SEM Expr
   | Let         loc     .   ppExtra     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
-                                                       >-<  ppGam (@lhs.finTyCnstr |=> @quValGam_ex_)
+                                                       >-<  ppGam (@lhs.finTyVarMp |=> @quValGam_ex_)
                                                        >-<  ppGam @lClGam
                                                        )
                                             else empty

@@ -50,7 +50,7 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam Cnstr Deriving Module Config BuiltinPrims \
+													Substitutable Gam VarMp Deriving Module Config BuiltinPrims \
 													CHR CHR/Key CHR/Constraint CHR/Solve \
 													Pred Pred/ToCHR Pred/CHR Pred/Evidence Pred/EvidenceToCore Pred/Heuristics Pred/CommonCHR Pred/RedGraph \
 													Base/Opts Base/Common Base/Builtin Base/HsName Base/Debug Base/Trie Base/CfgPP Base/ForceEval \

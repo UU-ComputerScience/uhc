@@ -11,14 +11,14 @@ scheme patexpr "PatExpr" =
     explain valGam.inh = (Already gathered bindings (for this EH version initially | [] |))
     explain valGam.syn = (|valGam.inh| + new bindings)
   view C =
-    holes [ | thread tyCnstr: Cnstr | retain ty: Ty, patFunTy: Ty ]
-    judgespec tyCnstr.inh ; valGam.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyCnstr.syn ; patFunTy
-    explain (Knowing the type of pattern |p| to be |tyCnstr.inh knTy| ,
+    holes [ | thread tyVarMp: VarMp | retain ty: Ty, patFunTy: Ty ]
+    judgespec tyVarMp.inh ; valGam.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyVarMp.syn ; patFunTy
+    explain (Knowing the type of pattern |p| to be |tyVarMp.inh knTy| ,
              |p| has type |ty| and bindings |valGam.syn| (for identifiers introduced by |p|) ,
-             under constraints |tyCnstr.syn|
+             under constraints |tyVarMp.syn|
             )
-    explain tyCnstr.inh = (Already known constraints)
-    explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
+    explain tyVarMp.inh = (Already known constraints)
+    explain tyVarMp.syn = (|tyVarMp.inh| + new constraints)
     explain ty = (Type of pattern |p|)
     -- explain patFunTy = (The type which encodes the value dissection as a function type, from value to tuple (holding the constituents of the value))
     explain patFunTy = ((Internal use only) Encoding of the value dissection as a type of the form |ty.v -> ty.e| ,
@@ -26,8 +26,8 @@ scheme patexpr "PatExpr" =
                        )
   view I1 =
     holes [ fiopt: FIOpts | thread tyGam: TyGam | ]
-    judgespec fiopt ; tyGam.inh ; valGam.inh ; tyCnstr.inh ; knTy :- p : ty ; tyGam.syn ; valGam.syn ~> tyCnstr.syn ; patFunTy
-    judgeuse tex fiopt ; valGam.inh ; tyCnstr.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyCnstr.syn ; patFunTy
+    judgespec fiopt ; tyGam.inh ; valGam.inh ; tyVarMp.inh ; knTy :- p : ty ; tyGam.syn ; valGam.syn ~> tyVarMp.syn ; patFunTy
+    judgeuse tex fiopt ; valGam.inh ; tyVarMp.inh ; knTy :-.."p" p : ty ; valGam.syn ~> tyVarMp.syn ; patFunTy
     explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers introduced by |p| , |tyGam.syn| holds bindings for lexically scoped type variables .)
     explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
     explain tyGam.inh = (Already gathered type variable bindings)
@@ -79,13 +79,13 @@ scheme pred "Pred" =
 
 scheme tyBtTyElim =
   view I2 =
-    holes [ bv: TyVarIdS, ty.tboth: Ty | | ty: Ty, ty.elim: Ty, tyCnstr: Cnstr ]
-    judgespec bv :-...("/=/ elim") ty.tboth : ty ~> ty.elim ; tyCnstr
-    explain (Split |ty.tboth| holding |tboth| types into |ty| holding type variables (of |tboth| types) and |tyCnstr| holding constraints on those type variables.)
+    holes [ bv: TyVarIdS, ty.tboth: Ty | | ty: Ty, ty.elim: Ty, tyVarMp: VarMp ]
+    judgespec bv :-...("/=/ elim") ty.tboth : ty ~> ty.elim ; tyVarMp
+    explain (Split |ty.tboth| holding |tboth| types into |ty| holding type variables (of |tboth| types) and |tyVarMp| holding constraints on those type variables.)
     explain ty.tboth = (Type to be |tboth| type eliminated)
     explain ty = (Result type, |tboth| types replaced by their original type variable)
     explain ty.elim = (Type where |tboth| types are replaced by their |tboth| type (if not |ANY|), only used internally)
-    explain tyCnstr = (Constraints for |tboth| type variables, mapping to their |tboth| type)
+    explain tyVarMp = (Constraints for |tboth| type variables, mapping to their |tboth| type)
     explain bv = (Already bound variables for which no elimination takes place)
 
 -------------------------------------------------------------------------

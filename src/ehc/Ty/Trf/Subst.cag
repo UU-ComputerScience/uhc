@@ -7,23 +7,23 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs module {%{EH}Ty.Trf.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr}) export(tyAppCnstr)
+%%[2 hs module {%{EH}Ty.Trf.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp}) export(tyAppVarMp)
 %%]
 
 %%[2.WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[2.tyAppCnstr.sig hs
-tyAppCnstr :: Cnstr -> Ty -> Ty
+%%[2.tyAppVarMp.sig hs
+tyAppVarMp :: VarMp -> Ty -> Ty
 %%]
 
-%%[9.tyAppCnstr.sig -2.tyAppCnstr.sig hs
-tyAppCnstr :: Cnstr -> Ty -> Ty
+%%[9.tyAppVarMp.sig -2.tyAppVarMp.sig hs
+tyAppVarMp :: VarMp -> Ty -> Ty
 %%]
 
-%%[2.tyAppCnstr hs
-tyAppCnstr cnstr ty
+%%[2.tyAppVarMp hs
+tyAppVarMp cnstr ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf {cnstr_Inh_TyAGItf = cnstr})
@@ -33,9 +33,9 @@ tyAppCnstr cnstr ty
 %%[3 hs
 type IsBound = TyVarId -> Bool
 
-tvRepl :: TyVarId -> Cnstr -> IsBound -> Ty -> Ty
+tvRepl :: TyVarId -> VarMp -> IsBound -> Ty -> Ty
 tvRepl tv c isBound repl
-  =  case (cnstrTyLookup tv c) of
+  =  case (varmpTyLookup tv c) of
         Just t | not (isBound tv)  -> t
         _                          -> repl
 %%]
@@ -44,8 +44,8 @@ tvRepl tv c isBound repl
 WRAPPER LabelAGItf
 %%]
 
-%%[10 hs export(labelAppCnstr)
-labelAppCnstr cnstr label
+%%[10 hs export(labelAppVarMp)
+labelAppVarMp cnstr label
   =  let  t =  wrap_LabelAGItf
                  (sem_LabelAGItf (LabelAGItf_AGItf label))
                  (Inh_LabelAGItf {cnstr_Inh_LabelAGItf = cnstr})
@@ -57,19 +57,19 @@ labelAppCnstr cnstr label
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.TySubst
-ATTR TyAGItf AllTy  [ cnstr: Cnstr  | |             ]
+ATTR TyAGItf AllTy  [ cnstr: VarMp  | |             ]
 ATTR AllTyAndFlds   [               | | repl: SELF  ]
 ATTR TyAGItf        [               | | repl: Ty    ]
 %%]
 
 %%[10
-ATTR LabelAGItf Label  [ cnstr: Cnstr  | |             ]
+ATTR LabelAGItf Label  [ cnstr: VarMp  | |             ]
 ATTR LabelAGItf        [               | | repl: Label    ]
 %%]
 
 %%[2
 SEM Ty
-  | Var             lhs     .   repl        =   maybe @repl id (cnstrTyLookup @tv @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.cnstr)
 %%]
 
 %%[3
@@ -94,24 +94,24 @@ SEM Ty
 
 %%[9
 SEM Impls
-  | Tail            lhs     .   repl        =   maybe @repl id (cnstrImplsLookup @iv @lhs.cnstr)
+  | Tail            lhs     .   repl        =   maybe @repl id (varmpImplsLookup @iv @lhs.cnstr)
 
 SEM Pred
-  | Var             lhs     .   repl        =   maybe @repl id (cnstrPredLookup @pv @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpPredLookup @pv @lhs.cnstr)
 %%]
 
 %%[10
 SEM Label
-  | Var             lhs     .   repl        =   maybe @repl id (cnstrLabelLookup @lv @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpLabelLookup @lv @lhs.cnstr)
 
 SEM RowExts
-  | Exts			lhs		.	repl		=	RowExts_Exts $ assocLMapElt (tyAppCnstr @lhs.cnstr) @exts
-  | Var             lhs     .   repl        =   maybe @repl id (cnstrExtsLookup @ev @lhs.cnstr)
+  | Exts			lhs		.	repl		=	RowExts_Exts $ assocLMapElt (tyAppVarMp @lhs.cnstr) @exts
+  | Var             lhs     .   repl        =   maybe @repl id (varmpExtsLookup @ev @lhs.cnstr)
 %%]
 
 %%[13
 SEM PredSeq
-  | Var				lhs		.	repl		=	maybe @repl id (cnstrPredSeqLookup @av @lhs.cnstr)
+  | Var				lhs		.	repl		=	maybe @repl id (varmpPredSeqLookup @av @lhs.cnstr)
 %%]
 
 %%[50

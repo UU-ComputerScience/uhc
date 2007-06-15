@@ -28,7 +28,7 @@
 %%[1 export(IdDefOccGam,IdDefOccAsc)
 %%]
 
-%%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
+%%[2 import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[3 import({%{EH}Ty.Trf.Quantify}) export(valGamQuantify,gamMapElts,valGamMapTy)
@@ -49,7 +49,7 @@
 %%[4_2 export(ErrGam)
 %%]
 
-%%[4_2 export(valGamQuantifyWithCnstr,valGamInst1ExistsWithCnstr)
+%%[4_2 export(valGamQuantifyWithVarMp,valGamInst1ExistsWithVarMp)
 %%]
 
 %%[6 export(gamUnzip)
@@ -470,26 +470,26 @@ valGamQuantify :: TyVarIdL -> ValGam -> ValGam
 valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
 %%]
 
-%%[4_2.valGamDoWithCnstr
-valGamDoWithCnstr :: (Ty -> thr -> (Ty,thr)) -> Cnstr -> thr -> ValGam -> (ValGam,Cnstr)
-valGamDoWithCnstr f gamCnstr thr gam
+%%[4_2.valGamDoWithVarMp
+valGamDoWithVarMp :: (Ty -> thr -> (Ty,thr)) -> VarMp -> thr -> ValGam -> (ValGam,VarMp)
+valGamDoWithVarMp f gamVarMp thr gam
   =  let  (g,(_,c))
             =  gamMapThr
                     (\(n,vgi) (thr,c)
                         ->  let  t = vgiTy vgi
-                                 (t',thr') = f (gamCnstr |=> t) thr
+                                 (t',thr') = f (gamVarMp |=> t) thr
                                  (tg,cg) =  case t of
-                                                Ty_Var v _ -> (t,v `cnstrTyUnit` t')
-                                                _ -> (t',emptyCnstr)
-                            in   ((n,vgi {vgiTy = tg}),(thr',cg `cnstrPlus` c))
+                                                Ty_Var v _ -> (t,v `varmpTyUnit` t')
+                                                _ -> (t',emptyVarMp)
+                            in   ((n,vgi {vgiTy = tg}),(thr',cg `varmpPlus` c))
                     )
-                    (thr,emptyCnstr) gam
+                    (thr,emptyVarMp) gam
      in   (g,c)
 %%]
 
-%%[4_2.valGamQuantifyWithCnstr
-valGamQuantifyWithCnstr :: Cnstr -> TyVarIdL -> ValGam -> (ValGam,Cnstr)
-valGamQuantifyWithCnstr = valGamDoWithCnstr (\t globTvL -> (tyQuantify (`elem` globTvL) t,globTvL))
+%%[4_2.valGamQuantifyWithVarMp
+valGamQuantifyWithVarMp :: VarMp -> TyVarIdL -> ValGam -> (ValGam,VarMp)
+valGamQuantifyWithVarMp = valGamDoWithVarMp (\t globTvL -> (tyQuantify (`elem` globTvL) t,globTvL))
 %%]
 
 %%[6.gamUnzip
@@ -528,10 +528,10 @@ valGamCloseExists :: ValGam -> ValGam
 valGamCloseExists = valGamMapTy (\t -> tyQuantify (not . tvIsEx (tyFtvMp t)) t)
 %%]
 
-%%[4_2.valGamInst1ExistsWithCnstr
-valGamInst1ExistsWithCnstr :: Cnstr -> UID -> ValGam -> (ValGam,Cnstr)
-valGamInst1ExistsWithCnstr
-  =  valGamDoWithCnstr
+%%[4_2.valGamInst1ExistsWithVarMp
+valGamInst1ExistsWithVarMp :: VarMp -> UID -> ValGam -> (ValGam,VarMp)
+valGamInst1ExistsWithVarMp
+  =  valGamDoWithVarMp
         (\t u ->  let  (u',ue) = mkNewLevUID u
                   in   (tyInst1Exists ue t,u')
         )
@@ -935,13 +935,13 @@ instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k
 %%]
 
 %%[2.Substitutable.inst.ValGamInfo
-instance Substitutable ValGamInfo TyVarId Cnstr where
+instance Substitutable ValGamInfo TyVarId VarMp where
   s |=> vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
   ftv   vgi         =   ftv (vgiTy vgi)
 %%]
 
 %%[6.Substitutable.inst.TyKiGamInfo
-instance Substitutable TyKiGamInfo TyVarId Cnstr where
+instance Substitutable TyKiGamInfo TyVarId VarMp where
   s |=> tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
   ftv   tkgi         =   ftv (tkgiKi tkgi)
 %%]

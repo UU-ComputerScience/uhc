@@ -19,32 +19,32 @@ scheme expr "Expr" =
     explain knTy = ("Expected/known" type of expression)
     explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
   view C =
-    holes [ | thread tyCnstr: Cnstr | ]
-    judgespec kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
-    judgeuse tex valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
-    explain (Within environment |valGam| , expecting the type of expression |e| to be |tyCnstr.inh knTy| , |e| has type |ty| , under constraints |tyCnstr.syn| .)
-    explain tyCnstr.inh = (Already known constraints)
-    explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
+    holes [ | thread tyVarMp: VarMp | ]
+    judgespec kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+    judgeuse tex valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
+    explain (Within environment |valGam| , expecting the type of expression |e| to be |tyVarMp.inh knTy| , |e| has type |ty| , under constraints |tyVarMp.syn| .)
+    explain tyVarMp.inh = (Already known constraints)
+    explain tyVarMp.syn = (|tyVarMp.inh| + new constraints)
   view I1 =
     holes [ fiopt: FIOpts | | ]
-    judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
-    judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
-    explain (Within environment |valGam| and context |fiopt| , expecting the type of expression |e| to be |tyCnstr.inh knTy| , |e| has type |ty| , under constraints |tyCnstr.syn| .)
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+    judgeuse tex fiopt ; valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
+    explain (Within environment |valGam| and context |fiopt| , expecting the type of expression |e| to be |tyVarMp.inh knTy| , |e| has type |ty| , under constraints |tyVarMp.syn| .)
     explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
   view I2 =
-    holes [ | thread ityCnstr: ICnstr | retain ity: Ty ]
-    judgespec fiopt ; kiGam ; tyGam ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :- e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
-    judgeuse tex fiopt ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :-.."e" e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
-    explain (Within environment |valGam| and context |fiopt| , expecting the types of expression |e| to be |ityCnstr.inh knTy| (and |tyCnstr.inh knTy|)
-            , |e| has type |ity| (and |ty|) , under constraints |ityCnstr.syn| (and |tyCnstr.syn|) .
+    holes [ | thread ityVarMp: IVarMp | retain ity: Ty ]
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :- e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
+    judgeuse tex fiopt ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :-.."e" e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
+    explain (Within environment |valGam| and context |fiopt| , expecting the types of expression |e| to be |ityVarMp.inh knTy| (and |tyVarMp.inh knTy|)
+            , |e| has type |ity| (and |ty|) , under constraints |ityVarMp.syn| (and |tyVarMp.syn|) .
             )
-    explain ityCnstr.inh = (Already known constraints (for quantifier propagation))
-    explain ityCnstr.syn = (|ityCnstr.inh| + new constraints (for quantifier propagation))
+    explain ityVarMp.inh = (Already known constraints (for quantifier propagation))
+    explain ityVarMp.syn = (|ityVarMp.inh| + new constraints (for quantifier propagation))
     explain ity = (Type (with type alternatives |talt|) of expression (for quantifier propagation))
   view CG =
     holes [ | | retain translExpr: TranslExpr ]
-    judgespec fiopt ; kiGam ; tyGam ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
-    judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn ; translExpr
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn ; translExpr
+    judgeuse tex fiopt ; valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn ; translExpr
     explain translExpr = (Translated expression)
 
 
@@ -76,32 +76,32 @@ scheme decl "Decl" =
     explain patValGam.syn = (|patValGam.inh| + new bindings)
     explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
   view C =
-    holes [ | thread tyCnstr: Cnstr, thread patTyCnstr: Cnstr | ]
-    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
-    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
+    holes [ | thread tyVarMp: VarMp, thread patTyVarMp: VarMp | ]
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn
     explain (Declaration |d| has explicit type bindings |gathTySigGam| ,
-             within explicit bindings |tySigGam| and implicit type bindings |patTyCnstr.inh patValGam.inh| ,
-             and type checks within |tyCnstr.inh valGam| ,
+             within explicit bindings |tySigGam| and implicit type bindings |patTyVarMp.inh patValGam.inh| ,
+             and type checks within |tyVarMp.inh valGam| ,
              yielding additional bindings |patValGam.syn| ,
-             under constraints |patTyCnstr.syn| (for |patValGam.syn|) and
-             |tyCnstr.syn| (for |valGam|).
+             under constraints |patTyVarMp.syn| (for |patValGam.syn|) and
+             |tyVarMp.syn| (for |valGam|).
             )
-    explain patTyCnstr.inh = ("Known/gathered" constraints during type inference of patterns (i.e. use of type signatures and pattern structure))
-    explain patTyCnstr.syn = (|patTyCnstr.inh| + new constraints)
-    explain tyCnstr.inh = ("Known/gathered" constraints during type inference of expressions bound to patterns)
-    explain tyCnstr.syn = (|tyCnstr.inh| + new constraints)
+    explain patTyVarMp.inh = ("Known/gathered" constraints during type inference of patterns (i.e. use of type signatures and pattern structure))
+    explain patTyVarMp.syn = (|patTyVarMp.inh| + new constraints)
+    explain tyVarMp.inh = ("Known/gathered" constraints during type inference of expressions bound to patterns)
+    explain tyVarMp.syn = (|tyVarMp.inh| + new constraints)
   view I2 =
-    holes [ | thread ityCnstr: ICnstr, thread tySigTyCnstr: Cnstr | ]
-    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
-    judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
-    explain tySigTyCnstr.inh = (Type signature information represented as constraint for binding to type variable in |gathTySigGam|)
-    explain tySigTyCnstr.syn = (|tySigTyCnstr.inh| + new constraints)
-    explain ityCnstr.inh = ("Known/gathered" constraints during quantifier propagation)
-    explain ityCnstr.syn = (|ityCnstr.inh| + new constraints)
+    holes [ | thread ityVarMp: IVarMp, thread tySigTyVarMp: VarMp | ]
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; tySigTyVarMp.inh ; patTyVarMp.inh ; ityVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> tySigTyVarMp.syn ; patTyVarMp.syn ; ityVarMp.syn ; tyVarMp.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyVarMp.inh ; patTyVarMp.inh ; ityVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyVarMp.syn ; patTyVarMp.syn ; ityVarMp.syn ; tyVarMp.syn
+    explain tySigTyVarMp.inh = (Type signature information represented as constraint for binding to type variable in |gathTySigGam|)
+    explain tySigTyVarMp.syn = (|tySigTyVarMp.inh| + new constraints)
+    explain ityVarMp.inh = ("Known/gathered" constraints during quantifier propagation)
+    explain ityVarMp.syn = (|ityVarMp.inh| + new constraints)
   view CG =
     holes [ | | translBind: TransDecl ]
-    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
-    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn ; translBind
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn ; translBind
 
 
 

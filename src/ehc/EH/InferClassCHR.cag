@@ -173,8 +173,8 @@ ATTR NTPrf [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRS
 
 %%[9
 SEM Decl
-  | Instance    loc         .   chrInstDecl         =   let cx = @unfixPrTyCnstr |=> @ctxtPrTyFixL
-                                                            hd = @unfixPrTyCnstr |=> @hdPrTyFix
+  | Instance    loc         .   chrInstDecl         =   let cx = @unfixPrTyVarMp |=> @ctxtPrTyFixL
+                                                            hd = @unfixPrTyVarMp |=> @hdPrTyFix
                                                             hdPr = tyPred hd
                                                         in  ( map tyPred cx
                                                             , hdPr

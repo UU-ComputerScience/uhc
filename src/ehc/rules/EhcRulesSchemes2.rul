@@ -5,9 +5,9 @@
 
 scheme expr.impr =
   view I2 =
-    holes [ node e: Expr, extern fiopt: FIOpts, extern knTy: Ty, extern valGam: ValGam | thread ityCnstr: ICnstr | retain ity: Ty ]
-    judgespec fiopt ; valGam ; ityCnstr.inh ; knTy :- e : ity ~> ityCnstr.syn
-    judgeuse tex fiopt ; valGam ; ityCnstr.inh ; knTy :-.."e" e : ity ~> ityCnstr.syn
+    holes [ node e: Expr, extern fiopt: FIOpts, extern knTy: Ty, extern valGam: ValGam | thread ityVarMp: IVarMp | retain ity: Ty ]
+    judgespec fiopt ; valGam ; ityVarMp.inh ; knTy :- e : ity ~> ityVarMp.syn
+    judgeuse tex fiopt ; valGam ; ityVarMp.inh ; knTy :-.."e" e : ity ~> ityVarMp.syn
 
 scheme expr.invisible =
   view E =
@@ -25,20 +25,20 @@ scheme expr =
     judgespec valGam; knTy :- e : ty
     judgeuse tex valGam; knTy :-.."e" e : ty
   view C =
-    holes [ | thread tyCnstr: Cnstr | ]
-    judgespec valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
-    judgeuse tex valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+    holes [ | thread tyVarMp: VarMp | ]
+    judgespec valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+    judgeuse tex valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
   view I1 =
     holes [ fiopt: FIOpts | | ]
-    judgespec fiopt ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn
-    judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn
+    judgespec fiopt ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+    judgeuse tex fiopt ; valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
   view I2 =
     holes scheme expr.impr
-    judgeuse tex fiopt ; valGam ; ityCnstr.inh ; tyCnstr.inh ; knTy :-.."e" e : ity ; ty ~> ityCnstr.syn ; tyCnstr.syn
+    judgeuse tex fiopt ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :-.."e" e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
   view CG =
     holes [ | | retain translExpr: TranslExpr ]
-    judgespec fiopt ; valGam ; tyCnstr.inh ; knTy :- e : ty ~> tyCnstr.syn ; translExpr
-    judgeuse tex fiopt ; valGam ; tyCnstr.inh ; knTy :-.."e" e : ty ~> tyCnstr.syn ; translExpr
+    judgespec fiopt ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn ; translExpr
+    judgeuse tex fiopt ; valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn ; translExpr
 
 -------------------------------------------------------------------------
 -- Declaration
@@ -46,8 +46,8 @@ scheme expr =
 
 scheme decl.impr =
   view I2 =
-    holes [ node d: Decl | thread ityCnstr: ICnstr | ]
-    judgespec ityCnstr.inh :-.."d" d ~> ityCnstr.syn
+    holes [ node d: Decl | thread ityVarMp: IVarMp | ]
+    judgespec ityVarMp.inh :-.."d" d ~> ityVarMp.syn
 
 scheme decl.invisible =
   view E =
@@ -65,15 +65,15 @@ scheme decl =
     judgespec tySigGam ; patValGam.inh ; valGam :- d : gathTySigGam ; patValGam.syn
     judgeuse tex tySigGam ; patValGam.inh ; valGam :-.."d" d : gathTySigGam ; patValGam.syn
   view C =
-    holes [ | thread tyCnstr: Cnstr, thread patTyCnstr: Cnstr | ]
-    judgespec tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
-    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn
+    holes [ | thread tyVarMp: VarMp, thread patTyVarMp: VarMp | ]
+    judgespec tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn
   view I2 =
-    holes scheme decl.impr | [ | thread tySigTyCnstr: Cnstr | ]
-    judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyCnstr.inh ; patTyCnstr.inh ; ityCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyCnstr.syn ; patTyCnstr.syn ; ityCnstr.syn ; tyCnstr.syn
+    holes scheme decl.impr | [ | thread tySigTyVarMp: VarMp | ]
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyVarMp.inh ; patTyVarMp.inh ; ityVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyVarMp.syn ; patTyVarMp.syn ; ityVarMp.syn ; tyVarMp.syn
   view CG =
     holes [ | | translBind: TransDecl ]
-    judgespec tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :- d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
-    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyCnstr.inh ; tyCnstr.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyCnstr.syn ; tyCnstr.syn ; translBind
+    judgespec tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn ; translBind
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn ; translBind
 
 

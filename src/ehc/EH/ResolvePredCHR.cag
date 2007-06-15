@@ -62,12 +62,12 @@ SEM Decl
                                                             )
                lhs          .   gathCnstrMp         =   Map.empty
 %%[[9
-               loc          .	toProveGathCnstrMp	=	@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
+               loc          .	toProveGathCnstrMp	=	@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
 %%][95
                loc          .   (toProveGathCnstrMp,derivAltsPrOcc)
                                                     =   case @instVariant of
                                                           InstDeriving
-                                                            -> ( gathPredLToProveCnstrMp $ foCnstr foDt |=> concat altsPrOcc
+                                                            -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat altsPrOcc
                                                                , altsPrOcc
                                                                )
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ dgiDataTy @derivDataDGI
@@ -79,7 +79,7 @@ SEM Decl
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
                                                                          ]
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq9 dataTy @derivHdDataTy
-                                                          _ -> (@decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp,[])
+                                                          _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[])
 %%]]
 %%]
 
@@ -126,7 +126,7 @@ debugInfo chrSimplifyResult
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   toProveCnstrMp      =   @expr.tyCnstr `chrAppSubst` @expr.gathCnstrMp
+  | AGItf       loc         .   toProveCnstrMp      =   @expr.tyVarMp `chrAppSubst` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
                             .   (_,chrSolveMainRemCnstrMp,_,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,_,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
                                                     =   simplify (@chrFIIn {fiUniq = @lUniq2}) @chrStore (heurScopedEHC @chrFIIn) Map.empty @toProveHereCnstrMp emptySimplifyResult
@@ -137,7 +137,7 @@ SEM AGItf
 
 %%[9
 SEM Expr
-  | Let         loc         .   toProveCnstrMp      =   @decls.tyCnstr `chrAppSubst` @decls.gathCnstrMp
+  | Let         loc         .   toProveCnstrMp      =   @decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
                             .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,chrSolve1EvidMp,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,cannotRes1CnstrMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidCoreMp)

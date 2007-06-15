@@ -7,7 +7,7 @@
 %%% Module itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs module {%{EH}Ty.Trf.Quantify} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
+%%[3 hs module {%{EH}Ty.Trf.Quantify} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyQuantify, tyQuantifyClosed)
 %%]
 
 %%[4 hs import({%{EH}Base.Debug},EH.Util.Pretty)

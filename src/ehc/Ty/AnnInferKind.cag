@@ -8,7 +8,7 @@
 %%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
 %%]
 
-%%[7_2 hs import({%{EH}Cnstr}, {%{EH}Ty.Trf.Subst}, {%{EH}Substitutable}, {%{EH}Ty.FitsIn}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, {%{EH}Gam})
+%%[7_2 hs import({%{EH}VarMp}, {%{EH}Ty.Trf.Subst}, {%{EH}Substitutable}, {%{EH}Ty.FitsIn}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, {%{EH}Gam})
 %%]
 
 %%[7_2 hs import(Debug.Trace)
@@ -52,9 +52,9 @@ WRAPPER TyAGItf
 
 ATTR TyAGItf Ty Ty -> Ty [ kindEnv : TyGam kindOverruleMap : {Map TyVarId Ty} | uid : UID | annKindMap USE {`Map.union`} {Map.empty} : AnnKindMap ]
 
-ATTR Ty Ty -> Ty [ cnstrFinal : Cnstr | cnstr : Cnstr | kind USE {`const`} {error "EHTyAnnInferKind: asked kind of unsupported nonterminal"} : Ty ]
+ATTR Ty Ty -> Ty [ cnstrFinal : VarMp | cnstr : VarMp | kind USE {`const`} {error "EHTyAnnInferKind: asked kind of unsupported nonterminal"} : Ty ]
 SEM TyAGItf
-  | AGItf  ty.cnstr      = emptyCnstr
+  | AGItf  ty.cnstr      = emptyVarMp
            ty.cnstrFinal = @ty.cnstr
 
 SEM Ty
@@ -69,7 +69,7 @@ SEM Ty
            loc.resKind          = mkTyVar @loc.uid1
            loc.funKind          = @arg.kind `mk1Arrow` @loc.resKind
            loc.fo               = fitsIn weakFIOpts emptyFE @arg.uid @loc.funKind @func.kind
-           loc.cnstr1           = @arg.cnstr `cnstrPlus` foCnstr @loc.fo
+           loc.cnstr1           = @arg.cnstr `varmpPlus` foVarMp @loc.fo
            lhs.cnstr            = @loc.cnstr1
            lhs.kind             = @loc.cnstr1 |=> @loc.resKind
            lhs.uid              = foUniq @loc.fo

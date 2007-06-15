@@ -28,7 +28,7 @@ SEM Expr
       lhs.annTy      = @loc.arrowValTy
   | Lam
       -- move to ruler when code is generated for an Expr.Lam
-      (loc.patTyAnnRef,_)   = infuseAnn Map.empty (@lhs.finTyCnstr |=> @arg.ty) @loc.annUniq1
+      (loc.patTyAnnRef,_)   = infuseAnn Map.empty (@lhs.finTyVarMp |=> @arg.ty) @loc.annUniq1
       (loc.patAnnKindMap,_) = inferAnnKindMap @lhs.finTyGam Map.empty @loc.patTyAnnRef @loc.annUniq2
       (loc.patTyAnnExp,_)   = infuseExp @loc.patAnnKindMap @lhs.exposedAnnEnv @lhs.tyConSeqChkF @lhs.mkExpTyConF @lhs.annMonoRestrictions @loc.patTyAnnRef @loc.annUniq3
 
@@ -64,7 +64,7 @@ Records get the annotations from the types of the expressions inside.
 SEM RecExpr
   | Empty
       -- move to ruler when code is generated for an RecExpr.Lam
-      (loc.tyAnnRef,_)   = infuseAnn Map.empty (@lhs.finTyCnstr |=> @loc.ty) @loc.annUniq1
+      (loc.tyAnnRef,_)   = infuseAnn Map.empty (@lhs.finTyVarMp |=> @loc.ty) @loc.annUniq1
       (loc.annKindMap,_) = inferAnnKindMap @lhs.finTyGam Map.empty @loc.tyAnnRef @loc.annUniq2
       (loc.tyAnnExp,_)   = infuseExp @loc.annKindMap @lhs.exposedAnnEnv @lhs.tyConSeqChkF @lhs.mkExpTyConF @lhs.annMonoRestrictions @loc.tyAnnRef @loc.annUniq3
 
