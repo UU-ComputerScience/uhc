@@ -373,7 +373,7 @@ chrSolve'' env chrStore cnstrs prevState
                   = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
                   where matches (StoredCHR {storedChr = CHR {chrHead = hc}}) cnstrs
                           = zipWith mt hc cnstrs
-                          where mt cFr cTo subst = chrMatchTo env (subst `chrAppSubst` cFr) cTo
+                          where mt cFr cTo subst = chrMatchTo (env {- fiVarMp = subst |=> fiVarMp env -}) (subst `chrAppSubst` cFr) cTo
                         checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
                           = map chk gd
                           where chk g subst = chrCheck (subst `chrAppSubst` g)

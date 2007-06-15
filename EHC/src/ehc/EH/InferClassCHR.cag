@@ -128,8 +128,7 @@ SEM AGItf
 
 %%[9
 SEM Decl
-  | Instance    loc         .   chrFIIn             =   FIIn strongFIOpts uidStart
-                                                             @fe
+  | Instance    loc         .   chrFIIn             =   emptyFI {fiEnv = @fe}
 %%]
 
 %%[9
@@ -137,8 +136,7 @@ ATTR Expr [ | | chrFIIn: FIIn ]
 
 SEM Expr
   | Let         loc         .   chrFIIn             =   @body.chrFIIn
-  | * - Let     loc         .   chrFIIn             =   FIIn strongFIOpts uidStart
-                                                             @fe
+  | * - Let     loc         .   chrFIIn             =   emptyFI {fiEnv = @fe}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

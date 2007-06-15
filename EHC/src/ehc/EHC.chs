@@ -348,7 +348,6 @@ ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 %%][99
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
-ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
 
 ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
@@ -356,7 +355,6 @@ ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
-ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
 
 ecuStoreGrinBC :: EcuUpdater GrinBC.Module
 %%[[8
@@ -364,11 +362,13 @@ ecuStoreGrinBC x ecu = ecu { ecuMbGrinBC = Just x }
 %%][99
 ecuStoreGrinBC x ecu | forceEval x `seq` True = ecu { ecuMbGrinBC = Just x }
 %%]]
-ecuStoreGrinBC x ecu | x `seq` True = ecu { ecuMbGrinBC = Just x }
 
 ecuStoreGrinBCSem :: EcuUpdater PP_Doc
 ecuStoreGrinBCSem x ecu = ecu { ecuMbGrinBCSem = Just x }
 %%]
+ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
+ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
+ecuStoreGrinBC x ecu | x `seq` True = ecu { ecuMbGrinBC = Just x }
 
 %%[20
 ecuStoreHSTime :: EcuUpdater ClockTime
@@ -486,10 +486,6 @@ showSizeCore :: Core.CModule -> String
 showSizeCore x = fevShow "Core" x
 
 %%]
-showSizeCU :: EHCompileUnit -> [String]
-showSizeCU cu
-  = [ fevShow "ecuMbEHSem.valGam_Inh_AGItf" $ EHSem.valGam_Inh_AGItf $ fromJust $ ecuMbEHSem cu
-    ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: message

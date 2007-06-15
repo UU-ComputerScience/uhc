@@ -142,7 +142,7 @@ SEM Decl
                                 .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
                                 .   supPrTyL        =   let  t      =  clgiRuleTy $ @clgi
                                                              st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkArrow` @hdPrTyFix
-                                                             fo     =  fitsIn predFIOpts @fe2 @lUniq3 t st
+                                                             fo     =  fitsIn predFIOpts @fe2 @lUniq3 emptyVarMp t st
                                                         in   tyArrowArgs . foTy $ fo
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
@@ -159,7 +159,7 @@ SEM Decl
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
-                loc             .   foPr            =   fitPredToEvid @lUniq @prExpr.ty @lhs.clGam
+                loc             .   foPr            =   fitPredToEvid @lUniq emptyVarMp @prExpr.ty @lhs.clGam
                 expr            .   knTy            =   foTy @foPr
 %%]
                                 .   tyGam           =   @lhs.tyGam
@@ -198,7 +198,7 @@ SEM PrExpr
 ATTR TyExpr PrExpr [ | | evTy: Ty ]
 
 SEM PrExpr
-  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftv @ty}) @fe2 @lUniq3
+  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftv @ty}) @fe2 @lUniq3 emptyVarMp
                                                                           (clgiPrToEvidTy @clgi) ([@ty] `mkArrow` mkNewTyVar @lUniq2)
                                                         in   snd $ tyArrowArgRes $ foTy fo
   | Arrow       lhs             .   evTy            =   [@arg.evTy] `mkArrow` @res.evTy

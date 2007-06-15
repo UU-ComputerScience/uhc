@@ -277,7 +277,7 @@ SEM AGItf
 -- generated from ruler rules into EHRulerRules, was 4_2.Val
 %%[90.Val
 SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart (@expr.imprTyVarMp |=> @patExpr.ty) @expr.imprTy
+  | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart @expr.imprTyVarMp (@expr.imprTyVarMp |=> @patExpr.ty) @expr.imprTy
                 lhs         .   imprTyVarMp         =   foVarMp @imprFO |=> @expr.imprTyVarMp
 %%]
 SEM AGItf
@@ -404,7 +404,7 @@ SEM Expr
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
-                loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @tyExpr.ki kiStar
+                loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp @tyExpr.ki kiStar
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
 
