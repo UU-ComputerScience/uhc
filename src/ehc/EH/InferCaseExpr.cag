@@ -39,7 +39,7 @@ SEM Expr
 %%[5_1
 SEM Expr
   | Case        loc         .   (ebTy,ebVarMp,ebErrs,_)
-                                                    =   tyElimAlts (mkFitsInWrap @fe) joinFIOpts @lUniq (@expr.ty)
+                                                    =   tyElimAlts (mkFitsInWrap @fe) joinFIOpts @lUniq @expr.tyVarMp (@expr.ty)
                 alts        .   knPatTy             :=  @ebTy
                             .   patTyVarMp          :=  @ebVarMp |=> @expr.tyVarMp
 %%]

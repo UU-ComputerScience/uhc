@@ -87,7 +87,9 @@ foAppLRCoe' opts (fCS,fLRCoe) c cs ce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.FIIn export(FIIn(..))
-data FIIn   =  FIIn     {  fiFIOpts          :: !FIOpts              ,  fiUniq            :: !UID
+data FIIn   =  FIIn     {  fiFIOpts          :: !FIOpts
+                        ,  fiUniq            :: !UID
+                        ,  fiVarMp           :: !VarMp
 %%[[9
                         ,  fiEnv             :: !FIEnv
 %%]]
@@ -95,7 +97,9 @@ data FIIn   =  FIIn     {  fiFIOpts          :: !FIOpts              ,  fiUniq  
 %%]
 
 %%[4.FIn.emptyFI export(emptyFI)
-emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts        ,  fiUniq            =   uidStart
+emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
+                        ,  fiUniq            =   uidStart
+                        ,  fiVarMp           =   emptyVarMp
 %%[[9
                         ,  fiEnv             =   emptyFE
 %%]]
@@ -284,9 +288,9 @@ fitsIn ty1 ty2
 manyFO :: [FIOut] -> FIOut
 manyFO = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
 
-fitsIn :: FIOpts -> FIEnv -> UID -> Ty -> Ty -> FIOut
-fitsIn opts env uniq
-  =  fitsInFI (emptyFI  { fiUniq = uniq, fiFIOpts = opts
+fitsIn :: FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
+fitsIn opts env uniq varmp
+  =  fitsInFI (emptyFI  { fiUniq = uniq, fiFIOpts = opts, fiVarMp = varmp
 %%[[9
                         , fiEnv = env
 %%]]
@@ -1046,9 +1050,9 @@ fitsInFI fi ty1 ty2
                               in  tr ("FIT" ++ "-" ++ msg) (pp (foTy fo)) fo
 
 %%[9
-fitsIn' :: String -> FIOpts -> FIEnv -> UID -> Ty -> Ty -> FIOut
-fitsIn' msg opts env uniq ty1 ty2
-  =  fitsIn opts (trPP (msg ++ "-env") env) (trPP (msg ++ "-uniq") uniq) (trPP (msg ++ "-ty1") ty1) (trPP (msg ++ "-ty2") ty2)
+fitsIn' :: String -> FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
+fitsIn' msg opts env uniq varmp ty1 ty2
+  =  fitsIn opts (trPP (msg ++ "-env") env) (trPP (msg ++ "-uniq") uniq) varmp (trPP (msg ++ "-ty1") ty1) (trPP (msg ++ "-ty2") ty2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1056,12 +1060,12 @@ fitsIn' msg opts env uniq ty1 ty2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6
-fitsInL :: FIOpts -> FIEnv -> UID -> TyL -> TyL -> (TyL,FIOut)
-fitsInL opts env uniq tyl1 tyl2
+fitsInL :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> TyL -> (TyL,FIOut)
+fitsInL opts env uniq varmp tyl1 tyl2
   = (map foTy foL,fo)
   where (fo,foL)
           = fitsInLWith (\fo1 fo2 -> fo2 {foVarMp = foVarMp fo1 |=> foVarMp fo2, foErrL = foErrL fo1 ++ foErrL fo2})
-                        (mkFitsInWrap' env) opts uniq tyl1 tyl2
+                        (mkFitsInWrap' env) opts uniq varmp tyl1 tyl2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1069,9 +1073,9 @@ fitsInL opts env uniq tyl1 tyl2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7 export(fitsInFold)
-fitsInFold :: FIOpts -> FIEnv -> UID -> TyL -> FIOut
-fitsInFold opts env uniq tyl
-  = foldl (\fo t -> if foHasErrs fo then fo else fitsIn opts env uniq (foTy fo) t)
+fitsInFold :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> FIOut
+fitsInFold opts env uniq varmp tyl
+  = foldl (\fo t -> if foHasErrs fo then fo else fitsIn opts env uniq varmp (foTy fo) t)
           emptyFO tyl
 %%]
 
@@ -1081,8 +1085,8 @@ fitsInFold opts env uniq tyl
 
 %%[9 export(fitPredIntoPred)
 fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,VarMp)
-fitPredIntoPred fi pr1 pr2 
-  = f pr1 pr2
+fitPredIntoPred fi pr1' pr2
+  = f ({- fiVarMp fi |=> -} pr1') pr2
   where f (Pred_Var pv1)    	pr2@(Pred_Var pv2) | pv1 /= pv2     = Just (pr2,pv1 `varmpPredUnit` pr2)
                                                    | otherwise      = Just (pr2,emptyVarMp)
         f pr1               	(Pred_Var pv2)                      = Nothing
@@ -1100,7 +1104,7 @@ fitPredIntoPred fi pr1 pr2
           = if foHasErrs fo
             then Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
-          where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2 ++ fioDontBind (fiFIOpts fi)}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
+          where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2 ++ fioDontBind (fiFIOpts fi)}) fe u (fiVarMp fi) (Ty_Pred pr1') (Ty_Pred pr2)
                 fe = fiEnv fi
                 u  = fiUniq fi
 %%]
@@ -1111,8 +1115,8 @@ fitPredIntoPred fi pr1 pr2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(fitPredToEvid)
-fitPredToEvid :: UID -> Ty -> ClGam -> FIOut
-fitPredToEvid u prTy g
+fitPredToEvid :: UID -> VarMp -> Ty -> ClGam -> FIOut
+fitPredToEvid u varmp prTy g
   =  case prTy of
        Ty_Any  ->  emptyFO
        _       ->  fPr u prTy
@@ -1122,7 +1126,7 @@ fitPredToEvid u prTy g
                     ->  case gamLookup (predMatchNm p) g of
                            Just clgi
                              -> let (u',u1,u2) = mkNewLevUID2 u
-                                    fo = fitsIn fOpts emptyFE u1 (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
+                                    fo = fitsIn fOpts emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
                                 in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
                            _ -> emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
                  Ty_Pred (Pred_Pred t)
@@ -1139,13 +1143,15 @@ fitPredToEvid u prTy g
 %%[4
 mkFitsInWrap' :: FIEnv -> FitsIn'
 mkFitsInWrap' env
-  =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
-                      in   fo
+  =  \opt u varmp t1 t2
+        -> let  fo = fitsIn opt env u varmp t1 t2
+           in   fo
 
 mkFitsInWrap :: FIEnv -> FitsIn
 mkFitsInWrap env
-  =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
-                      in   (foTy fo, foVarMp fo, foErrL fo)
+  =  \opt u varmp t1 t2
+        -> let  fo = fitsIn opt env u varmp t1 t2
+           in   (foTy fo, foVarMp fo, foErrL fo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

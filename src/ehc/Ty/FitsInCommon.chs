@@ -174,18 +174,18 @@ asgiSpine i = drop (asgiSpinePos i) $ asgiVertebraeL i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.FitsIn
-type FitsIn' = FIOpts -> UID -> Ty -> Ty -> FIOut
-type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,VarMp,ErrL)
+type FitsIn' = FIOpts -> UID -> VarMp -> Ty -> Ty -> FIOut
+type FitsIn = FIOpts -> UID -> VarMp -> Ty -> Ty -> (Ty,VarMp,ErrL)
 %%]
 
 %%[4.fitsInLWith
-fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> TyL -> TyL -> (FIOut,[FIOut])
-fitsInLWith foCmb elemFits opts uniq tyl1 tyl2
+fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> VarMp -> TyL -> TyL -> (FIOut,[FIOut])
+fitsInLWith foCmb elemFits opts uniq varmp tyl1 tyl2
   = (fo,foL)
   where ((_,fo),foL)
           = foldr  (\(t1,t2) ((u,foThr),foL)
                       -> let  (u',ue) = mkNewLevUID u
-                              fo = elemFits opts u (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
+                              fo = elemFits opts u (foVarMp foThr |=> varmp) (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
                          in   ((u',foCmb fo foThr),fo:foL)
                    )
                    ((uniq,emptyFO),[])

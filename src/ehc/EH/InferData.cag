@@ -22,7 +22,7 @@ SEM Decl
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
                             .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
                                                                       else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
-                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
+                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2 @lhs.patKiVarMp
                                                                 (@lhs.patKiVarMp |=> (@tyVars.kiL `mkArrow` kiStar))
                                                                 (@lhs.patKiVarMp |=> (tkgiKi @dataTkgi))
                             .   dataKi              =   foTy @fo_
@@ -38,7 +38,7 @@ SEM Decl
 %%[6
 SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
-                            .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq
+                            .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
                                                                  (@fldsKiVarMp |=> @fields.kiL)
                                                                  (repeat kiStar)
 				loc			.	fo_					:	FIOut
@@ -50,7 +50,7 @@ SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         :=  @eqs.kiVarMp
 
 SEM DataConstrEq
-  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq (@tyExpr.kiVarMp |=> @tyVar.ki) (@tyExpr.ki)
+  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp (@tyExpr.kiVarMp |=> @tyVar.ki) (@tyExpr.ki)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
 

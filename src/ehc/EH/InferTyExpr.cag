@@ -214,7 +214,7 @@ SEM TyExpr
   | Wild        loc         .   ki                  =   tkgiKi @tkgi_
   | Con         loc         .   ki                  =   tkgiKi @tkgi_
   | App         loc         .   knFunKi             =   [@arg.ki] `mkArrow` mkNewTyVar @lUniq
-                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (@arg.kiVarMp |=> @func.ki) @knFunKi
+                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
                             .   fKi                 =   foTy @fo_
                             .   (_,ki)              =   tyArrowArgRes @fKi
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
@@ -238,7 +238,7 @@ SEM TyExpr
   | Row         loc         .   ki                  =   kiRow
 
 SEM RowTyExpr
-  | Ext         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.ki kiStar
+  | Ext         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
                             .   ki                  =   foTy @fo_
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
@@ -254,7 +254,7 @@ SEM TyExpr
                             .   ki                  =   tkgiKi @tkgi_
 
 SEM RowTyExpr
-  | Var         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 (tkgiKi @tkgi_) kiRow
+  | Var         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
                             .   ki                  =   foTy @fo_
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @lhs.kiVarMp
 %%]
@@ -270,7 +270,7 @@ ATTR PrExpr [ | | ki: Ty ]
 SEM PrExpr
   | *           lhs         .   ki                  =   kiStar
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
-                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq
+                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExprs.kiVarMp
                                                           (@tyExprs.kiVarMp |=> (@tyExprs.kiL `mkArrow` kiStar))
                                                           (@tyExprs.kiVarMp |=> tkgiKi @tkgi_)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
@@ -430,7 +430,7 @@ SEM Decl
 SEM Decl
   | Type        loc         .   typeTgi             =   mkTGI (mkTyVar @lUniq)
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
-                loc         .   foTy_               =   fitsIn  strongFIOpts @fe @lUniq3
+                loc         .   foTy_               =   fitsIn  strongFIOpts @fe @lUniq3 @tyExpr.tyVarMp
                                                                 (@tyExpr.ty)
                                                                 (@tyExpr.tyVarMp |=> (tgiTy @typeTgi))
                 lhs         .   tyVarMp             =   foVarMp @foTy_ |=> @tyExpr.tyVarMp
@@ -444,7 +444,7 @@ Kind
 SEM Decl
   | Type        loc         .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
-                loc         .   foKi_               =   fitsIn  strongFIOpts emptyFE @lUniq2
+                loc         .   foKi_               =   fitsIn  strongFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp
                                                                 (@tyExpr.ki)
                                                                 (@tyExpr.kiVarMp |=> (tkgiKi @typeTkgi))
                 lhs         .   kiVarMp             =   foVarMp @foKi_ |=> @tyExpr.kiVarMp

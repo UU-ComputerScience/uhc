@@ -78,7 +78,7 @@ SEM Decl
                                                                            ]
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
                                                                          ]
-                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq9 dataTy @derivHdDataTy
+                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq9 emptyVarMp dataTy @derivHdDataTy
                                                           _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[])
 %%]]
 %%]

@@ -39,7 +39,7 @@ SEM Decl
 SEM Decl
   | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups (@lhs.finTyVarMp |=> @constrs.fldSelGam)
                                                              wrong tl = foHasErrs fo
-                                                                      where fo = fitsInFold unifyFIOpts @fe uidStart $ map (tyArrowRes . vgiTy) $ tl
+                                                                      where fo = fitsInFold unifyFIOpts @fe uidStart @lhs.finTyVarMp $ map (tyArrowRes . vgiTy) $ tl
                                                              nms = [ f | (f,tl) <- ft, wrong tl ]
                                                         in   if null nms then [] else [rngLift @range Err_InconsistentIntros "data field" nms]
 

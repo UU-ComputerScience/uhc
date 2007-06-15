@@ -6,7 +6,7 @@ relation tyAltTyElim =
   view I2 =
     holes [ fiopt: FIOpts, ity: Ty, ityVarMp.in: IVarMp, tvarv.g.._: TyVarIdS | | ty: Ty, ityVarMp: IVarMp ]
     judgespec fiopt; ityVarMp.in; tvarv.g.._ :-..."talt elim" ity : ty ~> ityVarMp
-    judgeuse ag (retain fo_altElim) `=` tyElimAlts (mkFitsInWrap' "@fe") fiopt tvarv.g.._ unique (ityVarMp.in ity)
+    judgeuse ag (retain fo_altElim) `=` tyElimAlts (mkFitsInWrap' "@fe") fiopt tvarv.g.._ unique ityVarMp.in (ityVarMp.in ity)
               | (retain ityVarMp  ) `=` tyElimAltsCleanup ityVarMp.in (foVarMp "@fo_altElim")
               | (retain ty        ) `=` foTy "@fo_altElim"
     explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityVarMp.in| for |ity| , 
