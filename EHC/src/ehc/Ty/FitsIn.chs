@@ -29,7 +29,7 @@
 %%[1 module {%{EH}Ty.FitsIn} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Error}) export (fitsIn)
 %%]
 
-%%[2 import({%{EH}Cnstr},{%{EH}Substitutable})
+%%[2 import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[4 import({%{EH}Ty.Trf.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
@@ -70,13 +70,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(foAppLRCoe)
-foAppLRCoe :: EHCOpts -> FIOut -> Cnstr -> CSubst -> CExpr -> CExpr
+foAppLRCoe :: EHCOpts -> FIOut -> VarMp -> CSubst -> CExpr -> CExpr
 foAppLRCoe opts fo c cs ce = foAppLRCoe' opts (foCSubst fo,foLRCoe fo) c cs ce
 %%]
 
 -- for use by Ruler
 %%[9 export(foAppLRCoe')
-foAppLRCoe' :: EHCOpts -> (CSubst,LRCoe) -> Cnstr -> CSubst -> CExpr -> CExpr
+foAppLRCoe' :: EHCOpts -> (CSubst,LRCoe) -> VarMp -> CSubst -> CExpr -> CExpr
 foAppLRCoe' opts (fCS,fLRCoe) c cs ce
   =  let  s = cs `cSubstApp` fCS
      in   cSubstApp s (lrcoeWipeWeave opts c s fLRCoe `coeEvalOn` ce)
@@ -181,7 +181,7 @@ fitsIn ty1 ty2
 %%]
 
 %%[fitsInBind.2
-            bind tv t                               = (res t) {foCnstr = tv `cnstrTyUnit` t}
+            bind tv t                               = (res t) {foVarMp = tv `varmpTyUnit` t}
             occurBind v t       | v `elem` ftv t    = err [Err_UnifyOccurs ty1 ty2 v t]
                                 | otherwise         = bind v t
 %%]
@@ -200,11 +200,11 @@ fitsIn ty1 ty2
                  = foldr1  (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
                            [ffo,afo,rfo]
                  where  ffo  =   f tf1 tf2
-                        fs   =   foCnstr ffo
+                        fs   =   foVarMp ffo
                         afo  =   f (fs |=> ta1) (fs |=> ta2)
-                        as   =   foCnstr afo
+                        as   =   foVarMp afo
                         rt   =   mkComp (as |=> foTy ffo) (foTy afo)
-                        rfo  =   emptyFO {foTy = rt, foCnstr = as |=> fs}
+                        rfo  =   emptyFO {foTy = rt, foVarMp = as |=> fs}
 %%]
 
 %%[fitsInApp.1
@@ -315,7 +315,7 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[4.fitsIn.bind
-            bind fi tv t            =  (res fi t) {foCnstr = tv `cnstrTyUnit` t}
+            bind fi tv t            =  (res fi t) {foVarMp = tv `varmpTyUnit` t}
 %%]
 
 %%[4_2.fitsIn.bind
@@ -368,13 +368,13 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[4_2
-            bindMany fi tvL t       =  (res fi t) {foCnstr = mkCnstr tvL t}
-            mkCnstr tvL t           =  assocLToCnstr .  map (flip (,) t) $ tvL
+            bindMany fi tvL t       =  (res fi t) {foVarMp = mkVarMp tvL t}
+            mkVarMp tvL t           =  assocLToVarMp .  map (flip (,) t) $ tvL
             cmbTyAltsL t1L t2L      =  nub (q1 ++ q2) ++ nub (r1 ++ r2)
                                        where  p = partition (tyIsQu . tyPlusTy)
                                               (q1,r1) = p t1L
                                               (q2,r2) = p t2L
-            foBindMany tvL t fo     =  foUpdCnstr (mkCnstr tvL t) . foUpdTy t $ fo
+            foBindMany tvL t fo     =  foUpdVarMp (mkVarMp tvL t) . foUpdTy t $ fo
             foBind tv               =  foBindMany [tv]
 %%]
 
@@ -409,16 +409,16 @@ fitsInFI fi ty1 ty2
                 =   (fi {fiUniq = u},uqt,back)
                 where  (u,uq)         = mkNewLevUID (fiUniq fi)
                        (uqt,rtvs)     = tyInst1Quants uq howToInst t
-                       back           = if hide  then  \fo ->  let  s = cnstrDel rtvs (foCnstr fo)
-                                                               in   fo {foCnstr = s, foTy = s |=> t}
+                       back           = if hide  then  \fo ->  let  s = varmpDel rtvs (foVarMp fo)
+                                                               in   fo {foVarMp = s, foTy = s |=> t}
                                                  else  id
 %%]
 %%[4_2.fitsIn.unquant -4.fitsIn.unquant
             unquant fi t hide howToInst
                 =   (fi2,uqt,back)
                 where  (fi2,uqt,rtvs) = unquant' fi t howToInst
-                       back           = if hide  then  \fo ->  let  s = cnstrDel rtvs (foCnstr fo)
-                                                               in   fo {foCnstr = s, foTy = s |=> t}
+                       back           = if hide  then  \fo ->  let  s = varmpDel rtvs (foVarMp fo)
+                                                               in   fo {foVarMp = s, foTy = s |=> t}
                                                  else  id
             unquant' fi t howToInst
                 =   (fi {fiUniq = u},uqt,rtvs)
@@ -428,7 +428,7 @@ fitsInFI fi ty1 ty2
 
 %%[4.fitsIn.FOUtils
             foUpdTy  t   fo  = fo {foTy = t}
-            foUpdCnstr c fo  = fo {foCnstr = c |=> foCnstr fo}
+            foUpdVarMp c fo  = fo {foVarMp = c |=> foVarMp fo}
 %%]
 
 %%[4_2.fitsIn.FOUtils
@@ -436,8 +436,8 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[4.fitsIn.foCmb
-            foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foCnstr afo |=> foTy ffo) (foTy afo)}
-            foCmbCnstr   ffo afo  = afo {foCnstr = foCnstr afo |=> foCnstr ffo}
+            foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foVarMp afo |=> foTy ffo) (foTy afo)}
+            foCmbVarMp   ffo afo  = afo {foVarMp = foVarMp afo |=> foVarMp ffo}
             foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 %%]
 
@@ -447,19 +447,19 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[50.fitsIn.foCmb
-            foCmbEqCnstr ffo afo  = afo {foEqCnstr = foEqCnstr afo |=> foEqCnstr ffo}
+            foCmbEqVarMp ffo afo  = afo {foEqVarMp = foEqVarMp afo |=> foEqVarMp ffo}
 %%]
 
 %%[4.fitsIn.foCmbApp
-            foCmbApp     ffo      = foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
+            foCmbApp     ffo      = foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
 %%]
 
 %%[9.fitsIn.foCmbApp -4.fitsIn.foCmbApp
-            foCmbApp     ffo      = foCmbPrfRes ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
+            foCmbApp     ffo      = foCmbPrfRes ffo . foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
 %%]
 
 %%[50.fitsIn.foCmbApp -9.fitsIn.foCmbApp
-            foCmbApp     ffo      = foCmbEqCnstr ffo . foCmbPrfRes ffo . foCmbCoCon ffo . foCmbCnstr ffo . foCmbAppTy ffo
+            foCmbApp     ffo      = foCmbEqVarMp ffo . foCmbPrfRes ffo . foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
 %%]
 
 %%[7.fitsIn.foCmbPrfRes
@@ -482,8 +482,8 @@ fitsInFI fi ty1 ty2
             foUpdPrL prL prMp fo = foUpdCnstrMp prMp $ fo {foPredOccL = prL ++ foPredOccL fo}
             foUpdCSubst s fo = fo {foCSubst = cSubstOptApp globOpts s (foCSubst fo)}
             foUpdImplExpl iv im tpr fo
-                            = foUpdCnstr (iv `cnstrImplsUnit` (foCnstr fo |=> im))
-                            $ foUpdTy ([foCnstr fo |=> tpr] `mkArrow` foTy fo)
+                            = foUpdVarMp (iv `varmpImplsUnit` (foVarMp fo |=> im))
+                            $ foUpdTy ([foVarMp fo |=> tpr] `mkArrow` foTy fo)
                             $ fo
             foUpdImplExplCoe iv im tpr lrcoe fo
                             = foUpdImplExpl iv im tpr . foUpdLRCoe lrcoe $ fo
@@ -494,9 +494,9 @@ fitsInFI fi ty1 ty2
               =  foldr  (\(t1,t2) (foL,fii,c)
                            -> let  fo = ff (fii) (c |=> t1) (c |=> t2)
                               in   (fo:foL,fii {fiUniq = foUniq fo},fo `cCmb` c))
-                        ([],fi,emptyCnstr)
+                        ([],fi,emptyVarMp)
                         (zip tL1 tL2)
-            fPairWise = fPairWise' (\fo c -> foCnstr fo |=> c)
+            fPairWise = fPairWise' (\fo c -> foVarMp fo |=> c)
 %%]
 
 %%[50
@@ -519,9 +519,9 @@ fitsInFI fi ty1 ty2
                        mkTv fi    = (fi',mkTyVar u)
                          where  (u',u) = mkNewUID (fiUniq fi)
                                 fi' = fi {fiUniq = u'}
-                       bind fo v r e = manyFO [fo,foUpdTy (foTy fo `mkTyRow` e') . foUpdCnstr (v `cnstrTyUnit` mkTyRow r' e') $ fo]
-                         where  e' = foCnstr fo |=> e
-                                r' = foCnstr fo |=> r
+                       bind fo v r e = manyFO [fo,foUpdTy (foTy fo `mkTyRow` e') . foUpdVarMp (v `varmpTyUnit` mkTyRow r' e') $ fo]
+                         where  e' = foVarMp fo |=> e
+                                r' = foVarMp fo |=> r
                        (u',u1)    = mkNewLevUID (fiUniq fi)
                        fi2        = fi {fiUniq = u'}
                        
@@ -550,9 +550,9 @@ fitsInFI fi ty1 ty2
                        fR fi r1 r2 e1 e12@(_:_) e2
                          = foR
                          where (e1L,e2L) = unzip e12
-                               (foL,fi2,fCnstr) = fPairWise (fiUpdOpts fioMkStrong fi) (assocLElts e1L) (assocLElts e2L)
+                               (foL,fi2,fVarMp) = fPairWise (fiUpdOpts fioMkStrong fi) (assocLElts e1L) (assocLElts e2L)
                                eKeys = assocLKeys e1L
-                               eL = zip eKeys (map ((fCnstr |=>) . foTy) foL)
+                               eL = zip eKeys (map ((fVarMp |=>) . foTy) foL)
                                fo = fR fi2 r1 r2 e1 [] e2
                                foR = manyFO ([fo] ++ foL ++ [foRes])
                                foRes = (\fo -> foldr foCmbPrfRes fo foL)
@@ -562,7 +562,7 @@ fitsInFI fi ty1 ty2
 %%]
 %%[7
                                        $ foUpdTy (foTy fo `mkTyRow` eL)
-                                       $ foUpdCnstr fCnstr fo
+                                       $ foUpdVarMp fVarMp fo
 %%]
 
 %%[7.fitsIn.fRow.fRFinal
@@ -589,12 +589,12 @@ fitsInFI fi ty1 ty2
 
 %%[10.fitsIn.fRow.foR -7.fitsIn.fRow.foR
                        fo         = fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
-                       foR        = (if isRec then foUpdRecCoe (foCnstr fo |=> r1) (foCnstr fo |=> r2) extsIn1 extsIn12 extsIn2 else id) fo 
+                       foR        = (if isRec then foUpdRecCoe (foVarMp fo |=> r1) (foVarMp fo |=> r2) extsIn1 extsIn12 extsIn2 else id) fo 
                        foUpdRecCoe r1 r2 e1 e12 e2 fo
                          =  let  rn = uidHNm u1
                                  predScope = fePredScope (fiEnv fi)
                                  r = CExpr_Var rn
-                                 tr1s = foCnstr fo |=> tr1
+                                 tr1s = foVarMp fo |=> tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnSuffix rn "!") r CTagRec n n (mkCExprHole globOpts u) Nothing
                                  mkLPred' r l u
@@ -659,7 +659,7 @@ fitsInFI fi ty1 ty2
                        foUpdRecFldsCoe eKeys foL tr1 foR
                          =  let cL =   [  (l,c)
                                        |  (l,fo) <- zip eKeys foL
-                                       ,  let c = lrcoeWipeWeave globOpts (foCnstr foR) (foCSubst foR) (foLRCoe fo)
+                                       ,  let c = lrcoeWipeWeave globOpts (foVarMp foR) (foCSubst foR) (foLRCoe fo)
                                        ,  not (coeIsId c)
                                        ]
                             in  foR {foRowCoeL = cL}
@@ -725,8 +725,8 @@ fitsInFI fi ty1 ty2
 
 %%[50.fitsIn.EqualVar
             f fi t1@(Ty_Var v1 _) t2@(Ty_Equal v2 t2e)
-                | fioAllowEqOpen (fiFIOpts fi)      = (bind fi v2 t2e) {foEqCnstr = ce}
-                where  ce = v1 `cnstrTyUnit` Ty_Equal v1 t2e
+                | fioAllowEqOpen (fiFIOpts fi)      = (bind fi v2 t2e) {foEqVarMp = ce}
+                where  ce = v1 `varmpTyUnit` Ty_Equal v1 t2e
 %%]
 
 %%[4.fitsIn.Var1
@@ -851,13 +851,13 @@ fitsInFI fi ty1 ty2
                        (u',u1,u2) = mkNewLevUID2 (fiUniq fi)
                        (fi1,uqt1,rtvs1) = unquant' (fi {fiUniq = u'}) t1 instMeet
                        fo = ff fi1 uqt1 t2
-                       (ebTy,ebCnstr) = tyElimBoth rtvs1 (foTy fo)
+                       (ebTy,ebVarMp) = tyElimBoth rtvs1 (foTy fo)
                        ebTy' =  if     m == FitMeet && tyquIsExists q1
                                    ||  m == FitJoin && tyquIsForall q1
-                                then ebCnstr |=> ebTy
+                                then ebVarMp |=> ebTy
                                 else ebTy
                        tvs = rtvs1 `List.intersect` ftv ebTy'
-                       fo2 = foUpdTy (mkTyQu q1 tvs ebTy') . foUpdCnstr ebCnstr $ fo
+                       fo2 = foUpdTy (mkTyQu q1 tvs ebTy') . foUpdVarMp ebVarMp $ fo
 %%]
 
 %%[4_2.fitsIn.QR
@@ -879,12 +879,12 @@ fitsInFI fi ty1 ty2
                        fP tpr1@(Ty_Pred _)              tpr2@(Ty_Pred _)
                             =  if foHasErrs pfo
                                then Nothing
-                               else Just  ( foUpdTy ([foCnstr fo |=> foTy pfo] `mkArrow` foTy fo)
+                               else Just  ( foUpdTy ([foVarMp fo |=> foTy pfo] `mkArrow` foTy fo)
                                           $ foUpdLRCoe (mkIdLRCoe n)
                                           $ fo)
                             where  pfo   = f (fi2 {fiFIOpts = predFIOpts}) tpr2 tpr1
                                    n     = uidHNm u2
-                                   fo    = ff (fi2 {fiUniq = foUniq pfo}) (foCnstr pfo |=> tr1) (foCnstr pfo |=> tr2)
+                                   fo    = ff (fi2 {fiUniq = foUniq pfo}) (foVarMp pfo |=> tr1) (foVarMp pfo |=> tr2)
                        fP tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2 ipo2))
                             =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId basePrfCtxtId u2) ipo2 im2) tpr1 (mkIdLRCoe n) fo)
                             where  im2   = Impls_Tail u1 ipo2
@@ -921,7 +921,7 @@ fitsInFI fi ty1 ty2
                 where  (u',u1)          = mkNewLevUID (fiUniq fi)
                        fi2              = fi {fiUniq = u'}
                        mbfp             = fP tpr2
-                       mkPrTy pr2 fo    = [Ty_Pred (foCnstr fo |=> pr2)] `mkArrow` foTy fo
+                       mkPrTy pr2 fo    = [Ty_Pred (foVarMp fo |=> pr2)] `mkArrow` foTy fo
                        fSub pr2v pr2 tr2
                             =  let  pr2n  = poiHNm pr2v
                                     (fi3,cnstrMp)
@@ -933,7 +933,7 @@ fitsInFI fi ty1 ty2
                             =  Just fo
                             where fo = f fi2 t1 tr2
                        fP (Ty_Impls (Impls_Tail iv2 _))
-                            =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) fo)
+                            =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) fo)
                             where fo = f fi2 t1 tr2
                        fP (Ty_Impls (Impls_Cons _ pr2 pv2 _ im2))
                             =  Just (foUpdLRCoe (lrcoeRSingleton rCoe) $ foUpdTy (mkPrTy pr2 fo) $ fo)
@@ -952,14 +952,14 @@ fitsInFI fi ty1 ty2
                        mbfp             = fP tpr1
                        fSub pv1 psc1 pr1 tr1
                             =  let  fo    = f fi2 tr1 t2
-                                    fs    = foCnstr fo
+                                    fs    = foVarMp fo
                                     prfPrL= [mkPredOcc (fs |=> pr1) pv1 psc1]
                                     coe   = mkAppCoe [mkCExprPrHole globOpts pv1]
                                in   (fo,coe,gathPredLToProveCnstrMp prfPrL)
                        fP (Ty_Impls (Impls_Nil))
                             =  Just (f fi2 tr1 t2)
                        fP (Ty_Impls (Impls_Tail iv1 _))
-                            =  Just (foUpdCnstr (iv1 `cnstrImplsUnit` Impls_Nil) (f fi2 tr1 t2))
+                            =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (f fi2 tr1 t2))
                        fP (Ty_Impls (Impls_Cons _ pr1 pv1 _ im1))
                             =  Just (foUpdPrL [] cnstrMp $ foUpdLRCoe (lrcoeLSingleton lCoe) $ fo)
                             where (fo,lCoe,cnstrMp) = fSub pv1 prfPredScope pr1 ([Ty_Impls im1] `mkArrow` tr1)
@@ -973,7 +973,7 @@ fitsInFI fi ty1 ty2
                             =  Just (foUpdTy ([im2] `mkArrow` foTy fo) $ fo)
                             where fo = f fi2 t1 tr2
                        fP (Ty_Impls (Impls_Tail iv2 _))
-                            =  Just (foUpdCnstr (iv2 `cnstrImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
+                            =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
                             where fo = f fi2 t1 tr2
 
 %%[7
@@ -1004,7 +1004,7 @@ fitsInFI fi ty1 ty2
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
                 = manyFO [ffo,afo,foCmbApp ffo afo]
                 where  ffo  = f fi tf1 tf2
-                       fs   = foCnstr ffo
+                       fs   = foVarMp ffo
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
                        fi'  = fi  { fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts $ fi
                                   , fiUniq    = foUniq ffo }
@@ -1015,7 +1015,7 @@ fitsInFI fi ty1 ty2
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
                 = manyFO [ffo,afo,rfo]
                 where  ffo  = f fi tf1 tf2
-                       fs   = foCnstr ffo
+                       fs   = foVarMp ffo
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
                        fi'  = fi  { fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts $ fi
                                   , fiUniq    = foUniq ffo }
@@ -1060,7 +1060,7 @@ fitsInL :: FIOpts -> FIEnv -> UID -> TyL -> TyL -> (TyL,FIOut)
 fitsInL opts env uniq tyl1 tyl2
   = (map foTy foL,fo)
   where (fo,foL)
-          = fitsInLWith (\fo1 fo2 -> fo2 {foCnstr = foCnstr fo1 |=> foCnstr fo2, foErrL = foErrL fo1 ++ foErrL fo2})
+          = fitsInLWith (\fo1 fo2 -> fo2 {foVarMp = foVarMp fo1 |=> foVarMp fo2, foErrL = foErrL fo1 ++ foErrL fo2})
                         (mkFitsInWrap' env) opts uniq tyl1 tyl2
 %%]
 
@@ -1080,26 +1080,26 @@ fitsInFold opts env uniq tyl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(fitPredIntoPred)
-fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,Cnstr)
+fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,VarMp)
 fitPredIntoPred fi pr1 pr2 
   = f pr1 pr2
-  where f (Pred_Var pv1)    	pr2@(Pred_Var pv2) | pv1 /= pv2     = Just (pr2,pv1 `cnstrPredUnit` pr2)
-                                                   | otherwise      = Just (pr2,emptyCnstr)
+  where f (Pred_Var pv1)    	pr2@(Pred_Var pv2) | pv1 /= pv2     = Just (pr2,pv1 `varmpPredUnit` pr2)
+                                                   | otherwise      = Just (pr2,emptyVarMp)
         f pr1               	(Pred_Var pv2)                      = Nothing
-        f (Pred_Var pv1)    	pr2                                 = Just (pr2,pv1 `cnstrPredUnit` pr2)
+        f (Pred_Var pv1)    	pr2                                 = Just (pr2,pv1 `varmpPredUnit` pr2)
 %%[[10
         f (Pred_Lacks (Ty_Var rv1 TyVarCateg_Plain)    (Label_Var lv1))
           (Pred_Lacks ty2                           l2@(Label_Lab lb2))
-          = Just (Pred_Lacks ty2 l2, (rv1 `cnstrTyUnit` ty2) |=> (lv1 `cnstrLabelUnit` l2))
+          = Just (Pred_Lacks ty2 l2, (rv1 `varmpTyUnit` ty2) |=> (lv1 `varmpLabelUnit` l2))
         f (Pred_Lacks ty1                              (Label_Var lv1))
           (Pred_Lacks ty2                           l2@(Label_Lab lb2))
           | tyIsEmptyRow ty1 && tyIsEmptyRow ty2
-          = Just (Pred_Lacks ty2 l2, lv1 `cnstrLabelUnit` l2)
+          = Just (Pred_Lacks ty2 l2, lv1 `varmpLabelUnit` l2)
 %%]]
         f pr1               	pr2
           = if foHasErrs fo
             then Nothing
-            else Just (tyPred $ foTy fo,foCnstr fo)
+            else Just (tyPred $ foTy fo,foVarMp fo)
           where fo = fitsIn (predFIOpts {fioDontBind = ftv pr2 ++ fioDontBind (fiFIOpts fi)}) fe u (Ty_Pred pr1) (Ty_Pred pr2)
                 fe = fiEnv fi
                 u  = fiUniq fi
@@ -1145,7 +1145,7 @@ mkFitsInWrap' env
 mkFitsInWrap :: FIEnv -> FitsIn
 mkFitsInWrap env
   =  \opt u t1 t2 ->  let  fo = fitsIn opt env u t1 t2
-                      in   (foTy fo, foCnstr fo, foErrL fo)
+                      in   (foTy fo, foVarMp fo, foErrL fo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1165,7 +1165,7 @@ tyBetaRed1 tyGam tp
           where (lamArgs,lamBody) = tyLamArgsRes lam
                 lamLen = length lamArgs
                 argLen = length args
-                subst  = assocLToCnstr (zip lamArgs args)
+                subst  = assocLToVarMp (zip lamArgs args)
         eval (Ty_Con nm) aa
               = case tyGamLookup nm tyGam of
                   Just tgi -> case tgiTy tgi of

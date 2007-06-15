@@ -10,10 +10,10 @@
 %%[3 hs module {%{EH}Ty.Trf.Instantiate}
 %%]
 
-%%[3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyInst)
+%%[3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyInst)
 %%]
 
-%%[4.tyInst -3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[4.tyInst -3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[4 hs import({%{EH}Base.Debug},EH.Util.Pretty)
@@ -45,8 +45,8 @@ tyInst' mkFreshTy uniq ty
   = s |=> ty'
   where  i u (Ty_Quant v t)  =  let  (u',v') = mkNewUID u
                                      (s,t') = i u' t
-                                in   ((v `cnstrTyUnit` (mkFreshTy v')) |=> s,t')
-         i _ t               =  (emptyCnstr,t)
+                                in   ((v `varmpTyUnit` (mkFreshTy v')) |=> s,t')
+         i _ t               =  (emptyVarMp,t)
          (s,ty')             =  i uniq ty
 
 tyInst :: UID -> Ty -> Ty
@@ -114,8 +114,8 @@ tyInst uniq onlyExists howToInst ty
   where  i u mbQ (Ty_Quant q v t) | not (tyquIsForall q && onlyExists) && maybe True (==q) mbQ
                              =  let  (u',v')        = mkNewUID u
                                      (s,t',tvl')    = i u' (Just q) t
-                                in   ((v `cnstrTyUnit` (howToInst q v')) |=> s,t',v':tvl')
-         i _ _ t             =  (emptyCnstr,t,[])
+                                in   ((v `varmpTyUnit` (howToInst q v')) |=> s,t',v':tvl')
+         i _ _ t             =  (emptyVarMp,t,[])
          (s,ty',tvl)         =  i uniq Nothing ty
 
 
@@ -168,19 +168,19 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
-ATTR AllTy [ replSubst: Cnstr | gathSubst: Cnstr | ]
+ATTR AllTy [ replSubst: VarMp | gathSubst: VarMp | ]
 ATTR Ty TyAGItf [ | | replTvL USE {++} {[]}: TyVarIdL ]
 ATTR AllTyAndFlds [ | | repl: SELF ]
 ATTR TyAGItf [ | | repl: Ty ]
 
 SEM TyAGItf
-  | AGItf           ty          .   gathSubst   =   emptyCnstr
+  | AGItf           ty          .   gathSubst   =   emptyVarMp
                                 .   replSubst   =   @ty.gathSubst
 
 SEM Ty
   | Quant           loc         .   tvNew       =   @lUniq
                     ty          .   gathSubst   =   if @allow
-                                                    then  (@tv `cnstrTyUnit` @lhs.howToInst @qu.repl @tvNew) `cnstrPlus` @lhs.gathSubst
+                                                    then  (@tv `varmpTyUnit` @lhs.howToInst @qu.repl @tvNew) `varmpPlus` @lhs.gathSubst
                                                     else  (@lhs.gathSubst)
 %%]
 
@@ -199,11 +199,11 @@ SEM Ty
                                                 =   if @allow
                                                     then  (@ty.repl,@tvNew : @ty.replTvL)
                                                     else  (@repl,[])
-  | Var             lhs         .   repl        =   maybe @repl id (cnstrTyLookup @tv @lhs.replSubst)
+  | Var             lhs         .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.replSubst)
 %%]
 
 %%[50
 SEM Ty
-  | Equal           lhs         .   repl        =   maybe @repl (\t -> Ty_Equal (tyVar t) @ty.repl) (cnstrTyLookup @tv @lhs.replSubst)
+  | Equal           lhs         .   repl        =   maybe @repl (\t -> Ty_Equal (tyVar t) @ty.repl) (varmpTyLookup @tv @lhs.replSubst)
 %%]
 

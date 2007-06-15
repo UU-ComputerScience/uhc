@@ -22,7 +22,7 @@ SEM TyVars
   | Nil   lhs.annKindF   = id
 
 SEM TyVar
-  | Var  (loc.annKind,_) = infuseAnn Map.empty (@lhs.finKiCnstr |=> @loc.ki) @loc.annUniq
+  | Var  (loc.annKind,_) = infuseAnn Map.empty (@lhs.finKiVarMp |=> @loc.ki) @loc.annUniq
 
 ATTR TyVar TyVars [|| kindOverruleMap USE {`Map.union`} {Map.empty} : {Map TyVarId Ty} ]
 SEM TyVar

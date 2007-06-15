@@ -26,11 +26,11 @@ format ag use ((a|Ty) -> r) `=` v = (a,r) `=` tyArrowArgRes (v)
 format ag use ((...) -> r) `=` v = r `=` tyArrowRes (v)
 format ag use (p => a -> r) `=` v = (p,a,r) `=` tyArrowImplsArgRes (v)
 
--- Cnstr
-format ag def  (c | Cnstr, ICnstr) (v | a) = (((c) |=> (v) | a))
-format ag def  (c1 | Cnstr, ICnstr) (c2 | Cnstr, ICnstr) (v | a) = (((c1) |=> (c2) |=> (v) | a))
-format ag def  (c1 | Cnstr, ICnstr) (c2 | Cnstr, ICnstr) (c3 | Cnstr, ICnstr) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (v) | a))
-format ag def  (c1 | Cnstr, ICnstr) (c2 | Cnstr, ICnstr) (c3 | Cnstr, ICnstr) (c4 | Cnstr, ICnstr) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (c4) |=> (v) | a))
+-- VarMp
+format ag def  (c | VarMp, IVarMp) (v | a) = (((c) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (c4 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (c4) |=> (v) | a))
 -- format ag def  (c1) (c2) (c3) (v) = c1 |=> c2 |=> c3 |=> v
 
 -- Gam
@@ -41,7 +41,7 @@ format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam
 format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
 
 -- Coercion
-format ag def  (coe | Coe) (transl | TranslExpr) = (foAppLRCoe' "@lhs.opts" (coe) "@lhs.finTyCnstr" "@lhs.cSubst" (transl) | TranslExpr)
+format ag def  (coe | Coe) (transl | TranslExpr) = (foAppLRCoe' "@lhs.opts" (coe) "@lhs.finTyVarMp" "@lhs.cSubst" (transl) | TranslExpr)
 
 -- Nm
 format ag def `|` (nm | Nm) `|` = (hsnProdArity (nm) | Int)
@@ -157,40 +157,40 @@ format tvars.g = tvarv.g.._
 
 format ag tyLVar = map tyVar
 
--- Impred Cnstr
-format tex ityCnstr = ICnstr
-format tex ityCnstr.in = ICnstr..k
-format tex ityCnstr.inh = ICnstr..k
-format tex ityCnstr.syn = ICnstr
-format tex ityCnstr.fitA = ICnstr.A
-format tex ityCnstr.fitF = ICnstr.F
-format tex ityCnstr.valGam = ityCnstr.Gamma
-format tex ityCnstr.elim = tyCnstr.Gamma
+-- Impred VarMp
+format tex ityVarMp = IVarMp
+format tex ityVarMp.in = IVarMp..k
+format tex ityVarMp.inh = IVarMp..k
+format tex ityVarMp.syn = IVarMp
+format tex ityVarMp.fitA = IVarMp.A
+format tex ityVarMp.fitF = IVarMp.F
+format tex ityVarMp.valGam = ityVarMp.Gamma
+format tex ityVarMp.elim = tyVarMp.Gamma
 
-format ag ityCnstr = imprTyCnstr
+format ag ityVarMp = imprTyVarMp
 
--- Plain Cnstr
-external emptyCnstr'
-external emptyCnstr
+-- Plain VarMp
+external emptyVarMp'
+external emptyVarMp
 
-format tex cnstr = Cnstr
-format tex emptyCnstr = []
-format tex emptyCnstr' =
-format tex patTyCnstr.syn = Cnstr.p
-format tex patTyCnstr.inh = Cnstr.p.k
-format tex tyCnstr = Cnstr
-format tex tyCnstr.inh = Cnstr..k
-format tex tyCnstr.syn = Cnstr
-format tex tySigTyCnstr.inh = Cnstr.t.k
-format tex tySigTyCnstr.syn = Cnstr.t
-format tex tyCnstr.r = Cnstr.r
-format tex tyCnstr.fun = Cnstr.f
-format tex tyCnstr.fitP = Cnstr.P
-format tex tyCnstr.fitF = Cnstr.F
-format tex tyCnstr.fitE = Cnstr.E
-format tex tyCnstr.arg = Cnstr.a
+format tex cnstr = VarMp
+format tex emptyVarMp = []
+format tex emptyVarMp' =
+format tex patTyVarMp.syn = VarMp.p
+format tex patTyVarMp.inh = VarMp.p.k
+format tex tyVarMp = VarMp
+format tex tyVarMp.inh = VarMp..k
+format tex tyVarMp.syn = VarMp
+format tex tySigTyVarMp.inh = VarMp.t.k
+format tex tySigTyVarMp.syn = VarMp.t
+format tex tyVarMp.r = VarMp.r
+format tex tyVarMp.fun = VarMp.f
+format tex tyVarMp.fitP = VarMp.P
+format tex tyVarMp.fitF = VarMp.F
+format tex tyVarMp.fitE = VarMp.E
+format tex tyVarMp.arg = VarMp.a
 
-format ag emptyCnstr' = emptyCnstr
+format ag emptyVarMp' = emptyVarMp
 
 -- Decl
 format tex declExpr = e

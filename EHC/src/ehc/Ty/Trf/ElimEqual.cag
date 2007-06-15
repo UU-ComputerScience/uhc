@@ -7,7 +7,7 @@
 %%% Haskell importable interface to eliminate 'Equal' types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50 hs module {%{EH}Ty.Trf.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyElimEqual)
+%%[50 hs module {%{EH}Ty.Trf.ElimEqual} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyElimEqual)
 %%]
 
 %%[50.WRAPPER ag import({Ty/AbsSyn})
@@ -15,12 +15,12 @@ WRAPPER TyAGItf
 %%]
 
 %%[50 hs
-tyElimEqual :: Ty -> (Ty,Cnstr)
+tyElimEqual :: Ty -> (Ty,VarMp)
 tyElimEqual ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf)
-     in   (repl_Syn_TyAGItf t,tyCnstr_Syn_TyAGItf t)
+     in   (repl_Syn_TyAGItf t,tyVarMp_Syn_TyAGItf t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,17 +36,17 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Replacement for tvars in form of Cnstr
+%%% Replacement for tvars in form of VarMp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-ATTR AllTyAndFlds [ | tyCnstr: Cnstr | ]
-ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
+ATTR AllTyAndFlds [ | tyVarMp: VarMp | ]
+ATTR TyAGItf  [ | | tyVarMp: VarMp ]
 
 SEM TyAGItf
-  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+  | AGItf           ty      .   tyVarMp     =   emptyVarMp
 
 SEM Ty
-  | Equal           ty      .   tyCnstr     =   (@tv `cnstrTyUnit` mkTyVar @tv) |=> @lhs.tyCnstr
+  | Equal           ty      .   tyVarMp     =   (@tv `varmpTyUnit` mkTyVar @tv) |=> @lhs.tyVarMp
 %%]
 

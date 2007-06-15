@@ -6,7 +6,7 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}Cnstr})
+%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp})
 %%]
 
 %%[9 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
@@ -37,8 +37,8 @@ Conversion from Pred to CHR.
 
 %%[9 export(ScopedPredStore,ScopedPredCHR)
 type PredStore p g s info = CHRStore p info g s
-type ScopedPredStore = PredStore CHRPredOcc Guard Cnstr RedHowAnnotation
-type ScopedPredCHR   = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard Cnstr
+type ScopedPredStore = PredStore CHRPredOcc Guard VarMp RedHowAnnotation
+type ScopedPredCHR   = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

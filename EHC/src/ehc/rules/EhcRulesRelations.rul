@@ -4,19 +4,19 @@
 
 relation tyAltTyElim =
   view I2 =
-    holes [ fiopt: FIOpts, ity: Ty, ityCnstr.in: ICnstr, tvarv.g.._: TyVarIdS | | ty: Ty, ityCnstr: ICnstr ]
-    judgespec fiopt; ityCnstr.in; tvarv.g.._ :-..."talt elim" ity : ty ~> ityCnstr
-    judgeuse ag (retain fo_altElim) `=` tyElimAlts (mkFitsInWrap' "@fe") fiopt tvarv.g.._ unique (ityCnstr.in ity)
-              | (retain ityCnstr  ) `=` tyElimAltsCleanup ityCnstr.in (foCnstr "@fo_altElim")
+    holes [ fiopt: FIOpts, ity: Ty, ityVarMp.in: IVarMp, tvarv.g.._: TyVarIdS | | ty: Ty, ityVarMp: IVarMp ]
+    judgespec fiopt; ityVarMp.in; tvarv.g.._ :-..."talt elim" ity : ty ~> ityVarMp
+    judgeuse ag (retain fo_altElim) `=` tyElimAlts (mkFitsInWrap' "@fe") fiopt tvarv.g.._ unique (ityVarMp.in ity)
+              | (retain ityVarMp  ) `=` tyElimAltsCleanup ityVarMp.in (foVarMp "@fo_altElim")
               | (retain ty        ) `=` foTy "@fo_altElim"
-    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityCnstr.in| for |ity| , 
+    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityVarMp.in| for |ity| , 
              |ty| equals |ity| in which all type alternatives (except for global type variables |tvarv.g.._|) are eliminated,
-             under |ityCnstr| constraining the type alternative variables to their type alternive eliminated type.
+             under |ityVarMp| constraining the type alternative variables to their type alternive eliminated type.
             )
     explain ity = (Type with type alternatives |talt|)
     explain ty = (Result type, without type alternatives |talt| (for non global type variables))
-    explain ityCnstr.in =  (Known constraints for type variables in |ity|)
-    explain ityCnstr =  (New constraints, constraining the type alternative variables to their type alternive eliminated type)
+    explain ityVarMp.in =  (Known constraints for type variables in |ity|)
+    explain ityVarMp =  (New constraints, constraining the type alternative variables to their type alternive eliminated type)
     explain tvarv.g.._ = (Global variables (which are not eliminated))
     explain fiopt = (Options to matching, in particular indicating meet/join)
 
@@ -27,13 +27,13 @@ relation tyAltTyElim =
 
 relation valElimExprAlts =
   view I2 =
-    holes [ fiopt: FIOpts, valGam: ValGam, ityCnstr.in: ICnstr, tvarv.g.._: TyVarIdS | | ityCnstr: ICnstr ]
-    judgespec fiopt; ityCnstr.in; tvarv.g.._ :-..."Gamma talt elim" valGam : ityCnstr
-    judgeuse ag (lArgElimValGam,ityCnstr,errGam)
-                    `=` valElimExprAlts (fiopt) "@fe" (tvarv.g.._) unique (ityCnstr.in) (valGam)
-    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityCnstr.in| for types in |valGam| , 
+    holes [ fiopt: FIOpts, valGam: ValGam, ityVarMp.in: IVarMp, tvarv.g.._: TyVarIdS | | ityVarMp: IVarMp ]
+    judgespec fiopt; ityVarMp.in; tvarv.g.._ :-..."Gamma talt elim" valGam : ityVarMp
+    judgeuse ag (lArgElimValGam,ityVarMp,errGam)
+                    `=` valElimExprAlts (fiopt) "@fe" (tvarv.g.._) unique (ityVarMp.in) (valGam)
+    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityVarMp.in| for types in |valGam| , 
              all type alternatives (except for global type variables |tvarv.g.._|) are eliminated,
-             under constraints |ityCnstr| .
+             under constraints |ityVarMp| .
             )
 
 -------------------------------------------------------------------------
@@ -50,7 +50,7 @@ relation match =
     explain rty = (Type to match)
     explain ty = (Result type)
   view C =
-    holes [ | | cnstr: Cnstr ]
+    holes [ | | cnstr: VarMp ]
     judgespec :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr
     judgeuse tex :-..howToMatch lty howToMatch rty : ty ~> cnstr
     explain cnstr = (Additional constraints under which matching succeeds)
@@ -85,12 +85,12 @@ relation fit =
     explain rty = (Type in which |lty| must fit)
     explain ty = (Result type, (in general) equals |rty| , but differs slightly in later versions)
   view C =
-    holes [ | | cnstr: Cnstr ]
+    holes [ | | cnstr: VarMp ]
     judgespec :-.."<=" lty <= rty : fo : ty ~> cnstr
     judgeuse tex :-.."<=" lty <= rty : ty ~> cnstr
     judgeuse ag (retain fo) `=` fitsIn ^ ((lty) - (rty))
            | ty `=` foTy (fo)
-           | cnstr `=` foCnstr (fo)
+           | cnstr `=` foVarMp (fo)
     explain ty = (|ty === cnstr rty|)
   view I1 =
     holes [ fiopt: FIOpts | | ]
@@ -98,7 +98,7 @@ relation fit =
     judgeuse tex fiopt :-.."<=" lty <= rty : ty ~> cnstr
     judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (lty) (rty)
            | ty `=` foTy (fo)
-           | cnstr `=` foCnstr (fo)
+           | cnstr `=` foVarMp (fo)
     explain fiopt = (Options to | <=> |)
   view EX =
     explain ty = (|ty === cnstr rty| , where quantifiers in |rty| may be left instantiated in |ty| (depending on |fiopt|))
@@ -108,7 +108,7 @@ relation fit =
     judgeuse tex fiopt :-.."<=" lty <= rty : ty ~> cnstr ; coe
     judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (lty) (rty)
            | ty `=` foTy fo
-           | cnstr `=` foCnstr (fo)
+           | cnstr `=` foVarMp (fo)
            | coe `=` (foCSubst (fo),foLRCoe (fo))
     explain coe = (Coercion (from |lty| to |rty| values) required for | <= | to hold)
 
@@ -118,7 +118,7 @@ relation fit =
 
 relation join =
   view I2 =
-    holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
+    holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: VarMp ]
     judgespec fiopt :-.."<->" lty <-> rty : ty ~> cnstr
     explain (| <-> | delegates to | <=> | .)
     explain lty = (Type to join)
@@ -132,7 +132,7 @@ relation join =
 
 relation meet =
   view I2 =
-    holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: Cnstr ]
+    holes [ fiopt: FIOpts, lty: Ty, rty: Ty | | ty: Ty, cnstr: VarMp ]
     judgespec fiopt :-.."<+>" lty <+> rty : ty ~> cnstr
     explain (| <+> | delegates to | <=> | .)
     explain lty = (Type to meet)
@@ -294,31 +294,31 @@ relation bind1PredToTy =
     judgespec predGam === [pred :> evid : ty ]
 
 -------------------------------------------------------------------------
--- Make a Cnstr
+-- Make a VarMp
 -------------------------------------------------------------------------
 
 relation bind1TyVarToTy =
   view C =
-    holes [ tvarv: TyVarId, ty: Ty | | tyCnstr: Cnstr ]
-    judgespec tyCnstr === [tvarv :-> ty]
-    judgeuse ag  tyCnstr `=` cnstrTyUnit (tvarv) (ty)
+    holes [ tvarv: TyVarId, ty: Ty | | tyVarMp: VarMp ]
+    judgespec tyVarMp === [tvarv :-> ty]
+    judgeuse ag  tyVarMp `=` varmpTyUnit (tvarv) (ty)
 
 relation bind2TyVarToTy =
   view C =
-    holes [ tvarv.1: TyVarId, tvarv.2: TyVarId, ty: Ty | | tyCnstr: Cnstr ]
-    judgespec tyCnstr === [tvarv.1, tvarv.2 :-> ty]
-    judgeuse tex tyCnstr === [tvarv.1 :-> ty, tvarv.2 :-> ty]
-    judgeuse ag  tyCnstr `=` assocLToCnstr [(tvarv.1,ty),(tvarv.2,ty)]
+    holes [ tvarv.1: TyVarId, tvarv.2: TyVarId, ty: Ty | | tyVarMp: VarMp ]
+    judgespec tyVarMp === [tvarv.1, tvarv.2 :-> ty]
+    judgeuse tex tyVarMp === [tvarv.1 :-> ty, tvarv.2 :-> ty]
+    judgeuse ag  tyVarMp `=` assocLToVarMp [(tvarv.1,ty),(tvarv.2,ty)]
 
 -------------------------------------------------------------------------
--- Remove keys from Cnstr
+-- Remove keys from VarMp
 -------------------------------------------------------------------------
 
 relation bindDelTyVarIds =
   view I1 =
-    holes [ tvars: TyVarIdS | thread tyCnstr: Cnstr | ]
-    judgespec tyCnstr.syn === tyCnstr.inh \\ tvars
-    judgeuse tex tyCnstr.syn === tyCnstr.inh \\.tvars."dom"
+    holes [ tvars: TyVarIdS | thread tyVarMp: VarMp | ]
+    judgespec tyVarMp.syn === tyVarMp.inh \\ tvars
+    judgeuse tex tyVarMp.syn === tyVarMp.inh \\.tvars."dom"
 
 -------------------------------------------------------------------------
 -- Free type variables
@@ -448,30 +448,30 @@ relation tyQuantify =
 
 relation valGamQuantify =
   view HM =
-    holes [ valGam.l: ValGam, valGam.g: ValGam, tyCnstr: Cnstr | | valGam.q: ValGam, valGam.l.subs: ValGam, valGam.g.subs: ValGam, gtvars: TyVarIdS ]
-    judgespec valGam.q, gtvars, valGam.l.subs, valGam.g.subs === valGam.l, valGam.g, tyCnstr
+    holes [ valGam.l: ValGam, valGam.g: ValGam, tyVarMp: VarMp | | valGam.q: ValGam, valGam.l.subs: ValGam, valGam.g.subs: ValGam, gtvars: TyVarIdS ]
+    judgespec valGam.q, gtvars, valGam.l.subs, valGam.g.subs === valGam.l, valGam.g, tyVarMp
     judgeuse tex valGam.q
                    ===  [   i :-> forall alpha..._ (.) sigma
-                       `|`  (i :-> sigma) <- tyCnstr valGam.l
-                        ,   alpha..._ === ftv(sigma) `-` ftv(tyCnstr valGam.g)
+                       `|`  (i :-> sigma) <- tyVarMp valGam.l
+                        ,   alpha..._ === ftv(sigma) `-` ftv(tyVarMp valGam.g)
                         ]
-    judgeuse ag (retain valGam.l.subs) `=` tyCnstr (valGam.l)
-              | (retain valGam.g.subs) `=` tyCnstr (valGam.g)
+    judgeuse ag (retain valGam.l.subs) `=` tyVarMp (valGam.l)
+              | (retain valGam.g.subs) `=` tyVarMp (valGam.g)
               | (retain gtvars       ) `=` ftv (valGam.g.subs)
               | (retain valGam.q     ) `=` valGamQuantify gtvars valGam.l.subs
   view I2 =
-    holes [ | | cnstr.q: Cnstr ]
-    judgespec valGam.q, gtvars, valGam.l.subs, valGam.g.subs, cnstr.q === valGam.l, valGam.g, tyCnstr
+    holes [ | | cnstr.q: VarMp ]
+    judgespec valGam.q, gtvars, valGam.l.subs, valGam.g.subs, cnstr.q === valGam.l, valGam.g, tyVarMp
     judgeuse tex cnstr.q
                    ===  [   tvarv.g :-> forall alpha..._ (.) sigma
                        `|`  (i :-> tvarv.g) <- valGam.l
-                        ,   sigma === tyCnstr tvarv.g
-                        ,   alpha..._ === ftv(sigma) \\ ftv(tyCnstr valGam.g)
+                        ,   sigma === tyVarMp tvarv.g
+                        ,   alpha..._ === ftv(sigma) \\ ftv(tyVarMp valGam.g)
                         ]
-    judgeuse ag (retain valGam.l.subs) `=` tyCnstr (valGam.l)
-              | (retain valGam.g.subs) `=` tyCnstr (valGam.g)
+    judgeuse ag (retain valGam.l.subs) `=` tyVarMp (valGam.l)
+              | (retain valGam.g.subs) `=` tyVarMp (valGam.g)
               | (retain gtvars       ) `=` ftv (valGam.g.subs)
-              | (valGam.q,cnstr.q    ) `=` valGamQuantifyWithCnstr (tyCnstr) gtvars (valGam.l)
+              | (valGam.q,cnstr.q    ) `=` valGamQuantifyWithVarMp (tyVarMp) gtvars (valGam.l)
 
 -------------------------------------------------------------------------
 -- Open top level existential types in gamma
@@ -482,23 +482,23 @@ relation valGamInst1Exists =
     holes [ valGam: ValGam | | valGam.e: ValGam ]
     judgespec valGam.e === valGam
     judgeuse tex valGam.e
-                   ===  [   i :-> Cnstr sigma
+                   ===  [   i :-> VarMp sigma
                        `|`  (i :-> exists ^ tvarv..._ (.) sigma) <- valGam
-                        ,   Cnstr === (tvarv :-> tvarf)..._
+                        ,   VarMp === (tvarv :-> tvarf)..._
                         ,   tvarf (text "fresh")
                         ]
     judgeuse ag (retain valGam.e) `=` valGamInst1Exists unique (valGam)
   view I2 =
-    holes [ cnstr: Cnstr | | cnstr.e: Cnstr ]
+    holes [ cnstr: VarMp | | cnstr.e: VarMp ]
     judgespec valGam.e, cnstr.e === valGam, cnstr
     judgeuse tex cnstr.e
-                   ===  [   tvarv.g :-> Cnstr sigma
+                   ===  [   tvarv.g :-> VarMp sigma
                        `|`  (i :-> tvarv.g) <- valGam
                         ,   exists ^ tvarv..._ (.) sigma === cnstr tvarv.g
-                        ,   Cnstr === (tvarv :-> tvarf)..._
+                        ,   VarMp === (tvarv :-> tvarf)..._
                         ,   tvarf (text "fresh")
                         ]
-    judgeuse ag (valGam.e,cnstr.e) `=` valGamInst1ExistsWithCnstr (cnstr) unique (valGam)
+    judgeuse ag (valGam.e,cnstr.e) `=` valGamInst1ExistsWithVarMp (cnstr) unique (valGam)
 
 -------------------------------------------------------------------------
 -- Ftv of ty part of tyGam
@@ -506,20 +506,20 @@ relation valGamInst1Exists =
 
 relation tyGamTyFtv =
   view I1 =
-    holes [ tyGam: TyGam, tyCnstr: Cnstr | | tvars: TyVarIdS ]
-    judgespec tvars === tyGam, tyCnstr
-    judgeuse tex tvars === ftv (tyCnstr tyGam)
-    judgeuse ag (retain tvars) `=` ftv `.` (tyCnstr |=>) `.` map (tgiTy `.` snd) `.` gamToAssocL $ tyGam
+    holes [ tyGam: TyGam, tyVarMp: VarMp | | tvars: TyVarIdS ]
+    judgespec tvars === tyGam, tyVarMp
+    judgeuse tex tvars === ftv (tyVarMp tyGam)
+    judgeuse ag (retain tvars) `=` ftv `.` (tyVarMp |=>) `.` map (tgiTy `.` snd) `.` gamToAssocL $ tyGam
 
 -------------------------------------------------------------------------
 -- Filtering out ty alt constraints
 -------------------------------------------------------------------------
 
 {-
-relation cnstrDelTyAlt =
+relation varmpTyUnitTyAlt =
   view I2 =
-  holes [ ityCnstr: ICnstr | | ityCnstr.elim: ICnstr ]
-  judgespec ityCnstr.elim === [c `|` c@(_ :-> ity) <- ityCnstr, ity =/= _ [_] && ity =/= tvarv ]
+  holes [ ityVarMp: IVarMp | | ityVarMp.elim: IVarMp ]
+  judgespec ityVarMp.elim === [c `|` c@(_ :-> ity) <- ityVarMp, ity =/= _ [_] && ity =/= tvarv ]
 -}
 
 -------------------------------------------------------------------------
@@ -543,9 +543,9 @@ relation eqRLTy =
     judgespec lty =<= rty
     judgeuse tex lty === rty
 
-relation eqRLCnstr =
+relation eqRLVarMp =
   view I2 =
-    holes [ r: Cnstr | | l: Cnstr ]
+    holes [ r: VarMp | | l: VarMp ]
     judgespec l =<= r
     judgeuse tex l === r
     judgeuse ag l `=` r
@@ -594,14 +594,14 @@ relation inst.tvar =
   view HM =
     holes [ ty: Ty, q: TyQu, tvar: TyVarId, mk: String | | ty.i: Ty, tvar.i: TyVarId ]
     judgespec ty.i, tvar.i === q, ty, tvar, mk
-    judgeuse tex ty.i === Cnstr.i ty', ^^ q ^ (tvar)..._ (.) ty' === ty, ^^ Cnstr.i === ([tvar :-> tvar.i])..._, ^^ (tvar.i)..._ (text "fresh")
+    judgeuse tex ty.i === VarMp.i ty', ^^ q ^ (tvar)..._ (.) ty' === ty, ^^ VarMp.i === ([tvar :-> tvar.i])..._, ^^ (tvar.i)..._ (text "fresh")
     judgeuse ag ty.i `=` mk unique (ty)
 
 relation inst.tvarv' =
   view HM =
     holes [ ty: Ty, tvar: TyVarId | | ty.i: Ty, tvar.i: TyVarId, tvars.i: TyVarIdS ]
     judgespec ty.i, tvar.i, tvars.i === ty, tvar
-    judgeuse tex ty.i === (Cnstr).(tvar) ty, ^^ (Cnstr).(tvar) === (tvar :-> tvar.i)..._, ^^ tvars.i (text "fresh")
+    judgeuse tex ty.i === (VarMp).(tvar) ty, ^^ (VarMp).(tvar) === (tvar :-> tvar.i)..._, ^^ tvars.i (text "fresh")
 
 -------------------------------------------------------------------------
 -- Instantiation of type (with `both` vars)
@@ -611,13 +611,13 @@ relation inst.tvarb =
   view I1 =
     holes [ ty: Ty | | ty.i: Ty, tvars: TyVarIdS ]
     judgespec (tvars,ty.i) === inst.tvarb(ty)
-    judgeuse tex ty.i === Cnstr.i ty', tvars === (tvarv')..._, | forall ^ tvarv..._ (.) ty' === ty, | Cnstr.i === ([tvarv :-> (tvarv' /=/ ANY)])..._, | (tvarv')..._ (text "fresh")
+    judgeuse tex ty.i === VarMp.i ty', tvars === (tvarv')..._, | forall ^ tvarv..._ (.) ty' === ty, | VarMp.i === ([tvarv :-> (tvarv' /=/ ANY)])..._, | (tvarv')..._ (text "fresh")
 
 relation inst.tvarb' =
   view HM =
     holes [ ty: Ty, tvar: TyVarId, mk: String | | ty.i: Ty, tvar.i: TyVarId, tvars.i: TyVarIdS ]
     judgespec ty.i, tvar.i, tvars.i === ty, tvar, mk
-    judgeuse tex ty.i === (Cnstr).(tvar) ty, ^^ (Cnstr).(tvar) === (tvar :-> (tvar.i /=/ ANY))..._, ^^ tvars.i (text "fresh")
+    judgeuse tex ty.i === (VarMp).(tvar) ty, ^^ (VarMp).(tvar) === (tvar :-> (tvar.i /=/ ANY))..._, ^^ tvars.i (text "fresh")
     judgeuse ag ty.i `=` mk unique (ty)
 
 -------------------------------------------------------------------------
@@ -628,7 +628,7 @@ relation inst.known =
   view HM =
     holes [ ty: Ty | | ty.i: Ty ]
     judgespec ty.i === inst.K(ty)
-    judgeuse tex ty.i === Cnstr.i ty', ^^ forall ^ tvarv..._ (.) ty' === ty, ^^ Cnstr.i === ([tvarv :-> tvarf])..._, ^^ (tvarf)..._ (text "fresh")
+    judgeuse tex ty.i === VarMp.i ty', ^^ forall ^ tvarv..._ (.) ty' === ty, ^^ VarMp.i === ([tvarv :-> tvarf])..._, ^^ (tvarf)..._ (text "fresh")
     judgeuse ag ty.i `=` tyInstKnown unique (ty)
 
 -------------------------------------------------------------------------
@@ -686,10 +686,10 @@ relation tyEnsureNonAny =
 
 relation tyEnsureTVar =
   view I1 =
-    holes [ ty.e: Ty | | ty.v: Ty, cnstr: Cnstr, tvarv: TyVarId ]
+    holes [ ty.e: Ty | | ty.v: Ty, cnstr: VarMp, tvarv: TyVarId ]
     judgespec ty.v, cnstr, tvarv === ty.e
     judgeuse tex ty.v === tvarv ^^ && ^^ cnstr === [tvarv :-> ty.e] ^^ && ^^ tvarv (text "fresh")
-    judgeuse ag (ty.v,cnstr) `=` tyAsCnstr unique (ty.e)
+    judgeuse ag (ty.v,cnstr) `=` tyAsVarMp unique (ty.e)
 
 -------------------------------------------------------------------------
 -- Partitioning of alt ty

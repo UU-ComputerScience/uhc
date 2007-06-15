@@ -19,7 +19,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import({%{EH}Base.Common})
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
+%%[9 import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
 %%]
 
 %%[10 import({%{EH}Base.Builtin})
@@ -36,47 +36,47 @@ Derived from work by Gerrit vd Geest.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-instance CHRMatchable FIIn Pred Cnstr where
+instance CHRMatchable FIIn Pred VarMp where
   chrMatchTo fi pr1 pr2
     = do { (_,subst) <- fitPredIntoPred fi pr1 pr2
          ; return subst
          }
 
-instance CHRMatchable FIIn PredScope Cnstr where
-  chrMatchTo _ (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2  = Just emptyCnstr
-                                                         | otherwise = Just $ v1 `cnstrScopeUnit` sc2
+instance CHRMatchable FIIn PredScope VarMp where
+  chrMatchTo _ (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2  = Just emptyVarMp
+                                                         | otherwise = Just $ v1 `varmpScopeUnit` sc2
   chrMatchTo _ _                      (PredScope_Var v2)             = Nothing
-  chrMatchTo _ (PredScope_Var v1) sc2                                = Just $ v1 `cnstrScopeUnit` sc2
-  chrMatchTo _ (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyCnstr
+  chrMatchTo _ (PredScope_Var v1) sc2                                = Just $ v1 `varmpScopeUnit` sc2
+  chrMatchTo _ (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyVarMp
   chrMatchTo _ _                  _                                  = Nothing
 
-instance CHRMatchable FIIn CHRPredOcc Cnstr where
+instance CHRMatchable FIIn CHRPredOcc VarMp where
   chrMatchTo fi po1 po2
     = do { subst1 <- chrMatchTo fi (cpoPr po1) (cpoPr po2)
          ; subst2 <- chrMatchTo fi (cpoScope po1) (cpoScope po2)
          ; return $ subst2 |=> subst1
          }
 
-instance CHREmptySubstitution Cnstr where
-  chrEmptySubst = emptyCnstr
+instance CHREmptySubstitution VarMp where
+  chrEmptySubst = emptyVarMp
 
-instance CHRSubstitutable CHRPredOcc TyVarId Cnstr where
+instance CHRSubstitutable CHRPredOcc TyVarId VarMp where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 
-instance CHRSubstitutable PredScope TyVarId Cnstr where
+instance CHRSubstitutable PredScope TyVarId VarMp where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 
-instance CHRSubstitutable CHRPredOccCnstrMp TyVarId Cnstr where
+instance CHRSubstitutable CHRPredOccCnstrMp TyVarId VarMp where
   chrFtv        x = Set.unions [ chrFtv k | k <- Map.keys x ]
   chrAppSubst s x = Map.mapKeysWith (++) (chrAppSubst s) x
 
-instance CHRSubstitutable Cnstr TyVarId Cnstr where
+instance CHRSubstitutable VarMp TyVarId VarMp where
   chrFtv        x = Set.empty
   chrAppSubst s x = s |=> x
 
-instance CHRSubstitutable Guard TyVarId Cnstr where
+instance CHRSubstitutable Guard TyVarId VarMp where
   chrFtv        (HasStrictCommonScope   p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
   chrFtv        (IsStrictParentScope    p1 p2 p3) = Set.unions $ map ftvSet [p1,p2,p3]
   chrFtv        (IsVisibleInScope       p1 p2   ) = Set.unions $ map ftvSet [p1,p2]
@@ -95,37 +95,37 @@ instance CHRSubstitutable Guard TyVarId Cnstr where
   chrAppSubst s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s |=> r)  (s |=> o)  (s |=> t)  (s |=> l)
 %%]]
 %%]
-instance CHRMatchable FIIn PredOccId Cnstr where
-  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 == v2  = Just emptyCnstr
+instance CHRMatchable FIIn PredOccId VarMp where
+  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 == v2  = Just emptyVarMp
                                                          | otherwise = Just $ v1 `cnstrPoiUnit` sc2
   chrMatchTo _ _                      (PredOccId_Var v2)             = Nothing
   chrMatchTo _ (PredOccId_Var v1) sc2                                = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)             = Just emptyCnstr
---  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyCnstr
+  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)             = Just emptyVarMp
+--  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyVarMp
 --  chrMatchTo _ _                  _                                 = Nothing
 
-instance CHRMatchable FIIn PredOcc Cnstr where
+instance CHRMatchable FIIn PredOcc VarMp where
   chrMatchTo fi po1 po2
     = do { subst1 <- chrMatchTo fi (poPr po1) (poPr po2)
          ; subst2 <- chrMatchTo fi (poScope po1) (poScope po2)
          ; return $ subst2 |=> subst1
          }
 
-instance CHRSubstitutable PredOcc TyVarId Cnstr where
+instance CHRSubstitutable PredOcc TyVarId VarMp where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 
 
 %%[9
-instance CHRSubstitutable VarUIDHsName TyVarId Cnstr where
+instance CHRSubstitutable VarUIDHsName TyVarId VarMp where
   chrFtv          (VarUIDHs_Var i)  = Set.singleton i
   chrFtv          _                 = Set.empty
-  chrAppSubst s a@(VarUIDHs_Var i)  = maybe a id $ cnstrAssNmLookup i s
+  chrAppSubst s a@(VarUIDHs_Var i)  = maybe a id $ varmpAssNmLookup i s
   chrAppSubst s a                   = a
 %%]
 
 %%[9
-instance CHRSubstitutable RedHowAnnotation TyVarId Cnstr where
+instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
   chrFtv        (RedHow_Assumption   vun sc)  = Set.unions [chrFtv vun,chrFtv sc]
 %%[[10
   chrFtv        (RedHow_ByLabel      l o sc)  = Set.unions [chrFtv l,chrFtv o,chrFtv sc]
@@ -140,30 +140,30 @@ instance CHRSubstitutable RedHowAnnotation TyVarId Cnstr where
 %%]
 
 %%[10
-instance CHRSubstitutable Label TyVarId Cnstr where
+instance CHRSubstitutable Label TyVarId VarMp where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 
-instance CHRSubstitutable LabelOffset TyVarId Cnstr where
+instance CHRSubstitutable LabelOffset TyVarId VarMp where
   chrFtv        x = Set.fromList (ftv x)
   chrAppSubst s x = s |=> x
 %%]
 
 %%[10
-instance CHRMatchable FIIn Label Cnstr where
-  chrMatchTo _ (Label_Var v1) lb2@(Label_Var v2) | v1 == v2  = Just emptyCnstr
-                                                 | otherwise = Just $ v1 `cnstrLabelUnit` lb2
+instance CHRMatchable FIIn Label VarMp where
+  chrMatchTo _ (Label_Var v1) lb2@(Label_Var v2) | v1 == v2  = Just emptyVarMp
+                                                 | otherwise = Just $ v1 `varmpLabelUnit` lb2
   chrMatchTo _ _                  (Label_Var v2)             = Nothing
-  chrMatchTo _ (Label_Var v1) lb2                            = Just $ v1 `cnstrLabelUnit` lb2
-  chrMatchTo _ (Label_Lab l1)     (Label_Lab l2) | l1 == l2  = Just emptyCnstr
+  chrMatchTo _ (Label_Var v1) lb2                            = Just $ v1 `varmpLabelUnit` lb2
+  chrMatchTo _ (Label_Lab l1)     (Label_Lab l2) | l1 == l2  = Just emptyVarMp
   chrMatchTo _ _              _                              = Nothing
 
-instance CHRMatchable FIIn LabelOffset Cnstr where
-  chrMatchTo _ (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2  = Just emptyCnstr
-                                                             | otherwise = Just $ v1 `cnstrOffsetUnit` of2
+instance CHRMatchable FIIn LabelOffset VarMp where
+  chrMatchTo _ (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2  = Just emptyVarMp
+                                                             | otherwise = Just $ v1 `varmpOffsetUnit` of2
   chrMatchTo _ _                        (LabelOffset_Var v2)             = Nothing
-  chrMatchTo _ (LabelOffset_Var v1) of2                                  = Just $ v1 `cnstrOffsetUnit` of2
-  chrMatchTo _ (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2  = Just emptyCnstr
+  chrMatchTo _ (LabelOffset_Var v1) of2                                  = Just $ v1 `varmpOffsetUnit` of2
+  chrMatchTo _ (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2  = Just emptyVarMp
   chrMatchTo _ _                    _                                    = Nothing
 %%]
 
@@ -242,33 +242,33 @@ instance PPForHI Guard where
 %%]
 
 %%[9
-instance CHRCheckable Guard Cnstr where
+instance CHRCheckable Guard VarMp where
   chrCheck (HasStrictCommonScope (PredScope_Var vDst) sc1 sc2)
     = do { scDst <- pscpCommon sc1 sc2
          ; if scDst == sc1
            then Nothing
-           else return $ vDst `cnstrScopeUnit` scDst
+           else return $ vDst `varmpScopeUnit` scDst
          }
   chrCheck (IsStrictParentScope (PredScope_Var vDst) sc1 sc2)
     = do { scDst <- pscpCommon sc1 sc2
          ; if scDst == sc1 && sc1 /= sc2
-           then return $ vDst `cnstrScopeUnit` scDst
+           then return $ vDst `varmpScopeUnit` scDst
            else Nothing
          }
   chrCheck (NotEqualScope sc1 sc2) | isJust c
-    = if fromJust c /= EQ then return emptyCnstr else Nothing
+    = if fromJust c /= EQ then return emptyVarMp else Nothing
     where c = pscpCmp sc1 sc2
   chrCheck (EqualScope sc1 sc2) | isJust c
-    = if fromJust c == EQ then return emptyCnstr else Nothing
+    = if fromJust c == EQ then return emptyVarMp else Nothing
     where c = pscpCmp sc1 sc2
   chrCheck (IsVisibleInScope (PredScope_Var vDst) sc1)
-    = return $ vDst `cnstrScopeUnit` sc1
+    = return $ vDst `varmpScopeUnit` sc1
   chrCheck (IsVisibleInScope scDst sc1) | pscpIsVisibleIn scDst sc1
-    = return emptyCnstr
+    = return emptyVarMp
 %%[[10
   chrCheck (NonEmptyRowLacksLabel (Ty_Var tv TyVarCateg_Plain) (LabelOffset_Var vDst) ty (Label_Lab lab)) | not (null exts) -- tyIsEmptyRow row
-    = return $ (vDst `cnstrOffsetUnit` LabelOffset_Off offset)
-               |=> (tv `cnstrTyUnit` row)
+    = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
+               |=> (tv `varmpTyUnit` row)
     where (row,exts) = tyRowExts ty
           offset = tyExtsOffset lab $ tyRowCanonOrder exts
 %%]]

@@ -13,7 +13,7 @@
 %%[1 import(qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[2 import({%{EH}Cnstr})
+%%[2 import({%{EH}VarMp})
 %%]
 
 %%[4 import({%{EH}Base.Opts}) export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
@@ -45,15 +45,15 @@ foErrSq = Seq.fromList . foErrL
 %%]
 
 %%[2.FIOut -1.FIOut
-data FIOut  =  FIOut  {  foTy     ::  Ty      ,  foErrL   ::  ErrL  ,  foCnstr           ::  Cnstr           }
+data FIOut  =  FIOut  {  foTy     ::  Ty      ,  foErrL   ::  ErrL  ,  foVarMp           ::  VarMp           }
 %%]
 
 %%[2.FIOut.empty
-emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foCnstr           =   emptyCnstr      }
+emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp           =   emptyVarMp      }
 %%]
 
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
-data FIOut  =  FIOut    {  foCnstr           :: !Cnstr               ,  foTy              :: !Ty
+data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
                         ,  foErrL            :: !ErrL  
 %%]
@@ -66,14 +66,14 @@ data FIOut  =  FIOut    {  foCnstr           :: !Cnstr               ,  foTy    
                         ,  foRowCoeL         :: !(AssocL HsName Coe)
 %%]
 %%[50
-                        ,  foEqCnstr         :: !Cnstr
+                        ,  foEqVarMp         :: !VarMp
 %%]
 %%[4.FIOut.tl
                         }
 %%]
 
 %%[4.emptyFO
-emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy              =   Ty_Any
+emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []         
 %%]
@@ -86,7 +86,7 @@ emptyFO     =  FIOut    {  foCnstr           =   emptyCnstr          ,  foTy    
                         ,  foRowCoeL         =   []
 %%]
 %%[50
-                        ,  foEqCnstr         =   emptyCnstr
+                        ,  foEqVarMp         =   emptyVarMp
 %%]
 %%[4.emptyFO.tl
                         }
@@ -175,7 +175,7 @@ asgiSpine i = drop (asgiSpinePos i) $ asgiVertebraeL i
 
 %%[4.FitsIn
 type FitsIn' = FIOpts -> UID -> Ty -> Ty -> FIOut
-type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,Cnstr,ErrL)
+type FitsIn = FIOpts -> UID -> Ty -> Ty -> (Ty,VarMp,ErrL)
 %%]
 
 %%[4.fitsInLWith
@@ -185,7 +185,7 @@ fitsInLWith foCmb elemFits opts uniq tyl1 tyl2
   where ((_,fo),foL)
           = foldr  (\(t1,t2) ((u,foThr),foL)
                       -> let  (u',ue) = mkNewLevUID u
-                              fo = elemFits opts u (foCnstr foThr |=> t1) (foCnstr foThr |=> t2)
+                              fo = elemFits opts u (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
                          in   ((u',foCmb fo foThr),fo:foL)
                    )
                    ((uniq,emptyFO),[])

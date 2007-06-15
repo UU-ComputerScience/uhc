@@ -12,36 +12,36 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
-ATTR AllCase [ knPatTy: Ty | patTyCnstr: Cnstr | patTy: Ty ]
+ATTR AllCase [ knPatTy: Ty | patTyVarMp: VarMp | patTy: Ty ]
 
 SEM Expr
   | Case        alts        .   knPatTy             =   @expr.ty
-                            .   patTyCnstr          =   @expr.tyCnstr
-                            .   tyCnstr             =   @alts.patTyCnstr
+                            .   patTyVarMp          =   @expr.tyVarMp
+                            .   tyVarMp             =   @alts.patTyVarMp
 
 SEM CaseAlt
-  | Pat         patExpr     .   tyCnstr             =   @lhs.patTyCnstr
+  | Pat         patExpr     .   tyVarMp             =   @lhs.patTyVarMp
                             .   knTy                =   @lhs.knPatTy
                             .   valGam              =   gamPushNew @lhs.valGam
-                lhs         .   patTyCnstr          =   @patExpr.tyCnstr
+                lhs         .   patTyVarMp          =   @patExpr.tyVarMp
                             .   patTy               =   @patExpr.ty
 
 SEM CaseAlts
-  | Nil         lhs         .   patTy               =   @lhs.patTyCnstr |=> @lhs.knPatTy
-  | Cons        tl          .   knPatTy             =   @hd.patTyCnstr |=> @lhs.knPatTy
+  | Nil         lhs         .   patTy               =   @lhs.patTyVarMp |=> @lhs.knPatTy
+  | Cons        tl          .   knPatTy             =   @hd.patTyVarMp |=> @lhs.knPatTy
 %%]
 
 %%[6
 SEM Expr
-  | Case        alts        .   patTyCnstr          :=  agFakeDependOn @alts.kiCnstr @expr.tyCnstr
+  | Case        alts        .   patTyVarMp          :=  agFakeDependOn @alts.kiVarMp @expr.tyVarMp
 %%]
 
 %%[5_1
 SEM Expr
-  | Case        loc         .   (ebTy,ebCnstr,ebErrs,_)
+  | Case        loc         .   (ebTy,ebVarMp,ebErrs,_)
                                                     =   tyElimAlts (mkFitsInWrap @fe) joinFIOpts @lUniq (@expr.ty)
                 alts        .   knPatTy             :=  @ebTy
-                            .   patTyCnstr          :=  @ebCnstr |=> @expr.tyCnstr
+                            .   patTyVarMp          :=  @ebVarMp |=> @expr.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,9 +56,9 @@ SEM Expr
                 alts        .   knTy                =   @lhs.knTy
 
 SEM CaseAlt
-  | Pat         expr        .   tyCnstr             =   @lhs.tyCnstr
+  | Pat         expr        .   tyVarMp             =   @lhs.tyVarMp
                 lhs         .   ty                  =   @expr.ty
-                            .   tyCnstr             =   @expr.tyCnstr
+                            .   tyVarMp             =   @expr.tyVarMp
 
 SEM CaseAlts
   | Nil         lhs         .   ty                  =   @lhs.knTy
@@ -71,14 +71,14 @@ SEM CaseAlts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-ATTR AllPatExpr [ | | tyEqCnstr USE {|=>} {emptyCnstr}: Cnstr ]
+ATTR AllPatExpr [ | | tyEqVarMp USE {|=>} {emptyVarMp}: VarMp ]
 
 SEM PatExpr
-  | AppTop      lhs         .   tyEqCnstr           =   foEqCnstr @fo_ |=> @patExpr.tyEqCnstr
-  | Con         lhs         .   tyEqCnstr           =   foEqCnstr @fo_
+  | AppTop      lhs         .   tyEqVarMp           =   foEqVarMp @fo_ |=> @patExpr.tyEqVarMp
+  | Con         lhs         .   tyEqVarMp           =   foEqVarMp @fo_
 
 SEM CaseAlt
-  | Pat         expr        .   tyCnstr             :=  @patExpr.tyEqCnstr |=> @lhs.tyCnstr
-                lhs         .   tyCnstr             :=  cnstrDel (cnstrKeys @patExpr.tyEqCnstr) @expr.tyCnstr
+  | Pat         expr        .   tyVarMp             :=  @patExpr.tyEqVarMp |=> @lhs.tyVarMp
+                lhs         .   tyVarMp             :=  varmpDel (varmpKeys @patExpr.tyEqVarMp) @expr.tyVarMp
 %%]
 

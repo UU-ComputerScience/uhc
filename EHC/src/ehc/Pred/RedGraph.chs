@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.RedGraph} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr})
+%%[9 module {%{EH}Pred.RedGraph} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp})
 %%]
 
 %%[9 import({%{EH}CHR.Constraint},{%{EH}CHR.Constraint})

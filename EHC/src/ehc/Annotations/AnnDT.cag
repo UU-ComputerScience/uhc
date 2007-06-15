@@ -17,8 +17,8 @@ map from annotation to result) and access this map from the main AST AG.
 ATTR AGItf -> DataField [| annUID : UID |]
 ATTR Decl -> DataConstr [ annExpDataTy : Ty ||]
 ATTR TyVars TyVar [|| annTyL USE {<+>} {emptySeq} : {Seq Ty} ]
-ATTR TyVars TyVar [|| annTySubst USE {`cnstrPlus`} {emptyCnstr} : Cnstr ]
-ATTR Decl -> DataField [ annTySubst : Cnstr ||]
+ATTR TyVars TyVar [|| annTySubst USE {`varmpPlus`} {emptyVarMp} : VarMp ]
+ATTR Decl -> DataField [ annTySubst : VarMp ||]
 ATTR DataConstr -> DataField [|| annExpTyL USE {<+>} {emptySeq} : {Seq Ty} ]
 
 SEM AGItf
@@ -38,16 +38,16 @@ SEM TyVar
   | Var
       loc.dtFinalAnnVarTy = addAnn @loc.annUniq2 @loc.dtFinalVarTy
       lhs.annTyL = unitSeq @loc.dtFinalAnnVarTy
-      lhs.annTySubst = cnstrTyUnit @loc.dtTyVarId @loc.dtFinalAnnVarTy
+      lhs.annTySubst = varmpTyUnit @loc.dtTyVarId @loc.dtFinalAnnVarTy
 
 SEM DataConstr
   | Constr
-      (loc.annTy, fields.annUID) = infuseAnn @lhs.dataAnnMapBndg (@lhs.finTyCnstr |=> @loc.dataConTy) @lhs.annUID
+      (loc.annTy, fields.annUID) = infuseAnn @lhs.dataAnnMapBndg (@lhs.finTyVarMp |=> @loc.dataConTy) @lhs.annUID
       loc.expAnnTy = mkAnnArrow @lhs.annExpDataTy (seqToList @fields.annExpTyL) @loc.annUniq1
 
 SEM DataField
   | Field
-      (loc.annTy, loc.annUID1) = infuseAnn @lhs.dataAnnMapBndg (@lhs.finTyCnstr |=> @tyExpr.ty) @lhs.annUID
+      (loc.annTy, loc.annUID1) = infuseAnn @lhs.dataAnnMapBndg (@lhs.finTyVarMp |=> @tyExpr.ty) @lhs.annUID
       loc.substAnnTy = mergeDoubleAnnotations (@lhs.annTySubst |=> @loc.annTy)
       loc.expAnnTy = infuseDataTrunc @loc.exposedAnnsMap @loc.substAnnTy
       lhs.annExpTyL = unitSeq @loc.expAnnTy
@@ -241,7 +241,7 @@ ATTR TyVars [|| dtTyVars USE {<+>} {emptySeq} : {Seq TyVarId} ]
 ATTR TyVar  [|| dtTyVars : {Seq TyVarId} ]
 
 SEM TyVar
-  | Var   loc.dtFinalVarTy = @lhs.finTyCnstr |=> tgiTy @loc.tgi_
+  | Var   loc.dtFinalVarTy = @lhs.finTyVarMp |=> tgiTy @loc.tgi_
           loc.dtTyVarId    = case @loc.dtFinalVarTy of
                                Ty_Var v _ -> v
                                _          -> uidStart -- will never match
@@ -250,7 +250,7 @@ SEM TyVar
 SEM Decl
   | Data  loc.dtArgs      = seqToList @tyVars.dtTyVars
           loc.constrExpFs = seqToList @constrs.constrExpFs
-          loc.mkSubst     = \args -> foldr cnstrPlus emptyCnstr (zipWith cnstrTyUnit @loc.dtArgs args)
+          loc.mkSubst     = \args -> foldr varmpPlus emptyVarMp (zipWith varmpTyUnit @loc.dtArgs args)
           loc.dtExpFun    = (@tyNm, @loc.dtExpFun')
           loc.dtExpFun'   = \args origTy uid -> let ty              = Ty_ExpTyCon constrs @loc.dtArgs origTy
                                                     (constrs, uid') = threadMap (flip ($) subst) uid @loc.constrExpFs
@@ -278,7 +278,7 @@ SEM DataConstr
 Creates an expanded version of the fields in the data type.
 Constructs a function with the type: (Map TyVarId Ty -> UID -> (TyExpField, UID)).
 Replaces the type variables of the data type with the type arguments to the
-corresponding type constructor using the substitution mechanism (Cnstr).
+corresponding type constructor using the substitution mechanism (VarMp).
 
 %%[7_2.constructionFieldF
 
@@ -309,12 +309,12 @@ SEM Decl
                                                in conFun
             lhs.dtTrExpMap    = Map.singleton @tyNm @loc.dtTrExpConFun
 
-ATTR AllDataConstr [|| constrTrExpFs USE {<+>} {emptySeq} : {Seq ([Annotation Ty] -> Cnstr -> Map HsName [Ty])} ]
+ATTR AllDataConstr [|| constrTrExpFs USE {<+>} {emptySeq} : {Seq ([Annotation Ty] -> VarMp -> Map HsName [Ty])} ]
 SEM DataConstr
   | Constr  lhs.constrTrExpFs = unitSeq @loc.constrTrExpF
             loc.constrTrExpF  = \anns subst -> Map.singleton @conNm (map (\f -> f anns subst) (seqToList @fields.tyTrExpFs))
 
-ATTR AllDataField [|| tyTrExpFs USE {<+>} {emptySeq} : {Seq ([Annotation Ty] -> Cnstr -> Ty)} ]
+ATTR AllDataField [|| tyTrExpFs USE {<+>} {emptySeq} : {Seq ([Annotation Ty] -> VarMp -> Ty)} ]
 SEM DataField
   | Field  lhs.tyTrExpFs = unitSeq @loc.tyTrExpF
            loc.tyTrExpF  = \anns subst -> substAnns anns @loc.exposedAnnsMap (mergeDoubleAnnotations (subst |=> @loc.annTy))

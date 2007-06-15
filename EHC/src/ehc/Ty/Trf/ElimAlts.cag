@@ -7,7 +7,7 @@
 %%% Haskell importable interface to check/elimination for/of inconsistent/ binds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2 hs module {%{EH}Ty.Trf.ElimAlts} import(qualified Data.Set as Set,Data.List,EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Error},{%{EH}Cnstr},{%{EH}Substitutable},{%{EH}Gam},{%{EH}Ty.FitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
+%%[4_2 hs module {%{EH}Ty.Trf.ElimAlts} import(qualified Data.Set as Set,Data.List,EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam},{%{EH}Ty.FitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
 %%]
 
 %%[4_2 hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}Error.Pretty})
@@ -27,12 +27,12 @@ tyElimAlts fitsIn fio globTvL uniq ty
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, fio_Inh_TyAGItf = fio {fioBindToTyAlts = True}
                               , gUniq_Inh_TyAGItf = uniq, globTvL_Inh_TyAGItf = globTvL})
-     in   emptyFO { foTy = repl_Syn_TyAGItf t, foCnstr = tyCnstr_Syn_TyAGItf t, foErrL = errL_Syn_TyAGItf t }
+     in   emptyFO { foTy = repl_Syn_TyAGItf t, foVarMp = tyVarMp_Syn_TyAGItf t, foErrL = errL_Syn_TyAGItf t }
 
-tyElimAltsCleanup :: Cnstr -> Cnstr -> Cnstr
-tyElimAltsCleanup gCnstr newCnstr
-  =  let  c2 = cnstrDelAlphaRename newCnstr
-          c3 = cnstrKeys c2 `cnstrDel` cnstrFilterAlphaRename gCnstr
+tyElimAltsCleanup :: VarMp -> VarMp -> VarMp
+tyElimAltsCleanup gVarMp newVarMp
+  =  let  c2 = varmpDelAlphaRename newVarMp
+          c3 = varmpKeys c2 `varmpDel` varmpFilterAlphaRename gVarMp
      in   c2 |=> c3
 
 %%]
@@ -43,11 +43,11 @@ tyElimForgetAlts ty
                  (Inh_TyAGItf {fitsIn_Inh_TyAGItf = undefined, fio_Inh_TyAGItf = undefined, gUniq_Inh_TyAGItf = undefined, globTvL_Inh_TyAGItf = []})
      in   (replNoAlt_Syn_TyAGItf t,ambTvS_Syn_TyAGItf t)
 
-cnstrElimForgetAlts :: Cnstr -> (Cnstr,Set.Set TyVarId)
+cnstrElimForgetAlts :: VarMp -> (VarMp,Set.Set TyVarId)
 cnstrElimForgetAlts c
   = (c'',s)
-  where  (c',s) = cnstrMapThrTy  (\_ t s -> let (t',s') = tyElimForgetAlts t in (t',s `Set.union` s')) Set.empty c
-         c'' = cnstrDelAlphaRename c'
+  where  (c',s) = varmpMapThrTy  (\_ t s -> let (t',s') = tyElimForgetAlts t in (t',s `Set.union` s')) Set.empty c
+         c'' = varmpDelAlphaRename c'
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% fitsIn, parameterized with env+opts, passed as param to avoid mutual module recursion
@@ -135,43 +135,43 @@ fitAlts elimFits fio u startTy tL
                           ->  let  (u',u1) = mkNewLevUID u2
                                    fo = elimFits fio u1 (foTy fo2) t1
                                    rfo = if null (foErrL fo) && null (foErrL fo2)
-                                         then (fo {foCnstr = foCnstr fo |=> foCnstr fo2},u')
+                                         then (fo {foVarMp = foVarMp fo |=> foVarMp fo2},u')
                                          else (emptyFO {foErrL = if null (foErrL fo) then foErrL fo2 else foErrL fo},u)
                               in   rfo
                       )
                       (emptyFO {foTy = startTy},u) tL
      in   fo
 %%]
-                              in   tr "XX" (pp (foTy fo2) >-< pp (fioMode fio) >-< pp t1 >-< pp (foTy fo) >-< ppCnstrV (foCnstr fo) >-< ppErrL (foErrL fo)) rfo
-                              in   tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >-< "res=" >#< pp t >-< "cnstr=" >#< ppCnstrV c >-< ppErrL e)
-                                     (if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
+                              in   tr "XX" (pp (foTy fo2) >-< pp (fioMode fio) >-< pp t1 >-< pp (foTy fo) >-< ppVarMpV (foVarMp fo) >-< ppErrL (foErrL fo)) rfo
+                              in   tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >-< "res=" >#< pp t >-< "cnstr=" >#< ppVarMpV c >-< ppErrL e)
+                                     (if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
                                      )
-                              in   if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyCnstr,if null e then e2 else e,u)
+                              in   if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
 
 %%[4_2.Alts
 SEM Ty
-  | Alts            loc     .   (repl,quTyCnstr,errL)
-                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+  | Alts            loc     .   (repl,quTyVarMp,errL)
+                                            =   case varmpTyLookup @tv @lhs.tyVarMp of
                                                     Nothing | @tv `notElem` @lhs.globTvL
                                                         ->  if null @tyL.hardTyL
-                                                            then  (mkTyVar @tv,@tv `cnstrTyUnit` mkTyVar @tv,[])
+                                                            then  (mkTyVar @tv,@tv `varmpTyUnit` mkTyVar @tv,[])
                                                             else  let  foh = fitAlts @lhs.fitsIn @lhs.fio @lUniq Ty_Any (@tyL.hardTyL)
                                                                   in   if null (foErrL foh)
-                                                                       then  let  fos = fitAlts @lhs.fitsIn @lhs.fio @lUniq2 (foTy foh) (foCnstr foh |=> @tyL.softTyL)
+                                                                       then  let  fos = fitAlts @lhs.fitsIn @lhs.fio @lUniq2 (foTy foh) (foVarMp foh |=> @tyL.softTyL)
                                                                                   eat = if null (foErrL fos) then foTy fos else foTy foh
                                                                                   fo = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 eat
-                                                                                  eaCnstr = @tv `cnstrTyUnit` foTy fo
+                                                                                  eaVarMp = @tv `varmpTyUnit` foTy fo
                                                                                   (_,foOtherL)
                                                                                      = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 @tyL.otherTyL (repeat eat)
                                                                                      where fio = @lhs.fio {fioMode = if fioMode @lhs.fio == FitMeet then FitSubLR else FitSubRL} 
-                                                                             in   (foTy fo,eaCnstr |=> foCnstr fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)
+                                                                             in   (foTy fo,eaVarMp |=> foVarMp fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)
                                                                        else  (mkTyVar @tv
-                                                                             ,@tv `cnstrTyUnit` Ty_Any
+                                                                             ,@tv `varmpTyUnit` Ty_Any
                                                                              ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.hardTyL (fioMode @lhs.fio)]
                                                                              )
                                                     Just t
-                                                        ->  (t,emptyCnstr,[])
-                                                    _   ->  (@self,emptyCnstr,[])
+                                                        ->  (t,emptyVarMp,[])
+                                                    _   ->  (@self,emptyVarMp,[])
   | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
 %%]
 
@@ -223,20 +223,20 @@ SEM TyPlusL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
-ATTR AllTyAndFlds [ | tyCnstr: Cnstr | ]
-ATTR TyAGItf  [ | | tyCnstr: Cnstr ]
+ATTR AllTyAndFlds [ | tyVarMp: VarMp | ]
+ATTR TyAGItf  [ | | tyVarMp: VarMp ]
 
 SEM TyAGItf
-  | AGItf           ty      .   tyCnstr     =   emptyCnstr
+  | AGItf           ty      .   tyVarMp     =   emptyVarMp
 
 SEM Ty
-  | Alts            loc     .   tyCnstr     =   @quTyCnstr `cnstrPlus` @lhs.tyCnstr
-                    lhs     .   tyCnstr     =   @tyCnstr
+  | Alts            loc     .   tyVarMp     =   @quTyVarMp `varmpPlus` @lhs.tyVarMp
+                    lhs     .   tyVarMp     =   @tyVarMp
 %%]
-                    lhs     .   tyCnstr     =   @tyCnstr
-                    lhs     .   tyCnstr     =   tr "YY" ("ty=" >#< pp @self >-< "l.cnstr=" >#< ppCnstrV @lhs.tyCnstr >-< "cnstr=" >#< ppCnstrV @quTyCnstr >-< "err=" >#< ppErrL @errL) @tyCnstr
-                    lhs     .   tyCnstr     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppCnstrV @tyCnstr >-< "err=" >#< ppErrL @errL) @tyCnstr
-                    lhs     .   tyCnstr     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppCnstrV @tyCnstr >-< "err=" >#< ppErrL @errL >-< "ierr=" >#< ppErrL @internErrL) @tyCnstr
+                    lhs     .   tyVarMp     =   @tyVarMp
+                    lhs     .   tyVarMp     =   tr "YY" ("ty=" >#< pp @self >-< "l.cnstr=" >#< ppVarMpV @lhs.tyVarMp >-< "cnstr=" >#< ppVarMpV @quTyVarMp >-< "err=" >#< ppErrL @errL) @tyVarMp
+                    lhs     .   tyVarMp     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppVarMpV @tyVarMp >-< "err=" >#< ppErrL @errL) @tyVarMp
+                    lhs     .   tyVarMp     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppVarMpV @tyVarMp >-< "err=" >#< ppErrL @errL >-< "ierr=" >#< ppErrL @internErrL) @tyVarMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Orig type
@@ -278,28 +278,28 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SEM Ty
-  | Alts            loc     .   (repl,quTyCnstr,errL)
-                                            =   case cnstrTyLookup @tv @lhs.tyCnstr of
+  | Alts            loc     .   (repl,quTyVarMp,errL)
+                                            =   case varmpTyLookup @tv @lhs.tyVarMp of
                                                     Nothing | @tv `notElem` @lhs.globTvL
                                                         ->  if null @tyL.hardTyL
-                                                            then  (mkTyVar @tv,@tv `cnstrTyUnit` mkTyVar @tv,[])
+                                                            then  (mkTyVar @tv,@tv `varmpTyUnit` mkTyVar @tv,[])
                                                             else  let  (ht,hc,he) = fitAlts @lhs.fitsIn @lhs.fio @lUniq Ty_Any (@tyL.hardTyL)
                                                                   in   if null he
                                                                        then  let  (st,sc,se) = fitAlts @lhs.fitsIn @lhs.fio @lUniq2 ht (hc |=> @tyL.softTyL)
                                                                                   eat = if null se then st else ht
                                                                                   (t,c,e) = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 eat
-                                                                                  eaCnstr = @tv `cnstrTyUnit` t
+                                                                                  eaVarMp = @tv `varmpTyUnit` t
                                                                              in   case tyMbQu ht of
                                                                                     Just q | tyquIsExists q && not (null @tyL.softTyL) && fioMode @lhs.fio == FitJoin
                                                                                         -> (mkTyVar @tv,c,e)
-                                                                                    _   -> (t,eaCnstr |=> c,e)
+                                                                                    _   -> (t,eaVarMp |=> c,e)
                                                                        else  (mkTyVar @tv
-                                                                             ,@tv `cnstrTyUnit` Ty_Any
+                                                                             ,@tv `varmpTyUnit` Ty_Any
                                                                              ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.hardTyL (fioMode @lhs.fio)]
                                                                              )
                                                     Just t
-                                                        ->  (t,emptyCnstr,[])
-                                                    _   ->  (@self,emptyCnstr,[])
+                                                        ->  (t,emptyVarMp,[])
+                                                    _   ->  (@self,emptyVarMp,[])
   | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
 
 ATTR AllTyAndFlds [ | | selfTvRen: SELF ]

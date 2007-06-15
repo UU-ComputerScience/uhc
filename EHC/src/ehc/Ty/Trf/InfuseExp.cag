@@ -15,7 +15,7 @@ Notice:
 %%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
 %%]
 
-%%[7_2 hs import({%{EH}EH}, {%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.TyConPat}, {%{EH}Cnstr})
+%%[7_2 hs import({%{EH}EH}, {%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.TyConPat}, {%{EH}VarMp})
 %%]
 
 %%[7_2 ag import({Ty/AbsSyn})
@@ -31,7 +31,7 @@ providing allowed type constructor sequences.
 
 %%[7_2.interface hs
 
-type MkExpFSyn a    = Cnstr -> UID -> (a, UID)
+type MkExpFSyn a    = VarMp -> UID -> (a, UID)
 type MkExpTyConFSyn = (HsName, [Ty] -> Ty -> UID -> (Ty, UID))
 type MkExpTyConF    = HsName -> [Ty] -> Ty -> UID -> (Ty, UID)
 

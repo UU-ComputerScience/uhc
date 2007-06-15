@@ -23,11 +23,11 @@ SEM Decl
                             .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
                                                                       else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2
-                                                                (@lhs.patKiCnstr |=> (@tyVars.kiL `mkArrow` kiStar))
-                                                                (@lhs.patKiCnstr |=> (tkgiKi @dataTkgi))
+                                                                (@lhs.patKiVarMp |=> (@tyVars.kiL `mkArrow` kiStar))
+                                                                (@lhs.patKiVarMp |=> (tkgiKi @dataTkgi))
                             .   dataKi              =   foTy @fo_
-                lhs         .   patKiCnstr          =   foCnstr @fo_ |=> @lhs.patKiCnstr
-                constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiCnstr |=> @tyVars.tyKiGam))
+                lhs         .   patKiVarMp          =   foVarMp @fo_ |=> @lhs.patKiVarMp
+                constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp |=> @tyVars.tyKiGam))
                                                                     @lhs.tyKiGam
 %%]
 
@@ -37,21 +37,21 @@ SEM Decl
 
 %%[6
 SEM DataConstr
-  | Constr      loc         .   fldsKiCnstr         =   @fields.kiCnstr
+  | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq
-                                                                 (@fldsKiCnstr |=> @fields.kiL)
+                                                                 (@fldsKiVarMp |=> @fields.kiL)
                                                                  (repeat kiStar)
 				loc			.	fo_					:	FIOut
-                lhs         .   kiCnstr             =   agFakeDependOn @lhs.dataTy $ foCnstr @fo_ |=> @fldsKiCnstr
+                lhs         .   kiVarMp             =   agFakeDependOn @lhs.dataTy $ foVarMp @fo_ |=> @fldsKiVarMp
 %%]
 
 %%[50
 SEM DataConstr
-  | Constr      loc         .   fldsKiCnstr         :=  @eqs.kiCnstr
+  | Constr      loc         .   fldsKiVarMp         :=  @eqs.kiVarMp
 
 SEM DataConstrEq
-  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq (@tyExpr.kiCnstr |=> @tyVar.ki) (@tyExpr.ki)
-                lhs         .   kiCnstr             =   foCnstr @fo_ |=> @tyExpr.kiCnstr
+  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq (@tyExpr.kiVarMp |=> @tyVar.ki) (@tyExpr.ki)
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,9 +165,9 @@ ATTR AllDataConstr [ dataAltTy: Ty | | ]
 !!!!! Fix following w.r.t. dataUnConTy
 %%[50
 SEM DataConstr
-  | Constr      loc         .   dataConTy           :=  @eqs.eqTyCnstr |=> (@fields.tyL `mkArrow` @lhs.dataTy)
-                            .   eqEqCnstr           =   assocLToCnstr . map (\(v,t) -> (v,Ty_Equal v t)) . cnstrToAssocTyL $ @eqs.eqTyCnstr
-                            .   dataUnConTy         :=  [@eqEqCnstr |=> @lhs.dataTy] `mkArrow` (@eqs.eqTyCnstr |=> @dataConProdTy)
+  | Constr      loc         .   dataConTy           :=  @eqs.eqTyVarMp |=> (@fields.tyL `mkArrow` @lhs.dataTy)
+                            .   eqEqVarMp           =   assocLToVarMp . map (\(v,t) -> (v,Ty_Equal v t)) . varmpToAssocTyL $ @eqs.eqTyVarMp
+                            .   dataUnConTy         :=  [@eqEqVarMp |=> @lhs.dataTy] `mkArrow` (@eqs.eqTyVarMp |=> @dataConProdTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,13 +175,13 @@ SEM DataConstr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[50
-ATTR AllDataConstrEq [ | eqTyCnstr: Cnstr | ]
+ATTR AllDataConstrEq [ | eqTyVarMp: VarMp | ]
 
 SEM DataConstr
-  | Constr      eqs         .   eqTyCnstr           =   emptyCnstr
+  | Constr      eqs         .   eqTyVarMp           =   emptyVarMp
 
 SEM DataConstrEq
-  | Eq          lhs         .   eqTyCnstr           =   (tyVar @tyVar.ty `cnstrTyUnit` @tyExpr.ty) |=> @lhs.eqTyCnstr
+  | Eq          lhs         .   eqTyVarMp           =   (tyVar @tyVar.ty `varmpTyUnit` @tyExpr.ty) |=> @lhs.eqTyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,7 +321,7 @@ SEM Decl
 
 %%[7
 SEM DataFieldExpr
-  | Con         loc         .   finConTy            =   @lhs.finTyCnstr |=> @ty
+  | Con         loc         .   finConTy            =   @lhs.finTyVarMp |=> @ty
 %%]
 
 %%[7

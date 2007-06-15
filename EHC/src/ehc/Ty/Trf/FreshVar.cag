@@ -10,7 +10,7 @@
 Replace type variables with fresh ones.
 Module is currently not used.
 
-%%[4 hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable}) export(tyFreshVar)
+%%[4 hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyFreshVar)
 %%]
 
 %%[4.WRAPPER ag import({Ty/AbsSyn})
@@ -18,15 +18,15 @@ WRAPPER TyAGItf
 %%]
 
 %%[4.tyFreshVar hs
-tyFreshVar' :: (TyVarId -> Bool) -> UID -> Cnstr -> Ty -> (Ty,Cnstr)
-tyFreshVar' allowFresh uniq tvCnstr ty
+tyFreshVar' :: (TyVarId -> Bool) -> UID -> VarMp -> Ty -> (Ty,VarMp)
+tyFreshVar' allowFresh uniq tvVarMp ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {tvCnstr_Inh_TyAGItf = tvCnstr, allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
-     in   (repl_Syn_TyAGItf t,tvCnstr_Syn_TyAGItf t)
+                 (Inh_TyAGItf {tvVarMp_Inh_TyAGItf = tvVarMp, allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
+     in   (repl_Syn_TyAGItf t,tvVarMp_Syn_TyAGItf t)
 
 tyFreshVar :: (TyVarId -> Bool) -> UID -> Ty -> Ty
-tyFreshVar allowFresh uniq ty =  fst $ tyFreshVar' allowFresh uniq emptyCnstr ty
+tyFreshVar allowFresh uniq ty =  fst $ tyFreshVar' allowFresh uniq emptyVarMp ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,7 +60,7 @@ SEM Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% New tvar map as Cnstr, replacement
+%%% New tvar map as VarMp, replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
@@ -69,28 +69,28 @@ ATTR TyAGItf      [ | | repl: Ty    ]
 %%]
 
 %%[4
-ATTR AllTy TyAGItf [ | tvCnstr: Cnstr | ]
+ATTR AllTy TyAGItf [ | tvVarMp: VarMp | ]
 
 SEM Ty
-  | Var             lhs     .   (repl,tvCnstr)
+  | Var             lhs     .   (repl,tvVarMp)
                                             =   if @lhs.allowFresh @tv
-                                                then  case cnstrTyLookup @tv @lhs.tvCnstr of
-                                                        Just t   -> (t,@lhs.tvCnstr)
-                                                        Nothing  -> (t,(@tv `cnstrTyUnit` t) |=> @lhs.tvCnstr)
+                                                then  case varmpTyLookup @tv @lhs.tvVarMp of
+                                                        Just t   -> (t,@lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) |=> @lhs.tvVarMp)
                                                                  where t = Ty_Var @lUniq @categ.repl
-                                                else  (@repl,@lhs.tvCnstr)
+                                                else  (@repl,@lhs.tvVarMp)
 %%]
 SEM TyAGItf
-  | AGItf           ty      .   tvCnstr     =   emptyCnstr
+  | AGItf           ty      .   tvVarMp     =   emptyVarMp
 
 SEM Ty
   | Var             lhs     .   repl        =   if @lhs.allowFresh @tv then Ty_Var @lUniq @categ.repl else @repl
 SEM Ty
-  | Var             lhs     .   (repl,tvCnstr)
+  | Var             lhs     .   (repl,tvVarMp)
                                             =   if @lhs.allowFresh @tv
-                                                then  case cnstrTyLookup @tv @lhs.tvCnstr of
-                                                        Just t   -> (t,@lhs.tvCnstr)
-                                                        Nothing  -> (t,(@tv `cnstrTyUnit` t) |=> @lhs.tvCnstr)
+                                                then  case varmpTyLookup @tv @lhs.tvVarMp of
+                                                        Just t   -> (t,@lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) |=> @lhs.tvVarMp)
                                                                  where t = Ty_Var @lUniq @categ.repl
-                                                else  (@repl,@lhs.tvCnstr)
+                                                else  (@repl,@lhs.tvVarMp)
 

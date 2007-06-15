@@ -100,9 +100,9 @@ SEM Expr
   | CConst      loc         .   cexprBase   :=  CExpr_Char @char
   | Var         loc         .   cexprBase   :=  CExpr_Var @nm
   | Var IConst CConst
-                loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
+                loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
   | Con         loc         .   cexprBase   :=  CExpr_Var @nm
-                            .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBase
+                            .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
 %%[9
 SEM Expr
   | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
@@ -111,16 +111,16 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   cexpr       :=  CExpr_App
-                                                    (coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @appImplsCoeL []
+                                                    (coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
   | Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
-  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyCnstr @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyCnstr @lhs.cSubst $ @expr.cexpr
+                loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
+  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyVarMp @lhs.cSubst $ @expr.cexpr
 %%]
 
 %%[10
@@ -131,7 +131,7 @@ SEM Expr
 %%[97
 SEM PatExpr
   | Expr        loc         .   cexprBaseEq =   CExpr_Var @eqFldNm
-                            .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyCnstr @lhs.cSubst @cexprBaseEq)
+                            .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBaseEq)
                                                            [@expr.cexpr]
 %%]
 
@@ -193,7 +193,7 @@ SEM RecExpr
 
 %%[8
 SEM RecExpr
-  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recExpr.ty))
+  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recExpr.ty))
 %%]
 
 %%[10
@@ -264,7 +264,7 @@ SEM DataFieldExpr
 
 %%[8
 SEM Expr
-  | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyCnstr |=> @expr.ty))
+  | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyVarMp |=> @expr.ty))
                             .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
                                                     in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset Nothing
 %%]
@@ -340,7 +340,7 @@ SEM PatExpr
 
 %%[8
 SEM PatExpr
-  | AppTop Con  loc         .   finResTy    =   @lhs.finTyCnstr |=> @ty_r_
+  | AppTop Con  loc         .   finResTy    =   @lhs.finTyVarMp |=> @ty_r_
                             .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
                                                      dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show (tyConNm c))
                                                               $ dataGamLookup (tyConNm c) $ @lhs.dataGam
@@ -443,7 +443,7 @@ SEM DataFieldPatExpr
                             .   offset      =   CExpr_Int @ioffset
 
 SEM RecPatExpr
-  | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyCnstr |=> @recPatExpr.ty))
+  | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
 %%]
 
 %%[10

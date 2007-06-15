@@ -5,7 +5,7 @@
 Derived from work by Gerrit vd Geest, but with searching structures for predicates
 to avoid explosion of search space during resolution.
 
-%%[9 module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Base.Common},{%{EH}Substitutable},{%{EH}Cnstr})
+%%[9 module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
 %%]
 
 %%[9 import(Data.Monoid,qualified Data.Set as Set)

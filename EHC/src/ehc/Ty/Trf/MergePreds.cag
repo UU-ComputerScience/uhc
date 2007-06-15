@@ -10,7 +10,7 @@ MergePreds gets a set of predicates and places those predicates
 %%[9 hs module {%{EH}Ty.Trf.MergePreds} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
 
-%%[9 hs import({%{EH}Ty},{%{EH}Cnstr},{%{EH}Substitutable})
+%%[9 hs import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
 %%[9 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
@@ -37,7 +37,7 @@ tyMergePreds prL ty
     in   TyMergePredOut
             { tmpoTy                 = prTy_Syn_TyAGItf t
             , tmpoInsPrIdSet         = insPrIdSet_Syn_TyAGItf t
-            , tmpoImplsCnstr         = assocLToCnstrImpls (prImpls_Syn_TyAGItf t)
+            , tmpoImplsVarMp         = assocLToVarMpImpls (prImpls_Syn_TyAGItf t)
             , tmpoImplsPrvReq        = prvReqs_Syn_TyAGItf t
             }
 %%]
@@ -50,7 +50,7 @@ data TyMergePredOut
   = TyMergePredOut
       { tmpoTy               ::  Ty
       , tmpoInsPrIdSet       ::  Set.Set PredOccId
-      , tmpoImplsCnstr       ::  Cnstr
+      , tmpoImplsVarMp       ::  VarMp
       , tmpoImplsPrvReq      ::  PrvReqs
       }
 
@@ -58,7 +58,7 @@ instance Show TyMergePredOut where
   show _ = ""
 
 instance PP TyMergePredOut where
-  pp tmpo = pp (tmpoImplsCnstr tmpo) >-< ppAssocLV (tmpoImplsPrvReq tmpo)
+  pp tmpo = pp (tmpoImplsVarMp tmpo) >-< ppAssocLV (tmpoImplsPrvReq tmpo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
