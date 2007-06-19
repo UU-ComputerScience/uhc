@@ -14,30 +14,50 @@
 WRAPPER TyAGItf
 %%]
 
-%%[2.tyAppVarMp.sig hs
-tyAppVarMp :: VarMp -> Ty -> Ty
-%%]
-
-%%[9.tyAppVarMp.sig -2.tyAppVarMp.sig hs
-tyAppVarMp :: VarMp -> Ty -> Ty
-%%]
-
 %%[2.tyAppVarMp hs
-tyAppVarMp cnstr ty
-  =  let  t =  wrap_TyAGItf
-                 (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf {cnstr_Inh_TyAGItf = cnstr})
-     in   repl_Syn_TyAGItf t
+tyAppVarMp :: VarMp -> Ty -> Ty
+tyAppVarMp varmp ty
+  = repl_Syn_TyAGItf t
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf {varmp_Inh_TyAGItf = varmp})
+%%]
+
+%%[100 -2.tyAppVarMp hs
+tyAppVarMp' :: VarMp -> Ty -> (Ty,Bool)
+tyAppVarMp' varmp ty
+  = (repl_Syn_TyAGItf t,isChanged_Syn_TyAGItf t)
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf {varmp_Inh_TyAGItf = varmp})
+
+tyAppVarMp :: VarMp -> Ty -> Ty
+tyAppVarMp varmp ty
+  = if isChanged then ty' else ty
+  where (ty',isChanged) = tyAppVarMp' varmp ty
 %%]
 
 %%[3 hs
 type IsBound = TyVarId -> Bool
+%%]
 
+%%[3.tvRepl hs
 tvRepl :: TyVarId -> VarMp -> IsBound -> Ty -> Ty
 tvRepl tv c isBound repl
-  =  case (varmpTyLookup tv c) of
-        Just t | not (isBound tv)  -> t
-        _                          -> repl
+  = case (varmpTyLookup tv c) of
+       Just t | not (isBound tv)  -> t
+       _                          -> repl
+%%]
+
+%%[100 -3.tvRepl hs
+tvRepl :: TyVarId -> VarMp -> IsBound -> Maybe Ty
+tvRepl tv c isBound
+  = case (varmpTyLookup tv c) of
+       Just t | not (isBound tv)  -> Just t
+       _                          -> Nothing
+
+repl :: x -> Maybe x -> (x,Bool)
+repl x = maybe (x,False) (\x' -> (x',True))
 %%]
 
 %%[10
@@ -45,11 +65,19 @@ WRAPPER LabelAGItf
 %%]
 
 %%[10 hs export(labelAppVarMp)
-labelAppVarMp cnstr label
-  =  let  t =  wrap_LabelAGItf
-                 (sem_LabelAGItf (LabelAGItf_AGItf label))
-                 (Inh_LabelAGItf {cnstr_Inh_LabelAGItf = cnstr})
-     in   repl_Syn_LabelAGItf t
+labelAppVarMp varmp label
+  = repl_Syn_LabelAGItf t
+  where t = wrap_LabelAGItf
+              (sem_LabelAGItf (LabelAGItf_AGItf label))
+              (Inh_LabelAGItf {varmp_Inh_LabelAGItf = varmp})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is changed?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[100
+ATTR TyAGItf AllTyAndFlds [ | | isChanged USE {||} {False}: Bool ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,19 +85,19 @@ labelAppVarMp cnstr label
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2.TySubst
-ATTR TyAGItf AllTy  [ cnstr: VarMp  | |             ]
+ATTR TyAGItf AllTy  [ varmp: VarMp  | |             ]
 ATTR AllTyAndFlds   [               | | repl: SELF  ]
 ATTR TyAGItf        [               | | repl: Ty    ]
 %%]
 
 %%[10
-ATTR LabelAGItf Label  [ cnstr: VarMp  | |             ]
+ATTR LabelAGItf Label  [ varmp: VarMp  | |             ]
 ATTR LabelAGItf        [               | | repl: Label    ]
 %%]
 
 %%[2
 SEM Ty
-  | Var             lhs     .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.varmp)
 %%]
 
 %%[3
@@ -79,7 +107,7 @@ SEM TyAGItf
   | AGItf           ty      .   isBound     =   const False
 
 SEM Ty
-  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.cnstr @lhs.isBound @repl
+  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.varmp @lhs.isBound @repl
   | Quant
 %%[[11
     Lam
@@ -87,35 +115,72 @@ SEM Ty
                     ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
 %%]
 
+%%[100
+SEM Ty
+  | Var             lhs     .   (repl,isChanged)
+                                            :=  repl @repl $ tvRepl @tv @lhs.varmp @lhs.isBound
+%%]
+
 %%[4_2
 SEM Ty
-  | Alts Both       lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
+  | Alts Both       lhs     .   repl        =   tvRepl @tv @lhs.varmp @lhs.isBound @repl
 %%]
 
 %%[9
 SEM Impls
-  | Tail            lhs     .   repl        =   maybe @repl id (varmpImplsLookup @iv @lhs.cnstr)
+  | Tail            lhs     .   repl        =   maybe @repl id (varmpImplsLookup @iv @lhs.varmp)
 
 SEM Pred
-  | Var             lhs     .   repl        =   maybe @repl id (varmpPredLookup @pv @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpPredLookup @pv @lhs.varmp)
+%%]
+
+%%[100
+SEM Impls
+  | Tail            lhs     .   (repl,isChanged)
+                                            :=  repl @repl $ varmpImplsLookup @iv @lhs.varmp
+
+SEM Pred
+  | Var             lhs     .   (repl,isChanged)
+                                            :=  repl @repl $ varmpPredLookup @pv @lhs.varmp
 %%]
 
 %%[10
 SEM Label
-  | Var             lhs     .   repl        =   maybe @repl id (varmpLabelLookup @lv @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpLabelLookup @lv @lhs.varmp)
 
 SEM RowExts
-  | Exts			lhs		.	repl		=	RowExts_Exts $ assocLMapElt (tyAppVarMp @lhs.cnstr) @exts
-  | Var             lhs     .   repl        =   maybe @repl id (varmpExtsLookup @ev @lhs.cnstr)
+  | Exts            lhs     .   repl        =   RowExts_Exts $ assocLMapElt (tyAppVarMp @lhs.varmp) @exts
+  | Var             lhs     .   repl        =   maybe @repl id (varmpExtsLookup @ev @lhs.varmp)
+%%]
+
+%%[100
+SEM Label
+  | Var             lhs     .   (repl,isChanged)
+                                            :=  repl @repl $ varmpLabelLookup @lv @lhs.varmp
+
+SEM RowExts
+  | Exts            lhs     .   (repl,isChanged)
+                                            :=  let (ls,ts) = unzip @exts
+                                                    (ts',chs) = unzip $ map (tyAppVarMp' @lhs.varmp) ts
+                                                in  (RowExts_Exts $ zip ls ts',or chs)
+  | Var             lhs     .   (repl,isChanged)
+                                            :=  repl @repl $ varmpExtsLookup @ev @lhs.varmp
 %%]
 
 %%[13
 SEM PredSeq
-  | Var				lhs		.	repl		=	maybe @repl id (varmpPredSeqLookup @av @lhs.cnstr)
+  | Var             lhs     .   repl        =   maybe @repl id (varmpPredSeqLookup @av @lhs.varmp)
+%%]
+
+%%[100
+SEM PredSeq
+  | Var             lhs     .   (repl,isChanged)
+                                            :=  repl @repl $ varmpPredSeqLookup @av @lhs.varmp
 %%]
 
 %%[50
 SEM Ty
-  | Equal           lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
+  | Equal           lhs     .   repl        =   tvRepl @tv @lhs.varmp @lhs.isBound @repl
 %%]
+
 
