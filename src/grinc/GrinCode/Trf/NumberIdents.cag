@@ -61,7 +61,7 @@ listInsert l fm = foldl (flip $ uncurry Map.insert) fm l
 
 %%[8.grTrf
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllNT [ | | grTrf: SELF     ]
+ATTR AllNT [ | | grTrf: SELF  copy: SELF     ]
 %%]
 
 %%[8.unique
@@ -170,11 +170,17 @@ SEM GrExpr
 -- and then reverse the resulting newNames back to the original order
 
 SEM GrBind
-  | Bind      loc   .  (var2id2, nn, unique3)   =  addList @loc.unique2 @lhs.var2id (reverse @argNmL)
+  | Bind      loc   .  (var2id2, nn, unique3)   =  if @loc.skip
+                                                    then (@lhs.var2id, [], @lhs.unique)
+                                                    else addList @loc.unique2 @lhs.var2id (reverse @argNmL)
                     .  newNames                 =  reverse @nn
   			  loc   .  var2id2                  :  LookupList
   			        .  nn                       :  {[HsName]}
   			        .  unique3                  :  Int
+  			        
+  			  loc   .  skip                     =  case @nm of
+  			                                         HNmNr _ _ -> True
+  			                                         _         -> False
               expr  .  var2id                   =  @loc.var2id2
                     .  unique                   =  @loc.unique3
               lhs   .  unique                   =  @expr.unique
@@ -194,7 +200,11 @@ SEM GrPatLam
   | Var   lhs  .  grTrf  = GrPatLam_Var  @newName
 
 SEM GrBind
-  | Bind  lhs  .  grTrf    = GrBind_Bind @bindName @newNames @newExpr
+  | Bind  lhs  .  grTrf    = if @loc.skip
+                              then @loc.copy
+                                   -- do not rename bindings that already have a numbered name
+                                   -- i.e. the appN bindings that were introduced in BuiuldAppBindings  			        
+                              else GrBind_Bind @bindName @newNames @newExpr
           loc  .  newExpr  = @expr.grTrf
 
 SEM GrVal

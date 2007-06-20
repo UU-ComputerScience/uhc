@@ -429,11 +429,13 @@ SEM GrBind
 ATTR AllGrVal AllGrExpr AllDef GrModule [ | | fpaNodes USE {++} {[]} : {[NodeInfo (Maybe Variable)]} 
                                               allCalls USE {++} {[]} : {AbstractCallList}
                                         ]
-ATTR GrTag [ | | isfpa : {Bool}  ]
+ATTR GrTag [ | | isfpa : {Bool}  isa : {Bool} getAppNr : {Int} ]
 
 
 SEM GrVal
   |  Node   lhs . fpaNodes  =  if @tag.isfpa then [ InNode @tag.self @fldL.vars ] else []
+            lhs . allCalls  =  if @tag.isa   then [ (@tag.getAppNr,@fldL.vars)] else []  
+
 
 SEM GrExpr
   | Call    lhs . allCalls  =  [ (getNr @nm, @argL.vars) ]
@@ -445,4 +447,11 @@ SEM GrTag
   | App      lhs . isfpa  = True
   | * - Fun PApp App
              lhs . isfpa  = False
+  | App      lhs . isa    = True
+  | * - App
+             lhs . isa    = False
+             
+SEM GrTag
+  | App      lhs . getAppNr = getNr @nm
+  | * - App  lhs . getAppNr = undefined
 %%]

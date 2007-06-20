@@ -154,6 +154,7 @@ SEM GrExpr
   | FetchNode  lhs  .  grTrf  = GrExpr_FetchNode  (getHsName @nm @lhs.subst)
   | FetchField lhs  .  grTrf  = GrExpr_FetchField (getHsName @nm @lhs.subst) @offset @mbTag
   | FFI        lhs  .  grTrf  = GrExpr_FFI @nm (map (flip getHsName @lhs.subst) @argL) @tagL.grTrf
+  | UpdateUnit lhs  .  grTrf  = GrExpr_UpdateUnit (getHsName @nm @lhs.subst) @val.grTrf
 
 SEM GrBind
   | Bind  expr . subst     = Map.empty
