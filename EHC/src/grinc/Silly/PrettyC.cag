@@ -229,7 +229,7 @@ declareName tp nm
 
 trace :: String -> PP_Doc
 trace s
- = text ("printf(\"" ++ s ++ " SP=%d\\n\", SP-Stack); fflush(stdout);")
+ = text ("printf(\"" ++ s ++ " SP=%d (%d)\\n\", SP, SP-Stack); fflush(stdout);")
 
 caseDefault :: PP_Doc -> PP_Doc
 caseDefault x
@@ -250,7 +250,7 @@ callSillyFunctionFromC optOwn n nm
  | optOwn>=3 = let lab = "mainlab" ++ show n
                in  "*--SP = (GrWord)(&&" >|< lab >|< ");"   -- return address
                    >-< ppWhen optTraceAssign
-                              (" printf(\"def label" >#< lab >#< "= %d \\n\", " >#< "SP[0]" >#< "); fflush(stdout);")
+                              (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
                    >-< "*--SP = (GrWord)0;"                 -- link
                    >-< "goto" >#< nm >|< ";"                -- do the call
                    >-< label lab                            -- return here
@@ -272,7 +272,9 @@ returnFromSillyFunction retdiff optOwn
                               )
                           >|< ");"
                  >-< "goto *(SP[-" >|< show retdiff >|< "]);"                          
- | optOwn>=3   = "goto *(SP[-" >|< show retdiff >|< "]);"
+ | optOwn>=3   = ppWhen optTraceAssign
+                      (" printf(\"goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "]); fflush(stdout);")
+ 	             >-< "goto *(SP[-" >|< show retdiff >|< "]);"
  | optOwn<=2   = text ""
 
 
@@ -339,7 +341,9 @@ jumpSillyFunctionFromSilly optOwn nm
                >#< "{ register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
                >#< machDepCForTailcallLeave2
                >-< "goto *_tail_call_dest; }"
- | optOwn>=3 = "goto" >#< nm >|< ";"
+ | optOwn>=3 = ppWhen optTraceAssign
+                      (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
+ 	           >-< "goto" >#< nm >|< ";"
 
 
 assignment2 :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc

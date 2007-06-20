@@ -60,6 +60,9 @@ isFinalTag (GrTag_PApp _ _)  = True
 isFinalTag (GrTag_Con _ _ _) = True
 isFinalTag _                 = False
 
+isApplyTag (GrTag_App _)     = True
+isApplyTag _                 = False
+
 
 filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
 filterTaggedNodes p (AbsNodes nodes) = let newNodes = Map.filterWithKey (const . p) nodes
@@ -67,6 +70,10 @@ filterTaggedNodes p (AbsNodes nodes) = let newNodes = Map.filterWithKey (const .
                                           AbsNodes newNodes
 filterTaggedNodes p av               = av
 
+
+getApplyNodesParameters :: AbstractValue -> [ [AbstractValue] ]
+getApplyNodesParameters (AbsNodes nodes) = Map.elems (Map.filterWithKey (const . isApplyTag) nodes)
+getApplyNodesParameters _ = []
 
 
 
@@ -95,13 +102,18 @@ envChanges equat env heap
                                       ;  res <- absDeref av
                                       ;  return [(d,res)]
                                       }
+      IsApplication Nothing (f:as) ev  -> do 
+                                      {  return []
+                                      }
+
       IsApplication mbd (f:as) ev  -> do 
                                       {  av         <-  readArray env f
                                       ;  absFun     <-  case mbd of
                                                          Nothing  -> absDeref av
                                                          Just _   -> return av
                                       ;  absArgs    <-  mapM (readArray env) as
-                                      ;  (sfx,res)  <-  absCall absFun absArgs ev
+                                      ;  (sfx,res)  <-  absCall absFun absArgs (Just ev)
+                                      -- ;  _          <-  trace ("sfx " ++ show sfx) (return ())
                                       ;  case mbd of
                                            Nothing  ->  return sfx
                                            Just d   ->  return ((d,res):sfx)
@@ -114,17 +126,37 @@ envChanges equat env heap
          AbsBottom     -> av
          AbsError _    -> av
          _             -> AbsError "Variable passed to eval is not a node"
+         
+    
+    --absDeref :: AbstractValue -> ST s AbstractValue  
     absDeref av
       = case av of
           AbsLocs ls  ->  do { vs <- mapM (readArray heap) (Set.toList ls)
-                             ; return (mconcat (map (filterTaggedNodes isFinalTag) vs))
+                             ; let xs :: [AbstractValue]
+                                   xs = map (filterTaggedNodes isFinalTag) vs
+                             ; let ys :: [[AbstractValue]]
+                                   ys = concat (map getApplyNodesParameters vs)
+                             ; ws <- mapM verwerk ys
+                             ; return (mconcat (xs++ws))
                              }
           AbsBottom   ->  return av
           AbsError _  ->  return av
           _           ->  return $ AbsError "Variable passed to eval is not a location"
+         
+    --verwerk :: [AbstractValue] -> ST s AbstractValue
+    verwerk avs 
+      = do { (f:args)  <- mapM absDeref avs
+           -- ; let (f:args) = avs
+           ; (sfx,res) <- absCall f args Nothing
+           -- ;  _        <-  trace ("ignored sfx " ++ show sfx) (return ())
+           ; return res
+           }
+           
                                    
-    absCall f args ev
+    --absCall :: AbstractValue -> [AbstractValue] -> Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
+    absCall f args mbev
       = do { ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
+           -- ;  _  <-  trace ("absCall " ++ show f ++ " " ++ show args ++ " " ++ show ts) (return ())
            ; let (sfxs,avs) = unzip ts
            ; return (concat sfxs, mconcat avs)
       	   }
@@ -139,8 +171,10 @@ envChanges equat env heap
                    ; exc <-  if    n<needs
                              then  return AbsBottom
                              else  readArray env (funnr+1)
-                   ; let excfx = (ev, exc)  
-                   ; return (excfx:sfx, res)
+                   ; return (maybe (sfx, res)
+                                   (\ev -> ((ev,exc):sfx, res))
+                                   mbev
+                            )
                    }
 %%]
 
@@ -154,7 +188,8 @@ fixpoint eqs1 eqs2 proc1 proc2
         ; let doStep2 b i = proc2 i >>= return . (b||)
         ; changes1 <- foldM doStep1 False eqs1
         ; changes2 <- foldM doStep2 False eqs2
-        ; if    trace ("fixpoint step " ++ show count) ((changes1 || changes2) && count<10)
+        ; if    -- trace ("fixpoint step " ++ show count) 
+                 ((changes1 || changes2) && count<10)
           then  countFixpoint (count+1)
           else  return count
         }
@@ -178,13 +213,15 @@ solveEquations lenEnv lenHeap eqs1 eqs2 =
        ; let procEnv equat
                 = do
                   { cs <- envChanges equat env heap
-                  ; bs <- mapM (procChange env) cs
+                  ; bs <- -- trace ("equat " ++ show equat ++ " change " ++ show cs)
+                            (mapM (procChange env) cs)
                   ; return (or bs)
                   }
              procHeap equat
                 = do
                   { cs <- heapChange equat env
-                  ; b  <- procChange heap cs
+                  ; b  <- -- trace ("hpeqa " ++ show equat ++ " change " ++ show cs) 
+                            (procChange heap cs)
                   ; return b
                   }
        ; count <- fixpoint eqs1 eqs2 procEnv procHeap
@@ -192,10 +229,10 @@ solveEquations lenEnv lenHeap eqs1 eqs2 =
        ; absHeap <- unsafeFreeze heap
        ; absEnv  <- unsafeFreeze env
     
-       ; trace (unlines ("EQUATIONS"     : map show eqs1))        $ return ()
-       ; trace (unlines ("SOLUTION"      : map show (assocs absEnv)))  $ return ()
-       ; trace (unlines ("HEAPEQUATIONS" : map show eqs2))          $ return ()
-       ; trace (unlines ("HEAPSOLUTION"  : map show (assocs absHeap))) $ return ()
+       -- ; trace (unlines ("EQUATIONS"     : map show eqs1))        $ return ()
+       -- ; trace (unlines ("SOLUTION"      : map show (assocs absEnv)))  $ return ()
+       -- ; trace (unlines ("HEAPEQUATIONS" : map show eqs2))          $ return ()
+       -- ; trace (unlines ("HEAPSOLUTION"  : map show (assocs absHeap))) $ return ()
        
        ; return (count, (absEnv, absHeap, Map.empty))
        }

@@ -15,9 +15,7 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(RenameMap, wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag)
-
-type RenameMap      = [(Int,  [Int])]
+%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (Just wildcardNm)

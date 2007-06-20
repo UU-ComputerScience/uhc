@@ -370,15 +370,18 @@ SEM GrValL
 SEM GrTag
  | Con     loc.constant = Constant_Alias ("C" ++ hsnShowAlphanumeric @nm)
  | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumeric @nm)
+ | App     loc.constant = Constant_Alias ("A" ++ hsnShowAlphanumeric @nm)
  | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumeric @nm)
- | Con Fun PApp
+ | Con Fun App PApp
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
+
  | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
  | Any     lhs.value    = error "GrTag:Any value"
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
  | Any     lhs.constant = Constant_Alias "ANY"
- | * - Con Fun PApp Unboxed Any
+
+ | * - Con Fun App PApp Unboxed Any
            lhs.constant = error "GrTag:other constant"
            lhs.value    = error "GrTag:other value"
 
@@ -536,8 +539,8 @@ isRealVar _             = True
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
 allocate :: Char -> Int -> Int -> Value
-allocate 'C' n1 _  = Value_Alloc n1
-allocate _   n1 n2 = Value_Alloc (max n1 n2)
+allocate 'C' n1 _  = Value_Alloc (1+n1)
+allocate _   n1 n2 = Value_Alloc (1+(max n1 n2))
        
 -- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char

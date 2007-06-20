@@ -49,6 +49,7 @@ SEM GrAGItf
 
 %%[8 hs
 type IdentOneToMany = (Int,  [Int])
+type RenameMap      = [(Int,  [Int])]
 
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], IdentOneToMany)
 newNames hptMap uniq (HNmNr v _) = case getEnvVar hptMap v of
