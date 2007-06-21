@@ -114,8 +114,8 @@ node2app size (unique, origNamesMap, evalMap, bindings) =
 %%[8.addAppBindings
 SEM GrModule
   | Mod  loc  . (unique', origNamesMap, evalTagMp', binds)  = foldr node2app
-                                                                    (@lhs.unique, [], @evalTagMp, @bindL.grTrf)
+                                                                    (@lhs.unique, [], [], @bindL.grTrf)
                                                                     (Set.elems @bindL.applyNodeSizes)
          lhs  . unique = @unique'
-         lhs  . grTrf  = GrModule_Mod @moduleNm @globalL.grTrf @binds @ctagsMp @evalTagMp' @applyTagMp
+         lhs  . grTrf  = GrModule_Mod @moduleNm @globalL.grTrf @binds @ctagsMp (@evalTagMp ++ @evalTagMp') @applyTagMp
 %%]

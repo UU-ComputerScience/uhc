@@ -127,13 +127,13 @@ putErrs (CompileError e) = putStrLn e >> return ()
 -- create initial GRIN
 caLoad doParse = task_ VerboseNormal "Loading"
     ( do { when doParse caParseGrin
-         ; caWriteGrin     True             "0-parsed"
+         ; caWriteGrin     True             "10-parsed"
          ; transformGrin   cleanupPass      "Cleanup pass"
-         ; caWriteGrin     True             "0a-cleaned"
+         ; caWriteGrin     True             "11-cleaned"
          ; transformTriple buildAppBindings "Renaming lazy apply tags"
-         ; caWriteGrin     True             "0b-renamed"
+         ; caWriteGrin     True             "12-renamed"
          ; transformTriple numberIdents     "Numbering identifiers"
-         ; caWriteGrin     True             "1-loaded"
+         ; caWriteGrin     True             "19-numbered"
          }
     )
 
@@ -142,7 +142,7 @@ caAnalyse = task_ VerboseNormal "Analyzing"
     ( do { caNormForHPT
          ; caRightSkew
          ; caHeapPointsTo
-         ; caWriteGrin True "2-analyzed"
+         ; caWriteGrin True "29-analyzed"
          }
     )
 
@@ -150,59 +150,61 @@ caAnalyse = task_ VerboseNormal "Analyzing"
 caKnownCalls = task_ VerboseNormal "Removing unknown calls"
     ( do { transformTriple inlineEA "Inlining Eval and Apply calls" 
          ; caRightSkew
-         ; caWriteGrin True "3-knownCalls"
+         ; caWriteGrin True "31-evalinlined"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
          ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
-         ; caWriteGrin True "3a-unboxed"
+         ; caWriteGrin True "39-unboxed"
          }
     )
--- optionsations part I
+-- optimisations part I
 caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
     ( do { transformTriple sparseCase "Removing impossible case alternatives"
-         ; caWriteGrin True "4a-sparseCaseRemoved"
+         ; caWriteGrin True "41-sparseCaseRemoved"
          ; transformGrin   caseElimination "Removing evaluated and trivial cases"
-         ; caWriteGrin True "4b-evaluatedCaseRemoved"
+         ; caWriteGrin True "42-evaluatedCaseRemoved"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "4c-unusedExprRemoved"
+         ; caWriteGrin True "43-unusedExprRemoved"
          ; caDropUnusedBindings
-         ; caWriteGrin True "4-partlyOptimized"
+         ; caWriteGrin True "49-partlyOptimized"
          }
     )
 -- simplification part II
 caNormalize = task_ VerboseNormal "Normalizing"
     ( do { transformTriple lowerGrin "Lowering Grin"
+         ; caWriteGrin True "51-lowered"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
          ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
-         ; caWriteGrin True "5-normalized"
+         ; caWriteGrin True "59-unboxedagain"
          }
     )
 
--- optionsations part II
+-- optimisations part II
 caOptimize = task_ VerboseNormal "Optimizing (full)"
     ( do { caCopyPropagation
-         ; caWriteGrin True "6-after-cp"
+         ; caWriteGrin True "61-after-cp"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "7-optimized"
+         ; caWriteGrin True "69-optimized"
          }
     )
 
 -- simplification part III
 caFinalize = task_ VerboseNormal "Finalizing"
     ( do { transformTriple splitFetch "Splitting and specializing fetch operations"
-         ; caWriteGrin True "8a-fetchSplitted"
+         ; caWriteGrin True "71-fetchSplitted"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
+         ; caWriteGrin True "72-unboxedoncemore"
          ; when doUnbox (transformTriple testUnbox "Testing Unboxed values")
-         ; caWriteGrin True "8y-unboxes tested"
+         ; caWriteGrin True "73-unboxtested"
          ; transformGrin   caseElimination "Removing evaluated and trivial cases"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "8x-unboxes tested"
          ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "8b-unusedExprRemoved"
+         ; caWriteGrin True "74-unusedExprRemoved"
          ; transformGrin   dropUnusedTags "Remove unused tags"
-         ; caWriteGrin True "8c-unusedTagsRemoved"
+         ; caWriteGrin True "75-unusedTagsRemoved"
          ; caCopyPropagation
 --       ; transformTriple returnCatch "Ensure code exists after catch statement"
-         ; caWriteGrin True "8-final"
+         ; caWriteGrin True "79-final"
          }
     )
 
