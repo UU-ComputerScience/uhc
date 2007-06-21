@@ -105,7 +105,6 @@ envChanges equat env heap
       IsApplication Nothing (f:as) ev  -> do 
                                       {  return []
                                       }
-
       IsApplication mbd (f:as) ev  -> do 
                                       {  av         <-  readArray env f
                                       ;  absFun     <-  case mbd of
@@ -136,27 +135,24 @@ envChanges equat env heap
                                    xs = map (filterTaggedNodes isFinalTag) vs
                              ; let ys :: [[AbstractValue]]
                                    ys = concat (map getApplyNodesParameters vs)
-                             ; ws <- mapM verwerk ys
+                             ; ws <- mapM absApply ys
                              ; return (mconcat (xs++ws))
                              }
           AbsBottom   ->  return av
           AbsError _  ->  return av
           _           ->  return $ AbsError "Variable passed to eval is not a location"
          
-    --verwerk :: [AbstractValue] -> ST s AbstractValue
-    verwerk avs 
+    --absApply :: [AbstractValue] -> ST s AbstractValue
+    absApply avs 
       = do { (f:args)  <- mapM absDeref avs
-           -- ; let (f:args) = avs
            ; (sfx,res) <- absCall f args Nothing
            -- ;  _        <-  trace ("ignored sfx " ++ show sfx) (return ())
            ; return res
            }
-           
                                    
     --absCall :: AbstractValue -> [AbstractValue] -> Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
     absCall f args mbev
       = do { ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
-           -- ;  _  <-  trace ("absCall " ++ show f ++ " " ++ show args ++ " " ++ show ts) (return ())
            ; let (sfxs,avs) = unzip ts
            ; return (concat sfxs, mconcat avs)
       	   }
@@ -189,7 +185,7 @@ fixpoint eqs1 eqs2 proc1 proc2
         ; changes1 <- foldM doStep1 False eqs1
         ; changes2 <- foldM doStep2 False eqs2
         ; if    -- trace ("fixpoint step " ++ show count) 
-                 ((changes1 || changes2) && count<10)
+                 ((changes1 || changes2) {- && count<10 -} )
           then  countFixpoint (count+1)
           else  return count
         }

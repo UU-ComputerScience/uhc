@@ -92,4 +92,16 @@ SEM GrVal
   | VarNode  lhs . trf  =  if varCanbeUnboxed @lhs.hptMap ((\(GrVal_Var v)->v) (head @fldL.trf))
                             then GrVal_Node GrTag_Unboxed (tail @fldL.trf)
                             else @trf
+                            
+SEM GrExpr
+  | FetchField lhs . trf = maybe @trf
+                                 (\t-> if tagCanbeUnboxed @lhs.hptMap t  
+                                        then GrExpr_FetchField @nm @offset (Just GrTag_Unboxed)
+                                        else @trf
+                                 )
+                                 @mbTag                            
+                            
+                            
+                            
+                            
 %%]
