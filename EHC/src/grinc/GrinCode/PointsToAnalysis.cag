@@ -63,30 +63,16 @@ A unique integer "location" is threaded through all expressions to number all St
 The value "unique", the first unused variable number, is made available to the root
 -}
 
-ATTR GrAGItf GrModule AllDef AllGrExpr [                    | location: Int |                       ]
-ATTR GrAGItf GrModule                  [ unique: {Int}      |               |                       ]
+ATTR GrAGItf GrModule AllDef AllGrExpr [                    | location: Int |    ]
+ATTR GrAGItf GrModule                  [ unique: {Int}      |               |    ]
 
 SEM GrAGItf
   | AGItf  module . location = 0
 
 SEM GrAGItf
-  | AGItf  lhs.equations = [ IsApplication Nothing (map fromJust args)             (getNr nm)
-                           | (InNode (GrTag_App nm) args) <- @module.fpaNodes
-                           ]
-                           ++
-                           [ IsEqual x y
+  | AGItf  lhs.equations = [ IsEqual x y
                            | (funnr, args) <- @module.allCalls
                            , (x, Just y) <- zip [funnr + 2 ..] args
-                           ]
-                           ++
-                           [ IsEqual x y
-                           | (InNode (GrTag_Fun nm) args) <- @module.fpaNodes
-                           , (x, Just y) <- zip [getNr nm + 2 ..] args
-                           ]
-                           ++
-                           [ IsEqual x y
-                           | (InNode (GrTag_PApp needs nm) args) <- @module.fpaNodes
-                           , (x, Just y) <- zip [getNr nm + 2 ..] args
                            ]
                            ++  @module.equations
 %%]
@@ -383,7 +369,7 @@ SEM GrExpr
 %%[8.apply
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
-                             InVar tvar -> [ IsApplication (Just tvar) (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
+                             InVar tvar -> [ IsApplication tvar (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
                              _          -> error "HPT: Apply target should be a variable"
 %%]
 
@@ -426,32 +412,17 @@ SEM GrBind
 %%[8
 -- Collect all Fun, PApp and App nodes, and all Calls
 
-ATTR AllGrVal AllGrExpr AllDef GrModule [ | | fpaNodes USE {++} {[]} : {[NodeInfo (Maybe Variable)]} 
-                                              allCalls USE {++} {[]} : {AbstractCallList}
-                                        ]
-ATTR GrTag [ | | isfpa : {Bool}  isa : {Bool} getAppNr : {Int} ]
+ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallList} ]
+ATTR GrTag                              [ | | mbFPAnr                : {Maybe Int}        ]
 
 
 SEM GrVal
-  |  Node   lhs . fpaNodes  =  if @tag.isfpa then [ InNode @tag.self @fldL.vars ] else []
-            lhs . allCalls  =  if @tag.isa   then [ (@tag.getAppNr,@fldL.vars)] else []  
-
+  |  Node   lhs . allCalls  =  maybe [] (\n->[(n, @fldL.vars)]) @tag.mbFPAnr
 
 SEM GrExpr
   | Call    lhs . allCalls  =  [ (getNr @nm, @argL.vars) ]
 
-
 SEM GrTag
-  | Fun      lhs . isfpa  = True
-  | PApp     lhs . isfpa  = True
-  | App      lhs . isfpa  = True
-  | * - Fun PApp App
-             lhs . isfpa  = False
-  | App      lhs . isa    = True
-  | * - App
-             lhs . isa    = False
-             
-SEM GrTag
-  | App      lhs . getAppNr = getNr @nm
-  | * - App  lhs . getAppNr = undefined
+  |     Fun PApp App   lhs . mbFPAnr = Just (getNr @nm)
+  | * - Fun PApp App   lhs . mbFPAnr = Nothing
 %%]

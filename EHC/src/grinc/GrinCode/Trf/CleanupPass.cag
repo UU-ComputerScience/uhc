@@ -1,5 +1,4 @@
 cleanup EHC generated GRIN:
-- eval and apply functions not needed (their semantics are builtin)
 - better F-tag than P0-tag (altough they are aliases)
 - primThrow and primCatch are not primitives, but ehc does not support the grin statements
 
@@ -37,21 +36,6 @@ SEM GrModule
   | Mod  lhs  .  grTrf         =  GrModule_Mod @moduleNm @newGlobals @bindL.grTrf @ctagsMp @newEvalTagMp @applyTagMp
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Eval and Apply are builtin %%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8.dropEvalApply
-SEM GrBind [ | | dropBinding: Bool ]
-  | Bind  lhs  . dropBinding  =  @nm `elem` [evalNm, evalNr,  applyNm, applyNr] 
-  | Rec   lhs  . dropBinding  =  False
-
-
-SEM GrBindL
-  | Cons  lhs  .  grTrf  =  if @hd.dropBinding
-                            then @tl.grTrf
-                            else @hd.grTrf : @tl.grTrf
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% F-Tag  <== P0-Tag %%%%%
@@ -134,11 +118,11 @@ SEM GrBind
 buildThrowExpr [exceptNm] = GrExpr_Throw exceptNm
 
 buildCatchExpr [tryNm, handlerNm] = let  exceptNm = hsnPrefix "except_ptr@" handlerNm
-                                         evalNm   = hsnPrefix "except_node@" handlerNm
+                                         varNm    = hsnPrefix "except_node@" handlerNm
                                     in GrExpr_Catch (GrExpr_Eval tryNm)
                                                     exceptNm
                                                     (GrExpr_Seq (GrExpr_Eval handlerNm)
-                                                                (GrPatLam_Var evalNm)
-                                                                (GrExpr_App evalNm [GrVal_Var exceptNm])
+                                                                (GrPatLam_Var varNm)
+                                                                (GrExpr_App varNm [GrVal_Var exceptNm])
                                                     )
 %%]

@@ -23,11 +23,11 @@ PRAGMA nocycle novisit
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(dropUnusedExpr)
-dropUnusedExpr :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-dropUnusedExpr (input,unique,hptMap)
+dropUnusedExpr :: (GrModule,HptMap) -> GrModule
+dropUnusedExpr (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, unique, hptMap)
+    in  grTrf_Syn_GrAGItf syn
 
 %%]
 

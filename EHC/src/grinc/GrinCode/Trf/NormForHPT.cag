@@ -28,10 +28,10 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.NormForHPT} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
-normForHPT :: Int -> GrModule -> (Int, GrModule)
-normForHPT unique grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
-                                               (Inh_GrAGItf { unique_Inh_GrAGItf = unique })
-                          in (unique_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+normForHPT :: (GrModule,Int) -> (GrModule,Int)
+normForHPT (grmod,unique) = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
+                                                 (Inh_GrAGItf { unique_Inh_GrAGItf = unique })
+                            in (grTrf_Syn_GrAGItf t, unique_Syn_GrAGItf t)
 
 newVar :: Int -> (HsName, Int)
 newVar u = (HNmNr u Nothing, u+1)

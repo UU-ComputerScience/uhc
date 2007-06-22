@@ -13,11 +13,11 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.SparseCase} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(sparseCase)
-sparseCase :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-sparseCase (input,unique,hptMap)
+sparseCase :: (GrModule,HptMap) -> GrModule
+sparseCase (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, unique, hptMap)
+    in  grTrf_Syn_GrAGItf syn
 %%]
 
 %%[8

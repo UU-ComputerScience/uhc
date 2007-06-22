@@ -15,19 +15,12 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(wildcardNm, wildcardNr, evalNm, evalNr,  applyNm, applyNr, mainNr, isSpecialBind, getNr, throwTag)
+%%[8 export(wildcardNm, wildcardNr, mainNr, getNr, throwTag)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (Just wildcardNm)
-evalNm     = hsnEval
-evalNr     = HNmNr 1 (Just evalNm)
-applyNm    = hsnApply
-applyNr    = HNmNr 2 (Just applyNm)
 
-mainNr     = HNmNr 3 (Just (hsnPrefix "fun_" hsnMain))
---mainNr     = HNmNr 3 (Just (hsnMain))
-
-isSpecialBind f = f == evalNm || f == applyNm || f==hsnMain
+mainNr     = HNmNr 1 (Just (hsnPrefix "fun_" hsnMain))
 
 getNr :: HsName -> Int
 getNr (HNmNr i _) = i
@@ -143,7 +136,7 @@ data Equation
   | IsSelection           Variable  Variable Int GrTag
   | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
   | IsEvaluation          Variable  Variable                     Variable
-  | IsApplication  (Maybe Variable) [Variable]                   Variable
+  | IsApplication         Variable  [Variable]                   Variable
     deriving (Show, Eq)
 
 data HeapEquation

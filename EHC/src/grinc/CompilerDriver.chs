@@ -108,7 +108,7 @@ initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath
 initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grmod}
 
 initState opts
-  = GRINCompileState { gcsUnique     = 5          -- 0,1,2,3,4 are reserved for wildcard, eval, apply, main, mainexcept
+  = GRINCompileState { gcsUnique     = 3          -- 0,1,2 are reserved for wildcard, main, mainexcept
                      , gcsGrin       = undefined
                      , gcsSilly      = undefined
                      , gcsHptMap     = undefined
@@ -125,86 +125,86 @@ putErrs (CompileError e) = putStrLn e >> return ()
 
 %%[8
 -- create initial GRIN
-caLoad doParse = task_ VerboseNormal "Loading"
+caLoad doParse = task_ VerboseNormal                "Loading"
     ( do { when doParse caParseGrin
-         ; caWriteGrin     True             "10-parsed"
-         ; transformGrin   cleanupPass      "Cleanup pass"
-         ; caWriteGrin     True             "11-cleaned"
-         ; transformTriple buildAppBindings "Renaming lazy apply tags"
-         ; caWriteGrin     True             "12-renamed"
-         ; transformTriple numberIdents     "Numbering identifiers"
-         ; caWriteGrin     True             "19-numbered"
+         ; caWriteGrin           True               "10-parsed"
+         ; transformCode         cleanupPass        "Cleanup pass"
+         ; caWriteGrin           True               "11-cleaned"
+         ; transformCodeUnq      buildAppBindings   "Renaming lazy apply tags"
+         ; caWriteGrin           True               "12-renamed"
+         ; transformCodeUnq      numberIdents       "Numbering identifiers"
+         ; caWriteGrin           True               "19-numbered"
          }
     )
 
 -- create HPT info
-caAnalyse = task_ VerboseNormal "Analyzing"
-    ( do { caNormForHPT
-         ; caRightSkew
+caAnalyse = task_ VerboseNormal                     "Analyzing"
+    ( do { transformCodeUnq      normForHPT         "Normalizing"
+         ; transformCodeIterated rightSkew          "Unskewing"
          ; caHeapPointsTo
-         ; caWriteGrin True "29-analyzed"
+         ; caWriteGrin           True               "29-analyzed"
          }
     )
 
 -- simplification part I
-caKnownCalls = task_ VerboseNormal "Removing unknown calls"
-    ( do { transformTriple inlineEA "Inlining Eval and Apply calls" 
-         ; caRightSkew
-         ; caWriteGrin True "31-evalinlined"
+caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
+    ( do { transformCodeUnqHpt   inlineEA           "Inlining Eval and Apply calls" 
+         ; transformCodeIterated rightSkew          "Unskewing"
+         ; caWriteGrin           True               "31-evalinlined"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
-         ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
-         ; caWriteGrin True "39-unboxed"
+         ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
+         ; caWriteGrin           True               "39-unboxed"
          }
     )
 -- optimisations part I
-caOptimizePartly = task_ VerboseNormal "Optimizing (partly)"
-    ( do { transformTriple sparseCase "Removing impossible case alternatives"
-         ; caWriteGrin True "41-sparseCaseRemoved"
-         ; transformGrin   caseElimination "Removing evaluated and trivial cases"
-         ; caWriteGrin True "42-evaluatedCaseRemoved"
-         ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "43-unusedExprRemoved"
-         ; caDropUnusedBindings
-         ; caWriteGrin True "49-partlyOptimized"
+caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
+    ( do { transformCodeUsingHpt sparseCase         "Removing impossible case alternatives"
+         ; caWriteGrin           True               "41-sparseCaseRemoved"
+         ; transformCode         caseElimination    "Removing evaluated and trivial cases"
+         ; caWriteGrin           True               "42-evaluatedCaseRemoved"
+         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; caWriteGrin           True               "43-unusedExprRemoved"
+         ; transformCode         dropUnusedBindings "Dropping unused bindings"
+         ; caWriteGrin           True               "49-partlyOptimized"
          }
     )
 -- simplification part II
-caNormalize = task_ VerboseNormal "Normalizing"
-    ( do { transformTriple lowerGrin "Lowering Grin"
-         ; caWriteGrin True "51-lowered"
+caNormalize = task_ VerboseNormal                   "Normalizing"
+    ( do { transformCodeUnqHpt   lowerGrin          "Lowering Grin"
+         ; caWriteGrin           True               "51-lowered"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
-         ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
-         ; caWriteGrin True "59-unboxedagain"
+         ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
+         ; caWriteGrin           True               "59-unboxedagain"
          }
     )
 
 -- optimisations part II
-caOptimize = task_ VerboseNormal "Optimizing (full)"
-    ( do { caCopyPropagation
-         ; caWriteGrin True "61-after-cp"
-         ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "69-optimized"
+caOptimize = task_ VerboseNormal                    "Optimizing (full)"
+    ( do { transformCodeIterated propagate          "Copy propagation"
+         ; caWriteGrin           True               "61-after-cp"
+         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; caWriteGrin           True               "69-optimized"
          }
     )
 
 -- simplification part III
-caFinalize = task_ VerboseNormal "Finalizing"
-    ( do { transformTriple splitFetch "Splitting and specializing fetch operations"
-         ; caWriteGrin True "71-fetchSplitted"
+caFinalize = task_ VerboseNormal                    "Finalizing"
+    ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
+         ; caWriteGrin           True               "71-fetchSplitted"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
-         ; when doUnbox (transformTriple unbox2 "Unboxing Int and Char")
-         ; caWriteGrin True "72-unboxedoncemore"
-         ; when doUnbox (transformTriple testUnbox "Testing Unboxed values")
-         ; caWriteGrin True "73-unboxtested"
-         ; transformGrin   caseElimination "Removing evaluated and trivial cases"
-         ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; transformTriple dropUnusedExpr "Remove unused expressions"
-         ; caWriteGrin True "74-unusedExprRemoved"
-         ; transformGrin   dropUnusedTags "Remove unused tags"
-         ; caWriteGrin True "75-unusedTagsRemoved"
-         ; caCopyPropagation
---       ; transformTriple returnCatch "Ensure code exists after catch statement"
-         ; caWriteGrin True "79-final"
+         ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
+         ; caWriteGrin           True               "72-unboxedoncemore"
+         ; when doUnbox (transformCodeUnqHpt testUnbox "Testing Unboxed values")
+         ; caWriteGrin           True               "73-unboxtested"
+         ; transformCode         caseElimination    "Removing evaluated and trivial cases"
+         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; caWriteGrin           True               "76-unusedExprRemoved"
+         ; transformCode         dropUnusedTags     "Remove unused tags"
+         ; caWriteGrin           True               "77-unusedTagsRemoved"
+         ; transformCodeIterated propagate          "Copy propagation"
+--       ; transformCodeUnqHpt   returnCatch        "Ensure code exists after catch statement"
+         ; caWriteGrin           True               "79-final"
          }
     )
 
@@ -256,32 +256,6 @@ caParseGrin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-caDropUnusedBindings :: CompileAction ()
-caDropUnusedBindings = do
-    { putMsg VerboseALot "Remove unused function bindings" Nothing
-    ; code  <- gets gcsGrin
-    ; (code, dot) <- return $ dropUnusedBindings code
-    ; modify (gcsUpdateGrin code)
-    ; outputCallGraph <- gets (ehcOptDumpCallGraph . gcsOpts)
-    ; when outputCallGraph
-        (do { input <- gets gcsPath
-            ; let output = fpathSetSuff "dot" input
-            ; putMsg VerboseALot ("Writing call graph to " ++ fpathToStr output) Nothing
-            ; liftIO $ writeToFile dot output
-            }
-        )
-    }
-
-caNormForHPT :: CompileAction ()
-caNormForHPT = task VerboseALot "Normalizing"
-    ( do { code   <- gets gcsGrin
-         ; unique <- gets gcsUnique
-         ; (unique', code) <- return $ normForHPT unique code
-         ; modify (gcsUpdateGrin code)
-         ; modify (gcsUpdateUnique unique')
-         ; return (unique' - unique)
-         }
-    ) (\i -> Just $ show i ++ " variable(s) introduced")
 
 caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
@@ -292,27 +266,6 @@ caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
          ; return iterCount
          }
      ) (\i -> Just $ show i ++ " iteration(s)")
-
-
-caCopyPropagation1 :: CompileAction Bool
-caCopyPropagation1 = do
-    code <- gets gcsGrin
-    (changed, code) <- return $ propagate code
-    putDebugMsg (if changed then "Changes" else "No change")
-    modify (gcsUpdateGrin code)
-    return changed
-
-caRightSkew1 :: CompileAction Bool
-caRightSkew1 = do
-    code <- gets gcsGrin
-    (code, changed) <- return $ rightSkew code
-    modify (gcsUpdateGrin code)
-    putDebugMsg (if changed then "Changes" else "No change")
-    return changed
-
-caCopyPropagation, caRightSkew :: CompileAction ()
-caCopyPropagation = task VerboseALot "Copy propagation" (caFix caCopyPropagation1) (\i -> Just $ show i ++ " iteration(s)")
-caRightSkew       = task VerboseALot "Unskewing"        (caFix caRightSkew1)       (\i -> Just $ show i ++ " iteration(s)")
 
 caGrin2Silly :: CompileAction ()
 caGrin2Silly = do
@@ -378,20 +331,37 @@ gcsUpdateSilly  x s = s { gcsSilly  = x }
 gcsUpdateUnique x s = s { gcsUnique = x }
 gcsUpdateHptMap x s = s { gcsHptMap = x }
 
-gcsGetTriple
+gcsGetCodeUnq
+  = do{ code   <- gets gcsGrin
+      ; unique <- gets gcsUnique
+      ; return (code,unique)
+      }
+
+gcsGetCodeHpt
+  = do{ code   <- gets gcsGrin
+      ; hpt    <- gets gcsHptMap
+      ; return (code,hpt)
+      }
+
+gcsGetCodeUnqHpt
   = do{ code   <- gets gcsGrin
       ; unique <- gets gcsUnique
       ; hptMap <- gets gcsHptMap
       ; return (code,unique,hptMap)
       }
 
-gcsPutTriple (code,unique,hptMap)
+gcsPutCodeUnq (code,unique)
+  = modify (\s -> s { gcsGrin   = code
+                    , gcsUnique = unique
+                    }
+           )
+
+gcsPutCodeUnqHpt (code,unique,hptMap)
   = modify (\s -> s { gcsGrin   = code
                     , gcsUnique = unique
                     , gcsHptMap = hptMap
                     }
            )
-
 
 traceHptMap :: CompileAction ()
 traceHptMap
@@ -399,19 +369,44 @@ traceHptMap
        ; trace (showHptMap hptMap) (return ())
        }
 
-transformTriple :: ((GrModule,Int,HptMap) -> (GrModule,Int,HptMap)) -> String -> CompileAction ()
-transformTriple process message 
-  = do { putMsg VerboseALot message Nothing
-       ; trip <- gcsGetTriple
-       ; gcsPutTriple (process trip)
-       }
-
-transformGrin :: (GrModule->GrModule) -> String -> CompileAction ()
-transformGrin process message 
+transformCode :: (GrModule->GrModule) -> String -> CompileAction ()
+transformCode process message 
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
        ; modify (gcsUpdateGrin (process grin))
        }
+
+transformCodeUsingHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()
+transformCodeUsingHpt process message 
+  = do { putMsg VerboseALot message Nothing
+       ; ch <- gcsGetCodeHpt
+       ; modify (gcsUpdateGrin (process ch))
+       }
+
+transformCodeUnq :: ((GrModule,Int) -> (GrModule,Int)) -> String -> CompileAction ()
+transformCodeUnq process message 
+  = do { putMsg VerboseALot message Nothing
+       ; cu <- gcsGetCodeUnq
+       ; gcsPutCodeUnq (process cu)
+       }
+
+transformCodeUnqHpt :: ((GrModule,Int,HptMap) -> (GrModule,Int,HptMap)) -> String -> CompileAction ()
+transformCodeUnqHpt process message 
+  = do { putMsg VerboseALot message Nothing
+       ; trip <- gcsGetCodeUnqHpt
+       ; gcsPutCodeUnqHpt (process trip)
+       }
+
+transformCodeIterated :: (GrModule->(GrModule,Bool)) -> String -> CompileAction ()
+transformCodeIterated process message 
+  = task VerboseALot message (caFixCount 1) (\i -> Just $ show i ++ " iteration(s)")
+     where
+     caFixCount n = do
+         code <- gets gcsGrin
+         (code, changed) <- return $ process code
+         putDebugMsg (if changed then "Changes" else "No change")
+         modify (gcsUpdateGrin code)
+         if changed then (caFixCount $ n+1) else return n
 
 transformSilly :: (EHCOpts->SilModule->SilModule) -> String -> CompileAction ()
 transformSilly process message 
@@ -420,14 +415,6 @@ transformSilly process message
        ; options <- gets gcsOpts
        ; modify (gcsUpdateSilly (process options silly))
        }
-
-
-caFix :: CompileAction Bool -> CompileAction Int
-caFix step = caFixCount 1
-    where
-    caFixCount n = do
-        changes <- step
-        if changes then (caFixCount $ n+1) else return n
 
 %%]
 

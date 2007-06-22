@@ -26,11 +26,11 @@ WRAPPER GrAGItf
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
 
-numberIdents :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-numberIdents (code,unique,hptMap)
+numberIdents :: (GrModule,Int) -> (GrModule,Int)
+numberIdents (code,unique)
   = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn, hptMap)
+    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn)
 
 
 %%]
@@ -81,7 +81,7 @@ ATTR GrModule AllBind [ | bind2idFrag: LookupList | ]
 SEM GrAGItf
   | AGItf  module  .  bind2idFrag  = Map.empty
                    .  var2id       = Map.empty
-           loc     .  bind2id      = Map.insert hsnMain mainNr (Map.insert evalNm evalNr (Map.insert applyNm applyNr @module.bind2idFrag))
+           loc     .  bind2id      = Map.insert hsnMain mainNr @module.bind2idFrag
 
 %%]
 
@@ -99,30 +99,18 @@ addMbToMap fm mbk mbv = maybe fm id mbMap
 %%[8.bindings
 SEM GrBind
   | Bind  loc . bindName    :  HsName
-          loc . bindName    =  if      @nm == applyNm
-                               then applyNr
-                               else if @nm == evalNm
-                               then evalNr
-                               else if @nm == hsnMain
+          loc . bindName    =  if @nm == hsnMain
                                then mainNr
                                else case @nm of
                                      HNmNr nr (Just orig) -> @nm
                                      _                    -> HNmNr @lhs.unique (Just (hsnPrefix "fun_" @nm))
           loc . unique2     :  Int
-          loc . unique2     =  if      @nm == applyNm
-                               then @lhs.unique
-                               else if @nm == evalNm
-                               then @lhs.unique
-                               else if @nm == hsnMain
+          loc . unique2     =  if @nm == hsnMain
                                then @lhs.unique
                                else case @nm of
                                      HNmNr nr (Just orig) -> @lhs.unique
                                      _                    -> @lhs.unique + 2
-          loc . bind2idFrag =  if      @nm == applyNm
-                               then @lhs.bind2idFrag
-                               else if @nm == evalNm
-                               then @lhs.bind2idFrag
-                               else if @nm == hsnMain
+          loc . bind2idFrag =  if @nm == hsnMain
                                then @lhs.bind2idFrag
                                else case @nm of
                                      HNmNr nr (Just orig) -> Map.insert orig @nm @lhs.bind2idFrag
@@ -239,7 +227,7 @@ SEM GrTag
 
 SEM GrModule
   | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
-         loc  . bind2idplus   = Map.insert hsnMain mainNr (Map.insert evalNm evalNr (Map.insert applyNm applyNr @lhs.bind2id))
+         loc  . bind2idplus   = Map.insert hsnMain mainNr @lhs.bind2id
          loc  . newEvalTagMp  = map (newMap @loc.bind2idplus) @evalTagMp
               . newAppTagMp   = map (newMap @loc.bind2idplus) @applyTagMp
 %%]

@@ -43,18 +43,9 @@ ATTR AllNT [ | | trf: SELF ]
 
 %%[8
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] (Seq.toList @bindL.trfSq) [] [] []
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf [] [] []
 
 SEM GrExpr
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL []
 %%]
 
-%%[8
-ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
-
-SEM GrBind
-  | Bind        lhs         .   trfSq           =   if @nm `elem` [hsnGrEval, hsnGrApply]
-                                                    then Seq.empty
-                                                    else Seq.singleton @trf
-  | Rec         lhs         .   trfSq           =   Seq.singleton $ GrBind_Rec $ Seq.toList @bindL.trfSq
-%%]

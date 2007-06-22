@@ -18,7 +18,7 @@ WRAPPER GrAGItf
 %%]
 %%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getNr, applyNr, wildcardNr, absFetch, getEnvVar, getNodes, addEnvVar, addEnvVars, throwTag, AbstractValue(..))})
+%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getNr, absFetch, getEnvVar, getNodes, addEnvVar, addEnvVars, throwTag, AbstractValue(..))})
 %%]
 
 %%[8 hs
@@ -199,7 +199,7 @@ restart. Otherwise continue until all arguments in an apply call are used and
 create a case to build the resulting P-node.
 
 The analysis result of P-nodes 'in between' is not available. We must generate
-this from the availible information. To that end we must create a new abstract
+this from the available information. To that end we must create a new abstract
 value which returns the union of the abstract value of each case alternative.
 
 %%[8.applyCode hs
@@ -233,11 +233,10 @@ buildApplyAlt
 buildApplyAlt ((t, a, avL), rhs) appArgs hptMap u
  = buildAlternative t avL a rhs u uf vf tf
     where
-    hptData av  = [(getNr applyNr, av)]
     uf u args   = error "no unit at the right hand side of apply map expected"
     vf u args v = let absVal = getEnvVar hptMap (getNr v)
                   in  ( u
-                      , hptData absVal
+                      , [(-1, absVal)]
                       , GrExpr_Call v (map GrVal_Var args ++ appArgs)
                       )
     tf u args t = let val2av v = case v of
@@ -245,7 +244,7 @@ buildApplyAlt ((t, a, avL), rhs) appArgs hptMap u
                                      otherwise   -> AbsBasic
                       absVal = AbsNodes (Map.singleton t (avL ++ map val2av appArgs))
                   in ( u
-                     , hptData absVal
+                     , [(-1, absVal)]
                      , GrExpr_Unit (GrVal_Node t (map GrVal_Var args ++ appArgs))
                      )
 
@@ -273,7 +272,7 @@ buildApplyCase unique hptMap funVar appArgs nodeList
  =  let makeAlt elem (u, h, l)   = let (u2, h2, alt) = buildApplyAlt elem appArgs hptMap u
                                    in (u2, h2 ++ h, alt:l)
         (unique2, hptData, alts) = foldr makeAlt (unique, [], []) nodeList
-        (altAvs, hptDelta)       = partition (\(i, _) -> getNr applyNr == i) hptData
+        (altAvs, hptDelta)       = partition (\(i, _) -> i == -1) hptData
         unionAV                  = mconcat (map snd altAvs)
     in ( unique2
        , hptDelta
