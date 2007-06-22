@@ -97,7 +97,6 @@ data EHCOpts
       ,  ehcOptUniqueness     ::  Bool
 %%]]
 %%[[8
-      ,  ehcOptDumpCallGraph  ::  Bool
       ,  ehcOptTimeCompile    ::  Bool
 
       ,  ehcOptGrinDebug      ::  Bool              -- debug info for code generation phase
@@ -174,7 +173,6 @@ defaultEHCOpts
       ,  ehcOptUniqueness     =   True
 %%]]
 %%[[8
-      ,  ehcOptDumpCallGraph  =   False
       ,  ehcOptTimeCompile    =   False
 
       ,  ehcOptGrinDebug      =   False
@@ -263,7 +261,6 @@ ehcCmdLineOpts
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off core transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
-     ,  Option ""   ["dump-call-graph"]  (NoArg oDumpCallGraph)               "output grin call graph as dot file"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
      ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
 
@@ -337,7 +334,6 @@ ehcCmdLineOpts
 %%]]
 %%[[8
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
-         oDumpCallGraph  o =  o { ehcOptDumpCallGraph     = True }
 
          oCode       ms  o =  case ms of
                                 Just "-"     -> o { ehcOptEmitCore     = False     }

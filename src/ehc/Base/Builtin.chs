@@ -231,15 +231,6 @@ hsnInteger                          =   hsnFromString "Integer"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Backend related names
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 export(hsnEval,hsnApply)
-hsnEval     = hsnFromString "!eval"
-hsnApply    = hsnFromString "!apply"
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known/available runtime values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -316,10 +307,12 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]
 
 %%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId,hsnPrimAddInt)
-[hsnUndefined
- , hsnPackedString, hsnPackedStringToString
+[ hsnUndefined
+ , hsnPackedString
+ , hsnPackedStringToString
  , hsnPrelId
- , hsnPrimAddInt, hsnPrimGtInt
+ , hsnPrimAddInt
+ , hsnPrimGtInt
 %%[[97
  , hsnPackedStringToInteger
 %%]]
@@ -331,9 +324,11 @@ mkRV m = hsnSetQual m . hsnFromString
       (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
 %%]]
       [ "undefined"
-      , "PackedString", "packedStringToString"
+      , "PackedString"
+      , "packedStringToString"
       , "id"
-      , "primAddInt", "primGtInt"
+      , "primAddInt"
+      , "primGtInt"
 %%[[97
       , "packedStringToInteger"
 %%]]

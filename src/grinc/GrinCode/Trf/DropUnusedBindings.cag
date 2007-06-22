@@ -27,17 +27,15 @@ type NodeInfoF = [NodeInfo] -> [NodeInfo]
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(dropUnusedBindings)
-dropUnusedBindings :: GrModule -> (GrModule, String)
+dropUnusedBindings :: GrModule -> GrModule
 dropUnusedBindings grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                                 (Inh_GrAGItf {})
-                           in (grTrf_Syn_GrAGItf t, dot_Syn_GrAGItf t)
+                           in grTrf_Syn_GrAGItf t
 %%]
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
-
-ATTR GrAGItf GrModule [ | | dot: String ]
 
 %%]
 
@@ -88,39 +86,3 @@ SEM GrBindL [ | | count: Int ]
                .  count  =  if @hd.dropBinding then @tl.count else 1 + @tl.count
   | Nil   lhs  .  count  =  0
 %%]
-
-%%[8.dot
-SEM GrModule
-  | Mod   loc  .  dot        = unlines (mkDot @loc.entry
-                                              (show @moduleNm) 
-                                              (foldl (mkNodeEdges @lifeBindings)
-                                                     id
-                                                     @nodes
-                                              )
-                                       )
-%%]
-
-%%[8.dot hs
-mkDot e n nodeEdges = let header     = (  (("digraph \"" ++ n ++ "\" {") :)
-                                       .  ("margin = 0" :)
-                                       )
-                          entryNode  = ( (show e ++ " [ shape = diamond ]") :)
-                          footer     = ( "}" :)
-                      in (header . entryNode . nodeEdges . footer) []
-
-mkNodeEdges lns sf (n,es) = 
-    let  style  =  if n `Set.member` lns
-                   then ""
-                   else "color = gray, fontcolor = gray"
-         node   =  ( (show n ++ " [ label = \"" ++ show n ++ "\"" ++ style ++ "];") :)
-    in Map.foldWithKey (mkEdge n) (sf . node) es
-
-mkEdge from to callType sf = sf . ( (show from ++ " -> " ++ show to ++ style) :)
-    where
-    style = case callType of
-               Call      ->  ";"
-               TailCall  ->  " [style=\"dotted\"];"
-               BothCall  ->  " [style=\"dashed\"];"
-%%]
-
-% vim:ts=4:et:ai:

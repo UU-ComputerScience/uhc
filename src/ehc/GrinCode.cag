@@ -37,7 +37,7 @@
 %%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[8 hs export(hsnGrApply,hsnGrEval,grBuiltinTyNmL)
+%%[8 hs export(grBuiltinTyNmL)
 %%]
 
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
@@ -52,9 +52,6 @@ DERIVING *     : Show, Eq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-hsnGrApply  = mkHNm "!apply"
-hsnGrEval   = mkHNm "!eval"
-
 grBuiltinTyNmL opts = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames opts ] ++ map hsnProd (0:[2..10])
 %%]
 

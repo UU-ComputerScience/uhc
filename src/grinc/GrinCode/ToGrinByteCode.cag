@@ -172,6 +172,13 @@ constImpNodeAdd :: ConstMp -> (Int,ConstMp)
 constImpNodeAdd = constAdd GB.Const_ImpNode
 %%]
 
+
+%%[8 hs
+hsnEval     = hsnFromString "!eval"
+hsnApply    = hsnFromString "!apply"
+%%]
+
+
 %%[8
 ATTR AllNTNoMod [ | strMp: StrMp | ]
 

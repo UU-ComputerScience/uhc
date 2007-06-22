@@ -18,10 +18,10 @@ WRAPPER GrAGItf
  Left transformation is not possible if v is a single variable and p is a node
 -}
 
-propagate :: GrModule -> (Bool, GrModule)
+propagate :: GrModule -> (GrModule, Bool)
 propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                        (Inh_GrAGItf)
-                  in (changed_Syn_GrAGItf t, grTrf_Syn_GrAGItf t)
+                  in (grTrf_Syn_GrAGItf t, changed_Syn_GrAGItf t)
 %%]
 
 %%[8

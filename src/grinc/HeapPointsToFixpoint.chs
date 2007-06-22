@@ -102,20 +102,10 @@ envChanges equat env heap
                                       ;  res <- absDeref av
                                       ;  return [(d,res)]
                                       }
-      IsApplication Nothing (f:as) ev  -> do 
-                                      {  return []
-                                      }
-      IsApplication mbd (f:as) ev  -> do 
-                                      {  av         <-  readArray env f
-                                      ;  absFun     <-  case mbd of
-                                                         Nothing  -> absDeref av
-                                                         Just _   -> return av
-                                      ;  absArgs    <-  mapM (readArray env) as
-                                      ;  (sfx,res)  <-  absCall absFun absArgs (Just ev)
-                                      -- ;  _          <-  trace ("sfx " ++ show sfx) (return ())
-                                      ;  case mbd of
-                                           Nothing  ->  return sfx
-                                           Just d   ->  return ((d,res):sfx)
+      IsApplication   d vs     ev  -> do 
+                                      {  (absFun:absArgs)  <-  mapM (readArray env) vs
+                                      ;  (sfx,res)         <-  absCall absFun absArgs (Just ev)
+                                      ;  return ((d,res):sfx)
                                       }
       
     where
@@ -145,8 +135,7 @@ envChanges equat env heap
     --absApply :: [AbstractValue] -> ST s AbstractValue
     absApply avs 
       = do { (f:args)  <- mapM absDeref avs
-           ; (sfx,res) <- absCall f args Nothing
-           -- ;  _        <-  trace ("ignored sfx " ++ show sfx) (return ())
+           ; (_,res)   <- absCall f args Nothing     -- deliberately ignore sfx returned by absCall as they are dereferenced one level to much
            ; return res
            }
                                    
@@ -184,8 +173,7 @@ fixpoint eqs1 eqs2 proc1 proc2
         ; let doStep2 b i = proc2 i >>= return . (b||)
         ; changes1 <- foldM doStep1 False eqs1
         ; changes2 <- foldM doStep2 False eqs2
-        ; if    -- trace ("fixpoint step " ++ show count) 
-                 ((changes1 || changes2) {- && count<10 -} )
+        ; if    changes1 || changes2
           then  countFixpoint (count+1)
           else  return count
         }
@@ -209,15 +197,13 @@ solveEquations lenEnv lenHeap eqs1 eqs2 =
        ; let procEnv equat
                 = do
                   { cs <- envChanges equat env heap
-                  ; bs <- -- trace ("equat " ++ show equat ++ " change " ++ show cs)
-                            (mapM (procChange env) cs)
+                  ; bs <- mapM (procChange env) cs
                   ; return (or bs)
                   }
              procHeap equat
                 = do
                   { cs <- heapChange equat env
-                  ; b  <- -- trace ("hpeqa " ++ show equat ++ " change " ++ show cs) 
-                            (procChange heap cs)
+                  ; b  <- procChange heap cs
                   ; return b
                   }
        ; count <- fixpoint eqs1 eqs2 procEnv procHeap

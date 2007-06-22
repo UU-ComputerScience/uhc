@@ -1,10 +1,10 @@
-The input contains nodes with an A/apply tags and a variable number of fields. 
+The input contains nodes with an A/_ tags and a variable number of fields. 
 The first field always represents the function to be applied, the other fields are arguments for this function.
 This transformation replaces the tag with a tag that also encodes the number of arguments.
 Examples:
-  (A/apply f a1 a2 a3)  ==>  (A/app3 f a1 a2 a3)
-  (A/apply f a1 a2)     ==>  (A/app2 f a1 a2)
-  (A/apply f a1)        ==>  (A/app1 f a1)
+  (A/_ f a1 a2 a3)  ==>  (A/app3 f a1 a2 a3)
+  (A/_ f a1 a2)     ==>  (A/app2 f a1 a2)
+  (A/_ f a1)        ==>  (A/app1 f a1)
 
 The transformation also builds new functions app1, app2, app3 ...
 for all number of arguments for which A tags exist.
@@ -25,13 +25,13 @@ WRAPPER GrAGItf
 %%[8 hs module {%{GRIN}GrinCode.Trf.BuildAppBindings} import(qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
+%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
 
-buildAppBindings :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-buildAppBindings (code,unique,hptMap)
+buildAppBindings :: (GrModule,Int) -> (GrModule,Int)
+buildAppBindings (code,unique)
   = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn, hptMap)
+    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn)
 
 %%]
 
@@ -64,7 +64,7 @@ SEM GrValL [ | | fieldCount: Int ]
   | Nil   lhs  .  fieldCount  =  0
 
 SEM GrTag [ | | isGenApplyTag : Bool ]
-  | App      lhs  .  isGenApplyTag  =  @nm == HNm "!apply"
+  | App      lhs  .  isGenApplyTag  =  @nm == hsnWild
   | * - App  lhs  .  isGenApplyTag  =  False
 %%]
 

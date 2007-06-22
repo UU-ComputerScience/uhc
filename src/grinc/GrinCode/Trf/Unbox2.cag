@@ -12,11 +12,11 @@
 %%]
 
 %%[8 hs export(unbox2)
-unbox2 :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-unbox2 (input,unique,hptMap)
+unbox2 :: (GrModule,HptMap) -> GrModule
+unbox2 (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (trf_Syn_GrAGItf syn, unique, hptMap)
+    in  trf_Syn_GrAGItf syn
 
 %%]
 
