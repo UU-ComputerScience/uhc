@@ -22,6 +22,8 @@ WRAPPER SilModule
 %%]
 %%[8 hs import(qualified Data.Set as Set)
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 
 %%[8 hs
@@ -167,22 +169,25 @@ hasRealVal (_, Value_Con (Constant_Alias "UNBOXED")) = False
 hasRealVal _                                         = True
 
 type EIV = Either Int Value
-data SmartTree = SmartTree EIV [SmartTree]
+data SmartTree = SmartTree EIV [(SmartTree,Maybe Int)]
+       deriving Show
 
 smartAssignment :: [(Int,Value)] -> [Statement]
 smartAssignment = concat . map smartAss . foldr smartAdd [] . convertTups
 
-convertTups :: [(Int,Value)] -> [(EIV,Int)]
-convertTups tups = [ (dependency, destination) 
+convertTups :: [(Int,Value)] -> [(EIV,Maybe Int,Int)]
+convertTups tups = [ (dependency, mbindex, destination) 
                    | (destination, value) <- tups
-                   , let dependency = smartDep value
-                   , either (\n->n/=destination) (\v->True) dependency
+                   , let (dependency,mbindex) = smartDep value
+                   , either (\dep->dep/=destination) (\v->True) dependency
                    ]
 
-smartDep :: Value -> EIV
-smartDep (Value_Var (Variable_Subs Variable_SP n)) = Left n
-smartDep v = Right v
+smartDep :: Value -> (EIV,Maybe Int)
+smartDep (Value_Var (Variable_Subs Variable_SP n)) = (Left n,Nothing)
+smartDep (Value_Var (Variable_Subs (Variable_Subs Variable_SP n) k)) = (Left n,Just k)
+smartDep v = (Right v,Nothing)
 
+-- single out the tree that has n as its root, or make a new tree
 smartFind :: EIV -> [SmartTree] -> (SmartTree, [SmartTree])
 smartFind n [] =  (SmartTree n [], [])
 smartFind n (t@(SmartTree r ks):ts)
@@ -190,22 +195,24 @@ smartFind n (t@(SmartTree r ks):ts)
   | otherwise  =  let (t2,ts2) = smartFind n ts
                   in (t2, t:ts2)
 
-smartAdd :: (EIV,Int) -> [SmartTree] -> [SmartTree]
-smartAdd p@(x,y) ts = let (y2,ts2) = smartFind (Left y) ts
-                          (rs,b) = smartIns (x,y2) ts2
-                      in  if b
-                           then rs
-                           else (SmartTree x [y2]) : ts2
+smartAdd :: (EIV,Maybe Int,Int) -> [SmartTree] -> [SmartTree]
+smartAdd p@(dep,mbi,dest) ts = let (found,ts2) = smartFind (Left dest) ts
+                                   (rs,b) = smartIns (dep,found,mbi) ts2
+                               in  if b
+                                   then rs
+                                   else (SmartTree dep [(found,mbi)]) : ts2
                            
-smartInsert :: (EIV,SmartTree) -> SmartTree -> (SmartTree,Bool)
-smartInsert p@(x,y) t@(SmartTree root kids)
- | x==root   =  (SmartTree root (y:kids), True)
- | otherwise =  let (rs,b) = smartIns p kids
-                in  if b
-                     then (SmartTree root rs, True)
-                     else (t                , False)
+                           
+smartInsert :: (EIV,SmartTree,Maybe Int) -> SmartTree -> (SmartTree,Bool)
+smartInsert p@(dep,found,mbi) t@(SmartTree root kids)
+ | dep==root  =  (SmartTree root ((found,mbi):kids), True)
+ | otherwise  =  let (kids2,mbis2) = unzip kids
+                     (rs,b) = smartIns p kids2
+                 in  if b
+                     then (SmartTree root (zip rs mbis2), True)
+                     else (t                            , False)
                     
-smartIns :: (EIV,SmartTree) -> [SmartTree] -> ([SmartTree],Bool)
+smartIns :: (EIV,SmartTree,Maybe Int) -> [SmartTree] -> ([SmartTree],Bool)
 smartIns p ts = foldr f ([],False) ts
   where f t (rs,True) = (t:rs, True)
         f t (rs,False) = let (r,b) = smartInsert p t
@@ -213,7 +220,7 @@ smartIns p ts = foldr f ([],False) ts
        
 smartElems :: SmartTree -> [Int]
 smartElems (SmartTree (Left n) [])   = [n]
-smartElems (SmartTree (Left n) kids) = n : concat (map smartElems kids)
+smartElems (SmartTree (Left n) kids) = n : concat (map smartElems (map fst kids))
 
 
 auxVar = Variable_Aux
@@ -222,19 +229,25 @@ auxVal = Value_Var auxVar
 smartAss :: SmartTree -> [Statement]
 smartAss t@(SmartTree root kids) 
   =  either
-     (\n -> if  n `elem` concat (map smartElems kids)
-             then Statement_Assignment auxVar (Value_Var (Variable_Subs Variable_SP n))
-                  : concat (map (smartChain auxVal) kids)
-             else concat (map (smartChain (Value_Var (Variable_Subs Variable_SP n))) kids)
+     (\n -> if  n `elem` concat (map smartElems (map fst kids))
+            then Statement_Assignment auxVar (Value_Var (Variable_Subs Variable_SP n))
+                 : concat (map (smartChain (mbsubs auxVar)) kids)
+            else concat (map (smartChain (mbsubs (Variable_Subs Variable_SP n))) kids)
      )
-     (\v -> concat (map (smartChain v) kids)
+     (\v -> concat (map (smartChain (const v)) kids)
      )
      root
   
-smartChain :: Value -> SmartTree -> [Statement]
-smartChain v (SmartTree (Left root) kids) 
-   = concat (map (smartChain (Value_Var (Variable_Subs Variable_SP root))) kids) 
-     ++ [ Statement_Assignment (Variable_Subs Variable_SP root) v ]
+mbsubs :: Variable -> (Maybe Int -> Value)
+mbsubs var Nothing  = Value_Var var
+mbsubs var (Just i) = Value_Var (Variable_Subs var i)
+  
+smartChain :: (Maybe Int -> Value) -> (SmartTree,Maybe Int) -> [Statement]
+smartChain v (SmartTree (Left root) kids, mbindex) 
+   = concat (map (smartChain (mbsubs (Variable_Subs Variable_SP root))) kids) 
+     ++ [ Statement_Assignment (Variable_Subs Variable_SP root) 
+                               (v mbindex) 
+        ]
 
        
 %%]

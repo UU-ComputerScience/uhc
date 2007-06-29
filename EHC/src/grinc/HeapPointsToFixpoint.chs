@@ -105,6 +105,7 @@ envChanges equat env heap
       IsApplication   d vs     ev  -> do 
                                       {  (absFun:absArgs)  <-  mapM (readArray env) vs
                                       ;  (sfx,res)         <-  absCall absFun absArgs (Just ev)
+                                      -- ;  _ <- trace ("sfx IsApp " ++ show sfx) (return ())
                                       ;  return ((d,res):sfx)
                                       }
       
@@ -114,7 +115,7 @@ envChanges equat env heap
          AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
          AbsBottom     -> av
          AbsError _    -> av
-         _             -> AbsError "Variable passed to eval is not a node"
+         _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)
          
     
     --absDeref :: AbstractValue -> ST s AbstractValue  
@@ -186,38 +187,99 @@ procChange arr (i,e1) =
       ; return changed
       }
 
-solveEquations :: Int -> Int -> Equations -> HeapEquations -> (Int,HptMap)
-solveEquations lenEnv lenHeap eqs1 eqs2 =
+solveEquations :: Int -> Int -> Equations -> HeapEquations -> Limitations -> (Int,HptMap)
+solveEquations lenEnv lenHeap eqs1 eqs2 lims =
     runST (
     do { 
+       -- ; trace (unlines ("EQUATIONS"     : map show eqs1)) $ return ()
+       -- ; trace (unlines ("HEAPEQUATIONS" : map show eqs2)) $ return ()
+       -- ; trace (unlines ("LIMITATIONS"   : map show lims)) $ return ()
+
    	    -- create arrays
        ; env     <- newArray (0, lenEnv   - 1) AbsBottom
        ; heap    <- newArray (0, lenHeap  - 1) AbsBottom
 
        ; let procEnv equat
                 = do
-                  { cs <- envChanges equat env heap
+                  { _ <- return ()
+                  -- ; _ <- trace ("equat " ++ show equat) (return ())
+                  -- ; ah <- getAssocs heap
+                  -- ; ae  <- getAssocs env
+                  -- ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
+                  -- ; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
+                  ; cs <- envChanges equat env heap
+                  -- ; _ <- trace ("changes " ++ show cs) (return ())
                   ; bs <- mapM (procChange env) cs
                   ; return (or bs)
                   }
              procHeap equat
                 = do
-                  { cs <- heapChange equat env
+                  { _ <- return ()
+                  -- ; _ <- trace ("hpequ " ++ show equat) (return ())
+                  -- ; ah <- getAssocs heap
+                  -- ; ae  <- getAssocs env
+                  -- ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
+                  -- ; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
+                  ; cs <- heapChange equat env
+                  -- ; _ <- trace ("hpchs " ++ show cs) (return ())
                   ; b  <- procChange heap cs
                   ; return b
                   }
        ; count <- fixpoint eqs1 eqs2 procEnv procHeap
       
+       ; let lims1 = Map.fromList lims
+             lims2 = [ (y,z) 
+                     | IsEvaluation x y _ <- eqs1 
+                     , let mbz = Map.lookup x lims1
+                     , isJust mbz
+                     , let z=fromJust mbz 
+                     ]
+                     ++ lims
+
+       ; mapM (procLimit env heap) lims2      
+      
        ; absHeap <- unsafeFreeze heap
        ; absEnv  <- unsafeFreeze env
     
-       -- ; trace (unlines ("EQUATIONS"     : map show eqs1))        $ return ()
-       -- ; trace (unlines ("SOLUTION"      : map show (assocs absEnv)))  $ return ()
-       -- ; trace (unlines ("HEAPEQUATIONS" : map show eqs2))          $ return ()
-       -- ; trace (unlines ("HEAPSOLUTION"  : map show (assocs absHeap))) $ return ()
        
        ; return (count, (absEnv, absHeap, Map.empty))
        }
        )
+
+procLimit env heap (x,ts)
+ = do { av <- readArray env x
+      ; av2 <- limit env heap ts av
+      ; writeArray env x av2
+      }
+
+
+limit env heap ts (AbsNodes ns)
+ = do { let kvs = Map.toList ns
+            validTag (t@(GrTag_Con _ _ _) , _)
+              = return (t `elem` ts)
+            validTag (t@(GrTag_Fun (HNmNr f _)) , _)
+              = do { ans <- readArray env f
+                   ; AbsNodes ns2 <- limit env heap ts ans
+             	   ; return (not (Map.null ns2))
+             	   }
+            validTag _
+              = return True
+      ; kvs2 <- filterM validTag kvs
+      ; return (AbsNodes (Map.fromList kvs2))
+ 	  }
+
+limit env heap ts (AbsLocs ps)
+ = do { let validPtr p
+             = do { ans <- readArray heap p
+                  ; AbsNodes ns2 <- limit env heap ts ans
+             	  ; return (not (Map.null ns2))
+             	  }
+      ; ps2 <- filterM validPtr (Set.toList ps)
+      ; return (AbsLocs (Set.fromList ps2))
+ 	  }
+
+limit env heap ts av
+ = do { return av
+ 	  }
 
 %%]

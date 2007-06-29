@@ -128,7 +128,7 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations)
+%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation(..), Limitations)
 
 data Equation
   = IsKnown               Variable  AbstractValue
@@ -143,8 +143,12 @@ data HeapEquation
   = WillStore             Location  GrTag [Maybe Variable]
     deriving (Show, Eq)
 
+type Limitation
+  = (Variable, [GrTag])
+
 type Equations     = [Equation]
 type HeapEquations = [HeapEquation]
+type Limitations   = [Limitation]
 
 %%]
 

@@ -372,7 +372,8 @@ SEM GrTag
  | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumeric @nm)
  | App     loc.constant = Constant_Alias ("A" ++ hsnShowAlphanumeric @nm)
  | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumeric @nm)
- | Con Fun App PApp
+ | Hole    loc.constant = Constant_Alias ("HOLE")
+ | Con Fun App PApp Hole
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
 
@@ -381,7 +382,7 @@ SEM GrTag
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
  | Any     lhs.constant = Constant_Alias "ANY"
 
- | * - Con Fun App PApp Unboxed Any
+ | * - Con Fun App PApp Hole Unboxed Any
            lhs.constant = error "GrTag:other constant"
            lhs.value    = error "GrTag:other value"
 
@@ -586,7 +587,7 @@ showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"
-showGrTag (GrTag_Hole) = "GrTag:hole"
+showGrTag (GrTag_Hole) = "HOLE"
 showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
 showGrTag (GrTag_Any    ) = "GrTag:Any"
 showGrTag (GrTag_World    ) = "GrTag:World"

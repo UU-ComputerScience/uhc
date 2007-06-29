@@ -141,10 +141,15 @@ SEM GrPatLam
   			   loc  .  var2id                     :  LookupList
   			        .  newNames                   :  {[HsName]}
   			        .  unique                     :  Int
-  | Var        lhs  .  var2id   = Map.insert @nm @newName @lhs.var2id
-                    .  unique   = @lhs.unique + 1
+  | Var        (lhs.var2id, lhs.unique)  = if @loc.skip
+                                           then (                        @lhs.var2id, @lhs.unique    )
+                                           else (Map.insert @nm @newName @lhs.var2id, @lhs.unique + 1)
                loc  .  newName  : HsName
                loc  .  newName  = HNmNr @lhs.unique (Just @nm)
+  			   loc  .  skip     = case @nm of
+  			                        HNmNr _ _ -> True
+  			                        _         -> False
+               
 
 SEM GrExpr
   | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
@@ -185,7 +190,9 @@ SEM GrPatAlt
   | Node  lhs  .  grTrf  = GrPatAlt_Node @tag.grTrf @newNames
   
 SEM GrPatLam
-  | Var   lhs  .  grTrf  = GrPatLam_Var  @newName
+  | Var   lhs  .  grTrf  = if @loc.skip
+                            then @loc.copy
+                            else GrPatLam_Var  @newName
 
 SEM GrBind
   | Bind  lhs  .  grTrf    = if @loc.skip

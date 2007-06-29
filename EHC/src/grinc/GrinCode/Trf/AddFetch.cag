@@ -1,0 +1,117 @@
+When the body of a binding ends with a pointer, add a Fetch expression to make sure it reutrns a node
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.AddFetch} import(qualified Data.Map as Map)
+%%]
+
+%%[8 hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(addFetch)
+
+addFetch :: (GrModule,Int) -> (GrModule,Int)
+addFetch (code,unique)
+  = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn)
+
+%%]
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF ]
+
+ATTR GrAGItf GrModule AllBind AllGrExpr [ | unique: Int | ]
+%%]
+
+%%[8
+
+SEM GrBind
+  | Bind   (lhs.grTrf, lhs.unique) = if @expr.isNode
+                                     then (@loc.grTrf, @expr.unique)
+                                     else (GrBind_Bind @nm @argNmL @loc.newExpr, @expr.unique+1)
+           loc.newExpr             = GrExpr_Seq @expr.grTrf @loc.newPat (GrExpr_FetchNode @loc.newVar)
+           loc.newVar              = HNmNr @expr.unique Nothing
+           loc.newPat              = GrPatLam_Var @loc.newVar
+
+SEM GrExpr
+  | Case   (lhs.grTrf, lhs.unique) = if @val.isNode
+                                     then (@loc.grTrf, @lhs.unique)
+                                     else (@loc.newExpr, @lhs.unique+1)
+           loc.newExpr             = GrExpr_Seq (GrExpr_FetchNode @val.getName) @loc.newPat (GrExpr_Case @loc.newVal @altL.grTrf)
+           loc.newVar              = HNmNr @lhs.unique Nothing
+           loc.newVal              = GrVal_Var @loc.newVar
+           loc.newPat              = GrPatLam_Var @loc.newVar
+
+
+
+
+
+ATTR AllGrExpr GrVal [ env : {Map.Map HsName Bool} | | isNode : {Bool} ]
+
+SEM GrExpr
+  | Seq          lhs.isNode = @body.isNode
+  | Unit         lhs.isNode = @val.isNode
+  | UpdateUnit   lhs.isNode = @val.isNode
+  | Case         lhs.isNode = @altL.isNode
+  | FetchNode    lhs.isNode = True
+  | FetchUpdate  lhs.isNode = True
+  | FetchField   lhs.isNode = False
+  | Store        lhs.isNode = False
+  | Call         lhs.isNode = True
+  | FFI          lhs.isNode = True
+  | Eval         lhs.isNode = True
+  | App          lhs.isNode = True
+  | Throw        lhs.isNode = True
+  | Catch        lhs.isNode = True
+
+SEM GrAltL
+  | Nil          lhs.isNode = True
+  | Cons         lhs.isNode = @hd.isNode && @tl.isNode
+  
+SEM GrAlt
+  | Alt          lhs.isNode = @expr.isNode
+
+SEM GrVal
+  | Empty
+    LitInt
+    LitStr
+    Tag          lhs.isNode = False
+  | Node
+    VarNode
+%%[[10
+    NodeAdapt    
+%%]]
+                 lhs.isNode = True
+  | Var          lhs.isNode = fromJust (Map.lookup @nm @lhs.env)
+
+SEM GrBind
+  | Bind         expr.env   = Map.empty
+  
+SEM GrExpr
+  | Seq          expr.env   = @lhs.env 
+                 body.env   = Map.insert @pat.boundVar @expr.isNode @lhs.env
+
+
+ATTR GrPatLam [ | | boundVar : {HsName} ]
+
+SEM GrPatLam
+  | Var         lhs.boundVar  = @nm    
+  | Empty
+    VarNode     lhs.boundVar  = wildcardNm
+
+ATTR GrVal [ | | getName : {HsName} ]
+
+SEM GrVal
+  | Var         lhs.getName   = @nm
+  | * - Var     lhs.getName   = error "AddFetch: getName from non-Var"
+
+%%]
