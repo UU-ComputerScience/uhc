@@ -36,13 +36,14 @@ heapPointsToAnalysis grmod unique
         inh = Inh_GrAGItf { location_Inh_GrAGItf = 0, unique_Inh_GrAGItf = unique  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
 
-        -- get three synthesized attributes
-        equations = equations_Syn_GrAGItf syn
-        heapEqs   = heapEqs_Syn_GrAGItf syn
+        -- get four synthesized attributes
+        equations   = equations_Syn_GrAGItf syn
+        heapEqs     = heapEqs_Syn_GrAGItf syn
+        limitations = limitations_Syn_GrAGItf syn
         lenHeap   = location_Syn_GrAGItf syn
         
         -- now solve the equations
-    in  solveEquations unique lenHeap equations heapEqs
+    in  solveEquations unique lenHeap equations heapEqs limitations
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -54,8 +55,9 @@ The overall goal is to collect equations that express
 what constraints variables and heaplocations satisfy.
 -}
 
-ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations  USE {++} {[]} : {Equations}
-                                             heapEqs    USE {++} {[]} : {HeapEquations}
+ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations   USE {++} {[]} : {Equations}
+                                             heapEqs     USE {++} {[]} : {HeapEquations}
+                                             limitations USE {++} {[]} : {Limitations}
                                        ]
 
 {-
@@ -109,7 +111,7 @@ fromInVar _          = error "HPT: Apply arguments should all be variables"
 
 ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe Variable) }  var   : { Maybe Variable } ]
 ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  vars  : {[Maybe Variable]} ]
-ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }                             ]
+ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }  tag   : { Maybe GrTag}     ]
 ATTR GrVar             [ | | tag     : GrTag                          var   : { Variable }       ]
 ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[Variable]}       ]
 
@@ -143,16 +145,21 @@ SEM GrValL
 SEM GrPatAlt
   | LitInt     lhs.patInfo  =  error "HPT: patInfo: literal"
   | Tag        lhs.patInfo  =  InNode @tag.self []
+               lhs.tag      =  Just @tag.self
   | Node       lhs.patInfo  =  InNode @tag.self (map getNr @fldL)
+               lhs.tag      =  Just @tag.self
   | Otherwise  lhs.patInfo  =  error "HPT: patInfo: Otherwise"
 %%[[10
   | NodeSplit  lhs.patInfo  =  error "HPT: patInfo: nodesplit"
 %%]]
+  | * - Tag Node lhs.tag =  Nothing
 
 SEM GrPatLam
   | Empty      lhs.patInfo  =  InVar (getNr wildcardNr)
   | Var        lhs.patInfo  =  InVar (getNr @nm)
   | VarNode    lhs.patInfo  =  InNode (@fldL.headTag) (tail @fldL.vars)
+               lhs.tag      =  Just @fldL.headTag
+  | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  
   | Cons         lhs.headTag  =  @hd.tag
@@ -289,6 +296,35 @@ SEM GrGlobal
 %%%%%%%%%%%%%%%%%%%%%%
 %%[8.alt
 
+ATTR AllAlt [ | | tags USE {++} {[]} : {[GrTag]} ]
+
+
+ATTR GrExpr [ | | makeLimited : {GrTag->Limitations} ]
+
+
+SEM GrExpr
+  | Case         lhs . limitations  =  maybe []
+                                             (\v -> [ (v, @altL.tags) ])
+                                             @val.var
+                                       ++ @altL.limitations
+
+  | Seq          lhs . limitations  =  (maybe []
+                                              (\t -> @expr.makeLimited t)
+                                              @pat.tag
+                                       )
+                                       ++ @expr.limitations
+                                       ++ @body.limitations
+
+  | Unit         lhs . makeLimited  =  \t -> maybe []
+                                                   (\v -> [ (v, [t]) ])
+                                                   @val.var
+  | * - Unit     lhs . makeLimited  =  \t -> []
+  
+SEM GrAlt
+  | Alt          lhs . tags         =  maybe []
+                                             (\t -> [t])
+                                             @pat.tag
+
 {-
 In every alternative,
 a select-equation is generated for each variable in the pattern: the values are selected from the scrutinee
@@ -299,6 +335,7 @@ SEM GrAlt
                                (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
                                _                               -> error "HPT: Alternative scrutinee must be a variable, pattern a node"
                              ++ @expr.equations
+       
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -307,7 +344,7 @@ SEM GrAlt
 %%[8.fetch
 SEM GrExpr
   | FetchNode    lhs . equations =  case @lhs.targetInfo of
-                                      InVar tvar  -> [ IsEqual tvar (getNr @nm) ]
+                                      InVar tvar  -> [ IsEvaluation tvar (getNr @nm) tvar ]   -- TODO: third parameter is not sensible when exceptions are really used
                                       _           -> error "HPT: FetchNode target should be a variable"
   | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) (getNr @src) ]
   | FetchField   lhs . equations =  case @lhs.targetInfo of

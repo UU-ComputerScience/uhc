@@ -89,7 +89,7 @@ SEM GrVal
 buildAppBinding unique size = let funcNr  = unique
                                   minArg  = funcNr + 2
                                   maxArg  = minArg + size
-                                  unique' = maxArg + 2
+                                  unique2 = maxArg + 2
                                   funcName                  = HNmNr funcNr (Just origFuncName)
                                   origFuncName              = HNm $ "app" ++ show size
                                   args@(partialApp:appArgs) = map (\n->HNmNr n Nothing) [minArg .. maxArg]
@@ -98,24 +98,28 @@ buildAppBinding unique size = let funcNr  = unique
                                   body = GrExpr_Seq (GrExpr_Eval partialApp)
                                                     (GrPatLam_Var evalPartialApp)
                                                     (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
-                              in (unique', origFuncName, funcName, code)
+                              in (unique2, origFuncName, funcName, code)
 
 size2tag size = GrTag_App (HNm $ "app" ++ show size)
 
 node2app size (unique, origNamesMap, evalMap, bindings) =
     let key = (size2tag (size-1), size)
-        (unique', origFuncName, funcName, code) = buildAppBinding unique (size-1)
+        (unique2, origFuncName, funcName, code) = buildAppBinding unique (size-1)
         origNameMap = (funcName, origFuncName)
         evalMapElem = (key, EvApTagVar funcName)
-
-    in (unique', origNameMap:origNamesMap, evalMapElem:evalMap, code:bindings)
+    in (unique2, origNameMap:origNamesMap, evalMapElem:evalMap, code:bindings)
 %%]
 
 %%[8.addAppBindings
 SEM GrModule
-  | Mod  loc  . (unique', origNamesMap, evalTagMp', binds)  = foldr node2app
+  | Mod  loc  . (unique2, origNamesMap, evalTagMp2, binds)  = foldr node2app
                                                                     (@lhs.unique, [], [], @bindL.grTrf)
                                                                     (Set.elems @bindL.applyNodeSizes)
-         lhs  . unique = @unique'
-         lhs  . grTrf  = GrModule_Mod @moduleNm @globalL.grTrf @binds @ctagsMp (@evalTagMp ++ @evalTagMp') @applyTagMp
+         lhs  . unique = @unique2
+         lhs  . grTrf  = GrModule_Mod @moduleNm 
+                                      @globalL.grTrf 
+                                      @binds 
+                                      @ctagsMp 
+                                      (@evalTagMp ++ @evalTagMp2) 
+                                      @applyTagMp
 %%]

@@ -252,8 +252,8 @@ SEM CModule
                                                        ( @allFPTags ++ (Map.toList $ arityMpFilterCaf @expr.gathArityMp) )
 
                             .   applyTagMp  =   map makeApplyMapEntryP @allPTags
-                            .   evalTagMp   =   makeEvalMapEntryH
-                                                :  map makeEvalMapEntryC @allCTags
+                            .   evalTagMp   =   map makeEvalMapEntryC @allCTags
+                                                ++ [   makeEvalMapEntryH ]
                                                 ++ map makeEvalMapEntryP @allPTags
                                                 ++ map makeEvalMapEntryF @allFTags
 

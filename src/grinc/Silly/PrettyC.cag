@@ -188,7 +188,7 @@ SEM Variable
   | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
                 lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
   | Aux         lhs.prettyC   = text "auxVar"
-                lhs.prettyPtr = text "auxVar"
+                lhs.prettyPtr = text "((Pointer)auxVar)"
   | Ptr         lhs.prettyC   = text "auxPtr"
                 lhs.prettyPtr = text "((Pointer)auxPtr)"
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"

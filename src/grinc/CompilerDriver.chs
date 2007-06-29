@@ -51,6 +51,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
 %%]
+%%[8 import({%{GRIN}GrinCode.Trf.AddFetch})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.RightSkew})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation})
@@ -132,6 +134,8 @@ caLoad doParse = task_ VerboseNormal                "Loading"
          ; caWriteGrin           True               "11-cleaned"
          ; transformCodeUnq      buildAppBindings   "Renaming lazy apply tags"
          ; caWriteGrin           True               "12-renamed"
+         ; transformCodeUnq      addFetch           "Adding fetches"
+         ; caWriteGrin           True               "13-fetchadded"
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
          ; caWriteGrin           True               "19-numbered"
          }
@@ -140,7 +144,9 @@ caLoad doParse = task_ VerboseNormal                "Loading"
 -- create HPT info
 caAnalyse = task_ VerboseNormal                     "Analyzing"
     ( do { transformCodeUnq      normForHPT         "Normalizing"
+         ; caWriteGrin           True               "21-normalized"
          ; transformCodeIterated rightSkew          "Unskewing"
+         ; caWriteGrin           True               "22-unskewed"
          ; caHeapPointsTo
          ; caWriteGrin           True               "29-analyzed"
          }
