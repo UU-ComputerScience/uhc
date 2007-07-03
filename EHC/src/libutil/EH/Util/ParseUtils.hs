@@ -45,7 +45,7 @@ toResMsgs steps
 
 toOffsideResMsgs :: Steps (a,b) s pos -> (a, [Message s pos])
 toOffsideResMsgs steps
-  = (r,getMsgs steps)
+  = r `seq` (r,getMsgs steps)
   where (r,_) = evalSteps steps
 
 parsePlain :: (Symbol s, InputState inp s pos) 
