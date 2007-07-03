@@ -6,7 +6,9 @@
 .SUFFIXES: .pdf .tex .bib .html .lhs .sty .lag .cag .chs
 
 ###########################################################################################
-# EHC variants. 90-99 are reserved for very Haskell specific functionality (like deriving)
+# EHC variants.
+# 90-99 are reserved for very Haskell specific functionality (like deriving)
+# 100-101 are used (temporary hopefully) for debugging performance problems
 ###########################################################################################
 
 # 1 : explicitly typed lambda calculus
@@ -53,6 +55,8 @@ EHC_VARIANTS							:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
 
 GRIN_PUB_VARIANTS						:= $(EHC_PUB_CODE_VARIANTS)
 GRIN_VARIANTS							:= $(GRIN_PUB_VARIANTS) $(EHC_UHC_VARIANT)
+
+TEST_VARIANTS							:= $(EHC_PUB_NOCODE_VARIANTS) 8 9 10 11
 
 ###########################################################################################
 # Locations in source, build and install
@@ -124,6 +128,11 @@ GHC_OPTS_WHEN_EHC	:= @GHC_EHC_OPTIONS@
 UUAGC_OPTS_WHEN_EHC				:= @UUAGC_OPTIONS@
 UUAGC_OPTS_WHEN_EHC_AST_DATA	:= @UUAGC_EHC_AST_OPTIONS@
 UUAGC_OPTS_WHEN_EHC_AST_SEM		:= @UUAGC_EHC_SEM_OPTIONS@
+
+# UUAGC options for production version (i.e. uhc, ehc variant >=99)
+UUAGC_OPTS_WHEN_UHC				:=
+UUAGC_OPTS_WHEN_UHC_AST_DATA	:= --strictdata
+UUAGC_OPTS_WHEN_UHC_AST_SEM		:= --Wignore --strictwrap -O
 
 # GCC options
 GCC_OPTS_WHEN_EHC	:= @GCC_EHC_OPTIONS@

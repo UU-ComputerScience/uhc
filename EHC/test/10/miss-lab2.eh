@@ -1,4 +1,4 @@
-let  r1 :: (a :: Int, b :: Char)
+let  r1 :: (a :: Int)
      r1 = (a = 3, b = 'x')
 in
 let

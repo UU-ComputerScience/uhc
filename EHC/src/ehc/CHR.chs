@@ -90,12 +90,6 @@ class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
 %%]
 
 %%[9
-%%]
-instance (Ord var,Substitutable x var subst) => CHRSubstitutable x var subst where
-  chrFtv        x = Set.fromList (ftv x)
-  chrAppSubst s x = s |=> x
-
-%%[9
 instance (CHRSubstitutable c v s,CHRSubstitutable g v s) => CHRSubstitutable (CHR c g s) v s where
   chrFtv          (CHR {chrHead=h, chrGuard=g, chrBody=b})
     = Set.unions $ concat [map chrFtv h, map chrFtv g, map chrFtv b]
@@ -122,7 +116,7 @@ A Matchable participates in the reduction process as a reducable constraint.
 
 %%[9 export(CHRMatchable(..))
 class (Keyable x) => CHRMatchable env x subst | x -> subst env where
-  chrMatchTo      :: env -> x -> x -> Maybe subst
+  chrMatchTo      :: env -> subst -> x -> x -> Maybe subst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,8 +126,8 @@ class (Keyable x) => CHRMatchable env x subst | x -> subst env where
 A Checkable participates in the reduction process as a guard, to be checked.
 
 %%[9 export(CHRCheckable(..))
-class CHRCheckable x subst | x -> subst where
-  chrCheck      :: x -> Maybe subst
+class CHRCheckable env x subst | x -> subst env where
+  chrCheck      :: env -> subst -> x -> Maybe subst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

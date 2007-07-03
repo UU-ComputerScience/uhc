@@ -95,7 +95,7 @@ instance Keyable Label where
 ATTR
   TyAGItf Ty Pred
 %%[[10
-  Label LabelAGItf RowExts
+  Label LabelAGItf {- RowExts -}
 %%]]
 %%[[13
   PredSeq
@@ -161,19 +161,19 @@ SEM Pred
 SEM Pred
   | Lacks           lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "\\") :++: @lab.trieKey
                             .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
+%%]
   | RowSplit        lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "|"
                             .   trieKeyNest     =   @ty.trieKey :++: @exts.trieKey
-%%]
 
 %%[10
 SEM Label
   | Lab             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_HNm @nm
   | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @lv
 
+%%]
 SEM RowExts
   | Exts            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_Str "exts"
   | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @ev
-%%]
 
 %%[13
 SEM PredSeq

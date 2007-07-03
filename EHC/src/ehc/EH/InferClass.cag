@@ -140,10 +140,10 @@ SEM Decl
                                 .   dictBuildNm     =   hsnPrefix "_res_" @dictNm
                                 .   dictSelfNm      =   hsnPrefix "_self_" @dictNm
                                 .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
-                                .   supPrTyL        =   let  t      =  clgiRuleTy $ @clgi
-                                                             st     =  mkNewTyVarL (tyArrowArity . tyQuant $ t) @lUniq4 `mkArrow` @hdPrTyFix
+                                .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
+                                                             st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 emptyVarMp t st
-                                                        in   tyArrowArgs . foTy $ fo
+                                                        in   tyArrowArgs $ foVarMp fo |=> foTy fo
                                 .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
                                 .   recTy           =   fst $ tyFixTyVars $ tyQuantifyRank [2..] $ tyArrowRes $ @tyPrExpr.evTy
@@ -161,6 +161,7 @@ SEM Decl
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
                 loc             .   foPr            =   fitPredToEvid @lUniq emptyVarMp @prExpr.ty @lhs.clGam
                 expr            .   knTy            =   foTy @foPr
+                                .   tyVarMp         =   foVarMp @foPr |=> @lhs.tyVarMp
 %%]
                                 .   tyGam           =   @lhs.tyGam
 
@@ -198,9 +199,9 @@ SEM PrExpr
 ATTR TyExpr PrExpr [ | | evTy: Ty ]
 
 SEM PrExpr
-  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftv @ty}) @fe2 @lUniq3 emptyVarMp
+  | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftvSet @ty}) @fe2 @lUniq3 emptyVarMp
                                                                           (clgiPrToEvidTy @clgi) ([@ty] `mkArrow` mkNewTyVar @lUniq2)
-                                                        in   snd $ tyArrowArgRes $ foTy fo
+                                                        in   snd $ tyArrowArgRes $ foVarMp fo |=> foTy fo
   | Arrow       lhs             .   evTy            =   [@arg.evTy] `mkArrow` @res.evTy
 
 SEM TyExpr

@@ -248,16 +248,16 @@ DATA Pred
 RowSplit is not used, but left in for now:
 
 %%[10
+%%]
 DATA Pred
   | RowSplit	ty				: Ty				
   				exts			: RowExts
-%%]
 
 %%[10
+%%]
 DATA RowExts										
   | Exts		exts			: {AssocL HsName Ty}
   | Var			ev              : UID
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SET's
@@ -281,12 +281,12 @@ SET AllTy
     Pred Impls
 %%]]
 %%[[10
-    RowExts
 %%]]
 %%[[13
     PredSeq
 %%]]
 %%]
+    RowExts
 
 %%[1
 SET AllTyAndFlds

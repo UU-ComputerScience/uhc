@@ -20,9 +20,6 @@
 %%[2 import(qualified Data.Set as Set)
 %%]
 
-%%[4_2 export((|>>))
-%%]
-
 %%[9 import(qualified Data.Map as Map)
 %%]
 
@@ -34,22 +31,41 @@
 infixr 6 |=>
 %%]
 
+%%[4
+infixr 6 |==>
+%%]
+
 %%[2.Substitutable
 class Substitutable vv k subst | vv -> subst k where
   (|=>)         ::  subst -> vv -> vv
+%%[[4
+  (|==>)        ::  subst -> vv -> (vv,VarMp)
+%%]]
   ftv           ::  vv -> [k]
+
+%%[[4
+  s |==> x = (s |=> x,emptyVarMp)
+%%]]
+%%]
+
+%%[4 export(substLift)
+substLift :: (v' -> v) -> (v' -> v -> v') -> (subst -> v -> (v,r)) -> subst -> v' -> (v',r)
+substLift toV updV app s v'
+  = (updV v' x,r)
+  where (x,r) = app s $ toV v'
 %%]
 
 %%[2 export(ftvSet)
-ftvSet :: (Ord k,Substitutable vv k subst) => vv -> Set.Set k
+ftvSet :: (Ord k,Substitutable x k subst) => x -> Set.Set k
 ftvSet = Set.fromList . ftv
 %%]
 
-%%[4_2.partialSubstApp
-infixr 6 |>>
-
-(|>>) :: VarMp -> VarMp -> VarMp
-c1 |>> c2 = varmpMapTy (const (c1 |=>)) c2
+%%[9 export(ftvClosureSet)
+ftvClosureSet :: (Substitutable x TyVarId VarMp) => VarMp -> x -> Set.Set TyVarId
+ftvClosureSet varmp x
+  = fvs `Set.union` fv
+  where fv = ftvSet x
+        (fvs,_,mcyc) = varmpClosure (`Set.member` fv) ftvSet varmp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,19 +74,16 @@ c1 |>> c2 = varmpMapTy (const (c1 |=>)) c2
 
 %%[2.SubstitutableTy
 instance Substitutable Ty TyVarId VarMp where
-  (|=>)  = tyAppVarMp
-  ftv    = tyFtv
-%%]
-
-%%[9.SubstitutableTy -2.SubstitutableTy
-instance Substitutable Ty TyVarId VarMp where
-  (|=>)  = tyAppVarMp
-  ftv    = tyFtv
+  (|=>)     = tyAppVarMp
+%%[[4
+  (|==>)    = tyAppVarMp2
+%%]]
+  ftv       = tyFtv
 %%]
 
 %%[10
 instance Substitutable Label TyVarId VarMp where
-  (|=>)             = labelAppVarMp
+  s |=> lb          = maybe lb id $ varmpLabelLookupLabelCyc lb s
   ftv (Label_Var v) = [v]
   ftv _             = []
 
@@ -80,11 +93,19 @@ instance Substitutable LabelOffset TyVarId VarMp where
   ftv (LabelOffset_Var v) = [v]
   ftv _                   = []
 %%]
+instance Substitutable Label TyVarId VarMp where
+  (|=>)             = labelAppVarMp
+  ftv (Label_Var v) = [v]
+  ftv _             = []
 
 %%[2.SubstitutableList
 instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
   s      |=>  l   =   map (s |=>) l
-  ftv         l   =   unions . map ftv $ l
+%%[[4
+  s      |==> l   =   (l,varmpUnions m)
+                  where (l,m) = unzip $ map (s |==>) l
+%%]]
+  ftv         l   =   unions $ map ftv l
 %%]
 
 %%[2.SubstitutableVarMp
@@ -95,12 +116,20 @@ instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
   ftv (VarMp sl)
     = ftv . map snd $ sl
 %%]
-instance (Ord k,Substitutable v k subst) => Substitutable (VarMp' k v) k subst where
+
+%%[4.SubstitutableVarMp -2.SubstitutableVarMp
+instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
-    = VarMp (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
-    where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
+    = s1 `varmpPlus` s2
   ftv (VarMp sl)
-    = ftv . map snd $ sl
+    = ftv $ map snd sl
+%%]
+
+%%[9.SubstitutableVarMp -4.SubstitutableVarMp
+instance Substitutable (VarMp' TyVarId (VarMpInfo Ty)) TyVarId VarMp where
+  s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` {- Map.map (s1 |=>) -} sl2)
+  ftv                  (VarMp sl)      =   ftv $ Map.elems sl
+%%]
 
 %%[7
 instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where
@@ -108,23 +137,13 @@ instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where
   ftv    (_,v) =  ftv v
 %%]
 
-%%[9.SubstitutableVarMp -2.SubstitutableVarMp
-instance Substitutable (VarMp' TyVarId (VarMpInfo Ty)) TyVarId VarMp where
-  s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` Map.map (s1 |=>) sl2)
-  ftv                  (VarMp sl)      =   ftv $ Map.elems sl
-%%]
-instance (Ord k,Substitutable v k subst) => Substitutable (VarMp' k v) k subst where
-  s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` Map.map (s1 |=>) sl2)
-  ftv                  (VarMp sl)      =   ftv $ Map.elems sl
-
 %%[9
 instance Substitutable Pred TyVarId VarMp where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
   ftv    p  =  ftv (Ty_Pred p)
 
 instance Substitutable PredScope TyVarId VarMp where
-  s |=>  sc@(PredScope_Var v) = maybe sc id $ varmpScopeLookup v s
-  s |=>  sc                   = sc
+  s |=>  sc                   = maybe sc id $ varmpScopeLookupScopeCyc sc s
   ftv    (PredScope_Var v)    = [v]
   ftv    _                    = []
 
@@ -140,11 +159,8 @@ instance Substitutable Impls TyVarId VarMp where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
   ftv    i  =  ftv (Ty_Impls i)
 %%]
-instance Substitutable PredOccId UID VarMp where
-  s |=>  i@(PredOccId_Var v) = maybe i id $ cnstrPoiLookup v s
-  s |=>  i                   = i
-  ftv    (PredOccId_Var v)   = [v]
-  ftv    _                   = []
+  s |=>  sc@(PredScope_Var v) = maybe sc id $ varmpScopeLookup v s
+  s |=>  sc                   = sc
 
 
 %%[9
@@ -158,7 +174,7 @@ instance Substitutable (VarMpInfo Ty) TyVarId VarMp where
                  VMIPredSeq  x  -> VMIPredSeq (s |=> x)
 %%]]
 %%[[10
-                 VMIExts     x  -> VMIExts (s |=> x)
+                 -- VMIExts     x  -> VMIExts (s |=> x)
                  vmi            -> vmi
 %%]]
   ftv   vmi =  case vmi of
@@ -170,7 +186,7 @@ instance Substitutable (VarMpInfo Ty) TyVarId VarMp where
                  VMIPredSeq  x  -> ftv x
 %%]]
 %%[[10
-                 VMIExts     x  -> ftv x
+                 -- VMIExts     x  -> ftv x
                  vmi            -> []
 %%]]
 %%]
@@ -178,12 +194,12 @@ instance Substitutable (VarMpInfo Ty) TyVarId VarMp where
 This is still/regretfully duplicated in Ty/Subst.cag, Ty/Ftv.cag
 
 %%[10
+%%]
 instance Substitutable RowExts TyVarId VarMp where
   s |=>  e@(RowExts_Var  v) = maybe e id $ varmpExtsLookup v s
   s |=>    (RowExts_Exts x) = RowExts_Exts $ assocLMapElt (s |=>) x
   ftv      (RowExts_Var  v) = [v]
   ftv    _                  = []
-%%]
 
 And this too...
 
@@ -214,29 +230,4 @@ tyFixTyVars t
   where (sTo,sFr) = fixTyVarsVarMp t
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tvar under constr
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4_1 hs
-%%]
-tvUnderVarMp :: VarMp -> TyVarId -> TyVarId
-tvUnderVarMp c v
-  =  case c |=> mkTyVar v of
-		Ty_Var   v' TyVarCateg_Plain  -> v'
-		Ty_Alts  v' _                 -> v'
-		_                             -> v
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Are tvars alpha renaming of eachother?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4_1 hs
-%%]
-tvLMbAlphaRename :: VarMp -> TyVarIdL -> TyVarIdL -> Maybe TyVarIdL
-tvLMbAlphaRename c l1 l2
-  =  if l1' == l2' && length l1' == length l1 then Just l1' else Nothing
-  where  r = sort . nub . map (tvUnderVarMp c)
-         l1' = r l1
-         l2' = r l2
 

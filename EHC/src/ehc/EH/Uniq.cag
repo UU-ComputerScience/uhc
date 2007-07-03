@@ -126,7 +126,7 @@ SEM PatExpr
   | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
   | VarAs           (patExpr.gUniq,loc.lUniq,loc.lUniq2)            :=  mkNewLevUID2    @lhs.gUniq
   | AppTop          (patExpr.gUniq,loc.lUniq)                       =   mkNewLevUID     @lhs.gUniq
-  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | Con             (lhs.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)     :=  mkNewLevUID3    @lhs.gUniq
   | TypeAs          (tyExpr.gUniq,loc.lUniq)                        =   mkNewLevUID     @lhs.gUniq
 
 SEM TyExpr

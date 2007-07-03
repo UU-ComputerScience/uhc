@@ -23,13 +23,15 @@ SEM Decl
                             .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
                                                                       else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2 @lhs.patKiVarMp
-                                                                (@lhs.patKiVarMp |=> (@tyVars.kiL `mkArrow` kiStar))
-                                                                (@lhs.patKiVarMp |=> (tkgiKi @dataTkgi))
+                                                                (@tyVars.kiL `mkArrow` kiStar) (tkgiKi @dataTkgi)
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiVarMp          =   foVarMp @fo_ |=> @lhs.patKiVarMp
                 constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp |=> @tyVars.tyKiGam))
                                                                     @lhs.tyKiGam
 %%]
+                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2 @lhs.patKiVarMp
+                                                                (@lhs.patKiVarMp |=> (@tyVars.kiL `mkArrow` kiStar))
+                                                                (@lhs.patKiVarMp |=> (tkgiKi @dataTkgi))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind inferencing for data
@@ -39,20 +41,13 @@ SEM Decl
 SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
-                                                                 (@fldsKiVarMp |=> @fields.kiL)
-                                                                 (repeat kiStar)
+                                                                 @fields.kiL (repeat kiStar)
 				loc			.	fo_					:	FIOut
                 lhs         .   kiVarMp             =   agFakeDependOn @lhs.dataTy $ foVarMp @fo_ |=> @fldsKiVarMp
 %%]
-
-%%[50
-SEM DataConstr
-  | Constr      loc         .   fldsKiVarMp         :=  @eqs.kiVarMp
-
-SEM DataConstrEq
-  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp (@tyExpr.kiVarMp |=> @tyVar.ki) (@tyExpr.ki)
-                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
-%%]
+                            .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
+                                                                 (@fldsKiVarMp |=> @fields.kiL)
+                                                                 (repeat kiStar)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data info gam
@@ -160,28 +155,6 @@ SEM Decl
 
 %%[8
 ATTR AllDataConstr [ dataAltTy: Ty | | ]
-%%]
-
-!!!!! Fix following w.r.t. dataUnConTy
-%%[50
-SEM DataConstr
-  | Constr      loc         .   dataConTy           :=  @eqs.eqTyVarMp |=> (@fields.tyL `mkArrow` @lhs.dataTy)
-                            .   eqEqVarMp           =   assocLToVarMp . map (\(v,t) -> (v,Ty_Equal v t)) . varmpToAssocTyL $ @eqs.eqTyVarMp
-                            .   dataUnConTy         :=  [@eqEqVarMp |=> @lhs.dataTy] `mkArrow` (@eqs.eqTyVarMp |=> @dataConProdTy)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Equal constraints for constructors
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[50
-ATTR AllDataConstrEq [ | eqTyVarMp: VarMp | ]
-
-SEM DataConstr
-  | Constr      eqs         .   eqTyVarMp           =   emptyVarMp
-
-SEM DataConstrEq
-  | Eq          lhs         .   eqTyVarMp           =   (tyVar @tyVar.ty `varmpTyUnit` @tyExpr.ty) |=> @lhs.eqTyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -320,9 +293,9 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
+%%]
 SEM DataFieldExpr
   | Con         loc         .   finConTy            =   @lhs.finTyVarMp |=> @ty
-%%]
 
 %%[7
 ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]

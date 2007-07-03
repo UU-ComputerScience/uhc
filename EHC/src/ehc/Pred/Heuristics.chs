@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsIn},{%{EH}CHR},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
+%%[9 module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsIn},{%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
 %%[9 import(Data.List(nub, maximumBy, partition),Data.Maybe)
@@ -164,12 +164,14 @@ hasAlts _                = True
 %%% Predefined heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+This should not depend on emptyVarMp, but abstract away from it. Perhaps use chrEmptySubst
+
 %%[9
 cmpSpecificness :: FIIn -> Pred -> Pred -> PartialOrdering
 cmpSpecificness env p q = 
-  case  chrMatchTo env p q of 
+  case  chrMatchTo env emptyVarMp p q of 
     Nothing  -> P_GT
-    Just _   -> case  chrMatchTo env q p of
+    Just _   -> case  chrMatchTo env emptyVarMp q p of
                   Nothing  -> P_LT
                   Just _   -> P_EQ
 %%]

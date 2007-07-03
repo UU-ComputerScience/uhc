@@ -117,11 +117,11 @@ SEM Label
 SEM PredSeq
   | Var				lhs		.	repl		=	forceEval' @av
 
+%%]
 SEM RowExts
   | Var				lhs		.	repl		=	forceEval' @ev
   | Exts			lhs		.	repl		=	forceEval' @exts
 
-%%]
 
 %%[101
 ATTR AllTyAndFlds  [ | | cm USE {`cmUnion`} {(emptyCM)}: CountMp ]
@@ -164,9 +164,9 @@ SEM PredSeq
   | Cons            lhs     .   cm          =   cm1 "PredSeq_Cons"  `cmUnion` @hd.cm `cmUnion` @tl.cm
   | Nil             lhs     .   cm          =   cm1 "PredSeq_Nil"
 
+%%]
 SEM RowExts
   | Var             lhs     .   cm          =   cm1 "RowExts_Var"   `cmUnion` fevCount @ev
   | Exts            lhs     .   cm          =   cm1 "RowExts_Exts"  `cmUnion` fevCount @exts
 
-%%]
 

@@ -28,9 +28,9 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 3.Let
 %%[5.Let
 SEM Expr
-  | Let         loc         .   lSubsValGam_        =   @decls.tyVarMp |=> @valGam_l_
-                            .   gSubsValGam_        =   @decls.tyVarMp |=> @valGam_g_
-                            .   gTyTvL              =   ftv @gSubsValGam_
+  | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l)=   @decls.tyVarMp |==> @valGam_l_
+                (loc.gSubsValGam_,loc.cycTyVarMp_g)=   @decls.tyVarMp |==> @valGam_g_
+                loc         .   gTyTvL              =   ftv @gSubsValGam_
                             .   quValGam_           =   valGamQuantify @gTyTvL @lSubsValGam
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
@@ -39,38 +39,9 @@ SEM Expr
 %%[5.Let
 SEM Expr
   | Let         loc         .   gathTySigGam_l_     :=  valGamInst1Exists @lUniq @decls.gathTySigGam
-                loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 . valGamQuantify @gTyTvL $ @lSubsValGam_
+                loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 $ valGamQuantify @gTyTvL $ @lSubsValGam_
                             .   quValGam_           :=  emptyGam
                 body        .   valGam              :=  gamPushGam @quValGam_ex_ @gSubsValGam_
-%%]
-
-%%[4_2 hs
-valElimExprAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> VarMp -> ValGam -> (ValGam,VarMp,ErrGam)
-valElimExprAlts fio fe globTvL u c g
-  = (g',c'',eg)
-  where  (g',c',eg) = valGamElimAlts fio fe globTvL u c g
-         c'' = varmpDelAlphaRename c'
-%%]
-
--- generated from ruler rules into EHRulerRules, was 4_2.Let
-%%[90.Let
-SEM Expr
-  | Let         decls       .   tySigTyVarMp        =   emptyVarMp
-                loc         .   (_,lExSigTyVarMp)   =   valGamInst1ExistsWithVarMp @decls.tySigTyVarMp @lUniq @decls.gathTySigGam
-                            .   lExplTyVarMp        =   @lExSigTyVarMp |=> @decls.tySigTyVarMp
-                decls       .   patValGam           :=  gamPushGam @decls.gathTySigGam @lhs.valGam
-                            .   patTyVarMp          :=  @lExplTyVarMp
-                            .   imprTyVarMp         =   @decls.patTyVarMp |=> @lhs.imprTyVarMp
-                loc         .   (_,imprTyVarMp_elim_,_)
-                                                    =   valElimExprAlts joinFIOpts @fe (ftv @valGam_g_) @lUniq4 @decls.imprTyVarMp @valGam_l_
-                decls       .   tyVarMp             :=  @imprTyVarMp_elim_ |=> @decls.patTyVarMp |=> @lhs.tyVarMp
-                loc         .   (quValGam_ex_,lQuTyVarMp)
-                                                    :=  let  (g1,c1) = valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvL @valGam_l_
-                                                             (g2,c2) = valGamInst1ExistsWithVarMp (c1 |=> @decls.tyVarMp) @lUniq2 g1
-                                                        in   (g2,c2 |=> c1)
-                body        .   imprTyVarMp         =   @imprTyVarMp_elim_ |=> @decls.imprTyVarMp
-                            .   tyVarMp             :=  @lQuTyVarMp |=> @decls.tyVarMp
-                            .   valGam              :=  @decls.patValGam
 %%]
 
 %%[9
@@ -80,12 +51,6 @@ SEM Expr
                                                         in   (valGamInst1Exists @lUniq2 vg,tqog)
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
-
-%%[50
-%%]
-SEM Expr
-  | Let         loc         .   lElimEqualValGam    =   valGamElimEqual (@decls.tyVarMp |=> @valGam_l_)
-                            .   lSubsValGam_        :=  @lElimEqualValGam
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
@@ -180,16 +145,6 @@ SEM AGItf
 %%]
 
 %%[7
-%%]
-ATTR AllNT [ finTyGam: TyGam |  | ]
-
-SEM AGItf
-  | AGItf       expr        .   finTyGam            =   emptyGam
-
-SEM Expr
-  | Let         loc         .   finTyGam            =   @lhs.finKiVarMp |=> @decls.patTyGam
-
-%%[7
 ATTR AllNT [ finTyKiGam: TyKiGam |  | ]
 
 SEM AGItf
@@ -267,62 +222,6 @@ SEM Decl
                 expr        .   tyVarMp             =   @lhs.tyVarMp
 %%]
 
-%%[4_2
-ATTR AllDecl AllExpr [ | imprTyVarMp: VarMp | ]
-
-SEM AGItf
-  | AGItf       expr        .   imprTyVarMp         =   emptyVarMp
-%%]
-
--- generated from ruler rules into EHRulerRules, was 4_2.Val
-%%[90.Val
-SEM Decl
-  | Val         loc         .   imprFO              =   fitsIn impredFIOpts @fe uidStart @expr.imprTyVarMp (@expr.imprTyVarMp |=> @patExpr.ty) @expr.imprTy
-                lhs         .   imprTyVarMp         =   foVarMp @imprFO |=> @expr.imprTyVarMp
-%%]
-SEM AGItf
-  | AGItf       expr        .   tyVarMp             :=  emptyVarMp
-
-SEM AGItf
-  | AGItf       loc         .   (exprTyVarMp1,ambTvS)
-                                                    =   cnstrElimForgetAlts @expr.imprTyVarMp
-                            .   exprTyVarMp         =   let (eC,(vC,_))
-                                                              =  varmpMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
-                                                                                                     (t',c') = tyFreshVar (`Set.member` @ambTvS) u1 c t
-                                                                                                in   (t',(c',u'))
-                                                                                )
-                                                                                (emptyVarMp,@lUniq)
-                                                                 @exprTyVarMp1
-                                                        in  eC
-                expr        .   tyVarMp             :=  emptyVarMp
-
-SEM AGItf
-  | AGItf       loc         .   (exprTyVarMp1,ambTvS)
-                                                    =   cnstrElimForgetAlts @expr.imprTyVarMp
-                            .   exprTyVarMp         =   let (eC,(vC,_))
-                                                              =  varmpMapThrTy  (\v t (c,u) ->  let  (u',u1) = mkNewLevUID u
-                                                                                                     (t',c') = tyFreshVar (`Set.member` @ambTvS) u1 c t
-                                                                                                in   (t',(c',u'))
-                                                                                )
-                                                                                (emptyVarMp,@lUniq)
-                                                                 @exprTyVarMp1
-                                                        in  eC
-                expr        .   tyVarMp             :=  @exprTyVarMp1
-
-                            .   exprTyVarMp         =   fst
-                                                        .  varmpMapThrTy (\v t u -> let (u',u1) = mkNewLevUID u in (tyFreshVar (const True) u1 t,u')) @lUniq
-                                                        $  @exprTyVarMp1
-
-%%[5_2
-ATTR AllCase [ | imprTyVarMp: VarMp | ]
-%%]
-
-%%[50
-SEM Decl
-  | Val         loc         .   (_,elimEqVarMp)     =   tyElimEqual @expr.ty
-                lhs         .   tyVarMp             =   @elimEqVarMp |=> @expr.tyVarMp
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind inferencing, decls, top level, abstraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -391,8 +290,10 @@ SEM Expr
                 decls       .   tyGam               :=  gamPushGam @tyGam_l_ @lhs.tyGam
                             .   tyKiGam             =   gamPushGam @tyKiGam_l_ @lhs.tyKiGam
                             .   kiVarMp             =   @decls.patKiVarMp
-                loc         .   lSubsTyKiGam        =   @decls.kiVarMp |=> @tyKiGam_l_
-                            .   gSubsTyKiGam        =   @decls.kiVarMp |=> @tyKiGam_g_
+                loc         .   (lSubsTyKiGam,cycTyKiVarMp_l)
+                									=   @decls.kiVarMp |==> @tyKiGam_l_
+                            .   (gSubsTyKiGam,cycTyKiVarMp_g)
+                									=   @decls.kiVarMp |==> @tyKiGam_g_
                             .   gKiTvL              =   ftv @gSubsTyKiGam
                             .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 . tyKiGamQuantify @gKiTvL $ @lSubsTyKiGam
                 body        .   tyGam               =   gamAddGam @tyGam_l_ @tyGam_g_
@@ -759,33 +660,10 @@ SEM Decl
                             .   gamSigTy            :=  @ty_sig_
 %%]
 
-%%[4_2
-ATTR AllDecl [ | tySigTyVarMp: VarMp | ]
-%%]
-
--- generated from ruler rules into EHRulerRules, was 4_2.TySig
-%%[90
-SEM Decl
-  | TySig       loc         .   (gamSigTy,gamSigVarMp)
-                                                    :=  tyAsVarMp @lUniq @ty_sig_
-                lhs         .   tySigTyVarMp        =   @gamSigVarMp |=> @lhs.tySigTyVarMp
-%%]
-
--- generated from ruler rules into EHRulerRules, was 4_2.Let.tySigGam
-%%[90.Let.tySigGam
-SEM Expr
-  | Let         decls       .   tySigGam            :=  @decls.tySigTyVarMp |=> @decls.gathTySigGam
-%%]
-
 %%[6
 SEM Decl
   | TySig       loc         .   gTyTvL              =   ftv . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                             .   ty_sig_             :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
-%%]
-
-%%[9
-SEM Decl
-  | TySig       loc         .   ty_sig_             :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
 %%]
 
 %%[8
@@ -808,17 +686,6 @@ SEM Expr
 SEM Decl
   | KiSig       lhs         .   gathKiSigGam        =   gamAdd @nm (mkTGI (Ty_Con @nm)) @lhs.gathKiSigGam
 %%]
-
-SEM Expr
-  | Let         decls       .   gathKiSigGam        =   emptyGam
-                            .   kiSigGam            =   @decls.gathKiSigGam
-
-SEM Decl
-  | Data
-    Type
-                loc         .   (sigKi,hasKiSig)    =   case gamLookup @tyNm @lhs.kiSigGam of
-                                                          Nothing   -> (Ty_Any,False)
-                                                          Just tgi  -> (tgiKi tgi,True)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind signatures (based on TyKiGam)
@@ -1032,6 +899,9 @@ SEM Expr
 ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
 
 SEM RecExpr
+  | Ext         loc         .  knFIOpts             =   strongFIOpts
+                recExpr     .  fiOpts               =   @lhs.fiOpts {fioNoRLabElimFor = @nm : fioNoRLabElimFor @lhs.fiOpts}
+  | Upd         loc         .  knFIOpts             =   strongFIOpts -- {fioNoRLabElimFor = [@nm]}
   | Ext Upd     expr        .  fiOpts               =   strongFIOpts
 
 SEM Expr

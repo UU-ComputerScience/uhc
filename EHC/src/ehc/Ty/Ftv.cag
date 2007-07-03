@@ -68,12 +68,12 @@ SEM Ty
 %%]
 
 %%[10
+%%]
 SEM Pred
   | RowSplit		lhs		.	tvMp		=	Map.unions [@ty.tvMp,@exts.tvMp] 
 
 SEM RowExts
   | Exts			lhs		.	tvMp		=	Map.unions [ tyFtvMp t | (_,t) <- @exts ] 
-%%]
 
 %%[13
 SEM PredSeq

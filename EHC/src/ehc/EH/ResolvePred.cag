@@ -10,6 +10,19 @@
 %%[10
 SEM Expr
   | Sel         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq2
+                            .   prOccL              =   [mkPredOcc (Pred_Lacks @knRowTy (Label_Lab @lbl)) @prUid @lhs.predScope]
+
+SEM RecExpr
+  | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
+  | Upd         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq4
+  | Ext Upd     loc         .   prOccL              =   [mkPredOcc (Pred_Lacks @knRowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+
+SEM RecPatExpr
+  | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
+                            .   prOccL              =   [mkPredOcc (Pred_Lacks @rowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+%%]
+SEM Expr
+  | Sel         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq2
                             .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) (Label_Lab @lbl)) @prUid @lhs.predScope]
 
 SEM RecExpr
@@ -20,7 +33,6 @@ SEM RecExpr
 SEM RecPatExpr
   | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
                             .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @knRecTy) (Label_Lab @nm)) @prUid @lhs.predScope]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Impl prove occurrence
@@ -40,7 +52,7 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | AppTop      loc         .   imSubsTy            =   @imTy
+  | AppTop      loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
   | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
 %%]
 

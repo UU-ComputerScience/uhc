@@ -28,9 +28,9 @@ format ag use (p => a -> r) `=` v = (p,a,r) `=` tyArrowImplsArgRes (v)
 
 -- VarMp
 format ag def  (c | VarMp, IVarMp) (v | a) = (((c) |=> (v) | a))
-format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (v) | a))
-format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (v) | a))
-format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (c4 | VarMp, IVarMp) (v | a) = (((c1) |=> (c2) |=> (c3) |=> (c4) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (v | a) = (((c1) |+> (c2) |+> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (v | a) = (((c1) |+> (c2) |+> (c3) |+> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (c4 | VarMp, IVarMp) (v | a) = (((c1) |+> (c2) |+> (c3) |+> (c4) |+> (v) | a))
 -- format ag def  (c1) (c2) (c3) (v) = c1 |=> c2 |=> c3 |=> v
 
 -- Gam
@@ -459,6 +459,10 @@ ruleset expr.base scheme expr "Expression type rules" =
       ---
       judge R : expr
           | tyVarMp.syn = tyVarMp tyVarMp.inh
+    view I1 = 
+      judge F : fit
+          | rty = knTy
+      ---
     view I2 =
       ---
       judge R : expr
@@ -637,7 +641,8 @@ ruleset expr.base scheme expr "Expression type rules" =
     view I1 =
       judge - I
       judge F : fit
-          | lty = tyVarMp.inh ty.g
+          | lty = ty.g
+          | rty = knTy
       -          
     view I2 =
       -          
@@ -698,7 +703,8 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge - V P
       judge G : valGamLookupIdTy = identc :-> ty.g `elem` valGam
       judge F : fit
-          | lty = tyVarMp.inh ty.g
+          | lty = ty.g
+          | rty = knTy
       ---
       judge R : expr
           | e = identc
@@ -749,6 +755,8 @@ ruleset expr.base scheme expr "Expression type rules" =
           | knTy = tvarv
           | fiopt = instLRFIOpts
       ---
+      judge R : expr
+          | ty = knTy
     view I2 =
       judge F : expr
           | ity = ity.f
@@ -901,7 +909,10 @@ ruleset expr.base scheme expr "Expression type rules" =
           | tyGam = tyGam.p
       judge fitF : fit
           | fiopt = fioBindRFirstY, fiopt
+          | rty = knTy
       ---
+      judge R : expr
+          | ty = ty.p -> ty.e
     view I2 =
       judge P : patexpr
           | tyVarMp.inh = emptyVarMp
@@ -1171,6 +1182,7 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge - instKnown
       judge F : fit
           | lty = ty.q
+          | rty = knTy
       judge E : expr
           | knTy = ty.q
           | tyGam = tyGam.t
@@ -1456,6 +1468,8 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
           | ty = tyInt
           | patFunTy = ANY
     view I1 =
+      judge F : fit
+          | lty = knTy
       ---
       judge R : patexpr
           | tyGam.syn = tyGam.inh
@@ -1524,14 +1538,14 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
       judge - P
       judge G : valGamLookupIdTy = (hsnUn identc) :-> ty.g `elem` valGam
       judge V : tvarvFresh2
-      judge fitP : fit = instLRFIOpts ; tyVarMp.inh :- ty.g <= (tvarv1 -> tvarv2) : fo.fitP : ty.pf ~> tyVarMp.p
-      judge fitR : fit = fiopt ; (tyVarMp.p tyVarMp.inh) :- (tyVarMp.inh knTy) <= (tyVarMp.p tvarv1) : fo.fitR : (retain ty.r) ~> tyVarMp.r
+      judge fitP : fit = instLRFIOpts ; emptyVarMp :- ty.g <= (tvarv1 -> tvarv2) : fo.fitP : ty.pf ~> tyVarMp.p
+      judge fitR : fit = fiopt ; (tyVarMp.p tyVarMp.inh) :- knTy <= tvarv1 : fo.fitR : (retain ty.r) ~> tyVarMp.r
       ---
       judge R : patexpr
           | tyGam.syn = tyGam.inh
           | ty = ty.r
           | tyVarMp.syn = tyVarMp.r tyVarMp.p tyVarMp.inh
-          | patFunTy = ty.pf
+          | patFunTy = tyVarMp.p ty.pf
     view DT =
       judge fitP : fit
           | fiopt = instFIOpts
@@ -1594,6 +1608,7 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
           | tyGam.syn = tyGam.p
       ---
       judge R : patexpr
+          | ty = ty.p
           | tyGam.syn = tyGam.p
     view I2 =
       judge O : inst.tvar
@@ -1624,8 +1639,11 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
     view I1 =
       judge P : patexpr
           | tyGam.syn = tyGam.p
+      judge F : fit
+          | lty = knTy
       ---
       judge R : patexpr
+          | ty = ty
           | tyGam.syn = tyGam.p
 
   rule p.app "App" =
@@ -1659,8 +1677,8 @@ ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules
   rule p.ann viewsel I1 - * "TypeAs" =
     view I1 =
       judge T : tyexpr = tyGam.inh :- tAnn : ty.t ~> tyGam.t ; _
-      judge F : fit = fiopt ; tyVarMp.inh :- (tyVarMp.inh knTy) <= (tyVarMp.inh ty.t) : fo : ty ~> tyVarMp.f
-      judge P : patexpr = fiopt ; tyGam.t ; valGam.inh ; (tyVarMp.f tyVarMp.inh) ; ty :- pExpr : ty.p ; tyGam.p ; valGam.p ~> tyVarMp.p ; _
+      judge F : fit = fiopt ; tyVarMp.inh :- knTy <= ty.t : fo : ty ~> tyVarMp.f
+      judge P : patexpr = fiopt ; tyGam.t ; valGam.inh ; (tyVarMp.f tyVarMp.inh) ; knTy :- pExpr : ty.p ; tyGam.p ; valGam.p ~> tyVarMp.p ; _
       ---
       judge R : patexpr = fiopt ; tyGam.inh ; valGam.inh ; tyVarMp.inh ; knTy :- (((node 2 = pExpr) :: (node 1 = tAnn))) : ty.p ; tyGam.p ; valGam.p ~> tyVarMp.p ; ANY
       
@@ -2827,8 +2845,13 @@ relation valGamQuantify =
                        `|`  (i :-> sigma) <- tyVarMp valGam.l
                         ,   alpha..._ === ftv(sigma) `-` ftv(tyVarMp valGam.g)
                         ]
-    judgeuse ag (retain valGam.l.subs) `=` tyVarMp (valGam.l)
-              | (retain valGam.g.subs) `=` tyVarMp (valGam.g)
+    judgeuse ag (retain valGam.l.subs) `=` (tyVarMp |=> (valGam.l))
+              | (retain valGam.g.subs) `=` (tyVarMp |=> (valGam.g))
+              | (retain gtvars       ) `=` ftv (valGam.g.subs)
+              | (retain valGam.q     ) `=` valGamQuantify gtvars valGam.l.subs
+  view I1 =
+    judgeuse ag (valGam.l.subs,cycTyVarMp.l) `=` (tyVarMp |==> (valGam.l))
+              | (valGam.g.subs,cycTyVarMp.g) `=` (tyVarMp |==> (valGam.g))
               | (retain gtvars       ) `=` ftv (valGam.g.subs)
               | (retain valGam.q     ) `=` valGamQuantify gtvars valGam.l.subs
   view I2 =

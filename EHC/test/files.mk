@@ -29,7 +29,7 @@ test-lists:
 test-expect test-regress: test-lists
 	@how=`echo $@ | sed -e 's/.*expect.*/exp/' -e 's/.*regress.*/reg/'` ; \
 	cd $(TEST_SRC_PREFIX) ; \
-	for v in $(VERSIONS) ; \
+	for v in $(TEST_VARIANTS) ; \
 	do \
 	  echo "== version $$v ==" ; \
 	  ehc=../bin/$$v/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
@@ -96,7 +96,8 @@ test-expect test-regress: test-lists
 	        fi \
 	      fi ; \
 	      $${cleanup} ; \
-	    done \
+	    done ; \
+	    TEST_FILES="" ; \
 	  else \
 	    echo "-- no $$ehc to compile with" | $(INDENT2) ; \
 	  fi \

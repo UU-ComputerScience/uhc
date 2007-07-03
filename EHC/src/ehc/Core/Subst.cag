@@ -142,13 +142,13 @@ SEM CExpr
 coeImplsAppLVarMp :: EHCOpts -> VarMp -> Coe -> [Coe]
 coeImplsAppLVarMp opts c coe
   =  case coe of
-       CoeImplApp i  -> maybe [coe] (mkImplsAppCoe opts) (varmpImplsLookup i c)
+       CoeImplApp i  -> maybe [coe] (mkImplsAppCoe opts) (varmpImplsLookupCyc i c)
        _             -> [coe]
 
 coeImplsAppRVarMp :: VarMp -> Coe -> [Coe]
 coeImplsAppRVarMp c coe
   =  case coe of
-       CoeImplLam i  -> maybe [coe] (mkImplsLamCoe coeId) (varmpImplsLookup i c)
+       CoeImplLam i  -> maybe [coe] (mkImplsLamCoe coeId) (varmpImplsLookupCyc i c)
        _             -> [coe]
 
 coeEvalOn :: Coe -> CExpr -> CExpr
