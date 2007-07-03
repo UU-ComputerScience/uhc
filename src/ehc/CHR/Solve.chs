@@ -263,7 +263,7 @@ ppSolveTrace tr = ppBracketsCommasV [ pp st | st <- tr ]
 
 %%[9 export(chrSolve,chrSolve',chrSolve'')
 chrSolve
-  :: ( CHRMatchable env p s, CHRCheckable g s
+  :: ( CHRMatchable env p s, CHRCheckable env g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
@@ -274,7 +274,7 @@ chrSolve env chrStore cnstrs
   where (work,done,_) = chrSolve' env chrStore cnstrs
 
 chrSolve'
-  :: ( CHRMatchable env p s, CHRCheckable g s
+  :: ( CHRMatchable env p s, CHRCheckable env g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
@@ -285,7 +285,7 @@ chrSolve' env chrStore cnstrs
   where finalState = chrSolve'' env chrStore cnstrs emptySolveState
 
 chrSolve''
-  :: ( CHRMatchable env p s, CHRCheckable g s
+  :: ( CHRMatchable env p s, CHRCheckable env g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , Ord (Constraint p i)
@@ -373,10 +373,10 @@ chrSolve'' env chrStore cnstrs prevState
                   = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
                   where matches (StoredCHR {storedChr = CHR {chrHead = hc}}) cnstrs
                           = zipWith mt hc cnstrs
-                          where mt cFr cTo subst = chrMatchTo (env {- fiVarMp = subst |=> fiVarMp env -}) (subst `chrAppSubst` cFr) cTo
+                          where mt cFr cTo subst = chrMatchTo env subst cFr cTo
                         checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
                           = map chk gd
-                          where chk g subst = chrCheck (subst `chrAppSubst` g)
+                          where chk g subst = chrCheck env subst g
                         cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
                         cmb _        _    = Nothing
         isUsedByPropPart wlUsedIn (chr,(keys,_))
@@ -403,6 +403,17 @@ chrSolve'' env chrStore cnstrs prevState
                   = case match chr (map workCnstr works) of
                       r@(Just s) -> Just (chr,kw,s)
                       _          -> cont
+
+                match chr cnstrs
+                  = foldl cmb (Just chrEmptySubst) $ matches chr cnstrs ++ checks chr
+                  where matches (StoredCHR {storedChr = CHR {chrHead = hc}}) cnstrs
+                          = zipWith mt hc cnstrs
+                          where mt cFr cTo subst = chrMatchTo env subst (subst `chrAppSubst` cFr) cTo
+                        checks (StoredCHR {storedChr = CHR {chrGuard = gd}})
+                          = map chk gd
+                          where chk g subst = chrCheck subst (subst `chrAppSubst` g)
+                        cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
+                        cmb _        _    = Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ForceEval

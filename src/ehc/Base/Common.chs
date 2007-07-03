@@ -49,6 +49,9 @@
 %%[1.Token hs import(UU.Scanner.Token)
 %%]
 
+%%[2 import(qualified Data.Set as Set)
+%%]
+
 %%[5 -1.Token hs import({%{EH}Scanner.Token})
 %%]
 
@@ -70,7 +73,7 @@
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
 %%]
 
-%%[7_2 import(qualified Data.Map as Map, Data.Map(Map), qualified Data.Set as Set, Data.Set(Set))
+%%[7_2 import(qualified Data.Map as Map, Data.Map(Map), Data.Set(Set))
 %%]
 
 %%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
@@ -91,7 +94,7 @@
 %%[8 export(putCompileMsg, openFPath,writeToFile, writePP)
 %%]
 
-%%[8 import(qualified Data.Set as Set) export(ppHsnNonAlpha)
+%%[8 export(ppHsnNonAlpha)
 %%]
 
 %%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
@@ -172,6 +175,10 @@ instance HSNM UID where
 
 %%[1.UID.UIDL
 type UIDL = [UID]
+%%]
+
+%%[2
+type UIDS = Set.Set UID
 %%]
 
 %%[1.UID.Show
@@ -672,6 +679,11 @@ assocLMapKey :: (k -> k') -> AssocL k v -> AssocL k' v
 assocLMapKey f = assocLMap (\k v -> (f k,v))
 %%]
 
+%%[4 export(assocLMapUnzip)
+assocLMapUnzip :: AssocL k (v1,v2) -> (AssocL k v1,AssocL k v2)
+assocLMapUnzip l = unzip [ ((k,v1),(k,v2)) | (k,(v1,v2)) <- l ]
+%%]
+
 %%[1
 assocLKeys :: AssocL k v -> [k]
 assocLKeys = map fst
@@ -1136,6 +1148,12 @@ vunmNm (VarUIDHs_UID  i  ) = mkHNm i
 vunmNm _                   = panic "Common.assnmNm"
 %%]
 
+%%[9 export(vunmMbVar)
+vunmMbVar :: VarUIDHsName -> Maybe UID
+vunmMbVar (VarUIDHs_Var v) = Just v
+vunmMbVar _                = Nothing
+%%]
+
 %%[9
 instance Show VarUIDHsName where
   show (VarUIDHs_Name _ n) = show n
@@ -1145,4 +1163,56 @@ instance Show VarUIDHsName where
 instance PP VarUIDHsName where
   pp a = pp $ show a
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generic lookup wrapper checking for cycles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2 hs
+withLkupLiftCyc2 :: (t -> Maybe UID) -> (UID -> Maybe t) -> x -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> UID -> x
+withLkupLiftCyc2 get lookup dflt yes no vsVisited v
+  = case lookup v of
+      Just t | not (v `Set.member` vsVisited)
+        -> yes (Set.insert v vsVisited) t
+      _ -> dflt
+%%]
+
+%%[2 hs export(withLkupLiftCyc1,withLkupLift)
+withLkupLiftCyc1 :: (t -> Maybe UID) -> (UID -> Maybe t) -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> t -> x
+withLkupLiftCyc1 get lookup yes no vsVisited t
+  = maybe dflt (withLkupLiftCyc2 get lookup dflt yes no vsVisited) $ get t
+  where dflt = no t
+
+withLkupLift :: (t -> Maybe UID) -> (UID -> Maybe t) -> (t -> x) -> (t -> x) -> t -> x
+withLkupLift get lookup yes no t
+  = withLkupLiftCyc1 get lookup (\_ t -> yes t) no Set.empty t
+%%]
+
+%%[2 hs
+lookupLiftCyc1 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x' -> (x->x') -> x -> x'
+lookupLiftCyc1 get lookup dflt found x
+  = lk Set.empty dflt found x
+  where lk s dflt found x = withLkupLiftCyc1 get lookup (\s t -> lk s (found t) found t) (const dflt) s x
+
+lookupLiftCyc2 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x' -> (x->x') -> UID -> x'
+lookupLiftCyc2 get lookup dflt found x
+  = maybe dflt (\x -> lookupLiftCyc1 get lookup (found x) found x) $ lookup x
+%%]
+
+%%[2 export(lookupLiftCycMb1,lookupLiftCycMb2)
+lookupLiftCycMb1 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x -> Maybe x
+lookupLiftCycMb1 get lookup x = lookupLiftCyc1 get lookup Nothing Just x
+
+lookupLiftCycMb2 :: (x -> Maybe UID) -> (UID -> Maybe x) -> UID -> Maybe x
+lookupLiftCycMb2 get lookup x = lookupLiftCyc2 get lookup Nothing Just x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Presence of something (just a boolean with meaning)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(Presence(..))
+data Presence = Present | Absent deriving (Eq,Ord,Show)
+%%]
+
 

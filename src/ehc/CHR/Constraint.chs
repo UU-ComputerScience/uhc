@@ -41,10 +41,10 @@ instance Keyable p => Keyable (Constraint p info) where
   toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ reducablePart c
 
 instance (CHRMatchable env p s) => CHRMatchable env (Constraint p info) s where
-  chrMatchTo env c1 c2
+  chrMatchTo env s c1 c2
     = do { (_,p1,_) <- reducablePart c1
          ; (_,p2,_) <- reducablePart c2
-         ; chrMatchTo env p1 p2
+         ; chrMatchTo env s p1 p2
          }
 
 instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable (Constraint p info) v s where
@@ -53,12 +53,10 @@ instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable 
         Just (_,p,_) -> chrFtv p
         _            -> Set.empty
 
+  chrAppSubst s      (Prove     p     ) = Prove      (chrAppSubst s p)
+  chrAppSubst s      (Assume    p     ) = Assume     (chrAppSubst s p)
   chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) (chrAppSubst s i) (map (chrAppSubst s) ps)
-  chrAppSubst s      c                  = case reducablePart c of
-                                            Just (_,p,mk) -> mk (chrAppSubst s p)
-                                            _             -> c
 %%]
-  chrAppSubst s      (Reduction p i ps) = Reduction  (chrAppSubst s p) i (map (chrAppSubst s) ps)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Mapping: constraint -> info

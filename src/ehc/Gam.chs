@@ -640,7 +640,12 @@ type TyKiGam = Gam TyKiKey TyKiGamInfo
 
 %%[6 export(tyKiGamLookup,tyKiGamLookupByName)
 tyKiGamLookupByName :: HsName -> TyKiGam -> Maybe TyKiGamInfo
-tyKiGamLookupByName n g = gamLookup (TyKiKey_Name n) g
+tyKiGamLookupByName n g
+  = case gamLookup (TyKiKey_Name n) g of
+      Nothing
+        | hsnIsProd n
+            -> Just (TyKiGamInfo (replicate (hsnProdArity n) kiStar `mkArrow` kiStar))
+      x     -> x
 
 tyKiGamLookup :: Ty -> TyKiGam -> Maybe TyKiGamInfo
 tyKiGamLookup t g
@@ -924,26 +929,49 @@ idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
 
 %%[2.Substitutable.Gam
 instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k subst where
-  s |=> (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
-  ftv   (Gam ll)    =   unions . map ftv . map snd . concat $ ll
+  s |=>  (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
+%%[[4
+  s |==> (Gam ll)    =   (Gam ll',varmpUnions $ map (varmpUnions . assocLElts) m)
+                     where (ll',m) = unzip $ map (assocLMapUnzip . assocLMapElt (s |==>)) ll
+%%]]
+  ftv    (Gam ll)    =   unions . map ftv . map snd . concat $ ll
 %%]
 
 %%[9.Substitutable.LGam -2.Substitutable.Gam
 instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k subst where
-  s |=> g    =   gamMapElts (s |=>) g
-  ftv   g    =   unions $ map ftv $ gamElts g
+  s |=>  g    =   gamMapElts (s |=>) g
+%%[[4
+  s |==> g    =   (g',varmpUnions $ gamElts gm)
+              where (g',gm) = lgamUnzip $ gamMapElts (s |==>) g
+%%]]
+  ftv    g    =   unions $ map ftv $ gamElts g
 %%]
 
 %%[2.Substitutable.inst.ValGamInfo
 instance Substitutable ValGamInfo TyVarId VarMp where
-  s |=> vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
-  ftv   vgi         =   ftv (vgiTy vgi)
+  s |=>  vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
+%%[[4
+  s |==> vgi         =   substLift vgiTy (\i x -> i {vgiTy = x}) (|==>) s vgi
+%%]]
+  ftv    vgi         =   ftv (vgiTy vgi)
+%%]
+
+%%[2.Substitutable.inst.TyGamInfo
+instance Substitutable TyGamInfo TyVarId VarMp where
+  s |=>  tgi         =   tgi { tgiTy = s |=> tgiTy tgi }
+%%[[4
+  s |==> tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) (|==>) s tgi
+%%]]
+  ftv    tgi         =   ftv (tgiTy tgi)
 %%]
 
 %%[6.Substitutable.inst.TyKiGamInfo
 instance Substitutable TyKiGamInfo TyVarId VarMp where
-  s |=> tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
-  ftv   tkgi         =   ftv (tkgiKi tkgi)
+  s |=>  tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
+%%[[4
+  s |==> tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) (|==>) s tkgi
+%%]]
+  ftv    tkgi         =   ftv (tkgiKi tkgi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

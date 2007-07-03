@@ -24,8 +24,9 @@ SEM TyExpr
 %%[6
 SEM TyExpr
   | Con         loc         .   (tgi_,nmErrs)       :=  tyGamLookupErr @nm @lhs.tyGam
-                loc         .   (tkgi_,nmErrs2)     =   let (i,e) = tyKiGamLookupByNameErr @nm @lhs.tyKiGam in (@lhs.kiVarMp |=> i,e)
+                loc         .   (tkgi_,nmErrs2)     =   tyKiGamLookupByNameErr @nm @lhs.tyKiGam
 %%]
+                loc         .   (tkgi_,nmErrs2)     =   let (i,e) = tyKiGamLookupByNameErr @nm @lhs.tyKiGam in (@lhs.kiVarMp |=> i,e)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TyKiGam
@@ -53,12 +54,12 @@ Type 't' is assumed to be a Ty_Con or Ty_Var.
 Should only be used on result from tyGamLookupOrAdd.
 
 %%[6 hs
-tyKiGamLookupOrAdd :: VarMp -> Ty -> TyKiGam -> (TyKiGamInfo,TyKiGam)
-tyKiGamLookupOrAdd cnstr t tyKiGam
+tyKiGamLookupOrAdd :: Ty -> TyKiGam -> (TyKiGamInfo,TyKiGam)
+tyKiGamLookupOrAdd t tyKiGam
   =  case tyKiGamLookup t tyKiGam of
        Nothing    ->  (tkgi,tyKiGamSingleton t tkgi `gamUnion` tyKiGam)
                   where tkgi  =  TyKiGamInfo t
-       Just tkgi  ->  (cnstr |=> tkgi,tyKiGam)
+       Just tkgi  ->  (tkgi,tyKiGam)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
@@ -103,8 +104,9 @@ SEM TyExpr
 %%[6
 SEM TyExpr
   | Var VarWild (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm @lhs.tyGam
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd @lhs.kiVarMp (tgiTy @tgi_) @lhs.tyKiGam
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd @lhs.kiVarMp (tgiTy @tgi_) @lhs.tyKiGam
 
 -- generated from ruler rules into EHRulerRules, was 4.tyVarGather
 %%[5.tyVarGather
@@ -113,14 +115,14 @@ SEM TyExpr
                                                         in   (@lUniq,TyGamInfo t)
                 tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
-                tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
-                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
 %%]
 
 %%[6
 SEM TyExpr
   | Quant       loc         .   (tv,tgi_,tkgi_)     :=  let  t = mkTyVar @lUniq
                                                         in   (@lUniq,mkTGI t,TyKiGamInfo t)
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
 %%]
 
 %%[5.tyVarGather
@@ -139,8 +141,9 @@ SEM TyVar
 %%[6
 SEM TyVar
   | Var         (loc.tgi_,lhs.tyGam)                := 	tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam)
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd emptyVarMp (tgiTy @tgi_) @lhs.tyKiGam
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd emptyVarMp (tgiTy @tgi_) @lhs.tyKiGam
 
 %%[9.tyVarGather
 SEM PrExpr
@@ -155,8 +158,9 @@ SEM PrExpr
 %%[9
 SEM RowTyExpr
   | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd @lhs.kiVarMp (tgiTy @tgi_) @lhs.tyKiGam
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
+                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd @lhs.kiVarMp (tgiTy @tgi_) @lhs.tyKiGam
 
 %%[11
 SEM TyExpr
@@ -213,12 +217,14 @@ SEM TyExpr
   | Var VarWild loc         .   ki                  =   tkgiKi @tkgi_
   | Wild        loc         .   ki                  =   tkgiKi @tkgi_
   | Con         loc         .   ki                  =   tkgiKi @tkgi_
-  | App         loc         .   knFunKi             =   [@arg.ki] `mkArrow` mkNewTyVar @lUniq
-                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
+  | App         loc         .   knResKi             =   mkNewTyVar @lUniq
+                            .   knFunKi             =   [@arg.ki] `mkArrow` @knResKi
+                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp @func.ki @knFunKi
                             .   fKi                 =   foTy @fo_
-                            .   (_,ki)              =   tyArrowArgRes @fKi
+                            .   ki                  =   @knResKi
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
 %%]
+                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
 
 %%[6
 SEM TyExprs
@@ -261,8 +267,9 @@ SEM RowTyExpr
 
 %%[11
 SEM TyExpr
-  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp |=> tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+  | Lam         loc         .   ki                  =   [tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 %%]
+  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp |=> tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
 
 %%[9
 ATTR PrExpr [ | | ki: Ty ]
@@ -271,10 +278,13 @@ SEM PrExpr
   | *           lhs         .   ki                  =   kiStar
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
                             .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExprs.kiVarMp
-                                                          (@tyExprs.kiVarMp |=> (@tyExprs.kiL `mkArrow` kiStar))
-                                                          (@tyExprs.kiVarMp |=> tkgiKi @tkgi_)
+                                                          (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
 %%]
+  | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
+                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExprs.kiVarMp
+                                                          (@tyExprs.kiVarMp |=> (@tyExprs.kiL `mkArrow` kiStar))
+                                                          (@tyExprs.kiVarMp |=> tkgiKi @tkgi_)
   | Class       loc         .   fo_                 =   if @nmIsDef
                                                         then fitsIn weakFIOpts emptyFE @lUniq
                                                                 (@tyExprs.kiVarMp |=> (@tyExprs.kiL `mkArrow` kiStar))
@@ -445,8 +455,10 @@ SEM Decl
   | Type        loc         .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
                 loc         .   foKi_               =   fitsIn  strongFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp
-                                                                (@tyExpr.ki)
-                                                                (@tyExpr.kiVarMp |=> (tkgiKi @typeTkgi))
+                                                                @tyExpr.ki (tkgiKi @typeTkgi)
                 lhs         .   kiVarMp             =   foVarMp @foKi_ |=> @tyExpr.kiVarMp
 %%]
+                loc         .   foKi_               =   fitsIn  strongFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp
+                                                                (@tyExpr.ki)
+                                                                (@tyExpr.kiVarMp |=> (tkgiKi @typeTkgi))
 

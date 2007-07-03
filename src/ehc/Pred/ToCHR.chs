@@ -323,7 +323,7 @@ patchUnresolvedWithAssumption env unresCnstrMp evidMp
 %%[9 export(chrSimplifyToEvidence)
 chrSimplifyToEvidence
   :: ( Ord p, Ord i
-     , CHRMatchable FIIn p s, CHRCheckable g s
+     , CHRMatchable FIIn p s, CHRCheckable FIIn g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
      , CHREmptySubstitution s
      , PP g, PP i, PP p -- for debugging

@@ -37,23 +37,37 @@ Derived from work by Gerrit vd Geest.
 
 %%[9
 instance CHRMatchable FIIn Pred VarMp where
-  chrMatchTo fi pr1 pr2
-    = do { (_,subst) <- fitPredIntoPred fi pr1 pr2
-         ; return subst
+  chrMatchTo fi subst pr1 pr2
+    = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |=> fiVarMp fi}) pr1 pr2
+         ; return subst'
          }
+%%]
 
+%%[9
 instance CHRMatchable FIIn PredScope VarMp where
-  chrMatchTo _ (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2  = Just emptyVarMp
-                                                         | otherwise = Just $ v1 `varmpScopeUnit` sc2
-  chrMatchTo _ _                      (PredScope_Var v2)             = Nothing
-  chrMatchTo _ (PredScope_Var v1) sc2                                = Just $ v1 `varmpScopeUnit` sc2
-  chrMatchTo _ (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyVarMp
-  chrMatchTo _ _                  _                                  = Nothing
+  chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
+  chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
+                                                                             where mbSc = varmpScopeLookup v1 subst
+  chrMatchTo e subst sc1                    (PredScope_Var v2) | isJust mbSc = chrMatchTo e subst sc1 (fromJust mbSc)
+                                                                             where mbSc = varmpScopeLookup v2 subst
+  chrMatchTo _ subst _                      (PredScope_Var v2)               = Nothing
+  chrMatchTo _ subst (PredScope_Var v1) sc2                                  = Just $ v1 `varmpScopeUnit` sc2
+  chrMatchTo _ subst (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2    = Just emptyVarMp
+  chrMatchTo _ subst _                  _                                    = Nothing
+%%]
+instance CHRMatchable FIIn PredScope VarMp where
+  chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2  = Just emptyVarMp
+                                                               | otherwise = Just $ v1 `varmpScopeUnit` sc2
+  chrMatchTo _ subst _                      (PredScope_Var v2)             = Nothing
+  chrMatchTo _ subst (PredScope_Var v1) sc2                                = Just $ v1 `varmpScopeUnit` sc2
+  chrMatchTo _ subst (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyVarMp
+  chrMatchTo _ subst _                  _                                  = Nothing
 
+%%[9
 instance CHRMatchable FIIn CHRPredOcc VarMp where
-  chrMatchTo fi po1 po2
-    = do { subst1 <- chrMatchTo fi (cpoPr po1) (cpoPr po2)
-         ; subst2 <- chrMatchTo fi (cpoScope po1) (cpoScope po2)
+  chrMatchTo fi subst po1 po2
+    = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
+         ; subst2 <- chrMatchTo fi subst (cpoScope po1) (cpoScope po2)
          ; return $ subst2 |=> subst1
          }
 
@@ -61,11 +75,11 @@ instance CHREmptySubstitution VarMp where
   chrEmptySubst = emptyVarMp
 
 instance CHRSubstitutable CHRPredOcc TyVarId VarMp where
-  chrFtv        x = Set.fromList (ftv x)
+  chrFtv        x = ftvSet x
   chrAppSubst s x = s |=> x
 
 instance CHRSubstitutable PredScope TyVarId VarMp where
-  chrFtv        x = Set.fromList (ftv x)
+  chrFtv        x = ftvSet x
   chrAppSubst s x = s |=> x
 
 instance CHRSubstitutable CHRPredOccCnstrMp TyVarId VarMp where
@@ -95,33 +109,12 @@ instance CHRSubstitutable Guard TyVarId VarMp where
   chrAppSubst s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s |=> r)  (s |=> o)  (s |=> t)  (s |=> l)
 %%]]
 %%]
-instance CHRMatchable FIIn PredOccId VarMp where
-  chrMatchTo _ (PredOccId_Var v1) sc2@(PredOccId_Var v2) | v1 == v2  = Just emptyVarMp
-                                                         | otherwise = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ _                      (PredOccId_Var v2)             = Nothing
-  chrMatchTo _ (PredOccId_Var v1) sc2                                = Just $ v1 `cnstrPoiUnit` sc2
-  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2)             = Just emptyVarMp
---  chrMatchTo _ (PredOccId   _ i1)     (PredOccId   _ i2) | i1 == i2 = Just emptyVarMp
---  chrMatchTo _ _                  _                                 = Nothing
-
-instance CHRMatchable FIIn PredOcc VarMp where
-  chrMatchTo fi po1 po2
-    = do { subst1 <- chrMatchTo fi (poPr po1) (poPr po2)
-         ; subst2 <- chrMatchTo fi (poScope po1) (poScope po2)
-         ; return $ subst2 |=> subst1
-         }
-
-instance CHRSubstitutable PredOcc TyVarId VarMp where
-  chrFtv        x = Set.fromList (ftv x)
-  chrAppSubst s x = s |=> x
-
 
 %%[9
 instance CHRSubstitutable VarUIDHsName TyVarId VarMp where
   chrFtv          (VarUIDHs_Var i)  = Set.singleton i
   chrFtv          _                 = Set.empty
-  chrAppSubst s a@(VarUIDHs_Var i)  = maybe a id $ varmpAssNmLookup i s
-  chrAppSubst s a                   = a
+  chrAppSubst s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
 %%[9
@@ -141,31 +134,52 @@ instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
 
 %%[10
 instance CHRSubstitutable Label TyVarId VarMp where
-  chrFtv        x = Set.fromList (ftv x)
+  chrFtv        x = ftvSet x
   chrAppSubst s x = s |=> x
 
 instance CHRSubstitutable LabelOffset TyVarId VarMp where
-  chrFtv        x = Set.fromList (ftv x)
+  chrFtv        x = ftvSet x
   chrAppSubst s x = s |=> x
 %%]
 
 %%[10
 instance CHRMatchable FIIn Label VarMp where
-  chrMatchTo _ (Label_Var v1) lb2@(Label_Var v2) | v1 == v2  = Just emptyVarMp
-                                                 | otherwise = Just $ v1 `varmpLabelUnit` lb2
-  chrMatchTo _ _                  (Label_Var v2)             = Nothing
-  chrMatchTo _ (Label_Var v1) lb2                            = Just $ v1 `varmpLabelUnit` lb2
-  chrMatchTo _ (Label_Lab l1)     (Label_Lab l2) | l1 == l2  = Just emptyVarMp
-  chrMatchTo _ _              _                              = Nothing
-
-instance CHRMatchable FIIn LabelOffset VarMp where
-  chrMatchTo _ (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2  = Just emptyVarMp
-                                                             | otherwise = Just $ v1 `varmpOffsetUnit` of2
-  chrMatchTo _ _                        (LabelOffset_Var v2)             = Nothing
-  chrMatchTo _ (LabelOffset_Var v1) of2                                  = Just $ v1 `varmpOffsetUnit` of2
-  chrMatchTo _ (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2  = Just emptyVarMp
-  chrMatchTo _ _                    _                                    = Nothing
+  chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
+  chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
+                                                                     where mbLb = varmpLabelLookup v1 subst
+  chrMatchTo e subst lb1                (Label_Var v2) | isJust mbLb = chrMatchTo e subst lb1 (fromJust mbLb)
+                                                                     where mbLb = varmpLabelLookup v2 subst
+  chrMatchTo _ subst _                  (Label_Var v2)               = Nothing
+  chrMatchTo _ subst (Label_Var v1) lb2                              = Just $ v1 `varmpLabelUnit` lb2
+  chrMatchTo _ subst (Label_Lab l1)     (Label_Lab l2) | l1 == l2    = Just emptyVarMp
+  chrMatchTo _ subst _              _                                = Nothing
 %%]
+  chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2  = Just emptyVarMp
+                                                       | otherwise = Just $ v1 `varmpLabelUnit` lb2
+  chrMatchTo _ subst _                  (Label_Var v2)             = Nothing
+  chrMatchTo _ subst (Label_Var v1) lb2                            = Just $ v1 `varmpLabelUnit` lb2
+  chrMatchTo _ subst (Label_Lab l1)     (Label_Lab l2) | l1 == l2  = Just emptyVarMp
+  chrMatchTo _ subst _              _                              = Nothing
+
+%%[10
+instance CHRMatchable FIIn LabelOffset VarMp where
+  chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
+  chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
+                                                                                 where mbOf = varmpOffsetLookup v1 subst
+  chrMatchTo s subst of1                      (LabelOffset_Var v2) | isJust mbOf = chrMatchTo s subst of1 (fromJust mbOf)
+                                                                                 where mbOf = varmpOffsetLookup v2 subst
+  chrMatchTo _ subst _                        (LabelOffset_Var v2)               = Nothing
+  chrMatchTo _ subst (LabelOffset_Var v1) of2                                    = Just $ v1 `varmpOffsetUnit` of2
+  chrMatchTo _ subst (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2    = Just emptyVarMp
+  chrMatchTo _ subst _                    _                                      = Nothing
+%%]
+instance CHRMatchable FIIn LabelOffset VarMp where
+  chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2  = Just emptyVarMp
+                                                                   | otherwise = Just $ v1 `varmpOffsetUnit` of2
+  chrMatchTo _ subst _                        (LabelOffset_Var v2)             = Nothing
+  chrMatchTo _ subst (LabelOffset_Var v1) of2                                  = Just $ v1 `varmpOffsetUnit` of2
+  chrMatchTo _ subst (LabelOffset_Off l1)     (LabelOffset_Off l2) | l1 == l2  = Just emptyVarMp
+  chrMatchTo _ subst _                    _                                    = Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lattice ordering, for annotations which have no ordering
@@ -242,38 +256,49 @@ instance PPForHI Guard where
 %%]
 
 %%[9
-instance CHRCheckable Guard VarMp where
-  chrCheck (HasStrictCommonScope (PredScope_Var vDst) sc1 sc2)
-    = do { scDst <- pscpCommon sc1 sc2
-         ; if scDst == sc1
-           then Nothing
-           else return $ vDst `varmpScopeUnit` scDst
-         }
-  chrCheck (IsStrictParentScope (PredScope_Var vDst) sc1 sc2)
-    = do { scDst <- pscpCommon sc1 sc2
-         ; if scDst == sc1 && sc1 /= sc2
-           then return $ vDst `varmpScopeUnit` scDst
-           else Nothing
-         }
-  chrCheck (NotEqualScope sc1 sc2) | isJust c
-    = if fromJust c /= EQ then return emptyVarMp else Nothing
-    where c = pscpCmp sc1 sc2
-  chrCheck (EqualScope sc1 sc2) | isJust c
-    = if fromJust c == EQ then return emptyVarMp else Nothing
-    where c = pscpCmp sc1 sc2
-  chrCheck (IsVisibleInScope (PredScope_Var vDst) sc1)
-    = return $ vDst `varmpScopeUnit` sc1
-  chrCheck (IsVisibleInScope scDst sc1) | pscpIsVisibleIn scDst sc1
-    = return emptyVarMp
+instance CHRCheckable FIIn Guard VarMp where
+  chrCheck env subst x
+    = chk x
+    where subst' = subst |=> fiVarMp env
+          chk (HasStrictCommonScope (PredScope_Var vDst) sc1 sc2)
+            = do { let sc1' = chrAppSubst subst' sc1
+                       sc2' = chrAppSubst subst' sc2
+                 ; scDst <- pscpCommon sc1' sc2'
+                 ; if scDst == sc1'
+                   then Nothing
+                   else return $ vDst `varmpScopeUnit` scDst
+                 }
+          chk (IsStrictParentScope (PredScope_Var vDst) sc1 sc2)
+            = do { let sc1' = chrAppSubst subst' sc1
+                       sc2' = chrAppSubst subst' sc2
+                 ; scDst <- pscpCommon sc1' sc2'
+                 ; if scDst == sc1' && sc1' /= sc2'
+                   then return $ vDst `varmpScopeUnit` scDst
+                   else Nothing
+                 }
+          chk (NotEqualScope sc1 sc2) | isJust c
+            = if fromJust c /= EQ then return emptyVarMp else Nothing
+            where c = pscpCmp (chrAppSubst subst' sc1) (chrAppSubst subst' sc2)
+          chk (EqualScope sc1 sc2) | isJust c
+            = if fromJust c == EQ then return emptyVarMp else Nothing
+            where c = pscpCmp (chrAppSubst subst' sc1) (chrAppSubst subst' sc2)
+          chk (IsVisibleInScope scDst@(PredScope_Var vDst) sc1) | isJust mbSc
+            = chk (IsVisibleInScope (fromJust mbSc) sc1)
+            where mbSc = varmpScopeLookupScopeCyc scDst subst'
+          chk (IsVisibleInScope (PredScope_Var vDst) sc1)
+            = return $ vDst `varmpScopeUnit` sc1
+          chk (IsVisibleInScope scDst sc1) | pscpIsVisibleIn (chrAppSubst subst' scDst) (chrAppSubst subst' sc1)
+            = return emptyVarMp
 %%[[10
-  chrCheck (NonEmptyRowLacksLabel (Ty_Var tv TyVarCateg_Plain) (LabelOffset_Var vDst) ty (Label_Lab lab)) | not (null exts) -- tyIsEmptyRow row
-    = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
-               |=> (tv `varmpTyUnit` row)
-    where (row,exts) = tyRowExts ty
-          offset = tyExtsOffset lab $ tyRowCanonOrder exts
+          chk (NonEmptyRowLacksLabel (Ty_Var tv TyVarCateg_Plain) (LabelOffset_Var vDst) ty lab) | not (null exts) && presence == Absent -- tyIsEmptyRow row
+            = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
+                       |=> (tv `varmpTyUnit` row)
+            where (row,exts) = tyRowExtsWithLkup (varmpTyLookupCyc2 subst') ty
+                  (offset,presence) = tyExtsOffset lab' $ tyRowCanonOrder exts
+                  (Label_Lab lab') = chrAppSubst subst' lab
 %%]]
-  chrCheck _
-    = Nothing
+          chk _
+            = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

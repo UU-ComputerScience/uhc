@@ -480,10 +480,20 @@ SEM Expr
                                             else empty
 %%]
 
+%%[9
+%%]
+SEM Expr
+  | Let         loc     .   ppExtra     :=  ppVarMpV @tmpoTyVarMp
+
 %%[100
 SEM Expr
   | Let         loc     .   ppExtra     :=  empty
 %%]
+
+%%[9
+%%]
+SEM AGItf
+  | AGItf       loc     .   ppExtra 	:=  ppVarMpV @expr.tyVarMp
 
 %%[20
 SEM AGItf

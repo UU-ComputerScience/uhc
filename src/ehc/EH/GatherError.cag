@@ -29,6 +29,7 @@ ppErrsSq = ppErrs . Seq.toList
 ATTR AllNT [ | | errSq USE {`Seq.union`} {Seq.empty} : ErrSq ]
 
 SEM Expr
+  | Let         loc         .   letErrL     =   Seq.fromList @dupErrs
   | App         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@func.errSq, @arg.errSq]
   | Lam         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
   | Var         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_]
@@ -67,13 +68,14 @@ SEM Decl
 %%[4
 SEM Expr
   | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_]
+  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs ]
 
 SEM PatExpr
   | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_fitR_]
   | TypeAs      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@patExpr.errSq, @tyExpr.errSq, foErrSq @fo_]
   | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@patExpr.errSq, Seq.fromList @arityErrs, foErrSq @fo_fitR_]
 %%]
-  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@patExpr.errSq, Seq.fromList @arityErrs, foErrSq @fo_, foErrSq @patFunFo]
+  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@patExpr.errSq, Seq.fromList @arityErrs, foErrSq @fo_, foErrSq @fo_fitP_]
 
 %%[4_2
 SEM Expr
@@ -91,7 +93,7 @@ SEM PatExpr
 %%[5
 SEM Expr
   | SConst      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
-  | TypeAs      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq, @tyExpr.errSq, foErrSq @fo_, foErrSq @fo_fitDown]
+  | TypeAs      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList @occCycTyErrs, @expr.errSq, @tyExpr.errSq, foErrSq @fo_, foErrSq @fo_fitDown]
 %%]
 
 %%[5_1
@@ -100,6 +102,9 @@ SEM Expr
 %%]
 
 %%[6
+SEM Expr
+  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs, Seq.fromList @occCycTyKiErrs ]
+
 SEM TyExpr
   | App         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@func.errSq, @arg.errSq, foErrSq @fo_]
   | AppTop      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExpr.errSq]
@@ -148,15 +153,18 @@ SEM DataConstr
 %%]
 
 %%[9
+SEM Expr
+  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs, Seq.fromList @occCycTyKiErrs
+                                                           , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @predAmbigErrs, firstNotEmpty [@chrSolve1Errs, @chrSolve2Errs]]
+                                                           ]
+  | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
+  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq]
+
 SEM RowTyExpr
   | Var         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
 
 SEM PrExpr
   | Class       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExprs.errSq, Seq.fromList $ firstNotEmpty [@nmErrs,@clKiNmErrs], foErrSq @fo_]
-
-SEM Expr
-  | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
-  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq]
 %%]
 
 %%[11
@@ -190,8 +198,7 @@ SEM Decls
                 lhs         .   errSq       =   Seq.empty
 
 SEM Expr
-  | Let         loc         .   letErrL     =   Seq.fromList @dupErrs
-                            .   errLetPP    =   ppErrsSq @letErrL
+  | Let         loc         .   errLetPP    =   ppErrsSq @letErrL
                             .   errBodyPP   =   ppErrsSq @body.errSq
                 lhs         .   errSq       =   Seq.empty
 
@@ -221,21 +228,11 @@ SEM Decl
                             .   errInstPP   =   ppErrsSq @lErrSq
                 lhs         .   errSq       =   Seq.empty
 
-SEM Expr
-  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs
-                                                           , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @predAmbigErrs, firstNotEmpty [@chrSolve1Errs, @chrSolve2Errs]]
-                                                           ]
-
 SEM AGItf
   | AGItf       loc         .   lErrSq      =   Seq.unions [ Seq.fromList @predNotPrfErrs
                                                            , Seq.fromList @chrSolveMainErrs
                                                            ]
                             .   errTopPP    :=  ppErrsSq @lErrSq
-%%]
-
-%%[9_1
-SEM Expr
-  | Let         loc         .   letErrL     :=  Seq.unions $ map Seq.fromList [@dupErrs, @gamErrL, @prfErrs, @bodyPrfErrs]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -19,13 +19,16 @@
 %%[3 hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
 %%]
 
-%%[4 hs import({%{EH}Base.Debug})
+%%[4 hs import({%{EH}Base.Debug},Debug.Trace)
 %%]
 
-%%[4_2 hs import(qualified Data.Set as Set,{%{EH}Gam.Utils},{%{EH}Ty.Trf.ElimAlts},{%{EH}Ty.Trf.FreshVar})
+%%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[7 hs import(qualified Data.Set as Set,qualified Data.Map as Map,{%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
+%%[4_2 hs import({%{EH}Gam.Utils},{%{EH}Ty.Trf.ElimAlts},{%{EH}Ty.Trf.FreshVar})
+%%]
+
+%%[7 hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
 %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
@@ -105,6 +108,7 @@ WRAPPER AGItf
 %%[99
 PRAGMA strictcase
 PRAGMA strictsem
+PRAGMA gencostcentres
 %%]
 PRAGMA splitsems
 

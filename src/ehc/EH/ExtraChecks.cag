@@ -37,7 +37,7 @@ SEM Decl
 
 %%[7
 SEM Decl
-  | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups (@lhs.finTyVarMp |=> @constrs.fldSelGam)
+  | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups @constrs.fldSelGam
                                                              wrong tl = foHasErrs fo
                                                                       where fo = fitsInFold unifyFIOpts @fe uidStart @lhs.finTyVarMp $ map (tyArrowRes . vgiTy) $ tl
                                                              nms = [ f | (f,tl) <- ft, wrong tl ]
@@ -58,6 +58,25 @@ SEM Expr
                                                             | otherwise       -> []
                             .   fldDupErrs          =   let fs = [ f | (f:_:_) <- group @fldL ]
                                                         in  if null fs then [] else [rngLift @range Err_DuplicateDataFields fs]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Occur cycles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+SEM Expr
+  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr $ @cycTyVarMp_l `varmpUnion` @cycTyVarMp_g
+%%]
+
+%%[5
+SEM Expr
+  | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @cycVarMp
+%%]
+
+%%[6
+SEM Expr
+  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr $ @cycTyKiVarMp_l `varmpUnion` @cycTyKiVarMp_g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -193,7 +193,7 @@ SEM RecExpr
 
 %%[8
 SEM RecExpr
-  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recExpr.ty))
+  | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recExpr.ty)
 %%]
 
 %%[10
@@ -264,10 +264,11 @@ SEM DataFieldExpr
 
 %%[8
 SEM Expr
-  | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyVarMp |=> @expr.ty))
+  | Sel         loc         .   offset          =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
                             .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
                                                     in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset Nothing
 %%]
+  | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyVarMp |=> @expr.ty))
 
 %%[10
 SEM Expr
@@ -340,8 +341,7 @@ SEM PatExpr
 
 %%[8
 SEM PatExpr
-  | AppTop Con  loc         .   finResTy    =   @lhs.finTyVarMp |=> @ty_r_
-                            .   tag         =   let  (c,_)  = tyAppFunArgs @finResTy
+  | AppTop Con  loc         .   tag         =   let  (c,_)  = tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
                                                      dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show (tyConNm c))
                                                               $ dataGamLookup (tyConNm c) $ @lhs.dataGam
                                                 in   dtiCTag
@@ -443,8 +443,9 @@ SEM DataFieldPatExpr
                             .   offset      =   CExpr_Int @ioffset
 
 SEM RecPatExpr
-  | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
+  | Ext         loc         .   offset      =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recPatExpr.ty)
 %%]
+  | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
 
 %%[10
 SEM RecPatExpr

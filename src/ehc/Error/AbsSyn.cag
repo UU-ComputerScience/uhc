@@ -84,6 +84,8 @@ DATA Err
                         tvar       : {TyVarId}
                         ty2detail  : {Ty}
                         fiModeD    : {FIMode}
+  | OccurCycle          tvar       : {TyVarId}
+                        ty         : {Ty}
 %%]
 
 %%[4_2
