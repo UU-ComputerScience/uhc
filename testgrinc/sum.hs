@@ -1,17 +1,8 @@
 data Bool = False | True
-data Ordering = EQ | GT | LT
 data ''[]'' a = a : [a] | ''[]''
 
-{-
-error :: forall a . [Char] -> a
-error _ = undefined
-
-undefined :: forall a . a
-undefined = error "undefined"
--}
-
-foreign import jazy "primAddInt" (+) :: Int -> Int -> Int
-foreign import jazy "primGtInt"  (>) :: Int -> Int -> Bool
+foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
+foreign import ccall "primGtInt"  (>) :: Int -> Int -> Bool
 
 upto m n | m > n = []
          | True  = m : upto (m + 1) n
