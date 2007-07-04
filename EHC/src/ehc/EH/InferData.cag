@@ -29,9 +29,6 @@ SEM Decl
                 constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp |=> @tyVars.tyKiGam))
                                                                     @lhs.tyKiGam
 %%]
-                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2 @lhs.patKiVarMp
-                                                                (@lhs.patKiVarMp |=> (@tyVars.kiL `mkArrow` kiStar))
-                                                                (@lhs.patKiVarMp |=> (tkgiKi @dataTkgi))
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind inferencing for data
@@ -45,9 +42,6 @@ SEM DataConstr
 				loc			.	fo_					:	FIOut
                 lhs         .   kiVarMp             =   agFakeDependOn @lhs.dataTy $ foVarMp @fo_ |=> @fldsKiVarMp
 %%]
-                            .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
-                                                                 (@fldsKiVarMp |=> @fields.kiL)
-                                                                 (repeat kiStar)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data info gam

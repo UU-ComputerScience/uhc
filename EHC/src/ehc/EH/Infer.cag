@@ -87,11 +87,6 @@ SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
 
-%%[1010.tyInstKnown
-SEM Decl
-  | DynVal      loc         .   knTy                =   Ty_Any
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Final type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,12 +120,6 @@ SEM Expr
 %%[9
 SEM Expr
   | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp
-%%]
-
-%%[1010
-SEM Decl
-  | DynTySig    loc         .   finalTy             =   vgiTy . fromJust
-                                                        . valGamLookup @nm $ @lhs.finValGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -232,11 +221,6 @@ Decl should merge with one in InferTyExpr
 ATTR AllDecl AllExpr [ tyGam: TyGam | | ]
 %%]
 
-%%[3
-%%]
-SEM Decl
-  | TySig       lhs         .   tyGam               =   @lhs.tyGam
-
 %%[4
 ATTR AllPatExpr [ | tyGam: TyGam | ]
 %%]
@@ -299,7 +283,6 @@ SEM Expr
                 body        .   tyGam               =   gamAddGam @tyGam_l_ @tyGam_g_
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
 %%]
-                            .   gKiTvL              =   ftv @gSubsTyGam
 
 %%[6
 SEM Decl
@@ -993,22 +976,6 @@ SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% The Ty_Con name of a TyExpr, if any
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-%%]
-ATTR TyExpr PrExpr [ | | mbConNm USE {`const`} {Nothing}: {Maybe HsName} ]
-
-SEM PrExpr
-  | Arrow		lhs			.	mbConNm				=	Just hsnPrArrow
-
-SEM TyExpr
-  | Con			lhs			.	mbConNm				=	Just @nm
-  | App			lhs			.	mbConNm				=	@func.mbConNm
-  | Var			lhs			.	mbConNm				=	Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The XX_App function name of a XX, if any
