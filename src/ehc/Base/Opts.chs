@@ -487,6 +487,7 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
 %%[9.FIOpts
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
                         ,  fioDontBind       ::  TyVarIdS
+                        ,  fioBindLVars      ::  Bool                ,  fioBindRVars            ::  Bool
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
@@ -507,6 +508,7 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%[9.strongFIOpts
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   Set.empty
+                        ,  fioBindLVars      =   True                ,  fioBindRVars            =   True
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst
@@ -582,7 +584,16 @@ implFIOpts = strongFIOpts {fioAllowRPredElim = False}
 
 %%[4
 fioSwapOpts :: FIOpts -> FIOpts
-fioSwapOpts fio = fio { fioBindRFirst = fioBindLFirst fio, fioBindLFirst = fioBindRFirst fio, fioBindLBeforeR = not (fioBindLBeforeR fio) }
+fioSwapOpts fio
+  = fio
+      { fioBindRFirst   = fioBindLFirst fio
+      , fioBindLFirst   = fioBindRFirst fio
+      , fioBindLBeforeR = not (fioBindLBeforeR fio)
+%%[[9
+      , fioBindLVars    = fioBindRVars fio
+      , fioBindRVars    = fioBindLVars fio
+%%]]
+      }
 
 fioSwapCoCo :: CoContraVariance -> FIOpts -> FIOpts
 fioSwapCoCo coco fio = fio {fioMode = fimSwapCoCo coco (fioMode fio)}

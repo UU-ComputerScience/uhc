@@ -22,10 +22,10 @@
 %%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
-%%[9 import({%{EH}Core},{%{EH}Core.Subst})
+%%[9 import(qualified Data.Set as Set)
 %%]
 
-%%[9 import({%{EH}Pred.CommonCHR})
+%%[9 import({%{EH}Core},{%{EH}Core.Subst},{%{EH}Pred.CommonCHR})
 %%]
 
 
@@ -61,6 +61,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
                         ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
                         ,  foLRCoe           :: !LRCoe
                         ,  foGathCnstrMp     :: !CHRPredOccCnstrMp
+                        ,  foDontBind        :: !TyVarIdS
 %%]
 %%[10
                         ,  foRowCoeL         :: !(AssocL HsName Coe)
@@ -81,6 +82,7 @@ emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy    
                         ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
                         ,  foLRCoe           =   emptyLRCoe
                         ,  foGathCnstrMp     =   emptyCnstrMp
+                        ,  foDontBind        =   Set.empty
 %%]
 %%[10
                         ,  foRowCoeL         =   []
