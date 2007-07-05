@@ -61,7 +61,6 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
                         ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
                         ,  foLRCoe           :: !LRCoe
                         ,  foGathCnstrMp     :: !CHRPredOccCnstrMp
-                        ,  foDontBind        :: !TyVarIdS
 %%]
 %%[10
                         ,  foRowCoeL         :: !(AssocL HsName Coe)
@@ -82,7 +81,6 @@ emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy    
                         ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
                         ,  foLRCoe           =   emptyLRCoe
                         ,  foGathCnstrMp     =   emptyCnstrMp
-                        ,  foDontBind        =   Set.empty
 %%]
 %%[10
                         ,  foRowCoeL         =   []
