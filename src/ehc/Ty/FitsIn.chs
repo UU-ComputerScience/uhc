@@ -377,14 +377,8 @@ fitsInFI fi ty1 ty2
             fiSetVarMp  c fi = fi {fiVarMpLoc = c}
             fiPlusVarMp c fi = fi {fiVarMpLoc = c |+> fiVarMpLoc fi}
             fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi
-%%[[9
-                                  , foDontBind = fioDontBind (fiFIOpts fi)
-%%]]
                                   }
             fofi       fo fi = fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo
-%%[[9
-                                  , fiFIOpts = (fiFIOpts fi) {fioDontBind = foDontBind fo}
-%%]]
                                   }
             fiBind    v t fi = fiPlusVarMp (v `varmpTyUnit` t) fi
 %%]
@@ -667,19 +661,25 @@ fitsInFI fi ty1 ty2
             fVar f fi t1@(Ty_Var v1 f1)     t2
                 | isJust mbTy1                                = fVar f ({- fiBind v1 t1' -} fi) t1' t2
 %%[[9
-                | not (fioBindLVars (fiFIOpts fi) || v1 `Set.member` fioDontBind (fiFIOpts fi))
+                | not ((fioBindIsYes mbvs || v1 `Set.member` fioBindNoSet mbvs) || v1 `Set.member` fioDontBind (fiFIOpts fi))
                                                               = fVar f (fiInhibitBind v1 fi) t1 t2
 %%]]
                 where mbTy1   = fiLookupTyVarCyc fi v1
                       t1'     = fromJust mbTy1
+%%[[9
+                      mbvs    = fioBindLVars (fiFIOpts fi)
+%%]]
             fVar f fi t1                    t2@(Ty_Var v2 f2)
                 | isJust mbTy2                                = fVar f ({- fiBind v2 t2' -} fi) t1 t2'
 %%[[9
-                | not (fioBindRVars (fiFIOpts fi) || v2 `Set.member` fioDontBind (fiFIOpts fi))
+                | not ((fioBindIsYes mbvs || v2 `Set.member` fioBindNoSet mbvs) || v2 `Set.member` fioDontBind (fiFIOpts fi))
                                                               = fVar f (fiInhibitBind v2 fi) t1 t2
 %%]]
                 where mbTy2   = fiLookupTyVarCyc fi v2
                       t2'     = fromJust mbTy2
+%%[[9
+                      mbvs    = fioBindRVars (fiFIOpts fi)
+%%]]
             fVar f fi t1                    t2                = f fi t1 t2
 %%]
 
@@ -1009,8 +1009,7 @@ fitPredIntoPred fi pr1 pr2
           = if foHasErrs fo
             then Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
-          -- where fo = fitsIn (predFIOpts {fioDontBind = ftvClosureSet (fiVarMp fi) pr2 `Set.union` fioDontBind (fiFIOpts fi)})
-          where fo = fitsIn (predFIOpts {fioBindRVars = False, fioDontBind = fioDontBind (fiFIOpts fi)})
+          where fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)})
                             (fiEnv fi) (fiUniq fi) (fiVarMp fi)
                             (Ty_Pred pr1) (Ty_Pred pr2)
 %%]
@@ -1031,15 +1030,15 @@ fitPredToEvid u varmp prTy g
                     ->  case gamLookup (predMatchNm p) g of
                            Just clgi
                              -> let (u',u1,u2) = mkNewLevUID2 u
-                                    fo = fitsIn fOpts emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
+                                    fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
                                 in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
                            _ -> emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
                  Ty_Pred (Pred_Pred t)
                     ->  let  (aL,r) = tyArrowArgsRes t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
                         in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `mkArrow` foTy r'}])
-         fOpts = predFIOpts {fioDontBind = ftvClosureSet varmp prTy}
 %%]
+         fOpts = predFIOpts {fioDontBind = ftvClosureSet varmp prTy}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper for fitsIn (as a solution for module dependency cycle)

@@ -476,6 +476,17 @@ optsDiscrRecompileRepr opts
 %%% Fitting options (should be in FitsIn, but here it avoids mut rec modules)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9 export(FIOBind(..),fioBindIsYes,fioBindNoSet)
+data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
+
+fioBindNoSet :: FIOBind -> TyVarIdS
+fioBindNoSet (FIOBindNoBut s) = s
+
+fioBindIsYes :: FIOBind -> Bool
+fioBindIsYes FIOBindYes = True
+fioBindIsYes _          = False
+%%]
+
 %%[4.FIOpts.hd
 data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst           ::  Bool
                         ,  fioBindLFirst     ::  Bool                ,  fioBindLBeforeR         ::  Bool
@@ -487,7 +498,7 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
 %%[9.FIOpts
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
                         ,  fioDontBind       ::  TyVarIdS
-                        ,  fioBindLVars      ::  Bool                ,  fioBindRVars            ::  Bool
+                        ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
@@ -508,7 +519,7 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%[9.strongFIOpts
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   Set.empty
-                        ,  fioBindLVars      =   True                ,  fioBindRVars            =   True
+                        ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst

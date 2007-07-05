@@ -443,13 +443,15 @@ varmpLabelLookup2 m v = varmpLabelLookup v m
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Faulty: computes cycles incorrectly, don't use 3d component of result.
+20070705: obsolete now.
 
-%%[4 export(varmpClosure)
-%%[[4
+%%[4
+%%]
+ %%[[4
 varmpClosure :: (TyVarId -> Bool) -> (x -> Set.Set TyVarId) -> VarMp' TyVarId x -> (Set.Set TyVarId,VarMp' TyVarId x,VarMp' TyVarId x)
-%%][9
+ %%][9
 varmpClosure :: (TyVarId -> Bool) -> (VarMpInfo x -> Set.Set TyVarId) -> VarMp' TyVarId (VarMpInfo x) -> (Set.Set TyVarId,VarMp' TyVarId (VarMpInfo x),VarMp' TyVarId (VarMpInfo x))
-%%]]
+ %%]]
 varmpClosure startWith tvof m
   = cl Set.empty m' emptyVarMp emptyVarMp
   where m' = varmpFilter (\k _ -> startWith k) m
@@ -465,7 +467,6 @@ varmpClosure startWith tvof m
                           | (_,x) <- varmpToAssocL mnew1
                           , let tvs = tvof x
                           ]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Error
