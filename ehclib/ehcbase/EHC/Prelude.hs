@@ -2293,7 +2293,11 @@ instance Monad IO where
 
 data PackedString
 
-foreign import ccall "primCStringToString"  packedStringToString  :: PackedString -> [Char]
+-- foreign import ccall "primCStringToString"  packedStringToString  :: PackedString -> [Char]
+foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
+foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
+foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
+
 foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
 
 -- ByteArray -----------------------------------------------------

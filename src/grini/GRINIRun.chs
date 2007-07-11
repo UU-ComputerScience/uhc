@@ -317,7 +317,7 @@ grEvalExpr rs e
                   ;  return (grCall rs fn' (map (grEvalVal rs) aL),Nothing)
                   }
         GrExpr_FFI fn aL _
-          ->  grFFI rs fn (map (rsVar rs) aL)
+          ->  grFFI rs fn (map (grEvalVal rs) aL)
         GrExpr_App fn aL
           ->  grEvalApp rs (rsVar rs fn) aL
         GrExpr_Eval n

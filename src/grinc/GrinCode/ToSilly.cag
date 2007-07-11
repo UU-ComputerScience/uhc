@@ -223,7 +223,7 @@ SEM GrExpr
                          else internal1 "FFI" @lhs.targets @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
-           loc.callres = maybe id (:) @tagL.mbOnlyTagValue $ [Value_Call @nm (map (Value_Var . mkVar) @argL)]
+           loc.callres = maybe id (:) @tagL.mbOnlyTagValue $ [Value_Call @nm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
 
 
  | Store   lhs.stats  = let ph = head @lhs.targets
@@ -357,8 +357,14 @@ SEM GrVal
  | Tag     lhs.value  = @tag.value
  | Node    lhs.values = @tag.value : @fldL.values
  | VarNode lhs.values =              @fldL.values
- | Node    lhs.value  = @tag.value                            -- TODO: why does this not need the values of fldL? can this be removed after CopyPropgation is repaired?
- | * - LitInt LitStr Var Tag Node
+ | Node    lhs.value  = if null @fldL.values
+                        then @tag.value
+                        else error "cannot generate value code for non-singleton Node"
+ | VarNode lhs.value  = let vs = @fldL.values
+                        in  if length vs==1
+                            then head vs
+                            else error "cannot generate value code for non-singleton VarNode"
+ | * - LitInt LitStr Var Tag Node VarNode
            lhs.value  = error "GrVal:other value"
  | * - Node VarNode Var
            lhs.values = error "GrVal:other values"

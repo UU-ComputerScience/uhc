@@ -462,7 +462,7 @@ SEM GrModule
 
 %%[8
 ATTR GrVal [ | | grvalIntro: {GB.GrValIntro} ]
-ATTR GrValL [ | | grvalIntroL: {[GB.GrValIntro]} ]
+ATTR GrValL [ | | grvalIntroL: {[GB.GrValIntro]} length : {Int} ]
 
 SEM GrVal
   | Var         lhs         .   grvalIntro      =   GB.GrValIntro_Nm @nm
@@ -474,7 +474,9 @@ SEM GrVal
 
 SEM GrValL
   | Nil         lhs         .   grvalIntroL     =   []
+                lhs         .   length          =   0
   | Cons        lhs         .   grvalIntroL     =   @hd.grvalIntro : @tl.grvalIntroL
+                lhs         .   length          =   1              + @tl.length
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -566,12 +568,12 @@ SEM GrExpr
                                                                where (ins',inc') = GB.gvCall @mbDebugStrInx @nmEnv @lhs.modNmConstInx ins inc @lhs.stkDepth @nm
   | FFI         loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case @mbGbPrim of
-                                                      Just gbPrim | gbprimNrArgs gbPrim == length @argL && ehcOptOptimise @lhs.opts >= OptimiseNormal
-                                                        -> case gbprimMk gbPrim GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
+                                                      Just gbPrim | gbprimNrArgs gbPrim == @argL.length && ehcOptOptimise @lhs.opts >= OptimiseNormal
+                                                        -> case gbprimMk gbPrim GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ @argL.grvalIntroL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
                                                                -> (ins, inc, False)
                                                              _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @nm)
-                                                      _ -> case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ @argL of
+                                                      _ -> case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ @argL.grvalIntroL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
                                                                -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.callc @mbDebugStrInx inc], 1, False)
                                                                where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]

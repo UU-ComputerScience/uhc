@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The prims table describes alternate implementation, in particular how to inline.
-Module {%{EH}BuiltinPrims} describes similar information required in the frontend.
+Module {%{Base}Builtin} describes similar information required in the frontend.
 Ideally, these tables should be merged.
 
 %%[8 module {%{GRIN}BuiltinPrims}

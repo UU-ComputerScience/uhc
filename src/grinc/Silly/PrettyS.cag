@@ -179,7 +179,7 @@ SEM Statement
   | Return      loc.prettyS   = ";" >#< @loc.pretty >-<
                                 instruction1 "jmp" (dereference (indirectOffset (@retdiff *(-4)) esp))
   | Label       loc.prettyS   = label @name
-  | Smart       loc.prettyS   = error "Statement_Smart found while generating C"
+  | Smart       loc.prettyS   = error "Statement_Smart found while generating S"
 
 
 
@@ -306,7 +306,7 @@ SEM Constant
                 lhs.value      =   @value
   | Alias       lhs.loadInA    =   instruction2 "movl" (immediate @loc.value) (text eax)
                 loc.value      =   Map.findWithDefault 9999 @name @lhs.constantMap
-  | LiteralStr  lhs.loadInA    =   error "loadInA of LiteralString"
+  | LiteralStr  lhs.loadInA    =   instruction2 "movl" (immediate @value) (text eax)  -- TODO: generate EQU for literal string
                 lhs.value      =   error "value of LiteralString"
 
 SEM Variable

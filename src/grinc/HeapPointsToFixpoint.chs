@@ -112,7 +112,7 @@ envChanges equat env heap
     where
     absSelect av i t
      = case av of
-         AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
+         AbsNodes  ns  -> maybe AbsBottom (\xs -> if i<length xs then xs!!i else error "cannot analyze FFI's returning non-nullary constructors") (Map.lookup t ns)
          AbsBottom     -> av
          AbsError _    -> av
          _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)

@@ -220,7 +220,7 @@ SEM GrExpr
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.var2id @src) (findNewVar @lhs.var2id @dst)
   | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch       lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
-  | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm (map (findNewVar @lhs.var2id) @argL) @tagL.grTrf
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm @argL.grTrf @tagL.grTrf
 
 SEM GrTag
   | Con Fun PApp App

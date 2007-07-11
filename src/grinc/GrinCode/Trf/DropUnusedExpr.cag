@@ -56,7 +56,7 @@ SEM GrVal
   | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
 
 SEM GrExpr
-  | FFI     lhs   .  usedVars  =  foldr Set.insert @lhs.usedVars @argL
+  | FFI     lhs   .  usedVars  =  @argL.usedVars
   | App     argL  .  usedVars  =  Set.insert @nm @lhs.usedVars
   | Eval    lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
   | FetchNode  lhs.  usedVars  =  Set.insert @nm @lhs.usedVars

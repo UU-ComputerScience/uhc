@@ -70,7 +70,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 					<$  pKey "fetchupdate"  <*> pGrNm   <*>  pGrNm
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
-                <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pGrNmL
+                <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pValL
                                                             <*> pCurly_pSemics pTag
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
