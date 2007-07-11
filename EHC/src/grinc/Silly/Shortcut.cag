@@ -46,6 +46,7 @@ ATTR Value Values [ env : {Map.Map Variable Value} | | ]
 
 ATTR Value Variable [ | | isSimple : {Bool} ]
 ATTR       Variable [ | | isVerySimple : {Bool} ]
+ATTR Value          [ | | isntCall : {Bool} ]
 
 
 SEM Function
@@ -70,9 +71,10 @@ SEM Variable
   | Unembedded  lhs.useMap  =  Map.adjust (+1) @loc.trf @lhs.useMap
 
 SEM Statement
-  | Assignment  (lhs.trf, lhs.env)  =  if virtualizable (Map.lookup @dest.self @lhs.allDefMap)
-                                                        (Map.lookup @dest.self @lhs.allUseMap)
-                                                        @source.isSimple
+  | Assignment  (lhs.trf, lhs.env)  =  if @source.isntCall
+                                          && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
+                                                           (Map.lookup @dest.self @lhs.allUseMap)
+                                                           @source.isSimple
                                         then ( Statement_Comment [" (inlined)"]  --  ++ show @source.trf ]
                                              , Map.insert @dest.self @source.trf @lhs.env 
                                              )
@@ -95,6 +97,9 @@ SEM Value
   | Alloc         lhs.isSimple  =  False
   | Var           lhs.isSimple  =  @var.isSimple
   | * - Alloc Var lhs.isSimple  =  True
+  
+  | Call          lhs.isntCall  =  False
+  | * - Call      lhs.isntCall  =  True
 
                                   
 %%]

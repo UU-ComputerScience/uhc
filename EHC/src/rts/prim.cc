@@ -2,21 +2,19 @@
 #include "rts.h"
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Test primitive
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-PRIM int primXXXInt(int x, int y, int z)
-{   return x+y+z;
-}
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Int related primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+
+
+PRIM int primNegateInt(int x)
+{
+	return -x;	
+}
+
 PRIM int primAddInt(int x, int y)
 {   
 	//printf("add %d %d\n", x, y );
@@ -48,21 +46,15 @@ PRIM int primModInt(int x, int y)
 }
 %%]
 
-%%[8
-/* In the following 3 functions, only the constructor of Bool is returned.
-
-   The arity of the constructor should also be returned, but we can return only one value.
-   So, the arity will obtain a random value.
-   Luckily, the arity is never used anywhere.
-   (So I wonder why it is stored at all!)
-*/
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ord Int related primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+
+/* The Boolean functions below only return the constructor */
+
+
 PRIM int primGtInt(int x, int y)
 {   if (x>y)
     { //  printf ("%d is groter dan %d\n", x, y );
@@ -98,7 +90,7 @@ PRIM int primEqInt(int x, int y)
 {
 	 //printf("eq %d %d\n", x, y );
 	
-	   if (x==y)
+    if (x==y)
         return ((Pointer)global_True)[0];
     return ((Pointer)global_False)[0];
 }
@@ -109,7 +101,7 @@ PRIM int primNeInt(int x, int y)
 {
 	 //printf("neq %d %d\n", x, y );
 	
-	   if (x!=y)
+    if (x!=y)
         return ((Pointer)global_True)[0];
     return ((Pointer)global_False)[0];
 }
@@ -130,5 +122,43 @@ PRIM int primUndefined()
     gb_exit(1);
     return 0;
 }
+
+PRIM int primOrd(int x)
+{
+	return x;	
+}
+
+PRIM int primChr(int x)
+{
+	return x;	
+}
+
+PRIM int primOdd(int x)
+{
+    if (x&1)
+        return ((Pointer)global_True)[0];
+    return ((Pointer)global_False)[0];
+}
+
+
+PRIM GrWord primPackedStringNull(GrWord s)
+{
+	if (*  ((char*)s) )	
+    	return ((Pointer)global_False)[0];	
+    return ((Pointer)global_True)[0];
+}
+
+PRIM GrWord primPackedStringTail(GrWord s)
+{
+	return  (GrWord)(((char*)s)+1);
+}
+
+PRIM GrWord primPackedStringHead(GrWord s)
+{
+	return (GrWord)(*((char*)s));
+}
+
+
+
 
 %%]

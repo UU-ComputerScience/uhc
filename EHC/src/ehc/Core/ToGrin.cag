@@ -566,13 +566,14 @@ SEM CBind
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = @isUnboxed resTyNm
                                                      resTagL
-                                                       = case dataGamTagsOfTy @resTy @lhs.dataGam of
-                                                           Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
-                                                                               [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
-                                                           _ | resIsUnboxed -> -- Result type is one of the unboxable types Int, Char, PackedString
-                                                                               [ GrTag_Unboxed ]
-                                                             | otherwise    -> -- Result type is any other type
-                                                                               [ GrTag_Any ]
+                                                       = if resIsUnboxed
+                                                         then -- Result type is one of the unboxable types Int, Char, PackedString
+                                                              [ GrTag_Unboxed ]
+                                                         else case dataGamTagsOfTy @resTy @lhs.dataGam of
+                                                                Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
+                                                                                    [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                                _                -> -- Result type is any other type (TODO: is this possible? or can this case be removed?)
+                                                                                    [ GrTag_Any ]
                                                      mkRes v
                                                        = if resIsUnboxed
                                                          then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
@@ -585,7 +586,7 @@ SEM CBind
                                                        = GrExpr_Seq (if needEval then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n)) p
 %%]]
                                                 in   [GrBind_Bind @nm @nmArgL
-                                                        (foldr mkEval (mkRes @nmRes (GrExpr_FFI @impEnt @nmArgPatL resTagL))
+                                                        (foldr mkEval (mkRes @nmRes (GrExpr_FFI @impEnt (map GrVal_Var @nmArgPatL) resTagL))
 %%[[8
                                                         $ zip @nmArgL
 %%][96

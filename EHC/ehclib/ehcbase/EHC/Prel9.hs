@@ -69,7 +69,11 @@ asTypeOf       :: a -> a -> a
 asTypeOf        = const
 
 data PackedString
-foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+-- foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
+foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
+foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
+
 error :: [Char] -> a
 error s = undefined
 undefined :: forall a . a

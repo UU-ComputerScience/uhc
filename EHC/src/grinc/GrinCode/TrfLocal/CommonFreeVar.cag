@@ -18,7 +18,7 @@ SEM GrExpr
   | Seq         loc         .   gathBodyFviMp   =   @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
                             .   gathFviMp       =   fviMpUnions [@expr.gathFviMp, @gathBodyFviMp]
   | Call App    loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton' FvUse_Call @nm, @argL.gathFviMp]
-  | FFI         loc         .   gathFviMp       =   fviMpFromList @argL
+  | FFI         loc         .   gathFviMp       =   @argL.gathFviMp
   | Eval FetchNode FetchField Throw
                 loc         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
   | FetchUpdate loc         .   gathFviMp       =   fviMpFromList [@src,@dst]

@@ -128,7 +128,7 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation(..), Limitations)
+%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation, Limitations)
 
 data Equation
   = IsKnown               Variable  AbstractValue

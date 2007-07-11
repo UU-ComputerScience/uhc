@@ -527,6 +527,35 @@ PRIM GB_Word gb_primCharIsLower( GB_Int x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+
+PRIM GB_Word gb_primPackedStringNull( char *s )
+{
+	if ( *s )
+		return Cast(GB_Word,gb_False) ;
+  	return Cast(GB_Word,gb_True) ;
+}
+
+PRIM GB_Word gb_primPackedStringTail( char *s )
+{
+  	return Cast(GB_Word,s+1) ;
+}
+
+PRIM GB_Word gb_primPackedStringHead( char *s )
+{
+  	return Cast(GB_Word,*s) ;
+}
+
+%%]
+
+
+
+/* Old implementation of packedStringToString
+   deprecated because it allocates cells, and introduces a new thunk tag,
+   which is not possible in the Grin Compiler.
+   In order to make BC an GrinC use the same prelude, we replaced
+   the PackedString handling by the functions above
+*/
+
 GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
@@ -546,7 +575,13 @@ PRIM GB_NodePtr gb_primCStringToString( char* s )
 {
   	return gb_primCStringToString1Char( s, GB_Int0 ) ;
 }
-%%]
+
+
+
+
+
+
+
 
 In the following function GB_List_Iterate causes a Bus error when:
   - compiled on MacIntel, gcc 4.01

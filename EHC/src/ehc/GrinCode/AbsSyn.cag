@@ -56,7 +56,7 @@ DATA GrExpr
   | Call        nm              : {HsName}
                 argL            : GrValL
   | FFI         nm              : {String}
-                argL            : {[HsName]}
+                argL            : GrValL
                 tagL            : GrTagL
   | Eval        nm              : {HsName}
   | App         nm              : {HsName}
