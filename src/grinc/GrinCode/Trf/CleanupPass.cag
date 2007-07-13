@@ -48,11 +48,11 @@ Also, replace F-Tags for constructorfunctions by C-tags
 
 SEM GrTag
   | Fun  lhs . grTrf = if   hsnIsConstructorName @nm
-                       then GrTag_Con emptyGrTagAnn 99 @nm  -- (error ("cleaned F-tag " ++ show @nm)) @nm
+                       then GrTag_Con emptyGrTagAnn 0 @nm  -- TODO: replace 0 by real tag number
                        else @loc.grTrf
   | PApp lhs . grTrf = if   @needs==0 
                        then (if   hsnIsConstructorName @nm
-                             then GrTag_Con emptyGrTagAnn 99 @nm  -- (error ("cleaned P0-tag " ++ show @nm)) @nm
+                             then GrTag_Con emptyGrTagAnn 0 @nm  -- TODO: replace 0 by real tag number
                              else GrTag_Fun @nm
                             )
                        else @loc.grTrf

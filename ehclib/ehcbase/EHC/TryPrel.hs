@@ -809,6 +809,11 @@ foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> 
 foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
 foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
 
+packedStringToString :: PackedString -> [Char]
+packedStringToString p = if packedStringNull p 
+                          then []
+                          else packedStringHead p : packedStringToString (packedStringTail p)
+
 foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
 
 -- ByteArray -----------------------------------------------------

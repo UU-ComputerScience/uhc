@@ -151,6 +151,7 @@ stringAlphanumeric s
 
 %%[8
 charAlphanumeric :: Char -> String
+charAlphanumeric '\'' = "prime"
 charAlphanumeric ':' = "colon"
 charAlphanumeric '!' = "exclam"
 charAlphanumeric '@' = "at"

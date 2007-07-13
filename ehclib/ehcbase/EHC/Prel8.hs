@@ -88,6 +88,11 @@ foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> 
 foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
 foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
 
+packedStringToString :: PackedString -> [Char]
+packedStringToString p = if packedStringNull p 
+                          then []
+                          else packedStringHead p : packedStringToString (packedStringTail p)
+
 error :: [Char] -> a
 error s = undefined
 undefined :: forall a . a
@@ -128,13 +133,13 @@ until p f x     = if p x then x else until p f (f x)
 
 length           :: [a] -> Int
 length            = foldl' (\n _ -> n + 1) 0
-
+{-
 (!!)             :: [a] -> Int -> a
 xs     !! n | n<0 = error "Prelude.!!: negative index"
 []     !! _       = error "Prelude.!!: index too large"
 (x:_)  !! 0       = x
 (_:xs) !! n       = xs !! (n-1)
-
+-}
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
 foldl' f a (x:xs) = (foldl' f $! f a x) xs
@@ -314,4 +319,4 @@ either              :: (a -> c) -> (b -> c) -> Either a b -> c
 either l r (Left x)  = l x
 either l r (Right y) = r y
 
-
+main = until (>5) (+1) 0 -- length "hallo!"
