@@ -44,7 +44,8 @@
 %%]
 
 %%[8 ag import({GrinCode/AbsSyn})
-DERIVING *     : Show, Eq
+DERIVING * - GrTag    : Show, Eq
+DERIVING GrTag        : Show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,6 +68,20 @@ data GrTagAnn
       { gtannArity 		:: !Int
       , gtannMaxArity 	:: !Int
       }
+
+instance Eq GrTag where
+  GrTag_Con _ _ x1 == GrTag_Con _ _ x2 = x1==x2
+  GrTag_Fun     x1 == GrTag_Fun     x2 = x1==x2
+  GrTag_App     x1 == GrTag_App     x2 = x1==x2
+  GrTag_PApp n1 x1 == GrTag_PApp n2 x2 = n1==n2 && x1==x2
+  GrTag_Unboxed    == GrTag_Unboxed    = True
+  GrTag_Hole       == GrTag_Hole       = True
+  GrTag_Rec        == GrTag_Rec        = True
+  GrTag_World      == GrTag_World      = True
+  GrTag_Any        == GrTag_Any        = True
+  _                == _                = False
+  
+
 
 instance Eq GrTagAnn where
   x == y = True

@@ -61,6 +61,11 @@ varCanbeUnboxed hptMap (HNmNr n _)
                         [tag] -> tagCanbeUnboxed hptMap tag
                         _     -> False
       _           -> False
+      
+valCanbeUnboxed :: HptMap -> GrVal -> Bool
+valCanbeUnboxed hptMap (GrVal_Var v) = varCanbeUnboxed hptMap v
+valCanbeUnboxed hptMap (GrVal_Tag t) = tagCanbeUnboxed hptMap t
+valCanbeUnboxed hptMap val           = error ("Unbox2: valCanbeUnboxed unexpected case" ++ show val)
 
 %%]
 
@@ -70,6 +75,7 @@ varCanbeUnboxed hptMap (HNmNr n _)
 SEM GrVarL [ | | headCanbeUnboxed : {Bool} ]
   | Nil lhs. headCanbeUnboxed = False
   | Cons lhs.headCanbeUnboxed = @hd.varCanbeUnboxed
+  
 SEM GrVar [ | | varCanbeUnboxed : {Bool} ]
   | KnownTag  lhs.varCanbeUnboxed = tagCanbeUnboxed @lhs.hptMap @tag.trf
   | Var       lhs.varCanbeUnboxed = varCanbeUnboxed @lhs.hptMap @nm
@@ -89,7 +95,7 @@ SEM GrVal
   | Node     lhs . trf  =  if tagCanbeUnboxed @lhs.hptMap @tag.trf
                             then GrVal_Node GrTag_Unboxed @fldL.trf
                             else @trf
-  | VarNode  lhs . trf  =  if varCanbeUnboxed @lhs.hptMap ((\(GrVal_Var v)->v) (head @fldL.trf))
+  | VarNode  lhs . trf  =  if valCanbeUnboxed @lhs.hptMap (head @fldL.trf)
                             then GrVal_Node GrTag_Unboxed (tail @fldL.trf)
                             else @trf
                             
@@ -100,8 +106,4 @@ SEM GrExpr
                                         else @trf
                                  )
                                  @mbTag                            
-                            
-                            
-                            
-                            
 %%]

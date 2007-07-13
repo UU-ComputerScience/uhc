@@ -73,6 +73,11 @@ foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> 
 foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
 foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
 
+packedStringToString :: PackedString -> [Char]
+packedStringToString p = if packedStringNull p 
+                          then []
+                          else packedStringHead p : packedStringToString (packedStringTail p)
+
 error :: [Char] -> a
 error s = undefined
 undefined :: forall a . a
@@ -637,3 +642,6 @@ showException tag msg =
   showString tag . (if null msg then id else showString ": " . showString msg)
 
 data ExitCode = ExitSuccess | ExitFailure Int
+
+main = length "hallo!"
+

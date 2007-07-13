@@ -1,4 +1,6 @@
-When the body of a binding ends with a pointer, add a Fetch expression to make sure it reutrns a node
+Make sure a Bind always returns a node (not a pointer)
+Also, make sure that a Case always scrutinizes a node.
+If not, add an extra Fetch to fetch the contents of a pointer.
 
 %%[0
 %include lhs2TeX.fmt
@@ -29,29 +31,74 @@ addFetch (code,unique)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]
 
+
+ATTR GrExpr  [ | | selfAsNode: GrExpr ]
+ATTR GrAlt   [ | | selfAsNode: GrAlt  ]
+ATTR GrAltL  [ | | selfAsNode: GrAltL ]
+
+
 ATTR GrAGItf GrModule AllBind AllGrExpr [ | unique: Int | ]
 %%]
 
 %%[8
 
 SEM GrBind
-  | Bind   (lhs.grTrf, lhs.unique) = if @expr.isNode
-                                     then (@loc.grTrf, @expr.unique)
-                                     else (GrBind_Bind @nm @argNmL @loc.newExpr, @expr.unique+1)
-           loc.newExpr             = GrExpr_Seq @expr.grTrf @loc.newPat (GrExpr_FetchNode @loc.newVar)
-           loc.newVar              = HNmNr @expr.unique Nothing
-           loc.newPat              = GrPatLam_Var @loc.newVar
+  | Bind   lhs.grTrf               = GrBind_Bind @nm @argNmL @expr.selfAsNode
+
 
 SEM GrExpr
-  | Case   (lhs.grTrf, lhs.unique) = if @val.isNode
+  | Seq    lhs.selfAsNode          = GrExpr_Seq (if @expr.isNode then @expr.selfAsNode else @expr.grTrf)   -- if @expr claims to be a node, make sure it indeed is so (in Case expressions, some of the branches may not yet be)
+                                                @pat.grTrf 
+                                                @body.selfAsNode
+  
+  | Store  lhs.selfAsNode          = GrExpr_Unit @val.grTrf
+
+  | Case   (lhs.selfAsNode, lhs.grTrf, lhs.unique)          
+                                   = if @val.isNode
+                                     then (GrExpr_Case @val.grTrf @altL.selfAsNode
+                                          ,@loc.grTrf
+                                          ,@altL.unique
+                                          )
+                                     else (GrExpr_Seq (GrExpr_FetchNode @val.getName) @loc.newPat (GrExpr_Case @loc.newVal @altL.selfAsNode)
+                                          ,GrExpr_Seq (GrExpr_FetchNode @val.getName) @loc.newPat (GrExpr_Case @loc.newVal @altL.grTrf)
+                                          ,@altL.unique+1
+                                          )
+           loc.newVal              = GrVal_Var @loc.newVar
+           loc.newVar              = HNmNr @altL.unique Nothing
+           loc.newPat              = GrPatLam_Var @loc.newVar
+  
+  | Unit
+    UpdateUnit
+           (lhs.selfAsNode, lhs.unique)
+                                   = if @val.isNode
                                      then (@loc.grTrf, @lhs.unique)
                                      else (@loc.newExpr, @lhs.unique+1)
-           loc.newExpr             = GrExpr_Seq (GrExpr_FetchNode @val.getName) @loc.newPat (GrExpr_Case @loc.newVal @altL.grTrf)
+  | FetchField
+           lhs.selfAsNode          = @loc.newExpr
+           lhs.unique              = @lhs.unique+1
+
+  | Unit                                     
+    UpdateUnit
+    FetchField
+           loc.newExpr             = GrExpr_Seq @loc.grTrf @loc.newPat (GrExpr_FetchNode @loc.newVar)
            loc.newVar              = HNmNr @lhs.unique Nothing
-           loc.newVal              = GrVal_Var @loc.newVar
            loc.newPat              = GrPatLam_Var @loc.newVar
+  | FetchNode
+    FetchUpdate
+    Call
+    FFI
+    Eval
+    App
+    Throw
+    Catch  lhs.selfAsNode          = @loc.grTrf                       
+                                     
+  
+SEM GrAlt
+  | Alt    lhs.selfAsNode          = GrAlt_Alt @pat.grTrf @expr.selfAsNode
 
-
+SEM GrAltL
+  | Nil    lhs.selfAsNode          = []
+  | Cons   lhs.selfAsNode          = @hd.selfAsNode : @tl.selfAsNode
 
 
 
@@ -74,11 +121,12 @@ SEM GrExpr
   | Catch        lhs.isNode = True
 
 SEM GrAltL
-  | Nil          lhs.isNode = True
-  | Cons         lhs.isNode = @hd.isNode && @tl.isNode
+  | Nil          lhs.isNode = False
+  | Cons         lhs.isNode = @hd.isNode || @tl.isNode
   
 SEM GrAlt
   | Alt          lhs.isNode = @expr.isNode
+
 
 SEM GrVal
   | Empty
@@ -91,7 +139,7 @@ SEM GrVal
     NodeAdapt    
 %%]]
                  lhs.isNode = True
-  | Var          lhs.isNode = fromJust (Map.lookup @nm @lhs.env)
+  | Var          lhs.isNode = maybe (error ("AddFetch: " ++ show @nm ++ " not found in " ++ show @lhs.env)) id (Map.lookup @nm @lhs.env)
 
 SEM GrBind
   | Bind         expr.env   = Map.empty

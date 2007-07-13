@@ -118,6 +118,11 @@ envChanges equat env heap
          _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)
          
     
+    -- an additional occur check for analysing functions like "until" in finite time
+    replaceByBot av1 av2
+      | av1==av2  =  AbsBottom
+      | otherwise =  av2
+    
     --absDeref :: AbstractValue -> ST s AbstractValue  
     absDeref av
       = case av of
@@ -126,7 +131,7 @@ envChanges equat env heap
                                    xs = map (filterTaggedNodes isFinalTag) vs
                              ; let ys :: [[AbstractValue]]
                                    ys = concat (map getApplyNodesParameters vs)
-                             ; ws <- mapM absApply ys
+                             ; ws <- mapM absApply ((map (map (replaceByBot av)) ys))
                              ; return (mconcat (xs++ws))
                              }
           AbsBottom   ->  return av
@@ -145,7 +150,7 @@ envChanges equat env heap
       = do { ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
            ; let (sfxs,avs) = unzip ts
            ; return (concat sfxs, mconcat avs)
-      	   }
+           }
       where addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
               = do { let n        = length args
                          newtag   = GrTag_PApp (needs-n) nm
@@ -174,7 +179,7 @@ fixpoint eqs1 eqs2 proc1 proc2
         ; let doStep2 b i = proc2 i >>= return . (b||)
         ; changes1 <- foldM doStep1 False eqs1
         ; changes2 <- foldM doStep2 False eqs2
-        ; if    changes1 || changes2
+        ; if    (changes1 || changes2) && count<100
           then  countFixpoint (count+1)
           else  return count
         }
@@ -195,7 +200,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
        -- ; trace (unlines ("HEAPEQUATIONS" : map show eqs2)) $ return ()
        -- ; trace (unlines ("LIMITATIONS"   : map show lims)) $ return ()
 
-   	    -- create arrays
+       -- create arrays
        ; env     <- newArray (0, lenEnv   - 1) AbsBottom
        ; heap    <- newArray (0, lenHeap  - 1) AbsBottom
 
@@ -260,26 +265,30 @@ limit env heap ts (AbsNodes ns)
             validTag (t@(GrTag_Fun (HNmNr f _)) , _)
               = do { ans <- readArray env f
                    ; AbsNodes ns2 <- limit env heap ts ans
-             	   ; return (not (Map.null ns2))
-             	   }
+                   ; return (not (Map.null ns2))
+                   }
             validTag _
               = return True
       ; kvs2 <- filterM validTag kvs
       ; return (AbsNodes (Map.fromList kvs2))
- 	  }
+      }
 
 limit env heap ts (AbsLocs ps)
  = do { let validPtr p
              = do { ans <- readArray heap p
-                  ; AbsNodes ns2 <- limit env heap ts ans
-             	  ; return (not (Map.null ns2))
-             	  }
+                  ; lans <- limit env heap ts ans
+                  ; return (case lans of
+                             AbsNodes ns2 -> (not (Map.null ns2))
+                             --_            -> error ("limit lans is " ++ show lans)
+                             AbsBottom    -> False   -- can happen because of occur check in absDeref
+                           )
+                  }
       ; ps2 <- filterM validPtr (Set.toList ps)
       ; return (AbsLocs (Set.fromList ps2))
- 	  }
+      }
 
 limit env heap ts av
  = do { return av
- 	  }
+      }
 
 %%]
