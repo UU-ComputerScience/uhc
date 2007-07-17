@@ -48,7 +48,7 @@ data AbstractValue
   = AbsBottom
   | AbsBasic
   | AbsTags  (Set.Set GrTag)
-  | AbsLocs  (Set.Set Location)
+  | AbsLocs  (Set.Set Location) (Maybe (Set.Set GrTag))
   | AbsNodes (Map.Map GrTag [AbstractValue])
   | AbsError String
     deriving (Eq, Ord)
@@ -66,9 +66,14 @@ instance Show AbstractValue where
                   AbsBottom   -> "BOT"
                   AbsBasic    -> "BAS"
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
-                  AbsLocs  ls -> "LOCS" ++ show (Set.elems ls)
+                  AbsLocs  ls ml -> "LOCS" ++ show (Set.elems ls) ++ show ml
                   AbsNodes ns -> "NODS" ++ show (Map.assocs ns)
                   AbsError s  -> "ERR: " ++ s
+
+
+limitIntersect (Just a) (Just b) = Just (Set.intersection a b)
+limitIntersect Nothing  b        = b
+limitIntersect a        _        = a
 
 instance Monoid AbstractValue where
     mempty                                  =  AbsBottom
@@ -76,7 +81,7 @@ instance Monoid AbstractValue where
     mappend    AbsBottom    b               =  b
     mappend    AbsBasic        AbsBasic     =  AbsBasic
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
-    mappend   (AbsLocs  al)   (AbsLocs  bl) =  AbsLocs (Set.union al bl)
+    mappend   (AbsLocs  al am)(AbsLocs  bl bm) =  AbsLocs (Set.union al bl) (limitIntersect am bm)
     mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (Map.unionWith (zipWith mappend) an bn)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
@@ -128,7 +133,7 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation, Limitations)
+%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation, Limitations, limitIntersect)
 
 data Equation
   = IsKnown               Variable  AbstractValue
@@ -184,9 +189,19 @@ getEnvVar (ea,_,m) i  | snd (bounds ea) >= i = (ea ! i)
 getHeapLoc :: HptMap -> Int -> AbstractValue
 getHeapLoc (_,ha,_) i = ha ! i  -- ahBaseSet (ha ! i)
 
+
+limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
+limit Nothing v = v
+limit (Just tset) (AbsNodes ns) = AbsNodes (Map.fromList (filter (validTag tset) (Map.toList ns)))
+limit _ v = error ("limit applied to non-Node " ++ show v)
+
+validTag ts (t@(GrTag_Con _ _ _) , _)  = Set.member t ts
+validTag _  _                          = True
+
+
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
-                             AbsLocs l -> mconcat $ map (getHeapLoc a) (Set.toList l)
+                             AbsLocs l m   -> mconcat $ map (limit m . getHeapLoc a) (Set.toList l)
                              AbsBottom     -> AbsNodes Map.empty
                              AbsError s     -> error $ "analysis error: " ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
@@ -205,7 +220,7 @@ getNodes av = case av of
 
 isBottom av = case av of
                   AbsBottom   ->  True
-                  AbsLocs  l  ->  Set.null l
+                  AbsLocs l m ->  Set.null l
                   AbsNodes n  ->  Map.null n
                   AbsError s  ->  error $ "analysis error: " ++ s
                   otherwise   ->  False

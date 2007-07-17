@@ -134,9 +134,9 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
 
 
 
-isEmptyAbsVal AbsBottom    = True
-isEmptyAbsVal (AbsLocs xs) = Set.null xs
-isEmptyAbsVal v            = error $ "wrong content of exception variable of binding " ++ show v
+isEmptyAbsVal AbsBottom      = True
+isEmptyAbsVal (AbsLocs xs m) = Set.null xs
+isEmptyAbsVal v              = error $ "wrong content of exception variable of binding " ++ show v
 
 
 

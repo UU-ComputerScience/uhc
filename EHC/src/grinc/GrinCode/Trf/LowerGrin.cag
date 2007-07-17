@@ -53,18 +53,18 @@ type RenameMap      = [(Int,  [Int])]
 
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], IdentOneToMany)
 newNames hptMap uniq (HNmNr v _) = case getEnvVar hptMap v of
-                                     AbsLocs  _  -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
+                                     AbsLocs _ _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
                                      AbsNodes nl -> let count    = maxNodeSize nl
                                                         newVars  = [uniq .. uniq + count - 1]
                                                     in (uniq + count, map (\n->HNmNr n Nothing) newVars, (v, newVars))
                                      av          -> error ("Newnames: abstract value " ++ show av ++ " for " ++ show v ++ " is not locations or nodes")
 
--- TODO: use arity information in the eval map!
+-- TODO: use arity information in the ctags map!
 maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
 
 isSingleVar :: HptMap -> HsName -> Bool
 isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
-                             AbsLocs _   -> True
+                             AbsLocs _ _ -> True
                              AbsNodes _  -> False
                              AbsBottom   -> error $ "dead variable " ++ show name ++ " node or pointer?"
                              AbsError e  -> error $ "analysis errror: " ++ e

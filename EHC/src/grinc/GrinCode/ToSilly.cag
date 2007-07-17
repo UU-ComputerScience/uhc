@@ -579,12 +579,13 @@ tagConstants1 bs eas
  = let m = Map.fromList bs
        f n ((t,s),k) = let nm = showGrTag t
                        in  maybe (nm,n) (\n2->(nm,n2)) (Map.lookup nm m)
-   in  zipWith f [0..] eas 
+   in  zipWith f [2..] eas 
 
 tagConstants2 :: CTagsMp -> [(String,Int)]
 tagConstants2 cts
- = let f n (nm,ct) = ('C' : hsnShowAlphanumeric (ctagNm ct), n)
-   in  concat (map ((zipWith f [0..]).snd) cts)
+   = []    -- no separate numbering for the constructors of each type
+-- = let f n (nm,ct) = ('C' : hsnShowAlphanumeric (ctagNm ct), n)
+--   in  concat (map ((zipWith f [0..]).snd) cts)
 
 
 showGrTag :: GrTag -> String

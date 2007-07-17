@@ -105,5 +105,19 @@ SEM GrExpr
                                         then GrExpr_FetchField @nm @offset (Just GrTag_Unboxed)
                                         else @trf
                                  )
-                                 @mbTag                            
+                                 @mbTag
+  | Case       lhs . trf = GrExpr_Case @val.trf (skipDuplicUnbox @altL.trf)
+  
+{
+skipDuplicUnbox [] = []	
+skipDuplicUnbox (a@(GrAlt_Alt (GrPatAlt_Tag GrTag_Unboxed) e):as) = a : skipEveryUnbox  as
+skipDuplicUnbox (a                                           :as) = a : skipDuplicUnbox as
+
+skipEveryUnbox  [] = []	
+skipEveryUnbox  (  (GrAlt_Alt (GrPatAlt_Tag GrTag_Unboxed) e):as) =     skipEveryUnbox as
+skipEveryUnbox  (a                                           :as) = a:  skipEveryUnbox as
+}
+  
+  
+  
 %%]
