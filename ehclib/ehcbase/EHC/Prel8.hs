@@ -319,4 +319,5 @@ either              :: (a -> c) -> (b -> c) -> Either a b -> c
 either l r (Left x)  = l x
 either l r (Right y) = r y
 
-main = until (>5) (+1) 0 -- length "hallo!"
+-- main = until (>5) (+1) 0
+main = length "hallo!"

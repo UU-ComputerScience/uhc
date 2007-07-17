@@ -103,7 +103,11 @@ SEM Function
               loc  . paramsTup = zipWith (makeEmbedTupel Variable_Param) [1..] @parameters
 
 SEM Variable
-  | Unembedded      lhs . localsSet = Set.singleton @name
+  | Unembedded      lhs . localsSet = case @name of
+                                       HNmNr n (Just (HNm s)) -> if take 6 s == "global" 
+                                                                  then Set.empty
+                                                                  else Set.singleton @name
+                                       _                      -> Set.singleton @name
 
 SEM Variable
   | Unembedded   lhs.trf = @lhs.embed @name

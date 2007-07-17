@@ -273,7 +273,7 @@ SEM GrExpr
                                   InNode stag snms  -> [ WillStore @lhs.location stag snms ]
                                   _                 -> error "HPT: source of Store should be a node"
            lhs . equations   =  case (@val.valInfo, @lhs.targetInfo) of
-                                  (InNode stag snms, InVar tvar)  -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location))] 
+                                  (InNode stag snms, InVar tvar)  -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location) Nothing)] 
                                   _                               -> error "HPT: destination of Store should be a variable, source a node"
 
 {-
@@ -287,7 +287,7 @@ SEM GrGlobal
                                   _                 -> error "HPT: source of Global should be a node"
            loc . tvar        =  getNr @nm
            lhs . equations   =  case @val.valInfo of
-                                  InNode stag snms  -> [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.location))]
+                                  InNode stag snms  -> [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.location) Nothing)]
                                   _                 -> error "HPT: source of Global should be a node"
 %%]
 
