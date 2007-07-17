@@ -160,7 +160,7 @@ ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
 SEM CBind
   | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
   | FFI         
-                loc         .   argTyLresTy :   ( TyL, Ty )
+                loc         .   argTyLresTy :   {( TyL, Ty )}
                 loc         .   argTyLresTy =   tyArrowArgsRes @ty
                 loc         .   argTyL      :   TyL
                 loc         .   argTyL      =   fst @loc.argTyLresTy
