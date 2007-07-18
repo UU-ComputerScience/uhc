@@ -1,6 +1,15 @@
 This transformation drops all not directly called functions. Because only
-direct calls are counted, this should be used after inlining eval and apply
-calls. (When no hidden function calls exists anymore.)
+direct calls are counted (not the implicit ones through F, P and A thunks), 
+this should be used after inlining eval and apply.
+
+This transformation is almost obsolete, since we do remove unused functions
+in DropUnreachablebindings now, which *can* be applied before inlining,
+because it *does* take F, P and A into account.
+Still, the current transformation can find an occasional unused function
+which depends on the abstract interpretation.
+
+For example, packedStringHead is not needed when a packed string is tranformed
+to a string, but only counted afterwards.
 
 %%[0
 %include lhs2TeX.fmt
@@ -64,7 +73,7 @@ SEM GrExpr
 SEM GrModule
   | Mod  loc  .  nodes  = @bindL.nodes []
               .  graph  = let buildNode prev outlist = Map.keys outlist
-                          in accumArray buildNode undefined (@bindL.smallest, @bindL.biggest) @nodes
+                          in accumArray buildNode undefined (@bindL.smallest, @bindL.biggest) @loc.nodes
 %%]
 
 %%[8.dropUnusedBindings
@@ -72,7 +81,8 @@ ATTR AllBind [ lifeBindings: {Set.Set Int} | | ]
 
 SEM GrModule
   | Mod  loc   . entry         =  mainNr
-               . lifeBindings  =  Set.fromList $ reachable @graph (getNr @loc.entry)
+               . lifeBindingL  =  reachable @graph (getNr @loc.entry)
+               . lifeBindings  =  Set.fromList @loc.lifeBindingL
          
 SEM GrBind [ | | dropBinding: Bool ]
   | Bind  lhs  . dropBinding  =  not (@bindNr `Set.member` @lhs.lifeBindings)

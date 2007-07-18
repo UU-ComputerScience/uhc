@@ -59,6 +59,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropUnusedBindings})
 %%]
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.NormForHPT})
 %%]
 %%[8 import({%{GRIN}GrinCode.PointsToAnalysis})
@@ -147,6 +149,8 @@ caAnalyse = task_ VerboseNormal                     "Analyzing"
          ; caWriteGrin           True               "21-normalized"
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin           True               "22-unskewed"
+         ; transformCode         dropUnreachableBindings "Dropping unreachable bindings"
+         ; caWriteGrin           True               "23-reachable"
          ; caHeapPointsTo
          ; caWriteGrin           True               "29-analyzed"
          }

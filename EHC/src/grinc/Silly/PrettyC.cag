@@ -70,7 +70,6 @@ ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
                                 >-< comment ["Tag constants"]
-                                >-< constantDefinition ("UNBOXED",1)
                                 >-< ppVertically (map constantDefinition @constants)
                                 >-< text ""
                                 >-< comment ["Global table"]

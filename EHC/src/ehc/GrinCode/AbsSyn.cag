@@ -157,14 +157,22 @@ SET AllDef      =   AllGlobal AllBind
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
 SET AllGrTag    =   GrTag GrTagL
-SET AllGrVal    =   GrVal GrValL
-SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
 SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
+%%[[10
+SET AllAdapt    =   GrAdapt GrAdaptL
+SET AllSplit    =   GrSplit GrSplitL
+%%]]
 SET AllWithName =   AllExpr
 %%[[10
                     AllAdapt AllSplit
-SET AllAdapt    =   GrAdapt GrAdaptL
-SET AllSplit    =   GrSplit GrSplitL
+%%]]
+SET AllGrVal    =   GrVal GrValL
+%%[[10
+                    AllAdapt
+%%]]
+SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
+%%[[10
+                    AllSplit
 %%]]
 SET AllNTNoMod  =   AllWithName AllGlobal AllBind
 SET AllNT       =   GrModule AllNTNoMod

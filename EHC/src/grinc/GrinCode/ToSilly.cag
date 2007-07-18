@@ -6,7 +6,7 @@
 %%[8 hs module {%{GRIN}GrinCode.ToSilly} export(grin2silly)
 %%]
 
-%%[8 hs import(EH.Util.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Config})
+%%[8 hs import(EH.Util.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List((\\)), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Config})
 %%]
 %%[8 hs import({%{GRIN}Silly})
 %%]
@@ -157,7 +157,7 @@ SEM GrBind
 %%[8
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagConstants1 (tagConstants2 @ctagsMp) @evalTagMp)    -- constants
+                                (tagConstants @evalTagMp)   -- constants
                                 @globalL.names              -- variables
                                 ( Function_Function (HNm "initialize") False [] []
                                                     ( @globalL.initStats
@@ -574,19 +574,12 @@ arrayValue a i = Value_Var (Variable_Subs a i)
 arrayVariab :: Variable -> Int -> Variable
 arrayVariab a i = Variable_Subs a i
 
-tagConstants1 :: [(String,Int)] -> EvApTagMp -> [(String,Int)]
-tagConstants1 bs eas
- = let m = Map.fromList bs
-       f n ((t,s),k) = let nm = showGrTag t
-                       in  maybe (nm,n) (\n2->(nm,n2)) (Map.lookup nm m)
-   in  zipWith f [2..] eas 
-
-tagConstants2 :: CTagsMp -> [(String,Int)]
-tagConstants2 cts
-   = []    -- no separate numbering for the constructors of each type
--- = let f n (nm,ct) = ('C' : hsnShowAlphanumeric (ctagNm ct), n)
---   in  concat (map ((zipWith f [0..]).snd) cts)
-
+tagConstants :: EvApTagMp -> [(String,Int)]
+tagConstants eas
+ = let f ((t,s),k) = showGrTag t
+       needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "CEQ", "CGT", "CLT" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
+       inprog = map f eas
+   in  zip (needed ++ (inprog \\ needed)) [0..]
 
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumeric nm
