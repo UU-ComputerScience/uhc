@@ -9,7 +9,7 @@ This is done if the tag is statically known, because either
 1. x is a constant tag
 2. hpt analysis reveals that the list of possible tags for n is singleton
 
-Otherwise, all but the first fetchfield operations is right hoisted to the branch of a case expression
+Otherwise, all but the first fetchfield operations are right hoisted to the branch of a case expression
 where the tag *is* known.
 We assume that such a case expression follows, because the fetchnode would be illegal otherwise.
 Thus,
@@ -63,7 +63,7 @@ addHptItems renList hptMap
 ATTR GrAGItf [  hptMap: HptMap | uniq: Int | grTrf: GrModule ]
 ATTR AllNT [  hptMap: HptMap | uniq: Int | grTrf: SELF ]
 
-ATTR AllWithName [ renameMap: RenMap  | | ]
+ATTR AllExpr [ renameMap: RenMap  | | ]
 ATTR AllGrExpr AllBind GrModule GrAGItf [ | | newVars USE {++} {[]} : {RenList}  ]
 
 SEM GrGlobal

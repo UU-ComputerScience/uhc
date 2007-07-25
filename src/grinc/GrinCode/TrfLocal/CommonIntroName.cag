@@ -21,8 +21,6 @@ SEM GrVar
 %%]
 
 %%[10
-ATTR AllSplit [ | | introNmL USE {++} {[]}: {[HsName]} ]
-
 SEM GrSplit
   | Sel         lhs         .   introNmL        =   [@nm]
 %%]
