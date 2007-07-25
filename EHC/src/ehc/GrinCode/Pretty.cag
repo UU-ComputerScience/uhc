@@ -78,7 +78,7 @@ instance PPForHI GrExpr where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllWithName [ ppGrNm: PPGrNm | | ]
+ATTR AllExpr [ ppGrNm: PPGrNm | | ]
 
 SEM GrBind
   | Bind        loc         .   ppGrNm      =   cfgppHsName CfgPP_Grin

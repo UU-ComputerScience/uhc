@@ -243,6 +243,8 @@ ATTR AllGrVal [ | | asNmL USE {++} {[]}: {[Maybe HsName]} ]
 SEM GrVal
   | Var         lhs         .   asNmL           =   [Just @nm]
   | * - Var     lhs         .   asNmL           =   [Nothing]
+  
+-- TODO: How to handle NodeAdapt?
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

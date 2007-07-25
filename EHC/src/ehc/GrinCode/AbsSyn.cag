@@ -162,10 +162,6 @@ SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
 SET AllAdapt    =   GrAdapt GrAdaptL
 SET AllSplit    =   GrSplit GrSplitL
 %%]]
-SET AllWithName =   AllExpr
-%%[[10
-                    AllAdapt AllSplit
-%%]]
 SET AllGrVal    =   GrVal GrValL
 %%[[10
                     AllAdapt
@@ -174,6 +170,6 @@ SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
 %%[[10
                     AllSplit
 %%]]
-SET AllNTNoMod  =   AllWithName AllGlobal AllBind
+SET AllNTNoMod  =   AllExpr AllGlobal AllBind
 SET AllNT       =   GrModule AllNTNoMod
 %%]

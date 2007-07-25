@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllWithName AllGrVal AllGrPat [ nmAliasMp: NmAliasMp | | ]
+ATTR AllExpr [ nmAliasMp: NmAliasMp | | ]
 
 SEM GrBind
   | Bind        expr        .   nmAliasMp       =   Map.empty

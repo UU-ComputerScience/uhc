@@ -75,9 +75,6 @@ SEM GrModule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Clone
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[10
-ATTR AllAdapt AllSplit [ | | self: SELF ]
-%%]
 %%[8
 ATTR AllBind [ | | lamGlobL, cafGlobL USE {++} {[]}: {AssocL HsName RunVal} ]
 ATTR AllExpr [ | | self: SELF ]
