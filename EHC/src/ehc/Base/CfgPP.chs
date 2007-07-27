@@ -72,7 +72,7 @@ instance CfgPP CfgPP_HI where
           -> pp i
         _ -> ppHsnNonAlpha hiScanOpts n
 %%]]
-  cfgppConHsName x n            = if n == hsnRowEmpty then hsnORow >#< hsnCRow else cfgppHsName x n
+  cfgppConHsName x n            = {- if n == hsnRowEmpty then hsnORow >#< hsnCRow else -} cfgppHsName x n
   cfgppVarHsName x _ (Just u) _ = cfgppUID x u
   cfgppUID       _ u            = "uid" >#< ppUID' u
   cfgppFollowAST _              = True
