@@ -2,6 +2,12 @@ Make sure a Bind always returns a node (not a pointer)
 Also, make sure that a Case always scrutinizes a node.
 If not, add an extra Fetch to fetch the contents of a pointer.
 
+Contrariwise, the parameters of "Apply" should always be pointers.
+If not, add an extra Store to store the node in a heap location.
+
+TODO: these transformations, particularly the adding of Stores,
+wastes unique numbers, because unique is incremented even if the transformation was not necessary.
+
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -31,13 +37,16 @@ addFetch (code,unique)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]
 
-
 ATTR GrExpr  [ | | selfAsNode: GrExpr ]
 ATTR GrAlt   [ | | selfAsNode: GrAlt  ]
 ATTR GrAltL  [ | | selfAsNode: GrAltL ]
 
+ATTR GrVal   [ | | selfAsPtr:  GrVal  ]
+ATTR GrValL  [ | | selfAsPtr:  GrValL ]
+ATTR AllGrVal[ | | conversion USE {.} {id}: {GrExpr -> GrExpr} ]
 
-ATTR GrAGItf GrModule AllBind AllGrExpr [ | unique: Int | ]
+ATTR GrAGItf GrModule AllBind AllGrExpr AllGrVal [ | unique: Int | ]
+
 %%]
 
 %%[8
@@ -91,6 +100,12 @@ SEM GrExpr
     App
     Throw
     Catch  lhs.selfAsNode          = @loc.grTrf                       
+
+  | App    loc.grTrf               = @argL.conversion (GrExpr_App @nm @argL.selfAsPtr)
+
+
+
+
                                      
   
 SEM GrAlt
@@ -102,7 +117,7 @@ SEM GrAltL
 
 
 
-ATTR AllGrExpr GrVal [ env : {Map.Map HsName Bool} | | isNode : {Bool} ]
+ATTR AllGrExpr AllGrVal [ env : {Map.Map HsName Bool} | | isNode : {Bool} ]
 
 SEM GrExpr
   | Seq          lhs.isNode = @body.isNode
@@ -132,14 +147,39 @@ SEM GrVal
   | Empty
     LitInt
     LitStr
-    Tag          lhs.isNode = False
+    Tag          loc.isNode = False
+                 lhs.selfAsPtr = @loc.grTrf
   | Node
     VarNode
 %%[[10
     NodeAdapt    
 %%]]
-                 lhs.isNode = True
-  | Var          lhs.isNode = maybe (error ("AddFetch: " ++ show @nm ++ " not found in " ++ show @lhs.env)) id (Map.lookup @nm @lhs.env)
+                 loc.isNode = True
+  | Var          loc.isNode = maybe False id (Map.lookup @nm @lhs.env)
+  
+  | Node
+    VarNode
+%%[[10
+    NodeAdapt    
+%%]]
+    Var          (lhs.selfAsPtr,lhs.conversion,lhs.unique) = if @loc.isNode
+                                                             then let newVar = HNmNr @lhs.unique Nothing
+                                                                      newVal = GrVal_Var newVar
+                                                                      newPat = GrPatLam_Var newVar
+                                                                      newExp = GrExpr_Store @loc.grTrf
+                                                                  in  ( newVal
+                                                                      , GrExpr_Seq newExp newPat
+                                                                      , @lhs.unique+1
+                                                                      )
+                                                             else     ( @loc.grTrf
+                                                                      , id
+                                                                      , @lhs.unique
+                                                                      )
+  
+
+SEM GrValL
+  | Nil         lhs.selfAsPtr = []
+  | Cons        lhs.selfAsPtr = @hd.selfAsPtr : @tl.selfAsPtr
 
 SEM GrBind
   | Bind         expr.env   = Map.empty

@@ -359,11 +359,11 @@ SEM GrVal
  | VarNode lhs.values =              @fldL.values
  | Node    lhs.value  = if null @fldL.values
                         then @tag.value
-                        else error "cannot generate value code for non-singleton Node"
+                        else error ("cannot generate value code for non-singleton Node " ++ show @tag.value ++ show @fldL.values)
  | VarNode lhs.value  = let vs = @fldL.values
                         in  if length vs==1
                             then head vs
-                            else error "cannot generate value code for non-singleton VarNode"
+                            else error ("cannot generate value code for non-singleton VarNode " ++ show vs)
  | * - LitInt LitStr Var Tag Node VarNode
            lhs.value  = error "GrVal:other value"
  | * - Node VarNode Var

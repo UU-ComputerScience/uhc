@@ -11,6 +11,10 @@ which depends on the abstract interpretation.
 For example, packedStringHead is not needed when a packed string is tranformed
 to a string, but only counted afterwards.
 
+TODO: This transformation is currently broken, 
+since DropDeadBindings removed functions that are still called
+
+
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -54,7 +58,6 @@ ATTR AllBind            [ | | biggest USE {`max`} {minBound}: Int
                               nodes USE {.} {id}: NodeInfoF
                         ]
 ATTR AllGrExpr          [ | calls: CallInfo | ]
-ATTR AllBind AllGrExpr  [ | | ]
 
 SEM GrBind
   | Bind  loc   .  bindNr    = getNr @nm
@@ -73,7 +76,8 @@ SEM GrExpr
 SEM GrModule
   | Mod  loc  .  nodes  = @bindL.nodes []
               .  graph  = let buildNode prev outlist = Map.keys outlist
-                          in accumArray buildNode undefined (@bindL.smallest, @bindL.biggest) @loc.nodes
+                          in accumArray buildNode [] (@bindL.smallest, @bindL.biggest) @loc.nodes
+                          
 %%]
 
 %%[8.dropUnusedBindings
