@@ -80,12 +80,7 @@ SEM GrAGItf
 %%]
 
 %%[8
-ATTR AllGrVal 
-     AllGrTag 
-%%[[10
-     AllAdapt     
-%%]]
-              [ | | self : SELF ]
+ATTR AllGrVal AllGrTag  [ | | self : SELF ]
 %%]
 
 
@@ -271,10 +266,11 @@ SEM GrExpr
   | Store  lhs . location    =  @lhs.location + 1  
            lhs . heapEqs     =  case @val.valInfo of
                                   InNode stag snms  -> [ WillStore @lhs.location stag snms ]
+                                  InVar  svar       -> [ WillEquate @lhs.location svar ]
                                   _                 -> error "HPT: source of Store should be a node"
-           lhs . equations   =  case (@val.valInfo, @lhs.targetInfo) of
-                                  (InNode stag snms, InVar tvar)  -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location) Nothing)] 
-                                  _                               -> error "HPT: destination of Store should be a variable, source a node"
+           lhs . equations   =  case @lhs.targetInfo of
+                                  InVar tvar        -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location) Nothing)] 
+                                  _                 -> error "HPT: destination of Store should be a variable"
 
 {-
 A global definition is similar to a Store expression
@@ -286,9 +282,7 @@ SEM GrGlobal
                                   InNode stag snms  -> [ WillStore @lhs.location stag snms ]
                                   _                 -> error "HPT: source of Global should be a node"
            loc . tvar        =  getNr @nm
-           lhs . equations   =  case @val.valInfo of
-                                  InNode stag snms  -> [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.location) Nothing)]
-                                  _                 -> error "HPT: source of Global should be a node"
+           lhs . equations   =                         [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.location) Nothing)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%

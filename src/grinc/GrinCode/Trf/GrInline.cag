@@ -43,11 +43,12 @@ buildAlternative
     Int                                                                  ->      -- arity
     EvApTagElt                                                           ->      -- rhsElem
     Int                                                                  ->      -- unique
-    (Int -> [HsName]           -> (Int, [(Int,AbstractValue)], GrExpr))  ->      -- uf
-    (Int -> [HsName] -> HsName -> (Int, [(Int,AbstractValue)], GrExpr))  ->      -- vf
-    (Int -> [HsName] -> GrTag  -> (Int, [(Int,AbstractValue)], GrExpr))  ->      -- tf
+    (Int -> [HsName]           -> (Int, [(Int,AbstractValue)], [AbstractValue], GrExpr))  ->      -- uf
+    (Int -> [HsName] -> HsName -> (Int, [(Int,AbstractValue)], [AbstractValue], GrExpr))  ->      -- vf
+    (Int -> [HsName] -> GrTag  -> (Int, [(Int,AbstractValue)], [AbstractValue], GrExpr))  ->      -- tf
     ( Int                                -- new unique number
     , [(Int, AbstractValue)]             -- entries for HPT
+    , [AbstractValue]
     , GrAlt                              -- code
     )
 
@@ -60,13 +61,14 @@ buildAlternative tag args arity rhsElem unique uf vf tf =
         
         (uniqBody,
          entrBody,
+         avBody,
          codeBody )     = case rhsElem of
-                              EvApTagThrow -> (uniqHead, [], GrExpr_Throw (head patNames))
+                              EvApTagThrow -> (uniqHead, [], [], GrExpr_Throw (head patNames))
                               EvApTagUnit  -> uf uniqHead patNames
                               EvApTagVar f -> vf uniqHead patNames f
                               EvApTagTag t -> tf uniqHead patNames t
 
-    in (uniqBody, entrHead++entrBody, codeHead codeBody)
+    in (uniqBody, entrHead++entrBody, avBody, codeHead codeBody)
 
 
 
@@ -80,6 +82,7 @@ buildEvalAlt
     Int                          ->      -- u
     ( Int                     -- newU
     , [(Int, AbstractValue)]  -- maps
+    , [AbstractValue]
     , GrAlt                   -- code
     )
 
@@ -88,7 +91,7 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
     where
     (arity, rhs) = fromJust' ("tag not found: " ++ show tag ++ " in " ++ show (map fst evalMap)) (lookup tag evalMap)
     tf u args t  = error "no tag at the right hand side of eval map expected"
-    uf u args    = (u, [], GrExpr_Unit (GrVal_Var fetchVar))
+    uf u args    = (u, [], [], GrExpr_Unit (GrVal_Var fetchVar))
     vf u args functVar  
                  = -- process an evalMap entry which represents a function call
                    let 
@@ -129,8 +132,8 @@ buildEvalAlt locatVar fetchVar tag avs evalMap hptMap u
                                               GrExpr_Throw throwVar
                                  handleExpr = GrExpr_Seq eCode catchPat $
                                               GrExpr_Unit catchVal
-                             in  (u+3, [ boundEntry, throwEntry, catchEntry ], handleExpr )
-                        else     (u+1, [ boundEntry ]                        , callExpr   )
+                             in  (u+3, [ boundEntry, throwEntry, catchEntry ], [], handleExpr )
+                        else     (u+1, [ boundEntry ]                        , [], callExpr   )
 
 
 
@@ -171,7 +174,7 @@ evalCode unique evalMap hptMap locatVar
        (uniqFinal, entrFinal, altsFinal)  = foldr makeAlt (uniqStart,entrStart,altsStart) cases
        -- where each case is processed by:
        makeAlt (tag, av) (uniqPrev, entrPrev, altsPrev) 
-                   = let (uniqNext, entrNext, altNext) = buildEvalAlt locatVar fetchVar tag av evalMap hptMap uniqPrev
+                   = let (uniqNext, entrNext, _, altNext) = buildEvalAlt locatVar fetchVar tag av evalMap hptMap uniqPrev
                      in  (uniqNext, entrNext++entrPrev, altNext:altsPrev)
 
        code        = GrExpr_Seq (GrExpr_FetchNode locatVar) fetchPat $
@@ -227,6 +230,7 @@ buildApplyAlt
     Int                          ->      -- u
     ( Int                                -- newU
     , [(Int, AbstractValue)]             -- newHPT
+    , [AbstractValue]
     , GrAlt                              -- alt
     )
 
@@ -236,7 +240,8 @@ buildApplyAlt ((t, a, avL), rhs) appArgs hptMap u
     uf u args   = error "no unit at the right hand side of apply map expected"
     vf u args v = let absVal = getEnvVar hptMap (getNr v)
                   in  ( u
-                      , [(-1, absVal)]
+                      , []
+                      , [absVal]
                       , GrExpr_Call v (map GrVal_Var args ++ appArgs)
                       )
     tf u args t = let val2av v = case v of
@@ -244,7 +249,8 @@ buildApplyAlt ((t, a, avL), rhs) appArgs hptMap u
                                      otherwise   -> AbsBasic
                       absVal = AbsNodes (Map.singleton t (avL ++ map val2av appArgs))
                   in ( u
-                     , [(-1, absVal)]
+                     , []
+                     , [absVal]
                      , GrExpr_Unit (GrVal_Node t (map GrVal_Var args ++ appArgs))
                      )
 
@@ -269,15 +275,13 @@ buildApplyCase
     )
 
 buildApplyCase unique hptMap funVar appArgs nodeList
- =  let makeAlt elem (u, h, l)   = let (u2, h2, alt) = buildApplyAlt elem appArgs hptMap u
-                                   in (u2, h2 ++ h, alt:l)
-        (unique2, hptData, alts) = foldr makeAlt (unique, [], []) nodeList
-        (altAvs, hptDelta)       = partition (\(i, _) -> i == -1) hptData
-        unionAV                  = mconcat (map snd altAvs)
+ =  let makeAlt elem (u, h, e, l)= let (u2, h2, e2, alt) = buildApplyAlt elem appArgs hptMap u
+                                   in (u2, h2 ++ h, e2++e, alt:l)
+        (unique2, hptDelta, altAvs, alts) = foldr makeAlt (unique, [], [], []) nodeList
     in ( unique2
        , hptDelta
        , GrExpr_Case (GrVal_Var funVar) alts
-       , unionAV
+       , mconcat altAvs
        )
 
 applyCodePart
@@ -298,13 +302,11 @@ applyCodePart unique applyMap hptMap nodes appVar appArgs
         getNewTag
           :: GrTag -> (Maybe GrTag, Int, EvApTagElt)
         getNewTag t
-          = case fromJust'
-                  ("tag not found in applyMap: " ++ show t)
-                  (lookup t applyMap)
-              of (a, e@(EvApTagTag  t)) -> (Just t, a, e)
-                 (a, e@(EvApTagVar  v)) -> (Nothing, a, e)
-                 (a,    EvApTagUnit   ) ->  error "unit tag not expected"
-
+          = case lookup t applyMap
+              of Just (a, e@(EvApTagTag  t)) -> (Just t, a, e)
+                 Just (a, e@(EvApTagVar  v)) -> (Nothing, a, e)
+                 Just (a,    EvApTagUnit   ) -> error "unit tag not expected"
+                 Nothing                     -> error ("tag not found in applyMap: " ++ show t)
 
         getElements
           :: [GrTag]              ->                        -- tags
@@ -333,15 +335,15 @@ applyCodePart unique applyMap hptMap nodes appVar appArgs
         hptMap2                              = addEnvVars hptMap hptDelta
         newVar                               = HNmNr unique2 Nothing
 
-    in if null restArgs
-       then (unique2, hptMap2, code)
-       else let (unique3, hptMap3, code2) = applyCodePart (unique2 + 1)
-                                                          applyMap
-                                                          (addEnvVar hptMap2 unique2 resultAV)
-                                                          (filter isPartialApplication $ getNodes resultAV)
-                                                          newVar
-                                                          restArgs
-            in (unique3, hptMap3, GrExpr_Seq code (GrPatLam_Var newVar) code2)
+    in  if null restArgs
+         then (unique2, hptMap2, code)
+         else let (unique3, hptMap3, code2)  = applyCodePart (unique2 + 1)
+                                                             applyMap
+                                                             (addEnvVar hptMap2 unique2 resultAV)
+                                                             (filter isPartialApplication $ getNodes resultAV)
+                                                             newVar
+                                                             restArgs
+              in (unique3, hptMap3, GrExpr_Seq code (GrPatLam_Var newVar) code2)
 
 
 
@@ -357,7 +359,7 @@ applyCode
     )
 
 applyCode unique applyMap hptMap funVar appArgs
- =  let nodes = (getNodes (getEnvVar hptMap (getNr funVar)))
+ =  let nodes = filter isPartialApplication (getNodes (getEnvVar hptMap (getNr funVar)))
     in applyCodePart unique applyMap hptMap nodes funVar appArgs
 
 

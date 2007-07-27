@@ -11,7 +11,9 @@ This is done if the tag is statically known, because either
 
 Otherwise, all but the first fetchfield operations are right hoisted to the branch of a case expression
 where the tag *is* known.
-We assume that such a case expression follows, because the fetchnode would be illegal otherwise.
+
+If such a case expression does not follows, we return a node containing a black hole, as a panic result.
+
 Thus,
    fetchnode n; \(x y z) ->
    case x of
@@ -28,6 +30,7 @@ is replaced by
 Note that y and z are renamed in the respective branches to ensure global unique names.
 Also note that in the C2 branch, less fetchfield expressions are generated because C2
 has lower arity than C1.
+
 
 
 %%[0
@@ -180,7 +183,10 @@ SEM GrExpr
   | Catch  loc  . hasNext      =  False
   | FetchNode FetchField
            loc  .  mbKnownTag  =  checkSingleTag @lhs.hptMap @nm
-                .  knownTag    =  fromJust' ("unknown tag in returning fetch " ++ show @nm ++ " tags can be " ++ show (getNodes (absFetch @lhs.hptMap @nm))) @mbKnownTag
+                .  knownTag    =  case @mbKnownTag of
+                                   Just t  -> t
+                                   Nothing -> GrTag_Hole  -- TODO: is this the right panic result?
+                                              -- error ("unknown tag in returning fetch " ++ show @nm ++ " tags can be " ++ show (getNodes (absFetch @lhs.hptMap @nm))) 
                 .  size        =  nodeSizeTag @knownTag @lhs.nodeSizes
                 .  fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField @nm o @mbKnownTag, o+1)
                                   in take @size $ unfoldr buildFetchInfo 1

@@ -45,6 +45,11 @@ heapChange (WillStore locat tag args) env
        getEnv (Just v)  =  readArray env v
        tagFun (GrTag_Fun nm)  =  Just (getNr nm)
        tagFun _               =  Nothing
+heapChange (WillEquate locat var) env 
+ = do  { absNode         <- readArray env var
+       ; return  (locat, absNode)
+       }
+    
 %%]
 
 %%[8.envChanges
@@ -99,13 +104,12 @@ envChanges equat env heap
                                       }
       IsEvaluation    d v      ev  -> do
                                       {  av <- readArray env v
-                                      ;  res <- absDeref [] av
+                                      ;  res <- absEval av
                                       ;  return [(d,res)]
                                       }
       IsApplication   d vs     ev  -> do 
                                       {  (absFun:absArgs)  <-  mapM (readArray env) vs
-                                      ;  (sfx,res)         <-  absCall absFun absArgs (Just ev)
-                                      -- ;  _ <- trace ("sfx IsApp " ++ show sfx) (return ())
+                                      ;  (sfx,res)         <-  absApply absFun absArgs (Just ev)
                                       ;  return ((d,res):sfx)
                                       }
       
@@ -118,42 +122,39 @@ envChanges equat env heap
          _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)
          
     
-    -- an additional occur check for analysing functions like "until" in finite time
-    replaceByBot av1s av2
-      | av2 `elem` av1s  =  AbsBottom
-      | otherwise        =  av2
-    
-    -- absDeref and absApply are mutually recursive
-    -- they take an additional parameter "occs" which contains all av 
-    -- that have been already been treated by parent incarnations of absDeref.
-    -- these are replaced by Bottom in subsequent calls to absApply
-    
-    --absDeref :: [AbstractValue] -> AbstractValue -> ST s AbstractValue  
-    absDeref occs av
+    --absDeref :: AbstractValue -> ST s AbstractValue  
+    absDeref av
       = case av of
-          AbsLocs ls m -> do { 
-          	                   vs <- mapM (readArray heap) (Set.toList ls)
-          	                 --;  _  <- trace ("absDeref Locs " ++ show ls ++ " = " ++ show vs) (return ())
+          AbsLocs ls m -> do { vs <- mapM (readArray heap) (Set.toList ls)
+                             ; return (mconcat vs)
+                             }
+          _            ->  return av
+
+
+    --absEval :: AbstractValue -> ST s AbstractValue  
+    absEval av
+      = case av of
+          AbsLocs ls m -> do { vs <- mapM (readArray heap) (Set.toList ls)
                              ; let xs :: [AbstractValue]
                                    xs = map (filterTaggedNodes isFinalTag) vs
                              ; let ys :: [[AbstractValue]]
                                    ys = concat (map getApplyNodesParameters vs)
-                             ; ws <- mapM (absApply (av:occs)) ((map (map (replaceByBot occs)) ys))
+                             ; ws <- mapM absAux ys
                              ; return (mconcat (xs++ws))
                              }
           AbsBottom   ->  return av
           AbsError _  ->  return av
           _           ->  return $ AbsError "Variable passed to eval is not a location"
          
-    --absApply :: [AbstractValue] -> [AbstractValue] -> ST s AbstractValue
-    absApply occs avs 
-      = do { (f:args)  <- mapM (absDeref occs) avs
-           ; (_,res)   <- absCall f args Nothing     -- deliberately ignore sfx returned by absCall as they are dereferenced one level to much
+    --absAux :: [AbstractValue] -> ST s AbstractValue
+    absAux avs 
+      = do { (f:args)  <- mapM absDeref avs
+           ; (_,res)   <- absApply f args Nothing     -- deliberately ignore sfx returned by absApply as they are dereferenced one level to much
            ; return res
            }
                                    
-    --absCall :: AbstractValue -> [AbstractValue] -> Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
-    absCall f args mbev
+    --absApply :: AbstractValue -> [AbstractValue] -> Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
+    absApply f args mbev
       = do { ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
            ; let (sfxs,avs) = unzip ts
            ; return (concat sfxs, mconcat avs)
@@ -204,8 +205,9 @@ procChange arr (i,e1) =
       }
 
 
-moniEqua (IsEvaluation d _ _) = d==814
-moniEqua _ = False
+--moniEqua (IsEvaluation d _ _) = d==320
+--moniEqua (IsApplication d _ _) = d==788
+--moniEqua _ = False
 
 solveEquations :: Int -> Int -> Equations -> HeapEquations -> Limitations -> (Int,HptMap)
 solveEquations lenEnv lenHeap eqs1 eqs2 lims =
@@ -221,8 +223,8 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
 
        ; let procEnv equat
                 = do
-                  { _ <- return ()
-                  --; ah <- getAssocs heap
+                  { 
+                  --  ah <- getAssocs heap
                   --; ae  <- getAssocs env
                   --; _ <- trace ("equat " ++ show equat) (return ())
                   --; _ <- (if moniEqua equat then trace (unlines ("SOLUTION"      : map show ae)) else id)  $ return ()
@@ -234,8 +236,8 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
                   }
              procHeap equat
                 = do
-                  { _ <- return ()
-                  -- ; _ <- trace ("hpequ " ++ show equat) (return ())
+                  { 
+                  --   _ <- trace ("hpequ " ++ show equat) (return ())
                   -- ; ah <- getAssocs heap
                   -- ; ae  <- getAssocs env
                   -- ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
@@ -262,8 +264,8 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
 
        ; mapM (procLimit env heap) lims2      
 
-       ; ah <- getAssocs heap
-       ; ae  <- getAssocs env
+       --; ah <- getAssocs heap
+       --; ae  <- getAssocs env
        --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
        --; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
       
@@ -287,7 +289,10 @@ limit env heap ts (AbsNodes ns)
               = return (t `elem` ts)
             validTag (t@(GrTag_Fun (HNmNr f _)) , _)
               = do { ans <- readArray env f
-                   ; AbsNodes ns2 <- limit env heap ts ans
+                   ; ls  <- limit env heap ts ans
+                   ; let ns2 = case ls of
+                                 AbsNodes ns -> ns
+                                 _           -> Map.empty
                    ; return (not (Map.null ns2))
                    }
             validTag _
@@ -302,8 +307,7 @@ limit env heap ts (AbsLocs ps m)
                   ; lans <- limit env heap ts ans
                   ; return (case lans of
                              AbsNodes ns2 -> (not (Map.null ns2))
-                             --_            -> error ("limit lans is " ++ show lans)
-                             AbsBottom    -> False   -- can happen because of occur check in absDeref
+                             AbsBottom    -> False
                            )
                   }
       ; ps2 <- filterM validPtr (Set.toList ps)

@@ -146,6 +146,7 @@ data Equation
 
 data HeapEquation
   = WillStore             Location  GrTag [Maybe Variable]
+  | WillEquate            Location  Variable
     deriving (Show, Eq)
 
 type Limitation

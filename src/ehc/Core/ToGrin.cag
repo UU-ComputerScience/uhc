@@ -19,6 +19,8 @@ WRAPPER CodeAGItf
 
 %%[8 hs import({%{EH}Gam}(DataGam,dataGamTagsOfTy))
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%[96 hs import({%{EH}BuiltinPrims})
 %%]
@@ -565,15 +567,22 @@ SEM CBind
                                                             _                -> GrPatLam_Var n
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = @isUnboxed resTyNm
+                                                     resTagLfromDataGam = dataGamTagsOfTy @resTy @lhs.dataGam
                                                      resTagL
                                                        = if resIsUnboxed
                                                          then -- Result type is one of the unboxable types Int, Char, PackedString
                                                               [ GrTag_Unboxed ]
-                                                         else case dataGamTagsOfTy @resTy @lhs.dataGam of
+                                                         else case resTagLfromDataGam of
                                                                 Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
                                                                                     [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
-                                                                _                -> -- Result type is any other type (TODO: is this possible? or can this case be removed?)
-                                                                                    [ GrTag_Any ]
+                                                                _                -> -- Result type is any other type 
+                                                                                       -- This can be the case for:
+                                                                                       --  * type-synonyms (e.g. String)
+                                                                                       --  * types with implicit constructors (e.g. Double)
+                                                                                       --  * a few primitives (unsafeCoerce, throwException, catchException)
+                                                                                       --  * ffi's with structured results (quotRemInteger, flushChannel)
+                                                                                     -- TODO: figure out how to handle these
+                                                                                    [ ]  -- [ GrTag_Any ]
                                                      mkRes v
                                                        = if resIsUnboxed
                                                          then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))

@@ -59,6 +59,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropUnusedBindings})
 %%]
+%%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.NormForHPT})
@@ -161,6 +163,8 @@ caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
     ( do { transformCodeUnqHpt   inlineEA           "Inlining Eval and Apply calls" 
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin           True               "31-evalinlined"
+         ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
+         ; caWriteGrin           True               "32-undead"
          ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
          ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
          ; caWriteGrin           True               "39-unboxed"
