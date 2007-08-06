@@ -155,7 +155,7 @@ SEM CPat
   | Char        lhs         .   pp          =   ppCNm @pnm >#< ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCNm @pnm
   | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< ppTag @tag)
-                                                      (ppCurly (@rest.pp >|< "|" >|< ppCommas' @binds.ppL))
+                                                      (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 
 SEM CPatL
   | Nil         lhs         .   ppL         =   []
@@ -174,7 +174,7 @@ SEM CPatBindL
   | Undef       lhs         .   pp          =   pp hsnUnknown
 
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
-                                                >|< ppParens (@pat.pp >|< "|">|< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
+                                                >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
 %%[9
 SEM CExpr

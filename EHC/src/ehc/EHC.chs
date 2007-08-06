@@ -594,7 +594,9 @@ cpParseCore modNm
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               fpC     = fpathSetSuff "core" fp
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
-       ; cpParsePlain CorePrs.pCModule coreScanOpts ecuStoreCore "Parse Core (of previous compile) of module" fpC modNm
+       ; errs <- cpParsePlain' CorePrs.pCModule coreScanOpts ecuStoreCore fpC modNm
+       ; when (ehcDebugStopAtCoreError opts) $ cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs
+       ; return ()
        }
 
 cpParsePrevHI :: HsName -> EHCompilePhase ()

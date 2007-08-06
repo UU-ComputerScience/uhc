@@ -657,7 +657,7 @@ PRIM GB_Word gb_primByteArrayLength( GB_Word a )
 /*
   In the following function gb_eval(GB_List_Head(n)) must be put into a local var,
   inlining produces a faulty program.
-  Reason unknown.
+  Reason unknown :-(.
 */
 
 PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
