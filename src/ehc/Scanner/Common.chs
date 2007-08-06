@@ -227,8 +227,9 @@ coreScanOpts
                                     ++ scoKeywordsTxt hsScanOpts
         ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts ++ scoKeywordsOps hsScanOpts
         ,   scoDollarIdent      =   True
-        ,   scoOpChars          =          scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
+        ,   scoOpChars          =   scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
         ,   scoSpecChars        =   "!=" ++ scoSpecChars grinScanOpts ++ scoSpecChars hsScanOpts
+        ,   scoSpecPairs        =   scoSpecPairs hsScanOpts
         }
 %%]
 

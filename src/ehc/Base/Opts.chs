@@ -143,6 +143,8 @@ data EHCOpts
 %%[[20
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
+      ,  ehcDebugStopAtCoreError
+                              ::  Bool              -- stop when Core parse error occurs (otherwise errors are ignored, repaired .core is used)
 %%]]
 %%[[99
       ,  ehcProgName          ::  String			-- name of this program
@@ -227,6 +229,7 @@ defaultEHCOpts
 %%[[20
       ,  ehcOptCheckRecompile    =   True
       ,  ehcDebugStopAtHIError   =   False
+      ,  ehcDebugStopAtCoreError =   False
 %%]]
 %%[[99
       ,  ehcProgName          =   ""
@@ -282,6 +285,8 @@ ehcCmdLineOpts
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
      ,  Option ""   ["debug-stopat-hi-error"]
                                          (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
+     ,  Option ""   ["debug-stopat-core-error"]
+                                         (boolArg oStopAtCoreError)           "debug: stop at .core parse error (default=off)"
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
@@ -450,6 +455,7 @@ optBoolean tr ms o
 
 %%[20
 oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
+oStopAtCoreError     o b = o { ehcDebugStopAtCoreError     = b }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

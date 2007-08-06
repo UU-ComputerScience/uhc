@@ -69,8 +69,8 @@ typedef GrWord* Pointer;
 #define HEAPSIZE 1000000
 
 extern Pointer HP;
-extern Pointer Heap;
-extern Pointer HeapLimit;
+extern Pointer HeapAreaLow;
+extern Pointer HeapAreaHigh;
 
 #endif
 %%]

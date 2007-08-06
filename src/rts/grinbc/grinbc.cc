@@ -605,6 +605,22 @@ unsigned long gb_StepCounter ;
 #if TRACE || DUMP_INTERNALS
 extern char* gb_lookupMnem( GB_Byte c ) ;
 
+void gb_prWordAsNode( GB_NodePtr n )
+{
+	printf( "sz %d, ev %d, cat %d, tg %d:"
+		  , GB_NH_Fld_Size(n->header), GB_NH_Fld_NdEv(n->header), GB_NH_Fld_TagCat(n->header), GB_NH_Fld_Tag(n->header) ) ;
+	int i ;
+	for ( i = 0 ; i < 5 && i < GB_Node_NrFlds(n) ; i++ )
+	{
+#			if USE_64_BITS
+			printf( " 0x%0.16lx"
+#			else
+			printf( " 0x%0.8x"
+#			endif
+				  , n->content.fields[i] ) ;
+	}
+}
+
 void gb_prWord( GB_Word x )
 {
 	GB_Node* n = Cast(GB_Node*,x) ;
@@ -618,31 +634,20 @@ void gb_prWord( GB_Word x )
 #		if USE_BOEHM_GC
 	       || x < Cast(GB_Word,StackAreaLow)
 #		else
-	       || x < Cast(GB_Word,Heap)
+	       || x < Cast(GB_Word,HeapAreaLow)
 #		endif
          )
          && n != &gb_Nil
 	)
 	{
 #		if USE_64_BITS
-			printf( "int %ld"
+			printf( "gb int %ld"
 #		else
-			printf( "int %d"
+			printf( "gb int %d"
 #		endif
 				  , GB_GBInt2Int(x) ) ;
 	} else {
-		printf( "sz %d, ev %d, cat %d, tg %d:"
-		      , GB_NH_Fld_Size(n->header), GB_NH_Fld_NdEv(n->header), GB_NH_Fld_TagCat(n->header), GB_NH_Fld_Tag(n->header) ) ;
-		int i ;
-		for ( i = 0 ; i < 5 && i < GB_Node_NrFlds(n) ; i++ )
-		{
-#			if USE_64_BITS
-				printf( " 0x%0.16lx"
-#			else
-				printf( " 0x%0.8x"
-#			endif
-					  , n->content.fields[i] ) ;
-		}
+		gb_prWordAsNode( Cast(GB_NodePtr,x) ) ;
 	}
 	/* printf( "\n" ) ; */
 }
@@ -1238,11 +1243,11 @@ gb_interpreter_InsApplyEntry:
 			case GB_Ins_AllocStore(GB_InsOp_LocB_TOS) :
 				GB_PopIn(x) ;
 				p = GB_HeapAlloc_Bytes(x) ;
-				IF_GB_TR_ON(3,printf( "alloc %x\n", p );) \
 				p2 = p ;
 				p3 = GB_SPByteRel(GB_Word,x) ;
 				MemCopyForward(sp,p3,p) ;
 				GB_Push(p2) ;
+				IF_GB_TR_ON(3,{printf( "alloc sz=%d p=0x%x: ", x, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
 				break ;
 
 			/* allocstorer */

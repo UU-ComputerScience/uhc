@@ -20,10 +20,10 @@ declare void %initialize()
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Global variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-%Heap = global %thunk_type* undef
+%HeapAreaLow = global %thunk_type* undef
 %Stack = global %thunk_type* undef
 %ReturnArea = global %thunk_type* undef
-%HeapLimit = global %thunk_type* undef
+%HeapAreaHigh = global %thunk_type* undef
 
 %HP = global %thunk_type* undef
 %SP = global %thunk_type* undef
@@ -42,14 +42,14 @@ declare void %initialize()
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 void %main( ) {
 
-  ; Allocate the heap and save the pointer in %Heap and %HP
+  ; Allocate the heap and save the pointer in %HeapAreaLow and %HP
   %heap_ptr  = malloc %thunk_type, uint 100000
-  store %thunk_type* %heap_ptr, %thunk_type** %Heap
+  store %thunk_type* %heap_ptr, %thunk_type** %HeapAreaLow
   store %thunk_type* %heap_ptr, %thunk_type** %HP
 
-  ; Get the last element of the allocated heap and save that in %HeapLimit
+  ; Get the last element of the allocated heap and save that in %HeapAreaHigh
   %heap_limit_ptr = getelementptr %thunk_type* %heap_ptr, uint 99999
-  store %thunk_type* %heap_limit_ptr, %thunk_type** %HeapLimit
+  store %thunk_type* %heap_limit_ptr, %thunk_type** %HeapAreaHigh
 
   ; Allocate the stack
   %stack_ptr = malloc %thunk_type, uint 100000
@@ -119,7 +119,7 @@ uint %primAddInt( uint %l, uint %r ) {
   ; The thunk can be allocated on this address
   %curr_ptr = load %thunk_type** %HP
   %new_ptr  = getelementptr %thunk_type* %curr_ptr, uint %word_offset
-  %heap_limit = load %thunk_type** %HeapLimit
+  %heap_limit = load %thunk_type** %HeapAreaHigh
 
   ; Check if the new heap pointer is below the heap limit
   %heap_limit_cond = setge %thunk_type* %new_ptr, %heap_limit
