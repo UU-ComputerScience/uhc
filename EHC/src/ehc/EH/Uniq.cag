@@ -339,6 +339,7 @@ SEM Decl
                                                                     =   mkNewLevUID5    @lhs.gUniq
                     (ctxtPrExprs.gUniq,loc.lUniq6,loc.lUniq7)
                                                                     =   mkNewLevUID2    @gUniq2
+
 %%[10
 SEM Expr
   | Sel             (expr.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
@@ -383,4 +384,5 @@ SEM PatExpr
 SEM DataConstrEq
   | Eq              (tyVar.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
 %%]
+
 

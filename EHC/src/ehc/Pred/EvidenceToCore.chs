@@ -78,7 +78,7 @@ predScopeToCBindMapUnion :: PredScopeToCBindMap -> PredScopeToCBindMap -> PredSc
 predScopeToCBindMapUnion = Map.unionWith (++)
 %%]
 
-%%[9 export(evidMpToCore,EvidKeyToCExprMap)
+%%[9 export(evidMpToCore)
 evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[AmbigEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrCExpr r,tcrUsed r,tcrScope r)) $ tcsMp

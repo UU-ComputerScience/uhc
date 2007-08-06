@@ -78,12 +78,14 @@ tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
                             .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+                loc         .   tgi_                :   TyGamInfo
 %%]
 
 %%[6
 SEM TyExpr
   | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t
                             .   tkgi_               =   TyKiGamInfo (tgiTy @tgi_)
+                loc         .   tkgi_               :   TyKiGamInfo
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyVarGather
@@ -95,6 +97,7 @@ SEM TyExpr
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   tgi_                :   TyGamInfo
 %%]
 
 %%[6
@@ -129,6 +132,7 @@ SEM TyVar
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   tgi_                :   TyGamInfo
                 loc         .   tv                  =   tyVar . tgiTy $ @tgi_
 %%]
 
