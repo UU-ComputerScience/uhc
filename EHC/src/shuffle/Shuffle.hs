@@ -279,6 +279,8 @@ cmdLineOpts
           "Dependency ignore list (or terminals)"
      ,  Option ""   ["lhs2tex"]         (OptArg oLhs2tex "yes|no")
           "wrap chunks in lhs2tex's code environment, default=yes"
+     ,  Option ""   ["agmodheader"]     (OptArg oAGModHeader "yes|no")
+          "generate AG MODULE headers instead of Haskell module headers"
      ,  Option ""   ["def"]             (ReqArg oDef "key:value")
           "define key/value pair, alternate form: key=value"
      ]
@@ -313,6 +315,7 @@ cmdLineOpts
          oDepBaseDir ms o = o { optDepBaseDir = maybe "./" id ms }
          oDepTerm ms o = o { optDepTerm = maybe Map.empty (Map.fromList . parseDeps) ms }
          oDepIgn ms o = o { optDepIgn = maybe Set.empty (Set.fromList . words) ms }
+         oAGModHeader ms o = yesno (\f o -> o {optAGModHeader = f}) ms o
          oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
                                 (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
                                 _         -> o
