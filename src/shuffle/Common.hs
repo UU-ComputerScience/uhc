@@ -124,6 +124,7 @@ data Opts
       , optDepBaseDir     :: String
       , optDepTerm        :: Map String [String]
       , optDepIgn         :: Set String
+      , optAGModHeader    :: Bool
       } deriving (Show)
 
 defaultOpts
@@ -155,6 +156,7 @@ defaultOpts
       , optDepBaseDir     = error "optDepBaseDir not set"
       , optDepTerm        = Map.empty
       , optDepIgn         = Set.empty
+      , optAGModHeader    = False
       }
 
 optsHasNoVerOrder :: Opts -> Bool

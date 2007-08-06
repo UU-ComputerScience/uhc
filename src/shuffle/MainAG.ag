@@ -662,8 +662,11 @@ buildAG opts wrap fileBase is
                  ChHS      -> h (vciCD i)
                  _         -> buildAGImps i .-. vciCD i
         ish  = filter vciIsHS noPre'
+        buildImpExp = if optAGModHeader opts
+                      then buildAGHSModImpExp fileBase ish
+                      else h (buildHSModImpExp fileBase ish)
         pph  = if any vciHasImpExp ish
-               then wrap True (h (buildHSModImpExp fileBase ish))
+               then wrap True buildImpExp
                else CDoc_Emp
         cds  =   map (\i -> let vnm = vciFullNm i
                             in  linePragma opts (fileBase++".cag") (vciLineNr i) (wrap (not (vciIsPre i)) (mk i))
@@ -674,6 +677,19 @@ buildAG opts wrap fileBase is
             .-. pph
             .-. (cdVer cds)
      in d
+
+buildAGHSModImpExp :: String -> [VerChunkInfo] -> CDoc
+buildAGHSModImpExp fileBase is = buildAGHSModuleHead fileBase is .-. "{" .-. buildHSImps is .-. "}"
+
+buildAGHSModuleHead :: String -> [VerChunkInfo] -> CDoc
+buildAGHSModuleHead fileBase is
+  = let ismie = [ i | i <- is   , isJust (vciMbModNm i) || not (null (vciExps i) && null (vciImps i)) ]
+        isie  = [ i | i <- ismie, not (null (vciExps i) && null (vciImps i)) ]
+        e = [ vciExps i | i <- isie, not (null (vciExps i)) ]
+        m = catMaybes . map vciMbModNm $ ismie
+        exps = cdListSepV "{" "}" ", " . map (cdListSep "" "" ", ") $ e
+        modNm = if null m then fileBase else head m
+     in "MODULE" .#. ("{" ++ modNm ++ "}") .#. exps
 }
 
 ATTR AGItf [ | | bldAG: {[Build]} ]
