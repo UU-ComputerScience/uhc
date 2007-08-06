@@ -530,6 +530,7 @@ PRIM GB_Word gb_primCharIsLower( GB_Int x )
 
 PRIM GB_Word gb_primPackedStringNull( char *s )
 {
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringNull %x, %d, %s\n", s, *s, s ););
 	if ( *s )
 		return Cast(GB_Word,gb_False) ;
   	return Cast(GB_Word,gb_True) ;
@@ -537,12 +538,23 @@ PRIM GB_Word gb_primPackedStringNull( char *s )
 
 PRIM GB_Word gb_primPackedStringTail( char *s )
 {
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringTail %x, %d, %s\n", s, *s, s ););
   	return Cast(GB_Word,s+1) ;
 }
 
+/*
+GB_NodePtr gb_primPackedStringTail( char *s )
+{
+  	GB_NodePtr n ;
+  	GB_MkPackedString(n,Cast(GB_NodePtr,s+1)) ;
+  	return n ;
+}
+*/
+
 PRIM GB_Word gb_primPackedStringHead( char *s )
 {
-  	return Cast(GB_Word,*s) ;
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringHead %x, %d, %s, %d\n", s, *s, s, GB_Int2GBInt(*s) ););
+  	return Cast(GB_Word,GB_Int2GBInt(*s)) ;
 }
 
 %%]
@@ -642,14 +654,26 @@ PRIM GB_Word gb_primByteArrayLength( GB_Word a )
   	return GB_Int2GBInt(n->content.bytearray.size) ;
 }
 
+/*
+  In the following function gb_eval(GB_List_Head(n)) must be put into a local var,
+  inlining produces a faulty program.
+  Reason unknown.
+*/
+
 PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 {
 	GB_NodePtr n2 ;
 	int bufInx = 0 ;
+  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray1 sz=%d n=%x\n", sz, n ););
 	gb_listForceEval( &n, &sz ) ;
+  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%x\n", sz, n ););
 	GB_NodeAlloc_Malloc2_In( sz, n2 ) ;
-	char* s = Cast(char*,n2->content.bytearray.ptr) ;
-	GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
+	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
+	GB_List_Iterate(n,sz,{GB_Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
+	// GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
+  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray4 bufInx=%d, n=%x buf=", bufInx, n ););
+  	IF_GB_TR_ON(3,{int i ; for (i = 0 ; i < bufInx ; i++) {printf(" %d",s[i]);};});
+  	IF_GB_TR_ON(3,printf("\n"););
 	return n2 ;
 }
 %%]

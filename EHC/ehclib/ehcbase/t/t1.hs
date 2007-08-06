@@ -32,7 +32,6 @@ asciiTab = zip ['\NUL'..' ']
 -}
 
 {-
--}
 main
   = do putStrLn
          $ concat [ "Hello World!\n"
@@ -54,6 +53,9 @@ main
                   -- , show ('\a' == '\a')
                   ]
        hFlush  stdout
+-}
+
+main = putStrLn "aa"
 
 -- main = putStrLn (showChar (fst ('o','m')) "")
 -- main = putStrLn (show (snd ('o',999::Int)))
