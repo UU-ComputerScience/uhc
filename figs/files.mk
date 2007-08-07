@@ -7,7 +7,11 @@ FIGS_MKF					:= $(FIGS_SRC_PREFIX)files.mk
 # figures
 FIGS_XFIG_SRC_FIG			:= $(wildcard $(FIGS_SRC_PREFIX)*.fig)
 FIGS_EPS_SRC_EPS			:= $(wildcard $(FIGS_SRC_PREFIX)*.eps)
+ifeq ($(TEXT_CFG_FIGS_INCLUDES_DOT_SRC),yes)
 FIGS_DOT_SRC_DOT			:= $(wildcard $(FIGS_SRC_PREFIX)*.dot)
+else
+FIGS_DOT_SRC_DOT			:= 
+endif
 FIGS_ASIS_SRC_PDF			:= $(wildcard $(FIGS_SRC_PREFIX)*.pdf)
 FIGS_ASIS_SRC_JPG			:= $(wildcard $(FIGS_SRC_PREFIX)*.jpg)
 FIGS_ASIS_SRC_EPS			:= # $(wildcard $(FIGS_SRC_PREFIX)*.eps)
