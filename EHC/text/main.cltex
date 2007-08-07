@@ -1694,25 +1694,31 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicEHCStructure.introduction
 
-\section{Coping with design complexity: stepwise grow a language}
-\label{sec-ehcstruct-complexity-design}
+\section{Coping with internal complexity: transformations}
+\label{sec-ehcstruct-complexity-internal}
 
-%%@TopicEHCStructure.complexityDesign
-
-\section{Coping with maintenance complexity: generate, generate and generate}
-\label{sec-ehcstruct-complexity-maintenance}
-
-%%@TopicEHCStructure.complexityMaintenance
+%%@TopicEHCStructure.complexityTransformations
 
 \section{Coping with formalisation complexity: domain specific languages}
 \label{sec-ehcstruct-complexity-formalisation}
 
 %%@TopicEHCStructure.complexityFormalisation
 
-\section{Coping with internal complexity: transformations}
-\label{sec-ehcstruct-complexity-internal}
+\subsection{Attribute Grammar (AG) system}
+%%@TopicEHCStructure.explainAG
 
-%%@TopicEHCStructure.complexityTransformations
+\subsection{Ruler system}
+%%@TopicEHCStructure.explainRuler
+
+\section{Coping with maintenance complexity: generate, generate and generate}
+\label{sec-ehcstruct-complexity-maintenance}
+
+%%@TopicEHCStructure.complexityMaintenance
+
+\section{Coping with design complexity: stepwise grow a language}
+\label{sec-ehcstruct-complexity-design}
+
+%%@TopicEHCStructure.complexityDesign
 
 \section{Experiences}
 \label{sec-ehcstruct-experiences}

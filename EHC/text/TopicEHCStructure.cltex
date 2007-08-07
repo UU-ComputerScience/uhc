@@ -219,6 +219,9 @@ With |AG| we specify --in essence-- folds over data types, without the need to s
 With |Ruler| we specify type rules in such a way that both |AG| and \LaTeX\ can be generated;
 we do not get lost in inconsistencies between semantics specification and compiler implementation, and \LaTeX\ obscurities.
 
+%%]
+
+%%[explainAG
 Both |AG| and |Ruler| also support growing definitions, or aspects.
 We demonstrate this for |AG|,
 by showing the additional AG fragments for the code generation aspect of variant 8 in
@@ -242,6 +245,9 @@ fragments specifies how to compute the code generation aspect |cexpr| for functi
 The |AG| compiler then combines such separate specifications and builds one fold function,
 to be used on EH abstract syntax.
 
+%%]
+
+%%[explainRuler
 %%]
 
 %%[complexityTransformations
