@@ -2,8 +2,11 @@
 \small\sf
 \def\ColNodeBg{yellow}
 \def\ColNodeFg{black}
+%%[[exportedTikZMacros
+%%]]
 \newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
-\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
+\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{#4}}}
+\newcommand{\PCNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
 \newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
 %%[[exportedMacros
 \newcommand{\NTitle}[1]{{\Large\textbf{#1}}}
@@ -17,7 +20,7 @@
 \draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
 
 % title
-\draw (10.5,29.3) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\draw (10.5,29.3) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\FigScaledPDF{0.6}{2a_NWO_LogoBasis_PMSb}
 \PTitle{%
  \parbox{.5\linewidth}{\centering Essential Haskell\\
@@ -27,7 +30,7 @@
 }
 };
 
-\draw (10.5,26.5) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\draw (10.5,26.5) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\large
 \NTitle{Observations:}
 \begin{itemize}
@@ -43,7 +46,7 @@
 };
 
 % growing example
-\draw (10.5,22) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\draw (10.5,22) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 \renewcommand{\arraystretch}{1.5}
 \newcommand{\Nw}{\hspace{\tabcolsep}}
 \def\Line{}
@@ -66,18 +69,18 @@ Higher ranked types
 \\ \Line
 \textbf{Example:}
 &
-%%[[wrap=boxcode{.12}
+%%[[wrap=boxcode{.12} langSeriesEx1
 %%@[file:test/1/demo2.eh%%]
 %%]]
 &
-%%[[wrap=boxcode{.12}
+%%[[wrap=boxcode{.12} langSeriesEx2
 let  id = \x -> x
 in   (id 3,id 'x')
 %%]]
 %yields
 %|id :: %%3(let id = \x -> x in id%%)|
 &
-%%[[wrap=boxcode{.15}
+%%[[wrap=boxcode{.15} langSeriesEx3
 %%@[file:test/4/demo2.eh%%]
 %%]]
 &
@@ -85,23 +88,33 @@ in   (id 3,id 'x')
 \\
 \textbf{\Sem:}
 &
+%%[[langSeriesSem1
 \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+%%]]
 &
+%%[[langSeriesSem2
 \(\rulerCmdUse{rules3.I1.expr.base.e.app}\)
+%%]]
 &
+%%[[langSeriesSem3
 \(\rulerCmdUse{rules3.I2.expr.base.e.app}\)
+%%]]
 &
 \Dots
 \\
 \textbf{\Impl:}
 &
+%%[[langSeriesImpl1
 {\tiny
 %%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
 }
+%%]]
 &
+%%[[langSeriesImpl2
 {\tiny
 %%@EHRulerRules.4.expr.e.app wrap=boxcode{.12}
 }
+%%]]
 &
 \Dots
 &
@@ -116,7 +129,7 @@ in   (id 3,id 'x')
 };
 
 % toolchain
-\draw (5,11.5) \PNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
+\draw (5,11.5) \PCNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
 {%\large
 \NTitle{Coping with maintenance complexity: generate, generate and generate}\\[0.2cm]
 {\large from common source: guarantees consistency of generated artefacts}\\
@@ -133,7 +146,7 @@ in   (id 3,id 'x')
 }};
 
 % dsl's
-\draw (16,11.5) \PNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
+\draw (16,11.5) \PCNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
 {%\large
 \NTitle{Coping with formalisation complexity: domain specific languages}\\[0.2cm]
 %{\large for an otherwise too complex problem}
@@ -146,7 +159,7 @@ in   (id 3,id 'x')
 }};
 
 % participants
-\draw (16,3.75) \PNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
+\draw (16,3.75) \PCNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
 {%\large
 \NTitle{More information}\\
 \begin{Itemize}

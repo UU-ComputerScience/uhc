@@ -82,6 +82,12 @@ The semantics is defined in terms of type rules and the implementation in terms 
 
 {
 %%@Poster.exportedMacros
+%%@Poster.exportedTikZMacros
+
+\newcommand{\Node}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
+\newcommand{\PNode}[2]{\Node{#1}{\parbox{#1cm}{#2}}}
+\newcommand{\PCNode}[2]{\PNode{#1}{{\begin{center}#2\end{center}}}}
+
 \begin{figure*}[t]
 \newcommand{\Nw}{}
 \def\Line{\hline}
@@ -94,6 +100,52 @@ The semantics is defined in terms of type rules and the implementation in terms 
 \caption{Languages design steps}
 \label{fig-ehcstruct-langs}
 \end{figure*}
+
+\begin{figure*}[t]
+\begin{tikzpicture}
+
+\draw[step=1cm,blue,very thin] (0,0) grid (12,12);
+
+%% Examples
+\draw (4,10) \PNode{7.5}{%
+%%@Poster.langSeriesEx3
+};
+
+\draw (2,9.5) \PNode{5.5}{%
+%%@Poster.langSeriesEx2
+};
+
+\draw (0,9) \PNode{3.5}{%
+%%@Poster.langSeriesEx1
+};
+
+%% Semantics
+\draw (4,5) \PNode{7.5}{%
+%%@Poster.langSeriesSem3
+};
+
+\draw (2,4.5) \PNode{5.5}{%
+%%@Poster.langSeriesSem2
+};
+
+\draw (0,4) \PNode{3.5}{%
+%%@Poster.langSeriesSem1
+};
+
+%% Implementation
+\draw (2,0.5) \PNode{5.5}{%
+%%@Poster.langSeriesImpl2
+};
+
+\draw (0,0) \PNode{4.5}{%
+%%@Poster.langSeriesImpl1
+};
+
+\end{tikzpicture}
+\caption{Languages design steps}
+\label{fig-ehcstruct-langs-shadowed}
+\end{figure*}
+
 }
 
 The next two columns in \figRef{fig-ehcstruct-langs} show the incorporation of polymorphic type inference

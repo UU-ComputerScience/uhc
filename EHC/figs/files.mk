@@ -5,7 +5,11 @@ FIGS_SRC_PREFIX				:= $(TOP_PREFIX)figs/
 FIGS_MKF					:= $(FIGS_SRC_PREFIX)files.mk
 
 # figures
+ifeq ($(TEXT_CFG_FIGS_INCLUDES_XFIG_SRC),yes)
 FIGS_XFIG_SRC_FIG			:= $(wildcard $(FIGS_SRC_PREFIX)*.fig)
+else
+FIGS_XFIG_SRC_FIG			:= 
+endif
 FIGS_EPS_SRC_EPS			:= $(wildcard $(FIGS_SRC_PREFIX)*.eps)
 ifeq ($(TEXT_CFG_FIGS_INCLUDES_DOT_SRC),yes)
 FIGS_DOT_SRC_DOT			:= $(wildcard $(FIGS_SRC_PREFIX)*.dot)
