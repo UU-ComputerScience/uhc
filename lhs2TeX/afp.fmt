@@ -162,6 +162,8 @@
 %format ICnstrk		= ICnstr "^{k}"
 
 %format VarMp       = "\mathcal{C}"
+%format VarMpk		= VarMp "^{k}"
+
 %format IVarMp      = "\mathbb{C}"
 
 %format CHR				= "CHR"

@@ -133,12 +133,16 @@ The semantics is defined in terms of type rules and the implementation in terms 
 };
 
 %% Implementation
+\draw (4,1) \PNode{6.5}{%
+%%@Poster.langSeriesImpl3Tiny
+};
+
 \draw (2,0.5) \PNode{5.5}{%
-%%@Poster.langSeriesImpl2
+%%@Poster.langSeriesImpl2Tiny
 };
 
 \draw (0,0) \PNode{4.5}{%
-%%@Poster.langSeriesImpl1
+%%@Poster.langSeriesImpl1Tiny
 };
 
 \end{tikzpicture}
@@ -305,6 +309,106 @@ to be used on EH abstract syntax.
 %%]
 
 %%[explainRuler
+With the |Ruler| language of the |Ruler| system we describe type rules in such a way that both
+\LaTeX\ rendering and AG implementation are generated from such a common type rule description.
+We use the following \LaTeX\ rendering (see also \FigRef{fig-ehcstruct-langs-shadowed}):
+
+\[
+%%@Poster.langSeriesSem2Rule
+\]
+
+and its corresponding AG implementation:
+
+%%@Poster.langSeriesImpl2
+
+to provide an overview of the |Ruler| system.
+We omit a thorough explanation of the meaning of these fragments,
+as our purpose here is to demonstrate how we can describe these fragments with
+one common |Ruler| source text.
+Neither do we intend to be complete in our description;
+we point out those parts corresponding to
+the distinguishing features of the |Ruler| system.
+
+The given rule algorithmically describes the typing of a function application in a standard lambda calculus
+with the Hindley-Milner type system.
+The rule involves four judgement, three premises and one conclusion.
+All judgements but the judgement involving the freshness of a type variable have the same structure as these all
+relate various properties of expressions: the conclusion about the function application |e1 e2|, the premises about
+the function |e1| and argument |e2|.
+
+|Ruler| exploits this commonality by means of the \IxAsDef{scheme} of a judgement, the type of a judgement:
+
+%{
+%include ruler.fmt
+
+%%[[wrap=code
+scheme expr =
+    holes  [ node e: Expr, inh valGam: ValGam, inh knTy: Ty
+           , thread tyVarMp: VarMp, syn ty: Ty ]
+    judgeuse tex valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
+    judgespec valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+%%]]
+
+The scheme declaration for expressions |expr| defines the following for each |expr| judgement:
+
+\begin{Itemize}
+\item |holes|: names, types and modifiers of placeholders (or \IxAsDef{hole}s) for the various properties.
+\item |judgeuse tex| (unparsing): \LaTeX\ pretty printing in terms of holes and other symbols. 
+\item |judgespec| (parsing): concrete syntax for specifying a complete judgement. 
+\end{Itemize}
+
+Modifiers |node|, |inh|, |syn|, and |thread| are mainly required for the generation of an AG implementation,
+as more information is needed to turn a rule into an algorithm.
+The |thread| modifier introduces two holes suffixed with |.inh| and |.syn|.
+For a \LaTeX\ rendering the remaining modifiers do not matter.
+
+Additional formatting is required to map identifiers to \LaTeX\ symbols, for example: 
+
+%%[[wrap=code
+valGam          :->     Gamma
+ty              :->     sigma
+knTy            :->     sigmak
+tyVarMp.inh     :->     VarMpk
+%%]]
+
+We omit further discussion of lexical issues.
+
+The rule for function application now is defined by judgements introduced with the keyword |judge|:
+
+%%[[wrap=code
+rule e.app =
+      judge tvarvFresh
+      judge expr =  tyVarMp.inh ; tyVarMp ; (tvarv -> knTy)
+                    :- eFun : (ty.a -> ty) ~> tyVarMp.fun
+      judge expr =  tyVarMp.fun ; valGam ; ty.a
+                    :- eArg : ty.a ~> tyVarMp.arg
+      -
+      judge expr =  tyVarMp.inh ; valGam ; knTy
+                    :- (eFun ^^ eArg) : (tyVarMp.arg ty) ~> tyVarMp.arg
+%%]]
+
+For each judgement its scheme is specified.
+The |judgespec| of the corresponding scheme is used to check the concrete syntax and to bind the holes of the judgement
+to the concrete values specified by the judgement.
+From this rule definition a \LaTeX\ rendering is straightforwardly generated.
+
+For the generation of a corresponding AG implementation we need information as specified by hole modifiers.
+An AG implementation is tree based, that is the structure of the tree drives the choice of which rule to apply.
+One of the holes needs to correspond to a node of such a tree; the modifier |node| specifies which.
+Further holes correspond to attributes.
+Attributes however have a top-to-bottom inherited direction indicated by |inh|,
+a bottom-to-top synthesized direction indicated by |syn|, or both, indicated by |thread|.
+
+The judgement with scheme |tvarvFresh| is an example of a judgement which does not fit into a tree structure required
+by AG: it does not refer to a |node| hole.
+For such schemes, called \IxAsDef{relation}s,
+an explicit AG implementation must be provided; we omit further discussion of relations.
+
+Finally, |Ruler| also provides support for incremental language specification,
+which we discuss in \secRef{sec-ehcstruct-complexity-design}.
+
+%}
+
 %%]
 
 %%[complexityTransformations

@@ -817,7 +817,7 @@ WWW home page:
 %%]
 
 %%[25
-\title{Experience Report: The Structure of the Essential Haskell Compiler, or Coping with Compiler Complexity}
+\title{The Structure of the Essential Haskell Compiler, or Coping with Compiler Complexity}
 %if acm && useSigplanconfSty
 %if blinded
 \authorinfo{author info removed for reviewing}{--}{--}
