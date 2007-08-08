@@ -246,7 +246,12 @@ In summary, |Shuffle|:
 \item combines chunks upto an externally specified variant, using an also externally specified variant ordering.
 \end{Itemize}
 
-\FigurePDF{t}{0.35}{toolchain}{EHC toolchain}{fig-ehcstruct-toolchain}
+\begin{figure*}
+\hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
+\caption{chain of tools used to build EHC}
+\label{fig-ehcstruct-toolchain}
+\end{figure*}
+
 
 %%]
 
@@ -309,8 +314,8 @@ transformations.
 with its major intermediate representations:
 
 \begin{figure*}
-\raisebox{-50mm}[50mm][0mm]{\FigScaledPDF{0.65}{ehc-dataflow}}
-\caption{EHC toolchain}
+\hspace*{-25mm}\raisebox{-60mm}[30mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
+\caption{stages in the EHC pipeline}
 \label{fig-ehcstruct-dataflow}
 \end{figure*}
 
