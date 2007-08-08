@@ -75,7 +75,8 @@ Higher ranked types
 &
 %%[[wrap=boxcode{.12} langSeriesEx2
 let  id = \x -> x
-in   (id 3,id 'x')
+in   let  (a,b) = (id 3,id 'x')
+     in   a
 %%]]
 %yields
 %|id :: %%3(let id = \x -> x in id%%)|
@@ -110,7 +111,9 @@ in   (id 3,id 'x')
 &
 %%[[langSeriesImpl1Tiny
 {\tiny
+%%[[langSeriesImpl1
 %%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
+%%]]
 }
 %%]]
 &
@@ -124,7 +127,9 @@ in   (id 3,id 'x')
 &
 %%[[langSeriesImpl3Tiny
 {\tiny
+%%[[langSeriesImpl3
 %%@EHRulerRules.4.expr.e.app wrap=boxcode{.12}
+%%]]
 }
 %%]]
 &

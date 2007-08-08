@@ -67,7 +67,7 @@ For each compiler in the series, various artefacts
 are created:
 a definition of the semantics, an implementation,
 example programs, documentation, etcetera.
-\figRef{fig-ehcstruct-langs} shows some instances.
+\figRef{fig-ehcstruct-langs-shadowed} shows some instances.
 The language in the first column introduces the starting point
 for subsequent languages.
 It features the simply typed |lambda|-calculus, where all defined values require an accompanying type signature,
@@ -88,26 +88,23 @@ The semantics is defined in terms of type rules and the implementation in terms 
 \newcommand{\PNode}[2]{\Node{#1}{\parbox{#1cm}{#2}}}
 \newcommand{\PCNode}[2]{\PNode{#1}{{\begin{center}#2\end{center}}}}
 
-\begin{figure*}[t]
-\newcommand{\Nw}{}
-\def\Line{\hline}
-\def\Impl{Impl.}
-\def\Sem{Sem.}
-\def\Doc{Doc.}
-\begin{tabular}{l||l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
-%%@Poster.langSeries
-\end{tabular}
-\caption{Languages design steps}
-\label{fig-ehcstruct-langs}
-\end{figure*}
 
 \begin{figure*}[t]
 \begin{tikzpicture}
 
-\draw[step=1cm,blue,very thin] (0,0) grid (12,12);
+%\draw[step=1cm,blue,very thin] (0,0) grid (13,13);
+
+%% Titles
+\draw (0,13) node[anchor=north west] {\textbf{\(\downarrow\) Simply typed |lambda| calculus}};
+\draw (2,13.5) node[anchor=north west] {\textbf{\(\downarrow\) Polymorphic type inference}};
+\draw (4,14) node[anchor=north west] {\textbf{\(\downarrow\) Higher ranked types)}};
+
+\draw (1,3.25) node[anchor=east] {\textbf{Implementation:}};
+\draw (1,8.25) node[anchor=east] {\textbf{Semantics:}};
+\draw (1,11.25) node[anchor=east] {\textbf{Example:}};
 
 %% Examples
-\draw (4,10) \PNode{7.5}{%
+\draw (4,10) \PNode{6.5}{%
 %%@Poster.langSeriesEx3
 };
 
@@ -120,29 +117,35 @@ The semantics is defined in terms of type rules and the implementation in terms 
 };
 
 %% Semantics
-\draw (4,5) \PNode{7.5}{%
+\draw (4,6.5) \PNode{6.5}{%
 %%@Poster.langSeriesSem3
 };
 
-\draw (2,4.5) \PNode{5.5}{%
+\draw (2,6) \PNode{5.5}{%
 %%@Poster.langSeriesSem2
 };
 
-\draw (0,4) \PNode{3.5}{%
+\draw (0,5.5) \PNode{3.5}{%
 %%@Poster.langSeriesSem1
 };
 
 %% Implementation
-\draw (4,1) \PNode{6.5}{%
-%%@Poster.langSeriesImpl3Tiny
+\draw (4,1) \PNode{8}{%
+{\small
+%%@Poster.langSeriesImpl3
+}
 };
 
-\draw (2,0.5) \PNode{5.5}{%
-%%@Poster.langSeriesImpl2Tiny
+\draw (2,0.5) \PNode{8.5}{%
+{\small
+%%@Poster.langSeriesImpl2
+}
 };
 
-\draw (0,0) \PNode{4.5}{%
-%%@Poster.langSeriesImpl1Tiny
+\draw (0,0) \PNode{7.5}{%
+{\small
+%%@Poster.langSeriesImpl1
+}
 };
 
 \end{tikzpicture}
@@ -152,7 +155,7 @@ The semantics is defined in terms of type rules and the implementation in terms 
 
 }
 
-The next two columns in \figRef{fig-ehcstruct-langs} show the incorporation of polymorphic type inference
+The next two columns in \figRef{fig-ehcstruct-langs-shadowed} show the incorporation of polymorphic type inference
 and higher ranked types, respectively.
 Actually, part of the latter related to the propagation of quantified types
 is experimented with as separate variant
@@ -704,7 +707,20 @@ and GRIN global transformations.
 
 %%]
 
-%%[XX
+%%[oldLangSteps
+\begin{figure*}[t]
+\newcommand{\Nw}{}
+\def\Line{\hline}
+\def\Impl{Impl.}
+\def\Sem{Sem.}
+\def\Doc{Doc.}
+\begin{tabular}{l||l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
+%%@Poster.langSeries
+\end{tabular}
+\caption{Languages design steps}
+\label{fig-ehcstruct-langs}
+\end{figure*}
+
 %%]
 
 %%[XX
