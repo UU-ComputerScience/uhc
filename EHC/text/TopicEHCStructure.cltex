@@ -88,7 +88,6 @@ The semantics is defined in terms of type rules and the implementation in terms 
 \newcommand{\PNode}[2]{\Node{#1}{\parbox{#1cm}{#2}}}
 \newcommand{\PCNode}[2]{\PNode{#1}{{\begin{center}#2\end{center}}}}
 
-
 \begin{figure*}[t]
 \begin{tikzpicture}
 
@@ -441,7 +440,7 @@ and how to group multiple semantic rules under a single |SEM| header:
 %%[[wrap=code
 SEM Expr
   | Var  lhs.listing  = @name
-  | Lam  lhs.typ      = Type_Arrow (substit @body.varmap @arg.type) @body.type
+  | Lam  lhs.typ      = Type_Arrow (substit @body.varmap @arg.typ) @body.typ
   | App  lhs.typ      = case @func.typ of
                           (Type_Arrow p b) -> substit @arg.varmap b
 %%]]
@@ -628,10 +627,15 @@ which we discuss in \secRef{sec-ehcstruct-complexity-design}.
 %%]
 
 %%[complexityTransformations
-The many jobs a compiler has to do usually can be organised into a pipeline of internal representations and
-transformations.
-\figRef{fig-ehcstruct-dataflow} shows EHC's pipeline,
-with its major intermediate representations:
+
+EHC is organised as a sequence of transformations between internal representations
+of the program under compilation. 
+In order to keep the compiler understandable, we keep the transformations simple,
+and consequently, there are many transformations.
+At each step where the nature of the representation changes drastically
+we introduce a separate data structure (or language, if you will).
+\figRef{fig-ehcstruct-dataflow} shows these languages,
+and the transformations between them:
 
 \begin{figure*}
 \hspace*{-25mm}\raisebox{-60mm}[30mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
@@ -640,25 +644,88 @@ with its major intermediate representations:
 \end{figure*}
 
 \begin{Itemize}
-\item \textbf{Haskell}
-  A representation of the concrete program text, used for
+\item \textbf{HS} 
+  (Haskell) is a representation of the concrete program text as parsed.
+  It is used for
   desugaring, name and dependency analysis, and the regrouping of definitions accordingly.
-\item \textbf{Essential Haskell}
-  A simplified and desugared representation,
-  used for type analysis, code generation, and code expansion of class system related constructs.
+\item \textbf{EH}
+  (Essential Haskell) is a simplified and desugared representation.
+  It is used for
+  type analysis and code expansion of class system related constructs.
 \item \textbf{Core}
-  An untyped |lambda|-calculus representation,
-  used for lambda-lifting.
-\item \textbf{GRIN}
-  A GRIN representation \cite{boquist99phd-optim-lazy},
-  representing an almost imperative program, used for global program analysis.
+  is a representation in untyped |lambda|-calculus.
+\item \textbf{Grin}
+  (Graph reduction intermediate notation)
+  is a representation where local definitions have been made sequential
+  and the need for evaluation been made explicit \cite{boquist99phd-optim-lazy}.
 \item \textbf{Silly}
-  A simple imperative language abstraction,
-  used to generate C or any other imperative language such as input for LLVM \cite{lattner07www-llvm}.
+  (Simple imperative little language)
+  is a simple abstraction of an imperative language with an explicit stack and heap,
+  functions with local variables which can be called and tail-called.
+\item \textbf{C}
+  is used here as a universal back-end, hiding the details of the underlying machine.
+  Primitive functions are implemented here.
+\item \textbf{LLVM}
+  (Low level virtual machine)
+  is an imperative language which, other than C, is {\em intended} to be a universal
+  back-end \cite{lattner07www-llvm}.
+  We have it under consideration as an alternative route to executable code.
 \end{Itemize}
 
-Most of the intermediate representations can be pretty printed and parsed again, thus facilitating both debugging and experimenting.
-In \figRef{fig-ehcstruct-dataflow} the vertical arrows indicate this.
+As can be seen from the figure, the compilation pipeline branches after the Grin stage,
+offering different modes of compilation:
+\begin{Itemize}
+\item Grin code can be interpreted directly by a simple (and thus slow) interpreter.
+\item Grin code can be translated to C directly. 
+      In this mode, the program is represented as a custom bytecode, stored in arrays
+      which are linked together with a bytecode interpreter written in C.
+\item Grin code can be translated to C via transformations that do global program analysis,
+      and generate optimized Silly code, which can be further processed by either the
+      C or LLVM route.
+\end{Itemize}
+
+The transformations between the languages mentioned above bring the program stepwise
+to a lower level of representation, until it can be executed directly. 
+Much of the simplification work is done however by the transformations that are
+indicated by a loop in figure~\ref{fig-ehcstruct-dataflow}, i.e.\ for which the
+source and target language are the same.
+We give a short description of the more important of these transformations.
+Some of them are necessary simplifications, others are optimisations that can
+optionally be left out.
+
+Transformations on the Core language include:
+\begin{Itemize}
+\item Lambda lifting
+\item Eta-reduction
+\item Eliminating trivial applications
+\item Constant propagation
+\item Rename unique
+\item Let unrec
+\item Inline let alias
+\item Full lazyness
+\item Lambda global as argument
+\item CAF global as argument
+\item Float to global
+\end{Itemize}
+
+Transformations on the Grin language include:
+\begin{Itemize}
+\item Alias elimination
+\item Unused name elimination
+\item Eval elimination
+\item Unboxing
+\item Abstract interpretation: globally analyze actual parameters
+\item Inline eval operation, limiting the number of cases to those that can actually occur
+\item Remove dead case alternatives
+\item Translate to lower level, where complete nodes are unpacked to their fields
+\end{Itemize}
+
+Transformations on the Silly language include:
+\begin{Itemize}
+\item Shortcut: avoid unnecessary copying of local variables
+\item Embed: map local variables to stack positions
+\end{Itemize}
+
 %%]
 
 %%[experiences

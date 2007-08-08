@@ -831,6 +831,14 @@ WWW home page:
 %endif
 %else
 \author{Atze Dijkstra, Jeroen Fokker and S. Doaitse Swierstra}
+\institute{Department of Information and Computing Sciences,\\
+Universiteit Utrecht,\\
+P.O.Box 80.089, \\
+Padualaan 14, Utrecht, Netherlands,\\
+\email{@{atze,jeroen,doaitse}@@cs.uu.nl@},\\
+WWW home page:
+\texttt{http://www.cs.uu.nl}
+}
 %endif
 %%]
 
