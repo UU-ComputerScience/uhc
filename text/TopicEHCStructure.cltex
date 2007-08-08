@@ -283,29 +283,242 @@ we do not get lost in inconsistencies between semantics specification and compil
 %%]
 
 %%[explainAG
-Both |AG| and |Ruler| also support growing definitions, or aspects.
-We demonstrate this for |AG|,
-by showing the additional AG fragments for the code generation aspect of variant 8 in
-\figRef{fig-ehcstruct-alllangvariant}:
 
+Functional languages are famous for their ability to 
+parameterize functions not only with numbers and data structures,
+but also with functions and operators.
+The standard textbook example involves the functions |sum| and |product|,
+which can be defined separately by tedious inductive definitions:
+%%[[wrap=code
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+product  []      = 1
+product  (x:xs)  = x * product xs
+%%]]
+but, once this pattern has been generalized in a function |foldr|
+that takes as additional parameters the base value and the operator to apply
+in the inductive case:
+%%[[wrap=code
+foldr op e []      = e
+foldr op e (x:xs)  = x `op` foldr op e xs
+%%]]
+could easily have been defined as specializations of the general case:
+%%[[wrap=code
+sum      = foldr (+)  0
+product  = foldr (*)  1
+%%]]
+Indeed, good generalizations might have unexpected applications in other domains:
+%%[[wrap=code
+concat     =  foldr (++) []
+sort       =  foldr insert []
+transpose  =  foldr (zipWith (:)) (repeat [])
+%%]]
+The idea that underlies the definition of |foldr|, i.e.\ to capture the pattern
+of an inductive definition by adding a function parameter for each constructor of
+the data structure, can also be used for other data types, and even for
+multiple mutually recursive data types.
+Functions that can be expressed in this way were called {\em catamorphisms}
+by Bird, and the collective extra parameters to |foldr|-like functions 
+an {\em algebra} \cite{bird84circ-traverse,birdmoor96algebra}. 
+Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
+In fact, every algebra defines a {\em semantics} of the data structure.
+When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
+such as |((:),[])| for lists, we have the identity function.
+Such an algebra is said to define the `initial' semantics.
+
+Outside circles of functional programmers and category theorists, an
+algebra is simply known as a `tree walk'.
+In compiler construction, algebras could be very useful to define
+a semantics of a language, or bluntly said to define tree walks over the parse tree.
+The fact that this is not widely done, is due to the following problems:
+
+\begin{enumerate}
+\item Unlike lists, which have a standard function |foldr|, in a compiler we deal with
+      (many) custom data structures to describe the abstract syntax of a language, 
+      so we have to invest in writing a custom |fold|
+      function first. Morover, whenever we change the abstract syntax,
+      we need to change the |fold| function, and every algebra.
+\item Generated code can be described as a semantics of the language, but often
+      we need additional semantices: pretty-printed listings, warning messages,
+      and various derived structures for internal use (symbol tables etc.).
+      This can be done by having the semantic functions in the algebra return
+      tuples, but this makes them hard to handle.
+\item Data structures for abstract syntax tend to have many alternatives,
+      so algebras end up to be clumsy tuples containing dozens of functions.
+\item In practice, information not only flows bottom-up in the parse tree,
+      but also top-down. E.g., symbol tables with global definitions need
+      to be distributed to the leafs of the parse tree to be able to evaluate them.
+      This can be done by making the semantic functions in the algebra
+      higher order functions, but this pushes handling algebras beyond human control.
+\item Much of the work is just passing values up and down the tree.
+      The essense of a semantics is sparsely present in the algebra,
+      and obscured by lots of boilerplate.
+\end{enumerate}
+
+Many compiler writers thus end up writing ad hoc recursive functions
+instead of defining the semantics by a algebra,
+or even resort to non-functional techniques.
+Others succeed in giving a concise definition of a semantics,
+often using proof rules of some kind, but thereby loose the executability.
+For the implementation they still need conventional techniques,
+and the issue arises whether the program soundly implements
+the specified semantics.
+
+To save the nice idea of using an algebra for defining a semantics,
+we use a preprocessor for Haskell that overcomes the abovementioned problems \cite{swierstra99comb-lang}.
+It is not a separate language; we can still use Haskell for writing
+auxiliary functions, and use all abstraction techniques and libraries available.
+The preprocessor just allows a few additional constructs, which are translated
+into a custom |fold| function and algebras.
+
+
+
+We describe the main features of the preprocessor here, and explain why they overcome
+the five problems mentioned above.
+To start with, the abstract syntax of the language is defined in a |DATA| declaration,
+which is like a Haskell |data| declaration with named fields.
+The difference is that we don't have to write braces and commas,
+and that constructor function names need not to be unique.
+As an example, we show some fragments of the EH language, used in EHC to represent typed lambda calculus:
 %%[[wrap=code
 DATA Expr
-  | App             func            : Expr
-                    arg             : Expr
-
-ATTR Expr [ | | cexpr: CExpr ]
-
-SEM Expr
-  | App         lhs         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
+  =  Var     name  :: Name
+  |  Let     decl  :: Decl       body :: Expr
+  |  App     func  :: Expr       arg  :: Expr
+  |  Lam     arg   :: Pat        body :: Expr
+DATA Decl
+  =  Val     pat   :: Pat        expr :: Expr
+DATA Pat
+  =  Var     name  :: Name
+  |  App     func  :: Expr       arg  :: Expr
 %%]]
+The preprocessor generates corresponding Haskell |data| declarations
+(making the constructors unique by prepending the type name, like |Expr_Var|),
+and more importantly, generates a custom |fold| function. This overcomes problem 1.
 
-From EH abstract syntax |Expr| (see \figRef{fig-ehcstruct-dataflow}) we generate Core abstract syntax |CExpr|
-for function application.
-We omit further explanation of this fragment, but point out that this fragment independently of other |AG|
-fragments specifies how to compute the code generation aspect |cexpr| for function applications.
-The |AG| compiler then combines such separate specifications and builds one fold function,
-to be used on EH abstract syntax.
+For any desired value we wish to compute over a tree, we can declare a `synthesized attribute'.
+Attributes can be defined for one or more data types.
+For example, we can define that for all three datatypes we wish to 
+synthesize a pretty-printed listing, and that expressions
+in addition synthesize a type and a variable substitution map:
+%%[[wrap=code
+ATTR Expr Decl Pat  SYN listing   :: String
+ATTR Expr           SYN typ       :: Type
+                        varmap    :: [(Name,Type)]
+%%]]
+The preprocessor will ensure that the semantic functions will return appropriate
+tuples, but in our program we can simply refer to the attributes by name.
+This overcomes problem 2.
 
+The value of each attribute needs to be defined for 
+every constructor of every data type which has the attribute.
+As this defines the semantics of the language, these definitions
+are known as `semantic rules', and start with keyword |SEM|.
+An example is:
+%%[[wrap=code
+SEM Expr | Let
+  @lhs.listing =  "let " ++ @decl.listing ++ " in " ++ @body.listing
+%%]]
+This states that the synthesized |listing| attribute
+of an assignment statement can be constructed
+by combining the |listing| attributes of its |decl| and |body| children
+and some fixed strings.
+The |@| symbol in this context should be read as `attribute',
+not to be confused with Haskell `as-patterns'.
+At the left of the |=| symbol, the attribute to be defined is mentioned;
+at the right, any Haskell expression can be given.
+The |@| symbol may be omitted in the destination attribute,
+as is done in the next example. 
+This example shows that the right hand side of a semantics definition
+can use any Haskell expression form (a |case| expression in the example)
+and use auxiliary functions (like |substit| in the example),
+with embedded occurrences of child attributes.
+Also, it shows how to use the value of terminal symbols (|@name| in the example),
+and how to group multiple semantic rules under a single |SEM| header:
+%%[[wrap=code
+SEM Expr
+  | Var  lhs.listing  = @name
+  | Lam  lhs.typ      = Type_Arrow (substit @body.varmap @arg.type) @body.type
+  | App  lhs.typ      = case @func.typ of
+                          (Type_Arrow p b) -> substit @arg.varmap b
+%%]]
+The preprocessor collects and orders all definitions into a single algebra,
+replacing the attribute references by suitable selections from the results 
+of the recursive tree walk on the children. 
+This overcomes problem 3.
+
+To be able to pass information downward during a tree walk,
+we can define `inherited' attributes
+(the terminology goes back to \cite{knuth68ag}).
+As an example, it can serve to pass an environment,
+i.e.\ a lookup table that associates variables to types,
+which can be consulted when we need to determine the type of a variable:
+%%[[wrap=code
+ATTR Expr INH env :: [(Name,Type)]
+SEM Expr 
+  | Var  lhs.typ  =  fromJust (lookup @lhs.env @name)
+%%]]
+The value to use for the inherited attributes can be defined
+in semantic rules higher up the tree.
+In the example, |Let| expressions extend the environment
+that they inherited themselves with the new declarations,
+to define the environment to be used in the body:
+%%[[wrap=code
+SEM Expr
+  | Let  body.env  =  @decl.newenv ++ @lhs.env
+%%]]
+The preprocessor translates inherited attributes into
+extra parameters for the semantic functions in the algebra.
+This overcomes problem 4.
+
+In practice, there are many situations where inherited attributes
+are passed unchanged as inherited attirbutes for the children.
+For example, the environment is passed unchanged at |App| and |Lam| expressions:
+This can be quite tedious to do:
+%%[[wrap=code
+SEM Expr
+  |  App  func.env  = @lhs.env
+          arg.env   = @lhs.env
+  |  Lam  body.env  = @lhs.env
+%%]]
+To make this easier, the preprocessor has a convention that, 
+unless stated otherwise, attributes with the same name
+are automatically copied. So, the attribute |env| that
+an |App| expression inherited from its parent, is automatically copied
+to the children which also inherit an |env|, and the tedious rules
+above can be omitted.
+A similar automated copying is done for synthesized attributes,
+so if they need to be passed unchanged up the tree, this needs
+not to be explicitly coded.
+
+When more than one child offers a candidate to be copied,
+normally the last one is taken.
+But if we wish a combination of the copy candidates
+to be used, we can specify so in the attribute declaration in a special |USE| clause.
+An example is:
+%%[[wrap=code
+ATTR Expr Decl Pat
+  SYN listing USE (++) []
+%%]]
+which specifies that by default, the synthesized
+attribute |listing| is the concatenation of the |listing|s of
+all children that have one, or the empty list if no child has one.
+This defines a useful default rule, which can be overridden
+when extra symbols need to be interspersed, as for example in
+the definition of |listing| for |Let| expressions given earlier.
+
+It is allowed to declare both an inherited and a synthesized attribute
+with the same name. In combination with the copying mechanisms,
+this enables us to silently thread a value through the entire
+tree, updating it when necessary. 
+A useful application is to thread an integer value as a source
+for fresh variable names, incrementing it whenever a fresh name is 
+needed during the tree walk.
+This captures a pattern for which often |Reader| and
+|Writer| monads are introduced \cite{jones99thih}.
+
+The preprocessor automatically generates semantic rules
+in the standard situations described, and this overcomes problem 5.
 %%]
 
 %%[explainRuler
