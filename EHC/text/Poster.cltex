@@ -93,30 +93,40 @@ in   (id 3,id 'x')
 %%]]
 &
 %%[[langSeriesSem2
-\(\rulerCmdUse{rules3.I1.expr.base.e.app}\)
+\(
+%%[[langSeriesSem2Rule
+\rulerCmdUse{rules3.HM.expr.base.e.app}
+%%]]
+\)
 %%]]
 &
 %%[[langSeriesSem3
-\(\rulerCmdUse{rules3.I2.expr.base.e.app}\)
+\(\rulerCmdUse{rules3.I1.expr.base.e.app}\)
 %%]]
 &
 \Dots
 \\
 \textbf{\Impl:}
 &
-%%[[langSeriesImpl1
+%%[[langSeriesImpl1Tiny
 {\tiny
 %%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
 }
 %%]]
 &
+%%[[langSeriesImpl2Tiny
+{\tiny
 %%[[langSeriesImpl2
+%%@EHRulerRules.3.expr.e.app wrap=boxcode{.12}
+%%]]
+}
+%%]]
+&
+%%[[langSeriesImpl3Tiny
 {\tiny
 %%@EHRulerRules.4.expr.e.app wrap=boxcode{.12}
 }
 %%]]
-&
-\Dots
 &
 \Dots
 \\
