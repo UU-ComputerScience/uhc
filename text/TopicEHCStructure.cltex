@@ -41,20 +41,20 @@ in the context of the Essential Haskell (EH) Compiler (EHC)
 and in particular the following issues:
 \begin{Itemize}
 \item \textbf{Implementation complexity} (\secRef{sec-ehcstruct-complexity-implementation})
-  The amount of work a compiler has to do is a source of complexity as well.
+  The amount of work a compiler has to do is a source of complexity.
   We use a dataflow through many relatively small transformations, between various internal representations.
 \item \textbf{Description complexity} (\secRef{sec-ehcstruct-complexity-description})
   The specification of parts of the implementation itself can become complex because low-level details
   are visible.
   We use domain specific languages which factor out those low-level details which can be dealt with automatically.
-\item \textbf{Maintenance complexity} (\secRef{sec-ehcstruct-complexity-maintenance})
-  Actual compiler source, its documentation and specification tend to become inconsistent over time.
-  We deal with inconsistencies by avoiding its main cause: duplication.
-  Whenever two artefacts have to be consistent, we generate these from a common description.
 \item \textbf{Design complexity} (\secRef{sec-ehcstruct-complexity-design})
   Language features usually are experimented with in isolation.
   We describe their implementation in isolation, as a sequence of language variants, building on top
   of each other.
+\item \textbf{Maintenance complexity} (\secRef{sec-ehcstruct-complexity-maintenance})
+  Actual compiler source, its documentation and specification tend to become inconsistent over time.
+  We deal with inconsistencies by avoiding its main cause: duplication.
+  Whenever two artefacts have to be consistent, we generate these from a common description.
 \end{Itemize}
 %%]
 
@@ -64,7 +64,7 @@ EHC is designed as a sequence of compilers,
 each of which adds new features.
 This enables us to experiment with
 non-standard features.
-\figRef{fig-ehcstruct-alllangvariant} shows all 11 language variants we currently recognize,
+\figRef{fig-ehcstruct-alllangvariant} shows the language variants we currently recognize,
 with the standard and experimental features they introduce.
 The subdivision reflects a didactical choice
 of increasingly complex features; it is not
@@ -164,11 +164,6 @@ The semantics is defined in terms of type rules and the implementation in terms 
 
 The next two columns in \figRef{fig-ehcstruct-langs-shadowed} show the incorporation of polymorphic type inference
 and higher ranked types, respectively.
-Actually, part of the latter related to the propagation of quantified types
-is experimented with as separate variant
-\cite{dijkstra06exploit-tyann-tr},
-but is shown here to demonstrate the increase in complexity
-of both the type rules and the corresponding implementation.
 
 The tool architecture was designed in such a way that the description
 for each language variant |n| consists of the delta with respect to language |(n-1)|.
@@ -263,13 +258,13 @@ In summary, |Shuffle|:
 %%]
 
 %%[complexityDescription
-Haskell is well suited as an implemantation language for compilers, 
+Haskell is well suited as an implementation language for compilers, 
 among others because of the ease of manipulating tree structures.
 Still, if one needs to write many tree walks, especially with multiple passes
 over complicated syntax trees, the necessary mutually recursive functions
 tend to become hard to understand, and contain large pieces of boilerplate code.
 In the implementation of EHC we therefore use a chain of preprocessing tools,
-depicted in figure~\ref{fig-ehcstruct-toolchain}.
+depicted in \figRef{fig-ehcstruct-toolchain}.
 
 \begin{figure*}
 \hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
@@ -288,14 +283,15 @@ which enables a high-level specification of type inferencing,
 generating both AG code and \LaTeX\ documentation
 \cite{dijkstra06ruler}.
 \item \textbf{Shuffle}, 
-which deals with the compiler organisation and logistics of many different language features.
+which deals with the compiler organisation and logistics of many different language features,
+and provides a form of literate programming.
 \end{Itemize}
 
-In the rest of this section we elaborate on the rationale of UUAGC (section~\ref{sec-ehcstruct-explainUUAGC}) and Ruler (section~\ref{sec-ehcstruct-explainRuler}).
-We illustrate their use with example code, which implements part of the Hindley-Milner type checker.
+In the rest of this section we elaborate on the rationale of UUAGC (\secRef{sec-ehcstruct-explainUUAGC}) and Ruler (\secRef{sec-ehcstruct-explainRuler}).
+We illustrate their use with example code, which implements part of a Hindley-Milner type checker.
 In the section on UUAGC this is idealized toy code, but the section on Ruler shows 
 actual code taken from EHC for the same example case.
-In section~\ref{sec-ehcstruct-complexity-maintenance} and \ref{sec-ehcstruct-complexity-design} we continue with the rationale and use of Shuffle.
+In \secRef{sec-ehcstruct-complexity-maintenance} and \ref{sec-ehcstruct-complexity-design} we continue with the rationale and use of Shuffle.
 %%]
 
 %%[explainUUAGC
@@ -541,29 +537,31 @@ With the AG system we can describe the part of a compiler related to treewalks c
 However, this does not give us any means of looking at such an implementation in a more formal setting.
 Currently a formal description of Haskell, suitable for both the generation of a implementation and use in formal proofs,
 does not exist.
-For EH we have taken the less ambitious approach by using the |Ruler| system.
-The |Ruler| system allows us to have both an implementation and a type rule presentation with the guarantee that
+For EH we |Ruler|,
+which allows us to have both an implementation and a type rule presentation with the guarantee that
 these are mutually consistent.
 
-With the |Ruler| language of the |Ruler| system we describe type rules in such a way that both
+With |Ruler| we describe type rules in such a way that both
 \LaTeX\ rendering and AG implementation are generated from such a common type rule description.
-We use the following \LaTeX\ rendering (see also \FigRef{fig-ehcstruct-langs-shadowed}):
-
-\[
-%%@Poster.langSeriesSem2Rule
-\]
-
-and its corresponding AG implementation:
-
-%%@Poster.langSeriesImpl2
-
-to provide an overview of the |Ruler| system.
+We will demonstrate the use of |Ruler| by showing |Ruler| code for the Hindley-Milner type inferencing of
+function application |App| (see previous section for this and other names for expression terms).
 We omit a thorough explanation of the meaning of these fragments,
 as our purpose here is to demonstrate how we can describe these fragments with
 one common |Ruler| source text.
 Neither do we intend to be complete in our description;
 we point out those parts corresponding to
 the distinguishing features of the |Ruler| system.
+
+From a single source, to be discussed below, |Ruler| can both generate a \LaTeX\ rendering for human use
+in technical writing:
+
+\[
+%%@Poster.langSeriesSem2Rule
+\]
+
+and its corresponding AG implementation, for further processing by UUAGC:
+
+%%@Poster.langSeriesImpl2
 
 The given rule algorithmically describes the typing of a function application in a standard lambda calculus
 with the Hindley-Milner type system.
@@ -572,7 +570,8 @@ All judgements but the judgement involving the freshness of a type variable have
 relate various properties of expressions: the conclusion about the function application |e1 e2|, the premises about
 the function |e1| and argument |e2|.
 
-|Ruler| exploits this commonality by means of the \IxAsDef{scheme} of a judgement, the type of a judgement:
+|Ruler| exploits this commonality by means of the \IxAsDef{scheme} of a judgement,
+which can be thought of as the type of a judgement:
 
 %{
 %include ruler.fmt
@@ -585,17 +584,22 @@ scheme expr =
     judgespec valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
 %%]]
 
-The scheme declaration for expressions |expr| defines the following for each |expr| judgement:
+The scheme declaration for expressions |expr| defines
+a common framework for the judgements of each |expr| term, such
+as |App| and |Lam| (lambda expression):
 
 \begin{Itemize}
-\item |holes|: names, types and modifiers of placeholders (or \IxAsDef{hole}s) for the various properties.
-\item |judgeuse tex| (unparsing): \LaTeX\ pretty printing in terms of holes and other symbols. 
+\item |holes|: names, types and modifiers of placeholders (or \IxAsDef{hole}s) for the various properties,
+      such as |e| and |valGam|.
+\item |judgeuse tex| (unparsing): \LaTeX\ pretty printing in terms of holes and other symbols,
+      such as |:-| and |~>|. 
 \item |judgespec| (parsing): concrete syntax for specifying a complete judgement. 
 \end{Itemize}
 
 Modifiers |node|, |inh|, |syn|, and |thread| are mainly required for the generation of an AG implementation,
 as more information is needed to turn a rule into an algorithm.
-The |thread| modifier introduces two holes suffixed with |.inh| and |.syn|.
+The |thread| modifier introduces two holes suffixed with |.inh| and |.syn|,
+to be used by UUAGC for threading a value through a syntax tree.
 For a \LaTeX\ rendering the remaining modifiers do not matter.
 
 Additional formatting is required to map identifiers to \LaTeX\ symbols, for example: 
@@ -609,7 +613,7 @@ tyVarMp.inh     :->     VarMpk
 
 We omit further discussion of lexical issues.
 
-The rule for function application now is defined by judgements introduced with the keyword |judge|:
+The rule for function application |App| now is defined by judgements introduced with the keyword |judge|:
 
 %%[[wrap=code
 rule e.app =
@@ -623,7 +627,7 @@ rule e.app =
                     :- (eFun ^^ eArg) : (tyVarMp.arg ty) ~> tyVarMp.arg
 %%]]
 
-For each judgement its scheme is specified.
+For each judgement its scheme is specified (|expr| in the example).
 The |judgespec| of the corresponding scheme is used to check the concrete syntax and to bind the holes of the judgement
 to the concrete values specified by the judgement.
 From this rule definition a \LaTeX\ rendering is straightforwardly generated.
@@ -656,7 +660,7 @@ and consequently, there are many transformations.
 This approach is similar to the one taken in GHC 
 \cite{peytonjones92ghc-overview,peytonjones94trafo-ghc,peytonjones96hs-transf}.
 All our transformations are expressed as a full tree walk over the data structure, 
-using a tool for easyly defining tree walks (see section~\ref{sec-ehcstruct-explainUUAGC}).
+using a tool for easily defining tree walks (see \secRef{sec-ehcstruct-explainUUAGC}).
 At each step where the nature of the representation changes drastically
 we introduce a separate data structure (or language, if you will).
 \figRef{fig-ehcstruct-dataflow} shows these languages,
@@ -702,9 +706,9 @@ offering different modes of compilation:
 \begin{Itemize}
 \item Grin code can be interpreted directly by a simple (and thus slow) interpreter.
 \item Grin code can be translated to C directly. 
-      In this mode, the program is represented as a custom bytecode, stored in arrays
-      which are linked together with a bytecode interpreter written in C.
-\item Grin code can be translated to C via transformations that do global program analysis,
+      In this mode, the program is represented by a custom bytecodeformat, stored in arrays,
+      and executed by a bytecode interpreter written in C.
+\item Grin code can be translated to C via transformations which perform global program analysis,
       and generate optimized Silly code, which can be further processed by either the
       C or LLVM route.
 \end{Itemize}
@@ -712,7 +716,7 @@ offering different modes of compilation:
 The transformations between the languages mentioned above bring the program stepwise
 to a lower level of representation, until it can be executed directly. 
 Much of the simplification work is done however by the transformations that are
-indicated by a loop in figure~\ref{fig-ehcstruct-dataflow}, i.e.\ for which the
+indicated by a loop in \figRef{fig-ehcstruct-dataflow}, i.e.\ for which the
 source and target language are the same.
 We give a short description of the more important of these transformations.
 Some of them are necessary simplifications, others are optimisations that can
