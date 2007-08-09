@@ -53,7 +53,7 @@ and in particular the following issues:
   of each other.
 \item \textbf{Maintenance complexity} (\secRef{sec-ehcstruct-complexity-maintenance})
   Actual compiler source, its documentation and specification tend to become inconsistent over time.
-  We deal with inconsistencies by avoiding its main cause: duplication.
+  We deal with inconsistencies by avoiding their main cause: duplication.
   Whenever two artefacts have to be consistent, we generate these from a common description.
 \end{Itemize}
 %%]
@@ -291,7 +291,7 @@ In the rest of this section we elaborate on the rationale of UUAGC (\secRef{sec-
 We illustrate their use with example code, which implements part of a Hindley-Milner type checker.
 In the section on UUAGC this is idealized toy code, but the section on Ruler shows 
 actual code taken from EHC for the same example case.
-In \secRef{sec-ehcstruct-complexity-maintenance} and \ref{sec-ehcstruct-complexity-design} we continue with the rationale and use of Shuffle.
+In \secRef{sec-ehcstruct-complexity-design} and \ref{sec-ehcstruct-complexity-maintenance} we continue with the rationale and use of Shuffle.
 %%]
 
 %%[explainUUAGC
@@ -370,7 +370,7 @@ Many compiler writers thus end up writing ad hoc recursive functions
 instead of defining the semantics by a algebra,
 or even resort to non-functional techniques.
 Others succeed in giving a concise definition of a semantics,
-often using proof rules of some kind, but thereby loose the executability.
+often using proof rules of some kind, but thereby loose executability.
 For the implementation they still need conventional techniques,
 and the issue arises whether the program soundly implements
 the specified semantics.
@@ -393,15 +393,15 @@ and that constructor function names need not to be unique.
 As an example, we show some fragments of the EH language, used in EHC to represent typed lambda calculus:
 %%[[wrap=code
 DATA Expr
-  =  Var     name :: Name
-  |  Let     decl :: Decl   ^^ ^^ ^^    body :: Expr
-  |  App     func :: Expr   ^^ ^^ ^^    arg :: Expr
-  |  Lam     arg  :: Pat    ^^ ^^ ^^    body :: Expr
+  =  Var   ^^  ^^  name :: Name
+  |  Let   ^^  ^^  decl :: Decl   ^^  ^^  ^^    body :: Expr
+  |  App   ^^  ^^  func :: Expr   ^^  ^^  ^^    arg :: Expr
+  |  Lam   ^^  ^^  arg  :: Pat    ^^  ^^  ^^    body :: Expr
 DATA Decl
-  =  Val     pat :: Pat     ^^ ^^ ^^    expr :: Expr
+  =  Val   ^^  ^^  pat :: Pat     ^^  ^^  ^^    expr :: Expr
 DATA Pat
-  =  Var     name :: Name
-  |  App     func :: Expr   ^^ ^^ ^^    arg :: Expr
+  =  Var   ^^  ^^  name :: Name
+  |  App   ^^  ^^  func :: Expr   ^^  ^^  ^^    arg :: Expr
 %%]]
 The preprocessor generates corresponding Haskell |data| declarations
 (making the constructors unique by prepending the type name, like |Expr_Var|),
@@ -431,20 +431,23 @@ SEM Expr | Let
   @lhs.listing =  "let " ++ @decl.listing ++ " in " ++ @body.listing
 %%]]
 This states that the synthesized |listing| attribute
-of an assignment statement can be constructed
+of a |Let| expression can be constructed
 by combining the |listing| attributes of its |decl| and |body| children
 and some fixed strings.
-The |@| symbol in this context should be read as `attribute',
+The $\!\!$|@| symbol in this context should be read as `attribute',
 not to be confused with Haskell `as-patterns'.
+The keyword |lhs| refers to the parent of the children $\!\!$|@decl| and $\!\!$|@body|,
+i.e.\ the nameless |Expr| at the \textbf{l}eft \textbf{h}and \textbf{s}ide of
+the grammar rule.
 At the left of the |=| symbol, the attribute to be defined is mentioned;
 at the right, any Haskell expression can be given.
-The |@| symbol may be omitted in the destination attribute,
+The $\!\!$|@| symbol may be omitted in the destination attribute,
 as is done in the next example. 
 This example shows that the right hand side of a semantics definition
 can use any Haskell expression form (a |case| expression in the example)
 and use auxiliary functions (like |substit| in the example),
 with embedded occurrences of child attributes.
-Also, it shows how to use the value of terminal symbols (|@name| in the example),
+Also, it shows how to use the value of terminal symbols ($\!\!$|@name| in the example),
 and how to group multiple semantic rules under a single |SEM| header:
 %%[[wrap=code
 SEM Expr
@@ -472,7 +475,7 @@ SEM Expr
 The value to use for the inherited attributes can be defined
 in semantic rules higher up the tree.
 In the example, |Let| expressions extend the environment
-that they inherited themselves with the new declarations,
+that they inherited themselves with new declarations,
 to define the environment to be used in the body:
 %%[[wrap=code
 SEM Expr
@@ -483,7 +486,7 @@ extra parameters for the semantic functions in the algebra.
 This overcomes problem 4.
 
 In practice, there are many situations where inherited attributes
-are passed unchanged as inherited attirbutes for the children.
+are passed unchanged as inherited attributes for the children.
 For example, the environment is passed unchanged at |App| and |Lam| expressions:
 This can be quite tedious to do:
 %%[[wrap=code
@@ -522,6 +525,7 @@ It is allowed to declare both an inherited and a synthesized attribute
 with the same name. In combination with the copying mechanisms,
 this enables us to silently thread a value through the entire
 tree, updating it when necessary. 
+Such a pair of attirbutes can be declared as if it were a single `threaded' attribute.
 A useful application is to thread an integer value as a source
 for fresh variable names, incrementing it whenever a fresh name is 
 needed during the tree walk.
@@ -565,7 +569,7 @@ and its corresponding AG implementation, for further processing by UUAGC:
 
 The given rule algorithmically describes the typing of a function application in a standard lambda calculus
 with the Hindley-Milner type system.
-The rule involves four judgement, three premises and one conclusion.
+The rule involves four judgements, three premises and one conclusion.
 All judgements but the judgement involving the freshness of a type variable have the same structure as these all
 relate various properties of expressions: the conclusion about the function application |e1 e2|, the premises about
 the function |e1| and argument |e2|.
@@ -599,7 +603,7 @@ as |App| and |Lam| (lambda expression):
 Modifiers |node|, |inh|, |syn|, and |thread| are mainly required for the generation of an AG implementation,
 as more information is needed to turn a rule into an algorithm.
 The |thread| modifier introduces two holes suffixed with |.inh| and |.syn|,
-to be used by UUAGC for threading a value through a syntax tree.
+to be used by UUAGC for a threaded attribute.
 For a \LaTeX\ rendering the remaining modifiers do not matter.
 
 Additional formatting is required to map identifiers to \LaTeX\ symbols, for example: 
@@ -690,7 +694,7 @@ and the transformations between them:
 \item \textbf{Silly}
   (Simple imperative little language)
   is a simple abstraction of an imperative language with an explicit stack and heap,
-  functions with local variables which can be called and tail-called.
+  and functions with local variables which can be called and tail-called.
 \item \textbf{C}
   is used here as a universal back-end, hiding the details of the underlying machine.
   Primitive functions are implemented here.
