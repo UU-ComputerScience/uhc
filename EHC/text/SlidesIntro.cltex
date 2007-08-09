@@ -650,7 +650,16 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \hline
  & \textbf{Haskell} & \textbf{extensions} \\
 \hline
-1 - 4 & |lambda|-calculus, polymorphism, type checking/inferencing
+1 & |lambda|-calculus, type checking
+  & 
+  \\
+2 & type inferencing
+  &
+  \\
+3 & polymorphism
+  &
+  \\
+4 &
   & higher ranked types, existentials
   \\
 5 & data types
@@ -675,10 +684,13 @@ infers kind @Eq :: Forall a . a -> a -> *@
   & 
   \\
 12 & 
-  & \textit{explicit parameter passing for implicit parameters}
+  & explicit parameter passing
+  \\
+  & 
+  & ~~~for implicit parameters *
   \\
 13 & 
-  & \textit{higher order predicates}
+  & higher order predicates *
   \\
 14 - 19 & 
   & reserved for type system extensions
@@ -686,19 +698,19 @@ infers kind @Eq :: Forall a . a -> a -> *@
 20 & module system
   & 
   \\
-95 & \textit{class instance deriving}
+95 & class instance deriving *
   & 
   \\
 96 & exception handling
   & 
   \\
-97 & \textit{numbers: Integer, Float, Double}
+97 & numbers: Integer, Float, Double *
   & 
   \\
-98 & \textit{IO}
+98 & IO *
   & 
   \\
-99 & \textit{the rest for full Haskell}
+99 & the rest for full Haskell *
   & 
   \\
 \end{tabular}{}

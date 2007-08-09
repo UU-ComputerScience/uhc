@@ -1706,20 +1706,22 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicEHCStructure.introduction
 
-\section{Coping with internal complexity: transformations}
-\label{sec-ehcstruct-complexity-internal}
+\section{Coping with implementation complexity: transformations}
+\label{sec-ehcstruct-complexity-implementation}
 
-%%@TopicEHCStructure.complexityTransformations
+%%@TopicEHCStructure.complexityImplementation
 
-\section{Coping with formalisation complexity: domain specific languages}
-\label{sec-ehcstruct-complexity-formalisation}
+\section{Coping with description complexity: domain specific languages}
+\label{sec-ehcstruct-complexity-description}
 
-%%@TopicEHCStructure.complexityFormalisation
+%%@TopicEHCStructure.complexityDescription
 
-\subsection{Attribute Grammar (AG) system}
-%%@TopicEHCStructure.explainAG
+\subsection{UUAGC, a system for specifying tree walks}
+\label{sec-ehcstruct-explainUUAGC}
+%%@TopicEHCStructure.explainUUAGC
 
-\subsection{Ruler system}
+\subsection{Ruler, a system for specifying type rule implementation}
+\label{sec-ehcstruct-explainRuler}
 %%@TopicEHCStructure.explainRuler
 
 \section{Coping with maintenance complexity: generate, generate and generate}
