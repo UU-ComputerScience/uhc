@@ -1,4 +1,12 @@
 %%[abstract
+In \thispaper\ we describe the structure of the Essential Haskell Compiler (EHC)
+and how we manage its complexity,
+despite its growth beyond the essentials towards a full Haskell compiler.
+Our approach partitions both language and its implementation into smaller, manageable steps,
+and uses compiler domain specific tools to generate parts of the compiler from higher level descriptions.
+%%]
+
+%%[abstractExpReport
 Haskell compilers are complex programs.
 Testimony to this observation is the Glasgow Haskell compiler (GHC),
 which simultaneously incorporates many novel features, is used as a reliable workhorse for many a
@@ -20,6 +28,12 @@ As such it is an answer for the programmer looking for a programming language wh
 while at the same time guaranteeing program properties like ``well-typed programs don't crash''.
 However, the consequence is that a programming language implementation is burdened by these responsibilities,
 and becomes complex as a result.
+Haskell thus also is a perfect example of a programming language for which its compilers are complex.
+Testimony to this observation is the Glasgow Haskell compiler (GHC),
+which simultaneously incorporates many novel features, is used as a reliable workhorse for many a
+functional programmer, and offers a research platform for language designers.
+As a result, modifying GHC requires a steep learning curve for getting acquainted 
+with GHC's internals.
 
 In \thispaper\ we show how we deal with this compiler complexity
 in the context of the Essential Haskell (EH) Compiler (EHC)
@@ -76,8 +90,8 @@ For the description of the corresponding compiler we require the static semantic
 their implementation and documentation.
 The semantics is defined in terms of type rules and the implementation in terms of attribute grammars.
 
-\begin{CenterFigure}{t}{EH all language variants}{fig-ehcstruct-alllangvariant}
-%%@SlidesIntro.ehVariantsTable
+\begin{CenterFigure}{t}{EH language variants (work in progress marked by \textit{italic})}{fig-ehcstruct-alllangvariant}
+%%@SlidesIntro.ehVariantsTableLong
 \end{CenterFigure}
 
 {
@@ -695,17 +709,12 @@ optionally be left out.
 
 Transformations on the Core language include:
 \begin{Itemize}
-\item Lambda lifting
-\item Eta-reduction
-\item Eliminating trivial applications
+\item Cleanup transformations:
+      Eta-reduction, Eliminating trivial applications, Inline let alias, Remove unnecessary letrec mutual recursion
 \item Constant propagation
-\item Rename unique
-\item Let unrec
-\item Inline let alias
-\item Full lazyness
-\item Lambda global as argument
-\item CAF global as argument
-\item Float to global
+\item Rename identifiers to unique names
+\item Lambda lifting, composed of smaller transformations:
+      Full lazyness of subexpressions, Lambda/CAF globals passed as argument, Float lambda expressions to global level
 \end{Itemize}
 
 Transformations on the Grin language include:

@@ -604,7 +604,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \frame<presentation>
 {
 \frametitle{EHC versions}
-%%[[ehVariantsTable
+%%[[ehVariantsTableShort
 \begin{tabular}{lp{.4\linewidth}p{.42\linewidth}}
 \hline
  & \textbf{Haskell} & \textbf{extensions} \\
@@ -643,6 +643,65 @@ infers kind @Eq :: Forall a . a -> a -> *@
 \end{tabular}{}
 %%]]
 }
+%%]
+
+%%[ehVariantsTableLong
+\begin{tabular}{lp{.4\linewidth}p{.42\linewidth}}
+\hline
+ & \textbf{Haskell} & \textbf{extensions} \\
+\hline
+1 - 4 & |lambda|-calculus, polymorphism, type checking/inferencing
+  & higher ranked types, existentials
+  \\
+5 & data types
+  & 
+  \\
+6 & kind inferencing
+  & kind signatures
+  \\
+7 & records
+  & tuples as records
+  \\
+8 & code generation
+  & GRIN
+  \\
+9 & class system
+  & 
+  \\
+10 & 
+  & extensible records
+  \\
+11 & type synonyms
+  & 
+  \\
+12 & 
+  & \textit{explicit parameter passing for implicit parameters}
+  \\
+13 & 
+  & \textit{higher order predicates}
+  \\
+14 - 19 & 
+  & reserved for type system extensions
+  \\
+20 & module system
+  & 
+  \\
+95 & \textit{class instance deriving}
+  & 
+  \\
+96 & exception handling
+  & 
+  \\
+97 & \textit{numbers: Integer, Float, Double}
+  & 
+  \\
+98 & \textit{IO}
+  & 
+  \\
+99 & \textit{the rest for full Haskell}
+  & 
+  \\
+\end{tabular}{}
 %%]
 
 %%[XX
