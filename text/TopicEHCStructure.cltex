@@ -538,6 +538,14 @@ in the standard situations described, and this overcomes problem 5.
 %%]
 
 %%[explainRuler
+With the AG system we can describe the part of a compiler related to treewalks concisely and efficiently.
+However, this does not give us any means of looking at such an implementation in a more formal setting.
+Currently a formal description of Haskell, suitable for both the generation of a implementation and use in formal proofs,
+does not exist.
+For EH we have taken the less ambitious approach by using the |Ruler| system.
+The |Ruler| system allows us to have both an implementation and a type rule presentation with the guarantee that
+these are mutually consistent.
+
 With the |Ruler| language of the |Ruler| system we describe type rules in such a way that both
 \LaTeX\ rendering and AG implementation are generated from such a common type rule description.
 We use the following \LaTeX\ rendering (see also \FigRef{fig-ehcstruct-langs-shadowed}):
@@ -624,11 +632,11 @@ From this rule definition a \LaTeX\ rendering is straightforwardly generated.
 For the generation of a corresponding AG implementation we need information as specified by hole modifiers.
 An AG implementation is tree based, that is the structure of the tree drives the choice of which rule to apply.
 One of the holes needs to correspond to a node of such a tree; the modifier |node| specifies which.
-Further holes correspond to attributes.
+Other holes correspond to attributes.
 Attributes however have a top-to-bottom inherited direction indicated by |inh|,
 a bottom-to-top synthesized direction indicated by |syn|, or both, indicated by |thread|.
 
-The judgement with scheme |tvarvFresh| is an example of a judgement which does not fit into a tree structure required
+The judgement with scheme |tvarvFresh| is an example of a judgement which does not fit into a tree structure as required
 by AG: it does not refer to a |node| hole.
 For such schemes, called \IxAsDef{relation}s,
 an explicit AG implementation must be provided; we omit further discussion of relations.
