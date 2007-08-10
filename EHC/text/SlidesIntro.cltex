@@ -693,7 +693,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
   & higher order predicates *
   \\
 14 - 19 & 
-  & reserved for type system extensions
+  & \textit{reserved for type system extensions} *
   \\
 20 & module system
   & 
