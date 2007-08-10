@@ -57,7 +57,7 @@ in particular in the following areas:
   are visible.
   We use domain specific languages which factor out those low-level details which can be dealt with automatically.
 \item \textbf{Design complexity} (\secRef{sec-ehcstruct-complexity-design})
-  Language features usually are experimented with in isolation.
+  Experiments with language features are usually done in isolation.
   We describe their implementation in isolation, as a sequence of language variants, building on top
   of each other.
 \item \textbf{Maintenance complexity} (\secRef{sec-ehcstruct-complexity-maintenance})
@@ -94,7 +94,7 @@ EH3 (adding polymorphic type inference), and
 EH4 (adding higher-ranked types).
 
 
-\begin{CenterFigure}{t}{EH language variants (work in progress marked by an asterisk)}{fig-ehcstruct-alllangvariant}
+\begin{CenterFigure}{t}{EH language variants (work in progress is marked by an asterisk `*' )}{fig-ehcstruct-alllangvariant}
 %%@SlidesIntro.ehVariantsTableLong
 \end{CenterFigure}
 
@@ -276,10 +276,6 @@ tend to become hard to understand, and contain large pieces of boilerplate code.
 In the implementation of EHC we therefore use a chain of preprocessing tools,
 depicted in \figRef{fig-ehcstruct-toolchain}.
 
-\begin{CenterFigure}{}{Chain of tools used to build EHC}{fig-ehcstruct-toolchain}
-\hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
-\end{CenterFigure}
-
 We use the following preprocessing tools:
 \begin{Itemize}
 \item \textbf{UUAGC} (Utrecht University Attribute Grammar Compiler),
@@ -294,8 +290,11 @@ generating both AG code and \LaTeX\ documentation
 which deals with the compiler organisation and logistics of many different language features,
 and provides a form of literate programming.
 \end{Itemize}
+\begin{CenterFigure}{}{Chain of tools used to build EHC}{fig-ehcstruct-toolchain}
+\hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
+\end{CenterFigure}
 
-In the rest of this section we elaborate on the rationale of UUAGC (\secRef{sec-ehcstruct-explainUUAGC}) and Ruler (\secRef{sec-ehcstruct-explainRuler}).
+In the remainder of this section we elaborate on the rationale of UUAGC (\secRef{sec-ehcstruct-explainUUAGC}) and Ruler (\secRef{sec-ehcstruct-explainRuler}).
 We illustrate their use with example code, which implements part of a Hindley-Milner type checker.
 In the section on UUAGC this is idealized toy code, but the section on Ruler shows 
 actual code taken from EHC for the same example case.
@@ -394,7 +393,7 @@ into a custom |fold| function and algebras.
 
 We describe the main features of the preprocessor here, and explain why they overcome
 the five problems mentioned above.
-To start with, the abstract syntax of the language is defined in a |DATA| declaration,
+To start with, the grammar of the abstract syntax of the language is defined in a |DATA| declaration,
 which is like a Haskell |data| declaration with named fields.
 The difference is that we don't have to write braces and commas,
 and that constructor function names need not to be unique.
@@ -425,7 +424,8 @@ ATTR Expr Decl Pat  SYN  listing   :: String
 ATTR Expr           SYN  typ       :: Type
                          varmap    :: [(Name,Type)]
 %%]]
-The preprocessor will ensure that the semantic functions will return appropriate
+In the presence of multiple synthesized attributes,
+the preprocessor ensures that the semantic functions combine them in
 tuples, but in our program we can simply refer to the attributes by name.
 This overcomes problem 2.
 
@@ -455,7 +455,7 @@ This example shows that the right hand side of a semantics definition
 can use any Haskell expression form (a |case| expression in the example)
 and use auxiliary functions (like |substit| in the example),
 with embedded occurrences of child attributes.
-Also, it shows how to use the value of terminal symbols ($\!\!$|@name| in the example),
+Also, it shows how to use the value of leafs ($\!\!$|@name| in the example),
 and how to group multiple semantic rules under a single |SEM| header:
 %%[[wrap=code
 SEM Expr
@@ -555,7 +555,7 @@ these are mutually consistent.
 
 With |Ruler| we describe type rules in such a way that both
 \LaTeX\ rendering and AG implementation are generated from such a common type rule description.
-We will demonstrate the use of |Ruler| by showing |Ruler| code for the Hindley-Milner type inferencing of
+We demonstrate the use of |Ruler| by showing |Ruler| code for the Hindley-Milner type inferencing of
 function application |App| (see previous section for this and other names for expression terms).
 We omit a thorough explanation of the meaning of these fragments,
 as our purpose here is to demonstrate how we can describe these fragments with
@@ -658,7 +658,7 @@ an explicit AG implementation must be provided; we omit further discussion of re
 
 Finally, |Ruler| also provides support for incremental language specification,
 which we discuss in \secRef{sec-ehcstruct-complexity-design}.
-
+\pagebreak
 %}
 
 %%]
@@ -677,11 +677,6 @@ At each step where the nature of the representation changes drastically
 we introduce a separate data structure (or language, if you will).
 \figRef{fig-ehcstruct-dataflow} shows these languages,
 and the transformations between them:
-
-\begin{CenterFigure}{}{Intermediate languages and transformations in the EHC pipeline}{fig-ehcstruct-dataflow}
-\hspace*{-25mm}\raisebox{-60mm}[30mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
-\end{CenterFigure}
-
 \begin{Itemize}
 \item \textbf{HS} 
   (Haskell) is a representation of the concrete program text as parsed.
@@ -692,7 +687,7 @@ and the transformations between them:
   It is used for
   type analysis and code expansion of class system related constructs.
 \item \textbf{Core}
-  is a representation in untyped |lambda|-calculus.
+  is a representation in an untyped |lambda|-calculus.
 \item \textbf{Grin}
   (Graph reduction intermediate notation)
   is a representation where local definitions have been made sequential
@@ -711,6 +706,11 @@ and the transformations between them:
   We have it under consideration as an alternative route to executable code.
 \end{Itemize}
 
+\begin{CenterFigure}{}{Intermediate languages and transformations in the EHC pipeline}{fig-ehcstruct-dataflow}
+\hspace*{-25mm}\raisebox{-60mm}[30mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
+\end{CenterFigure}
+
+
 As can be seen from the figure, the compilation pipeline branches after the Grin stage,
 offering different modes of compilation:
 \begin{Itemize}
@@ -719,7 +719,7 @@ offering different modes of compilation:
       In this mode, the program is represented by a custom bytecodeformat, stored in arrays,
       and executed by a bytecode interpreter written in C.
 \item Grin code can be translated to C via transformations which perform global program analysis,
-      and generate optimized Silly code, which can be further processed by either the
+      and generate optimized Silly code, which can be further processed through either the
       C or LLVM route.
 \end{Itemize}
 
@@ -728,27 +728,29 @@ to a lower level of representation, until it can be executed directly.
 Much of the simplification work is done however by the transformations that are
 indicated by a loop in \figRef{fig-ehcstruct-dataflow}, i.e.\ for which the
 source and target language are the same.
-We give a short description of the more important of these transformations.
+We strive to have many small transformations rather than a few complicated ones.
+To give an idea, we list a short description of the more important of these transformations.
 Some of them are necessary simplifications, others are optimisations that can
 optionally be left out.
-
-Transformations on the Core language include:
 \begin{Itemize}
+\item 
+Transformations on the Core language include:
+\begin{itemize}
 \item Cleanup transformations:
       Eta-reduction, 
       Eliminating trivial applications, 
       Inline let alias, 
       Remove unnecessary letrec mutual recursion
 \item Constant propagation
-\item Rename identifiers to unique names
-\item Lambda lifting, composed of smaller transformations:
+and   Rename identifiers to unique names
+\item Lambda lifting, split up in:
       Full lazyness of subexpressions, 
       Lambda/CAF globals passed as argument, 
       Float lambda expressions to global level
-\end{Itemize}
-
+\end{itemize}
+\item
 Transformations on the Grin language include:
-\begin{Itemize}
+\begin{itemize}
 \item Transformations on separate modules:
       Alias elimination, 
       Unused name elimination,
@@ -762,12 +764,13 @@ Transformations on the Grin language include:
       Global inlining
 \item Transformations that remove higher-level constructs, 
       such as splitting complete nodes into their constituent fields.
-\end{Itemize}
-
+\end{itemize}
+\item
 Transformations on the Silly language include:
-\begin{Itemize}
+\begin{itemize}
 \item Shortcut: avoid unnecessary copying of local variables
 \item Embed: map local variables to stack positions
+\end{itemize}
 \end{Itemize}
 
 %%]
@@ -808,7 +811,13 @@ there is room for improvement:
   With a transformational approach to different intermediate representations,
   the relation of later stages to earlier available information becomes unclear.
   For example, by desugaring to a simpler (Essential) Haskell representation,
-  sourcecode gets reshuffled and their original source location has to be propagated correctly
+  source code of the program compiled by EHC gets reshuffled and their original
+  source location has to be propagated correctly as part of the AST.
+\item \textbf{Loss of information while transforming.}
+  With a transformational approach to different intermediate representations,
+  the relation of later stages to earlier available information becomes unclear.
+  For example, by desugaring to a simpler (Essential) Haskell representation,
+  source code gets reshuffled and their original source location has to be propagated correctly
   as part of the AST.
   Such information flow patterns are not yet automated.
 \item \textbf{High level description and efficiency.}
