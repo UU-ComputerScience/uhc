@@ -813,12 +813,6 @@ there is room for improvement:
   For example, by desugaring to a simpler (Essential) Haskell representation,
   source code of the program compiled by EHC gets reshuffled and their original
   source location has to be propagated correctly as part of the AST.
-\item \textbf{Loss of information while transforming.}
-  With a transformational approach to different intermediate representations,
-  the relation of later stages to earlier available information becomes unclear.
-  For example, by desugaring to a simpler (Essential) Haskell representation,
-  source code gets reshuffled and their original source location has to be propagated correctly
-  as part of the AST.
   Such information flow patterns are not yet automated.
 \item \textbf{High level description and efficiency.}
   Using a high level description usually also provides opportunities to optimise at a low level.
