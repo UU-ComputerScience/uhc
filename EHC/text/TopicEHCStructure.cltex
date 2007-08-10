@@ -37,8 +37,17 @@ with GHC's internals.
 
 In \thispaper\ we show how we deal with this compiler complexity
 in the context of the Essential Haskell (EH) Compiler (EHC)
-\cite{dijkstra04ehc-web,dijkstra05phd},
-and in particular the following issues:
+\cite{dijkstra04ehc-web,dijkstra05phd}.
+EH intends
+\begin{Itemize}
+\item to be full Haskell (the H in EH).
+\item to offer an implementation in terms of the essential, or desugared, core language constructs of Haskell (the E in EH).
+\item to be usable for research (i.e. extendable for experimentation) and education (also the E in EH).
+\end{Itemize}
+
+These requirements impose complexity upon the EH compiler,
+in particular in the following areas:
+
 \begin{Itemize}
 \item \textbf{Implementation complexity} (\secRef{sec-ehcstruct-complexity-implementation})
   The amount of work a compiler has to do is a source of complexity.
@@ -97,7 +106,7 @@ EH4 (adding higher-ranked types).
 \newcommand{\PNode}[2]{\Node{#1}{\parbox{#1cm}{#2}}}
 \newcommand{\PCNode}[2]{\PNode{#1}{{\begin{center}#2\end{center}}}}
 
-\begin{figure*}[t]
+\begin{CenterFigure}{}{Examples of created artefacts (rows) for various language variants (columns)}{fig-ehcstruct-langs-shadowed}
 \begin{tikzpicture}
 
 %\draw[step=1cm,blue,very thin] (0,0) grid (13,13);
@@ -157,9 +166,7 @@ EH4 (adding higher-ranked types).
 };
 
 \end{tikzpicture}
-\caption{Examples of created artefacts (rows) for various language variants (columns)}
-\label{fig-ehcstruct-langs-shadowed}
-\end{figure*}
+\end{CenterFigure}
 
 }
 
@@ -269,11 +276,9 @@ tend to become hard to understand, and contain large pieces of boilerplate code.
 In the implementation of EHC we therefore use a chain of preprocessing tools,
 depicted in \figRef{fig-ehcstruct-toolchain}.
 
-\begin{figure*}
+\begin{CenterFigure}{}{Chain of tools used to build EHC}{fig-ehcstruct-toolchain}
 \hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
-\caption{Chain of tools used to build EHC}
-\label{fig-ehcstruct-toolchain}
-\end{figure*}
+\end{CenterFigure}
 
 We use the following preprocessing tools:
 \begin{Itemize}
@@ -673,11 +678,9 @@ we introduce a separate data structure (or language, if you will).
 \figRef{fig-ehcstruct-dataflow} shows these languages,
 and the transformations between them:
 
-\begin{figure*}
+\begin{CenterFigure}{}{Intermediate languages and transformations in the EHC pipeline}{fig-ehcstruct-dataflow}
 \hspace*{-25mm}\raisebox{-60mm}[30mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
-\caption{Intermediate languages and transformations in the EHC pipeline}
-\label{fig-ehcstruct-dataflow}
-\end{figure*}
+\end{CenterFigure}
 
 \begin{Itemize}
 \item \textbf{HS} 
@@ -781,6 +784,14 @@ without being hindered by subsequent variants.
 However, on the downside, there are builtin system wide assumptions, for example about how type checking is done.
 We are currently investigating this issue in the context of |Ruler|.
 
+\Paragraph{Use in research and education}
+
+EH has been used in various projects.
+The stepwise organisation of EHC allows such projects to pick a suitable variant for experimentation.
+Furthermore, EHC is constructed as a library and a toplevel compilerdriver,
+thus facilitating the use of the implementation of EHC by other programs as well
+(see \figRef{fig-ehcstruct-toolchain}).
+
 \Paragraph{Improvements}
 
 Although our approach to cope with complexity indeed leads to the advocated benefits,
@@ -804,6 +815,11 @@ there is room for improvement:
   Using a high level description usually also provides opportunities to optimise at a low level.
   For attribute grammars a large body of optimisations are available,
   of which some are finding their way into our AG system.
+\item \textbf{Stepwise approach vs aspectwise approach.}
+  EH's stepwise approach imposes a fixed order in which language constructs are implemented on top of eachother.
+  Ideally one should be able to arbitrarily combine separate language constructs as aspects (independent implementation fragments),
+  but interaction between language constructs hinders this flexibility.
+  We are investigating the use of aspects in the context of |Ruler|.
 \end{Itemize}
 
 \Paragraph{Status and plans}
