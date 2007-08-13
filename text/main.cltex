@@ -1721,7 +1721,7 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 \label{sec-ehcstruct-explainUUAGC}
 %%@TopicEHCStructure.explainUUAGC
 
-\subsection{Ruler, a system for specifying type rule implementation}
+\subsection{Ruler, a system for specifying type rule implementations}
 \label{sec-ehcstruct-explainRuler}
 %%@TopicEHCStructure.explainRuler
 

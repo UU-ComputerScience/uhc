@@ -27,49 +27,52 @@ offering a sophisticated type system.
 As such it is an answer for the programmer looking for a programming language which does as much as possible of the programmer's job,
 while at the same time guaranteeing program properties like ``well-typed programs don't crash''.
 However, the consequence is that a programming language implementation is burdened by these responsibilities,
-and becomes complex as a result.
-Haskell thus also is a perfect example of a programming language for which its compilers are complex.
-Testimony to this observation is the Glasgow Haskell compiler (GHC),
+and consequently becomes quite complex.
+Haskell thus also is a perfect example of a programming language for which compilers are complex.
+Testimony to this observation is the Glasgow Haskell compiler (GHC)
+\cite{www04ghc,www07ghc-dev-wiki,marlow98new-ghc-run,peytonjones02hs-inline,peytonjones96hs-transf},
 which simultaneously incorporates many novel features, is used as a reliable workhorse for many a
 functional programmer, and offers a research platform for language designers.
 As a result, modifying GHC requires a steep learning curve for getting acquainted 
 with GHC's internals.
 
-In \thispaper\ we show how we deal with this compiler complexity
+In \thispaper\ we show how we deal with the complexity of compiling Haskell
 in the context of the Essential Haskell (EH) Compiler (EHC)
 \cite{dijkstra04ehc-web,dijkstra05phd}.
 EH intends
 \begin{Itemize}
-\item to be full Haskell (the H in EH).
+\item to compile full Haskell (the H in EH).
 \item to offer an implementation in terms of the essential, or desugared, core language constructs of Haskell (the E in EH).
-\item to be usable for research (i.e. extendable for experimentation) and education (also the E in EH).
+\item to provide a solid framework for research (i.e. extendable for experimentation) and education (also the E in EH).
 \end{Itemize}
 
-These requirements impose complexity upon the EH compiler,
-in particular in the following areas:
+In particular the following areas require attention:
 
 \begin{Itemize}
 \item \textbf{Implementation complexity} (\secRef{sec-ehcstruct-complexity-implementation})
   The amount of work a compiler has to do is a source of complexity.
-  We use a dataflow through many relatively small transformations, between various internal representations.
+  We organise the work as a series of smaller transformation steps
+  \cite{peytonjones96hs-transf,peytonjones98trans-optim}
+  between various internal representations.
 \item \textbf{Description complexity} (\secRef{sec-ehcstruct-complexity-description})
   The specification of parts of the implementation itself can become complex because low-level details
   are visible.
-  We use domain specific languages which factor out those low-level details which can be dealt with automatically.
+  We use domain specific languages which factor out such low-level details, so they are dealt with automatically.
 \item \textbf{Design complexity} (\secRef{sec-ehcstruct-complexity-design})
   Experiments with language features are usually done in isolation.
   We describe their implementation in isolation, as a sequence of language variants, building on top
   of each other.
 \item \textbf{Maintenance complexity} (\secRef{sec-ehcstruct-complexity-maintenance})
-  Actual compiler source, its documentation and specification tend to become inconsistent over time.
-  We deal with inconsistencies by avoiding their main cause: duplication.
-  Whenever two artefacts have to be consistent, we generate these from a common description.
+  Actual compilefight suchdeal with inconsistencies by avoiding their main cause: duplication.
+  Whenever two artefacts have to be consistent, we generate them from a common description.
 \end{Itemize}
+
+In each of the next sections we explain how we deal with each of these sources of complexity.
 %%]
 
 %%[complexityDesign
 To cope with the many features of Haskell,
-EHC is designed as a sequence of compilers,
+EHC actually is constructed as a sequence of compilers,
 each of which adds new features.
 This enables us to experiment with
 non-standard features.
@@ -181,7 +184,7 @@ Usually this delta is a pure addition, but there is interaction between subseque
   whereas such a context must anticipate later changes.
 \end{Itemize}
 
-Conventional compiler building tools are neither aware of partitioning into increments nor their interaction.
+Conventional compiler building tools are neither aware of partitioning into increments nor aware of their interaction.
 We use a separate tool, called |Shuffle|, to take care of such issues.
 We describe |Shuffle| in the next section.
 
@@ -227,7 +230,7 @@ program text plus documentation,
 whereas |Shuffle| combines chunks for different variants from different files into either program source code or documentation.
 
 |Shuffle| offers a different functionality than version management: version management offers historical versions,
-whereas |Shuffle| offers the simultaneous handling of different variants from one source.
+whereas |Shuffle| offers the simultaneous handling of different variants from a single source.
 
 For example, for language variant |2| and |3| (on top of |2|) a different Haskell wrapper function |mkTyVar| for
 the construction of the compiler internal representation of a type variable is required.
@@ -294,10 +297,12 @@ and provides a form of literate programming.
 \hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
 \end{CenterFigure}
 
-In the remainder of this section we elaborate on the rationale of UUAGC (\secRef{sec-ehcstruct-explainUUAGC}) and Ruler (\secRef{sec-ehcstruct-explainRuler}).
-We illustrate their use with example code, which implements part of a Hindley-Milner type checker.
-In the section on UUAGC this is idealized toy code, but the section on Ruler shows 
-actual code taken from EHC for the same example case.
+In the remainder of this section we elaborate on the rationale of UUAGC (\secRef{sec-ehcstruct-explainUUAGC})
+and |Ruler| (\secRef{sec-ehcstruct-explainRuler}).
+We illustrate the use of UUAGC and |Ruler| with example code, which implements part of a Hindley-Milner type checker.
+In the section on UUAGC this is idealized toy code,
+but in the section on |Ruler| we show
+actual code taken from EHC for the same example.
 In \secRef{sec-ehcstruct-complexity-design} and \ref{sec-ehcstruct-complexity-maintenance} we continue with the rationale and use of Shuffle.
 %%]
 
@@ -549,7 +554,7 @@ With the AG system we can describe the part of a compiler related to treewalks c
 However, this does not give us any means of looking at such an implementation in a more formal setting.
 Currently a formal description of Haskell, suitable for both the generation of a implementation and use in formal proofs,
 does not exist.
-For EH we do a step in that direction with |Ruler|,
+For EH we make a step in that direction with |Ruler|,
 which allows us to have both an implementation and a type rule presentation with the guarantee that
 these are mutually consistent.
 
@@ -559,7 +564,7 @@ We demonstrate the use of |Ruler| by showing |Ruler| code for the Hindley-Milner
 function application |App| (see previous section for this and other names for expression terms).
 We omit a thorough explanation of the meaning of these fragments,
 as our purpose here is to demonstrate how we can describe these fragments with
-one common |Ruler| source text.
+one common piece of |Ruler| source text.
 Neither do we intend to be complete in our description;
 we point out those parts corresponding to
 the distinguishing features of the |Ruler| system.
@@ -642,7 +647,7 @@ rule e.app =
 For each judgement its scheme is specified (|expr| in the example).
 The |judgespec| of the corresponding scheme is used to check the concrete syntax and to bind the holes of the judgement
 to the concrete values specified by the judgement.
-From this rule definition a \LaTeX\ rendering is straightforwardly generated.
+From this rule definition a \LaTeX\ rendering can straightforwardly be generated.
 
 For the generation of a corresponding AG implementation we need information as specified by hole modifiers.
 An AG implementation is tree based, that is the structure of the tree drives the choice of which rule to apply.
@@ -658,30 +663,29 @@ an explicit AG implementation must be provided; we omit further discussion of re
 
 Finally, |Ruler| also provides support for incremental language specification,
 which we discuss in \secRef{sec-ehcstruct-complexity-design}.
-\pagebreak
+%\pagebreak
 %}
 
 %%]
 
 %%[complexityImplementation
-
 EHC is organised as a sequence of transformations between internal representations
-of the program under compilation. 
+of the program being compiled. 
 In order to keep the compiler understandable, we keep the transformations simple,
-and consequently, there are many transformations.
+and consequently, there are many.
 This approach is similar to the one taken in GHC 
 \cite{peytonjones92ghc-overview,peytonjones94trafo-ghc,peytonjones96hs-transf}.
 All our transformations are expressed as a full tree walk over the data structure, 
 using a tool for easily defining tree walks (see \secRef{sec-ehcstruct-explainUUAGC}).
 At each step where the nature of the representation changes drastically
-we introduce a separate data structure (or language, if you will).
+we introduce a separate data structure (or ``language'').
 \figRef{fig-ehcstruct-dataflow} shows these languages,
 and the transformations between them:
 \begin{Itemize}
 \item \textbf{HS} 
   (Haskell) is a representation of the concrete program text as parsed.
   It is used for
-  desugaring, name and dependency analysis, and the regrouping of definitions accordingly.
+  desugaring, name and dependency analysis, and making binding groups explicit.
 \item \textbf{EH}
   (Essential Haskell) is a simplified and desugared representation.
   It is used for
@@ -695,7 +699,7 @@ and the transformations between them:
 \item \textbf{Silly}
   (Simple imperative little language)
   is a simple abstraction of an imperative language with an explicit stack and heap,
-  and functions with local variables which can be called and tail-called.
+  and functions which can be called and tail-called.
 \item \textbf{C}
   is used here as a universal back-end, hiding the details of the underlying machine.
   Primitive functions are implemented here.
@@ -703,7 +707,7 @@ and the transformations between them:
   (Low level virtual machine)
   is an imperative language which, other than C, is {\em intended} to be a universal
   back-end \cite{lattner07www-llvm}.
-  We have it under consideration as an alternative route to executable code.
+  We have it under consideration as an alternative route to attain executable code.
 \end{Itemize}
 
 \begin{CenterFigure}{}{Intermediate languages and transformations in the EHC pipeline}{fig-ehcstruct-dataflow}
@@ -718,6 +722,7 @@ offering different modes of compilation:
 \item Grin code can be translated to C directly. 
       In this mode, the program is represented by a custom bytecodeformat, stored in arrays,
       and executed by a bytecode interpreter written in C.
+      Its speed is comparable to that of Hugs \cite{www03hugs}.
 \item Grin code can be translated to C via transformations which perform global program analysis,
       and generate optimized Silly code, which can be further processed through either the
       C or LLVM route.
@@ -725,51 +730,50 @@ offering different modes of compilation:
 
 The transformations between the languages mentioned above bring the program stepwise
 to a lower level of representation, until it can be executed directly. 
-Much of the simplification work is done however by the transformations that are
+Most of the simplification work however is done by the transformations that are
 indicated by a loop in \figRef{fig-ehcstruct-dataflow}, i.e.\ for which the
 source and target language are the same.
 We strive to have many small transformations rather than a few complicated ones.
 To give an idea, we list a short description of the more important of these transformations.
-Some of them are necessary simplifications, others are optimisations that can
-optionally be left out.
+Some of them are necessary simplifications, others are optimisations that can be left out.
 \begin{Itemize}
 \item 
 Transformations on the Core language include:
 \begin{itemize}
 \item Cleanup transformations:
-      Eta-reduction, 
-      Eliminating trivial applications, 
-      Inline let alias, 
-      Remove unnecessary letrec mutual recursion
-\item Constant propagation
-and   Rename identifiers to unique names
+      \textit{eta-reduction},
+      \textit{eliminating trivial applications},
+      \textit{inline let alias},
+      \textit{remove unnecessary letrec mutual recursion}
+\item \textit{Constant propagation}
+and   \textit{rename identifiers to unique names}
 \item Lambda lifting, split up in:
-      Full lazyness of subexpressions, 
-      Lambda/CAF globals passed as argument, 
-      Float lambda expressions to global level
+      \textit{Full lazyness of subexpressions},
+      \textit{Lambda/CAF globals passed as argument},
+      \textit{Float lambda expressions to global level}
 \end{itemize}
 \item
 Transformations on the Grin language include:
 \begin{itemize}
 \item Transformations on separate modules:
-      Alias elimination, 
-      Unused name elimination,
-      Eval elimination,
-      Unboxing,
-      Local inlining
+      \textit{Alias elimination},
+      \textit{Unused name elimination},
+      \textit{Eval elimination},
+      \textit{Unboxing},
+      \textit{Local inlining}
 \item Transformations based on a global abstract interpretation
       that determines possible constructors of actual parameters:
-      Inline eval operation,
-      Remove dead case alternatives and unused functions,
-      Global inlining
+      \textit{Inline eval operation},
+      \textit{Remove dead case alternatives and unused functions},
+      \textit{Global inlining}
 \item Transformations that remove higher-level constructs, 
       such as splitting complete nodes into their constituent fields.
 \end{itemize}
 \item
 Transformations on the Silly language include:
 \begin{itemize}
-\item Shortcut: avoid unnecessary copying of local variables
-\item Embed: map local variables to stack positions
+\item \textit{Shortcut}: avoid unnecessary copying of local variables
+\item \textit{Embed}: map local variables to stack positions
 \end{itemize}
 \end{Itemize}
 
@@ -780,7 +784,7 @@ Transformations on the Silly language include:
 
 The partitioning into variants is helpful for both development and debugging.
 It is always clear to which variant code contributes,
-and if a problem arises one can go a variant back in order to isolate the problem.
+and if a problem arises one can use a previous variant in order to isolate the problem.
 Experimentation also benefits because one can pick a suitable variant to build upon,
 without being hindered by subsequent variants.
 
@@ -794,6 +798,14 @@ The stepwise organisation of EHC allows such projects to pick a suitable variant
 Furthermore, EHC is constructed as a library and a toplevel compilerdriver,
 thus facilitating the use of the implementation of EHC by other programs as well
 (see \figRef{fig-ehcstruct-toolchain}).
+
+We intend to use the first three language variants (\figRef{fig-ehcstruct-alllangvariant})
+in our basic course on compiler construction,
+thus providing students a realistic integrated introduction to
+language design, compiler implementation and software engineering.
+This approach is similar to Pierce's \cite{typing:types-prog-lang:pierce},
+however, in contrast we focus on a realistic implementation of full Haskell instead of small independent
+implementations of isolated type systems.
 
 \Paragraph{Improvements}
 
@@ -819,7 +831,7 @@ there is room for improvement:
   For attribute grammars a large body of optimisations are available,
   of which some are finding their way into our AG system.
 \item \textbf{Stepwise approach vs aspectwise approach.}
-  EH's stepwise approach imposes a fixed order in which language constructs are implemented on top of eachother.
+  EH's stepwise approach imposes a fixed order in which language constructs are implemented on top of each other.
   Ideally one should be able to arbitrarily combine separate language constructs as aspects (independent implementation fragments),
   but interaction between language constructs hinders this flexibility.
   We are investigating the use of aspects in the context of |Ruler|.
