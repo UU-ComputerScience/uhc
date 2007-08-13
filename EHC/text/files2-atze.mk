@@ -205,7 +205,7 @@ text-variant-icfp07-ehcstruct-blind:
 
 text-variant-ifl07-ehcstruct:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifl07 --set=kscode --set=natbib --set=storyEHCstruct --set=llncs --set=blockstyle --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifl07 --set=kscode --set=storyEHCstruct --set=llncs --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib
 
