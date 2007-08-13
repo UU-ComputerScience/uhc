@@ -70,7 +70,7 @@ Higher ranked types
 \textbf{Example:}
 &
 %%[[wrap=boxcode{.12} langSeriesEx1
-%%@[file:test/1/demo2.eh%%]
+%%@[file:test/regress/1/demo2.eh%%]
 %%]]
 &
 %%[[wrap=boxcode{.12} langSeriesEx2
@@ -82,7 +82,7 @@ in   let  (a,b) = (id 3,id 'x')
 %|id :: %%3(let id = \x -> x in id%%)|
 &
 %%[[wrap=boxcode{.15} langSeriesEx3
-%%@[file:test/4/demo2.eh%%]
+%%@[file:test/regress/4/demo2.eh%%]
 %%]]
 &
 \Dots
