@@ -39,7 +39,6 @@ SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
                                                                  @fields.kiL (repeat kiStar)
-				loc			.	fo_					:	FIOut
                 lhs         .   kiVarMp             =   agFakeDependOn @lhs.dataTy $ foVarMp @fo_ |=> @fldsKiVarMp
 %%]
 

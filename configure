@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS UUAGC_OPTIONS UUAGC_EHC_AST_OPTIONS UUAGC_EHC_SEM_OPTIONS CABAL_CONFIGURE_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD cppCmd CPP_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP SLASH LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME EXTLIBS_GMP_PKG_NAME LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS SET_MAKE build build_cpu build_vendor build_os host host_cpu host_vendor host_os EH_VERSION_MAJOR EH_VERSION_MINOR EH_VERSION_MINORMINOR EH_VERSION_STABILITY EH_VERSION ranlibCmd RANLIB_CMD arCmd AR_CMD GCC_EHC_OPTIONS GHC_EHC_OPTIONS SHUFFLE_EHC_OPTIONS UUAGC_OPTIONS UUAGC_EHC_AST_OPTIONS UUAGC_EHC_SEM_OPTIONS CABAL_CONFIGURE_OPTIONS ghcCmd GHC_CMD GHC_VERSION OPT_GHC_STANDARD_PACKAGES CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES uuagcCmd UUAGC_CMD gccCmd GCC_CMD cppCmd CPP_CMD CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP EGREP MACH_DEP_C_FOR_TAILCALL_ENTER MACH_DEP_C_FOR_TAILCALL_LEAVE1 MACH_DEP_C_FOR_TAILCALL_LEAVE2 SUFFIX_SHELL SUFFIX_EXEC SUFFIX_LIB PREFIX_LIB PATHS_SEP SLASH LIBTOOL_STATIC_CMD LIBTOOL_DYNAMIC_CMD EHC_GCC_OPTS_STATIC TOP_ABS TOP_ABS2 INSTALL_PREFIX INPLACE_PREFIX INPLACE_INSTALL_DIR RTS_PKG_NAME EXTLIBS_BGC_PKG_NAME EXTLIBS_GMP_PKG_NAME LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -853,6 +853,9 @@ Optional Packages:
                           with EHC.
   --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
                           Additional options to pass to GHC when compiling
+                          EHC.
+  --with-shuffle-ehc-options=<shuffle options for compiling ehc>
+                          Additional options to pass to SHUFFLE when compiling
                           EHC.
   --with-uuagc-options=<AG compiler options for compiling ehc>
                           Additional options to pass to UUAGC when compiling
@@ -1610,6 +1613,16 @@ if test "${with_ghc_ehc_options+set}" = set; then
    ghcEhcOptions="$withval"
 fi;
 GHC_EHC_OPTIONS="$ghcEhcOptions"
+
+
+### 'with' option for shuffle options
+
+# Check whether --with-shuffle-ehc-options or --without-shuffle-ehc-options was given.
+if test "${with_shuffle_ehc_options+set}" = set; then
+  withval="$with_shuffle_ehc_options"
+   shuffleEhcOptions="$withval"
+fi;
+SHUFFLE_EHC_OPTIONS="$shuffleEhcOptions"
 
 
 ### 'with' option for uuagc options
@@ -4842,6 +4855,7 @@ s,@arCmd@,$arCmd,;t t
 s,@AR_CMD@,$AR_CMD,;t t
 s,@GCC_EHC_OPTIONS@,$GCC_EHC_OPTIONS,;t t
 s,@GHC_EHC_OPTIONS@,$GHC_EHC_OPTIONS,;t t
+s,@SHUFFLE_EHC_OPTIONS@,$SHUFFLE_EHC_OPTIONS,;t t
 s,@UUAGC_OPTIONS@,$UUAGC_OPTIONS,;t t
 s,@UUAGC_EHC_AST_OPTIONS@,$UUAGC_EHC_AST_OPTIONS,;t t
 s,@UUAGC_EHC_SEM_OPTIONS@,$UUAGC_EHC_SEM_OPTIONS,;t t
