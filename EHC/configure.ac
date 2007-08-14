@@ -86,6 +86,13 @@ AC_ARG_WITH(ghc-ehc-options,
 [ ghcEhcOptions="$withval" ],)
 AC_SUBST(GHC_EHC_OPTIONS, "$ghcEhcOptions")
 
+### 'with' option for shuffle options
+AC_ARG_WITH(shuffle-ehc-options,
+[AC_HELP_STRING([--with-shuffle-ehc-options=<shuffle options for compiling ehc>],
+                [Additional options to pass to SHUFFLE when compiling EHC.])],
+[ shuffleEhcOptions="$withval" ],)
+AC_SUBST(SHUFFLE_EHC_OPTIONS, "$shuffleEhcOptions")
+
 ### 'with' option for uuagc options
 AC_ARG_WITH(uuagc-options,
 [AC_HELP_STRING([--with-uuagc-options=<AG compiler options for compiling ehc>],
