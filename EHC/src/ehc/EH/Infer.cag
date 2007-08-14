@@ -652,6 +652,11 @@ SEM Decl
 %%[8
 SEM Decl
   | FFI         loc         .   ty_sig_             =   tyQuantifyClosed @tyExpr.ty
+%%[[8
+                            .   ty_sig_expanded     =   @ty_sig_
+%%][11
+                            .   ty_sig_expanded     =   tyCanonic (emptyFI {fiEnv = @fe}) @ty_sig_
+%%]]
                 lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]
 

@@ -35,7 +35,7 @@ PRAGMA strictcase
 %%% Haskell importable interface to making canonical type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs 
+%%[9 hs export(tyCanonic)
 tyCanonic :: FIIn -> Ty -> Ty
 tyCanonic fi ty
   =  let  t =  wrap_TyAGItf

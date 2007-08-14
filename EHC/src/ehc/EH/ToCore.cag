@@ -527,7 +527,7 @@ ATTR Decls Decl AllDataConstr [ | | cbindL, ffiCBindL USE {++} {[]}: CBindL ]
 SEM Decl
   | Val         lhs         .   cbindL          =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
   | TySig       lhs         .   cbindL          =   []
-  | FFI         lhs         .   ffiCBindL       =   [CBind_FFI @callconv @safety @impEnt @nm @ty_sig_]
+  | FFI         lhs         .   ffiCBindL       =   [CBind_FFI @callconv @safety @impEnt @nm @ty_sig_expanded]
 %%]
 
 %%[9
