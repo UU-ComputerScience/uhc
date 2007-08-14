@@ -1725,12 +1725,12 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 \label{sec-ehcstruct-explainRuler}
 %%@TopicEHCStructure.explainRuler
 
-\section{Coping with design complexity: stepwise grow a language}
+\section{Coping with design complexity: growing a language stepwise}
 \label{sec-ehcstruct-complexity-design}
 
 %%@TopicEHCStructure.complexityDesign
 
-\section{Coping with maintenance complexity: generate, generate and generate}
+\section{Coping with maintenance complexity:\\generate, generate and generate}
 \label{sec-ehcstruct-complexity-maintenance}
 
 %%@TopicEHCStructure.complexityMaintenance

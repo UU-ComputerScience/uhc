@@ -43,7 +43,7 @@ EH intends
 \begin{Itemize}
 \item to compile full Haskell (the H in EH).
 \item to offer an implementation in terms of the essential, or desugared, core language constructs of Haskell (the E in EH).
-\item to provide a solid framework for research (i.e. extendable for experimentation) and education (also the E in EH).
+\item to provide a solid framework for research (i.e. extendable for experimentation) and education (another interpretation of the E in EH).
 \end{Itemize}
 
 In particular the following areas require attention:
@@ -73,7 +73,7 @@ In the next sections we explain how we deal with each of these sources of comple
 
 %%[complexityDesign
 To cope with the many features of Haskell,
-EHC actually is constructed as a sequence of compilers,
+EHC is actually constructed as a sequence of compilers,
 each of which adds new features.
 This enables us to experiment with
 non-standard features.
@@ -84,8 +84,28 @@ of increasingly complex features; it is not
 the development history of the project.
 Every compiler in the sequence can actually be built out of the repository.
 
-For each language variant in the sequence, various artefacts are created:
-example programs, a definition of the semantics, an implementation, documentation, etcetera.
+The tool architecture was designed in such a way that the description
+for each language variant $n$ consists of the delta with respect to language $n\!-\!1$.
+Usually this delta is a pure addition, but there is interaction between subsequent variants when:
+
+\begin{Itemize}
+\item Language features interact.
+\item The overall implementation and individual increments interact: an increment is described
+  in the context of the implementation of preceding variants,
+  whereas such a context must anticipate later changes.
+\end{Itemize}
+
+Conventional compiler building tools are neither aware of partitioning into increments nor aware of their interaction.
+We use a separate tool, called |Shuffle|, to take care of such issues.
+We describe |Shuffle| in the next section.
+
+\begin{CenterFigure}{t}{EH language variants (work in progress is marked by an asterisk `*' )}{fig-ehcstruct-alllangvariant}
+%%@SlidesIntro.ehVariantsTableLong
+\end{CenterFigure}
+
+
+For each language variant in the sequence, various artefacts are created, such as
+example programs, a definition of the semantics, an implementation, documentation.
 \figRef{fig-ehcstruct-langs-shadowed} shows some of these artefacts for some language variants.
 The first row shows an example program for each language variant.
 The second row shows a description of part of the semantics of the language variants (the type rule for functional application),
@@ -97,10 +117,6 @@ EH1 (simply explicitly typed |lambda|-calculus),
 EH3 (adding polymorphic type inference), and
 EH4 (adding higher-ranked types).
 
-
-\begin{CenterFigure}{t}{EH language variants (work in progress is marked by an asterisk `*' )}{fig-ehcstruct-alllangvariant}
-%%@SlidesIntro.ehVariantsTableLong
-\end{CenterFigure}
 
 {
 %%@Poster.exportedMacros
@@ -174,21 +190,6 @@ EH4 (adding higher-ranked types).
 
 }
 
-The tool architecture was designed in such a way that the description
-for each language variant $n$ consists of the delta with respect to language $n\!-\!1$.
-Usually this delta is a pure addition, but there is interaction between subsequent variants when:
-
-\begin{Itemize}
-\item Language features interact.
-\item The overall implementation and individual increments interact: an increment is described
-  in the context of the implementation of preceding variants,
-  whereas such a context must anticipate later changes.
-\end{Itemize}
-
-Conventional compiler building tools are neither aware of partitioning into increments nor aware of their interaction.
-We use a separate tool, called |Shuffle|, to take care of such issues.
-We describe |Shuffle| in the next section.
-
 %%]
 EH thus consists of a sequence of languages, each with its own compiler.
 Each language variant is described, and implemented, as an increment on top of the previous variant.
@@ -202,7 +203,7 @@ but to be able to make subsequent versions.
 One must be prepared for change, and in order to facilitate change, the object of change should
 be isolated and encapsulated.
 Although many programming languages support encapsulation,
-this is not enough for the construction of a compiler,
+this is not sufficient for the construction of a compiler,
 because one language feature influences not only different parts of a compiler
 (parser, structure of abstract syntax tree, type system, code generation, runtime system)
 but also other artefacts such as specification, documentation and test suites.
@@ -257,8 +258,8 @@ These two Haskell fragments are generated from the following |Shuffle| descripti
 %%%]
 %%]]
 
-The notation @%%[2.mkTyVar@ begins a chunk for variant |2| with name |mkTyVar|, ended by @%%]@.
-The chunk for @3.mkTyVar@ explicitly specifies to override @2.mkTyVar@ for variant |3|.
+The notation @%%[2.mkTyVar@ begins a chunk for variant~2 with name |mkTyVar|, ended by @%%]@.
+The chunk for @3.mkTyVar@ explicitly specifies to override @2.mkTyVar@ for variant~3.
 Although the type signature can be factored out, we refrain from doing so for small definitions.
 
 In summary, |Shuffle|:
@@ -284,7 +285,7 @@ We use the following preprocessing tools:
 \begin{Itemize}
 \item \textbf{UUAGC} (Utrecht University Attribute Grammar Compiler),
 which enables us to specify abstract syntax trees and tree walks over them using an attribute grammar (AG) formalism
-\cite{baars04ag-www,dijkstra04thag,dijkstra05phd,swierstra99comb-lang}.
+\cite{baars04ag-www,dijkstra05phd,dijkstra04thag,swierstra99comb-lang}.
 \item \textbf{Ruler},
 a translator for an even more specialized language,
 which enables a high-level specification of type inferencing,
@@ -354,7 +355,7 @@ Outside circles of functional programmers and category theorists, an
 algebra is simply known as a `tree walk'.
 In compiler construction, algebras could be very useful to define
 a semantics of a language, or bluntly said to define tree walks over the parse tree.
-The fact that this is not widely done, is due to the following problems:
+This is not widely done, due to the following problems:
 
 \begin{enumerate}
 \item Unlike lists, which have a standard function |foldr|, in a compiler we deal with
@@ -371,9 +372,9 @@ The fact that this is not widely done, is due to the following problems:
       so algebras end up to be clumsy tuples containing dozens of functions.
 \item In practice, information not only flows bottom-up in the parse tree,
       but also top-down. E.g., symbol tables with global definitions need
-      to be distributed to the leafs of the parse tree to be able to evaluate them.
+      to be distributed to the leaves of the parse tree to be able to evaluate them.
       This can be done by making the semantic functions in the algebra
-      higher order functions, but this pushes handling algebras beyond human control.
+      higher order functions, but this pushes the handling of algebras beyond human control.
 \item Much of the work is just passing values up and down the tree.
       The essence of a semantics is sparsely present in the algebra,
       and obscured by lots of boilerplate.
@@ -395,16 +396,16 @@ we use a preprocessor for Haskell that overcomes the abovementioned problems \ci
 It is not a separate language; we can still use Haskell for writing
 auxiliary functions, and use all abstraction techniques and libraries available.
 The preprocessor just allows a few additional constructs, which are translated
-into a custom |fold| function and algebras.
+into custom |fold|-like functions and algebras.
 
 
 
 We describe the main features of the preprocessor here, and explain why they overcome
 the five problems mentioned above.
 To start with, the grammar of the abstract syntax of the language is defined in a |DATA| declaration,
-which is like a Haskell |data| declaration with named fields.
-The difference is that we don't have to write braces and commas,
-and that constructor function names need not to be unique.
+which is like a Haskell |data| declaration with named fields,
+except that we don't have to write braces and commas,
+and that constructor function names need not be unique.
 As an example, we show some fragments of the EH language, used in EHC to represent typed lambda calculus:
 %%[[wrap=code
 DATA Expr
@@ -422,7 +423,8 @@ The preprocessor generates corresponding Haskell |data| declarations
 (making the constructors unique by prepending the type name, like |Expr_Var|),
 and more importantly, generates a custom |fold| function. This overcomes problem 1.
 
-For any desired value we wish to compute over a tree, we can declare a `synthesized attribute'.
+For any desired value we wish to compute over a tree, we can declare a `synthesized attribute'
+(the terminology goes back to Knuth \cite{knuth68ag}).
 Attributes can be defined for one or more data types.
 For example, we can define that for all three datatypes we wish to 
 synthesize a pretty-printed listing, and that expressions
@@ -464,7 +466,7 @@ This example shows that the right hand side of a semantics definition
 can be any Haskell expression (a |case| expression in the example)
 and use auxiliary functions (like |substit| in the example),
 with embedded occurrences of child attributes.
-Also, it shows how to use the value of leafs ($\!\!$|@name| in the example),
+Also, it shows how to use the value of leaves ($\!\!$|@name| in the example),
 and how to group multiple semantic rules under a single |SEM| header:
 %%[[wrap=code
 SEM Expr
@@ -479,8 +481,7 @@ of the recursive tree walk on the children.
 This overcomes problem 3.
 
 To be able to pass information downward during a tree walk,
-we can define `inherited' attributes
-(the terminology goes back to Knuth \cite{knuth68ag}).
+we can define `inherited' attributes.
 As an example, it can serve to pass an environment,
 i.e.\ a lookup table that associates variables to types,
 which can be consulted when we need to determine the type of a variable:
@@ -504,7 +505,7 @@ This overcomes problem 4.
 
 In practice, there are many situations where inherited attributes
 are passed unchanged as inherited attributes for the children.
-For example, the environment is passed unchanged at |App| and |Lam| expressions:
+For example, the environment is passed unchanged at |App| and |Lam| expressions.
 This can be quite tedious to do:
 %%[[wrap=code
 SEM Expr
@@ -512,15 +513,15 @@ SEM Expr
           arg.env   = @lhs.env
   |  Lam  body.env  = @lhs.env
 %%]]
-To make this easier, the preprocessor has a convention that, 
+Since the code above is trivial, the preprocessor has a convention that, 
 unless stated otherwise, attributes with the same name
 are automatically copied. So, the attribute |env| that
 an |App| expression inherited from its parent, is automatically copied
 to the children which also inherit an |env|, and the tedious rules
 above can be omitted.
-This captures a pattern for which often a |Reader|
-monad is introduced \cite{jones99thih}.
-A similar automated copying is done for synthesized attributes,
+This captures a pattern that is often addressed by introducing a |Reader|
+monad \cite{jones99thih}.
+Similar automated copying is performed for synthesized attributes,
 so if they need to be passed unchanged up the tree, this doesn't
 need an explicit encoding, nor a |Writer| monad.
 
@@ -565,7 +566,7 @@ which allows us to have both an implementation and a type rule presentation with
 these are mutually consistent.
 
 With |Ruler| we describe type rules in such a way that both
-\LaTeX\ rendering and AG implementation are generated from such a common type rule description.
+a \LaTeX\ rendering and an AG implementation can be generated from such a common type rule description.
 We demonstrate the use of |Ruler| by showing |Ruler| code for the Hindley-Milner type inferencing of
 function application |App| (see previous section for this and other names for expression terms).
 We omit a thorough explanation of the meaning of these fragments,
@@ -700,8 +701,9 @@ and the transformations between them:
   is a representation in an untyped |lambda|-calculus.
 \item \textbf{Grin}
   (Graph reduction intermediate notation)
-  is a representation where local definitions have been made sequential
-  and the need for evaluation has been made explicit \cite{boquist99phd-optim-lazy,boquist96grin-optim}.
+  a representation proposed by Boquist \cite{boquist99phd-optim-lazy,boquist96grin-optim}
+  where local definitions have been made sequential
+  and the need for evaluation has been made explicit.
 \item \textbf{Silly}
   (Simple imperative little language)
   is a simple abstraction of an imperative language with an explicit stack and heap,
@@ -809,7 +811,7 @@ We intend to use the first three language variants (\figRef{fig-ehcstruct-alllan
 in our basic course on compiler construction,
 thus providing students with a realistic integrated introduction to
 language design, compiler implementation and software engineering.
-This approach is similar to Pierce's \cite{typing:types-prog-lang:pierce},
+This approach is similar to that in Pierce's textbook \cite{typing:types-prog-lang:pierce},
 however, in contrast we focus on a realistic implementation of full Haskell instead of small independent
 implementations of isolated type systems.
 
@@ -845,10 +847,10 @@ there is room for improvement:
 
 \Paragraph{Status and plans}
 
-We are working towards a release as a Haskell compiler: the last variant of the whole sequence.
-Compilation of a Prelude succeeds, and we run programs with a GRIN based bytecode interpreter.
-We intend to work on AG optimisations, use LLVM \cite{lattner07www-llvm} as a backend,
-and GRIN global transformations.
+We are working towards a release of EHC as a Haskell compiler: the last variant of the whole sequence.
+Compilation of a prelude succeeds, and we run programs with a GRIN based bytecode interpreter.
+We intend to work on AG optimisations, on using LLVM \cite{lattner07www-llvm} as a backend,
+and on GRIN global transformations.
 
 %%]
 
