@@ -444,7 +444,7 @@
 %%[1
 
 %if not asSlides
-\usepackage{txfonts}
+% \usepackage{txfonts}
 %endif
 %if not (storyRuler || storyRulerDoc) || asSlides
 \usepackage[bbgreekl]{mathbbol}
@@ -1707,12 +1707,12 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicEHCStructure.introduction
 
-\section{Coping with implementation complexity: transformations}
+\section{Coping with implementation complexity: transform}
 \label{sec-ehcstruct-complexity-implementation}
 
 %%@TopicEHCStructure.complexityImplementation
 
-\section{Coping with description complexity: domain specific languages}
+\section{Coping with description complexity: use tools}
 \label{sec-ehcstruct-complexity-description}
 
 %%@TopicEHCStructure.complexityDescription
@@ -1725,7 +1725,7 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 \label{sec-ehcstruct-explainRuler}
 %%@TopicEHCStructure.explainRuler
 
-\section{Coping with design complexity: growing a language stepwise}
+\section{Coping with design complexity: grow stepwise}
 \label{sec-ehcstruct-complexity-design}
 
 %%@TopicEHCStructure.complexityDesign

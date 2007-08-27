@@ -693,7 +693,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
   & higher order predicates *
   \\
 14--19 & 
-  & \textit{reserved for type system extensions} *
+  & \textit{reserved for other extensions} *
   \\
 20 & module system
   & 
@@ -701,8 +701,8 @@ infers kind @Eq :: Forall a . a -> a -> *@
 95 & class instance deriving *
   & 
   \\
-96 & exception handling
-  & 
+96 &
+  & exception handling
   \\
 97 & numbers: Integer, Float, Double *
   & 
