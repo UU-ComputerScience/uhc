@@ -295,7 +295,7 @@ which deals with the compiler organisation and logistics of many different langu
 and provides a form of literate programming.
 \end{itemize}
 \begin{CenterFigure}{}{Chain of tools used to build EHC}{fig-ehcstruct-toolchain}
-\hspace*{-5mm}\raisebox{-10mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
+\hspace*{-5mm}\raisebox{-15mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
 \end{CenterFigure}
 
 In the remainder of this section we elaborate on the rationale of UUAGC (\secRef{sec-ehcstruct-explainUUAGC})
@@ -331,7 +331,7 @@ foldr op e (x:xs)  = x `op` foldr op e xs
 %%]]
 Once we have this generalized function, we can partially parameterize it
 to obtain simpler definitions for |sum| and |product|, and
-in many other functions as well:
+many other functions as well:
 %%[[wrap=code
 sum        =  foldr (+)  0
 product    =  foldr (*)  1
@@ -719,7 +719,7 @@ and the transformations between them:
 \end{itemize}
 
 \begin{CenterFigure}{}{Intermediate languages and transformations in the EHC pipeline}{fig-ehcstruct-dataflow}
-\hspace*{-25mm}\raisebox{-60mm}[25mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
+\hspace*{-25mm}\raisebox{-70mm}[25mm][0mm]{\FigScaledPDF{0.60}{ehc-dataflow2}}
 \end{CenterFigure}
 
 
