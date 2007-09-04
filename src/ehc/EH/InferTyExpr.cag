@@ -40,9 +40,9 @@ ATTR AllTyVar AllTyExpr [ | tyKiGam: TyKiGam | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6 hs
-tyGamLookupOrAdd :: UID -> HsName -> TyGam -> (TyGamInfo,TyGam)
-tyGamLookupOrAdd uniq nm tyGam
-  =  case tyGamLookup nm tyGam of
+tyGamLookupOrAdd :: UID -> HsName -> TyGam -> TyGam -> (TyGamInfo,TyGam)
+tyGamLookupOrAdd uniq nm tyGamLkup tyGam
+  =  case tyGamLookup nm tyGamLkup of
        Nothing    ->  let  t    =  mkNewTyVar uniq
                            tgi  =  mkTGI t
                       in   (tgi,gamAdd nm tgi tyGam)
@@ -99,7 +99,7 @@ SEM TyExpr
 
 %%[6
 SEM TyExpr
-  | Var VarWild (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm @lhs.tyGam
+  | Var VarWild (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
 
@@ -134,7 +134,7 @@ SEM TyVar
 
 %%[6
 SEM TyVar
-  | Var         (loc.tgi_,lhs.tyGam)                := 	tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam)
+  | Var         (loc.tgi_,lhs.tyGam)                := 	tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam) @lhs.tyGam
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd emptyVarMp (tgiTy @tgi_) @lhs.tyKiGam
@@ -151,7 +151,7 @@ SEM PrExpr
 
 %%[9
 SEM RowTyExpr
-  | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam
+  | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
 
