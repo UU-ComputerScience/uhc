@@ -261,10 +261,14 @@ data AltFetch
 
 %%[8
 SEM GrAlt
-  | Alt         loc         .   altFetch        =   case [ x | x@(n,o) <- zip @pat.introNmL [0..], n `Map.member` @expr.gathFviMp ] of
-                                                      []      -> AltFetch_Zero
-                                                      [(n,o)] -> AltFetch_One n o
-                                                      _       -> AltFetch_Many @pat.introNmL
+  | Alt         loc         .   (altFetch,nrOfFlds)
+                                                =   let nmOffs = zip @pat.introNmL [0..]
+                                                    in  ( case [ x | x@(n,o) <- nmOffs, n `Map.member` @expr.gathFviMp ] of
+                                                            []      -> AltFetch_Zero
+                                                            [(n,o)] -> AltFetch_One n o
+                                                            _       -> AltFetch_Many @pat.introNmL
+                                                        , length nmOffs
+                                                        )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -280,23 +284,36 @@ SEM GrBind
 SEM GrExpr
   | Unit Store Call Eval App FFI FetchUpdate
                 loc         .   valDepth        =   @lhs.stkDepth + @valStkInc
-  | Unit Store Call Eval App FFI FetchUpdate Case
+  | FetchUpdate Case
                 lhs         .   stkDepth        =   @valDepth
-  | Seq         body        .   stkDepth        =   @expr.stkDepth + @seqStkInc
+  | Unit Store Call Eval App FFI
+                lhs         .   stkDepth        =   @retStkDepth
+  | Seq         loc         .   bodyStkDepth    =   @expr.stkDepth + @seqStkInc
+                body        .   stkDepth        =   @bodyStkDepth
   | Case        altL        .   stkDepth        =   @lhs.stkDepth + @scrutineeStkInc
-                loc         .   valDepth        =   @altL.stkDepth
+                loc         .   enumStkInc      =   if @altL.isAllEnum then -1 else 0
+                            .   valDepth        =   case @returnCtxt of
+                                                      ReturnCtxt_CaseReturns _ dep
+                                                        -> dep + 1
+                                                      _ -> @altL.stkDepth
+%%]
+  | Case        altL        .   stkDepth        =   @lhs.stkDepth + @scrutineeStkInc
+                loc         .   enumStkInc      =   if @altL.isAllEnum then -1 else 0
+                            .   valDepth        =   @altL.stkDepth
 
+%%[8
 SEM GrAlt
   | Alt         loc         .   fetchDepth      =   case @altFetch of
                                                       AltFetch_Many ns   -> length ns - 1
                                                       AltFetch_One  _ _  -> 1
                                                       AltFetch_Zero      -> 0
-                            .   stkDepth        =   @lhs.stkDepth + @fetchDepth
-                lhs         .   stkDepth        =   case @lhs.returnCtxt of
+                            .   exprStkDepth    =   @lhs.stkDepth + @fetchDepth
+                expr        .   stkDepth        =   @exprStkDepth
+                loc         .   bodyStkDepth    =   case @lhs.returnCtxt of
                                                       ReturnCtxt_CaseFallThrough
                                                         -> @expr.stkDepth           -- scrutinee remains on stack
                                                       _ -> @lhs.stkDepth            -- scrutinee is replaced with value of same size
-
+                lhs         .   stkDepth        =   @bodyStkDepth
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -319,7 +336,7 @@ SEM GrBind
 
 SEM GrExpr
   | Seq         expr        .   returnCtxt      =   ReturnCtxt_Continues
-  | Case        altL        .   returnCtxt      =   case @lhs.returnCtxt of
+  | Case        loc         .   returnCtxt      =   case @lhs.returnCtxt of
                                                       ReturnCtxt_Continues
                                                         | @altL.nrAlts == 1 -> ReturnCtxt_CaseFallThrough
                                                         | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stkDepth
@@ -339,10 +356,13 @@ SEM GrAltL
 %%]
 
 %%[8
-ATTR AllAlt [ | | isEnum USE {&&} {True}: Bool ]
+ATTR AllAlt [ isEnum: Bool | | isAllEnum USE {&&} {True}: Bool ]
 
 SEM GrAlt
-  | Alt         lhs         .   isEnum          =   @altFetch == AltFetch_Zero
+  | Alt         lhs         .   isAllEnum       =   @nrOfFlds == 0
+
+SEM GrExpr
+  | Case        altL        .   isEnum          =   @altL.isAllEnum
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -407,8 +427,8 @@ SEM GrBind
 
 SEM GrAlt
   | Alt         loc         .   newVaGam        =   case @altFetch of
-                                                      AltFetch_Many ns  -> patNmL2VAGam' @stkDepth $ patNmL2DepL2 ns
-                                                      AltFetch_One  n _ -> patNmL2VAGam' @stkDepth $ patNmL2DepL2 [n]
+                                                      AltFetch_Many ns  -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 ns
+                                                      AltFetch_One  n _ -> patNmL2VAGam' @exprStkDepth $ patNmL2DepL2 [n]
                                                       _                 -> Map.empty
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 %%]
@@ -601,15 +621,12 @@ SEM GrExpr
                                                         | @altL.nrAlts == 1
                                                           -> (ins Seq.:++: @altL.i,1,True,inc)
                                                         | otherwise
-                                                          -> (ins Seq.:++: insc Seq.:++: ins',1,True,incc+inc)
+                                                          -> ( ins Seq.:++: insc Seq.:++: ins', 1, True, @enumStkInc+inc )
                                                           where ins' = Seq.fromList [GB.casecall,GB.label (GB.LocRef_Label @at1stOffLabel),GB.link $ GB.linkOffsets @nrOfAlts]
                                                                         Seq.:++: Seq.fromList [ GB.labelref l | l <- @altL.altLocRefs ]
                                                                         Seq.:++: @altL.i
                                                                         Seq.:++: Seq.fromList [GB.label @aftCaseLocRef]
-                                                                (insc,incc)
-                                                                     = if @altL.isEnum
-                                                                       then (Seq.empty,-1)
-                                                                       else (Seq.fromList [GB.ldnt],0)
+                                                                insc = if @altL.isAllEnum then Seq.empty else Seq.fromList [GB.ldnt]
   | Seq         loc         .   (seqIns,seqStkInc,newVaGam)
                                                 =   let nm ins inc nmIntro
                                                           = case nmIntro of
@@ -639,28 +656,33 @@ mkRetLabel returnCtxt l
         -> GB.newLabelId l
       _ -> (l,l)
 
-mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackDepth -> GB.StackDepth -> GB.InsSeq
+mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackDepth -> GB.StackDepth -> (GB.InsSeq,GB.StackDepth)
 mkRet returnCtxt retLocLbl stkDepth inc
   = case returnCtxt of
       ReturnCtxt_Returns nrArgsOuter
-        -> Seq.fromList [GB.retcall 1 nrArgsOuter {- retOffSurr -}]
-        -- where retOffSurr  = stkDepth + inc
+        -> (Seq.fromList [GB.retcall 1 nrArgsOuter],dfltDepth)
       ReturnCtxt_CaseReturns labelId dep
-        -> Seq.fromList [ GB.retcase 1 (stkDepth + inc - dep)
-                 , GB.label $ GB.LocRef_Label retLocLbl
-                 , GB.link $ GB.linkOffsets 1
-                 , GB.labelref $ GB.LocRef_Label labelId
-                 ]
+        -> ( Seq.fromList
+               [ GB.meta ("Expr depth=" >|< stkDepth >#< "ret depth=" >|< retDepth)
+               , GB.retcase 1 (stkDepth + inc - dep)
+               , GB.label $ GB.LocRef_Label retLocLbl
+               , GB.link $ GB.linkOffsets 1
+               , GB.labelref $ GB.LocRef_Label labelId
+               ]
+           , retDepth
+           )
+        where retDepth = dep + 1
       ReturnCtxt_CaseFallThrough
-        -> Seq.empty
-      _ -> Seq.empty
+        -> (Seq.empty,dfltDepth)
+      _ -> (Seq.empty,dfltDepth)
+  where dfltDepth = stkDepth + inc
 %%]
 
 %%[8
 SEM GrExpr
   | Unit Store Call Eval App FFI
-                loc         .   retIns          =   if @retIsDone
-                                                    then Seq.empty
+                (loc.retIns,loc.retStkDepth)    =   if @retIsDone
+                                                    then (Seq.empty,@lhs.stkDepth + @valStkInc)
                                                     else mkRet @lhs.returnCtxt @retLocLabel @lhs.stkDepth @valStkInc
   | * - Unit Store Call Eval App FFI
                 loc         .   retIns          =   Seq.empty
@@ -729,14 +751,16 @@ SEM GrBind
 SEM GrExpr
   | Unit Store Call Eval App Case FFI FetchUpdate
                 lhs         .   i               =   @valIns Seq.:++: @retIns
-  | Seq         lhs         .   i               =   @expr.i Seq.:++: @seqIns Seq.:++: @body.i Seq.:++: @retIns
+  | Seq         lhs         .   i               =   @expr.i Seq.:++: Seq.fromList [GB.meta ("Expr depth=" >|< @expr.stkDepth >#< "body depth=" >|< @bodyStkDepth)]
+                                                            Seq.:++: @seqIns Seq.:++: @body.i Seq.:++: @retIns
 
 SEM GrAlt
   | Alt         lhs         .   i               =   let fetch = case @altFetch of
                                                                   AltFetch_Many _  -> Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
                                                                   AltFetch_One _ o -> Seq.fromList [GB.l2ts (o + GB.nrNodeHdrWords)]
                                                                   AltFetch_Zero    -> Seq.empty
-                                                    in  Seq.fromList [GB.label @altLocRef] Seq.:++: fetch Seq.:++: @expr.i
+                                                    in  Seq.fromList [GB.label @altLocRef] Seq.:++: Seq.fromList [GB.meta ("Alt depth=" >|< @lhs.stkDepth >#< "pre depth=" >|< @exprStkDepth >#< "post depth=" >|< @bodyStkDepth)]
+                                                                                           Seq.:++: fetch Seq.:++: @expr.i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

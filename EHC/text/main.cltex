@@ -444,7 +444,7 @@
 %%[1
 
 %if not asSlides
-% \usepackage{txfonts}
+% 
 %endif
 %if not (storyRuler || storyRulerDoc) || asSlides
 \usepackage[bbgreekl]{mathbbol}
@@ -456,6 +456,10 @@
 \let\leq=\undefined
 \let\geq=\undefined
 \usepackage{mathabx}
+%%]
+
+%%[24
+\usepackage{txfonts}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

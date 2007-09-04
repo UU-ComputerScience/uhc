@@ -12,7 +12,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
 								gbm \
 								uniqueness slides-uniqueness \
-								icfp07-chr-locinst icfp07-chr-locinst-blind \
+								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct
 
 # subtext

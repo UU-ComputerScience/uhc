@@ -180,14 +180,20 @@ text-variant-gbm:
 	  text-variant-dflt-bib
 
 text-variant-icfp07-chr-locinst:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyCHRlocinst --set=acm --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=24 \
 	  text-variant-dflt-bib
 
 text-variant-icfp07-chr-locinst-blind:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyCHRlocinst --set=acm --set=blockstyle --set=asArticle --set=blinded" \
+	  TEXT_SHUFFLE_VARIANT=24 \
+	  text-variant-dflt-bib
+
+text-variant-cc08-chr-locinst:
+	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=cc08 --set=kscode --set=storyCHRlocinst --set=llncs --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=24 \
 	  text-variant-dflt-bib
 
