@@ -85,24 +85,24 @@ test-expect test-regress: test-lists
 	          then \
 	            rm -f $${tg} ; \
 	            $$ehc $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
-	            echo "== grin execution ==" >> $${th} ; \
+	            echo "== grin interpreter execution ==" >> $${th} ; \
 	            $$gri $${tg} >> $${th} 2>&1 ; \
-	            rm -f $${texe} ; \
-	            echo "== grin bytecode (GBM) compilation ==" >> $${th} ; \
-	            $$ehc $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
-	            if test $$? = 0 -a -x $${texe} ; \
-	            then \
-	              echo "== grin bytecode (GBM) execution ==" >> $${th} ; \
-	              (ulimit $(TEST_LIMIT_TIME) && $${texe} >> $${th} 2>&1) ; \
-	            fi ; \
-	            rm -f $${texe} ; \
-	            echo "== grin full program analysis compilation ==" >> $${th} ; \
-	            $$ehc $${TEST_OPTIONS} --pretty=- --code=exe $${t2} >> $${th} 2>&1 ; \
-	            if test $$? = 0 -a -x $${texe} ; \
-	            then \
-	              echo "== grin full program analysis execution ==" >> $${th} ; \
-	              (ulimit $(TEST_LIMIT_TIME) && $${texe} >> $${th} 2>&1) ; \
-	            fi \
+	          fi ; \
+	          rm -f $${texe} ; \
+	          echo "== grin bytecode (GBM) compilation ==" >> $${th} ; \
+	          $$ehc $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
+	          if test $$? = 0 -a -x $${texe} ; \
+	          then \
+	            echo "== grin bytecode (GBM) execution ==" >> $${th} ; \
+	            (ulimit -S $(TEST_LIMIT_TIME) && $${texe} >> $${th} 2>&1) ; \
+	          fi ; \
+	          rm -f $${texe} ; \
+	          echo "== grin full program analysis compilation ==" >> $${th} ; \
+	          $$ehc $${TEST_OPTIONS} --pretty=- --code=exe $${t2} >> $${th} 2>&1 ; \
+	          if test $$? = 0 -a -x $${texe} ; \
+	          then \
+	            echo "== grin full program analysis execution ==" >> $${th} ; \
+	            (ulimit -S $(TEST_LIMIT_TIME) && $${texe} >> $${th} 2>&1) ; \
 	          fi \
 	        fi ; \
 	        if test $${tr} = $${th} -a -r $${te} ; \
