@@ -59,6 +59,7 @@ include $(SRC_PREFIX)agprimer/files.mk
 -include text/files2.mk
 -include $(wildcard text/files2-*.mk)
 -include www/files.mk
+include ehclib/files.mk
 include test/files.mk
 
 -include mk/dist.mk
@@ -72,6 +73,7 @@ WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 explanation:
 	@echo "make <n>/ehc             : make compiler version <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) version <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
 	echo  "make <n>/grini           : make grin interpreter version <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
 	echo  "make <n>/hdoc            : make Haddock documentation for version <n> (in hdoc/)" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
@@ -90,7 +92,7 @@ explanation:
 	echo  "make heliumdoc           : make Haddock documentation for Helium, Top and Lvm (in hdoc/)" ; \
 	echo  "make test-regress        : run regression test," ; \
 	echo  "                           restrict to versions <v> by specifying 'TEST_VARIANTS=<v>' (default '${TEST_VARIANTS}')," ; \
-	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME) already built" ; \
+	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME)/$(EHCLIB_EHCLIB) already built" ; \
 	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
 	echo  "" ; \
 	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
@@ -141,7 +143,8 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_$(EHC_VARIANT))
+	@echo $(patsubst $(BLD_PREFIX)%/$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX),%,$(EHCLIB_ALL_LIBS))
+	@echo $(EHCLIB_ALL_LIBS)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

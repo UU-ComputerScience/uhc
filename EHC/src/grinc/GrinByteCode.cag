@@ -27,9 +27,17 @@
 %%% Configuration like constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Nr of words of basic values, both boxed and unboxed
+20070904: Not yet used consistently, will it change anyway?
+
+%%[8 hs export(nrValWords)
+nrValWords :: Int
+nrValWords = 1
+%%]
+
 Nr of words occupied by header in node
 
-%%[8 hs  export(nrNodeHdrWords)
+%%[8 hs export(nrNodeHdrWords)
 nrNodeHdrWords :: Int
 nrNodeHdrWords = 1
 %%]
@@ -37,7 +45,7 @@ nrNodeHdrWords = 1
 Nr of words required for call return info:
 return address + saved bp
 
-%%[8 hs  export(nrCallRetWords)
+%%[8 hs export(nrCallRetWords)
 nrCallRetWords :: Int
 nrCallRetWords = 2
 %%]
@@ -277,10 +285,10 @@ ldsrc2ins' :: (Instr -> Instr) -> LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins' ann s
   = case s of
       LoadSrc_TOS       -> (Seq.empty,0)
-      LoadSrc_TOS_Rel o -> (Seq.singleton $ ann $ ldl  o,1)
-      LoadSrc_Reg_Rel o -> (Seq.singleton $ ann $ l1tr o,1)
-      LoadSrc_Imm     c -> (Seq.singleton $ ann $ ldc  c,1)
-      LoadSrc_Imm_Int c -> (Seq.singleton $ ann $ ldi  c,1)
+      LoadSrc_TOS_Rel o -> (Seq.singleton $ ann $ ldl  o,nrValWords)
+      LoadSrc_Reg_Rel o -> (Seq.singleton $ ann $ l1tr o,nrValWords)
+      LoadSrc_Imm     c -> (Seq.singleton $ ann $ ldc  c,nrValWords)
+      LoadSrc_Imm_Int c -> (Seq.singleton $ ann $ ldi  c,nrValWords)
 
 ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins = ldsrc2ins' id
@@ -311,12 +319,12 @@ nmLd' optim env modNmConstInx stkDepth nm
              Val_Int i
                -> (mva,Load Seq.empty 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
-               -> (mva,Load (Seq.singleton $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) 1 LoadSrc_TOS)
+               -> (mva,Load (Seq.singleton $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
 %%[[20
              Val_ImpEntry mo eo
-               -> (mva,Load (Seq.fromList [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+1))
+               -> (mva,Load (Seq.fromList [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+nrValWords))
 %%]]
-      _ -> (Nothing,Load (Seq.singleton $ ann ("dummy ld for" >#< nm) $ ldl stkDepth) 1 LoadSrc_TOS)
+      _ -> (Nothing,Load (Seq.singleton $ ann ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
 %%]
 
 %%[8 hs
@@ -375,7 +383,7 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
                 where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Str s l
-                -> GrValIntroAlt_OnTOS (ins Seq.::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+1) defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins Seq.::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect
               GrValIntro_Int i
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (Load Seq.empty 0 $ LoadSrc_Imm_Int i)
 {-
@@ -402,7 +410,7 @@ gviLd optim env modNmConstInx stkDepth intro
 %%[8 hs export(gvCall)
 gvCall :: MbStrInx -> NmEnv -> Int -> InsSeq -> Int -> StackDepth -> HsName -> (InsSeq,StackDepth)
 gvCall i nmEnv modNmConstInx ins inc stkDepth nm
-  = (ins Seq.:++: fins Seq.:++: Seq.fromList [call i InsOp_LocB_TOS], 1)
+  = (ins Seq.:++: fins Seq.:++: Seq.fromList [call i InsOp_LocB_TOS], nrValWords)
   where (fins,_) = nmLd defaultOptimCtxt nmEnv modNmConstInx (stkDepth + inc) nm
 %%]
 
@@ -577,7 +585,7 @@ fetchupdate :: Instr
 fetchupdate = Instr_FetchUpdate
 
 ndStore :: Int -> (InsSeq,StackDepth)
-ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], 1)
+ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], nrValWords)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -3,6 +3,7 @@
 module Main where
 
 {-
+-}
 showLitChar2               :: Char -> ShowS
 showLitChar2 c | c > '\DEL' = showChar '\\' .
                              protectEsc isDigit (shows (fromEnum c))
@@ -29,7 +30,6 @@ asciiTab = zip ['\NUL'..' ']
             "DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB",
             "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US",
             "SP"]
--}
 
 {-
 -}
@@ -37,21 +37,21 @@ main
   = do putStrLn
          $ concat [ "Hello World!\n"
                   , ['a','\n']
-                  -- , show stderr
-                  -- , fst (splitAt 5 "splitat")
+                  , show stderr
+                  , fst (splitAt 5 "splitat")
                   , show (999::Int)
-                  -- , show [5,6::Int]
-                  {- , concat (map show [2,3::Int])
+                  , show [5,6::Int]
+                  -- , concat (map show [2,3::Int])
                   , showLitChar2 '\a' ""
+                  , showLitChar2 '\NAK' ""
                   , show '\a'
                   , show (snd ([(0::Int,'n'),(2,'m'),(4,'p')] !! (1::Int)))
-                  , -} {- showChar (snd ('o','m')) ""
+                  , showChar (snd ('o','m')) ""
                   , showChar '\'' $ showLitChar2 '\a' $ showChar '\'' $ ""
                   , show "a\LF"
                   -- , show "a\NAK"
                   , show (2 ^ (6::Integer) :: Int)
-                  -}
-                  -- , show ('\a' == '\a')
+                  , show ('\a' == '\a')
                   ]
        hFlush  stdout
 
