@@ -12,7 +12,7 @@
 %%% Timing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8.TIMING
 #define TIMING		1
 
 #if TIMING
@@ -20,6 +20,9 @@
 
 static clock_t clockStart, clockStop ;
 #endif
+%%]
+
+%%[100 -8.TIMING
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,17 +124,23 @@ int main_Sil_Init1(int argc, char** argv)
 
 int main_Sil_Run(int argc, char** argv)
 {
-	clockStart = clock() ;
+#	if TIMING
+		clockStart = clock() ;
+#	endif
     silly_main();
-	clockStop = clock() ;
+#	if TIMING
+		clockStop = clock() ;
+#	endif
     return 0;
 }
 
 int main_Sil_Exit(int argc, char** argv)
 {
 	memoryDumpResult_Sil() ;
-	double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
-	printf("Time %.3f secs\n", clockDiff ) ;
+#	if TIMING
+		double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
+		printf("Time %.3f secs\n", clockDiff ) ;
+#	endif
     return 0;
 }
 %%]

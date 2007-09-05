@@ -18,7 +18,7 @@
 
 Internal config
 
-%%[8
+%%[8.TRACE
 #define TRACE 					1
 
 #if TRACE
@@ -26,6 +26,9 @@ Internal config
 #else
 #define GB_COUNT_STEPS			0
 #endif
+%%]
+
+%%[100 -8.TRACE
 %%]
 
 %%[8
@@ -126,8 +129,11 @@ extern int main_GB_Exit(int argc, char** argv) ;
 %%% Dumping internal state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8.DUMP_INTERNALS
 #define DUMP_INTERNALS	1
+%%]
+
+%%[100 -8.DUMP_INTERNALS
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
