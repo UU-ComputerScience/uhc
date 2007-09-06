@@ -14,7 +14,7 @@
 %%[8 export(fileprefixInplaceInstall)
 %%]
 
-%%[8 export(libnamesGcc, mbSuffixExec)
+%%[8 export(libnamesGcc, libnamesGccPerVariant, mbSuffixExec)
 %%]
 
 %%[99 export(fileprefixInstall)
@@ -103,10 +103,12 @@ shellCmdCpp = "@CPP_CMD@@SUFFIX_EXEC@"
 %%[8
 prefixLib :: String
 prefixLib = "@PREFIX_LIB@"
+%%]
 
+%%[8
 libnamesGcc :: [String]
 libnamesGcc
-  = [ prefixLib ++ "@RTS_PKG_NAME@"]
+  = [ ]
     ++ (if useBoehmGC
         then [ "@EXTLIBS_BGC_PKG_NAME@" ]
         else []
@@ -117,6 +119,12 @@ libnamesGcc
         else []
        )
 %%]]
+%%]
+
+%%[8
+libnamesGccPerVariant :: [String]
+libnamesGccPerVariant
+  = [ prefixLib ++ "@RTS_PKG_NAME@"]
 %%]
 
 %%[8 export(ehcGccOptsStatic)

@@ -1375,7 +1375,9 @@ cpCompileWithGCC how othModNmL modNm
                             GCC_CompileExec -> ( fpExec
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
-                                               , map ("-l" ++) Cfg.libnamesGcc
+                                               -- , map ("-l" ++) (Cfg.libnamesGccPerVariant ++ Cfg.libnamesGcc)
+                                               , map (\l -> Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib/lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
+                                                 ++ map (\l -> Cfg.fileprefixInplaceInstall ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                , [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
@@ -1384,9 +1386,9 @@ cpCompileWithGCC how othModNmL modNm
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ Cfg.shellCmdGcc ]
-                                 ++ [ "-L" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib"
+                                 ++ [ {- "-L" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib"
                                     , "-L" ++ Cfg.fileprefixInplaceInstall ++ "lib"
-                                    , "-I" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
+                                    , -} "-I" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
                                     , "-I" ++ Cfg.fileprefixInplaceInstall ++ "include"
                                     ]
                                  ++ linkOpts

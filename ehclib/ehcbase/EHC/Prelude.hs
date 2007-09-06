@@ -162,7 +162,6 @@ module EHC.Prelude (
     boundedEnumFromThen,
     boundedEnumFromThenTo
     
-    , primEqInt
   ) where
 
 -- Standard value bindings {Prelude} ----------------------------------------
