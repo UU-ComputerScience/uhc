@@ -458,6 +458,10 @@
 \usepackage{mathabx}
 %%]
 
+%%[22
+\usepackage{txfonts}
+%%]
+
 %%[24
 \usepackage{txfonts}
 %%]

@@ -161,6 +161,8 @@ module EHC.Prelude (
     boundedEnumFromTo,
     boundedEnumFromThen,
     boundedEnumFromThenTo
+    
+    , primEqInt
   ) where
 
 -- Standard value bindings {Prelude} ----------------------------------------
@@ -1369,10 +1371,16 @@ instance Show Double where
 
 -- Some standard functions --------------------------------------------------
 
+{-----------------------------
 fst            :: (a,b) -> a
+-----------------------------}
+fst            :: forall b . (a,b) -> a
 fst (x,_)       = x
 
+{-----------------------------
 snd            :: (a,b) -> b
+-----------------------------}
+snd            :: forall a . (a,b) -> b
 snd (_,y)       = y
 
 curry          :: ((a,b) -> c) -> (a -> b -> c)
@@ -1692,7 +1700,11 @@ maximum           = foldl1 max
 minimum           = foldl1 min
 
 concatMap        :: (a -> [b]) -> [a] -> [b]
+{-----------------------------
 concatMap f       = concat . map f
+-----------------------------}
+concatMap _ []      = []
+concatMap f (x:xs)  = f x ++ concatMap f xs
 
 zip              :: [a] -> [b] -> [(a,b)]
 zip               = zipWith  (\a b -> (a,b))

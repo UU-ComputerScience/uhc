@@ -41,15 +41,16 @@ main
                   , fst (splitAt 5 "splitat")
                   , show (999::Int)
                   , show [5,6::Int]
-                  -- , concat (map show [2,3::Int])
+                  , concat (map show [2,3::Int])
                   , showLitChar2 '\a' ""
                   , showLitChar2 '\NAK' ""
+                  , snd (asciiTab !! fromEnum '\NAK')
                   , show '\a'
                   , show (snd ([(0::Int,'n'),(2,'m'),(4,'p')] !! (1::Int)))
                   , showChar (snd ('o','m')) ""
                   , showChar '\'' $ showLitChar2 '\a' $ showChar '\'' $ ""
                   , show "a\LF"
-                  -- , show "a\NAK"
+                  , show "a\NAK"
                   , show (2 ^ (6::Integer) :: Int)
                   , show ('\a' == '\a')
                   ]
