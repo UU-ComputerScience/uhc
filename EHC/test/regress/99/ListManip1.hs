@@ -1,5 +1,7 @@
+{- ----------------------------------------------------------------------------------------
 -- what    : basic list manipulation yielding strings
 -- expected: all ok
+---------------------------------------------------------------------------------------- -}
 
 module ListManip1 where
 
@@ -31,4 +33,6 @@ main
        putStrLn (concat $ zipWith (++) ["zip1", "zip2"] ["ZIP1", "ZIP2"])
        putStrLn (fst (splitAt 5 "splitat") ++ snd (splitAt 5 "splitat"))
        putStrLn (["!!1", "!!2", "!!3"] !! 1)
+       putStrLn (take 26 $ iterate succ 'a')
+       putStrLn (take 30 $ cycle "cycle ")
 
