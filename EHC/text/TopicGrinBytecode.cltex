@@ -1114,30 +1114,6 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |call : gcode|
- }{%
-  |d : gstack|
- }{%
-  |gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |d|
- }{%
-  |gcode : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
-
 
 \subsubsection{Tail call}
 
@@ -1175,29 +1151,6 @@ where |n, m :: angle(is)|.
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |tailcall n m r : _|
- }{%
-  |d : a1 : .. : an : .. : Sup(c)(r) : b1 : .. : bm : gstack|
- }{%
-  |gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |d|
- }{%
-  |Sup(c)(r) : a1 : .. : an : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 
 \subsubsection{Return from call}
@@ -1236,29 +1189,6 @@ where |n, m :: angle(is)|
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |retcall n m r : _|
- }{%
-  |a1 : .. : an : .. : Sup(c)(r) : b1 : .. : bm : gstack|
- }{%
-  |gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |Sup(c)(r)|
- }{%
-  |a1 : .. : an : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 
 \subsubsection{Return from case}
@@ -1368,30 +1298,6 @@ Return is handled by |retcase|.
 Internally, |gframep| is pushed onto the stack as well, before invoking the C function.
 This allows calling Haskell functions from C.
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |callc n : gcode|
- }{%
-  |f : a1 .. an : gstack|
- }{%
-  |gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |gcode|
- }{%
-  |(f a1 .. an) : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
-
 
 
 
@@ -1432,29 +1338,6 @@ A saturated function call closure:
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evalt : gcode|
- }{%
-  |p : gstack|
- }{%
-  |[ p :-> (F : f : a1 .. an) ] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |call : evupdcont|
- }{%
-  |f : a1 .. an : gcode : p : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 \Paragraph{C call}
 A saturated C function call closure:
@@ -1481,29 +1364,6 @@ A saturated C function call closure:
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evalt : gcode|
- }{%
-  |p : gstack|
- }{%
-  |[ p :-> (CF : f : a1 : .. : an) ] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |gcode|
- }{%
-  |(f a1 .. an) : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 \Paragraph{Apply call}
 Special case, apply closure:
@@ -1532,29 +1392,6 @@ Special case, apply closure:
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evalt : gcode|
- }{%
-  |p : gstack|
- }{%
-  |[ p :-> (A : f : a1 .. an) ] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |evalt : evappcont|
- }{%
-  |f : gcode : p : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 \Paragraph{Indirection}
 An indirection is just followed:
@@ -1581,29 +1418,6 @@ An indirection is just followed:
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evalt : gcode|
- }{%
-  |p : gstack|
- }{%
-  |[ p :-> (I : p') ] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |evalt : gcode|
- }{%
-  |p' : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 \Paragraph{WHNF}
 Nodes which require no evaluation are left as is, e.g. constructors and partial applications:
@@ -1630,29 +1444,6 @@ Nodes which require no evaluation are left as is, e.g. constructors and partial 
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evalt : gcode|
- }{%
-  |p : gstack|
- }{%
-  |[ p :-> (C/P : _) ] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |gcode|
- }{%
-  |p : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 
 \subsubsection{Eval Update continuation}
@@ -1733,29 +1524,6 @@ Only is done as part of |evalt|, hence is not generated/called directly.
 
 Context call info of |gcode|: |callinfoEval|.
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |evappcont : _|
- }{%
-  |f : gcode : p : gstack|
- }{%
-  |[f :-> (P m, _) : _, p :-> (A : f : a1 .. an) ] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |applyt : gcode|
- }{%
-  |f : n : a1 .. an : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 
 
@@ -1793,29 +1561,6 @@ Previous:
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |taileval m r : _|
- }{%
-  |p : .. : Sup(c)(r) : b1 .. bm : gstack|
- }{%
-  |gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |evalt : Sup(c)(r)|
- }{%
-  |p : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 
 
@@ -1857,29 +1602,7 @@ When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
  }{}
 }
 
-Previous
 
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |applyt : gcode|
- }{%
-  |p : n : a1 .. an : gstack|
- }{%
-  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |call : papplycont|
- }{%
-  |f : b1 .. bk : a1 .. Sub(a)(m) : gcode : (n-m) : Sub(a)(1+m) .. an : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 \Paragraph{Exactly saturated}
 
@@ -1907,29 +1630,7 @@ When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
  }{}
 }
 
-Previous:
 
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |applyt : gcode|
- }{%
-  |p : n : a1 .. an : gstack|
- }{%
-  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |call : gcode|
- }{%
-  |f : b1 .. bk : a1 .. an : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 \Paragraph{Under saturated}
 
@@ -1957,29 +1658,6 @@ When |m > n|, still missing parameters:
  }{}
 }
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |applyt : gcode|
- }{%
-  |p : n : a1 .. an : gstack|
- }{%
-  |[p :-> (P m, f) : b1 .. bk] `elem` gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |gcode|
- }{%
-  |p' : gstack|
- }{%
-  |gheap[p' :-> (P (m-n), f) : b1 .. bk : a1 .. an]|
- }{
- }{}
-}
 
 
 \subsubsection{Partial Apply continuation}
@@ -2021,29 +1699,6 @@ The saved return address of the apply and result are shuffled to be ready for th
 
 Context call info of |gcode|: |callinfoApply|.
 
-Previous:
-
-\GriniStep{%
- \GriniStateBefore{%
- }{%
-  |papplycont : _|
- }{%
-  |p : gcode : n : a1 : .. : an : gstack|
- }{%
-  |gheap|
- }{
- }
-}{%
- \GriniStateAfter{%
- }{%
-  |applyt : gcode|
- }{%
-  |p : n : a1 : .. : an : gstack|
- }{%
-  |gheap|
- }{
- }{}
-}
 
 
 %%]

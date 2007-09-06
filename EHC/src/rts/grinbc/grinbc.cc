@@ -207,9 +207,10 @@ typedef GB_Word GB_CFun();
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-static GB_CallInfo gb_callinfo_EvalWrap = GB_MkCallInfo(GB_CallInfo_Kind_EvalWrap, "evalwrap") ;
-static GB_CallInfo gb_callinfo_EvCont   = GB_MkCallInfo(GB_CallInfo_Kind_EvCont  , "evalcont") ;
-static GB_CallInfo gb_callinfo_PEvCont  = GB_MkCallInfo(GB_CallInfo_Kind_PApCont , "pappcont") ;
+static GB_CallInfo gb_callinfo_EvalWrap 		= GB_MkCallInfo(GB_CallInfo_Kind_EvalWrap		, "evalwrap"		) ;
+static GB_CallInfo gb_callinfo_EvCont   		= GB_MkCallInfo(GB_CallInfo_Kind_EvCont  		, "evalcont"		) ;
+static GB_CallInfo gb_callinfo_EvAppFunCont   	= GB_MkCallInfo(GB_CallInfo_Kind_EvAppFunCont  	, "evalappfuncont"	) ;
+static GB_CallInfo gb_callinfo_PEvCont  		= GB_MkCallInfo(GB_CallInfo_Kind_PApCont 		, "pappcont"		) ;
 %%]
 
 %%[8
@@ -222,7 +223,12 @@ static GB_Byte gb_code_AfterEvalCall[] =
   } ;
 
 static GB_Byte gb_code_AfterEvalApplyFunCall[] =
-  { GB_Ins_EvalApplyCont
+  { 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  , GB_Ins_EvalApplyCont
+  , GB_Ins_EvalUpdCont
   } ;
 
 static GB_Byte gb_code_AfterCallInApplyWithTooManyArgs[] =
@@ -244,6 +250,8 @@ GB_Byte gb_code_Eval[] =
 
 #define GB_InitPatch_gb_code_Eval				*Cast(GB_Ptr,&gb_code_Eval[1]         ) = Cast(GB_Word,&gb_callinfo_EvalWrap)
 #define GB_InitPatch_gb_code_AfterEvalCall		*Cast(GB_Ptr,&gb_code_AfterEvalCall[0]) = Cast(GB_Word,&gb_callinfo_EvCont  )
+#define GB_InitPatch_gb_code_AfterEvalApplyFunCall 				\
+												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[0]) = Cast(GB_Word,&gb_callinfo_EvAppFunCont  )
 #define GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs	\
 												*Cast(GB_Ptr,&gb_code_AfterCallInApplyWithTooManyArgs[0]) = Cast(GB_Word,&gb_callinfo_PEvCont  )
 
@@ -1132,8 +1140,9 @@ gb_interpreter_InsEvalEntry:
 									break ;
 								case GB_NodeTagCat_App :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
+									GB_BP_Link ;													/* and bp							*/
 									GB_Push(x = n->content.fields[0]) ;								/* push function to eval 			*/
-									pc = gb_code_AfterEvalApplyFunCall ;
+									pc = &gb_code_AfterEvalApplyFunCall[sizeof(GB_CallInfo_Inline)] ;
 									goto gb_interpreter_InsEvalEntry ;								/* evaluate							*/
 									break ;
 								case GB_NodeTagCat_Ind :
@@ -1167,14 +1176,12 @@ gb_interpreter_InsEvalUpdContEntry:
 			/* evappcont */
 			case GB_Ins_EvalApplyCont :
 				GB_PopIn(x) ;													/* evaluated function						*/
-				GB_PopIn(retSave) ;												/* saved return address 					*/
-				GB_PopCastedIn(GB_NodePtr,n) ;									/* the apply node							*/
+				n = Cast(GB_NodePtr,GB_SPRelx(2)) ;								/* the apply node							*/
 				h = n->header ;
 				GB_PushNodeArgs(n,h,p,p2) ;										/* copy arguments from app					*/
 				GB_Push(GB_NH_Fld_Size(h)-2) ;									/* nr of args								*/
 				GB_Push(x) ;													/* function									*/
-				pc = Cast(GB_BytePtr,retSave) ;									/* continue with apply						*/
-				goto gb_interpreter_InsApplyEntry ;
+				goto gb_interpreter_InsApplyEntry ;								/* continue with apply						*/
 				break ;
 
 			/* papplycont */
@@ -1452,6 +1459,7 @@ void gb_Initialize()
 {
 	GB_InitPatch_gb_code_Eval ;
 	GB_InitPatch_gb_code_AfterEvalCall ;
+	GB_InitPatch_gb_code_AfterEvalApplyFunCall ;
 	GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs ;
 %%[[96
 	GB_InitPatch_gb_code_ExcHdl_EvalValue ;
