@@ -18,7 +18,7 @@ SEM Module
 
 SEM Body
     | Body
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errReorder, @declarations.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupdef, Seq.fromList @errReorder, @declarations.errSq]
 %%]
 
 %%[20 -1.Module
@@ -28,7 +28,7 @@ SEM Module
 
 SEM Body
     | Body
-        lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse,Seq.fromList @errReorder, @declarations.errSq]
+        lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errDupdef, Seq.fromList @errIdUse,Seq.fromList @errReorder, @declarations.errSq]
 %%]
 
 %%[1
@@ -38,7 +38,7 @@ SEM Expression
     | Variable Constructor
         loc         .   errSq       =   Seq.fromList @errIdUse
     | Let
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errReorder, @declarations.errSq, @expression.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupdef, Seq.fromList @errReorder, @declarations.errSq, @expression.errSq]
     | InfixApplicationChainTop 
         loc         .   errSq       =   Seq.unions [Seq.fromList @errRearr, @expression.errSq]
     | Negate 

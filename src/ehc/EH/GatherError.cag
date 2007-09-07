@@ -231,6 +231,10 @@ SEM Decl
 SEM AGItf
   | AGItf       loc         .   lErrSq      =   Seq.unions [ Seq.fromList @predNotPrfErrs
                                                            , Seq.fromList @chrSolveMainErrs
+%%[[98
+                                                           , Seq.fromList @nmErrs
+                                                           , foErrSq @foMain
+%%]]
                                                            ]
                             .   errTopPP    :=  ppErrsSq @lErrSq
 %%]

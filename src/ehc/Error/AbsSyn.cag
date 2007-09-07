@@ -46,7 +46,8 @@ DATA Err
 
 %%[1.Rest
 DATA Err
-  | NamesDupIntrod      nmL        : {[HsName]}
+  | NamesDupIntrod      kind       : String
+                        nmL        : {[(HsName,Maybe [Range])]}
   | PatArity            ty         : {Ty}
                         arity      : {Int}
   | NestedIn            wher       : {PP_Doc}

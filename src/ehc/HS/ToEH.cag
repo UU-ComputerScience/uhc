@@ -31,8 +31,8 @@ SEM Body
 %%[8.Body.hsnMain -1.Body.hsnMain
 SEM Body
     | Body
-        lhs         .   eh          =   @mkSccLet (if @mainExists then rngLift @range EH.Expr_Var hsnMain
-                                                                  else rngLift @range EH.Expr_IConst 0
+        lhs         .   eh          =   @mkSccLet (if @mainValExists then rngLift @range EH.Expr_Var hsnMain
+                                                                     else rngLift @range EH.Expr_IConst 0
                                                   )
 %%]
 
