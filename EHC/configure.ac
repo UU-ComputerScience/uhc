@@ -288,6 +288,9 @@ case $HostPlatform in
   i*86-pc-linux-gnu )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
+  *-linux-gnu )
+        gcc_ehc_extra_extern_libs="pthread"
+        ;;
   x86_64-* )
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
@@ -304,6 +307,7 @@ esac
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_ENTER,"$mach_dep_c_for_tailcall_enter")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
+AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
 
 ### platform specific stuff
 # defaults:

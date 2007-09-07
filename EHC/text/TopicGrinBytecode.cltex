@@ -102,6 +102,7 @@ the machinery.
 %format Frac(x)(y)  = "\frac{" x "}{" y "}"
 
 %format gcode       = "\textit{is}"
+%format gcode'
 %format gstack      = "\textit{st}"
 %format gheap       = "\textit{hp}"
 %format greg        = "\textit{r}"
@@ -122,6 +123,7 @@ the machinery.
 %format callinfoApCont	= callinfo "_{apcont}"
 %format callinfoPApCont	= callinfo "_{papcont}"
 %format callinfoHdlr	= callinfo "_{hdlr}"
+%format callinfoEvAppFunCont	= callinfo "_{evappfcont}"
 
 %format (ixx1(x)(f))    = x "_{" f "}"
 %format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
@@ -801,17 +803,18 @@ The information stored contains:
  Kind of call:
  \\
 %%[[wrap=code
-callinfoCall        =  0     -- normal call
-callinfoTail        =  1     -- tail call
-callinfoEval        =  2     -- eval call
-callinfoEvalWrap    =  3     -- eval call wrapper
-callinfoTailEv      =  4     -- tail eval call
-callinfoApply       =  5     -- apply call
-callinfoCCall       =  6     -- C call
-callinfoEvCont      =  7     -- eval update continuation
-callinfoApCont      =  8     -- apply continuation
-callinfoPApCont     =  9     -- partial apply continuation
-callinfoHdlr        =  10    -- exception handler installment
+callinfoCall        		=  0     -- normal call
+callinfoTail        		=  1     -- tail call
+callinfoEval        		=  2     -- eval call
+callinfoEvalWrap    		=  3     -- eval call wrapper
+callinfoTailEv      		=  4     -- tail eval call
+callinfoApply       		=  5     -- apply call
+callinfoCCall       		=  6     -- C call
+callinfoEvCont      		=  7     -- eval update continuation
+callinfoApCont      		=  8     -- apply continuation
+callinfoPApCont     		=  9     -- partial apply continuation
+callinfoHdlr        		=  10    -- exception handler installment
+callinfoEvAppFunCont        =  11    -- apply function eval update continuation
 %%]]
 \end{itemize}
 
@@ -1382,7 +1385,7 @@ Special case, apply closure:
 }{%
  \GriniStateAfter{%
  }{%
-  |evalt : callinfoEval : evappcont|
+  |evalt : callinfoEvAppFunCont : evappcont : evupdcont|
  }{%
   |f : (gframep :-> gframep') : gcode : p : gstack|
  }{%
@@ -1501,24 +1504,22 @@ Only is done as part of |evalt|, hence is not generated/called directly.
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |evappcont : _|
+  |evappcont : gcode|
  }{%
-  |f : gcode : p : gstack|
+  |f : gframep : gcode' : p : gstack|
  }{%
   |[f :-> (P m, _) : _, p :-> (A : f : a1 .. an) ] `elem` gheap|
  }{
-  |gframep|
  }
 }{%
  \GriniStateAfter{%
  }{%
   |applyt : callinfoEval : gcode|
  }{%
-  |f : n : a1 .. an : gstack|
+  |f : n : a1 .. an : gframep : gcode' : p : gstack|
  }{%
   |gheap|
  }{
-  |gframep|
  }{}
 }
 
