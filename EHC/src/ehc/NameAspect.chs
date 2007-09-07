@@ -57,16 +57,22 @@ data IdAspect
   | IdAsp_Any
 %%]
 
+%%[1 hs export(iaspIsFun)
+iaspIsFun :: IdAspect -> Bool
+iaspIsFun (IdAsp_Val_Fun _ _ _) = True
+iaspIsFun _                     = False
+%%]
+
 %%[1 hs export(iaspIsValSig)
 iaspIsValSig :: IdAspect -> Bool
 iaspIsValSig (IdAsp_Val_Sig _) = True
 iaspIsValSig _                 = False
 %%]
 
-%%[1 hs export(iaspIsFun)
-iaspIsFun :: IdAspect -> Bool
-iaspIsFun (IdAsp_Val_Fun _ _ _) = True
-iaspIsFun _                     = False
+%%[8 hs export(iaspIsValVar)
+iaspIsValVar :: IdAspect -> Bool
+iaspIsValVar IdAsp_Val_Var = True
+iaspIsValVar _             = False
 %%]
 
 %%[1 hs

@@ -296,6 +296,16 @@ SEM Decl
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[98
+SEM AGItf
+  | AGItf       loc         .   fe                  =   emptyFE
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @predScope
+                                                            , feTyGam = @expr.gathTyGam
+                                                            , feRange = emptyRange
+                                                            }
+%%]
+
 %%[4.Decl.fe
 SEM Decl
   | *           loc         .   fe                  =   emptyFE

@@ -418,6 +418,17 @@ mkRV m = hsnSetQual m . hsnFromString
       [ "fromRational", "%" ]
 %%]
 
+%%[98
+[hsnIO]
+  = map
+%%[[98
+      mkRV
+%%][99
+      (mkRV hsnModIntlPrelude)
+%%]]
+      [ "IO" ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -521,6 +532,9 @@ data EHBuiltinNames
       , ehbnDataBool   				:: HsName
       , ehbnPackedStringToInteger   :: HsName
 %%]]
+%%[[98
+      , ehbnIO                      :: HsName
+%%]]
       }
 
 mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
@@ -573,6 +587,9 @@ mkEHBuiltinNames f
 %%[[97
       , ehbnDataBool                = f IdOcc_Type  	hsnBool
       , ehbnPackedStringToInteger   = f IdOcc_Val  		hsnPackedStringToInteger
+%%]]
+%%[[98
+      , ehbnIO                      = f IdOcc_Type 		hsnIO
 %%]]
       }
 %%]

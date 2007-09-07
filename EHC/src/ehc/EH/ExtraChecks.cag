@@ -14,7 +14,7 @@
 %%[1.dupErrs
 SEM Expr
   | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
-                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod nms]
+                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +45,7 @@ SEM Decl
 
 SEM DataConstr
   | Constr      loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups @fields.fldSelGam
-                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod nms]
+                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod "data field" (zip nms (repeat Nothing))]
 %%]
 
 %%[7

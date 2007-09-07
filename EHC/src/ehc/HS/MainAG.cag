@@ -38,6 +38,9 @@
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
 %%]
 
+%%[98 hs import({%{EH}Ty.Utils})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

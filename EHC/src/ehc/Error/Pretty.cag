@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Maybe,EH.Util.Pretty, EH.Util.Utils,  {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
+%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Char, Data.Maybe,EH.Util.Pretty, EH.Util.Utils,  {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
 %%]
 
 %%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
@@ -112,6 +112,18 @@ SEM ErrL
 %%% Error pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1 hs
+ppNmAndRange :: PP x => [(x,Maybe [Range])] -> PP_Doc
+ppNmAndRange nmL
+  = case catMaybes $ map snd $ nmL of
+      [] -> ppListSep "" "" ", " $ map fst $ nmL
+      _  -> vlist [ n >|< ":" >#< maybe empty vlist rs | (n,rs) <- nmL ]
+
+strCapHeading :: String -> String -> String
+strCapHeading kind title@(ht:tt)
+  = maybeHd title (const (strCapitalize kind ++ " " ++ [toLower ht] ++ tt)) kind
+%%]
+
 %%[1
 ATTR Err [ | | pp: PP_Doc ]
 ATTR ErrL [ | | ppL: {[PP_Doc]} ]
@@ -122,20 +134,13 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (maybeHd
-                                                          "Names not in scope"
-                                                          (const (strCapitalize @kind ++ " names not in scope"))
-                                                          @kind
-                                                        )
-                                                        (case catMaybes $ map snd $ @nmL of
-                                                           [] -> ppListSep "" "" ", " $ map fst $ @nmL
-                                                           _  -> vlist [ n >|< ":" >#< maybe empty vlist rs | (n,rs) <- @nmL ]
-                                                        )
+  | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (strCapHeading @kind "Names not in scope")
+                                                        (ppNmAndRange @nmL)
 %%[[99
                                                         @range
 %%]]
-  | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    "Names introduced more than once"
-                                                        (ppListSep "" "" ", " @nmL)
+  | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    (strCapHeading @kind "Names introduced more than once")
+                                                        (ppNmAndRange @nmL)
 %%[[99
                                                         @range
 %%]]

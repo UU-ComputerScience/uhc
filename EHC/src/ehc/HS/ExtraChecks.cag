@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional checks
+%%% Undefined names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -8,6 +8,10 @@ SEM Module
         loc             .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @body.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
                                             in  (if null ns then [] else [rngLift @range mkErr_NamesNotIntrod' "" ns])
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ..
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
 %%]
@@ -23,6 +27,10 @@ SEM Declaration
     | Class
         loc             .   errNotAllowed
                                         =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idOccDefGam
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
 SEM Module
@@ -52,3 +60,31 @@ SEM Declaration
                                                 -> []
                                               _ -> [rngLift @range Err_Newtype @simpletype.name]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ..
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+idDefOccGamCheckDupSigs :: IdDefOccGam -> [Err]
+idDefOccGamCheckDupSigs g
+  = case dups of
+      []           -> []
+      ds@((_,Just (r:_)):_) -> [rngLift r Err_NamesDupIntrod "type signature" ds]
+  where dups = [ (n,Just $ map doccRange d)
+               | (IdOcc {ioccKind=IdOcc_Val, ioccNm=n},ds) <- gamToAssocDupL g
+               , let d = filter (\docc -> iaspIsValSig (doccAsp docc)) ds
+               , length d > 1
+               ]
+%%]
+
+%%[1
+SEM Body
+    | Body
+        loc             .   errDupdef   =   idDefOccGamCheckDupSigs @declarations.idOccDefGam
+
+SEM Expression
+    | Let
+        loc             .   errDupdef   =   idDefOccGamCheckDupSigs @declarations.idOccDefGam
+%%]
+

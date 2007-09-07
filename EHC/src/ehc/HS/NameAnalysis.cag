@@ -941,7 +941,6 @@ SEM Body
     | Body
         loc             .   (_,idUseHereOccL,_,undefOccGamMain)
                                         =   splitIdUseOccGam @lhs.nmLev @idUseOccGamMain
-                        .   mainExists  =   null @errIdUse && (null $ gamToAssocL $ @undefOccGamMain)
 %%]
 
 %%[20
@@ -963,6 +962,27 @@ SEM Deriving
                                                 [ idDpdMpSingleton @idOccDef @lhs.idOccDefData
                                                 , idDpdMpSingleton @idOccDefVal @idOccDef
                                                 ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Existence of main
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM Body
+    | Body
+%%[[8
+        loc             .   mainValExists
+                                        =   case gamLookupDup (IdOcc hsnMain IdOcc_Val) @idGam of
+                                              Nothing   -> False
+                                              Just occs -> chk iaspIsValVar
+%%][98
+        loc             .   (mainValExists,mainSigExists)
+                                        =   case gamLookupDup (IdOcc hsnMain IdOcc_Val) @idGam of
+                                              Nothing   -> (False,False)
+                                              Just occs -> (chk iaspIsValVar, chk iaspIsValSig)
+%%]]
+                                                        where chk f = not $ null $ filter (f . doccAsp) occs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1085,7 +1105,7 @@ mergeFunDefL ds
   = case ds of
       [_] -> (ds,[])
       (d:_:_)
-          -> ([d],[rngLift emptyRange Err_NamesDupIntrod [ioccNm $ doccOcc $ d]])
+          -> ([d],[rngLift emptyRange Err_NamesDupIntrod "value" [(ioccNm $ doccOcc $ d,Nothing)]])
       _   -> ([],[])
 %%]
 
@@ -1185,7 +1205,7 @@ SEM Body
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
-                                        =   let g = if not @mainExists then @idOccDefGamMain else emptyGam
+                                        =   let g = if not @mainValExists then @idOccDefGamMain else emptyGam
                                             in  mkIdOccSccEH @range False (g `gamUnion` @declarations.idOccDefGam) (Just @sccOrder)
 %%]
 
