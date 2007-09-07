@@ -850,6 +850,14 @@ WWW home page:
 %endif
 %%]
 
+%%[28
+\title{The Structure of the Essential Haskell Compiler\\Coping with Compiler Complexity}
+\author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra}
+
+\newcommand{\hallo}[1]{\pgfsincos{#1}}
+
+%%]
+
 %%[12
 \title{Ruler manual \\
 {\normalsize
@@ -2725,6 +2733,23 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesStatus.currentWork
 
 %%]
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for EHCStructure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[28
+%%@SlidesEHCStructure.title
+
+\section{Motivation}
+%%@SlidesEHCStructure.intro
+
+%%]
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Slides for afp

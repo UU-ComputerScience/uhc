@@ -173,6 +173,12 @@ text-variant-slides-status:
 	  TEXT_SHUFFLE_VARIANT=23 \
 	  text-variant-dflt-once
 
+text-variant-slides-ehcstruct:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStatus --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=28 \
+	  text-variant-dflt-once
+
 text-variant-gbm:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF --set=blockstyle" \

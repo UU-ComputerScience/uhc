@@ -1,0 +1,356 @@
+\RequirePackage{svnrev}
+\ProvidesPackageSVN $Id: beamerouterthemeuufancy.sty 15 2006-02-07 10:29:27Z adam $
+
+% Copyright 2005 by uubeamer developers <uubeamer@cs.uu.nl>
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{calc}
+\RequirePackage{ifthen}
+%\RequirePackage{uubeameroptions}[2005/02/03]
+
+%%%% General stuff
+\def\uubeamer@Warning#1{\ClassWarning{uu-beamer}{#1}}
+\def\uubeamer@WarningNoLine#1{\ClassWarningNoLine{uu-beamer}{#1}}
+\def\uubeamer@Info#1{\ClassInfo{uu-beamer}{#1}}
+\def\uubeamer@WarnOptionValue#1#2#3{%
+  \uubeamer@Warning{%
+    Unexpected value `#1'\MessageBreak
+    of option `#2' instead of\MessageBreak
+    #3%
+  }
+}
+
+
+%%%% Declare all options
+\newif\ifincludehead
+\includeheadtrue
+\DeclareOptionBeamer{head}[false]{%
+  \uubeamer@boolkey{includehead}{#1}}
+%\define@key{uubeamer}{head}[true]{%
+%  \uubeamer@boolkey{includehead}{#1}}
+
+\newif\ifincludefoot
+\includefoottrue
+%\define@key{uubeamer}{foot}[true]{%
+%  \uubeamer@boolkey{includefoot}{#1}}
+
+%\ProcessOptionsUuBeamer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%% uusol logo
+\newlength{\logouusolheight}
+\setlength{\logouusolheight}{24pt}
+
+\pgfdeclareimage[height=\the\logouusolheight]{uusol-logo}{UU_logo_fullcolor_uncoated_sol_left}
+
+\setbox\beamer@tempbox=\hbox{\pgfuseimage{uusol-logo}}%
+\beamer@tempdim=\wd\beamer@tempbox%
+\newlength{\logouusolwidth}
+\setlength\logouusolwidth{\beamer@tempdim}
+\uubeamer@Info{Resized uusol logo to (\the\logouusolwidth, \the\logouusolheight).}
+
+%% FIX: The logo drawing starts with current color (flaw in original EPS?)
+%% Set active color to black to get logo right
+\def\logouusol{{\color{black}\pgfuseimage{uusol-logo}}}
+\logo{\logouusol}
+
+%%%% uu boog
+\newif\ifuuboog
+\uuboogfalse
+\define@key{uubeamer}{uuboog}[false]{%
+  \uubeamer@boolkey{uuboog}{#1}}
+
+\ifuuboog
+\newlength{\uuboogradius}
+\setlength{\uuboogradius}{30cm}%140cm/2*\logouusolheight/52}
+\uubeamer@Warning{straal bepaald op \the\uuboogradius}
+\usebackgroundtemplate{%
+    \begin{pgfpicture}{0cm}{0cm}{\the\paperwidth}{\the\paperheight}
+		\pgfsetcolor{white}
+		\pgfpathrectangle{\pgfpoint{0cm}{0cm}}{\pgfpoint{\the\paperwidth}{\the\paperheight}}
+		\pgfusepath{clip,fill}
+
+		\pgfsetlinewidth{1pt}
+		\pgfsetcolor{uuyellow}
+        \pgfpathcircle{\pgfpoint{301mm}{-2cm}}{30cm}
+		\pgfusepath{stroke}
+%        \pgfcircle[stroke]{\pgfpoint{300.7mm}{+7cm}}{30cm}
+    \end{pgfpicture}
+}
+\fi % ifuuboog
+
+%%%% Page numbering
+\newif\ifpagenr
+\pagenrfalse
+\define@key{uubeamer}{pagenr}[false]{%
+  \uubeamer@boolkey{pagenr}{#1}}
+
+%%%% Navigation controls
+\newif\ifnavcontrols
+\navcontrolsfalse
+\define@key{uubeamer}{navcontrols}[false]{%
+  \uubeamer@boolkey{navcontrols}{#1}}
+
+%%%% footline dimensions/positioning
+\def\footlineleftblockwidth{10pt}
+\def\footlinelogohskip{0.1cm}
+\newlength{\footlinelogofullwidth}
+\setlength{\footlinelogofullwidth}{\footlineleftblockwidth+\footlinelogohskip+\logouusolwidth+\footlinelogohskip}
+\newlength{\footlinebarwidth}
+\setlength{\footlinebarwidth}{\paperwidth-\footlinelogofullwidth}
+\uubeamer@Info{Footline horizontal subdivision: \the\footlinebarwidth = \the\paperwidth - \footlineleftblockwidth - 2*\footlinelogohskip - \the\logouusolwidth}
+
+% Disabled, ex units can only be evaluated at eventual location!
+%\newlength{\footlinevskip}
+%\setlength{\footlinevskip}{\logouusolheight/2-3.25ex/2}
+%\uubeamer@Warning{Footline vertical placement: 1.5pt + footlinevskip = 1.5pt + (\the\logouusolheight/2-3.25ex/2) = 1.5pt + \the\footlinevskip}
+
+%%%%%
+\mode<presentation>
+
+%% Associate some colors
+\setbeamercolor*{institute in head/foot}{parent=palette tertiary}
+\setbeamercolor{institute in head/foot}{fg=black}
+\setbeamercolor*{author in head/foot}{parent=palette tertiary}
+\setbeamercolor*{title in head/foot}{parent=palette secondary}
+\setbeamercolor*{date in head/foot}{parent=palette primary}
+
+\setbeamercolor*{head}{bg=white,fg=black}
+\setbeamercolor*{title in head}{parent=head}
+\setbeamercolor*{section in head}{parent=head}
+\setbeamercolor*{subsection in head}{parent=head}
+\setbeamercolor*{page in head}{parent=head}
+
+\setbeamercolor{upper separation line head}{parent=fine separation line}
+\setbeamercolor{middle separation line head}{parent=fine separation line}
+\setbeamercolor{lower separation line head}{parent=fine separation line}
+\setbeamercolor{upper separation line foot}{parent=fine separation line}
+\setbeamercolor{middle separation line foot}{parent=fine separation line}
+\setbeamercolor{lower separation line foot}{parent=fine separation line}
+
+\setbeamercolor{frametitle}{parent=palette primary}
+\setbeamercolor{frametitle right}{parent=palette quaternary}
+
+\setbeamercolor{title}{use=palette primary,fg=white,bg=palette primary.bg}
+\setbeamerfont{block title}{size={}}
+
+%% frame components
+%%%% sidebar right (nav symbols only)
+\defbeamertemplate*{sidebar right}{uubeamer theme}
+{
+  \vfill%
+  \ifnavcontrols%
+  	\llap{\usebeamertemplate***{navigation symbols}\hskip0.1cm}%
+  \fi
+  \vskip2pt%
+}
+
+%%%% footline (sol logo at left, yellow bar vertically centered)
+\ifincludefoot
+\defbeamertemplate*{footline}{uubeamer theme}
+{%
+	\leavevmode%
+	\hbox{%
+	\begin{beamercolorbox}[wd=\footlinelogofullwidth,ht=2.4ex,dp=.85ex]{author in head/foot}%
+	% Nothing
+	\end{beamercolorbox}%
+	\begin{beamercolorbox}[wd=0.5\footlinebarwidth,ht=2.4ex,dp=.85ex,left]{institute in head/foot}%
+		\usebeamerfont{institute in head/foot}\vbox{}\vskip2pt\insertshortinstitute
+	\end{beamercolorbox}%
+	\begin{beamercolorbox}[wd=0.5\footlinebarwidth,ht=2.4ex,dp=.85ex,right]{author in head/foot}%
+		\usebeamerfont{author in head/foot}\insertshortauthor\hspace*{1ex}
+	\end{beamercolorbox}%
+	}%
+	\vskip-1.625ex% half foot bar height
+	\vskip-12pt% half logo height
+	\hbox{%
+		\hskip\footlineleftblockwidth%
+		\insertlogo%
+	}%
+	\vskip1.5pt%
+}
+\fi
+
+%%%% headline (all in same color, title, sections and slidenr)
+\ifincludehead
+\defbeamertemplate*{headline}{uubeamer theme}
+{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.8\paperwidth,ht=2.25ex,dp=1ex,left]{head}%
+    \hspace*{2ex}
+	\usebeamerfont{title in head}\insertshorttitle
+    \ifx\insertsectionhead\@empty\else%
+		\hspace{1ex}$>$\hspace{1ex}
+		\usebeamerfont{section in head}\insertsectionhead
+    	\ifx\insertsubsectionhead\@empty\else%
+			\hspace{1ex}$>$\hspace{1ex}
+    		\usebeamerfont{subsection in head}\insertsubsectionhead
+		\fi
+	\fi
+  \end{beamercolorbox}
+  \begin{beamercolorbox}[wd=.2\paperwidth,ht=2.25ex,dp=1ex,right]{head}%
+	\ifpagenr%
+	\usebeamerfont{page in head}\insertframenumber{} / \inserttotalframenumber\hspace*{2ex}%
+	\fi
+  \end{beamercolorbox}}%
+  \vskip0pt%
+  \begin{beamercolorbox}[colsep=.2pt]{lower separation line head}
+  \end{beamercolorbox}
+}
+\fi
+
+%%%% frame title
+\pgfdeclarehorizontalshading[frametitle.bg,frametitle right.bg]{beamer@frametitleshade}{\paperheight}{%
+  color(0pt)=(frametitle.bg);
+  color(\paperwidth)=(frametitle right.bg)}
+
+\AtBeginDocument{
+  \pgfdeclareverticalshading{beamer@topshade}{\paperwidth}{%
+    color(0pt)=(bg);
+    color(4pt)=(black!50!bg)}
+}
+
+\defbeamertemplate*{frametitle}{uubeamer theme}
+{%
+  \nointerlineskip%
+%  \vskip2pt%
+  \hbox{\leavevmode
+    \advance\beamer@leftmargin by -12bp%
+    \advance\beamer@rightmargin by -12bp%
+    \beamer@tempdim=\textwidth%
+    \advance\beamer@tempdim by \beamer@leftmargin%
+    \advance\beamer@tempdim by \beamer@rightmargin%
+    \hskip-\Gm@lmargin\hbox{%
+      \setbox\beamer@tempbox=\hbox{\begin{minipage}[b]{\paperwidth}%
+          \vbox{}\vskip-.75ex%
+          \leftskip0.3cm%
+          \rightskip0.3cm plus1fil\leavevmode
+          \insertframetitle%
+          \ifx\insertframesubtitle\@empty%
+            \strut\par%
+          \else
+            \par{\usebeamerfont*{framesubtitle}{\usebeamercolor[fg]{framesubtitle}\insertframesubtitle}\strut\par}%
+          \fi%
+          \nointerlineskip
+          \vbox{}%
+          \end{minipage}}%
+      \beamer@tempdim=\ht\beamer@tempbox%
+      \advance\beamer@tempdim by 2pt%
+      \begin{pgfpicture}{0pt}{0pt}{\paperwidth}{\beamer@tempdim}
+        \usebeamercolor{frametitle right}
+		\pgfpathrectangle{\pgfpoint{0cm}{0cm}}{\pgfpoint{\the\paperwidth}{\the\beamer@tempdim}}
+		\pgfusepath{clip}
+        \pgftext[at=\pgfpoint{0cm}{0cm},left]{\pgfuseshading{beamer@frametitleshade}}
+      \end{pgfpicture}
+      \hskip-\paperwidth%
+      \box\beamer@tempbox%
+    }%
+    \hskip-\Gm@rmargin%
+  }%
+  \nointerlineskip
+    \vskip-0.2pt
+    \hbox to\textwidth{\hskip-\Gm@lmargin\pgfuseshading{beamer@topshade}\hskip-\Gm@rmargin}
+    \vskip-2pt
+}
+
+\setbeamersize{text margin left=4ex,text margin right=4ex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\endinput
+\setbeamercolor{section in head/foot}{parent=palette tertiary}
+\setbeamercolor{subsection in head/foot}{parent=palette secondary}
+\setbeamercolor{author in head/foot}{parent=subsection in head/foot}
+\setbeamercolor{title in head/foot}{parent=section in head/foot}
+
+
+\def\beamer@theme@footline@empty{}
+\def\beamer@theme@footline@authorinstitute{
+  \defbeamertemplate*{footline}{miniframes theme}
+  {%
+    \begin{beamercolorbox}[colsep=1.5pt]{upper separation line foot}
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{author in head/foot}%
+      \leavevmode{\usebeamerfont{author in head/foot}\insertshortauthor}%
+      \hfill%
+      {\usebeamerfont{institute in head/foot}\usebeamercolor[fg]{institute in head/foot}\insertshortinstitute}%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[colsep=1.5pt]{lower separation line foot}
+    \end{beamercolorbox}
+  }
+}
+\def\beamer@theme@footline@authortitle{
+  \defbeamertemplate*{footline}{miniframes theme}
+  {%
+    \begin{beamercolorbox}[colsep=1.5pt]{upper separation line foot}
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+      \leavevmode{\usebeamerfont{title in head/foot}\insertshorttitle}%
+      \hfill%
+      {\usebeamerfont{author in head/foot}\usebeamercolor[fg]{author in head/foot}\insertshortauthor}%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[colsep=1.5pt]{lower separation line foot}
+    \end{beamercolorbox}
+  }
+}
+\def\beamer@theme@footline@institutetitle{
+  \defbeamertemplate*{footline}{miniframes theme}
+  {%
+    \begin{beamercolorbox}[colsep=1.5pt]{upper separation line foot}
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+      \leavevmode{\usebeamerfont{title in head/foot}\insertshorttitle}%
+      \hfill%
+      {\usebeamerfont{institute in head/foot}\usebeamercolor[fg]{institute in head/foot}\insertshortinstitute}%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[colsep=1.5pt]{lower separation line foot}
+    \end{beamercolorbox}
+  }
+}
+\def\beamer@theme@footline@authorinstitutetitle{
+  \defbeamertemplate*{footline}{miniframes theme}
+  {%
+    \begin{beamercolorbox}[colsep=1.5pt]{upper separation line foot}
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{author in head/foot}%
+      \leavevmode{\usebeamerfont{author in head/foot}\insertshortauthor}%
+      \hfill%
+      {\usebeamerfont{institute in head/foot}\usebeamercolor[fg]{institute in head/foot}\insertshortinstitute}%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{title in head/foot}%
+      {\usebeamerfont{title in head/foot}\insertshorttitle}%
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[colsep=1.5pt]{lower separation line foot}
+    \end{beamercolorbox}
+  }
+}
+
+
+
+\mode<presentation>
+
+                                % Head
+\defbeamertemplate*{headline}{miniframes theme}
+{%
+  \begin{beamercolorbox}[colsep=1.5pt]{upper separation line head}
+  \end{beamercolorbox}
+  \begin{beamercolorbox}{section in head/foot}
+    \vskip2pt\insertnavigation{\paperwidth}\vskip2pt
+  \end{beamercolorbox}%
+  \ifbeamer@theme@subsection%
+    \begin{beamercolorbox}[colsep=1.5pt]{middle separation line head}
+    \end{beamercolorbox}
+    \begin{beamercolorbox}[ht=2.5ex,dp=1.125ex,%
+      leftskip=.3cm,rightskip=.3cm plus1fil]{subsection in head/foot}
+      \usebeamerfont{subsection in head/foot}\insertsubsectionhead
+    \end{beamercolorbox}%
+  \fi%
+  \begin{beamercolorbox}[colsep=1.5pt]{lower separation line head}
+  \end{beamercolorbox}
+}
+
+\mode
+<all>

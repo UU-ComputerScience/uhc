@@ -1,0 +1,33 @@
+% Get date and version from SVN Ids
+% Originally from latex-beamer package by Till Tantau (RCS variant)
+% Modified by Arthur van Dam for svn Id keyword
+
+\def\svn@parseid $#1: #2.#3 #4 #5-#6-#7 #8${%
+  \svn@parsesvnfile$#2/$
+  \def\svn@svnrevision{#4}
+  \def\svn@svndate{#5/#6/#7}
+}
+\def\svn@parsesvnfile$#1/#2${
+  \def\svn@temp{#2}
+  \ifx\svn@temp\@empty
+    \def\svn@svnfile{#1}
+  \else
+    \svn@parsesvnfile$#2$
+  \fi}
+
+\def\ProvidesPackageSVNwdesc $#1$ [#2]{
+  \svn@parseid $#1$
+  \ProvidesPackage{\svn@svnfile}[\svn@svndate\space#2\space (rev.\svn@svnrevision)]
+}
+
+\def\ProvidesPackageSVN $#1${
+  \svn@parseid $#1$
+  \ProvidesPackage{\svn@svnfile}[\svn@svndate\space (rev.\svn@svnrevision)]
+}
+
+\def\ProvidesClassSVN $#1$ [#2]{%
+  \svn@parseid $#1$
+  \ProvidesClass{\svn@svnfile}[\svn@svndate\space#2\space (rev.\svn@svnrevision)]
+}
+
+\ProvidesPackageSVN $Id: svnrev.sty 477 2005-01-31 10:37:46Z adam $

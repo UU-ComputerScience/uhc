@@ -9,7 +9,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								scratch scratch2 \
 								poster posterLDL \
 								slides-ruler slides-ruler-long \
-								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
+								slides-explimpl slides-explimpl-fpnl slides-overview slides-status slides-ehcstruct \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
@@ -19,7 +19,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SharedTypeLang SharedFIOpts \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
-								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus \
+								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler \
 								TopicGrinBytecode \
@@ -61,8 +61,9 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 25: experience report "ehc structure"
 # 26: acm paper: base (share)
 # 27: poster LDL
+# 28: slides EHC Structure
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, \
 								1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, \
-								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27
+								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27, 18 < 28

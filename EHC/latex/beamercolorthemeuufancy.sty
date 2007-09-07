@@ -1,0 +1,37 @@
+\RequirePackage{svnrev}
+\ProvidesPackageSVN $Id: beamercolorthemeuufancy.sty 14 2006-02-01 22:06:43Z adam $
+
+% Copyright 2005 by uubeamer developers <uubeamer@cs.uu.nl>
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{uucorporatecolors}[2005/03/28]
+
+\mode<presentation>
+
+\setbeamercolor{structure}{fg=uuyellow}
+
+\setbeamercolor{palette primary}{fg=uured,bg=uuyellow!90}
+\setbeamercolor{palette secondary}{fg=uured,bg=uuyellow!75}
+\setbeamercolor{palette tertiary}{fg=uured,bg=uuyellow!60}
+\setbeamercolor{palette quaternary}{fg=uured,bg=uuyellow!45}
+
+\setbeamercolor{titlelike}{parent=palette quaternary}
+
+\setbeamercolor{block title}{fg=white,bg=uuyellow}
+\setbeamercolor{block title alerted}{use=alerted text,fg=uured,bg=alerted text.fg!75!bg}
+\setbeamercolor{block title example}{use=example text,fg=uured,bg=example text.fg!75!bg}
+
+\setbeamercolor{block body}{parent=normal text,use=block title,bg=block title.bg!25!bg}
+\setbeamercolor{block body alerted}{parent=normal text,use=block title alerted,bg=block title alerted.bg!25!bg}
+\setbeamercolor{block body example}{parent=normal text,use=block title example,bg=block title example.bg!25!bg}
+
+\setbeamercolor{sidebar}{bg=uuyellow!70}
+  
+%\setbeamercolor{palette sidebar primary}{fg=craneblue}
+%\setbeamercolor{palette sidebar secondary}{fg=craneblue!75}
+%\setbeamercolor{palette sidebar tertiary}{fg=craneblue!75}
+%\setbeamercolor{palette sidebar quaternary}{fg=craneblue}
+
+\setbeamercolor*{separation line}{bg=uured}
+\setbeamercolor*{fine separation line}{bg=uured}
+
+\mode<all>
