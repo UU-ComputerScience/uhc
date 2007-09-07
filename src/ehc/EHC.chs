@@ -1378,6 +1378,7 @@ cpCompileWithGCC how othModNmL modNm
                                                -- , map ("-l" ++) (Cfg.libnamesGccPerVariant ++ Cfg.libnamesGcc)
                                                , map (\l -> Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib/lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
                                                  ++ map (\l -> Cfg.fileprefixInplaceInstall ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
+                                                 ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
