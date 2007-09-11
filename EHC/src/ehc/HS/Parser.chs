@@ -279,10 +279,10 @@ pWhere = pWhere' pDeclaration
 %%[1
 pDeclarationFixity :: HSParser Declaration
 pDeclarationFixity
-  = (\f p o -> Declaration_Fixity emptyRange f p (tokMkQNames o))
+  = (\f p os@(o:_) -> Declaration_Fixity (mkRange1 o) f p (tokMkQNames os))
     <$> pFixity
     <*> ((Just . tokMkInt) <$> pInteger10Tk <|> pSucceed Nothing)
-    <*> pListSep pCOMMA op
+    <*> pList1Sep pCOMMA op
 
 pFixity :: HSParser' Fixity
 pFixity = Fixity_Infixl <$ pINFIXL <|> Fixity_Infixr <$ pINFIXR <|> Fixity_Infix <$ pINFIX

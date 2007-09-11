@@ -113,11 +113,11 @@ SEM ErrL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-ppNmAndRange :: PP x => [(x,Maybe [Range])] -> PP_Doc
+ppNmAndRange :: PP x => [(x,Maybe [(Range,Maybe PP_Doc)])] -> PP_Doc
 ppNmAndRange nmL
   = case catMaybes $ map snd $ nmL of
       [] -> ppListSep "" "" ", " $ map fst $ nmL
-      _  -> vlist [ n >|< ":" >#< maybe empty vlist rs | (n,rs) <- nmL ]
+      _  -> vlist [ n >|< ":" >#< maybe empty (vlist . map (\(r,mbinfo) -> maybe (pp r) (\i -> r >#< ppParens i) mbinfo)) rs | (n,rs) <- nmL ]
 
 strCapHeading :: String -> String -> String
 strCapHeading kind title@(ht:tt)
@@ -139,7 +139,8 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    (strCapHeading @kind "Names introduced more than once")
+  | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    ("Name(s) for " ++ @kind ++ "(s) introduced more than once")
+                                                        -- (strCapHeading @kind "Names introduced more than once")
                                                         (ppNmAndRange @nmL)
 %%[[99
                                                         @range
