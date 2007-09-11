@@ -240,6 +240,14 @@ SEM Expr
 ATTR AllDataField [ | tyGam: TyGam | ]
 %%]
 
+%%[16
+ATTR AllDataConstrEq [ | tyGam: TyGam | ]
+
+-- tyvarid of .tyVar already present in @lhs.tyGam
+SEM DataConstrEq
+  | Eq  tyExpr.tyGam = @lhs.tyGam
+%%]
+
 %%[50
 ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
@@ -250,6 +258,9 @@ ATTR
   AllPatExpr
 %%[[7
   AllDataField
+%%]]
+%%[[16
+  AllDataConstrEq
 %%]]
     [ | tyKiGam: TyKiGam | ]
 %%]

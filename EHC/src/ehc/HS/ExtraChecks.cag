@@ -49,6 +49,9 @@ SEM Declaration
                                                                    _
 %%]]
                                                                    [_]
+%%[[16
+                                                                   _
+%%]]
                                                 -> []
                                               _ -> [rngLift @range Err_Newtype @simpletype.name]
 %%]

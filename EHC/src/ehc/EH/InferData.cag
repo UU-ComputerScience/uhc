@@ -103,7 +103,8 @@ SEM DataConstr
                 loc         .   dataConProdTy       :   Ty
                 loc         .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
                                                              fvU = ftv @dataConProdTy
-                                                        in   mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy)
+                                                        in (mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy))
+
                 lhs         .   patValGam           =   gamUnions
                                                           [ assocLToGam
                                                               [ (@conNm, ValGamInfo @dataConTy)
@@ -132,18 +133,47 @@ SEM Decl
                                                           ]
 %%]
 
+
 %%[7
 ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
-  | Constr      loc         .   dataConTy           :=  assocLElts @fields.fldTyL `mkArrow` @lhs.dataTy
-                            .   dataConProdTy       :=  let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
-                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL)
+  | Constr      loc         .   dataConTy2          =   assocLElts @fields.fldTyL `mkArrow` @lhs.dataTy 
+                loc         .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
+                                                        in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL) 
+
+                loc         .   dataConTy           :=  @loc.dataConTy1
+                loc         .   dataConProdTy       :=  @loc.dataConProdTy1
+
                 loc         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
+%%]
+
+%%[7.dataConXTy
+SEM DataConstr
+  | Constr
+      loc.dataConTy1     = @loc.dataConTy2
+      loc.dataConProdTy1 = @loc.dataConProdTy2
+%%]
+
+%%[16.dataConXTy -7.dataConXTy
+SEM DataConstr
+  | Constr
+      (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp |==> @loc.dataConTy2
+      (loc.dataConProdTy1, _)        = @loc.eqsVarMp |==> prependEqPreds @eqs.prOccL @loc.dataConProdTy2  -- cyclic occurrences subsumed by @loc.cycVarMp
+      loc.occErrL                    = varmpOccurErr @loc.cycVarMp
+%%]
+
+%%[16 hs
+-- assumption: Ty is a product
+prependEqPreds :: [PredOcc] -> Ty -> Ty
+prependEqPreds preds ty
+  = let predsTyL = map (Ty_Pred . poPr) preds
+        prodTyL  = tyProdArgs ty
+     in mkProdApp (prodTyL ++ predsTyL)
 %%]
 
 %%[8
@@ -338,6 +368,47 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GADT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Kind of LHS of the DataConstrEq should match the kind of the RHS.
+
+%%[16
+SEM DataConstrEq
+  | Eq  loc.fo_ = fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
+        lhs.kiVarMp = foVarMp @loc.fo_
+
+ATTR AllDataConstrEq [ | | prOccL USE {++} {[]} : {[PredOcc]} ]
+
+SEM DataConstrEq
+  | Eq  loc.pr      = Pred_Eq (tyVar @tyVar.ty) @tyExpr.ty
+        loc.prOccId = mkPrIdCHR @loc.lUniq3
+        loc.prOcc   = mkPredOcc @loc.pr @loc.prOccId @lhs.predScope
+        lhs.prOccL  = [@loc.prOcc]
+%%]
+
+Construct a substitution from the additional equations. This subsitution is applied to the type of the constructor function to obtain
+the actual type of the constructor, i.e. the additional equations do not show up in the type of a constructor. The equations are required
+to be non-cyclic, and in case one equation is multiply defined, the right hand sides have to be equal modulo unification.
+
+%%[16
+SEM AllDataConstrEq [ | eqVarMp : {VarMp} | ]
+
+SEM DataConstr
+  | Constr
+      eqs.eqVarMp  = emptyVarMp
+      loc.eqsVarMp = @eqs.eqVarMp
+
+SEM DataConstrEq
+  | Eq
+      loc.tv        = tyVar @tyVar.ty
+      loc.knRhsTy   = maybe Ty_Any id $ varmpTyLookup @loc.tv @lhs.eqVarMp
+      loc.foRhsTy   = fitsIn strongFIOpts emptyFE @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
+      loc.unitVarMp = @loc.tv `varmpTyUnit` foTy @loc.foRhsTy
+      lhs.eqVarMp   = @loc.unitVarMp `varmpUnion` foVarMp @loc.foRhsTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pattern: additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -358,4 +429,19 @@ SEM DataFieldPatExpr
   | * - Ext     lhs         .   fldL                =   []
 %%]
 
+Check that LHS of equations is a tyvar in scope
+%%[16
+ATTR AllDataConstrEq TyVar [ | | tyvarNms USE {`Set.union`} {Set.empty} : {Set HsName} ]
+SEM TyVar
+  | Var  lhs.tyvarNms = Set.singleton @nm
+
+SEM DataConstr
+  | Constr
+      loc.tyVarsInScope = Set.fromList (gamKeys @fields.tyGam)
+      loc.undefTyVarsInEqs = @eqs.tyvarNms `Set.difference` @loc.tyVarsInScope
+      loc.undefVarsErrSq = if Set.null @loc.undefTyVarsInEqs
+                           then Seq.empty
+                           else Seq.singleton $ Err_NamesNotIntrod "" [(pp nm, Nothing) | nm <- Set.toList @loc.undefTyVarsInEqs]
+
+%%]
 

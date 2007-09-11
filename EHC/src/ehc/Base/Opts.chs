@@ -482,6 +482,11 @@ optsDiscrRecompileRepr opts
 %%% Fitting options (should be in FitsIn, but here it avoids mut rec modules)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Difference strong/weak:
+
+strong: in a context where information is known (i.e. type signature)
+strong allows impredicative binding whereas weak will instantiate quantifiers
+
 %%[9 export(FIOBind(..),fioBindIsYes,fioBindNoSet)
 data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
 

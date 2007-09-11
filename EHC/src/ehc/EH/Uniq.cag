@@ -379,6 +379,11 @@ SEM PatExpr
   | Expr            (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
 %%]
 
+%%[16
+SEM DataConstrEq
+  | Eq              (tyVar.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)   =   mkNewLevUID3    @lhs.gUniq
+%%]
+
 %%[50
 SEM DataConstrEq
   | Eq              (tyVar.gUniq,loc.lUniq)                          =   mkNewLevUID     @lhs.gUniq
