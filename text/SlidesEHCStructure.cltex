@@ -6,15 +6,235 @@
 %%]
 
 %%[intro
-\frame<presentation>
-{
-\frametitle{Coping with compiler complexity?}
+
+\raggedbottom
+
+\begin{frame}
+\frametitle{The structure of the Essential Haskell Compiler\dots}
+
+{\large We are writing a Haskell compiler}
+
+{\large that by design {\em evolves}}
+
 \begin{itemize}
-\item Implementation complexity
-\item Description complexity
-\item Design complexity
-\item Maintenance complexity
+\item from {\em essential} to {\em syntactically sugared}
+\item from {\em lambda calculus} to {\em full Haskell}
+\item from {\em plain constructs} to {\em extensions}
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{\dots\ or: Coping with Compiler Complexity}
+
+
+{\large When writing a compiler we face}
+
+\begin{itemize}
+\item {\large Implementation complexity}\\
+      \uncover<2->{\hspace*{5mm}a compiler is a {\em large program}}
+
+\item {\large Description complexity}\\
+      \uncover<2->{\hspace*{5mm}translation involves {\em complicated trees}}
+
+\item {\large Design complexity}\\
+      \uncover<2->{\hspace*{5mm}a language has {\em many features}}
+
+\item {\large Maintenance complexity}\\
+      \uncover<2->{\hspace*{5mm}evolving projects must {\em remain consistent}}
+
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Coping with \emph{Implementation} Complexity}
+
+\begin{center}
+{\Large\bf Transform!}
+\end{center}
+
+\temporal<3>{%
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2a}}
+}{%
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2b}}
+}{%
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2}}
+}
+
+Many intermediate languages\uncover<3->{, {\em and even more transformations}}
+\begin{itemize}
+\item \makebox[30mm][l]{Haskell          }
+\item \makebox[30mm][l]{Essential Haskell}  \uncover<2-2>{\makebox[9mm][l]{(desugared)}}
+\item \makebox[30mm][l]{Core             }  \uncover<2-2>{\makebox[9mm][l]{(untyped)}}     \uncover<3-4>{{\em 12 transformations}}
+\item \makebox[30mm][l]{Grin             }  \uncover<2-2>{\makebox[9mm][l]{(sequential)}}  \uncover<3-4>{{\em 17 transformations}}
+\item \makebox[30mm][l]{Silly            }  \uncover<2-2>{\makebox[9mm][l]{(imperative)}}  \uncover<3-4>{{\em 3 transformations}}
+\item \makebox[30mm][l]{C                }
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Coping with \emph{Description} Complexity}
+
+
+\begin{center}
+{\Large\bf Use tools!}
+\end{center}
+
+\mbox{%
+\parbox[b]{40mm}{%
+\begin{itemize}
+\item<6-> Ruler\\\mbox{ }
+\item<5-> Shuffle\\\mbox{ }
+\item<4-> {\em Utrecht University}\\
+          Attribute Grammar Compiler
+\item<2-> {\em Glasgow}\\
+          Haskell Compiler
 \end{itemize}
 }
+\hspace*{-10mm}%
+\only<1>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2a}}}%
+\only<2>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2b}}}%
+\only<3>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2c}}}%
+\only<4>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2d}}}%
+\only<5>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2e}}}%
+\only<6>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2}}}
+}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Coping with \emph{Design} Complexity}
+
+\begin{center}
+{\Large\bf Grow stepwise!}
+\end{center}
+
+\begin{enumerate}
+\item[~]<2-> \makebox[50mm][l]{{\color{uured}plain Haskell}}                  {\color{uured}extensions}
+\item<1-> \makebox[50mm][l]{$\lambda$-calculus, type checking}
+\item<1-> \makebox[50mm][l]{type inference}
+\item<1-> \makebox[50mm][l]{polymorphism}
+\item<1-> \makebox[50mm][l]{}                                  \visible<2->{higher ranked types}
+\item<1-> \makebox[50mm][l]{data types}
+\item<3-> \makebox[50mm][l]{kind inference}                    kind signatures
+\item<3-> \makebox[50mm][l]{records}                           tuples as records
+\item<3-> \makebox[50mm][l]{code generation}                   full program analysis
+\item<3-> \makebox[50mm][l]{classes, synonyms}                 extensible records
+\setcounter{enumi}{19}
+\item<4-> \makebox[50mm][l]{modules}
+\setcounter{enumi}{94}
+\item<4-> \makebox[50mm][l]{`deriving'}                      exceptions
+\setcounter{enumi}{98}
+\item<4-> \makebox[50mm][l]{prelude, I/O}
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Coping with \emph{Maintenance} Complexity}
+\begin{center}
+{\Large\bf Generate, generate, generate\dots}
+\end{center}
+
+\end{frame}
+
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+{\large\visible<2->{{\color{uured}\bf Do not }}
+write recursive functions}
+\vspace*{2mm}
+
+%%[[wrap=safecode
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+concat   []      = []
+concat   (x:xs)  = x ++ concat xs
+%%]]
+\vspace*{2mm}
+
+\visible<2->{{\large but generalize\dots}
+\vspace*{2mm}
+
+%%[[wrap=safecode
+foldr op e []      = e
+foldr op e (x:xs)  = x `op` foldr op e xs
+%%]]
+}
+
+\visible<3->{{\large \dots and specialize}
+\vspace*{2mm}
+
+%%[[wrap=safecode
+sum        =  foldr (+)  0
+concat     =  foldr (++) []
+sort       =  foldr insert []
+%%]]
+}
+
+\visible<4->{
+\hspace*{5mm}{\em\color{uured}catamorphism} = {\em foldr} {\em\color{uured}algebra}
+}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+{\large If {\em programming by writing algebras} is a Good Thing\\
+why doesn't anybody do it?}
+
+\begin{itemize}
+\item<2-> we need a custom {\em fold}-function for each datatype\\
+          \visible<6>{{\color{uured}automatically generated}}
+
+\item<3-> algebras contain {\em many} functions which\dots\\
+          \visible<6>{{\color{uured}distributedly definable}}
+
+\item<4-> \dots each return a tuple\\
+          \visible<6>{{\color{uured}{\em synthesized} attributes}}
+
+\item<4-> \dots take extra parameters\\
+          \visible<6>{{\color{uured}{\em inherited} attributes}}
+      
+\item<5-> \dots and mostly just copy values up or down\\  
+          \visible<6>{{\color{uured}defaulting mechanism}}
+
+\end{itemize}
+
+\visible<6->{{\large{\color{uured}\em Attribute Grammar Compiler} makes this easy}}
+
+
+\end{frame}
+
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Ruler}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Shuffle}
+
+\end{frame}
+
+
+
+
 %%]
 
