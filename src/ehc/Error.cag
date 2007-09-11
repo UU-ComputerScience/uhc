@@ -79,14 +79,14 @@ mkNestErr r wher errL | null (forceEval errL) = []
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.mkErr_NamesNotIntrod hs export(mkErr_NamesNotIntrod, mkErr_NamesNotIntrod')
-mkErr_NamesNotIntrod' :: PP n => String -> [(n,Maybe [Range])] -> Err
+mkErr_NamesNotIntrod' :: PP n => String -> [(n,Maybe [(Range,Maybe PP_Doc)])] -> Err
 mkErr_NamesNotIntrod' m ns = Err_NamesNotIntrod m (assocLMapKey pp ns)
 
 mkErr_NamesNotIntrod :: String -> [HsName] -> Err
 mkErr_NamesNotIntrod m ns = mkErr_NamesNotIntrod' m (zip (map pp ns) (repeat Nothing))
 %%]
 %%[99 -1.mkErr_NamesNotIntrod hs export(mkErr_NamesNotIntrod, mkErr_NamesNotIntrod')
-mkErr_NamesNotIntrod' :: PP n => Range -> String -> [(n,Maybe [Range])] -> Err
+mkErr_NamesNotIntrod' :: PP n => Range -> String -> [(n,Maybe [(Range,Maybe PP_Doc)])] -> Err
 mkErr_NamesNotIntrod' r m ns = Err_NamesNotIntrod r m (assocLMapKey pp ns)
 
 mkErr_NamesNotIntrod :: Range -> String -> [HsName] -> Err

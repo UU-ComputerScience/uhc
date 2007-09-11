@@ -57,22 +57,58 @@ data IdAspect
   | IdAsp_Any
 %%]
 
-%%[1 hs export(iaspIsFun)
+%%[1 hs export(iaspIsFun,iaspIsPat,iaspIsValSig,iaspIsValVar,iaspIsValFix)
 iaspIsFun :: IdAspect -> Bool
 iaspIsFun (IdAsp_Val_Fun _ _ _) = True
 iaspIsFun _                     = False
-%%]
 
-%%[1 hs export(iaspIsValSig)
+iaspIsPat :: IdAspect -> Bool
+iaspIsPat (IdAsp_Val_Pat _) = True
+iaspIsPat _                 = False
+
 iaspIsValSig :: IdAspect -> Bool
 iaspIsValSig (IdAsp_Val_Sig _) = True
 iaspIsValSig _                 = False
-%%]
 
-%%[8 hs export(iaspIsValVar)
 iaspIsValVar :: IdAspect -> Bool
 iaspIsValVar IdAsp_Val_Var = True
 iaspIsValVar _             = False
+
+iaspIsValFix :: IdAspect -> Bool
+iaspIsValFix IdAsp_Val_Fix = True
+iaspIsValFix _             = False
+%%]
+
+%%[5 hs export(iaspIsValCon,iaspIsTypeDef,iaspIsValFld)
+iaspIsValCon :: IdAspect -> Bool
+iaspIsValCon IdAsp_Val_Con = True
+iaspIsValCon _             = False
+
+iaspIsValFld :: IdAspect -> Bool
+iaspIsValFld IdAsp_Val_Fld = True
+iaspIsValFld _             = False
+
+iaspIsTypeDef :: IdAspect -> Bool
+iaspIsTypeDef (IdAsp_Type_Def _) = True
+iaspIsTypeDef _                  = False
+%%]
+
+%%[6 hs export(iaspIsTypeSig)
+iaspIsTypeSig :: IdAspect -> Bool
+iaspIsTypeSig (IdAsp_Type_Sig _) = True
+iaspIsTypeSig _                  = False
+%%]
+
+%%[8 hs export(iaspIsValFFI)
+iaspIsValFFI :: IdAspect -> Bool
+iaspIsValFFI (IdAsp_Val_FFI _) = True
+iaspIsValFFI _                 = False
+%%]
+
+%%[9 hs export(iaspIsClassDef)
+iaspIsClassDef :: IdAspect -> Bool
+iaspIsClassDef (IdAsp_Class_Def _ _) = True
+iaspIsClassDef _                     = False
 %%]
 
 %%[1 hs
@@ -82,36 +118,36 @@ instance Show IdAspect where
 
 %%[1 hs
 instance PP IdAspect where
-  pp  IdAsp_Val_Var         = pp "VAR"
-  pp (IdAsp_Val_Pat _    )  = pp "PAT"
-  pp (IdAsp_Val_Fun _ _ _)  = pp "FUN"
-  pp (IdAsp_Val_Sig _    )  = pp "SIG"
-  pp  IdAsp_Val_Fix         = pp "FIX"
-  pp  IdAsp_Val_Con         = pp "CON"
+  pp  IdAsp_Val_Var         = pp "value"
+  pp (IdAsp_Val_Pat _    )  = pp "pattern"
+  pp (IdAsp_Val_Fun _ _ _)  = pp "function"
+  pp (IdAsp_Val_Sig _    )  = pp "type signature"
+  pp  IdAsp_Val_Fix         = pp "fixity"
+  pp  IdAsp_Val_Con         = pp "data constructor"
 %%[[5
-  pp  IdAsp_Val_Fld         = pp "FLD"
+  pp  IdAsp_Val_Fld         = pp "data field"
 %%]
-  pp  IdAsp_Type_Con        = pp "CON"
+  pp  IdAsp_Type_Con        = pp "type constructor"
 %%[[3
-  pp  IdAsp_Type_Var        = pp "VAR"
+  pp  IdAsp_Type_Var        = pp "type variable"
 %%]
 %%[[5
-  pp (IdAsp_Type_Def _   )  = pp "DEF"
+  pp (IdAsp_Type_Def _   )  = pp "type"
 %%]
 %%[[6
-  pp (IdAsp_Type_Sig _   )  = pp "SIG"
-  pp  IdAsp_Kind_Con        = pp "CON"
-  pp  IdAsp_Kind_Var        = pp "VAR"
+  pp (IdAsp_Type_Sig _   )  = pp "kind signature"
+  pp  IdAsp_Kind_Con        = pp "kind constructor"
+  pp  IdAsp_Kind_Var        = pp "kind variable"
 %%]
 %%[[8
-  pp (IdAsp_Val_FFI _    )  = pp "FFI"
+  pp (IdAsp_Val_FFI _    )  = pp "foreign function"
 %%]
 %%[[9
-  pp  IdAsp_Class_Class     = pp "CLS"
-  pp (IdAsp_Class_Def _ _)  = pp "DEF"
-  pp  IdAsp_Inst_Inst       = pp "INS"
-  pp (IdAsp_Inst_Def  _ _)  = pp "DEF"
-  pp (IdAsp_Dflt_Def  _  )  = pp "DEF"
+  pp  IdAsp_Class_Class     = pp "class"
+  pp (IdAsp_Class_Def _ _)  = pp "class"
+  pp  IdAsp_Inst_Inst       = pp "instance"
+  pp (IdAsp_Inst_Def  _ _)  = pp "instance"
+  pp (IdAsp_Dflt_Def  _  )  = pp "default"
 %%]
   pp  IdAsp_Any             = pp "ANY"
 %%]

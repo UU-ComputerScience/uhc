@@ -5,7 +5,9 @@
 %%[1
 SEM Module
     | Module
-        loc             .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map uoccRange os)) | (o,os) <- gamToAssocDupL @body.undefOccGam, not $ hsnIsProd $ ioccNm $ o ]
+        loc             .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map (\o -> (uoccRange o,Nothing)) os))
+                                                     | (o,os) <- gamToAssocDupL @body.undefOccGam, not $ hsnIsProd $ ioccNm $ o
+                                                     ]
                                             in  (if null ns then [] else [rngLift @range mkErr_NamesNotIntrod' "" ns])
 %%]
 
@@ -62,29 +64,75 @@ SEM Declaration
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ..
+%%% Duplicate introductions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-idDefOccGamCheckDupSigs :: IdDefOccGam -> [Err]
-idDefOccGamCheckDupSigs g
+idDupCheckInfo :: AssocL IdOccKind (AssocL String (IdAspect -> Bool))
+idDupCheckInfo
+  = [ ( IdOcc_Val
+      , [ ( "type signature"    , iaspIsValSig )
+        , ( "value"             , (\a -> iaspIsValVar a
+                                         || iaspIsFun a
+%%[[5
+                                         || iaspIsValFld a
+%%]]
+%%[[8
+                                         || iaspIsValFFI a
+%%]]
+          )                       )
+        , ( "operator fixity"   , iaspIsValFix )
+%%[[5
+        , ( "data constructor"  , iaspIsValCon )
+%%]]
+        ]
+      )
+%%[[5
+    , ( IdOcc_Type
+      , [ ( "type"              , iaspIsTypeDef )
+%%[[6
+        , ( "kind signature"    , iaspIsTypeSig )
+%%]]
+        ]
+      )
+%%]]
+%%[[9
+    , ( IdOcc_Class
+      , [ ( "class"             , iaspIsClassDef )
+        ]
+      )
+%%]]
+    ]
+%%]
+
+%%[1 hs
+idDefOccGamCheckDupNames :: IdDefOccGam -> [Err]
+idDefOccGamCheckDupNames g
   = case dups of
-      []           -> []
-      ds@((_,Just (r:_)):_) -> [rngLift r Err_NamesDupIntrod "type signature" ds]
-  where dups = [ (n,Just $ map doccRange d)
-               | (IdOcc {ioccKind=IdOcc_Val, ioccNm=n},ds) <- gamToAssocDupL g
-               , let d = filter (\docc -> iaspIsValSig (doccAsp docc)) ds
-               , length d > 1
+      [] -> []
+      es -> map mk es
+         where mk (info,ds@((_,Just ((r,_):_)):_)) = rngLift r Err_NamesDupIntrod info ds
+  where dups
+          = Map.toList
+            $  Map.unionsWith (++)
+            $  [ Map.singleton info [(n,Just [(doccRange d, Just $ pp $ doccAsp d) | d <- defs])]
+               | (IdOcc {ioccKind=k, ioccNm=n},ds) <- gamToAssocDupL g
+               , check <- maybeToList $ lookup k idDupCheckInfo
+               , (info,defs) <- filter (\(_,x) -> length x > 1)
+                                $ assocLMapElt (\c -> filter (\d -> c (doccAsp d)) $ collapse ds) check
                ]
+        collapse ds
+          = take 1 funs ++ others
+          where (funs,others) = partition (iaspIsFun . doccAsp) ds
 %%]
 
 %%[1
 SEM Body
     | Body
-        loc             .   errDupdef   =   idDefOccGamCheckDupSigs @declarations.idOccDefGam
+        loc             .   errDupdef   =   idDefOccGamCheckDupNames @declarations.idOccDefGam
 
 SEM Expression
     | Let
-        loc             .   errDupdef   =   idDefOccGamCheckDupSigs @declarations.idOccDefGam
+        loc             .   errDupdef   =   idDefOccGamCheckDupNames @declarations.idOccDefGam
 %%]
 

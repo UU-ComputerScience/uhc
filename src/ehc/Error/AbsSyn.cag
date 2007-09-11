@@ -41,13 +41,13 @@ DATA Err
 %%[1.NamesNotIntrod
 DATA Err
   | NamesNotIntrod      kind       : String
-                        nmL        : {[(PP_Doc,Maybe [Range])]}
+                        nmL        : {[(PP_Doc,Maybe [(Range,Maybe PP_Doc)])]}
 %%]
 
 %%[1.Rest
 DATA Err
   | NamesDupIntrod      kind       : String
-                        nmL        : {[(HsName,Maybe [Range])]}
+                        nmL        : {[(HsName,Maybe [(Range,Maybe PP_Doc)])]}
   | PatArity            ty         : {Ty}
                         arity      : {Int}
   | NestedIn            wher       : {PP_Doc}
