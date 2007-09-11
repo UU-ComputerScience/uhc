@@ -370,6 +370,24 @@ fitsInFI fi ty1 ty2
                                                  else  id
 %%]
 
+%%[16.fitsIn.eqProofObligation
+            eqProofObligation tRes fi tL tR
+                = (res fi tRes) { foGathCnstrMp = mp }
+                where
+                  mp    = cnstrMpFromList [cnstr]
+                  cnstr = mkProveConstraint (Pred_Eq tL tR) uid scope
+                  scope = fePredScope $ fiEnv fi
+                  uid   = fiUniq fi
+%%]
+
+%%[16.fitsIn.isSkVar
+            -- is skolemnized tyvar?
+            isSkVar = isSkVar' . show
+            
+            isSkVar' ('C':'_':_) = True
+            isSkVar' _           = False
+%%]
+
 %%[4.fitsIn.FOUtils
             foUpdVarMp  c fo = fo {foVarMp = c |=> foVarMp fo}
             foSetVarMp  c fo = fo {foVarMp = c}
@@ -928,6 +946,16 @@ fitsInFI fi ty1 ty2
 %%[7.fitsIn.Ext
             f fi t1@(Ty_Ext _ _ _)   t2@(Ty_Ext _ _ _)
                 =  fRow fi t1 t2 False False
+%%]
+
+FitsIn type clashes
+
+GADT: type clash between fixed type variable and some other type results in a equality proof constraint
+%%[16.fitsIn.EqProve
+            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2 = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed) = eqProofObligation t2 fi t2 t1
+            f fi t1@(Ty_Con cstr) t2 | isSkVar cstr = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Con cstr) | isSkVar cstr = eqProofObligation t2 fi t2 t1
 %%]
 
 %%[4.fitsIn.DefaultCase

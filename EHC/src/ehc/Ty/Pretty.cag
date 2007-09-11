@@ -576,7 +576,7 @@ SEM Ty
 
 %%[16
 SEM Pred
-  | Eq              lhs     .   pp      =   ppParNeed @parNeed @lhs.parNeed (maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "v" @tv) id (tnLookupPP @tv @lhs.tnMap) >#< "=" >#< @ty.pp)
+  | Eq              lhs     .   pp      =   ppParNeed @parNeed @lhs.parNeed (@tyL.pp >#< "=" >#< @tyR.pp)
 %%]
 
 %%[50

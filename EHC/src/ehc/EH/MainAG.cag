@@ -55,9 +55,6 @@
 %%[9 hs import({%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[16 hs import({%{EH}Ty.Trf.InsertEqPreds})
-%%]
-
 %%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 

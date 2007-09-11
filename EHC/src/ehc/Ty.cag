@@ -984,6 +984,9 @@ predTy p
 %%[10 hs
        Pred_Lacks    t _  -> t
 %%]
+%%[16 hs
+       Pred_Eq t _ -> t  -- does it matter if we return the left or the right type?
+%%]
 
 %%[13 hs export(predSeqToList,predLFlatten)
 predSeqToList :: PredSeq -> [Pred]

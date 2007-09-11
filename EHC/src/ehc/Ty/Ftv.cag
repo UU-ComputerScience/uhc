@@ -82,7 +82,7 @@ SEM PredSeq
 
 %%[16
 SEM Pred
-  | Eq              lhs     .  tvMp         =   Map.insert @tv TyVarCateg_Plain @ty.tvMp
+  | Eq              lhs     .  tvMp         =   @tyL.tvMp `Map.union` @tyR.tvMp
 %%]
 
 %%[50
