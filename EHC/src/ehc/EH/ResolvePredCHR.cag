@@ -46,6 +46,14 @@ SEM PatExpr
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @expr.gathCnstrMp]
 %%]
 
+%%[16
+SEM PatExpr
+  | AppTop
+                loc         .   prodPredUIDL        =   mkInfNewUIDL @loc.lUniq3
+                loc         .   hereCnstrMp         =   cnstrMpFromList $ zipWith (\p u -> mkAssumeConstraint p u @lhs.predScope) @loc.prodPredL @loc.prodPredUIDL
+                lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @patExpr.gathCnstrMp]
+%%]
+
 %%[9
 SEM Decl
   | Instance    loc         .   (chrCtxtAssumeCnstrMp,chrSuperProveCnstrMp,chrInstAssumeCnstrMp,chrCtxtArgUIDL,chrCtxtArgNmL,chrSuperProveUIDL,chrSuperProveNmL,chrInstArgUID,chrInstNm)
