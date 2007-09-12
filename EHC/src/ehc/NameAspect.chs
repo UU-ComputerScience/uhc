@@ -79,6 +79,12 @@ iaspIsValFix IdAsp_Val_Fix = True
 iaspIsValFix _             = False
 %%]
 
+%%[3 hs export(iaspIsTypeVar)
+iaspIsTypeVar :: IdAspect -> Bool
+iaspIsTypeVar IdAsp_Type_Var = True
+iaspIsTypeVar _              = False
+%%]
+
 %%[5 hs export(iaspIsValCon,iaspIsTypeDef,iaspIsValFld)
 iaspIsValCon :: IdAspect -> Bool
 iaspIsValCon IdAsp_Val_Con = True

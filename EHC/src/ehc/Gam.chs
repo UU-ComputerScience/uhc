@@ -157,9 +157,14 @@ assocDupLToGam :: Ord k => AssocL k [v] -> Gam k v
 assocDupLToGam = lgamFromAssocDupL
 %%]
 
+%%[1 export(assocLToGamWithDups)
+assocLToGamWithDups :: Ord k => AssocL k v -> Gam k v
+assocLToGamWithDups = assocDupLToGam . assocLGroupSort
+%%]
+
 %%[1.gamToAssocDupL
 gamToAssocDupL :: Ord k => Gam k v -> AssocL k [v]
-gamToAssocDupL = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst . gamToAssocL
+gamToAssocDupL = assocLGroupSort . gamToAssocL
 %%]
 
 %%[9 -1.gamToAssocDupL

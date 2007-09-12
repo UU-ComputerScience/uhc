@@ -692,6 +692,11 @@ assocLElts :: AssocL k v -> [v]
 assocLElts = map snd
 %%]
 
+%%[1 export(assocLGroupSort)
+assocLGroupSort :: Ord k => AssocL k v -> AssocL k [v]
+assocLGroupSort = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fitting mode (should be in FitsIn, but here it avoids mut rec modules)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

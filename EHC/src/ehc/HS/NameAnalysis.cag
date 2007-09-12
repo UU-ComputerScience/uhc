@@ -97,7 +97,7 @@ splitIdUseOccGam level g
 %%[1 hs
 mkDefGam' :: NmLev -> Range -> (IdOcc -> IdAspect) -> [IdOcc] -> IdDefOccGam
 mkDefGam' l r mka os
-  = assocLToGam [ (o,mkIdDefOcc o (mka o) l r) | o <- os ]
+  = assocLToGamWithDups [ (o,mkIdDefOcc o (mka o) l r) | o <- os ]
 
 mkDefGam :: NmLev -> Range -> IdAspect -> [IdOcc] -> IdDefOccGam
 mkDefGam l r a os
@@ -165,8 +165,9 @@ SEM Declaration
 %%[5
     | Data Newtype
         loc             .   idOccDefGamType
-                                        =   -- tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? or from constrs itself, so implicit exists is allowed
-                                            tvarS2IdDefOccGam @nmLev @simpletype.range @constructors.freeTvarS
+                                        =   tvarS2IdDefOccGam @nmLev @simpletype.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
+                        .   idOccDefGamType2
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? this should be it, now only used for check on duplicates
                         .   idOccDefGamConstrs
                                         =   mkDefGam @lhs.nmLev @simpletype.range IdAsp_Val_Con @idOccDefsCon
 %%[[7
@@ -241,7 +242,7 @@ SEM FunctionBinding
 %%[1
 SEM Pattern
     | Variable As
-        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range IdAsp_Val_Var [@idOccDef]
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range IdAsp_Val_Var @idOccDefsNoWildcard
     | As
         lhs             .   idOccDefGam =   @idOccDefGam `gamAddGam` @pattern.idOccDefGam
 %%[[4
@@ -1031,6 +1032,12 @@ SEM Body
 SEM Body
     | Body
         loc             .   sccOrder    =   idDpdMp2SccOrder (@idOccDefGamMain `gamUnion` @declarations.idOccDefGam) @declarations.idDpdMp
+%%]
+
+%%[20.Body.sccOrder -8.Body.sccOrder
+SEM Body
+    | Body
+        loc             .   sccOrder    =   idDpdMp2SccOrder (@idOccDefGamMain `gamUnion` @declarations.idOccDefGam) @idDpdMp
 %%]
 
 %%[1
