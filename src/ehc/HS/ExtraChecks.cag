@@ -87,9 +87,12 @@ idDupCheckInfo
 %%]]
         ]
       )
-%%[[5
+%%[[3
     , ( IdOcc_Type
-      , [ ( "type"              , iaspIsTypeDef )
+      , [ ( "type variable"     , iaspIsTypeVar )
+%%[[5
+        , ( "type"              , iaspIsTypeDef )
+%%]]
 %%[[6
         , ( "kind signature"    , iaspIsTypeSig )
 %%]]
@@ -129,10 +132,60 @@ idDefOccGamCheckDupNames g
 %%[1
 SEM Body
     | Body
-        loc             .   errDupdef   =   idDefOccGamCheckDupNames @declarations.idOccDefGam
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idOccDefGam
 
 SEM Expression
     | Let
-        loc             .   errDupdef   =   idDefOccGamCheckDupNames @declarations.idOccDefGam
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idOccDefGam
+    | Lambda
+%%[[12
+      ImplicitLambda
+%%]]
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @patterns.idOccDefGam
+
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @lefthandside.idOccDefGam
 %%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idOccDefGamInside
+%%]
+
+%%[5
+SEM Declaration
+    | Data Newtype
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idOccDefGamType2
+
+SEM Alternative
+    | Alternative
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @pattern.idOccDefGam
+
+SEM Qualifier
+    | Generator
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @pattern.idOccDefGam
+    | Let
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idOccDefGam
+%%]
+
+%%[9
+SEM Declaration
+    | Class
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idOccDefGamType
+
+SEM Statement
+    | Generator
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @pattern.idOccDefGam
+    | Let
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idOccDefGam
+%%]
+
+%%[11
+SEM Declaration
+    | Type
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idOccDefGamType
+%%]
+
 

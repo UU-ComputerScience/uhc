@@ -306,13 +306,16 @@ mkRV m = hsnSetQual m . hsnFromString
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId,hsnPrimAddInt)
+%%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId)
 [ hsnUndefined
  , hsnPackedString
  , hsnPackedStringToString
  , hsnPrelId
  , hsnPrimAddInt
  , hsnPrimGtInt
+%%[[95
+ , hsnPrimLtInt
+%%]]
 %%[[97
  , hsnPackedStringToInteger
 %%]]
@@ -329,6 +332,9 @@ mkRV m = hsnSetQual m . hsnFromString
       , "id"
       , "primAddInt"
       , "primGtInt"
+%%[[95
+      , "primLtInt"
+%%]]
 %%[[97
       , "packedStringToInteger"
 %%]]
@@ -340,6 +346,7 @@ mkRV m = hsnSetQual m . hsnFromString
  , hsnClassEq
 %%[[95
  , hsnBoolAnd
+ , hsnBoolOr
  , hsnClassOrd, hsnClassOrdFldCompare
  , hsnPrelConcat2, hsnPrelConcat
  , hsnPrelCompose
@@ -355,6 +362,7 @@ mkRV m = hsnSetQual m . hsnFromString
       , "Eq"
 %%[[95
       , "&&"
+      , "||"
       , "Ord", "compare"
       , "concat", "++"
       , "."
@@ -498,6 +506,7 @@ data EHBuiltinNames
       , ehbnBoolTrue                :: HsName
       , ehbnBoolFalse               :: HsName
       , ehbnBoolAnd                 :: HsName
+      , ehbnBoolOr                  :: HsName
       , ehbnClassEq                 :: HsName
       , ehbnClassEqFldEq            :: HsName
       , ehbnClassOrd                :: HsName
@@ -527,6 +536,7 @@ data EHBuiltinNames
       , ehbnClassBounded            :: HsName
       , ehbnClassBoundedFldMinBound :: HsName
       , ehbnClassBoundedFldMaxBound :: HsName
+      , ehbnPrimLtInt               :: HsName
 %%]]
 %%[[97
       , ehbnDataBool   				:: HsName
@@ -554,6 +564,7 @@ mkEHBuiltinNames f
       , ehbnBoolTrue                = f IdOcc_Val  		hsnTrue
       , ehbnBoolFalse               = f IdOcc_Val  		hsnFalse
       , ehbnBoolAnd                 = f IdOcc_Val  		hsnBoolAnd
+      , ehbnBoolOr                  = f IdOcc_Val  		hsnBoolOr
       , ehbnClassEq                 = f IdOcc_Class 	hsnClassEq
       , ehbnClassEqFldEq            = f IdOcc_Val   	hsnClassEqFldEq
       , ehbnClassOrd                = f IdOcc_Class 	hsnClassOrd
@@ -583,6 +594,7 @@ mkEHBuiltinNames f
       , ehbnClassBounded            = f IdOcc_Class 	hsnClassBounded
       , ehbnClassBoundedFldMinBound = f IdOcc_Val   	hsnClassBoundedFldMinBound
       , ehbnClassBoundedFldMaxBound = f IdOcc_Val   	hsnClassBoundedFldMaxBound
+      , ehbnPrimLtInt               = f IdOcc_Val  		hsnPrimLtInt
 %%]]
 %%[[97
       , ehbnDataBool                = f IdOcc_Type  	hsnBool

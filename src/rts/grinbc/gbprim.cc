@@ -568,6 +568,9 @@ PRIM GB_Word gb_primPackedStringHead( char *s )
    the PackedString handling by the functions above
 */
 
+The implementation is left here for convenience of testing GB based impl.
+
+%%[95
 GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
@@ -587,7 +590,7 @@ PRIM GB_NodePtr gb_primCStringToString( char* s )
 {
   	return gb_primCStringToString1Char( s, GB_Int0 ) ;
 }
-
+%%]
 
 
 

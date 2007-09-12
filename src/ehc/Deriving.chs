@@ -17,17 +17,23 @@ data DerivClsFld
   = DerivClsFld
       { dcfNm                       :: !HsName                                  -- name of field
       , dcfTy                       :: !Ty                                      -- type of field
+      , dcfMkCPat                   ::                                          -- make the pattern for each alternative
+                                       Int                                      -- index of alternative (the actual Enum ordering)
+                                       -> CTag                                  -- tag
+                                       -> Int                                   -- arity
+                                       -> Maybe [HsName]                        -- optional list of names for constituents
+                                       -> CPat
       , dcfInitialArgL              :: ![HsName]                                -- initial arguments for function, passed to dcfFoldSubsCExpr
       , dcfInitialSubArgL           :: DataTagInfo -> [CExpr]                   -- initial arguments for constituents
       , dcfNrOmitTailArg            :: !Int                                     -- nr of args not passed, i.e. how much to omit for partial app
-      , dcfFoldSubsCExpr            :: UID										-- construct out of constituents
+      , dcfFoldSubsCExpr            :: UID                                      -- construct out of constituents
                                        -> RCEEnv
-                                       -> DataTagInfo							-- this tag info
-                                       -> (Int,Int)								-- (index (a la toEnum), nr of alts)
-                                       -> [HsName]								-- names of initial args (usually same as dcfInitialArgL)
-                                       -> [CExpr]								-- constituents
+                                       -> DataTagInfo                           -- this tag info
+                                       -> (Int,Int)                             -- (index (a la toEnum), nr of alts)
+                                       -> [HsName]                              -- names of initial args (usually same as dcfInitialArgL)
+                                       -> [CExpr]                               -- constituents
                                        -> CExpr
-      , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]					-- all tag info + subs
+      , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]                  -- all tag info + subs
                                        -> CExpr                                 -- when class member takes no args
       , dcfAllTagLtCExpr            :: !CExpr                                   -- when tags are < previous
       , dcfAllTagGtCExpr            :: !CExpr                                   -- when tags are > previous
@@ -46,6 +52,7 @@ mkDerivClsMp opts valGam dataGam
     $ [
       -- Eq((==))
         mk ehbnClassEq ehbnClassEqFldEq
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -59,6 +66,7 @@ mkDerivClsMp opts valGam dataGam
       
       -- Ord(compare)
       , mk ehbnClassOrd ehbnClassOrdFldCompare
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -79,6 +87,7 @@ mkDerivClsMp opts valGam dataGam
       
       -- Enum(fromEnum,succ,pred)
       , mk ehbnClassEnum ehbnClassEnumFldFromEnum
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -87,7 +96,18 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            undef undef
+      , mk ehbnClassEnum ehbnClassEnumFldToEnum
+           (\altInx _ _ _ -> CPat_Int hsnWild altInx)
+           []
+           (const [])
+           0
+           (\_ _ dti _ _ []
+                -> CExpr_Tup (dtiCTag dti)
+           )
+           (const undef)
+           undef undef
       , mk ehbnClassEnum ehbnClassEnumFldSucc
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -99,6 +119,7 @@ mkDerivClsMp opts valGam dataGam
            (const undef)
            undef undef
       , mk ehbnClassEnum ehbnClassEnumFldPred
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -112,6 +133,7 @@ mkDerivClsMp opts valGam dataGam
       
       -- Bounded(maxBound,minBound)
       , mk ehbnClassBounded ehbnClassBoundedFldMaxBound
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -124,6 +146,7 @@ mkDerivClsMp opts valGam dataGam
            )
            undef undef
       , mk ehbnClassBounded ehbnClassBoundedFldMinBound
+           (const mkCPatCon)
            []
            (const [])
            0
@@ -138,6 +161,7 @@ mkDerivClsMp opts valGam dataGam
       
       -- Show(showsPrec)
       , mk ehbnClassShow ehbnClassShowFldShowsPrec
+           (const mkCPatCon)
            [precDepthNm]
            (\dti -> [CExpr_Int $ maybe (fixityMaxPrio + 1) (+1) $ dtiMbFixityPrio $ dti])
            0
@@ -155,10 +179,10 @@ mkDerivClsMp opts valGam dataGam
            (const undef)
            undef undef
       ]
-  where mk c f as asSubs omTl cAllMatch cNoArg cLT cGT
+  where mk c f mkPat as asSubs omTl cAllMatch cNoArg cLT cGT
           = (c', [mkf f])
           where c' = fn c
-                mkf f = (f', DerivClsFld f' t as asSubs omTl cAllMatch cNoArg cLT cGT)
+                mkf f = (f', DerivClsFld f' t mkPat as asSubs omTl cAllMatch cNoArg cLT cGT)
                       where f' = fn f
                             (t,_) = valGamLookupTy f' valGam
         fn f  = f $ ehcOptBuiltinNames opts

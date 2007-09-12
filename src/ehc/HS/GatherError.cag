@@ -18,7 +18,7 @@ SEM Module
 
 SEM Body
     | Body
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupdef, Seq.fromList @errReorder, @declarations.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errReorder, @declarations.errSq]
 %%]
 
 %%[20 -1.Module
@@ -28,7 +28,7 @@ SEM Module
 
 SEM Body
     | Body
-        lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errDupdef, Seq.fromList @errIdUse,Seq.fromList @errReorder, @declarations.errSq]
+        lhs         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errDupIntro, Seq.fromList @errIdUse,Seq.fromList @errReorder, @declarations.errSq]
 %%]
 
 %%[1
@@ -38,7 +38,12 @@ SEM Expression
     | Variable Constructor
         loc         .   errSq       =   Seq.fromList @errIdUse
     | Let
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupdef, Seq.fromList @errReorder, @declarations.errSq, @expression.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errReorder, @declarations.errSq, @expression.errSq]
+    | Lambda
+%%[[12
+      ImplicitLambda
+%%]]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @patterns.errSq, @expression.errSq]
     | InfixApplicationChainTop 
         loc         .   errSq       =   Seq.unions [Seq.fromList @errRearr, @expression.errSq]
     | Negate 
@@ -59,6 +64,12 @@ SEM Expression
 SEM RightHandSide
     | Expression
         loc         .   errSq       =   Seq.unions [Seq.fromList @errReorder, @expression.errSq, @where.errSq]
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @lefthandside.errSq, @righthandside.errSq]
 %%]
 
 %%[1
@@ -92,6 +103,10 @@ SEM Type
       Variable NamedWildcard
 %%]]
         loc         .   errSq       =   Seq.fromList @errIdUse
+%%[[4
+    | Forall Exists
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @type.errSq]
+%%]]
 %%[[9
     | InfixApplication
         loc         .   errSq       =   Seq.unions [Seq.fromList @ctxtFormErrs, @leftType.errSq, @operator.errSq, @rightType.errSq]
@@ -100,12 +115,18 @@ SEM Type
 
 %%[5
 SEM Declaration
+    | Data
+    	loc			.	locErrs		=	Seq.empty
     | Newtype
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errNewtype
+    	loc			.	locErrs		=	Seq.fromList @errNewtype
+    | Data Newtype
+        loc         .   errSq       =   Seq.unions [ @locErrs
+                                                   , @simpletype.errSq
+                                                   , Seq.fromList @errDupIntro
 %%[[8
                                                    , Seq.fromList @errIdUseVal
 %%]]
-                                                   , @simpletype.errSq, @constructors.errSq
+                                                   , @constructors.errSq
 %%[[9
                                                    , @context.errSq
 %%]]
@@ -119,16 +140,20 @@ SEM Declaration
 SEM GuardedExpression
     | GuardedExpression
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUseVal, Seq.fromList @errIdUseType, @guard.errSq, @expression.errSq]
+
+SEM Alternative
+    | Alternative
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, @pattern.errSq, @righthandside.errSq]
 %%]
 
 %%[5
 SEM Qualifier
     | Let
-        loc         .   errSq       =   Seq.firstNotEmpty [@declarations.errSq, Seq.fromList @errReorder]
+        loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errDupIntro, @declarations.errSq, Seq.fromList @errReorder]
     | Guard
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUseVal, Seq.fromList @errIdUseType, @guard.errSq]
     | Generator
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @pattern.errSq, @expression.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errIdUse, @pattern.errSq, @expression.errSq]
     | Empty
         loc         .   errSq       =   Seq.fromList @errIdUse
 %%]
@@ -147,27 +172,14 @@ SEM RecordPatternBinding
         loc         .   errSq       =   Seq.fromList @errIdUse
 %%]
 
-%%[8
-SEM Declaration
-    | Data
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errIdUseVal, @simpletype.errSq, @constructors.errSq
-%%[[9
-                                                   , @context.errSq
-%%]]
-%%[[95
-                                                   , @derivings.errSq
-%%]]
-                                                   ]
-%%]
-
 %%[9
 SEM Statement
     | Let
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errReorder, @declarations.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errReorder, @declarations.errSq]
     | Expression
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq]
     | Generator
-        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @pattern.errSq, @expression.errSq]
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errDupIntro, Seq.fromList @errIdUse, @pattern.errSq, @expression.errSq]
 
 SEM ContextItem
     | Class
@@ -175,7 +187,7 @@ SEM ContextItem
 
 SEM Declaration
     | Class
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errReorder, @context.errSq, @simpletype.errSq
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, Seq.fromList @errReorder, @context.errSq, @simpletype.errSq
 %%[[15
                                                    , @dependencies.errSq
 %%]]
@@ -185,6 +197,12 @@ SEM Declaration
         loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse, @context.errSq, @types.errSq, @where.errSq, Seq.fromList @errReorder]
     | InstanceUseImplicitly
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @types.errSq]
+%%]
+
+%%[11
+SEM Declaration
+    | Type
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @simpletype.errSq, @type.errSq ]
 %%]
 
 %%[95

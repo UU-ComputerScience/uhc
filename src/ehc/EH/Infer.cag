@@ -302,7 +302,9 @@ SEM AGItf
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @predScope
                                                             , feTyGam = @expr.gathTyGam
+%%[[99
                                                             , feRange = emptyRange
+%%]]
                                                             }
 %%]
 

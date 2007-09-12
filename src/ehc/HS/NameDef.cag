@@ -181,6 +181,16 @@ SEM RecordPatternBinding
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wildcard special case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Pattern
+    | Variable As
+        loc             .   isWildcard  =   @name == hsnWild
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -266,10 +276,12 @@ SEM FunctionBinding
 SEM Pattern
     | Variable As
         loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+                        .   idOccDefsNoWildcard
+                                        =   if @isWildcard then [] else [@idOccDef]
     | Variable
-        loc             .   idOccDefs   =   [@idOccDef]
+        loc             .   idOccDefs   =   @idOccDefsNoWildcard
     | As
-        loc             .   idOccDefs   =   [@idOccDef] ++ @pattern.idOccDefs
+        loc             .   idOccDefs   =   @idOccDefsNoWildcard ++ @pattern.idOccDefs
 %%]
 
 %%[7
@@ -329,7 +341,7 @@ ATTR Pattern [ | | mbTopRefname: {Maybe HsName} ]
 
 SEM Pattern
     | Variable As
-        lhs         .   mbTopRefname=   Just @refname
+        lhs         .   mbTopRefname=   if @isWildcard then Just @refname else Nothing
     | * - Variable As
         lhs         .   mbTopRefname=   Nothing
 %%]

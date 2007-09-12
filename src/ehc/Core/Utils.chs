@@ -33,15 +33,15 @@ emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (
 %%]
 
 %%[8
-rceEnvDataAlts :: RCEEnv -> CTag -> [CTag]
+rceEnvDataAlts :: RCEEnv -> CTag -> Maybe [CTag]
 rceEnvDataAlts env t
   = case t of
       CTag _ conNm _ _ _
          -> case valGamTyOfDataCon conNm (rceValGam env) of
               (_,ty,[])
-                 -> maybe [] id $ dataGamTagsOfTy ty (rceDataGam env)
-              _  -> [t]
-      _  -> [t]
+                 -> dataGamTagsOfTy ty (rceDataGam env)
+              _  -> Nothing
+      _  -> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,9 +64,11 @@ mkCPatCon ctag arity mbNmL
 caltLSaturate :: RCEEnv -> CAltL -> CAltL
 caltLSaturate env alts
   = case alts of
-      (alt1:_) -> listSaturateWith 0 (length allAlts - 1) (ctagTag . caltTag) allAlts alts
+      (alt1:_) -> listSaturateWith 0 (length allAlts - 1) caltIntTag allAlts alts
             where allAlts
-                    = [ (ctagTag t,mkA env t (ctagArity t)) | t <- rceEnvDataAlts env (caltTag alt1) ]
+                    = case rceEnvDataAlts env (caltConTag alt1) of
+                        Just ts -> [ (ctagTag t,mkA env t (ctagArity t)) | t <- ts ]
+                        _       -> [ (caltIntTag a, a) | a <- alts ]
                     where mkA env ct a = CAlt_Alt (mkCPatCon ct a Nothing) (rceCaseCont env)
       _     -> []
 %%]
