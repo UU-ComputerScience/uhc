@@ -503,6 +503,7 @@ data EHBuiltinNames
       , ehbnPrelString              :: HsName
 %%]]
 %%[[95
+      , ehbnDataBool   				:: HsName
       , ehbnBoolTrue                :: HsName
       , ehbnBoolFalse               :: HsName
       , ehbnBoolAnd                 :: HsName
@@ -539,7 +540,6 @@ data EHBuiltinNames
       , ehbnPrimLtInt               :: HsName
 %%]]
 %%[[97
-      , ehbnDataBool   				:: HsName
       , ehbnPackedStringToInteger   :: HsName
 %%]]
 %%[[98
@@ -561,6 +561,7 @@ mkEHBuiltinNames f
       , ehbnPrelString              = f IdOcc_Type 		hsnPrelString
 %%]]
 %%[[95
+      , ehbnDataBool                = f IdOcc_Type  	hsnBool
       , ehbnBoolTrue                = f IdOcc_Val  		hsnTrue
       , ehbnBoolFalse               = f IdOcc_Val  		hsnFalse
       , ehbnBoolAnd                 = f IdOcc_Val  		hsnBoolAnd
@@ -597,7 +598,6 @@ mkEHBuiltinNames f
       , ehbnPrimLtInt               = f IdOcc_Val  		hsnPrimLtInt
 %%]]
 %%[[97
-      , ehbnDataBool                = f IdOcc_Type  	hsnBool
       , ehbnPackedStringToInteger   = f IdOcc_Val  		hsnPackedStringToInteger
 %%]]
 %%[[98

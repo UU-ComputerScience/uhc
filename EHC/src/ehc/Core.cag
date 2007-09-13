@@ -217,7 +217,7 @@ instance Show RPatNm where
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLam,mkCExprApp,mkCExprStrictIn)
+%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLam,mkCExprApp,mkCExprStrictIn,mkCExprMbStrictIn)
 mkCExprLet' :: Bool -> CBindCateg -> CBindL -> CExpr -> CExpr
 mkCExprLet' merge c bs e
   = if null bs
@@ -241,6 +241,10 @@ mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
 
 mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+
+mkCExprMbStrictIn :: Maybe HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
+mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+mkCExprMbStrictIn _         e mkC =                                          mkC e
 %%]
 
 %%[8 hs
@@ -248,10 +252,10 @@ mkCMod :: CExpr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
 %%]
 
-%%[97 hs export(mkCIf)
-mkCIf :: EHCOpts -> HsName -> CExpr -> CExpr -> CExpr -> CExpr
+%%[95 hs export(mkCIf)
+mkCIf :: EHCOpts -> Maybe HsName -> CExpr -> CExpr -> CExpr -> CExpr
 mkCIf opts cn c t f
-  = mkCExprStrictIn cn c
+  = mkCExprMbStrictIn cn c
     $ (\c -> CExpr_Case c
                [ CAlt_Alt (CPat_Con hsnUnknown (ctagFalse opts) CPatRest_Empty []) f
                , CAlt_Alt (CPat_Con hsnUnknown (ctagTrue  opts) CPatRest_Empty []) t
@@ -287,6 +291,11 @@ cexprIsEvaluated _              = False
 %%% Operator construction, expressed in terms of primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8 hs export(cbuiltinApp)
+cbuiltinApp :: EHCOpts -> (EHBuiltinNames -> HsName) -> [CExpr] -> CExpr
+cbuiltinApp opts bnmOf args = CExpr_Var (bnmOf $ ehcOptBuiltinNames opts) `mkCExprApp` args
+%%]
+
 %%[8 hs export(caddint)
 caddint :: EHCOpts -> CExpr -> Int -> CExpr
 caddint opts e i
@@ -294,12 +303,12 @@ caddint opts e i
     then e
     else case e of
            CExpr_Int i' -> CExpr_Int $ i+i'
-           _            -> CExpr_Var (ehbnPrimAddInt $ ehcOptBuiltinNames opts) `mkCExprApp` [e,CExpr_Int i]
+           _            -> cbuiltinApp opts ehbnPrimAddInt [e,CExpr_Int i]
 %%]
 
 %%[8 hs export(cgtint)
 cgtint :: EHCOpts -> CExpr -> Int -> CExpr
-cgtint opts e i = CExpr_Var (ehbnPrimGtInt $ ehcOptBuiltinNames opts) `mkCExprApp` [e,CExpr_Int i]
+cgtint opts e i = cbuiltinApp opts ehbnPrimGtInt [e,CExpr_Int i]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -308,7 +317,7 @@ cgtint opts e i = CExpr_Var (ehbnPrimGtInt $ ehcOptBuiltinNames opts) `mkCExprAp
 
 %%[8 hs export(cstring)
 cstring :: EHCOpts -> String -> CExpr
-cstring opts m = CExpr_Var (ehbnPackedStringToString $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String m]
+cstring opts m = cbuiltinApp opts ehbnPackedStringToString [CExpr_String m]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,7 +326,7 @@ cstring opts m = CExpr_Var (ehbnPackedStringToString $ ehcOptBuiltinNames opts) 
 
 %%[97 hs export(cinteger)
 cinteger :: EHCOpts -> Integer -> CExpr
-cinteger opts i = CExpr_Var (ehbnPackedStringToInteger $ ehcOptBuiltinNames opts) `mkCExprApp` [CExpr_String $ show $ i]
+cinteger opts i = cbuiltinApp opts ehbnPackedStringToInteger [CExpr_String $ show $ i]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -326,10 +335,10 @@ cinteger opts i = CExpr_Var (ehbnPackedStringToInteger $ ehcOptBuiltinNames opts
 
 %%[8 hs export(cerror,cundefined)
 cerror :: EHCOpts -> String -> CExpr
-cerror opts m = CExpr_Var (ehbnError $ ehcOptBuiltinNames opts) `mkCExprApp` [cstring opts m]
+cerror opts m = cbuiltinApp opts ehbnError [cstring opts m]
 
 cundefined :: EHCOpts -> CExpr
-cundefined opts = CExpr_Var (ehbnUndefined $ ehcOptBuiltinNames opts)
+cundefined opts = cbuiltinApp opts ehbnUndefined []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -354,7 +363,9 @@ caltIntTag :: CAlt -> Int
 caltIntTag (CAlt_Alt p _) = cpatIntTag p
 %%]
 
-%%[97 hs export(ctagTrue, ctagFalse)
+In the following, note the hardcodedness!!!!!
+
+%%[95 hs export(ctagTrue, ctagFalse)
 ctagTrue, ctagFalse :: EHCOpts -> CTag
 ctagTrue  opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolTrue  $ ehcOptBuiltinNames opts) 1 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ ehcOptBuiltinNames opts) 0 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
