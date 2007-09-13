@@ -214,15 +214,98 @@ why doesn't anybody do it?}
 \end{itemize}
 
 \visible<6->{{\large{\color{uured}\em Attribute Grammar Compiler} makes this easy}}
-
-
 \end{frame}
 
 
+\newcommand{\Node}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
 
 
 \begin{frame}
 \frametitle{{\em Tools:} Ruler}
+
+
+\begin{tikzpicture}
+
+% \draw[step=1cm,blue,very thin] (0,0) grid (8,8);
+
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+{\tiny
+%%[[wrap=safecode
+sem_Expr_App func_ arg_ =
+    (\ _lhsIknTy
+       _lhsIopts
+       _lhsItyGam
+       _lhsIvalGam ->
+         (case (_lhsIvalGam) of
+          { _argOvalGam ->
+          (case (_lhsItyGam) of
+           { _argOtyGam ->
+           (case (_lhsIopts) of
+            { _argOopts ->
+            (case (_lhsIvalGam) of
+             { _funcOvalGam ->
+             (case (_lhsItyGam) of
+              { _funcOtyGam ->
+              (case (_lhsIopts) of
+               { _funcOopts ->
+               (case ([ Ty_Any ] `mkArrow` _lhsIknTy) of
+                { _funcOknTy ->
+                (case ((func_ _funcOknTy _funcOopts _funcOtyGam _funcOvalGam)) of
+                 { ( _funcIappArgPPL,_funcIappFunNm,_funcIappFunPP,_funcIerrSq,_funcIpp,_funcIppAST,_funcIty) ->
+                 (case (tyArrowArgRes _funcIty) of
+                  { __tup2 ->
+                  (case (__tup2) of
+                   { (_ty_a_,_) ->
+                   (case (_ty_a_) of
+                    { _argOknTy ->
+                    (case ((arg_ _argOknTy _argOopts _argOtyGam _argOvalGam)) of
+                     { ( _argIappArgPPL,_argIappFunNm,_argIappFunPP,_argIerrSq,_argIpp,_argIppAST,_argIty) ->
+                     (case (_funcIappArgPPL ++ [_argIpp]) of
+                      { _lhsOappArgPPL ->
+                      (case (_funcIappFunNm) of
+                       { _lhsOappFunNm ->
+                       (case (_funcIappFunPP) of
+                        { _lhsOappFunPP -> 
+%%]]
+}
+};
+
+\only<2->{
+\draw (1.5,5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\small
+%%[[wrap=safecode
+DATA Expr
+  | App  func : Expr
+         arg  : Expr
+ATTR AllExpr [ knTy: Ty | | ty: Ty ]
+SEM Expr
+  | App  func  .  knTy        =  [ Ty_Any ] `mkArrow` @lhs.knTy
+         (loc.ty_a_,loc.ty_)  =  tyArrowArgRes @func.ty
+         arg   .  knTy        =  @ty_a_
+         loc   .  ty          =  @ty_
+%%]]
+}
+};
+}
+
+\only<3->{
+\draw (4.5,7.5) node[fill=uured,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\large
+\(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+}
+};
+}
+
+\end{tikzpicture}
+
+
+
+\(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+
+
+%%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
+
+
 
 \end{frame}
 

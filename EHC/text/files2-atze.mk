@@ -162,7 +162,7 @@ text-variant-slides-uniqueness:
 	  text-variant-dflt-once
 
 text-variant-slides-overview:
-	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=17 \
 	  text-variant-dflt-once
