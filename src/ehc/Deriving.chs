@@ -37,6 +37,13 @@ data DerivClsFld
                                        -> CExpr                                 -- when class member takes no args
       , dcfAllTagLtCExpr            :: !CExpr                                   -- when tags are < previous
       , dcfAllTagGtCExpr            :: !CExpr                                   -- when tags are > previous
+      , dcfWrapCase                 :: 											-- wrap case expr in derived function
+                                       EHCOpts
+      								   -> DataGamInfo							-- info of data ty
+                                       -> Int                                   -- nr of alts
+      								   -> HsName								-- name of expr inspected by case expr
+      								   -> CExpr									-- case expr
+      								   -> CExpr
       }
 
 type DerivClsMp = Map.Map HsName (AssocL HsName DerivClsFld)
@@ -63,6 +70,7 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            false false
+           nowrap
       
       -- Ord(compare)
       , mk ehbnClassOrd ehbnClassOrdFldCompare
@@ -84,6 +92,7 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            gt lt
+           nowrap
       
       -- Enum(fromEnum,succ,pred)
       , mk ehbnClassEnum ehbnClassEnumFldFromEnum
@@ -96,6 +105,7 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            undef undef
+           nowrap
       , mk ehbnClassEnum ehbnClassEnumFldToEnum
            (\altInx _ _ _ -> CPat_Int hsnWild altInx)
            []
@@ -106,6 +116,18 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            undef undef
+           (\opts dgi nrOfAlts cNm body
+             -> let cNmv = CExpr_Var cNm
+                    cNm1 = hsnSuffix cNm "!boundCheck"
+                in  mkCIf opts (Just cNm1)
+                      (cbuiltinApp opts ehbnPrimGtInt [cNmv,CExpr_Int (nrOfAlts-1)])
+                      (cerror opts $ "too high for toEnum to " ++ show (dgiTyNm dgi))
+                      (mkCIf opts (Just cNm1)
+                        (cbuiltinApp opts ehbnPrimGtInt [CExpr_Int 0,cNmv])
+                        (cerror opts $ "too low for toEnum to " ++ show (dgiTyNm dgi))
+                        body
+                      )
+           )
       , mk ehbnClassEnum ehbnClassEnumFldSucc
            (const mkCPatCon)
            []
@@ -118,6 +140,7 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            undef undef
+           nowrap
       , mk ehbnClassEnum ehbnClassEnumFldPred
            (const mkCPatCon)
            []
@@ -130,6 +153,7 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            undef undef
+           nowrap
       
       -- Bounded(maxBound,minBound)
       , mk ehbnClassBounded ehbnClassBoundedFldMaxBound
@@ -145,6 +169,7 @@ mkDerivClsMp opts valGam dataGam
                    in  CExpr_Tup (dtiCTag dti) `mkCExprApp` subs
            )
            undef undef
+           nowrap
       , mk ehbnClassBounded ehbnClassBoundedFldMinBound
            (const mkCPatCon)
            []
@@ -158,6 +183,7 @@ mkDerivClsMp opts valGam dataGam
                    in  CExpr_Tup (dtiCTag dti) `mkCExprApp` subs
            )
            undef undef
+           nowrap
       
       -- Show(showsPrec)
       , mk ehbnClassShow ehbnClassShowFldShowsPrec
@@ -178,11 +204,12 @@ mkDerivClsMp opts valGam dataGam
            )
            (const undef)
            undef undef
+           nowrap
       ]
-  where mk c f mkPat as asSubs omTl cAllMatch cNoArg cLT cGT
+  where mk c f mkPat as asSubs omTl cAllMatch cNoArg cLT cGT wrap
           = (c', [mkf f])
           where c' = fn c
-                mkf f = (f', DerivClsFld f' t mkPat as asSubs omTl cAllMatch cNoArg cLT cGT)
+                mkf f = (f', DerivClsFld f' t mkPat as asSubs omTl cAllMatch cNoArg cLT cGT wrap)
                       where f' = fn f
                             (t,_) = valGamLookupTy f' valGam
         fn f  = f $ ehcOptBuiltinNames opts
@@ -205,5 +232,15 @@ mkDerivClsMp opts valGam dataGam
             $ dgiDtiOfCon conNm
             $ panicJust "mkDerivClsMp.dataGamLookup"
             $ dataGamLookup (fn ehbnDataOrdering) dataGam
+        nowrap _ _ _ _ x = x
 %%]
 
+                in  mkCIf opts (Just cNm1)
+                      (mkCExprStrictIn cNm2 (CExpr_Var cNm)
+                         (\v -> cbuiltinApp opts ehbnBoolOr
+                                 [ cbuiltinApp opts ehbnPrimGtInt [v,CExpr_Int (nrOfAlts-1)]
+                                 , cbuiltinApp opts ehbnPrimGtInt [CExpr_Int 0,v]
+                                 ]
+                      )  )
+                      (cerror opts $ "out of bounds for toEnum to " ++ show (dgiTyNm dgi))
+                      body

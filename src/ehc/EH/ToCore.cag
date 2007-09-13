@@ -622,6 +622,7 @@ SEM Decl
                                                            InstDeriving
                                                              -> mkNormalD bindL
                                                              where nsA@(n1:n1s) = hsnLclSupplyWith (mkHNm "x")
+                                                                   n1v = CExpr_Var n1
                                                                    mkf :: DerivClsFld -> CBind
                                                                    mkf dcf
                                                                      = CBind_Bind (dcfNm dcf)
@@ -629,7 +630,8 @@ SEM Decl
                                                                           then dcfNoArgSubsCExpr dcf
                                                                                $ [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
                                                                           else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
-                                                                                 (mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") (CExpr_Var n1)
+                                                                                 (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1
+                                                                                  $ mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") n1v
                                                                                     [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
                                                                                                (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)
                                                                                     | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
@@ -923,7 +925,7 @@ rceUpdEnv e env
 %%[97 hs
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchBoolExpr env (arg:args) alts
-  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) n c t f) (rceCaseCont env) m
+  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) m
   where m = [ ( hsnSuffix arg $ "!" ++ show u
               , mkCExprApp b [CExpr_Var arg]
               , rceMatch env args [RAlt_Alt remPats e]
