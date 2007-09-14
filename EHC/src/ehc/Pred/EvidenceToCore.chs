@@ -137,7 +137,8 @@ evidMpToCore env evidMp
         ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `mkCExprLam` tcrCExpr body, sc )
 %%]]
 %%[[16
-        ann (RedHow_ByEquality sc) _           = ( CExpr_Hole uidStart, sc )
+        -- solving of equality constraints does not result in evidence (resulting evidence is not used)
+        ann (RedHow_ByEqSymmetry sc)  _        = ( CExpr_Hole uidStart, sc )
 %%]]
         strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)

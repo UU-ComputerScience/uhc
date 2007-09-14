@@ -262,7 +262,7 @@ hiScanOpts
                                     , "Assume", "Prove", "Reduction"
                                     , "scope"
                                     , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
-                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhowequality"
+                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym"
                                     , "varuidnmname", "varuidnmuid", "varuidnmvar"
 %%]]
 %%[[10

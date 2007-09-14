@@ -129,6 +129,9 @@ instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
 %%[[10
   chrAppSubst s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (chrAppSubst s l) (chrAppSubst s o) (chrAppSubst s sc)
 %%]]
+%%[[16
+  chrAppSubst s (RedHow_ByEqSymmetry     sc)  = RedHow_ByEqSymmetry (chrAppSubst s sc)
+%%]]
   chrAppSubst _ x                             = x
 %%]
 
@@ -329,6 +332,7 @@ instance ForceEval Guard where
   forceEval x@(NotEqualScope          sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(EqualScope             sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
+  forceEval x@(UnequalTy              ty1 ty2    ) | forceEval ty1 `seq` forceEval ty2 `seq` True = x
 %%[[101
   fevCount (HasStrictCommonScope   sc1 sc2 sc3) = cm1 "HasStrictCommonScope"  `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
   fevCount (IsStrictParentScope    sc1 sc2 sc3) = cm1 "IsStrictParentScope"   `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3

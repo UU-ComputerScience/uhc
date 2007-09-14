@@ -116,7 +116,7 @@ initScopedPredStore
       ++ [ instForall, predArrow, predSeq1, predSeq2 ]
 %%]]
 %%[[16
-      ++ [ rlEqReduce, rlEqSymmetry ]
+      ++ [ rlEqSymmetry ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1
         p1s2         = mkCHRPredOcc pr1 sc2
@@ -163,8 +163,7 @@ initScopedPredStore
 %%[[16
         eqT1T2       = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
         eqT2T1       = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
-        rlEqReduce   = [Prove eqT1T2, Assume eqT1T2] ==> [Reduction eqT1T2 (RedHow_ByEquality sc1) []]
-        rlEqSymmetry = [Prove eqT1T2] ==> [Prove eqT2T1, Reduction eqT1T2 (RedHow_ByEquality sc1) []]
+        rlEqSymmetry = [Prove eqT1T2] ==> [Prove eqT2T1, Reduction eqT1T2 (RedHow_ByEqSymmetry sc1) []]
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]
