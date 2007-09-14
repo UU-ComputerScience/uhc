@@ -131,6 +131,10 @@ SEM MaybeExports
 %%% Definitions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+The visible and hidden exports for an instance.
+Visible as a value only when explicitly given a name, but this is returned as a hidden export.
+Visible as an instance only when used as such implicitly.
+
 %%[20 hs
 mkInstDefsRel :: Bool -> HsName -> Maybe HsName -> IdOcc -> IdOcc -> (ModEntRel,ModEntRel)
 mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
@@ -171,6 +175,8 @@ SEM Declaration
         loc             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
                                               (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub))
+                        .   (_,modHideDefsRel)
+                                        =   mkInstDefsRel False @instancename Nothing @idOccDef @idOccDefVal
                         .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsSig ]
     | Data Newtype Class
         lhs             .   modDefsRel  =   @modDefsRel

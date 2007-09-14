@@ -98,7 +98,7 @@ module EHC.Prelude (
     packedStringToString,
     packedStringToInteger,
     
-    primAddInt,
+    primAddInt, primGtInt,
     
 --  List type: []((:), [])
 {-----------------------------
@@ -1039,6 +1039,7 @@ instance Show Int where
 {-----------------------------
 primitive primShowsInteger :: Int -> Integer -> ShowS
 -----------------------------}
+foreign import ccall primShowInteger :: Integer -> String
 
 {-----------------------------
 instance Read Integer where
@@ -1047,6 +1048,8 @@ instance Read Integer where
 instance Show Integer where
     showsPrec   = primShowsInteger
 -----------------------------}
+instance Show Integer where
+    show   = primShowInteger
 
 -- Standard Floating types --------------------------------------------------
 
@@ -2277,7 +2280,10 @@ foreign import ccall primWriteChan :: Handle -> ByteArray -> ()
 foreign import ccall primFlushChan :: Handle -> ()
 
 hPutStr, hPutStrLn     :: Handle -> String -> IO ()
-hPutStr   h s = ioFromPrim (\_ -> primWriteChan h (primStringToByteArray s 1000))
+-- hPutStr   h s = ioFromPrim (\_ -> primWriteChan h (primStringToByteArray s 1000))
+hPutStr   h s = do let (shd,stl) = splitAt 1000 s
+                   ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
+                   if null stl then return () else hPutStr h stl
 hPutStrLn h s = do {hPutStr h s ; hPutStr h "\n"}
 
 hFlush     :: Handle -> IO ()

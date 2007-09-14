@@ -237,6 +237,7 @@ SEM Declaration
 %%[9
     | Class
         loc             .   idOccDef    =   IdOcc @classrefname IdOcc_Class
+                        .   idOccDefVal =   IdOcc @instancerefname IdOcc_Val
                         .   idOccDefsSig=   @where.idOccDefs -- !!!! a bit too optimistic, value defs also included (but they are not permitted, checked later only)
                         .   idOccDefs   =   [@idOccDef] ++ @idOccDefsSig
     | Instance

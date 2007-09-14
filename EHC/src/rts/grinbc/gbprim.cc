@@ -705,13 +705,32 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 	
   	IF_GB_TR_ON(3,printf("gb_primShowInt s(%d) %s\n", strlen(buf), buf ););
 	GB_NodePtr n ;
-	int sz = strlen(buf) + 1 ;
+	int sz = strlen(buf) + 1 ; // ??? why +1
 	GB_NodeAlloc_Malloc2_In( sz, n ) ;
 	memcpy( n->content.bytearray.ptr, buf, sz ) ;
 	
   	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
 }
 %%]
+
+%%[97
+#if USE_GMP
+PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
+{
+	int sz = mpz_sizeinbase( integerNd->content.mpz, 10 ) + 2 ;
+	char* buf = alloca( sz ) ;
+
+	mpz_get_str( buf, 10, integerNd->content.mpz ) ;
+	GB_NodePtr n ;
+	sz = strlen(buf) ;
+	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	memcpy( n->content.bytearray.ptr, buf, sz ) ;
+
+  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
+}
+#endif
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Exception handling, program running
