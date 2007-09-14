@@ -44,6 +44,9 @@ data RedHowAnnotation
 %%[[13
   |  RedHow_Lambda        !UID !PredScope
 %%]]
+%%[[16
+  |  RedHow_ByEquality
+%%]]
   deriving (Eq, Ord)
 %%]
 
@@ -65,6 +68,9 @@ instance PP RedHowAnnotation where
 %%[[13
   pp (RedHow_Lambda       i   sc)  =    "lambda" >#< i >#< sc
 %%]]
+%%[[16
+  pp (RedHow_ByEquality         )  = pp "equality"
+%%]]
 %%]
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< s >|< sc >#< "::" >#< p
 
@@ -75,6 +81,7 @@ instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_ProveObl     i   sc)  =    "redhowprove"  >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
   ppForHI (RedHow_Assumption   vun sc)  =    "redhowassume" >#< ppCurlysCommasBlock [ppForHI vun, ppForHI sc]
   ppForHI (RedHow_ByScope            )  = pp "redhowscope"
+  ppForHI (RedHow_ByEquality         )  = pp "redhowequality"
   ppForHI (RedHow_ByLabel      l o sc)  =    "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
   ppForHI (RedHow_Lambda       i   sc)  =    "redhowlambda" >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
 %%]
@@ -141,6 +148,7 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ProveObl     i   sc)  = cm1 "RedHow_ProveObl"        `cmUnion` fevCount i `cmUnion` fevCount sc
   fevCount (RedHow_Assumption   vun sc)  = cm1 "RedHow_Assumption"      `cmUnion` fevCount vun `cmUnion` fevCount sc
   fevCount (RedHow_ByScope            )  = cm1 "RedHow_ByScope"
+  fevCount (RedHow_ByEquality         )  = cm1 "RedHow_ByEquality"
   fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
   fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
 %%]]

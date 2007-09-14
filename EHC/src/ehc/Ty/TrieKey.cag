@@ -165,6 +165,12 @@ SEM Pred
   | RowSplit        lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "|"
                             .   trieKeyNest     =   @ty.trieKey :++: @exts.trieKey
 
+%%[16
+SEM Pred
+  | Eq              lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "=") :++: @tyL.trieKey :++: @tyR.trieKey
+                            .   trieKeyNest     =   @tyL.trieKeyNest :++: @tyR.trieKeyNest
+%%]
+
 %%[10
 SEM Label
   | Lab             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_HNm @nm
