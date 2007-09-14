@@ -167,8 +167,8 @@ SEM Pred
 
 %%[16
 SEM Pred
-  | Eq              lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "=") :++: @tyL.trieKey :++: @tyR.trieKey
-                            .   trieKeyNest     =   @tyL.trieKeyNest :++: @tyR.trieKeyNest
+  | Eq              lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "=")
+                            .   trieKeyNest     =   @tyL.trieKey :++: @tyR.trieKey :++: @tyL.trieKeyNest :++: @tyR.trieKeyNest
 %%]
 
 %%[10

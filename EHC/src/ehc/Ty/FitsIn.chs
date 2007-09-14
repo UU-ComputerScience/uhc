@@ -1033,6 +1033,28 @@ fitPredIntoPred fi pr1 pr2
           | tyIsEmptyRow ty1 && tyIsEmptyRow ty2
           = Just (Pred_Lacks ty2 l2, lv1 `varmpLabelUnit` l2)
 %%]]
+%%[[16
+        f (Pred_Eq tlA trA) (Pred_Eq tlB trB)
+          = if foHasErrs foL || foHasErrs foR
+            then Nothing
+            else Just $ (Pred_Eq tlOut trOut, varMpOut)
+          where
+            (u1, u2) = mkNewLevUID (fiUniq fi)
+            fiOpts = predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)}
+
+            foL = fitsIn fiOpts (fiEnv fi) u1 varMp1In tlA tlB
+            foR = fitsIn fiOpts (fiEnv fi) u2 varMp2In trA trB
+
+            varMp1In = fiVarMp fi
+            varMp2In = varMp1Out |=> fiVarMp fi
+
+            varMp1Out = foVarMp foL
+            varMp2Out = foVarMp foR
+            varMpOut  = varMp2Out |=> varMp1Out
+
+            tlOut = foTy foL
+            trOut = foTy foR
+%%]]
         f pr1               	pr2
           = if foHasErrs fo
             then Nothing

@@ -383,7 +383,7 @@ Kind of LHS of the DataConstrEq should match the kind of the RHS.
 %%[16
 SEM DataConstrEq
   | Eq  loc.fo_ = fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
-        lhs.kiVarMp = foVarMp @loc.fo_
+        lhs.kiVarMp = foVarMp @loc.fo_ |=> @tyExpr.kiVarMp
 
 ATTR AllDataConstrEq [ | | prOccL USE {++} {[]} : {[PredOcc]} ]
 
@@ -412,7 +412,7 @@ SEM DataConstrEq
       loc.knRhsTy   = maybe Ty_Any id $ varmpTyLookup @loc.tv @lhs.eqVarMp
       loc.foRhsTy   = fitsIn strongFIOpts emptyFE @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
       loc.unitVarMp = @loc.tv `varmpTyUnit` foTy @loc.foRhsTy
-      lhs.eqVarMp   = @loc.unitVarMp `varmpUnion` foVarMp @loc.foRhsTy
+      lhs.eqVarMp   = @loc.unitVarMp |=> foVarMp @loc.foRhsTy |=> @lhs.eqVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
