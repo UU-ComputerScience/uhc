@@ -1219,6 +1219,9 @@ cpTranslateGrin2ByteCode modNm
                             expNmOffMp
 %%]]
                             $ grin
+%%[[20
+         -- ;  lift $ putStrLn (show (crsiModOffMp crsi))
+%%]]
          ;  when (isJust mbGrin && (ehcOptEmitGrinBC opts))
                  (do { cpUpdCU modNm $! ecuStoreGrinBC bc
                      ; lift $ putPPFile (fpathToStr $ fpathSetSuff "grin-bc" $ fp) (ppGrModule grin) 400
