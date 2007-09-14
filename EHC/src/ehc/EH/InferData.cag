@@ -162,15 +162,22 @@ SEM DataConstr
 %%[16.dataConXTy -7.dataConXTy
 SEM DataConstr
   | Constr
-      (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp |==> @loc.dataConTy2
-      (loc.dataConProdTy1, _)        = @loc.eqsVarMp |==> prependEqPreds @eqs.prOccL @loc.dataConProdTy2  -- cyclic occurrences subsumed by @loc.cycVarMp
-      loc.occErrL                    = varmpOccurErr @loc.cycVarMp
+      (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarMp2_RhsOfEqOnly` @loc.dataConTy2
+      (loc.dataConProdTy1, _)        = @loc.eqsVarMp `tyAppVarMp2_RhsOfEqOnly` appendEqPreds @eqs.prOccL @loc.dataConProdTy2  -- cyclic occurrences subsumed by @loc.cycVarMp
+      loc.occErrL                    = varmpOccurErr 
+%%[[99
+                                         @range
+%%]]
+                                         @loc.cycVarMp
 %%]
 
 %%[16 hs
 -- assumption: Ty is a product
-prependEqPreds :: [PredOcc] -> Ty -> Ty
-prependEqPreds preds ty
+-- this function is supposed to be applied to the RHS of the unquantified type of the deconstructor function, which
+-- is a product of the field types of the constructor. The equality constraints are encoded by adding them to the
+-- end of this product.
+appendEqPreds :: [PredOcc] -> Ty -> Ty
+appendEqPreds preds ty
   = let predsTyL = map (Ty_Pred . poPr) preds
         prodTyL  = tyProdArgs ty
      in mkProdApp (prodTyL ++ predsTyL)
@@ -441,7 +448,12 @@ SEM DataConstr
       loc.undefTyVarsInEqs = @eqs.tyvarNms `Set.difference` @loc.tyVarsInScope
       loc.undefVarsErrSq = if Set.null @loc.undefTyVarsInEqs
                            then Seq.empty
-                           else Seq.singleton $ Err_NamesNotIntrod "" [(pp nm, Nothing) | nm <- Set.toList @loc.undefTyVarsInEqs]
+                           else Seq.singleton $
+                                  Err_NamesNotIntrod
+%%[[99
+                                    @range
+%%]]
+                                    "" [(pp nm, Nothing) | nm <- Set.toList @loc.undefTyVarsInEqs]
 
 %%]
 

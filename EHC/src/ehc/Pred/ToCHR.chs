@@ -84,6 +84,9 @@ Hence we can safely use non-unique variables.
  ,[pr1v]
  ,[pa1]
 %%]]
+%%[[16
+ ,ty3
+%%]]
  )
   = ( map PredScope_Var [u1,u2,u3]
     , map Pred_Var [u7,u8,u9]
@@ -96,11 +99,16 @@ Hence we can safely use non-unique variables.
     , [u7]
     , map PredSeq_Var [u4]
 %%]]
+%%[[16
+    , mkTyVar u14
+%%]]
     )
 %%[[9
   where [u1,u2,u3,u4,u5,u6,u7,u8,u9] = mkNewLevUIDL 9 uidStart
 %%][10
   where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13] = mkNewLevUIDL 13 uidStart
+%%][16
+  where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13,u14] = mkNewLevUIDL 14 uidStart
 %%]]
 %%]
 
@@ -114,6 +122,9 @@ initScopedPredStore
 %%]]
 %%[[13
       ++ [ instForall, predArrow, predSeq1, predSeq2 ]
+%%]]
+%%[[16
+      ++ [ rlEqTrivial, rlEqScope, rlEqSymmetry, rlEqTransitivity ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1
         p1s2         = mkCHRPredOcc pr1 sc2
@@ -156,6 +167,18 @@ initScopedPredStore
                          <==> [Prove s2s1, Prove s3s1]
         predSeq2     = [Prove $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
                          <==> []
+%%]]
+%%[[16
+        eqT1T2           = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
+        eqT2T3           = mkCHRPredOcc (Pred_Eq ty2 ty3) sc1
+        eqT1T3           = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
+        eqT2T1           = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
+        eqT1T2sc2        = mkCHRPredOcc (Pred_Eq ty2 ty1) sc2
+        rlEqScope        = [Assume eqT1T2 ] ==> [Assume eqT1T2sc2] |> [IsVisibleInScope sc1 sc2]  -- push assumptions to a lower scope
+        rlEqTrivial      = [Assume eqT1T2, Prove eqT1T2] <==> [Assume eqT1T2]                     -- get rid of prove constraints if implied by an assumption
+        rlEqSymmetry     = [Assume eqT1T2] ==> [Assume eqT2T1]                                    -- mirror assumptions
+        rlEqTransitivity = [Assume eqT1T2, Assume eqT2T3] ==> [Assume eqT1T3]                     -- transitive closure of the equality relation on assumptions
+        -- rlEqReflexivity = ...                                                                  -- reflexivity is not needed (CHR property)
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]

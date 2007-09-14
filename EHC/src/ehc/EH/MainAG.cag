@@ -55,6 +55,9 @@
 %%[9 hs import({%{EH}Ty.Trf.Canonic})
 %%]
 
+%%[16 hs import({%{EH}Ty.Trf.Subst})
+%%]
+
 %%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
@@ -363,6 +366,9 @@ SEM *
        loc.clMissNmS : {Set HsName}
        loc.clKiNmErrs : ErrL
        loc.foKnRec : FIOut
+       loc.eqsVarMp : VarMp
+       loc.dataConTy1 : Ty
+       loc.foRhsTy : FIOut
 
 %%]
 
