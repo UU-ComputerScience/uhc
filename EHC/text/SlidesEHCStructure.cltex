@@ -16,11 +16,13 @@
 
 {\large that by design {\em evolves}}
 
+{\large
 \begin{itemize}
-\item from {\em essential} to {\em syntactically sugared}
 \item from {\em lambda calculus} to {\em full Haskell}
+\item from {\em essential} to {\em syntactically sugared}
 \item from {\em plain constructs} to {\em extensions}
 \end{itemize}
+}
 
 \end{frame}
 
@@ -49,6 +51,9 @@
 
 \end{frame}
 
+%%]
+
+%%[coping
 
 
 \begin{frame}
@@ -70,7 +75,7 @@ Many intermediate languages\uncover<3->{, {\em and even more transformations}}
 \begin{itemize}
 \item \makebox[30mm][l]{Haskell          }
 \item \makebox[30mm][l]{Essential Haskell}  \uncover<2-2>{\makebox[9mm][l]{(desugared)}}
-\item \makebox[30mm][l]{Core             }  \uncover<2-2>{\makebox[9mm][l]{(untyped)}}     \uncover<3-4>{{\em 12 transformations}}
+\item \makebox[30mm][l]{Core             }  \uncover<2-2>{\makebox[9mm][l]{(ype erased)}}  \uncover<3-4>{{\em 12 transformations}}
 \item \makebox[30mm][l]{Grin             }  \uncover<2-2>{\makebox[9mm][l]{(sequential)}}  \uncover<3-4>{{\em 17 transformations}}
 \item \makebox[30mm][l]{Silly            }  \uncover<2-2>{\makebox[9mm][l]{(imperative)}}  \uncover<3-4>{{\em 3 transformations}}
 \item \makebox[30mm][l]{C                }
@@ -125,7 +130,7 @@ Many intermediate languages\uncover<3->{, {\em and even more transformations}}
 \item<3-> \makebox[50mm][l]{kind inference}                    kind signatures
 \item<3-> \makebox[50mm][l]{records}                           tuples as records
 \item<3-> \makebox[50mm][l]{code generation}                   full program analysis
-\item<3-> \makebox[50mm][l]{classes, synonyms}                 extensible records
+\item<3-> \makebox[50mm][l]{classes, type-synonyms}            extensible records
 \setcounter{enumi}{19}
 \item<4-> \makebox[50mm][l]{modules}
 \setcounter{enumi}{94}
@@ -145,6 +150,9 @@ Many intermediate languages\uncover<3->{, {\em and even more transformations}}
 \end{frame}
 
 
+%%]
+
+%%[toolsAG
 
 
 \begin{frame}
@@ -213,20 +221,28 @@ why doesn't anybody do it?}
 
 \end{itemize}
 
-\visible<6->{{\large{\color{uured}\em Attribute Grammar Compiler} makes this easy}}
+\visible<6->{{\large the {\color{uured}\em Attribute Grammar Compiler} makes this easy}
+             \makebox[0mm][l]{\raisebox{-10mm}[0mm][0mm]{\FigScaledPDF{0.20}{uuagc-logo}}}
+            }
 \end{frame}
 
 
 \newcommand{\Node}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
 
 
+%%]
+
+%%[toolsRuler
+
+
 \begin{frame}
 \frametitle{{\em Tools:} Ruler}
 
+\definecolor{uuyellowlight}{rgb}{0.93,0.87,0}
 
 \begin{tikzpicture}
 
-% \draw[step=1cm,blue,very thin] (0,0) grid (8,8);
+%\draw[step=1cm,blue,very thin] (0,0) grid (8,8);
 
 \draw (0,8) node[fill=white,text=black,anchor=north west] {
 {\tiny
@@ -270,8 +286,9 @@ sem_Expr_App func_ arg_ =
 }
 };
 
-\only<2->{
-\draw (1.5,5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\uncover<2->{
+\draw (1.0,5) node[fill=uuyellow!50,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{10cm}{
 {\small
 %%[[wrap=safecode
 DATA Expr
@@ -285,11 +302,12 @@ SEM Expr
          loc   .  ty          =  @ty_
 %%]]
 }
+}
 };
 }
 
-\only<3->{
-\draw (4.5,7.5) node[fill=uured,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\uncover<3->{
+\draw (4.5,7.5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
 {\large
 \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
 }
@@ -298,26 +316,172 @@ SEM Expr
 
 \end{tikzpicture}
 
+\end{frame}
 
 
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Ruler}
+
+\begin{tikzpicture}
+
+\draw[step=1cm,white,very thin] (0,0) grid (12,8);
+
+\uncover<1->{
+\draw (0,7) node[fill=white,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{4cm}{
+{\large
+Now that things are\\acceptably simple\dots
+}
+}
+};
+}
+
+\uncover<1->{
+\draw (4.5,7.5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\large
 \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+}
+};
+}
 
 
-%%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
+
+\uncover<2->{
+\draw (0,5.2) node[fill=white,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{7cm}{
+{\large
+\dots we can start to introduce new ideas:
+}
+}
+};
+}
 
 
+\uncover<2->{
+\draw (3.5,4.5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\large
+\(\rulerCmdUse{rules3.HM.expr.base.e.app}\)
+}
+};
+}
+
+\uncover<3->{
+\draw (0,4.5) node[fill=uuyellow!50,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{10cm}{
+{\raisebox{0mm}[30mm][5mm]{
+\(\rulerCmdUse{rules3.I2.expr.base.e.app}\)
+}
+}
+}
+};
+}
+
+\end{tikzpicture}
 
 \end{frame}
+
+
+
+%%]
+
+%%[toolsShuffle
 
 
 
 \begin{frame}
 \frametitle{{\em Tools:} Shuffle}
 
+How to ensure consistency in:
+\begin{itemize}
+\item 20 language variants of increasing complexity
+\item code, documentation, publications, presentations
+\end{itemize}
+
+\uncover<2->{
+\begin{center}
+{\Large\bf Shuffle}
+\end{center}
+
+\begin{itemize}
+\item source files divided in {\em chunks}
+\item each chunk is tagged with
+      \begin{itemize}
+      \item variant number
+      \item name
+      \end{itemize}
+\end{itemize}
+}
+
+\uncover<3->{
+{\bf Shuffle} shuffles the chunks,\\
+to extract the input for the compiler and text formatter
+}
+
 \end{frame}
 
 
+\begin{frame}
+\frametitle{{\em Tools:} Shuffle}
 
+{\large {\bf Shuffle} combines the best of:}
+
+\begin{itemize}
+\item {\em \#define} / {\em \#ifdef}\\
+       \visible<2->{{\color{uured}Shuffle has {\em hierarchical} variants}}
+
+\item {\em \#include}\\
+       \visible<3->{{\color{uured}Shuffle can include {\em parts of} a file}}
+
+\item Literate programming\\
+       \visible<4->{{\color{uured}Shuffle can combine {\em multiple sources} and {\em re-use} code}}
+
+\item Version management\\
+       \visible<5->{{\color{uured}Shuffle variants are not historically grown\\but {\em didactically chosen}}}
+
+\end{itemize}
+
+\end{frame}
+
+
+%%]
+
+%%[summary
+
+
+\begin{frame}
+\frametitle{Summary}
+
+
+{\large Coping with Compiler Complexity}
+
+\begin{itemize}
+\item Implementation complexity\\
+      \uncover<2->{{\large\bf Transform!}
+                   \hspace*{20mm}
+                   \makebox[0mm][l]{\raisebox{-30mm}[0mm][0mm]{\FigScaledPDF{0.25}{ehc-dataflow2b}}}
+                  }
+
+\item Description complexity\\
+      \uncover<3->{{\large\bf Use tools!}
+                   \hspace*{20mm}
+                   \makebox[0mm][l]{\raisebox{-20mm}[0mm][0mm]{\FigScaledPDF{0.12}{uuagc-logo}}}
+                  }
+
+\item Design complexity\\
+      \uncover<4->{{\large\bf Grow stepwise!}
+                  }
+
+\item Maintenance complexity\\
+      \uncover<5->{{\large\bf Generate, generate, generate!}
+                   \makebox[0mm][l]{\raisebox{-15mm}[0mm][0mm]{\FigScaledPDF{0.20}{toolchain2}}}
+                  }
+
+\end{itemize}
+in the Essential Haskell Compiler
+\end{frame}
 
 %%]
 
