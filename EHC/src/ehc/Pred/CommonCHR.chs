@@ -84,7 +84,7 @@ instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_Assumption   vun sc)  =    "redhowassume" >#< ppCurlysCommasBlock [ppForHI vun, ppForHI sc]
   ppForHI (RedHow_ByScope            )  = pp "redhowscope"
   ppForHI (RedHow_ByEqReduction    sc)  = pp "redhoweqred"
-  ppForHI (RedHow_ByEqSymmetry     sc)  = pp "redhoweqsym"
+  ppForHI (RedHow_ByEqSymmetry     sc)  = pp "redhoweqsym"  >#< ppCurlysCommasBlock [ppForHI sc]
   ppForHI (RedHow_ByLabel      l o sc)  =    "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
   ppForHI (RedHow_Lambda       i   sc)  =    "redhowlambda" >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
 %%]

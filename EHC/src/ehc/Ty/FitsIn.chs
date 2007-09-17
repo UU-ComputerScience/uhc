@@ -145,6 +145,9 @@ data FIEnv
 %%[[99
         ,   feRange         :: !Range
 %%]]
+%%[[16
+        ,   feGenEqProveCnstrs :: !Bool
+%%]]
         }
 %%]]
 
@@ -159,6 +162,9 @@ emptyFE
 %%]]
 %%[[99
         ,   feRange         =   emptyRange
+%%]]
+%%[[16
+        ,   feGenEqProveCnstrs = False
 %%]]
         }
 %%]]
@@ -370,6 +376,18 @@ fitsInFI fi ty1 ty2
                                                  else  id
 %%]
 
+%%[16.fitsIn.eqProofAssume
+            eqAssume p fi t1 t2 isRec isSum
+              = out { foGathCnstrMp = foGathCnstrMp out `Map.union` mp }
+              where
+                mp    = cnstrMpFromList [cnstr]
+                cnstr = mkAssumeConstraint p lUniq scope
+                scope = fePredScope $ fiEnv fi
+                (gUniq,lUniq) = mkNewLevUID (fiUniq fi)
+                fi' = fi { fiUniq = gUniq }
+                out = fRow fi' t1 t2 isRec isSum
+%%]
+
 %%[16.fitsIn.eqProofObligation
             eqProofObligation tRes fi tL tR
                 = (res fi tRes) { foGathCnstrMp = mp }
@@ -465,6 +483,12 @@ fitsInFI fi ty1 ty2
                               in   (fo:foL,fofi fo fii))
                         ([],fi)
                         (zip tL1 tL2)
+%%]
+
+GADT: when encountering a product with eq-constraints on the outset, remove them and bring them in scope as assume constraints
+%%[16.fitsIn.fRow.StripPreds
+            fRow fi (Ty_Ext t1 _ (Ty_Pred p)) t2 isRec isSum = eqAssume p fi t1 t2 isRec isSum
+            fRow fi t1 (Ty_Ext t2 _ (Ty_Pred p)) isRec isSum = eqAssume p fi t1 t2 isRec isSum
 %%]
 
 %%[7.fitsIn.fRow.Base
@@ -952,10 +976,10 @@ FitsIn type clashes
 
 GADT: type clash between fixed type variable and some other type results in a equality proof constraint
 %%[16.fitsIn.EqProve
-            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2 = eqProofObligation t2 fi t1 t2
-            f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed) = eqProofObligation t2 fi t2 t1
-            f fi t1@(Ty_Con cstr) t2 | isSkVar cstr = eqProofObligation t2 fi t1 t2
-            f fi t1 t2@(Ty_Con cstr) | isSkVar cstr = eqProofObligation t2 fi t2 t1
+            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2  | feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed)  | feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t2 t1
+            f fi t1@(Ty_Con cstr) t2 | isSkVar cstr && feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Con cstr) | isSkVar cstr && feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t2 t1
 %%]
 
 %%[4.fitsIn.DefaultCase

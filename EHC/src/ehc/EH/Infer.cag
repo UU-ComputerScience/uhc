@@ -319,6 +319,9 @@ SEM Decl
 %%[[99
                                                             , feRange = @range
 %%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
+%%]]
                                                             }
 %%]
 
@@ -332,6 +335,9 @@ SEM Decl
 %%]]
 %%[[99
                                                             , feRange = @range
+%%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
 %%]]
                                                             }
                             .   fe2                 =   emptyFE
@@ -368,6 +374,9 @@ SEM Expr
 %%[[99
                                                             , feRange = @range
 %%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
+%%]]
                                                             }
   | Lam AppTop
 %%[[12
@@ -381,6 +390,9 @@ SEM Expr
 %%]]
 %%[[99
                                                             , feRange = @range
+%%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
 %%]]
                                                             }
   | * - Lam AppTop Let
@@ -396,6 +408,9 @@ SEM Expr
 %%[[99
                                                             , feRange = @range
 %%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
+%%]]
                                                             }
 
 SEM RecExpr
@@ -408,6 +423,9 @@ SEM RecExpr
 %%[[99
                                                             , feRange = @range
 %%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
+%%]]
                                                             }
 
 SEM DataFieldExpr
@@ -419,6 +437,9 @@ SEM DataFieldExpr
 %%]]
 %%[[99
                                                             , feRange = @range
+%%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
 %%]]
                                                             }
 %%]
@@ -434,6 +455,9 @@ SEM PatExpr
 %%]]
 %%[[99
                                                             , feRange = @range
+%%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
 %%]]
                                                             }
 %%]]
@@ -451,6 +475,9 @@ SEM RecPatExpr
 %%[[99
                                                             , feRange = @range
 %%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
+%%]]
                                                             }
 %%]]
 %%]
@@ -466,6 +493,9 @@ SEM DataFieldPatExpr
 %%]]
 %%[[99
                                                             , feRange = @range
+%%]]
+%%[[16
+                                                            , feGenEqProveCnstrs = @lhs.isWithinGADTContext
 %%]]
                                                             }
 %%]]
@@ -991,6 +1021,51 @@ SEM Expr
 SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Discover GADT pattern match
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Determine for each subexpression if it is in lexical scope of a GADT pattern match.
+
+%%[16
+ATTR NTPrf [|| gathWithinGADTContext USE {||} {False} : Bool ]
+ATTR NTPrf [ isWithinGADTContext : Bool ||]
+
+SEM AGItf
+  | AGItf
+      expr.isWithinGADTContext = False
+
+-- scoping
+SEM Expr
+  | Let
+      loc.isWithinGADTContext = @decls.gathWithinGADTContext || @lhs.isWithinGADTContext
+  | Lam LamImpl
+      loc.isWithinGADTContext = @arg.gathWithinGADTContext || @lhs.isWithinGADTContext
+      lhs.gathWithinGADTContext = False
+
+-- scoping
+SEM CaseAlt
+  | Pat
+      loc.isWithinGADTContext = @patExpr.gathWithinGADTContext || @lhs.isWithinGADTContext
+      lhs.gathWithinGADTContext = False
+
+-- pattern match
+SEM PatExpr
+  | Con
+      lhs.gathWithinGADTContext = True -- Todo: determine this from the name of the constructor
+
+-- pattern match
+SEM DataFieldPatExpr
+  | Con
+      lhs.gathWithinGADTContext = True -- Todo: determine this from the name of the constructor
+%%]
+
+%%[16 hs
+isEqPred :: Constraint CHRPredOcc info -> Bool
+isEqPred (Assume { cnstrPred = (CHRPredOcc { cpoPr = (Pred_Eq _ _) }) }) = True
+isEqPred _ = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

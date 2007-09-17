@@ -56,11 +56,19 @@ SEM PatExpr
 %%[5.patFunTy
 SEM PatExpr
   | Con         loc         .  (ty_g_,nmErrs)       =   valGamLookupTy (hsnUn @nm) @lhs.valGam
-                            .  (tvarv1_,tvarv2_,fo_fitP_)
-                                                    =   let  [a,r]  = mkNewTyVarL 2 @lUniq
-                                                        in   (a,r,fitsIn instFIOpts @fe @lUniq2 emptyVarMp @ty_g_ ([a] `mkArrow` r))
+                            .  (tvarv1_,tvarv2_)    =   let  [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
+                            .  knTyShape            =   [@loc.tvarv1_] `mkArrow` @loc.tvarv2_
+                            .  fo_fitP_             =   fitsIn instFIOpts @fe @lUniq2 emptyVarMp @ty_g_ @loc.knTyShape
                             .  tyVarMp_p_           =   foVarMp @fo_fitP_
                             .  patFunTy             :=  @tyVarMp_p_ |=> foTy @fo_fitP_
+%%]
+
+GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
+      match with this additional information such that the equality constraints will be stripped off by the fitsIn function.
+%%[16.patFunTy
+SEM PatExpr
+  | Con
+      loc.knTyShape := [@loc.tvarv1_] `mkArrow` (hsnRec `mkConApp` [@loc.tvarv2_])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,9 +88,8 @@ ATTR PatExpr [ knTyL: TyL | | ]
 SEM PatExpr
   | AppTop      loc         .  knProdTy             =   @lhs.knTy
                             .  prodTyL              =   tyProdArgs @knProdTy
-                            .  prodTyL2             =   @loc.prodTyL
                             .  (knTyL,arityErrs)
-                                                    =   case @loc.prodTyL2 of
+                                                    =   case @loc.prodTyL of
                                                             tL | @patExpr.arity == length tL
                                                                 ->  (reverse tL,[])
                                                             _   ->  (repeat Ty_Any
@@ -92,21 +99,6 @@ SEM PatExpr
                                                     =   hdAndTl @lhs.knTyL
                 func        .  knTy                 =   Ty_Any
                 arg         .  knTy                 =   @knArgTy
-%%]
-
-There can be some equality constraints in front of the knProdTy. These constraints are assumed.
-%%[16 ag
-SEM PatExpr
-  | AppTop
-      (loc.prodPredTyL, loc.prodTyL1) = partition isTyPred @loc.prodTyL
-      loc.prodPredL = [p | (Ty_Pred p) <- @loc.prodPredTyL ]
-      loc.prodTyL2 := @loc.prodTyL1
-%%]
-
-%%[16 hs
-isTyPred :: Ty -> Bool
-isTyPred (Ty_Pred _) = True
-isTyPred _           = False
 %%]
 
 %%[1.knTy.Init
@@ -243,10 +235,19 @@ SEM DataFieldPatExpr
                 patExpr     .   knTy                =   @knFldTy
                 loc         .   ty                  =   @dataFieldPatExpr.ty
   | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
-                            .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
-                                                        in  fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @gTy ([@lhs.knTy] `mkArrow` u)
+                            .   tyvar               =   mkTyVar @lUniq
+                            .   knTyShape           =   [@lhs.knTy] `mkArrow` @knTyShape
+                            .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @gTy @loc.knTyShape
                             .   ty                  =   @lhs.knTy
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
+      match with this additional information such that the equality constraints will be stripped off by the fitsIn function.
+%%[16
+SEM DataFieldPatExpr
+  | Con
+      loc.knTyShape := [@lhs.knTy] `mkArrow` (hsnRec `mkConApp` [@loc.tyvar])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

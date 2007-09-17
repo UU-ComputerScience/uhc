@@ -207,12 +207,6 @@ SEM DataField
 
 %%]
 
-%%[16
-SEM PatExpr
-  | AppTop          (patExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3) :=  mkNewLevUID3    @lhs.gUniq
-%%]
-
-
 New unique-rules for 7_2: I just need a lot of unique numbers...
 
 %%[7_2
