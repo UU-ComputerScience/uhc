@@ -855,11 +855,10 @@ WWW home page:
 %%]
 
 %%[28
-\title{The Structure of the Essential Haskell Compiler\\Coping with Compiler Complexity}
+\title[The Essential Haskell Compiler]{The Structure of the Essential Haskell Compiler\\Coping with Compiler Complexity}
 \author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra}
-
-\newcommand{\hallo}[1]{\pgfsincos{#1}}
-
+\date[IFL, September 27--29, 2007]{IFL, September 27--29, 2007}
+\pagenrtrue
 %%]
 
 %%[12
@@ -2747,9 +2746,21 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%[28
 %%@SlidesEHCStructure.title
-
-\section{Motivation}
 %%@SlidesEHCStructure.intro
+
+\section{Coping with complexity}
+%%@SlidesEHCStructure.coping
+
+\section{Tools}
+\subsection{Attribute Grammar Compiler}
+%%@SlidesEHCStructure.toolsAG
+\subsection{Ruler}
+%%@SlidesEHCStructure.toolsRuler
+\subsection{Shuffle}
+%%@SlidesEHCStructure.toolsShuffle
+
+\section{}
+%%@SlidesEHCStructure.summary
 
 %%]
 
