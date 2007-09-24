@@ -20,7 +20,7 @@
 \begin{itemize}
 \item from {\em lambda calculus} to {\em full Haskell}
 \item from {\em essential} to {\em syntactically sugared}
-\item from {\em plain constructs} to {\em extensions}
+\item from {\em common constructs} to {\em extensions}
 \end{itemize}
 }
 
@@ -38,8 +38,8 @@
 \item {\large Implementation complexity}\\
       \uncover<2->{\hspace*{5mm}a compiler is a {\em large program}}
 
-\item {\large Description complexity}\\
-      \uncover<2->{\hspace*{5mm}translation involves {\em complicated trees}}
+\item {\large Description/Coding complexity}\\
+      \uncover<2->{\hspace*{5mm}translation involves {\em complicated abstract syntax trees}}
 
 \item {\large Design complexity}\\
       \uncover<2->{\hspace*{5mm}a language has {\em many features}}
@@ -68,16 +68,16 @@
 }{%
 \hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2b}}
 }{%
-\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2}}
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
 }
 
-Many intermediate languages\uncover<3->{, {\em and even more transformations}}
+Many intermediate languages\uncover<1->{, {\em 7 transformations}}
 \begin{itemize}
 \item \makebox[30mm][l]{Haskell          }
 \item \makebox[30mm][l]{Essential Haskell}  \uncover<2-2>{\makebox[9mm][l]{(desugared)}}
-\item \makebox[30mm][l]{Core             }  \uncover<2-2>{\makebox[9mm][l]{(ype erased)}}  \uncover<3-4>{{\em 12 transformations}}
-\item \makebox[30mm][l]{Grin             }  \uncover<2-2>{\makebox[9mm][l]{(sequential)}}  \uncover<3-4>{{\em 17 transformations}}
-\item \makebox[30mm][l]{Silly            }  \uncover<2-2>{\makebox[9mm][l]{(imperative)}}  \uncover<3-4>{{\em 3 transformations}}
+\item \makebox[30mm][l]{Core             }  \uncover<2-2>{\makebox[9mm][l]{(type erased)}}  \uncover<3-4>{{\em 12 transformations}}
+\item \makebox[30mm][l]{Grin             }  \uncover<2-2>{\makebox[9mm][l]{(sequential)}}   \uncover<3-4>{{\em 17 transformations}}
+\item \makebox[30mm][l]{Silly            }  \uncover<2-2>{\makebox[9mm][l]{(imperative)}}   \uncover<3-4>{{\em 3 transformations}}
 \item \makebox[30mm][l]{C                }
 \end{itemize}
 \end{frame}
@@ -108,7 +108,7 @@ Many intermediate languages\uncover<3->{, {\em and even more transformations}}
 \only<3>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2c}}}%
 \only<4>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2d}}}%
 \only<5>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2e}}}%
-\only<6>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2}}}
+\only<6>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}}
 }
 
 \end{frame}
@@ -121,11 +121,11 @@ Many intermediate languages\uncover<3->{, {\em and even more transformations}}
 \end{center}
 
 \begin{enumerate}
-\item[~]<2-> \makebox[50mm][l]{{\color{uured}plain Haskell}}                  {\color{uured}extensions}
+\item[~]<2-> \makebox[50mm][l]{{\color{uured}plain Haskell}}                  {\color{uured}experiments}
 \item<1-> \makebox[50mm][l]{$\lambda$-calculus, type checking}
 \item<1-> \makebox[50mm][l]{type inference}
 \item<1-> \makebox[50mm][l]{polymorphism}
-\item<1-> \makebox[50mm][l]{}                                  \visible<2->{higher ranked types}
+\item<1-> \makebox[50mm][l]{}                                  \visible<2->{higher ranked types, existentials}
 \item<1-> \makebox[50mm][l]{data types}
 \item<3-> \makebox[50mm][l]{kind inference}                    kind signatures
 \item<3-> \makebox[50mm][l]{records}                           tuples as records
@@ -146,6 +146,16 @@ Many intermediate languages\uncover<3->{, {\em and even more transformations}}
 \begin{center}
 {\Large\bf Generate, generate, generate\dots}
 \end{center}
+
+{\large
+Domain specific languages\\
+and tools to transform them:
+\begin{itemize}
+\item Attribute Grammar Compiler
+\item Ruler
+\item Shuffle
+\end{itemize}
+}
 
 \end{frame}
 
@@ -190,7 +200,7 @@ sort       =  foldr insert []
 }
 
 \visible<4->{
-\hspace*{5mm}{\em\color{uured}catamorphism} = {\em foldr} {\em\color{uured}algebra}
+\hspace*{5mm}{\em\color{uured}catamorphism} = {\em foldr${}_T$} {\em\color{uured}algebra${}_T$}
 }
 
 \end{frame}
@@ -201,27 +211,27 @@ sort       =  foldr insert []
 \frametitle{{\em Tools:} Attribute Grammar Compiler}
 
 {\large If {\em programming by writing algebras} is a Good Thing\\
-why doesn't anybody do it?}
+why does nobody do it when processing parse trees?}
 
 \begin{itemize}
 \item<2-> we need a custom {\em fold}-function for each datatype\\
-          \visible<6>{{\color{uured}automatically generated}}
+          \visible<7->{{\color{uured}automatically generated}}
 
 \item<3-> algebras contain {\em many} functions which\dots\\
-          \visible<6>{{\color{uured}distributedly definable}}
+          \visible<8->{{\color{uured}distributedly definable}}
 
-\item<4-> \dots each return a tuple\\
-          \visible<6>{{\color{uured}{\em synthesized} attributes}}
+\item<4-> \dots all return a tuple\\
+          \visible<9->{{\color{uured}{\em synthesized} attributes}}
 
 \item<4-> \dots take extra parameters\\
-          \visible<6>{{\color{uured}{\em inherited} attributes}}
+          \visible<9->{{\color{uured}{\em inherited} attributes}}
       
-\item<5-> \dots and mostly just copy values up or down\\  
-          \visible<6>{{\color{uured}defaulting mechanism}}
+\item<5-> \dots and mostly just pass values up or down\\  
+          \visible<10->{{\color{uured}defaulting mechanism}}
 
 \end{itemize}
 
-\visible<6->{{\large the {\color{uured}\em Attribute Grammar Compiler} makes this easy}
+\visible<6->{{\large our {\color{uured}\em Attribute Grammar Compiler} makes this easy}
              \makebox[0mm][l]{\raisebox{-10mm}[0mm][0mm]{\FigScaledPDF{0.20}{uuagc-logo}}}
             }
 \end{frame}
@@ -397,7 +407,7 @@ Now that things are\\acceptably simple\dots
 How to ensure consistency in:
 \begin{itemize}
 \item 20 language variants of increasing complexity
-\item code, documentation, publications, presentations
+\item code, documentation, test sets, publications, presentations
 \end{itemize}
 
 \uncover<2->{
@@ -439,7 +449,8 @@ to extract the input for the compiler and text formatter
        \visible<4->{{\color{uured}Shuffle can combine {\em multiple sources} and {\em re-use} code}}
 
 \item Version management\\
-       \visible<5->{{\color{uured}Shuffle variants are not historically grown\\but {\em didactically chosen}}}
+       \visible<5->{{\color{uured}Shuffle does {\em variant} management\\
+                      versions are historically grown\\variants are {\em didactically chosen}}}
 
 \end{itemize}
 
@@ -452,35 +463,73 @@ to extract the input for the compiler and text formatter
 
 
 \begin{frame}
+\frametitle{Project status}
+
+Status of the Essential Haskell Compiler
+\begin{itemize}
+\item<1-> Available on
+      {\tt www.cs.uu.nl/wiki/Ehc}
+
+\item<2-> 85000 lines of code,\\
+           half of which in AG
+\hspace*{0mm}\makebox[0mm][l]{\raisebox{-35mm}[0mm][0mm]{\FigScaledPDF{0.4}{codesize}}}
+
+
+\item<3-> Working towards\\
+          full Haskell\\
+          with full prelude
+
+\item<3-> Simple programs\\
+          compile and run
+          \begin{itemize}
+          \item as interpreted bytecode
+          \item as compiled code
+          \end{itemize}
+     
+\end{itemize}
+
+
+
+
+
+\end{frame}
+
+
+
+
+\begin{frame}
 \frametitle{Summary}
 
 
 {\large Coping with Compiler Complexity}
 
+\uncover<2->{
 \begin{itemize}
 \item Implementation complexity\\
-      \uncover<2->{{\large\bf Transform!}
+      \uncover<3->{{\large\bf Transform!}
                    \hspace*{20mm}
                    \makebox[0mm][l]{\raisebox{-30mm}[0mm][0mm]{\FigScaledPDF{0.25}{ehc-dataflow2b}}}
                   }
 
 \item Description complexity\\
-      \uncover<3->{{\large\bf Use tools!}
+      \uncover<4->{{\large\bf Use tools!}
                    \hspace*{20mm}
                    \makebox[0mm][l]{\raisebox{-20mm}[0mm][0mm]{\FigScaledPDF{0.12}{uuagc-logo}}}
                   }
 
 \item Design complexity\\
-      \uncover<4->{{\large\bf Grow stepwise!}
+      \uncover<5->{{\large\bf Grow stepwise!}
                   }
 
 \item Maintenance complexity\\
-      \uncover<5->{{\large\bf Generate, generate, generate!}
-                   \makebox[0mm][l]{\raisebox{-15mm}[0mm][0mm]{\FigScaledPDF{0.20}{toolchain2}}}
+      \uncover<6->{{\large\bf Generate, generate, generate!}
+                   \makebox[0mm][l]{\raisebox{-15mm}[0mm][0mm]{\FigScaledPDF{0.20}{toolchain2f}}}
                   }
 
 \end{itemize}
-in the Essential Haskell Compiler
+}
+in the Essential Haskell Compiler\\
+\uncover<7->{{\tt www.cs.uu.nl/wiki/Ehc}}
 \end{frame}
 
 %%]

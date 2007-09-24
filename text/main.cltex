@@ -856,9 +856,9 @@ WWW home page:
 
 %%[28
 \title[The Essential Haskell Compiler]{The Structure of the Essential Haskell Compiler\\Coping with Compiler Complexity}
-\author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra}
+\author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra\\~~Utrecht University~~}
 \date[IFL, September 27--29, 2007]{IFL, September 27--29, 2007}
-\pagenrtrue
+% \pagenrtrue
 %%]
 
 %%[12
