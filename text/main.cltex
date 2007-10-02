@@ -46,7 +46,7 @@
 \documentclass[sffont=false,color=false,a4paper]{st-thesis}
 %%]
 
-%%[7
+%%[30
 \documentclass[%
                headinclude,% new for typearea
                footexclude,% new for typearea
@@ -97,7 +97,7 @@
 \typearea[1.2cm]{15}% was BCOR: [0.5]{12}
 %%]
 
-%%[7
+%%[30
 \typearea[1.2cm]{15}% was BCOR: [0.5]{12}
 %%]
 \setlength{\paperwidth}{170mm}
@@ -131,12 +131,6 @@
 %let inclParts  = True
 %else
 %let inclParts  = False
-%endif
-
-%if storyPHD || storyEhcBook || storyAfpTRUU1
-%let inclTOC    = True
-%else
-%let inclTOC    = False
 %endif
 
 %if storyRuler
@@ -209,18 +203,6 @@
 %let incl16     = False
 %let incl17     = False
 %let inclXX     = False
-%endif
-
-%if storyPHD || storyEhcBook || storyImpred || storyRuler
-%let inclApp    = True
-%else
-%let inclApp    = False
-%endif
-
-%if storyPHD || storyEhcBook || storyRulerDoc
-%let inclInx    = True
-%else
-%let inclInx    = False
 %endif
 
 %if storyAFP04Notes
@@ -478,7 +460,7 @@
 \usepackage{kslayout}
 %%]
 
-%%[7
+%%[30
 \usepackage{kslayout}
 %%]
 
@@ -548,7 +530,7 @@
 \SetSectionsForArticle
 %%]
 
-%%[7
+%%[30
 \SetSectionsForBook
 %%]
 
@@ -892,6 +874,11 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[29
+\title{EHC manual}
+\author{Atze Dijkstra}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -908,6 +895,12 @@ WWW home page:
 
 %%[19
 \makeindex
+%%]
+
+%%[30
+%if inclInx
+\makeindex
+%endif %% inclInx
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1051,6 +1044,10 @@ WWW home page:
 \maketitle
 %%]
 
+%%[30
+\maketitle
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1094,6 +1091,23 @@ WWW home page:
 {\setlength{\parskip}{0cm}
 \tableofcontents
 }
+%%]
+
+%%[30
+
+%if inclTOC
+
+{\setlength{\parskip}{0cm}
+\tableofcontents
+%if not targetForPaper
+\listoffigures
+%endif
+}
+
+%endif %% inclTOC
+
+\raggedbottom
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2465,6 +2479,47 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EHC Manual
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[29
+%%@ToolDocEHC.preamble
+
+%{
+\section{Introduction and installation}
+
+\section{EHC Reference}
+\subsection{Commandline parameters}
+%%@ToolDocEHC.referenceCmdLineParams
+
+\section{EH Language extensions}
+
+\subsection{Higher ranked types}
+\subsection{Impredicativity}
+\subsection{Partial type signature}
+\subsection{Existential types}
+\subsection{Partial type signature}
+\subsection{Extensible types}
+\subsection{Extensible types}
+
+\section{Implementation details}
+
+\subsection{Runtime ?}
+\subsection{Unimplemented Haskell98 features}
+
+\appendix
+
+\section{Appendices}
+\subsection{Glossary}
+%%@ToolDocEHC.glossary
+
+
+%}
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% References
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -2763,6 +2818,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesEHCStructure.summary
 
 %%]
+
 
 
 
@@ -3192,6 +3248,17 @@ and the included documentation only describes |Shuffle|'s basic features.
 {\small
 \Input{\jobname.ind}
 }
+%%]
+
+%%[30
+%if inclInx
+
+\AddContentsLine{Index}
+{\small
+\Input{\jobname.ind}
+}
+
+%endif %% inclInx
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

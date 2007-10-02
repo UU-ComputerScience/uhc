@@ -283,6 +283,7 @@ mkRV m = hsnSetQual m . hsnFromString
  , hsnPrelString
  , hsnClassEqFldEq
 %%[[95
+ , hsnMap
  , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
  , hsnClassBounded, hsnClassBoundedFldMinBound, hsnClassBoundedFldMaxBound
  , hsnClassEnum, hsnClassEnumFldFromEnum, hsnClassEnumFldToEnum, hsnClassEnumFldSucc, hsnClassEnumFldPred
@@ -299,6 +300,7 @@ mkRV m = hsnSetQual m . hsnFromString
       , "String"
       , "=="
 %%[[95
+      , "map"
       , "Ordering", "EQ", "LT", "GT"
       , "Bounded", "minBound", "maxBound"
       , "Enum", "fromEnum", "toEnum", "succ", "pred"
@@ -492,116 +494,136 @@ hsnClass2Kind = hsnPrefix "ClassKind-"
 %%[8 export(EHBuiltinNames(..),mkEHBuiltinNames)
 data EHBuiltinNames
   = EHBuiltinNames
-      { ehbnId                      :: HsName
-      , ehbnUndefined               :: HsName
-      , ehbnError                   :: HsName
-      , ehbnPackedString            :: HsName
-      , ehbnPackedStringToString    :: HsName
-      , ehbnPrimAddInt              :: HsName
-      , ehbnPrimGtInt               :: HsName
+      { ehbnId                          :: HsName
+      , ehbnUndefined                   :: HsName
+      , ehbnError                       :: HsName
+      , ehbnPackedString                :: HsName
+      , ehbnPackedStringToString        :: HsName
+      , ehbnPrimAddInt                  :: HsName
+      , ehbnPrimGtInt                   :: HsName
 %%[[11
-      , ehbnPrelString              :: HsName
+      , ehbnPrelString                  :: HsName
 %%]]
 %%[[95
-      , ehbnDataBool   				:: HsName
-      , ehbnBoolTrue                :: HsName
-      , ehbnBoolFalse               :: HsName
-      , ehbnBoolAnd                 :: HsName
-      , ehbnBoolOr                  :: HsName
-      , ehbnClassEq                 :: HsName
-      , ehbnClassEqFldEq            :: HsName
-      , ehbnClassOrd                :: HsName
-      , ehbnClassOrdFldCompare      :: HsName
-      , ehbnDataOrdering            :: HsName
-      , ehbnDataOrderingAltLT       :: HsName
-      , ehbnDataOrderingAltEQ       :: HsName
-      , ehbnDataOrderingAltGT       :: HsName
-      , ehbnClassShow               :: HsName
-      , ehbnClassShowFldShow        :: HsName
-      , ehbnClassShowFldShowsPrec   :: HsName
-      , ehbnPrelShowString          :: HsName
-      , ehbnPrelShowParen           :: HsName
-      , ehbnClassRead               :: HsName
-      , ehbnClassReadFldRead        :: HsName
-      , ehbnClassReadFldReadsPrec   :: HsName
-      , ehbnPrelLex                 :: HsName
-      , ehbnPrelReadParen           :: HsName
-      , ehbnPrelConcat              :: HsName
-      , ehbnPrelConcat2             :: HsName
-      , ehbnPrelCompose             :: HsName
-      , ehbnClassEnum               :: HsName
-      , ehbnClassEnumFldFromEnum    :: HsName
-      , ehbnClassEnumFldToEnum      :: HsName
-      , ehbnClassEnumFldSucc        :: HsName
-      , ehbnClassEnumFldPred        :: HsName
-      , ehbnClassBounded            :: HsName
-      , ehbnClassBoundedFldMinBound :: HsName
-      , ehbnClassBoundedFldMaxBound :: HsName
-      , ehbnPrimLtInt               :: HsName
+      , ehbnMap                         :: HsName
+      , ehbnDataBool                    :: HsName
+      , ehbnBoolTrue                    :: HsName
+      , ehbnBoolFalse                   :: HsName
+      , ehbnBoolAnd                     :: HsName
+      , ehbnBoolOr                      :: HsName
+{-
+      , ehbnDataList                    :: HsName
+      , ehbnDataListAltCons             :: HsName
+      , ehbnDataListAltNil              :: HsName
+-}
+      , ehbnClassEq                     :: HsName
+      , ehbnClassEqFldEq                :: HsName
+      , ehbnClassOrd                    :: HsName
+      , ehbnClassOrdFldCompare          :: HsName
+      , ehbnDataOrdering                :: HsName
+      , ehbnDataOrderingAltLT           :: HsName
+      , ehbnDataOrderingAltEQ           :: HsName
+      , ehbnDataOrderingAltGT           :: HsName
+      , ehbnClassShow                   :: HsName
+      , ehbnClassShowFldShow            :: HsName
+      , ehbnClassShowFldShowsPrec       :: HsName
+      , ehbnPrelShowString              :: HsName
+      , ehbnPrelShowParen               :: HsName
+      , ehbnClassRead                   :: HsName
+      , ehbnClassReadFldRead            :: HsName
+      , ehbnClassReadFldReadsPrec       :: HsName
+      , ehbnPrelLex                     :: HsName
+      , ehbnPrelReadParen               :: HsName
+      , ehbnPrelConcat                  :: HsName
+      , ehbnPrelConcat2                 :: HsName
+      , ehbnPrelCompose                 :: HsName
+      , ehbnClassEnum                   :: HsName
+      , ehbnClassEnumFldFromEnum        :: HsName
+      , ehbnClassEnumFldToEnum          :: HsName
+      , ehbnClassEnumFldSucc            :: HsName
+      , ehbnClassEnumFldPred            :: HsName
+      , ehbnClassEnumFldEnumFrom        :: HsName
+      , ehbnClassEnumFldEnumFromTo      :: HsName
+      , ehbnClassEnumFldEnumFromThen    :: HsName
+      , ehbnClassEnumFldEnumFromThenTo  :: HsName
+      , ehbnClassBounded                :: HsName
+      , ehbnClassBoundedFldMinBound     :: HsName
+      , ehbnClassBoundedFldMaxBound     :: HsName
+      , ehbnPrimLtInt                   :: HsName
 %%]]
 %%[[97
-      , ehbnPackedStringToInteger   :: HsName
+      , ehbnPackedStringToInteger       :: HsName
 %%]]
 %%[[98
-      , ehbnIO                      :: HsName
+      , ehbnIO                          :: HsName
 %%]]
       }
 
 mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
 mkEHBuiltinNames f
   = EHBuiltinNames
-      { ehbnId                      = f IdOcc_Val  		hsnPrelId
-      , ehbnUndefined               = f IdOcc_Val  		hsnUndefined
-      , ehbnError                   = f IdOcc_Val  		hsnError
-      , ehbnPackedString            = f IdOcc_Type 		hsnPackedString
-      , ehbnPackedStringToString    = f IdOcc_Val  		hsnPackedStringToString
-      , ehbnPrimAddInt              = f IdOcc_Val  		hsnPrimAddInt
-      , ehbnPrimGtInt               = f IdOcc_Val  		hsnPrimGtInt
+      { ehbnId                          = f IdOcc_Val       hsnPrelId
+      , ehbnUndefined                   = f IdOcc_Val       hsnUndefined
+      , ehbnError                       = f IdOcc_Val       hsnError
+      , ehbnPackedString                = f IdOcc_Type      hsnPackedString
+      , ehbnPackedStringToString        = f IdOcc_Val       hsnPackedStringToString
+      , ehbnPrimAddInt                  = f IdOcc_Val       hsnPrimAddInt
+      , ehbnPrimGtInt                   = f IdOcc_Val       hsnPrimGtInt
 %%[[11
-      , ehbnPrelString              = f IdOcc_Type 		hsnPrelString
+      , ehbnPrelString                  = f IdOcc_Type      hsnPrelString
 %%]]
 %%[[95
-      , ehbnDataBool                = f IdOcc_Type  	hsnBool
-      , ehbnBoolTrue                = f IdOcc_Val  		hsnTrue
-      , ehbnBoolFalse               = f IdOcc_Val  		hsnFalse
-      , ehbnBoolAnd                 = f IdOcc_Val  		hsnBoolAnd
-      , ehbnBoolOr                  = f IdOcc_Val  		hsnBoolOr
-      , ehbnClassEq                 = f IdOcc_Class 	hsnClassEq
-      , ehbnClassEqFldEq            = f IdOcc_Val   	hsnClassEqFldEq
-      , ehbnClassOrd                = f IdOcc_Class 	hsnClassOrd
-      , ehbnClassOrdFldCompare      = f IdOcc_Val   	hsnClassOrdFldCompare
-      , ehbnDataOrdering            = f IdOcc_Type   	hsnDataOrdering
-      , ehbnDataOrderingAltLT       = f IdOcc_Val   	hsnDataOrderingAltLT
-      , ehbnDataOrderingAltEQ       = f IdOcc_Val   	hsnDataOrderingAltEQ
-      , ehbnDataOrderingAltGT       = f IdOcc_Val   	hsnDataOrderingAltGT
-      , ehbnClassShow               = f IdOcc_Class 	hsnClassShow
-      , ehbnClassShowFldShow        = f IdOcc_Val   	hsnClassShowFldShow
-      , ehbnClassShowFldShowsPrec   = f IdOcc_Val   	hsnClassShowFldShowsPrec
-      , ehbnPrelShowString          = f IdOcc_Val   	hsnPrelShowString
-      , ehbnPrelShowParen           = f IdOcc_Val   	hsnPrelShowParen
-      , ehbnClassRead               = f IdOcc_Class 	hsnClassRead
-      , ehbnClassReadFldRead        = f IdOcc_Val   	hsnClassReadFldRead
-      , ehbnClassReadFldReadsPrec   = f IdOcc_Val   	hsnClassReadFldReadsPrec
-      , ehbnPrelLex                 = f IdOcc_Val   	hsnPrelLex
-      , ehbnPrelReadParen           = f IdOcc_Val   	hsnPrelReadParen
-      , ehbnPrelConcat              = f IdOcc_Val   	hsnPrelConcat
-      , ehbnPrelConcat2             = f IdOcc_Val   	hsnPrelConcat2
-      , ehbnPrelCompose             = f IdOcc_Val   	hsnPrelCompose
-      , ehbnClassEnum               = f IdOcc_Class 	hsnClassEnum
-      , ehbnClassEnumFldFromEnum    = f IdOcc_Val   	hsnClassEnumFldFromEnum
-      , ehbnClassEnumFldToEnum      = f IdOcc_Val   	hsnClassEnumFldToEnum
-      , ehbnClassEnumFldSucc        = f IdOcc_Val   	hsnClassEnumFldSucc
-      , ehbnClassEnumFldPred        = f IdOcc_Val   	hsnClassEnumFldPred
-      , ehbnClassBounded            = f IdOcc_Class 	hsnClassBounded
-      , ehbnClassBoundedFldMinBound = f IdOcc_Val   	hsnClassBoundedFldMinBound
-      , ehbnClassBoundedFldMaxBound = f IdOcc_Val   	hsnClassBoundedFldMaxBound
-      , ehbnPrimLtInt               = f IdOcc_Val  		hsnPrimLtInt
+      , ehbnMap                         = f IdOcc_Type      hsnMap
+      , ehbnDataBool                    = f IdOcc_Type      hsnBool
+      , ehbnBoolTrue                    = f IdOcc_Val       hsnTrue
+      , ehbnBoolFalse                   = f IdOcc_Val       hsnFalse
+      , ehbnBoolAnd                     = f IdOcc_Val       hsnBoolAnd
+      , ehbnBoolOr                      = f IdOcc_Val       hsnBoolOr
+{-
+      , ehbnDataList                    = f IdOcc_Type      hsnDataList
+      , ehbnDataListAltCons             = f IdOcc_Type      hsnDataListAltCons
+      , ehbnDataListAltNil              = f IdOcc_Type      hsnDataListAltNil
+-}
+      , ehbnClassEq                     = f IdOcc_Class     hsnClassEq
+      , ehbnClassEqFldEq                = f IdOcc_Val       hsnClassEqFldEq
+      , ehbnClassOrd                    = f IdOcc_Class     hsnClassOrd
+      , ehbnClassOrdFldCompare          = f IdOcc_Val       hsnClassOrdFldCompare
+      , ehbnDataOrdering                = f IdOcc_Type      hsnDataOrdering
+      , ehbnDataOrderingAltLT           = f IdOcc_Val       hsnDataOrderingAltLT
+      , ehbnDataOrderingAltEQ           = f IdOcc_Val       hsnDataOrderingAltEQ
+      , ehbnDataOrderingAltGT           = f IdOcc_Val       hsnDataOrderingAltGT
+      , ehbnClassShow                   = f IdOcc_Class     hsnClassShow
+      , ehbnClassShowFldShow            = f IdOcc_Val       hsnClassShowFldShow
+      , ehbnClassShowFldShowsPrec       = f IdOcc_Val       hsnClassShowFldShowsPrec
+      , ehbnPrelShowString              = f IdOcc_Val       hsnPrelShowString
+      , ehbnPrelShowParen               = f IdOcc_Val       hsnPrelShowParen
+      , ehbnClassRead                   = f IdOcc_Class     hsnClassRead
+      , ehbnClassReadFldRead            = f IdOcc_Val       hsnClassReadFldRead
+      , ehbnClassReadFldReadsPrec       = f IdOcc_Val       hsnClassReadFldReadsPrec
+      , ehbnPrelLex                     = f IdOcc_Val       hsnPrelLex
+      , ehbnPrelReadParen               = f IdOcc_Val       hsnPrelReadParen
+      , ehbnPrelConcat                  = f IdOcc_Val       hsnPrelConcat
+      , ehbnPrelConcat2                 = f IdOcc_Val       hsnPrelConcat2
+      , ehbnPrelCompose                 = f IdOcc_Val       hsnPrelCompose
+      , ehbnClassEnum                   = f IdOcc_Class     hsnClassEnum
+      , ehbnClassEnumFldFromEnum        = f IdOcc_Val       hsnClassEnumFldFromEnum
+      , ehbnClassEnumFldToEnum          = f IdOcc_Val       hsnClassEnumFldToEnum
+      , ehbnClassEnumFldSucc            = f IdOcc_Val       hsnClassEnumFldSucc
+      , ehbnClassEnumFldPred            = f IdOcc_Val       hsnClassEnumFldPred
+      , ehbnClassEnumFldEnumFrom        = f IdOcc_Val       hsnEnumFrom
+      , ehbnClassEnumFldEnumFromTo      = f IdOcc_Val       hsnEnumFromTo
+      , ehbnClassEnumFldEnumFromThen    = f IdOcc_Val       hsnEnumFromThen
+      , ehbnClassEnumFldEnumFromThenTo  = f IdOcc_Val       hsnEnumFromThenTo
+      , ehbnClassBounded                = f IdOcc_Class     hsnClassBounded
+      , ehbnClassBoundedFldMinBound     = f IdOcc_Val       hsnClassBoundedFldMinBound
+      , ehbnClassBoundedFldMaxBound     = f IdOcc_Val       hsnClassBoundedFldMaxBound
+      , ehbnPrimLtInt                   = f IdOcc_Val       hsnPrimLtInt
 %%]]
 %%[[97
-      , ehbnPackedStringToInteger   = f IdOcc_Val  		hsnPackedStringToInteger
+      , ehbnPackedStringToInteger       = f IdOcc_Val       hsnPackedStringToInteger
 %%]]
 %%[[98
-      , ehbnIO                      = f IdOcc_Type 		hsnIO
+      , ehbnIO                          = f IdOcc_Type      hsnIO
 %%]]
       }
 %%]

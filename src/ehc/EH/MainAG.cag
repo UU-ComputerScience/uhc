@@ -239,6 +239,7 @@ SEM *
        loc.lUniq7 : UID
        loc.lUniq8 : UID
        loc.lUniq9 : UID
+       loc.lUniq10 : UID
        loc.uniq1 : UID
        loc.uniq2 : UID
        loc.uniq3 : UID

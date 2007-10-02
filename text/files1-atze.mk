@@ -1,5 +1,5 @@
 # all variants
-TEXT_PUB_VARIANTS			+= ruler-doc shuffle-doc ehc-book
+TEXT_PUB_VARIANTS			+= ruler-doc shuffle-doc ehc-book ehc-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -21,7 +21,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure \
 								CodeFragsExplImpl \
-								ToolDocShuffle ToolDocRuler \
+								ToolDocShuffle ToolDocRuler ToolDocEHC \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
@@ -62,8 +62,10 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 26: acm paper: base (share)
 # 27: poster LDL
 # 28: slides EHC Structure
+# 29: ehc doc
+# 30: book: base (share)
 # 77: scratch (article format)
 
-TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 1 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, \
+TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 30 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, \
 								1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, \
-								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27, 18 < 28
+								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27, 18 < 28, 1 < 30, 30 < 29

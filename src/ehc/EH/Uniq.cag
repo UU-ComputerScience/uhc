@@ -370,8 +370,8 @@ SEM Expr
 
 %%[95
 SEM Decl
-  | Instance        (tyPrExpr.gUniq,loc.lUniq6,loc.lUniq7,loc.lUniq8,loc.lUniq9)
-                                                                    :=  mkNewLevUID4    @gUniq2
+  | Instance        (tyPrExpr.gUniq,loc.lUniq6,loc.lUniq7,loc.lUniq8,loc.lUniq9,loc.lUniq10)
+                                                                    :=  mkNewLevUID5    @gUniq2
 %%]
 
 %%[97

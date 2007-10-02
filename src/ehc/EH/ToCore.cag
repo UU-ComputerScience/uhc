@@ -627,8 +627,10 @@ SEM Decl
                                                                    mkf dcf
                                                                      = CBind_Bind (dcfNm dcf)
                                                                          (if fArity == 0
-                                                                          then dcfNoArgSubsCExpr dcf
-                                                                               $ [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
+                                                                          then mkCExprLam (dcfInitialArgL dcf)
+                                                                               $ dcfNoArgSubsCExpr dcf 
+                                                                                   [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
+                                                                                   nrOfAlts (CExpr_Var @dictBuildNm) extraCxL (dcfInitialArgL dcf)
                                                                           else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
                                                                                  (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1
                                                                                   $ mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") n1v
@@ -647,6 +649,7 @@ SEM Decl
                                                                            fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf - length (dcfInitialArgL dcf) - 1 {- dictionary -}
                                                                            n1subs t = nsubs t n1
                                                                            nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
+                                                                           extraCxL = [ mkCExprPrHole @lhs.opts (poPoi prOcc) | prOcc <- @derivExtraPrOcc ]
                                                                            mkcSubs dti nmFldLL altPrOccL
                                                                              = [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole @lhs.opts (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
                                                                                | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
@@ -664,7 +667,7 @@ SEM Decl
                                                                                  _ -> dcfFoldSubsCExpr dcf @lUniq @rceEnv dti (altInx, nrOfAlts) (dcfInitialArgL dcf)
                                                                                       $ mkcSubs dti (transpose nmFldLL) altPrOccL
                                                                    bindL
-                                                                     = [ mkf dcf | (_,dcf) <- panicJust "Decl.Instance.Deriving.derivMp" $ Map.lookup @instClsNm @derivMp ]
+                                                                     = [ mkf dcf | dcf <- dclFldL @derivDCL ]
                                                                            
 %%]]
                                                      mkNormalD bindL

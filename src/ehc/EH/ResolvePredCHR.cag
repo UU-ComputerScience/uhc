@@ -75,11 +75,12 @@ SEM Decl
 %%[[9
                loc          .	toProveGathCnstrMp	=	@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
 %%][95
-               loc          .   (toProveGathCnstrMp,derivAltsPrOcc)
+               loc          .   (toProveGathCnstrMp,derivAltsPrOcc,derivExtraPrOcc,derivDCL)
                                                     =   case @instVariant of
                                                           InstDeriving
-                                                            -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat altsPrOcc
-                                                               , altsPrOcc
+                                                            -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (extraPrOcc : altsPrOcc)
+                                                               , altsPrOcc, extraPrOcc
+                                                               , derivDCL
                                                                )
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ dgiDataTy @derivDataDGI
                                                                   alts = tyRecExts2 dataAltTy
@@ -89,8 +90,14 @@ SEM Decl
                                                                            ]
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
                                                                          ]
+                                                                  extraPrOcc
+                                                                       = [ mkPredOcc (Pred_Class (dccMkTy cx)) (mkPrId basePrfCtxtId u) @predScope
+                                                                         | (cx,u) <- zip cxl (mkNewUIDL (length cxl) @lUniq10)
+                                                                         ]
+                                                                       where cxl = dclExtraCtxt derivDCL
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq9 emptyVarMp dataTy @derivHdDataTy
-                                                          _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[])
+                                                                  derivDCL = panicJust ("Decl.Instance.Deriving.derivMp: " ++ show @instClsNm) $ Map.lookup @instClsNm @derivMp
+                                                          _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[],[],emptyDerivCls)
 %%]]
 %%]
 
