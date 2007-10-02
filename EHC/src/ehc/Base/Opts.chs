@@ -134,7 +134,7 @@ data EHCOpts
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
       ,  ehcOptPrfCutOffAt    ::  Int				-- cut off limit for context reduction
       ,  ehcCfgClassViaRec    ::  Bool				-- instance representation via record instead of data
-      ,  ehcCfgCHRScoped      ::  CHRScoped			-- how to gen scoped CHR's (option is used only for paper writing + experimenting)
+      -- ,  ehcCfgCHRScoped      ::  CHRScoped			-- how to gen scoped CHR's (option is used only for paper writing + experimenting)
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
@@ -220,7 +220,7 @@ defaultEHCOpts
       ,  ehcCfgInstFldHaveSelf=   False
       ,  ehcOptPrfCutOffAt    =   20
       ,  ehcCfgClassViaRec    =   False -- True
-      ,  ehcCfgCHRScoped      =   CHRScopedAll
+      -- ,  ehcCfgCHRScoped      =   CHRScopedAll
 %%]]
 %%[[11
       ,  ehcOptTyBetaRedCutOffAt
@@ -242,7 +242,7 @@ defaultEHCOpts
 
 %%[1
 ehcCmdLineOpts
-  =  [  Option "d"  ["debug"]            (NoArg oDebug)                       "show extra debug information"
+  =  [  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
      ,  Option "p"  ["pretty"]
 %%[[1
                     (OptArg oPretty "hs|eh|ast|-")
@@ -279,7 +279,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
 %%]]
 %%[[9
-     ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
+     -- ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
 %%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
@@ -399,6 +399,7 @@ ehcCmdLineOpts
                                 _           -> o
 %%]]
 %%[[9
+{-
          oCHRScoped    s o =  o { ehcCfgCHRScoped       =
                                     case s of
                                       "0" -> CHRScopedInstOnly
@@ -406,6 +407,7 @@ ehcCmdLineOpts
                                       "2" -> CHRScopedAll
                                       _   -> CHRScopedAll
                                 }
+-}
 %%]]
 %%[[20
          oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }

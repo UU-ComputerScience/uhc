@@ -193,7 +193,7 @@ mkClassSimplChrs env rules (context, head, infos)
             . filter (\(_,x) -> not (rednodePred x `Set.member` done))
     
         transClosure done reds par (info, pr@(Red_Pred p@(CHRPredOcc {cpoPr = super})))
-          = [superRule] ++ (if ehcCfgCHRScoped opts >= CHRScopedMutualSuper then [scopeRule1, scopeRule2] else []) ++ rules
+          = [superRule] ++ ({-if ehcCfgCHRScoped opts >= CHRScopedMutualSuper then -} [scopeRule1, scopeRule2] {- else [] -}) ++ rules
           where super1     = mkCHRPredOcc super sc1
                 super2     = mkCHRPredOcc super sc2
                 super3     = mkCHRPredOcc super sc3

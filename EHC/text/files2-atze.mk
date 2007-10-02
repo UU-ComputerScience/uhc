@@ -1,55 +1,55 @@
 # rules
 text-variant-ehc-book:
 	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-ehc-book-tst:
 	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-once
 
 text-variant-phd:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-paper:
 	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-tst:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-once
 
 text-variant-phd-draft:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-flops06-ruler-paper:
 	$(MAKE) RULER2_DEMO_MARK_CHANGES_CFG= \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=shortStory --set=storyRuler --set=asArticle --set=targetForPaper" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=shortStory --set=storyRuler --set=asArticle --set=targetForPaper --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
 text-variant-flops06-ruler:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=shortStory --set=storyRuler --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=flops06 --set=llncs --set=kscode --set=shortStory --set=storyRuler --set=asArticle --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
 text-variant-truu-ruler:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyRuler --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=storyRuler --set=asArticle --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=3 \
 	  text-variant-dflt-bib
 
@@ -73,19 +73,19 @@ text-variant-truu-explimpl:
 
 text-variant-hw06-impred:
 	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
 text-variant-esop07-impred:
 	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=llncs --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=llncs --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
 text-variant-esop07-impred-tr:
 	$(MAKE) TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=truu --set=kscode --set=trStory --set=infer2pass --set=storyImpred --set=asArticle --set=wide" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=truu --set=kscode --set=trStory --set=infer2pass --set=storyImpred --set=asArticle --set=wide --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
@@ -109,7 +109,7 @@ text-variant-shuffle-doc:
 
 text-variant-ruler-doc:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyRulerDoc --set=asArticle --set=useHyperref --set=asDraft --set=refToPDF" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyRulerDoc --set=asArticle --set=useHyperref --set=asDraft --set=refToPDF --set=inclInx" \
 	  TEXT_SHUFFLE_VARIANT=19 \
 	  text-variant-dflt-once
 
@@ -220,5 +220,11 @@ text-variant-ifl07-ehcstruct:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifl07 --set=kscode --set=storyEHCstruct --set=llncs --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib
+
+text-variant-ehc-doc:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyEHCDoc --unset=asArticle --set=useHyperref --set=refToPDF --set=blockstyle --set=inclInx --unset=inclApp --set=inclTOC" \
+	  TEXT_SHUFFLE_VARIANT=29 \
+	  text-variant-dflt-bib-inx
 
 

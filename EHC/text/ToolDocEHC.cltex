@@ -1,0 +1,196 @@
+%%[preamble
+\newcommand\DocOpt[2]{\item #1 \\ \emph{#2}.\\}
+\newcommand\DocOptRef[1]{\texttt{#1}}
+\newcommand\DocEHCVariant[1]{EHC variants \(#1\)}
+
+%include verb.fmt
+
+%format CCP			= "\textsf{CCP}"
+%format GBM			= "\textsf{GBM}"
+%format GRIN		= "\textsf{GRIN}"
+%format GFULL		= GRIN
+%format LLVM		= "\textsf{LLVM}"
+
+%%]
+
+%%[referenceCmdLineParams
+\begin{itemize}
+\DocOpt{@-c[<o>], --code[=<o>]@  |where  <o> =hs||eh||core||java||grin||c||exe[c]||llvm||bc||bexe[c]|| - |}{Generate an encoding of results to a file}
+\IxDef{-c}%
+\IxDef{--code}%
+Generate output, either just a pretty printed representation (see also option \DocOptRef{--pretty}) or executable output.
+The generated output is written to a file with the same name as the file being analysed, except for the suffix.
+The suffix equals the chosen |<o>|, except where specified differently.
+
+The following can be generated:
+
+\begin{itemize}
+\item |hs| Haskell source.
+\item |core| Internal core.
+\item |eh| Essential Haskell source.
+\item |grin| with suffix \texttt{grin2}. GRIN code.
+\item |java| Java code. This is currently (20071002) not maintained.
+\item |c| C for |GFULL|.
+\item |bc| C for |GBM|.
+\item |exe[c]| with suffix depending on platform. Executable based on |GFULL|.
+\item |bexe[c]| with suffix depending on platform. Executable based on |GBM|.
+\item |llvm| |LLVM| code. This is currently (20071002) not maintained.
+\item |-| Off, no generation.
+\end{itemize}
+
+The default is |bexec|, except for \DocEHCVariant{< 99} for which it is |-|.
+
+
+
+\DocOpt{@--cpp@}{Preprocess with |CPP|}
+\IxDef{--cpp}%
+Force recompilation of module which with the recompilation check in place would not have been recompiled.
+
+
+
+\DocOpt{@-d, --debug@}{Show debug information}
+\IxDef{-d}%
+\IxDef{--debug}%
+Dump the EH AST on stdout, annotated with information maintained by the type inferencer.
+This option is intended for developers only.
+
+
+
+\DocOpt{@-h, --help@}{Show help, don't run the compiler}
+\IxDef{-h}%
+\IxDef{--help}%
+
+
+
+\DocOpt{@--no-recomp@}{Turn off recompilation check}
+\IxDef{--no-recomp}%
+Force recompilation of module which with the recompilation check in place would not have been recompiled.
+
+
+
+\DocOpt{@--numeric-version@}{Show the compiler version number, don't run the compiler}
+\IxDef{--numeric-version}%
+Show only the version number of full version information (see also option \DocOptRef{--version}).
+
+
+
+\DocOpt{@-P, --search-path=<p>@  |where  <p> = path |}{Search path for all files}
+\IxDef{-P}%
+\IxDef{--search-path}%
+Specify a search path, extending the already used one.
+The path consists of a semicolon separated list of directories.
+
+
+\DocOpt{@-p[<o>], --pretty[=<o>]@  |where  <o> =hs||eh||grin||ast|| - |}{Show pretty printed intermediate representation}
+\IxDef{-p}%
+\IxDef{--pretty}%
+Pretty print a representation of the AST as close as possible to what would have been typed in to create the AST.
+The following AST's can be pretty printed:
+
+\begin{itemize}
+\item |hs| Haskell source code representation.
+\item |eh| Essential Haskell source code representation.
+\item |grin| GRIN code.
+\item |ast| Essential Haskell internal AST representation (see also option \DocOptRef{--debug}).
+\item |-| Off, no pretty printing.
+\end{itemize}
+
+The default is |-|, except for \DocEHCVariant{< 99} for which it is |eh|.
+
+
+
+\DocOpt{@-v[<o>], --verbose=[<o>]@  |where  <o> = 0||1||2||3 |}{Be verbose}
+\IxDef{-v}%
+\IxDef{--verbose}%
+Print out more information.
+This is done for all parts of the compiler, this flag globally influences the amount of information printed.
+The following verbosity levels can be specified:
+
+\begin{itemize}
+\item |0| Quiet, silent
+\item |1| Normal
+\item |2| Noisy, a lot
+\item |3| Very noisy, for debugging purposes.
+\end{itemize}
+
+The default verbosity level 'normal' reports about progress.
+
+
+
+\DocOpt{@--version@}{Show the compiler version, don't run the compiler}
+\IxDef{--version}%
+Show full version information (see also option \DocOptRef{--numeric-version}).
+
+
+
+\DocOpt{@-xx, --xx=xx@  |where  xx = xx |}{XX}
+
+
+
+\DocOpt{@-xx, --xx=xx@  |where  xx = xx |}{XX}
+
+
+
+\DocOpt{@-xx, --xx=xx@  |where  xx = xx |}{XX}
+
+
+
+\DocOpt{@-xx, --xx=xx@  |where  xx = xx |}{XX}
+
+
+
+\DocOpt{@-xx, --xx=xx@  |where  xx = xx |}{XX}
+
+
+
+\end{itemize}
+%%]
+
+%%[glossary
+\begin{tabular}{lp{.7\linewidth}}
+|CPP|
+& |C| PreProcessor.
+\\
+|GBM|
+& |GRIN| Bytecode Machine.
+\\
+|GFULL|
+& Graph Reduction Intermediate Notation.
+  When relevant the use of this term implies full program analysis.
+\\
+|LLVM|
+& Low Level Virtual Machine
+\\
+|XX|
+& XX XX
+\\
+\end{tabular}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

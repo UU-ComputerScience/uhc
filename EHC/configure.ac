@@ -144,31 +144,31 @@ AC_SUBST(GHC_CMD,$ghcCmd)
 ghcVersion=`$ghcCmd --numeric-version`
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
-# GHC 6.6 and higher: no package util, lang, and data anymore
+# GHC version dependencies: packages passed as option, cabal packages
+cabal_base_lib_depends="base haskell98 mtl fgl"
+cabal_extra_lib_depends=""
+optCabalAllowUndecidableInstances=UndecidableInstances
+optStandardGHCPackages=""
+# (1) GHC 6.6 and higher: no package util, lang, and data anymore
+# (2) after ghc 6.4.1 the names of cabal option(s) changed
 case $ghcVersion in
   6.4.1)
     optStandardGHCPackages="-package util -package lang -package data"
+    optCabalAllowUndecidableInstances=AllowUndecidableInstances
     ;;
   6.4.2)
     optStandardGHCPackages="-package util -package lang -package data"
     ;;
+  6.8)
+    cabal_base_lib_depends="$cabal_base_lib_depends containers"
+    ;;
   *)
-    optStandardGHCPackages=""
     ;;
 esac
 
 AC_SUBST(OPT_GHC_STANDARD_PACKAGES,"$optStandardGHCPackages")
-
-# after ghc 6.4.1 the names of cabal option(s) changed
-case $ghcVersion in
-  6.4.1)
-    optCabalAllowUndecidableInstances=AllowUndecidableInstances
-    ;;
-  *)
-    optCabalAllowUndecidableInstances=UndecidableInstances
-    ;;
-esac
-
+AC_SUBST(CABAL_BASE_LIB_DEPENDS,"$cabal_base_lib_depends")
+AC_SUBST(CABAL_EXTRA_LIB_DEPENDS,"$cabal_extra_lib_depends")
 AC_SUBST(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES,"$optCabalAllowUndecidableInstances")
 
 # uuagc
@@ -286,6 +286,7 @@ case $HostPlatform in
         mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   i*86-pc-linux-gnu )
+        gcc_ehc_extra_extern_libs="pthread"
         mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   *-linux-gnu )

@@ -603,8 +603,13 @@ Chapter~\myRef{#1}%
 
 % Indexing
 \newcommand{\Ix}[1]{\index{#1}}
-\newcommand{\IxAsIs}[1]{#1\Ix{#1}}
-\newcommand{\IxAsDef}[1]{\emph{#1}\Ix{#1}}
+\newcommand{\IxDef}[1]{\Ix{#1}}
+\newcommand{\IxUse}[1]{\Ix{#1}}
+\newcommand{\IxAndDef}[1]{\emph{#1}\IxDef{#1}}
+\newcommand{\IxAndUse}[1]{#1\IxUse{#1}}
+% older variants:
+\newcommand{\IxAsIs}[1]{\IxAndUse{#1}}
+\newcommand{\IxAsDef}[1]{\IxAndDef{#1}}
 
 % To be done
 %if omitTBD
