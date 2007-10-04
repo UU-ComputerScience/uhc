@@ -290,6 +290,9 @@ SEM Body
         loc             .   idOccDefGamMain
                                         =   gamSingleton @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Pat @ehMainDecl) @lhs.nmLev @range)
                                             `gamUnion` gamSingleton @idOccDefMain (mkIdDefOcc @idOccDefMain IdAsp_Val_Var @lhs.nmLev @range)
+%%[[98
+                                            `gamUnion` gamSingleton @idOccDefMain (mkIdDefOcc @idOccDefMain (IdAsp_Val_Sig @ehMainSig) @lhs.nmLev @range)
+%%]]
 %%]
 
 %%[13
@@ -777,8 +780,14 @@ SEM Statement
 %%[8
 SEM Body
     | Body
-        loc             .   (mainrefname,_,idUseOccGamMain,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @idGam [hsnMain] IdOcc_Val IdAsp_Val_Var @range
+        loc             .   (mainrefname,mainrefnames,idUseOccGamMain,errIdUse)
+                                        =   mkUseOccGam @lhs.opts @idGam
+%%[[8
+                                              [hsnMain]
+%%][98
+                                              [hsnMain,hsnIO]
+%%]]
+                                              IdOcc_Val IdAsp_Val_Var @range
 %%]
 
 %%[8
@@ -979,11 +988,12 @@ SEM Body
                                               Just occs -> chk iaspIsValVar
 %%][98
         loc             .   (mainValExists,mainSigExists)
-                                        =   case gamLookupDup (IdOcc hsnMain IdOcc_Val) @idGam of
-                                              Nothing   -> (False,False)
-                                              Just occs -> (chk iaspIsValVar, chk iaspIsValSig)
+                                        =   let occ = IdOcc hsnMain IdOcc_Val
+                                            in  case gamLookupDup occ @idGam of
+                                                  Nothing   -> (False,False)
+                                                  Just occs -> (chk iaspIsValVar, chk iaspIsValSig)
 %%]]
-                                                        where chk f = not $ null $ filter (f . doccAsp) occs
+                                                            where chk f = not $ null $ filter (f . doccAsp) occs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

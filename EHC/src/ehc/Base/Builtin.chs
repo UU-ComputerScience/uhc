@@ -428,7 +428,7 @@ mkRV m = hsnSetQual m . hsnFromString
       [ "fromRational", "%" ]
 %%]
 
-%%[98
+%%[98 export(hsnIO)
 [hsnIO]
   = map
 %%[[98

@@ -28,8 +28,8 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 3.Let
 %%[5.Let
 SEM Expr
-  | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l)=   @decls.tyVarMp |==> @valGam_l_
-                (loc.gSubsValGam_,loc.cycTyVarMp_g)=   @decls.tyVarMp |==> @valGam_g_
+  | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
+                (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @decls.tyVarMp |==> @valGam_g_
                 loc         .   gTyTvL              =   ftv @gSubsValGam_
                             .   quValGam_           =   valGamQuantify @gTyTvL @lSubsValGam
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
