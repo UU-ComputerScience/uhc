@@ -97,6 +97,7 @@ SEM TyAGItf
 SEM Ty
   | App         loc         .   (implsPrL,mbTail)       =   maybe ([],Nothing) implsPredsMbTail @func.mbImpls
                 arg         .   mbPrLoc                 =   @mbTail
+                func        .   mbPrLoc                 =   Nothing
   | Var         loc         .   implsPrL                =   []
   | * - App Var Con Any
                 loc         .   mbPrLoc                 =   Nothing
@@ -142,9 +143,11 @@ ATTR AllTy [ | | insPrL USE {++} {[]} : {[PredOcc]} ]
 SEM Ty
   | App         loc         .   candPrL         =   @herePrL ++ @func.insPrL ++ @arg.insPrL
   | Var         loc         .   candPrL         =   @herePrL
-  | App Var     (loc.insHerePrL,lhs.insPrL)     =   maybe ([],@candPrL) (\(Impls_Tail _ ipos) -> (toInsPrPrvOcc @candPrL ipos,[])) @lhs.mbPrLoc
-                loc         .   insPrPrvOccL    =   @implsPrL ++ @insHerePrL
-                            .   hasNoInsPrL     =   null @insPrPrvOccL
+  | App Var     (loc.insHerePrL,lhs.insPrL)     =   case @lhs.mbPrLoc of
+                                                      Just (Impls_Tail _ ipos)
+                                                        -> (toInsPrPrvOcc @candPrL ipos,[])
+                                                      _ -> ([],@candPrL) 
+                loc         .   forPrTyOccL     =   @implsPrL ++ @insHerePrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,8 +158,8 @@ SEM Ty
 ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
 
 SEM Ty
-  | App         lhs         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL) `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
-  | Var         lhs         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL)
+  | App Var     loc         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   @insPrIdSet `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,7 +169,9 @@ SEM Ty
 %%[9 hs
 prOccLImpls :: Maybe Impls -> [InsPrPrvOcc] -> AssocL ImplsVarId Impls
 prOccLImpls mbI prL
-  = maybe [] (\i -> [(implsTailVar i,foldr (\(p,_) im -> Impls_Cons (poId p) (poPr p) (poPoi p) [] im) Impls_Nil prL)]) mbI
+  = case mbI of
+      Just i -> [(implsTailVar i,foldr (\(p,_) im -> Impls_Cons (poId p) (poPr p) (poPoi p) [] im) Impls_Nil prL)]
+      _      -> []
 %%]
 
 %%[9
@@ -177,9 +182,15 @@ SEM TyAGItf
   | AGItf       ty          .   prImpls         =   []
 
 SEM Ty
-  | App         lhs         .   prImpls         =   (if @isArrowRoot then prOccLImpls @lhs.mbPrLoc @insHerePrL else []) ++ @arg.prImpls
+  | App         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @arg.prImpls
   | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
 %%]
+  | App         lhs         .   prImpls         =   (if @isArrowRoot then prOccLImpls @lhs.mbPrLoc @insHerePrL else []) ++ @arg.prImpls
+  | App         lhs         .   prImpls         =   if @isSpineRoot
+                                                    then if @isArrowRoot
+                                                         then prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @arg.prImpls
+                                                         else prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
+                                                    else @arg.prImpls
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional prove requirements
@@ -194,9 +205,10 @@ prOccLPrvReqs mbI prL = maybe [] (const prL) mbI
 ATTR TyAGItf AllTy [ | | prvReqs USE {++} {[]}: PrvReqs ]
 
 SEM Ty
-  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc (if @isArrowRoot then @insHerePrL else []) ++ @arg.prvReqs
+  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL ++ @func.prvReqs ++ @arg.prvReqs
   | Var         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL
 %%]
+  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc (if @isArrowRoot then @insHerePrL else []) ++ @arg.prvReqs
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicated type
@@ -209,6 +221,6 @@ ATTR AllTyAndFlds [ | | prTy: SELF ]
 
 %%[9
 SEM Ty
-  | Var         lhs         .   prTy            =   mkTyImpls (map (poPr . fst) @insPrPrvOccL) $ Ty_Var @tv @categ.prTy
-  | App         loc         .   prTy            =   mkTyImpls (map (poPr . fst) @insPrPrvOccL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
+  | Var         lhs         .   prTy            =   mkTyImpls (map (poPr . fst) @forPrTyOccL) $ Ty_Var @tv @categ.prTy
+  | App         loc         .   prTy            =   mkTyImpls (map (poPr . fst) @forPrTyOccL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
 %%]

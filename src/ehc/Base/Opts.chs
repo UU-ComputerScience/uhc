@@ -295,7 +295,8 @@ ehcCmdLineOpts
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
-     ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
+     -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
+     -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
 %%]]
      ]
 %%]

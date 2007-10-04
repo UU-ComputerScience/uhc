@@ -5,15 +5,25 @@
 
 %include verb.fmt
 
+%format EHC			= "\textsf{ehc}"
 %format CCP			= "\textsf{CCP}"
 %format GBM			= "\textsf{GBM}"
 %format GRIN		= "\textsf{GRIN}"
 %format GFULL		= GRIN
 %format LLVM		= "\textsf{LLVM}"
+%format Prelude		= "\texttt{Prelude}"
 
 %%]
 
 %%[referenceCmdLineParams
+In the following overview of options to |EHC| the following shorthand notation is used:
+
+%%[[wrap=code
+<bool>     ::=  0|1|no|yes|-|+
+%%]]
+
+For |<bool>| the values |1, yes, +| correspond to |True|.
+
 \begin{itemize}
 \DocOpt{@-c[<o>], --code[=<o>]@  |where  <o> =hs||eh||core||java||grin||c||exe[c]||llvm||bc||bexe[c]|| - |}{Generate an encoding of results to a file}
 \IxDef{-c}%
@@ -56,9 +66,55 @@ This option is intended for developers only.
 
 
 
+\DocOpt{@--debug-stopat-hi-error=<bool>@}{Stop at Haskell interface file parse error}
+Any out of date @.hi@ Haskell interface file triggers a recompile of the corresponding module.
+A faulty interface file also triggers this, silently, without warnings about errors in the interface file.
+This flag turns this default behavior off, so an error is reported when it occurs.
+The compilation is then halted.
+This flag is useful during changes in the interface file format.
+
+
+
+\DocOpt{@--debug-stopat-core-error=<bool>@}{Stop at Haskell core file parse error}
+When performing full program analysis core files are the endproduct of per module compilation.
+For full program analysis these core files are read and combined for further full program analysis.
+Parsing errors are ignored.
+This flag turns this default behavior off, so an error is reported when it occurs.
+The compilation is then halted.
+This flag is useful during changes in the core file format.
+
+
+
 \DocOpt{@-h, --help@}{Show help, don't run the compiler}
 \IxDef{-h}%
 \IxDef{--help}%
+
+
+
+%\DocOpt{@--limit-ctxt-red=<n>@  |where  <n> = int |}{Limit context reduction ...}
+%\IxDef{--limit-ctxt-red}%
+%Limit the depth of type expansions during e.g. type comparison to |<n>|.
+
+
+
+\DocOpt{@--limit-tysyn-expand=<n>@  |where  <n> = int |}{Limit type synonym expansion}
+\IxDef{--limit-tysyn-expand}%
+Limit the depth of type expansions during e.g. type comparison to |<n>|.
+
+
+
+\DocOpt{@--no-prelude@}{Do not assume the presence of Prelude}
+\IxDef{--no-prelude}%
+Turn off the automatic inclusion of the import of module |Prelude|:
+
+\begin{itemize}
+\item
+  Normally compiler assumed identifiers always map to identifiers defined in |Prelude|,
+  even if redefined locally.
+  This is turned off, so locally introduced corresponding identifiers and their definitions are used.
+\item
+  
+\end{itemize}
 
 
 
@@ -120,10 +176,6 @@ The default verbosity level 'normal' reports about progress.
 \DocOpt{@--version@}{Show the compiler version, don't run the compiler}
 \IxDef{--version}%
 Show full version information (see also option \DocOptRef{--numeric-version}).
-
-
-
-\DocOpt{@-xx, --xx=xx@  |where  xx = xx |}{XX}
 
 
 
