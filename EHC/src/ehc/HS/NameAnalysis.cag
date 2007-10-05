@@ -986,7 +986,7 @@ SEM Body
                                         =   case gamLookupDup (IdOcc hsnMain IdOcc_Val) @idGam of
                                               Nothing   -> False
                                               Just occs -> chk iaspIsValVar
-%%][98
+%%][9898
         loc             .   (mainValExists,mainSigExists)
                                         =   let occ = IdOcc hsnMain IdOcc_Val
                                             in  case gamLookupDup occ @idGam of
