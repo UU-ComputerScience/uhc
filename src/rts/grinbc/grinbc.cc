@@ -210,6 +210,7 @@ typedef GB_Word GB_CFun();
 static GB_CallInfo gb_callinfo_EvalWrap 		= GB_MkCallInfo(GB_CallInfo_Kind_EvalWrap		, "evalwrap"		) ;
 static GB_CallInfo gb_callinfo_EvCont   		= GB_MkCallInfo(GB_CallInfo_Kind_EvCont  		, "evalcont"		) ;
 static GB_CallInfo gb_callinfo_EvAppFunCont   	= GB_MkCallInfo(GB_CallInfo_Kind_EvAppFunCont  	, "evalappfuncont"	) ;
+static GB_CallInfo gb_callinfo_EvAppFunEvCont   = GB_MkCallInfo(GB_CallInfo_Kind_EvAppFunEvCont , "evalappfunevcont") ;
 static GB_CallInfo gb_callinfo_PEvCont  		= GB_MkCallInfo(GB_CallInfo_Kind_PApCont 		, "pappcont"		) ;
 %%]
 
@@ -228,6 +229,10 @@ static GB_Byte gb_code_AfterEvalApplyFunCall[] =
   , 0, 0, 0, 0
 #endif
   , GB_Ins_EvalApplyCont
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
   , GB_Ins_EvalUpdCont
   } ;
 
@@ -251,11 +256,21 @@ GB_Byte gb_code_Eval[] =
 #define GB_InitPatch_gb_code_Eval				*Cast(GB_Ptr,&gb_code_Eval[1]         ) = Cast(GB_Word,&gb_callinfo_EvalWrap)
 #define GB_InitPatch_gb_code_AfterEvalCall		*Cast(GB_Ptr,&gb_code_AfterEvalCall[0]) = Cast(GB_Word,&gb_callinfo_EvCont  )
 #define GB_InitPatch_gb_code_AfterEvalApplyFunCall 				\
-												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[0]) = Cast(GB_Word,&gb_callinfo_EvAppFunCont  )
+									{ \
+												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[0]								) = Cast(GB_Word,&gb_callinfo_EvAppFunCont  ) ; \
+												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[1+sizeof(GB_CallInfo_Inline)]	) = Cast(GB_Word,&gb_callinfo_EvAppFunEvCont  ) ; \
+									}
 #define GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs	\
 												*Cast(GB_Ptr,&gb_code_AfterCallInApplyWithTooManyArgs[0]) = Cast(GB_Word,&gb_callinfo_PEvCont  )
 
 %%]
+#define GB_InitPatch_gb_code_AfterEvalApplyFunCall 				\
+												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[0]) = Cast(GB_Word,&gb_callinfo_EvAppFunCont  )
+
+#define GB_InitPatch_gb_code_ExcHdl_EvalValue \
+									{ *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[0]         						) = Cast(GB_Word,&gb_callinfo_ExcHdl_EvalValue) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(GB_CallInfo_Inline)]  	) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
+									}
 
 %%[96
 static GB_CallInfo gb_callinfo_ExcHdl_EvalValue  					= GB_MkCallInfo(GB_CallInfo_Kind_Call , "exception handler value eval"	) ;
@@ -711,10 +726,12 @@ void gb_prState( char* msg, int maxStkSz )
 	GB_ByteCodeModule* bcm ;
 	GB_ByteCodeEntryPoint* bce ;
 	GB_ByteCodeInstrEntry* bci ;
+	/*
 	if ( gb_lookupInfoForPC( pc, &bcm, &bce, &bci ) )
 	{
 		printf( "%s.%s: %s\n", bcm->bcModNm, bce->nm, bci->bc ) ;
 	}
+	*/
 %%]]
 	gb_prStack( maxStkSz ) ;
 }
@@ -1175,6 +1192,7 @@ gb_interpreter_InsEvalUpdContEntry:
 
 			/* evappcont */
 			case GB_Ins_EvalApplyCont :
+				GB_Skip_CallInfoPtr ;
 				GB_PopIn(x) ;													/* evaluated function						*/
 				n = Cast(GB_NodePtr,GB_SPRelx(2)) ;								/* the apply node							*/
 				h = n->header ;

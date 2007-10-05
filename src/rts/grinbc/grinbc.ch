@@ -467,6 +467,7 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 #define GB_CallInfo_Kind_PApCont  		9			// partial apply continuation
 #define GB_CallInfo_Kind_Hdlr    		10			// exception handler installment
 #define GB_CallInfo_Kind_EvAppFunCont  	11			// apply fun eval update continuation
+#define GB_CallInfo_Kind_EvAppFunEvCont 12			// apply fun eval update eval continuation
 
 %%]
 

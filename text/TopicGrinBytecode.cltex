@@ -124,6 +124,7 @@ the machinery.
 %format callinfoPApCont	= callinfo "_{papcont}"
 %format callinfoHdlr	= callinfo "_{hdlr}"
 %format callinfoEvAppFunCont	= callinfo "_{evappfcont}"
+%format callinfoEvAppFunEvCont	= callinfo "_{evappfevcont}"
 
 %format (ixx1(x)(f))    = x "_{" f "}"
 %format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
@@ -815,6 +816,7 @@ callinfoApCont      		=  8     -- apply continuation
 callinfoPApCont     		=  9     -- partial apply continuation
 callinfoHdlr        		=  10    -- exception handler installment
 callinfoEvAppFunCont        =  11    -- apply function eval update continuation
+callinfoEvAppFunEvCont      =  12    -- apply function eval update eval continuation
 %%]]
 \end{itemize}
 
@@ -1096,7 +1098,7 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |call : callinfoCall : gcode|
+  |call : callinfo : gcode|
  }{%
   |d : gstack|
  }{%
@@ -1117,6 +1119,7 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
  }{}
 }
 
+Callinfo |callinfo| depends on context from which is called: |callinfoCall, callinfoEvAppFunCont, callinfoEvAppFunEvCont ...|
 
 \subsubsection{Tail call}
 
@@ -1385,7 +1388,7 @@ Special case, apply closure:
 }{%
  \GriniStateAfter{%
  }{%
-  |evalt : callinfoEvAppFunCont : evappcont : evupdcont|
+  |evalt : callinfoEvAppFunCont : evappcont : callinfoEvAppFunEvCont : evupdcont|
  }{%
   |f : (gframep :-> gframep') : gcode : p : gstack|
  }{%
@@ -1504,7 +1507,7 @@ Only is done as part of |evalt|, hence is not generated/called directly.
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |evappcont : gcode|
+  |evappcont : callinfoEvAppFunEvCont : gcode|
  }{%
   |f : gframep : gcode' : p : gstack|
  }{%
@@ -1514,7 +1517,7 @@ Only is done as part of |evalt|, hence is not generated/called directly.
 }{%
  \GriniStateAfter{%
  }{%
-  |applyt : callinfoEval : gcode|
+  |applyt : callinfoEvAppFunEvCont : gcode|
  }{%
   |f : n : a1 .. an : gframep : gcode' : p : gstack|
  }{%
@@ -1582,7 +1585,7 @@ When |m<n|, i.e. more parameters |Sub(a)(i)| than are missing:
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |applyt : callinfoApply : gcode|
+  |applyt : callinfoApply / callinfoEvAppFunEvCont : gcode|
  }{%
   |p : n : a1 .. an : gstack|
  }{%
@@ -1612,7 +1615,7 @@ When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |applyt : callinfoApply : gcode|
+  |applyt : callinfoApply / callinfoEvAppFunEvCont : gcode|
  }{%
   |p : n : a1 .. an : gstack|
  }{%
@@ -1622,7 +1625,7 @@ When |m = n|, i.e. exactly the number of missing parameters |Sub(a)(i)|:
 }{%
  \GriniStateAfter{%
  }{%
-  |call : callinfoApply : gcode|
+  |call : callinfoApply / callinfoEvAppFunEvCont : gcode|
  }{%
   |f : b1 .. bk : a1 .. an : gstack|
  }{%
@@ -1640,7 +1643,7 @@ When |m > n|, still missing parameters:
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |applyt : callinfoApply : gcode|
+  |applyt : callinfoApply / callinfoEvAppFunEvCont : gcode|
  }{%
   |p : n : a1 .. an : gstack|
  }{%
