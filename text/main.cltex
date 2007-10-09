@@ -78,6 +78,10 @@
 \documentclass[10pt,headexclude,footexclude]{article}
 %%]
 
+%%[31
+\documentclass[10pt,headexclude,footexclude]{article}
+%%]
+
 %%[18
 \documentclass[ignorenonframetext]{beamer}
 %%]
@@ -109,6 +113,11 @@
 %%]
 
 %%[27
+\setlength{\paperwidth}{210mm}
+\setlength{\paperheight}{297mm}
+%%]
+
+%%[31
 \setlength{\paperwidth}{210mm}
 \setlength{\paperheight}{297mm}
 %%]
@@ -332,6 +341,11 @@
 \pagestyle{empty}
 %%]
 
+%%[31
+\setlength\parindent{0pt}
+\pagestyle{empty}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beamer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -381,6 +395,10 @@
 %%]
 
 %%[27
+\usepackage{tikz}
+%%]
+
+%%[31
 \usepackage{tikz}
 %%]
 
@@ -965,6 +983,10 @@ WWW home page:
 %%]
 
 %%[27
+\tolerance=400
+%%]
+
+%%[31
 \tolerance=400
 %%]
 
@@ -2218,6 +2240,11 @@ To be done ...
 %%[27
 %%@PosterLDL.posterLDL
 %%]
+
+%%[31
+%%@PosterTrOrPr.posterTrOrPr
+%%]
+
 
 \TPGrid[10mm,10mm]{100}{100}
 \TPMargin{.5ex}
