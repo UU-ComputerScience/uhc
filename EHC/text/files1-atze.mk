@@ -7,7 +7,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								phd-paper phd-draft phd-tst phd \
 								ehc-book-tst \
 								scratch scratch2 \
-								poster posterLDL \
+								poster posterLDL posterTrOrPr \
 								slides-ruler slides-ruler-long \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status slides-ehcstruct \
 								gbm \
@@ -26,7 +26,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
 								AppxNotation FrontMatter OldText \
-								Poster PosterLDL \
+								Poster PosterLDL PosterTrOrPr \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
@@ -64,8 +64,9 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 28: slides EHC Structure
 # 29: ehc doc
 # 30: book: base (share)
+# 31: poster TrOrPr
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 30 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, \
 								1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, \
-								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27, 18 < 28, 1 < 30, 30 < 29
+								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27, 18 < 28, 1 < 30, 30 < 29, 1 < 31

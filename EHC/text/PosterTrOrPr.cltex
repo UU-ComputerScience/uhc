@@ -1,0 +1,81 @@
+%%[posterTrOrPr
+\small\sf
+\def\ColNodeBg{yellow}
+\def\ColNodeFg{black}
+%%[[exportedTikZMacros
+%%]]
+\newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
+\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{#4}}}
+\newcommand{\PCNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
+\newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
+%%[[exportedMacros
+\newcommand{\NTitle}[2]{{\Large\textbf{#1} \Large\textit{#2}}}
+\newcommand{\Dots}{\NTitle{...}{}}
+%%]]
+\let\NL=\\
+\noindent
+\begin{tikzpicture}
+
+% grid & reserve the space
+\draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
+
+
+% title
+\draw (10.5,29.3) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\FigScaledPDF{0.45}{2a_NWO_LogoBasis_PMSb}
+\PTitle{%
+ \parbox{.6\linewidth}{\centering \LARGE Tree Oriented Programming\\
+                      {\Large the Haskell Utrecht Tools for compiler construction}}
+}
+\FigScaledPDF{0.45}{UULogoSolRight}
+}
+};
+
+\draw (10.5,26.7) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.50}{trOrPr-essence}}
+}
+};
+
+\draw (10.5,23.0) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.25}{trOrPr-parscom}}
+}
+};
+
+\draw (10.5,12.0) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.25}{trOrPr-fold}}\\
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.25}{trOrPr-compile}}\\
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.25}{trOrPr-realsize}}\\
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.25}{trOrPr-ag2hs}}
+}
+};
+
+\draw (10.5,6) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\hspace*{0mm}\raisebox{0mm}[27mm][0mm]{\FigScaledPDF{0.25}{trOrPr-pretty}}
+}
+};
+
+
+
+% participants
+\draw (16.4,3.75) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{More information}{}\\
+\begin{Itemize}
+\item NWO project 612.063.410
+\item Jeroen Fokker, Atze Dijkstra, Arie Middelkoop, Doaitse Swierstra
+\item See \texttt{http://www.cs.uu.nl/wiki/HUT}
+\end{Itemize}
+}};
+
+
+
+
+
+
+\end{tikzpicture}
+%%]
+
