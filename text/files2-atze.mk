@@ -114,7 +114,7 @@ text-variant-ruler-doc:
 	  text-variant-dflt-once
 
 text-variant-poster:
-	$(MAKE) TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	$(MAKE) TEXT_RULER_MARK_CHANGES_CFG="--markchanges='I1 - *'" TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --set=fullWide --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=13 \
 	  text-variant-dflt-once

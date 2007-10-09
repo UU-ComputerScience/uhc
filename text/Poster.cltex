@@ -9,8 +9,8 @@
 \newcommand{\PCNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
 \newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
 %%[[exportedMacros
-\newcommand{\NTitle}[1]{{\Large\textbf{#1}}}
-\newcommand{\Dots}{\NTitle{...}}
+\newcommand{\NTitle}[2]{{\Large\textbf{#1} \Large\textit{#2}}}
+\newcommand{\Dots}{\NTitle{...}{}}
 %%]]
 \let\NL=\\
 \noindent
@@ -21,32 +21,108 @@
 
 % title
 \draw (10.5,29.3) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
-{\FigScaledPDF{0.6}{2a_NWO_LogoBasis_PMSb}
+{\FigScaledPDF{0.45}{2a_NWO_LogoBasis_PMSb}
 \PTitle{%
- \parbox{.5\linewidth}{\centering Essential Haskell\\
-                      {\Large coping with compiler complexity}}
+ \parbox{.6\linewidth}{\centering \LARGE Coping with Compiler Complexity\\
+                      {\Large The structure of the Essential Haskell Compiler}}
 }
-\FigScaledPDF{0.6}{UULogoSolRight}
+\FigScaledPDF{0.45}{UULogoSolRight}
 }
 };
 
-\draw (10.5,26.5) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\draw (10.5,26.7) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\large
-\NTitle{Observations:}
+\NTitle{Observations:}{}
 \begin{itemize}
 \item Programmers: want programming languages to do as much as possible of their programming job
 \item Users: want guarantees of resulting programs, e.g. no errors
 \end{itemize}
 \vspace{0.4cm}
-\NTitle{Resulting problem:}
+\NTitle{Resulting problem:}{}
 \begin{itemize}
 \item Programming language + compiler: become more complex
 \end{itemize}
 }
 };
 
+% transformations
+\draw (5.95,22) \PCNode{\ColNodeBg}{\ColNodeFg}{11.3}{%
+{%\large
+\NTitle{Coping with implementation complexity:\\}{transform, transform and transform}\\[0.2cm]
+\hspace*{-20mm}\raisebox{-53mm}[27mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
+\begin{itemize}
+\item From complex to simple representations
+\end{itemize}
+}};
+
 % growing example
-\draw (10.5,22) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+% background
+\draw (5.95,16.5) \PCNode{\ColNodeBg}{\ColNodeFg}{11.3}{%
+\NTitle{Coping with design complexity:\\}{stepwise grow a language}
+\vspace{14.5cm}\ 
+};
+\begin{scope}[shift={(1.35,0.4)},xscale=0.5,yscale=0.89]
+%%@TopicEHCStructure.langSeriesShadowedDefs
+
+%% Titles (copy paste modified)
+\draw (-1,15.0) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Simply typed |lambda| calculus (EH1)}};
+\draw (1.5,15.5) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Polymorphic type inference (EH3)}};
+\draw (4,16.0) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Higher ranked types (EH4)}};
+
+\draw (-2,5.75) node[anchor=west,color=blue] {\textbf{Implementation}};
+\draw (-2,5.25) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+\draw (-2,10.25) node[anchor=west,color=blue] {\textbf{Semantics}};
+\draw (-2,9.75) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+\draw (-2,13.75) node[anchor=west,color=blue] {\textbf{Example}};
+\draw (-2,13.25) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+
+%%@TopicEHCStructure.langSeriesShadowed
+\end{scope}
+
+% toolchain
+\draw (16.4,22) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{Coping with maintenance complexity:\\}{generate, generate and generate}\\[0.2cm]
+{\large from common source: guarantees consistency of generated artefacts}\\
+%\FigScaledPDF{0.3}{toolchain2f}
+\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}
+\raggedright
+\begin{itemize}
+\item Chunks (.chs, .cag): for program, documentation (etc) combination
+\item Attribute Grammar (.ag): for tree based computation
+\item Ruler (.rul): for type rules
+\end{itemize}
+}};
+
+% dsl's
+\draw (16.4,11.6) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{Coping with formalisation complexity:\\}{domain specific languages}
+\[\rulerCmdUse{rules3.I2.expr.base.e.app}\]
+\begin{itemize}
+\item Specification of type rules
+\item Implementation of type rules, different strategies
+\item Pretty printing type rules
+\end{itemize}
+}};
+
+% participants
+\draw (16.4,3.75) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{More information}{}\\
+\begin{Itemize}
+\item NWO program `Hefboom' (project 641.000.412)
+\item Prof. Dr. S. Doaitse Swierstra, Dr. Bastiaan J. Heeren, Dr. Atze Dijkstra, Drs. Jeroen D. Fokker, Drs. Arie Middelkoop
+\item See \texttt{http://www.cs.uu.nl/wiki/Ehc/WebHome}
+\end{Itemize}
+}};
+
+\end{tikzpicture}
+%%]
+
+May still be used elsewhere:
+
+%%[langSeriesObsoleteHere
 \renewcommand{\arraystretch}{1.5}
 \newcommand{\Nw}{\hspace{\tabcolsep}}
 \def\Line{}
@@ -141,48 +217,5 @@ in   let  (a,b) = (id 3,id 'x')
 \\
 %%]]
 \end{tabular}
-};
-
-% toolchain
-\draw (5,11.5) \PCNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
-{%\large
-\NTitle{Coping with maintenance complexity: generate, generate and generate}\\[0.2cm]
-{\large from common source: guarantees consistency of generated artefacts}\\
-\FigScaledPDF{0.27}{toolchain}
-\raggedright
-\begin{itemize}
-\item Chunks (.chs, .cag):
- combine chunks of text for program, documentation, ...
-\item Attribute Grammar (.ag):
- domain specific language for tree based computation
-\item Ruler (.rul):
- domain specific language for type rules
-\end{itemize}
-}};
-
-% dsl's
-\draw (16,11.5) \PCNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
-{%\large
-\NTitle{Coping with formalisation complexity: domain specific languages}\\[0.2cm]
-%{\large for an otherwise too complex problem}
-\[\rulerCmdUse{rules3.I2.expr.base.e.app}\]
-\begin{itemize}
-\item Specification of type rules
-\item Implementation of type rules, different strategies
-\item Pretty printing type rules
-\end{itemize}
-}};
-
-% participants
-\draw (16,3.75) \PCNode{\ColNodeBg}{\ColNodeFg}{9.5}{%
-{%\large
-\NTitle{More information}\\
-\begin{Itemize}
-\item Supported by NWO program `Hefboom' (project 641.000.412)
-\item Participants: Prof. Dr. S. Doaitse Swierstra, Dr. Bastiaan J. Heeren, Dr. Atze Dijkstra, Drs. Jeroen D. Fokker, Drs. Arie Middelkoop
-\item See \texttt{http://www.cs.uu.nl/wiki/Ehc/WebHome}
-\end{Itemize}
-}};
-
-\end{tikzpicture}
 %%]
+

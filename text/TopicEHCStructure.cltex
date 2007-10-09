@@ -121,9 +121,11 @@ EH4 (adding higher-ranked types).
 %%@Poster.exportedMacros
 %%@Poster.exportedTikZMacros
 
-\newcommand{\Node}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
-\newcommand{\PNode}[2]{\Node{#1}{\parbox{#1cm}{#2}}}
-\newcommand{\PCNode}[2]{\PNode{#1}{{\begin{center}#2\end{center}}}}
+%%[[langSeriesShadowedDefs
+\newcommand{\LangSeriesNode}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
+\newcommand{\LangSeriesPNode}[2]{\LangSeriesNode{#1}{\parbox{#1cm}{#2}}}
+\newcommand{\LangSeriesPCNode}[2]{\LangSeriesPNode{#1}{{\begin{center}#2\end{center}}}}
+%%]]
 
 \begin{CenterFigure}{}{Examples of created artefacts (rows) for various language variants (columns)}{fig-ehcstruct-langs-shadowed}
 \begin{tikzpicture}
@@ -139,50 +141,52 @@ EH4 (adding higher-ranked types).
 \draw (-1.5,10.00) node[anchor=west] {\textbf{Semantics \(\rightarrow\)}};
 \draw (-1.5,13.50) node[anchor=west] {\textbf{Example \(\rightarrow\)}};
 
+%%[[langSeriesShadowed
 %% Examples
-\draw (3,11.5) \PNode{6.5}{%
+\draw (3,11.5) \LangSeriesPNode{6.5}{%
 %%@Poster.langSeriesEx3
 };
 
-\draw (0.5,11) \PNode{5}{%
+\draw (0.5,11) \LangSeriesPNode{5}{%
 %%@Poster.langSeriesEx2
 };
 
-\draw (-2,10.5) \PNode{4}{%
+\draw (-2,10.5) \LangSeriesPNode{4}{%
 %%@Poster.langSeriesEx1
 };
 
 %% Semantics
-\draw (3,7.5) \PNode{6.5}{%
+\draw (3,7.5) \LangSeriesPNode{6.5}{%
 %%@Poster.langSeriesSem3
 };
 
-\draw (0.5,7) \PNode{5}{%
+\draw (0.5,7) \LangSeriesPNode{5}{%
 %%@Poster.langSeriesSem2
 };
 
-\draw (-2,6.5) \PNode{4}{%
+\draw (-2,6.5) \LangSeriesPNode{4}{%
 %%@Poster.langSeriesSem1
 };
 
 %% Implementation
-\draw (3,1.5) \PNode{8.5}{%
+\draw (3,1.5) \LangSeriesPNode{8.5}{%
 {\small
 %%@Poster.langSeriesImpl3
 }
 };
 
-\draw (0.5,0.75) \PNode{9.5}{%
+\draw (0.5,0.75) \LangSeriesPNode{9.5}{%
 {\small
 %%@Poster.langSeriesImpl2
 }
 };
 
-\draw (-2,0) \PNode{8.1}{%
+\draw (-2,0) \LangSeriesPNode{8.1}{%
 {\small
 %%@Poster.langSeriesImpl1
 }
 };
+%%]]
 
 \end{tikzpicture}
 \end{CenterFigure}
