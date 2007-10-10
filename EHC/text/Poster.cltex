@@ -18,9 +18,10 @@
 
 % grid & reserve the space
 \draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
+%\draw[step=1cm,red,very thin] (0,0) grid (21,29.6);
 
 % title
-\draw (10.5,29.3) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\draw (10.5,29.5) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\FigScaledPDF{0.45}{2a_NWO_LogoBasis_PMSb}
 \PTitle{%
  \parbox{.6\linewidth}{\centering \LARGE Coping with Compiler Complexity\\
@@ -30,23 +31,26 @@
 }
 };
 
-\draw (10.5,26.7) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\draw (10.5,27.1) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\large
+\begin{tabular}{p{.52\linewidth}p{.42\linewidth}}
 \NTitle{Observations:}{}
-\begin{itemize}
-\item Programmers: want programming languages to do as much as possible of their programming job
-\item Users: want guarantees of resulting programs, e.g. no errors
-\end{itemize}
-\vspace{0.4cm}
+&
 \NTitle{Resulting problem:}{}
-\begin{itemize}
-\item Programming language + compiler: become more complex
-\end{itemize}
+\\
+\emph{Programmers} want programming languages to do as much as possible of their programming job
+&
+\emph{Programming language + compiler} become more complex
+\\
+\emph{Users} want guarantees of resulting programs, e.g. no errors
+&
+\\
+\end{tabular}
 }
 };
 
 % transformations
-\draw (5.95,22) \PCNode{\ColNodeBg}{\ColNodeFg}{11.3}{%
+\draw (5.95,24) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
 {%\large
 \NTitle{Coping with implementation complexity:\\}{transform, transform and transform}\\[0.2cm]
 \hspace*{-20mm}\raisebox{-53mm}[27mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
@@ -57,11 +61,11 @@
 
 % growing example
 % background
-\draw (5.95,16.5) \PCNode{\ColNodeBg}{\ColNodeFg}{11.3}{%
+\draw (5.95,18.5) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
 \NTitle{Coping with design complexity:\\}{stepwise grow a language}
 \vspace{14.5cm}\ 
 };
-\begin{scope}[shift={(1.35,0.4)},xscale=0.5,yscale=0.89]
+\begin{scope}[shift={(1.35,2.4)},xscale=0.5,yscale=0.89]
 %%@TopicEHCStructure.langSeriesShadowedDefs
 
 %% Titles (copy paste modified)
@@ -80,7 +84,7 @@
 \end{scope}
 
 % toolchain
-\draw (16.4,22) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+\draw (16.4,24) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
 {%\large
 \NTitle{Coping with maintenance complexity:\\}{generate, generate and generate}\\[0.2cm]
 {\large from common source: guarantees consistency of generated artefacts}\\
@@ -95,7 +99,7 @@
 }};
 
 % dsl's
-\draw (16.4,11.6) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+\draw (16.4,13.7) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
 {%\large
 \NTitle{Coping with formalisation complexity:\\}{domain specific languages}
 \[\rulerCmdUse{rules3.I2.expr.base.e.app}\]
@@ -106,15 +110,29 @@
 \end{itemize}
 }};
 
-% participants
-\draw (16.4,3.75) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+% future plans
+\draw (16.4,6.1) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
 {%\large
-\NTitle{More information}{}\\
+\NTitle{Future plans}{}\\
 \begin{Itemize}
-\item NWO program `Hefboom' (project 641.000.412)
-\item Prof. Dr. S. Doaitse Swierstra, Dr. Bastiaan J. Heeren, Dr. Atze Dijkstra, Drs. Jeroen D. Fokker, Drs. Arie Middelkoop
-\item See \texttt{http://www.cs.uu.nl/wiki/Ehc/WebHome}
+\item Incremental evaluation
+\item Parallel compilers
+\item Use of visual environments (Proxima)
+\item Efficient analysis
+\item ...
 \end{Itemize}
+}};
+
+% participants
+\draw (10.5,2) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large 
+\begin{tabular}{p{.39\linewidth}||p{.33\linewidth}||p{.27\linewidth}}
+NWO `Hefboom' project 641.000.412, 612.063.410;
+Microsoft Research Scholarship
+& Prof.~Dr.~S.~Doaitse~Swierstra, Dr.~Atze~Dijkstra, Drs.~Jeroen~Fokker, Drs.~Arie~Middelkoop
+& \texttt{http://www.cs.uu.nl/\NL wiki/Ehc/WebHome}
+\\
+\end{tabular}
 }};
 
 \end{tikzpicture}
