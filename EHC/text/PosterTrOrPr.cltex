@@ -137,8 +137,9 @@
 \draw (10.5,2) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
 {\large \raggedright
 \begin{tabular}{p{.39\linewidth}||p{.33\linewidth}||p{.27\linewidth}}
-\mbox{NWO `Hefboom' project 641.000.412,} 612.063.410;
-Microsoft Research Scholarship
+\mbox{NWO `Hefboom' project 641.000.412,} 
+\mbox{NWO project 612.063.410,}
+\mbox{Microsoft Research Scholarship}
 & \mbox{Prof.~Dr.~S.~Doaitse~Swierstra,} Dr.~Atze~Dijkstra, Drs.~Jeroen~Fokker, Drs.~Arie~Middelkoop
 & \texttt{http://www.cs.uu.nl/\NL wiki/HUT}
 \\
