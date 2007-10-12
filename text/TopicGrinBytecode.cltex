@@ -103,12 +103,18 @@ the machinery.
 
 %format gcode       = "\textit{is}"
 %format gcode'
+%format gb_code_ExcHdl_NormalReturn_MarkedAsHandler = gcode "_{hret}"
+%format gb_code_ExcHdl_EvalValue = gcode "_{heval}"
+%format gb_code_ExcHdl_ThrowReturn = gcode "_{tret}"
 %format gstack      = "\textit{st}"
+%format gstack'
 %format gheap       = "\textit{hp}"
 %format greg        = "\textit{r}"
 %format gpc         = "\textit{pc}"
 %format gframep     = "\textit{bp}"
 %format gframep'
+%format gframep''
+%format gframep'''
 %format gframepOff	= gframep "_{off}"
 %format gsp         = "\textit{sp}"
 
@@ -120,11 +126,13 @@ the machinery.
 %format callinfoApply	= callinfo "_{ap}"
 %format callinfoCCall	= callinfo "_{C}"
 %format callinfoEvCont	= callinfo "_{evcont}"
+%format callinfoEvWrap	= callinfo "_{evwrap}"
 %format callinfoApCont	= callinfo "_{apcont}"
 %format callinfoPApCont	= callinfo "_{papcont}"
 %format callinfoHdlr	= callinfo "_{hdlr}"
 %format callinfoEvAppFunCont	= callinfo "_{evappfcont}"
 %format callinfoEvAppFunEvCont	= callinfo "_{evappfevcont}"
+%format callinfoExcHdlEvalValue	= callinfo "_{heval}"
 
 %format (ixx1(x)(f))    = x "_{" f "}"
 %format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
@@ -153,14 +161,20 @@ $\Longrightarrow$ &
 #5
 }
 
-\newcommand{\GriniStep}[2]{%
+\newenvironment{GriniSteps}{%
 \begin{tabular}{lllll}
 \hline
 & Code & Stack & Heap & Regs \\
 \hline
-#1 \\ #2 \\
+}{%
 \hline
 \end{tabular}
+}
+
+\newcommand{\GriniStep}[2]{%
+\begin{GriniSteps}
+#1 \\ #2 \\
+\end{GriniSteps}
 }
 
 \newenvironment{GrinEncoding}[1]{%
@@ -804,17 +818,17 @@ The information stored contains:
  Kind of call:
  \\
 %%[[wrap=code
-callinfoCall        		=  0     -- normal call
-callinfoTail        		=  1     -- tail call
-callinfoEval        		=  2     -- eval call
-callinfoEvalWrap    		=  3     -- eval call wrapper
-callinfoTailEv      		=  4     -- tail eval call
-callinfoApply       		=  5     -- apply call
-callinfoCCall       		=  6     -- C call
-callinfoEvCont      		=  7     -- eval update continuation
-callinfoApCont      		=  8     -- apply continuation
-callinfoPApCont     		=  9     -- partial apply continuation
-callinfoHdlr        		=  10    -- exception handler installment
+callinfoCall                =  0     -- normal call
+callinfoTail                =  1     -- tail call
+callinfoEval                =  2     -- eval call
+callinfoEvWrap              =  3     -- eval call wrapper
+callinfoTailEv              =  4     -- tail eval call
+callinfoApply               =  5     -- apply call
+callinfoCCall               =  6     -- C call
+callinfoEvCont              =  7     -- eval update continuation
+callinfoApCont              =  8     -- apply continuation
+callinfoPApCont             =  9     -- partial apply continuation
+callinfoHdlr                =  10    -- exception handler installment
 callinfoEvAppFunCont        =  11    -- apply function eval update continuation
 callinfoEvAppFunEvCont      =  12    -- apply function eval update eval continuation
 %%]]
@@ -2170,7 +2184,17 @@ int main(int argc, char** argv) {
 
 \subsection{Exception handling}
 
-A primitive |primCatchException :: a -> (x -> a) -> a| installs a handler, |primThrowException :: x -> ()| raises an exception.
+The primitive |primCatchException|, |primThrowException| raises an exception:
+
+%%[[wrap=code
+foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
+primCatchException e h = ...
+
+foreign import ccall primThrowException :: forall a . Exception -> a
+primThrowException exc = ...
+%%]]
+
+
 Catching pushes a special stackframe, of which the call info has kind |callinfoHdlr|. Installing such a stackframe is complicated by the necessity not to leave
 the stack frame for calling on primitive on the stack. This is solved by:
 \begin{itemize}
@@ -2182,6 +2206,137 @@ the stack frame for calling on primitive on the stack. This is solved by:
  and pushing a copy of the primitive call stack frame, which will be removed by the primitive return.
  The only modification to this stack frame is the return address, which points to code for the evaluation of the expression wrapped by the handler.
 \end{itemize}
+
+To be more precise, the following sequence of catch + throw is executed:
+
+
+\begin{GriniSteps}
+ \GriniStateBefore{%
+ }{%
+  |callc 2 : callinfoCCall : gcode|
+ }{%
+  |primCatchException : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |(gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep''|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |e : (gframep''' :-> gframep'') : gb_code_ExcHdl_EvalValue : e : h : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'''|
+ }{}
+\\
+\end{GriniSteps}
+
+where
+
+%%[[wrap=code
+callinfoHdlr                                : (gb_code_ExcHdl_NormalReturn_MarkedAsHandler  :-> retcall 1 2)                                        -- remove primCatchException stack frame
+callinfoExcHdlEvalValue                     : (gb_code_ExcHdl_EvalValue                     :-> evalt) : callinfoEvWrap : retcall 1 2               -- eval expr and return
+%%]]
+
+At this point the stack is set up such that the expression |e| passed to |primCatchException| will be evaluated after the return from the C call to |primCatchException|.
+After a normal evaluation the stack will unwind through the frames, which just return.
+When an exception occurs the stack is unwound until a frame marked with |callinfoHdlr| is encountered.
+This marks the presence of a handler, which is then invoked.
+
+\begin{GriniSteps}
+ \GriniStateBefore{%
+ }{%
+  |callc 1 : callinfoCCall : gcode|
+ }{%
+  |primThrowException : exc : ... : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |exc : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep''|
+ }{}
+\\
+\end{GriniSteps}
+
+After unwinding, the stack is set up such that the call to |primThrowException| returns to code which calls the handler:
+
+%%[[wrap=code
+callinfoCall                     : (gb_code_ExcHdl_ThrowReturn                     :-> ldi 1) : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2              -- call handler
+%%]]
+
+During unwinding all thunks under evaluation are replaced by an indirection node to the thrown exception.
+This is to prevent the code causing the exception to be reevaluated.
+
+\begin{GriniSteps}
+ \GriniStateAfter{%
+ }{%
+  |ldi 1 : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2|
+ }{%
+  |exc : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2|
+ }{%
+  |h : 1 : exc : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |retcall 1 2|
+ }{%
+  |h exc : (gframep' :-> gframep) : gcode : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |h exc : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep|
+ }{}
+\\
+\end{GriniSteps}
+
+At this point the handler has returned to the caller of the |primCatchException| which did install the handler.
 
 %%]
 

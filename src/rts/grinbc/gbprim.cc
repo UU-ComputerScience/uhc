@@ -624,6 +624,31 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exiting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This version also prints a stacktrace
+
+%%[96.gb_primExitWith
+PRIM GB_Word gb_primExitWith( GB_Word exitCode )
+{
+	gb_exit( GB_GBInt2Int( exitCode ) ) ;
+	return exitCode ; // for now
+}
+%%]
+
+Whereas this is left to the runtime wrapper (see EHC.Prelude.ehcRunMain) in this version
+
+%%[99 -96.gb_primExitWith
+PRIM GB_Word gb_primExitWith( GB_Word exitCode )
+{
+	rts_exit( GB_GBInt2Int( exitCode ) ) ;
+	gb_panic( "impossible: exit failed" ) ;
+	return exitCode ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Byte array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -742,17 +767,9 @@ PRIM GB_Word gb_primCatchException( GB_Word e, GB_Word handler )
 	return gb_intl_primCatchException( e, handler ) ;
 }
 
-PRIM GB_Word gb_primThrowException( GB_Word exc )
+PRIM GB_NodePtr gb_primThrowException( GB_Word exc )
 {
 	return gb_intl_primThrowException( exc ) ;
-}
-%%]
-
-%%[96
-PRIM GB_Word gb_primExitWith( GB_Word e )
-{
-	gb_exit( GB_GBInt2Int( e ) ) ;
-	return e ; // for now
 }
 %%]
 

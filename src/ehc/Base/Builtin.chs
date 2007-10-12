@@ -439,6 +439,13 @@ mkRV m = hsnSetQual m . hsnFromString
       [ "IO" ]
 %%]
 
+%%[99 export(hsnEhcRunMain)
+[hsnEhcRunMain]
+  = map
+      (mkRV hsnModIntlPrelude)
+      [ "ehcRunMain" ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -557,6 +564,9 @@ data EHBuiltinNames
 %%[[98
       , ehbnIO                          :: HsName
 %%]]
+%%[[99
+      -- , ehbnEhcRunMain                  :: HsName
+%%]]
       }
 
 mkEHBuiltinNames :: (IdOccKind -> HsName -> HsName) -> EHBuiltinNames
@@ -624,6 +634,9 @@ mkEHBuiltinNames f
 %%]]
 %%[[98
       , ehbnIO                          = f IdOcc_Type      hsnIO
+%%]]
+%%[[99
+      -- , ehbnEhcRunMain                  = f IdOcc_Val       hsnEhcRunMain
 %%]]
       }
 %%]

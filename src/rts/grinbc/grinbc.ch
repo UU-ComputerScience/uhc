@@ -811,7 +811,7 @@ extern GB_Byte gb_code_Startup[] ;
 
 %%[96
 extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
-extern GB_Word gb_intl_primThrowException( GB_Word exc ) ;
+extern GB_NodePtr gb_intl_primThrowException( GB_Word exc ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

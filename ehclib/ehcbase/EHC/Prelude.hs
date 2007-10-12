@@ -34,6 +34,7 @@ module EHC.Prelude (
     getChar, getLine, getContents, interact,
     readFile, writeFile, appendFile, readIO, readLn,
 -----------------------------}
+    catch,
     putStr, putStrLn, print,
 --  module Ix,
 {-----------------------------
@@ -77,6 +78,8 @@ module EHC.Prelude (
 
     IOMode(..),
 -----------------------------}
+    catchException,
+    ehcRunMain,
     stdin, stdout, stderr,
 {-----------------------------
     openFile,
@@ -493,13 +496,22 @@ sequence (c:cs) = do x  <- c
                      xs <- sequence cs
                      return (x:xs)
 
+{-----------------------------
+sequence_        :: forall a . Monad m => [m a] -> m ()
+-----------------------------}
 sequence_        :: Monad m => [m a] -> m ()
 sequence_         = foldr (>>) (return ())
 
+{-----------------------------
 mapM             :: Monad m => (a -> m b) -> [a] -> m [b]
+-----------------------------}
+mapM             :: forall a b . Monad m => (a -> m b) -> [a] -> m [b]
 mapM f            = sequence . map f
 
+{-----------------------------
 mapM_            :: Monad m => (a -> m b) -> [a] -> m ()
+-----------------------------}
+mapM_            :: forall a b . Monad m => (a -> m b) -> [a] -> m ()
 mapM_ f           = sequence_ . map f
 
 (=<<)            :: Monad m => (a -> m b) -> m a -> m b
@@ -1412,15 +1424,13 @@ until p f x     = if p x then x else until p f (f x)
 asTypeOf       :: a -> a -> a
 asTypeOf        = const
 
-{-----------------------------
 error          :: String -> a
 error s         = throw (ErrorCall s)
 
+{-----------------------------
 undefined      :: a
 undefined       = error "Prelude.undefined"
 -----------------------------}
-error :: String -> a
-error s = throw (ErrorCall s)
 
 undefined :: forall a . a
 undefined = error "Prelude.undefined"
@@ -2171,18 +2181,12 @@ userError :: String -> IOError
 userError str = IOError Nothing UserError "" str Nothing
 -----------------------------}
 
-{-----------------------------
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = catchException m $ \e -> case e of
                 IOException err -> h err
                 _ -> throw e
+{-----------------------------
 -----------------------------}
-foreign import ccall primCatchException :: forall exc a . a -> (exc -> a) -> a
-
-catch :: IO a -> (IOError -> IO a) -> IO a
-catch m h = primCatchException m $ \e -> case e of
-                IOException err -> h err
-                _ -> throw e
 
 {-----------------------------
 putChar   :: Char -> IO ()
@@ -2434,7 +2438,7 @@ data IOFinished a
 primitive throw "primThrowException" :: Exception -> a
 primitive primCatchException :: a -> Either Exception a
 -----------------------------}
-foreign import ccall primThrowException :: forall exc a . exc -> a
+foreign import ccall primThrowException :: forall a . Exception -> a
 
 throw :: Exception -> a
 throw e = primThrowException e
@@ -2445,7 +2449,20 @@ catchException (IO m) k = IO $ \ s ->
   Hugs_Catch (m hugsReturn)
              (\ e -> case (k e) of { IO k' -> k' s })
              (s . fromObj)
+-----------------------------}
 
+foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
+
+catchTracedException :: IO a -> (([(Int,String)],Exception) -> IO a) -> IO a
+catchTracedException (IO m) k = IO $ \s ->
+  primCatchException (m s)
+                     (\te -> case (k te) of {IO k' -> k' s })
+
+catchException :: IO a -> (Exception -> IO a) -> IO a
+catchException m k =
+  catchTracedException m (\(_,e) -> k e)
+
+{-----------------------------
 hugsReturn :: a -> IOResult
 hugsReturn x = Hugs_Return (toObj x)
 
@@ -2471,10 +2488,27 @@ hugsIORun m =
         putStr "Program error: "
         putStrLn (show err)
         primExitWith 1
+-----------------------------}
 
+{-----------------------------
 basicIORun :: IO a -> IOFinished a
 basicIORun (IO m) = loop [m hugsReturn]
+-----------------------------}
 
+ehcRunMain :: IO a -> IO a
+ehcRunMain m =
+  catchTracedException m
+    (\(t,e) -> do { putStrLn ("Error: " ++ show e)
+                  ; if null t
+                    then return ()
+                    else do { putStrLn "Trace:"
+                            ; mapM_ (\(_,s) -> putStrLn ("  " ++ s)) $ reverse t
+                            }
+                  ; exitWith 1
+                  }
+    )
+
+{-----------------------------
 threadToIOResult :: IO a -> IOResult
 threadToIOResult (IO m) = m (const Hugs_DeadThread)
 
@@ -2513,6 +2547,11 @@ primExitWith     :: Int -> IO a
 primExitWith c    = IO (\ s -> Hugs_ExitWith c)
 -----------------------------}
 
+foreign import ccall primExitWith :: forall a . Int -> a
+
+exitWith :: Int -> IO a
+exitWith e = ioFromPrim (\_ -> primExitWith e)
+
 primCompAux      :: Ord a => a -> a -> Ordering -> Ordering
 primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
 
@@ -2541,5 +2580,4 @@ emptyRec = EmptyRec
 
 -- End of Hugs standard prelude ----------------------------------------------
 
--- main = 3
 

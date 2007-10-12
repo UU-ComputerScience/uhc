@@ -61,7 +61,11 @@ SEM Body
     | Body
         loc         .   ehMainDecl  =   rngLift @range EH.Decl_Val
                                             (rngLift @range EH.PatExpr_Var hsnMain)
+%%[[20
                                             (rngLift @range EH.Expr_Var @mainrefname)
+%%][99
+                                            (mkRngApp @range [rngLift @range EH.Expr_Var (@mainrefnames !! 2),rngLift @range EH.Expr_Var @mainrefname])
+%%]]
 %%[[98
                     .   ehMainSig   =   rngLift @range EH.Decl_TySig
                                             hsnMain
