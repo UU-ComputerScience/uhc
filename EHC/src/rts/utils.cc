@@ -3,10 +3,15 @@
 %%]
 
 %%[8
+void rts_exit( int exitCode )
+{
+	exit( exitCode ) ;
+}
+
 void rts_error( char* msg )
 {
 	fprintf( stderr, "error: %s\n", msg ) ;
-	exit( 1 ) ;
+	rts_exit( 1 ) ;
 }
 
 void gb_error( char* msg )

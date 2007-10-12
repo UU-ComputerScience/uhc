@@ -298,7 +298,12 @@ chrSolve'' env chrStore cnstrs prevState
               (_:_)
                 -> expandMatch st matches
                 where expandMatch st@(SolveState {stWorkList = wl})
-                                  (((schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})}),(keys,works)),subst) : tlMatch)
+                                  ( ( ( schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})})
+                                      , (keys,works)
+                                      )
+                                    , subst
+                                    ) : tlMatch
+                                  )
                         = expandMatch (st')
                           $ filter (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || isUsedByPropPart (wlUsedIn wl') r))
                           $ tlMatch

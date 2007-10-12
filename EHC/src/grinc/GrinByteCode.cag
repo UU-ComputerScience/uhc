@@ -350,14 +350,16 @@ nmLd optim env modNmConstInx stkDepth nm
 %%% GrVal Value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(GrValIntro(..),GrValIntroAlt(..))
+%%[8 hs export(GrValIntro(..))
 data GrValIntro
   = GrValIntro_Nm    !HsName
   | GrValIntro_Int   !Integer
   | GrValIntro_Str   !String !Link
   | GrValIntro_Grp   !GrTag ![GrValIntro]
   | GrValIntro_None
+%%]
 
+%%[8 hs export(GrValIntroAlt(..))
 data GrValIntroAlt
   = GrValIntroAlt_OnTOS     InsSeq StackDepth OptimEffect
   | GrValIntroAlt_Delay     InsSeq StackDepth OptimEffect (Maybe ValAccess) Load

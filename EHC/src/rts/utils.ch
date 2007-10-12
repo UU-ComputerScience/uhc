@@ -18,6 +18,7 @@ typedef int Bool ;
 %%]
 
 %%[8
+extern void rts_exit( int exitCode ) ;
 extern void rts_error( char* msg ) ;
 extern void gb_error( char* msg ) ;
 extern void gb_panic( char* msg ) ;

@@ -174,9 +174,9 @@ constImpNodeAdd = constAdd GB.Const_ImpNode
 
 
 %%[8 hs
+%%]
 hsnEval     = hsnFromString "!eval"
 hsnApply    = hsnFromString "!apply"
-%%]
 
 
 %%[8
@@ -192,10 +192,15 @@ SEM GrBind
 SEM GrExpr
   | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @nm @lhs.constMp
                 (loc.strConst,lhs.strMp)        =   strAdd @nm @lhs.strMp
+  | Eval        (loc.strConst,lhs.strMp)        =   strAdd (show @nm) @lhs.strMp
+  | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
+  | App         (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
+%%]
+  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @nm @lhs.constMp
+                (loc.strConst,lhs.strMp)        =   strAdd @nm @lhs.strMp
   | Eval        (loc.strConst,lhs.strMp)        =   strAdd (show hsnEval) @lhs.strMp
   | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
   | App         (loc.strConst,argL.strMp)       =   strAdd (show hsnApply) @lhs.strMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Debug info
