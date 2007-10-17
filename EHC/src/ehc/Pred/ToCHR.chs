@@ -76,7 +76,7 @@ Hence we can safely use non-unique variables.
 ([sc1,sc2,sc3]
  ,[pr1,pr2,pr3]
 %%[[10
- ,[ty1,ty2]
+ ,[ty1,ty2,ty3]
  ,[lab1]
  ,[off1]
 %%]]
@@ -88,7 +88,7 @@ Hence we can safely use non-unique variables.
   = ( map PredScope_Var [u1,u2,u3]
     , map Pred_Var [u7,u8,u9]
 %%[[10
-    , map mkTyVar [u10,u11]
+    , map mkTyVar [u10,u11,u14]
     , map Label_Var [u12]
     , map LabelOffset_Var [u13]
 %%]]
@@ -100,9 +100,16 @@ Hence we can safely use non-unique variables.
 %%[[9
   where [u1,u2,u3,u4,u5,u6,u7,u8,u9] = mkNewLevUIDL 9 uidStart
 %%][10
-  where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13] = mkNewLevUIDL 13 uidStart
+  where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13,u14] = mkNewLevUIDL 14 uidStart
 %%]]
 %%]
+
+CHR rules for proving constraints. These rules have to obey the invariant that
+the new proof obligations are individually weaker than the original proof
+obligations, i.e. that there is no sequence of reductions that can lead from the
+new proof obligations to the original ones.
+
+In terms of entailment: for a CHR rule H => B, B may not entail H.
 
 %%[9 export(initScopedPredStore)
 initScopedPredStore :: ScopedPredStore
@@ -161,8 +168,11 @@ initScopedPredStore
                          <==> []
 %%]]
 %%[[16
+
         eqT1T2       = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
         eqT2T1       = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
+        eqT2T3       = mkCHRPredOcc (Pred_Eq ty2 ty3) sc1
+        eqT1T3       = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
         rlEqSymmetry = [Prove eqT1T2, Assume eqT2T1] ==> [Reduction eqT1T2 (RedHow_ByEqSymmetry sc1) []]
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env

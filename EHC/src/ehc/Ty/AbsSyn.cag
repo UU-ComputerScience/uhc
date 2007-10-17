@@ -7,6 +7,24 @@
 %%% Abstract syntax for Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+There are some conventions/restrictions on the structure of types that are not enforced
+by the abstract syntax:
+
+Encoding of prove-constraints:
+  concrete syntax:
+    {! impls !} -> ty
+  abstract syntax:
+    Ty_App (Ty_App (Ty_Con "->") (Ty_Impls impls)) ty
+
+Encoding of assume-constraints:
+  concrete syntax:
+    (ty, {! pred1 !}, ..., {! predn !})
+  abstract syntax:
+    Ty_Ext (... (Ty_Ext ty (prod m+1) (Ty_Pred pred_1) ) ...) (prod m+n) (Ty_Pred pred_n)
+  
+  In other words: the predicates are at the outset of a product, pred_n "more outermost"
+  than pred_{n-1}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

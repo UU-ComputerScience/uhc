@@ -511,6 +511,9 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioDontBind       ::  TyVarIdS
                         ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
 %%]
+%%[16.FIOpts
+                        ,  fioAllowPredVarElim :: Bool
+%%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
 %%]
@@ -531,6 +534,9 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   Set.empty
                         ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
+%%]
+%%[16.FIOpts
+                        ,  fioAllowPredVarElim = False
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst

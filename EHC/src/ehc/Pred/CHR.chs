@@ -25,6 +25,9 @@ Derived from work by Gerrit vd Geest.
 %%[10 import({%{EH}Base.Builtin})
 %%]
 
+%%[16 import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, Debug.Trace)
+%%]
+
 %%[20 import({%{EH}Base.CfgPP})
 %%]
 
@@ -131,6 +134,9 @@ instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
 %%]]
 %%[[16
   chrAppSubst s (RedHow_ByEqSymmetry     sc)  = RedHow_ByEqSymmetry (chrAppSubst s sc)
+  chrAppSubst s (RedHow_ByEqTrans        sc)  = RedHow_ByEqTrans (chrAppSubst s sc)
+  chrAppSubst s (RedHow_ByEqCongr        sc)  = RedHow_ByEqCongr (chrAppSubst s sc)
+  chrAppSubst s (RedHow_ByEqTyReduction  ty1 ty2 sc)  = RedHow_ByEqTyReduction (s |=> ty1) (s |=> ty2) (chrAppSubst s sc)
 %%]]
   chrAppSubst _ x                             = x
 %%]
@@ -225,6 +231,9 @@ data Guard
 %%[[10
   | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
 %%]]
+%%[[16
+  | IsCtxNilReduction Ty Ty
+%%]]
 %%]
 
 %%[9
@@ -236,6 +245,9 @@ ppGuard (NotEqualScope          sc1 sc2    ) = sc1 >#< "/=" >#< sc2
 ppGuard (EqualScope             sc1 sc2    ) = sc1 >#< "==" >#< sc2
 %%[[10
 ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
+%%]]
+%%[[16
+ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
 %%]]
 %%]
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
@@ -300,6 +312,21 @@ instance CHRCheckable FIIn Guard VarMp where
                   (offset,presence) = tyExtsOffset lab' $ tyRowCanonOrder exts
                   (Label_Lab lab') = chrAppSubst subst' lab
 %%]]
+%%[[16
+          chk (IsCtxNilReduction t1 t2)
+            = if foHasErrs fo || tStart == tRes
+              then Nothing
+              else return varMp
+            where
+              tStart = subst' |=> t1
+              t1' = tmpoTy $ tyMergePreds [] tStart
+              t2' = subst' |=> t2
+              uid = fiUniq env
+              fiOpts = unifyFIOpts { fioUniq = uid }
+              fo = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
+              varMp = foVarMp fo
+              tRes = varMp |=> foTy fo -- hum, I would assume that this substitution is already applied by fitsIn...?!
+%%]]
           chk _
             = Nothing
 %%]
@@ -332,6 +359,7 @@ instance ForceEval Guard where
   forceEval x@(NotEqualScope          sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(EqualScope             sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
+  forceEval x@(IsCtxNilReduction      t1 t2      ) | forceEval t1 `seq` forceEval t2 `seq` True = x
 %%[[101
   fevCount (HasStrictCommonScope   sc1 sc2 sc3) = cm1 "HasStrictCommonScope"  `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
   fevCount (IsStrictParentScope    sc1 sc2 sc3) = cm1 "IsStrictParentScope"   `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
@@ -339,6 +367,7 @@ instance ForceEval Guard where
   fevCount (NotEqualScope          sc1 sc2    ) = cm1 "NotEqualScope"         `cmUnion` fevCount sc1 `cmUnion` fevCount sc2
   fevCount (EqualScope             sc1 sc2    ) = cm1 "EqualScope"            `cmUnion` fevCount sc1 `cmUnion` fevCount sc2
   fevCount (NonEmptyRowLacksLabel  r o t l    ) = cm1 "NonEmptyRowLacksLabel" `cmUnion` fevCount r   `cmUnion` fevCount o `cmUnion` fevCount t `cmUnion` fevCount l
+  fevCount (IsCtxNilReduction      t1 t2      ) = cm1 "IsCtxNilReduction" `cmUnion` fevCount t1 `cmUnion` fevCount t2
 %%]]
 %%]
 

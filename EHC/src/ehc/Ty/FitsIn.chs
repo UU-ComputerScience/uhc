@@ -56,6 +56,9 @@
 %%[10 import({%{EH}Core.Utils})
 %%]
 
+%%[16 import(Debug.Trace)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -928,6 +931,20 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
                             where fo = fVar f fi t1 tr2
 
+-- disabled, because this gives problems with existing constraints in the chr store...
+-- %%[16
+-- unifies {| i |} -> t with t to t 
+-- Note: what if t1 or tr2 also refer to |{ i |} in some way? What if there are then double mappings when performing foUpdVarMp?
+            f fi  t1@(Ty_App (Ty_App (Ty_Con c1) (Ty_Impls (Impls_Tail iv1 _))) tr1)
+                  t2
+                     | hsnIsArrow c1 && fioAllowPredVarElim (fiFIOpts fi)
+                = foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar f fi tr1 t2)
+            f fi  t1
+                  t2@(Ty_App (Ty_App (Ty_Con c1) (Ty_Impls (Impls_Tail iv1 _))) tr2)
+                     | hsnIsArrow c1 && fioAllowPredVarElim (fiFIOpts fi)
+                = foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar f fi t1 tr2)
+-- %%]
+
 %%[7
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
                   t2@(Ty_App (Ty_Con n2) tr2)
@@ -1064,7 +1081,7 @@ fitPredIntoPred fi pr1 pr2
             else Just $ (Pred_Eq tlOut trOut, varMpOut)
           where
             (u1, u2) = mkNewLevUID (fiUniq fi)
-            fiOpts = predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)}
+            fiOpts = predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi), fioAllowPredVarElim = True}
 
             foL = fitsIn fiOpts (fiEnv fi) u1 varMp1In tlA tlB
             foR = fitsIn fiOpts (fiEnv fi) u2 varMp2In trA trB
@@ -1076,8 +1093,8 @@ fitPredIntoPred fi pr1 pr2
             varMp2Out = foVarMp foR
             varMpOut  = varMp2Out |=> varMp1Out
 
-            tlOut = foTy foL
-            trOut = foTy foR
+            tlOut = varMpOut |=> foTy foL
+            trOut = varMpOut |=> foTy foR
 %%]]
         f pr1               	pr2
           = if foHasErrs fo

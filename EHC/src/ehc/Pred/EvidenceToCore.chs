@@ -139,6 +139,8 @@ evidMpToCore env evidMp
 %%[[16
         -- solving of equality constraints does not result in evidence (resulting evidence is not used)
         ann (RedHow_ByEqSymmetry sc)  _        = ( CExpr_Hole uidStart, sc )
+        ann (RedHow_ByEqTrans    sc)  _        = ( CExpr_Hole uidStart, sc )
+        ann (RedHow_ByEqCongr    sc)  _        = ( CExpr_Hole uidStart, sc )
 %%]]
         strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
