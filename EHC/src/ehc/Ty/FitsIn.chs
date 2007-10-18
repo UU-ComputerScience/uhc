@@ -931,20 +931,6 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
                             where fo = fVar f fi t1 tr2
 
--- disabled, because this gives problems with existing constraints in the chr store...
--- %%[16
--- unifies {| i |} -> t with t to t 
--- Note: what if t1 or tr2 also refer to |{ i |} in some way? What if there are then double mappings when performing foUpdVarMp?
-            f fi  t1@(Ty_App (Ty_App (Ty_Con c1) (Ty_Impls (Impls_Tail iv1 _))) tr1)
-                  t2
-                     | hsnIsArrow c1 && fioAllowPredVarElim (fiFIOpts fi)
-                = foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar f fi tr1 t2)
-            f fi  t1
-                  t2@(Ty_App (Ty_App (Ty_Con c1) (Ty_Impls (Impls_Tail iv1 _))) tr2)
-                     | hsnIsArrow c1 && fioAllowPredVarElim (fiFIOpts fi)
-                = foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar f fi t1 tr2)
--- %%]
-
 %%[7
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
                   t2@(Ty_App (Ty_Con n2) tr2)
@@ -997,6 +983,11 @@ GADT: type clash between fixed type variable and some other type results in a eq
             f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed)  | feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t2 t1
             f fi t1@(Ty_Con cstr) t2 | isSkVar cstr && feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t1 t2
             f fi t1 t2@(Ty_Con cstr) | isSkVar cstr && feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t2 t1
+            
+            f fi t1 t2
+              | fioFitFailureToProveObl (fiFIOpts fi)
+                  && t1 /= ty1 && t2 /= ty2  -- only generate proof obligations for type clashes when there is at least a partial match
+              = eqProofObligation t1 fi t1 t2
 %%]
 
 %%[4.fitsIn.DefaultCase
@@ -1074,17 +1065,41 @@ fitPredIntoPred fi pr1 pr2
           | tyIsEmptyRow ty1 && tyIsEmptyRow ty2
           = Just (Pred_Lacks ty2 l2, lv1 `varmpLabelUnit` l2)
 %%]]
+%%[[13
+        -- assumption: a PredSeq_Var can only occur as a tail in a PredSeq
+        f (Pred_Preds ps1) (Pred_Preds ps2)
+          = do (ps, varMp) <- fPreds ps1 ps2
+               return (Pred_Preds ps, varMp)
+          where
+            fPreds ps@(PredSeq_Var v1) (PredSeq_Var v2)
+              | v1 == v2
+              = Just (ps, emptyVarMp)
+            fPreds (PredSeq_Var v1) ps
+              = Just (ps, v1 `varmpPredSeqUnit` ps)
+            fPreds ps (PredSeq_Var v1)
+              = Just (ps, v1 `varmpPredSeqUnit` ps)
+            fPreds (PredSeq_Cons pr1 ps1) (PredSeq_Cons pr2 ps2)
+              = do (pr', s1) <- f pr1 pr2
+                   (ps', s2) <- fPreds (s1 |=> ps1) (s1 |=> ps2)
+                   return (PredSeq_Cons pr' ps', s2 |=> s1)
+            fPreds PredSeq_Nil PredSeq_Nil
+              = Just (PredSeq_Nil, emptyVarMp)
+            fPreds _ _
+              = Nothing
+%%]]
 %%[[16
         f (Pred_Eq tlA trA) (Pred_Eq tlB trB)
           = if foHasErrs foL || foHasErrs foR
             then Nothing
             else Just $ (Pred_Eq tlOut trOut, varMpOut)
           where
-            (u1, u2) = mkNewLevUID (fiUniq fi)
-            fiOpts = predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi), fioAllowPredVarElim = True}
+            (u1, u2, u3, u4) = mkNewLevUID3 (fiUniq fi)
 
-            foL = fitsIn fiOpts (fiEnv fi) u1 varMp1In tlA tlB
-            foR = fitsIn fiOpts (fiEnv fi) u2 varMp2In trA trB
+            fiOptsL = unifyFIOpts { fioUniq = u3, fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi), fioPredAsTy = True, fioLeaveRInst = True }
+            fiOptsR = unifyFIOpts { fioUniq = u4, fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi), fioPredAsTy = True, fioLeaveRInst = True }
+
+            foL = fitsIn fiOptsL (fiEnv fi) u1 varMp1In tlA tlB
+            foR = fitsIn fiOptsR (fiEnv fi) u2 varMp2In trA trB
 
             varMp1In = fiVarMp fi
             varMp2In = varMp1Out |=> fiVarMp fi

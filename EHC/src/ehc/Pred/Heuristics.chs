@@ -267,8 +267,8 @@ anncmpEHCScoped env ann1 ann2
       (HeurRed RedHow_ByScope _             , _                                    )  ->  P_LT
       (_                                    , HeurRed RedHow_ByScope _             )  ->  P_GT
 %%[[16
-      (HeurRed (RedHow_ByEqSymmetry _) _    , HeurRed (RedHow_ByEqTrans    _) _    )  ->  P_LT
-      (HeurRed (RedHow_ByEqTrans    _) _    , HeurRed (RedHow_ByEqSymmetry _) _    )  ->  P_GT
+      (HeurRed (RedHow_ByEqSymmetry) _      , HeurRed (RedHow_ByEqTrans   ) _      )  ->  P_LT
+      (HeurRed (RedHow_ByEqTrans   ) _      , HeurRed (RedHow_ByEqSymmetry) _      )  ->  P_GT
 %%]]
       _                                                                               ->  error ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
 

@@ -173,7 +173,7 @@ initScopedPredStore
         eqT2T1       = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
         eqT2T3       = mkCHRPredOcc (Pred_Eq ty2 ty3) sc1
         eqT1T3       = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
-        rlEqSymmetry = [Prove eqT1T2, Assume eqT2T1] ==> [Reduction eqT1T2 (RedHow_ByEqSymmetry sc1) []]
+        rlEqSymmetry = [Prove eqT1T2, Assume eqT2T1] ==> [Reduction eqT1T2 (RedHow_ByEqSymmetry) []]
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]

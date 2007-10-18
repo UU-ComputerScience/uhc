@@ -86,7 +86,7 @@ evidMpToCore env evidMp
       $ evidMp'
     , concat ambigs
     )
-  where (evidMp',ambigs) = unzip [ ((i,ev3),as) | (i,ev) <- Map.toList evidMp, let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
+  where (evidMp',ambigs) = unzip [ ((i,ev3),as) | (i,ev) <- filter (not.ignore) (Map.toList evidMp), let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
         mke (RedHow_ProveObl i _,ev) st = fst $ mk1 st (Just i) ev
         mk1 st mbevk ev@(Evid_Proof p info evs)
                       = ins (insk || isJust mbevk) evk evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
@@ -137,10 +137,12 @@ evidMpToCore env evidMp
         ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `mkCExprLam` tcrCExpr body, sc )
 %%]]
 %%[[16
-        -- solving of equality constraints does not result in evidence (resulting evidence is not used)
-        ann (RedHow_ByEqSymmetry sc)  _        = ( CExpr_Hole uidStart, sc )
-        ann (RedHow_ByEqTrans    sc)  _        = ( CExpr_Hole uidStart, sc )
-        ann (RedHow_ByEqCongr    sc)  _        = ( CExpr_Hole uidStart, sc )
+        ignore (_, (Evid_Proof _ red  _))
+          | red `elem` [RedHow_ByEqSymmetry, RedHow_ByEqTrans, RedHow_ByEqCongr, RedHow_ByPredSeqUnpack]
+          = True
+        ignore (_, (Evid_Proof _ (RedHow_ByEqTyReduction _ _) _))
+          = True
+        ignore _ = False
 %%]]
         strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
