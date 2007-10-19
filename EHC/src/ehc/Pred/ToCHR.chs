@@ -123,7 +123,7 @@ initScopedPredStore
       ++ [ instForall, predArrow, predSeq1, predSeq2 ]
 %%]]
 %%[[16
-      ++ [ rlEqSymmetry ]
+      ++ [ rlEqSym, rlEqTrans1, rlEqTrans2, rlEqCongr, rlCtxToNil, rlUnpackCons, rlUnpackNil ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1
         p1s2         = mkCHRPredOcc pr1 sc2
@@ -168,12 +168,28 @@ initScopedPredStore
                          <==> []
 %%]]
 %%[[16
-
-        eqT1T2       = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
-        eqT2T1       = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
-        eqT2T3       = mkCHRPredOcc (Pred_Eq ty2 ty3) sc1
-        eqT1T3       = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
-        rlEqSymmetry = [Prove eqT1T2, Assume eqT2T1] ==> [Reduction eqT1T2 (RedHow_ByEqSymmetry) []]
+        eqT1T2 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
+        eqT2T1 = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
+        eqT2T3 = mkCHRPredOcc (Pred_Eq ty2 ty3) sc2
+        eqT3T2 = mkCHRPredOcc (Pred_Eq ty3 ty2) sc2
+        eqT1T3 = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
+        psPred = mkCHRPredOcc (Pred_Preds pa1)  sc1
+        psCons = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
+        psNil  = mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1
+        psHead = mkCHRPredOcc pr1 sc1
+        
+        rlEqSym      = [Prove eqT1T2] ==> [Prove eqT2T1, Reduction eqT1T2 RedHow_ByEqSymmetry [eqT2T1]]
+                                      |> [UnequalTy ty1 ty2]
+        rlEqTrans1   = [Prove eqT1T2, Assume eqT2T3] ==> [Prove eqT1T3, Reduction eqT1T2 RedHow_ByEqTrans [eqT1T3, eqT2T3]]
+                                                      |> [UnequalTy ty2 ty3, IsVisibleInScope sc2 sc1]
+        rlEqTrans2   = [Prove eqT1T2, Assume eqT3T2] ==> [Prove eqT1T3, Reduction eqT1T2 RedHow_ByEqTrans [eqT1T3, eqT3T2]]
+                                                      |> [UnequalTy ty2 ty3, IsVisibleInScope sc2 sc1]
+        rlEqCongr    = [Prove eqT1T2] ==> [Prove psPred, Reduction eqT1T2 RedHow_ByEqCongr [psPred]]
+                                       |> [AreOblsByCongruence ty1 ty2 pa1]
+        rlCtxToNil   = [Prove eqT1T2] ==> [Prove eqT1T3, Reduction eqT1T2 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3]]
+                                       |> [IsCtxNilReduction ty2 ty3]
+        rlUnpackCons = [Prove psCons] ==> [Prove psHead, Prove psPred, Reduction psCons RedHow_ByPredSeqUnpack [psHead, psPred]]
+        rlUnpackNil  = [Prove psNil]  ==> [Reduction psNil RedHow_ByPredSeqUnpack []]
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]

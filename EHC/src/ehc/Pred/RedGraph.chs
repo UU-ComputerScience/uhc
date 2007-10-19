@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.RedGraph} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp})
+%%[9 module {%{EH}Pred.RedGraph} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp}, Data.Maybe)
 %%]
 
 %%[9 import({%{EH}CHR.Constraint},{%{EH}CHR.Constraint})
@@ -13,7 +13,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import({%{EH}Pred.Heuristics})
 %%]
 
-%%[9 import(qualified Data.Map as Map)
+%%[9 import(qualified Data.Map as Map, Data.Map(Map), Data.Set(Set), qualified Data.Set as Set)
 %%]
 
 %%[9 import(EH.Util.AGraph,EH.Util.Pretty) export(module EH.Util.AGraph)
@@ -104,9 +104,15 @@ addReduction _                    =  id
 
 %%[9 export(redAlternatives)
 redAlternatives :: (Ord p {-, PP p, PP info debug -}) => RedGraph p info -> p -> HeurAlts p info
-redAlternatives gr = recOr
-  where  recOr   p       = HeurAlts  p  (map recAnd  (successors gr (Red_Pred p))) 
-         recAnd  (i, n)  = HeurRed   i  (map recOr   (preds n))
+redAlternatives gr = recOr Set.empty
+  where  recOr visited p = HeurAlts p (mapMaybe (recAnd visited') (successors gr (Red_Pred p)))
+           where visited' = Set.insert p visited
+
+         recAnd visited (i, n)
+           | any (`Set.member` visited) qs = Nothing
+           | otherwise = return $ HeurRed i (map (recOr visited) qs)
+           where qs = preds n
+
          preds  n  = case n of
                        Red_Pred  q   -> [q]
                        Red_And   qs  -> qs

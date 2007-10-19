@@ -266,14 +266,39 @@ anncmpEHCScoped env ann1 ann2
       (HeurRed RedHow_ByScope [HeurAlts p _], HeurRed RedHow_ByScope [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
       (HeurRed RedHow_ByScope _             , _                                    )  ->  P_LT
       (_                                    , HeurRed RedHow_ByScope _             )  ->  P_GT
-%%[[16
-      (HeurRed (RedHow_ByEqSymmetry) _      , HeurRed (RedHow_ByEqTrans   ) _      )  ->  P_LT
-      (HeurRed (RedHow_ByEqTrans   ) _      , HeurRed (RedHow_ByEqSymmetry) _      )  ->  P_GT
-%%]]
       _                                                                               ->  error ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
 
+cmpEqReds :: RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+%%[[16
+cmpEqReds (RedHow_Assumption _ _) _      = P_GT
+cmpEqReds _ (RedHow_Assumption _ _)      = P_LT
+cmpEqReds RedHow_ByPredSeqUnpack _       = P_GT
+cmpEqReds _ RedHow_ByPredSeqUnpack       = P_LT
+cmpEqReds (RedHow_ByEqTyReduction _ _) _ = P_GT
+cmpEqReds _ (RedHow_ByEqTyReduction _ _) = P_LT
+cmpEqReds RedHow_ByEqCongr _             = P_GT
+cmpEqReds _ RedHow_ByEqCongr             = P_LT
+cmpEqReds RedHow_ByEqTrans _             = P_GT
+cmpEqReds _ RedHow_ByEqTrans             = P_LT
+cmpEqReds RedHow_ByEqSymmetry _          = P_GT
+cmpEqReds _ RedHow_ByEqSymmetry          = P_LT
+%%]]
+cmpEqReds r1 r2 = error ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
+
 heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
-heurScopedEHC env = toHeuristic $ contextBinChoice (anncmpEHCScoped env)
+heurScopedEHC env = toHeuristic $ ifthenelseSHeuristic isEqHeuristic eqHeuristic defaultHeuristic
+  where
+%%[[16
+    isEqHeuristic (CHRPredOcc (Pred_Eq _ _) _) = True
+%%]]
+    isEqHeuristic _                            = False
+    eqHeuristic = binChoice cmpEqReds . solvable
+    defaultHeuristic = contextBinChoice (anncmpEHCScoped env)
+
+ifthenelseSHeuristic :: (p -> Bool) -> SHeuristic p info -> SHeuristic p info -> SHeuristic p info
+ifthenelseSHeuristic g t e alts
+  | g (redaltsPredicate alts) = t alts
+  | otherwise = e alts
 %%]
 
 %%[9

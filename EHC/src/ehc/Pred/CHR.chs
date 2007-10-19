@@ -118,6 +118,7 @@ instance CHRSubstitutable Guard TyVarId VarMp where
 %%[[16
   chrAppSubst s (IsCtxNilReduction t1 t2)         = IsCtxNilReduction (s |=> t1) (s |=> t2)
   chrAppSubst s (AreOblsByCongruence t1 t2 ps)    = AreOblsByCongruence (s |=> t1) (s |=> t2) (s |=> ps)
+  chrAppSubst s (UnequalTy t1 t2)                 = UnequalTy (s |=> t1) (s |=> t2)
 %%]]
 %%]
 
@@ -239,6 +240,7 @@ data Guard
 %%[[16
   | IsCtxNilReduction Ty Ty
   | AreOblsByCongruence Ty Ty PredSeq
+  | UnequalTy Ty Ty
 %%]]
 %%]
 
@@ -255,6 +257,7 @@ ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens
 %%[[16
 ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
 ppGuard (AreOblsByCongruence t1 t2 ps      ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
+ppGuard (UnequalTy t1 t2                   ) = t1 >#< "/=" >#< t2
 %%]]
 %%]
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
@@ -329,7 +332,7 @@ instance CHRCheckable FIIn Guard VarMp where
               t1' = tmpoTy $ tyMergePreds [] tStart
               t2' = subst' |=> t2
               uid = fiUniq env
-              fiOpts = unifyFIOpts { fioUniq = uid }
+              fiOpts = unifyFIOpts { fioUniq = uid, fioBindRVars = FIOBindNoBut (ftvSet t2), fioPredAsTy = True, fioLeaveRInst = True }
               fo = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
               varMp = foVarMp fo
               tRes = varMp |=> foTy fo -- hum, I would assume that this substitution is already applied by fitsIn...?!
@@ -343,13 +346,18 @@ instance CHRCheckable FIIn Guard VarMp where
               t2'   = subst' |=> t2
               obls' = subst' |=> obls
               uid   = fiUniq env
-              fiOpts = unifyFIOpts { fioUniq = uid, fioFitFailureToProveObl = True }
+              fiOpts = unifyFIOpts { fioUniq = uid, fioFitFailureToProveObl = True, fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts env), fioPredAsTy = True, fioLeaveRInst = True }
               fo = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
               cnstrs = Map.keys (foGathCnstrMp fo)
               preds  = [ cpoPr p | (Prove p) <- cnstrs ]
               ps = foldr PredSeq_Cons PredSeq_Nil preds
               (PredSeq_Var v) = obls
               varMp = v `varmpPredSeqUnit` ps |=> foVarMp fo
+          
+          chk (UnequalTy t1 t2)
+            = if (subst' |=> t1) == (subst' |=> t2)
+              then Nothing
+              else return emptyVarMp
 %%]]
           chk _
             = Nothing
