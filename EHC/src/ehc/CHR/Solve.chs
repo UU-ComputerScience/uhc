@@ -329,8 +329,9 @@ chrSolve'' env chrStore cnstrs prevState
                                          >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl
                                          >-< "schr" >#< schr
-                                         >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
-                                         >-< "usedin'" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
+                                         >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
+                                         >-< "usedin'" >#< (ppBracketsCommasV $ map (\(k,s) -> ppKs k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
+                                     where ppKs ks = ppBracketsCommas $ map ppTrieKey $ Set.toList ks
 %%][100
 %%]]
                       expandMatch st _ 
