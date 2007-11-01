@@ -2495,6 +2495,7 @@ basicIORun :: IO a -> IOFinished a
 basicIORun (IO m) = loop [m hugsReturn]
 -----------------------------}
 
+-- Wrapper around 'main', invoked like 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
   catchTracedException m
@@ -2502,7 +2503,7 @@ ehcRunMain m =
                   ; if null t
                     then return ()
                     else do { putStrLn "Trace:"
-                            ; mapM_ (\(_,s) -> putStrLn ("  " ++ s)) $ reverse t
+                            ; mapM_ (\(k,s) -> putStrLn ("  " ++ show k ++ ": " ++ s)) $ reverse t
                             }
                   ; exitWith 1
                   }
