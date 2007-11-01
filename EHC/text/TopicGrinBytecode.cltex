@@ -118,6 +118,9 @@ the machinery.
 %format gframepOff	= gframep "_{off}"
 %format gsp         = "\textit{sp}"
 
+%format trace		= t
+%format exc			= x
+
 %format callinfo		= "\mathsf{ci}"
 %format callinfoCall	= callinfo "_{call}"
 %format callinfoTail	= callinfo "_{tail}"
@@ -2253,7 +2256,7 @@ callinfoExcHdlEvalValue                     : (gb_code_ExcHdl_EvalValue         
 
 At this point the stack is set up such that the expression |e| passed to |primCatchException| will be evaluated after the return from the C call to |primCatchException|.
 After a normal evaluation the stack will unwind through the frames, which just return.
-When an exception occurs the stack is unwound until a frame marked with |callinfoHdlr| is encountered.
+When an exception |exc| occurs the stack is unwound until a frame marked with |callinfoHdlr| is encountered.
 This marks the presence of a handler, which is then invoked.
 
 \begin{GriniSteps}
@@ -2286,15 +2289,16 @@ After unwinding, the stack is set up such that the call to |primThrowException| 
 callinfoCall                     : (gb_code_ExcHdl_ThrowReturn                     :-> ldi 1) : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2              -- call handler
 %%]]
 
-During unwinding all thunks under evaluation are replaced by an indirection node to the thrown exception.
+During unwinding all thunks under evaluation are replaced by an indirection node to the thrown exception |exc|.
 This is to prevent the code causing the exception to be reevaluated.
+The unwound part of the stack is reified as a trace |trace|, tupled with the exception |exc| and passed to the handler.
 
 \begin{GriniSteps}
  \GriniStateAfter{%
  }{%
   |ldi 1 : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2|
  }{%
-  |exc : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |(trace,exc) : (gframep' :-> gframep) : gcode : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2305,7 +2309,7 @@ This is to prevent the code causing the exception to be reevaluated.
  }{%
   |evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2|
  }{%
-  |h : 1 : exc : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |h : 1 : (trace,exc) : (gframep' :-> gframep) : gcode : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2316,7 +2320,7 @@ This is to prevent the code causing the exception to be reevaluated.
  }{%
   |retcall 1 2|
  }{%
-  |h exc : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |h (trace,exc) : (gframep' :-> gframep) : gcode : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2327,7 +2331,7 @@ This is to prevent the code causing the exception to be reevaluated.
  }{%
   |gcode|
  }{%
-  |h exc : gstack|
+  |h (trace,exc) : gstack|
  }{%
   |gheap|
  }{

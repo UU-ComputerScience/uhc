@@ -1472,7 +1472,7 @@ GB_NodePtr gb_intl_primThrowException( GB_Word exc )
 				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,n)) ;											// update node under evaluation with exception throwing thunk
 			}
 		}
-		if ( ci->name )
+		if ( gb_prCallInfoIsVisible(ci) && ci->name )
 		{
 			GB_NodePtr n1, n2, n3 ;
 			GB_MkCFunNode1In(n1,gb_primCStringToString,ci->name) ;
