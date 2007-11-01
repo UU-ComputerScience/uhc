@@ -138,7 +138,7 @@ evidMpToCore env evidMp
 %%]]
 %%[[16
         ignore (_, (Evid_Proof _ red  _))
-          | red `elem` [RedHow_ByEqSymmetry, RedHow_ByEqTrans, RedHow_ByEqCongr, RedHow_ByPredSeqUnpack]
+          | red `elem` [RedHow_ByEqSymmetry, RedHow_ByEqTrans, RedHow_ByEqCongr, RedHow_ByPredSeqUnpack, RedHow_ByEqFromAssume]
           = True
         ignore (_, (Evid_Proof _ (RedHow_ByEqTyReduction _ _) _))
           = True

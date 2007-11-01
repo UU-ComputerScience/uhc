@@ -50,6 +50,7 @@ data RedHowAnnotation
   |  RedHow_ByEqCongr
   |  RedHow_ByEqTyReduction !Ty !Ty
   |  RedHow_ByPredSeqUnpack
+  |  RedHow_ByEqFromAssume
 %%]]
   deriving (Eq, Ord)
 %%]
@@ -78,6 +79,7 @@ instance PP RedHowAnnotation where
   pp (RedHow_ByEqCongr   ) = pp "eqcongr"
   pp (RedHow_ByEqTyReduction ty1 ty2) = "eqtyred" >#< ty1 >#< "~>" >#< ty2
   pp (RedHow_ByPredSeqUnpack) = pp "unpack"
+  pp (RedHow_ByEqFromAssume)  = pp "eqassume"
 %%]]
 %%]
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< s >|< sc >#< "::" >#< p
@@ -160,6 +162,7 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ByEqCongr          )  = cm1 "RedHow_ByEqCongr"
   fevCount (RedHow_ByEqTyReduction ty1 ty2)  = cm1 "RedHow_ByEqTyReduction" `cmUnion` fevCount ty1 `cmUnion` fevCount ty2
   fevCount (RedHow_ByPredSeqUnpack    )  = cm1 "RedHow_ByPredSeqUnpack"
+  fevCount (RedHow_ByEqFromAssume     )  = cm1 "RedHow_ByEqFromAssume"
   fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
   fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
 %%]]

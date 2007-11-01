@@ -137,7 +137,8 @@ ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":"
 
 %%[9
 type WorkKey = CHRKey
-type WorkUsedInMap = Map.Map CHRKey (Set.Set UsedByKey)
+-- type WorkUsedInMap = Map.Map CHRKey (Set.Set UsedByKey)
+type WorkUsedInMap = Map.Map (Set.Set CHRKey) (Set.Set UsedByKey)
 
 data Work p i
   = Work
@@ -298,12 +299,18 @@ chrSolve'' env chrStore cnstrs prevState
               (_:_)
                 -> expandMatch st matches
                 where expandMatch st@(SolveState {stWorkList = wl})
-                                  (((schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})}),(keys,works)),subst) : tlMatch)
+                                  ( ( ( schr@(StoredCHR {storedIdent = chrId, storedChr = chr@(CHR {chrBody = b, chrSimpSz = simpSz})})
+                                      , (keys,works)
+                                      )
+                                    , subst
+                                    ) : tlMatch
+                                  )
                         = expandMatch (st')
                           $ filter (\(r@(_,(ks,_)),_) -> not (any (`elem` keysSimp) ks || isUsedByPropPart (wlUsedIn wl') r))
                           $ tlMatch
                         where (keysSimp,keysProp) = splitAt simpSz keys
-                              usedIn              = Map.fromListWith Set.union $ zip keysProp (repeat $ Set.singleton chrId)
+                              usedIn              = Map.singleton (Set.fromList keysProp) (Set.singleton chrId)
+                              -- usedIn              = Map.fromListWith Set.union $ zip keysProp (repeat $ Set.singleton chrId)
                               (bTodo,bDone)       = splitDone $ map (chrAppSubst subst) b
                               wl' = wlInsert bTodo
                                     $ wlDeleteByKey keysSimp
@@ -322,8 +329,8 @@ chrSolve'' env chrStore cnstrs prevState
                                          >-< "workkeys" >#< ppBracketsCommas (map ppTrieKey keys)
                                          >-< "worktrie" >#< wlTrie wl
                                          >-< "schr" >#< schr
-                                         >-< "usedin" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
-                                         >-< "usedin'" >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
+                                         >-< "usedin" -- >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl)
+                                         >-< "usedin'" -- >#< (ppBracketsCommasV $ map (\(k,s) -> ppTrieKey k >#< ppBracketsCommas (map ppUsedByKey $ Set.toList s)) $ Map.toList $ wlUsedIn wl')
 %%][100
 %%]]
                       expandMatch st _ 
@@ -380,12 +387,16 @@ chrSolve'' env chrStore cnstrs prevState
                         cmb (Just s) next = fmap (`chrAppSubst` s) $ next s
                         cmb _        _    = Nothing
         isUsedByPropPart wlUsedIn (chr,(keys,_))
-          = all fnd $ drop (storedSimpSz chr) keys
-          where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup k wlUsedIn
+          = fnd $ drop (storedSimpSz chr) keys
+          where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup (Set.fromList k) wlUsedIn
         initState st = st { stWorkList = wlInsert wlnew $ stWorkList st, stDoneCnstrSet = Set.unions [Set.fromList done, stDoneCnstrSet st] }
                      where (wlnew,done) = splitDone cnstrs
         splitDone  = partition (\x -> cnstrRequiresSolve x)
 %%]
+        isUsedByPropPart wlUsedIn (chr,(keys,_))
+          = all fnd $ drop (storedSimpSz chr) keys
+          where fnd k = maybe False (storedIdent chr `Set.member`) $ Map.lookup k wlUsedIn
+
                 -> iter {- $ trp "YY" ("chr" >#< schr >-< ppwork) $ -} st'
                 r4 = foldr first Nothing $ r3
                 -- r5 = foldr first Nothing r4

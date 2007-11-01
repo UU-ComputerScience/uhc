@@ -104,7 +104,7 @@ instance CHRSubstitutable Guard TyVarId VarMp where
 %%]]
 %%[[16
   chrFtv        (IsCtxNilReduction t1 t2)         = Set.unions [ftvSet t1, ftvSet t2]
-  chrFtv        (AreOblsByCongruence t1 t2 ps)    = Set.unions [ftvSet t1, ftvSet t2, ftvSet ps]
+  chrFtv        (EqsByCongruence t1 t2 ps)        = Set.unions [ftvSet t1, ftvSet t2, ftvSet ps]
 %%]]
 
   chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s |=> p1) (s |=> p2) (s |=> p3)
@@ -117,7 +117,7 @@ instance CHRSubstitutable Guard TyVarId VarMp where
 %%]]
 %%[[16
   chrAppSubst s (IsCtxNilReduction t1 t2)         = IsCtxNilReduction (s |=> t1) (s |=> t2)
-  chrAppSubst s (AreOblsByCongruence t1 t2 ps)    = AreOblsByCongruence (s |=> t1) (s |=> t2) (s |=> ps)
+  chrAppSubst s (EqsByCongruence t1 t2 ps)        = EqsByCongruence (s |=> t1) (s |=> t2) (s |=> ps)
   chrAppSubst s (UnequalTy t1 t2)                 = UnequalTy (s |=> t1) (s |=> t2)
 %%]]
 %%]
@@ -239,7 +239,7 @@ data Guard
 %%]]
 %%[[16
   | IsCtxNilReduction Ty Ty
-  | AreOblsByCongruence Ty Ty PredSeq
+  | EqsByCongruence Ty Ty PredSeq
   | UnequalTy Ty Ty
 %%]]
 %%]
@@ -256,7 +256,7 @@ ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens
 %%]]
 %%[[16
 ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
-ppGuard (AreOblsByCongruence t1 t2 ps      ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
+ppGuard (EqsByCongruence t1 t2 ps          ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
 ppGuard (UnequalTy t1 t2                   ) = t1 >#< "/=" >#< t2
 %%]]
 %%]
@@ -337,7 +337,7 @@ instance CHRCheckable FIIn Guard VarMp where
               varMp = foVarMp fo
               tRes = varMp |=> foTy fo -- hum, I would assume that this substitution is already applied by fitsIn...?!
           
-          chk (AreOblsByCongruence t1 t2 obls)
+          chk (EqsByCongruence t1 t2 obls)
             = if foHasErrs fo || null preds
               then Nothing
               else return varMp
@@ -392,7 +392,7 @@ instance ForceEval Guard where
   forceEval x@(EqualScope             sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
   forceEval x@(IsCtxNilReduction      t1 t2      ) | forceEval t1 `seq` forceEval t2 `seq` True = x
-  forceEval x@(AreOblsByCongruence    t1 t2 ps   ) | forceEval t1 `seq` forceEval t2 `seq` forceEval ps `seq` True = x
+  forceEval x@(EqsByCongruence    t1 t2 ps   ) | forceEval t1 `seq` forceEval t2 `seq` forceEval ps `seq` True = x
 %%[[101
   fevCount (HasStrictCommonScope   sc1 sc2 sc3) = cm1 "HasStrictCommonScope"  `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
   fevCount (IsStrictParentScope    sc1 sc2 sc3) = cm1 "IsStrictParentScope"   `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
@@ -401,7 +401,7 @@ instance ForceEval Guard where
   fevCount (EqualScope             sc1 sc2    ) = cm1 "EqualScope"            `cmUnion` fevCount sc1 `cmUnion` fevCount sc2
   fevCount (NonEmptyRowLacksLabel  r o t l    ) = cm1 "NonEmptyRowLacksLabel" `cmUnion` fevCount r   `cmUnion` fevCount o `cmUnion` fevCount t `cmUnion` fevCount l
   fevCount (IsCtxNilReduction      t1 t2      ) = cm1 "IsCtxNilReduction" `cmUnion` fevCount t1 `cmUnion` fevCount t2
-  fevCount (AreOblsByCongruence    t1 t2 ps   ) = cm1 "AreOblByCongruence" `cmUnion` fevCount t1 `cmUnion` fevCount t2 `cmUnion` fevCount ps
+  fevCount (EqsByCongruence        t1 t2 ps   ) = cm1 "EqsByCongruence" `cmUnion` fevCount t1 `cmUnion` fevCount t2 `cmUnion` fevCount ps
 %%]]
 %%]
 
