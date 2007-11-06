@@ -148,9 +148,6 @@ data FIEnv
 %%[[99
         ,   feRange         :: !Range
 %%]]
-%%[[16
-        ,   feGenEqProveCnstrs :: !Bool
-%%]]
         }
 %%]]
 
@@ -165,9 +162,6 @@ emptyFE
 %%]]
 %%[[99
         ,   feRange         =   emptyRange
-%%]]
-%%[[16
-        ,   feGenEqProveCnstrs = False
 %%]]
         }
 %%]]
@@ -979,10 +973,10 @@ FitsIn type clashes
 
 GADT: type clash between fixed type variable and some other type results in a equality proof constraint
 %%[16.fitsIn.EqProve
-            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2  | feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t1 t2
-            f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed)  | feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t2 t1
-            f fi t1@(Ty_Con cstr) t2 | isSkVar cstr && feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t1 t2
-            f fi t1 t2@(Ty_Con cstr) | isSkVar cstr && feGenEqProveCnstrs (fiEnv fi) = eqProofObligation t2 fi t2 t1
+            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2 = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed) = eqProofObligation t2 fi t2 t1
+            f fi t1@(Ty_Con cstr) t2 | isSkVar cstr = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Con cstr) | isSkVar cstr = eqProofObligation t2 fi t2 t1
             
             f fi t1 t2
               | fioFitFailureToProveObl (fiFIOpts fi)

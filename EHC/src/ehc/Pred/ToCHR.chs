@@ -120,10 +120,10 @@ initScopedPredStore
       ++ [ labelProve1, labelProve2 ]
 %%]]
 %%[[13
-      ++ [ instForall, predArrow, predSeq1, predSeq2 ]
+      ++ [ instForall, predArrow {-, predSeq1, predSeq2 -} ] -- commented out troublesome predSeqs
 %%]]
 %%[[16
-      ++ [ rlEqScope, rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons, rlCtxToNil, rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume ]
+      ++ [ rlEqScope, rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons, rlCtxToNil, rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume, rlPrvByIdentity ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1
         p1s2         = mkCHRPredOcc pr1 sc2
@@ -187,11 +187,12 @@ initScopedPredStore
         
         rlCtxToNil      = [Prove eqT1T2s1] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
         rlEqSymPrv      = [Prove eqT1T2s1] ==> [Prove eqT2T1s1, Reduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] |> [UnequalTy ty1 ty2]
-        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s1] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1, eqT2T3s1]] |> [UnequalTy ty2 ty3]
+        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s1] ==> [Prove eqT1T3s1, Prove eqT2T3s1, Reduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [UnequalTy ty2 ty3]
         rlEqCongrPrv    = [Prove eqT1T2s1] ==> [Prove psPreds1, Reduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] |> [EqsByCongruence ty1 ty2 pa1]
         rlUnpackConsPrv = [Prove psConss1] ==> [Prove psHeads1, Prove psPreds1, Reduction psConss1 RedHow_ByPredSeqUnpack [psHeads1, psPreds1]]
         rlUnpackNilPrv  = [Prove psNils1]  ==> [Reduction psNils1 RedHow_ByPredSeqUnpack []]
         rlPrvByAssume   = [Prove eqT1T2s1, Assume eqT1T2s1] ==> [Reduction eqT1T2s1 RedHow_ByEqFromAssume []]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
+        rlPrvByIdentity = [Prove eqT1T2s1] ==> [Reduction eqT1T2s1 RedHow_ByEqIdentity []] |> [EqualModuloUnification ty1 ty2]
         
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env

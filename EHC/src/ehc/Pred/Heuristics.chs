@@ -270,12 +270,14 @@ anncmpEHCScoped env ann1 ann2
 
 cmpEqReds :: RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 %%[[16
+cmpEqReds RedHow_ByEqIdentity _          = P_GT
+cmpEqReds _ RedHow_ByEqIdentity          = P_LT
+cmpEqReds RedHow_ByPredSeqUnpack _       = P_GT
+cmpEqReds _ RedHow_ByPredSeqUnpack       = P_LT
 cmpEqReds RedHow_ByEqFromAssume _        = P_GT
 cmpEqReds _ RedHow_ByEqFromAssume        = P_LT
 cmpEqReds (RedHow_Assumption _ _) _      = P_GT
 cmpEqReds _ (RedHow_Assumption _ _)      = P_LT
-cmpEqReds RedHow_ByPredSeqUnpack _       = P_GT
-cmpEqReds _ RedHow_ByPredSeqUnpack       = P_LT
 cmpEqReds (RedHow_ByEqTyReduction _ _) _ = P_GT
 cmpEqReds _ (RedHow_ByEqTyReduction _ _) = P_LT
 cmpEqReds RedHow_ByEqCongr _             = P_GT

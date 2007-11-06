@@ -105,6 +105,7 @@ instance CHRSubstitutable Guard TyVarId VarMp where
 %%[[16
   chrFtv        (IsCtxNilReduction t1 t2)         = Set.unions [ftvSet t1, ftvSet t2]
   chrFtv        (EqsByCongruence t1 t2 ps)        = Set.unions [ftvSet t1, ftvSet t2, ftvSet ps]
+  chrFtv        (EqualModuloUnification t1 t2)    = Set.unions [ftvSet t1, ftvSet t2]
 %%]]
 
   chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s |=> p1) (s |=> p2) (s |=> p3)
@@ -119,6 +120,7 @@ instance CHRSubstitutable Guard TyVarId VarMp where
   chrAppSubst s (IsCtxNilReduction t1 t2)         = IsCtxNilReduction (s |=> t1) (s |=> t2)
   chrAppSubst s (EqsByCongruence t1 t2 ps)        = EqsByCongruence (s |=> t1) (s |=> t2) (s |=> ps)
   chrAppSubst s (UnequalTy t1 t2)                 = UnequalTy (s |=> t1) (s |=> t2)
+  chrAppSubst s (EqualModuloUnification t1 t2)    = EqualModuloUnification (s |=> t1) (s |=> t2)
 %%]]
 %%]
 
@@ -241,6 +243,7 @@ data Guard
   | IsCtxNilReduction Ty Ty
   | EqsByCongruence Ty Ty PredSeq
   | UnequalTy Ty Ty
+  | EqualModuloUnification Ty Ty
 %%]]
 %%]
 
@@ -258,6 +261,7 @@ ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens
 ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
 ppGuard (EqsByCongruence t1 t2 ps          ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
 ppGuard (UnequalTy t1 t2                   ) = t1 >#< "/=" >#< t2
+ppGuard (EqualModuloUnification t1 t2      ) = t1 >#< "==" >#< t2
 %%]]
 %%]
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
@@ -358,6 +362,17 @@ instance CHRCheckable FIIn Guard VarMp where
             = if (subst' |=> t1) == (subst' |=> t2)
               then Nothing
               else return emptyVarMp
+          
+          chk (EqualModuloUnification t1 t2)
+            = if foHasErrs fo
+              then Nothing
+              else return emptyVarMp
+            where
+              t1'    = subst' |=> t1
+              t2'    = subst' |=> t2
+              uid    = fiUniq env
+              fiOpts = unifyFIOpts { fioUniq = uid, fioPredAsTy = True, fioLeaveRInst = True }
+              fo     = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
 %%]]
           chk _
             = Nothing
@@ -393,6 +408,7 @@ instance ForceEval Guard where
   forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
   forceEval x@(IsCtxNilReduction      t1 t2      ) | forceEval t1 `seq` forceEval t2 `seq` True = x
   forceEval x@(EqsByCongruence    t1 t2 ps   ) | forceEval t1 `seq` forceEval t2 `seq` forceEval ps `seq` True = x
+  forceEval x@(EqualModuloUnification t1 t2) | forceEval t1 `seq` forceEval 2t `seq` True = x
 %%[[101
   fevCount (HasStrictCommonScope   sc1 sc2 sc3) = cm1 "HasStrictCommonScope"  `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
   fevCount (IsStrictParentScope    sc1 sc2 sc3) = cm1 "IsStrictParentScope"   `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
@@ -402,6 +418,7 @@ instance ForceEval Guard where
   fevCount (NonEmptyRowLacksLabel  r o t l    ) = cm1 "NonEmptyRowLacksLabel" `cmUnion` fevCount r   `cmUnion` fevCount o `cmUnion` fevCount t `cmUnion` fevCount l
   fevCount (IsCtxNilReduction      t1 t2      ) = cm1 "IsCtxNilReduction" `cmUnion` fevCount t1 `cmUnion` fevCount t2
   fevCount (EqsByCongruence        t1 t2 ps   ) = cm1 "EqsByCongruence" `cmUnion` fevCount t1 `cmUnion` fevCount t2 `cmUnion` fevCount ps
+  fevCount (EqualModuloUnification t1 t2      ) = cm1 "EqualModuloUnification" `cmUnion` fevCount t1 `cmUnion` fevCount t2
 %%]]
 %%]
 
