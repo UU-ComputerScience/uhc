@@ -230,7 +230,7 @@ GEN_CABAL			= \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
 					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
-					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC)" \
+					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fglasgow-exts" \
 					)
 
 # generate simplest cabal Setup.hs
