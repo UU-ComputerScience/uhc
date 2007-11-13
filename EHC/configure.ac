@@ -159,8 +159,8 @@ case $ghcVersion in
   6.4.2)
     optStandardGHCPackages="-package util -package lang -package data"
     ;;
-  6.8)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers"
+  6.8*)
+    cabal_base_lib_depends="$cabal_base_lib_depends containers array"
     ;;
   *)
     ;;
