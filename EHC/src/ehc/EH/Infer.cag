@@ -847,6 +847,7 @@ ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
 
 SEM AGItf
   | AGItf       expr        .  fiOpts               =   strongFIOpts
+
 %%]
 
 -- generated from ruler rules into EHRulerRules, was/from 4.fiOpts.init

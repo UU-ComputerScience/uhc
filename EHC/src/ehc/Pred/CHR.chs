@@ -364,6 +364,14 @@ instance CHRCheckable FIIn Guard VarMp where
               else return emptyVarMp
           
           chk (EqualModuloUnification t1 t2)
+            | isTyVar t1 = return emptyVarMp
+            | isTyVar t2 = return emptyVarMp
+            where
+              isTyVar t = case (subst' |=> t) of
+                            Ty_Var _ TyVarCateg_Plain -> True
+                            _                         -> False
+          {-
+          chk (EqualModuloUnification t1 t2)
             = if foHasErrs fo
               then Nothing
               else return emptyVarMp
@@ -373,6 +381,7 @@ instance CHRCheckable FIIn Guard VarMp where
               uid    = fiUniq env
               fiOpts = unifyFIOpts { fioUniq = uid, fioPredAsTy = True, fioLeaveRInst = True }
               fo     = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
+          -}
 %%]]
           chk _
             = Nothing

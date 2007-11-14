@@ -536,7 +536,7 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
 %%]
 %%[16.FIOpts
-                        ,  fioFitFailureToProveObl = False
+                        ,  fioFitFailureToProveObl    = False
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst

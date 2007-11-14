@@ -123,7 +123,7 @@ initScopedPredStore
       ++ [ instForall, predArrow {-, predSeq1, predSeq2 -} ] -- commented out troublesome predSeqs
 %%]]
 %%[[16
-      ++ [ rlEqScope, rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons, rlCtxToNil, rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume, rlPrvByIdentity ]
+      ++ [ {-rlEqScope,-} rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons , {- rlCtxToNil, -} rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume, rlPrvByIdentity ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1
         p1s2         = mkCHRPredOcc pr1 sc2
@@ -173,25 +173,25 @@ initScopedPredStore
         eqT2T1s1 = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
         eqT2T3s1 = mkCHRPredOcc (Pred_Eq ty2 ty3) sc1
         eqT1T3s1 = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
+        eqT2T3s2 = mkCHRPredOcc (Pred_Eq ty2 ty3) sc2
         eqT3T4s2 = mkCHRPredOcc (Pred_Eq ty3 ty4) sc2
         psPreds1 = mkCHRPredOcc (Pred_Preds pa1)  sc1
         psConss1 = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
         psNils1  = mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1
         psHeads1 = mkCHRPredOcc pr1 sc1
 
-        rlEqScope    = [Assume eqT1T2s1, Prove eqT3T4s2] ==> [Assume eqT1T2s2] |> [IsVisibleInScope sc1 sc2] -- push equality assumption downwards
-        rlEqSym      = [Assume eqT1T2s1] ==> [Assume eqT2T1s1]                                               -- symmetry
-        rlEqTrans    = [Assume eqT1T2s1, Assume eqT2T3s1] ==> [Assume eqT1T3s1]                              -- transitivity
-        rlEqCongr    = [Assume eqT1T2s1] ==> [Assume psPreds1] |> [EqsByCongruence ty1 ty2 pa1]              -- congruence
-        rlUnpackCons = [Assume psConss1] ==> [Assume psHeads1, Assume psPreds1]                              -- unpack a list of assumptions
+        rlEqSym      = [Assume eqT1T2s1] ==> [Assume eqT2T1s1]                                                 -- symmetry
+        rlEqTrans    = [Assume eqT1T2s1, Assume eqT2T3s2] ==> [Assume eqT1T3s1] |> [IsVisibleInScope sc2 sc1]  -- transitivity
+        rlEqCongr    = [Assume eqT1T2s1] ==> [Assume psPreds1] |> [EqsByCongruence ty1 ty2 pa1]                -- congruence
+        rlUnpackCons = [Assume psConss1] ==> [Assume psHeads1, Assume psPreds1]                                -- unpack a list of assumptions
         
-        rlCtxToNil      = [Prove eqT1T2s1] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
+        -- rlCtxToNil      = [Prove eqT1T2s1] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
         rlEqSymPrv      = [Prove eqT1T2s1] ==> [Prove eqT2T1s1, Reduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] |> [UnequalTy ty1 ty2]
-        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s1] ==> [Prove eqT1T3s1, Prove eqT2T3s1, Reduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [UnequalTy ty2 ty3]
+        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s2] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [IsVisibleInScope sc2 sc1, UnequalTy ty2 ty3]
         rlEqCongrPrv    = [Prove eqT1T2s1] ==> [Prove psPreds1, Reduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] |> [EqsByCongruence ty1 ty2 pa1]
         rlUnpackConsPrv = [Prove psConss1] ==> [Prove psHeads1, Prove psPreds1, Reduction psConss1 RedHow_ByPredSeqUnpack [psHeads1, psPreds1]]
         rlUnpackNilPrv  = [Prove psNils1]  ==> [Reduction psNils1 RedHow_ByPredSeqUnpack []]
-        rlPrvByAssume   = [Prove eqT1T2s1, Assume eqT1T2s1] ==> [Reduction eqT1T2s1 RedHow_ByEqFromAssume []]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
+        rlPrvByAssume   = [Prove eqT1T2s1, Assume eqT1T2s2] ==> [Reduction eqT1T2s1 RedHow_ByEqFromAssume []] |> [IsVisibleInScope sc2 sc1]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
         rlPrvByIdentity = [Prove eqT1T2s1] ==> [Reduction eqT1T2s1 RedHow_ByEqIdentity []] |> [EqualModuloUnification ty1 ty2]
         
 %%]]
