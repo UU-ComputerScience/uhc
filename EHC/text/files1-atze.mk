@@ -13,7 +13,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
-								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct
+								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
+								abstrint
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -25,6 +26,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
+								TopicAbstrInt \
 								AppxNotation FrontMatter OldText \
 								Poster PosterLDL PosterTrOrPr \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
@@ -32,9 +34,19 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
 								uniqueness/Slides uniqueness/TopicImplementation
+								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
+
+# GENERIC STYLES TO BE SHARED BY VARIOUS PRODUCTS
 # 1	: base (share)
+# 9	: slides explimpl: base (share)
+# 18: slides: base (share)
+# 26: acm paper: base (share)
+# 30: book: base (share)
+# 32: llncs paper: base (share) - not yet available
+
+# ALL PRODUCTS
 # 2	: ehc book (previously phd)
 # 3	: flops06-ruler, truu-ruler
 # 4	: popl07-explimpl, truu-explimpl
@@ -42,7 +54,6 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 6	: afp (will be obsolete)
 # 7	: scratch (book format)
 # 8	: slides afp
-# 9	: slides explimpl: base (share)
 # 10: future
 # 11: shuffle doc
 # 12: garbage
@@ -51,7 +62,6 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 15: slides explimpl, general
 # 16: slides explimpl, for fpnl dag
 # 17: slides overview
-# 18: slides: base (share)
 # 19: ruler doc
 # 20: uniqueness doc
 # 21: uniqueness slides
@@ -59,14 +69,43 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 23: slides status
 # 24: paper "chr & local instances"
 # 25: experience report "ehc structure"
-# 26: acm paper: base (share)
 # 27: poster LDL
 # 28: slides EHC Structure
 # 29: ehc doc
-# 30: book: base (share)
-# 31: poster TrOrPr
+# 31: poster Tree Oriented Programming (Siren 2008)
+# 33: paper "Abstract Interpretation"
 # 77: scratch (article format)
 
-TEXT_SHUFFLE_ORDER			+= 1 < 2, 1 < 3, 1 < 4, 1 < 5, 1 < 6, 30 < 7, 1 < 77, 1 < 8, 18 < 9, 1 < 10, \
-								1 < 11, 1 < 13, 18 < 14, 9 < 15, 9 < 16, 18 < 17, 1 < 18, 1 < 19, 1 < 20, \
-								18 < 21, 1 < 22, 18 < 23, 26 < 24, 1 < 26, 26 < 25, 1 < 27, 18 < 28, 1 < 30, 30 < 29, 1 < 31
+TEXT_SHUFFLE_ORDER	+= \
+		1 < 2, \
+		1 < 3, \
+		1 < 4, \
+		1 < 5, \
+		1 < 6, \
+		1 < 8, \
+		1 < 10, \
+		1 < 11, \
+		1 < 13, \
+		1 < 18, \
+		1 < 19, \
+		1 < 20, \
+		1 < 22, \
+		1 < 26, \
+		1 < 27, \
+		1 < 30, \
+		1 < 31, \
+		1 < 77, \
+		9 < 15, \
+		9 < 16, \
+		18 < 9, \
+		18 < 14, \
+		18 < 17, \
+		18 < 21, \
+		18 < 23, \
+		18 < 28, \
+		26 < 24, \
+		26 < 25, \
+		26 < 33, \
+		30 < 7, \
+		30 < 29
+		
