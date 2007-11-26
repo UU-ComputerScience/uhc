@@ -4,7 +4,7 @@
 
 %%[articleDocumentClass
 %if acm
-\documentclass{sigplanconf}
+\documentclass[preprint,9pt]{sigplanconf}
 %elif llncs
 \documentclass{llncs}
 %else
@@ -85,6 +85,9 @@
 %%[18
 \documentclass[ignorenonframetext]{beamer}
 %%]
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Paper size
@@ -472,6 +475,10 @@
 
 %%[30
 \usepackage{txfonts}
+%%]
+
+%%[33
+\usepackage{amsmath}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -901,6 +908,43 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+
+%%[33
+\title{Abstract Interpretation to Avoid Indirect Jumps}
+\subtitle{A Complete Description based on Attribute Grammars}
+%if acm && useSigplanconfSty
+%if blinded
+\authorinfo{XXXXXXXXXXXXX\and YYYYYYYYYYYYYY}
+           {ZZZZZZZZZZZZ University}
+           {\{xxxxxxx,yyyyyyy\}@@zzzzzzzz}
+%else
+\authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
+           {Utrecht University}
+           {\{jeroen,doaitse\}@@cs.uu.nl}
+%endif
+\conferenceinfo{ICFP '07}{September 30, Freiburg.} 
+\copyrightyear{2007} 
+\copyrightdata{[to be supplied]} 
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+
+%else
+\author{Jeroen Fokker and S. Doaitse Swierstra}
+\institute{Department of Information and Computing Sciences,\\
+Universiteit Utrecht,\\
+P.O.Box 80.089, \\
+Padualaan 14, Utrecht, Netherlands,\\
+\email{@{jeroen,doaitse}@@cs.uu.nl@},\\
+WWW home page:
+\texttt{http://www.cs.uu.nl}
+}
+%endif
+
+%%@TopicAbstrInt.extradefinitions
+
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1073,6 +1117,7 @@ WWW home page:
 %%[30
 \maketitle
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
@@ -1255,6 +1300,12 @@ have been submitted to POPL2006 in a slighty extended form.
 %%[25
 \begin{abstract}
 %%@TopicEHCStructure.abstract
+\end{abstract}
+%%]
+
+%%[33
+\begin{abstract}
+%%@TopicAbstrInt.abstract
 \end{abstract}
 %%]
 
@@ -1800,6 +1851,27 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 %%@TopicEHCStructure.experiences
 
 %%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract Interpretation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[33
+
+%%@TopicAbstrInt.introduction
+%%@TopicAbstrInt.treewalk
+%%@TopicAbstrInt.grinlanguage
+%%@TopicAbstrInt.abstractinterpretation
+%%@TopicAbstrInt.discussion
+%%@TopicAbstrInt.ackbib
+
+%%]
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC ??
