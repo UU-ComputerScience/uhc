@@ -114,10 +114,14 @@ is also included.
 %subst fromto b e t     = "\fromto{" b "}{" e "}{{}\allowforspacecorrection " t "{}}'n"
 
 
+
+%if acm
 \usepackage{natbib}
 \bibpunct();A{},
 \let\cite=\citep
 \bibliographystyle{plainnat}
+%else
+%endif
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{3pt}
@@ -126,6 +130,7 @@ is also included.
 
 
 %%[introduction
+
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{3pt}
@@ -141,13 +146,13 @@ Substitution is done in evaluation of a $\beta$-redex
 either directly by walking through a copy of $b$ and
 replacing occurences of $x$,
 or indirectly by compilation to 
-SKI-combinators \cite{turner} or super-combinators \cite{hughes}.
+SKI-combinators \cite{turner79new-implementation-technique} or super-combinators \cite{hughes82-supercombinators}.
 
 Later, other approaches were taken
 which compile to an abstract machine model
 based on stacks and continuations.
 The instructions of this `STG-machine' can be mapped to
-those of traditional hardware architectures \cite{stgmachine}.
+those of traditional hardware architectures \cite{peytonjones92stg}.
 
 Lazy evaluation is implemented by, instead of calling a function directly,
 building `closures' of functions, 
@@ -159,11 +164,11 @@ viz.\ when it is used in a case-expression, or passed in a strict argument posit
 In a naive implementation, the function reference would be a tag,
 and there is a special evaluation function which does a case distinction on this tag.
 Peyton Jones describes a better encoding, where the tag is actually 
-a pointer to an information table, which in turn contains a pointer to the code of the function \cite{stgmachine}.
+a pointer to an information table, which in turn contains a pointer to the code of the function \cite{peytonjones92stg}.
 Evaluating a closure now amounts to just calling that code.
 The double indirection in this encoding can be reduced to a single indirection
 by having the `tag' point directly to the code, and putting the
-rest of the information table just before that code in memory \cite{marlow}.
+rest of the information table just before that code in memory \cite{marlowpeytonjones06}.
 
 Either way, evaluation involves calling code through an indirection pointer.
 On modern pipelined processors, this is a very costly operation, as
@@ -174,7 +179,7 @@ case distinction between tags, the evaluation function is `inlined'
 whenever used.
 To prevent copying the large body of the evaluation function,
 in each occurence the case analysis is pruned to contain only those cases
-that can actually occur in that particular instance \cite{boquist1999}.
+that can actually occur in that particular instance \cite{boquist99phd-optim-lazy}.
 This way, evaluation amounts to a few tests and conditional jumps,
 and indirect jumps are avoided completely.
 Branch prediction schemes that are built in in pipelined processors
@@ -186,14 +191,14 @@ To be able to do the pruning,
 it is necessary to know for each function closure what its possible tags are.
 This can be determined by a global control flow analysis.
 In an earlier paper, Boquist sketches an algorithm for
-this abstract interpretation \cite{boquist1996}.
+this abstract interpretation \cite{boquist96grin-optim}.
 Unfortunately, the actual implementation of the algorithm
 seems to be lost in history.
 
 
 We re-engineered the abstract interpretation algorithm
-to incorporate it in an experimental Haskell compiler \cite{ehc}
-and to extend it to handle exceptions \cite{douma}.
+to incorporate it in an experimental Haskell compiler \cite{dijkstra05phd}
+and to extend it to handle exceptions \cite{douma06exceptional-grin}.
 As the algorithm is vital to this approach to avoid
 indirect jumps, we carefully documented the implementation,
 which is presented in this paper.
@@ -209,7 +214,7 @@ than an implementation, sometimes it is cluttered with low-level
 encodings of data structures in terms of lists and tuples.
 
 A way out of this paradox is to use Haskell itself as the description language.
-We consider a paper like `Typing Haskell in Haskell' \cite{thih}
+We consider a paper like `Typing Haskell in Haskell' \cite{jones99thih}
 to be better readable than many a formal treatise on the same subject.
 An added benefit is that the description is actually executable code,
 which makes an error-prone translation from specification to implementation obsolete.
@@ -218,7 +223,7 @@ To be useful as an algorithm description intended for human readers,
 an implementation should of course abstract from trivial details as much as possible.
 Although Haskell has many mechanisms for abstraction, we think that for
 tree processing algorithms it is helpful to use notions derived
-from the realm of attribute grammars \cite{knuth}.
+from the realm of attribute grammars \cite{knuth68ag}.
 In order not to loose executability of our implementation,
 we use a preprocessor that translates the attribute grammar notions to plain Haskell.
 In order to be self-contained, we include a description of this preprocessor as well.
@@ -292,7 +297,7 @@ the data structure, can also be used for other data types, and even for
 multiple mutually recursive data types.
 Functions that can be expressed in this way were called {\em catamorphisms}
 by Bird, and the collective extra parameters to |foldr|-like functions 
-an {\em algebra} \cite{bird,birdmoor}. 
+an {\em algebra} \cite{bird84circ-traverse,birdmoor96algebra}. 
 Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
 In fact, every algebra defines a {\em semantics} of the data structure.
 When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
@@ -338,7 +343,7 @@ and the issue arises whether the program soundly implements
 the specified semantics.
 
 To save the nice idea of using an algebra for defining a semantics,
-we use a preprocessor for Haskell that overcomes the abovementioned problems \cite{agsyst}.
+we use a preprocessor for Haskell that overcomes the abovementioned problems \cite{swierstra99comb-lang}.
 It is not a separate language; we can still use Haskell for writing
 auxiliary functions, and use all abstraction techniques and libraries available.
 The preprocessor just allows a few additional constructs, which are translated
@@ -426,7 +431,7 @@ This overcomes problem 3.
 
 To be able to pass information downward during a tree walk,
 we can define `inherited' attributes
-(the terminology goes back to \cite{knuth}).
+(the terminology goes back to \cite{knuth68ag}).
 As an example, it can serve to pass an environment,
 i.e.\ a lookup table that associates variables to values,
 which is needed to evaluate expressions:
@@ -492,7 +497,7 @@ tree, updating it when necessary. See section~\ref{sec.collect}
 which maintains, in attribute |location|,
 a unique counter during the tree walk.
 This captures a pattern for which often |Reader| and
-|Writer| monads are introduced \cite{thih}.
+|Writer| monads are introduced \cite{jones99thih}.
 
 The preprocessor automatically generates semantic rules
 in the standard situations described, and this overcomes problem 5.
@@ -507,7 +512,7 @@ in the standard situations described, and this overcomes problem 5.
 The Grin language (Graph Reduction Intermediate Notation)
 was proposed by Boquist as an intermediate language sitting
 between the Core language (that in Haskell compilers describes a desugared program)
-and an imperative backend \cite{boquist1999}.
+and an imperative backend \cite{boquist99phd-optim-lazy}.
 
 We describe a slightly modified version here, which is
 more explicit than Boquist's original description
@@ -523,7 +528,7 @@ both as the specification and as the implementation of the abstract semantics of
 The semantics/interpretation that we deal with in this paper
 is an abstract interpretation needed for analysis of the program.
 In the same style we are able to present other semantices.
-In our compiler \cite{ehc} we implement a translation to bytecode that
+In our compiler \cite{dijkstra05phd} we implement a translation to bytecode that
 is executable by a simple interpreter, and a translation
 to a generic imperative language that can in turn be translated
 to various backend languages.
@@ -1687,7 +1692,7 @@ we think it is worthwhile to consistently use attribute grammar based tools.
 A debate remains on whether this should be organized as a preprocessor allowing for new constructs,
 as we used in this work,
 or as a library offering a set of combinators manipulating attributes.
-\cite{cata,moor}
+\cite{jones95overl-highpoly,moorpeytonjonesvanwyk99aspect-oriented}
 
 
 
@@ -1699,113 +1704,15 @@ or as a library offering a set of combinators manipulating attributes.
 %%[ackbib
 
 
-
+%if acm
 \acks
+%else
+\subsection*{Acknowledgements}
+%endif
 
 The authors thank Christof Douma for
 writing an initial version of the implementation
 described in this work.
-
-
-
-\begin{thebibliography}{}
-
-
-
-
-\bibitem[Bird 1984]{bird}
-Richard S.\ Bird.
-Using circular programs to eliminate multiple traversals of data.
-{\em Acta Informatica} {\bf 21}: 239--250.
-
-\bibitem[Bird and de Moor 1996]{birdmoor}
-R.\ Bird and O.\ de Moor.
-{\em The algebra of programming}.
-Prentice Hall, 1996.
-
-
-\bibitem[Boquist and Johnsson 1996]{boquist1996}
-Urban Boquist and Thomas Johnsson.
-The GRIN project: A highly optimising back end for lazy functional languages.
-In {\em Workshop on Implementation of Functional Languages} IFL 1996.
-Springer LNCS 1268. 
-
-\bibitem[Boquist 1999]{boquist1999}
-Urban Boquist.
-{\em Code optimisation techniques for lazy functional languages}.
-PhD Thesis Chalmers University, G\"oteborg March 1999.
-
-% \bibitem[Dijkstra 2005]{ehc}
-% Atze Dijkstra.
-% {\em Stepping through Haskell}.
-% PhD Thesis Utrecht University, November 2005.
-
-\bibitem[Douma 2006]{douma}
-Christof Douma.
-{\em Exceptional GRIN}.
-% Master's Thesis Utrecht University, April 2006.
-Master's Thesis Zzzzzzz University, April 2006.
-
-\bibitem[Hughes 1982]{hughes}
-R.J.M.\ Hughes.
-Super-combinators, a new implementation method for applicative languages.
-In {\em Proc.\ ACM conference on Lisp and functional programming} 1982.
-
-
-\bibitem[Jones 1995]{cata}
-Mark. P.\ Jones.
-Functional programming with overloading and higher-order polymorphism.
-In: {\em Advanced Functional Programming} AFP'95, pp.~97--136.
-Springer LNCS 925.
-
-
-\bibitem[Jones 1999]{thih}
-Mark P.\ Jones.
-Typing Haskell in Haskell.
-In: {\em Haskell Workshop} 1999.
-
-
-\bibitem[Knuth 1968]{knuth}
-D.E.\ Knuth.
-Semantics of context-free languages.
-{\em Mathematical Systems Theory} {\bf 2}: 127--145.
-
-
-\bibitem[Marlow and Peyton Jones 2006]{marlow}
-Simon Marlow and Simon Peyton Jones.
-Making a fast curry: push/enter vs.\ eval/apply for higher-order languages.
-{\em J.\ Functional Progr.} {\bf 16}: 415--449.
-
-
-\bibitem[de Moor et al. 1999]{moor}
-Oege de Moor, Simon Peyton Jones and Eric van Wyk,
-Aspect-oriented compilers.
-In: {\em Generative and Component-Based Software Engineering} GCSE'99, pp.~121-133.
-Springer LNCS 1799.
-
-
-\bibitem[Peyton Jones 1992]{stgmachine}
-Simon L.\ Peyton Jones.
-Implementing lazy functional languages on stock hardware: the Spineless Tagless G-machine.
-{\em J.~Functional Programming} {\bf 2}: 127--202.
- 
-\bibitem[Swierstra et al. 1998]{agsyst}
-S.\ Doaitse Swierstra,
-Pablo R.\ Azero Alocer,
-and Jo\~ao Saraiva.
-Designing and implementing combinator languages.
-In: {\em Advanced functional programming} AFP'98.
-Springer LNCS 1608.
-
-\bibitem[Turner 1979]{turner}
-D.A.\ Turner.
-A new implementation technique for ap\-plicative languages.
-{\em Softw.\ practice and experience} {\bf 9}: 31--49.
-
-\bibitem[We 200x]{ehc}
-(Details of reference to a description of our compiler left out for blind review)
-
-\end{thebibliography}
 
 
 %%]

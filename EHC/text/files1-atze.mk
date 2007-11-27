@@ -14,7 +14,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
-								abstrint
+								tr-abstrint ldta08-abstrint
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -95,6 +95,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 30, \
 		1 < 31, \
 		1 < 77, \
+		1 < 33, \
 		9 < 15, \
 		9 < 16, \
 		18 < 9, \
@@ -105,7 +106,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		18 < 28, \
 		26 < 24, \
 		26 < 25, \
-		26 < 33, \
 		30 < 7, \
 		30 < 29
 		
