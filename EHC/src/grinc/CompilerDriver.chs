@@ -71,6 +71,8 @@
 %%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
+%%[8 import({%{GRIN}Silly.PrettyLLVM(prettyLLVM)})
+%%]
 %%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
 %%]
 %%[8 import({%{GRIN}Silly.Pretty(pretty)})
@@ -232,9 +234,8 @@ caOutput = task_ VerboseNormal "Writing code"
          ; caWriteSilly "sil2" pretty
          ; transformSilly   embedVars     "Embed Variables"
          ; caWriteSilly "sil3" pretty
-         
---       ; when (ehcOptEmitLLVM options)
---         (caWriteSilly "ll" prettyLL)
+         ; when (ehcOptEmitLLVM options)
+           (caWriteSilly "ll" prettyLLVM)
          ; when (ehcOptEmitLlc options)
            (caWriteSilly "c" prettyC)
          ; when (ehcOptEmitLlc options)

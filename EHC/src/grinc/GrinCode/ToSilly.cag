@@ -34,7 +34,9 @@ WRAPPER GrAGItf
 grin2silly :: HptMap -> GrModule -> EHCOpts -> SilModule
 grin2silly hptmap gr opts
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
-                        (Inh_GrAGItf { opts_Inh_GrAGItf = opts
+                        (Inh_GrAGItf { opts_Inh_GrAGItf = if ehcOptEmitLLVM opts
+                                                          then opts{ ehcOptOwn = 0 }
+                                                          else opts
                                      , hptMap_Inh_GrAGItf = hptmap
                                      }
                         )
