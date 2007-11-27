@@ -9,28 +9,154 @@
 %%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
+%%[8 hs import({%{GRIN}ConfigDefines})
+%%]
+%%[8 hs import(Data.List(intersperse))
+%%]
 %%[8 import({Silly/AbsSyn})
 %%]
+
 
 %%[8 hs
 prettyLLVM :: EHCOpts -> SilModule -> PP_Doc
 prettyLLVM _ silmod
-  = let t = wrap_SilModule (sem_SilModule silmod) 
-                           (Inh_SilModule { })
+  = let intType = if sizeofPointer == 8
+                  then I64
+                  else I32
+        ptrType = if sizeofPointer == 8
+                  then I64Pointer
+                  else I32Pointer
+        t = wrap_SilModule (sem_SilModule silmod) 
+                           (Inh_SilModule { intType_Inh_SilModule = 
+                                              intType
+                                          , pointerType_Inh_SilModule =
+                                              ptrType
+                                          }
+                           )
      in  code_Syn_SilModule t
 %%]
 
-%%[8
+%%[8.LLVMCode
 
 WRAPPER SilModule
-
-ATTR SilModule [ | | code : PP_Doc ]
 
 --------------------------------------------------------------------------------
 -- MODULE GENERATION
 --------------------------------------------------------------------------------
+ATTR SilModule Functions Function 
+     Statements Statement 
+     [ | | code USE {>-<} {empty} : PP_Doc ]
+     
+ATTR Statements Statement   
+     [ | | initCode USE {>-<} {empty} : PP_Doc ]  
 
 SEM SilModule
-  | SilModule   lhs.code  = text (show @constants)
+  | SilModule   lhs.code  = mkComment "Map of constructor identifiers"
+                            >-< mkCommentList @constants
+                            >-< mkGlobalList @lhs.pointerType @variables
+                            >-< @functions.code
+
+SEM Function  
+  | Function    lhs.code = mkFunction @name 
+                                      (zip (repeat @lhs.intType) @parameters)
+                                      @body.code
+
+SEM Statement
+  | Call        lhs.code = mkCall @name 
+                                  [(@lhs.intType, @name)] -- placeholder
+                                  False 
+  | * - Call	lhs.code = empty 
+%%]
+
+%%[8.LLVMTypes
+--------------------------------------------------------------------------------
+-- LLVM TYPES
+-- In LLVM we have two types, Integers and Pointers.
+-- Currently we only have 32 and 64 bit variants.
+-- We require the integer size <= pointer size
+--------------------------------------------------------------------------------
+{
+data LLVMType
+  = I64
+  | I64Pointer
+  | I32
+  | I32Pointer
+  deriving (Eq)
   
+instance Show LLVMType where
+  show I64        = "i64"
+  show I64Pointer = "i64*"
+  show I32        = "i32"
+  show I32Pointer = "i32*"  
+}  
+
+ATTR SilModule Functions Function 
+     Statements Statement
+     Alternatives Alternative
+     [ pointerType, intType : LLVMType | | ]
+
+%%]
+
+%%[8.LLVMCounter
+--------------------------------------------------------------------------------
+-- Counter
+-- The counter is used for generating fresh variables if needed.
+--------------------------------------------------------------------------------
+ATTR Functions Function 
+     Statements Statement
+     Alternatives Alternative
+     [ | uniqueNr : Int | ]
+     
+SEM SilModule
+  | SilModule	functions.uniqeNr = 0	
+
+%%]
+
+%%[8.LLVMHelpers
+{
+--------------------------------------------------------------------------------
+-- HELPER FUNCTIONS
+--------------------------------------------------------------------------------
+vlist' :: (a -> PP_Doc) -> [a] -> PP_Doc
+vlist' f = foldr (\x xs -> f x >-< xs) empty 
+
+mkComment :: (Show a) => a -> PP_Doc
+mkComment x = text ";" >#< text (show x)
+
+mkCommentList :: (Show a) => [a] -> PP_Doc
+mkCommentList = vlist' mkComment
+
+mkGlobalId :: HsName -> PP_Doc
+mkGlobalId id = text "@" >|< text (hsnShowAlphanumeric id)
+
+mkGlobal :: (Show a) =>  a -> HsName -> PP_Doc
+mkGlobal tp id = mkGlobalId id 
+                 >#< text "= internal global" 
+                 >#< text (show tp) >#< text "null"
+
+mkGlobalList :: (Show a) => a -> [HsName] -> PP_Doc
+mkGlobalList tp = vlist' (mkGlobal tp)
+
+mkParamList :: (Show a) => [(a,HsName)] -> [PP_Doc]
+mkParamList params = 
+  Data.List.intersperse (text ", ") $
+  map (\(tp,nm) -> text (show tp) >#< text "%" >|< hsnShowAlphanumeric nm) params
+
+mkFunction :: (Show a) => HsName -> [(a,HsName)] -> PP_Doc -> PP_Doc
+mkFunction id params body =
+  let params' = mkParamList params
+   in text "declare internal void" >#< mkGlobalId id
+      >|< text "(" >#< hlist params' >#< text ")"
+      >-< text "{" >-< body >-< text "}" 
+      
+mkCall :: (Show a) => HsName -> [(a,HsName)] -> Bool -> PP_Doc
+mkCall id params tail =
+  let annotation = if tail then text "tail" else empty
+      params' = mkParamList params
+   in annotation >#< text "call void" >#< mkGlobalId id
+      >|< text "(" >#< hlist params' >#< text ")" 
+      
+mkFreshName :: Int -> PP_Doc
+mkFreshName nr = text "fresh" >|< text (show nr)   
+}
 %%]
