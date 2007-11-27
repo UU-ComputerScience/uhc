@@ -233,9 +233,14 @@ text-variant-ehc-doc:
 	  TEXT_SHUFFLE_VARIANT=29 \
 	  text-variant-dflt-bib-inx
 
-text-variant-abstrint:
+text-variant-tr-abstrint:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=acm --set=blockstyle --set=asArticle" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=acm --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=33 \
 	  text-variant-dflt-bib
 
+text-variant-ldta08-abstrint:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=entcs --set=blockstyle --set=shortStory --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=33 \
+	  text-variant-dflt-bib

@@ -4,9 +4,11 @@
 
 %%[articleDocumentClass
 %if acm
-\documentclass[preprint,9pt]{sigplanconf}
+\documentclass{sigplanconf}
 %elif llncs
 \documentclass{llncs}
+%elif entcs
+\documentclass{entcs}
 %else
 \documentclass{article}
 %endif
@@ -86,6 +88,9 @@
 \documentclass[ignorenonframetext]{beamer}
 %%]
 
+%%[33
+%%@main.articleDocumentClass
+%%]
 
 
 
@@ -584,6 +589,11 @@
 \SetSectionsForArticle
 %%]
 
+%%[33
+\SetSectionsForArticle
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -602,7 +612,7 @@
 %%]
 
 %%[1
-%if not (asSlides || llncs || acm)
+%if not (asSlides || llncs || entcs || acm)
 %if wide
 %if asArticle
 \usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
@@ -618,7 +628,7 @@
 %\usepackage{geometry}
 %endif %% not (...)
 
-%if llncs || acm
+%if llncs || entcs || acm
 %if blockstyle
 \setlength{\mathindent}{.03\textwidth}
 %else
@@ -908,8 +918,11 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
-
 %%[33
+
+%if entcs
+%else
+
 \title{Abstract Interpretation to Avoid Indirect Jumps}
 \subtitle{A Complete Description based on Attribute Grammars}
 %if acm && useSigplanconfSty
@@ -922,12 +935,7 @@ WWW home page:
            {Utrecht University}
            {\{jeroen,doaitse\}@@cs.uu.nl}
 %endif
-\conferenceinfo{ICFP '07}{September 30, Freiburg.} 
-\copyrightyear{2007} 
 \copyrightdata{[to be supplied]} 
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{3pt}
-
 %else
 \author{Jeroen Fokker and S. Doaitse Swierstra}
 \institute{Department of Information and Computing Sciences,\\
@@ -938,6 +946,7 @@ Padualaan 14, Utrecht, Netherlands,\\
 WWW home page:
 \texttt{http://www.cs.uu.nl}
 }
+%endif
 %endif
 
 %%@TopicAbstrInt.extradefinitions
@@ -1045,6 +1054,10 @@ WWW home page:
 \frontmatter
 %endif
 
+%if entcs
+\begin{frontmatter}
+%endif
+
 %%]
 
 %%[20
@@ -1116,6 +1129,19 @@ WWW home page:
 
 %%[30
 \maketitle
+%%]
+
+
+%%[33
+%if entcs
+\title{Abstract Interpretation of Functional Programs using an Attribute Grammar System}
+\author{Jeroen Fokker}
+\address{dept.\ Computer Science, Utrecht University, The Netherlands}
+\author{S. Doaitse Swierstra}
+\address{dept.\ Computer Science, Utrecht University, The Netherlands}
+%else
+\maketitle
+%endif
 %%]
 
 
@@ -1317,6 +1343,18 @@ have been submitted to POPL2006 in a slighty extended form.
 %endif
 
 %%]
+
+
+%%[1
+
+%if entcs
+\end{frontmatter}
+%endif
+
+%%]
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Page numbering
