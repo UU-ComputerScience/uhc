@@ -1,6 +1,23 @@
 
 
 %%[abstract
+
+%if shortStory
+
+We describe an algorithm for abstract interpretation of an
+intermediate language in a Haskell compiler,
+also written in Haskell.
+It determines approximations of possible values for all
+variables in the program, which can be used for optimizing
+the code.
+The analysis is done by collecting constraints on variables,
+which are then solved in a fixpoint iteration.
+The set of constraints is dynamically extended while solving,
+as possible values of unknown functions become known.
+The constraints are collected by decorating the abstract syntax
+tree in an attribute grammar based preprocessor for Haskell.
+An introduction to this preprocessor is also given.
+%else
 Implementations of lazy functional languages often use 
 closures, that is heap cells denoting postponed function 
 calls. When a closure is forced to evaluation, the function 
@@ -26,6 +43,7 @@ top of that, we use a preprocessor to be able to describe
 the algorithm in terms of catamorphisms and algebras.
 A description of this attribute grammar based preprocessor 
 is also included.
+%endif
 %%]
 
 
@@ -83,6 +101,7 @@ is also included.
 %format GrVarL    = "\mathit{VarL}"
 %format GrVar     = "\mathit{Var}"
 %format GrTag     = "\mathit{Tag}"
+%format GrTagL    = "\mathit{TagL}"
 %format HsName    = "\mathit{Name}"
 %format getNr     = "\mathit{nr}"
 %format GrTag_Con     = "\mathit{Tag\_Con}"
@@ -137,6 +156,8 @@ is also included.
 
 \section{Introduction}
 
+
+%if not shortStory
 Early implementations of lazy functional languages
 were usually based on graph rewriting techniques.
 Substitution is done in evaluation of a $\beta$-redex
@@ -153,8 +174,9 @@ which compile to an abstract machine model
 based on stacks and continuations.
 The instructions of this `STG-machine' can be mapped to
 those of traditional hardware architectures \cite{peytonjones92stg}.
+%endif
 
-Lazy evaluation is implemented by, instead of calling a function directly,
+Lazy evaluation of functional languages is implemented by, instead of calling a function directly,
 building `closures' of functions, 
 i.e.\ heap records containing a reference to the function and to its arguments.
 Such a closure can be forced to evaluation in situations where 
@@ -180,21 +202,27 @@ whenever used.
 To prevent copying the large body of the evaluation function,
 in each occurence the case analysis is pruned to contain only those cases
 that can actually occur in that particular instance \cite{boquist99phd-optim-lazy}.
+%if not shortStory
 This way, evaluation amounts to a few tests and conditional jumps,
 and indirect jumps are avoided completely.
 Branch prediction schemes that are built in in pipelined processors
 can deal with the conditional jumps efficiently.
 Also, the conditional jumps are very local, and are likely to have their target
 within the instruction cache.
+%endif
 
 To be able to do the pruning, 
 it is necessary to know for each function closure what its possible tags are.
 This can be determined by a global control flow analysis.
 In an earlier paper, Boquist sketches an algorithm for
 this abstract interpretation \cite{boquist96grin-optim}.
+%if shortStory
+This paper presents a full implementation we prepared in 
+our experimental Haskell compiler \cite{dijkstra05phd}
+(a few details that are left out can be found in an accompagnying technical report).
+%else
 Unfortunately, the actual implementation of the algorithm
 seems to be lost in history.
-
 
 We re-engineered the abstract interpretation algorithm
 to incorporate it in an experimental Haskell compiler \cite{dijkstra05phd}
@@ -202,7 +230,12 @@ and to extend it to handle exceptions \cite{douma06exceptional-grin}.
 As the algorithm is vital to this approach to avoid
 indirect jumps, we carefully documented the implementation,
 which is presented in this paper.
+%endif
 
+
+%if shortStory
+The implementation is presented by giving the actual code.
+%else
 Algorithms are often described in some mathematical formalism.
 A problem of mathematical notation is that it lacks sophisticated
 data structures.
@@ -219,14 +252,15 @@ to be better readable than many a formal treatise on the same subject.
 An added benefit is that the description is actually executable code,
 which makes an error-prone translation from specification to implementation obsolete.
 
+%endif
 To be useful as an algorithm description intended for human readers,
-an implementation should of course abstract from trivial details as much as possible.
+we try to abstract from trivial details as much as possible.
 Although Haskell has many mechanisms for abstraction, we think that for
 tree processing algorithms it is helpful to use notions derived
 from the realm of attribute grammars \cite{knuth68ag}.
 In order not to loose executability of our implementation,
 we use a preprocessor that translates the attribute grammar notions to plain Haskell.
-In order to be self-contained, we include a description of this preprocessor as well.
+to make the paper self-contained, we include a description of this preprocessor as well.
 
 The aim of this paper is twofold:
 \begin{enumate}
@@ -236,9 +270,13 @@ The aim of this paper is twofold:
 \item (methodological) to provide a case study for the use of Haskell
       and attribute grammar related techniques for the description of an algorithm.
 \end{enumate}
+%if shortStory
+In section~\ref{sec.ai} we present the actual algorithm.
+%else
 The reader is invited to judge whether the 7 pages we use for the actual algorithm
 description in section~\ref{sec.ai} could have been much shorter
 when using other formalisms.
+%endif
 Before that, we introduce the language to be analyzed in section~\ref{sec.lang},
 and the attribute grammar preprocessor to Haskell in section~\ref{sec.ag}.
 
@@ -253,6 +291,11 @@ and the attribute grammar preprocessor to Haskell in section~\ref{sec.ag}.
 
 \subsection{Defining semantics}
 
+%if shortStory
+Using higher order functions, like |map|, |filter| and |foldr|,
+is a good way to abstract from common patterns in
+functional programs.
+%else
 % If a single phenomenon needed to be nominated as the
 % most fundamental aspect of computer science, it would
 % be the ability to generalize from specific instances
@@ -291,13 +334,15 @@ concat     =  foldr (++) []
 sort       =  foldr insert []
 transpose  =  foldr (zipWith (:)) (repeat [])
 \end{code}
+%endif
 The idea that underlies the definition of |foldr|, i.e.\ to capture the pattern
-of an inductive definition by adding a function parameter for each constructor of
+of an inductive definition by having a function parameter for each constructor of
 the data structure, can also be used for other data types, and even for
 multiple mutually recursive data types.
 Functions that can be expressed in this way were called {\em catamorphisms}
 by Bird, and the collective extra parameters to |foldr|-like functions 
 an {\em algebra} \cite{bird84circ-traverse,birdmoor96algebra}. 
+%if not shortStory
 Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
 In fact, every algebra defines a {\em semantics} of the data structure.
 When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
@@ -306,6 +351,7 @@ Such an algebra is said to define the `initial' semantics.
 
 Outside circles of functional programmers and category theorists, an
 algebra is simply known as a `tree walk'.
+%endif
 In compiler construction, algebras could be very useful to define
 a semantics of a language, or bluntly said to define tree walks over the parse tree.
 The fact that this is not widely done, is due to the following problems:
@@ -332,7 +378,7 @@ The fact that this is not widely done, is due to the following problems:
       The essense of a semantics is sparsely present in the algebra,
       and obscured by lots of boilerplate.
 \end{enumate}
-
+%if not shortStory
 Many compiler writers thus end up writing ad hoc recursive functions
 instead of defining the semantics by a algebra,
 or even resort to non-functional techniques.
@@ -341,6 +387,7 @@ often using proof rules of some kind, but thereby loose the executability.
 For the implementation they still need conventional techniques,
 and the issue arises whether the program soundly implements
 the specified semantics.
+%endif
 
 To save the nice idea of using an algebra for defining a semantics,
 we use a preprocessor for Haskell that overcomes the abovementioned problems \cite{swierstra99comb-lang}.
@@ -358,6 +405,7 @@ To start with, the abstract syntax of the language is defined in a |DATA| declar
 which is like a Haskell |Data| declaration with named fields.
 The difference is that we don't have to write braces and commas,
 and that constructor function names need not to be unique.
+%if not shortStory
 As an example, we define a fragment of a typical imperative language:
 \begin{code}
 DATA Stat
@@ -370,20 +418,28 @@ DATA Expr
   |  Add     left  :: Expr     ^^  ^^  ^^  ^^  right  :: Expr
   |  Call    name  :: String   ^^  ^^  ^^  ^^  args   :: [Expr]
 \end{code}
+%endif
 The preprocessor generates corresponding |Data| declarations
 (making the constructors unique by prepending the type name, like |Expr_Const|),
-and more importantly, generates a custom |fold| function. This overcomes problem 1.
+and generates a custom |fold| function. This overcomes problem 1.
 
 For any desired value we wish to compute over a tree, we can declare a `synthesized attribute'.
-Attributes can be defined for one or more data types.
-For example, we can define that both statements and expressions need to 
+Attributes can be declared for one or more data types.
+For example, we can declare that both statements and expressions need to 
 synthesize bytecode as well as pretty-printed listing, and that expressions
 can be evaluated to an integer value:
+%if shortStory
+\begin{code}
+ATTR Expr Stat  SYN bytecode  :: [Instr]  ^^ ^^ ^^ SYN listing   :: String
+ATTR Expr       SYN value     :: Int
+\end{code}
+%else
 \begin{code}
 ATTR Expr Stat  SYN bytecode  :: [Instr]
                 SYN listing   :: String
 ATTR Expr       SYN value     :: Int
 \end{code}
+%endif
 The preprocessor will ensure that the semantic functions will return appropriate
 tuples, but in our program we can simply refer to the attributes by name.
 This overcomes problem 2.
@@ -393,6 +449,17 @@ every constructor of every data type which has the attribute.
 As this defines the semantics of the language, these definitions
 are known as `semantic rules', and start with keyword |SEM|.
 An example is:
+%if shortStory
+\begin{code}
+SEM Expr
+  | Const  lhs.value = @num
+  | Add    lhs.value = @left.value + @right.value
+\end{code}
+This states that the synthesized |value| attribute
+of a constant expression is just the |num| field,
+and that of an |Add|-expression can be computed
+by adding the |value| attributes of its |left| and |right| subtrees.
+%else
 \begin{code}
 SEM Stat | Assign
   @lhs.listing =  @dest.listing ++ ":=" ++ 
@@ -402,10 +469,12 @@ This states that the synthesized |listing| attribute
 of an assignment statement can be constructed
 by combining the |listing| attributes of its |dest| and |src| children
 and some fixed strings.
+%endif
 The |@| symbol in this context should be read as `attribute',
 not to be confused with Haskell `as-patterns'.
 At the left of the |=| symbol, the attribute to be defined is mentioned;
 at the right, any Haskell expression can be given.
+%if not shortStory
 The |@| symbol may be omitted in the destination attribute,
 as is done in the next example. 
 This example shows that it is indeed useful that any Haskell expression,
@@ -424,6 +493,7 @@ SEM Expr
   | Const  lhs.value = @num
   | Add    lhs.value = @left.value + @right.value
 \end{code}
+%endif
 The preprocessor collects and orders all definitions into a single algebra,
 replacing the attribute references by suitable selections from the results 
 of the recursive tree walk on the children. 
@@ -431,7 +501,7 @@ This overcomes problem 3.
 
 To be able to pass information downward during a tree walk,
 we can define `inherited' attributes
-(the terminology goes back to \cite{knuth68ag}).
+(the terminology goes back to Knuth \cite{knuth68ag}).
 As an example, it can serve to pass an environment,
 i.e.\ a lookup table that associates variables to values,
 which is needed to evaluate expressions:
@@ -441,16 +511,29 @@ ATTR Expr INH env::Env
 SEM Expr | Var
   lhs.value = fromJust (lookup @lhs.env @name)
 \end{code}
+%if not shortStory
 The value to use for the inherited attributes can be defined
 in semantic rules higher up the tree:
 \begin{code}
 SEM Stat | Assign
   src.env = [ ("x",37), ("y",42) ]
 \end{code}
+%endif
 The preprocessor translates inherited attributes into
 extra parameters for the semantic functions in the algebra.
 This overcomes problem 4.
 
+
+%if shortStory
+In many situations, |SEM| rules only specify that attributes
+a tree node inherites 
+should be passed unchanged to its children.
+To scrap the boilerplate expressing this, 
+the preprocessor has
+a convention that, 
+unless stated otherwise, attributes with the same name
+are automatically copied.
+%else
 In the example above, an environment with two variables was just made up.
 In reality, a |Stat| construct probably inherited the environment
 from even higher constructs, say a procedure declaration.
@@ -470,6 +553,7 @@ are automatically copied. So, the attribute |env| that
 a |Stat| inherited from its parent, is automatically copied
 to the children which also inherit an |env|, and the tedious rules
 above can be omitted.
+%endif
 A similar automated copying is done for synthesized attributes,
 so if they need to be passed unchanged up the tree, this needs
 not to be explicitly coded.
@@ -479,13 +563,20 @@ normally the last one is taken.
 But if we wish a combination of the copy candidates
 to be used, we can specify so in the attribute declaration.
 An example is:
+%if shortStory
+\begin{code}
+ATTR Expr Stat SYN listing USE (++) []
+\end{code}
+%else
 \begin{code}
 ATTR Expr Stat
   SYN listing USE (++) []
 \end{code}
+%endif
 which specifies that by default, the synthesized
 attribute |listing| is the concatenation of the |listing|s of
 all children that have one, or the empty list if no child has one.
+%if not shortStory
 This defines a useful default rule, which can be overridden
 when extra symbols need to be interspersed, as for example in
 the definition of |listing| for assignment statements given earlier.
@@ -499,6 +590,7 @@ a unique counter during the tree walk.
 This captures a pattern for which often |Reader| and
 |Writer| monads are introduced \cite{jones99thih}.
 
+%endif
 The preprocessor automatically generates semantic rules
 in the standard situations described, and this overcomes problem 5.
 
@@ -514,6 +606,13 @@ was proposed by Boquist as an intermediate language sitting
 between the Core language (that in Haskell compilers describes a desugared program)
 and an imperative backend \cite{boquist99phd-optim-lazy}.
 
+%if shortStory
+We describe a slightly modified version here
+by means of
+|DATA| declarations for the AG preprocessor.
+We do not provide a concrete syntax for the language,
+as Grin programs are only an intermediate representation.
+%else
 We describe a slightly modified version here, which is
 more explicit than Boquist's original description
 about what constructs are allowed at various places.
@@ -543,8 +642,23 @@ Another reason is that the mental parsing and unparsing involved
 when reading the semantics description in later sections could
 distract the reader from the algorithm proper, and cause confusion
 between program fragments as data structures and their semantic values.
+%endif
 
 We start our description with a definition of toplevel constructs.
+%if shortStory
+A program consists of a single module, which has a name,
+and a list of function bindings.
+Each binding binds a parameterized name to an expression.
+\begin{code}
+DATA Program
+  = Prog      mod  :: GrModule
+DATA GrModule
+  = Mod       nm   :: HsName      ^^  ^^  ^^ bindL :: GrBindL
+TYPE GrBindL    =   [GrBind]
+DATA GrBind
+  = Bind    nm      :: HsName    ^^  ^^  ^^  argNmL :: [HsName] ^^ ^^ ^^ expr :: GrExpr
+\end{code}
+%else
 A program consists of a single module, which has a name,
 a list of global variable definitions, and a list of function bindings.
 Note that in our naming, we conventionally use suffix |L| for `list',
@@ -571,6 +685,7 @@ DATA GrBind
             argNmL          :: [HsName]
             expr            :: GrExpr
 \end{code}
+%endif
 Grin programs manipulate five kinds of values:
 integers, nodes with a known tag and a list of fields,
 standalone tags, pointers to a node stored on the heap,
@@ -578,6 +693,16 @@ and the empty value.
 The first three have a direct syntactic
 representation as a |GrTerm|, pointers and the empty value have not.
 Another possible |GrTerm| is a variable, which can refer to any of the five kinds of value.
+%if shortStory
+\begin{code}
+DATA GrTerm
+  =  LitInt  int    :: Int
+  |  Tag     tag    :: GrTag
+  |  Node    tag    :: GrTag ^^ ^^ ^^  fldL   :: GrTermL
+  |  Var     nm     :: HsName
+TYPE GrTermL  =  [GrTerm]
+\end{code}
+%else
 \begin{code}
 DATA GrTerm
   =  LitInt  int    :: Int
@@ -587,13 +712,19 @@ DATA GrTerm
   |  Var     nm     :: HsName
 TYPE GrTermL  =  [GrTerm]
 \end{code}
+%endif
 Although the syntax above allows fields of a |Node| be any |GrTerm|,
 we do not make use of nested nodes;
 if they are desired, the field list should contain
 variables that point to heap cells storing the inner nodes.
 
 Tags label nodes.
-Six different tags are possible.
+%if shortStory
+Four
+%else
+Six
+%endif
+different tags are possible.
 Most tags are |Con| tags, which label nodes
 that build up data structures in Grin.
 They correspond to constructor functions in the Haskell source program,
@@ -601,9 +732,22 @@ but unlike constructor functions, nodes with a |Con| tag are always fully satura
 For implementing lazy evaluation we have a |Fun| tag, which is needed
 to construct function `thunks', i.e.\ function applications of which the evaluation is postponed.
 Nodes with a |Fun| tag are always fully saturated functions.
-For unsaturated functions (partial parameterization), a |PApp| tag is used,
-which, apart from the function name, also specifies the number of 
+For unsaturated lazy function calls (partial parameterization), a |PApp| tag is used,
+which, apart from the function name, also records the number of 
 parameters it still |needs| to become fully saturated.
+%if shortStory
+When a lazy call is needed to a function of which the name is not statically known,
+a special thunk node is used. It has tag |App|;
+the first field of the node represents the function,
+the other fields the arguments to which the function is applied when the thunk is forced to evaluate.
+\begin{code}
+DATA GrTag
+  |  Con   nm        :: HsName
+  |  Fun   nm        :: HsName
+  |  PApp  needs     :: Int     ^^ ^^ ^^ nm        :: HsName
+  |  App
+\end{code}
+%else
 \begin{code}
 DATA GrTag
   |  Con   nm        :: HsName
@@ -614,7 +758,6 @@ DATA GrTag
   |  Unboxed
   |  Hole
 \end{code}
-
 The other three tags are an extension to those proposed by Boquist.
 When a lazy call is needed to a function of which the name is not statically known,
 a special thunk node is used. It has tag |App|;
@@ -624,10 +767,27 @@ The |Unboxed| tag is a mockup tag for constructs that conceptually are nodes,
 but in reality are implemented as unboxed values.
 Finally, the |Hole| tag is used in the implementation of recursive definitions,
 but plays no special role in the analysis described in this paper.
+%endif
 
 The most ubiquitous construct in a Grin program is an expression, which
 represents the body of function bindings.
 An expression can be evaluated to a value, during which side effects on the heap may occur.
+%if shortStory
+There are ten cases in the expression syntax:
+\begin{code}
+DATA GrExpr
+  =  Seq          expr            :: GrExpr     ^^ ^^ ^^  pat :: GrPatLam     ^^ ^^ ^^  body :: GrExpr
+  |  Unit         val             :: GrTerm
+  |  Case         val             :: GrTerm     ^^ ^^ ^^  altL :: GrAltL
+  |  Store        val             :: GrTerm
+  |  Update       nm              :: HsName     ^^ ^^ ^^  val :: GrTerm
+  |  FetchNode    nm              :: HsName
+  |  FetchField   nm              :: HsName     ^^ ^^ ^^  offset :: Int       ^^ ^^ ^^  mbTag :: Maybe GrTag
+  |  Call         nm              :: HsName     ^^ ^^ ^^  argL :: GrTermL
+  |  Eval         nm              :: HsName
+  |  Apply        nm              :: HsName     ^^ ^^ ^^  argL :: GrTermL
+\end{code}
+%else
 There are twelve cases in the expression syntax:
 \begin{code}
 DATA GrExpr
@@ -655,10 +815,13 @@ DATA GrExpr
   |  Apply        nm              :: HsName
                   argL            :: GrTermL
 \end{code}
+%endif
 We give an informal description of the semantics of these constructions,
 that is their runtime evaluation result and side effects.
+%if not shortStory
 A formal description would be a Grin interpreter, which is not the focus of this paper.
 
+%endif
 An expression |Unit val| simply evaluates to a known value |val|.
 Evaluation of expression |Seq expr pat body| first evaluates |expr|,
 binds the result to |pat| and in the extended environment evaluates |body|.
@@ -670,6 +833,12 @@ or even as an imperative style assignment |pat:=expr; body|.
 Concrete syntax is immaterial; what is important is that |expr| and |body|
 are evaluated sequentially.
 
+
+%if shortStory
+Two constructs have a side effect on the heap:
+|Store|, which stores a node value in a new heap cell and returns a pointer to it,
+and |Update|, which stores a node value in an existing heap cell and returns the empty value.
+%else
 Boquist proposes two constructs which have a side effect on the heap:
 |Store|, which stores a node value in a new heap cell and returns a pointer to it,
 and |Update|, which stores a node value in an existing heap cell and returns the empty value.
@@ -677,13 +846,21 @@ We do have a |Store| expression in our language,
 but instead of a separate |Update| expression we have |UpdateUnit|,
 which combines the overwriting of an existing heap cell with returning the value.
 This allows for a more efficient implementation of the combination.
+%endif
 Boquist uses a single construct |Fetch| for fetching either a complete node,
 or a particular field of a node. Because these two variants behave quite differently,
-we have separate constructs |FetchNode| and |FetchField|, and a |FetchUpdate|
-which combines fetching a node and using it to update an existing heap cell.
+we have separate constructs |FetchNode| and |FetchField|%
+%if not shortStory
+, and a |FetchUpdate|
+which combines fetching a node and using it to update an existing heap cell%
+%endif
+.
 
-Next, we have a construct |Call| for calling a Grin function,
-and |FFI| for calling a foreign function.
+Next, we have a construct |Call| for calling a Grin function%
+%if not shortStory
+, and |FFI| for calling a foreign function%
+%endif
+.
 Boquist proposes the use of two builtin functions |eval| and |apply|,
 which can be called to force evaluation of a variable,
 or to force application of an unknown function in a strict context, respectively.
@@ -693,7 +870,22 @@ we choose to include special constructs |Eval| and |Apply| for these cases.
 Finally, there is a |Case| construct which selects from a list
 of alternatives the one that has a pattern that matches 
 the value of the variable in the |Case| header (the `scrutinee').
-Each alternative consists of a pattern and a corresponding expression:
+Each alternative consists of a pattern and a corresponding expression.
+%if shortStory
+Patterns in a case alternative normally consist of a node
+with a known tag, and variables as arguments.
+Stand-alone tags and literal integers are also possible patterns:
+\begin{code}
+TYPE GrAltL = [GrAlt]
+DATA GrAlt
+  |  Alt         pat   :: GrPatAlt  ^^ ^^ ^^ expr  :: GrExpr
+DATA GrPatAlt
+  =  LitInt      int   :: Int
+  |  Tag         tag   :: GrTag
+  |  Node        tag   :: GrTag
+                 fldL  :: [HsName]
+\end{code}
+%else
 \begin{code}
 DATA GrAlt
   | Alt  pat   :: GrPatAlt
@@ -710,6 +902,7 @@ DATA GrPatAlt
   |  Node        tag             :: GrTag
                  fldL            :: [HsName]
 \end{code}
+%endif
 A pattern in a case alternative is quite different from
 a lambda pattern in a |Seq| expression.
 A lambda pattern is often just a variable name.
@@ -728,12 +921,17 @@ DATA GrVar
 TYPE GrVarL     =   [GrVar]
 \end{code}
 We assume the existence of a special name
+%if shortStory
+|wildcard :: HsName|
+%else
 \begin{code}
 wildcard :: HsName
 \end{code}
+%endif
 which can serve as a
 `don't care variable' in a lambda pattern.
 
+%if not shortStory
 To complete our exposition of the Grin language, we
 define abbreviations for some groups of nonterminal symbols,
 which will facilitate the definition
@@ -744,8 +942,7 @@ SET AllTerm   =  GrTerm GrTermL
 SET AllExpr   =  GrExpr GrAlt GrAltL
                  GrPatAlt GrPatLam GrVar GrVarL
 \end{code}
-
-
+%endif
 
 %%]
 
@@ -1365,8 +1562,8 @@ variables are numbered (trivial, not shown in this paper),
 and as synthesized attribute |location| in the tree walk.
 \begin{figure*}
 \begin{code}
-envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ApplyMap -> ST s [(Variable,AbstractValue)]
-envChanges equat env heap applyMap
+envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ST s [(Variable,AbstractValue)]
+envChanges equat env heap
   = case equat of
       IsKnown         d av         ->  return [(d, av)]
 
@@ -1433,7 +1630,7 @@ solveEquations ::  Int -> Int
                    -> Equations -> HeapEquations 
                    -> (AbsEnv,AbsHeap,Int)
 \end{code}
-The |solveQuations| function starts with creating two arrays,
+The |solveEquations| function starts with creating two arrays,
 initially holding only |AbsBottom| values, to store the
 abstract values of all variables and locations, respectively.
 Then a fixpoint iteration is done, processing in each step

@@ -1136,7 +1136,7 @@ WWW home page:
 %if entcs
 \title{Abstract Interpretation of Functional Programs using an Attribute Grammar System}
 \author{Jeroen Fokker}
-\address{dept.\ Computer Science, Utrecht University, The Netherlands}
+and
 \author{S. Doaitse Swierstra}
 \address{dept.\ Computer Science, Utrecht University, The Netherlands}
 %else
