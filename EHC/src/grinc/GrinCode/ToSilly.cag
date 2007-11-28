@@ -187,12 +187,16 @@ SEM GrBind
                                 -- locals
                                 @loc.locals
                                 -- body
-                                @expr.stats
+                                (@expr.stats ++ [@loc.return])   
                             ]
 
           expr . numberParameters = length @argNmL
           loc  . locals  = filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet)
           loc  . nParams      = if @lhs.optOwn>=1 then length @argNmL else 0
+          -- We add an explicit return if no tailjumps are done in the function
+          loc  . return = if @lhs.optOwn >= 1 && @expr.tailJumps 
+                          then Statement_Comment ["Tailjump, no explicit return"]
+                          else Statement_Return 0 
           
 
 SEM GrExpr
@@ -277,12 +281,12 @@ SEM GrExpr
            lhs.localsSet = Set.union (Set.fromList @lhs.targets) @altL.localsSet
 
  | Call    lhs.stats  = if @isLastExpr && @lhs.optOwn>=1
-                         then [ Statement_Comment ["Call (Tail) "]
+                         then [ Statement_Comment ["Call (Own controlled tail) "]
                               , Statement_Smart (reverse @argL.values ++ map (Value_Var . Variable_Subs Variable_BP) [1, 0] )
                               , Statement_Assignment  Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2- @loc.nMyParams-2))
                               , Statement_Jump @nm
                               ]
-                         else (   Statement_Comment ["Call (Normal)"]
+                         else (   Statement_Comment ["Call (Normal or Tail)"]
                               :   (if @lhs.optOwn>=1
                                    then (  zipWith Statement_Assignment
                                                    (map (arrayVariab Variable_SP) [-1,-2..])
@@ -294,13 +298,13 @@ SEM GrExpr
                                                       ]
                                                    )
                                         ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
-                                           , Statement_Call @nm [] 
+                                           , Statement_Call @nm @isLastExpr [] 
                                            ]
                                         ++ if @lhs.optOwn>=3
                                             then [ Statement_Label @loc.label ]
                                             else []
                                         )
-                                   else [Statement_Call @nm @argL.values ]
+                                   else [Statement_Call @nm @isLastExpr @argL.values]
                                   )
                               ++ [ Statement_Assignment v e
                                  | (v,e) <-zip  [mkVar x  | x <- @lhs.targets]
@@ -405,7 +409,7 @@ SEM GrPatAlt
 
 SEM GrExpr
  | Seq     lhs.tailJumps = @body.tailJumps
- | Call    lhs.tailJumps = @isLastExpr && @lhs.optOwn>=1
+ | Call    lhs.tailJumps = @isLastExpr
  | Case    lhs.tailJumps = @altL.tailJumps
  | * - Seq Call Case
            lhs.tailJumps = False

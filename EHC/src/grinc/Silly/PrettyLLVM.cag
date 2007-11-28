@@ -59,13 +59,15 @@ SEM SilModule
 SEM Function  
   | Function    lhs.code = mkFunction @name 
                                       (zip (repeat @lhs.intType) @parameters)
-                                      @body.code
+                                      (indent 2 @body.code)
 
 SEM Statement
   | Call        lhs.code = mkCall @name 
-                                  [(@lhs.intType, @name)] -- placeholder
-                                  False 
-  | * - Call	lhs.code = empty 
+                                  [(@lhs.intType, @name)] -- TODO
+                                  @tailJumps 
+  | Return		lhs.code = mkReturn
+  | * - Call Return 
+                lhs.code = mkComment "Statement not implemented yet"
 %%]
 
 %%[8.LLVMTypes
@@ -108,7 +110,7 @@ ATTR Functions Function
      [ | uniqueNr : Int | ]
      
 SEM SilModule
-  | SilModule	functions.uniqeNr = 0	
+  | SilModule	functions.uniqueNr = 0	
 
 %%]
 
@@ -145,16 +147,19 @@ mkParamList params =
 mkFunction :: (Show a) => HsName -> [(a,HsName)] -> PP_Doc -> PP_Doc
 mkFunction id params body =
   let params' = mkParamList params
-   in text "declare internal void" >#< mkGlobalId id
+   in text "define internal void" >#< mkGlobalId id
       >|< text "(" >#< hlist params' >#< text ")"
       >-< text "{" >-< body >-< text "}" 
       
 mkCall :: (Show a) => HsName -> [(a,HsName)] -> Bool -> PP_Doc
 mkCall id params tail =
-  let annotation = if tail then text "tail" else empty
+  let annotation = if tail then text "tail " else empty
       params' = mkParamList params
-   in annotation >#< text "call void" >#< mkGlobalId id
+   in annotation >|< text "call void" >#< mkGlobalId id
       >|< text "(" >#< hlist params' >#< text ")" 
+      
+mkReturn :: PP_Doc
+mkReturn = text "ret void"      
       
 mkFreshName :: Int -> PP_Doc
 mkFreshName nr = text "fresh" >|< text (show nr)   
