@@ -121,10 +121,8 @@ test-expect test-regress: test-lists
 	        if test $${tr} = $${th} -a -r $${te} ; \
 	        then \
 	          echo "-- $${te} -- $${th} --" | $(INDENT2) ; \
-	          if cmp $${te} $${th} > /dev/null ; \
+	          if ! cmp $${te} $${th} > /dev/null ; \
 	          then \
-	            echo -n ; \
-	          else \
 	            diff $${te} $${th} | $(INDENT4) ; \
 	          fi \
 	        elif test ! -r $${te} ; \
