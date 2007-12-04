@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs import(IO,Data.List,EH.Util.Pretty,UU.Parsing,UU.Scanner,UU.Scanner.Position( initPos, Pos ),DemoUtils)
+%%[3 hs import(IO,Data.List,UU.Pretty,UU.Parsing,UU.Scanner,UU.Scanner.Position( initPos, Pos ),RulerDemoUtils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,7 +100,7 @@ SEM AGItf
 ATTR AGItf Expr [ | | pp: PP_Doc ]
 
 SEM Expr
-  | App  lhs  .   pp   =   @f.pp >#< ppParens @a.pp
+  | App  lhs  .   pp   =   @f.pp >#< pp_parens @a.pp
                            >-< mkErr @mtErrs
   | Int  lhs  .   pp   =   pp @int
   | Var  lhs  .   pp   =   pp @i >-< mkErr @nmErrs

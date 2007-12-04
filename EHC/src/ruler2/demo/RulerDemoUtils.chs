@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[3 module DemoUtils import(Data.List,EH.Util.Pretty)
+%%[3 module RulerDemoUtils import(Data.List,UU.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
