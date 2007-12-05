@@ -1,0 +1,675 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 hs module {%{GRIN}Silly.ToLLVM} export(silly2llvm)
+%%]
+%%[8 hs import({%{GRIN}LLVM})
+%%]
+%%[8 hs import({%{GRIN}Silly})
+%%]
+%%[8 hs import({%{EH}Base.Common})
+%%]
+%%[8 hs import({%{GRIN}ConfigDefines})
+%%]
+%%[8 import({Silly/AbsSyn})
+%%]
+%%[8 hs import(qualified Data.Map)
+%%]
+%%[8
+WRAPPER SilModule
+%%]
+
+%%[8 hs
+silly2llvm :: SilModule -> LLVMModule
+silly2llvm silmod = 
+  let intType    = if sizeofPointer == 8
+                   then I64
+                   else I32
+      ptrType    = pLift intType
+      gblType    = pLift ptrType
+      t = wrap_SilModule (sem_SilModule silmod)
+                         (Inh_SilModule { intType_Inh_SilModule = intType 
+                                        , pointerType_Inh_SilModule = ptrType
+                                        , globalType_Inh_SilModule = gblType
+                                        , gUniq_Inh_SilModule = uidStart
+                                        } 
+                         )
+   in llvmCode_Syn_SilModule t
+%%]
+
+%%[8
+{
+type LLVMExpr = Either Var (Expression,LLVMType)
+
+getExprType :: LLVMExpr -> LLVMType
+getExprType (Left var) =
+  getType var
+getExprType (Right expr) =
+  snd expr
+}
+
+ATTR SilModule
+     [ | | llvmCode : {LLVMModule} ]
+
+ATTR Functions
+     [ | | llvmCode : {Funcs} ]
+
+ATTR Function
+     [ | | llvmCode : {Func} ] 
+   
+ATTR Statements Statement
+     Values Value
+     Variables Variable
+     [ | | llvmCode : {Stmts} ]
+     
+ATTR Values
+     Variables
+     [ | | llvmExpr : {[LLVMExpr]} ]
+
+ATTR Value
+     Variable
+     [ | | llvmExpr : {LLVMExpr} ]   
+ 
+ATTR Alternatives
+     [ | | jumpTargets : {[(Var,Var,Stmts)]} ]
+     
+ATTR Alternative
+     [ | | jumpTarget : {(Var,Var,Stmts)} ] 
+     
+ATTR Constant    
+     [ | | var : {Var} ]  
+     
+ATTR Alternatives Alternative
+     Statements Statement
+     [ | | locMapping : {Data.Map.Map String [Var]} ]     
+  
+SEM Statement 
+  | Assignment  lhs.locMapping = if @lhs.inBranch && @dest.isLocal
+                                 then Data.Map.singleton @dest.origName [@loc.lhsVar]
+                                 else Data.Map.empty   
+  | * - Assignment
+                lhs.locMapping = Data.Map.empty
+     
+ATTR AllNT
+     [ gUniq: UID | | ]      
+           
+SEM SilModule
+  | SilModule   lhs.llvmCode = let globals = GlobalVar "RP" (pLift @lhs.pointerType)
+                                             : mkVarList GlobalVar @variables
+                                                          @lhs.globalType
+  
+                                in LLVMModule_LLVMModule globals [] 
+                                                         @functions.llvmCode
+
+SEM Functions
+  | Cons        lhs.llvmCode = @hd.llvmCode : @tl.llvmCode
+ 
+                (tl.gUniq, hd.gUniq) = 
+                               mkNewLevUID @lhs.gUniq
+  | Nil         lhs.llvmCode = []
+
+SEM Function
+  | Function    lhs.llvmCode = Func_Func @loc.fnDecl @body.llvmCode
+ 
+SEM Statements
+  | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
+                lhs.locMapping =
+                               Data.Map.unionWith (++) @hd.locMapping
+                                                       @tl.locMapping
+                
+                (tl.gUniq, hd.gUniq) = 
+                               mkNewLevUID @lhs.gUniq
+                
+  | Nil         lhs.llvmCode = []
+                lhs.locMapping =
+                               Data.Map.empty
+  
+SEM Statement
+  -- A Silly assign will translate to a store. We have the following steps
+  --   * If the RHS is an expression, assign the RHS to a fresh var
+  --   * Do the same for the LHS
+  --   * If the LHS is a localvar, then we just assign to a temporary
+  --   * check if the LHS is a pointertype, otherwise cast to pointer
+  --   * check if the RHS type fits in the pointertype of the LHS, otherwise
+  --     cast the LHS
+  --   * Store
+  | Assignment  lhs.llvmCode = @dest.llvmCode ++
+                               @source.llvmCode ++
+                               @loc.rhsStmts ++
+                               @loc.lhsStmts ++
+                               @loc.lhsptrStmts ++
+                               @loc.fitsStmts ++
+                               if @lhs.inBranch && @dest.isLocal
+                               then [Stmt_Assignment @loc.lhsVar
+                                                     (toExpr @source.llvmExpr) ]
+                               else [Stmt_Store @loc.fitsVar @loc.lhsptrVar] 
+                
+                (loc.uniqSeed, dest.gUniq, source.gUniq) =
+                               mkNewLevUID2 @lhs.gUniq 
+                
+                loc.(uniqNr1,rhsVar,rhsStmts) =
+                               expr2var @loc.uniqSeed @source.llvmExpr
+                loc.(uniqNr2,lhsVar,lhsStmts) =
+                               expr2var @loc.uniqNr1 @dest.llvmExpr
+                loc.(uniqNr3,lhsptrVar,lhsptrStmts) =
+                               if @lhs.inBranch && @dest.isLocal
+                               then (@loc.uniqNr2,@loc.lhsVar,[])
+                               else cast2ptr @loc.uniqNr2 @loc.lhsVar 
+                                             @lhs.pointerType
+                loc.(uniqNr4,fitsVar,fitsStmts) =
+                               if @lhs.inBranch && @dest.isLocal
+                               then (@loc.uniqNr3, @loc.rhsVar, [])
+                               else makeFitting @loc.uniqNr3 @loc.rhsVar
+                                                @loc.lhsptrVar                                         
+
+  | Call        lhs.llvmCode = let fDecl = Data.Map.findWithDefault 
+                                             (error "No such function")
+                                             (hs2str @name) @lhs.fnAvailDecls
+                                in @args.llvmCode ++
+                                   @loc.argStmts ++
+                                   @loc.castStmts ++
+                                   [ Stmt_Call fDecl @tailJumps @loc.castVars ]
+ 
+                (loc.uniqSeed, args.gUniq) =
+                               mkNewLevUID @lhs.gUniq 
+                           
+                -- It is very well possible that some arguments evaluate
+                -- to a LLVMExpression and need to be reduced to a Var
+                loc.(uniqNr1,argVars,argStmts) =
+                               foldr (\x xs -> let (nr,val,stmt) =
+                                                     expr2var (fst3 xs) x
+                                                in ( nr, val : snd3 xs
+                                                   , stmt ++ (trd3 xs)
+                                                   )
+                                     ) (@loc.uniqSeed,[],[]) @args.llvmExpr 
+                -- Some arguments can be pointers and need to be casted
+                -- to inttypes 
+                loc.(uniqNr2,castVars,castStmts) =  
+                               foldr (\x xs -> let (nr,val,stmt) =
+                                                     cast2int (fst3 xs) x @lhs.intType
+                                                in ( nr, val : snd3 xs
+                                                   , stmt ++ (trd3 xs)
+                                                   )
+                                     ) (@loc.uniqNr1,[],[]) @loc.argVars  
+                                   
+  | Comment     lhs.llvmCode = [Stmt_Comment @comment]
+  
+  | If          lhs.llvmCode = @scrutinee.llvmCode ++
+                               @loc.scrutineeStmts ++ 
+                               @loc.cmpStmts ++ 
+                               [ Stmt_BranchIf 
+                                 @loc.cmpVar
+                                 @loc.fstLabel @loc.sndLabel
+                               ] ++
+                               @loc.fstStmts ++ 
+                               [ Stmt_Branch @loc.resumeLabel] ++
+                               @loc.sndStmts ++
+                               [ Stmt_Branch @loc.resumeLabel
+                               , Stmt_Label  @loc.resumeLabel
+                               ] ++
+                               @loc.phiStms
+  
+                loc.(fstConst,fstLabel,fstStmts) =
+                                     @loc.fstAlt
+                loc.(sndConst,sndLabel,sndStmts) =
+                                     @loc.sndAlt                     
+                loc.(fstAlt,sndAlt) =
+                               let f (x:y:[]) = (x,y)
+                                   f _ = error "More then two alts for If"
+                                in f @body.jumpTargets  
+                                
+                loc.phiStms = let predecessors xs = zip xs [ @loc.fstLabel
+                                                           , @loc.sndLabel ] 
+                                  mkVar str = LocalVar str @lhs.intType                                  
+                               in map (\(str,preds) -> 
+                                        Stmt_Assignment (mkVar str) $
+                                        Expression_Phi @lhs.intType
+                                                       (predecessors preds)
+                                      ) $ Data.Map.toList @body.locMapping                 
+                                
+                (loc.uniqSeed, scrutinee.gUniq, body.gUniq) =
+                               mkNewLevUID2 @lhs.gUniq 
+                               
+                loc.(uniqNr1, scrutineeVar, scrutineeStmts) =                               
+                               expr2var @loc.uniqSeed @scrutinee.llvmExpr
+                               
+                loc.(uniqNr2, cmpVar, cmpStmts) =
+                              expr2var @loc.uniqNr1 $
+                              Right ( Expression_Compare CMPEQ @loc.scrutineeVar
+                                                        @loc.fstConst
+                                    , I1)               
+                               
+                loc.(uniqNr3, resumeLabel) =
+                               newFresh @loc.uniqNr2 Label              
+
+  | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
+                               @loc.scrutineeStmts ++ 
+                               [ Stmt_Switch 
+                                 @loc.scrutineeVar
+                                 (snd $ last @loc.targets) 
+                                 (init @loc.targets)
+                               ] ++
+                               @loc.altStmts ++
+                               [ Stmt_Label  @loc.resumeLabel ] ++
+                               @loc.phiStms
+                    
+                loc.altStmts =  
+                               concatMap (( ++ [Stmt_Branch @loc.resumeLabel]) . 
+                                          trd3)
+                                   @body.jumpTargets  
+                
+                loc.targets = map (\(x,y,z) -> (x,y)) @body.jumpTargets
+                                
+                loc.phiStms = let labels = map snd @loc.targets
+                                  predecessors xs = zip xs labels 
+                                  mkVar str = LocalVar str @lhs.intType                                  
+                               in map (\(str,preds) -> 
+                                        Stmt_Assignment (mkVar str) $
+                                        Expression_Phi @lhs.intType
+                                                       (predecessors preds)
+                                      ) $ Data.Map.toList @body.locMapping                 
+                                
+                (loc.uniqSeed, scrutinee.gUniq, body.gUniq) =
+                               mkNewLevUID2 @lhs.gUniq 
+                               
+                loc.(uniqNr1, scrutineeVar, scrutineeStmts) =                               
+                               expr2var @loc.uniqSeed @scrutinee.llvmExpr                                            
+                               
+                loc.(uniqNr2, resumeLabel) =
+                               newFresh @loc.uniqNr1 Label   
+                               
+  | Jump        lhs.llvmCode = error $ "Generated jump instructions not allowed"
+                                     ++ " in LLVM. Is -g set to 0?"
+  
+  | Label       lhs.llvmCode = error $ "Generated label instructions not"
+                                     ++ " allowed in LLVM. Is -g set to 0?"
+  
+  | Return      lhs.llvmCode = [Stmt_Return $ LocalVar (error "ReturnNoVar")
+                                                       Void
+                               ]  
+                                    
+  | Smart       lhs.llvmCode = error "Smart should be generated for ASM only"
+                                    
+  | * - Assignment Call Comment If Jump Label Return Smart Switch
+                lhs.llvmCode = [Stmt_Comment ["Statement: not yet implemented"]]
+
+SEM Alternatives
+  | Cons        lhs.jumpTargets = 
+                               @hd.jumpTarget : @tl.jumpTargets
+                lhs.locMapping =
+                               Data.Map.unionWith (++) @hd.locMapping
+                                                       @tl.locMapping                
+                (tl.gUniq, hd.gUniq) = 
+                               mkNewLevUID @lhs.gUniq
+                               
+  | Nil         lhs.jumpTargets = 
+                               [] 
+                lhs.locMapping =
+                               Data.Map.empty
+                
+SEM Alternative
+  | Alternative lhs.jumpTarget = 
+                               ( @when.var
+                               , @loc.label
+                               , Stmt_Label @loc.label : @body.llvmCode
+                               )
+                                        
+                (loc.uniqSeed, body.gUniq) =
+                               mkNewLevUID @lhs.gUniq                     
+                (loc.uniqNr1, loc.label) = 
+                               newFresh @loc.uniqSeed Label              
+ 
+SEM Values
+  | Cons        lhs.llvmExpr = @hd.llvmExpr : @tl.llvmExpr
+                lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
+                (tl.gUniq, hd.gUniq) = 
+                               mkNewLevUID @lhs.gUniq
+                               
+  | Nil         lhs.llvmExpr = [] 
+                lhs.llvmCode = []       
+       
+SEM Value
+  | Alloc       lhs.llvmExpr = Right
+                               ( Expression_Malloc @lhs.intType @size
+                               , @lhs.pointerType)
+                lhs.llvmCode = []
+
+  -- Perform the required arithmic (>>1)
+  -- 
+  | BoxVar      lhs.llvmExpr = Right 
+                               (Expression_BinOp SHR @loc.varVar 
+                                                 (Constant 1 @lhs.intType)
+                               , getType @loc.varVar)
+                lhs.llvmCode = @var.llvmCode ++
+                               @loc.varStms
+                                               
+                (loc.uniqSeed,var.gUniq) =
+                               mkNewLevUID @lhs.gUniq 
+  
+                loc.(uniqNr1,varVar,varStms) =
+                               expr2var @loc.uniqSeed @var.llvmExpr
+                               
+  | Call        lhs.llvmExpr = Right
+                               ( Expression_Call @loc.fnDecl False @loc.castVars
+                               , @lhs.intType)
+                lhs.llvmCode = @args.llvmCode ++
+                               @loc.argStmts ++
+                               @loc.castStmts
+ 
+                loc.fnDecl  = FuncDecl_FuncDecl @name @lhs.intType []
+ 
+                (loc.uniqSeed, args.gUniq) =
+                               mkNewLevUID @lhs.gUniq 
+                           
+                -- It is very well possible that some arguments evaluate
+                -- to a LLVMExpression and need to be reduced to a Var
+                loc.(uniqNr1,argVars,argStmts) =
+                               foldr (\x xs -> let (nr,val,stmt) =
+                                                     expr2var (fst3 xs) x
+                                                in ( nr, val : snd3 xs
+                                                   , stmt ++ (trd3 xs)
+                                                   )
+                                     ) (@loc.uniqSeed,[],[]) @args.llvmExpr 
+                -- Some arguments can be pointers and need to be casted
+                -- to inttypes 
+                loc.(uniqNr2,castVars,castStmts) =  
+                               foldr (\x xs -> let (nr,val,stmt) =
+                                                     cast2int (fst3 xs) x @lhs.intType
+                                                in ( nr, val : snd3 xs
+                                                   , stmt ++ (trd3 xs)
+                                                   )
+                                     ) (@loc.uniqNr1,[],[]) @loc.argVars  
+
+  | Con         lhs.llvmExpr = Left @con.var
+                lhs.llvmCode = []
+  
+  -- Perform the required arithmic (<<1) | 0x01
+  -- 
+  | UnboxCon    lhs.llvmExpr = Right 
+                               (Expression_BinOp OR @loc.shlVar 
+                                                 (Constant 1 @lhs.intType)
+                               , getType @loc.shlVar)
+                lhs.llvmCode = @con.llvmCode ++
+                               @loc.conStms  ++                        
+                               [ Stmt_Assignment @loc.shlVar
+                                   ( Expression_BinOp SHL @loc.conVar
+                                       (Constant 1 @lhs.intType)
+                                   )
+                               ]
+                                               
+                (loc.uniqSeed,con.gUniq) =
+                               mkNewLevUID @lhs.gUniq 
+  
+                loc.(uniqNr1,conVar,conStms) =
+                               expr2var @loc.uniqSeed @con.llvmExpr
+                loc.(uniqNr2,shlVar) =
+                               newFresh @loc.uniqNr1 (getExprType @con.llvmExpr)                               
+              
+  | Var         lhs.llvmExpr = if getType @loc.var == @lhs.intType
+                               then Left @loc.var
+                               else Right
+                                      ( Expression_Load @loc.var
+                                      , pLower $ getType @loc.var
+                                      ) 
+                lhs.llvmCode = @var.llvmCode ++
+                               @loc.varStmts                
+
+                (loc.uniqSeed, var.gUniq) =
+                               mkNewLevUID @lhs.gUniq
+               
+                loc.(uniqNr1,var,varStmts) =                
+                               expr2var @loc.uniqSeed @var.llvmExpr                              
+                
+  | * - Alloc BoxVar Call Con Var UnboxCon
+                lhs.llvmExpr = error $ "No Label, Cast or Offset Value expected"
+                lhs.llvmCode = error $ "No Label, Cast or Offset Value expected"       
+ 
+SEM Variables
+  | Cons        lhs.llvmExpr = @hd.llvmExpr : @tl.llvmExpr
+                lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
+  | Nil         lhs.llvmExpr = [] 
+                lhs.llvmCode = [] 
+                
+SEM Variable
+  | Global      lhs.llvmExpr = Left $ GlobalVar (hs2str @name) 
+                                                (pLift @lhs.pointerType)
+                lhs.llvmCode = []
+                
+  | Local       lhs.llvmExpr = if Data.Map.member (hs2str @name) @lhs.localsMap
+                                  && @lhs.inBranch
+                               then Left $ @loc.freshVar
+                               else Left $ LocalVar (hs2str @name) @lhs.intType                                        
+                lhs.llvmCode = [] 
+                
+                loc.(uniqNr1,freshVar) =
+                               newFresh @lhs.gUniq @lhs.intType
+  
+  | Param       lhs.llvmExpr = Left $ LocalVar (hs2str @name) @lhs.intType                                       
+                lhs.llvmCode = []                                                    
+                                               
+  | RP          lhs.llvmExpr = Left $ GlobalVar "RP" (pLift @lhs.pointerType) 
+                lhs.llvmCode = []
+                
+  | Subs        lhs.llvmExpr = Right $ 
+                               (Expression_GetElemPtr @loc.ptrVar @index
+                               , getType @loc.ptrVar)
+                lhs.llvmCode = @array.llvmCode ++
+                               @loc.arrStmts ++
+                               @loc.loadedStmts ++ 
+                               @loc.ptrStmts 
+
+                (loc.uniqSeed, array.gUniq) =
+                               mkNewLevUID @lhs.gUniq                
+                loc.(uniqNr1,arrVar,arrStmts) =
+                               expr2var @loc.uniqSeed @array.llvmExpr
+                loc.(uniqNr2,loadedVar,loadedStmts) =
+                               if isGlobal @loc.arrVar
+                               then load @loc.uniqNr1 @loc.arrVar
+                               else (@loc.uniqNr1, @loc.arrVar, []) 
+                loc.(uniqNr3,ptrVar,ptrStmts) =
+                               cast2ptr @loc.uniqNr2 @loc.loadedVar 
+                                        @lhs.pointerType  
+                                                                                            
+  | * - Global Local Param RP Subs
+                lhs.llvmExpr = error "Variable contains an impossible construct"
+                lhs.llvmCode = error "Variable contains an impossible construct"               
+                
+SEM Constant
+  | LiteralInt  lhs.var      = Constant @value @lhs.intType
+  | LiteralStr  lhs.var      = error "Strings not supported by LLVM"
+  | Alias       lhs.var      = let value = Data.Map.findWithDefault
+                                             (error "Alias not in constantmap")
+                                             @name @lhs.constantMap 
+                                in Constant value @lhs.intType                                                                 
+%%]
+
+%%[8
+--------------------------------------------------------------------------------
+-- Passing up the signatures of the functions declared and the functions 
+-- defined in this module. If we have the set of these functions, we can 
+-- query them for Calls and we can warn if undeclared/undefined functions are
+-- called
+--------------------------------------------------------------------------------
+ATTR Functions Function
+     Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     [ fnAvailDecls : {Data.Map.Map String FuncDecl} | | ]
+
+ATTR Functions
+     [ | | fnDecls : {[(String,FuncDecl)]} ]
+
+ATTR Function
+     [ | | fnDecl : {(String,FuncDecl)} ]
+
+SEM SilModule
+  | SilModule   functions.fnAvailDecls
+                           = Data.Map.fromList @functions.fnDecls
+
+SEM Functions
+  | Cons        lhs.fnDecls
+                           = @hd.fnDecl : @tl.fnDecls
+  | Nil         lhs.fnDecls
+                           = []
+
+SEM Function
+  | Function    lhs.fnDecl = (hs2str @name, @loc.fnDecl)
+                loc.fnDecl = let prms = mkVarList LocalVar @parameters 
+                                                           @lhs.intType
+                              in FuncDecl_FuncDecl (hs2str @name) Void prms
+%%]
+  
+%%[8
+--------------------------------------------------------------------------------
+-- Passing down platform depended types.
+--------------------------------------------------------------------------------
+
+ATTR AllNT
+     [ intType, pointerType, globalType : {LLVMType} | | ]
+%%]
+
+%%[8
+--------------------------------------------------------------------------------
+-- We pass down a map, containing the alias name and the 
+-- corresponding Int value of constructor tags
+--------------------------------------------------------------------------------
+ATTR Functions Function 
+     Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     Constant
+     [ constantMap : {Data.Map.Map String Int} | | ]
+
+SEM SilModule
+  | SilModule   functions.constantMap = Data.Map.fromList @constants
+%%]
+
+%%[8
+--------------------------------------------------------------------------------
+-- We pass down a map with the names of local variables in it
+-- this is needed to remove the assignment to local variables that occurs
+-- in branches and transform it to a SSA state
+--------------------------------------------------------------------------------
+ATTR Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     [ localsMap : {Data.Map.Map String String} | | ]
+
+ATTR Variable
+     [ | | isLocal : {Bool} origName : {String} ]
+
+ATTR Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     [ inBranch : {Bool} | | ]
+
+SEM Function
+  | Function    body.localsMap = 
+                             let locals = map ((\x -> (x,x)) . hs2str) @locals 
+                              in Data.Map.fromList locals
+                body.inBranch =
+                             False
+
+SEM Alternative
+  | Alternative body.inBranch =
+                             True
+                              
+SEM Variable
+  | Local       lhs.isLocal  = True
+                lhs.origName = hs2str @name 
+  | * - Local
+                lhs.isLocal  = False
+                lhs.origName = "TODO: BUG"                               
+%%]
+
+%%[8
+{
+--------------------------------------------------------------------------------
+-- Misc functions
+--------------------------------------------------------------------------------
+-- Shortcut method to fetch the string representation of a HsName
+hs2str :: HsName -> String
+hs2str = hsnShowAlphanumeric
+
+-- Get the first element of a 3 tuple
+fst3 :: (a,b,c) -> a
+fst3 (x,_,_) = x
+
+-- Get the second element of a 3 tuple
+snd3 :: (a,b,c) -> b
+snd3 (_,x,_) = x
+
+
+-- Get the third element of a 3 tuple
+trd3 :: (a,b,c) -> c
+trd3 (_,_,x) = x
+
+toExpr :: LLVMExpr -> Expression
+toExpr (Right (e,tp)) = e
+toExpr (Left var) = Expression_Cast var (getType var)
+
+toVar :: LLVMExpr -> Var
+toVar (Right _)  = error "Expression toVar"
+toVar (Left var) = var
+
+-- Make a list of variables with a given constructor, a list of HsNames and
+-- one type
+-- used primary for parameter lists
+mkVarList :: (String -> LLVMType -> Var) -> [HsName] -> LLVMType -> [Var]
+mkVarList constr names tp =
+  zipWith (\x y -> constr (hs2str x) y) names (repeat tp)
+   
+cast2int :: UID -> Var -> LLVMType -> (UID,Var,Stmts)   
+cast2int nr var intType =
+  if isInt (getType var)
+  then (nr,var,[])
+  else let (nr', fresh) = newFresh nr intType
+        in (nr', fresh, [Stmt_Assignment fresh $ Expression_Cast var intType])
+        
+cast2ptr :: UID -> Var -> LLVMType -> (UID,Var,Stmts)
+cast2ptr nr var ptrType
+  | isPointer (getType var) =
+    (nr,var,[])
+  | otherwise =
+    let (nr', fresh) = newFresh nr ptrType
+     in (nr', fresh, [Stmt_Assignment fresh $ Expression_Cast var ptrType])         
+ 
+makeFitting :: UID -> Var -> Var -> (UID,Var,Stmts)
+makeFitting nr what hole 
+  -- Case 1 it already fits
+  | getType what == pLower (getType hole) =
+    (nr,what,[])
+  | otherwise = 
+    let targetType   = pLower $ getType hole 
+        (nr', fresh) = newFresh nr targetType
+     in (nr', fresh, [Stmt_Assignment fresh $ Expression_Cast what targetType])
+
+-- Build a new fresh local variable
+newFresh :: UID -> LLVMType -> (UID,Var)
+newFresh nr tp = 
+  (uidNext nr, LocalVar ("fresh" ++ show nr) tp)
+
+-- A LLVMExpr can be either a Variable or an Expression. If it is an Expression
+-- assign it to a fresh Variable and return it, otherwise, return the 
+-- given variable
+expr2var :: UID -> LLVMExpr -> (UID,Var,Stmts)
+expr2var nr (Left var) =
+  (nr,var,[])
+expr2var nr (Right (expr,tp)) =
+  let (nr', fresh) = newFresh nr tp
+   in (nr', fresh, [Stmt_Assignment fresh expr])
+   
+-- Load a given LLVMExpr
+load :: UID -> Var -> (UID,Var,Stmts)
+load nr var =
+  let loadType     = pLower (getType var)
+      (nr', fresh) = newFresh nr loadType
+   in (nr', fresh, [Stmt_Assignment fresh (Expression_Load var)])   
+}
+%%]

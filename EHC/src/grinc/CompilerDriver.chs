@@ -69,9 +69,13 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
 %%]
+%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)})
+%%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
 %%[8 import({%{GRIN}Silly.PrettyLLVM(prettyLLVM)})
+%%]
+%%[8 import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
 %%]
 %%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
 %%]
@@ -234,8 +238,9 @@ caOutput = task_ VerboseNormal "Writing code"
          ; caWriteSilly "sil2" pretty
          ; transformSilly   embedVars     "Embed Variables"
          ; caWriteSilly "sil3" pretty
+         ; transformSilly   shortcut      "Shortcut single-use variables"
          ; when (ehcOptEmitLLVM options)
-           (caWriteSilly "ll" prettyLLVM)
+           (caWriteSilly "ll" (\_ mod -> prettyLLVMModule $ silly2llvm mod) )
          ; when (ehcOptEmitLlc options)
            (caWriteSilly "c" prettyC)
          ; when (ehcOptEmitLlc options)

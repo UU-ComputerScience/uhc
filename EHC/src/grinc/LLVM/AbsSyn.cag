@@ -1,0 +1,84 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8.LLVMModule
+DATA LLVMModule
+  |  LLVMModule  globals    : {[Var]} 
+                 fwdDecls   : FuncDecls
+                 funcs      : Funcs
+
+%%]
+
+%%[8.LLVMFunc
+TYPE Funcs  = [Func]
+
+DATA Func
+  |  Func    funcDecl       : FuncDecl
+             body           : Stmts
+%%]
+
+%%[8.LLVMFuncDecl
+TYPE FuncDecls = [FuncDecl]
+
+DATA FuncDecl
+  | FuncDecl     name       : {String}
+                 returnType : {LLVMType} 
+                 params     : {[Var]}
+%%]
+
+%%[8.LLVMStmt
+TYPE Stmts = [Stmt]
+
+DATA Stmt
+  | Assignment   dest       : {Var}
+                 source     : Expression
+  | Branch       target     : {Var}
+  | BranchIf     cond       : {Var}
+                 targetTrue : {Var}
+                 targetFalse: {Var}
+  | Call         func       : FuncDecl  -- Calls that have a void return type
+                 tailJumps  : {Bool}
+                 args       : {[Var]}
+  | Comment      comment    : {[String]}     
+  | Label        name       : {Var}           
+  | Store        value      : {Var}
+                 ptr        : {Var}
+  | Switch       scrutinee  : {Var}
+                 default    : {Var}
+                 targets    : {[(Var,Var)]}                 
+  | Return       result     : {Var}
+%%]
+
+%%[8.LLVMExpression
+DATA Expression
+  | BinOp        op         : {BinaryOperator}
+                 left       : {Var}
+                 right      : {Var}
+  | Compare      op         : {CmpOp}
+                 left       : {Var}
+                 right      : {Var}
+  | Malloc       tp         : {LLVMType}
+                 size       : {Int}
+  | Load         ptr        : {Var}
+  | GetElemPtr   ptr        : {Var}
+                 index      : {Int}
+  | Cast         from       : {Var}
+                 to         : {LLVMType}
+  | Call         func       : FuncDecl
+                 tailJumps  : {Bool}
+                 args       : {[Var]}
+  | Phi          tp         : {LLVMType}
+                 precessors : {[(Var,Var)]} 
+%%]
+
+%%[8.LLVMAlt
+TYPE Alts = [Alt]
+
+DATA Alt
+  |  Alt         when       : {(Var,Var)}
+                 body       : Stmts
+                                  
+DERIVING * : Show, Eq
+%%]
