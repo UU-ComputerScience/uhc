@@ -110,6 +110,9 @@ is also included.
 %format GrTag_App     = "\mathit{Tag\_App}"
 %format GrTag_Unboxed = "\mathit{Tag\_Unboxed}"
 %format GrTag_Any     = "\mathit{Tag\_Any}"
+%format v0         = "\mathit{v0}"
+%format v1         = "\mathit{v1}"
+%format v2         = "\mathit{v2}"
 
 %format Data = "\mathbf{data}"
 %format DATA = "\mathbf{syntax}"
@@ -750,14 +753,14 @@ we do not make use of nested nodes;
 if they are desired, the field list should contain
 variables that point to heap cells storing the inner nodes.
 
-Tags label nodes.
+Tags are used to label nodes.
 %if shortStory
 Four
 %else
 Six
 %endif
 different tags are possible.
-Most tags are |Con| tags, which label nodes
+First we have |Con| tags, which label nodes
 that build up data structures in Grin.
 They correspond to constructor functions in the Haskell source program,
 but unlike constructor functions, nodes with a |Con| tag are always fully saturated.
@@ -1285,8 +1288,9 @@ The definition of these attributes is straightforward; only the nontrivial cases
 \begin{code}
 data NodeInfo a  =  IV Variable | INd GrTag [a]
 ATTR  GrTerm             SYN  termInfo    :: NodeInfo (Maybe Variable)
+ATTR  Alt AltL           INH  termInfo    :: NodeInfo (Maybe Variable)
 ATTR  GrPatAlt GrPatLam  SYN  patInfo     :: NodeInfo Variable
-ATTR  AllExpr            INH  targetInfo  :: NodeInfo Variable
+ATTR  GrExpr Alt AltL    INH  targetInfo  :: NodeInfo Variable
 SEM GrBind | Bind   expr.targetInfo  =  IV (getNr @nm)
 SEM GrExpr | Seq    expr.targetInfo  =  @pat.patInfo
                     body.targetInfo  =  @lhs.targetInfo
@@ -1499,7 +1503,7 @@ SEM GrExpr | Eval
 
 SEM GrExpr | Apply  
   lhs.equations    =  case @lhs.targetInfo of
-                        InVar tvar ->  [ IsApplication (Just tvar) (getNr @nm : map fromInVar @argL.valsInfo) ]
+                        InVar tvar ->  [ IsApplication (Just tvar) (getNr @nm : @argL.varsInfo) ]
 \end{code}
 \caption{Definition of constraint equations for various expression types (discussed in section~\ref{sec.collect})}
 \label{fig.equations}
@@ -1519,11 +1523,11 @@ SEM GrAlt    |  Alt
   lhs.eqs    =  case (@pat.patInfo, @lhs.termInfo) of
                  (INd  tt tns  ,  IV   sv      )  -> mkSelEqs sv tt tns
 SEM GrExpr   |  Store  
-  lhs.locnr  =  @lhs.aloc + 1  
+  lhs.locnr  =  @lhs.locnr + 1  
   lhs.hEqs   =  case @val.termInfo of
-                 INd st sns  -> [ WillStore @lhs.aloc st sns ]
+                 INd st sns  -> [ WillStore @lhs.locnr st sns ]
   lhs.eqs    =  case @lhs.targetInfo of
-                 IV tv ->  [ IsKnown tv (AbsLocs (Set.singleton @lhs.aloc)) ] 
+                 IV tv ->  [ IsKnown tv (AbsLocs (Set.singleton @lhs.locnr)) ] 
 SEM GrExpr   |  FetchUpdate
   lhs.eqs    =             [ IsSuperset (getNr @dst) (getNr @src) ]
 SEM GrExpr   |  Call  
@@ -1535,7 +1539,7 @@ SEM GrExpr   |  Eval
                  IV tv ->  [ IsEval tv (getNr @nm) ]
 SEM GrExpr   |  Apply  
   lhs.eqs    =  case @lhs.targetInfo of
-                 IV tv ->  [ IsApply (Just tv) (getNr @nm : map fromIV @argL.valsInfo) ]
+                 IV tv ->  [ IsApply (Just tv) (getNr @nm : @argL.varsInfo) ]
 \end{code}
 %else
 We are now ready to discuss the twelve syntactic positions where
@@ -1546,29 +1550,29 @@ In the case of a |Unit|
 or |UpdateUnit|
 %endif
 we distinguish
-the four combinations of target pattern (variable or node)
-and source term (variable or node). When both are variables, the
+the four combinations of target pattern
+and source term (each variable or node). When both are variables, the
 target is constrained to hold a superset of the source;
 when the target is a variable and the source is a node, 
-the target should be able to hold that node. If the
+the target can hold that node. If the
 target is a node and the source is a
 variable, all the fields of the node
 %if not shortStory
 that are not wildcards 
 %endif 
 should be projections of the source variable.
-When both target and source are nodes, their corresponding fields should be unified.
+When both are nodes, their corresponding fields should be unified.
 For the last two cases we have auxiliary functions:
 %if shortStory
 \begin{code}
 mkSelectEqs :: Variable -> GrTag -> [Variable] -> Equations
 mkSelectEqs sv tt tns
-  = [  IsSelection tv sv i tt  |  (tv,i) <- zip tns [0..] ]
+  = [  IsSelection tv sv i tt  |  (tv,i) <- zip tns [0..]     ^^ ]
 mkUnifyEqs  :: [Maybe Variable] -> [Variable] -> Equations
 mkUnifyEqs sns tns
   = [  case mbSvar of  Nothing  -> IsKnown     tv AbsBasic    ^^
                        Just sv  -> IsSuperset  tv sv          ^^
-    |  (tv,mbSvar) <- zip tns sns                             ]
+    |  (tv,mbSvar) <- zip tns sns                             ^^ ]
 \end{code}
 %else
 \begin{code}
@@ -1609,18 +1613,15 @@ The situation arising from an alternative |Alt| in a |Case| expression
 is very much like the third subcase of a |Unit| expression:
 the fields of the target node (which come from the pattern in
 each alternative) are projections of the value of the
-scrutinee, that we so carefully passed down in
-the tree before.
+scrutinee, that for this reason was (automatically!) passed down.
 
 %if shortStory
-For a |Store| expression we need a new uniquely
-numbered location.
-A heap equation is generated that states that this location indeed
-stores the value, and a normal equation is generated
-that equates the target variable to a pointer to that location.
+For a |Store| expression we generate a new uniquely
+numbered location, and a heap equation that associates it with
+the stored value. A normal equation
+equates the target variable to a pointer to the new location.
 The destination heap location that is updated by |FetchUpdate| 
 can at least take all the values of the source location.
-
 In the case of a |Call| to a function
 we distinguish the cases 
 that the target is a variable or a complete node.
@@ -1665,13 +1666,12 @@ The |Call| expression handled in figure~\ref{fig.equations} only
 matched the result, not the arguments.
 %endif
 Function calls can either occur directly in a |Call| expression,
-or be postponed by way of a thunk node.
-Thunk nodes are recognizible by their tag, which is either
+or implicitly in an |fpaNode|, that is a node with
 |Fun|, |PApp| or |App| (but not |Con|%
 %if not shortStory
- or one of the other special tags%
+ or one of the other special%
 %endif
-).
+) tags.
 
 
 In a tree walk we collect the relevant calls and
@@ -1679,17 +1679,15 @@ tagged nodes. Conceptually this is a separate tree walk,
 but it is merged by the AG preprocessor with the tree walk
 defined earlier.
 We declare synthesized attributes to collect |allCalls| and
-|fpaNodes| (nodes with tags that indicate a thunk)
-for nearly all syntactic positions,
-because nodes are introduced at many places,
-and the collections need to be passed up the tree.
+|fpaNodes| for nearly all syntactic positions,
+because this must be passed all up the tree.
 %if shortStory
 Thanks to the |USE| clause, we only need to specify the
 locations where calls and nodes are actually introduced:
 \begin{code}
-ATTR AllTerm AllExpr AllDef GrModule 
-  SYN allCalls  USE (++) [] :: [(Variable,  [Maybe Variable])]
-  SYN fpaNodes  USE (++) [] :: [(GrTag,     [Maybe Variable])]
+ATTR Bind BindL Expr Alt AltL Term TermL
+  SYN allCalls  USE (++) [] ::  ^^ [(Variable,  [Maybe Variable])]
+  SYN fpaNodes  USE (++) [] ::  ^^ [(GrTag,     [Maybe Variable])]
 SEM GrExpr  | Call  lhs.allCalls  =  [ (getNr @nm, @argL.vars) ]
 SEM GrTerm  | Node  lhs.fpaNodes  =  [ (@tag, @fldL.vars) | @tag.isfpa ]
 \end{code}
@@ -1722,22 +1720,22 @@ SEM GrTag
 Now the final set of equations is the combination of
 constraints that were gathered in the tree walk
 (that is, the synthesized |eqs| from all bindings),
-and those that arise from direct calls, |Fun|, |PApp| and |App| thunk nodes:
-\begin{code}
-SEM Program  |  Prog
-  lhs.eqs  = @bindL.eqs
-     ++ [  IsSuperset x y  |  (funnr, args) <- @bindL.allCalls
-                           ,  (x, Just y) <- zip [funnr + 1 ..] args  ]
-     ++ [  IsSuperset x y  |  (GrTag_Fun nm, args) <- @bindL.fpaNodes
-                           ,  (x, Just y) <- zip [getNr nm + 1 ..] args  ]
-     ++ [  IsSuperset x y  |  (GrTag_PApp _ nm, args) <- @bindL.fpaNodes
-                           ,  (x, Just y) <- zip [getNr nm + 1 ..] args  ]
-     ++ [  IsApply Nothing (map fromJust args)
-                           |  (GrTag_App, args) <- @bindL.fpaNodes ]
-\end{code}
+and those that arise from direct calls and |fpaNodes|.
 Note that we exploit the fact that the function and its arguments
-are numbered consecutively: the arguments are numbered from
+are numbered consecutively, from
 one more than the function number onwards.
+\begin{code}
+SEM Program | Prog
+  lhs.eqs =  @bindL.eqs
+             ++ [  IsSuperset x y  |  (funnr, args) <- @bindL.allCalls
+                                   ,  (x, Just y) <- zip [funnr + 1 ..] args  ]
+             ++ [  IsSuperset x y  |  (GrTag_Fun nm, args) <- @bindL.fpaNodes
+                                   ,  (x, Just y) <- zip [getNr nm + 1 ..] args  ]
+             ++ [  IsSuperset x y  |  (GrTag_PApp _ nm, args) <- @bindL.fpaNodes
+                                   ,  (x, Just y) <- zip [getNr nm + 1 ..] args  ]
+             ++ [  IsApply Nothing (map fromJust args)
+                                   |  (GrTag_App, args) <- @bindL.fpaNodes ]
+\end{code}
 %else
 Now the final set of equations is the combination of
 constraints that were gathered in the tree walk
@@ -1944,6 +1942,14 @@ procChange arr (i,v1) =  do  { v0 <- readArray arr i
                                      changed  =  v0 /= v2
                              ; when changed (writeArray arr i v2)  ^^
                              ; return changed                      }
+fixpoint eqs1 eqs2 proc1 proc2 
+=  fix 0  where  fix count  =  do  {  let step1 b i  = proc1  i >>= return . (b||)  ^^
+                                   ;  let step2 b i  = proc2  i >>= return . (b||)
+                                   ;  changes1  <- foldM step1  False eqs1
+                                   ;  changes2  <- foldM step2  False eqs2
+                                   ;  if    changes1 || changes2
+                                      then  fix (count+1)
+                                      else  return count                            }
 \end{code}
 Function |procChange| can be used for either an environment variable
 or a heap location.
@@ -1954,16 +1960,6 @@ The fixpoint function uses that boolean to decide whether to
 stop:
 as long as one of the equations results in a change, the
 iteration is continued.
-\begin{code}
-fixpoint eqs1 eqs2 proc1 proc2 
-=  fix 0  where  fix count  =  do  {  let step1 b i  = proc1  i >>= return . (b||)  ^^
-                                   ;  let step2 b i  = proc2  i >>= return . (b||)
-                                   ;  changes1  <- foldM step1  False eqs1
-                                   ;  changes2  <- foldM step2  False eqs2
-                                   ;  if    changes1 || changes2
-                                      then  fix (count+1)
-                                      else  return count                            }
-\end{code}
 %else
 Function |procChange| can be generically used for either an environment variable
 or a heap location.
@@ -2013,7 +2009,7 @@ Function |heapChange| dissects an |HeapEquation|,
 that states that at some location a node with given tag
 and argument variables is stored.
 It returns that the abstract contents of the location
-can be either the abstract node constructed from the |tag| and the abstract value of its arguments,
+can either be the abstract node constructed from the |tag| and the abstract value of its arguments,
 or, if the tag is a |GrTag_Fun| thunk, the result of the function
 (because after evaluation, the thunk is updated with the function result).
 %if shortStory
@@ -2048,12 +2044,13 @@ heapChange (WillStore locat tag args) env
 \end{code}
 %endif
 
-The changes of the abstract variables that arise from
-processing an |Equation| are determined by function |envChanges|
+The changes to abstract variables that arise from
+processing an |Equation| are determined by function |envChanges|%
 %if not shortStory
 in figure~\ref{fig.envChanges},
+which we will now discuss%
 %endif
-which we will now discuss.
+.
 The function returns a list of changes,
 unlike function |heapChange| above, which returns only a single change.
 For five out of six possible equation types this list 
@@ -2066,17 +2063,17 @@ envChanges :: Equation -> AbsEnv s -> AbsHeap s -> ST s [(Variable,AbsValue)]
 envChanges equat env heap
   =  case equat of
        IsKnown d  av         ->  return [(d, av)]
-       IsSuperset d  v       ->  do  {  av <- readArray env v  ^^
-                                     ;  return [(d, av)]       }
+       IsSuperset d  v       ->  do  {  av <- readArray env v
+                                     ;  return [(d, av)]                          }
        IsSelection d  v i t  ->  do  {  av <- readArray env v
-                                     ;  return [(d, absSelect av i t)]  }
-       IsConstruct d  t as       
-         ->  do  {  vars <- mapM (maybe (return AbsBasic) (readArray env)) as  ^^
-                 ;  return [(d, AbsNodes (Map.singleton t vars))]              }
-       IsEval d  v          
-         ->  do  {  av   <- readArray env v  ^^
-                 ;  res  <- absDeref av      ^^
-                 ;  return [(d,res)]         }
+                                     ;  return [(d, absSelect av i t)]            }
+       IsConstruct d  t as   ->  do  {  vars <- mapM  (maybe  (return AbsBasic)   ^^
+                                                              (readArray env))    ^^ 
+                                                      as                  
+                                     ;  return [(d, absNode t vars)]              }
+       IsEval d  v           ->  do  {  av   <- readArray env v
+                                     ;  res  <- absDeref av
+                                     ;  return [(d,res)]                          }
        IsApply mbd (f:as)     
          ->  do  {  av         <-  readArray env f
                  ;  absFun     <-  case mbd of  Nothing  -> absDeref av  ^^
@@ -2087,7 +2084,7 @@ envChanges equat env heap
 \end{code}
 %endif
 For the first equation type |IsKnown|, where a variable is known 
-to be able have some abstract value, 
+to be able to have some abstract value, 
 the variable is simply paired with that abstract value to indicate
 a necessary change.
 For the second equation type |IsSuperset d v|, 
@@ -2106,8 +2103,8 @@ equation is similar to
 the |WillStore| heap equation discussed above, in that 
 an abstract node is created from the known tag and the abstractly 
 evaluated argument variables.
-
 %if shortStory
+We have local auxiliaries that do the abstract selection and dereferencing:
 \begin{code}
 where
 absSelect av i t   
@@ -2176,11 +2173,11 @@ in figure~\ref{fig.envChanges}, |IsApplication|,
 %endif
 is the trickiest.
 It was introduced in section~\ref{sec.collect} in two situations:
-(1) at every |App| expression in the Grin program, 
-where the |Maybe Variable| destination is |Just| a variable name,
+(1) for every |App| expression in the Grin program
+(here the |Maybe Variable| destination is |Just| a variable name),
 and 
-(2) at every constructed node in the Grin program with |App| tag,
-where the destination is |Nothing|.
+(2) for every constructed node in the Grin program with |App| tag,
+(here the destination is |Nothing|).
 Remember from section~\ref{sec.constraintlang} 
 that
 %if shortStory
@@ -2198,15 +2195,16 @@ evaluate |f| and |as| abstractly.
 If the equation was introduced from situation (2),
 the function variable also needs to be dereferenced abstractly.
 This gives us an abstract function |absFun| and abstract arguments |absArgs|.
-Function |absCall| now can abstractly apply the former to the latter.
+auxiliary function |absCall| now can abstractly apply the former to the latter.
 %if shortStory
 \begin{code}
 absCall f args     
   =  do  {  ts <- mapM addArgs (getNodes (filterNodes isPAppTag f))
          ;  let (sfxs,avs) = unzip ts
-         ;  return (concat sfxs, mconcat avs)
-         }
-  where  addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
+         ;  return (concat sfxs, mconcat avs)  ^^ ^^  }
+  where  getNodes av  =  case av of  AbsNodes n  -> Map.toAscList n
+                                     AbsBottom   -> []
+         addArgs (tag@(GrTag_PApp needs nm) , oldArgs) 
            =  do  {  let  n         = length args
                           newtag    = GrTag_PApp (needs-n) nm
                           funnr     = getNr nm
@@ -2214,10 +2212,8 @@ absCall f args
                   ;  res <-  if    n<needs
                              then  return $ absNode newtag (oldArgs++args)
                              else  readArray env funnr
-                  ;  return (sfx, res)
+                  ;  return (sfx, res)                                      
                   }
-         getNodes av  =  case av of  AbsNodes n  -> Map.toAscList n
-                                     AbsBottom   -> []
 \end{code}
 %endif
 
@@ -2232,13 +2228,14 @@ The resulting nodes (either the newly constructed, or those read)
 is tupled with the destination variable to indicate a necessary change,
 at least in situation (1) where such a variable exists.
 
-But there are other changes that need to be taken into account as well.
-In the abstract call, new associations are made between arguments and
-formal parameters, that are not otherwise detected.
+But there are other changes that need to be taken into account as well,
+coined `side effects' or |sfx| in the code.
+During the abstract call, new associations between arguments and
+formal parameters become manifest, that are not statically available in the equations.
 This is why the |absCall| and |addArgs| functions, in addition to the function result,
 also return changes that take care of new possible abstract values for argument variables.
-It is because of these `side effects' (designated |sfx| in the listing)
-that function |envChanges| sometimes returns more than one change.
+It is because of these side effects
+that |envChanges| sometimes returns more than one change.
 
 
 %%]
@@ -2246,16 +2243,16 @@ that function |envChanges| sometimes returns more than one change.
 %%[discussion
 
 
-\section{Discussion and future/related work}
+\section{Discussion and related work}
 
 
 Our algorithm determines, through static analysis,
-for each variable the possible contents it can have at run time.
+for each variable an apporximation of its runtime value.
 In particular, this reveals the possible functions a closure can
 represent.
+%if not shortStory
 This information can be used to replace the indirect jump
 in a closure evaluation by a small case analysis.
-%if not shortStory
 It is vital that the back end which translates the case distinction to machine code
 does not use a jump table to implement it, as that
 would waste all our efforts to avoid indirect jumps.
@@ -2294,20 +2291,31 @@ adress popped from the stack, we can do a direct jump based
 on a case analysis of possible callers.
 %endif
 
-We end with a few remarks on the attribute grammar based methodology we used.
+
+We collect constraints on variables by means of a tree walk,
+which is implemented in an attribute grammar based formalism.
+We think this case study shows that it is useful to be able to
+define separate attributes.
+An alternative approach to collect information on a syntax tree
+is ASF+SDF \cite{vandenbrand02-asfsdf}.
+In comparison, the AG approach is lightweight, in that it relies on
+the underlying language for the definition of semantic rules.
+Yet another approach would be to provide combinators that manipulate
+attributes within the language, instead of as a preprocessor \cite{moorpeytonjonesvanwyk99aspect-oriented}.
+%if not shortStory
 We think that describing a tree walk algorithm explicitly in terms
 of inherited and synthesized attributes helps a lot in 
 clarifying the structure of the algorithm.
 As tree walks are abundant in compiler construction
 (the algorithm described is just one of many in our compiler),
 we think it is worthwhile to consistently use attribute grammar based tools.
-
-%if not shortStory
-A debate remains on whether this should be organized as a preprocessor allowing for new constructs,
-as we used in this work,
-or as a library offering a set of combinators manipulating attributes.
-\cite{jones95overl-highpoly-Short,moorpeytonjonesvanwyk99aspect-oriented}
 %endif
+
+
+
+The solution of the constraints involve a standard fixpoint iteration.
+Special is that during solving new constraints are derived and solved on the fly
+for variables that are not statically known when the contraints were collected.
 
 
 %%]
@@ -2333,6 +2341,7 @@ described in this work.
 %endif
 
 %%]
+
 
 
 \end{document}

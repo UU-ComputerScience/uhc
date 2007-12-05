@@ -517,6 +517,7 @@ Acknowledgement
 \fi
      %\itemsep 0.3\@bls \@plus 0.1\@bls \@minus 0.1\@bls
      \itemsep 0.0\@bls \@plus 0.1\@bls \@minus 0.0\@bls
+     \parsep 0.0\@bls
     \usecounter{enumiv}\let\p@enumiv\@empty
     \def\theenumiv{\arabic{enumiv}}}%
     \def\newblock{\hskip 0.11em \@plus 0.33em \@minus -0.07em}
