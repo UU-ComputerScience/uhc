@@ -2,48 +2,20 @@
 
 %%[abstract
 
-%if shortStory
-
 We describe an algorithm for abstract interpretation of an
 intermediate language in a Haskell compiler,
-also written in Haskell.
-It determines approximations of possible values for all
+itself also written in Haskell.
+It computes approximations of possible values for all
 variables in the program, which can be used for optimizing
-the code.
+the object code.
 The analysis is done by collecting constraints on variables,
-which are then solved in a fixpoint iteration.
-The set of constraints is dynamically extended while solving,
+which are then solved by fixpoint iteration.
+The set of constraints grows while solving,
 as possible values of unknown functions become known.
 The constraints are collected by decorating the abstract syntax
-tree in an attribute grammar based preprocessor for Haskell.
+tree with an attribute grammar based preprocessor for Haskell.
 An introduction to this preprocessor is also given.
-%else
-Implementations of lazy functional languages often use 
-closures, that is heap cells denoting postponed function 
-calls. When a closure is forced to evaluation, the function 
-code is called. The usual implementation involves an 
-indirect jump to this code at evaluation points. Indirect 
-jumps are expensive on pipelined architecture processors and 
-should therefore be avoided. An alternative implementation 
-evaluates closures by case analysis on the possible 
-functions it represents. To keep the number of cases small, 
-for each evaluation point the possible contents of the 
-closure needs to be known. This paper describes the abstract 
-interpretation algorithm that precisely determines 
-the possible contents of all variables.
 
-The algorithm does a tree walk over the program, collecting 
-constraints on program variables. The set of constraints is 
-then solved with fixpoint iteration. The description of the 
-algorithm is a complete implementation, with no details left 
-out. As such, it is a case study of the possibility to do so 
-within the limits of a short paper. We use many abstraction 
-mechanisms of Haskell to keep the description concise. On 
-top of that, we use a preprocessor to be able to describe 
-the algorithm in terms of catamorphisms and algebras.
-A description of this attribute grammar based preprocessor 
-is also included.
-%endif
 %%]
 
 
@@ -113,6 +85,7 @@ is also included.
 %format v0         = "\mathit{v0}"
 %format v1         = "\mathit{v1}"
 %format v2         = "\mathit{v2}"
+%format tvar       = "\mathit{tvar}"
 
 %format Data = "\mathbf{data}"
 %format DATA = "\mathbf{syntax}"
@@ -145,8 +118,11 @@ is also included.
 %else
 %endif
 
+%if shortStory
+\setlength{\parskip}{0pt}
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{3pt}
+%endif
+
 
 %%]
 
@@ -154,10 +130,6 @@ is also included.
 %%[introduction
 
 
-% \setlength{\parindent}{0pt}
-% \setlength{\parskip}{3pt}
-
-\setlength{\parskip}{0pt}
 \setlength{\abovedisplayskip}{6pt plus 2pt minus 1pt}
 \setlength{\belowdisplayskip}{6pt plus 2pt minus 1pt}
 
@@ -180,42 +152,42 @@ SKI-combinators \cite{turner79new-implementation-technique} or super-combinators
 Later, other approaches were taken
 which compile to an abstract machine model
 based on stacks and continuations.
-The instructions of this `STG-machine' can be mapped to
+The instructions of this ``STG-machine'' can be mapped to
 those of traditional hardware architectures \cite{peytonjones92stg}.
 %endif
 
-Lazy evaluation of functional languages is implemented by, instead of calling a function directly,
-building `closures' of functions, 
+Lazy evaluation of functional languages is implemented by, instead of calling functions directly,
+building ``closures'' of functions, 
 i.e.\ heap records containing a reference to the function and to its arguments.
-Such a closure can be forced to evaluation in situations where 
+Such a closure is forced to evaluation when 
 the result is actually needed,
-viz.\ when it is used in a case-expression, or passed in a strict argument position.
+viz.\ when it is used in a case-expression or passed in a strict argument position.
 
-In a naive implementation, the function reference would be a tag,
-and there is a special evaluation function which does case distinction on this tag.
+In a naive implementation, the function reference can be a tag,
+and a special evaluation function performs case distinction on this tag.
 %if shortStory
-Peyton Jones describes an encoding, where the tag is actually 
+Peyton Jones et al.\ describe an encoding, where the tag is actually 
 a pointer to the code of the function \cite{peytonjones92stg,marlowpeytonjones06-Short}.
 Evaluating a closure now amounts to just calling that code.
 %else
-Peyton Jones describes an encoding, where the tag is actually 
-a pointer to an information table, which in turn contains a pointer to the code of the function \cite{peytonjones92stg}.
+Peyton Jones et al.\ describe an encoding \cite{peytonjones92stg}, in which the tag is actually 
+a pointer to an information table, which in turn contains a pointer to the code of the function.
 Evaluating a closure now amounts to just calling that code.
 The double indirection in this encoding can be reduced to a single indirection
-by having the `tag' point directly to the code, and putting the
+by having the ``tag'' point directly to the code, and putting the
 rest of the information table just before that code in memory \cite{marlowpeytonjones06-Short}.
 
 Either way, evaluation involves calling code through an indirection pointer.
 %endif
-On modern pipelined processors, this is a very costly operation, as
-it stalls the pipeline.
-Therefore, Boquist proposes to return to the naive encoding.
+On modern pipelined processors, this is a costly operation, as
+it stalls the prefetching pipeline.
+Therefore, Boquist proposes to return to the naive encoding \cite{boquist99phd-optim-lazy}.
 To avoid the overhead of calling the evaluation function which does the
-case distinction between tags, the evaluation function is `inlined'
+case distinction between tags, the evaluation function is ``inlined''
 whenever used.
 To prevent copying the large body of the evaluation function,
-in each occurence the case analysis is pruned to contain only those cases
-that can actually occur in that particular instance \cite{boquist99phd-optim-lazy}.
+each occurence of the case analysis is pruned to contain only those cases
+that can actually occur in that particular instance.
 %if not shortStory
 This way, evaluation amounts to a few tests and conditional jumps,
 and indirect jumps are avoided completely.
@@ -225,27 +197,17 @@ Also, the conditional jumps are very local, and are likely to have their target
 within the instruction cache.
 %endif
 
-To do the pruning, 
+To do the pruning
 it is necessary to know for each closure what its possible tags are.
-This can be determined by a global control flow analysis.
+This is to be determined by a global control flow analysis.
 Boquist sketches an algorithm for
 this abstract interpretation \cite{boquist96grin-optim-Short}.
+Here we present a full implementation we employ in 
+our experimental Haskell compiler \cite{dijkstra05phd}%
 %if shortStory
-This paper presents a full implementation we prepared in 
-our experimental Haskell compiler \cite{dijkstra05phd}
-(a few left out details can be found in an accompagnying technical report).
-%else
-Unfortunately, the actual implementation of the algorithm
-seems to be lost in history.
-
-We re-engineered the abstract interpretation algorithm
-to incorporate it in an experimental Haskell compiler \cite{dijkstra05phd}
-and to extend it to handle exceptions \cite{douma06exceptional-grin}.
-As the algorithm is vital to this approach to avoid
-indirect jumps, we carefully documented the implementation,
-which is presented in this paper.
+(a few left out details can be found in an accompanying technical report \cite{UUCS2007049-short})%
 %endif
-
+.
 
 %if shortStory
 The implementation is presented by giving the actual code.
@@ -265,7 +227,7 @@ than an implementation, sometimes it is cluttered with low-level
 encodings of data structures in terms of lists and tuples.
 
 A way out of this paradox is to use Haskell itself as the description language.
-We consider a paper like `Typing Haskell in Haskell' \cite{jones99thih}
+We consider a paper like ``Typing Haskell in Haskell'' \cite{jones99thih}
 to be better readable than many a formal treatise on the same subject.
 An added benefit is that the description is actually executable code,
 which makes an error-prone translation from specification to implementation obsolete.
@@ -286,15 +248,10 @@ The aim of this paper is twofold:
       abstract interpretation algorithm that is needed to avoid indirect jumps
       when evaluating a closure in a lazy functional language;
 \item (methodological) to provide a case study for the use of Haskell
-      and attribute grammar related techniques for the description of an algorithm.
+      and attribute grammar related techniques for the description of an algorithm,
+      to show that is enables a concise and clear representation.
 \end{enumate}
-%if shortStory
 In section~\ref{sec.ai} we present the actual algorithm.
-%else
-The reader is invited to judge whether the 7 pages we use for the actual algorithm
-description in section~\ref{sec.ai} could have been much shorter
-when using other formalisms.
-%endif
 Before that, we introduce the language to be analyzed in section~\ref{sec.lang},
 and the attribute grammar preprocessor for Haskell in section~\ref{sec.ag}.
 
@@ -310,19 +267,10 @@ and the attribute grammar preprocessor for Haskell in section~\ref{sec.ag}.
 \subsection{Defining semantics}
 
 %if shortStory
-Using higher order functions, like |map|, |filter| and |foldr|,
+Using higher order functions on lists, like |map|, |filter| and |foldr|,
 is a good way to abstract from common patterns in
 functional programs.
 %else
-% If a single phenomenon needed to be nominated as the
-% most fundamental aspect of computer science, it would
-% be the ability to generalize from specific instances
-% through abstraction and parameterization.
-% Every programming language has a way to define 
-% subroutines, procedures, functions, methods, or other
-% manifestations of abstraction, and to call them with
-% appropriate parameters.
-
 Functional languages are famous for their ability to 
 parameterize functions not only with numbers and data structures,
 but also with functions and operators.
@@ -357,7 +305,7 @@ The idea that underlies the definition of |foldr|, i.e.\ to capture the pattern
 of an inductive definition by having a function parameter for each constructor of
 the data structure, can also be used for other data types, and even for
 multiple mutually recursive data types.
-Functions that can be expressed in this way were called {\em catamorphisms}
+A function that can be expressed in this way was called a {\em catamorphism}
 by Bird, and the collective extra parameters to |foldr|-like functions 
 an {\em algebra} \cite{bird84circ-traverse,birdmoor96algebra}. 
 %if not shortStory
@@ -365,35 +313,35 @@ Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
 In fact, every algebra defines a {\em semantics} of the data structure.
 When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
 such as |((:),[])| for lists, we have the identity function.
-Such an algebra is said to define the `initial' semantics.
+Such an algebra is said to define the ``initial'' semantics.
 
 Outside circles of functional programmers and category theorists, an
-algebra is simply known as a `tree walk'.
+algebra is simply known as a ``tree walk''.
 %endif
 In compiler construction, algebras could be very useful to define
-a semantics of a language, or bluntly said to define tree walks over the parse tree.
+a semantics of a language or, bluntly said, to define tree walks over the parse tree.
 The fact that this is not widely done, is due to the following problems:
 
 \begin{enumate}
 \item Unlike lists, for which |foldr| is standard, in a compiler we deal with
       custom data structures for abstract syntax of a language, 
-      which need a custom |fold|
-      function each. Morover, whenever we change the abstract syntax,
-      we need to change the |fold| function, and every algebra.
+      which each need a custom |fold|
+      function. Morover, whenever we change the abstract syntax,
+      we need to change the |fold| function and every algebra.
 \item Generated code can be described as a semantics of the language, but often
       we need additional semantices: listings, messages,
       and internal structures (symbol tables etc.).
-      This can be done by having the semantic functions in the algebra return
+      This can be done by having the semantic functions in algebras return
       tuples, but this makes them hard to handle.
 \item Data structures for abstract syntax tend to have many alternatives,
       so algebras end up to be clumsy tuples containing dozens of functions.
 \item In practice, information not only flows bottom-up in the parse tree,
       but also top-down. E.g., symbol tables with global definitions need
       to be distributed to the leafs of the parse tree to be able to evaluate them.
-      This can be done by making the semantic functions in the algebra
-      higher order functions, but this pushes handling algebras beyond human control.
-\item Much code is just passing values up and down.
-      The essense of a semantics is sparsely present in the algebra,
+      This can be done by using higher-order domains
+      for the algebras, but the resulting code becomes even harder to understand.
+\item A major portion of the algebra is involved with moving information around.
+      The essense of a semantics is sparsely present in the algebra
       and obscured by lots of boilerplate.
 \end{enumate}
 %if not shortStory
@@ -411,8 +359,8 @@ To save the nice idea of using an algebra for defining a semantics,
 we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short} that overcomes the abovementioned problems.
 It is not a separate language; we can still use Haskell for writing
 auxiliary functions, and use all abstraction techniques and libraries available.
-The preprocessor just allows a few additional constructs, which are translated
-into a custom |fold| function and algebras.
+The preprocessor just allows a few additional constructs, which can be translated
+into a custom |fold| function and algebras, or an equivalent more efficient implementation.
 
 
 \subsection{An Attribute Grammar based preprocessor for Haskell}
@@ -422,24 +370,22 @@ the five problems mentioned above.
 %if shortStory
 The abstract syntax of the language is defined in a |DATA| declaration,
 which is like a Haskell |Data| declaration with named fields,
-without the braces and commas.
+without the braces and commas (see section~\ref{sec.lang} for an example).
 Constructor function names need not to be unique between types.
 %else
 To start with, the abstract syntax of the language is defined in a |DATA| declaration,
 which is like a Haskell |Data| declaration with named fields.
 The difference is that we don't have to write braces and commas,
-and that constructor function names need not to be unique.
+and that constructor function names need not be unique.
 As an example, we define a fragment of a typical imperative language:
 \begin{code}
-DATA Stat
-  =  Assign  dest   :: String  ^^  ^^  ^^  ^^  src   :: Expr
-  |  While   cond   :: Expr    ^^  ^^  ^^  ^^  body  :: Stat
-  |  Group   elems  :: [Stat]
-DATA Expr
-  =  Const   num   :: Int
-  |  Var     name  :: String
-  |  Add     left  :: Expr     ^^  ^^  ^^  ^^  right  :: Expr
-  |  Call    name  :: String   ^^  ^^  ^^  ^^  args   :: [Expr]
+DATA Stat  =  Assign  dest   :: String  ^^  ^^  ^^  ^^  src   :: Expr
+           |  While   cond   :: Expr    ^^  ^^  ^^  ^^  body  :: Stat
+           |  Group   elems  :: [Stat]
+DATA Expr  =  Const   num   :: Int
+           |  Var     name  :: String
+           |  Add     left  :: Expr     ^^  ^^  ^^  ^^  right  :: Expr
+           |  Call    name  :: String   ^^  ^^  ^^  ^^  args   :: [Expr]
 \end{code}
 %endif
 The preprocessor generates corresponding |Data| declarations
@@ -447,17 +393,17 @@ The preprocessor generates corresponding |Data| declarations
 and generates a custom |fold| function. This overcomes problem 1.
 
 %if shortStory
-For any desired value we wish to compute over a tree, we can declare a `synthesized attribute',
+For any desired value we wish to compute over a tree, we can declare a ``synthesized attribute'',
 possibly for more than one data type.
 For example, we can declare that both statements and expressions need to 
-synthesize bytecode as well as a listing, and that expressions
-can be evaluated to an integer value:
+synthesize bytecode as well as listings, and that expressions
+can be evaluated to integer values:
 \begin{code}
 ATTR Expr Stat  SYN bytecode  :: [Instr]  ^^ ^^ ^^ SYN listing   :: String
 ATTR Expr       SYN value     :: Int
 \end{code}
 %else
-For any desired value we wish to compute over a tree, we can declare a `synthesized attribute'.
+For any desired value we wish to compute over a tree, we can declare a ``synthesized attribute''.
 Attributes can be declared for one or more data types.
 For example, we can declare that both statements and expressions need to 
 synthesize bytecode as well as pretty-printed listing, and that expressions
@@ -476,36 +422,35 @@ The value of each attribute needs to be defined for
 every constructor of every data type which has the attribute.
 %if shortStory
 These definitions
-are known as `semantic rules', and start with keyword |SEM|.
+are known as ``semantic rules'', and start with keyword |SEM|.
 An example is:
 \begin{code}
 SEM Expr  | Const  lhs.value = @num
           | Add    lhs.value = @left.value + @right.value
 \end{code}
-This states that the synthesized |value| attribute
-of a constant expression is just the |num| field,
+This states that the synthesized (left hand side) |value| attribute
+of a |Const|ant expression is just the contents of the |num| field,
 and that of an |Add|-expression can be computed
 by adding the |value| attributes of its subtrees.
 %else
 As this defines the semantics of the language, these definitions
-are known as `semantic rules', and start with keyword |SEM|.
+are known as ``semantic rules'', and start with keyword |SEM|.
 An example is:
 \begin{code}
 SEM Stat | Assign
-  @lhs.listing =  @dest.listing ++ ":=" ++ 
-                  @src.listing ++ ";"
+  @lhs.listing =  @dest.listing ++ ":=" ++ @src.listing ++ ";"
 \end{code}
 This states that the synthesized |listing| attribute
 of an assignment statement can be constructed
 by combining the |listing| attributes of its |dest| and |src| children
 and some fixed strings.
 %endif
-The |@| symbol in this context should be read as `attribute',
-not to be confused with Haskell `as-patterns'.
-At the left of the |=| symbol, the attribute to be defined is mentioned;
+The |@|-symbol in this context should be read as ``attribute'',
+not to be confused with Haskell ``as-patterns''.
+At the left of the |=|-symbol, the attribute to be defined is mentioned;
 at the right, any Haskell expression can be given.
 %if not shortStory
-The |@| symbol may be omitted in the destination attribute,
+The |@|-symbol may be omitted in the destination attribute,
 as is done in the next example. 
 This example shows that it is indeed useful that any Haskell expression,
 with embedded occurrences of child attributes, can be used in the definition.
@@ -515,10 +460,8 @@ and how to group multiple semantic rules under a single |SEM| header:
 SEM Stat | While
   lhs.bytecode =  let  k = length @cond.bytecode
                        n = length @body.bytecode
-                  in   @cond.bytecode
-                       ++ [BEQ (n+1)]
-                       ++ @body.bytecode
-                       ++ [BRA (-(n+k+2))]
+                  in   @cond.bytecode ++ [BEQ (n+1)]
+                       ++ @body.bytecode++ [BRA (-(n+k+2))]
 SEM Expr
   | Const  lhs.value = @num
   | Add    lhs.value = @left.value + @right.value
@@ -530,7 +473,7 @@ of the tree walk on the children.
 This overcomes problem 3.
 
 To be able to pass information downward during a tree walk,
-we can define `inherited' attributes
+we can define ``inherited'' attributes
 (the terminology goes back to Knuth \cite{knuth68ag}).
 As an example, it can serve to pass an environment,
 i.e.\ a lookup table that associates variables to values,
@@ -572,7 +515,7 @@ are automatically copied.
 A similar automated copying is done for synthesized attributes
 passed up the tree.
 When more than one child offers a candidate to be copied,
-normally the last one is taken,
+normally the rightmost one is taken,
 unless we specify to |USE| an operator to combine several candidates:
 \begin{code}
 ATTR Expr Stat SYN listing USE (++) []
@@ -697,15 +640,11 @@ TYPE GrBindL   =  [GrBind]
 We start our description with a definition of toplevel constructs.
 A program consists of a single module, which has a name,
 a list of global variable definitions, and a list of function bindings.
-Note that in our naming, we conventionally use suffix |L| for `list',
-and prefix |mb| for `maybe'.
+Note that in our naming, we conventionally use suffix |L| for ``list'',
+and prefix |mb| for ``maybe''.
 \begin{code}
-DATA Program
-  = Prog      mod          :: GrModule
-DATA GrModule
-  = Mod       nm           :: HsName
-              globalL      :: GrGlobalL
-              bindL        :: GrBindL
+DATA Program   = Prog      mod          :: GrModule
+DATA GrModule  = Mod       nm           :: HsName    ^^  ^^  ^^  ^^  globalL      :: GrGlobalL   ^^  ^^  ^^  ^^  bindL        :: GrBindL
 TYPE GrGlobalL  =   [GrGlobal]
 TYPE GrBindL    =   [GrBind]
 \end{code}
@@ -713,23 +652,17 @@ A global definition binds a name to a term,
 whereas a lambda binding binds a parameterized name
 to an expression.
 \begin{code}
-DATA GrGlobal
-  = Global  nm              :: HsName
-            val             :: GrTerm
-DATA GrBind
-  = Bind    nm              :: HsName
-            argNmL          :: [HsName]
-            expr            :: GrExpr
+DATA GrGlobal  = Global  nm              :: HsName   ^^  ^^  ^^  ^^   val             :: GrTerm
+DATA GrBind    = Bind    nm              :: HsName   ^^  ^^  ^^  ^^   argNmL          :: [HsName]   ^^  ^^  ^^  ^^  expr            :: GrExpr
 \end{code}
 %endif
 Grin programs manipulate five kinds of values:
-integers, nodes with a known tag and a list of fields,
-standalone tags, pointers to a node stored on the heap,
+integers, standalone tags, nodes with a known tag and a list of fields,
+pointers to a node stored on the heap,
 and the empty value.
 The first three have a direct syntactic
 representation as a |GrTerm|, pointers and the empty value have not.
 Another possible |GrTerm| is a variable, which can refer to any of the five kinds of value.
-%if shortStory
 \begin{code}
 DATA GrTerm  =  LitInt  int    :: Int
              |  Tag     tag    :: GrTag
@@ -737,43 +670,36 @@ DATA GrTerm  =  LitInt  int    :: Int
              |  Var     nm     :: HsName
 TYPE GrTermL  =  [GrTerm]
 \end{code}
-%else
-\begin{code}
-DATA GrTerm
-  =  LitInt  int    :: Int
-  |  Tag     tag    :: GrTag
-  |  Node    tag    :: GrTag
-             fldL   :: GrTermL
-  |  Var     nm     :: HsName
-TYPE GrTermL  =  [GrTerm]
-\end{code}
-%endif
 Although the syntax above allows fields of a |Node| be any |GrTerm|,
 we do not make use of nested nodes;
 if they are desired, the field list should contain
 variables that point to heap cells storing the inner nodes.
 
-Tags are used to label nodes.
 %if shortStory
 Four
 %else
 Six
 %endif
-different tags are possible.
-First we have |Con| tags, which label nodes
-that build up data structures in Grin.
+different tags are used to label nodes:
+|Con|, |Fun|, |PApp| and |App|%
+%if not shortStory
+and two special ones |Unboxed| and |Hole|%
+%endif
+. A |Con| tag labels nodes
+that build up data structures.
 They correspond to constructor functions in the Haskell source program,
 but unlike constructor functions, nodes with a |Con| tag are always fully saturated.
-For implementing lazy evaluation we have a |Fun| tag, which is needed
-to construct function `thunks', i.e.\ function applications of which the evaluation is postponed.
-Nodes with a |Fun| tag are always fully saturated functions.
-For unsaturated lazy function calls (partial parameterization), a |PApp| tag is used,
-which, apart from the function name, also records the number of 
+A |Fun| tag labels ``thunks''
+, i.e.\ function applications of which the evaluation is postponed for lazy evaluation.
+Nodes with a |Fun| tag are always fully saturated.
+A |PApp| tag indicates
+an unsaturated lazy function call (partial parameterization)
+and records, apart from the function name, also the number of 
 parameters it still |needs| to become fully saturated.
 %if shortStory
-When a lazy call is needed to a function of which the name is not statically known,
-a special thunk node is used. It has tag |App|;
-the first field of the node represents the function,
+For lazy calls to functions of which the name is not statically known,
+special thunk nodes are used with tag |App|.
+The first field of such node represents the function,
 the other fields the arguments to which the function is applied when the thunk is forced to evaluate.
 \begin{code}
 DATA GrTag  =  Con   nm        :: HsName
@@ -783,29 +709,27 @@ DATA GrTag  =  Con   nm        :: HsName
 \end{code}
 %else
 \begin{code}
-DATA GrTag
-  =  Con   nm        :: HsName
-  |  Fun   nm        :: HsName
-  |  PApp  needs     :: Int
-           nm        :: HsName
-  |  App
-  |  Unboxed
-  |  Hole
+DATA GrTag  =  Con   nm        :: HsName
+            |  Fun   nm        :: HsName
+            |  PApp  needs     :: Int     ^^ ^^ ^^ nm        :: HsName
+            |  App
+            |  Unboxed
+            |  Hole
 \end{code}
 The other three tags are an extension to those proposed by Boquist.
-When a lazy call is needed to a function of which the name is not statically known,
-a special thunk node is used. It has tag |App|;
-the first field of the node represents the function,
-the other fields the arguments to which the function is applied when the thunk is forced to evaluate.
+A |PApp| tag indicates
+an unsaturated lazy function call (partial parameterization)
+and records, apart from the function name, also the number of 
+parameters it still |needs| to become fully saturated.
 The |Unboxed| tag is a mockup tag for constructs that conceptually are nodes,
 but in reality are implemented as unboxed values.
 Finally, the |Hole| tag is used in the implementation of recursive definitions,
 but plays no special role in the analysis described in this paper.
 %endif
 
-The most ubiquitous construct in a Grin program is an expression, which
-represents the body of function bindings.
-An expression can be evaluated to a value, during which side effects on the heap may occur.
+The main construct in Grin is an expression, which
+represents the body of a function binding.
+Evaluation of expressions may lead to side effects on the heap.
 %if shortStory
 Eight cases in the expression syntax are relevant for this paper:
 \begin{code}
@@ -822,45 +746,33 @@ DATA GrExpr  =  Unit         val             :: GrTerm
 %else
 There are twelve cases in the expression syntax:
 \begin{code}
-DATA GrExpr
-  =  Unit         val             :: GrTerm
-  |  Seq          expr            :: GrExpr
-                  pat             :: GrPatLam
-                  body            :: GrExpr
-  |  Case         val             :: GrTerm
-                  altL            :: GrAltL
-  |  Store        val             :: GrTerm
-  |  UpdateUnit   nm              :: HsName
-                  val             :: GrTerm
-  |  FetchNode    nm              :: HsName
-  |  FetchUpdate  src             :: HsName
-                  dst             :: HsName
-  |  FetchField   nm              :: HsName
-                  offset          :: Int
-                  mbTag           :: Maybe GrTag
-  |  Call         nm              :: HsName
-                  argL            :: GrTermL
-  |  FFI          nm              :: String
-                  argL            :: [HsName]
-                  tagL            :: GrTagL
-  |  Eval         nm              :: HsName
-  |  Apply        nm              :: HsName
-                  argL            :: GrTermL
+DATA GrExpr  =  Unit         val             :: GrTerm
+             |  Seq          expr            :: GrExpr     ^^ ^^ ^^  pat :: GrPatLam     ^^ ^^ ^^  body :: GrExpr
+             |  Case         val             :: GrTerm     ^^ ^^ ^^  altL :: GrAltL
+             |  Store        val             :: GrTerm
+             |  UpdateUnit   nm              :: HsName     ^^ ^^ ^^  val :: GrTerm
+             |  FetchNode    nm              :: HsName
+             |  FetchUpdate  src             :: HsName     ^^ ^^ ^^  dst :: HsName
+             |  FetchField   nm              :: HsName     ^^ ^^ ^^  offset :: Int       ^^ ^^ ^^  mbTag :: Maybe GrTag
+             |  Call         nm              :: HsName     ^^ ^^ ^^  argL :: GrTermL
+             |  FFI          nm              :: String     ^^ ^^ ^^  argL :: [HsName]    ^^ ^^ ^^  tagL :: GrTagL
+             |  Eval         nm              :: HsName
+             |  Apply        nm              :: HsName     ^^ ^^ ^^  argL :: GrTermL
 \end{code}
 %endif
-We give an informal description of the semantics of these constructions,
-that is their runtime evaluation result and side effects.
+We give an informal description of the semantics of these constructs,
+that is their runtime evaluation result and side effects on the heap.
 %if not shortStory
 A formal description would be a Grin interpreter, which is not the focus of this paper.
 
 %endif
 An expression |Unit val| simply evaluates to a known value |val|.
 Evaluation of expression |Seq expr pat body| first evaluates |expr|,
-binds the result to |pat| and in the extended environment evaluates |body|.
+binds the result to |pat| and evaluates |body| in the extended environment.
 %if not shortStory
 Boquist uses a monadic style concrete syntax for this construct:
 |expr ; \pat -> body|, which is why we declared |pat| to have type |GrPatLam|
-(for `lambda pattern').
+(for ``lambda pattern'').
 It can however just as well be thought of as |LET pat=expr IN body|
 or even as an imperative style assignment |pat:=expr; body|.
 Concrete syntax is immaterial; what is important is that |expr| and |body|
@@ -868,16 +780,15 @@ are evaluated sequentially.
 
 %endif
 A |Case| expression selects from a list
-of alternatives the one that has a pattern that matches 
-the value of the variable in the |Case| header (the `scrutinee').
+of alternatives the one with a pattern that matches 
+the value of the variable in the |Case| header (the ``scrutinee'').
 Each alternative consists of a pattern and a corresponding expression.
 %if shortStory
-A pattern is 
+A pattern in a case alternative is 
 a node with a known tag and names as arguments.
-A pattern in a case alternative is quite different from
-a lambda pattern in a |Seq| expression, 
-which can be |Empty|, to be able to match
-for the empty result value of the |FetchUpdate| expression,
+A pattern in a |Seq| expression is quite different:
+it can be |Empty|, to be able to match
+the empty result value of the |FetchUpdate| expression,
 or just a variable name.
 \begin{code}
 TYPE GrAltL    =  [GrAlt]
@@ -888,20 +799,16 @@ DATA GrPatLam  =  Empty
 \end{code}
 %else
 \begin{code}
-DATA GrAlt
-  = Alt  pat   :: GrPatAlt
-         expr  :: GrExpr
-TYPE GrAltL = [GrAlt]
+TYPE GrAltL    =  [GrAlt]
+DATA GrAlt     =  Alt         pat   :: GrPatAlt  ^^  ^^  ^^  expr  :: GrExpr
 \end{code}
 Patterns in a case alternative normally consist of a node
 with a known tag, and variables as arguments.
 Stand-alone tags and literal integers are also possible patterns:
 \begin{code}
-DATA GrPatAlt
-  =  LitInt      int             :: Int
-  |  Tag         tag             :: GrTag
-  |  Node        tag             :: GrTag
-                 fldL            :: [HsName]
+DATA GrPatAlt  =  LitInt      int             :: Int
+               |  Tag         tag             :: GrTag
+               |  Node        tag             :: GrTag    ^^  ^^  ^^  fldL :: [HsName]
 \end{code}
 A pattern in a case alternative is quite different from
 a lambda pattern in a |Seq| expression.
@@ -911,21 +818,19 @@ for the empty result value of the |FetchUpdate| expression that
 only has a side effect, and a node denotation where
 the tag can, but needs not be, known:
 \begin{code}
-DATA GrPatLam
-  =  Empty
-  |  Var         nm              :: HsName
-  |  VarNode     fldL            :: GrVarL
-DATA GrVar
-  =  Var         nm              :: HsName
-  |  KnownTag    tag             :: GrTag
-TYPE GrVarL     =   [GrVar]
+DATA GrPatLam  =  Empty
+               |  Var         nm              :: HsName
+               |  VarNode     fldL            :: GrVarL
+DATA GrVar     =  Var         nm              :: HsName
+               |  KnownTag    tag             :: GrTag
+TYPE GrVarL    =  [GrVar]
 \end{code}
 We assume the existence of a special name
 \begin{code}
 wildcard :: HsName
 \end{code}
 which can serve as a
-`don't care variable' in a lambda pattern.
+``don't care variable'' in a lambda pattern.
 %endif
 
 %if shortStory
@@ -967,8 +872,7 @@ of attributes that are needed for all of them:
 \begin{code}
 SET AllDef    =  GrGlobal GrGlobalL GrBind GrBindL
 SET AllTerm   =  GrTerm GrTermL
-SET AllExpr   =  GrExpr GrAlt GrAltL
-                 GrPatAlt GrPatLam GrVar GrVarL
+SET AllExpr   =  GrExpr GrAlt GrAltL GrPatAlt GrPatLam GrVar GrVarL
 \end{code}
 %endif
 
@@ -980,8 +884,8 @@ SET AllExpr   =  GrExpr GrAlt GrAltL
 \section{Abstract interpretation}\label{sec.ai}
 
 In this section we describe an abstract interpretation
-algorithm for Grin programs.
-The algorithm solves a set of constraints by
+algorithm,
+which solves a set of constraints by
 fixpoint iteration.
 Constraints are first collected in a walk
 over the tree that represents the Grin program.
@@ -1018,9 +922,9 @@ also determines, for each |Store| expression%
 %endif
 , what type of node it can create.
 The abstraction of all heap cells that a particular
-|Store|
+|Store|-expression
 %if not shortStory
-or |Global|
+or |Global|-binding
 %endif
 creates is known as a |Location|.
 %if not shortStory
@@ -1047,37 +951,25 @@ getNr :: HsName -> Variable
 %endif
 
 We introduce a data type |AbsValue| to describe
-the abstract domain in the abstract interpretation%
+the domain in the abstract interpretation%
 %if not shortStory
 .
 It distinguishes four cases for the five different kinds of value 
-(both the empty value and integers are regarded as `basic')%
+(both the empty value and integers are regarded as ``basic'')%
 %endif
 , 
 with added bottom and error cases to form a complete lattice
 suitable for fixpoint iteration.
-%if shortStory
 \begin{code}
 data AbsValue  =  AbsBottom
-                    |  AbsBasic
-                    |  AbsTags   (Set GrTag)
-                    |  AbsLocs   (Set Location)
-                    |  AbsNodes  (Map GrTag [AbsValue])
-                    |  AbsError  String
+               |  AbsBasic
+               |  AbsTags   (Set GrTag)
+               |  AbsLocs   (Set Location)
+               |  AbsNodes  (Map GrTag [AbsValue])
+               |  AbsError  String
 \end{code}
-%else
-\begin{code}
-data AbsValue
-  =  AbsBottom
-  |  AbsBasic
-  |  AbsTags   (Set GrTag)
-  |  AbsLocs   (Set Location)
-  |  AbsNodes  (Map GrTag [AbsValue])
-  |  AbsError  String
-\end{code}
-%endif
 In the |AbsTags| case, abstract interpretation reveals
-to which subset of all possible tags a variable can refer.
+to which tags a variable can possibly refer.
 Similarly, for |AbsLocs| we determine to which locations
 a pointer can point.
 In the |AbsNodes| case, we not only determine the possible
@@ -1121,15 +1013,10 @@ That is, any abstract value remains unchanged when merging it with |AbsBottom|
 \end{code}
 Abstract values of each of the four types can be merged with others of the same type:
 \begin{code}
-   ^^  mappend AbsBasic AbsBasic     
-         =  AbsBasic
-       mappend (AbsTags  at) (AbsTags  bt) 
-         =  AbsTags (Set.union at bt)
-       mappend (AbsLocs  al) (AbsLocs  bl) 
-         =  AbsLocs (Set.union al bl)
-       mappend (AbsNodes an) (AbsNodes bn) 
-         =  AbsNodes  (Map.unionWith 
-                        (zipWith mappend) an bn)
+   ^^  mappend AbsBasic       AbsBasic         =  AbsBasic
+       mappend (AbsTags  at)  (AbsTags  bt)    =  AbsTags (Set.union at bt)
+       mappend (AbsLocs  al)  (AbsLocs  bl)    =  AbsLocs (Set.union al bl)
+       mappend (AbsNodes an)  (AbsNodes bn)    =  AbsNodes  (Map.unionWith (zipWith mappend) an bn)
 \end{code}
 Errors remain errors even when merged with other values:
 \begin{code}
@@ -1138,8 +1025,7 @@ Errors remain errors even when merged with other values:
 \end{code}
 New errors originate from merging abstract values from incompatible types:
 \begin{code}
-     mappend a b  
-       =  AbsError (show a ++ " conflicts " ++ show b)
+     mappend a b  =  AbsError (show a ++ " conflicts " ++ show b)
 \end{code}  
 %endif
 %if shortStory
@@ -1157,10 +1043,8 @@ to determine the abstract value of each variable
 in the program, and likewise for each abstract heap |Location|.
 For efficiency reasons we represent these mappings by arrays:
 \begin{code}
-type AbstractEnv s  
-  =  STArray s Variable AbsValue
-type AbstractHeap s 
-  =  STArray s Location AbsValue
+type AbstractEnv s   =  STArray s Variable AbsValue
+type AbstractHeap s  =  STArray s Location AbsValue
 \end{code}
 %endif
 
@@ -1191,13 +1075,12 @@ type HeapEquations  =  [HeapEquation]
 \end{code}
 %else
 \begin{code}
-data Equation
-  =  IsKnown          Variable  AbsValue
-  |  IsSuperset       Variable  Variable
-  |  IsSelection      Variable  Variable Int GrTag
-  |  IsConstruction   Variable  GrTag [Maybe Variable]
-  |  IsEvaluation     Variable  Variable
-  |  IsApplication    (Maybe Variable) [Variable]
+data Equation       =  IsKnown          Variable  AbsValue
+                    |  IsSuperset       Variable  Variable
+                    |  IsSelection      Variable  Variable Int GrTag
+                    |  IsConstruction   Variable  GrTag [Maybe Variable]
+                    |  IsEvaluation     Variable  Variable
+                    |  IsApplication    (Maybe Variable) [Variable]
 \end{code}
 Five out of the six equation types constrain a variable to fulfil certain properties.
 Only in the case of an |IsApplication| equation, 
@@ -1209,7 +1092,7 @@ These equations are cumulative.
 %if shortStory
 The semantics of the equations will be discussed in section~\ref{sec.solution}.
 %else
-If for example one constraint specifies that a variable `is known'
+If for example one constraint specifies that a variable ``is known''
 to have a particular abstract value, 
 and another constraint specifies that it is known to have
 another value, the abstract interpretation algorithm
@@ -1247,8 +1130,7 @@ on the possible values of parameters of |f|.
 
 For heap equations, we have only one constraint type:
 \begin{code}
-data HeapEquation
-  =  WillStore Location GrTag [Maybe Variable]
+data HeapEquation  =  WillStore Location GrTag [Maybe Variable]
 \end{code}
 The meaning of |WillStore p t as| is that location |p|
 stores a node with tag |t| and arguments |as|.
@@ -1276,9 +1158,9 @@ language described in section~\ref{sec.ag}.
 %if shortStory
 The goal of the tree walk is to synthesize equations |eqs| and |hEqs|
 stating the constraints for program variables and locations, respectively.
-Equations are collected for the whole |Program| but also for most substructures.
+Equations are collected for the whole |Program| but also for many substructures.
 \begin{code}
-ATTR Program GrBind GrBindL GrExpr GrAlt GrAltL GrPatAlt GrPatLam GrVar GrVarL
+ATTR Program GrBind GrBindL GrExpr GrAlt GrAltL
   SYN  eqs   USE (++) []  :: Equations
   SYN  hEqs  USE (++) []  :: HeapEquations
 \end{code}
@@ -1300,7 +1182,7 @@ expresses that the default way to synthesize
 equations is just to concatenate the equations synthesized on
 underlying levels. We will redefine the |eqs| and
 |heapEqs| attributes for the tree positions where
-equations are introduced.
+equations are introduced.\clearpage
 %else
 The goal of the tree walk is to synthesize |equations| stating
 the constraints for program variables, and |heapEqs| stating
@@ -1357,9 +1239,8 @@ information that we may want to express for the parameters of the node.
 Function |fromInVar| retrieves the variable from
 a |NodeInfo| that is known to be a |InVar| case.
 \begin{code}
-data NodeInfo a 
-  =  InVar   Variable 
-  |  InNode  GrTag [a]
+data NodeInfo a   =  InVar   Variable 
+                  |  InNode  GrTag [a]
  
 fromInVar :: NodeInfo a -> Variable
 fromInVar (InVar v)  = v
@@ -1393,8 +1274,7 @@ SEM GrPatAlt
 SEM GrPatLam
 | Empty      lhs.patInfo   =  InVar   wildcard
 | Var        lhs.patInfo   =  InVar   (getNr @nm)
-| VarNode    lhs.patInfo   =  InNode  (@fldL.hdTag)
-                                      (tail @fldL.vars)
+| VarNode    lhs.patInfo   =  InNode  (@fldL.hdTag) (tail @fldL.vars)
 SEM GrTerm
 | Var        lhs.var       =  Just    (getNr @nm)
 | * - Var    lhs.var       =  Nothing
@@ -1576,8 +1456,7 @@ mkUnifyEqs sns tns
 \end{code}
 %else
 \begin{code}
-buildSelectEquations 
-  :: Variable -> GrTag -> [Variable] -> Equations
+buildSelectEquations   :: Variable -> GrTag -> [Variable] -> Equations
 buildSelectEquations svar ttag tnms
   = [  IsSelection tvar svar i ttag
     |  (tvar,i) <- zip tnms [0..]
@@ -1588,12 +1467,10 @@ Finally, when both target and source are full nodes,
 corresponding arguments should unify.
 This is handled by another auxiliary function:
 \begin{code}
-buildUnifyEquations 
-  :: [Maybe Variable] -> [Variable] -> Equations
+buildUnifyEquations   :: [Maybe Variable] -> [Variable] -> Equations
 buildUnifyEquations snms tnms
-  = [  case mbSvar of
-         Nothing    -> IsKnown     tvar AbsBasic
-         Just svar  -> IsSuperset  tvar svar
+  = [  case mbSvar of  Nothing    -> IsKnown     tvar AbsBasic
+                       Just svar  -> IsSuperset  tvar svar
     |  (tvar,mbSvar) <- zip tnms snms
     ,  tvar /= wildcard
     ]
@@ -1744,29 +1621,22 @@ and those that arise from direct calls, |Fun|, |PApp| and |App| thunk nodes:
 \begin{code}
 SEM Program  |  Prog
   lhs.equations 
-   = @mod.equations
-     ++
-     [  IsSuperset x y
-     |  (funnr, args) <- @mod.allCalls
-     ,  (x, Just y) <- zip [funnr + 1 ..] args
-     ]
-     ++
-     [  IsSuperset x y
-     |  (InNode (GrTag_Fun nm) args) 
-            <- @mod.fpaNodes
-     ,  (x, Just y) <- zip [getNr nm + 1 ..] args
-     ]
-     ++
-     [  IsSuperset x y
-     |  (InNode (GrTag_PApp needs nm) args) 
-            <- @mod.fpaNodes
-     ,  (x, Just y) <- zip [getNr nm + 1 ..] args
-     ]
-     ++ 
-     [  IsApplication Nothing (map fromJust args)
-     |  (InNode GrTag_App args) 
-            <- @mod.fpaNodes
-     ]
+   =  @mod.equations
+      ++  [  IsSuperset x y
+          |  (funnr, args) <- @mod.allCalls
+          ,  (x, Just y) <- zip [funnr + 1 ..] args
+          ]
+      ++  [  IsSuperset x y
+          |  (InNode (GrTag_Fun nm) args) <- @mod.fpaNodes
+          ,  (x, Just y) <- zip [getNr nm + 1 ..] args
+          ]
+      ++  [  IsSuperset x y
+          |  (InNode (GrTag_PApp needs nm) args) <- @mod.fpaNodes
+          ,  (x, Just y) <- zip [getNr nm + 1 ..] args
+          ]
+      ++  [  IsApplication Nothing (map fromJust args)
+          |  (InNode GrTag_App args) <- @mod.fpaNodes
+          ]
 \end{code}
 Note that we exploit the fact that the function and its arguments
 are numbered consecutively: the arguments are numbered from
@@ -1790,7 +1660,7 @@ result is stored.
 
 Now we've collected all equations,
 we can proceed to solve them.
-The solution process is wrapped in function |solveEquations|.
+The solution is computed in function |solveEquations|.
 %if shortStory
 It takes 
 the number of |Variable|s and |Location|s,
@@ -1828,26 +1698,21 @@ envChanges equat env heap
                                            ;  return [(d,res)]
                                            }
       IsApplication mbd (f:as)     ->  do  {  av         <-  readArray env f
-                                           ;  absFun     <-  case mbd of
-                                                               Nothing  -> absDeref av
-                                                               Just _   -> return av
+                                           ;  absFun     <-  case mbd of  Nothing  -> absDeref av
+                                                                          Just _   -> return av
                                            ;  absArgs    <-  mapM (readArray env) as
                                            ;  (sfx,res)  <-  absCall absFun absArgs
                                            ;  return $ (maybe id (\d->((d,res):)) mbd) sfx
                                            }
-\end{code}
-\begin{code}
     where
     absSelect av i t   =  case av of
                             AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
-                            AbsBottom     -> av
-                            AbsError _    -> av
+                            _             -> av
     absDeref av        =  case av of
                             AbsLocs ls    ->  do  { vs <- mapM (readArray heap) (Set.toList ls)
                                                   ; return (mconcat (map (filterNodes isFinalTag) vs))
                                                   }
-                            AbsBottom     ->  return av
-                            AbsError _    ->  return av
+                            _             ->  return av
     absCall f args     =  do {  ts <- mapM addArgs (getNodes (filterNodes isPAppTag f))
                              ;  let (sfxs,avs) = unzip ts
                              ;  return (concat sfxs, mconcat avs)
@@ -1891,9 +1756,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2
 \end{code}
 %else
 \begin{code}
-solveEquations ::  Int -> Int 
-                   -> Equations -> HeapEquations 
-                   -> (AbstractEnv,AbstractHeap,Int)
+solveEquations ::  Int -> Int -> Equations -> HeapEquations -> (AbstractEnv,AbstractHeap,Int)
 \end{code}
 %endif
 The |solveEquations| function starts with creating two arrays,
@@ -1971,11 +1834,11 @@ stop or continue processing all equations again:
 as long as one of the equations results in a change, the
 iteration is continued.
 \begin{code}
-procChange arr (i,e1) =
-   do { e0 <- readArray arr i
-      ; let   e2       =  e0 `mappend` e1
-              changed  =  e0 /= e2
-      ; when changed (writeArray arr i e2)
+procChange arr (i,v1) =
+   do { v0 <- readArray arr i
+      ; let   v2       =  v0 `mappend` v1
+              changed  =  v0 /= v2
+      ; when changed (writeArray arr i v2)
       ; return changed
       }
 \end{code}
@@ -2026,14 +1889,12 @@ absNode t as = AbsNodes (Map.singleton tag absArgs)
 \end{code}
 %else
 \begin{code}
-heapChange ::  HeapEquation -> AbstractEnv s 
-               -> ST s (Location,AbsValue)
+heapChange ::  HeapEquation -> AbstractEnv s -> ST s (Location,AbsValue)
 heapChange (WillStore locat tag args) env 
  = do  { let mbres       =   tagFun tag
        ; absArgs         <-  mapM getEnv args
        ; absRes          <-  getEnv mbres
-       ; let absNode     =   AbsNodes 
-                               (Map.singleton tag absArgs)
+       ; let absNode     =   AbsNodes (Map.singleton tag absArgs)
        ; return (locat, absNode `mappend` absRes)
        }
        where
@@ -2092,7 +1953,7 @@ the current approximation of |v| is looked up in the abstract environment,
 and designated as a needed change for |d| as well.
 For an |IsSelection| equation, the variable |v| is abstractly evaluated
 to obtain an abstract node. From that abstract node the desired field
-is abstractly selected.
+is selected.
 The case of an
 %if shortStory
 |IsConstruct|
@@ -2104,17 +1965,18 @@ the |WillStore| heap equation discussed above, in that
 an abstract node is created from the known tag and the abstractly 
 evaluated argument variables.
 %if shortStory
-We have local auxiliaries that do the abstract selection and dereferencing:
+We have local auxiliaries that do selection and dereferencing in the abstract world:
 \begin{code}
 where
 absSelect av i t   
   =  case av of  AbsNodes  ns  -> maybe AbsBottom (!!i) (Map.lookup t ns)
                  _             -> av
 absDeref av        
-  =  case av of  AbsLocs ls    ->  do  { vs <- mapM (readArray heap) (Set.toList ls)
-                                       ; return (mconcat (map (filterNodes isFinalTag) vs))
-                                       }
-                 _             ->  return av
+  =  case av of  AbsLocs ls    
+                 ->  do  { vs <- mapM (readArray heap) (Set.toList ls)
+                         ; return (mconcat (map (filterNodes isFinalTag) vs))
+                         }
+                 _   ->  return av
 \end{code}
 The fifth equation type is |IsEval d v|, 
 which states that |d| may hold the evaluation result of 
@@ -2149,12 +2011,9 @@ remain, and those with thunk tag (like |GrTag_Fun|) are discarded.
 %if not shortStory
 The filtering is done by an auxiliary function:
 \begin{code}
-filterNodes ::  (GrTag->Bool) 
-                -> AbsValue -> AbsValue
-filterNodes p (AbsNodes nodes) 
-  = AbsNodes (Map.filterWithKey (const . p) nodes)
-filterNodes p av
-  = av
+filterNodes ::  (GrTag->Bool) -> AbsValue -> AbsValue
+filterNodes p (AbsNodes nodes)  =  AbsNodes (Map.filterWithKey (const . p) nodes)
+filterNodes p av                =  av
 isFinalTag, isPAppTag :: GrTag -> Bool
 isFinalTag  (GrTag_Fun _)      = False
 isFinalTag   GrTag_App         = False
@@ -2190,12 +2049,12 @@ which refers to a function which is applied to
 values referred to by variables |as|
 (and the result may be stored in variable |v| if |mbv| is |Just v|).
 
-The first thing that needs to be done is therefore to
+Therefore, the first thing that needs to be done is to
 evaluate |f| and |as| abstractly.
 If the equation was introduced from situation (2),
 the function variable also needs to be dereferenced abstractly.
 This gives us an abstract function |absFun| and abstract arguments |absArgs|.
-auxiliary function |absCall| now can abstractly apply the former to the latter.
+Auxiliary function |absCall| now can abstractly apply the former to the latter.
 %if shortStory
 \begin{code}
 absCall f args     
@@ -2229,7 +2088,7 @@ is tupled with the destination variable to indicate a necessary change,
 at least in situation (1) where such a variable exists.
 
 But there are other changes that need to be taken into account as well,
-coined `side effects' or |sfx| in the code.
+coined ``side effects'' or |sfx| in the code.
 During the abstract call, new associations between arguments and
 formal parameters become manifest, that are not statically available in the equations.
 This is why the |absCall| and |addArgs| functions, in addition to the function result,
@@ -2246,8 +2105,8 @@ that |envChanges| sometimes returns more than one change.
 \section{Discussion and related work}
 
 
-Our algorithm determines, through static analysis,
-for each variable an apporximation of its runtime value.
+Our implementation determines, through static analysis,
+for each variable an approximation of its runtime value.
 In particular, this reveals the possible functions a closure can
 represent.
 %if not shortStory
@@ -2258,9 +2117,7 @@ does not use a jump table to implement it, as that
 would waste all our efforts to avoid indirect jumps.
 Instead, the case analysis should be translated to 
 repeated tests and conditional jumps.
-%endif
 
-%if not shortStory
 Although branch prediction makes conditional jumps with
 known target less expensive than indirect jumps, it is still
 important to keep the number of jumps as low as possible.
@@ -2289,15 +2146,14 @@ using control flow analysis: if the number of possible callers
 is limited, instead of returning by indirectly jumping to the
 adress popped from the stack, we can do a direct jump based 
 on a case analysis of possible callers.
+
 %endif
-
-
 We collect constraints on variables by means of a tree walk,
 which is implemented in an attribute grammar based formalism.
 We think this case study shows that it is useful to be able to
-define separate attributes.
+define attributes separately.
 An alternative approach to collect information on a syntax tree
-is ASF+SDF \cite{vandenbrand02-asfsdf}.
+is using ASF \cite{vandenbrand02-asfsdf}.
 In comparison, the AG approach is lightweight, in that it relies on
 the underlying language for the definition of semantic rules.
 Yet another approach would be to provide combinators that manipulate
@@ -2310,7 +2166,6 @@ As tree walks are abundant in compiler construction
 (the algorithm described is just one of many in our compiler),
 we think it is worthwhile to consistently use attribute grammar based tools.
 %endif
-
 
 
 The solution of the constraints involve a standard fixpoint iteration.
@@ -2341,7 +2196,6 @@ described in this work.
 %endif
 
 %%]
-
 
 
 \end{document}
