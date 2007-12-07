@@ -9,7 +9,7 @@
 \def\esp@filedate{1994/01/12}
 %% esl.dtx Copyright (C) 1994 Elsevier Science
 \def\@shortjnl{\relax}
- \def\@journal{Elsevier Preprint} \def\@company{}
+ \def\@journal{LDTA 2008} \def\@company{}
   \def\@shortjid{entcs}
  \NeedsTeXFormat{LaTeX2e}
  \ProvidesClass{\@shortjid}

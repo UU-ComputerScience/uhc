@@ -691,7 +691,9 @@
 %%[1
 %if truu
 \usepackage{TRtitlepage}
+\usepackage{a4wide}
 %endif
+
 
 %if storyPHD || storyEhcBook
 %elif acm && (storyExplImpl || storyImpred || storyRuler)
@@ -920,12 +922,12 @@ WWW home page:
 
 %%[33
 
-%if entcs
-%else
 
-\title{Abstract Interpretation to Avoid Indirect Jumps}
+%if acm
+\title{Abstract Interpretation of Functional Programs}
 \subtitle{A Complete Description based on Attribute Grammars}
-%if acm && useSigplanconfSty
+\copyrightdata{[to be supplied]} 
+
 %if blinded
 \authorinfo{XXXXXXXXXXXXX\and YYYYYYYYYYYYYY}
            {ZZZZZZZZZZZZ University}
@@ -935,19 +937,12 @@ WWW home page:
            {Utrecht University}
            {\{jeroen,doaitse\}@@cs.uu.nl}
 %endif
-\copyrightdata{[to be supplied]} 
-%else
-\author{Jeroen Fokker and S. Doaitse Swierstra}
-\institute{Department of Information and Computing Sciences,\\
-Universiteit Utrecht,\\
-P.O.Box 80.089, \\
-Padualaan 14, Utrecht, Netherlands,\\
-\email{@{jeroen,doaitse}@@cs.uu.nl@},\\
-WWW home page:
-\texttt{http://www.cs.uu.nl}
-}
+
+%elif not entcs
+\title{Abstract Interpretation of Functional Programs using an Attribute Grammar System}
+\author{Jeroen Fokker and S.\ Doaitse Swierstra}
 %endif
-%endif
+
 
 %%@TopicAbstrInt.extradefinitions
 
@@ -1137,9 +1132,15 @@ WWW home page:
 \title{Abstract Interpretation of Functional Programs using an Attribute Grammar System}
 \author{Jeroen Fokker}
 and
-\author{S. Doaitse Swierstra}
-\address{dept.\ Computer Science, Utrecht University, The Netherlands}
+\author{S.\ Doaitse Swierstra}
+\address{Dept.\ of Information and Computing Sciences,\\Utrecht University, The Netherlands}
 %else
+%if truu
+\TRtitlepage
+{Abstract Interpretation\\of Functional Programs\\using an Attribute Grammar System}
+{Jeroen Fokker \\[2ex] S.\ Doaitse Swierstra}
+{UU-CS-2007-049}
+%endif
 \maketitle
 %endif
 %%]
@@ -2671,7 +2672,9 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 
 %%[1
 %if not asSlides && not storyPoster && not storyUniqueness
+%if not entcs
 \AddContentsLine{References}
+%endif
 %if refToPDF
 %\bibliographystyle{uhcbook}
 \bibliographystyle{plain}
