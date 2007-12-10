@@ -5,7 +5,9 @@
 
 %%[8.LLVMModule
 DATA LLVMModule
-  |  LLVMModule  globals    : {[Var]} 
+  |  LLVMModule  comments   : {[String]}
+                 constants  : {[(Var,Var)]}
+                 globals    : {[Var]} 
                  fwdDecls   : FuncDecls
                  funcs      : Funcs
 
@@ -16,6 +18,7 @@ TYPE Funcs  = [Func]
 
 DATA Func
   |  Func    funcDecl       : FuncDecl
+             internal       : {Bool}
              body           : Stmts
 %%]
 
@@ -25,6 +28,7 @@ TYPE FuncDecls = [FuncDecl]
 DATA FuncDecl
   | FuncDecl     name       : {String}
                  returnType : {LLVMType} 
+                 varargs    : {Bool}
                  params     : {[Var]}
 %%]
 
@@ -53,6 +57,8 @@ DATA Stmt
 
 %%[8.LLVMExpression
 DATA Expression
+  | Alloca       tp         : {LLVMType}
+                 size       : {Int}
   | BinOp        op         : {BinaryOperator}
                  left       : {Var}
                  right      : {Var}
@@ -63,7 +69,7 @@ DATA Expression
                  size       : {Int}
   | Load         ptr        : {Var}
   | GetElemPtr   ptr        : {Var}
-                 index      : {Int}
+                 indexes    : {[Int]}
   | Cast         from       : {Var}
                  to         : {LLVMType}
   | Call         func       : FuncDecl

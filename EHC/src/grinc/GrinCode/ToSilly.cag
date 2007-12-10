@@ -206,7 +206,11 @@ SEM GrExpr
  | UpdateUnit
            loc.name   = mkVar @nm
            loc.overwr = if @val.isUnboxed
-                          then [ Statement_Assignment @loc.name (Value_UnboxCon (head(tail @val.values))) ]
+                          -- Overwriting the parameter that is an pointer
+                          -- with an integer saves us a compile time cast
+                          -- but it introduces a bug in LLVM
+                          -- then [ Statement_Assignment @loc.name (Value_UnboxCon (head(tail @val.values))) ]
+                          then []
                           else []
                                 
            lhs.stats   = if @isLastExpr

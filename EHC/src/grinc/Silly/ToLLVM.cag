@@ -81,28 +81,79 @@ ATTR Alternative
 ATTR Constant    
      [ | | var : {Var} ]  
      
-ATTR Alternatives Alternative
-     Statements Statement
-     [ | | locMapping : {Data.Map.Map String [Var]} ]     
-  
-SEM Statement 
-  | Assignment  lhs.locMapping = if @lhs.inBranch && @dest.isLocal
-                                 then Data.Map.singleton @dest.origName [@loc.lhsVar]
-                                 else Data.Map.empty   
-  | * - Assignment
-                lhs.locMapping = Data.Map.empty
-     
 ATTR AllNT
      [ gUniq: UID | | ]      
            
 SEM SilModule
-  | SilModule   lhs.llvmCode = let globals = GlobalVar "RP" (pLift @lhs.pointerType)
-                                             : mkVarList GlobalVar @variables
-                                                          @lhs.globalType
-  
-                                in LLVMModule_LLVMModule globals [] 
-                                                         @functions.llvmCode
-
+  | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
+                                                     @loc.constants 
+                                                     @loc.globals 
+                                                     ( @loc.printfDecl
+                                                     : primPatternMatchFailureFuncDecl
+                                                     : @functions.externFuncs 
+                                                     )
+                                                     ( @loc.main 
+                                                     : @functions.llvmCode 
+                                                     )
+                                                     
+                loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
+                loc.constants= [ ( GlobalVar "STR_RES" (Array 22 I8)
+                                  , StrConst "c\"Tag: %lld Value:%lld\\0A\\00\""
+                                             (Array 22 I8)
+                                  )
+                               ]
+                loc.globals  = GlobalVar "RP" (@lhs.globalType) :
+                               mkVarList GlobalVar @variables @lhs.globalType                              
+                loc.printfDecl =
+                               FuncDecl_FuncDecl "printf" I32 True
+                                                 [(LocalVar "str" (pLift I8))]
+                                           
+                loc.main     = Func_Func 
+                                 (FuncDecl_FuncDecl "main" I32 False []) False
+                                 [ Stmt_Assignment 
+                                     (LocalVar "rpArr" @lhs.pointerType)
+                                     (Expression_Malloc @lhs.intType 
+                                                        (1 + @functions.maxRPSize)
+                                     )
+                                 , Stmt_Store
+                                     (LocalVar "rpArr" @lhs.pointerType)
+                                     (GlobalVar "RP" @lhs.globalType)
+                                 , Stmt_Call
+                                     (FuncDecl_FuncDecl "initialize" Void False [])
+                                     False []
+                                 , Stmt_Call
+                                     (FuncDecl_FuncDecl "fun_main" Void False [])
+                                     False []
+                                 , Stmt_Assignment 
+                                     (LocalVar "rp.0.val" @lhs.intType)
+                                     (Expression_Load 
+                                       (LocalVar "rpArr" @lhs.pointerType)
+                                     )
+                                 , Stmt_Assignment
+                                     (LocalVar "rp.1" @lhs.pointerType)
+                                     (Expression_GetElemPtr
+                                       (LocalVar "rpArr" @lhs.pointerType) [1]
+                                     )
+                                 , Stmt_Assignment
+                                     (LocalVar "rp.1.val" @lhs.intType)
+                                     (Expression_Load 
+                                       (LocalVar "rp.1" @lhs.pointerType)
+                                     )
+                                 , Stmt_Assignment
+                                     (LocalVar "cast.str.res" (pLift I8))
+                                     (Expression_GetElemPtr 
+                                       (GlobalVar "STR_RES" (pLift $ Array 22 I8))
+                                       [0,0]
+                                     )  
+                                 , Stmt_Call
+                                     @loc.printfDecl True
+                                     [ LocalVar "cast.str.res" (pLift I8)
+                                     , LocalVar "rp.0.val" @lhs.intType
+                                     , LocalVar "rp.1.val" @lhs.intType
+                                     ]   
+                                 , Stmt_Return (Constant 0 I32)      
+                                 ]                     
+                               
 SEM Functions
   | Cons        lhs.llvmCode = @hd.llvmCode : @tl.llvmCode
  
@@ -111,20 +162,20 @@ SEM Functions
   | Nil         lhs.llvmCode = []
 
 SEM Function
-  | Function    lhs.llvmCode = Func_Func @loc.fnDecl @body.llvmCode
+  | Function    lhs.llvmCode = let locals = map (\nm -> Stmt_Assignment 
+                                                          (LocalVar (hs2str nm) @lhs.pointerType)
+                                                          (Expression_Alloca @lhs.intType 1)
+                                                ) @locals
+                                in Func_Func @loc.fnDecl True $
+                                   locals ++ @body.llvmCode
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
-                lhs.locMapping =
-                               Data.Map.unionWith (++) @hd.locMapping
-                                                       @tl.locMapping
                 
                 (tl.gUniq, hd.gUniq) = 
                                mkNewLevUID @lhs.gUniq
                 
   | Nil         lhs.llvmCode = []
-                lhs.locMapping =
-                               Data.Map.empty
   
 SEM Statement
   -- A Silly assign will translate to a store. We have the following steps
@@ -141,10 +192,7 @@ SEM Statement
                                @loc.lhsStmts ++
                                @loc.lhsptrStmts ++
                                @loc.fitsStmts ++
-                               if @lhs.inBranch && @dest.isLocal
-                               then [Stmt_Assignment @loc.lhsVar
-                                                     (toExpr @source.llvmExpr) ]
-                               else [Stmt_Store @loc.fitsVar @loc.lhsptrVar] 
+                               [Stmt_Store @loc.fitsVar @loc.lhsptrVar] 
                 
                 (loc.uniqSeed, dest.gUniq, source.gUniq) =
                                mkNewLevUID2 @lhs.gUniq 
@@ -154,15 +202,46 @@ SEM Statement
                 loc.(uniqNr2,lhsVar,lhsStmts) =
                                expr2var @loc.uniqNr1 @dest.llvmExpr
                 loc.(uniqNr3,lhsptrVar,lhsptrStmts) =
-                               if @lhs.inBranch && @dest.isLocal
-                               then (@loc.uniqNr2,@loc.lhsVar,[])
-                               else cast2ptr @loc.uniqNr2 @loc.lhsVar 
-                                             @lhs.pointerType
+                               cast2ptr @loc.uniqNr2 @loc.lhsVar 
+                                        @lhs.pointerType
                 loc.(uniqNr4,fitsVar,fitsStmts) =
-                               if @lhs.inBranch && @dest.isLocal
-                               then (@loc.uniqNr3, @loc.rhsVar, [])
-                               else makeFitting @loc.uniqNr3 @loc.rhsVar
-                                                @loc.lhsptrVar                                         
+                               makeFitting @loc.uniqNr3 @loc.rhsVar
+                                           @loc.lhsptrVar                                         
+
+  | Assignment2 lhs.llvmCode = @source.llvmCode ++
+                               @loc.sourceStmts ++                               
+                               @dest1.llvmCode ++
+                               @loc.dest1Stmts ++
+                               @loc.dest1ptrStmts ++
+                               @loc.fits1Stmts ++
+                               [ Stmt_Store @loc.fits1Var @loc.dest1ptrVar ] ++
+                               @dest2.llvmCode ++
+                               @loc.dest2Stmts ++                               
+                               @loc.dest2ptrStmts ++                               
+                               @loc.fits2Stmts ++
+                               [ Stmt_Store @loc.fits2Var @loc.dest2ptrVar] 
+                
+                (loc.uniqSeed, dest1.gUniq, dest2.gUniq, source.gUniq) =
+                               mkNewLevUID3 @lhs.gUniq 
+                
+                loc.(uniqNr1,sourceVar,sourceStmts) =
+                               expr2var @loc.uniqSeed @source.llvmExpr
+                loc.(uniqNr2,dest1Var,dest1Stmts) =
+                               expr2var @loc.uniqNr1 @dest1.llvmExpr
+                loc.(uniqNr3,dest2Var,dest2Stmts) =
+                               expr2var @loc.uniqNr2 @dest2.llvmExpr
+                loc.(uniqNr4,dest1ptrVar,dest1ptrStmts) =
+                               cast2ptr @loc.uniqNr3 @loc.dest1Var 
+                                        @lhs.pointerType
+                loc.(uniqNr5,dest2ptrVar,dest2ptrStmts) =
+                               cast2ptr @loc.uniqNr4 @loc.dest2Var 
+                                        @lhs.pointerType                                        
+                loc.(uniqNr6,fits1Var,fits1Stmts) =
+                               makeFitting @loc.uniqNr5 @loc.sourceVar
+                                           @loc.dest1ptrVar
+                loc.(uniqNr7,fits2Var,fits2Stmts) =
+                               makeFitting @loc.uniqNr6 @loc.sourceVar
+                                           @loc.dest2ptrVar  
 
   | Call        lhs.llvmCode = let fDecl = Data.Map.findWithDefault 
                                              (error "No such function")
@@ -198,6 +277,8 @@ SEM Statement
   
   | If          lhs.llvmCode = @scrutinee.llvmCode ++
                                @loc.scrutineeStmts ++ 
+                               @loc.scrutToIntStmts ++
+                               @loc.scrutineeUnboxStmts ++
                                @loc.cmpStmts ++ 
                                [ Stmt_BranchIf 
                                  @loc.cmpVar
@@ -208,8 +289,7 @@ SEM Statement
                                @loc.sndStmts ++
                                [ Stmt_Branch @loc.resumeLabel
                                , Stmt_Label  @loc.resumeLabel
-                               ] ++
-                               @loc.phiStms
+                               ]
   
                 loc.(fstConst,fstLabel,fstStmts) =
                                      @loc.fstAlt
@@ -217,43 +297,46 @@ SEM Statement
                                      @loc.sndAlt                     
                 loc.(fstAlt,sndAlt) =
                                let f (x:y:[]) = (x,y)
-                                   f _ = error "More then two alts for If"
-                                in f @body.jumpTargets  
-                                
-                loc.phiStms = let predecessors xs = zip xs [ @loc.fstLabel
-                                                           , @loc.sndLabel ] 
-                                  mkVar str = LocalVar str @lhs.intType                                  
-                               in map (\(str,preds) -> 
-                                        Stmt_Assignment (mkVar str) $
-                                        Expression_Phi @lhs.intType
-                                                       (predecessors preds)
-                                      ) $ Data.Map.toList @body.locMapping                 
+                                   f _ = error "Not exactly 2 alts for If"
+                                in f @body.jumpTargets                                              
                                 
                 (loc.uniqSeed, scrutinee.gUniq, body.gUniq) =
                                mkNewLevUID2 @lhs.gUniq 
                                
                 loc.(uniqNr1, scrutineeVar, scrutineeStmts) =                               
                                expr2var @loc.uniqSeed @scrutinee.llvmExpr
+
+                loc.(uniqNr2, scrutToIntVar, scrutToIntStmts) =
+                              cast2int @loc.uniqNr1 @scrutineeVar
+                                       @lhs.intType
+
+                loc.(uniqNr3, scrutineeUnboxVar, scrutineeUnboxStmts) =                               
+                              expr2var @loc.uniqNr2 $
+                              Right ( Expression_BinOp AND @loc.scrutToIntVar
+                                                       (Constant 1 @lhs.intType)
+                                    , @lhs.intType)
                                
-                loc.(uniqNr2, cmpVar, cmpStmts) =
-                              expr2var @loc.uniqNr1 $
-                              Right ( Expression_Compare CMPEQ @loc.scrutineeVar
-                                                        @loc.fstConst
+                loc.(uniqNr4, cmpVar, cmpStmts) =
+                              expr2var @loc.uniqNr3 $
+                              Right ( Expression_Compare CMPEQ 
+                                                         @loc.scrutineeUnboxVar
+                                                         @loc.fstConst
                                     , I1)               
                                
-                loc.(uniqNr3, resumeLabel) =
-                               newFresh @loc.uniqNr2 Label              
+                loc.(uniqNr5, resumeLabel) =
+                               newFresh @loc.uniqNr4 Label              
 
   | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
                                @loc.scrutineeStmts ++ 
                                [ Stmt_Switch 
                                  @loc.scrutineeVar
-                                 (snd $ last @loc.targets) 
-                                 (init @loc.targets)
+                                 @loc.defaultLabel
+                                 @loc.targets 
                                ] ++
                                @loc.altStmts ++
-                               [ Stmt_Label  @loc.resumeLabel ] ++
-                               @loc.phiStms
+                               @loc.defaultBody ++
+                               [ Stmt_Branch @loc.resumeLabel] ++
+                               [ Stmt_Label  @loc.resumeLabel ]
                     
                 loc.altStmts =  
                                concatMap (( ++ [Stmt_Branch @loc.resumeLabel]) . 
@@ -261,16 +344,7 @@ SEM Statement
                                    @body.jumpTargets  
                 
                 loc.targets = map (\(x,y,z) -> (x,y)) @body.jumpTargets
-                                
-                loc.phiStms = let labels = map snd @loc.targets
-                                  predecessors xs = zip xs labels 
-                                  mkVar str = LocalVar str @lhs.intType                                  
-                               in map (\(str,preds) -> 
-                                        Stmt_Assignment (mkVar str) $
-                                        Expression_Phi @lhs.intType
-                                                       (predecessors preds)
-                                      ) $ Data.Map.toList @body.locMapping                 
-                                
+                                                                            
                 (loc.uniqSeed, scrutinee.gUniq, body.gUniq) =
                                mkNewLevUID2 @lhs.gUniq 
                                
@@ -278,7 +352,10 @@ SEM Statement
                                expr2var @loc.uniqSeed @scrutinee.llvmExpr                                            
                                
                 loc.(uniqNr2, resumeLabel) =
-                               newFresh @loc.uniqNr1 Label   
+                               newFresh @loc.uniqNr1 Label
+                               
+                loc.(uniqNr3, defaultLabel, defaultBody) =
+                               defaultCase @loc.uniqNr2   
                                
   | Jump        lhs.llvmCode = error $ "Generated jump instructions not allowed"
                                      ++ " in LLVM. Is -g set to 0?"
@@ -292,22 +369,17 @@ SEM Statement
                                     
   | Smart       lhs.llvmCode = error "Smart should be generated for ASM only"
                                     
-  | * - Assignment Call Comment If Jump Label Return Smart Switch
-                lhs.llvmCode = [Stmt_Comment ["Statement: not yet implemented"]]
+  | * - Assignment Assignment2 Call Comment If Jump Label Return Smart Switch
+                lhs.llvmCode = error "Unimplemented Statement"
 
 SEM Alternatives
   | Cons        lhs.jumpTargets = 
-                               @hd.jumpTarget : @tl.jumpTargets
-                lhs.locMapping =
-                               Data.Map.unionWith (++) @hd.locMapping
-                                                       @tl.locMapping                
+                               @hd.jumpTarget : @tl.jumpTargets              
                 (tl.gUniq, hd.gUniq) = 
                                mkNewLevUID @lhs.gUniq
                                
   | Nil         lhs.jumpTargets = 
-                               [] 
-                lhs.locMapping =
-                               Data.Map.empty
+                               []
                 
 SEM Alternative
   | Alternative lhs.jumpTarget = 
@@ -339,17 +411,21 @@ SEM Value
   -- Perform the required arithmic (>>1)
   -- 
   | BoxVar      lhs.llvmExpr = Right 
-                               (Expression_BinOp SHR @loc.varVar 
+                               (Expression_BinOp SHR @loc.intVar 
                                                  (Constant 1 @lhs.intType)
-                               , getType @loc.varVar)
+                               , getType @loc.intVar)
                 lhs.llvmCode = @var.llvmCode ++
-                               @loc.varStms
+                               @loc.varStms ++
+                               @loc.intVarStms
                                                
                 (loc.uniqSeed,var.gUniq) =
                                mkNewLevUID @lhs.gUniq 
   
                 loc.(uniqNr1,varVar,varStms) =
                                expr2var @loc.uniqSeed @var.llvmExpr
+                               
+                loc.(uniqNr2,intVar,intVarStms) =
+                               load2Value @loc.uniqNr1 @loc.varVar                           
                                
   | Call        lhs.llvmExpr = Right
                                ( Expression_Call @loc.fnDecl False @loc.castVars
@@ -358,7 +434,7 @@ SEM Value
                                @loc.argStmts ++
                                @loc.castStmts
  
-                loc.fnDecl  = FuncDecl_FuncDecl @name @lhs.intType []
+                loc.fnDecl  = FuncDecl_FuncDecl @name @lhs.intType False @loc.params
  
                 (loc.uniqSeed, args.gUniq) =
                                mkNewLevUID @lhs.gUniq 
@@ -381,6 +457,13 @@ SEM Value
                                                    , stmt ++ (trd3 xs)
                                                    )
                                      ) (@loc.uniqNr1,[],[]) @loc.argVars  
+                -- We generate the formal parameters by generating new names
+                -- for the actual ones
+                loc.(uniqNr3,params) =  
+                               foldr (\x xs -> let (nr,fresh) = newFresh (fst xs) (getType x)
+                                                in (nr, fresh : (snd xs))
+                                     ) 
+                                     (@loc.uniqNr2,[]) @loc.castVars
 
   | Con         lhs.llvmExpr = Left @con.var
                 lhs.llvmCode = []
@@ -392,9 +475,10 @@ SEM Value
                                                  (Constant 1 @lhs.intType)
                                , getType @loc.shlVar)
                 lhs.llvmCode = @con.llvmCode ++
-                               @loc.conStms  ++                        
+                               @loc.conStmts  ++  
+                               @loc.intConStmts ++                      
                                [ Stmt_Assignment @loc.shlVar
-                                   ( Expression_BinOp SHL @loc.conVar
+                                   ( Expression_BinOp SHL @loc.intConVar
                                        (Constant 1 @lhs.intType)
                                    )
                                ]
@@ -402,11 +486,15 @@ SEM Value
                 (loc.uniqSeed,con.gUniq) =
                                mkNewLevUID @lhs.gUniq 
   
-                loc.(uniqNr1,conVar,conStms) =
-                               expr2var @loc.uniqSeed @con.llvmExpr
-                loc.(uniqNr2,shlVar) =
-                               newFresh @loc.uniqNr1 (getExprType @con.llvmExpr)                               
-              
+                loc.(uniqNr1,conVar,conStmts) =
+                               expr2var @loc.uniqSeed @con.llvmExpr  
+                                                            
+                loc.(uniqNr2,intConVar,intConStmts) =
+                               load2Value @loc.uniqNr1 @loc.conVar 
+                               
+                loc.(uniqNr3,shlVar) =
+                               newFresh @loc.uniqNr2 (getExprType @con.llvmExpr)
+                                                                             
   | Var         lhs.llvmExpr = if getType @loc.var == @lhs.intType
                                then Left @loc.var
                                else Right
@@ -434,17 +522,11 @@ SEM Variables
                 
 SEM Variable
   | Global      lhs.llvmExpr = Left $ GlobalVar (hs2str @name) 
-                                                (pLift @lhs.pointerType)
+                                                @lhs.globalType
                 lhs.llvmCode = []
                 
-  | Local       lhs.llvmExpr = if Data.Map.member (hs2str @name) @lhs.localsMap
-                                  && @lhs.inBranch
-                               then Left $ @loc.freshVar
-                               else Left $ LocalVar (hs2str @name) @lhs.intType                                        
-                lhs.llvmCode = [] 
-                
-                loc.(uniqNr1,freshVar) =
-                               newFresh @lhs.gUniq @lhs.intType
+  | Local       lhs.llvmExpr = Left $ LocalVar (hs2str @name) @lhs.pointerType                                        
+                lhs.llvmCode = []               
   
   | Param       lhs.llvmExpr = Left $ LocalVar (hs2str @name) @lhs.intType                                       
                 lhs.llvmCode = []                                                    
@@ -453,7 +535,7 @@ SEM Variable
                 lhs.llvmCode = []
                 
   | Subs        lhs.llvmExpr = Right $ 
-                               (Expression_GetElemPtr @loc.ptrVar @index
+                               (Expression_GetElemPtr @loc.ptrVar [@index]
                                , getType @loc.ptrVar)
                 lhs.llvmCode = @array.llvmCode ++
                                @loc.arrStmts ++
@@ -465,7 +547,7 @@ SEM Variable
                 loc.(uniqNr1,arrVar,arrStmts) =
                                expr2var @loc.uniqSeed @array.llvmExpr
                 loc.(uniqNr2,loadedVar,loadedStmts) =
-                               if isGlobal @loc.arrVar
+                               if isGlobal @loc.arrVar || @array.isLocal
                                then load @loc.uniqNr1 @loc.arrVar
                                else (@loc.uniqNr1, @loc.arrVar, []) 
                 loc.(uniqNr3,ptrVar,ptrStmts) =
@@ -519,7 +601,7 @@ SEM Function
   | Function    lhs.fnDecl = (hs2str @name, @loc.fnDecl)
                 loc.fnDecl = let prms = mkVarList LocalVar @parameters 
                                                            @lhs.intType
-                              in FuncDecl_FuncDecl (hs2str @name) Void prms
+                              in FuncDecl_FuncDecl (hs2str @name) Void False prms
 %%]
   
 %%[8
@@ -550,42 +632,55 @@ SEM SilModule
 
 %%[8
 --------------------------------------------------------------------------------
--- We pass down a map with the names of local variables in it
--- this is needed to remove the assignment to local variables that occurs
--- in branches and transform it to a SSA state
+-- TODO: Update comment
 --------------------------------------------------------------------------------
-ATTR Statements Statement
-     Alternatives Alternative
-     Values Value
-     Variables Variable
-     [ localsMap : {Data.Map.Map String String} | | ]
-
 ATTR Variable
-     [ | | isLocal : {Bool} origName : {String} ]
-
-ATTR Statements Statement
-     Alternatives Alternative
-     Values Value
-     Variables Variable
-     [ inBranch : {Bool} | | ]
-
-SEM Function
-  | Function    body.localsMap = 
-                             let locals = map ((\x -> (x,x)) . hs2str) @locals 
-                              in Data.Map.fromList locals
-                body.inBranch =
-                             False
-
-SEM Alternative
-  | Alternative body.inBranch =
-                             True
-                              
+     [ | | isLocal : {Bool} ]
+                          
 SEM Variable
   | Local       lhs.isLocal  = True
-                lhs.origName = hs2str @name 
   | * - Local
-                lhs.isLocal  = False
-                lhs.origName = "TODO: BUG"                               
+                lhs.isLocal  = False                           
+%%]
+
+%%[8
+--------------------------------------------------------------------------------
+-- Pass the max size of the closure that is stored in RP up
+-- so that we can initialize it at the start up.
+--------------------------------------------------------------------------------
+ATTR Functions Function 
+     Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     [ | | maxRPSize USE {`max`} {0}: {Int} ]
+
+SEM Variable
+  | Subs        lhs.maxRPSize =
+                             if @array.isRP then @index else 0  
+
+ATTR Variable
+     [ | | isRP : {Bool} ]
+                          
+SEM Variable
+  | Local       lhs.isRP   = True
+  | * - Local
+                lhs.isRP   = False                           
+%%]
+
+%%[8
+--------------------------------------------------------------------------------
+-- Pass function declarations that are defined exetern
+--------------------------------------------------------------------------------
+ATTR Functions Function 
+     Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     [ | | externFuncs USE {++} {[]}: {[FuncDecl]} ]
+                       
+SEM Value
+  | Call        lhs.externFuncs = [@loc.fnDecl]                  
 %%]
 
 %%[8
@@ -605,11 +700,22 @@ fst3 (x,_,_) = x
 snd3 :: (a,b,c) -> b
 snd3 (_,x,_) = x
 
-
 -- Get the third element of a 3 tuple
 trd3 :: (a,b,c) -> c
 trd3 (_,_,x) = x
 
+primPatternMatchFailureFuncDecl :: FuncDecl
+primPatternMatchFailureFuncDecl =
+  FuncDecl_FuncDecl "primPatternMatchFailure" Void False [] 
+
+defaultCase :: UID -> (UID,Var,Stmts)
+defaultCase nr =
+  let (nr1, fresh1) = newFresh nr Label
+   in (nr1, fresh1, [ Stmt_Label fresh1
+                    , Stmt_Call primPatternMatchFailureFuncDecl
+                                           False []
+                    ])
+  
 toExpr :: LLVMExpr -> Expression
 toExpr (Right (e,tp)) = e
 toExpr (Left var) = Expression_Cast var (getType var)
@@ -670,6 +776,14 @@ load :: UID -> Var -> (UID,Var,Stmts)
 load nr var =
   let loadType     = pLower (getType var)
       (nr', fresh) = newFresh nr loadType
-   in (nr', fresh, [Stmt_Assignment fresh (Expression_Load var)])   
+   in (nr', fresh, [Stmt_Assignment fresh (Expression_Load var)])
+   
+load2Value :: UID -> Var -> (UID,Var,Stmts)
+load2Value nr var 
+  | isInt (getType var) = (nr,var,[])
+  | otherwise           =
+    let (nr1,var1,stmts1) = load nr var
+        (nr2,var2,stmts2) = load2Value nr1 var1
+     in (nr2,var2, stmts1 ++ stmts2)       
 }
 %%]

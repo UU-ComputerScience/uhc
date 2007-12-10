@@ -69,7 +69,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
 %%]
-%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)})
+%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)}, {%{GRIN}LLVM(LLVMModule)})
 %%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
@@ -123,6 +123,7 @@ initState opts
   = GRINCompileState { gcsUnique     = 3          -- 0,1,2 are reserved for wildcard, main, mainexcept
                      , gcsGrin       = undefined
                      , gcsSilly      = undefined
+                     , gcsLLVM       = undefined
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
@@ -240,7 +241,11 @@ caOutput = task_ VerboseNormal "Writing code"
          ; caWriteSilly "sil3" pretty
          ; transformSilly   shortcut      "Shortcut single-use variables"
          ; when (ehcOptEmitLLVM options)
-           (caWriteSilly "ll" (\_ mod -> prettyLLVMModule $ silly2llvm mod) )
+            (do { caSilly2LLVM
+                ; caWriteLLVM "ll" prettyLLVMModule
+                }
+            )
+           -- (caWriteSilly "ll" (\_ mod -> prettyLLVMModule $ silly2llvm mod) )
          ; when (ehcOptEmitLlc options)
            (caWriteSilly "c" prettyC)
          ; when (ehcOptEmitLlc options)
@@ -296,6 +301,12 @@ caGrin2Silly = do
     ; modify (gcsUpdateSilly silly)
     }
 
+caSilly2LLVM :: CompileAction ()
+caSilly2LLVM = do
+    { code <- gets gcsSilly
+    ; let llvm = silly2llvm code
+    ; modify (gcsUpdateLLVM llvm)
+    }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,6 +314,15 @@ caGrin2Silly = do
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+caWriteLLVM  :: String -> (LLVMModule -> PP_Doc) -> CompileAction()
+caWriteLLVM suffix ppFun =
+  do input <- gets gcsPath
+     do { let output = fpathSetSuff suffix input
+        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+        ; llvm <- gets gcsLLVM
+        ; liftIO $ writePP ppFun llvm output
+        }
+
 caWriteSilly :: String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
 caWriteSilly suffix ppFun =
   do input <- gets gcsPath
@@ -340,6 +360,7 @@ data GRINCompileState = GRINCompileState
     { gcsUnique    :: Int
     , gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
+    , gcsLLVM      :: LLVMModule
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
@@ -348,6 +369,7 @@ data GRINCompileState = GRINCompileState
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
+gcsUpdateLLVM   x s = s { gcsLLVM   = x }
 gcsUpdateUnique x s = s { gcsUnique = x }
 gcsUpdateHptMap x s = s { gcsHptMap = x }
 

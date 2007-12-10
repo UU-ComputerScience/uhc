@@ -91,6 +91,11 @@ shellCmdGcc :: String
 shellCmdGcc = "@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
+%%[8 export(shellCmdLLVMC)
+shellCmdLLVMC :: String
+shellCmdLLVMC = "@LLVMC_CMD@@SUFFIX_EXEC@"
+%%]
+
 %%[99 export(shellCmdCpp)
 shellCmdCpp :: String
 shellCmdCpp = "@CPP_CMD@@SUFFIX_EXEC@"

@@ -50,6 +50,11 @@
 %%[8 import (qualified EH.Util.ScanUtils as ScanUtils)
 %%]
 
+%%[8 import (qualified Debug.Trace)
+
+-- DEBUG
+%%]
+
 %%[9 import ({%{EH}Pred})
 %%]
 
@@ -1408,7 +1413,7 @@ cpCompileWithGCC how othModNmL modNm
                             (do { cpMsg' modNm VerboseALot "GCC" Nothing fpTarg
                                 ; lift $ putStrLn compileC
                                 })
-                     ; cpSystem compileC
+                     ; cpSystem (Debug.Trace.trace compileC compileC)
                      })
          }
 %%]

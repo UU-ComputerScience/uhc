@@ -690,6 +690,8 @@ gccCmd
 GCC_CMD
 cppCmd
 CPP_CMD
+llvmcCmd
+LLVMC_CMD
 CC
 CFLAGS
 LDFLAGS
@@ -1340,6 +1342,9 @@ Optional Packages:
   --with-cpp=<cpp preprocessor>
                           Use a command different from 'cpp' to compile with
                           CPP.
+  --with-llvmc=<LLVM compiler>
+                          Use a command different from 'llvmc' to compile LLVM
+                          source code.
 
 Some influential environment variables:
   CC          C compiler command
@@ -2437,6 +2442,69 @@ else
 fi
 CPP_CMD=$cppCmd
 
+
+# gcc
+
+# Check whether --with-llvmc was given.
+if test "${with_llvmc+set}" = set; then
+  withval=$with_llvmc;  llvmCmd="$withval"
+else
+
+  if test "$LLVMC" = ""; then
+    # Extract the first word of "llvmc", so it can be a program name with args.
+set dummy llvmc; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmcCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmcCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmcCmd="$llvmcCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmcCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmcCmd=$ac_cv_path_llvmcCmd
+if test -n "$llvmcCmd"; then
+  { echo "$as_me:$LINENO: result: $llvmcCmd" >&5
+echo "${ECHO_T}$llvmcCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmcCmd=$LLVMC
+  fi
+
+
+fi
+
+if test "$llvmcCmd" = "no"; then
+  llvmcCmd=""
+  llvmcExists="no"
+else
+  llvmcExists="yes"
+fi
+LLVMC_CMD=$llvmcCmd
 
 
 ### Checks for libraries.
@@ -4756,7 +4824,7 @@ case $HostPlatform in
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="no"
+        #libtoolStatic="no"
         # ehcGccOptsStatic="-static"
 	    libtoolStatic="libtool --mode=link gcc -static -o"
         ;;
@@ -5541,6 +5609,8 @@ gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
 cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
+llvmcCmd!$llvmcCmd$ac_delim
+LLVMC_CMD!$LLVMC_CMD$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
@@ -5561,8 +5631,6 @@ SUFFIX_LIB!$SUFFIX_LIB$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
-LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
-LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -5604,6 +5672,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
+LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
@@ -5617,7 +5687,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 11; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 13; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
