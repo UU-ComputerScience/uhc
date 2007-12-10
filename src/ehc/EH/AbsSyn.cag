@@ -439,6 +439,9 @@ DATA DataConstr
                     mbFixityPrio    : {Maybe Int}       -- Nothing: not infix
 %%]]
                     fields          : DataFields
+%%[[16
+                    eqs             : DataConstrEqs
+%%]]
 %%]
 %%[50.DataConstr
                     eqs             : DataConstrEqs
@@ -454,6 +457,14 @@ DATA DataField
                     tyExpr          : TyExpr
 
 TYPE DataFields     = [DataField]
+%%]
+
+%%[16.Data
+DATA DataConstrEq
+  | Eq              tyVar           : TyVar
+                    tyExpr          : TyExpr
+
+TYPE DataConstrEqs  = [DataConstrEq]
 %%]
 
 %%[50.Data
@@ -473,6 +484,13 @@ SET AllData         = AllDataConstr
 SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr
+%%]
+
+%%[16.SetsData -7.SetsData
+SET AllDataConstrEq = DataConstrEq DataConstrEqs
+SET AllDataConstr   = DataConstr DataConstrs
+SET AllDataField    = DataField DataFields
+SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 %%]
 
 %%[50.SetsData -7.SetsData
@@ -537,7 +555,7 @@ SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr Al
                         AllFuncDep
 %%]]
 
-SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr
+SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr AllData
 %%]
 
 

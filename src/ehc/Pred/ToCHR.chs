@@ -76,7 +76,7 @@ Hence we can safely use non-unique variables.
 ([sc1,sc2,sc3]
  ,[pr1,pr2,pr3]
 %%[[10
- ,[ty1,ty2]
+ ,[ty1,ty2,ty3,ty4]
  ,[lab1]
  ,[off1]
 %%]]
@@ -88,7 +88,7 @@ Hence we can safely use non-unique variables.
   = ( map PredScope_Var [u1,u2,u3]
     , map Pred_Var [u7,u8,u9]
 %%[[10
-    , map mkTyVar [u10,u11]
+    , map mkTyVar [u10,u11,u14,u15]
     , map Label_Var [u12]
     , map LabelOffset_Var [u13]
 %%]]
@@ -100,9 +100,16 @@ Hence we can safely use non-unique variables.
 %%[[9
   where [u1,u2,u3,u4,u5,u6,u7,u8,u9] = mkNewLevUIDL 9 uidStart
 %%][10
-  where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13] = mkNewLevUIDL 13 uidStart
+  where [u1,u2,u3,u4,u5,u6,u7,u8,u9,u10,u11,u12,u13,u14,u15] = mkNewLevUIDL 15 uidStart
 %%]]
 %%]
+
+CHR rules for proving constraints. These rules have to obey the invariant that
+the new proof obligations are individually weaker than the original proof
+obligations, i.e. that there is no sequence of reductions that can lead from the
+new proof obligations to the original ones.
+
+In terms of entailment: for a CHR rule H => B, B may not entail H.
 
 %%[9 export(initScopedPredStore)
 initScopedPredStore :: ScopedPredStore
@@ -114,6 +121,10 @@ initScopedPredStore
 %%]]
 %%[[13
       ++ [ instForall, predArrow, predSeq1, predSeq2 ]
+%%]]
+%%[[16
+      -- comment out predSeq1 and predSeq2 above because they conflict with the unpack rules!
+      ++ [ {-rlEqScope,-} rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons , {- rlCtxToNil, -} rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume, rlPrvByIdentity ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1
         p1s2         = mkCHRPredOcc pr1 sc2
@@ -156,6 +167,34 @@ initScopedPredStore
                          <==> [Prove s2s1, Prove s3s1]
         predSeq2     = [Prove $ mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1]
                          <==> []
+%%]]
+%%[[16
+        eqT1T2s1 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc1
+        eqT1T2s2 = mkCHRPredOcc (Pred_Eq ty1 ty2) sc2
+        eqT2T1s1 = mkCHRPredOcc (Pred_Eq ty2 ty1) sc1
+        eqT2T3s1 = mkCHRPredOcc (Pred_Eq ty2 ty3) sc1
+        eqT1T3s1 = mkCHRPredOcc (Pred_Eq ty1 ty3) sc1
+        eqT2T3s2 = mkCHRPredOcc (Pred_Eq ty2 ty3) sc2
+        eqT3T4s2 = mkCHRPredOcc (Pred_Eq ty3 ty4) sc2
+        psPreds1 = mkCHRPredOcc (Pred_Preds pa1)  sc1
+        psConss1 = mkCHRPredOcc (Pred_Preds (PredSeq_Cons pr1 pa1)) sc1
+        psNils1  = mkCHRPredOcc (Pred_Preds PredSeq_Nil) sc1
+        psHeads1 = mkCHRPredOcc pr1 sc1
+
+        rlEqSym      = [Assume eqT1T2s1] ==> [Assume eqT2T1s1]                                                 -- symmetry
+        rlEqTrans    = [Assume eqT1T2s1, Assume eqT2T3s2] ==> [Assume eqT1T3s1] |> [IsVisibleInScope sc2 sc1]  -- transitivity
+        rlEqCongr    = [Assume eqT1T2s1] ==> [Assume psPreds1] |> [EqsByCongruence ty1 ty2 pa1]                -- congruence
+        rlUnpackCons = [Assume psConss1] ==> [Assume psHeads1, Assume psPreds1]                                -- unpack a list of assumptions
+        
+        -- rlCtxToNil      = [Prove eqT1T2s1] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 (RedHow_ByEqTyReduction ty2 ty3) [eqT1T3s1]] |> [IsCtxNilReduction ty2 ty3]
+        rlEqSymPrv      = [Prove eqT1T2s1] ==> [Prove eqT2T1s1, Reduction eqT1T2s1 RedHow_ByEqSymmetry [eqT2T1s1]] |> [UnequalTy ty1 ty2]
+        rlEqTransPrv    = [Prove eqT1T2s1, Assume eqT2T3s2] ==> [Prove eqT1T3s1, Reduction eqT1T2s1 RedHow_ByEqTrans [eqT1T3s1]] |> [IsVisibleInScope sc2 sc1, UnequalTy ty2 ty3]
+        rlEqCongrPrv    = [Prove eqT1T2s1] ==> [Prove psPreds1, Reduction eqT1T2s1 RedHow_ByEqCongr [psPreds1]] |> [EqsByCongruence ty1 ty2 pa1]
+        rlUnpackConsPrv = [Prove psConss1] ==> [Prove psHeads1, Prove psPreds1, Reduction psConss1 RedHow_ByPredSeqUnpack [psHeads1, psPreds1]]
+        rlUnpackNilPrv  = [Prove psNils1]  ==> [Reduction psNils1 RedHow_ByPredSeqUnpack []]
+        rlPrvByAssume   = [Prove eqT1T2s1, Assume eqT1T2s2] ==> [Reduction eqT1T2s1 RedHow_ByEqFromAssume []] |> [IsVisibleInScope sc2 sc1]  -- dirty hack: generated assumptions by chr are not added to the graph, so made a reduction instead
+        rlPrvByIdentity = [Prove eqT1T2s1] ==> [Reduction eqT1T2s1 RedHow_ByEqIdentity []] |> [EqualModuloUnification ty1 ty2]
+        
 %%]]
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]

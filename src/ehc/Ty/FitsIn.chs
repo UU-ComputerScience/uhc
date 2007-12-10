@@ -56,6 +56,9 @@
 %%[10 import({%{EH}Core.Utils})
 %%]
 
+%%[16 import(Debug.Trace)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -370,6 +373,36 @@ fitsInFI fi ty1 ty2
                                                  else  id
 %%]
 
+%%[16.fitsIn.eqProofAssume
+            eqAssume p fi t1 t2 isRec isSum
+              = out { foGathCnstrMp = foGathCnstrMp out `Map.union` mp }
+              where
+                mp    = cnstrMpFromList [cnstr]
+                cnstr = mkAssumeConstraint p lUniq scope
+                scope = fePredScope $ fiEnv fi
+                (gUniq,lUniq) = mkNewLevUID (fiUniq fi)
+                fi' = fi { fiUniq = gUniq }
+                out = fRow fi' t1 t2 isRec isSum
+%%]
+
+%%[16.fitsIn.eqProofObligation
+            eqProofObligation tRes fi tL tR
+                = (res fi tRes) { foGathCnstrMp = mp }
+                where
+                  mp    = cnstrMpFromList [cnstr]
+                  cnstr = mkProveConstraint (Pred_Eq tL tR) uid scope
+                  scope = fePredScope $ fiEnv fi
+                  uid   = fiUniq fi
+%%]
+
+%%[16.fitsIn.isSkVar
+            -- is skolemnized tyvar?
+            isSkVar = isSkVar' . show
+            
+            isSkVar' ('C':'_':_) = True
+            isSkVar' _           = False
+%%]
+
 %%[4.fitsIn.FOUtils
             foUpdVarMp  c fo = fo {foVarMp = c |=> foVarMp fo}
             foSetVarMp  c fo = fo {foVarMp = c}
@@ -447,6 +480,12 @@ fitsInFI fi ty1 ty2
                               in   (fo:foL,fofi fo fii))
                         ([],fi)
                         (zip tL1 tL2)
+%%]
+
+GADT: when encountering a product with eq-constraints on the outset, remove them and bring them in scope as assume constraints
+%%[16.fitsIn.fRow.StripPreds
+            fRow fi (Ty_Ext t1 _ (Ty_Pred p)) t2 isRec isSum = eqAssume p fi t1 t2 isRec isSum
+            fRow fi t1 (Ty_Ext t2 _ (Ty_Pred p)) isRec isSum = eqAssume p fi t1 t2 isRec isSum
 %%]
 
 %%[7.fitsIn.fRow.Base
@@ -930,6 +969,21 @@ fitsInFI fi ty1 ty2
                 =  fRow fi t1 t2 False False
 %%]
 
+FitsIn type clashes
+
+GADT: type clash between fixed type variable and some other type results in a equality proof constraint
+%%[16.fitsIn.EqProve
+            f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2 | fioFitVarFailureToProveObl (fiFIOpts fi)  = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed) | fioFitVarFailureToProveObl (fiFIOpts fi)  = eqProofObligation t2 fi t2 t1
+            f fi t1@(Ty_Con cstr) t2 | isSkVar cstr && fioFitVarFailureToProveObl (fiFIOpts fi) = eqProofObligation t2 fi t1 t2
+            f fi t1 t2@(Ty_Con cstr) | isSkVar cstr && fioFitVarFailureToProveObl (fiFIOpts fi) = eqProofObligation t2 fi t2 t1
+            
+            f fi t1 t2
+              | fioFitFailureToProveObl (fiFIOpts fi)
+                  && t1 /= ty1 && t2 /= ty2  -- only generate proof obligations for type clashes when there is at least a partial match
+              = eqProofObligation t1 fi t1 t2
+%%]
+
 %%[4.fitsIn.DefaultCase
             f fi t1                     t2          = errClash fi t1 t2
 %%]
@@ -1004,6 +1058,52 @@ fitPredIntoPred fi pr1 pr2
           (Pred_Lacks ty2                           l2@(Label_Lab lb2))
           | tyIsEmptyRow ty1 && tyIsEmptyRow ty2
           = Just (Pred_Lacks ty2 l2, lv1 `varmpLabelUnit` l2)
+%%]]
+%%[[13
+        -- assumption: a PredSeq_Var can only occur as a tail in a PredSeq
+        f (Pred_Preds ps1) (Pred_Preds ps2)
+          = do (ps, varMp) <- fPreds ps1 ps2
+               return (Pred_Preds ps, varMp)
+          where
+            fPreds ps@(PredSeq_Var v1) (PredSeq_Var v2)
+              | v1 == v2
+              = Just (ps, emptyVarMp)
+            fPreds (PredSeq_Var v1) ps
+              = Just (ps, v1 `varmpPredSeqUnit` ps)
+            fPreds ps (PredSeq_Var v1)
+              = Just (ps, v1 `varmpPredSeqUnit` ps)
+            fPreds (PredSeq_Cons pr1 ps1) (PredSeq_Cons pr2 ps2)
+              = do (pr', s1) <- f pr1 pr2
+                   (ps', s2) <- fPreds (s1 |=> ps1) (s1 |=> ps2)
+                   return (PredSeq_Cons pr' ps', s2 |=> s1)
+            fPreds PredSeq_Nil PredSeq_Nil
+              = Just (PredSeq_Nil, emptyVarMp)
+            fPreds _ _
+              = Nothing
+%%]]
+%%[[16
+        f (Pred_Eq tlA trA) (Pred_Eq tlB trB)
+          = if foHasErrs foL || foHasErrs foR
+            then Nothing
+            else Just $ (Pred_Eq tlOut trOut, varMpOut)
+          where
+            (u1, u2, u3, u4) = mkNewLevUID3 (fiUniq fi)
+
+            fiOptsL = unifyFIOpts { fioUniq = u3, fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi), fioPredAsTy = True, fioLeaveRInst = True }
+            fiOptsR = unifyFIOpts { fioUniq = u4, fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi), fioPredAsTy = True, fioLeaveRInst = True }
+
+            foL = fitsIn fiOptsL (fiEnv fi) u1 varMp1In tlA tlB
+            foR = fitsIn fiOptsR (fiEnv fi) u2 varMp2In trA trB
+
+            varMp1In = fiVarMp fi
+            varMp2In = varMp1Out |=> fiVarMp fi
+
+            varMp1Out = foVarMp foL
+            varMp2Out = foVarMp foR
+            varMpOut  = varMp2Out |=> varMp1Out
+
+            tlOut = varMpOut |=> foTy foL
+            trOut = varMpOut |=> foTy foR
 %%]]
         f pr1               	pr2
           = if foHasErrs fo

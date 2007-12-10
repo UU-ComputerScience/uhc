@@ -25,6 +25,9 @@ Derived from work by Gerrit vd Geest.
 %%[10 import({%{EH}Base.Builtin})
 %%]
 
+%%[16 import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, Debug.Trace)
+%%]
+
 %%[20 import({%{EH}Base.CfgPP})
 %%]
 
@@ -99,6 +102,11 @@ instance CHRSubstitutable Guard TyVarId VarMp where
 %%[[10
   chrFtv        (NonEmptyRowLacksLabel  r o t l ) = Set.unions [ftvSet r,ftvSet o,ftvSet t,ftvSet l]
 %%]]
+%%[[16
+  chrFtv        (IsCtxNilReduction t1 t2)         = Set.unions [ftvSet t1, ftvSet t2]
+  chrFtv        (EqsByCongruence t1 t2 ps)        = Set.unions [ftvSet t1, ftvSet t2, ftvSet ps]
+  chrFtv        (EqualModuloUnification t1 t2)    = Set.unions [ftvSet t1, ftvSet t2]
+%%]]
 
   chrAppSubst s (HasStrictCommonScope   p1 p2 p3) = HasStrictCommonScope   (s |=> p1) (s |=> p2) (s |=> p3)
   chrAppSubst s (IsStrictParentScope    p1 p2 p3) = IsStrictParentScope    (s |=> p1) (s |=> p2) (s |=> p3)
@@ -107,6 +115,12 @@ instance CHRSubstitutable Guard TyVarId VarMp where
   chrAppSubst s (EqualScope             p1 p2   ) = EqualScope             (s |=> p1) (s |=> p2)
 %%[[10
   chrAppSubst s (NonEmptyRowLacksLabel  r o t l ) = NonEmptyRowLacksLabel  (s |=> r)  (s |=> o)  (s |=> t)  (s |=> l)
+%%]]
+%%[[16
+  chrAppSubst s (IsCtxNilReduction t1 t2)         = IsCtxNilReduction (s |=> t1) (s |=> t2)
+  chrAppSubst s (EqsByCongruence t1 t2 ps)        = EqsByCongruence (s |=> t1) (s |=> t2) (s |=> ps)
+  chrAppSubst s (UnequalTy t1 t2)                 = UnequalTy (s |=> t1) (s |=> t2)
+  chrAppSubst s (EqualModuloUnification t1 t2)    = EqualModuloUnification (s |=> t1) (s |=> t2)
 %%]]
 %%]
 
@@ -128,6 +142,9 @@ instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
   chrAppSubst s (RedHow_Assumption   vun sc)  = RedHow_Assumption (chrAppSubst s vun) (chrAppSubst s sc)
 %%[[10
   chrAppSubst s (RedHow_ByLabel      l o sc)  = RedHow_ByLabel (chrAppSubst s l) (chrAppSubst s o) (chrAppSubst s sc)
+%%]]
+%%[[16
+  chrAppSubst s (RedHow_ByEqTyReduction  ty1 ty2) = RedHow_ByEqTyReduction (s |=> ty1) (s |=> ty2)
 %%]]
   chrAppSubst _ x                             = x
 %%]
@@ -222,6 +239,12 @@ data Guard
 %%[[10
   | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
 %%]]
+%%[[16
+  | IsCtxNilReduction Ty Ty
+  | EqsByCongruence Ty Ty PredSeq
+  | UnequalTy Ty Ty
+  | EqualModuloUnification Ty Ty
+%%]]
 %%]
 
 %%[9
@@ -233,6 +256,12 @@ ppGuard (NotEqualScope          sc1 sc2    ) = sc1 >#< "/=" >#< sc2
 ppGuard (EqualScope             sc1 sc2    ) = sc1 >#< "==" >#< sc2
 %%[[10
 ppGuard (NonEmptyRowLacksLabel  r o t l    ) = ppParens (t >#< "==" >#< ppParens (r >#< "| ...")) >#< "\\" >#< l >|< "@" >|< o
+%%]]
+%%[[16
+ppGuard (IsCtxNilReduction t1 t2           ) = t1 >#< "~>" >#< t2
+ppGuard (EqsByCongruence t1 t2 ps          ) = t1 >#< "~~" >#< t2 >#< "~>" >#< ps
+ppGuard (UnequalTy t1 t2                   ) = t1 >#< "/=" >#< t2
+ppGuard (EqualModuloUnification t1 t2      ) = t1 >#< "==" >#< t2
 %%]]
 %%]
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
@@ -296,6 +325,63 @@ instance CHRCheckable FIIn Guard VarMp where
             where (row,exts) = tyRowExtsWithLkup (varmpTyLookupCyc2 subst') ty
                   (offset,presence) = tyExtsOffset lab' $ tyRowCanonOrder exts
                   (Label_Lab lab') = chrAppSubst subst' lab
+%%]]
+%%[[16
+          chk (IsCtxNilReduction t1 t2)
+            = if foHasErrs fo || tStart == tRes
+              then Nothing
+              else return varMp
+            where
+              tStart = subst' |=> t1
+              t1' = tmpoTy $ tyMergePreds [] tStart
+              t2' = subst' |=> t2
+              uid = fiUniq env
+              fiOpts = unifyFIOpts { fioUniq = uid, fioBindRVars = FIOBindNoBut (ftvSet t2), fioPredAsTy = True, fioLeaveRInst = True }
+              fo = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
+              varMp = foVarMp fo
+              tRes = varMp |=> foTy fo -- hum, I would assume that this substitution is already applied by fitsIn...?!
+          
+          chk (EqsByCongruence t1 t2 obls)
+            = if foHasErrs fo || null preds
+              then Nothing
+              else return varMp
+            where
+              t1'   = subst' |=> t1   -- todo: check if these substitutions a really needed (maybe its already done by the solver before calling chk)
+              t2'   = subst' |=> t2
+              obls' = subst' |=> obls
+              uid   = fiUniq env
+              fiOpts = unifyFIOpts { fioUniq = uid, fioFitFailureToProveObl = True, fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts env), fioPredAsTy = True, fioLeaveRInst = True }
+              fo = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
+              cnstrs = Map.keys (foGathCnstrMp fo)
+              preds  = [ cpoPr p | (Prove p) <- cnstrs ]
+              ps = foldr PredSeq_Cons PredSeq_Nil preds
+              (PredSeq_Var v) = obls
+              varMp = v `varmpPredSeqUnit` ps |=> foVarMp fo
+          
+          chk (UnequalTy t1 t2)
+            = if (subst' |=> t1) == (subst' |=> t2)
+              then Nothing
+              else return emptyVarMp
+          
+          chk (EqualModuloUnification t1 t2)
+            | isTyVar t1 = return emptyVarMp
+            | isTyVar t2 = return emptyVarMp
+            where
+              isTyVar t = case (subst' |=> t) of
+                            Ty_Var _ TyVarCateg_Plain -> True
+                            _                         -> False
+          {-
+          chk (EqualModuloUnification t1 t2)
+            = if foHasErrs fo
+              then Nothing
+              else return emptyVarMp
+            where
+              t1'    = subst' |=> t1
+              t2'    = subst' |=> t2
+              uid    = fiUniq env
+              fiOpts = unifyFIOpts { fioUniq = uid, fioPredAsTy = True, fioLeaveRInst = True }
+              fo     = fitsIn fiOpts (fiEnv env) uid subst' t1' t2'
+          -}
 %%]]
           chk _
             = Nothing

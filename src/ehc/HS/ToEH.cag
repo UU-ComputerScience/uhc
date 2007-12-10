@@ -339,9 +339,17 @@ ehPlainDataField r
 %%[5.Constructor
 SEM Constructor
     | Constructor 
-        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname @types.eh
+        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
+                                                @types.eh
+%%[[16
+                                                []
+%%]]
     | Infix
-        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname [@leftType.eh,@rightType.eh]
+        lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
+                                                [@leftType.eh,@rightType.eh]
+%%[[16
+                                                []
+%%]]
 %%]
 %%[7.Constructor -5.Constructor
 SEM Constructor
@@ -351,18 +359,27 @@ SEM Constructor
                                                 Nothing
 %%]]
                                                 (map (ehPlainDataField emptyRange) @types.eh)
+%%[[16
+                                                []
+%%]]
     | Infix
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
 %%[[95
                                                 (Just $ fgiPrio $ fixityGamLookup @conrefname @lhs.fixityGam)
 %%]]
                                                 (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
+%%[[16
+                                                []
+%%]]
     | Record
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
 %%[[95
                                                 Nothing
 %%]]
                                                 @fieldDeclarations.eh
+%%[[16
+                                                []
+%%]]
 %%]
 %%[9
 	| Contexted

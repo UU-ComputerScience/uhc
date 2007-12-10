@@ -19,6 +19,7 @@ import Data.Graph.Inductive.Tree      (Gr)
 import Data.Graph.Inductive.Graphviz  (graphviz')
 
 import Data.Maybe (fromJust)
+import Data.List(nub)
 
 data AGraph a b = AGr { agraphNodeMap :: NodeMap a, agraphGraph :: Gr a b}
 
@@ -38,7 +39,7 @@ deleteEdge (p, q) (AGr nm gr) = AGr nm (delEdge (getId p, getId q) gr)
 
 insMapNodes :: Ord a => [a] -> AGraph a b -> AGraph a b
 insMapNodes as (AGr m g) =
-    let (ns, m') = mkNodes m as
+    let (ns, m') = mkNodes m (nub as)
         ns'      = filter (\(i, _) -> not $ gelem i g) ns
     in AGr m' (insNodes ns' g)
 

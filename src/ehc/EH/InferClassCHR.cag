@@ -95,6 +95,19 @@ SEM Decl
 SEM Expr
   | LamImpl     loc         .   implsIsEmpty        =   null @knPrL
 
+%%[16
+-- Each branch in a case expr has it's own predicate scope
+ATTR CaseAlts [ predScopeCounter : Int | | ]
+
+SEM Expr
+  | Case
+      alts.predScopeCounter = 0
+
+SEM CaseAlts
+  | Cons
+      (tl.predScopeCounter, hd.predScope) = pscpEnter @lhs.predScopeCounter @lhs.predScope
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scopes of introduced bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

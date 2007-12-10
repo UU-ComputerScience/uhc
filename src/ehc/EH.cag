@@ -58,6 +58,9 @@
 %%[15 hs export(FuncDep(..), FuncDeps)
 %%]
 
+%%[16 hs export(DataConstrEq(..), DataConstrEqs)
+%%]
+
 %%[50 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
