@@ -142,8 +142,9 @@ evidMpToCore env evidMp
           = True
         ignore (_, (Evid_Proof _ (RedHow_ByEqTyReduction _ _) _))
           = True
-        ignore _ = False
 %%]]
+        ignore _ = False
+
         strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
         strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
         strip ev                                 = ev

@@ -120,9 +120,10 @@ initScopedPredStore
       ++ [ labelProve1, labelProve2 ]
 %%]]
 %%[[13
-      ++ [ instForall, predArrow {-, predSeq1, predSeq2 -} ] -- commented out troublesome predSeqs
+      ++ [ instForall, predArrow, predSeq1, predSeq2 ]
 %%]]
 %%[[16
+      -- comment out predSeq1 and predSeq2 above because they conflict with the unpack rules!
       ++ [ {-rlEqScope,-} rlEqTrans, rlEqSym, rlEqCongr, rlUnpackCons , {- rlCtxToNil, -} rlEqSymPrv, rlEqTransPrv, rlEqCongrPrv, rlUnpackConsPrv, rlUnpackNilPrv, rlPrvByAssume, rlPrvByIdentity ]
 %%]]
   where p1s1         = mkCHRPredOcc pr1 sc1

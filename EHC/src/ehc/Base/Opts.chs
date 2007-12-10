@@ -512,7 +512,8 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
 %%]
 %%[16.FIOpts
-                        ,  fioFitFailureToProveObl :: Bool
+                        ,  fioFitFailureToProveObl    :: Bool
+                        ,  fioFitVarFailureToProveObl :: Bool
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
@@ -537,6 +538,7 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%]
 %%[16.FIOpts
                         ,  fioFitFailureToProveObl    = False
+                        ,  fioFitVarFailureToProveObl = False
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst

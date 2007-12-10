@@ -97,9 +97,6 @@ pRedHowAnnotation
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
   <|> RedHow_ByScope      <$ pKeyTk "redhowscope"
-  <|> RedHow_ByEqSymmetry <$ pKeyTk "redhoweqsym"  <* pOCURLY <*> pPredScope <* pCCURLY
-  <|> RedHow_ByEqTrans    <$ pKeyTk "redhoweqtrans"<* pOCURLY <*> pPredScope <* pCCURLY
-  <|> RedHow_ByEqCongr    <$ pKeyTk "redhoweqcongr"<* pOCURLY <*> pPredScope <* pCCURLY
   <|> RedHow_ByLabel      <$ pKeyTk "redhowlabel"  <* pOCURLY <*> pLabel
                                                    <* pCOMMA  <*> pLabelOffset
                                                    <* pCOMMA  <*> pPredScope

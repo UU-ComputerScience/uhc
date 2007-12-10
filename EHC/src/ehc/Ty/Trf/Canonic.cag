@@ -54,11 +54,13 @@ tyCanonic fi ty
 
 %%[9 hs export(predCanonic)
 predCanonic :: FIIn -> Pred -> Pred
+%%[[16
 predCanonic fi (Pred_Eq t1 t2)
   = Pred_Eq (tmpoTy $ tyMergePreds [] t1') (tmpoTy $ tyMergePreds [] t2')
     where
       t1' = tyCanonic fi t1
       t2' = tyCanonic fi t2
+%%]]
 predCanonic fi pr
   = case tyCanonic fi $ Ty_Pred pr of
       Ty_Pred pr' -> pr'

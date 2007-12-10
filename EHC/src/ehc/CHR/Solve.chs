@@ -24,7 +24,7 @@ Assumptions (to be documented further)
 %%]
 
 -- For debug
-%%[9 import(EH.Util.Utils)
+%%[9 import(EH.Util.Utils, Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
