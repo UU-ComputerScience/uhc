@@ -240,6 +240,14 @@ SEM Expr
 ATTR AllDataField [ | tyGam: TyGam | ]
 %%]
 
+%%[16
+ATTR AllDataConstrEq [ | tyGam: TyGam | ]
+
+-- tyvarid of .tyVar already present in @lhs.tyGam
+SEM DataConstrEq
+  | Eq  tyExpr.tyGam = @lhs.tyGam
+%%]
+
 %%[50
 ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
@@ -250,6 +258,9 @@ ATTR
   AllPatExpr
 %%[[7
   AllDataField
+%%]]
+%%[[16
+  AllDataConstrEq
 %%]]
     [ | tyKiGam: TyKiGam | ]
 %%]
@@ -848,51 +859,95 @@ ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
 
 SEM AGItf
   | AGItf       expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was/from 4.fiOpts.init
 %%[5.fiOpts.init
 SEM Expr
   | AppImpred   func        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 loc         .  argFIOpts            =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 arg         .  fiOpts               =   @argFIOpts
-
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]                
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
 %%[5.fiOpts.init
 SEM Decl
   | Val         expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 patExpr     .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
 %%[5.fiOpts.init
 SEM Expr
-  | Lam         loc         .  knFunFIOpts          =   @lhs.fiOpts {fioBindRFirst=True}
+  | Lam         loc         .  knFunFIOpts          =   (@lhs.fiOpts {fioBindRFirst=True }) 
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
   | App         func        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 loc         .  argFIOpts            =   instLFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 arg         .  fiOpts               =   @argFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 -- 20070205 - AD, should be generated from ruler rules, but not yet is
 %%[5
 SEM Expr
   | TypeAs      loc         .  asFiOpts             =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 expr        .  fiOpts               =   @asFiOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 %%[5
 ATTR AllCase [ fiOpts: FIOpts | | ]
 
 SEM Decl
-  | Val         expr        .  fiOpts               :=  if @hasTySig then strongFIOpts else weakFIOpts
+  | Val         expr        .  fiOpts               :=  (if @hasTySig then strongFIOpts else weakFIOpts)
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 
 SEM CaseAlt
   | Pat         patExpr     .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 
 SEM Expr
-  | Case        expr		.	fiOpts				=	weakFIOpts
+  | Case        expr        .  fiOpts              =   weakFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 %%[7
@@ -900,37 +955,70 @@ ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
 
 SEM RecExpr
   | Ext         loc         .  knFIOpts             =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
                 recExpr     .  fiOpts               =   @lhs.fiOpts {fioNoRLabElimFor = @nm : fioNoRLabElimFor @lhs.fiOpts}
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
   | Upd         loc         .  knFIOpts             =   strongFIOpts -- {fioNoRLabElimFor = [@nm]}
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
   | Ext Upd     expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 
 SEM Expr
   | DataFields  loc         .  fldFIOpts            =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 
 SEM DataFieldExpr
   | Upd         expr        .  fiOpts               =   @lhs.fldFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 
 SEM Expr
   | Rec         loc         .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 %%[9
 SEM Expr
   | App         func        .  fiOpts               :=  implFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 
 SEM Decl
   | InstanceIntro
                 expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 %%[12
 SEM Expr
   | AppImpl     arg         .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 %%[1010
 SEM Decl
   | DynVal      expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -993,6 +1081,7 @@ SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The XX_App function name of a XX, if any

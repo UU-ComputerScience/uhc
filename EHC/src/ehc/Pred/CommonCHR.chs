@@ -44,6 +44,15 @@ data RedHowAnnotation
 %%[[13
   |  RedHow_Lambda        !UID !PredScope
 %%]]
+%%[[16
+  |  RedHow_ByEqSymmetry
+  |  RedHow_ByEqTrans
+  |  RedHow_ByEqCongr
+  |  RedHow_ByEqTyReduction !Ty !Ty
+  |  RedHow_ByPredSeqUnpack
+  |  RedHow_ByEqFromAssume
+  |  RedHow_ByEqIdentity
+%%]]
   deriving (Eq, Ord)
 %%]
 
@@ -64,6 +73,15 @@ instance PP RedHowAnnotation where
 %%]]
 %%[[13
   pp (RedHow_Lambda       i   sc)  =    "lambda" >#< i >#< sc
+%%]]
+%%[[16
+  pp (RedHow_ByEqSymmetry) = pp "eqsym"
+  pp (RedHow_ByEqTrans   ) = pp "eqtrans"
+  pp (RedHow_ByEqCongr   ) = pp "eqcongr"
+  pp (RedHow_ByEqTyReduction ty1 ty2) = "eqtyred" >#< ty1 >#< "~>" >#< ty2
+  pp (RedHow_ByPredSeqUnpack) = pp "unpack"
+  pp (RedHow_ByEqFromAssume)  = pp "eqassume"
+  pp (RedHow_ByEqIdentity)    = pp "identity"
 %%]]
 %%]
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< s >|< sc >#< "::" >#< p
@@ -141,6 +159,13 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ProveObl     i   sc)  = cm1 "RedHow_ProveObl"        `cmUnion` fevCount i `cmUnion` fevCount sc
   fevCount (RedHow_Assumption   vun sc)  = cm1 "RedHow_Assumption"      `cmUnion` fevCount vun `cmUnion` fevCount sc
   fevCount (RedHow_ByScope            )  = cm1 "RedHow_ByScope"
+  fevCount (RedHow_ByEqSymmetry       )  = cm1 "RedHow_ByEqSymmetry"
+  fevCount (RedHow_ByEqTrans          )  = cm1 "RedHow_ByEqTrans"
+  fevCount (RedHow_ByEqCongr          )  = cm1 "RedHow_ByEqCongr"
+  fevCount (RedHow_ByEqTyReduction ty1 ty2)  = cm1 "RedHow_ByEqTyReduction" `cmUnion` fevCount ty1 `cmUnion` fevCount ty2
+  fevCount (RedHow_ByPredSeqUnpack    )  = cm1 "RedHow_ByPredSeqUnpack"
+  fevCount (RedHow_ByEqFromAssume     )  = cm1 "RedHow_ByEqFromAssume"
+  fevCount (RedHow_ByEqIdentity       )  = cm1 "RedHow_ByEqIdentity"
   fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
   fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
 %%]]

@@ -27,21 +27,43 @@ tyAppVarMp varmp ty
 %%]
 
 %%[4 -2.tyAppVarMp hs export(tyAppVarMp,tyAppVarMp2)
-tyAppVarMp' :: VarMp -> TVUseMp -> Ty -> (Ty,VarMp)
-tyAppVarMp' varmp usemp ty
+tyAppVarMp' :: SubstOpts -> VarMp -> TVUseMp -> Ty -> (Ty,VarMp)
+tyAppVarMp' opts varmp usemp ty
   = (repl_Syn_TyAGItf t,cycVarMp_Syn_TyAGItf t)
   where t = wrap_TyAGItf
               (sem_TyAGItf (TyAGItf_AGItf ty))
-              (Inh_TyAGItf {varmp_Inh_TyAGItf = varmp, tvUseMp_Inh_TyAGItf = usemp})
+              (Inh_TyAGItf {varmp_Inh_TyAGItf = varmp, tvUseMp_Inh_TyAGItf = usemp, substOpts_Inh_TyAGItf = opts })
 
 tyAppVarMp :: VarMp -> Ty -> Ty
 tyAppVarMp varmp ty
   = ty'
-  where (ty',_) = tyAppVarMp' varmp Map.empty ty
+  where (ty',_) = tyAppVarMp' defaultOpts varmp Map.empty ty
 
 tyAppVarMp2 :: VarMp -> Ty -> (Ty,VarMp)
 tyAppVarMp2 varmp ty
-  = tyAppVarMp' varmp Map.empty ty
+  = tyAppVarMp' defaultOpts varmp Map.empty ty
+%%]
+
+%%[4.substOpts hs
+data SubstOpts
+  = SubstOpts
+
+defaultOpts :: SubstOpts
+defaultOpts = SubstOpts
+%%]
+
+%%[16.substOpts -4.substOpts hs
+data SubstOpts
+  = SubstOpts { onlySubstRHSOfEq :: Bool }
+
+defaultOpts :: SubstOpts
+defaultOpts = SubstOpts { onlySubstRHSOfEq = False }
+%%]
+
+%%[16 hs export (tyAppVarMp2_RhsOfEqOnly)
+tyAppVarMp2_RhsOfEqOnly :: VarMp -> Ty -> (Ty, VarMp)
+tyAppVarMp2_RhsOfEqOnly varmp ty
+  = tyAppVarMp' (SubstOpts { onlySubstRHSOfEq = True }) varmp Map.empty ty
 %%]
 
 %%[4
@@ -207,6 +229,10 @@ ATTR AllTyAndFlds   [               | | repl: SELF  ]
 ATTR TyAGItf        [               | | repl: Ty    ]
 %%]
 
+%%[4 ag
+ATTR TyAGItf AllTy [ substOpts: SubstOpts | | ]
+%%]
+
 %%[10
 ATTR LabelAGItf Label  [ varmp: VarMp  | |             ]
 ATTR LabelAGItf        [               | | repl: Label    ]
@@ -258,6 +284,23 @@ SEM PredSeq
                                             :=  if @isRepl
                                                 then tvRepl3 @av @tvUse varmpPredSeqUnit @repl @replv @repl'.repl @repl'.cycVarMp
                                                 else (@repl,emptyVarMp)
+%%]
+
+%%[16
+
+-- if "onlySubstRHSOfEq" is True, then tyL is either a Var or a Con and the orig attribute is used and defined.
+-- The orig attribute is not used if "onlySubstRHSOfEq" is False. This setting is almost always False.
+
+ATTR Ty [ | | orig: Ty ]
+SEM Ty
+  | Var Con      loc.orig = @loc.repl
+  | * - Var Con  loc.orig = undefined
+
+SEM Pred
+  | Eq
+      lhs.repl = if onlySubstRHSOfEq @lhs.substOpts
+                 then Pred_Eq @tyL.orig @tyR.repl
+                 else @loc.repl
 %%]
 
 

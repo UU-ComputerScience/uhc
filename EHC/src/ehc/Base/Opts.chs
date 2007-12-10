@@ -485,6 +485,11 @@ optsDiscrRecompileRepr opts
 %%% Fitting options (should be in FitsIn, but here it avoids mut rec modules)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Difference strong/weak:
+
+strong: in a context where information is known (i.e. type signature)
+strong allows impredicative binding whereas weak will instantiate quantifiers
+
 %%[9 export(FIOBind(..),fioBindIsYes,fioBindNoSet)
 data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
 
@@ -509,6 +514,10 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioDontBind       ::  TyVarIdS
                         ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
 %%]
+%%[16.FIOpts
+                        ,  fioFitFailureToProveObl    :: Bool
+                        ,  fioFitVarFailureToProveObl :: Bool
+%%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
 %%]
@@ -529,6 +538,10 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   Set.empty
                         ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
+%%]
+%%[16.FIOpts
+                        ,  fioFitFailureToProveObl    = False
+                        ,  fioFitVarFailureToProveObl = False
 %%]
 %%[50.FIOpts
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst

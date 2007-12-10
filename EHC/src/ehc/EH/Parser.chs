@@ -400,6 +400,9 @@ pDataConstr     =    mkEH DataConstr_Constr
 pDataConstr     =    (\c f -> mkEH DataConstr_Constr c Nothing f)
 %%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)
+%%[[16
+                     <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)
+%%]]
 %%]
 %%[50.DataConstr
                      <*> pList (mkEH DataConstrEq_Eq <$ pComma <*> pTyVar <* pKey "=" <*> pTyExpr)

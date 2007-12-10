@@ -80,6 +80,11 @@ SEM PredSeq
   | Var  			lhs		.	tvMp		=	@av `Map.singleton` TyVarCateg_Plain
 %%]
 
+%%[16
+SEM Pred
+  | Eq              lhs     .  tvMp         =   @tyL.tvMp `Map.union` @tyR.tvMp
+%%]
+
 %%[50
 SEM Ty
   | Equal           lhs     .   tvs         =   [@tv] `union` @ty.tvs

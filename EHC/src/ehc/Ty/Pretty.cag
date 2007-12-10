@@ -126,6 +126,13 @@ instance PP ImplsProveOcc where
   pp o = ipoId o >|< "/" >|< ipoScope o
 %%]
 
+%%[16 hs
+instance PP PredSeq where
+  pp (PredSeq_Cons hd tl) = pp hd >#< ":" >#< pp tl
+  pp (PredSeq_Nil       ) = pp "[]"
+  pp (PredSeq_Var u     ) = pp u
+%%]
+
 %%[10 hs
 instance PP LabelOffset where
   pp = pp . show
@@ -572,6 +579,11 @@ SEM Pred
 SEM Ty
   | Lam             loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
                                                        (cfgppAside @lhs.cfg ("\\" >|< @tnPP) ("->" >#< @ty.pp))
+%%]
+
+%%[16
+SEM Pred
+  | Eq              lhs     .   pp      =   ppParNeed @parNeed @lhs.parNeed (@tyL.pp >#< "=" >#< @tyR.pp)
 %%]
 
 %%[50
