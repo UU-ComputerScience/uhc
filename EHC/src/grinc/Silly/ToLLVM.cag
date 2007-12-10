@@ -107,7 +107,7 @@ SEM SilModule
                 loc.printfDecl =
                                FuncDecl_FuncDecl "printf" I32 True
                                                  [(LocalVar "str" (pLift I8))]
-                                           
+                                                                                            
                 loc.main     = Func_Func 
                                  (FuncDecl_FuncDecl "main" I32 False []) False
                                  [ Stmt_Assignment 
