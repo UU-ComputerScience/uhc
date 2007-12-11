@@ -242,7 +242,7 @@ caOutput = task_ VerboseNormal "Writing code"
          ; transformSilly   shortcut      "Shortcut single-use variables"
          ; when (ehcOptEmitLLVM options)
             (do { caSilly2LLVM
-                ; caWriteLLVM "ll" prettyLLVMModule
+                ; caWriteLLVM "ll" (const prettyLLVMModule)
                 }
             )
            -- (caWriteSilly "ll" (\_ mod -> prettyLLVMModule $ silly2llvm mod) )
@@ -314,24 +314,27 @@ caSilly2LLVM = do
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-caWriteLLVM  :: String -> (LLVMModule -> PP_Doc) -> CompileAction()
-caWriteLLVM suffix ppFun =
-  do input <- gets gcsPath
-     do { let output = fpathSetSuff suffix input
-        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-        ; llvm <- gets gcsLLVM
-        ; liftIO $ writePP ppFun llvm output
-        }
+caWriteFile :: String -> (EHCOpts -> a -> PP_Doc) -> a -> CompileAction()
+caWriteFile suffix ppFun struct =
+  do { input <- gets gcsPath
+     ; opts  <- gets gcsOpts
+     ; do { let output = fpathSetSuff suffix input
+          ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+          ; liftIO $ writePP (ppFun opts) struct output
+          }
+     }
 
+caWriteLLVM  :: String -> (EHCOpts -> LLVMModule -> PP_Doc) -> CompileAction()
+caWriteLLVM suffix ppFun =
+  do { llvm <- gets gcsLLVM
+     ; caWriteFile suffix ppFun llvm
+     } 
+     
 caWriteSilly :: String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
 caWriteSilly suffix ppFun =
-  do input <- gets gcsPath
-     do { let output = fpathSetSuff suffix input
-        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-        ; silly <- gets gcsSilly
-        ; opts  <- gets gcsOpts
-        ; liftIO $ writePP (ppFun opts) silly output
-        }
+  do { silly <- gets gcsSilly
+     ; caWriteFile suffix ppFun silly
+     }
 
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it

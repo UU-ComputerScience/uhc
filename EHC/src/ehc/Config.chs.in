@@ -93,7 +93,9 @@ shellCmdGcc = "@GCC_CMD@@SUFFIX_EXEC@"
 
 %%[8 export(shellCmdLLVMC)
 shellCmdLLVMC :: String
-shellCmdLLVMC = "@LLVMC_CMD@@SUFFIX_EXEC@"
+shellCmdLLVMC = if null "@LLVMC_CMD@"
+                then error "EHC is compiled without support for LLVM exectution generation"
+                else "@LLVMC_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%[99 export(shellCmdCpp)
