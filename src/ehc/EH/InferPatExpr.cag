@@ -236,7 +236,7 @@ SEM DataFieldPatExpr
                 loc         .   ty                  =   @dataFieldPatExpr.ty
   | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .   tyvar               =   mkTyVar @lUniq
-                            .   knTyShape           =   [@lhs.knTy] `mkArrow` @knTyShape
+                            .   knTyShape           =   [@lhs.knTy] `mkArrow` @loc.tyvar
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @gTy @loc.knTyShape
                             .   ty                  =   @lhs.knTy
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
