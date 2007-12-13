@@ -28,6 +28,11 @@
 %%[99 hs import({%{EH}Base.ForceEval},{%{EH}GrinCode.Trf.ForceEval})
 %%]
 
+-- for debug
+%%[20 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,6 +75,18 @@ emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+GHC 6.8.1 problem:
+Leaving out workAroundGHC_6_8_1_Bug causes to yield Fixity_Infix irrespective of actual value.
+Solution seems to be to wrap non-trivial function around value?
+
+%%[20 hs export(workAroundGHC_6_8_1_Bug)
+workAroundGHC_6_8_1_Bug :: Int -> Fixity -> Fixity
+workAroundGHC_6_8_1_Bug p f
+  = case f of
+      Fixity_Infix | p >= 0 -> Fixity_Infix
+      _            -> f
+%%]
 
 %%[20 hs export(hiFromHIInfo)
 hiFromHIInfo :: HIInfo -> Seq.FastSeq Binding
@@ -114,7 +131,7 @@ hiFromAllGams exps hiddenExps fg idg vg tg tkg dg ig chrStore arityMp inlMp
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
     Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
     Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
-    Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (fgiFixity fgi)) fg
+    Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
     Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
