@@ -659,8 +659,8 @@ buildAG opts wrap fileBase is
         h p  = "{" .-. p .-. "}"
         mk i = case vciChKind i of
                  ChHaddock -> h (haddockize (vciCD i))
-                 ChHS      -> h (vciCD i)
-                 _         -> buildAGImps i .-. vciCD i
+                 ChHS      -> agLinePragma opts (fileBase++".cag") (vciLineNr i) (h (vciCD i))
+                 _         -> buildAGImps i .-. agLinePragma opts (fileBase++".cag") (vciLineNr i) (vciCD i)
         ish  = filter vciIsHS noPre'
         buildImpExp = if optAGModHeader opts
                       then buildAGHSModImpExp fileBase ish
@@ -835,6 +835,9 @@ linePragma opts filename n c
   = if not (optLinePragmas opts) || cdIsEmpty c 
      then c 
      else CDoc_Ver (CDoc_Str ("{-# LINE "++show (n+1)++" \"" ++ filename ++ "\" #-}")) c
+
+agLinePragma opts filename n c
+  = CDoc_Ver (CDoc_Str ("{- LINE "++show (n+1)++" \"" ++ filename ++ "\" -}")) c
 
 
 buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
