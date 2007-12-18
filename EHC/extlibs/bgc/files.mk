@@ -36,7 +36,7 @@ $(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
 	cd $(BLDABS_EXTLIBS_BGC_PREFIX) && \
 	tar xfz $(EXTLIBS_BGC_ARCHIVE) && \
 	cd $(EXTLIBS_BGC_NAME) && \
-	./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
+	./configure --disable-threads --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
 	make && \
 	make install && \
 	touch $@

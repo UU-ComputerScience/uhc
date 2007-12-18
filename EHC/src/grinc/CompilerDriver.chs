@@ -73,8 +73,6 @@
 %%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
-%%[8 import({%{GRIN}Silly.PrettyLLVM(prettyLLVM)})
-%%]
 %%[8 import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
 %%]
 %%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
@@ -245,7 +243,6 @@ caOutput = task_ VerboseNormal "Writing code"
                 ; caWriteLLVM "ll" (const prettyLLVMModule)
                 }
             )
-           -- (caWriteSilly "ll" (\_ mod -> prettyLLVMModule $ silly2llvm mod) )
          ; when (ehcOptEmitLlc options)
            (caWriteSilly "c" prettyC)
          ; when (ehcOptEmitLlc options)

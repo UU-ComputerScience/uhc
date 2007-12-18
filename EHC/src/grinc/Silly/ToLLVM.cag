@@ -106,8 +106,7 @@ SEM SilModule
                                mkVarList GlobalVar @variables @lhs.globalType                              
                 loc.printfDecl =
                                FuncDecl_FuncDecl "printf" I32 True
-                                                 [(LocalVar "str" (pLift I8))]
-                                                                                            
+                                                 [(LocalVar "str" (pLift I8))]                                               
                 loc.main     = Func_Func 
                                  (FuncDecl_FuncDecl "main" I32 False []) False
                                  [ Stmt_Assignment 
@@ -140,6 +139,16 @@ SEM SilModule
                                        (LocalVar "rp.1" @lhs.pointerType)
                                      )
                                  , Stmt_Assignment
+                                     (LocalVar "rp.2" @lhs.pointerType)
+                                     (Expression_GetElemPtr
+                                       (LocalVar "rpArr" @lhs.pointerType) [2]
+                                     )
+                                 , Stmt_Assignment
+                                     (LocalVar "rp.2.val" @lhs.intType)
+                                     (Expression_Load 
+                                       (LocalVar "rp.2" @lhs.pointerType)
+                                     )                                                                                 
+                                 , Stmt_Assignment
                                      (LocalVar "cast.str.res" (pLift I8))
                                      (Expression_GetElemPtr 
                                        (GlobalVar "STR_RES" (pLift $ Array 22 I8))
@@ -150,9 +159,9 @@ SEM SilModule
                                      [ LocalVar "cast.str.res" (pLift I8)
                                      , LocalVar "rp.0.val" @lhs.intType
                                      , LocalVar "rp.1.val" @lhs.intType
-                                     ]   
-                                 , Stmt_Return (Constant 0 I32)      
-                                 ]                     
+                                     ] 
+                                 , Stmt_Return (Constant 0 I32)  
+                                 ]                    
                                
 SEM Functions
   | Cons        lhs.llvmCode = @hd.llvmCode : @tl.llvmCode
