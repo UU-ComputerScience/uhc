@@ -164,9 +164,9 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = fst . maximumBy (\(_,sc1) (_,sc2) -> sc1 `pscpCmpByLen` sc2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (CBind_Bind (mkHNm i) e,u)    | (i,(e,u,_ )) <- Map.toList dependentOnAssumes   ]
+      $ [ (mkCBind1Meta (mkHNm i) CMeta_Dict e,u)    | (i,(e,u,_ )) <- Map.toList dependentOnAssumes   ]
     , Map.fromListWith (++)
-      $ [ (sc,[CBind_Bind (mkHNm i) e]) | (i,(e,_,sc)) <- Map.toList independentOfAssumes ]
+      $ [ (sc,[mkCBind1Meta (mkHNm i) CMeta_Dict e]) | (i,(e,_,sc)) <- Map.toList independentOfAssumes ]
     )
   where (independentOfAssumes, dependentOnAssumes) = Map.partition (\(_,uses,_) -> Set.null uses) m
 %%]

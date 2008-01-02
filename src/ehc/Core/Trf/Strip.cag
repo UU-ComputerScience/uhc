@@ -50,7 +50,7 @@ SEM CModule
   | Mod			lhs			.	cTrf		=	CModule_Mod hsnUnknown @expr.cTrf []
 
 SEM CExpr
-  | Lam			lhs			.	cTrf		=	CExpr_Lam hsnUnknown @body.cTrf
+  | Lam			lhs			.	cTrf		=	CExpr_Lam hsnUnknown @argMeta.cTrf @body.cTrf
   | Var			lhs			.	cTrf		=	CExpr_Var hsnUnknown
   | Int			lhs			.	cTrf		=	CExpr_Int 1
   | Integer		lhs			.	cTrf		=	CExpr_Integer 1
@@ -79,7 +79,7 @@ SEM CPatBind
   | Bind		lhs			.	cTrf		=	CPatBind_Bind hsnUnknown @offset.cTrf hsnUnknown @pat.cTrf
 
 SEM CBind
-  | Bind		lhs			.	cTrf		=	CBind_Bind hsnUnknown @expr.cTrf
+  | Bind		lhs			.	cTrf		=	CBind_Bind hsnUnknown @bindMeta.cTrf @expr.cTrf
   | FFI 		lhs			.	cTrf		=	CBind_FFI "" "" "" hsnUnknown Ty_Any
 %%]
 

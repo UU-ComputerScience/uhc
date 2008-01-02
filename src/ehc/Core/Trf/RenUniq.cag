@@ -161,10 +161,18 @@ SEM CExpr
 %%[8
 SEM CExpr
   | Var         lhs         .   cTrf        =   CExpr_Var (aRenRepl @lhs.aRenMp @nm)
+%%[[8
   | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @body.cTrf
+%%][9
+  | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @argMeta.cTrf @body.cTrf
+%%]]
 
 SEM CBind
+%%[[8
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @expr.cTrf
+%%][9
+  | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindMeta.cTrf @expr.cTrf
+%%]]
 
 SEM CPatBind
   | Bind        lhs         .   cTrf        =   CPatBind_Bind @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @nm) @pat.cTrf

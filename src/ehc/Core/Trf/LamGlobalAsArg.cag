@@ -98,7 +98,7 @@ SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
 
 SEM CBind
-  | Bind        expr		.	gUniq		=	@lhs.gUniq + Map.size @argMp
+  | Bind        expr		.	gUniq		=	@lhs.gUniq + Map.size @argMpNew
 
 %%]
 
@@ -128,13 +128,13 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ argSubst: {Map.Map HsName HsName} | | ]
+ATTR AllCodeNT [ argMp: CVarReplMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   argSubst    =   Map.empty
+  | AGItf       module      .   argMp       =   Map.empty
 
 SEM CBind
-  | Bind        expr        .   argSubst    =   @argMp `Map.union` @lhs.argSubst
+  | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,7 +142,7 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type LamArgMp = Map.Map HsName [HsName]
+type LamArgMp = Map.Map HsName CVarIntroL
 %%]
 
 %%[8
@@ -157,23 +157,6 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional used identifiers for mutual recursive definitions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-ATTR AllCodeNT [ mutRecMp: LevMp | | ]
-
-SEM CodeAGItf
-  | AGItf       module      .   mutRecMp    =   Map.empty
-
-SEM CExpr
-  | Let         binds       .   mutRecMp    =   (if @categ == CBindRec
-                                                 then Map.fromList (zip @binds.nmL (repeat @lhs.lev)) `Map.union` @lhs.mutRecMp
-                                                 else @lhs.mutRecMp
-                                                )
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -182,9 +165,9 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBind
-  | Bind        loc			.	(argNewL,argMp,bindLamArgMp)
+  | Bind        loc			.	(argNewL,argMpNew,bindLamArgMp)
                                             =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.introLevMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+                                                then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
                                                       in   (argNL, argONMp, @nm `Map.singleton` argOL)
                                                 else  ([],Map.empty, Map.empty)
@@ -192,11 +175,20 @@ SEM CBind
 
 %%[8
 SEM CBind
-  | Bind        lhs			.	cTrf        =   CBind_Bind @nm $ mkCExprLam @argNewL @expr.cTrf
+%%[[8
+  | Bind        lhs			.	cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
+%%][9
+  | Bind        lhs			.	cTrf        =   mkCBind1Meta @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+%%]]
 
 SEM CExpr
-  | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argSubst n
+  | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argMp n
                                                      v1 = r @nm
-                                                     v2 = maybe v1 (mkCExprApp v1 . map r) $ Map.lookup @nm $ @lhs.lamArgMp
+%%[[8
+                                                     mk as = mkCExprApp v1 $ [r a | (a,_) <- as]
+%%][9
+                                                     mk as = mkCExprAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
+%%]]
+                                                     v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2
 %%]

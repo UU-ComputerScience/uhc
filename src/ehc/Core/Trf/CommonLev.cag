@@ -8,26 +8,59 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Copy/Self
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR AllMeta [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CVarIntro's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+  | Lam         loc         .   cvi                 =   CVarIntro
+                                                          { cviLev  = @lev
+%%[[9
+                                                          , cviMeta = @argMeta.self
+%%]]
+                                                          }
+
+SEM CBind
+  | Bind        loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev }
+                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf }
+
+SEM CAlt
+  | Alt         loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lev }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Level of id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ levMp: LevMp | | ]
+ATTR AllCodeNT [ cvarIntroMp: CVarIntroMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   levMp       =   Map.empty
+  | AGItf       module      .   cvarIntroMp =   Map.empty
 
 SEM CExpr
-  | Lam         body        .   levMp       =   Map.insert @arg @lev @lhs.levMp
-  | Let         loc         .   maxBindLev  =   fvsLev @lhs.levMp cLevModule @binds.fvS
-                (loc.strLev,binds.levMp)    =   case @categ of
-                                                    CBindStrict -> (const @lhs.lev,@lhs.levMp)
-                                                    CBindRec    -> (const @maxBindLev,(Map.fromList . zipWith (\l n -> (n,l)) (repeat @maxBindLev) . Map.keys $ @binds.levOfMp) `Map.union` @lhs.levMp)
-                                                    _           -> (id,@lhs.levMp)
-                body        .   levMp       =   Map.map @strLev @binds.levOfMp `Map.union` @lhs.levMp
+  | Lam         body        .   cvarIntroMp =   Map.insert @arg @cvi @lhs.cvarIntroMp
+  | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
+                (loc.strLev,binds.cvarIntroMp)
+                                            =   case @categ of
+                                                    CBindStrict -> (const @lhs.lev,@lhs.cvarIntroMp)
+                                                    CBindRec    -> ( const @maxBindLev
+                                                                   , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
+                                                                       `Map.union` @lhs.cvarIntroMp
+                                                                   )
+                                                    _           -> (id,@lhs.cvarIntroMp)
+                body        .   cvarIntroMp =   Map.map (\cvi -> cvi {cviLev = @strLev $ cviLev cvi}) @binds.cvarIntroExprMp `Map.union` @lhs.cvarIntroMp
 
 SEM CAlt
-  | Alt         expr        .   levMp       =   Map.fromList (zip @pat.nmL (repeat @lev)) `Map.union` @lhs.levMp
+  | Alt         expr        .   cvarIntroMp =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.cvarIntroMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,25 +68,25 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ introLevMp: LevMp | | ]
+ATTR AllCodeNT [ introCVarIntroMp: CVarIntroMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   introLevMp  =   Map.empty
+  | AGItf       module      .   introCVarIntroMp    =   Map.empty
 
 SEM CExpr
-  | Lam         body        .   introLevMp  =   Map.insert @arg @lev @lhs.introLevMp
-  | Let         loc         .   introLevMp  =   Map.map (const @lhs.lev) @binds.bindsIntroLevMp `Map.union` @lhs.introLevMp
+  | Lam         body        .   introCVarIntroMp    =   Map.insert @arg @cvi @lhs.introCVarIntroMp
+  | Let         loc         .   introCVarIntroMp    =   Map.map (\cvi -> cvi {cviLev = @lhs.lev}) @binds.bindsIntroCVarIntroMp `Map.union` @lhs.introCVarIntroMp
 
 SEM CAlt
-  | Alt         expr        .   introLevMp  =   Map.fromList (zip @pat.nmL (repeat @lev)) `Map.union` @lhs.introLevMp
+  | Alt         expr        .   introCVarIntroMp    =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.introCVarIntroMp
 %%]
 
 %%[8
-ATTR AllBind [ | | bindsIntroLevMp USE {`Map.union`} {Map.empty}: LevMp ]
+ATTR AllBind [ | | bindsIntroCVarIntroMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
 SEM CBind
-  | Bind        lhs         .   bindsIntroLevMp
-                                            =   Map.singleton @nm @lhs.lev
+  | Bind        lhs         .   bindsIntroCVarIntroMp
+                                                    =   Map.singleton @nm @cvi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,24 +97,25 @@ SEM CBind
 ATTR AllCodeNT [ | | levOf USE {`max`} {cLevModule}: Int ]
 
 SEM CExpr
-  | Var         lhs         .   levOf       =   Map.findWithDefault cLevExtern @nm @lhs.levMp
+  | Var         lhs         .   levOf       =   fvLev @nm @lhs.cvarIntroMp
   | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
   | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
   | TupDel      loc         .   levOf       =   @expr.levOf `max` @offset.levOf
   | TupIns TupUpd
                 loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
-  | Lam         loc         .   levOf       =   fvsLev @lhs.levMp cLevModule @body.fvS
-  | Let         loc         .   levOf       =   fvsLev @lhs.levMp cLevModule @fvS
+  | Lam         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @body.fvS
+  | Let         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @fvS
 %%[[20
   | String      loc         .   levOf       =   cLevIntern
 %%]]
 
 SEM CAlt
-  | Alt         lhs         .   levOf       =   fvsLev @lhs.levMp cLevModule @expr.fvS
+  | Alt         lhs         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @expr.fvS
 
-ATTR AllBind [ | | levOfMp USE {`Map.union`} {Map.empty}: LevMp ]
+ATTR AllBind [ | | cvarIntroExprMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
 SEM CBind
-  | Bind        lhs         .   levOfMp     =   Map.singleton @nm @expr.levOf
+  | Bind        lhs         .   cvarIntroExprMp
+                                            =   Map.singleton @nm @cviExpr
 %%]
 
