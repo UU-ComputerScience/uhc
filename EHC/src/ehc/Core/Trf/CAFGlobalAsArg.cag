@@ -57,7 +57,7 @@ SEM CodeAGItf
 SEM CBind
   | Bind        loc         .   lUniq1      =   @lhs.gUniq
                             .   lUniq2      =   @lUniq1 + 1
-                expr        .   gUniq       =   @lUniq2 + Map.size @argMp
+                expr        .   gUniq       =   @lUniq2 + Map.size @argMpNew
 
 %%]
 
@@ -87,33 +87,14 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ argSubst: {Map.Map HsName HsName} | | ]
+ATTR AllCodeNT [ argMp: CVarReplMp | | ]
 
 SEM CodeAGItf
-  | AGItf       module      .   argSubst    =   Map.empty
+  | AGItf       module      .   argMp       =   Map.empty
 
 SEM CBind
-  | Bind        expr        .   argSubst    =   @argMp `Map.union` @lhs.argSubst
+  | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Adding parameters to lam call sites
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-%%]
-type LamArgMp = Map.Map HsName [HsName]
-
-%%[8
-%%]
-ATTR AllBind [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
-ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
-
-SEM CodeAGItf
-  | AGItf       module      .   lamArgMp    =   Map.empty
-
-SEM CExpr
-  | Let         loc         .   lamArgMp    =   @binds.bindLamArgMp `Map.union` @lhs.lamArgMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
@@ -121,9 +102,9 @@ SEM CExpr
 
 %%[8
 SEM CBind
-  | Bind        loc         .   (argNewL,argMp,argOldL)
+  | Bind        loc         .   (argNewL,argMpNew,argOldL)
                                             =   if @isClosurable
-                                                then  let  argLevL = fvLAsArg @lhs.introLevMp $ panicJust "CAFGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSCafMp
+                                                then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "CAFGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSCafMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lUniq2 $ argLevL
                                                       in   (argNL, argONMp, argOL)
                                                 else  ([],Map.empty, [])
@@ -138,8 +119,19 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 
 SEM CBind
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @nm
-                            .   cTrfVar     =   CBind_Bind @nm $ mkCExprApp (CExpr_Var @nmLam) $ map (fvVarRepl @lhs.argSubst) @argOldL
-                            .   cTrfLam     =   CBind_Bind @nmLam $ mkCExprLam @argNewL @expr.cTrf
+%%[[8
+                            .   cTrfVar     =   mkCBind1 @nm
+                                                $ mkCExprApp (CExpr_Var @nmLam)
+                                                $ map (\(n,_) -> fvVarRepl @lhs.argMp n) @argOldL
+                            .   cTrfLam     =   mkCBind1 @nmLam
+                                                $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
+%%][9
+                            .   cTrfVar     =   mkCBind1Meta @nm @bindMeta.cTrf
+                                                $ mkCExprAppMeta (CExpr_Var @nmLam)
+                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
+                            .   cTrfLam     =   mkCBind1 @nmLam
+                                                $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+%%]]
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL
                                                 then (Seq.singleton @cTrf,Seq.empty)
@@ -147,7 +139,7 @@ SEM CBind
   | FFI         lhs         .   varBindSq   =   Seq.singleton @cTrf
 
 SEM CExpr
-  | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argSubst @nm
+  | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
   | Let         lhs         .   cTrf        =   mkCExprLet CBindPlain (Seq.toList @binds.lamBindSq)
                                                 $ mkCExprLet @categ (Seq.toList @binds.varBindSq)
                                                 $ @body.cTrf

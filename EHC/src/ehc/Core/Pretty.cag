@@ -10,11 +10,15 @@
 %%[8 hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
-%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty}) export(ppCBindL)
+%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
 %%[8.WRAPPER ag import({Core/AbsSyn})
-WRAPPER CodeAGItf CExpr
+WRAPPER
+  CodeAGItf CExpr
+%%[[9
+  CMeta
+%%]]
 %%]
 
 %%[8 hs
@@ -38,28 +42,28 @@ ppCNm = cfgppHsName CfgPP_Core
 %%]
 
 %%[9 hs
-ppCBindL :: CBindL -> PP_Doc
-ppCBindL = ppAssocL . map (\(CBind_Bind n v) -> (n,v))
-%%]
-
-%%[9 hs
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
 
 %%[9 hs
+ppOptCMeta :: CMeta -> PP_Doc
+ppOptCMeta x
+  =  let  t = wrap_CMeta (sem_CMeta x) Inh_CMeta
+     in   (optPP_Syn_CMeta t)
 %%]
-ppCxBindLMap :: CxBindLMap -> PP_Doc
-ppCxBindLMap (CxBindLMap m)
-  =  ppAssocLV
-  .  assocLMapElt
-        (\cbs
-            -> ppAssocL . map (\(CBind_Bind n v,i,dpds) -> (n,pp v >-< (ppBracketsCommas . Set.toList $ dpds) >#< "->" >#< pp i)) $ cbs
-        )
-  .  Map.toList $ m
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Pretty printed code
+%%% Debugging only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs export(ppCBindL)
+ppCBindL :: CBindL -> PP_Doc
+ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMeta m))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
@@ -85,6 +89,10 @@ ppTag :: CTag -> PP_Doc
 ppTag t = "#Tag" >|< ppCTag' CfgPP_Core t
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 ATTR CPatBindL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
@@ -104,16 +112,14 @@ SEM CExpr
   | Var         loc         .   pp          =   ppCNm @nm
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
-                                                in  ppOr (ppDef fun (vlist args))
-                                                         (fun >#< (ppSpaces args))
+                                                in  ppDef fun (vlist args)
   | Let         loc         .   ppCateg     =   case @categ of
                                                   CBindRec     -> pp " rec"
                                                   CBindStrict  -> pp " !"
                                                   CBindFFI     -> pp " foreign"
                                                   _            -> empty
                             .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
-  | Lam         loc         .   pp          =   ppOr' (ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP))
-                                                      ("\\" >|< ppSpaces @lamArgPPL >#< "->" >#< @lamBodyPP)
+  | Lam         loc         .   pp          =   ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
   | Case        loc         .   pp          =   "case" >#< @expr.pp >#< "of"
                                                 >-< indent 1 (ppCurlysSemisBlock @alts.ppL >-< ppCurlysSemisBlock [ppDef "default" @dflt.pp])
   | Tup         loc         .   pp          =   ppTag @tag
@@ -124,18 +130,30 @@ SEM CExpr
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
+%%[[8
                             .   lamArgPPL   =   ppCNm @arg : @body.lamArgPPL
+%%][9
+                            .   lamArgPPL   =   (ppCNm @arg >|< @argMeta.optPP) : @body.lamArgPPL
+%%]]
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 
 SEM CExpr
   | App         loc         .   appFunPP    =   @func.appFunPP
+%%[[8
                             .   appArgPPL   =   @arg.pp : @func.appArgPPL
+%%][9
+                            .   appArgPPL   =   (@arg.pp >|< @argMeta.optPP) : @func.appArgPPL
+%%]]
   | * - App     lhs         .   appFunPP    =   @pp
                             .   appArgPPL   =   []
 
 SEM CBind
+%%[[8
   | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >#< "=") (@expr.pp)
+%%][9
+  | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.optPP >#< "=") (@expr.pp)
+%%]
   | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 
@@ -177,11 +195,22 @@ SEM CPatBindL
                                                 >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
 %%[9
+ATTR CMeta [ | | optPP : PP_Doc ]
+
 SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid
   | HoleLet     loc         .   pp          =   "let --" >#< ppHole @bindsUid >-< ppDef "in" @body.pp
   | CoeArg      loc         .   pp          =   pp "<_>"
   | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppHole @uid)
   | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
+
+SEM CMeta
+  | Val         loc         .   pp          =   pp "VAL"
+  | Dict        loc         .   pp          =   pp "DICT"
+
+SEM CMeta
+  | Val         loc         .   optPP       =   empty
+  | * - Val     loc         .   optPP       =   " :" >#< @pp
+
 %%]
 

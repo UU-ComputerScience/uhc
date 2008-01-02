@@ -25,7 +25,7 @@ SEM AGItf
 %%[8.mainDefExists
 SEM AGItf
   | AGItf       loc         .   mainDefExists
-                                            =   let ds = [ n | (_,g) <- @expr.letCBindL, (CBind_Bind n _) <- g, n == hsnMain ]
+                                            =   let ds = [ b | (_,g) <- @expr.letCBindL, b <- g, cbindNm b == hsnMain ]
                                                 in  not (null ds)
                             .   insertMainDef
                                             =   not @mainDefExists
@@ -46,7 +46,7 @@ ATTR AGItf [ | | cmodule: CModule ]
 
 SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then CExpr_Var hsnMain else @expr.letCBody
-                                                    d = if @insertMainDef then mkCExprLet CBindPlain [CBind_Bind hsnMain @expr.letCBody] else id
+                                                    d = if @insertMainDef then mkCExprLet CBindPlain [mkCBind1 hsnMain @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
                                                         (foldr (\(c,b) e -> mkCExprLet c b e)
                                                                (d b)
@@ -78,15 +78,15 @@ SEM Expr
                             .   letCBindL   =   [(@howToBind,@decls.cbindL)]
                             .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
   | App AppImpred
-                loc         .   cexpr       =   CExpr_App @func.cexpr @arg.cexpr
-  | Lam         loc         .   cexpr       =   CExpr_Lam @arg.topNm
+                loc         .   cexpr       =   mkCExprApp1 @func.cexpr @arg.cexpr
+  | Lam         loc         .   cexpr       =   mkCExprLam1 @arg.topNm
                                                     (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ n | (CExpr_Var n) <- fuL2ExprL (reverse @expr.fuCExprL) ]
                                                              in  (ns,[],@alts.raltL')
                                                         else let n = uidHNm @lUniq2
-                                                             in  ([n],[CBind_Bind n @expr.cexpr],@alts.raltL)
+                                                             in  ([n],[mkCBind1 n @expr.cexpr],@alts.raltL)
                                                 in  mkCExprLet CBindPlain bs (rceMatch @rceEnv ns as)
   | AppTop Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
@@ -110,7 +110,7 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   cexpr       :=  CExpr_App
+                loc         .   cexpr       :=  mkCExprApp1
                                                     (coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
@@ -147,7 +147,7 @@ SEM Expr
                                                     then  fuMkCExpr @lhs.opts @lUniq3 (reverse @recExpr.fuCExprL) @recExpr.recCExpr
                                                     else
 %%]]                                                    
-                                                          foldl CExpr_App (CExpr_Tup CTagRec)
+                                                          foldl mkCExprApp1 (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
                             .   cexpr           =   @rcexpr
 %%]
@@ -208,7 +208,7 @@ SEM RecExpr
 %%[8
 SEM Expr
   | DataFields  loc         .   dfexpr      =   let mkTup dti mkDflt con
-                                                      = foldl CExpr_App con
+                                                      = foldl mkCExprApp1 con
                                                         . fuL2ExprL
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
                                                         . fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
@@ -231,7 +231,7 @@ SEM Expr
                                                                             )
                                                                           | dti <- @dtiInFldL
                                                                           ]
-                                                                   err = [CBind_Bind en (cerror @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
+                                                                   err = [mkCBind1 en (cerror @lhs.opts ("has no field update '" ++ show @fldL ++ "'"))]
                                                                    en = mkHNm "_upd_error"
                             .   cexpr       =   @dfexpr
 %%]
@@ -248,7 +248,7 @@ SEM DataFieldExpr
   | Upd         loc         .   fldExprNm   =   mkHNm @lUniq
                 lhs         .   fuCExprL    =   let mke dti o = CExpr_TupIns @dataFieldExpr.dfeCExpr (dtiCTag dti) @nm (CExpr_Int o) (CExpr_Var @fldExprNm)
                                                 in  (@nm,(mke,Nothing)) : @dataFieldExpr.fuCExprL
-                            .   dfeCBindL   =   CBind_Bind @fldExprNm @expr.cexpr : @dataFieldExpr.dfeCBindL
+                            .   dfeCBindL   =   mkCBind1 @fldExprNm @expr.cexpr : @dataFieldExpr.dfeCBindL
   | Con         lhs         .   dfeCExpr    =   CExpr_Tup (dtiCTag @dti)
                             .   fuCExprL    =   []
                             .   dfeCBindL   =   []
@@ -284,8 +284,8 @@ SEM DataConstr
   | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
                                                     nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
                                                 in  if @lhs.isNewtype
-                                                    then [ CBind_Bind @conNm (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts) ]
-                                                    else [ CBind_Bind @conNm
+                                                    then [ mkCBind1 @conNm (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts) ]
+                                                    else [ mkCBind1 @conNm
                                                              (mkCExprLam nms
                                                                (mkCExprApp (CExpr_Tup @ctag)
                                                                  (map CExpr_Var nms)))
@@ -301,13 +301,13 @@ SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
                                                 in  if @isNewtype
-                                                    then [ [ CBind_Bind f (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts)
+                                                    then [ [ mkCBind1 f (CExpr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          ] ]
-                                                    else [ [ CBind_Bind f
+                                                    else [ [ mkCBind1 f
                                                                (mkCExprLam [xn1]
                                                                  (mkCExprSatSelsCases (rceUpdEnv (CExpr_Var en) @rceEnv) (Just xn2) (CExpr_Var xn1) (tgSels f i)))
-                                                           , CBind_Bind en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
+                                                           , mkCBind1 en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
                                                            ]
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
                                                          , let en = hsnSuffix f "_datafield_sel_error"
@@ -482,13 +482,13 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe @arg.topNm]
+  | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe1 @arg.topNm]
   | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
 %%]
 
 %%[12
 SEM Expr
-  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
+  | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe1 @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -503,7 +503,7 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe [@arg.cexpr]]
+                lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe1 @arg.cexpr]
                             .   appFunCExpr     =   @func.appFunCExpr
   | AppTop      lhs         .   (appArgCoeL,appFunCExpr)
                                                 =   if null @lamArgCoeL
@@ -525,14 +525,14 @@ SEM Expr
 ATTR Decls Decl AllDataConstr [ | | cbindL, ffiCBindL USE {++} {[]}: CBindL ]
 
 SEM Decl
-  | Val         lhs         .   cbindL          =   [CBind_Bind @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
+  | Val         lhs         .   cbindL          =   [mkCBind1 @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
   | TySig       lhs         .   cbindL          =   []
   | FFI         lhs         .   ffiCBindL       =   [CBind_FFI @callconv @safety @impEnt @nm @ty_sig_expanded]
 %%]
 
 %%[9
 SEM Decl
-  | Val         lhs         .   cbindL          :=  [CBind_Bind @patExpr.topNm $ mkCExprLet' True CBindRec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL
+  | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindRec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -572,15 +572,15 @@ SEM Decl
                                                      mkSel n = mkCExprSatSelsCase ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
                                                                                   [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (`CExpr_App` vx)
+                                                             then (`mkCExprApp1` vx)
                                                              else id
                                                      dDflt
-                                                       = [CBind_Bind nDflt (mkCExprLam [nD] d)] 
+                                                       = [mkCBind1 nDflt (mkCExprLam1Meta nD CMeta_Dict d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ CBind_Bind n (x `CExpr_Lam` (mkApp $ mkSel n))
+                                                     ++ [ mkCBind1 n $ mkCExprLam1Meta x CMeta_Dict $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -593,23 +593,24 @@ SEM Decl
 SEM Decl
   | Instance    lhs         .   cbindL      =   let  off n = cdictOffset n @recTy
                                                      mkSetFldsRec d bs
-                                                       = foldl (\d (CBind_Bind n v) -> mkSet d n v) d bs
+                                                       = foldl (\d (CBind_Bind n _ v) -> mkSet d n v) d bs
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
                                                      mkSetFldsData d bs
                                                        = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL Nothing
                                                        where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
-                                                             offValL = [ (off n,v) | (CBind_Bind n v) <- bs ]
+                                                             offValL = [ (off n,v) | (CBind_Bind n _ v) <- bs ]
                                                      mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFldsRec else mkSetFldsData
-                                                     d = case @instVariant of
+                                                     (d,cmeta)
+                                                       = case @instVariant of
                                                            InstNormal
-                                                             -> mkNormalD @decls.cbindL
+                                                             -> (mkNormalD @decls.cbindL,CMeta_Dict)
                                                            InstDefault
-                                                             -> dD
+                                                             -> (dD,CMeta_Val)
                                                              where nD = @dictSelfNm
                                                                    nR = @dictBuildNm
-                                                                   dD = mkCExprLam [nD]
+                                                                   dD = mkCExprLam1Meta nD CMeta_Dict
                                                                           (mkCExprLetRec
-                                                                              ([CBind_Bind nR
+                                                                              ([mkCBind1Meta nR CMeta_Dict
                                                                                   (mkCExprApp (CExpr_Tup @dictTag)
                                                                                       (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
                                                                                ++ (cSubstOptApp @lhs.opts @cSubst
@@ -617,15 +618,15 @@ SEM Decl
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
-                                                                     where b = map (\(CBind_Bind n v) -> (n,v)) @decls.cbindL
+                                                                     where b = map (\(CBind_Bind n _ v) -> (n,v)) @decls.cbindL
 %%[[95
                                                            InstDeriving
-                                                             -> mkNormalD bindL
+                                                             -> (mkNormalD bindL,CMeta_Dict)
                                                              where nsA@(n1:n1s) = hsnLclSupplyWith (mkHNm "x")
                                                                    n1v = CExpr_Var n1
                                                                    mkf :: DerivClsFld -> CBind
                                                                    mkf dcf
-                                                                     = CBind_Bind (dcfNm dcf)
+                                                                     = mkCBind1 (dcfNm dcf)
                                                                          (if fArity == 0
                                                                           then mkCExprLam (dcfInitialArgL dcf)
                                                                                $ dcfNoArgSubsCExpr dcf 
@@ -651,7 +652,10 @@ SEM Decl
                                                                            nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
                                                                            extraCxL = [ mkCExprPrHole @lhs.opts (poPoi prOcc) | prOcc <- @derivExtraPrOcc ]
                                                                            mkcSubs dti nmFldLL altPrOccL
-                                                                             = [ CExpr_Var (dcfNm dcf) `mkCExprApp` ([mkCExprPrHole @lhs.opts (poPoi prOcc)] ++ dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL)
+                                                                             = [ mkCExprAppMeta
+                                                                                   (CExpr_Var (dcfNm dcf))
+                                                                                   (cmetaLiftDict [mkCExprPrHole @lhs.opts (poPoi prOcc)]
+                                                                                     ++ cmetaLift (dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL))
                                                                                | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
                                                                                ]
                                                                            mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL
@@ -676,20 +680,20 @@ SEM Decl
                                                              nStrictDflt = hsnSuffix nDflt "!"
                                                              nR = @dictBuildNm
                                                              nStrictR = hsnSuffix nR "!"
-                                                             dDflt = mkCExprStrictIn nStrictDflt (CExpr_App (CExpr_Var nDflt) (CExpr_Var nR))
-                                                                       (\d -> mkSetFlds d (zipWith CBind_Bind @supClsNmL
+                                                             dDflt = mkCExprStrictInMeta nStrictDflt CMeta_Dict (mkCExprApp1Meta (CExpr_Var nDflt) (CExpr_Var nR) CMeta_Dict)
+                                                                       (\d -> mkSetFlds d (zipWith mkCBind1 @supClsNmL
                                                                                                    (map CExpr_Var @chrSuperProveNmL)))
-                                                             dD = mkCExprLam @chrCtxtArgNmL
+                                                             dD = mkCExprLamMeta (cmetaLiftDict @chrCtxtArgNmL)
                                                                     (mkCExprLetRec
-                                                                        ([CBind_Bind nR
-                                                                            (mkCExprStrictIn nStrictR dDflt (\d -> mkSetFlds d bindL))]
+                                                                        ([mkCBind1Meta nR CMeta_Dict
+                                                                            (mkCExprStrictInMeta nStrictR CMeta_Dict dDflt (\d -> mkSetFlds d bindL))]
                                                                          ++ (cSubstOptApp @lhs.opts @cSubst
                                                                                $ (@chrAssumeSuperBindL ++ @chrAssumeDeclsInstBindL ++ @chrAssumeDeclsCtxtBindL ++ @chrScopeSuperBindL ++ @chrScopeDeclsBindL)))
                                                                         (CExpr_Var nR)
                                                                     )
-                                                in   [CBind_Bind @dictNm (cSubstOptApp @lhs.opts @cSubst d)]
+                                                in   [mkCBind1Meta @dictNm cmeta (cSubstOptApp @lhs.opts @cSubst d)]
   | InstanceIntro
-                lhs         .   cbindL      =   [CBind_Bind @dictNm @expr.cexpr]
+                lhs         .   cbindL      =   [mkCBind1Meta @dictNm CMeta_Dict @expr.cexpr]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -731,7 +735,7 @@ rpatBindL2CBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbCPatRest -> AssocL RPa
 rpatBindL2CBindL env hasSub parNm ct rest pbL 
   = concat
     $  map  (\(RPatBind_Bind l o _ p,mbOff)
-                -> let  b n = [CBind_Bind n (mkc n mbOff)]
+                -> let  b n = [mkCBind1 n (mkc n mbOff)]
                         pn  = parNm
                         pn' = hsnSuffix pn "!"
                         mkc n (Just o) = mkCExprSatSelCase env (Just pn') (CExpr_Var pn) ct n l o rest
@@ -821,7 +825,7 @@ rceSplit f (x:xs@(x':_))
   where xcateg = f x
 
 rceRebinds :: HsName -> RCEAltL -> CBindL
-rceRebinds nm alts = [ CBind_Bind n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatNms alts, n /= nm ]
+rceRebinds nm alts = [ mkCBind1 n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatNms alts, n /= nm ]
 
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
@@ -897,7 +901,7 @@ rceMatch env args alts
            ->  case e of
                   CExpr_Var _
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
-                  _  ->  mkCExprLet CBindPlain [CBind_Bind nc e]
+                  _  ->  mkCExprLet CBindPlain [mkCBind1 nc e]
                          $ rceMatchSplits (rceUpdEnv (CExpr_Var nc) env) args alts
                      where nc  = hsnPrefix "_casecont_" (rpatNmNm $ rcpPNm $ rcaPat $ head alts)
         )

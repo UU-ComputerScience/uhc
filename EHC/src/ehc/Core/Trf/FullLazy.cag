@@ -20,7 +20,7 @@ WRAPPER CodeAGItf
 We have cycles, but they are there by design:
 
 *** UU.AG warning  ***
-problem  : Direct circular dependency pattern for inherited attribute levMp
+problem  : Direct circular dependency pattern for inherited attribute cvarIntroMp
             and synthesized attribute levOfMp of nonterminal CBindL
 pattern  : see help
 help     : The following attributes formed the cycle:
@@ -80,6 +80,27 @@ SEM CExpr
   | Let         (binds.gUniq,loc.lUniq)     =   mkNewUID @lhs.gUniq
   | Case TupDel TupIns TupUpd
                 (expr.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CMeta context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR CExpr AllAlt [ cmeta: CMeta | | ]
+
+SEM CExpr
+  | App         arg         .   cmeta       =   @argMeta.cTrf
+  | Lam         body        .   cmeta       =   CMeta_Val
+
+SEM CBind
+  | Bind        expr        .   cmeta       =   @bindMeta.cTrf
+
+SEM CModule
+  | Mod         expr        .   cmeta       =   CMeta_Val
+
+SEM CPatBind
+  | Bind        offset      .   cmeta       =   CMeta_Val
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,13 +237,23 @@ SEM CAlt
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8.mkTrf hs
 mkTrf :: Bool -> Int -> Int -> HsName -> CExpr -> (CExpr,LevBindSq)
 mkTrf cond outerLev hereLev n e
   =  if cond
-     then (CExpr_Var n,unitSeq (hereLev,(CBindPlain,[CBind_Bind n e])))
+     then (CExpr_Var n,unitSeq (hereLev,(CBindPlain,[mkCBind1 n e])))
      else (e,emptySeq)
+%%]
 
+%%[9 -8.mkTrf hs
+mkTrf :: Bool -> Int -> Int -> HsName -> CMeta -> CExpr -> (CExpr,LevBindSq)
+mkTrf cond outerLev hereLev n m e
+  =  if cond
+     then (CExpr_Var n,unitSeq (hereLev,(CBindPlain,[mkCBind1Meta n m e])))
+     else (e,emptySeq)
+%%]
+
+%%[8 hs
 mkLetTrf' :: LevBindSq -> CExpr -> (Bool,CExpr)
 mkLetTrf' bs ce
   =  let  l = seqToList bs
@@ -236,29 +267,48 @@ mkLetTrf bs ce = snd (mkLetTrf' bs ce)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
+SEM CAlt
+  | Alt         lhs         .   cTrf        =   CAlt_Alt @pat.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
+
 SEM CExpr
   | App Lam Case TupDel TupIns TupUpd Let
                 loc         .   trNm        =   uidHNm @lUniq
   | Lam         loc         .   trNm2       =   uidHNm @lUniq2
+
+SEM CExpr
   | TupIns TupUpd TupDel
                 loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopTup
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
-  | App Case
-                loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | App Case    loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
   | Lam         loc         .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
-                (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
-                                                          . CExpr_Lam @arg
-                                                          . mkLetTrf @hereBindSq
-                                                in  case @body.cTrf of
-                                                        CExpr_Lam _ _ | not (null (seqToList @hereBindSq))
-                                                            -> mkTLB (CExpr_Let CBindPlain [CBind_Bind @trNm2 @body.cTrf] (CExpr_Var @trNm2))
-                                                        _   -> mkTLB @body.cTrf
   | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
-                (lhs.cTrf,loc.levBindSq)    =   let  lt = mkLetTrf @hereBindSq @body.cTrf
-                                                in   mkTrf @trfIsOk @lhs.lev @levOf @trNm lt
-
-SEM CAlt
-  | Alt         lhs         .   cTrf        =   CAlt_Alt @pat.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
 %%]
+
+%%[8.CExpr.cTrf
+SEM CExpr
+  | TupIns TupUpd TupDel
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
+  | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
+                                                          . mkCExprLam1 @arg
+                                                          . mkLetTrf @hereBindSq
+                                                in  if cexprIsLam @body.cTrf && not (null (seqToList @hereBindSq))
+                                                    then mkTLB (CExpr_Let CBindPlain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
+                                                    else mkTLB @body.cTrf
+  | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm $ mkLetTrf @hereBindSq @body.cTrf
+%%]
+
+%%[9 -8.CExpr.cTrf
+SEM CExpr
+  | TupIns TupUpd TupDel
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf
+  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf
+  | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta
+                                                          . mkCExprLam1Meta @arg @argMeta.cTrf
+                                                          . mkLetTrf @hereBindSq
+                                                in  if cexprIsLam @body.cTrf && not (null (seqToList @hereBindSq))
+                                                    then mkTLB (CExpr_Let CBindPlain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
+                                                    else mkTLB @body.cTrf
+  | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta $ mkLetTrf @hereBindSq @body.cTrf
+%%]
+
 

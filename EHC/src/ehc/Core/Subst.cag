@@ -7,7 +7,7 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}VarMp},{%{EH}Core.Pretty},{%{EH}Core.FvS})
+%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}VarMp},{%{EH}Core.Pretty},{%{EH}Core.FvS})
 %%]
 
 %%[9 hs export(coeWipeWeave,coeEvalOn,coeCompose,mkPoisAppCoe,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
@@ -85,7 +85,7 @@ instance CSubstitutable CExpr where
        in   (cRepl_Syn_CExpr t)
 
 instance CSubstitutable CBind where
-  cSubstApp cs (CBind_Bind n e) = CBind_Bind n (cSubstApp cs e)
+  cSubstApp cs (CBind_Bind n m e) = CBind_Bind n m (cSubstApp cs e)
 
 instance CSubstitutable a => CSubstitutable [a] where
   cSubstApp cs = map (cSubstApp cs)
@@ -189,9 +189,9 @@ coeWipe cs l r
                                 notFreeIn n e
                                        =  not (n `Set.member` cexprFvS e)
                                 match  =  case (lce,rce) of
-                                            (CExpr_App f (CExpr_Var  ln),CExpr_Lam rn CExpr_CoeArg)
+                                            (CExpr_App f (CExpr_Var  ln) _,CExpr_Lam rn _ CExpr_CoeArg)
                                               -> ln == rn && notFreeIn ln f
-                                            (CExpr_App f (CExpr_Hole li),CExpr_Lam rn CExpr_CoeArg)
+                                            (CExpr_App f (CExpr_Hole li) _,CExpr_Lam rn _ CExpr_CoeArg)
                                               -> l  == r  && notFreeIn rn f
                                               where l = show li
                                                     r = show rn
@@ -201,21 +201,21 @@ coeWipe cs l r
      in   (reverse l',reverse r')
 
 mkPoisAppCoe :: EHCOpts -> [PredOccId] -> [Coe]
-mkPoisAppCoe opts = map (\i -> mkAppCoe [mkCExprPrHole opts i])
+mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) CMeta_Dict)
 
 mkImplsAppCoe :: EHCOpts -> Impls -> [Coe]
 mkImplsAppCoe opts = mkPoisAppCoe opts . implsPrIds
 
 mkPoiLLamCoe :: Coe -> [PredOccId] -> [Coe]
 mkPoiLLamCoe onLast poiL
-  =  case map (mkLamCoe . poiHNm) poiL of
-       l@(_:_)  ->  let  h = init l
-                         t = last l
+  =  case map mk poiL of
+       l@(_:_)  ->  let  (h,t) = fromJust $ initlast l
                     in   h ++ [t `coeCompose` onLast]
        _ | coeIsId onLast
                 ->  []
          | otherwise
                 ->  [onLast]
+  where mk poi = mkLamCoe1With (poiHNm poi) CMeta_Dict
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)
@@ -247,7 +247,7 @@ lrcoeForLamTyApp :: EHCOpts -> UID -> CSubst -> LRCoe -> LRCoe -> LRCoe
 lrcoeForLamTyApp opts uniq csubst f a
   = LRCoe k [l] [r] `lrcoeUnion` a
   where n = uidHNm uniq
-        r = mkLamCoe n
+        r = mkLamCoe1 n
         (k,l)
           = case f of
               lr@(LRCoe LRCoeOther _ _)

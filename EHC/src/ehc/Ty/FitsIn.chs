@@ -636,7 +636,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                  }
 -}
                                      | n2 == hsnRowEmpty && not (null fBldL)
-                                     ->  let coe = Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))
+                                     ->  let coe = Coe (\e -> mkCExprLet CBindPlain [mkCBind1 rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))
                                          in  fo  {  foLRCoe = lrcoeLSingleton coe
                                                  ,  foPredOccL = prBldL ++ foPredOccL fo
                                                  ,  foGathCnstrMp = gathPredLToProveCnstrMp prBldL `cnstrMpUnion` foGathCnstrMp fo
@@ -649,7 +649,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              ,  foGathCnstrMp = gathPredLToProveCnstrMp (prUpdL ++ prDelL) `cnstrMpUnion` foGathCnstrMp fo
                                              ,  foUniq = u'
                                              }
-                                     where coe = Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuL r))
+                                     where coe = Coe (\e -> mkCExprLet CBindPlain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuL r))
                                    _ |  not (null fuUpdL)
                                      ->  fo  {  foLRCoe = lrcoeLSingleton coe
                                              ,  foPredOccL = prUpdL ++ foPredOccL fo
@@ -658,7 +658,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              }
                                      |  otherwise
                                      ->  fo  {  foLRCoe = emptyLRCoe }
-                                     where coe = Coe (\e -> mkCExprLet CBindPlain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuUpdL r))
+                                     where coe = Coe (\e -> mkCExprLet CBindPlain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuUpdL r))
 %%]
 
 %%[10.fitsIn.fRow.Coe
@@ -823,18 +823,18 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  if foHasErrs pfo
                                then Nothing
                                else Just  ( foUpdTy ([foTy pfo] `mkArrow` foTy fo)
-                                          $ foUpdLRCoe (mkIdLRCoe n)
+                                          $ foUpdLRCoe (mkIdLRCoeWith n CMeta_Dict)
                                           $ fo)
                             where  pfo   = fVar f (fi {fiFIOpts = predFIOpts}) tpr2 tpr1
                                    n     = uidHNm u2
                                    fo    = fVar ff (fofi pfo fi) tr1 tr2
                        fP fi tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2 ipo2))
-                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId basePrfCtxtId u2) ipo2 im2) tpr1 (mkIdLRCoe n) fo)
+                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId basePrfCtxtId u2) ipo2 im2) tpr1 (mkIdLRCoeWith n CMeta_Dict) fo)
                             where  im2   = Impls_Tail u1 ipo2
                                    n     = uidHNm u2
                                    fo    = fVar f fi tr1 ([Ty_Impls im2] `mkArrow` tr2)
                        fP fi (Ty_Impls (Impls_Tail iv1 ipo1)) tpr2@(Ty_Pred pr2)
-                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId basePrfCtxtId u2) ipo1 im1) tpr2 (mkIdLRCoe n) fo)
+                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId basePrfCtxtId u2) ipo1 im1) tpr2 (mkIdLRCoeWith n CMeta_Dict) fo)
                             where  im1   = Impls_Tail u1 ipo1
                                    n     = uidHNm u2
                                    fo    = fVar f fi ([Ty_Impls im1] `mkArrow` tr1) tr2
@@ -903,7 +903,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  let  fo    = fVar f fi tr1 t2
                                     fs    = foVarMp fo
                                     prfPrL= [mkPredOcc ({- fs |=> -} pr1) pv1 psc1]
-                                    coe   = mkAppCoe [mkCExprPrHole globOpts pv1]
+                                    coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) CMeta_Dict
                                in   (fo,coe,gathPredLToProveCnstrMp prfPrL)
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just (fVar f fi tr1 t2)

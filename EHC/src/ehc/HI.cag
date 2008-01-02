@@ -73,20 +73,26 @@ emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Building
+%%% GHC 6.8.1 bug workaround
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 GHC 6.8.1 problem:
 Leaving out workAroundGHC_6_8_1_Bug causes to yield Fixity_Infix irrespective of actual value.
 Solution seems to be to wrap non-trivial function around value?
+It also has to do with strict datatype fields, omitting '!' in front of Fixity makes it work as well:
+  | Binding_Fixity !(HsName) !(Int) (Fixity)
 
 %%[20 hs export(workAroundGHC_6_8_1_Bug)
 workAroundGHC_6_8_1_Bug :: Int -> Fixity -> Fixity
 workAroundGHC_6_8_1_Bug p f
   = case f of
       Fixity_Infix | p >= 0 -> Fixity_Infix
-      _            -> f
+      _                     -> f
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 hs export(hiFromHIInfo)
 hiFromHIInfo :: HIInfo -> Seq.FastSeq Binding

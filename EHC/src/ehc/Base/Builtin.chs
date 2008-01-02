@@ -308,7 +308,7 @@ mkRV m = hsnSetQual m . hsnFromString
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId)
+%%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId,hsnPrimAddInt)
 [ hsnUndefined
  , hsnPackedString
  , hsnPackedStringToString

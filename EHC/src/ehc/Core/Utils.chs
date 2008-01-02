@@ -87,7 +87,7 @@ cpatBindOffsetL pbL
                         ->  let  offNm = hsnPrefix "off_" pn
                             in   case o of
                                    CExpr_Int _  -> (b,[])
-                                   _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
+                                   _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
                     )
                $  pbL
      in   (pbL',concat obL)
@@ -113,7 +113,7 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCase env eNm e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
   | dgiIsNewtype dgi
-  = mkCExprLet CBindPlain [CBind_Bind pnm e] ae
+  = mkCExprLet CBindPlain [mkCBind1 pnm e] ae
   where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
 mkCExprStrictSatCase env eNm e alts
   = case eNm of
@@ -214,7 +214,7 @@ fuReorder opts nL fuL
                      ->  let  mkOff n lbl o
                                 =  let smaller l = rowLabCmp l lbl == LT
                                        off = length (filter smaller dels) - length (filter smaller exts)
-                                   in  CBind_Bind n (caddint opts o off)
+                                   in  mkCBind1 n (caddint opts o off)
                               no = CExpr_Var n
                          in   case f of
                                  CExpr_TupIns _ t l o e -> ((l,(\r -> CExpr_TupIns r t l no e,Nothing)) : fuL,(mkOff n l o):offL,l:exts,dels  )
@@ -233,7 +233,7 @@ fuMkCExpr :: EHCOpts -> UID -> FieldUpdateL CExpr -> CExpr -> CExpr
 fuMkCExpr opts u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
           (oL,fuL') = fuReorder opts nL fuL
-          bL = CBind_Bind n r : oL
+          bL = mkCBind1 n r : oL
      in   mkCExprLet CBindStrict bL $ foldl (\r (_,(f,_)) -> f r) (CExpr_Var n) $ fuL'
 %%]
 
@@ -268,24 +268,26 @@ fvsTransClosure frLamMp frVarMp
 %%]
 
 %%[8 export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
-fvLAsArg :: LevMp -> FvS -> AssocL HsName Int
-fvLAsArg levMp fvS
-  =  sortOn snd
-     $ filter (\(_,l) -> l > cLevModule)
-     $ map (\n -> (n,fvLev levMp n))
+fvLAsArg :: CVarIntroMp -> FvS -> CVarIntroL
+fvLAsArg cvarIntroMp fvS
+  =  sortOn (cviLev . snd)
+     $ filter (\(_,cvi) -> cviLev cvi > cLevModule)
+     $ map (\n -> (n,cviLookup n cvarIntroMp))
      $ Set.toList fvS
 
 mkFvNm :: Int -> HsName -> HsName
 mkFvNm i n = hsnSuffix n ("~" ++ show i)
 
-fvLArgRepl :: Int -> AssocL HsName Int -> ([HsName],[HsName],Map.Map HsName HsName)
+fvLArgRepl :: Int -> CVarIntroL -> (CVarIntroL,CVarIntroL,CVarReplMp)
 fvLArgRepl uniq argLevL
-  =  let  argOL = assocLKeys argLevL
-          argNL = zipWith (\u n -> mkFvNm u n) [uniq..] argOL
-     in   (argOL,argNL,Map.fromList (zip argOL argNL))
+  =  let  argNL = zipWith (\u (n,i) -> (mkFvNm u n,i)) [uniq..] argLevL
+     in   ( argLevL
+          , argNL
+          , Map.fromList $ zipWith (\(o,_) (n,cvi) -> (o,(cvrFromCvi cvi) {cvrNm = n})) argLevL argNL
+          )
 
-fvVarRepl :: Map.Map HsName HsName -> HsName -> CExpr
-fvVarRepl nMp n = maybe (CExpr_Var n) CExpr_Var $ Map.lookup n nMp
+fvVarRepl :: CVarReplMp -> HsName -> CExpr
+fvVarRepl nMp n = maybe (CExpr_Var n) (CExpr_Var . cvrNm) $ Map.lookup n nMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -369,7 +371,7 @@ patBindLOffset
            ->  let  offNm = hsnPrefix "off_" . rpatNmNm $ pn
                in   case o of
                       CExpr_Int _  -> (b,[])
-                      _            -> (RPatBind_Bind l (CExpr_Var offNm) n p,[CBind_Bind offNm o])
+                      _            -> (RPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
        )
 %%]
 

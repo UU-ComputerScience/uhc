@@ -10,7 +10,7 @@
 %%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[8 hs import(Data.Char,Data.List,EH.Util.Pretty)
+%%[8 hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty)
 %%]
 
 %%[8 hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CBindL, CBindCateg(..), CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
@@ -19,7 +19,7 @@
 %%[8 hs export(RPatNm(..))
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp,LevMp,fvLev,fvsLev)
+%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp)
 %%]
 
 %%[8 hs export(mkCMod)
@@ -28,10 +28,7 @@
 %%[8 hs export(CaseFailSubst)
 %%]
 
-%%[9 hs import(Data.Maybe)
-%%]
-
-%%[9 hs export(cbindLNub)
+%%[9 hs export(CMeta(..), cbindLNub)
 %%]
 
 %%[20 hs export(cModMerge)
@@ -191,12 +188,36 @@ data CBindCateg = CBindRec | CBindStrict | CBindPlain | CBindFFI deriving (Show,
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(cexprIsLam)
+cexprIsLam :: CExpr -> Bool
+%%[[8
+cexprIsLam (CExpr_Lam _ _  ) = True
+%%][9
+cexprIsLam (CExpr_Lam _ _ _) = True
+%%]]
+cexprIsLam _                 = False
+%%]
+
+%%[8 hs export(cbindNm)
+cbindNm :: CBind -> HsName
+%%[[8
+cbindNm (CBind_Bind      n _  ) = n
+%%][9
+cbindNm (CBind_Bind      n _ _) = n
+%%]]
+cbindNm (CBind_FFI _ _ _ n _  ) = n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Remove duplicate bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
 cbindLNub :: CBindL -> CBindL
-cbindLNub = nubBy (\(CBind_Bind n1 _) (CBind_Bind n2 _) -> n1 == n2)
+cbindLNub = nubBy (\b1 b2 -> cbindNm b1 == cbindNm b2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,7 +238,82 @@ instance Show RPatNm where
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLam,mkCExprApp,mkCExprStrictIn,mkCExprMbStrictIn)
+%%[9 hs export(cmetaLiftDict,cmetaLift)
+cmetaLift :: [x] -> [(x,CMeta)]
+cmetaLift xs = zip xs (repeat CMeta_Val)
+
+cmetaLiftDict :: [x] -> [(x,CMeta)]
+cmetaLiftDict xs = zip xs (repeat CMeta_Dict)
+%%]
+
+%%[9 hs export(mkCExprAppMeta,mkCExprApp1Meta)
+mkCExprApp1Meta :: CExpr -> CExpr -> CMeta -> CExpr
+mkCExprApp1Meta f a m = CExpr_App f a m
+
+mkCExprAppMeta :: CExpr -> [(CExpr,CMeta)] -> CExpr
+mkCExprAppMeta f as = foldl (\f (a,m) -> mkCExprApp1Meta f a m) f as
+%%]
+
+%%[8 hs export(mkCExprApp,mkCExprApp1)
+mkCExprApp1 :: CExpr -> CExpr -> CExpr
+%%[[8
+mkCExprApp1 f a = CExpr_App f a
+%%][9
+mkCExprApp1 f a = mkCExprApp1Meta f a CMeta_Val
+%%]]
+
+mkCExprApp :: CExpr -> [CExpr] -> CExpr
+%%[[8
+mkCExprApp f as = foldl (\f a -> mkCExprApp1 f a) f as
+%%][9
+mkCExprApp f as = mkCExprAppMeta f (cmetaLift as)
+%%]]
+%%]
+
+%%[9 hs export(mkCExprLamMeta,mkCExprLam1Meta)
+mkCExprLam1Meta :: HsName -> CMeta -> CExpr -> CExpr
+mkCExprLam1Meta a m e = CExpr_Lam a m e
+
+mkCExprLamMeta :: [(HsName,CMeta)] -> CExpr -> CExpr
+mkCExprLamMeta as e = foldr (\(n,m) e -> mkCExprLam1Meta n m e) e as
+%%]
+
+%%[8 hs export(mkCExprLam,mkCExprLam1)
+mkCExprLam1 :: HsName -> CExpr -> CExpr
+%%[[8
+mkCExprLam1 a e = CExpr_Lam a e
+%%][9
+mkCExprLam1 a e = mkCExprLam1Meta a CMeta_Val e
+%%]]
+
+mkCExprLam :: [HsName] -> CExpr -> CExpr
+%%[[8
+mkCExprLam as e = foldr (\n e -> mkCExprLam1 n e) e as
+%%][9
+mkCExprLam as e = mkCExprLamMeta (cmetaLift as) e
+%%]]
+%%]
+
+%%[9 hs export(mkCBind1Meta)
+mkCBind1Meta :: HsName -> CMeta -> CExpr -> CBind
+mkCBind1Meta n m e = CBind_Bind n m e
+%%]
+
+%%[8 hs export(mkCBind1)
+mkCBind1 :: HsName -> CExpr -> CBind
+%%[[8
+mkCBind1 n e = CBind_Bind n e
+%%][9
+mkCBind1 n e = mkCBind1Meta n CMeta_Val e
+%%]]
+%%]
+
+%%[9 hs export(mkCExprStrictInMeta)
+mkCExprStrictInMeta :: HsName -> CMeta -> CExpr -> (CExpr -> CExpr) -> CExpr
+mkCExprStrictInMeta nm m e mkC = CExpr_Let CBindStrict [mkCBind1Meta nm m e] (mkC (CExpr_Var nm))
+%%]
+
+%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprStrictIn,mkCExprMbStrictIn)
 mkCExprLet' :: Bool -> CBindCateg -> CBindL -> CExpr -> CExpr
 mkCExprLet' merge c bs e
   = if null bs
@@ -233,18 +329,16 @@ mkCExprLet c bs e = mkCExprLet' False c bs e
 mkCExprLetRec :: CBindL -> CExpr -> CExpr
 mkCExprLetRec = mkCExprLet CBindRec
 
-mkCExprLam :: [HsName] -> CExpr -> CExpr
-mkCExprLam as e = foldr (\n e -> CExpr_Lam n e) e as
-
-mkCExprApp :: CExpr -> [CExpr] -> CExpr
-mkCExprApp f as = foldl (\f a -> CExpr_App f a) f as
-
 mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
-mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
+%%[[8
+mkCExprStrictIn nm e mkC = CExpr_Let CBindStrict [mkCBind1 nm e] (mkC (CExpr_Var nm))
+%%][9
+mkCExprStrictIn nm e mkC = mkCExprStrictInMeta nm CMeta_Val e mkC
+%%]]
 
 mkCExprMbStrictIn :: Maybe HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
-mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindStrict [CBind_Bind nm e] (mkC (CExpr_Var nm))
-mkCExprMbStrictIn _         e mkC =                                          mkC e
+mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindStrict [mkCBind1 nm e] (mkC (CExpr_Var nm))
+mkCExprMbStrictIn _         e mkC =                                        mkC e
 %%]
 
 %%[8 hs
@@ -372,12 +466,32 @@ ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Support for transformations
+%%% Var introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-type FvS = HsNameS
-type FvSMp = Map.Map HsName FvS
+%%[8 hs export(CVarIntro(..),emptyCVarIntro)
+data CVarIntro
+  = CVarIntro
+      { cviLev		:: Int		-- lexical level
+%%[[9
+      , cviMeta		:: CMeta	-- meta info
+%%]]
+      }
+
+emptyCVarIntro :: CVarIntro
+emptyCVarIntro
+  = CVarIntro cLevExtern
+%%[[9
+              CMeta_Val
+%%]]
+%%]
+
+%%[8 hs export(CVarIntroMp,CVarIntroL,cviLookup)
+type CVarIntroMp = Map.Map HsName CVarIntro
+type CVarIntroL  = AssocL  HsName CVarIntro
+
+cviLookup :: HsName -> CVarIntroMp -> CVarIntro
+cviLookup n m = Map.findWithDefault emptyCVarIntro n m
 %%]
 
 %%[8 hs export(cLevModule,cLevExtern)
@@ -391,18 +505,58 @@ cLevIntern :: Int
 cLevIntern = 1
 %%]
 
-%%[8 hs
-type LevMp = Map.Map HsName Int
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Var replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-fvLev :: LevMp -> HsName -> Int
-fvLev lm n = Map.findWithDefault cLevExtern n lm
+%%[8 hs export(CVarRepl(..),emptyCVarRepl)
+data CVarRepl
+  = CVarRepl
+      { cvrNm		:: HsName	-- replacement
+%%[[9
+      , cvrMeta		:: CMeta	-- meta info
+%%]]
+      }
 
-fvsLev :: LevMp -> Int -> FvS -> Int
-fvsLev lm lDflt fvs = foldr (\n l -> fvLev lm n `max` l) lDflt $ Set.toList $ fvs
-
+emptyCVarRepl :: CVarRepl
+emptyCVarRepl
+  = CVarRepl hsnUnknown
+%%[[9
+             CMeta_Val
+%%]]
 %%]
-levMpAdd :: LevMp -> FvSMp -> LevMp
-levMpAdd lm fvm = Map.map (fvsLev lm) fvm `Map.union` lm
+
+%%[8 hs export(CVarReplMp,CVarReplL)
+type CVarReplMp = Map.Map HsName CVarRepl
+type CVarReplL  = AssocL  HsName CVarRepl
+%%]
+
+%%[8 hs export(cvrFromCvi)
+cvrFromCvi :: CVarIntro -> CVarRepl
+cvrFromCvi i
+  = emptyCVarRepl
+%%[[9
+      { cvrMeta 	= cviMeta i
+      }
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Support for transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type FvS = HsNameS
+type FvSMp = Map.Map HsName FvS
+%%]
+
+%%[8 hs export(fvLev,fvsLev)
+fvLev :: HsName -> CVarIntroMp -> Int
+fvLev n m = cviLev $ cviLookup n m
+
+fvsLev :: CVarIntroMp -> Int -> FvS -> Int
+fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fvs
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known function arity
@@ -467,7 +621,7 @@ mkCExprLetHole i b = i `CExpr_HoleLet` b
 %%% Coercion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkAppCoe, mkLamCoe, mkLamLetCoe, mkLetRecCoe)
+%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkLamLetCoe, mkLetRecCoe)
 data Coe = Coe !(CExpr -> CExpr) | CoeC !CExpr | CoeImplApp !ImplsVarId | CoeImplLam !ImplsVarId
 
 coeId :: Coe
@@ -480,14 +634,8 @@ coeIsId _                   = False
 mkCoe :: (CExpr -> CExpr) -> Coe
 mkCoe = Coe
 
-mkAppCoe :: [CExpr] -> Coe
-mkAppCoe eL = mkCoe (\e -> e `mkCExprApp` eL)
-
-mkLamCoe :: HsName -> Coe
-mkLamCoe n = mkCoe (\e -> n `CExpr_Lam` e)
-
 mkLamLetCoe :: HsName -> UID -> Coe
-mkLamLetCoe n i = mkCoe (\e -> n `CExpr_Lam` mkCExprLetHole i e)
+mkLamLetCoe n i = mkCoe (\e -> n `mkCExprLam1` mkCExprLetHole i e)
 
 mkLetRecCoe :: CBindL -> Coe
 mkLetRecCoe [] = coeId
@@ -495,6 +643,28 @@ mkLetRecCoe b  = mkCoe (\e -> mkCExprLet CBindRec b e)
 
 instance Show Coe where
   show _ = "COE"
+%%]
+
+%%[9 hs export(mkAppCoe1With,mkAppCoe1,mkAppCoeWith,mkAppCoe)
+mkAppCoe1With :: CExpr -> CMeta -> Coe
+mkAppCoe1With a m = mkCoe (\e -> mkCExprApp1Meta e a m)
+
+mkAppCoe1 :: CExpr -> Coe
+mkAppCoe1 a = mkAppCoe1With a CMeta_Val
+
+mkAppCoeWith :: [(CExpr,CMeta)] -> Coe
+mkAppCoeWith as = mkCoe (\e -> mkCExprAppMeta e as)
+
+mkAppCoe :: [CExpr] -> Coe
+mkAppCoe as = mkAppCoeWith (cmetaLift as)
+%%]
+
+%%[9 hs export(mkLamCoe1With,mkLamCoe1)
+mkLamCoe1With :: HsName -> CMeta -> Coe
+mkLamCoe1With n m = mkCoe (\e -> mkCExprLam1Meta n m e)
+
+mkLamCoe1 :: HsName -> Coe
+mkLamCoe1 n = mkLamCoe1With n CMeta_Val
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -533,16 +703,22 @@ lrcoeIsId :: LRCoe -> Bool
 lrcoeIsId c = lrcoeKind c == LRCoeId
 %%]
 
-%%[9 hs export(mkLRCoe,mkIdLRCoe,lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)
+%%[9 hs export(mkLRCoe)
 mkLRCoe :: Coe -> Coe -> LRCoe
 mkLRCoe l r = LRCoe LRCoeOther [l] [r]
 
 mkIdLRCoe' :: Coe -> Coe -> LRCoe
 mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
+%%]
 
+%%[9 hs export(mkIdLRCoeWith)
+mkIdLRCoeWith :: HsName -> CMeta -> LRCoe
+mkIdLRCoeWith n m = mkIdLRCoe' (mkAppCoeWith [(CExpr_Var n,m)]) (mkLamCoe1With n m)
+%%]
 mkIdLRCoe :: HsName -> LRCoe
-mkIdLRCoe n = mkIdLRCoe' (mkAppCoe [CExpr_Var n]) (mkLamCoe n)
+mkIdLRCoe n = mkIdLRCoeWith n CMeta_Val
 
+%%[9 hs export(lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)
 lrcoeLFromList :: [Coe] -> LRCoe
 lrcoeLFromList c = LRCoe LRCoeOther c []
 

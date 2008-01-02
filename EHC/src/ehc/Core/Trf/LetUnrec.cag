@@ -71,11 +71,24 @@ SEM CBind
 %%% Bound id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8.BindMp hs
+type BindMp = Map.Map HsName CExpr
+%%]
+
+%%[9 -8.BindMp hs
+type BindMp = Map.Map HsName (CExpr,CMeta)
+%%]
+
 %%[8
-ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: {Map.Map HsName CExpr} ]
+ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
 
 SEM CBind
   | Bind        lhs         .   bindMp      =   @nm `Map.singleton` @expr.cTrf
+%%]
+
+%%[9
+SEM CBind
+  | Bind        lhs         .   bindMp      :=  @nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +101,11 @@ SEM CExpr
                                             =   if @categ == CBindRec
                                                 then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
                                                            o = scc . Map.toList $ h
-                                                           mk c ns b = mkCExprLet c [ CBind_Bind n e | n <- ns, e <- maybeToList (Map.lookup n @binds.bindMp) ] b
+%%[[8
+                                                           mk c ns b = mkCExprLet c [ mkCBind1 n e | n <- ns, e <- maybeToList (Map.lookup n @binds.bindMp) ] b
+%%][9
+                                                           mk c ns b = mkCExprLet c [ mkCBind1Meta n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
+%%]]
                                                            t = foldr (\bs b
                                                                          -> case bs of
                                                                                [n] | n `elem` Map.findWithDefault [] n h

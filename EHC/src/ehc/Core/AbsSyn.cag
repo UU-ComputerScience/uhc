@@ -4,17 +4,16 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Abstract syntax for Code
+%%% Abstract syntax for Core code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 DATA CodeAGItf
   | AGItf       module          : CModule
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Code structure
+%%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -24,6 +23,10 @@ DATA CModule
                 ctagsMp         : {CTagsMp}
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
 DATA CExpr
   | Let         categ           : {CBindCateg}
@@ -31,7 +34,13 @@ DATA CExpr
                 body            : CExpr
   | App         func            : CExpr
                 arg             : CExpr
+%%[[9
+                argMeta         : CMeta
+%%]]
   | Lam         arg             : {HsName}
+%%[[9
+                argMeta         : CMeta
+%%]]
                 body            : CExpr
   | Var         nm              : {HsName}
   | Case        expr            : CExpr
@@ -76,13 +85,26 @@ DATA CExpr
   | Integer     integer         : {Integer}
 %%]
 
-%%[8
-SET AllExpr     =   CExpr AllBind AllAlt AllPat
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA CMeta
+  | Val
+  | Dict
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 DATA CBind
   | Bind        nm              : {HsName}
+%%[[9
+                bindMeta        : CMeta
+%%]]
                 expr            : CExpr
   | FFI         callconv        : {String}
                 safety          : {String}
@@ -91,9 +113,11 @@ DATA CBind
                 ty              : {Ty}
 
 TYPE CBindL     =   [CBind]
-
-SET AllBind     =   CBind CBindL
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case alternative + pattern + pattern binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 DATA CAlt
@@ -101,8 +125,6 @@ DATA CAlt
                 expr            : CExpr
 
 TYPE CAltL      =   [CAlt]
-
-SET AllAlt      =   CAlt CAltL
 %%]
 
 %%[8
@@ -147,11 +169,27 @@ DATA CPat
                 offset          : CExpr
                 fldPat          : CPat
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of NT's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
-SET AllPatBind  	=   CPatBind CPatBindL
-SET AllPat      	=   CPatRest CPat CPatL AllPatBind
+SET AllAlt      =   CAlt CAltL
+SET AllBind     =   CBind CBindL
+SET AllPatBind  =   CPatBind CPatBindL
+SET AllPat      =   CPatRest CPat CPatL AllPatBind
+SET AllCodeNT   =   CModule AllExpr
+%%]
+
+%%[9
+SET AllMeta     =   CMeta
 %%]
 
 %%[8
-SET AllCodeNT   =   CModule AllExpr
+SET AllExpr
+  = CExpr AllBind AllAlt AllPat
+%%[[9
+    AllMeta
+%%]]
 %%]
+

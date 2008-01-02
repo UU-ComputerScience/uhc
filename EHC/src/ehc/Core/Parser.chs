@@ -7,7 +7,7 @@
 %%% Core parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Core.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
+%%[8 module {%{EH}Core.Parser} import(UU.Parsing as P, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
 %%]
 
 %%[20 export(pCModule,pCExpr)
@@ -60,21 +60,30 @@ pCExprSel = pCExprBase <??> pCExprSelSuffix
 
 pCExpr :: CParser CExpr
 pCExpr
-  =   foldl1 CExpr_App <$> pList1 pCExprSel
-  <|> (\as b -> foldr CExpr_Lam b as) <$ pLAM <*> pList1 pDollNm <* pRARROW <*> pCExpr
-  <|> CExpr_Let <$ pLET <*> pMaybe CBindPlain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
+  =   mkCExprAppMeta <$> pCExprSel <*> pList (pCExprSel P.<+> pCMetaOpt)
+  <|> mkCExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaOpt) <* pRARROW <*> pCExpr
+  <|> CExpr_Let      <$  pLET <*> pMaybe CBindPlain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
-      <* pOCURLY <* pDEFAULT <*> pCExpr <* pCCURLY
+      <* pOCURLY <*  pDEFAULT <*> pCExpr <* pCCURLY
   where pCBindCateg
           =   CBindRec    <$ pKeyTk "rec"
           <|> CBindFFI    <$ pFOREIGN
           <|> CBindStrict <$ pBANG
 
+pCMeta :: CParser CMeta
+pCMeta
+  =   CMeta_Val  <$ pKeyTk "VAL"
+  <|> CMeta_Dict <$ pKeyTk "DICT"
+
+pCMetaOpt :: CParser CMeta
+pCMetaOpt
+  =   pMaybe CMeta_Val id (pCOLON *> pCMeta)
+
 pCBind :: CParser CBind
 pCBind
   = (pDollNm <* pEQUAL)
-    <**> (   (\e n -> CBind_Bind n e) <$> pCExpr
+    <**> (   (\m e n -> mkCBind1Meta n m e) <$> pCMetaOpt <*> pCExpr
          <|> (\c s i t n -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
          )
   where pS = tokMkStr <$> pStringTk
