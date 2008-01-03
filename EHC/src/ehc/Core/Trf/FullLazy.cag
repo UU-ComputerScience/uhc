@@ -86,15 +86,15 @@ SEM CExpr
 %%% CMeta context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[8
 ATTR CExpr AllAlt [ cmeta: CMeta | | ]
 
 SEM CExpr
-  | App         arg         .   cmeta       =   @argMeta.cTrf
+  | App         arg         .   cmeta       =   @argMeta.self
   | Lam         body        .   cmeta       =   CMeta_Val
 
 SEM CBind
-  | Bind        expr        .   cmeta       =   @bindMeta.cTrf
+  | Bind        expr        .   cmeta       =   @bindMeta.self
 
 SEM CModule
   | Mod         expr        .   cmeta       =   CMeta_Val
@@ -237,15 +237,7 @@ SEM CAlt
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.mkTrf hs
-mkTrf :: Bool -> Int -> Int -> HsName -> CExpr -> (CExpr,LevBindSq)
-mkTrf cond outerLev hereLev n e
-  =  if cond
-     then (CExpr_Var n,unitSeq (hereLev,(CBindPlain,[mkCBind1 n e])))
-     else (e,emptySeq)
-%%]
-
-%%[9 -8.mkTrf hs
+%%[8 hs
 mkTrf :: Bool -> Int -> Int -> HsName -> CMeta -> CExpr -> (CExpr,LevBindSq)
 mkTrf cond outerLev hereLev n m e
   =  if cond
@@ -283,21 +275,7 @@ SEM CExpr
   | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
 %%]
 
-%%[8.CExpr.cTrf
-SEM CExpr
-  | TupIns TupUpd TupDel
-                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
-  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @cTrf
-  | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm
-                                                          . mkCExprLam1 @arg
-                                                          . mkLetTrf @hereBindSq
-                                                in  if cexprIsLam @body.cTrf && not (null (seqToList @hereBindSq))
-                                                    then mkTLB (CExpr_Let CBindPlain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
-                                                    else mkTLB @body.cTrf
-  | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm $ mkLetTrf @hereBindSq @body.cTrf
-%%]
-
-%%[9 -8.CExpr.cTrf
+%%[8
 SEM CExpr
   | TupIns TupUpd TupDel
                 (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf

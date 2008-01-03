@@ -130,30 +130,18 @@ SEM CExpr
 
 SEM CExpr
   | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
-%%[[8
-                            .   lamArgPPL   =   ppCNm @arg : @body.lamArgPPL
-%%][9
                             .   lamArgPPL   =   (ppCNm @arg >|< @argMeta.optPP) : @body.lamArgPPL
-%%]]
   | * - Lam     lhs         .   lamBodyPP   =   @pp
                             .   lamArgPPL   =   []
 
 SEM CExpr
   | App         loc         .   appFunPP    =   @func.appFunPP
-%%[[8
-                            .   appArgPPL   =   @arg.pp : @func.appArgPPL
-%%][9
                             .   appArgPPL   =   (@arg.pp >|< @argMeta.optPP) : @func.appArgPPL
-%%]]
   | * - App     lhs         .   appFunPP    =   @pp
                             .   appArgPPL   =   []
 
 SEM CBind
-%%[[8
-  | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >#< "=") (@expr.pp)
-%%][9
   | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.optPP >#< "=") (@expr.pp)
-%%]
   | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 
@@ -194,23 +182,28 @@ SEM CPatBindL
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
                                                 >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
-%%[9
+%%[8
 ATTR CMeta [ | | optPP : PP_Doc ]
 
+SEM CMeta
+  | Val         loc         .   pp          =   pp "VAL"
+%%[[9
+  | Dict        loc         .   pp          =   pp "DICT"
+%%]]
+
+SEM CMeta
+  | Val         loc         .   optPP       =   empty
+  | * - Val     loc         .   optPP       =   " :" >#< @pp
+
+%%]
+
+%%[9
 SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid
   | HoleLet     loc         .   pp          =   "let --" >#< ppHole @bindsUid >-< ppDef "in" @body.pp
   | CoeArg      loc         .   pp          =   pp "<_>"
   | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppHole @uid)
   | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppHole @uid >#< "-- Impl") ("->" >#< @body.pp)
-
-SEM CMeta
-  | Val         loc         .   pp          =   pp "VAL"
-  | Dict        loc         .   pp          =   pp "DICT"
-
-SEM CMeta
-  | Val         loc         .   optPP       =   empty
-  | * - Val     loc         .   optPP       =   " :" >#< @pp
 
 %%]
 

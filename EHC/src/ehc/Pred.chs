@@ -52,6 +52,7 @@ data ClGamInfo
        { clgiPrToEvidTy     :: !Ty
        , clgiRuleTy         :: !Ty
        , clgiDfltDictNm     :: !HsName
+       -- , clgiSupClsFldNmL   :: ![HsName]
        } deriving Show
 
 type ClGam     = Gam HsName ClGamInfo

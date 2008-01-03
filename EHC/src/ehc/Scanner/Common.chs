@@ -219,7 +219,10 @@ coreScanOpts
         {   scoKeywordsTxt      =   [ "let", "in", "case", "of", "rec", "foreign", "uniq"
                                     , "Int", "Char", "String", "Tag", "Rec"
                                     , "module", "default"
-                                    , "VAL", "DICT"
+                                    , "VAL"
+%%[[9
+                                    , "DICT"
+%%]]
 %%[[20
                                     , "Integer" 
 %%]

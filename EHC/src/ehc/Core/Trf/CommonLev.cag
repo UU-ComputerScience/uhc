@@ -11,7 +11,7 @@
 %%% Copy/Self
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[8
 ATTR AllMeta [ | | self: SELF ]
 %%]
 
@@ -23,14 +23,12 @@ ATTR AllMeta [ | | self: SELF ]
 SEM CExpr
   | Lam         loc         .   cvi                 =   CVarIntro
                                                           { cviLev  = @lev
-%%[[9
                                                           , cviMeta = @argMeta.self
-%%]]
                                                           }
 
 SEM CBind
-  | Bind        loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev }
-                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf }
+  | Bind        loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @bindMeta.self }
+                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @bindMeta.self }
 
 SEM CAlt
   | Alt         loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lev }

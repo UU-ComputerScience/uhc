@@ -258,7 +258,7 @@ SEM *
        loc.clsTySigGam : ValGam
        loc.clsNm : HsName
        loc.clsAllFldL : {[Assoc HsName Ty]}
-       loc.supClsNmL : {[HsName]}
+       loc.supClsFldL : {[HsName]}
        loc.clsTyRec : Ty
        loc.clsFldL : {[Assoc HsName Ty]}
        loc.clgi2 : ClGamInfo

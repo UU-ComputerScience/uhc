@@ -109,39 +109,32 @@ caltOffsetL alt
 type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 %%]
 
-%%[8 export(mkCExprStrictSatCase)
-mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
-mkCExprStrictSatCase env eNm e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
+%%[8 export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
+mkCExprStrictSatCaseMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CAltL -> CExpr
+mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
   | dgiIsNewtype dgi
-  = mkCExprLet CBindPlain [mkCBind1 pnm e] ae
+  = mkCExprLet CBindPlain [mkCBind1Meta pnm meta e] ae
   where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
-mkCExprStrictSatCase env eNm e alts
-  = case eNm of
-      Just n  -> mkCExprStrictIn n e $ mk alts
+mkCExprStrictSatCaseMeta env mbNm meta e alts
+  = case mbNm of
+      Just n  -> mkCExprStrictInMeta n meta e $ mk alts
       Nothing -> mk alts e
   where mk (alt:alts) n
           = mkCExprLet CBindStrict altOffBL (CExpr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
           where (alt',altOffBL) = caltOffsetL alt
         mk [] n
           = CExpr_Case n [] (rceCaseCont env) -- dummy case
-%%]
 
-%%[8 export(mkCExprSelCase,mkCExprSatSelCase)
-mkCExprSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> CExpr -> MbCPatRest -> CExpr
-mkCExprSelCase env ne e ct n lbl off mbRest
-  = mkCExprSelsCase' env ne e ct [(n,lbl,off)] mbRest (CExpr_Var n)
-
-mkCExprSatSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> Int -> MbCPatRest -> CExpr
-mkCExprSatSelCase env ne e ct n lbl off mbRest
-  = mkCExprSatSelsCase env ne e ct [(n,lbl,off)] mbRest (CExpr_Var n)
+mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
+mkCExprStrictSatCase env eNm e alts = mkCExprStrictSatCaseMeta env eNm CMeta_Val e alts
 %%]
 
 %%[8
-mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest,CExpr)] -> CExpr
-mkCExprSelsCases' env ne e tgSels
-  = mkCExprStrictSatCase env ne e alts
+mkCExprSelsCasesMeta' :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest,CExpr)] -> CExpr
+mkCExprSelsCasesMeta' env mbNm meta e tgSels
+  = mkCExprStrictSatCaseMeta env mbNm meta e alts
   where  alts = [ CAlt_Alt
-                    (CPat_Con (maybe (cexprVar e) id ne) ct
+                    (CPat_Con (maybe (cexprVar e) id mbNm) ct
                        (mkRest mbRest ct)
                        [CPatBind_Bind lbl off n (CPat_Var n) | (n,lbl,off) <- nmLblOffL]
                     )
@@ -152,18 +145,29 @@ mkCExprSelsCases' env ne e tgSels
            = case mbr of
                Just (r,_) -> r
                _          -> ctag (CPatRest_Var hsnWild) (\_ _ _ _ _ -> CPatRest_Empty) ct
+
+mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest,CExpr)] -> CExpr
+mkCExprSelsCases' env ne e tgSels = mkCExprSelsCasesMeta' env ne CMeta_Val e tgSels
 %%]
 
 %%[8
+mkCExprSelsCaseMeta' :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CTag -> [(HsName,HsName,CExpr)] -> MbCPatRest -> CExpr -> CExpr
+mkCExprSelsCaseMeta' env ne meta e ct nmLblOffL mbRest sel = mkCExprSelsCasesMeta' env ne meta e [(ct,nmLblOffL,mbRest,sel)]
+
 mkCExprSelsCase' :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,CExpr)] -> MbCPatRest -> CExpr -> CExpr
-mkCExprSelsCase' env ne e ct nmLblOffL mbRest sel
-  = mkCExprSelsCases' env ne e [(ct,nmLblOffL,mbRest,sel)]
+mkCExprSelsCase' env ne e ct nmLblOffL mbRest sel = mkCExprSelsCaseMeta' env ne CMeta_Val e ct nmLblOffL mbRest sel
+%%]
+
+%%[8 export(mkCExprSelCase)
+mkCExprSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> CExpr -> MbCPatRest -> CExpr
+mkCExprSelCase env ne e ct n lbl off mbRest
+  = mkCExprSelsCase' env ne e ct [(n,lbl,off)] mbRest (CExpr_Var n)
 %%]
 
 %%[8 export(mkCExprSatSelsCases)
-mkCExprSatSelsCases :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
-mkCExprSatSelsCases env ne e tgSels
-  =  mkCExprSelsCases' env ne e alts
+mkCExprSatSelsCasesMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
+mkCExprSatSelsCasesMeta env ne meta e tgSels
+  =  mkCExprSelsCasesMeta' env ne meta e alts
   where mkOffL ct mbr nol
           = case (ct,mbr) of
               (CTagRec       ,Nothing   ) -> map mklo nol
@@ -172,22 +176,34 @@ mkCExprSatSelsCases env ne e tgSels
           where mklo (n,l,o) = (n,l,CExpr_Int o)
                 mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
+
+mkCExprSatSelsCases :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
+mkCExprSatSelsCases env ne e tgSels = mkCExprSatSelsCasesMeta env ne CMeta_Val e tgSels
 %%]
 
-%%[8 export(mkCExprSatSelsCase)
+%%[8 export(mkCExprSatSelsCaseMeta,mkCExprSatSelsCase)
+mkCExprSatSelsCaseMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CTag -> [(HsName,HsName,Int)] -> MbCPatRest -> CExpr -> CExpr
+mkCExprSatSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = mkCExprSatSelsCasesMeta env ne meta e [(ct,nmLblOffL,mbRest,sel)]
+
 mkCExprSatSelsCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,Int)] -> MbCPatRest -> CExpr -> CExpr
-mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel
-  = mkCExprSatSelsCases env ne e [(ct,nmLblOffL,mbRest,sel)]
+mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel = mkCExprSatSelsCaseMeta env ne CMeta_Val e ct nmLblOffL mbRest sel
 %%]
 
-%%[8 export(mkCExprSatSelsCaseUpd)
-mkCExprSatSelsCaseUpd :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> Int -> [(Int,CExpr)] -> MbCPatRest -> CExpr
-mkCExprSatSelsCaseUpd env ne e ct arity offValL mbRest
-  = mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel
+%%[8 hs export(mkCExprSatSelCase)
+mkCExprSatSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> Int -> MbCPatRest -> CExpr
+mkCExprSatSelCase env ne e ct n lbl off mbRest
+  = mkCExprSatSelsCase env ne e ct [(n,lbl,off)] mbRest (CExpr_Var n)
+%%]
+
+%%[8 export(mkCExprSatSelsCaseUpdMeta)
+mkCExprSatSelsCaseUpdMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CTag -> Int -> [(Int,(CExpr,CMeta))] -> MbCPatRest -> CExpr
+mkCExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
+  = mkCExprSatSelsCaseMeta env mbNm meta e ct nmLblOffL mbRest sel
   where ns = take arity hsnLclSupply
         nmLblOffL = zip3 ns ns [0..]
-        sel = mkCExprApp (CExpr_Tup ct)
-                         (map snd $ listSaturateWith 0 (arity-1) fst [(o,(o,CExpr_Var n)) | (n,_,o) <- nmLblOffL] offValL)
+        sel = mkCExprAppMeta
+                (CExpr_Tup ct)
+                (map snd $ listSaturateWith 0 (arity-1) fst [(o,(o,(CExpr_Var n,CMeta_Val))) | (n,_,o) <- nmLblOffL] offValL)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -278,16 +294,16 @@ fvLAsArg cvarIntroMp fvS
 mkFvNm :: Int -> HsName -> HsName
 mkFvNm i n = hsnSuffix n ("~" ++ show i)
 
-fvLArgRepl :: Int -> CVarIntroL -> (CVarIntroL,CVarIntroL,CVarReplMp)
+fvLArgRepl :: Int -> CVarIntroL -> (CVarIntroL,CVarIntroL,CVarReplNmMp)
 fvLArgRepl uniq argLevL
   =  let  argNL = zipWith (\u (n,i) -> (mkFvNm u n,i)) [uniq..] argLevL
      in   ( argLevL
           , argNL
-          , Map.fromList $ zipWith (\(o,_) (n,cvi) -> (o,(cvrFromCvi cvi) {cvrNm = n})) argLevL argNL
+          , Map.fromList $ zipWith (\(o,_) (n,cvi) -> (o,(cvrFromCvi cvi) {cvrRepl = n})) argLevL argNL
           )
 
-fvVarRepl :: CVarReplMp -> HsName -> CExpr
-fvVarRepl nMp n = maybe (CExpr_Var n) (CExpr_Var . cvrNm) $ Map.lookup n nMp
+fvVarRepl :: CVarReplNmMp -> HsName -> CExpr
+fvVarRepl nMp n = maybe (CExpr_Var n) (CExpr_Var . cvrRepl) $ Map.lookup n nMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
