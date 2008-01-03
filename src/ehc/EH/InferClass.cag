@@ -44,7 +44,7 @@ tyPrLToSupNmL = zipWith (\i p -> hsnSuffix (tyPredNm p) (show i)) [1..]
 
 %%[9
 SEM Decl
-  | Class       loc             .   clgi1           =   ClGamInfo Ty_Any Ty_Any $ maybe (uidHNm @lUniq) id @mbDefaultInstNm
+  | Class       loc             .   clgi1           =   ClGamInfo Ty_Any Ty_Any (maybe (uidHNm @lUniq) id @mbDefaultInstNm) -- []
                                 .   clsNm           =   tyPredMatchNm @hdPrTy
                 lhs             .   patClGam1       =   gamAdd @clsNm @clgi1 @lhs.patClGam1
                 tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
@@ -55,15 +55,16 @@ SEM Decl
                                 .   lSigGam         =   @decls.gathTySigGam
                                 .   clsTySigGam     =   valGamMapTy (\t -> [@hdPrTy] `mkArrow` t) @lSigGam
                                 .   clsTySigDictGam =   if ehcCfgInstFldHaveSelf @lhs.opts then @clsTySigGam else @lSigGam
-                                .   supClsNmL       =   tyPrLToSupNmL @ctxtPrTyL
+                                .   supClsFldL      =   tyPrLToSupNmL @ctxtPrTyL
                                 .   clsFldL         =   assocLMapElt vgiTy (gamToAssocL @clsTySigDictGam)
-                                .   clsAllFldL      =   @clsFldL ++ zip @supClsNmL (repeat Ty_Any)
+                                .   clsAllFldL      =   @clsFldL ++ zip @supClsFldL (repeat Ty_Any)
                                 .   clsTyRec        =   mkTyRec @clsAllFldL
                                 .   dataDictNm      =   hsnClass2Dict @clsNm                                -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @clsAllFldL)        -- only used when `not ehcCfgClassViaRec'
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   clgi2           =   @clgi1 { clgiPrToEvidTy = tyQuantifyClosed $ [@hdPrTy] `mkArrow` @clsTyRec
-                                                               , clgiRuleTy     = tyQuantifyClosed @tyPrExpr.ty
+                                .   clgi2           =   @clgi1 { clgiPrToEvidTy     = tyQuantifyClosed $ [@hdPrTy] `mkArrow` @clsTyRec
+                                                               , clgiRuleTy         = tyQuantifyClosed @tyPrExpr.ty
+                                                               -- , clgiSupClsFldNmL   = @supClsFldL
                                                                }
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
@@ -144,7 +145,7 @@ SEM Decl
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
                                                              fo     =  fitsIn predFIOpts @fe2 @lUniq3 emptyVarMp t st
                                                         in   tyArrowArgs $ foVarMp fo |=> foTy fo
-                                .   supClsNmL       =   tyPrLToSupNmL @supPrTyL
+                                .   supClsFldL      =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
                                 .   recTy           =   fst $ tyFixTyVars $ tyQuantifyRank [2..] $ tyArrowRes $ @tyPrExpr.evTy
                                 .   recTyExts       =   snd $ tyRecExts $ @recTy

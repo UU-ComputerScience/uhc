@@ -34,13 +34,9 @@ DATA CExpr
                 body            : CExpr
   | App         func            : CExpr
                 arg             : CExpr
-%%[[9
                 argMeta         : CMeta
-%%]]
   | Lam         arg             : {HsName}
-%%[[9
                 argMeta         : CMeta
-%%]]
                 body            : CExpr
   | Var         nm              : {HsName}
   | Case        expr            : CExpr
@@ -89,10 +85,12 @@ DATA CExpr
 %%% Meta information
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[8
 DATA CMeta
   | Val
+%%[[9
   | Dict
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,9 +100,7 @@ DATA CMeta
 %%[8
 DATA CBind
   | Bind        nm              : {HsName}
-%%[[9
                 bindMeta        : CMeta
-%%]]
                 expr            : CExpr
   | FFI         callconv        : {String}
                 safety          : {String}
@@ -179,17 +175,10 @@ SET AllBind     =   CBind CBindL
 SET AllPatBind  =   CPatBind CPatBindL
 SET AllPat      =   CPatRest CPat CPatL AllPatBind
 SET AllCodeNT   =   CModule AllExpr
-%%]
-
-%%[9
 SET AllMeta     =   CMeta
-%%]
 
-%%[8
 SET AllExpr
   = CExpr AllBind AllAlt AllPat
-%%[[9
     AllMeta
-%%]]
 %%]
 

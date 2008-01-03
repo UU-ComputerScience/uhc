@@ -122,10 +122,10 @@ evidMpToCore env evidMp
                                         CExpr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _ sc) ctxt  = ( mknm n `mkCExprApp` map tcrCExpr ctxt, maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
-        ann (RedHow_BySuperClass n o t ) [sub] = ( mkCExprSatSelsCase
+        ann (RedHow_ByInstance   n _ sc) ctxt  = ( mkCExprAppMeta (mknm n) (map (\c -> (tcrCExpr c,CMeta_Dict)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_BySuperClass n o t ) [sub] = ( mkCExprSatSelsCaseMeta
                                                      (emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                     (Just $ hsnSuffix n "!") (tcrCExpr sub) t
+                                                     (Just $ hsnSuffix n "!") CMeta_Dict (tcrCExpr sub) t
                                                      [(n,n,o)] Nothing (CExpr_Var n)
                                                  , tcrScope sub
                                                  )

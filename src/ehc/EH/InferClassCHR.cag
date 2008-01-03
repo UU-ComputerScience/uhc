@@ -160,7 +160,7 @@ SEM Decl
   | Class       loc         .   chrClassDecl        =   let off n = tyRecOffset n @clsTyRec
                                                         in  ( map tyPred @ctxtPrTyL
                                                             , tyPred @hdPrTy
-                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) @ctxtPrTyL @supClsNmL
+                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) @ctxtPrTyL @supClsFldL
                                                             )
                 lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
 

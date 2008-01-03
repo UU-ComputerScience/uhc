@@ -87,7 +87,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ argMp: CVarReplMp | | ]
+ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 
 SEM CodeAGItf
   | AGItf       module      .   argMp       =   Map.empty
@@ -119,19 +119,11 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 
 SEM CBind
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @nm
-%%[[8
-                            .   cTrfVar     =   mkCBind1 @nm
-                                                $ mkCExprApp (CExpr_Var @nmLam)
-                                                $ map (\(n,_) -> fvVarRepl @lhs.argMp n) @argOldL
-                            .   cTrfLam     =   mkCBind1 @nmLam
-                                                $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
-%%][9
                             .   cTrfVar     =   mkCBind1Meta @nm @bindMeta.cTrf
                                                 $ mkCExprAppMeta (CExpr_Var @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
                             .   cTrfLam     =   mkCBind1 @nmLam
                                                 $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
-%%]]
                 lhs         .   (varBindSq,lamBindSq)
                                             =   if null @argNewL
                                                 then (Seq.singleton @cTrf,Seq.empty)

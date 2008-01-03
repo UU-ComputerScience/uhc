@@ -569,10 +569,11 @@ SEM Decl
                                                      vx = CExpr_Var x
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict
-                                                     mkSel n = mkCExprSatSelsCase ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) vx @dictTag
-                                                                                  [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
+                                                     mkSel n = mkCExprSatSelsCaseMeta
+                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) CMeta_Dict vx @dictTag
+                                                                 [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (`mkCExprApp1` vx)
+                                                             then (\f -> mkCExprApp1Meta f vx CMeta_Dict)
                                                              else id
                                                      dDflt
                                                        = [mkCBind1 nDflt (mkCExprLam1Meta nD CMeta_Dict d)] 
@@ -596,9 +597,9 @@ SEM Decl
                                                        = foldl (\d (CBind_Bind n _ v) -> mkSet d n v) d bs
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
                                                      mkSetFldsData d bs
-                                                       = mkCExprSatSelsCaseUpd env Nothing d @dictTag (length @recTyExts) offValL Nothing
+                                                       = mkCExprSatSelsCaseUpdMeta env Nothing CMeta_Dict d @dictTag (length @recTyExts) offValL Nothing
                                                        where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
-                                                             offValL = [ (off n,v) | (CBind_Bind n _ v) <- bs ]
+                                                             offValL = [ (off n,(v,m)) | (CBind_Bind n m v) <- bs ]
                                                      mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFldsRec else mkSetFldsData
                                                      (d,cmeta)
                                                        = case @instVariant of
@@ -611,14 +612,16 @@ SEM Decl
                                                                    dD = mkCExprLam1Meta nD CMeta_Dict
                                                                           (mkCExprLetRec
                                                                               ([mkCBind1Meta nR CMeta_Dict
-                                                                                  (mkCExprApp (CExpr_Tup @dictTag)
-                                                                                      (map (\(n,_) -> maybe (cundefined @lhs.opts) id (lookupBnd n)) $ tyRowCanonOrder $ @recTyExts))]
+                                                                                  (mkCExprAppMeta (CExpr_Tup @dictTag)
+                                                                                      (map (\(n,_) -> (maybe (cundefined @lhs.opts) id (lookupBnd n),lookupMeta n)) $ tyRowCanonOrder $ @recTyExts))]
                                                                                ++ (cSubstOptApp @lhs.opts @cSubst
                                                                                     (@chrScopeDeclsBindL ++ @chrAssumeDeclsInstBindL)))
                                                                               (CExpr_Var nR))
                                                                    lookupBnd
                                                                      = \n -> lookup n b
                                                                      where b = map (\(CBind_Bind n _ v) -> (n,v)) @decls.cbindL
+                                                                   lookupMeta
+                                                                     = \n -> if n `elem` @supClsFldL then CMeta_Dict else CMeta_Val
 %%[[95
                                                            InstDeriving
                                                              -> (mkNormalD bindL,CMeta_Dict)
@@ -681,7 +684,7 @@ SEM Decl
                                                              nR = @dictBuildNm
                                                              nStrictR = hsnSuffix nR "!"
                                                              dDflt = mkCExprStrictInMeta nStrictDflt CMeta_Dict (mkCExprApp1Meta (CExpr_Var nDflt) (CExpr_Var nR) CMeta_Dict)
-                                                                       (\d -> mkSetFlds d (zipWith mkCBind1 @supClsNmL
+                                                                       (\d -> mkSetFlds d (zipWith (\n e -> mkCBind1Meta n CMeta_Dict e) @supClsFldL
                                                                                                    (map CExpr_Var @chrSuperProveNmL)))
                                                              dD = mkCExprLamMeta (cmetaLiftDict @chrCtxtArgNmL)
                                                                     (mkCExprLetRec
