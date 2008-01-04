@@ -129,6 +129,7 @@ data EHCOpts
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
       ,  ehcOptErrAboutGrinBC ::  Bool				-- report when Grin ByteCode errors occur
+      ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
@@ -200,6 +201,7 @@ defaultEHCOpts
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
       ,  ehcOptEmitLLVM       =   False
       ,  ehcOptFullProgGRIN   =   False
+      ,  ehcOptDumpCoreStages =   False
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
@@ -264,6 +266,7 @@ ehcCmdLineOpts
 %%]]
 %%[[8
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
+     ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate core transformation stages (no)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off core transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -440,6 +443,7 @@ optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
+optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
 
 optBoolean :: (EHCOpts -> Bool -> EHCOpts) -> Maybe String -> EHCOpts -> EHCOpts
 optBoolean tr ms o

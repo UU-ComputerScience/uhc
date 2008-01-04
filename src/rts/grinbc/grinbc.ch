@@ -245,17 +245,25 @@ typedef struct GB_Node {
 #define GB_FillNodeFlds1(n,x1)				{(n)->content.fields[0] = Cast(GB_Word,x1);}
 #define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1   );(n)->content.fields[1] = Cast(GB_Word,x2);}
 #define GB_FillNodeFlds3(n,x1,x2,x3)		{GB_FillNodeFlds2(n,x1,x2);(n)->content.fields[2] = Cast(GB_Word,x3);}
+#define GB_FillNodeFlds4(n,x1,x2,x3,x4)		{GB_FillNodeFlds3(n,x1,x2,x3);(n)->content.fields[3] = Cast(GB_Word,x4);}
+#define GB_FillNodeFlds5(n,x1,x2,x3,x4,x5)	{GB_FillNodeFlds4(n,x1,x2,x3,x4);(n)->content.fields[4] = Cast(GB_Word,x5);}
 
-#define GB_FillNodeHdr(h,n)					{(n)->header = h;}
-#define GB_FillConNode0(n,tg)				{GB_NodeHeader _h = GB_MkConHeader(0,tg); GB_FillNodeHdr(_h,n);}
-#define GB_FillConNode1(n,tg,x1)			{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds1(n,x1);}
-#define GB_FillConNode2(n,tg,x1,x2)			{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds2(n,x1,x2);}
+#define GB_FillNodeHdr(h,n)						{(n)->header = h;}
+#define GB_FillConNode0(n,tg)					{GB_NodeHeader _h = GB_MkConHeader(0,tg); GB_FillNodeHdr(_h,n);}
+#define GB_FillConNode1(n,tg,x1)				{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds1(n,x1);}
+#define GB_FillConNode2(n,tg,x1,x2)				{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds2(n,x1,x2);}
+#define GB_FillConNode3(n,tg,x1,x2,x3)			{GB_NodeHeader _h = GB_MkConHeader(3,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds3(n,x1,x2,x3);}
+#define GB_FillConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeHeader _h = GB_MkConHeader(4,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds4(n,x1,x2,x3,x4);}
+#define GB_FillConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeHeader _h = GB_MkConHeader(5,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds5(n,x1,x2,x3,x4,x5);}
 
 #define GB_MkConNodeN(n,sz,tg)				{GB_NodeAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
 #define GB_MkFixConNodeN(n,sz,tg)			{GB_NodeFixAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
 #define GB_MkConNode0(n,tg)					{GB_NodeAlloc_In(1,n); GB_FillConNode0(n,tg); }
 #define GB_MkConNode1(n,tg,x1)				{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)			{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
+#define GB_MkConNode3(n,tg,x1,x2,x3)		{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
+#define GB_MkConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeAlloc_In(5,n); GB_FillConNode4(n,tg,x1,x2,x3,x4); }
+#define GB_MkConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeAlloc_In(6,n); GB_FillConNode5(n,tg,x1,x2,x3,x4,x5); }
 
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
 
@@ -304,6 +312,16 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Comparing Node
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Equality on nodes which are an instance of Enum, hence are encoded as GB_Int.
+
+%%[98
+#define GB_EnumIsEqual(x,y)					((x) == (y))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% PackedString
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -341,6 +359,74 @@ extern GB_NodePtr gb_listTail( GB_NodePtr n ) ;
 extern GB_Word gb_listHead( GB_NodePtr n ) ;
 extern Bool gb_listNull( GB_NodePtr n ) ;
 extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz ) ;
+%%]
+
+%%[98
+extern GB_NodePtr gb_copyCStringFromEvalString( char* cString, GB_NodePtr hsString, int sz ) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+#define GB_Tag_Maybe_Nothing				1
+#define GB_Tag_Maybe_Just					0
+
+#define GB_MkMaybeNothing(n)				{n = &gb_Nothing;}
+#define GB_MkMaybeJust(n,x1)				GB_MkConNode1(n,GB_Tag_Maybe_Just,x1)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IOException
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Definition must match the one in Prelude.hs
+
+%%[98
+#define GB_Tag_IOException_IOError						0
+
+#define GB_MkIOExceptionIOError(n,x1,x2,x3,x4,x5)		GB_MkConNode5(n,GB_Tag_IOException_IOError,x1,x2,x3,x4,x5)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exception
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Definition must match the one in Prelude.hs
+
+%%[98
+#define GB_Tag_Exception_ArithException   					0
+#define GB_Tag_Exception_ArrayException   					1
+#define GB_Tag_Exception_AssertionFailed  					2
+#define GB_Tag_Exception_AsyncException   					3
+#define GB_Tag_Exception_BlockedOnDeadMVar					4
+#define GB_Tag_Exception_Deadlock         					5
+#define GB_Tag_Exception_ErrorCall        					6
+#define GB_Tag_Exception_ExitException    					7
+#define GB_Tag_Exception_IOException      					8
+#define GB_Tag_Exception_NoMethodError    					9
+#define GB_Tag_Exception_NonTermination   					10
+#define GB_Tag_Exception_PatternMatchFail 					11
+#define GB_Tag_Exception_RecConError      					12
+#define GB_Tag_Exception_RecSelError      					13
+#define GB_Tag_Exception_RecUpdError      					14
+
+#define GB_MkExceptionArithException(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_ArithException   ,x1)
+#define GB_MkExceptionArrayException(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_ArrayException   ,x1)
+#define GB_MkExceptionAssertionFailed(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_AssertionFailed  ,x1)
+#define GB_MkExceptionAsyncException(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_AsyncException   ,x1)
+#define GB_MkExceptionBlockedOnDeadMVar(n)					GB_MkConNode0(n,GB_Tag_Exception_BlockedOnDeadMVar   )
+#define GB_MkExceptionDeadlock(n)							GB_MkConNode0(n,GB_Tag_Exception_Deadlock            )
+#define GB_MkExceptionErrorCall(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_ErrorCall        ,x1)
+#define GB_MkExceptionExitException(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_ExitException    ,x1)
+#define GB_MkExceptionIOException(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_IOException      ,x1)
+#define GB_MkExceptionNoMethodError(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_NoMethodError    ,x1)
+#define GB_MkExceptionNonTermination(n)						GB_MkConNode0(n,GB_Tag_Exception_NonTermination      )
+#define GB_MkExceptionPatternMatchFail(n,x1)				GB_MkConNode1(n,GB_Tag_Exception_PatternMatchFail ,x1)
+#define GB_MkExceptionRecConError(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_RecConError      ,x1)
+#define GB_MkExceptionRecSelError(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_RecSelError      ,x1)
+#define GB_MkExceptionRecUpdError(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_RecUpdError      ,x1)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

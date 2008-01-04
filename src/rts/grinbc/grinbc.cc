@@ -462,7 +462,7 @@ On return:
 GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
 {
 	int sz = 0 ;
-	while ( sz < *psz && ! GB_List_IsNull( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) )
+	while ( (sz < *psz || *psz == 0) && ! GB_List_IsNull( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) )
 	{
   		IF_GB_TR_ON(3,printf("gb_listForceEval1 *psz %d, sz %d, n %x: ", *psz, sz, *pn ););
   		IF_GB_TR_ON(3,gb_prWord(Cast(GB_Word,*pn)););
@@ -473,6 +473,20 @@ GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
 	}
 	*psz = sz ;
 	return *pn ;
+}
+%%]
+
+%%[98
+/*
+  In the following function gb_eval(GB_List_Head(n)) must be put into a local var,
+  inlining produces a faulty program.
+  Reason unknown :-(.
+*/
+
+GB_NodePtr gb_copyCStringFromEvalString( char* cString, GB_NodePtr hsString, int sz )
+{
+	int bufInx = 0 ;
+	GB_List_Iterate(hsString,sz,{GB_Word xx = gb_eval(GB_List_Head(hsString)); cString[bufInx++] = GB_GBInt2Int(xx);}) ;
 }
 %%]
 

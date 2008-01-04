@@ -30,6 +30,45 @@ PRIM GB_Word gb_LT
 
 %%]
 
+%%[98
+PRIM GB_Node gb_Nothing
+    = GB_MkConEnumNode( GB_Tag_Maybe_Nothing ) ;
+%%]
+
+The definition of IOErrorType must coincide with the one in Prelude.hs
+
+%%[98
+PRIM GB_Word gb_AlreadyExists
+	= GB_MkConEnumNodeAsTag( 0 ) ;
+PRIM GB_Word gb_AlreadyInUse
+	= GB_MkConEnumNodeAsTag( 1 ) ;
+PRIM GB_Word gb_DoesNotExist	
+	= GB_MkConEnumNodeAsTag( 2 ) ;
+PRIM GB_Word gb_EOF
+	= GB_MkConEnumNodeAsTag( 3 ) ;
+PRIM GB_Word gb_IllegalOperation
+	= GB_MkConEnumNodeAsTag( 4 ) ;
+PRIM GB_Word gb_PermissionDenied
+	= GB_MkConEnumNodeAsTag( 5 ) ;
+PRIM GB_Word gb_ResourceExhausted
+	= GB_MkConEnumNodeAsTag( 6 ) ;
+PRIM GB_Word gb_UserError
+	= GB_MkConEnumNodeAsTag( 7 ) ;
+%%]
+
+The definition of IOMode must coincide with the one in Prelude.hs
+
+%%[98
+PRIM GB_Word gb_AppendMode
+	= GB_MkConEnumNodeAsTag( 0 ) ;
+PRIM GB_Word gb_ReadMode
+	= GB_MkConEnumNodeAsTag( 1 ) ;
+PRIM GB_Word gb_ReadWriteMode
+	= GB_MkConEnumNodeAsTag( 2 ) ;
+PRIM GB_Word gb_WriteMode
+	= GB_MkConEnumNodeAsTag( 3 ) ;
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -254,31 +293,31 @@ PRIM GB_Int gb_primNegInt( GB_Int x )
 PRIM GB_Word gb_primEqInt( GB_Word x, GB_Word y )
 {
 	if ( x == y )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 
 PRIM GB_Word gb_primGtInt( GB_Int x, GB_Int y )
 {
 	if ( x > y )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 
 PRIM GB_Word gb_primLtInt( GB_Int x, GB_Int y )
 {
 	if ( x < y )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 
 PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 {
 	if ( x < y )
-		return Cast(GB_Word,gb_LT) ;
+		return gb_LT ;
 	else if ( x == y )
-		return Cast(GB_Word,gb_EQ) ;
-  	return Cast(GB_Word,gb_GT) ;
+		return gb_EQ ;
+  	return gb_GT ;
 }
 
 %%]
@@ -302,12 +341,12 @@ PRIM GB_Word gb_primMinInt()
 %%[97
 PRIM GB_Word gb_primEqFloat( GB_NodePtr x, GB_NodePtr y )
 {
-	return GB_Float_Cmp(x,y, Cast(GB_Word,gb_False), Cast(GB_Word,gb_True), Cast(GB_Word,gb_False) ) ;
+	return GB_Float_Cmp(x,y, gb_False, gb_True, gb_False ) ;
 }
 
 PRIM GB_Word gb_primCmpFloat( GB_NodePtr x, GB_NodePtr y )
 {
-	return GB_Float_Cmp(x,y, Cast(GB_Word,gb_LT), Cast(GB_Word,gb_EQ), Cast(GB_Word,gb_GT) ) ;
+	return GB_Float_Cmp(x,y, gb_LT, gb_EQ, gb_GT ) ;
 }
 
 PRIM GB_NodePtr gb_primAddFloat( GB_NodePtr x, GB_NodePtr y )
@@ -354,12 +393,12 @@ PRIM GB_NodePtr gb_primNegFloat( GB_NodePtr x )
 %%[97
 PRIM GB_Word gb_primEqDouble( GB_NodePtr x, GB_NodePtr y )
 {
-	return GB_Double_Cmp(x,y, Cast(GB_Word,gb_False), Cast(GB_Word,gb_True), Cast(GB_Word,gb_False) ) ;
+	return GB_Double_Cmp(x,y, gb_False, gb_True, gb_False ) ;
 }
 
 PRIM GB_Word gb_primCmpDouble( GB_NodePtr x, GB_NodePtr y )
 {
-	return GB_Double_Cmp(x,y, Cast(GB_Word,gb_LT), Cast(GB_Word,gb_EQ), Cast(GB_Word,gb_GT) ) ;
+	return GB_Double_Cmp(x,y, gb_LT, gb_EQ, gb_GT ) ;
 }
 
 PRIM GB_NodePtr gb_primAddDouble( GB_NodePtr x, GB_NodePtr y )
@@ -408,18 +447,18 @@ PRIM GB_NodePtr gb_primNegDouble( GB_NodePtr x )
 PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	if ( GB_Integer_Cmp(x,y) == 0 )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 
 PRIM GB_Word gb_primCmpInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	int c = GB_Integer_Cmp(x,y) ;
 	if ( c < 0 )
-		return Cast(GB_Word,gb_LT) ;
+		return gb_LT ;
 	else if ( c == 0 )
-		return Cast(GB_Word,gb_EQ) ;
-  	return Cast(GB_Word,gb_GT) ;
+		return gb_EQ ;
+  	return gb_GT ;
 }
 
 PRIM GB_NodePtr gb_primAddInteger( GB_NodePtr x, GB_NodePtr y )
@@ -509,16 +548,16 @@ PRIM GB_Word gb_primCharIsUpper( GB_Int x )
 {
 	char c = GB_GBInt2Int( x ) ;
 	if ( c >= 'A' && c <= 'Z' )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 
 PRIM GB_Word gb_primCharIsLower( GB_Int x )
 {
 	char c = GB_GBInt2Int( x ) ;
 	if ( c >= 'a' && c <= 'z' )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 %%]
 
@@ -532,8 +571,8 @@ PRIM GB_Word gb_primPackedStringNull( char *s )
 {
   	IF_GB_TR_ON(3,printf("gb_primPackedStringNull %x, %d, %s\n", s, *s, s ););
 	if ( *s )
-		return Cast(GB_Word,gb_False) ;
-  	return Cast(GB_Word,gb_True) ;
+		return gb_False ;
+  	return gb_True ;
 }
 
 PRIM GB_Word gb_primPackedStringTail( char *s )
@@ -691,12 +730,12 @@ PRIM GB_Word gb_primByteArrayLength( GB_Word a )
 PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 {
 	GB_NodePtr n2 ;
-	int bufInx = 0 ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray1 sz=%d n=%x\n", sz, n ););
 	gb_listForceEval( &n, &sz ) ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%x\n", sz, n ););
 	GB_NodeAlloc_Malloc2_In( sz, n2 ) ;
 	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
+	int bufInx = 0 ;
 	GB_List_Iterate(n,sz,{GB_Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 	// GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray4 bufInx=%d, n=%x buf=", bufInx, n ););
@@ -797,13 +836,80 @@ PRIM GB_NodePtr gb_primStderr()
 PRIM GB_Word gb_primEqChan( GB_NodePtr c1, GB_NodePtr c2 )
 {
 	if ( fileno(c1->content.chan.file) == fileno(c2->content.chan.file) )
-		return Cast(GB_Word,gb_True) ;
-  	return Cast(GB_Word,gb_False) ;
+		return gb_True ;
+  	return gb_False ;
 }
 
 PRIM GB_Word gb_primChanNumber( GB_NodePtr c )
 {
 	return GB_Int2GBInt( fileno(c->content.chan.file) ) ;
+}
+
+PRIM GB_NodePtr gb_primOpenFile( GB_NodePtr nmNd, GB_Word modeEnum )
+{
+	int nmSz = 0 ;
+	gb_listForceEval( &nmNd, &nmSz ) ;
+	char* nm = alloca( nmSz + 1 ) ;
+	gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ;	
+	// memcpy( nm, nmNd->content.bytearray.ptr, nmNd->content.bytearray.size ) ;
+	// nm[ nmNd->content.bytearray.size ] = 0 ;
+	nm[ nmSz ] = 0 ;
+	
+	char *mode ;
+	if ( GB_EnumIsEqual( modeEnum, gb_ReadMode ) )
+		mode = "r" ;
+	else if ( GB_EnumIsEqual( modeEnum, gb_WriteMode ) )
+		mode = "w" ;
+	else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteMode ) )
+		mode = "r+" ;
+	else if ( GB_EnumIsEqual( modeEnum, gb_AppendMode ) )
+		mode = "a" ;
+	
+	FILE *f = fopen( nm, mode ) ;
+	if ( f == NULL )
+	{
+		GB_NodePtr ioe_handle ;
+		GB_Word    ioe_type ;
+		GB_NodePtr ioe_location ;
+		GB_NodePtr ioe_description ;
+		GB_NodePtr ioe_filename ;
+		GB_NodePtr ioe ;
+		GB_NodePtr exc ;
+
+		GB_MkMaybeNothing( ioe_handle ) ;
+		
+		switch ( errno )
+		{
+			case ENODEV :
+			case ENOENT :
+				ioe_type = gb_DoesNotExist ;
+				break ;
+			case EPERM :
+			case EACCES :
+			case ENOTDIR :
+				ioe_type = gb_PermissionDenied ;
+				break ;
+			case EBUSY :
+				ioe_type = gb_AlreadyInUse ;
+				break ;
+			default :
+				ioe_type = gb_PermissionDenied ;
+				break ;
+		}
+
+		GB_MkListNil( ioe_location ) ;
+		ioe_description = gb_primCStringToString( strerror( errno ) ) ;
+		GB_MkMaybeJust( ioe_filename, nmNd ) ;
+		GB_MkIOExceptionIOError( ioe, ioe_handle, ioe_type, ioe_location, ioe_description, ioe_filename ) ;
+		GB_MkExceptionIOException( exc, ioe ) ;
+		gb_intl_primThrowException( exc ) ;
+	}
+	
+	GB_NodePtr fNd ;
+	GB_NodeAlloc_Chan_In(fNd) ;
+	fNd->content.chan.file = f ;
+	
+	return fNd ;
 }
 
 %%]
