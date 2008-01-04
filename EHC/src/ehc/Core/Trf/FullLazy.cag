@@ -112,7 +112,7 @@ type LevBindSq = Seq (Int,(CBindCateg,CBindL))
 
 levBindSplit :: Int -> LevBindSq -> (LevBindSq,LevBindSq)
 levBindSplit lev b
-  =  let (b1,b2) = partition (\(l,_) -> l >= lev) . seqToList $ b
+  =  let (b1,b2) = partition (\(l,_) -> l >= lev) $ seqToList b
      in  (mkSeq b1,mkSeq b2)
 %%]
 
@@ -138,7 +138,7 @@ SEM CExpr
                                                 in  (b,emptySeq)
                 lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
   | Lam         loc         .   (hereBindSq,remBindSq)
-                                            =   levBindSplit @lev @body.levBindSq
+                                            =   (@body.levBindSq,emptySeq) -- levBindSplit @lev @body.levBindSq
                 lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
 
 SEM CBind
@@ -149,9 +149,6 @@ SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)
                                             =   (@expr.levBindSq,emptySeq)
 %%]
-SEM CAlt
-  | Alt         (loc.hereBindSq,lhs.levBindSq)
-                                            =   levBindSplit @lev @expr.levBindSq
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Allow trf?

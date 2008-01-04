@@ -10,6 +10,10 @@
 #include "config.h"
 %%]
 
+%%[98
+#include <errno.h>
+%%]
+
 %%[97
 #if USE_GMP
 #include "gmp.h"

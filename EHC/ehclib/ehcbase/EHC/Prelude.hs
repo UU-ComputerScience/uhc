@@ -30,11 +30,13 @@ module EHC.Prelude (
 --  module PreludeIO,
 {-----------------------------
     FilePath, IOError, ioError, userError, catch,
+-----------------------------}
+    FilePath, catch,
+{-----------------------------
     putChar, putStr, putStrLn, print,
     getChar, getLine, getContents, interact,
     readFile, writeFile, appendFile, readIO, readLn,
 -----------------------------}
-    catch,
     putStr, putStrLn, print,
 --  module Ix,
 {-----------------------------
@@ -72,17 +74,20 @@ module EHC.Prelude (
     Handle, Object,
 {-----------------------------
     basicIORun, blockIO, IOFinished(..),
+-----------------------------}
+    ehcRunMain,
+{-----------------------------
     threadToIOResult,
+-----------------------------}
     catchException, throw,
+{-----------------------------
     Dynamic(..), TypeRep(..), Key(..), TyCon(..), Obj,
+-----------------------------}
 
     IOMode(..),
------------------------------}
-    catchException,
-    ehcRunMain,
     stdin, stdout, stderr,
-{-----------------------------
     openFile,
+{-----------------------------
     hClose,
     hGetContents, hGetChar, hGetLine,
     hPutChar,
@@ -1992,25 +1997,25 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
 -- Exception datatype and operations
 ----------------------------------------------------------------
 
-data Exception
-  = ArithException      ArithException
-  | ArrayException      ArrayException
-  | AssertionFailed     String
-  | AsyncException      AsyncException
-  | BlockedOnDeadMVar
-  | Deadlock
+data Exception                              -- alphabetical order of constructors required, assumed Int encoding in comment
+  = ArithException      ArithException      -- 0
+  | ArrayException      ArrayException      -- 1
+  | AssertionFailed     String              -- 2
+  | AsyncException      AsyncException      -- 3
+  | BlockedOnDeadMVar                       -- 4
+  | Deadlock                                -- 5
 {-----------------------------
   | DynException        Dynamic
 -----------------------------}
-  | ErrorCall           String
-  | ExitException       ExitCode
-  | IOException         IOException     -- IO exceptions (from 'ioError')
-  | NoMethodError       String
-  | NonTermination
-  | PatternMatchFail    String
-  | RecConError         String
-  | RecSelError         String
-  | RecUpdError         String
+  | ErrorCall           String              -- 6
+  | ExitException       ExitCode            -- 7 
+  | IOException         IOException         -- 8 -- IO exceptions (from 'ioError')
+  | NoMethodError       String              -- 9
+  | NonTermination                          -- 10
+  | PatternMatchFail    String              -- 11
+  | RecConError         String              -- 12
+  | RecSelError         String              -- 13
+  | RecUpdError         String              -- 14
 
 instance Show Exception where
   showsPrec _ (ArithException e)  = shows e
@@ -2024,7 +2029,7 @@ instance Show Exception where
 -----------------------------}
   showsPrec _ (ErrorCall s)       = showString s
   showsPrec _ (ExitException err) = showString "exit: " . shows err
-  showsPrec _ (IOException err)   = shows err
+  showsPrec _ (IOException err)   = {- id -- showString "AAP: " -- -} shows err
   showsPrec _ (NoMethodError s)   = showException "undefined member" s
   showsPrec _ NonTermination      = showString "<<loop>>"
   showsPrec _ (PatternMatchFail s) = showException "pattern match failure" s
@@ -2097,9 +2102,10 @@ data IOException
       } 
       deriving (Eq)
 
+{-----------------------------
 data IOErrorType
   = AlreadyExists
-  | NoSuchThing
+  | DoesNotExist
   | ResourceBusy
   | ResourceExhausted
   | EOF
@@ -2113,13 +2119,25 @@ data IOErrorType
      -- DOTNET only
   | DotNetException
     deriving (Eq)
+-----------------------------}
+data IOErrorType        -- alphabetical order of constructors required, assumed Int encoding in comment
+  = AlreadyExists       -- 0
+  | AlreadyInUse        -- 1 -- ResourceBusy
+  | DoesNotExist        -- 2 -- NoSuchThing
+  | EOF                 -- 3
+  | IllegalOperation    -- 4
+  | PermissionDenied    -- 5
+  | ResourceExhausted   -- 6
+  | UserError           -- 7
+    deriving (Eq)
 
+{-----------------------------
 instance Show IOErrorType where
   show x = 
     case x of
       AlreadyExists     -> "already exists"
       NoSuchThing       -> "does not exist"
-      ResourceBusy      -> "resource busy"
+      AlreadyInUse      -> "resource busy"
       ResourceExhausted -> "resource exhausted"
       EOF               -> "end of file"
       IllegalOperation  -> "illegal operation"
@@ -2129,6 +2147,18 @@ instance Show IOErrorType where
       UnsupportedOperation -> "unsupported operation"
       OtherError        -> "failed"
       DotNetException   -> ".NET exception"
+-----------------------------}
+instance Show IOErrorType where
+  show x = 
+    case x of
+      AlreadyExists     -> "already exists"
+      AlreadyInUse      -> "resource already in use"
+      DoesNotExist      -> "does not exist"
+      EOF               -> "end of file"
+      IllegalOperation  -> "illegal operation"
+      PermissionDenied  -> "permission denied"
+      ResourceExhausted -> "resource exhausted"
+      UserError         -> "user error"
 
 instance Show IOException where
   showsPrec p (IOError hdl iot loc s fn) =
@@ -2240,10 +2270,20 @@ readLn          :: Read a => IO a
 readLn           = do l <- getLine
                       r <- readIO l
                       return r
+-----------------------------}
 
+{-----------------------------
 data IOMode      =  ReadMode | WriteMode | AppendMode | ReadWriteMode
                     deriving (Eq, Ord, Ix, Bounded, Enum, Read, Show)
+-----------------------------}
+data IOMode         -- alphabetical order of constructors required, assumed Int encoding in comment
+  = AppendMode      -- 0
+  | ReadMode        -- 1
+  | ReadWriteMode   -- 2
+  | WriteMode       -- 3
+    deriving (Eq, Ord, Bounded, Enum, Show)
 
+{-----------------------------
 writeFile       :: FilePath -> String -> IO ()
 writeFile        = writeFile' WriteMode
 
@@ -2280,11 +2320,14 @@ primitive hGetChar    :: Handle -> IO Char
 primitive hPutChar    :: Handle -> Char -> IO ()
 primitive hPutStr     :: Handle -> String -> IO ()
 -----------------------------}
+foreign import ccall primOpenFile  :: String -> IOMode -> Handle
 foreign import ccall primWriteChan :: Handle -> ByteArray -> ()
 foreign import ccall primFlushChan :: Handle -> ()
 
+openFile    :: FilePath -> IOMode -> IO Handle
+openFile  f m = ioFromPrim (\_ -> primOpenFile f m)
+
 hPutStr, hPutStrLn     :: Handle -> String -> IO ()
--- hPutStr   h s = ioFromPrim (\_ -> primWriteChan h (primStringToByteArray s 1000))
 hPutStr   h s = do let (shd,stl) = splitAt 1000 s
                    ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
                    if null stl then return () else hPutStr h stl
@@ -2376,7 +2419,7 @@ instance Show Handle where
       = if      n == 0 then showString "<stdin>"
         else if n == 1 then showString "<stdout>"
         else if n == 2 then showString "<stderr>"
-        else                showString "<handle>"
+        else                showString ("<handle:" ++ show (primGetHandleNumber h) ++ ">")
       where n = primGetHandleNumber h
 
 {-----------------------------
@@ -2581,4 +2624,4 @@ emptyRec = EmptyRec
 
 -- End of Hugs standard prelude ----------------------------------------------
 
-
+main = return () -- dummy

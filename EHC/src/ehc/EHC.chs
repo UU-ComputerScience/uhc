@@ -1483,10 +1483,14 @@ cpTransformCore modNm trfNmL
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  tr     = ehcOptTrf opts
-                 ps     = intersperse cpStepUID 
-                          $ map (cpCore1Trf modNm)
+                 ps     = concat
+                          $ intersperse [cpStepUID]
+                          $ zipWith trf [1..]
                           $ filter (maybe True id . trfOptOverrides tr)
                           $ trfNmL
+                 trf    = if ehcOptDumpCoreStages opts
+                          then \n t -> [cpCore1Trf modNm t,cpOutputCore ("core-" ++ show n ++ "-" ++ t) modNm]
+                          else \_ t -> [cpCore1Trf modNm t]
          ;  cpSeq ps
          }
 %%]
@@ -1529,7 +1533,7 @@ cpProcessCoreBasic modNm
 %%[[101
                   -- [ "CS" ] ++
 %%]]
-                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", "CLGA", "CCGA", "CLU", "CFL", "CLFG" ]
+                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" ]
                 )
           , cpOutputCore "core" modNm
           ]
