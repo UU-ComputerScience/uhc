@@ -87,8 +87,8 @@ module EHC.Prelude (
     IOMode(..),
     stdin, stdout, stderr,
     openFile,
-{-----------------------------
     hClose,
+{-----------------------------
     hGetContents, hGetChar, hGetLine,
     hPutChar,
 -----------------------------}
@@ -2029,7 +2029,7 @@ instance Show Exception where
 -----------------------------}
   showsPrec _ (ErrorCall s)       = showString s
   showsPrec _ (ExitException err) = showString "exit: " . shows err
-  showsPrec _ (IOException err)   = {- id -- showString "AAP: " -- -} shows err
+  showsPrec _ (IOException err)   = shows err
   showsPrec _ (NoMethodError s)   = showException "undefined member" s
   showsPrec _ NonTermination      = showString "<<loop>>"
   showsPrec _ (PatternMatchFail s) = showException "pattern match failure" s
@@ -2320,12 +2320,13 @@ primitive hGetChar    :: Handle -> IO Char
 primitive hPutChar    :: Handle -> Char -> IO ()
 primitive hPutStr     :: Handle -> String -> IO ()
 -----------------------------}
-foreign import ccall primOpenFile  :: String -> IOMode -> Handle
+foreign import ccall primOpenChan  :: String -> IOMode -> Handle
+foreign import ccall primCloseChan :: Handle -> ()
 foreign import ccall primWriteChan :: Handle -> ByteArray -> ()
 foreign import ccall primFlushChan :: Handle -> ()
 
 openFile    :: FilePath -> IOMode -> IO Handle
-openFile  f m = ioFromPrim (\_ -> primOpenFile f m)
+openFile  f m = ioFromPrim (\_ -> primOpenChan f m)
 
 hPutStr, hPutStrLn     :: Handle -> String -> IO ()
 hPutStr   h s = do let (shd,stl) = splitAt 1000 s
@@ -2335,6 +2336,9 @@ hPutStrLn h s = do {hPutStr h s ; hPutStr h "\n"}
 
 hFlush     :: Handle -> IO ()
 hFlush h = ioFromPrim (\_ -> primFlushChan h)
+
+hClose     :: Handle -> IO ()
+hClose h = ioFromPrim (\_ -> primCloseChan h)
 
 putStr, putStrLn     :: String -> IO ()
 putStr   = hPutStr   stdout
@@ -2538,7 +2542,7 @@ basicIORun :: IO a -> IOFinished a
 basicIORun (IO m) = loop [m hugsReturn]
 -----------------------------}
 
--- Wrapper around 'main', invoked like 'ehcRunMain main'
+-- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
   catchTracedException m

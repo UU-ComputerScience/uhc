@@ -136,6 +136,7 @@ the machinery.
 %format callinfoEvAppFunCont	= callinfo "_{evappfcont}"
 %format callinfoEvAppFunEvCont	= callinfo "_{evappfevcont}"
 %format callinfoExcHdlEvalValue	= callinfo "_{heval}"
+%format callinfoIntlCCall	= callinfo "_{C-intl}"
 
 %format (ixx1(x)(f))    = x "_{" f "}"
 %format (ixx(x)(f)(t))  = x "_{" f "} .. " x "_{" t "}"
@@ -834,6 +835,7 @@ callinfoPApCont             =  9     -- partial apply continuation
 callinfoHdlr                =  10    -- exception handler installment
 callinfoEvAppFunCont        =  11    -- apply function eval update continuation
 callinfoEvAppFunEvCont      =  12    -- apply function eval update eval continuation
+callinfoIntlCCall           =  13    -- internal C call which must look like foreign function call (for exception handling)
 %%]]
 \end{itemize}
 
