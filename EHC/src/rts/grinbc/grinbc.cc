@@ -266,10 +266,11 @@ GB_Byte gb_code_Eval[] =
 %%]
 
 %%[96
-static GB_CallInfo gb_callinfo_ExcHdl_EvalValue  					= GB_MkCallInfo(GB_CallInfo_Kind_Call , "exception handler value eval"	) ;
-static GB_CallInfo gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler  = GB_MkCallInfo(GB_CallInfo_Kind_Hdlr , "exception handler"				) ;
-static GB_CallInfo gb_callinfo_ExcHdl_ThrowReturn  					= GB_MkCallInfo(GB_CallInfo_Kind_Call , "exception handler throw eval"	) ;
-static GB_CallInfo gb_callinfo_Apply 								= GB_MkCallInfo(GB_CallInfo_Kind_Apply, "apply"							) ;
+static GB_CallInfo gb_callinfo_ExcHdl_EvalValue  					= GB_MkCallInfo(GB_CallInfo_Kind_Call 		, "exception handler value eval"	) ;
+static GB_CallInfo gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler  = GB_MkCallInfo(GB_CallInfo_Kind_Hdlr 		, "exception handler"				) ;
+static GB_CallInfo gb_callinfo_ExcHdl_ThrowReturn  					= GB_MkCallInfo(GB_CallInfo_Kind_Call 		, "exception handler throw eval"	) ;
+static GB_CallInfo gb_callinfo_Apply 								= GB_MkCallInfo(GB_CallInfo_Kind_Apply		, "apply"							) ;
+static GB_CallInfo gb_callinfo_IntlCCall							= GB_MkCallInfo(GB_CallInfo_Kind_IntlCCall	, "internal C call"							) ;
 %%]
 
 %%[96
@@ -321,6 +322,14 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
   , 2*sizeof(GB_Word)	// nArgSurr
   } ;
 
+static GB_Byte gb_code_ThrowException[] =
+  { GB_Ins_CallC, GB_InsOp_ImmSz_08, 1
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  } ;
+
 #define GB_InitPatch_gb_code_ExcHdl_EvalValue \
 									{ *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[0]         						) = Cast(GB_Word,&gb_callinfo_ExcHdl_EvalValue) ; \
 									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(GB_CallInfo_Inline)]  	) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
@@ -332,6 +341,8 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[5+sizeof(GB_CallInfo_Inline)]    ) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
 									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[6+2*sizeof(GB_CallInfo_Inline)]  ) = Cast(GB_Word,&gb_callinfo_Apply) ; \
 									}
+#define GB_InitPatch_gb_code_ThrowException \
+									*Cast(GB_Ptr,&gb_code_ThrowException[3]         							) = Cast(GB_Word,&gb_callinfo_IntlCCall)
 
 %%]
 
@@ -1459,7 +1470,7 @@ GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 	return e ;
 }
 
-GB_NodePtr gb_intl_primThrowException( GB_Word exc )
+GB_NodePtr gb_intl_throwException( GB_Word exc )
 {
 	GB_Ptr p ;
 	GB_CallInfo* ci ;
@@ -1473,16 +1484,16 @@ GB_NodePtr gb_intl_primThrowException( GB_Word exc )
 	    ; p = Cast(GB_Ptr,*p)
 	    )
 	{
-		IF_GB_TR_ON(3,{printf("gb_intl_primThrowException:callInfo1: p %x : ", p) ; gb_prCallInfo( ci ); printf("\n");}) ;
+		IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo1: p %x : ", p) ; gb_prCallInfo( ci ); printf("\n");}) ;
 		GB_Ptr p2 ;
 		if ( ci->kind == GB_CallInfo_Kind_EvCont && (p2 = Cast(GB_Ptr,*p)) != NULL ) {						// if we are in a continuation of an eval then patch it
 			GB_CallInfo* ci2 = GB_FromBPToCallInfo(p2) ;
 			if ( ci2->kind == GB_CallInfo_Kind_Eval || ci2->kind == GB_CallInfo_Kind_EvalWrap ) {
 				if ( n == NULL ) {
-					GB_MkCFunNode1In(n,&gb_intl_primThrowException,exc) ;									// if not done already, construct exception throwing thunk
+					GB_MkCFunNode1In(n,&gb_intl_throwException,exc) ;									// if not done already, construct exception throwing thunk
 				}
 				GB_NodePtr nOld = Cast(GB_NodePtr,GB_RegRelx(p2,2)) ;
-				IF_GB_TR_ON(3,{printf("gb_intl_primThrowException:callInfo2: p %x p2 %x nOld %x: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo2: p %x p2 %x nOld %x: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
 				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,n)) ;											// update node under evaluation with exception throwing thunk
 			}
 		}
@@ -1495,7 +1506,7 @@ GB_NodePtr gb_intl_primThrowException( GB_Word exc )
 			GB_MkListCons(reifiedBackTrace,n2,n3) ;
 		}
 	}
-	IF_GB_TR_ON(3,{printf("gb_intl_primThrowException:callInfo3: ") ; gb_prCallInfo( ci ); printf("\n");}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo3: ") ; gb_prCallInfo( ci ); printf("\n");}) ;
 	
 	if ( p != NULL )
 	{
@@ -1510,6 +1521,35 @@ GB_NodePtr gb_intl_primThrowException( GB_Word exc )
 	GB_MkTupNode2_In(n,reifiedBackTrace,exc) ;																// tuple with backtrace
 	return n ;
 }
+
+/*
+ * Returning via an exception is not yet done correctly because another interpreterloop is started,
+ * making the C stack grow without a subsequent corresponding shrink.
+ */
+
+GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc )
+{
+	GB_Push( exc ) ;
+	GB_Push( &gb_intl_throwException ) ;
+	gb_interpretLoopWith( gb_code_ThrowException ) ;
+}
+
+GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename )
+{
+	GB_NodePtr ioe_location ;
+	GB_NodePtr ioe_description ;
+	GB_NodePtr ioe ;
+	GB_NodePtr exc ;
+
+	GB_MkListNil( ioe_location ) ;
+	ioe_description = gb_primCStringToString( strerror( errno ) ) ;
+	GB_MkIOExceptionIOError( ioe, ioe_handle, ioe_type, ioe_location, ioe_description, ioe_filename ) ;
+	GB_MkExceptionIOException( exc, ioe ) ;
+	
+	gb_intl_throwExceptionFromPrim( exc ) ;
+}
+
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1551,6 +1591,7 @@ void gb_Initialize()
 	GB_InitPatch_gb_code_ExcHdl_EvalValue ;
 	GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler ;
 	GB_InitPatch_gb_code_ExcHdl_ThrowReturn ;
+	GB_InitPatch_gb_code_ThrowException ;
 %%]]
 %%[[99
 	// GB_InitPatch_gb_code_Startup ;

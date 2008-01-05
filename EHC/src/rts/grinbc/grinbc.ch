@@ -242,10 +242,10 @@ typedef struct GB_Node {
 #define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
 #define GB_MkConEnumNodeAsTag(tg)			GB_Int2GBInt(tg)
 
-#define GB_FillNodeFlds1(n,x1)				{(n)->content.fields[0] = Cast(GB_Word,x1);}
-#define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1   );(n)->content.fields[1] = Cast(GB_Word,x2);}
-#define GB_FillNodeFlds3(n,x1,x2,x3)		{GB_FillNodeFlds2(n,x1,x2);(n)->content.fields[2] = Cast(GB_Word,x3);}
-#define GB_FillNodeFlds4(n,x1,x2,x3,x4)		{GB_FillNodeFlds3(n,x1,x2,x3);(n)->content.fields[3] = Cast(GB_Word,x4);}
+#define GB_FillNodeFlds1(n,x1)				{                                (n)->content.fields[0] = Cast(GB_Word,x1);}
+#define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1         );(n)->content.fields[1] = Cast(GB_Word,x2);}
+#define GB_FillNodeFlds3(n,x1,x2,x3)		{GB_FillNodeFlds2(n,x1,x2      );(n)->content.fields[2] = Cast(GB_Word,x3);}
+#define GB_FillNodeFlds4(n,x1,x2,x3,x4)		{GB_FillNodeFlds3(n,x1,x2,x3   );(n)->content.fields[3] = Cast(GB_Word,x4);}
 #define GB_FillNodeFlds5(n,x1,x2,x3,x4,x5)	{GB_FillNodeFlds4(n,x1,x2,x3,x4);(n)->content.fields[4] = Cast(GB_Word,x5);}
 
 #define GB_FillNodeHdr(h,n)						{(n)->header = h;}
@@ -554,7 +554,9 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 #define GB_CallInfo_Kind_Hdlr    		10			// exception handler installment
 #define GB_CallInfo_Kind_EvAppFunCont  	11			// apply fun eval update continuation
 #define GB_CallInfo_Kind_EvAppFunEvCont 12			// apply fun eval update eval continuation
-
+%%]
+%%[96
+#define GB_CallInfo_Kind_IntlCCall		13			// internal C call which must look like foreign function call (for exception handling)
 %%]
 
 Retrieval of call info given a bp
@@ -897,7 +899,9 @@ extern GB_Byte gb_code_Startup[] ;
 
 %%[96
 extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
-extern GB_NodePtr gb_intl_primThrowException( GB_Word exc ) ;
+extern GB_NodePtr gb_intl_throwException( GB_Word exc ) ;
+extern GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc ) ;
+extern GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -607,7 +607,7 @@ PRIM GB_Word gb_primPackedStringHead( char *s )
    the PackedString handling by the functions above
 */
 
-The implementation is left here for convenience of testing GB based impl.
+The implementation is left here for the GB based impl.
 
 %%[95
 GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
@@ -808,7 +808,7 @@ PRIM GB_Word gb_primCatchException( GB_Word e, GB_Word handler )
 
 PRIM GB_NodePtr gb_primThrowException( GB_Word exc )
 {
-	return gb_intl_primThrowException( exc ) ;
+	return gb_intl_throwException( exc ) ;
 }
 %%]
 
@@ -833,19 +833,19 @@ PRIM GB_NodePtr gb_primStderr()
   	return gb_chan_stderr ;
 }
 
-PRIM GB_Word gb_primEqChan( GB_NodePtr c1, GB_NodePtr c2 )
+PRIM GB_Word gb_primEqChan( GB_NodePtr chan1, GB_NodePtr chan2 )
 {
-	if ( fileno(c1->content.chan.file) == fileno(c2->content.chan.file) )
+	if ( fileno(chan1->content.chan.file) == fileno(chan2->content.chan.file) )
 		return gb_True ;
   	return gb_False ;
 }
 
-PRIM GB_Word gb_primChanNumber( GB_NodePtr c )
+PRIM GB_Word gb_primChanNumber( GB_NodePtr chan )
 {
-	return GB_Int2GBInt( fileno(c->content.chan.file) ) ;
+	return GB_Int2GBInt( fileno(chan->content.chan.file) ) ;
 }
 
-PRIM GB_NodePtr gb_primOpenFile( GB_NodePtr nmNd, GB_Word modeEnum )
+PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum )
 {
 	int nmSz = 0 ;
 	gb_listForceEval( &nmNd, &nmSz ) ;
@@ -870,13 +870,10 @@ PRIM GB_NodePtr gb_primOpenFile( GB_NodePtr nmNd, GB_Word modeEnum )
 	{
 		GB_NodePtr ioe_handle ;
 		GB_Word    ioe_type ;
-		GB_NodePtr ioe_location ;
-		GB_NodePtr ioe_description ;
 		GB_NodePtr ioe_filename ;
-		GB_NodePtr ioe ;
-		GB_NodePtr exc ;
 
 		GB_MkMaybeNothing( ioe_handle ) ;
+		GB_MkMaybeJust( ioe_filename, nmNd ) ;
 		
 		switch ( errno )
 		{
@@ -884,8 +881,8 @@ PRIM GB_NodePtr gb_primOpenFile( GB_NodePtr nmNd, GB_Word modeEnum )
 			case ENOENT :
 				ioe_type = gb_DoesNotExist ;
 				break ;
-			case EPERM :
-			case EACCES :
+			case EPERM   :
+			case EACCES  :
 			case ENOTDIR :
 				ioe_type = gb_PermissionDenied ;
 				break ;
@@ -897,19 +894,45 @@ PRIM GB_NodePtr gb_primOpenFile( GB_NodePtr nmNd, GB_Word modeEnum )
 				break ;
 		}
 
-		GB_MkListNil( ioe_location ) ;
-		ioe_description = gb_primCStringToString( strerror( errno ) ) ;
-		GB_MkMaybeJust( ioe_filename, nmNd ) ;
-		GB_MkIOExceptionIOError( ioe, ioe_handle, ioe_type, ioe_location, ioe_description, ioe_filename ) ;
-		GB_MkExceptionIOException( exc, ioe ) ;
-		gb_intl_primThrowException( exc ) ;
+		gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename ) ;
 	}
 	
-	GB_NodePtr fNd ;
-	GB_NodeAlloc_Chan_In(fNd) ;
-	fNd->content.chan.file = f ;
+	GB_NodePtr chan ;
+	GB_NodeAlloc_Chan_In(chan) ;
+	chan->content.chan.file = f ;
 	
-	return fNd ;
+	return chan ;
+}
+
+PRIM GB_NodePtr gb_primCloseChan( GB_NodePtr chan )
+{
+	fclose(chan->content.chan.file) ;
+	return gb_Unit ;
+}
+
+PRIM GB_NodePtr gb_primHGetChar( GB_NodePtr chan )
+{
+	FILE *f = chan->content.chan.file ;
+	int c = getc( f ) ;
+	GB_NodePtr res ;
+	if ( c == EOF ) {
+		if ( feof( f ) ) {
+			GB_MkListNil( res ) ;
+		} else {
+			GB_NodePtr ioe_handle ;
+			GB_Word    ioe_type ;
+			GB_NodePtr ioe_filename ;
+			
+			GB_MkMaybeNothing( ioe_filename ) ;
+			GB_MkMaybeJust( ioe_handle, chan ) ;
+			gb_intl_throwIOExceptionFromPrim( ioe_handle, gb_EOF, ioe_filename ) ;
+		}
+	} else {
+		GB_NodePtr n ;
+		GB_MkCFunNode1In(n,&gb_primHGetChar,chan) ;
+		GB_MkListCons(res,GB_Int2GBInt(c),n) ;
+	}
+	return res ;
 }
 
 %%]
