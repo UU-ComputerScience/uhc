@@ -1479,6 +1479,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	
 	GB_MkListNil(reifiedBackTrace) ;
 	
+	IF_GB_TR_ON(3,{printf("gb_intl_throwException bp %x : ", bp) ; printf("\n");}) ;
 	for ( p = bp
 	    ; p != NULL && ((ci = GB_FromBPToCallInfo(p))->kind) != GB_CallInfo_Kind_Hdlr
 	    ; p = Cast(GB_Ptr,*p)
@@ -1497,8 +1498,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,n)) ;											// update node under evaluation with exception throwing thunk
 			}
 		}
-		if ( gb_prCallInfoIsVisible(ci) && ci->name )
-		{
+		if ( gb_prCallInfoIsVisible(ci) && ci->name ) {
 			GB_NodePtr n1, n2, n3 ;
 			GB_MkCFunNode1In(n1,gb_primCStringToString,ci->name) ;
 			GB_MkTupNode2_In(n2,GB_Int2GBInt(ci->kind),n1) ;
@@ -1508,13 +1508,10 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	}
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo3: ") ; gb_prCallInfo( ci ); printf("\n");}) ;
 	
-	if ( p != NULL )
-	{
+	if ( p != NULL ) {
 		sp = bp = p ;																						// stack is unwound to handler frame
 		GB_SetSPRel( 1, Cast(GB_Word,&gb_code_ExcHdl_ThrowReturn[sizeof(GB_CallInfo_Inline)]) ) ;			// patch return address so primitive returns to handler calling code
-	}
-	else
-	{
+	} else {
 		gb_panic( "uncaught exception" ) ;
 	}
 	
@@ -1522,19 +1519,12 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	return n ;
 }
 
-/*
- * Returning via an exception is not yet done correctly because another interpreterloop is started,
- * making the C stack grow without a subsequent corresponding shrink.
- */
-
 GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc )
 {
-	GB_Push( exc ) ;
-	GB_Push( &gb_intl_throwException ) ;
-	gb_interpretLoopWith( gb_code_ThrowException ) ;
+	return gb_intl_throwException( Cast(GB_Word,exc) ) ;
 }
 
-GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename )
+GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr )
 {
 	GB_NodePtr ioe_location ;
 	GB_NodePtr ioe_description ;
@@ -1542,11 +1532,11 @@ GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_
 	GB_NodePtr exc ;
 
 	GB_MkListNil( ioe_location ) ;
-	ioe_description = gb_primCStringToString( strerror( errno ) ) ;
+	ioe_description = gb_primCStringToString( strErr ) ;
 	GB_MkIOExceptionIOError( ioe, ioe_handle, ioe_type, ioe_location, ioe_description, ioe_filename ) ;
 	GB_MkExceptionIOException( exc, ioe ) ;
 	
-	gb_intl_throwExceptionFromPrim( exc ) ;
+	return gb_intl_throwExceptionFromPrim( exc ) ;
 }
 
 
