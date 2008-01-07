@@ -29,12 +29,13 @@ module EHC.Prelude (
     showChar, showString,
 --  module PreludeIO,
 {-----------------------------
-    FilePath, IOError, ioError, userError, catch,
 -----------------------------}
-    FilePath, catch,
+    FilePath, IOError, ioError, userError, catch,
 {-----------------------------
     putChar, putStr, putStrLn, print,
+-----------------------------}
     getChar, getLine, getContents, interact,
+{-----------------------------
     readFile, writeFile, appendFile, readIO, readLn,
 -----------------------------}
     putStr, putStrLn, print,
@@ -88,8 +89,8 @@ module EHC.Prelude (
     stdin, stdout, stderr,
     openFile,
     hClose,
-{-----------------------------
     hGetContents, hGetChar, hGetLine,
+{-----------------------------
     hPutChar,
 -----------------------------}
     hPutStr, hPutStrLn,
@@ -2186,30 +2187,30 @@ primitive primbindIO             :: IO a -> (a -> IO b) -> IO b
 primitive primretIO              :: a -> IO a
 -----------------------------}
 
-ioFromPrim :: (() -> a) -> IO a
+ioFromPrim :: (IOWorld -> a) -> IO a
 ioFromPrim f
-  = IO (\_ -> letstrict x = f () in IOResult x)
+  = IO (\w -> letstrict x = f w in IOResult x)
 
 primbindIO :: IO a -> (a -> IO b) -> IO b
 primbindIO (IO io) f
-  = IO (\_ -> case io () of
+  = IO (\w -> case io w of
                 IOResult x
                   -> letstrict x' = x
-                     in       case f x' of
-                                IO fx -> fx ()
+                     in case f x' of
+                          IO fx -> fx w
        )
 
 primretIO :: a -> IO a
 primretIO x
   = IO (\_ -> IOResult x)
 
-{-----------------------------
 ioError :: IOError -> IO a
-ioError e = IO (\ s -> throw (IOException e))
+ioError e = IO (\s -> throw (IOException e))
 
+{-----------------------------
+-----------------------------}
 userError :: String -> IOError
 userError str = IOError Nothing UserError "" str Nothing
------------------------------}
 
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = catchException m $ \e -> case e of
@@ -2233,6 +2234,7 @@ print      = putStrLn . show
 putStrLn  :: String -> IO ()
 putStrLn s = do putStr s
                 putChar '\n'
+-----------------------------}
 
 getChar   :: IO Char
 getChar    = hGetChar stdin
@@ -2244,20 +2246,18 @@ getLine   :: IO String
 getLine    = hGetLine stdin
 
 hGetLine :: Handle -> IO String
-hGetLine h = do 
-  c <- hGetChar h
-  hGetLine' c
+hGetLine h = do c <- hGetChar h
+                hGetLine' c
   where
    hGetLine' '\n' = return ""
-   hGetLine' c = do
-     cs <- getRest
-     return (c:cs)
-   getRest = do
-     c <- catch (hGetChar h) $ \ ex ->
-        if isEOFError ex then return '\n' else ioError ex
-     hGetLine' c
+   hGetLine' c = do cs <- getRest
+                    return (c:cs)
+   getRest = do c <- catch (hGetChar h) $ \ ex ->
+                   if isEOFError ex then return '\n' else ioError ex
+                hGetLine' c
    isEOFError ex = ioe_type ex == EOF   -- defined in System.IO.Error
 
+{-----------------------------
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
 readIO s         = case [x | (x,t) <- reads s, ("","") <- lex t] of
@@ -2276,11 +2276,15 @@ readLn           = do l <- getLine
 data IOMode      =  ReadMode | WriteMode | AppendMode | ReadWriteMode
                     deriving (Eq, Ord, Ix, Bounded, Enum, Read, Show)
 -----------------------------}
-data IOMode         -- alphabetical order of constructors required, assumed Int encoding in comment
-  = AppendMode      -- 0
-  | ReadMode        -- 1
-  | ReadWriteMode   -- 2
-  | WriteMode       -- 3
+data IOMode             -- alphabetical order of constructors required, assumed Int encoding in comment
+  = AppendBinaryMode    -- 0
+  | AppendMode          -- 1
+  | ReadBinaryMode      -- 2
+  | ReadMode            -- 3
+  | ReadWriteBinaryMode -- 4
+  | ReadWriteMode       -- 5
+  | WriteBinaryMode     -- 6
+  | WriteMode           -- 7
     deriving (Eq, Ord, Bounded, Enum, Show)
 
 {-----------------------------
@@ -2298,10 +2302,10 @@ writeFile' mode name s = do
 
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents
+-----------------------------}
 
 interact  :: (String -> String) -> IO ()
 interact f = getContents >>= (putStr . f)
------------------------------}
 
 {-----------------------------
 primitive stdin       :: Handle
@@ -2320,10 +2324,12 @@ primitive hGetChar    :: Handle -> IO Char
 primitive hPutChar    :: Handle -> Char -> IO ()
 primitive hPutStr     :: Handle -> String -> IO ()
 -----------------------------}
-foreign import ccall primOpenChan  :: String -> IOMode -> Handle
-foreign import ccall primCloseChan :: Handle -> ()
-foreign import ccall primWriteChan :: Handle -> ByteArray -> ()
-foreign import ccall primFlushChan :: Handle -> ()
+foreign import ccall primOpenChan           :: String -> IOMode -> Handle
+foreign import ccall primCloseChan          :: Handle -> ()
+foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
+foreign import ccall primFlushChan          :: Handle -> ()
+foreign import ccall primChanGetChar        :: Handle -> Char
+foreign import ccall primChanGetContents    :: Handle -> String
 
 openFile    :: FilePath -> IOMode -> IO Handle
 openFile  f m = ioFromPrim (\_ -> primOpenChan f m)
@@ -2343,6 +2349,13 @@ hClose h = ioFromPrim (\_ -> primCloseChan h)
 putStr, putStrLn     :: String -> IO ()
 putStr   = hPutStr   stdout
 putStrLn = hPutStrLn stdout
+
+hGetChar     :: Handle -> IO Char
+hGetChar h = ioFromPrim (\_ -> primChanGetChar h)
+
+hGetContents     :: Handle -> IO String
+hGetContents h = ioFromPrim (\_ -> primChanGetContents h)
+
 
 {-----------------------------
 instance Functor IO where
@@ -2461,7 +2474,8 @@ fromObj = unsafeCoerce
 {-----------------------------
 newtype IO a = IO ((a -> IOResult) -> IOResult)
 -----------------------------}
-newtype IO a = IO (() -> IOResult a)
+data IOWorld
+newtype IO a = IO (IOWorld -> IOResult a)
 
 {-----------------------------
 data IOResult 

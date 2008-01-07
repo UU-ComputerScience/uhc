@@ -58,7 +58,9 @@ typedef struct GB_ByteArray {
 
 %%[98
 typedef struct GB_Chan {
-  FILE*		file ;
+  FILE*				file ;
+  struct GB_Node*	name ;
+  Bool				isText ;
 } GB_Chan ;
 %%]
 
@@ -901,7 +903,7 @@ extern GB_Byte gb_code_Startup[] ;
 extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
 extern GB_NodePtr gb_intl_throwException( GB_Word exc ) ;
 extern GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc ) ;
-extern GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename ) ;
+extern GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

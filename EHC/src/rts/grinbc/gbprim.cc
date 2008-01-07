@@ -59,14 +59,22 @@ PRIM GB_Word gb_UserError
 The definition of IOMode must coincide with the one in Prelude.hs
 
 %%[98
-PRIM GB_Word gb_AppendMode
+PRIM GB_Word gb_AppendBinaryMode
 	= GB_MkConEnumNodeAsTag( 0 ) ;
-PRIM GB_Word gb_ReadMode
+PRIM GB_Word gb_AppendMode
 	= GB_MkConEnumNodeAsTag( 1 ) ;
-PRIM GB_Word gb_ReadWriteMode
+PRIM GB_Word gb_ReadBinaryMode
 	= GB_MkConEnumNodeAsTag( 2 ) ;
-PRIM GB_Word gb_WriteMode
+PRIM GB_Word gb_ReadMode
 	= GB_MkConEnumNodeAsTag( 3 ) ;
+PRIM GB_Word gb_ReadWriteBinaryMode
+	= GB_MkConEnumNodeAsTag( 4 ) ;
+PRIM GB_Word gb_ReadWriteMode
+	= GB_MkConEnumNodeAsTag( 5 ) ;
+PRIM GB_Word gb_WriteBinaryMode
+	= GB_MkConEnumNodeAsTag( 6 ) ;
+PRIM GB_Word gb_WriteMode
+	= GB_MkConEnumNodeAsTag( 7 ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -851,19 +859,31 @@ PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum )
 	gb_listForceEval( &nmNd, &nmSz ) ;
 	char* nm = alloca( nmSz + 1 ) ;
 	gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ;	
-	// memcpy( nm, nmNd->content.bytearray.ptr, nmNd->content.bytearray.size ) ;
-	// nm[ nmNd->content.bytearray.size ] = 0 ;
 	nm[ nmSz ] = 0 ;
 	
 	char *mode ;
-	if ( GB_EnumIsEqual( modeEnum, gb_ReadMode ) )
+	Bool isText = True ;
+	if ( GB_EnumIsEqual( modeEnum, gb_ReadMode ) ) {
 		mode = "r" ;
-	else if ( GB_EnumIsEqual( modeEnum, gb_WriteMode ) )
+	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadBinaryMode ) ) {
+		mode = "rb" ;
+		isText = False ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteMode ) ) {
 		mode = "w" ;
-	else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteMode ) )
+	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteBinaryMode ) ) {
+		mode = "wb" ;
+		isText = False ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteMode ) ) {
 		mode = "r+" ;
-	else if ( GB_EnumIsEqual( modeEnum, gb_AppendMode ) )
+	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteBinaryMode ) ) {
+		mode = "r+b" ;
+		isText = False ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendMode ) ) {
 		mode = "a" ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendBinaryMode ) ) {
+		mode = "ab" ;
+		isText = False ;
+	}
 	
 	FILE *f = fopen( nm, mode ) ;
 	if ( f == NULL )
@@ -894,12 +914,14 @@ PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum )
 				break ;
 		}
 
-		gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename ) ;
+		return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
 	}
 	
 	GB_NodePtr chan ;
 	GB_NodeAlloc_Chan_In(chan) ;
 	chan->content.chan.file = f ;
+	chan->content.chan.name = nmNd ;
+	chan->content.chan.isText = isText ;
 	
 	return chan ;
 }
@@ -910,28 +932,102 @@ PRIM GB_NodePtr gb_primCloseChan( GB_NodePtr chan )
 	return gb_Unit ;
 }
 
-PRIM GB_NodePtr gb_primHGetChar( GB_NodePtr chan )
+GB_NodePtr gb_throwChanInteractionException( GB_NodePtr chan, char* strErr )
+{
+	GB_NodePtr ioe_handle ;
+	GB_Word    ioe_type ;
+	GB_NodePtr ioe_filename ;
+	
+	GB_MkMaybeJust( ioe_filename, chan->content.chan.name ) ;
+	GB_MkMaybeJust( ioe_handle, chan ) ;
+	return gb_intl_throwIOExceptionFromPrim( ioe_handle, gb_EOF, ioe_filename, strErr ) ;
+}
+
+GB_NodePtr gb_getChanEOFOrThrowExc( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof )
 {
 	FILE *f = chan->content.chan.file ;
-	int c = getc( f ) ;
-	GB_NodePtr res ;
-	if ( c == EOF ) {
-		if ( feof( f ) ) {
-			GB_MkListNil( res ) ;
-		} else {
-			GB_NodePtr ioe_handle ;
-			GB_Word    ioe_type ;
-			GB_NodePtr ioe_filename ;
-			
-			GB_MkMaybeNothing( ioe_filename ) ;
-			GB_MkMaybeJust( ioe_handle, chan ) ;
-			gb_intl_throwIOExceptionFromPrim( ioe_handle, gb_EOF, ioe_filename ) ;
+	if ( feof( f ) ) {
+		if ( throwExcForEOF ) {
+			return gb_throwChanInteractionException( chan, "EOF reached" ) ;
 		}
+		*isEof = True ;
+		return NULL ;
+	} else {
+		*isEof = False ;
+		return NULL ;
+	}
+}
+
+#define GB_getChanEOFOrThrowExc(chan,throwExcForEOF,isEof)			{ \
+																		GB_NodePtr xxx = gb_getChanEOFOrThrowExc(chan,throwExcForEOF,isEof)	; \
+																		if ( xxx != NULL ) \
+																			return xxx ; \
+																	}
+
+#define PassExc(action)												{ \
+																		GB_NodePtr xxx = action	; \
+																		if ( xxx != NULL ) \
+																			return xxx ; \
+																	}
+
+/*
+ * Read+return a char,
+ * unless at EOF which:
+ *   throws an exc if throwExcForEOF
+ *   or otherwise returns EOF in *isEof
+ */
+
+GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, int* pc )
+{
+	FILE *f = chan->content.chan.file ;
+	int c ;
+	
+	// printf( "%d ", feof( f ) ) ;
+	PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
+	if ( *isEof ) {
+		c == EOF ;
+	} else {
+		c = getc( f ) ;
+		if ( c == EOF ) {
+			PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
+		} else if ( c == '\r' && chan->content.chan.isText ) {
+			int c2 = getc( f ) ;
+			if ( c2 != '\n' && c2 != EOF ) {
+				ungetc( c2, f ) ;
+			}
+			c = '\n' ;
+		}
+	}
+	// printf( "%d %d %d\n", feof( f ), *isEof, c ) ;
+	*pc = c ;
+	return NULL ;
+}
+
+PRIM GB_NodePtr gb_primChanGetChar( GB_NodePtr chan )
+{
+	Bool isEof ;
+	int c ;
+	PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
+	return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
+}
+
+PRIM GB_NodePtr gb_primChanGetContents( GB_NodePtr chan )
+{
+	Bool isEof ;
+	GB_NodePtr res ;
+
+	int c ;
+	PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
+	if ( isEof ) {
+		GB_MkListNil( res ) ;
+	} else if ( c == EOF ) {
+		return gb_throwChanInteractionException( chan, strerror( errno ) ) ;
 	} else {
 		GB_NodePtr n ;
-		GB_MkCFunNode1In(n,&gb_primHGetChar,chan) ;
+		GB_MkCFunNode1In(n,&gb_primChanGetContents,chan) ;
 		GB_MkListCons(res,GB_Int2GBInt(c),n) ;
 	}
+	
 	return res ;
 }
 
