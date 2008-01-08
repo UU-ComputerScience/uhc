@@ -2312,9 +2312,16 @@ primitive stdin       :: Handle
 primitive stdout      :: Handle
 primitive stderr      :: Handle
 -----------------------------}
+{-----------------------------
 foreign import ccall "primStdin"  stdin  :: Handle
 foreign import ccall "primStdout" stdout :: Handle
 foreign import ccall "primStderr" stderr :: Handle
+-----------------------------}
+
+stdin, stdout, stderr :: Handle
+stdin  = primOpenChan "<stdin>"  ReadMode  (Just 0)
+stdout = primOpenChan "<stdout>" WriteMode (Just 1)
+stderr = primOpenChan "<stderr>" WriteMode (Just 2)
 
 {-----------------------------
 primitive openFile    :: FilePath -> IOMode -> IO Handle
@@ -2324,7 +2331,7 @@ primitive hGetChar    :: Handle -> IO Char
 primitive hPutChar    :: Handle -> Char -> IO ()
 primitive hPutStr     :: Handle -> String -> IO ()
 -----------------------------}
-foreign import ccall primOpenChan           :: String -> IOMode -> Handle
+foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> Handle
 foreign import ccall primCloseChan          :: Handle -> ()
 foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
 foreign import ccall primFlushChan          :: Handle -> ()
@@ -2332,7 +2339,7 @@ foreign import ccall primChanGetChar        :: Handle -> Char
 foreign import ccall primChanGetContents    :: Handle -> String
 
 openFile    :: FilePath -> IOMode -> IO Handle
-openFile  f m = ioFromPrim (\_ -> primOpenChan f m)
+openFile  f m = ioFromPrim (\_ -> primOpenChan f m Nothing)
 
 hPutStr, hPutStrLn     :: Handle -> String -> IO ()
 hPutStr   h s = do let (shd,stl) = splitAt 1000 s
@@ -2560,11 +2567,11 @@ basicIORun (IO m) = loop [m hugsReturn]
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
   catchTracedException m
-    (\(t,e) -> do { putStrLn ("Error: " ++ show e)
+    (\(t,e) -> do { hPutStrLn stderr ("Error: " ++ show e)
                   ; if null t
                     then return ()
-                    else do { putStrLn "Trace:"
-                            ; mapM_ (\(k,s) -> putStrLn ("  " ++ show k ++ ": " ++ s)) $ reverse t
+                    else do { hPutStrLn stderr "Trace:"
+                            ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ show k ++ ": " ++ s)) $ reverse t
                             }
                   ; exitWith 1
                   }

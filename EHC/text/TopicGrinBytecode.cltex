@@ -1906,6 +1906,31 @@ To tie the knot for mutual recursive structures on a non-global level (linking s
 \end{GrinEncoding}
 %%]
 
+\subsubsection{Halt}
+
+\begin{GrinEncoding}{|halt|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1111| &
+ &
+\\
+\end{GrinEncoding}
+%%]
+
+\subsubsection{Reset thrown exception}
+
+Reset the global interpreter variable holding the thrown exception to |NULL|.
+The variable is used to indicate exception handling throughout C primitive calls.
+
+\begin{GrinEncoding}{|resetexc|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1110| &
+ &
+\\
+\end{GrinEncoding}
+%%]
+
 %%[grinBExampleTranslations
 %%[[wrap=code
 ; $x2 

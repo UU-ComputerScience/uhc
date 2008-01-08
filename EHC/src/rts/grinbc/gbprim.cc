@@ -128,9 +128,9 @@ PRIM GB_NodePtr gb_primIntToDouble( GB_Int x )
 #if USE_GMP
 PRIM GB_NodePtr gb_primRationalToFloat( GB_NodePtr nr )
 {
-	GB_NodePtr nf ;
-	GB_NodePtr numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ;
-	GB_NodePtr divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ;
+	GB_NodePtr nf, numerator, divisor ;
+	GB_PassExc( numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExc( divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	GB_NodeAlloc_Float_In(nf) ;
 	nf->content.flt = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
 	return nf ;
@@ -138,9 +138,9 @@ PRIM GB_NodePtr gb_primRationalToFloat( GB_NodePtr nr )
 
 PRIM GB_NodePtr gb_primRationalToDouble( GB_NodePtr nr )
 {
-	GB_NodePtr nf ;
-	GB_NodePtr numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ;
-	GB_NodePtr divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ;
+	GB_NodePtr nf, numerator, divisor ;
+	GB_PassExc( numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExc( divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	GB_NodeAlloc_Double_In(nf) ;
 	nf->content.dbl = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
 	return nf ;
@@ -659,7 +659,11 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 	int bufInx = 0 ;
 	int sz = 99 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
+%%[[8
 	gb_listForceEval( &n, &sz ) ;
+%%][96
+	GB_PassExc( gb_listForceEval( &n, &sz ) ) ;
+%%]]
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
@@ -719,18 +723,28 @@ GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 
 PRIM GB_NodePtr gb_primByteArrayToString( GB_Word a )
 {
-	GB_NodePtr n = Cast( GB_NodePtr, gb_eval( a ) ) ;
+	GB_NodePtr n ;
+%%[[95
+	n = Cast( GB_NodePtr, gb_eval( a ) ) ;
+%%][96
+	GB_PassExc( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
+%%]]
   	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
 }
 
 PRIM GB_Word gb_primByteArrayLength( GB_Word a )
 {
-	GB_NodePtr n = Cast( GB_NodePtr, gb_eval( a ) ) ;
+	GB_NodePtr n ;
+%%[[95
+	n = Cast( GB_NodePtr, gb_eval( a ) ) ;
+%%][96
+	GB_PassExcAsWord( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
+%%]]
   	return GB_Int2GBInt(n->content.bytearray.size) ;
 }
 
 /*
-  In the following function gb_eval(GB_List_Head(n)) must be put into a local var,
+  In the following function gb_eval(GB_List_Head(n)) must be stored into a local var (here: xx),
   inlining produces a faulty program.
   Reason unknown :-(.
 */
@@ -739,13 +753,21 @@ PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 {
 	GB_NodePtr n2 ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray1 sz=%d n=%x\n", sz, n ););
+%%[[95
 	gb_listForceEval( &n, &sz ) ;
+%%][96
+	GB_PassExc( gb_listForceEval( &n, &sz ) ) ;
+%%]]
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%x\n", sz, n ););
 	GB_NodeAlloc_Malloc2_In( sz, n2 ) ;
 	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
 	int bufInx = 0 ;
+%%[[95
 	GB_List_Iterate(n,sz,{GB_Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
-	// GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
+%%][96
+	GB_List_Iterate(n,sz,{GB_Word xx ; GB_PassExc(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
+%%]]
+	// does not work: GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray4 bufInx=%d, n=%x buf=", bufInx, n ););
   	IF_GB_TR_ON(3,{int i ; for (i = 0 ; i < bufInx ; i++) {printf(" %d",s[i]);};});
   	IF_GB_TR_ON(3,printf("\n"););
@@ -824,7 +846,6 @@ PRIM GB_NodePtr gb_primThrowException( GB_Word exc )
 %%% IO Channels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[98
 PRIM GB_NodePtr gb_primStdin()
 {
   	return gb_chan_stdin ;
@@ -840,6 +861,7 @@ PRIM GB_NodePtr gb_primStderr()
 {
   	return gb_chan_stderr ;
 }
+%%[98
 
 PRIM GB_Word gb_primEqChan( GB_NodePtr chan1, GB_NodePtr chan2 )
 {
@@ -853,13 +875,25 @@ PRIM GB_Word gb_primChanNumber( GB_NodePtr chan )
 	return GB_Int2GBInt( fileno(chan->content.chan.file) ) ;
 }
 
-PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum )
+/*
+ * mbHandleNr to be used only for std{in,out,err}, ignoring the opening mode.
+ */
+
+PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr mbHandleNr )
 {
 	int nmSz = 0 ;
-	gb_listForceEval( &nmNd, &nmSz ) ;
+	GB_PassExc( gb_listForceEval( &nmNd, &nmSz ) ) ;
 	char* nm = alloca( nmSz + 1 ) ;
-	gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ;	
+	GB_PassExc( gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ) ;	
 	nm[ nmSz ] = 0 ;
+
+	GB_PassExc( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(GB_Word,mbHandleNr) ) ) ) ;
+	Bool mbHandleNrIsJust = False ;
+	GB_Word mbHandleNrFromJust ;
+	if ( GB_NH_Fld_Tag(mbHandleNr->header) == GB_Tag_Maybe_Just ) {
+		mbHandleNrIsJust = True ;
+		GB_PassExc( mbHandleNrFromJust = gb_eval( mbHandleNr->content.fields[0] ) ) ;
+	}
 	
 	char *mode ;
 	Bool isText = True ;
@@ -885,7 +919,16 @@ PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum )
 		isText = False ;
 	}
 	
-	FILE *f = fopen( nm, mode ) ;
+	FILE *f = NULL ;
+	if ( mbHandleNrIsJust ) {
+		switch( GB_GBInt2Int( mbHandleNrFromJust ) ) {
+			case 0: f = stdin  ; break ;
+			case 1: f = stdout ; break ;
+			case 2: f = stderr ; break ;
+		}
+	} else {
+		f = fopen( nm, mode ) ;
+	}
 	if ( f == NULL )
 	{
 		GB_NodePtr ioe_handle ;
@@ -958,18 +1001,6 @@ GB_NodePtr gb_getChanEOFOrThrowExc( GB_NodePtr chan, Bool throwExcForEOF, Bool* 
 	}
 }
 
-#define GB_getChanEOFOrThrowExc(chan,throwExcForEOF,isEof)			{ \
-																		GB_NodePtr xxx = gb_getChanEOFOrThrowExc(chan,throwExcForEOF,isEof)	; \
-																		if ( xxx != NULL ) \
-																			return xxx ; \
-																	}
-
-#define PassExc(action)												{ \
-																		GB_NodePtr xxx = action	; \
-																		if ( xxx != NULL ) \
-																			return xxx ; \
-																	}
-
 /*
  * Read+return a char,
  * unless at EOF which:
@@ -983,13 +1014,13 @@ GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, in
 	int c ;
 	
 	// printf( "%d ", feof( f ) ) ;
-	PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
+	GB_PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
 	if ( *isEof ) {
 		c == EOF ;
 	} else {
 		c = getc( f ) ;
 		if ( c == EOF ) {
-			PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
+			GB_PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
 		} else if ( c == '\r' && chan->content.chan.isText ) {
 			int c2 = getc( f ) ;
 			if ( c2 != '\n' && c2 != EOF ) {
@@ -1007,7 +1038,7 @@ PRIM GB_NodePtr gb_primChanGetChar( GB_NodePtr chan )
 {
 	Bool isEof ;
 	int c ;
-	PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
+	GB_PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
 	return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
 }
 
@@ -1017,7 +1048,7 @@ PRIM GB_NodePtr gb_primChanGetContents( GB_NodePtr chan )
 	GB_NodePtr res ;
 
 	int c ;
-	PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
+	GB_PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
 	if ( isEof ) {
 		GB_MkListNil( res ) ;
 	} else if ( c == EOF ) {
