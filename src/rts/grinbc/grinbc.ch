@@ -380,6 +380,28 @@ extern GB_NodePtr gb_copyCStringFromEvalString( char* cString, GB_NodePtr hsStri
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exceptions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[96
+extern GB_NodePtr gb_ThrownException ;
+extern int gb_ThrownException_NrOfEvalWrappers ;
+
+#define GB_PassExcWith(action,extratest,whenexc) \
+											{ \
+												action	; \
+												if ( gb_ThrownException != NULL && extratest ) {\
+													IF_GB_TR_ON(3,{printf("GB_PassExcWith exc=%x\n",gb_ThrownException) ;}) ; \
+													whenexc ; \
+												} \
+											}
+
+#define GB_PassExc(action)					GB_PassExcWith(action,True,return gb_ThrownException)
+#define GB_PassExcAsWord(action)			GB_PassExcWith(action,True,return Cast(GB_Word,gb_ThrownException))
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% IOException
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -556,9 +578,10 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 #define GB_CallInfo_Kind_Hdlr    		10			// exception handler installment
 #define GB_CallInfo_Kind_EvAppFunCont  	11			// apply fun eval update continuation
 #define GB_CallInfo_Kind_EvAppFunEvCont 12			// apply fun eval update eval continuation
-%%]
-%%[96
+%%[[96
 #define GB_CallInfo_Kind_IntlCCall		13			// internal C call which must look like foreign function call (for exception handling)
+%%]]
+#define GB_CallInfo_Kind_EvalTopWrap  	14			// top level eval call wrapper
 %%]
 
 Retrieval of call info given a bp
@@ -868,6 +891,10 @@ typedef __mpz_struct*  GB_mpz ;
 #define GB_InsExt_Halt							0xFF
 %%]
 
+%%[96
+#define GB_InsExt_ResetThrownException			0xFE
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface with interpreter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -910,11 +937,11 @@ extern GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Wo
 %%% IO Channels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[98
 extern GB_NodePtr gb_chan_stdin ;
 extern GB_NodePtr gb_chan_stdout ;
 extern GB_NodePtr gb_chan_stderr ;
 
+%%[98
 extern void gb_chan_initstd() ;
 %%]
 
