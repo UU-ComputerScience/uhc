@@ -303,7 +303,7 @@ static GB_Byte gb_code_ExcHdl_EvalValue[] =
 #endif
   , GB_Ins_RetCall, GB_InsOp_ImmSz_08<<2 | GB_InsOp_ImmSz_08
   , sizeof(GB_Word)		// nArgMine
-  , sizeof(GB_Word)		// nArgSurr
+  , 2*sizeof(GB_Word)	// nArgSurr
   } ;
 
 static GB_Byte gb_code_ExcHdl_NormalReturn_MarkedAsHandler[] =
@@ -313,7 +313,7 @@ static GB_Byte gb_code_ExcHdl_NormalReturn_MarkedAsHandler[] =
 #endif
   , GB_Ins_RetCall, GB_InsOp_ImmSz_08<<2 | GB_InsOp_ImmSz_08
   , sizeof(GB_Word)		// nArgMine
-  , 2*sizeof(GB_Word)	// nArgSurr
+  , 3*sizeof(GB_Word)	// nArgSurr
   } ;
 
 static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
@@ -323,7 +323,7 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 #endif
   , GB_Ins_Ext, GB_InsExt_ResetThrownException
   , GB_Ins_Ld(GB_InsOp_Deref0, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Imm, GB_InsOp_ImmSz_08), 1
-  , GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08), (3+GB_CallRetNrWords)*sizeof(GB_Word)	// after: 1, exc, bp, ret, expr
+  , GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08), (4+GB_CallRetNrWords)*sizeof(GB_Word)	// after: 1, exc, bp, ret, 2, expr
   , GB_Ins_Eval(GB_InsOp_LocB_TOS)
   , 0, 0, 0, 0
 #if USE_64_BITS
@@ -336,15 +336,7 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 #endif
   , GB_Ins_RetCall, GB_InsOp_ImmSz_08<<2 | GB_InsOp_ImmSz_08
   , sizeof(GB_Word)		// nArgMine
-  , 2*sizeof(GB_Word)	// nArgSurr
-  } ;
-
-static GB_Byte gb_code_ThrowException[] =
-  { GB_Ins_CallC, GB_InsOp_ImmSz_08, 1
-  , 0, 0, 0, 0
-#if USE_64_BITS
-  , 0, 0, 0, 0
-#endif
+  , 3*sizeof(GB_Word)	// nArgSurr
   } ;
 
 #define GB_InitPatch_gb_code_ExcHdl_EvalValue \
@@ -358,10 +350,18 @@ static GB_Byte gb_code_ThrowException[] =
 									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[7+sizeof(GB_CallInfo_Inline)]    ) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
 									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[8+2*sizeof(GB_CallInfo_Inline)]  ) = Cast(GB_Word,&gb_callinfo_Apply) ; \
 									}
-#define GB_InitPatch_gb_code_ThrowException \
-									*Cast(GB_Ptr,&gb_code_ThrowException[3]         							) = Cast(GB_Word,&gb_callinfo_IntlCCall)
 
 %%]
+static GB_Byte gb_code_ThrowException[] =
+  { GB_Ins_CallC, GB_InsOp_ImmSz_08, 1
+  , 0, 0, 0, 0
+#if USE_64_BITS
+  , 0, 0, 0, 0
+#endif
+  } ;
+
+#define GB_InitPatch_gb_code_ThrowException \
+									*Cast(GB_Ptr,&gb_code_ThrowException[3]         							) = Cast(GB_Word,&gb_callinfo_IntlCCall)
 
 %%[99
 %%]
@@ -858,7 +858,17 @@ void gb_prState( char* msg, int maxStkSz )
 				prepCallAdmin ;												/* sp points to call admin (if any),*/							\
 				restorePrevCallAdmin ;										/* which is assigned here			*/							\
 				jumpDst ;													/* jump to dst						*/
+%%]
 
+Calling C:
+The interpreter has two entry points to C code:
+- plain/directly
+- via closure
+Both have a different stack setup, which is not ideal for understanding, so may well change.
+The tricky point is exception handling which makes assumptions about the stack setup.
+The code is split up in preamble + call + postamble, where call is only necessary for the closure based call, plus postamble when an exception did occur.
+
+%%[8
 #define GB_CallC_Code(f,nargs,args,res) \
 				IF_GB_TR_ON(3,printf("GB_CallC_Code1 f %x nargs %d\n", f, nargs );); \
 				switch ( nargs )																																								\
@@ -875,7 +885,19 @@ void gb_prState( char* msg, int maxStkSz )
 						break ;																																									\
 				} \
 				IF_GB_TR_ON(3,printf("GB_CallC_Code2 f %x res %x\n", f, res ););
+#define GB_CallC_Code_Preamble(nargs) \
+				GB_SetTOS(nargs) ;											/* push nr of args			 						*/		\
+				GB_Push(pc) ;												/* setup call admin to look the same as normal 		*/		\
+				GB_BP_Link ;
+#define GB_CallC_Code_Postamble(nargs,res) \
+				GB_BP_UnlinkSP ;																										\
+				GB_PopCastedIn(GB_BytePtr,pc) ;																							\
+				GB_PopIn(nargs) ;											/* get nr of args									*/		\
+				sp = GB_RegRel(sp,nargs) ;									/* pop args											*/		\
+				GB_Push(res) ;
+%%]
 
+%%[8
 #define GB_UpdWithIndirection_Code_Tmp(nOld,xNew,nNew,h,tmpp1,tmpp2,tmpp3,setRes) 													\
 				if (  GB_Word_IsPtr(xNew)																							\
 				   && (GB_NH_Fld_Size((nNew = Cast(GB_NodePtr,xNew))->header) <= GB_NH_Fld_Size(nOld->header))						\
@@ -1170,14 +1192,8 @@ gb_interpreter_InsCallEntry:
 
 			/* casecall */
 			case GB_Ins_CaseCall :
-				/*
-				GB_PCExtIn(x) ;
-				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ;
-				*/
 				p = Cast(GB_Ptr,pc) ;										// start of table after instr						
-				// n = Cast(GB_NodePtr,GB_TOS) ;							// scrutinee is node 								
 				GB_PopIn(x) ;												// tag of scrutinee is on TOS
-				// dst = Cast(GB_BytePtr,p[GB_NH_Fld_Tag(n->header)]) ;		// destination from following table, indexed by tag
 				dst = Cast(GB_BytePtr,p[GB_GBInt2Int(x)]) ;					// destination from following table, indexed by tag
 				pc = dst ;													// jump 											
 				break ;
@@ -1189,17 +1205,13 @@ gb_interpreter_InsCallEntry:
 				GB_Skip_CallInfoPtr ;
 				p = GB_SPRel(1) ;											/* args												*/
 				x = GB_TOS ;												/* function											*/
-				GB_SetTOS(pc) ;												/* setup call admin to look the same as normal 		*/
-				GB_BP_Link ;
+				GB_CallC_Code_Preamble(x2) ;
 				GB_CallC_Code(x,x2,p,x) ;
 %%[[96
-				IF_GB_TR_ON(3,{printf("GB_Ins_CallC: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 				GB_PassExcWith(,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 %%]]
-				GB_BP_UnlinkSP ;
-				GB_PopCastedIn(GB_BytePtr,pc) ;
-				sp = GB_RegRel(sp,x2) ;
-				GB_Push(x) ;
+				GB_CallC_Code_Postamble(x2,x) ;
 				break ;
 
 			/* retcase */
@@ -1255,8 +1267,20 @@ gb_interpreter_InsEvalEntry:
 									x2 = x ;                                                        /* remember val + pc 				*/
 									retSave = Cast(GB_Word,pc) ;
 									n->header = GB_NH_SetFld_NdEv(h,GB_NodeNdEv_BlH) ;				/* may not be eval'd when eval'd	*/
+									// no preamble, C call is done directly with args from node, without nr of args pushed
 									GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+%%[[8
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
+%%][96
+									IF_GB_TR_ON(3,{printf("GB_Ins_Eval.GB_NodeTagCat_CFun: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
+									GB_PassExcWith(,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
+									if ( gb_ThrownException ) {
+										// postamble only because we now know we end up in a handler, which uses the default convention
+										GB_CallC_Code_Postamble(x2,x) ;
+									} else {
+										goto gb_interpreter_InsEvalUpdContEntry ;					/* update with result				*/
+									}
+%%]]
 									break ;
 								case GB_NodeTagCat_App :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
@@ -1506,12 +1530,15 @@ See GBM doc for explanation.
 %%[96
 GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 {
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException\n", bp) ;}) ;
 	GB_Push( e ) ;																							// build stack frame which just returns the value
+	GB_Push( 1 ) ;
 	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[sizeof(GB_CallInfo_Inline)]) ) ;		// return, marked as handler
 	GB_BP_Link ;
 	
 	GB_Push( handler ) ;																					// build adapted copy of primitive stack frame
 	GB_Push( e ) ;
+	GB_Push( 2 ) ;
 	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_EvalValue[sizeof(GB_CallInfo_Inline)]) ) ;						// with return to evaluation code
 	GB_BP_Link ;
 	
@@ -1566,6 +1593,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	} else {
 		gb_panic( "uncaught exception" ) ;
 	}
+	IF_GB_TR_ON(3,{printf("gb_intl_throwException:4: sp=%x bp=%x\n", sp, bp) ;}) ;
 	
 	GB_MkTupNode2_In(n,reifiedBackTrace,exc) ;																// tuple with backtrace
 	return (gb_ThrownException = n) ;
@@ -1633,7 +1661,7 @@ void gb_Initialize()
 	GB_InitPatch_gb_code_ExcHdl_EvalValue ;
 	GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler ;
 	GB_InitPatch_gb_code_ExcHdl_ThrowReturn ;
-	GB_InitPatch_gb_code_ThrowException ;
+	// GB_InitPatch_gb_code_ThrowException ;
 %%]]
 %%[[99
 	// GB_InitPatch_gb_code_Startup ;

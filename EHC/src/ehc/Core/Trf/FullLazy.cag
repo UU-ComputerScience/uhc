@@ -7,7 +7,7 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.FullLazy} import(Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFullLazy)
+%%[8 hs module {%{EH}Core.Trf.FullLazy} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFullLazy)
 %%]
 
 %%[8 hs import({%{EH}Base.Debug})
@@ -108,38 +108,38 @@ SEM CPatBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type LevBindSq = Seq (Int,(CBindCateg,CBindL))
+type LevBindSq = Seq.FastSeq (Int,(CBindCateg,CBindL))
 
 levBindSplit :: Int -> LevBindSq -> (LevBindSq,LevBindSq)
 levBindSplit lev b
-  =  let (b1,b2) = partition (\(l,_) -> l >= lev) $ seqToList b
-     in  (mkSeq b1,mkSeq b2)
+  =  let (b1,b2) = partition (\(l,_) -> l >= lev) $ Seq.toList b
+     in  (Seq.fromList b1,Seq.fromList b2)
 %%]
 
 %%[8
-ATTR AllCodeNT [ | | levBindSq USE {<+>} {emptySeq}: LevBindSq ]
+ATTR AllCodeNT [ | | levBindSq USE {:++:} {Seq.empty}: LevBindSq ]
 ATTR AllBind [ | | bindL USE {++} {[]}: {AssocL Int CBind} ]
 
 SEM CExpr
-  | App         lhs         .   levBindSq   =   @arg.levBindSq <+> @func.levBindSq <+> @levBindSq
-  | Case        lhs         .   levBindSq   =   @expr.levBindSq <+> @alts.levBindSq <+> @dflt.levBindSq <+> @levBindSq
-  | TupDel      lhs         .   levBindSq   =   @expr.levBindSq <+> @offset.levBindSq <+> @levBindSq
+  | App         lhs         .   levBindSq   =   @arg.levBindSq :++: @func.levBindSq :++: @levBindSq
+  | Case        lhs         .   levBindSq   =   @expr.levBindSq :++: @alts.levBindSq :++: @dflt.levBindSq :++: @levBindSq
+  | TupDel      lhs         .   levBindSq   =   @expr.levBindSq :++: @offset.levBindSq :++: @levBindSq
   | TupIns TupUpd
-                lhs         .   levBindSq   =   @expr.levBindSq <+> @offset.levBindSq <+> @fldExpr.levBindSq <+> @levBindSq
+                lhs         .   levBindSq   =   @expr.levBindSq :++: @offset.levBindSq :++: @fldExpr.levBindSq :++: @levBindSq
   | Let         (loc.hereBindSq,loc.remBindSq)
                                             =   let ((hl,_):_) = @binds.bindL
                                                     b1  = @binds.levBindSq
-                                                    b2  = unitSeq (@strLev hl,(@categ,assocLElts @binds.bindL))
-                                                    b12 = unitSeq (@maxBindLev,(CBindRec,concat . map (\(_,(_,b)) -> b) . seqToList $ (b1 <+> b2)))
+                                                    b2  = Seq.singleton (@strLev hl,(@categ,assocLElts @binds.bindL))
+                                                    b12 = Seq.singleton (@maxBindLev,(CBindRec,concat $ List.map (\(_,(_,b)) -> b) $ Seq.toList $ (b1 :++: b2)))
                                                     b3  = @body.levBindSq
                                                     b   = case @categ of 
-                                                            CBindRec  -> b12 <+> b3
-                                                            _         -> b1  <+> b2 <+> b3
-                                                in  (b,emptySeq)
-                lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
+                                                            CBindRec  -> b12 :++: b3
+                                                            _         -> b1  :++: b2 :++: b3
+                                                in  (b,Seq.empty)
+                lhs         .   levBindSq   =   @remBindSq :++: @levBindSq
   | Lam         loc         .   (hereBindSq,remBindSq)
-                                            =   (@body.levBindSq,emptySeq) -- levBindSplit @lev @body.levBindSq
-                lhs         .   levBindSq   =   @remBindSq <+> @levBindSq
+                                            =   (@body.levBindSq,Seq.empty) -- levBindSplit @lev @body.levBindSq
+                lhs         .   levBindSq   =   @remBindSq :++: @levBindSq
 
 SEM CBind
   | Bind        lhs         .   bindL       =   [(@expr.levOf,@cTrf)]
@@ -147,7 +147,7 @@ SEM CBind
 
 SEM CAlt
   | Alt         (loc.hereBindSq,lhs.levBindSq)
-                                            =   (@expr.levBindSq,emptySeq)
+                                            =   (@expr.levBindSq,Seq.empty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,15 +238,15 @@ SEM CAlt
 mkTrf :: Bool -> Int -> Int -> HsName -> CMeta -> CExpr -> (CExpr,LevBindSq)
 mkTrf cond outerLev hereLev n m e
   =  if cond
-     then (CExpr_Var n,unitSeq (hereLev,(CBindPlain,[mkCBind1Meta n m e])))
-     else (e,emptySeq)
+     then (CExpr_Var n,Seq.singleton (hereLev,(CBindPlain,[mkCBind1Meta n m e])))
+     else (e,Seq.empty)
 %%]
 
 %%[8 hs
 mkLetTrf' :: LevBindSq -> CExpr -> (Bool,CExpr)
 mkLetTrf' bs ce
-  =  let  l = seqToList bs
-     in   (not (null l),foldr (\(_,(c,b)) e -> mkCExprLet c b e) ce l)
+  =  let  l = Seq.toList bs
+     in   (not (List.null l),foldr (\(_,(c,b)) e -> mkCExprLet c b e) ce l)
 
 mkLetTrf :: LevBindSq -> CExpr -> CExpr
 mkLetTrf bs ce = snd (mkLetTrf' bs ce)
@@ -280,7 +280,7 @@ SEM CExpr
   | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta
                                                           . mkCExprLam1Meta @arg @argMeta.cTrf
                                                           . mkLetTrf @hereBindSq
-                                                in  if cexprIsLam @body.cTrf && not (null (seqToList @hereBindSq))
+                                                in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
                                                     then mkTLB (CExpr_Let CBindPlain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
                                                     else mkTLB @body.cTrf
   | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta $ mkLetTrf @hereBindSq @body.cTrf
