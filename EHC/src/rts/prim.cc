@@ -124,11 +124,10 @@ PRIM GrWord primUnsafeId(GrWord x)
 {   return x ;
 }
 
-PRIM GrWord primUndefined()
+PRIM void primExitFun( GrWord x)
 {
-    printf("attempt tot evaluate undefined\n");
-    exit(1);
-    return 0;
+
+  printf( "Exit function %d\n", x);
 }
 
 PRIM void primPatternMatchFailure()

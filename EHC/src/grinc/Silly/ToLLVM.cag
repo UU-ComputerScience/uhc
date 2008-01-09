@@ -89,6 +89,9 @@ SEM SilModule
                                                      @loc.constants 
                                                      @loc.globals 
                                                      ( @loc.printfDecl
+                                                     : gcInitFuncDecl
+                                                     : gcMallocFuncDecl @lhs.intType
+                                                     : gcMallocUncollectableFuncDecl @lhs.intType
                                                      : primPatternMatchFailureFuncDecl
                                                      : @functions.externFuncs 
                                                      )
@@ -111,8 +114,8 @@ SEM SilModule
                                  (FuncDecl_FuncDecl "main" I32 False []) False
                                  [ Stmt_Assignment 
                                      (LocalVar "rpArr" @lhs.pointerType)
-                                     (Expression_Malloc @lhs.intType 
-                                                        (1 + @functions.maxRPSize)
+                                     (mkMalloc True @lhs.intType 
+                                                    (1 + @functions.maxRPSize)
                                      )
                                  , Stmt_Store
                                      (LocalVar "rpArr" @lhs.pointerType)
@@ -413,7 +416,7 @@ SEM Values
        
 SEM Value
   | Alloc       lhs.llvmExpr = Right
-                               ( Expression_Malloc @lhs.intType @size
+                               ( mkMalloc False @lhs.intType @size
                                , @lhs.pointerType)
                 lhs.llvmCode = []
 
@@ -717,6 +720,19 @@ primPatternMatchFailureFuncDecl :: FuncDecl
 primPatternMatchFailureFuncDecl =
   FuncDecl_FuncDecl "primPatternMatchFailure" Void False [] 
 
+gcInitFuncDecl :: FuncDecl
+gcInitFuncDecl =
+  FuncDecl_FuncDecl "llvmgc_init" Void False []
+  
+gcMallocFuncDecl :: LLVMType -> FuncDecl
+gcMallocFuncDecl intType =
+  FuncDecl_FuncDecl "llvmgc_malloc" (pLift intType) False [(LocalVar "x" intType)] 
+
+gcMallocUncollectableFuncDecl :: LLVMType -> FuncDecl
+gcMallocUncollectableFuncDecl intType =
+  FuncDecl_FuncDecl "llvmgc_malloc_uncollectable" (pLift intType) 
+                    False [(LocalVar "x" intType)] 
+
 defaultCase :: UID -> (UID,Var,Stmts)
 defaultCase nr =
   let (nr1, fresh1) = newFresh nr Label
@@ -732,6 +748,17 @@ toExpr (Left var) = Expression_Cast var (getType var)
 toVar :: LLVMExpr -> Var
 toVar (Right _)  = error "Expression toVar"
 toVar (Left var) = var
+
+mkMalloc :: Bool -> LLVMType -> Int -> Expression
+mkMalloc unCollectable intType nrInts =
+  if rtsUseGC
+  then let size = nrInts * sizeofPointer
+        in if unCollectable
+           then Expression_Call (gcMallocUncollectableFuncDecl intType) 
+                                False [Constant size intType]
+           else Expression_Call (gcMallocFuncDecl intType)
+                                False [Constant size intType]
+  else Expression_Malloc intType nrInts
 
 -- Make a list of variables with a given constructor, a list of HsNames and
 -- one type

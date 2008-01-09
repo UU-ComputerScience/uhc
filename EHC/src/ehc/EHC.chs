@@ -1376,7 +1376,11 @@ cpCompileWithLLVM modNm
                                     (\s -> fpathSetSuff s fp) 
                                     Cfg.mbSuffixExec
               libs          = [ Cfg.fileprefixInplaceInstall 
-                              ++ "%%@{%{VARIANT}%%}/lib/prim.o"
+                                ++ "%%@{%{VARIANT}%%}/lib/prim.o"
+                              , Cfg.fileprefixInplaceInstall 
+                                ++ "%%@{%{VARIANT}%%}/lib/llvm-gc.o"
+                              , Cfg.fileprefixInplaceInstall
+                                ++ "non-threaded/lib/libgc.a"
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]

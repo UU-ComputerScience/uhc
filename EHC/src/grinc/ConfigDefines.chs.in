@@ -12,7 +12,7 @@
 %%[8 export(sizeofPointer)
 #undef SIZEOF_UINTPTR_T
 
-sizeofPointer :: Integer
+sizeofPointer :: Int
 sizeofPointer = SIZEOF_UINTPTR_T
 %%]
 
@@ -48,9 +48,13 @@ machineIsBigEndian = mkB BIGENDIAN
 %%% RTS related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(rtsGlobalVarPrefix)
+%%[8 export(rtsGlobalVarPrefix, rtsUseGC)
 #undef RTS_GLOBAL_VAR_PREFIX
+#undef USE_BOEHM_GC
 
 rtsGlobalVarPrefix :: String
 rtsGlobalVarPrefix = RTS_GLOBAL_VAR_PREFIX
+
+rtsUseGC :: Bool
+rtsUseGC = mkB USE_BOEHM_GC
 %%]
