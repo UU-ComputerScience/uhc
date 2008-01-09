@@ -59,7 +59,7 @@
 %%]
 
 %%[22
-%%@main.articleDocumentClass
+\documentclass[a4paper]{report}
 %%]
 
 %%[26
@@ -569,7 +569,7 @@
 %%]
 
 %%[22
-\SetSectionsForArticle
+\SetSectionsForBook
 %%]
 
 %%[77

@@ -2255,7 +2255,7 @@ To be more precise, the following sequence of catch + throw is executed:
  \GriniStateAfter{%
  }{%
  }{%
-  |(gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |(gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2265,7 +2265,7 @@ To be more precise, the following sequence of catch + throw is executed:
  \GriniStateAfter{%
  }{%
  }{%
-  |e : (gframep''' :-> gframep'') : gb_code_ExcHdl_EvalValue : e : h : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |e : (gframep''' :-> gframep'') : gb_code_ExcHdl_EvalValue : 2 : e : h : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2277,8 +2277,8 @@ To be more precise, the following sequence of catch + throw is executed:
 where
 
 %%[[wrap=code
-callinfoHdlr                                : (gb_code_ExcHdl_NormalReturn_MarkedAsHandler  :-> retcall 1 2)                                        -- remove primCatchException stack frame
-callinfoExcHdlEvalValue                     : (gb_code_ExcHdl_EvalValue                     :-> evalt) : callinfoEvWrap : retcall 1 2               -- eval expr and return
+callinfoHdlr                                : (gb_code_ExcHdl_NormalReturn_MarkedAsHandler  :-> retcall 1 3)                                        -- remove primCatchException stack frame
+callinfoExcHdlEvalValue                     : (gb_code_ExcHdl_EvalValue                     :-> evalt) : callinfoEvWrap : retcall 1 1               -- eval expr and return
 %%]]
 
 At this point the stack is set up such that the expression |e| passed to |primCatchException| will be evaluated after the return from the C call to |primCatchException|.
@@ -2286,12 +2286,17 @@ After a normal evaluation the stack will unwind through the frames, which just r
 When an exception |exc| occurs the stack is unwound until a frame marked with |callinfoHdlr| is encountered.
 This marks the presence of a handler, which is then invoked.
 
+Note also that the number of arguments of a C call is pushed as well. This is done internally (currently) as part of the interpreter implementation of |callc|,
+and is required because an exception can be thrown by other primitives than |primThrowException|.
+The handling of the |callc| can then no longer assume it knows how much arguments are to be popped from the stack.
+The number of arguments must therefore be part of the C call.
+
 \begin{GriniSteps}
  \GriniStateBefore{%
  }{%
   |callc 1 : callinfoCCall : gcode|
  }{%
-  |primThrowException : exc : ... : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |primThrowException : exc : ... : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2300,8 +2305,19 @@ This marks the presence of a handler, which is then invoked.
 \\
  \GriniStateAfter{%
  }{%
+  \mbox{internal C call return}
  }{%
-  |exc : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : e : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |(trace,exc) : (gframep'' :-> gframep') : gb_code_ExcHdl_NormalReturn_MarkedAsHandler : 1 : e : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep''|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+ }{%
+  |(trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2313,7 +2329,7 @@ This marks the presence of a handler, which is then invoked.
 After unwinding, the stack is set up such that the call to |primThrowException| returns to code which calls the handler:
 
 %%[[wrap=code
-callinfoCall                     : (gb_code_ExcHdl_ThrowReturn                     :-> ldi 1) : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2              -- call handler
+callinfoCall                     : (gb_code_ExcHdl_ThrowReturn                     :-> ldi 1) : ldl 6 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 3              -- call handler
 %%]]
 
 During unwinding all thunks under evaluation are replaced by an indirection node to the thrown exception |exc|.
@@ -2323,20 +2339,9 @@ The unwound part of the stack is reified as a trace |trace|, tupled with the exc
 \begin{GriniSteps}
  \GriniStateAfter{%
  }{%
-  |ldi 1 : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2|
+  |ldi 1 : ldl 5 : evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 3|
  }{%
-  |(trace,exc) : (gframep' :-> gframep) : gcode : e : h : gstack|
- }{%
-  |gheap|
- }{
-  |gframep = gframep'|
- }{}
-\\
- \GriniStateAfter{%
- }{%
-  |evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 2|
- }{%
-  |h : 1 : (trace,exc) : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |(trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
  }{%
   |gheap|
  }{
@@ -2345,9 +2350,20 @@ The unwound part of the stack is reified as a trace |trace|, tupled with the exc
 \\
  \GriniStateAfter{%
  }{%
-  |retcall 1 2|
+  |evalt : callinfoEvWrap : applyt : callinfoApply : retcall 1 3|
  }{%
-  |h (trace,exc) : (gframep' :-> gframep) : gcode : e : h : gstack|
+  |h : 1 : (trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
+ }{%
+  |gheap|
+ }{
+  |gframep = gframep'|
+ }{}
+\\
+ \GriniStateAfter{%
+ }{%
+  |retcall 1 3|
+ }{%
+  |h (trace,exc) : (gframep' :-> gframep) : gcode : 2 : e : h : gstack|
  }{%
   |gheap|
  }{

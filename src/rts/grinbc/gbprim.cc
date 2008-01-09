@@ -46,14 +46,16 @@ PRIM GB_Word gb_DoesNotExist
 	= GB_MkConEnumNodeAsTag( 2 ) ;
 PRIM GB_Word gb_EOF
 	= GB_MkConEnumNodeAsTag( 3 ) ;
-PRIM GB_Word gb_IllegalOperation
+PRIM GB_Word gb_FullError
 	= GB_MkConEnumNodeAsTag( 4 ) ;
-PRIM GB_Word gb_PermissionDenied
+PRIM GB_Word gb_IllegalOperation
 	= GB_MkConEnumNodeAsTag( 5 ) ;
-PRIM GB_Word gb_ResourceExhausted
+PRIM GB_Word gb_PermissionDenied
 	= GB_MkConEnumNodeAsTag( 6 ) ;
-PRIM GB_Word gb_UserError
+PRIM GB_Word gb_ResourceExhausted
 	= GB_MkConEnumNodeAsTag( 7 ) ;
+PRIM GB_Word gb_UserError
+	= GB_MkConEnumNodeAsTag( 8 ) ;
 %%]
 
 The definition of IOMode must coincide with the one in Prelude.hs
@@ -938,8 +940,7 @@ PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr m
 		GB_MkMaybeNothing( ioe_handle ) ;
 		GB_MkMaybeJust( ioe_filename, nmNd ) ;
 		
-		switch ( errno )
-		{
+		switch ( errno ) {
 			case ENODEV :
 			case ENOENT :
 				ioe_type = gb_DoesNotExist ;
@@ -947,6 +948,7 @@ PRIM GB_NodePtr gb_primOpenChan( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr m
 			case EPERM   :
 			case EACCES  :
 			case ENOTDIR :
+			case EMFILE :
 				ioe_type = gb_PermissionDenied ;
 				break ;
 			case EBUSY :
@@ -1048,7 +1050,7 @@ PRIM GB_NodePtr gb_primChanGetContents( GB_NodePtr chan )
 	GB_NodePtr res ;
 
 	int c ;
-	GB_PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
+	GB_PassExc( gb_ChanGetChar( chan, False, &isEof, &c ) ) ;
 	if ( isEof ) {
 		GB_MkListNil( res ) ;
 	} else if ( c == EOF ) {
@@ -1064,22 +1066,59 @@ PRIM GB_NodePtr gb_primChanGetContents( GB_NodePtr chan )
 
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% IO Actions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[98
+GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
+{
+	GB_NodePtr ioe_handle ;
+	GB_Word    ioe_type ;
+	GB_NodePtr ioe_filename ;
+
+	GB_MkMaybeJust( ioe_handle, chan ) ;
+	GB_MkMaybeJust( ioe_filename, chan->content.chan.name ) ;
+	
+	switch( errno ) {
+		case ENOMEM :
+		case ENOSPC :
+			ioe_type = gb_FullError ;
+			break ;
+		case EFBIG :
+		case EIO :
+			ioe_type = gb_PermissionDenied ;
+			break ;
+		default :
+			ioe_type = gb_PermissionDenied ;
+			break ;
+	}
+	
+	return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
+}
+%%]
 
 %%[98
-PRIM GB_Word gb_primFlushChan( GB_NodePtr c )
+PRIM GB_NodePtr gb_primFlushChan( GB_NodePtr chan )
 {
-	fflush( c->content.chan.file ) ;
-	return Cast(GB_Word,gb_Unit) ;
+	fflush( chan->content.chan.file ) ;
+	return gb_Unit ;
 }
 
-PRIM GB_Word gb_primWriteChan( GB_NodePtr c, GB_NodePtr a )
+PRIM GB_NodePtr gb_primPutCharChan( GB_NodePtr chan, GB_Word c )
+{	
+	int c2 = putc( GB_GBInt2Int(c), chan->content.chan.file ) ;
+	if (c2 == EOF) {
+		GB_PassExc( gb_ThrowWriteChanError( chan ) ) ;
+	}
+	return gb_Unit ;
+}
+
+PRIM GB_NodePtr gb_primWriteChan( GB_NodePtr chan, GB_NodePtr a )
 {
   	IF_GB_TR_ON(3,printf("gb_primWriteChan sz %d\n", a->content.bytearray.size ););
-	fwrite( a->content.bytearray.ptr, 1, a->content.bytearray.size, c->content.chan.file ) ;
-	return Cast(GB_Word,gb_Unit) ;
+  	size_t szWritten ;
+	szWritten = fwrite( a->content.bytearray.ptr, 1, a->content.bytearray.size, chan->content.chan.file ) ;
+	if (szWritten != a->content.bytearray.size) {
+		GB_PassExc( gb_ThrowWriteChanError( chan ) ) ;
+	}
+	return gb_Unit ;
 }
 
 %%]

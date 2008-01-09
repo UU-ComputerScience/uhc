@@ -67,7 +67,7 @@
 %%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
 %%]
 
-%%[7 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
+%%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
 %%[7 export(mkNewLevUIDL,mkInfNewLevUIDL)
@@ -300,6 +300,7 @@ emptyPredOccId = mkPrId basePrfCtxtId uidStart
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[7
+%%]
 newtype Seq a = Seq ([a] -> [a])
 
 emptySeq :: Seq a
@@ -330,7 +331,6 @@ instance Functor Seq where
 
 filterSeq :: (a -> Bool) -> Seq a -> Seq a
 filterSeq p = mkSeq . filter p . seqToList
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantics classes

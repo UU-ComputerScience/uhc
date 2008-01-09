@@ -31,14 +31,12 @@ module EHC.Prelude (
 {-----------------------------
 -----------------------------}
     FilePath, IOError, ioError, userError, catch,
-{-----------------------------
-    putChar, putStr, putStrLn, print,
------------------------------}
+    putChar, putStr, putStrLn, print, hPrint,
     getChar, getLine, getContents, interact,
 {-----------------------------
     readFile, writeFile, appendFile, readIO, readLn,
 -----------------------------}
-    putStr, putStrLn, print,
+    readFile, writeFile, appendFile,
 --  module Ix,
 {-----------------------------
     Ix(range, index, unsafeIndex, inRange, rangeSize),
@@ -90,14 +88,10 @@ module EHC.Prelude (
     openFile,
     hClose,
     hGetContents, hGetChar, hGetLine,
-{-----------------------------
     hPutChar,
------------------------------}
     hPutStr, hPutStrLn,
     hFlush,
 
-{-----------------------------
------------------------------}
     Bool(False, True),
     Maybe(Nothing, Just),
     Either(Left, Right),
@@ -2126,10 +2120,11 @@ data IOErrorType        -- alphabetical order of constructors required, assumed 
   | AlreadyInUse        -- 1 -- ResourceBusy
   | DoesNotExist        -- 2 -- NoSuchThing
   | EOF                 -- 3
-  | IllegalOperation    -- 4
-  | PermissionDenied    -- 5
-  | ResourceExhausted   -- 6
-  | UserError           -- 7
+  | FullError           -- 4
+  | IllegalOperation    -- 5
+  | PermissionDenied    -- 6
+  | ResourceExhausted   -- 7
+  | UserError           -- 8
     deriving (Eq)
 
 {-----------------------------
@@ -2207,8 +2202,6 @@ primretIO x
 ioError :: IOError -> IO a
 ioError e = IO (\s -> throw (IOException e))
 
-{-----------------------------
------------------------------}
 userError :: String -> IOError
 userError str = IOError Nothing UserError "" str Nothing
 
@@ -2216,25 +2209,15 @@ catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = catchException m $ \e -> case e of
                 IOException err -> h err
                 _ -> throw e
-{-----------------------------
------------------------------}
 
-{-----------------------------
 putChar   :: Char -> IO ()
 putChar    = hPutChar stdout
 
-putStr    :: String -> IO ()
-putStr     = hPutStr stdout
------------------------------}
+hPrint     :: Show a => Handle -> a -> IO ()
+hPrint h    = hPutStrLn h . show
 
 print     :: Show a => a -> IO ()
-print      = putStrLn . show
-
-{-----------------------------
-putStrLn  :: String -> IO ()
-putStrLn s = do putStr s
-                putChar '\n'
------------------------------}
+print      = hPrint stdout
 
 getChar   :: IO Char
 getChar    = hGetChar stdin
@@ -2287,7 +2270,6 @@ data IOMode             -- alphabetical order of constructors required, assumed 
   | WriteMode           -- 7
     deriving (Eq, Ord, Bounded, Enum, Show)
 
-{-----------------------------
 writeFile       :: FilePath -> String -> IO ()
 writeFile        = writeFile' WriteMode
 
@@ -2302,7 +2284,6 @@ writeFile' mode name s = do
 
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents
------------------------------}
 
 interact  :: (String -> String) -> IO ()
 interact f = getContents >>= (putStr . f)
@@ -2311,11 +2292,6 @@ interact f = getContents >>= (putStr . f)
 primitive stdin       :: Handle
 primitive stdout      :: Handle
 primitive stderr      :: Handle
------------------------------}
-{-----------------------------
-foreign import ccall "primStdin"  stdin  :: Handle
-foreign import ccall "primStdout" stdout :: Handle
-foreign import ccall "primStderr" stderr :: Handle
 -----------------------------}
 
 stdin, stdout, stderr :: Handle
@@ -2334,6 +2310,7 @@ primitive hPutStr     :: Handle -> String -> IO ()
 foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> Handle
 foreign import ccall primCloseChan          :: Handle -> ()
 foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
+foreign import ccall primPutCharChan        :: Handle -> Char -> ()
 foreign import ccall primFlushChan          :: Handle -> ()
 foreign import ccall primChanGetChar        :: Handle -> Char
 foreign import ccall primChanGetContents    :: Handle -> String
@@ -2341,11 +2318,14 @@ foreign import ccall primChanGetContents    :: Handle -> String
 openFile    :: FilePath -> IOMode -> IO Handle
 openFile  f m = ioFromPrim (\_ -> primOpenChan f m Nothing)
 
+hPutChar     :: Handle -> Char -> IO ()
+hPutChar h c = ioFromPrim (\_ -> primPutCharChan h c)
+
 hPutStr, hPutStrLn     :: Handle -> String -> IO ()
 hPutStr   h s = do let (shd,stl) = splitAt 1000 s
                    ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
                    if null stl then return () else hPutStr h stl
-hPutStrLn h s = do {hPutStr h s ; hPutStr h "\n"}
+hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
 
 hFlush     :: Handle -> IO ()
 hFlush h = ioFromPrim (\_ -> primFlushChan h)
