@@ -1,0 +1,127 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 hs module {%{GRIN}LLVM}
+%%]
+%%[8 hs export(LLVMModule(..), Func(..), FuncDecl(..), Stmt(..), Expression(..), Alt(..), Funcs, FuncDecls , Stmts, Alts, CmpOp(..), BinaryOperator(..), Var(..), LLVMType(..), isGlobal, getName, getPlainName, getType, pLift, pLower, isInt, isPointer)
+%%]
+
+%%[8 import({LLVM/AbsSyn})
+%%]
+
+%%[8 hs
+data CmpOp
+  = CMPEQ
+  | CMPNE
+  | CMPUGT
+  | CMPUGE
+  | CMPULT
+  | CMPULE
+  | CMPSGT
+  | CMPSGE
+  | CMPSLT
+  | CMPSLE
+  deriving (Eq)
+
+instance Show CmpOp where
+  show CMPEQ  = "eq"
+  show CMPNE  = "ne"
+  show CMPUGT = "ugt"
+  show CMPUGE = "uge"
+  show CMPULT = "ult"
+  show CMPULE = "ule"
+  show CMPSGT = "sgt"
+  show CMPSGE = "sge"
+  show CMPSLT = "slt"
+  show CMPSLE = "sle"
+
+data BinaryOperator
+  = ADD
+  | SHL
+  | SHR
+  | AND
+  | OR
+  deriving (Eq)
+
+instance Show BinaryOperator where
+  show ADD = "add"
+  show SHL = "shl"
+  show SHR = "ashr"
+  show AND = "and"
+  show OR  = "or"
+
+data Var
+  = GlobalVar  String LLVMType
+  | LocalVar   String LLVMType
+  | Constant   Int    LLVMType
+  | StrConst   String LLVMType
+  deriving (Eq)
+  
+instance Show Var where
+  show x                = show (getType x) ++ " " ++ getName x
+  
+isGlobal :: Var -> Bool
+isGlobal (GlobalVar _ _) = True
+isGlobal _               = False  
+  
+getName :: Var -> String
+getName (GlobalVar x _) = "@" ++ x
+getName (LocalVar  x _) = "%" ++ x
+getName (Constant  x _) = show x
+getName (StrConst  x _) = x 
+
+getPlainName :: Var -> String
+getPlainName (GlobalVar x _) = x
+getPlainName (LocalVar  x _) = x
+getPlainName (Constant  x _) = show x
+getPlainName (StrConst  x _) = x   
+
+getType :: Var -> LLVMType
+getType (GlobalVar _ y) = y
+getType (LocalVar _ y)  = y
+getType (Constant _ y)  = y  
+getType (StrConst x y)  = y  
+
+data LLVMType
+  = I64
+  | I32
+  | Pointer LLVMType
+  | Array Int LLVMType
+  | Label
+  | Void
+  | I1
+  | I8
+  deriving (Eq)
+  
+instance Show LLVMType where
+  show I64                = "i64"
+  show I32                = "i32"
+  show I1                 = "i1"
+  show I8                 = "i8"
+  show Label              = "label"
+  show Void               = "void"
+  show (Array nr tp)      = "[ " ++ show nr ++ " x " ++ show tp ++ "]"
+  show (Pointer x)        = show x ++ "*"   
+  
+pLift :: LLVMType -> LLVMType
+pLift (Label) = error "Labels are unliftable"
+pLift (Void)  = error "Voids are unliftable"
+pLift x       = Pointer x
+
+pLower :: LLVMType -> LLVMType
+pLower (Pointer x) = x
+pLower x           = error $ show x ++ " is a unlowerable type, need a pointer"
+
+isInt :: LLVMType -> Bool
+isInt I32 = True
+isInt I64 = True
+isInt I1  = True
+isInt I8  = True
+isInt _   = False
+
+isPointer :: LLVMType -> Bool
+isPointer (Pointer _) = True
+isPointer _           = False
+%%]

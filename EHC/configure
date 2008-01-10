@@ -690,6 +690,8 @@ gccCmd
 GCC_CMD
 cppCmd
 CPP_CMD
+llvmcCmd
+LLVMC_CMD
 CC
 CFLAGS
 LDFLAGS
@@ -1340,6 +1342,9 @@ Optional Packages:
   --with-cpp=<cpp preprocessor>
                           Use a command different from 'cpp' to compile with
                           CPP.
+  --with-llvmc=<LLVM compiler>
+                          Use a command different from 'llvmc' to compile LLVM
+                          source code.
 
 Some influential environment variables:
   CC          C compiler command
@@ -2438,6 +2443,69 @@ fi
 CPP_CMD=$cppCmd
 
 
+# gcc
+
+# Check whether --with-llvmc was given.
+if test "${with_llvmc+set}" = set; then
+  withval=$with_llvmc;  llvmCmd="$withval"
+else
+
+  if test "$LLVMC" = ""; then
+    # Extract the first word of "llvmc", so it can be a program name with args.
+set dummy llvmc; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmcCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmcCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmcCmd="$llvmcCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmcCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmcCmd=$ac_cv_path_llvmcCmd
+if test -n "$llvmcCmd"; then
+  { echo "$as_me:$LINENO: result: $llvmcCmd" >&5
+echo "${ECHO_T}$llvmcCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmcCmd=$LLVMC
+  fi
+
+
+fi
+
+if test "$llvmcCmd" = "no"; then
+  llvmcCmd=""
+  llvmcExists="no"
+else
+  llvmcExists="yes"
+fi
+LLVMC_CMD=$llvmcCmd
+
 
 ### Checks for libraries.
 
@@ -2456,7 +2524,7 @@ CPP_CMD=$cppCmd
 # AC_CHECK_SIZEOF([unsigned int])
 
 # sizeof GrWord*, Pointer
-# AC_CHECK_SIZEOF([unsigned int *])
+# AC_CHECK_SIZEOF([nsigned int *])
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -4013,9 +4081,9 @@ fi
 done
 
 
-{ echo "$as_me:$LINENO: checking for uintptr_t" >&5
-echo $ECHO_N "checking for uintptr_t... $ECHO_C" >&6; }
-if test "${ac_cv_type_uintptr_t+set}" = set; then
+{ echo "$as_me:$LINENO: checking for intptr_t" >&5
+echo $ECHO_N "checking for intptr_t... $ECHO_C" >&6; }
+if test "${ac_cv_type_intptr_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   cat >conftest.$ac_ext <<_ACEOF
@@ -4025,7 +4093,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-typedef uintptr_t ac__type_new_;
+typedef intptr_t ac__type_new_;
 int
 main ()
 {
@@ -4054,26 +4122,26 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test -z "$ac_c_werror_flag" ||
 	 test ! -s conftest.err
        } && test -s conftest.$ac_objext; then
-  ac_cv_type_uintptr_t=yes
+  ac_cv_type_intptr_t=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_type_uintptr_t=no
+	ac_cv_type_intptr_t=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_type_uintptr_t" >&5
-echo "${ECHO_T}$ac_cv_type_uintptr_t" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_type_intptr_t" >&5
+echo "${ECHO_T}$ac_cv_type_intptr_t" >&6; }
 
 # The cast to long int works around a bug in the HP C Compiler
 # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
 # declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
 # This bug is HP SR number 8606223364.
-{ echo "$as_me:$LINENO: checking size of uintptr_t" >&5
-echo $ECHO_N "checking size of uintptr_t... $ECHO_C" >&6; }
-if test "${ac_cv_sizeof_uintptr_t+set}" = set; then
+{ echo "$as_me:$LINENO: checking size of intptr_t" >&5
+echo $ECHO_N "checking size of intptr_t... $ECHO_C" >&6; }
+if test "${ac_cv_sizeof_intptr_t+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   if test "$cross_compiling" = yes; then
@@ -4085,7 +4153,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-   typedef uintptr_t ac__type_sizeof_;
+   typedef intptr_t ac__type_sizeof_;
 int
 main ()
 {
@@ -4122,7 +4190,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-   typedef uintptr_t ac__type_sizeof_;
+   typedef intptr_t ac__type_sizeof_;
 int
 main ()
 {
@@ -4176,7 +4244,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-   typedef uintptr_t ac__type_sizeof_;
+   typedef intptr_t ac__type_sizeof_;
 int
 main ()
 {
@@ -4213,7 +4281,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-   typedef uintptr_t ac__type_sizeof_;
+   typedef intptr_t ac__type_sizeof_;
 int
 main ()
 {
@@ -4277,7 +4345,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-   typedef uintptr_t ac__type_sizeof_;
+   typedef intptr_t ac__type_sizeof_;
 int
 main ()
 {
@@ -4316,15 +4384,15 @@ fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 done
 case $ac_lo in
-?*) ac_cv_sizeof_uintptr_t=$ac_lo;;
-'') if test "$ac_cv_type_uintptr_t" = yes; then
-     { { echo "$as_me:$LINENO: error: cannot compute sizeof (uintptr_t)
+?*) ac_cv_sizeof_intptr_t=$ac_lo;;
+'') if test "$ac_cv_type_intptr_t" = yes; then
+     { { echo "$as_me:$LINENO: error: cannot compute sizeof (intptr_t)
 See \`config.log' for more details." >&5
-echo "$as_me: error: cannot compute sizeof (uintptr_t)
+echo "$as_me: error: cannot compute sizeof (intptr_t)
 See \`config.log' for more details." >&2;}
    { (exit 77); exit 77; }; }
    else
-     ac_cv_sizeof_uintptr_t=0
+     ac_cv_sizeof_intptr_t=0
    fi ;;
 esac
 else
@@ -4335,7 +4403,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-   typedef uintptr_t ac__type_sizeof_;
+   typedef intptr_t ac__type_sizeof_;
 static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
 static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
 #include <stdio.h>
@@ -4387,34 +4455,34 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
   ac_status=$?
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
-  ac_cv_sizeof_uintptr_t=`cat conftest.val`
+  ac_cv_sizeof_intptr_t=`cat conftest.val`
 else
   echo "$as_me: program exited with status $ac_status" >&5
 echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
 ( exit $ac_status )
-if test "$ac_cv_type_uintptr_t" = yes; then
-     { { echo "$as_me:$LINENO: error: cannot compute sizeof (uintptr_t)
+if test "$ac_cv_type_intptr_t" = yes; then
+     { { echo "$as_me:$LINENO: error: cannot compute sizeof (intptr_t)
 See \`config.log' for more details." >&5
-echo "$as_me: error: cannot compute sizeof (uintptr_t)
+echo "$as_me: error: cannot compute sizeof (intptr_t)
 See \`config.log' for more details." >&2;}
    { (exit 77); exit 77; }; }
    else
-     ac_cv_sizeof_uintptr_t=0
+     ac_cv_sizeof_intptr_t=0
    fi
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
 fi
 rm -f conftest.val
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_sizeof_uintptr_t" >&5
-echo "${ECHO_T}$ac_cv_sizeof_uintptr_t" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_sizeof_intptr_t" >&5
+echo "${ECHO_T}$ac_cv_sizeof_intptr_t" >&6; }
 
 
 
 cat >>confdefs.h <<_ACEOF
-#define SIZEOF_UINTPTR_T $ac_cv_sizeof_uintptr_t
+#define SIZEOF_INTPTR_T $ac_cv_sizeof_intptr_t
 _ACEOF
 
 
@@ -4756,7 +4824,7 @@ case $HostPlatform in
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="no"
+        #libtoolStatic="no"
         # ehcGccOptsStatic="-static"
 	    libtoolStatic="libtool --mode=link gcc -static -o"
         ;;
@@ -5541,6 +5609,8 @@ gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
 cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
+llvmcCmd!$llvmcCmd$ac_delim
+LLVMC_CMD!$LLVMC_CMD$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
@@ -5561,8 +5631,6 @@ SUFFIX_LIB!$SUFFIX_LIB$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
-LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
-LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -5604,6 +5672,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
+LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
@@ -5617,7 +5687,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 11; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 13; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -117,7 +117,8 @@ data EHCOpts
       ,  ehcOptEmitJava       ::  Bool
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitLlc        ::  Bool
-      ,  ehcOptEmitLLVM       ::  Bool
+      ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
+      ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
       ,  ehcOptEmitGrinBC     ::  Bool
       ,  ehcOptEmitExec       ::  Bool
       ,  ehcOptEmitExecBC     ::  Bool
@@ -201,6 +202,7 @@ defaultEHCOpts
       ,  ehcOptTrf            =   []
       ,  ehcOptBuiltinNames   =   mkEHBuiltinNames (const id)
       ,  ehcOptEmitLLVM       =   False
+      ,  ehcOptEmitExecLLVM   =   False
       ,  ehcOptFullProgGRIN   =   False
       ,  ehcOptDumpCoreStages =   False
       ,  ehcOptDumpGrinStages =   False
@@ -267,7 +269,7 @@ ehcCmdLineOpts
      ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate core transformation stages (no)"
      ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate grin transformation stages (no)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
@@ -366,6 +368,11 @@ ehcCmdLineOpts
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True
                                                   , ehcOptFullProgGRIN = True
                                                   }
+                                Just m | m `elem` ["lexe", "lexec"]
+                                             -> o { ehcOptEmitLLVM     = True
+                                                  , ehcOptFullProgGRIN = True
+                                                  , ehcOptEmitExecLLVM = True
+                                                  }                   
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
                                 Just "c"     -> o { ehcOptEmitLlc      = True
                                                   , ehcOptFullProgGRIN = True
