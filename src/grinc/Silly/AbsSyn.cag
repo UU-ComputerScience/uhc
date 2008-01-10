@@ -39,6 +39,7 @@ DATA Statement
   |  Switch      scrutinee  : Value
                  body       : Alternatives
   |  Call        name       : {HsName}
+                 tailJumps  : {Bool}
                  args       : Values
   |  Jump        name       : {HsName}
   |  Return      retdiff    : {Int}

@@ -237,6 +237,26 @@ else
 fi
 AC_SUBST(CPP_CMD,$cppCmd)
 
+# gcc
+AC_ARG_WITH(llvmc,
+[AC_HELP_STRING([--with-llvmc=<LLVM compiler>],
+                [Use a command different from 'llvmc' to compile LLVM source code.])],
+[ llvmCmd="$withval" ],
+[ 
+  if test "$LLVMC" = ""; then
+    AC_PATH_PROG(llvmcCmd,llvmc)
+  else
+    llvmcCmd=$LLVMC
+  fi
+]
+)
+if test "$llvmcCmd" = "no"; then
+  llvmcCmd=""
+  llvmcExists="no"
+else
+  llvmcExists="yes"
+fi
+AC_SUBST(LLVMC_CMD,$llvmcCmd)
 
 ### Checks for libraries.
 
@@ -255,8 +275,8 @@ AC_SUBST(CPP_CMD,$cppCmd)
 # AC_CHECK_SIZEOF([unsigned int])
 
 # sizeof GrWord*, Pointer
-# AC_CHECK_SIZEOF([unsigned int *])
-AC_CHECK_SIZEOF([uintptr_t])
+# AC_CHECK_SIZEOF([nsigned int *])
+AC_CHECK_SIZEOF([intptr_t])
 
 AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
                [AC_DEFINE([LITTLEENDIAN],[1]) AC_DEFINE([BIGENDIAN],[0])],
@@ -341,7 +361,7 @@ case $HostPlatform in
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="no"
+        #libtoolStatic="no"
         # ehcGccOptsStatic="-static"
 	    libtoolStatic="libtool --mode=link gcc -static -o"
         ;;

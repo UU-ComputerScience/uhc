@@ -69,7 +69,11 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
 %%]
+%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)}, {%{GRIN}LLVM(LLVMModule)})
+%%]
 %%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
+%%]
+%%[8 import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
 %%]
 %%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
 %%]
@@ -117,6 +121,7 @@ initState opts
   = GRINCompileState { gcsUnique     = 3          -- 0,1,2 are reserved for wildcard, main, mainexcept
                      , gcsGrin       = undefined
                      , gcsSilly      = undefined
+                     , gcsLLVM       = undefined
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
@@ -232,9 +237,12 @@ caOutput = task_ VerboseNormal "Writing code"
          ; caWriteSilly "sil2" pretty
          ; transformSilly   embedVars     "Embed Variables"
          ; caWriteSilly "sil3" pretty
-         
---       ; when (ehcOptEmitLLVM options)
---         (caWriteSilly "ll" prettyLL)
+         ; transformSilly   shortcut      "Shortcut single-use variables"
+         ; when (ehcOptEmitLLVM options)
+            (do { caSilly2LLVM
+                ; caWriteLLVM "ll" (const prettyLLVMModule)
+                }
+            )
          ; when (ehcOptEmitLlc options)
            (caWriteSilly "c" prettyC)
          ; when (ehcOptEmitLlc options)
@@ -290,6 +298,12 @@ caGrin2Silly = do
     ; modify (gcsUpdateSilly silly)
     }
 
+caSilly2LLVM :: CompileAction ()
+caSilly2LLVM = do
+    { code <- gets gcsSilly
+    ; let llvm = silly2llvm code
+    ; modify (gcsUpdateLLVM llvm)
+    }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -297,15 +311,27 @@ caGrin2Silly = do
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+caWriteFile :: String -> (EHCOpts -> a -> PP_Doc) -> a -> CompileAction()
+caWriteFile suffix ppFun struct =
+  do { input <- gets gcsPath
+     ; opts  <- gets gcsOpts
+     ; do { let output = fpathSetSuff suffix input
+          ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+          ; liftIO $ writePP (ppFun opts) struct output
+          }
+     }
+
+caWriteLLVM  :: String -> (EHCOpts -> LLVMModule -> PP_Doc) -> CompileAction()
+caWriteLLVM suffix ppFun =
+  do { llvm <- gets gcsLLVM
+     ; caWriteFile suffix ppFun llvm
+     } 
+     
 caWriteSilly :: String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
 caWriteSilly suffix ppFun =
-  do input <- gets gcsPath
-     do { let output = fpathSetSuff suffix input
-        ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
-        ; silly <- gets gcsSilly
-        ; opts  <- gets gcsOpts
-        ; liftIO $ writePP (ppFun opts) silly output
-        }
+  do { silly <- gets gcsSilly
+     ; caWriteFile suffix ppFun silly
+     }
 
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
@@ -334,6 +360,7 @@ data GRINCompileState = GRINCompileState
     { gcsUnique    :: Int
     , gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
+    , gcsLLVM      :: LLVMModule
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
@@ -342,6 +369,7 @@ data GRINCompileState = GRINCompileState
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
+gcsUpdateLLVM   x s = s { gcsLLVM   = x }
 gcsUpdateUnique x s = s { gcsUnique = x }
 gcsUpdateHptMap x s = s { gcsHptMap = x }
 

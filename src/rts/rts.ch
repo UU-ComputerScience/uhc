@@ -47,7 +47,7 @@ Internal config
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef uintptr_t GrWord;
+typedef intptr_t GrWord;
 typedef GrWord* Pointer;
 %%]
 

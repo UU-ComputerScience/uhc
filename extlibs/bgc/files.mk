@@ -23,6 +23,7 @@ BLDABS_EXTLIBS_BGC_PREFIX		:= $(BLDABS_PREFIX)bgc/
 
 # install location
 INSABS_EXTLIBS_BGC_PREFIX		:= $(INSABS_PREFIX)
+INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX	:= $(INSABS_PREFIX)non-threaded/
 
 # distribution
 LIBUTIL_DIST_FILES				:= $(EXTLIBS_BGC_MKF) $(EXTLIBS_BGC_ARCHIVE)
@@ -36,6 +37,9 @@ $(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
 	cd $(BLDABS_EXTLIBS_BGC_PREFIX) && \
 	tar xfz $(EXTLIBS_BGC_ARCHIVE) && \
 	cd $(EXTLIBS_BGC_NAME) && \
+	./configure --prefix=$(INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX) --disable-threads && \
+	make && \
+	make install && \
 	./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
 	make && \
 	make install && \

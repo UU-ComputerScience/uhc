@@ -18,36 +18,36 @@
 %%[8
 
 
-PRIM int primNegateInt(int x)
+PRIM GrWord primNegateInt(GrWord x)
 {
 	return -x;	
 }
 
-PRIM int primAddInt(int x, int y)
+PRIM GrWord primAddInt(GrWord x, GrWord y)
 {   
 	//printf("add %d %d\n", x, y );
 	return x+y;
 }
 
-PRIM int primSubInt(int x, int y)
+PRIM GrWord primSubInt(GrWord x, GrWord y)
 {   
 	//printf("sub %d %d\n", x, y );
 	return x-y;
 }
 
-PRIM int primMulInt(int x, int y)
+PRIM GrWord primMulInt(GrWord x, GrWord y)
 {   
 	//printf("mul %d %d\n", x, y );
 	return x*y;
 }
 
-PRIM int primDivInt(int x, int y)
+PRIM GrWord primDivInt(GrWord x, GrWord y)
 {   
 	//printf("div %d %d\n", x, y );
 	return x/y;
 }
 
-PRIM int primModInt(int x, int y)
+PRIM GrWord primModInt(GrWord x, GrWord y)
 {   
 	//printf("mod %d %d\n", x, y );
 	return x%y;
@@ -63,7 +63,7 @@ PRIM int primModInt(int x, int y)
 /* The Boolean functions below only return the constructor */
 
 
-PRIM int primGtInt(int x, int y)
+PRIM GrWord primGtInt(GrWord x, GrWord y)
 {   if (x>y)
     { //  printf ("%d is groter dan %d\n", x, y );
         return CTrue;
@@ -72,7 +72,7 @@ PRIM int primGtInt(int x, int y)
     return CFalse;
 }
 
-PRIM int primLtInt(int x, int y)
+PRIM GrWord primLtInt(GrWord x, GrWord y)
 {   if (x<y)
         return CTrue;
     return CFalse;
@@ -80,7 +80,7 @@ PRIM int primLtInt(int x, int y)
 %%]
 
 %%[8
-PRIM GrWord primCmpInt(int x, int y)
+PRIM GrWord primCmpInt(GrWord x, GrWord y)
 {   if (x>y)
         return CGT;
     if (x==y)
@@ -94,7 +94,7 @@ PRIM GrWord primCmpInt(int x, int y)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-PRIM int primEqInt(int x, int y)
+PRIM GrWord primEqInt(GrWord x, GrWord y)
 {
 	 //printf("eq %d %d\n", x, y );
 	
@@ -105,7 +105,7 @@ PRIM int primEqInt(int x, int y)
 %%]
 
 %%[8
-PRIM int primNeInt(int x, int y)
+PRIM GrWord primNeInt(GrWord x, GrWord y)
 {
 	 //printf("neq %d %d\n", x, y );
 	
@@ -124,24 +124,29 @@ PRIM GrWord primUnsafeId(GrWord x)
 {   return x ;
 }
 
-PRIM int primUndefined()
+PRIM void primExitFun( GrWord x)
 {
-    printf("attempt tot evaluate undefined\n");
-    gb_exit(1);
-    return 0;
+
+  printf( "Exit function %d\n", x);
 }
 
-PRIM int primOrd(int x)
+PRIM void primPatternMatchFailure()
+{
+    printf("Pattern match failure\n");
+    exit(1);
+}
+
+PRIM GrWord primOrd(GrWord x)
 {
 	return x;	
 }
 
-PRIM int primChr(int x)
+PRIM GrWord primChr(GrWord x)
 {
 	return x;	
 }
 
-PRIM int primOdd(int x)
+PRIM GrWord primOdd(GrWord x)
 {
     if (x&1)
         return CTrue;

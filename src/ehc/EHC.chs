@@ -50,6 +50,11 @@
 %%[8 import (qualified EH.Util.ScanUtils as ScanUtils)
 %%]
 
+%%[8 import (qualified Debug.Trace)
+
+-- DEBUG
+%%]
+
 %%[9 import ({%{EH}Pred})
 %%]
 
@@ -1368,6 +1373,44 @@ cpSystem cmd
 %%]
 
 %%[8
+cpCompileWithLLVM :: HsName -> EHCompilePhase()
+cpCompileWithLLVM modNm
+  = do { cr <- get
+       ; let  (_,_,opts,fp) = crBaseInfo modNm cr
+              fpLL          = fpathSetSuff "ll" fp
+              fpExec        = maybe (fpathRemoveSuff fp) 
+                                    (\s -> fpathSetSuff s fp) 
+                                    Cfg.mbSuffixExec
+              libs          = [ Cfg.fileprefixInplaceInstall 
+                                ++ "%%@{%{VARIANT}%%}/lib/prim.o"
+                              , Cfg.fileprefixInplaceInstall 
+                                ++ "%%@{%{VARIANT}%%}/lib/llvm-gc.o"
+                              , Cfg.fileprefixInplaceInstall
+                                ++ "non-threaded/lib/libgc.a"
+                              ]
+              inputOpts     = [ fpathToStr fpLL ]
+              outputOpts    = ["-o " ++ fpathToStr fpExec]
+              ldOpts        = ["-O5", "-native"]
+       ; when ( ehcOptEmitExecLLVM opts )
+         (  do { let compileLL 
+                       = concat $ intersperse " "
+                         $  [Cfg.shellCmdLLVMC]
+                         ++ ldOpts
+                         ++ libs
+                         ++ outputOpts
+                         ++ inputOpts
+               ; when (ehcOptVerbosity opts >= VerboseALot)
+                 (  do { cpMsg' modNm VerboseALot "LLVM" Nothing fpExec
+                       ; lift $ putStrLn compileLL
+                       }
+                 )
+               ; cpSystem compileLL
+               }
+         ) 
+       }                 
+%%]
+
+%%[8
 data GCC_CompileHow
   = GCC_CompileOnly
   | GCC_CompileExec
@@ -1938,6 +1981,7 @@ cpCompileCU targHSState modNm
                            , cpProcessGrinAll' modNm
                            , cpProcessGrinBC modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
+                           , cpCompileWithLLVM modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    }
@@ -1962,6 +2006,7 @@ cpCompileCU targHSState modNm
                            , cpProcessGrinAll' modNm
                            , cpProcessGrinBC modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
+                           , cpCompileWithLLVM modNm
                            ]
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    }
