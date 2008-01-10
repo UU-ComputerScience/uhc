@@ -7,7 +7,7 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Pretty,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
+%%[1 module Main import(System, Data.Char, Data.List, Control.Monad, System.Console.GetOpt, IO, EH.Util.Pretty,{%{EH}Error.Pretty}, UU.Parsing, UU.Parsing.Offside, {%{EH}Base.Common}, {%{EH}Base.Builtin}, qualified {%{EH}Config} as Cfg, {%{EH}Scanner.Common}, {%{EH}Base.Opts})
 %%]
 
 %%[1 import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
@@ -1312,38 +1312,44 @@ cpOptimiseGrinLocal modNm
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  optGrin= if ehcOptOptimise opts >= OptimiseNormal
                           then if ehcOptFullProgGRIN opts
-                               then mk [ fl, ale, eve, ale, nme ]
+                               then mk (evel ++ evel ++ [nme])
                                else (  mk [ mte, unb ]
-                                    ++ evel
+                                    ++ mk evel
 %%[[8
                                     ++ mk [ ( grInline  , "inline" ) ]
 %%][20
-                                    ++ [ do { cr <- get
-                                            ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
-                                                  expNmOffMp
-                                                         = crsiExpNmOffMp modNm crsi
-                                                  optim  = crsiOptim crsi
-                                                  (g,gathInlMp) = grInline (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
-                                            ; cpMsgGrinTrf modNm "inline"
-                                            ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
-                                            } ]
+                                    ++ [ ( do { cr <- get
+                                              ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
+                                                    expNmOffMp
+                                                           = crsiExpNmOffMp modNm crsi
+                                                    optim  = crsiOptim crsi
+                                                    (g,gathInlMp) = grInline (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                              ; cpMsgGrinTrf modNm "inline"
+                                              ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
+                                              }
+                                         , "inline" ) ]
 %%]]
-                                    ++ evel
+                                    ++ mk evel
                                     ++ mk [ nme ]
                                     )
                           else if ehcOptFullProgGRIN opts
                                then []
-                               else mk [ mte, unb, fl ]
-                        where mk   = map (\(trf,msg) -> cpFromGrinTrf modNm trf msg)
-                              evel = mk [ fl, ale, eve, ale ]
-                              fl   = ( grFlattenSeq, "flatten" )
+                               else mk [ mte, unb, flt ]
+                        where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
+                              evel = [ flt, ale, eve, ale ]
+                              flt  = ( grFlattenSeq, "flatten" )
                               ale  = ( grAliasElim , "alias elim" )
                               nme  = ( grUnusedNameElim , "unused name elim" )
                               eve  = ( grEvalElim  , "eval elim" )
                               mte  = ( grUnusedMetaInfoElim  , "meta info elim" )
                               unb  = ( grUnbox GrinBC.tagUnbox  , "unbox" )
+                 optGrinNormal
+                        = map fst optGrin
+                 optGrinDump
+                        = out 0 "from core" : concat [ [o,out n nm] | (n,(o,nm)) <- zip [1..] optGrin ]
+                        where out n nm = cpOutputGrin ("grin-" ++ show n ++ "-" ++ filter isAlpha nm) modNm
          ;  when (isJust $ ecuMbGrin ecu)
-                 (cpSeq optGrin)
+                 (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          }
 %%]
 

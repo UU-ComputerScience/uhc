@@ -130,6 +130,7 @@ data EHCOpts
       ,  ehcOptFullProgGRIN   ::  Bool				-- do full GRIN program analysis
       ,  ehcOptErrAboutGrinBC ::  Bool				-- report when Grin ByteCode errors occur
       ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
+      ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
@@ -202,6 +203,7 @@ defaultEHCOpts
       ,  ehcOptEmitLLVM       =   False
       ,  ehcOptFullProgGRIN   =   False
       ,  ehcOptDumpCoreStages =   False
+      ,  ehcOptDumpGrinStages =   False
 %%]]
 %%[[8
       ,  ehcOptEmitLlc        =   False
@@ -267,6 +269,7 @@ ehcCmdLineOpts
 %%[[8
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
      ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate core transformation stages (no)"
+     ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate grin transformation stages (no)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off core transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -444,6 +447,7 @@ optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
+optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b, ehcOptEmitGrin = b }
 
 optBoolean :: (EHCOpts -> Bool -> EHCOpts) -> Maybe String -> EHCOpts -> EHCOpts
 optBoolean tr ms o
