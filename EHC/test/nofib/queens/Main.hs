@@ -58,5 +58,5 @@ nsoln nq = length (gen nq)
     safe x d (q:l) = (x /= q) && (x /= (q+d)) && (x /= (q-d)) && (safe x (d+1) l)
 
     gen :: Int -> [[Int]]
-    gen 0 = [[]]
-    gen n = [ (q:b) | b <- gen (n-1), q <- [1..nq], safe q 1 b]
+    gen n | n==0 = [[]]
+          | True = [ (q:b) | b <- gen (n-1), q <- [1..nq], safe q 1 b]

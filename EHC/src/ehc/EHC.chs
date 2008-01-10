@@ -1317,7 +1317,7 @@ cpOptimiseGrinLocal modNm
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  optGrin= if ehcOptOptimise opts >= OptimiseNormal
                           then if ehcOptFullProgGRIN opts
-                               then mk (evel ++ evel ++ [nme])
+                               then mk [ flt, ale, eve, ale, nme ]     -- mk (evel ++ evel ++ [nme])
                                else (  mk [ mte, unb ]
                                     ++ mk evel
 %%[[8
