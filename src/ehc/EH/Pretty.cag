@@ -7,6 +7,27 @@
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+PP aside or vertically with indentation to allow for less horizontal screen estate usage.
+
+%%[1 hs
+infixr 2 >###<      -- same as >-<
+
+(>###<) :: PP_Doc -> PP_Doc -> PP_Doc
+%%[[1
+l >###< r = l >#< r
+%%][99
+l >###< r = l >-< indent 2 r
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[1.Base.ExprSimple
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
@@ -25,12 +46,16 @@ SEM Expr
 %%[[8
                                              >|< (if @isStrict then pp "!" else empty)
 %%]]
-                                             >#< (@decls.pp >-< @ppExtra)
+                                             >#< (@decls.pp >-< @extraPP)
 %%[[1
                                              >-< @errLetPP
 %%][101
 %%]]
+%%[[1
                                              >-< "in" >#< @body.pp
+%%][99
+                                             >#< "in" >-< @body.pp
+%%]]
 %%[[1
                                              >-< @errBodyPP
 %%][100
@@ -44,12 +69,22 @@ SEM Expr
 %%[1.Base.ExprComplex
   | AppTop      loc     .   pp      =   ppAppTop  (@expr.appFunNm,@expr.appFunPP)
                                                   @expr.appArgPPL @expr.pp
-  | Lam         loc     .   pp      =   "\\" >|< @arg.pp >#< "->" >#< @body.pp
+  | Lam         loc     .   argPP   =   @arg.pp
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc     .   pp      =   if @lhs.isTopLam
+                                        then let sep = case @lamArgPPL of
+                                        				 [_] -> (>#<)
+                                        				 _   -> (>###<)
+                                             in  ("\\" >|< ppSpaces @lamArgPPL) `sep` ("->" >#< @body.lamBodyPP)
+                                        else "\\" >|< @argPP >#< "->" >#< @body.pp
 %%]
 
 %%[1.Base.Rest
 SEM Decl
-  | Val         lhs     .   pp      =   @patExpr.pp >#< "=" >#< @expr.pp
+  | Val         lhs     .   pp      =   @patExpr.pp >###< "=" >#< @expr.pp
   | TySig       loc     .   tyPP    =   @tyExpr.pp
                         .   pp      =   @nm >#< "::" >#< @tyPP
 
@@ -80,12 +115,29 @@ SEM Decls
                                         >-< @tl.pp
 
 SEM AGItf
-  | AGItf       lhs     .   pp      =   @ppExtra >-< @expr.pp
+  | AGItf       lhs     .   pp      =   @extraPP >-< @expr.pp
 %%[[1
                                         >-< @errTopPP
 %%][101
 %%]]
-                loc     .   ppExtra =   empty
+                loc     .   extraPP =   empty
+%%]
+
+%%[1
+ATTR Expr [ | | lamArgPPL: {[PP_Doc]}  lamBodyPP: PP_Doc ]
+
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc     .   lamArgPPL   =   @argPP : @body.lamArgPPL
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc     .   lamBodyPP   =   @pp
+                        .   lamArgPPL   =   []
 %%]
 
 %%[2.Wild.pp
@@ -138,20 +190,20 @@ SEM Expr
   | SConst      loc     .   pp      =   pp (show @str)
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
                                                 >-< indent 2 (vlist @alts.ppL)
-                                                >-< @ppExtra
-                        .   ppExtra =   empty
+                                                >-< @extraPP
+                        .   extraPP =   empty
 
 SEM PatExpr
   | SConst      loc     .   pp      =   pp (show @str)
 
 SEM CaseAlt
-  | Pat         loc     .   pp      =   @patExpr.pp >|< @ppExtra >#< "->" >#< @expr.pp
-                        .   ppExtra =   empty
+  | Pat         loc     .   pp      =   @patExpr.pp >|< @extraPP >###< "->" >#< @expr.pp
+                        .   extraPP =   empty
 
 SEM CaseAlts
   | Nil         lhs     .   ppL     =   []
-  | Cons        lhs     .   ppL     =   (@hd.pp >|< @ppExtra) : @tl.ppL
-                loc     .   ppExtra =   empty
+  | Cons        lhs     .   ppL     =   (@hd.pp >|< @extraPP) : @tl.ppL
+                loc     .   extraPP =   empty
 
 SEM TyExprs
   | Nil         lhs     .   ppL     =   []
@@ -324,7 +376,7 @@ SEM TyExpr
 SEM Expr
   | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
                         .   pp      =   @func.pp >#< hsnOImpl >#< @argPP >#< hsnCImpl
-  | LamImpl     loc     .   pp      =   "\\" >|< hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl >#< "->" >#< @body.pp
+  | LamImpl     loc     .   argPP   =   hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl
 %%]
 
 %%[15
@@ -384,16 +436,16 @@ SEM DataConstr
                                               then ppSpaced @fields.ppL
                                               else ppCurlysCommas' @fields.ppL
                                              )
-                                        >|<  @ppExtra
-                        .   ppExtra =   empty
+                                        >|<  @extraPP
+                        .   extraPP =   empty
 %%]
 %%[16
 SEM DataConstr
-  | Constr      loc     .   ppExtra :=  hlist . map ("," >#<) $ @eqs.ppL
+  | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
 %%[50
 SEM DataConstr
-  | Constr      loc     .   ppExtra :=  hlist . map ("," >#<) $ @eqs.ppL
+  | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
 %%]
 
 %%[16
@@ -461,32 +513,32 @@ SEM KiExpr
 
 %%[1.ExprExtra
 SEM Expr
-  | Let         loc     .   ppExtra     =   ppCmt (ppGam (gamTop @decls.patValGam))
+  | Let         loc     .   extraPP     =   ppCmt (ppGam (gamTop @decls.patValGam))
 %%]
 
 %%[2
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
 %%]
 
 %%[3
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_))
 %%]
 
 %%[4
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
 %%[6
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
 %%[9
 SEM Expr
-  | Let         loc     .   ppExtra     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
+  | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
                                                        >-<  ppGam (@lhs.finTyVarMp |=> @quValGam_ex_)
                                                        >-<  ppGam @lClGam
@@ -494,31 +546,26 @@ SEM Expr
                                             else empty
 %%]
 
-%%[9
-%%]
+%%[100100
 SEM Expr
-  | Let         loc     .   ppExtra     :=  ppVarMpV @tmpoTyVarMp
-
-%%[100
-SEM Expr
-  | Let         loc     .   ppExtra     :=  empty
+  | Let         loc     .   extraPP     :=  empty
 %%]
 
 %%[9
 %%]
 SEM AGItf
-  | AGItf       loc     .   ppExtra 	:=  ppVarMpV @expr.tyVarMp
+  | AGItf       loc     .   extraPP     :=  ppVarMpV @expr.tyVarMp
 
 %%[20
 SEM AGItf
-  | AGItf       loc     .   ppExtra 	:=  if ehcOptVerbosity @lhs.opts > VerboseNormal
+  | AGItf       loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (ppGam @lhs.valGam)
                                             else empty
 %%]
 
 %%[100
 SEM AGItf
-  | AGItf       loc     .   ppExtra 	:=  empty
+  | AGItf       loc     .   extraPP     :=  empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

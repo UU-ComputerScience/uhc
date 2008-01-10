@@ -462,13 +462,12 @@ instance SemApp Ty where
   semAppTop      = id
   semCon         = Ty_Con . mkHNm
   semParens      = id
-  mkRngCon _     = Ty_Con . mkHNm
 %%]
-%%[1.mkRngVar hs
-  mkRngVar       = mkRngCon
+%%[1.semRngVar hs
+  semRngVar      = semRngCon
 %%]
-%%[3 -1.mkRngVar hs
-  mkRngVar _     = panic "Ty:mkRngVar"
+%%[3 -1.semRngVar hs
+  semRngVar _    = panic "Ty:semRngVar"
 %%]
 %%[7 hs
   mkProdApp tyL  = mkTyRec (zip positionalFldNames tyL)

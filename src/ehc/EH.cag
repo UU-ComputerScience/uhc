@@ -203,17 +203,11 @@ mkEH = rngLift emptyRange
 
 %%[1 hs
 instance SemApp Expr where
-  semApp       = mkEH Expr_App
-  semAppTop    = mkEH Expr_AppTop
-  semCon       = mkEH Expr_Con . mkHNm
-  semParens    = mkEH Expr_Parens
-%%[[1
-  mkRngCon _   = Expr_Con . mkHNm
-  mkRngVar _   = Expr_Var . mkHNm
-%%][99
-  mkRngCon r   = Expr_Con r . mkHNm
-  mkRngVar r   = Expr_Var r . mkHNm
-%%]]
+  semRngApp    r  = rngLift r Expr_App
+  semRngAppTop r  = rngLift r Expr_AppTop
+  semRngVar    r  = rngLift r Expr_Var . mkHNm
+  semRngCon    r  = rngLift r Expr_Con . mkHNm
+  semRngParens r  = rngLift r Expr_Parens
 %%[[7
   mkProdApp l
     = mkEH Expr_Rec $ mkEH RecExpr_Empty `mkRow` l
@@ -224,17 +218,11 @@ instance SemApp Expr where
 
 %%[1 hs
 instance SemApp PatExpr where
-  semApp       = mkEH PatExpr_App
-  semAppTop    = mkEH PatExpr_AppTop
-  semCon       = mkEH PatExpr_Con . mkHNm
-  semParens    = mkEH PatExpr_Parens
-%%[[1
-  mkRngCon _   = PatExpr_Con . mkHNm
-  mkRngVar _   = PatExpr_Var . mkHNm
-%%][99
-  mkRngCon r   = PatExpr_Con r . mkHNm
-  mkRngVar r   = PatExpr_Var r . mkHNm
-%%]]
+  semRngApp    r  = rngLift r PatExpr_App
+  semRngAppTop r  = rngLift r PatExpr_AppTop
+  semRngVar    r  = rngLift r PatExpr_Var . mkHNm
+  semRngCon    r  = rngLift r PatExpr_Con . mkHNm
+  semRngParens r  = rngLift r PatExpr_Parens
 %%[[7
   mkProdApp l
     = mkEH PatExpr_Rec $ mkEH RecPatExpr_Empty `mkRow` l
@@ -244,22 +232,15 @@ instance SemApp PatExpr where
 
 %%[1 hs
 instance SemApp TyExpr where
-  semApp       = mkEH TyExpr_App
-  semAppTop    = mkEH TyExpr_AppTop
-  semCon       = mkEH TyExpr_Con . mkHNm
-  semParens    = mkEH TyExpr_Parens
+  semRngApp    r  = rngLift r TyExpr_App
+  semRngAppTop r  = rngLift r TyExpr_AppTop
 %%[[1
-  mkRngCon _   = TyExpr_Con . mkHNm
-%%][99
-  mkRngCon r   = TyExpr_Con r . mkHNm
-%%]]
-%%[[1
-  mkRngVar     = mkRngCon
+  semRngVar       = semRngCon
 %%][3
-  mkRngVar _   = TyExpr_Var . mkHNm
-%%][99
-  mkRngVar r   = TyExpr_Var r . mkHNm
+  semRngVar    r  = rngLift r TyExpr_Var . mkHNm
 %%]]
+  semRngCon    r  = rngLift r TyExpr_Con . mkHNm
+  semRngParens r  = rngLift r TyExpr_Parens
 %%[[7
   mkProdApp l
     = mkEH TyExpr_Row $ mkEH RowTyExpr_Empty `mkRow` l
@@ -269,16 +250,10 @@ instance SemApp TyExpr where
 
 %%[6 hs
 instance SemApp KiExpr where
-  semApp       = mkEH KiExpr_App
-  semAppTop    = mkEH KiExpr_AppTop
-  semCon       = mkEH KiExpr_Con . mkHNm
-  semParens    = mkEH KiExpr_Parens
-%%[[1
-  mkRngCon _   = KiExpr_Con . mkHNm
-  mkRngVar _   = KiExpr_Var . mkHNm
-%%][99
-  mkRngCon r   = KiExpr_Con r . mkHNm
-  mkRngVar r   = KiExpr_Var r . mkHNm
-%%]]
+  semRngApp    r  = rngLift r KiExpr_App
+  semRngAppTop r  = rngLift r KiExpr_AppTop
+  semRngVar    r  = rngLift r KiExpr_Var . mkHNm
+  semRngCon    r  = rngLift r KiExpr_Con . mkHNm
+  semRngParens r  = rngLift r KiExpr_Parens
 %%]
 

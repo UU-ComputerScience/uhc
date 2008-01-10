@@ -22,6 +22,10 @@
 %%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
+For debug/trace:
+%%[4 import(EH.Util.Pretty)
+%%]
+
 %%[9 import(qualified Data.Set as Set)
 %%]
 
@@ -55,7 +59,7 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
-                        ,  foErrL            :: !ErrL  
+                        ,  foErrL            :: !ErrL                ,  foTrace           :: ![PP_Doc]
 %%]
 %%[9
                         ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
@@ -75,7 +79,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
 %%[4.emptyFO
 emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
-                        ,  foErrL            =   []         
+                        ,  foErrL            =   []                  ,  foTrace           =   []
 %%]
 %%[9
                         ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []

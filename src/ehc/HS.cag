@@ -109,29 +109,29 @@ instance Show Range where
 
 %%[1 hs
 instance SemApp Type where
-  semApp       = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
-  semAppTop    = id
-  semCon       = mkRngNm Type_Constructor
-  semParens    = Type_Parenthesized emptyRange
-  mkApp (a:as) = if null as then a else Type_NormalApplication emptyRange a as
-  mkRngCon r n = Type_Constructor r (mkHNm n)
+  semApp        = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
+  semAppTop     = id
+  semCon        = mkRngNm Type_Constructor
+  semParens     = Type_Parenthesized emptyRange
+  mkApp (a:as)  = if null as then a else Type_NormalApplication emptyRange a as
+  semRngCon r n = Type_Constructor r (mkHNm n)
 %%]
-%%[1.mkRngVar hs
-  mkRngVar     = mkRngCon
+%%[1.semRngVar hs
+  semRngVar     = semRngCon
 %%]
-%%[3 -1.mkRngVar hs
-  mkRngVar r n = Type_Variable r (mkHNm n)
+%%[3 -1.semRngVar hs
+  semRngVar r n = Type_Variable r (mkHNm n)
 %%]
 
 %%[1 hs
 instance SemApp Expression where
-  semApp       = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
-  semAppTop    = id
-  semCon       = mkRngNm Expression_Constructor
-  semParens    = Expression_Parenthesized emptyRange
-  mkApp (a:as) = if null as then a else Expression_NormalApplication emptyRange a as
-  mkRngCon r n = Expression_Constructor r (mkHNm n)
-  mkRngVar r n = Expression_Variable r (mkHNm n)
+  semApp            = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
+  semAppTop         = id
+  semCon            = mkRngNm Expression_Constructor
+  semParens         = Expression_Parenthesized emptyRange
+  mkApp (a:as)      = if null as then a else Expression_NormalApplication emptyRange a as
+  semRngCon r n     = Expression_Constructor r (mkHNm n)
+  semRngVar r n     = Expression_Variable r (mkHNm n)
 %%]
 
 
