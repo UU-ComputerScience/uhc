@@ -2,8 +2,11 @@ Make sure a Bind always returns a node (not a pointer)
 Also, make sure that a Case always scrutinizes a node.
 If not, add an extra Fetch to fetch the contents of a pointer.
 
-Contrariwise, the parameters of "Apply" should always be pointers.
+Contrariwise, the argumentList of "Apply", "Call", "FFI" and Node-Values should always be pointers.
 If not, add an extra Store to store the node in a heap location.
+
+Finally, if a name is Eval`ed  that denotes a Node, 
+it will be replaced by Unit of a Var with that name.
 
 TODO: these transformations, particularly the adding of Stores,
 wastes unique numbers, because unique is incremented even if the transformation was not necessary.
@@ -101,12 +104,15 @@ SEM GrExpr
     Throw
     Catch  lhs.selfAsNode          = @loc.grTrf                       
 
-  | App    loc.grTrf               = @argL.conversion (GrExpr_App @nm @argL.selfAsPtr)
+  | App    loc.grTrf               = @argL.conversion (GrExpr_App  @nm @argL.selfAsPtr)
+  | Call   loc.grTrf               = @argL.conversion (GrExpr_Call @nm @argL.selfAsPtr)
+  | FFI    loc.grTrf               = @argL.conversion (GrExpr_FFI  @nm @argL.selfAsPtr @tagL.grTrf)
+--  | Store  loc.grTrf               = @val.conversion  (GrExpr_Store @val.selfAsPtr)
 
-
-
-
-                                     
+  | Eval   loc.grTrf               = let nameIsNode = maybe False id (Map.lookup @nm @lhs.env)
+                                     in  if   nameIsNode
+                                         then GrExpr_Unit (GrVal_Var @nm)
+                                         else GrExpr_Eval @nm
   
 SEM GrAlt
   | Alt    lhs.selfAsNode          = GrAlt_Alt @pat.grTrf @expr.selfAsNode
@@ -157,12 +163,13 @@ SEM GrVal
                  loc.isNode = True
   | Var          loc.isNode = maybe False id (Map.lookup @nm @lhs.env)
   
-  | Node
-    VarNode
+  | Node         lhs.selfAsPtr    =  GrVal_Node @tag @fldL.selfAsPtr
+  | VarNode      lhs.selfAsPtr    =  GrVal_VarNode   @fldL.selfAsPtr
 %%[[10
-    NodeAdapt    
+
 %%]]
-    Var          (lhs.selfAsPtr,lhs.conversion,lhs.unique) = if @loc.isNode
+
+  | Var          (lhs.selfAsPtr,lhs.conversion,lhs.unique) = if @loc.isNode
                                                              then let newVar = HNmNr @lhs.unique Nothing
                                                                       newVal = GrVal_Var newVar
                                                                       newPat = GrPatLam_Var newVar

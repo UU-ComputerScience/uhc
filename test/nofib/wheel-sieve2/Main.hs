@@ -132,8 +132,8 @@ nextSize (Wheel s ms ns) p q =
   where
   (xs, ns') = span (<=q) (foldr turn0 (roll (p-1) s) ns)
   ms' = foldr turn0 xs ms
-  roll 0 _ = []
-  roll t o = foldr (turn o) (foldr (turn o) (roll (t-1) (o+s)) ns) ms
+  roll t o | t==0  = []
+           | True  = foldr (turn o) (foldr (turn o) (roll (t-1) (o+s)) ns) ms
   turn0  n rs =
     if n`mod`p>0 then n:rs else rs
   turn o n rs =

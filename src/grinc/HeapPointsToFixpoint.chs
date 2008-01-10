@@ -104,7 +104,9 @@ envChanges equat env heap
                                       }
       IsEvaluation    d v      ev  -> do
                                       {  av <- readArray env v
+                                      --;  _ <- trace ("absEval " ++ show equat) (return ())
                                       ;  res <- absEval av
+                                      --;  _ <- trace ("res " ++ show res) (return ())
                                       ;  return [(d,res)]
                                       }
       IsApplication   d vs     ev  -> do 
@@ -116,7 +118,7 @@ envChanges equat env heap
     where
     absSelect av i t
      = case av of
-         AbsNodes  ns  -> maybe AbsBottom (\xs -> if i<length xs then xs!!i else error "cannot analyze FFI's returning non-nullary constructors") (Map.lookup t ns)
+         AbsNodes  ns  -> maybe AbsBottom (\xs -> if i<length xs then xs!!i else error ("cannot analyze FFI's returning non-nullary constructors " ++ show ns)) (Map.lookup t ns)
          AbsBottom     -> av
          AbsError _    -> av
          _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)
@@ -144,7 +146,7 @@ envChanges equat env heap
                              }
           AbsBottom   ->  return av
           AbsError _  ->  return av
-          _           ->  return $ AbsError "Variable passed to eval is not a location"
+          _           ->  return $ AbsError ("Variable passed to eval is not a location: " ++ show av)
          
     --absAux :: [AbstractValue] -> ST s AbstractValue
     absAux avs 
@@ -205,9 +207,9 @@ procChange arr (i,e1) =
       }
 
 
---moniEqua (IsEvaluation d _ _) = d==320
+--moniEqua (IsEvaluation d _ _) = d==5230
 --moniEqua (IsApplication d _ _) = d==788
---moniEqua _ = False
+moniEqua _ = False
 
 solveEquations :: Int -> Int -> Equations -> HeapEquations -> Limitations -> (Int,HptMap)
 solveEquations lenEnv lenHeap eqs1 eqs2 lims =
@@ -224,7 +226,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
        ; let procEnv equat
                 = do
                   { 
-                  --  ah <- getAssocs heap
+                  -- ah <- getAssocs heap
                   --; ae  <- getAssocs env
                   --; _ <- trace ("equat " ++ show equat) (return ())
                   --; _ <- (if moniEqua equat then trace (unlines ("SOLUTION"      : map show ae)) else id)  $ return ()
@@ -264,10 +266,10 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
 
        ; mapM (procLimit env heap) lims2      
 
-       --; ah <- getAssocs heap
-       --; ae  <- getAssocs env
-       --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
-       --; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
+       ; ah <- getAssocs heap
+       ; ae  <- getAssocs env
+       ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
+       ; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
       
        ; absHeap <- unsafeFreeze heap
        ; absEnv  <- unsafeFreeze env

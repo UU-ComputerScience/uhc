@@ -1034,7 +1034,8 @@ iterate' f x = x : (iterate' f $! f x)
 {-----------------------------
 primitive primShowsInt :: Int -> Int -> ShowS
 -----------------------------}
-foreign import ccall primShowInt :: Int -> String
+--foreign import ccall primShowInt :: Int -> String
+-- TODO: replace this by a function Int -> PackedString
 
 {-----------------------------
 -----------------------------}
@@ -1045,8 +1046,14 @@ instance Read Int where
 instance Show Int where
     showsPrec   = primShowsInt
 -----------------------------}
+showInt :: Int -> String
+showInt x | x<0  = '-' : showInt(-x)
+          | x==0 = "0"
+          | otherwise = (map primIntToChar . map (+48) . reverse . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
+
 instance Show Int where
-    show   = primShowInt
+--  show   = primShowInt
+    show   = showInt
 
 {-----------------------------
 primitive primShowsInteger :: Int -> Integer -> ShowS

@@ -52,6 +52,6 @@ the_filter (n:ns) = filter (isdivs n) ns
 primes :: [Int]
 primes = map head (iterate the_filter (iterate suCC 2))
 
-arg = 5500
+arg = 500
 
 main = primes !! arg

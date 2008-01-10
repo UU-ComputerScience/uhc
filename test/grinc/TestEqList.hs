@@ -31,6 +31,11 @@ foreign import ccall primEqInt      :: Int -> Int -> Bool
 instance Eq Int where 
    (==)  =  primEqInt
 
+instance Eq Bool where 
+   True == True  =  True
+   False == False = True
+   _ == _ = False
+
 
 data [] a = ''[]'' | a : [a]
 
@@ -40,4 +45,4 @@ instance Eq a => Eq [a] where
     _      == _      =  False
 
 
-main = [100] == [100]
+main = [100] == [100] && [True]==[True] && True==False && 42==37
