@@ -4,17 +4,13 @@
 #undef USE_BOEHM_GC
 
 /* size of Pointer/GrWord/... */
-#undef SIZEOF_UINTPTR_T
+#undef SIZEOF_INTPTR_T
 
 /* size of Pointer */
-#undef SIZEOF_UNSIGNED_INT_P
-
-#define SIZEOF_POINTER	SIZEOF_UINTPTR_T
+#define SIZEOF_POINTER	SIZEOF_INTPTR_T
 
 /* size of GrWord */
-#undef SIZEOF_UNSIGNED_INT
-
-#define SIZEOF_GRWORD	SIZEOF_UINTPTR_T
+#define SIZEOF_GRWORD	SIZEOF_INTPTR_T
 
 %%]
 
@@ -24,7 +20,7 @@
 %%]
 
 %%[8
-#if SIZEOF_UINTPTR_T == 8
+#if SIZEOF_INTPTR_T == 8
 #define USE_64_BITS 1
 #define USE_32_BITS 0
 #else

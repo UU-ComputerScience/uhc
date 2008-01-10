@@ -10,15 +10,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(sizeofPointer)
-#undef SIZEOF_UINTPTR_T
+#undef SIZEOF_INTPTR_T
 
 sizeofPointer :: Int
-sizeofPointer = SIZEOF_UINTPTR_T
+sizeofPointer = SIZEOF_INTPTR_T
 %%]
 
 %%[8 export(sizeofGrWord,use64Bits,use32Bits)
 sizeofGrWord :: Integer
-sizeofGrWord = SIZEOF_UINTPTR_T
+sizeofGrWord = SIZEOF_INTPTR_T
 
 use64Bits, use32Bits :: Bool
 (use64Bits,use32Bits)

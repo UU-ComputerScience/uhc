@@ -270,18 +270,18 @@ SEM Statement
                 -- to a LLVMExpression and need to be reduced to a Var
                 loc.(uniqNr1,argVars,argStmts) =
                                foldr (\x xs -> let (nr,val,stmt) =
-                                                     expr2var (fst3 xs) x
-                                                in ( nr, val : snd3 xs
-                                                   , stmt ++ (trd3 xs)
+                                                     expr2var (fstTup3 xs) x
+                                                in ( nr, val : sndTup3 xs
+                                                   , stmt ++ (trdTup3 xs)
                                                    )
                                      ) (@loc.uniqSeed,[],[]) @args.llvmExpr 
                 -- Some arguments can be pointers and need to be casted
                 -- to inttypes 
                 loc.(uniqNr2,castVars,castStmts) =  
                                foldr (\x xs -> let (nr,val,stmt) =
-                                                     cast2int (fst3 xs) x @lhs.intType
-                                                in ( nr, val : snd3 xs
-                                                   , stmt ++ (trd3 xs)
+                                                     cast2int (fstTup3 xs) x @lhs.intType
+                                                in ( nr, val : sndTup3 xs
+                                                   , stmt ++ (trdTup3 xs)
                                                    )
                                      ) (@loc.uniqNr1,[],[]) @loc.argVars  
                                    
@@ -352,7 +352,7 @@ SEM Statement
                     
                 loc.altStmts =  
                                concatMap (( ++ [Stmt_Branch @loc.resumeLabel]) . 
-                                          trd3)
+                                          trdTup3)
                                    @body.jumpTargets  
                 
                 loc.targets = map (\(x,y,z) -> (x,y)) @body.jumpTargets
@@ -455,18 +455,18 @@ SEM Value
                 -- to a LLVMExpression and need to be reduced to a Var
                 loc.(uniqNr1,argVars,argStmts) =
                                foldr (\x xs -> let (nr,val,stmt) =
-                                                     expr2var (fst3 xs) x
-                                                in ( nr, val : snd3 xs
-                                                   , stmt ++ (trd3 xs)
+                                                     expr2var (fstTup3 xs) x
+                                                in ( nr, val : sndTup3 xs
+                                                   , stmt ++ (trdTup3 xs)
                                                    )
                                      ) (@loc.uniqSeed,[],[]) @args.llvmExpr 
                 -- Some arguments can be pointers and need to be casted
                 -- to inttypes 
                 loc.(uniqNr2,castVars,castStmts) =  
                                foldr (\x xs -> let (nr,val,stmt) =
-                                                     cast2int (fst3 xs) x @lhs.intType
-                                                in ( nr, val : snd3 xs
-                                                   , stmt ++ (trd3 xs)
+                                                     cast2int (fstTup3 xs) x @lhs.intType
+                                                in ( nr, val : sndTup3 xs
+                                                   , stmt ++ (trdTup3 xs)
                                                    )
                                      ) (@loc.uniqNr1,[],[]) @loc.argVars  
                 -- We generate the formal parameters by generating new names
@@ -705,16 +705,16 @@ hs2str :: HsName -> String
 hs2str = hsnShowAlphanumeric
 
 -- Get the first element of a 3 tuple
-fst3 :: (a,b,c) -> a
-fst3 (x,_,_) = x
+fstTup3 :: (a,b,c) -> a
+fstTup3 (x,_,_) = x
 
 -- Get the second element of a 3 tuple
-snd3 :: (a,b,c) -> b
-snd3 (_,x,_) = x
+sndTup3 :: (a,b,c) -> b
+sndTup3 (_,x,_) = x
 
 -- Get the third element of a 3 tuple
-trd3 :: (a,b,c) -> c
-trd3 (_,_,x) = x
+trdTup3 :: (a,b,c) -> c
+trdTup3 (_,_,x) = x
 
 primPatternMatchFailureFuncDecl :: FuncDecl
 primPatternMatchFailureFuncDecl =
