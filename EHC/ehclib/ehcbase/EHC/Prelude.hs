@@ -441,14 +441,14 @@ class Enum a where
 -- Read and Show classes ------------------------------------------------------
 
 {-----------------------------
-type ReadS a = String -> [(a,String)]
 -----------------------------}
+type ReadS a = String -> [(a,String)]
 type ShowS   = String -> String
 
-{-----------------------------
 class Read a where
     readsPrec :: Int -> ReadS a
     readList  :: ReadS [a]
+{-----------------------------
 
     -- Minimal complete definition: readsPrec
     readList   = readParen False (\r -> [pr | ("[",s) <- lex r,
@@ -751,9 +751,9 @@ instance Monad [ ] where
     fail s       = []
 
 {-----------------------------
+-----------------------------}
 instance Read a => Read [a]  where
     readsPrec p = readList
------------------------------}
 
 instance Show a => Show [a]  where
     showsPrec p = showList
@@ -1037,9 +1037,9 @@ primitive primShowsInt :: Int -> Int -> ShowS
 foreign import ccall primShowInt :: Int -> String
 
 {-----------------------------
+-----------------------------}
 instance Read Int where
     readsPrec p = readSigned readDec
------------------------------}
 
 {-----------------------------
 instance Show Int where
@@ -1774,13 +1774,17 @@ showField m@(c:_) v
   | otherwise = showChar '(' . showString m . showString ") = " . shows v
 -----------------------------}
 
-{-----------------------------
 readParen    :: Bool -> ReadS a -> ReadS a
+{-----------------------------
 readParen b g = if b then mandatory else optional
                 where optional r  = g r ++ mandatory r
                       mandatory r = [(x,u) | ("(",s) <- lex r,
                                              (x,t)   <- optional s,
                                              (")",u) <- lex t    ]
+-----------------------------}
+readParen = undefined
+
+{-----------------------------
 
 readField    :: Read a => String -> ReadS a
 readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
@@ -1794,7 +1798,9 @@ readFieldName m@(c:_) s0
                            (f,s2)   <- lex s1, f == m,
                            (")",s3) <- lex s2 ]
 
+-----------------------------}
 lex                    :: ReadS String
+{-----------------------------
 lex ""                  = [("","")]
 lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
 lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
@@ -1836,6 +1842,8 @@ lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
                                                    (ds,u) <- lexDigits t] ++
                            [(e:ds,t)   | (ds,t) <- lexDigits s]
                 lexExp s = [("",s)]
+-----------------------------}
+lex = undefined
 
 lexDigits               :: ReadS String
 lexDigits               =  nonnull isDigit
@@ -1844,6 +1852,7 @@ nonnull                 :: (Char -> Bool) -> ReadS String
 nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
 
 lexLitChar          :: ReadS String
+{-----------------------------
 lexLitChar ""       =  []
 lexLitChar (c:s)
  | c /= '\\'        =  [([c],s)]
@@ -1865,16 +1874,17 @@ lexLitChar (c:s)
    table = ('\DEL',"DEL") : asciiTab
    prefix c (t,s) = (c:t, s)
 -----------------------------}
+lexLitChar = undefined
 
 isOctDigit c  =  c >= '0' && c <= '7'
 isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
                            || c >= 'a' && c <= 'f'
 
 {-----------------------------
+-----------------------------}
 lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
 lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
 lexmatch xs     ys               =  (xs,ys)
------------------------------}
 
 asciiTab = zip ['\NUL'..' ']
            ["NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL",
@@ -1935,7 +1945,6 @@ protectEsc p f             = f . cont
  where cont s@(c:_) | p c  = "\\&" ++ s
        cont s              = s
 
-{-----------------------------
 -- Unsigned readers for various bases
 readDec, readOct, readHex :: Integral a => ReadS a
 readDec = readInt 10 isDigit    (\ d -> fromEnum d - fromEnum_0)
@@ -1946,9 +1955,9 @@ readHex = readInt 16 isHexDigit hex
 
 fromEnum_0 :: Int
 fromEnum_0 = fromEnum '0'
+{-----------------------------
 -----------------------------}
 
-{-----------------------------
 -- readInt reads a string of digits using an arbitrary base.  
 -- Leading minus signs must be handled elsewhere.
 
@@ -1958,12 +1967,17 @@ readInt radix isDig digToInt s =
         | (ds,r) <- nonnull isDig s ]
 
 readSigned:: Real a => ReadS a -> ReadS a
+{-----------------------------
 readSigned readPos = readParen False read'
                      where read' r  = read'' r ++
                                       [(-x,t) | ("-",s) <- lex r,
                                                 (x,t)   <- read'' s]
                            read'' r = [(n,s)  | (str,s) <- lex r,
                                                 (n,"")  <- readPos str]
+-----------------------------}
+readSigned readPos = undefined
+
+{-----------------------------
 
 
 -- This floating point reader uses a less restrictive syntax for floating

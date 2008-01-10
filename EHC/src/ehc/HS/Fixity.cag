@@ -135,7 +135,7 @@ unOpChain opChain
   where un ch
           = case ch of
               OpChain_Op op _ _ _ rng l r
-                -> mkRngApp rng [op,un l,un r]
+                -> mkRngParApp rng [op,un l,un r]
               OpChain_Leaf leaf
                 -> leaf
 %%]

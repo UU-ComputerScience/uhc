@@ -35,6 +35,10 @@
 %%[4 import({%{EH}Ty.Trf.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
 %%]
 
+For debug/trace:
+%%[4 import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty})
+%%]
+
 %%[4 export(FIEnv(..),emptyFE)
 %%]
 
@@ -81,12 +85,13 @@ foAppLRCoe' opts (fCS,fLRCoe) c cs ce
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4.FIIn export(FIIn(..))
-data FIIn   =  FIIn     {  fiFIOpts          :: !FIOpts
-                        ,  fiUniq            :: !UID
-                        ,  fiVarMp           :: !VarMp
-                        ,  fiVarMpLoc        :: !VarMp
+data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts
+                        ,  fiUniq            ::  !UID
+                        ,  fiVarMp           ::  !VarMp
+                        ,  fiVarMpLoc        ::  !VarMp
+                        ,  fiTrace			 ::  ![PP_Doc]		-- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
 %%[[9
-                        ,  fiEnv             :: !FIEnv
+                        ,  fiEnv             ::  !FIEnv
 %%]]
                         }
 %%]
@@ -96,6 +101,7 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
                         ,  fiUniq            =   uidStart
                         ,  fiVarMp           =   emptyVarMp
                         ,  fiVarMpLoc        =   emptyVarMp
+                        ,  fiTrace           =   []
 %%[[9
                         ,  fiEnv             =   emptyFE
 %%]]
@@ -327,14 +333,18 @@ fitsInFI fi ty1 ty2
 %%][99
             range                   =  feRange $ fiEnv fi
 %%]]
-            res' fi tv t            =  (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = asGamLookup (tyConNm t) appSpineGam}
+            trfiAdd  tr   fi        =  fi {fiTrace = tr ++ fiTrace fi}
+            trfi msg rest fi        =  trfiAdd [trfitIn msg rest] fi
+            trfoAdd  tr   fo        =  fo {foTrace = tr ++ foTrace fo}
+            trfo msg rest fo        =  trfoAdd [trfitOu msg rest] fo
+            res' fi tv t            =  trfo "res" (ppTy tv) $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = asGamLookup (tyConNm t) appSpineGam}
             res  fi    t            =  res' fi t t
-            err    e                =  emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e}
-            errClash fi t1 t2       =  err [rngLift range Err_UnifyClash (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) (fiAppVarMp fi t1) (fiAppVarMp fi t2) (fioMode (fiFIOpts fi))]
+            err  fi e               =  trfo "err" (ppErrL e) $ emptyFO {foUniq = fioUniq (fiFIOpts fi), foErrL = e, foTrace = fiTrace fi}
+            errClash fi t1 t2       =  err fi [rngLift range Err_UnifyClash (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) (fiAppVarMp fi t1) (fiAppVarMp fi t2) (fioMode (fiFIOpts fi))]
             occurBind fi v t        =  bind fi v t
 %%]
             occurBind fi v t
-                | v `elem` ftv t    =  err [rngLift range Err_UnifyOccurs (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
+                | v `elem` ftv t    =  err fi [rngLift range Err_UnifyOccurs (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
                 | otherwise         =  bind fi v t
 
 %%[9.fitsIn.lookupImplsVar
@@ -409,9 +419,9 @@ fitsInFI fi ty1 ty2
             foPlusVarMp c fo = fo {foVarMp = c |+> foVarMp fo}
             fiSetVarMp  c fi = fi {fiVarMpLoc = c}
             fiPlusVarMp c fi = fi {fiVarMpLoc = c |+> fiVarMpLoc fi}
-            fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi
+            fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi -- , foTrace = fiTrace fi
                                   }
-            fofi       fo fi = fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo
+            fofi       fo fi = fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo -- , fiTrace = foTrace fo
                                   }
             fiBind    v t fi = fiPlusVarMp (v `varmpTyUnit` t) fi
 %%]
@@ -518,25 +528,25 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                          where (fi2,rv) = mkTv fi
                        fR fi r1@(Ty_Con n1) _ _ _ e2@(_:_)
                          | n1 == hsnRowEmpty && isRec
-                         = err [rngLift range Err_MissingRowLabels (assocLKeys e2) (fiAppVarMp fi tr1)]
+                         = err fi [rngLift range Err_MissingRowLabels (assocLKeys e2) (fiAppVarMp fi tr1)]
 {-
                        fR fi r1 r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isRec && not (null labs)
-                         = err [rngLift range Err_MissingRowLabels labs (fiAppVarMp fi tr2)]
+                         = err fi [rngLift range Err_MissingRowLabels labs (fiAppVarMp fi tr2)]
                          where labs = fioNoLLabElimFor (fiFIOpts fi) `List.intersect` assocLKeys e1
 -}
                        fR fi r1 r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isRec
                          =  if null labs
                             then fR fi r1 r2 [] e12 e2
-                            else err [rngLift range Err_TooManyRowLabels (assocLKeys e1) (fiAppVarMp fi tr2)]
+                            else err fi [rngLift range Err_TooManyRowLabels (assocLKeys e1) (fiAppVarMp fi tr2)]
                          where labs = fioNoRLabElimFor (fiFIOpts fi) `List.intersect` assocLKeys e1
                        fR fi r1@(Ty_Con n1) r2 e1 e12 e2@(_:_)
                          | n1 == hsnRowEmpty && isSum
                          = fR fi r1 r2 e1 e12 []
                        fR fi r1 r2@(Ty_Con n2) e1@(_:_) e12 e2
                          | n2 == hsnRowEmpty && isSum
-                         = err [rngLift range Err_MissingRowLabels (assocLKeys e1) (fiAppVarMp fi tr2)]
+                         = err fi [rngLift range Err_MissingRowLabels (assocLKeys e1) (fiAppVarMp fi tr2)]
                        fR fi r1 r2 e1 e12@(_:_) e2
                          = foR
                          where (e1L,e2L) = unzip e12
@@ -680,18 +690,22 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
               = case filter (not . foHasErrs) tries of
                   (f:_) -> f
                   _     -> case (drop limit rt1, drop limit rt2) of
-                             ((t:_),_) -> err [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi t1) (fiAppVarMp fi t) limit]
-                             (_,(t:_)) -> err [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi t2) (fiAppVarMp fi t) limit]
-                             _         -> head tries
+                             (((t,tr):_),_) -> err (trfiAdd tr fi) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi t1) (fiAppVarMp fi t) limit]
+                             (_,((t,tr):_)) -> err (trfiAdd tr fi) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi t2) (fiAppVarMp fi t) limit]
+                             _              -> head tries
               where limit = ehcOptTyBetaRedCutOffAt globOpts
                     reduc = tyBetaRed fi
                     rt1   = reduc t1
                     rt2   = reduc t2
-                    tries = take (limit+1) $ try (t1 : rt1) (t2 : rt2)
-                          where try (t1:ts1@(_:_)) (t2:ts2@(_:_)) = f fi t1 t2 : try ts1 ts2
-                                try ts1@[t1]       (t2:ts2@(_:_)) = f fi t1 t2 : try ts1 ts2
-                                try (t1:ts1@(_:_)) ts2@[t2]       = f fi t1 t2 : try ts1 ts2
-                                try [t1]           [t2]           = [f fi t1 t2]
+                    tries = take (limit+1) $ try fi ((t1,[]) : rt1) ((t2,[]) : rt2)
+                          where try fi ((t1,tr1):ts1@(_:_)) ((t2,tr2):ts2@(_:_)) = f fi' t1 t2 : try fi' ts1 ts2
+                                                                                 where fi' = trfiAdd tr1 $ trfiAdd tr2 fi
+                                try fi ts1@[(t1,tr1)]       ((t2,tr2):ts2@(_:_)) = f fi' t1 t2 : try fi' ts1 ts2
+                                                                                 where fi' = trfiAdd tr1 $ trfiAdd tr2 fi
+                                try fi ((t1,tr1):ts1@(_:_)) ts2@[(t2,tr2)]       = f fi' t1 t2 : try fi' ts1 ts2
+                                                                                 where fi' = trfiAdd tr1 $ trfiAdd tr2 fi
+                                try fi [(t1,tr1)]           [(t2,tr2)]           = [f fi' t1 t2]
+                                                                                 where fi' = trfiAdd tr1 $ trfiAdd tr2 fi
 %%]
 
 %%[4.fitsIn.fVar
@@ -947,20 +961,21 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 = manyFO [ffo,afo,foCmbApp ffo afo]
                 where  ffo  = fVar f fi tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi'  = (fofi ffo fi) {fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
+                       fi'  = (fofi ffo fi) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
                        afo  = fVar ff fi' ta1 ta2
 %%]
 
 %%[9.fitsIn.App -4.fitsIn.App
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
                 = manyFO [ffo,afo,rfo]
-                where  ffo  = fVar f fi tf1 tf2
+                where  fi2  = fi -- trfi "tyapp" ("t1:" >#< t1 >-< "t2:" >#< t2) fi
+                       ffo  = fVar f fi2 tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi'  = (fofi ffo fi) {fiFIOpts  = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
-                       afo  = fVar ff fi' ta1 ta2
+                       fi3  = (fofi ffo fi2) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
+                       afo  = fVar ff fi3 ta1 ta2
                        rfo  = case foMbAppSpineInfo ffo of
                                 Nothing | not $ lrcoeIsId $ foLRCoe afo
-                                  -> err [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
+                                  -> err fi3 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
                                 _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
 %%]
 
@@ -1002,6 +1017,18 @@ GADT: type clash between fixed type variable and some other type results in a eq
 fitsIn' :: String -> FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
 fitsIn' msg opts env uniq varmp ty1 ty2
   =  fitsIn opts (trPP (msg ++ "-env") env) (trPP (msg ++ "-uniq") uniq) varmp (trPP (msg ++ "-ty1") ty1) (trPP (msg ++ "-ty2") ty2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+trfit :: String -> String -> PP_Doc -> PP_Doc
+trfit dir msg rest =  dir >|< "." >|< msg >|< ":" >#< rest
+
+trfitIn = trfit ">"
+trfitOu = trfit "<"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1163,13 +1190,13 @@ mkFitsInWrap env
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[11
-tyBetaRed1 :: FIIn -> Ty -> Maybe Ty
+tyBetaRed1 :: FIIn -> Ty -> Maybe (Ty,[PP_Doc])
 tyBetaRed1 fi tp
   = eval fun args
   where (fun,args) = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) tp
         eval lam@(Ty_Lam fa b) args
           | lamLen <= argLen
-              = Just (mkApp (subst |=> lamBody : drop lamLen args))
+              = mkres (mkApp (subst |=> lamBody : drop lamLen args))
           | otherwise
               = Nothing
           where (lamArgs,lamBody) = tyLamArgsRes lam
@@ -1180,14 +1207,17 @@ tyBetaRed1 fi tp
               = case tyGamLookup nm tyGam of
                   Just tgi -> case tgiTy tgi of
                                 Ty_Con nm' | nm == nm' -> Nothing
-                                f                      -> Just (mkApp (f:aa))
+                                f                      -> mkres (mkApp (f:aa))
                   Nothing  -> Nothing
-        eval _ _
-              = Nothing
-        tyGam = feTyGam $ fiEnv fi
+        eval _ _ = Nothing
+        mkres t  = Just (t,[trfitIn "exp" ("from:" >#< tp >-< "to  :" >#< t)])
+        tyGam    = feTyGam $ fiEnv fi
 
-tyBetaRed :: FIIn -> Ty -> [Ty]
-tyBetaRed fi = unfoldr (fmap (\t -> (t,t)) . tyBetaRed1 fi)
+tyBetaRed :: FIIn -> Ty -> [(Ty,[PP_Doc])]
+tyBetaRed fi ty
+  = case tyBetaRed1 fi ty of
+      Just tf@(ty,_) -> tf : tyBetaRed fi ty
+      _              -> []
 %%]
 
 %%[11 export(tyBetaRedFull)
@@ -1196,7 +1226,7 @@ tyBetaRedFull fi ty
   = red ty
   where env = fiEnv fi
         lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
-        redl ty = take lim $ tyBetaRed fi ty
+        redl ty = take lim $ map fst $ tyBetaRed fi ty
         -- red  ty = reda $ choose ty $ redl ty
         red  ty = choose ty $ redl ty
         reda ty

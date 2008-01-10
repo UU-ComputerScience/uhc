@@ -64,12 +64,12 @@ SEM Body
 %%[[20
                                             (rngLift @range EH.Expr_Var @mainrefname)
 %%][99
-                                            (mkRngApp @range [rngLift @range EH.Expr_Var (@mainrefnames !! 2),rngLift @range EH.Expr_Var @mainrefname])
+                                            (mkRngParApp @range [rngLift @range EH.Expr_Var (@mainrefnames !! 2),rngLift @range EH.Expr_Var @mainrefname])
 %%]]
 %%[[98
                     .   ehMainSig   =   rngLift @range EH.Decl_TySig
                                             hsnMain
-                                            (mkRngApp @range [rngLift @range EH.TyExpr_Con (@mainrefnames !! 1),rngLift @range EH.TyExpr_Wild])
+                                            (mkRngParApp @range [rngLift @range EH.TyExpr_Con (@mainrefnames !! 1),rngLift @range EH.TyExpr_Wild])
 %%]]
 %%]
 
@@ -196,7 +196,7 @@ SEM Kind
     | NormalApplication
         lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
     | InfixApplication
-        loc         .   eh          =   mkRngApp @range [@operator.eh,@leftKind.eh,@rightKind.eh]
+        loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftKind.eh,@rightKind.eh]
     | Constructor
         lhs         .   eh          =   rngLift @range EH.KiExpr_Con @refname
     | Parenthesized
@@ -232,7 +232,7 @@ SEM Type
         lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
 %%[[1
     | InfixApplication
-        loc         .   eh          =   mkRngApp @range [@operator.eh,@leftType.eh,@rightType.eh]
+        loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh]
 %%][9
     | InfixApplication
         loc         .   (eh,ctxtFormErrs)
@@ -241,7 +241,7 @@ SEM Type
                                              in  if all isJust @leftType.ehMbAsPrL
                                                  then (t, [])
                                                  else (t, [rngLift @range Err_MalformedPred @leftType.pp])
-                                        else (mkRngApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
+                                        else (mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
 %%]
     | Constructor
         lhs         .   eh          =   rngLift @range EH.TyExpr_Con @refname
@@ -466,11 +466,11 @@ ehExpApp' app r f as
 
 ehExpConApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
 ehExpConApp r n as
-  = mkRngApp r (rngLift r EH.Expr_Con n : as)
+  = mkRngParApp r (rngLift r EH.Expr_Con n : as)
 
 ehExpVarApp :: Range -> HsName -> [EH.Expr] -> EH.Expr
 ehExpVarApp r n as
-  = mkRngApp r (rngLift r EH.Expr_Var n : as)
+  = mkRngParApp r (rngLift r EH.Expr_Var n : as)
 
 ehExpUnTop :: EH.Expr -> EH.Expr
 %%[[1
@@ -525,7 +525,7 @@ SEM Expression
     | NormalApplication
         loc         .   eh          =   mkRngApp @range (@function.eh : @arguments.eh)
     | InfixApplication
-        loc         .   eh          =   mkRngApp @range [@operator.eh,@leftExpression.eh,@rightExpression.eh]
+        loc         .   eh          =   mkRngParApp @range [@operator.eh,@leftExpression.eh,@rightExpression.eh]
     | InfixApplicationChainTop
         loc         .   eh          =   @ehFromOpChain
     | SectionApplication
@@ -533,9 +533,9 @@ SEM Expression
                                             ne = rngLift @range EH.Expr_Var n
                                             np = rngLift @range EH.PatExpr_Var n
                                         in  case (@leftExpression.eh,@rightExpression.eh) of
-                                              -- (Just l ,Just r ) -> mkRngApp @range [@operator.eh,l,r]
-                                              (Nothing,Just r ) -> rngLift @range EH.Expr_Lam np (mkRngApp @range [@operator.eh,ne,r])
-                                              (Just l ,Nothing) -> mkRngApp @range [@operator.eh,l]
+                                              -- (Just l ,Just r ) -> mkRngParApp @range [@operator.eh,l,r]
+                                              (Nothing,Just r ) -> rngLift @range EH.Expr_Lam np (mkRngParApp @range [@operator.eh,ne,r])
+                                              (Just l ,Nothing) -> mkRngParApp @range [@operator.eh,l]
                                               (Nothing,Nothing) -> @operator.eh
     | Lambda
         loc         .   eh          =   foldr (rngLift @range EH.Expr_Lam) @expression.eh @patterns.eh

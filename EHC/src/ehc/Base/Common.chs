@@ -19,9 +19,6 @@
 %%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
 %%]
 
-%%[1 export(SemApp(..),mkRngProdOpt)
-%%]
-
 %%[1 export(assocLElts,assocLKeys)
 %%]
 
@@ -336,12 +333,20 @@ filterSeq p = mkSeq . filter p . seqToList
 %%% Semantics classes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.SemApp
+%%[1.SemApp export(SemApp(..))
 class SemApp a where
+  -- basic semantics
   semApp            ::  a -> a -> a
   semAppTop         ::  a -> a
+  semVar            ::  (Position n,HSNM n) => n -> a
   semCon            ::  (Position n,HSNM n) => n -> a
   semParens         ::  a -> a
+  semRngApp         ::  Range -> a -> a -> a
+  semRngAppTop      ::  Range -> a -> a
+  semRngVar         ::  (Position n,HSNM n) => Range -> n -> a
+  semRngCon         ::  (Position n,HSNM n) => Range -> n -> a
+  semRngParens      ::  Range -> a -> a
+  -- constructing
   mk1App            ::  a -> a -> a
   mkApp             ::  [a] -> a
   mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
@@ -349,32 +354,48 @@ class SemApp a where
   mkProdApp         ::  [a] -> a
   mk1Arrow          ::  a -> a -> a
   mkArrow           ::  [a] -> a -> a
-%%]
-%%[1
+  -- constructin with Range
+  mk1RngApp         ::  Range -> a -> a -> a
   mkRngApp          ::  Range -> [a] -> a
-  mkRngVar          ::  HSNM n => Range -> n -> a
-  mkRngCon          ::  HSNM n => Range -> n -> a
   mkRngProd         ::  Range -> [a] -> a
-%%]
-%%[1.SemApp.default
-  mkApp as          =   case as of  [a]  ->  a
-                                    _    ->  semAppTop (foldl1 semApp as)
+
+  -- defaults semantics
+  semApp            =   semRngApp    emptyRange
+  semAppTop         =   semRngAppTop emptyRange
+  semVar            =   semRngVar    emptyRange
+  semCon            =   semRngCon    emptyRange
+  semParens         =   semRngParens emptyRange
+  semRngApp    _    =   semApp   
+  semRngAppTop _    =   semAppTop
+  semRngVar    _    =   semVar   
+  semRngCon    _    =   semCon   
+  semRngParens _    =   semParens
+  -- defaults
+  mkApp             =   mkRngApp emptyRange
   mk1App     a r    =   mkApp [a,r]
   mkConApp   c as   =   mkApp (semCon c : as)
   mk1ConApp  c a    =   mkConApp c [a]
   mkProdApp  as     =   mkConApp (hsnProd (length as)) as
   mk1Arrow   a r    =   mkApp [semCon hsnArrow,a,r]
   mkArrow           =   flip (foldr mk1Arrow)
-%%]
-%%[1
-  mkRngApp _        =   mkApp
-  mkRngProd _       =   mkProdApp
+  -- defaults with Range
+  mkRngProd rng     =   mkProdApp				-- to be done
+  mk1RngApp rng a r =   mkRngApp rng [a,r]
+  mkRngApp  rng as  =   case as of
+                          [a] -> a
+                          _   -> semRngAppTop rng (foldl1 (semRngApp rng) as)
 %%]
 
-%%[1
+%%[1 export(mkRngProdOpt)
 mkRngProdOpt :: SemApp e => Range -> [e] -> e
 mkRngProdOpt r [e] = e
 mkRngProdOpt r es  = mkRngProd r es
+%%]
+
+%%[1 export(mkRngParApp)
+mkRngParApp :: SemApp e => Range -> [e] -> e
+mkRngParApp r [a] = a
+mkRngParApp r as  = semRngParens r (mkRngApp r as)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

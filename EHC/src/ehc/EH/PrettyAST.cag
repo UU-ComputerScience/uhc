@@ -231,6 +231,7 @@ SEM Expr
 %%[4
 SEM Expr
   | Var         loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
+                                        , mkInfo1 "foTrace fo" (vlist $ foTrace @fo_)
                                         ]
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]

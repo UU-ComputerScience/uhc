@@ -195,6 +195,56 @@ ATTR AGItf [ isTopMod: Bool | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is top Lam? Used in Pretty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Expr [ isTopLam: Bool | | ]
+
+SEM Decl
+  | Val
+%%[[9
+    InstanceIntro
+%%]]
+                expr        .   isTopLam            =   True
+
+SEM AGItf
+  | AGItf       expr        .   isTopLam            =   True
+
+
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                body        .   isTopLam            =   False
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   isTopLam            =   True
+%%]
+
+%%[5
+SEM CaseAlt
+  | Pat         expr        .   isTopLam            =   True
+%%]
+
+%%[7
+SEM DataFieldExpr
+  | Upd Expr    expr        .   isTopLam            =   True
+
+SEM RecExpr
+  | Upd Expr Ext
+                expr        .   isTopLam            =   True
+%%]
+
+%%[97
+SEM PatExpr
+  | Expr        expr        .   isTopLam            =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% For mem retainment experiments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -203,7 +253,7 @@ ATTR AGItf [ isTopMod: Bool | | ]
 ATTR AGItf [ | | dummy: Int ]
 
 SEM AGItf
-  | AGItf		lhs			.	dummy				=	1
+  | AGItf       lhs         .   dummy               =   1
 
 
 
