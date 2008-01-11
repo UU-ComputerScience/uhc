@@ -3,6 +3,16 @@
  - Original code by Colin Runciman (colin@cs.york.ac.uk)
  - Changes to be compiled by EHC: John van Schie
  -}
+{-
+infixl 9  !!
+infixl 7  *,  `mod`
+infixl 6  +, -
+infixr 5  :
+infixr 5  ++
+infix  4  ==, /=, <, <=, >, `elem`, `notElem`
+infixr 3  &&
+infixr 2  ||
+
 
 foreign import ccall "primAddInt" (+)   :: Int -> Int -> Int
 foreign import ccall "primSubInt" (-)   :: Int -> Int -> Int
@@ -98,14 +108,14 @@ x <= y =
   if x > y
   then False
   else True
-
+-}
 {- wheel-sieve2 code -}
 
 primes :: [Int]
 primes = spiral wheels primes squares
 
 spiral :: [Wheel] -> [a] -> [Int] -> [Int]
-spiral ((Wheel s ms ns):ws) ps qs =
+spiral (Wheel s ms ns:ws) ps qs =
   foldr turn0 (roll s) ns
   where
   roll o = foldr (turn o) (foldr (turn o) (roll (o+s)) ns) ms
@@ -113,7 +123,7 @@ spiral ((Wheel s ms ns):ws) ps qs =
     if n<q then n:rs else sp
   turn o n rs =
     let n' = o+n in
-    if (n'==2) || (n'<q) then n':rs else dropWhile (<n') sp
+    if n'==2 || n'<q then n':rs else dropWhile (<n') sp
   sp = spiral ws (tail ps) (tail qs)
   q = head qs
 
@@ -140,7 +150,5 @@ nextSize (Wheel s ms ns) p q =
     let n' = o+n in
     if n'`mod`p>0 then n':rs else rs
 
-arg  = 30000
-main = primes !! arg
-
-
+arg  = <ARG1>
+main = <PRINT_INT> primes !! arg

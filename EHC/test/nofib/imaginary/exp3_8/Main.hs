@@ -4,14 +4,7 @@
  - Changes to be compiled by EHC: John van Schie
  -}
 
-foreign import ccall "primSubInt" (-)  :: Int -> Int -> Int
-foreign import ccall "primAddInt" (+)  :: Int -> Int -> Int
-
-foreign import ccall "primLtInt"  (<)  :: Int -> Int -> Bool
-
 infix 8 ^^^
-
-data Bool = False | True
 
 data Nat = Z | S Nat
 
@@ -24,8 +17,8 @@ mulNum :: Nat -> Nat -> Nat
 mulNum  x Z     = Z
 mulNum  x (S y) = plusNum (mulNum x y) x    
 
-fromInteger :: Int -> Nat
-fromInteger x   = if x < 1 then Z else S (fromInteger (x-1))
+fromInteger' :: Int -> Nat
+fromInteger' x   = if x < 1 then Z else S (fromInteger' (x-1))
 
 -- partain:sig
 int :: Nat -> Int
@@ -36,6 +29,6 @@ int (S x) = 1 + int x
 x ^^^ Z   = S Z
 x ^^^ S y = mulNum x (x ^^^ y)
 
-power = 8
+arg = <ARG1> 
 
-main = int ((fromInteger 3) ^^^ (fromInteger power))
+main = <PRINT_INT> int ((fromInteger' 3) ^^^ (fromInteger' arg))
