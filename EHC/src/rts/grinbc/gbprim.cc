@@ -340,7 +340,7 @@ PRIM GB_Word gb_primMaxInt()
 
 PRIM GB_Word gb_primMinInt()
 {
-  	return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+  	return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
 }
 %%]
 

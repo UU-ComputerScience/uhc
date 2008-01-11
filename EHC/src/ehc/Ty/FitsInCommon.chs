@@ -59,7 +59,7 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 %%[4.FIOut -(2.FIOut 2.FIOut.empty)
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
-                        ,  foErrL            :: !ErrL                ,  foTrace           :: ![PP_Doc]
+                        ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
 %%]
 %%[9
                         ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
