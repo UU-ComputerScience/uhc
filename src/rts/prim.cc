@@ -41,12 +41,14 @@ PRIM GrWord primMulInt(GrWord x, GrWord y)
 	return x*y;
 }
 
+/* This should be the Quot function */
 PRIM GrWord primDivInt(GrWord x, GrWord y)
 {   
 	//printf("div %d %d\n", x, y );
 	return x/y;
 }
 
+/* This should be the Rem function */
 PRIM GrWord primModInt(GrWord x, GrWord y)
 {   
 	//printf("mod %d %d\n", x, y );

@@ -6,8 +6,7 @@
 infixr 9  .
 infixl 9  !!
 --infixr 8  ^, ^^, **
-infixl 7  *, /, `div`, `mod`
---infixl 7  *, /, `quot`, `rem`, `div`, `mod`, :%, %
+infixl 7  *, /, `div`, `mod`, `rem`, `quot`
 infixl 6  +, -
 infixr 5  :
 infixr 5  ++
@@ -31,7 +30,11 @@ foreign import ccall "primSubInt" (-)  :: Int -> Int -> Int
 foreign import ccall "primMulInt" (*)  :: Int -> Int -> Int
 
 foreign import ccall "primDivInt" div  :: Int -> Int -> Int
-foreign import ccall "primModInt" mod   :: Int -> Int -> Int
+-- Quot == Div for non negative numbers, let's assume that for now
+foreign import ccall "primDivInt" quot  :: Int -> Int -> Int
+foreign import ccall "primModInt" mod  :: Int -> Int -> Int
+-- Rem == mod for non negative numbers, let's assume that for now
+foreign import ccall "primModInt" rem   :: Int -> Int -> Int
 
 -- Comparison binary operators
 foreign import ccall "primEqInt" (==)   :: Int -> Int -> Bool
@@ -45,6 +48,24 @@ x <= y = not (x > y)
 
 (>=) :: Int -> Int -> Bool
 x >= y = not (x < y)
+
+even, odd        :: Int -> Bool
+even n           =  n `rem` 2 == 0
+odd              =  not . even
+
+gcd            :: Int -> Int -> Int
+gcd x y         = gcd' (abs x) (abs y)
+                  where gcd' x 0 = x
+                        gcd' x y = gcd' y (x `rem` y)
+
+abs          :: Int -> Int
+abs x        | x >= 0    = x
+             | otherwise = -x
+
+signum       :: Int -> Int
+signum x     | x == 0    =  0
+             | x > 0     =  1
+             | otherwise = -1
 
 {------------------------------------------------------------------------------
 -- Booleans
@@ -119,10 +140,10 @@ length            = foldl (\n _ -> n + 1) 0
 foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []      = z
 foldl f z (x:xs)  = foldl f (f z x) xs
-{-
+
 foldl1           :: (a -> a -> a) -> [a] -> a
 foldl1 f (x:xs)   = foldl f x xs
-
+{-
 scanl            :: (a -> b -> a) -> a -> [b] -> [a]
 scanl f q xs      = q : (case xs of
                          []   -> []
@@ -163,12 +184,12 @@ replicate n x     = take n (repeat x)
 cycle            :: [a] -> [a]
 cycle []          = error "Prelude.cycle: empty list"
 cycle xs          = xs' where xs'=xs++xs'
-
+-}
 take                :: Int -> [a] -> [a]
 take n _  | n <= 0  = []
 take _ []           = []
 take n (x:xs)       = x : take (n-1) xs
-
+{-
 drop                :: Int -> [a] -> [a]
 drop n xs | n <= 0  = xs
 drop _ []           = []
@@ -202,10 +223,10 @@ break p              = span (\x -> not (p x))
 concatMap        :: (a -> [b]) -> [a] -> [b]
 concatMap _ []      = []
 concatMap f (x:xs)  = f x ++ concatMap f xs
-{-
+
 zip              :: [a] -> [b] -> [(a,b)]
 zip               = zipWith  (\a b -> (a,b))
-
+{-
 zip3             :: [a] -> [b] -> [c] -> [(a,b,c)]
 zip3              = zipWith3 (\a b c -> (a,b,c))
 -}
@@ -225,6 +246,35 @@ unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
 unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
                                   ([],[],[])
 -}
+reverse   :: [a] -> [a]
+reverse    = foldl (flip (:)) []
+
+and, or   :: [Bool] -> Bool
+and        = foldr (&&) True
+or         = foldr (||) False
+
+any, all  :: (a -> Bool) -> [a] -> Bool
+any p      = or  . map p
+all p      = and . map p
+
+elem, notElem    :: Int -> [Int] -> Bool
+elem              = any . (==)
+notElem           = all . (/=)
+{-
+lookup           :: a -> [(a,b)] -> Maybe b
+lookup k []       = Nothing
+lookup k ((x,y):xys)
+      | k==x      = Just y
+      | otherwise = lookup k xys
+-}
+sum, product     :: [Int] -> Int
+sum               = foldl (+) 0
+product           = foldl (*) 1
+
+maximum, minimum :: [Int] -> Int
+maximum           = foldl1 max
+minimum           = foldl1 min
+
 {------------------------------------------------------------------------------
 -- Strings
 -------------------------------------------------------------------------------}
@@ -234,7 +284,7 @@ foreign import ccall "primCStringToString" packedStringToString :: PackedString 
 
 {------------------------------------------------------------------------------
 -- Error Handling
--------------------------------------------------------------------------------}
+------------------------------------------------------------------------------}
 error :: [Char] -> a
 error s = undefined
 
@@ -243,22 +293,36 @@ undefined = error "undefined"
 
 {------------------------------------------------------------------------------
 -- Enum (Specialised for Int)
--------------------------------------------------------------------------------}
-{-
+------------------------------------------------------------------------------}
 enumFrom               :: Int -> [Int]
 enumFrom x             = [ x ..]
--}
+
 enumFromTo             :: Int -> Int -> [Int]
 enumFromTo m n | m > n = []
                | otherwise  
                        = m : enumFromTo (m + 1) n
-{-
+
 enumFromThen           :: Int -> Int -> [Int]
 enumFromThen x y       = [ x, y ..]
--}
+
 enumFromThenTo         :: Int -> Int -> Int -> [Int]
 enumFromThenTo x y z   = [ x, y .. z ]
 
+{------------------------------------------------------------------------------
+-- Num (Specialised for Int)
+------------------------------------------------------------------------------}
+negate          :: Int -> Int
+negate x        = 0 - x
+
+{------------------------------------------------------------------------------
+-- Ord (Specialised for Int)
+------------------------------------------------------------------------------}
+max       :: Int -> Int -> Int
+max x y   | x <= y      = y
+          | otherwise   = x
+min       :: Int -> Int -> Int
+min x y   | x <= y      = x
+          | otherwise   = y
 
 {------------------------------------------------------------------------------
 -- Some standard functions
