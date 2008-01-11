@@ -9,7 +9,7 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-clexe --verbose=0"
+DEF_EHC_FLAGS="-cbexe --verbose=0"
 DEF_GHC_FLAGS="-O2"
 
 # Haskell main file for each benchmark
@@ -165,7 +165,7 @@ function run {
     esac
     echo "$HC $FLAGS $EFLAGS $BENCHMARK_FILE"
     $HC $FLAGS $EFLAGS $BENCHMARK_FILE > $LOG_FILE 2>&1
-    ./$OBJFILE
+    time ./$OBJFILE
     clean_up
     echo "" 
     echo "--- DONE no-fib: $CURR_MAIN_FILE ---"
