@@ -17,7 +17,7 @@
 %%[2 module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}VarMp},{%{EH}Ty.Trf.Subst},{%{EH}Ty.Ftv}) export(Substitutable(..))
 %%]
 
-%%[2 import(qualified Data.Set as Set)
+%%[2 import(qualified Data.Set as Set,EH.Util.Pretty)
 %%]
 
 %%[9 import(qualified Data.Map as Map)
@@ -230,4 +230,11 @@ tyFixTyVars t
   where (sTo,sFr) = fixTyVarsVarMp t
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[2 hs export(ppS)
+ppS :: Substitutable x TyVarId VarMp => (x -> PP_Doc) -> VarMp -> x -> PP_Doc
+ppS pp c x = (pp $ c |=> x) >#< ppParens (pp x)
+%%]

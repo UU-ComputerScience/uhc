@@ -13,7 +13,7 @@
 %%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
-%%[2 hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe)
+%%[2 hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils})
 %%]
 
 %%[3 hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})

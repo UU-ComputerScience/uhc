@@ -277,6 +277,7 @@ AC_SUBST(LLVMC_CMD,$llvmcCmd)
 # sizeof GrWord*, Pointer
 # AC_CHECK_SIZEOF([nsigned int *])
 AC_CHECK_SIZEOF([intptr_t])
+AC_CHECK_SIZEOF([uintptr_t])
 
 AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
                [AC_DEFINE([LITTLEENDIAN],[1]) AC_DEFINE([BIGENDIAN],[0])],
