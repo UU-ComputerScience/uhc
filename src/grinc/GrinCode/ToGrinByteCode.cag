@@ -748,7 +748,7 @@ SEM GrModule
 ATTR AllBind AllGrExpr [ | | i USE {Seq.:++:} {Seq.empty}: {GB.InsSeq} ]
 
 SEM GrBind
-  | Bind        lhs         .   i               =   Seq.fromList [GB.label (GB.LocRef_CodeEntry @entryInx),GB.meta @nm] Seq.:++: @expr.i
+  | Bind        lhs         .   i               =   Seq.fromList [GB.label (GB.LocRef_CodeEntry @entryInx),GB.meta' GB.AnnFunStart @nm] Seq.:++: @expr.i
 
 SEM GrExpr
   | Unit Store Call Eval App Case FFI FetchUpdate

@@ -133,7 +133,13 @@ lrefIsLabel _                = False
 data LocRef
   = LocRef_CodeEntry    !Int                         -- resolved at initialization runtime, translates to
   | LocRef_Label        { lrefId :: !LabelId }       -- resolved before runtime, translates to offsets
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Show)
+%%]
+
+%%[8 hs
+instance PP LocRef where
+  pp (LocRef_CodeEntry c) = ".cod" >#< c
+  pp (LocRef_Label     l) = ".lbl" >#< l
 %%]
 
 %%[8 hs export(StackDepth)
@@ -660,12 +666,33 @@ op opTy opndTy locDst ind locSrc c
 %%% Constructing: comment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(meta,ann)
+%%[8 hs export(AnnKind(..))
+data AnnKind
+  = AnnComment
+  | AnnFunStart
+  | AnnLabel
+  | AnnLabelRef
+  deriving (Eq,Show)
+
+instance PP AnnKind where
+  pp AnnComment      = empty
+  pp AnnFunStart     = pp "fun"
+  pp AnnLabel        = pp "lbldef"
+  pp AnnLabelRef     = pp "lblref"
+%%]
+
+%%[8 hs export(meta',meta,ann',ann)
+meta' :: PP a => AnnKind -> a -> Instr
+meta' k a = Instr_Meta $ Meta_CmtHeader k $ pp a
+
 meta :: PP a => a -> Instr
-meta a = Instr_Meta $ Meta_CmtHeader $ pp a
+meta = meta' AnnComment
+
+ann' :: PP a => AnnKind -> a -> Instr -> Instr
+ann' k a = Instr_Ann k $ showPP a
 
 ann :: PP a => a -> Instr -> Instr
-ann a = Instr_Ann $ showPP a
+ann = ann' AnnComment
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

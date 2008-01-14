@@ -295,11 +295,11 @@ SEM Module
                             .   strNmInitF              =   "initModule"
                             .   ppNmInitF               =   @ppNm @strNmInitF
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
+                            .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
 %%[[20
                             .   strNmImpNode            =   "impNode"
                             .   strNmExpNode            =   "expNode"
                             .   strNmExpNodeSz          =   @strNmExpNode ++ "_size"
-                            .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
                             .   ppNmImpNode             =   @ppNm @strNmImpNode
                             .   ppNmImpNodeNms          =   @ppNm (@strNmImpNode ++ "_nms")
                             .   ppNmExpNode             =   @ppNm @strNmExpNode
@@ -331,13 +331,14 @@ SEM Module
                                                     bcodeentries
                                                             = ppTbl' "GB_ByteCodeEntryPoint" @ppNmByteCodeEntry
                                                                 (zipWith3 (\i l e
-                                                                            -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (ppAddrArrAt @ppNmByteCodeTraceTbl i, length l) else (pp "NULL",0)
+                                                                            -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (ppAddrArrAt @ppNmByteCodeTraceTbl i, l) else (pp "NULL",0)
                                                                                in  ppCurlysCommasBlock
                                                                                      [ (@ppNmAString $ constInx $ eiNmStrConst e) >#< ppCmtC @lhs.opts (eiNm e)
                                                                                      , bc, pp bcs
                                                                                      ]
-                                                                          ) [0::Int ..] bcTrL @allEntryL
+                                                                          ) (scanl (+) 0 bcTrLengthL) bcTrLengthL @allEntryL
                                                                 )
+                                                            where bcTrLengthL = map length bcTrL
                                                     bcodemodtrace
                                                             = "GB_ByteCodeModule" >#< @ppNmByteCodeModule >#< "="
                                                                >-< indent 2
@@ -407,8 +408,10 @@ SEM Module
                                                                                      , "gb_Opt_TraceSteps =" >#< ehcOptGenTrace @lhs.opts >#< ";"
                                                                                      , pp "argc -= nRtsOpts ; argv += nRtsOpts ;"
                                                                                      ]
+                                                                                  ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{gb_prModEntries" >|< ppParens @ppNmModEntriesTbl >#< ";});"] else [])
 %%[[8
                                                                                   ++ [ @ppNmInitF >|< "()" >#< ";" ]
+                                                                                  ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp (1::Int)] >#< ";" ]
 %%][20
                                                                                   ++ [ "GB_MkFixConNodeN(" >#< mkPre m >|< @strNmExpNode >|< "," >#< mkPre m >|< @strNmExpNodeSz >|<  ", 0 ) ;"
                                                                                      | (_,m) <- @allImpModNmL
@@ -416,7 +419,6 @@ SEM Module
                                                                                   ++ [ mkPre m >|< @strNmInitF >|< ppParens @ppNmModEntriesTbl >#< ";"
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
-                                                                                  ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{gb_prModEntries" >|< ppParens @ppNmModEntriesTbl >#< ";});"] else [])
                                                                                   ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp $ length @allImpModNmL] >#< ";" ]
 %%]]
                                                                                   ++ [ "main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
@@ -437,8 +439,15 @@ SEM Module
                                                                                       >-< "extern int" >#< mkPre m >|< @strNmExpNodeSz >#< ";"
                                                                                       >-< "extern GB_ByteCodeModule" >#< mkPre m >|< @strNmByteCodeModule >#< ";"
                                                                        ) @allImpModNmL
+%%]]
+%%[[8
                                                     mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
-                                                                ( [ ppCurlysCommasBlock [ pp $ show m, ppAddrOf $ mkPre m >|< @strNmExpNode, ppAddrOf $ mkPre m >|< @strNmByteCodeModule  ]
+                                                                ( [ ppCurlysCommasBlock [ pp $ show @moduleNm, ppAddrOf @ppNmByteCodeModule ] ]
+                                                                  ++ [ppCurlysCommasBlock (replicate 2 $ pp $ "NULL")]
+                                                                )
+%%][20
+                                                    mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
+                                                                ( [ ppCurlysCommasBlock [ pp $ show m, ppAddrOf $ mkPre m >|< @strNmExpNode, ppAddrOf $ mkPre m >|< @strNmByteCodeModule ]
                                                                   | (_,m) <- @allImpModNmL
                                                                   ]
                                                                   ++ [ppCurlysCommasBlock (replicate 3 $ pp $ "NULL")]
@@ -461,6 +470,7 @@ SEM Module
                                                       ++ links
                                                       ++ [ initf
 %%[[8
+                                                         , mods
                                                          , maincaf
                                                          , etc
                                                          , mainf
@@ -506,7 +516,7 @@ SEM Instr
   | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
-  | Ann         lhs         .   pp          =   @instr.pp >#< ppCmtC @lhs.opts @ann
+  | Ann         lhs         .   pp          =   @instr.pp -- >#< ppCmtC @lhs.opts @ann
   | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
   | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
   | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
@@ -529,7 +539,10 @@ ATTR Instrs [ | | ppL : {[PP_Doc]} ]
 SEM Instrs
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   if @hd.hasCode
-                                                then (ppCmtC @lhs.opts (@lhs.cLoc >|< ":" >#< @hd.mn) >|< @lhs.ppExtra >-< indent 3 @hd.pp) : @tl.ppL
+                                                then let instr = indent 3 @hd.pp
+                                                         locmnemo = ppCmtC @lhs.opts (@lhs.cLoc >|< ":" >#< @hd.mn)
+                                                         metapp = indent 40 (vlist $ map (\(k,m) -> ppCmtC @lhs.opts (k >#< "[" >#< m >#< "]")) $ @annL)
+                                                     in  (locmnemo >|< metapp >-< instr) : @tl.ppL
                                                 else @tl.ppL
 %%]
 
@@ -547,7 +560,7 @@ ATTR Instrs [ | | bcTrL: {[BCTrL]} ]
 SEM Instrs
   | Nil         lhs         .   bcTrL       =   [[]]
   | Cons        lhs         .   bcTrL       =   if @hd.hasCode
-                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas [@hd.mn,@lhs.ppExtra])
+                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas ([@hd.mn] ++ [ m | (AnnFunStart,m) <- @annL]))
                                                      in  case @tl.bcTrL of
                                                            (l:ls) -> (i:l) : ls
                                                 else if @hd.isEntry then [] : @tl.bcTrL else @tl.bcTrL
@@ -572,6 +585,7 @@ SEM Instr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: PP_Doc ]
 ATTR Instrs [ ppExtra: PP_Doc | | ]
 
@@ -586,6 +600,35 @@ SEM Instrs
 
 SEM Module
   | Mod         instrs      .   ppExtra     =   empty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional meta info to PP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+type AnnL = [(AnnKind,PP_Doc)]
+%%]
+
+%%[8
+ATTR Instr Meta [ | | gathAnnL USE {++} {[]}: AnnL ]
+ATTR Instrs Instr Meta [ annL: AnnL | | ]
+
+SEM Meta
+  | CmtHeader   lhs         .   gathAnnL    =   [(@kind,pp @ann)]
+
+SEM Instr
+  | Label       lhs         .   gathAnnL    =   [(AnnLabel,pp @locRef)]
+  | LabelRef    lhs         .   gathAnnL    =   [(AnnLabelRef,pp @locRef)]
+  | Ann         lhs         .   gathAnnL    =   (@kind,pp @ann) : @instr.gathAnnL
+
+SEM Instrs
+  | Cons        (loc.annL,tl.annL)          =   let m = @lhs.annL ++ @hd.gathAnnL
+                                                in  if @hd.hasCode
+                                                    then (m,[])
+                                                    else ([],m)
+
+SEM Module
+  | Mod         instrs      .   annL        =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
