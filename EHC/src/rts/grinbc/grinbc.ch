@@ -525,10 +525,12 @@ typedef struct GB_LinkEntry {
 
 Module info
 
-%%[20
+%%[8
 typedef struct GB_ModEntry {
   char*						name ;
+%%[[20
   GB_NodePtr*				expNode ;
+%%]]
   GB_ByteCodeModule*		bcModule ;
 } GB_ModEntry ;
 
@@ -536,8 +538,15 @@ extern GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
 
 %%]
 
-%%[20
-extern int gb_lookupInfoForPC( GB_BytePtr pc, GB_ByteCodeModule** m, GB_ByteCodeEntryPoint** e, GB_ByteCodeInstrEntry** i ) ;
+%%[8
+extern int gb_lookupInfoForPC
+	( GB_BytePtr pc
+	, GB_ByteCodeModule** m
+	, GB_ByteCodeEntryPoint** e
+	, GB_ByteCodeInstrEntry** i ) ;
+%%]
+
+%%[8
 #if TRACE || DUMP_INTERNALS
 extern void gb_prModEntries( GB_ModEntry* modTbl ) ;
 #endif
@@ -969,7 +978,7 @@ extern void gb_InitTables
 	) ;
 %%]
 
-%%[20
+%%[8
 extern void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz ) ;
 %%]
 

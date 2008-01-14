@@ -555,7 +555,7 @@ void gb_chan_initstd()
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[8
 static GB_ModEntry* 	gb_AllMod ;
 static GB_Word 			gb_AllModSize ;
 %%]
@@ -653,7 +653,7 @@ void gb_prByteCodeModule( GB_ByteCodeModule* m )
 #endif
 %%]
 
-%%[20
+%%[8
 #if TRACE || DUMP_INTERNALS
 void gb_prModEntries( GB_ModEntry* modTbl )
 {
@@ -821,17 +821,13 @@ void gb_prState( char* msg, int maxStkSz )
 	}
 %%]]
 	printf( "\n" ) ;
-%%[[20
 	GB_ByteCodeModule* bcm ;
 	GB_ByteCodeEntryPoint* bce ;
 	GB_ByteCodeInstrEntry* bci ;
-	/*
 	if ( gb_lookupInfoForPC( pc, &bcm, &bce, &bci ) )
 	{
 		printf( "%s.%s: %s\n", bcm->bcModNm, bce->nm, bci->bc ) ;
 	}
-	*/
-%%]]
 	gb_prStack( maxStkSz ) ;
 }
 
@@ -1674,7 +1670,7 @@ void gb_Initialize()
 
 %%]
 
-%%[20
+%%[8
 void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz )
 {
 	gb_AllMod 		= modTbl ;
@@ -1834,7 +1830,7 @@ GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
 %%% Debug info lookup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[8
 static int gb_CmpEntryPoint( const void* x, const void* y )
 {
 	GB_BytePtr pc = Cast(GB_BytePtr,x) ;
@@ -1861,7 +1857,11 @@ static int gb_CmpInstrEntry( const void* x, const void* y )
 		return 0 ;
 }
 
-int gb_lookupInfoForPC( GB_BytePtr pc, GB_ByteCodeModule** m, GB_ByteCodeEntryPoint** e, GB_ByteCodeInstrEntry** i )
+int gb_lookupInfoForPC
+	( GB_BytePtr pc
+	, GB_ByteCodeModule** m
+	, GB_ByteCodeEntryPoint** e
+	, GB_ByteCodeInstrEntry** i )
 {
 	int mc, ec, ic ;
 	for ( mc = 0 ; mc < gb_AllModSize ; mc++ )

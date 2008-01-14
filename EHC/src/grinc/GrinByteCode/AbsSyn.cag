@@ -87,7 +87,8 @@ DATA Instr
   				locSrc			: InsOp_LocOSrc
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
-  | Ann			ann				: String
+  | Ann			kind            : AnnKind
+                ann				: String
   				instr			: Instr
   | Halt
   | Meta		meta			: Meta
@@ -95,7 +96,8 @@ DATA Instr
   | LabelRef	locRef			: LocRef
 
 DATA Meta
-  | CmtHeader	ann				: PP_Doc
+  | CmtHeader	kind            : AnnKind
+                ann				: PP_Doc
 
 TYPE Instrs = [Instr]
 

@@ -64,10 +64,16 @@ SEM Expr
                 loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
                         .  info_2   =   []
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info ++ @info_2 ++ @info_4 ++ @info_4_2 ++ @info_9)
-                loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_4 ++ @info_4_2 ++ @info_9)
+%%[[1
+                loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "ty_g_" (ppTy @ty_g_)
                                         , mkInfo1 "ty" (ppTy @ty)
+%%][4
+                loc     .  info_1   =   [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+                                        , mkInfo1 "ty_g_" (ppTyS @lhs.tyVarMp @ty_g_)
+                                        , mkInfo1 "ty" (ppTyS (foVarMp @fo_ |=> @lhs.tyVarMp) @ty)
+%%]]
                                         ]
                         .  info_2   =   []
                         .  info_4   =   []
@@ -93,9 +99,14 @@ SEM Expr
                         .  info_4_2 =   []
                         .  info_9   =   []
   | Parens      lhs     .  ppAST    =   ppNest ["Expr","Parens"] [] [@expr.ppAST]
-  | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] (@info ++ @info_2 ++ @info_4 ++ @info_9)
-                loc     .  info     =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+  | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","AppTop"] [] [@expr.ppAST] (@info_1 ++ @info_2 ++ @info_4 ++ @info_9)
+%%[[1
+                loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         , mkInfo1 "expr.ty" (ppTy @expr.ty)
+%%][4
+                loc     .  info_1   =   [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+                                        , mkInfo1 "expr.ty" (ppTyS @expr.tyVarMp @expr.ty)
+%%]]
                                         ]
                         .  info_2   =   []
                         .  info_4   =   []
@@ -165,7 +176,6 @@ SEM Expr
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         ]
   | Var         loc     .  info_2   :=  [ mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
-                                        , mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         ]
   | App         loc     .  info_2   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
