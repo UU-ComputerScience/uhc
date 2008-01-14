@@ -32,13 +32,16 @@ foreign import ccall "primMulInt" (*)  :: Int -> Int -> Int
 foreign import ccall "primDivInt" div  :: Int -> Int -> Int
 -- Quot == Div for non negative numbers, let's assume that for now
 foreign import ccall "primDivInt" quot  :: Int -> Int -> Int
-foreign import ccall "primModInt" mod  :: Int -> Int -> Int
--- Rem == mod for non negative numbers, let's assume that for now
-foreign import ccall "primModInt" rem   :: Int -> Int -> Int
+
+mod :: Int -> Int -> Int
+x `mod` y = x - y * (x `div` y)
+
+rem :: Int -> Int -> Int
+x `rem` y = x - y * (x `quot` y)
+
 
 -- Comparison binary operators
 foreign import ccall "primEqInt" (==)   :: Int -> Int -> Bool
-foreign import ccall "primNeInt" (/=)   :: Int -> Int -> Bool
 foreign import ccall "primLtInt"  (<)   :: Int -> Int -> Bool
 foreign import ccall "primGtInt"  (>)   :: Int -> Int -> Bool
 
@@ -48,6 +51,9 @@ x <= y = not (x > y)
 
 (>=) :: Int -> Int -> Bool
 x >= y = not (x < y)
+
+(/=) :: Int -> Int -> Bool
+x /= y  =  not (x==y)
 
 even, odd        :: Int -> Bool
 even n           =  n `rem` 2 == 0
@@ -280,7 +286,16 @@ minimum           = foldl1 min
 -------------------------------------------------------------------------------}
 data PackedString
 
-foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+-- foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
+foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
+foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
+
+packedStringToString :: PackedString -> [Char]
+packedStringToString p = if packedStringNull p 
+                          then []
+                          else packedStringHead p : packedStringToString (packedStringTail p)
+
 
 {------------------------------------------------------------------------------
 -- Error Handling
