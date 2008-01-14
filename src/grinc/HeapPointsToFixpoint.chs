@@ -266,10 +266,10 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
 
        ; mapM (procLimit env heap) lims2      
 
-       ; ah <- getAssocs heap
-       ; ae  <- getAssocs env
-       ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
-       ; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
+       --; ah <- getAssocs heap
+       --; ae  <- getAssocs env
+       --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
+       --; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
       
        ; absHeap <- unsafeFreeze heap
        ; absEnv  <- unsafeFreeze env

@@ -9,7 +9,7 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-cbexe --verbose=0"
+DEF_EHC_FLAGS="-cbexe --verbose=0 -p-"
 DEF_GHC_FLAGS="-O2"
 
 # Haskell main file for each benchmark
@@ -138,7 +138,7 @@ function create_benchmarkfile {
 
 function clean_up {
   BENCHMARK_DIR=${BENCHMARK_FILE%/*}
-  rm -rf $BENCHMARK_DIR
+  # rm -rf $BENCHMARK_DIR
 }  
 
 function run {
@@ -163,8 +163,10 @@ function run {
        *)
         ;;
     esac
-    echo "$HC $FLAGS $EFLAGS $BENCHMARK_FILE"
-    $HC $FLAGS $EFLAGS $BENCHMARK_FILE > $LOG_FILE 2>&1
+    echo "Compiling $HC $FLAGS $EFLAGS $BENCHMARK_FILE"
+    # $HC $FLAGS $EFLAGS $BENCHMARK_FILE > $LOG_FILE 2>&1
+    $HC $FLAGS $EFLAGS $BENCHMARK_FILE
+    echo "Running ./$OBJFILE"
     time ./$OBJFILE
     clean_up
     echo "" 
