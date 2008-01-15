@@ -1180,3 +1180,26 @@ initKiGam
       ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Polarity gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[17 export(PolGamInfo(..), PolGam, initPolGam)
+data PolGamInfo = PolGamInfo { pgiPol :: Ty } deriving Show
+
+type PolGam = Gam HsName PolGamInfo
+
+initPolGam :: PolGam
+initPolGam
+  = assocLToGam
+      [ (hsnArrow,   PolGamInfo $ quant $ [mkPolNegate var, var] `mkArrow` var)
+      , (hsnInt,     PolGamInfo $ quant var)
+      , (hsnChar,    PolGamInfo $ quant var)
+      ]
+  where
+    u     = uidStart
+    quant = Ty_Quant TyQu_Forall u
+    var   = mkPolVar u
+
+%%]
+

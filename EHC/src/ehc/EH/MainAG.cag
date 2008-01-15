@@ -58,6 +58,9 @@
 %%[16 hs import({%{EH}Ty.Trf.Subst})
 %%]
 
+%%[17 hs import({%{EH}Ty.Trf.PolEval})
+%%]
+
 %%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
@@ -109,6 +112,9 @@ WRAPPER AGItf
 %%]
 
 %%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
+%%]
+
+%%[17 ag import({EH/InferPolarity})
 %%]
 
 %%[99
