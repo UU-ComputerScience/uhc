@@ -367,6 +367,15 @@ SEM Expr
                                                                     =   mkNewLevUID4    @lhs.gUniq
 %%]
 
+%%[17
+SEM Decl
+  | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)  :=   mkNewLevUID4    @lhs.gUniq
+
+SEM TyExpr  
+  | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)   :=   mkNewLevUID4    @lhs.gUniq
+  | Con Var         (lhs.gUniq,loc.lUniq,loc.lUniq2)                          :=   mkNewLevUID2    @lhs.gUniq
+%%]
+
 %%[95
 SEM Decl
   | Instance        (tyPrExpr.gUniq,loc.lUniq6,loc.lUniq7,loc.lUniq8,loc.lUniq9,loc.lUniq10)
