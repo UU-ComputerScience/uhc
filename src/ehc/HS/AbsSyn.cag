@@ -193,12 +193,14 @@ DATA Declaration                                  {- *** -}
         importname               : {Maybe String}
         name                     : Name
         type                     : Type
+%%[[94
     | ForeignExport
         range                    : Range
         callconvention           : String
         exportname               : {Maybe String}
         name                     : Name
         type                     : Type
+%%]]
 %%]
 %%[9
     | Class

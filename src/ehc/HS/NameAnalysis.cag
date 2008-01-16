@@ -222,7 +222,10 @@ SEM Declaration
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 %%]
 %%[8
-    | ForeignImport ForeignExport
+    | ForeignImport
+%%[[94
+      ForeignExport
+%%]]
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
     | ForeignImport
@@ -403,7 +406,10 @@ SEM Pattern
 SEM Declaration
     | TypeSignature
 %%[[8
-      ForeignImport ForeignExport
+      ForeignImport
+%%]]
+%%[[94
+      ForeignExport
 %%]]
         type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
 %%[[5

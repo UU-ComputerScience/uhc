@@ -103,12 +103,12 @@ data EHCOpts
       ,  ehcOptTimeCompile    ::  Bool
 
       ,  ehcOptGrinDebug      ::  Bool              -- debug info for code generation phase
-      ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenCaseDefault ::  Bool
       ,  ehcOptGenUnbox       ::  Bool
       ,  ehcOptOwn            ::  Int
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
+      ,  ehcOptGenTrace       ::  Bool
 
       ,  ehcOptShowGrin       ::  Bool              -- show Grin pretty print on stdout
       ,  ehcOptEmitHS         ::  Bool
@@ -184,11 +184,11 @@ defaultEHCOpts
       ,  ehcOptTimeCompile    =   False
 
       ,  ehcOptGrinDebug      =   False
-      ,  ehcOptGenTrace       =   False
       ,  ehcOptGenCaseDefault =   False
       ,  ehcOptGenUnbox       =   True
       ,  ehcOptOwn            =   3
       ,  ehcOptGenDebug       =   True
+      ,  ehcOptGenTrace       =   False
 
       ,  ehcOptShowGrin       =   False
       ,  ehcOptEmitHS         =   False
@@ -279,12 +279,15 @@ ehcCmdLineOpts
      ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
 
      ,  Option ""   ["grindebug"]        (NoArg oGrinDebug)                   "show debug information for grin code generation"
-     ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option ""   ["gen-unbox"]        (boolArg optSetGenUnbox)             "unbox int and char (yes)"
      ,  Option "g"  ["gen-own"]          (OptArg  oOwn "0|1|2|3|4")           "generate own 1=parameters/tailjumps, 2=locals, 3=calls, 4=stack (3)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
+%%]]
+%%[[8
+     ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
+%%][100
 %%]]
 %%[[9
      -- ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
@@ -448,7 +451,10 @@ optInt tr s o
 boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
 
 oGrinDebug           o   = o { ehcOptGrinDebug      = True }
+%%[[8
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
+%%][100
+%%]]
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }

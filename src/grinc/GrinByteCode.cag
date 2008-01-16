@@ -2,10 +2,13 @@
 %%% Haskell importable interface to Grin ByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg,{%{EH}GrinCode.Pretty})
+%%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg,{%{EH}GrinCode.Pretty})
 %%]
 
 %%[8 hs import(EH.Util.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
 %%[8 hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
@@ -288,13 +291,13 @@ data LoadSrc
   deriving (Show)
 
 ldsrc2ins' :: (Instr -> Instr) -> LoadSrc -> (InsSeq,StackDepth)
-ldsrc2ins' ann s
+ldsrc2ins' instrann s
   = case s of
       LoadSrc_TOS       -> (Seq.empty,0)
-      LoadSrc_TOS_Rel o -> (Seq.singleton $ ann $ ldl  o,nrValWords)
-      LoadSrc_Reg_Rel o -> (Seq.singleton $ ann $ l1tr o,nrValWords)
-      LoadSrc_Imm     c -> (Seq.singleton $ ann $ ldc  c,nrValWords)
-      LoadSrc_Imm_Int c -> (Seq.singleton $ ann $ ldi  c,nrValWords)
+      LoadSrc_TOS_Rel o -> (Seq.singleton $ instrann $ ldl  o,nrValWords)
+      LoadSrc_Reg_Rel o -> (Seq.singleton $ instrann $ l1tr o,nrValWords)
+      LoadSrc_Imm     c -> (Seq.singleton $ instrann $ ldc  c,nrValWords)
+      LoadSrc_Imm_Int c -> (Seq.singleton $ instrann $ ldi  c,nrValWords)
 
 ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins = ldsrc2ins' id
@@ -325,12 +328,12 @@ nmLd' optim env modNmConstInx stkDepth nm
              Val_Int i
                -> (mva,Load Seq.empty 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
-               -> (mva,Load (Seq.singleton $ ann nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
+               -> (mva,Load (Seq.singleton $ instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
 %%[[20
              Val_ImpEntry mo eo
-               -> (mva,Load (Seq.fromList [ann nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+nrValWords))
+               -> (mva,Load (Seq.fromList [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+nrValWords))
 %%]]
-      _ -> (Nothing,Load (Seq.singleton $ ann ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
+      _ -> (Nothing,Load (Seq.singleton $ instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
 %%]
 
 %%[8 hs
@@ -340,10 +343,10 @@ vaAndLd2Ins optim nm vald
       (Just (Val_LocalOffset _),Load pins pdep LoadSrc_TOS)
         | not (ocxOmitTOSLd optim)
           -> (pins Seq.:++: ins,pdep + dep)
-          where (ins,dep) = ldsrc2ins' (ann nm) (LoadSrc_TOS_Rel 0)
+          where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse nm) (LoadSrc_TOS_Rel 0)
       (_,Load pins pdep ls)
           -> (pins Seq.:++: ins,pdep + dep)
-          where (ins,dep) = ldsrc2ins' (ann $ show ls) ls
+          where (ins,dep) = ldsrc2ins' (instrann $ show ls) ls
 %%]
 
 %%[8 hs export(nmLd)
@@ -391,7 +394,7 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
                 where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Str s l
-                -> GrValIntroAlt_OnTOS (ins Seq.::+: (ann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect
               GrValIntro_Int i
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (Load Seq.empty 0 $ LoadSrc_Imm_Int i)
 {-
@@ -399,7 +402,7 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> ld optim dflt i
 -}
               GrValIntro_Grp gtag is
-                -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
                 where i@(GrValIntroAlt_OnTOS ins inc _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
                       (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
                       (sins,sinc) = ndStore (allocInc + inc + tinc)
@@ -470,16 +473,16 @@ nrWord2Byte sz
 tagIsUnboxed :: GrTag -> Bool
 tagIsUnboxed gt
   = case gt of
-      GrTag_Con _ _ nm | nm == hsnInt || nm == hsnChar
+      GrTag_Con _ _ nm | nm `elem` builtinMayLiveUnboxedTyNmL
         -> True
       GrTag_Unboxed
         -> True
       _ -> False
 %%]
 
-%%[8 hs export(tagUnbox)
-tagUnbox :: GrTag -> Unbox
-tagUnbox gt
+%%[8 hs export(tagAllowsUnboxedLife)
+tagAllowsUnboxedLife :: GrTag -> Unbox
+tagAllowsUnboxedLife gt
   = if tagIsUnboxed gt
     then Unbox_FirstField
     else case gt of
@@ -593,7 +596,7 @@ fetchupdate :: Instr
 fetchupdate = Instr_FetchUpdate
 
 ndStore :: Int -> (InsSeq,StackDepth)
-ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),ann "alloc+store" $ allocstore InsOp_LocB_TOS], nrValWords)
+ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),meta' AnnAllocStore sz,allocstore InsOp_LocB_TOS], nrValWords)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -670,30 +673,48 @@ op opTy opndTy locDst ind locSrc c
 data AnnKind
   = AnnComment
   | AnnFunStart
+  | AnnStackDepth
+  | AnnIdUse
+  | AnnTag
+  | AnnAllocStore
   | AnnLabel
   | AnnLabelRef
   deriving (Eq,Show)
 
 instance PP AnnKind where
   pp AnnComment      = empty
-  pp AnnFunStart     = pp "fun"
+  pp AnnFunStart     = pp "funstart"
+  pp AnnStackDepth   = pp "stackoff"
+  pp AnnIdUse        = pp "iduse"
+  pp AnnTag          = pp "tag"
+  pp AnnAllocStore   = pp "allocstore"
   pp AnnLabel        = pp "lbldef"
   pp AnnLabelRef     = pp "lblref"
 %%]
 
-%%[8 hs export(meta',meta,ann',ann)
+%%[8 hs export(meta',meta)
 meta' :: PP a => AnnKind -> a -> Instr
 meta' k a = Instr_Meta $ Meta_CmtHeader k $ pp a
 
 meta :: PP a => a -> Instr
 meta = meta' AnnComment
-
-ann' :: PP a => AnnKind -> a -> Instr -> Instr
-ann' k a = Instr_Ann k $ showPP a
-
-ann :: PP a => a -> Instr -> Instr
-ann = ann' AnnComment
 %%]
+
+%%[8 hs
+instrann' :: PP a => AnnKind -> a -> Instr -> Instr
+instrann' k a = Instr_Ann k $ showPP a
+
+instrann :: PP a => a -> Instr -> Instr
+instrann = instrann' AnnComment
+%%]
+
+%%[8 hs
+%%]
+metaprop' :: PP a => AnnKind -> String -> a -> Instr
+metaprop' k prop a = meta' k (prop >|< "=" >|< a)
+
+metaprop :: PP a => String -> a -> Instr
+metaprop = metaprop' AnnComment
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constructing: tag

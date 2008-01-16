@@ -77,6 +77,14 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
+%%[94
+DATA Decl
+  | FFE             callconv        : {String}
+                    expEnt          : {String}
+                    nm              : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
 %%[1010.Decl
 DATA Decl
   | DynTySig        nm              : {HsName}

@@ -294,6 +294,9 @@ SEM Expr
 
 SEM Decl
   | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
+%%[[94
+  | FFE         loc     .   pp      =   "foreign export" >#< @callconv >#< pp (show @expEnt) >#< @nm >#< "::" >#< @tyExpr.pp
+%%]]
 
 SEM PatExpr
   | Irrefutable loc     .   pp      =   "~" >|< @patExpr.pp

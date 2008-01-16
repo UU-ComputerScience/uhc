@@ -69,7 +69,11 @@ SEM CBind
                                                 else if @expr.isClosurable							-- CAF lift
                                                 then (Seq.empty,Seq.empty,Seq.singleton @cTrf)
                                                 else (Seq.singleton @cTrf,Seq.empty,Seq.empty)
-  | FFI         lhs         .   cOtherBinds =   Seq.singleton @cTrf
+  | FFI
+%%[[94
+    FFE
+%%]]
+                lhs         .   cOtherBinds =   Seq.singleton @cTrf
 
 SEM CExpr
   | Let         lhs         .   (cTrf,cFloatedBinds)

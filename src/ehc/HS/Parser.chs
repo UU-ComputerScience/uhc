@@ -428,8 +428,10 @@ pDeclarationForeign
   = pFOREIGN
     <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (tokMkStr c) s i (tokMkQName n) t)
              <$ pIMPORT <*> callconv <*> pSafety <*> pFSpec
+%%[[94
          <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (tokMkStr c) i (tokMkQName n) t)
              <$ pEXPORT <*> callconv <*> pFSpec
+%%]]
          )
   where pSafety =  (Just . tokMkStr) <$> safety <|> pSucceed Nothing
         pFSpec = (,,) <$> ((Just . tokMkStr) <$> pStringTk <|> pSucceed Nothing) <*> var{-id_no_foreign-} <* pDCOLON <*> pType
@@ -1482,16 +1484,22 @@ qvarid
 %%[8
 safety :: HSParser Token
 safety
-  =   pUNSAFE        
-  <|> pSAFE      
-  <|> pTHREADSAFE 
+  =   pSAFE 
+%%[[94       
+  <|> pUNSAFE      
+  <|> pTHREADSAFE
+%%]] 
   <?> "safety"
 
 callconv :: HSParser Token
 callconv
-  =   pSTDCALL 
-  <|> pCCALL    
-  <|> pJAZY 
+  =   pCCALL 
+  <|> pJAZY
+%%[[94
+  <|> pSTDCALL
+  <|> pDOTNET
+  <|> pJVM
+%%]]
   <?> "callconv"
 %%]
 
@@ -1546,12 +1554,14 @@ tyvar
 special_id_no_callconv :: HSParser Token 
 special_id_no_callconv
   =   pLABEL   
-  <|> pDYNAMIC
   <|> pEXPORT
 %%[[20
   <|> pAS      
   <|> pQUALIFIED   
   <|> pHIDING
+%%]]
+%%[[94
+  <|> pDYNAMIC
 %%]]
   <?> "special_id_no_callconv"
 

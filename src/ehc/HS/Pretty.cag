@@ -86,8 +86,6 @@ SEM Declaration
 %%[8
     | ForeignImport
         loc         .   pp          =   "foreign import" >#< @callconvention >#< @safety >#< maybe empty (pp.show) @importname >#< @name >#< "::" >#< @type.pp
-    | ForeignExport
-        loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp
 %%]
 %%[9
     | Class
@@ -114,6 +112,12 @@ SEM Declaration
 SEM FunctionalDependency
     | Dependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
+%%]
+
+%%[94
+SEM Declaration
+    | ForeignExport
+        loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp
 %%]
 
 %%[95

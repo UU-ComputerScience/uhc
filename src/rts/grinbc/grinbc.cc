@@ -826,7 +826,17 @@ void gb_prState( char* msg, int maxStkSz )
 	GB_ByteCodeInstrEntry* bci ;
 	if ( gb_lookupInfoForPC( pc, &bcm, &bce, &bci ) )
 	{
-		printf( "%s.%s: %s\n", bcm->bcModNm, bce->nm, bci->bc ) ;
+		printf
+%%[[8
+			( "%s.%s + %d/0x%x: %s\n"
+			, bcm->bcModNm
+%%][20
+			( "%s + %d/0x%x: %s\n"
+%%]]
+			, bce->nm
+			, bci - bce->bcInstr, pc - bce->bcInstr->bcLoc
+			, bci->bc
+			) ;
 	}
 	gb_prStack( maxStkSz ) ;
 }

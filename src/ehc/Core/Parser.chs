@@ -69,6 +69,9 @@ pCExpr
   where pCBindCateg
           =   CBindRec    <$ pKeyTk "rec"
           <|> CBindFFI    <$ pFOREIGN
+%%[[94
+          <|> CBindFFE    <$ pKeyTk "foreignexport"
+%%]]
           <|> CBindStrict <$ pBANG
 
 pCMeta :: CParser CMeta
@@ -85,6 +88,9 @@ pCBind
   = (pDollNm <* pEQUAL)
     <**> (   (\m e n -> mkCBind1Meta n m e) <$> pCMetaOpt <*> pCExpr
          <|> (\c s i t n -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
+%%[[94
+         <|> (\c e t n -> CBind_FFE c e n t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
+%%]]
          )
   where pS = tokMkStr <$> pStringTk
 

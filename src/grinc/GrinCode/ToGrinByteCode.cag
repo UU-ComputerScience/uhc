@@ -665,11 +665,12 @@ mkRet returnCtxt retLocLbl stkDepth inc
         -> (Seq.fromList [GB.retcall GB.nrValWords nrArgsOuter],dfltDepth)
       ReturnCtxt_CaseReturns labelId dep
         -> ( Seq.fromList
-               [ GB.meta ("Expr depth=" >|< stkDepth >#< "ret depth=" >|< retDepth)
+               [ GB.meta' GB.AnnStackDepth stkDepth
                , GB.retcase GB.nrValWords (stkDepth + inc - dep)
                , GB.label $ GB.LocRef_Label retLocLbl
                , GB.link $ GB.linkOffsets 1
                , GB.labelref $ GB.LocRef_Label labelId
+               , GB.meta' GB.AnnStackDepth retDepth
                ]
            , retDepth
            )
@@ -753,16 +754,21 @@ SEM GrBind
 SEM GrExpr
   | Unit Store Call Eval App Case FFI FetchUpdate
                 lhs         .   i               =   @valIns Seq.:++: @retIns
-  | Seq         lhs         .   i               =   @expr.i Seq.:++: Seq.fromList [GB.meta ("Expr depth=" >|< @expr.stkDepth >#< "body depth=" >|< @bodyStkDepth)]
-                                                            Seq.:++: @seqIns Seq.:++: @body.i Seq.:++: @retIns
+  | Seq         lhs         .   i               =   @expr.i Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @expr.stkDepth]
+                                                            Seq.:++: @seqIns Seq.:++: @body.i
+                                                            Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @bodyStkDepth]
+                                                            Seq.:++: @retIns
 
 SEM GrAlt
   | Alt         lhs         .   i               =   let fetch = case @altFetch of
                                                                   AltFetch_Many _  -> Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
                                                                   AltFetch_One _ o -> Seq.fromList [GB.l2ts (o + GB.nrNodeHdrWords)]
                                                                   AltFetch_Zero    -> Seq.empty
-                                                    in  Seq.fromList [GB.label @altLocRef] Seq.:++: Seq.fromList [GB.meta ("Alt depth=" >|< @lhs.stkDepth >#< "pre depth=" >|< @exprStkDepth >#< "post depth=" >|< @bodyStkDepth)]
-                                                                                           Seq.:++: fetch Seq.:++: @expr.i
+                                                    in           Seq.fromList [GB.meta' GB.AnnStackDepth @lhs.stkDepth,GB.label @altLocRef]
+                                                        Seq.:++: fetch
+                                                        Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @exprStkDepth]
+                                                        Seq.:++: @expr.i
+                                                        Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @bodyStkDepth]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

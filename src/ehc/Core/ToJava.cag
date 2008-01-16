@@ -194,6 +194,9 @@ SEM CExpr
   												       Nothing                -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
                                                     CBindFFI     -> @binds.jvSrc
+%%[[94
+                                                    CBindFFE     -> @binds.jvSrc
+%%]]
                                                     CBindPlain   -> @binds.jvSrc
                                                     CBindStrict  -> @binds.jvSrcStrict
                                                     CBindRec     -> @binds.jvSrcInd >-< @binds.jvSrcSetInd
@@ -231,6 +234,9 @@ SEM CBind
                             .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
   | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEnt $ primToJavaMp
+%%[[94
+  | FFE         lhs         .   jvSrc       =   pp "ffe not implemented"
+%%]]
 
 ATTR AllAlt AllPat [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
 ATTR CPat [ | | fldNm: HsName ]

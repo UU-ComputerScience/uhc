@@ -123,7 +123,11 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
 %%[8.pDecl
                 <|>  (\conv saf imp nm sig -> mkEH Decl_FFI conv saf (if null imp then show nm else imp) nm sig)
                      <$   pFOREIGN <* pIMPORT <*> pV pJAZY
-                     <*>  (pV (pSAFE <|> pUNSAFE) `opt` "safe")
+                     <*>  (pV (   pSAFE
+%%[[94
+                              <|> pUNSAFE
+%%]]
+                              ) `opt` "safe")
                      <*>  (pString `opt` "")
                      <*>  pVar
                      <*   pDCOLON <*> pTyExpr
