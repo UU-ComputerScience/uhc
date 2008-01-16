@@ -979,6 +979,13 @@ instance Substitutable TyKiGamInfo TyVarId VarMp where
   ftv    tkgi         =   ftv (tkgiKi tkgi)
 %%]
 
+%%[17.Substitutable.inst.PolGamInfo
+instance Substitutable PolGamInfo TyVarId VarMp where
+  s |=> pgi  = pgi { pgiPol = s |=> pgiPol pgi }
+  s |==> pgi = substLift pgiPol (\i x -> i {pgiPol = x}) (|==>) s pgi
+  ftv pgi    = ftv (pgiPol pgi)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1021,6 +1028,11 @@ instance PP TyGamInfo where
 %%[6
 instance PP TyKiGamInfo where
   pp i = ppTy (tkgiKi i)
+%%]
+
+%%[17
+instance PP PolGamInfo where
+  pp i = ppTy (pgiPol i)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1184,7 +1196,7 @@ initKiGam
 %%% Polarity gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 export(PolGamInfo(..), PolGam, initPolGam)
+%%[17 export(PolGamInfo(..), PolGam, initPolGam, mapPolGam, quantifyPolGam)
 data PolGamInfo = PolGamInfo { pgiPol :: Ty } deriving Show
 
 type PolGam = Gam HsName PolGamInfo
@@ -1201,5 +1213,14 @@ initPolGam
     quant = Ty_Quant TyQu_Forall u
     var   = mkPolVar u
 
+mapPolGam :: (Ty -> Ty) -> PolGam -> PolGam
+mapPolGam f
+  = fst . gamMapThr (\(nm, PolGamInfo ty) thr -> ((nm, PolGamInfo $ f ty), thr)) ()
+
+quantifyPolGam :: PolGam -> PolGam
+quantifyPolGam gam
+  = let fvs = ftv gam
+        notElemFtvs tv = not $ elem tv fvs
+     in mapPolGam (tyQuantify notElemFtvs) gam
 %%]
 

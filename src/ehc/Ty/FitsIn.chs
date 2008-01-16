@@ -1028,6 +1028,14 @@ GADT: type clash between fixed type variable and some other type results in a eq
               = eqProofObligation t1 fi t1 t2
 %%]
 
+%%[17.fitsIn.PolaritySubtyping
+            -- N.B. hsnInvariant is a unique name which cannot be written by a programmer. In other words,
+            -- this pattern match cannot trigger during other type inferences.
+            -- Weaken Co/Contravariant polarity to Invariant polarity
+            f fi (Ty_Con _) t@(Ty_Con s)
+                | s == hsnInvariant                 = res fi t
+%%]
+
 %%[4.fitsIn.DefaultCase
             f fi t1                     t2          = errClash fi t1 t2
 %%]

@@ -156,6 +156,9 @@ SEM DataConstr
 SEM Expr
   | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs, Seq.fromList @occCycTyKiErrs
                                                            , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @predAmbigErrs, firstNotEmpty [@chrSolve1Errs, @chrSolve2Errs]]
+%%[[17
+                                                           , @loc.cycErrSq
+%%]]
                                                            ]
   | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
   | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq]
@@ -189,6 +192,12 @@ SEM DataConstr
 
 SEM DataConstrEq
   | Eq          lhs         .   errSq      =    rngLift @range mkNestErr' @pp [foErrSq @loc.fo_, foErrSq @loc.foRhsTy, @tyVar.errSq, @tyExpr.errSq]
+%%]
+
+%%[17
+SEM TyExpr
+  | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList $ firstNotEmpty [@nmErrs,@nmErrs2], foErrSq @loc.foPol, @loc.cycErrSq]
+  | Var         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @loc.foPol, @loc.cycErrSq]
 %%]
 
 %%[50
