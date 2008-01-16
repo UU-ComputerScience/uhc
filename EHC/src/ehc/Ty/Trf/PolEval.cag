@@ -39,17 +39,19 @@ SEM Ty
 %%[17 hs
 
 evaluate :: Ty -> Ty
-evaluate ty@(Ty_App (Ty_Con hsnPolNegation) ty1)
-  = case ty1 of
-      Ty_App (Ty_Con nm) ty2 
-        | nm == hsnPolNegation   -> ty2
+evaluate ty@(Ty_App (Ty_Con nm') ty1)
+  | nm' == hsnPolNegation
+    = case ty1 of
+        Ty_App (Ty_Con nm) ty2 
+          | nm == hsnPolNegation   -> ty2
 
-      Ty_Con nm
-        | nm == hsnCovariant     -> mkPolContravariant
-        | nm == hsnContravariant -> mkPolCovariant
-        | nm == hsnInvariant     -> mkPolInvariant
+        Ty_Con nm
+          | nm == hsnCovariant     -> mkPolContravariant
+          | nm == hsnContravariant -> mkPolCovariant
+          | nm == hsnInvariant     -> mkPolInvariant
 
-      _ -> ty
+        _ -> ty
+evaluate ty = ty
 
 %%]
 

@@ -48,7 +48,7 @@ Polarities:
 
 Unify rules:
 
-  The system of polarities is assumed to be predicative. Polarities do not contain foralls when unifying them.
+  The following description implies a predicative type system 
 
     mgu p1 p2
       | p1 == p2     = emptySubst
@@ -62,17 +62,20 @@ Unify rules:
       = mgu p1 p3 ++ mgu p2 p4
     mgu (Negate p1) (Negate p2)
       = mgu p1 p2
+  
+  And some subtyping rules:
       
+    mgu Covariant Invariant     = Invariant
+    mgu Contravariant Invariant = Invariant
+  
+  (do we need direction here?)
+
   At first sight, the following cases seem reasonable as well, but should not be added:
 
     mgu Covariant Contravariant = Invariant
     mgu Contravariant Covariant = Invariant
-    mgu Invariant Covariant     = Invariant
-    mgu Invariant Contravariant = Invariant
-    mgu Covariant Invariant     = Invariant
-    mgu Contravariant Invariant = Invariant
-  
-  However, adding these cases breaks the invariant that bindings discovered for polarity variables may only
+
+  Adding these cases breaks the invariant that bindings discovered for polarity variables may only
   be changed into something more specific.
   
   Other cases are considered to be an error. Features such as polarity signatures or kind polymorphism will likely
@@ -104,6 +107,104 @@ Encoding of polarities:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Some examples. Todo: convert to english.
+
+    data GRose f a = Branch a (f (GRose f a))
+
+  Intern krijg je na een paar stappen:
+
+    f :: v1 -> v2
+    a :: v2
+
+  Waardoor GRose intern het type:
+
+    GRose :: (v1 -> v2) -> v2 -> v2
+
+  krijgt. En een paar stappen later wordt voor f gevonden:
+
+    f :: v2 -> v2
+
+  Zodat voor generalisatie:
+
+    GRose :: (v2 -> v2) -> v2 -> v2
+
+  Zodat er voor GRose gevonden wordt:
+
+    GRose :: forall d . (d -> d) -> d -> d
+
+
+  Interessanter is:
+
+    data GRose' f a = Branch (f a (GRose' f a))
+
+  Daarvoor vind je:
+
+    f :: v2 -> v1 -> v1
+    a :: v2
+
+    GRose' :: forall d1 d2 . (d2 -> d1 -> d1) -> d2 -> d1
+
+  Wanneer je dan de volgende type expressie gaat typeren:
+
+    GRose' (->) Int
+
+  instantiaties:
+
+    GRose' :: (Negate v1 -> v1 -> v1) -> Negate v1 -> v1
+    (->) :: Negate v1 -> v1 -> v1
+    Int :: Negate v1
+
+  v1 is de 'root' co/contravariantie dus Covariant, dus:
+
+    GRose' :: (Contra -> Co -> Co) -> Contra -> Co
+    (->) :: Contra -> Co -> Co
+    Int :: Contra
+
+  Terwijl voor:
+
+    GRose' (,) Int
+
+  instantiaties:
+
+    GRose' :: (v1 -> v1 -> v1) -> v1 -> v1
+    (,) :: v1 -> v1 -> v1
+    Int :: v1
+
+  Zodat alles covariant is.
+
+
+  Tot slot nog een geval met een conflict:
+
+    data C a = Con (a -> a)
+
+  Daarvoor:
+
+    a :: v2
+    C :: v2 -> v1
+    (->) :: Negate v1 -> v1 -> v1
+
+  Zodat:
+
+    a :: v1
+    a :: Negate v1
+
+  Dit geeft (v1 = Negate v1) wat v1 afbeeld op Invariant, zodat:
+
+    a :: Invariant
+    C :: Invariant -> Invariant
+
+  Om dit laatste goed te typeren heb ik subtyping nodig, zodat ik moet toevoegen:
+
+    fitsIn Covariant Invariant = Invariant
+    fitsIn Contravariant Invariant = Invariant
+    (afzwakken naar Invariant)
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inferencing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -118,6 +219,9 @@ Encoding of polarities:
   results for Tys. However, this procedure is less complicated since type variables do not
   have to be taken into account and the signature for each type constructor is known
   (available through finPolGam).
+  
+  Essentially, the inference process is just regular 'kind' inference, with a very basic
+  subtyping. The key difference is the Negation-construct and normalization.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,10 +296,9 @@ SEM TyExpr
 %%[17 ag
 SEM TyExpr
   | Con Var
-      loc.polFromEnv = maybe Ty_Any pgiPol (gamLookup @nm emptyGam)
+      loc.polFromEnv = maybe Ty_Any pgiPol (gamLookup @nm @lhs.polGam)
       loc.foPol      = fitsIn weakFIOpts emptyFE @lUniq2 @lhs.polVarMp @loc.polFromEnv @lhs.knPolCtx
       lhs.pol        = foTy @loc.foPol
-      {- deal with errors -}
 %%]
 
   An analysis of the actual type expression of a wild card is needed to properly deal with
@@ -266,13 +369,14 @@ SEM TyExpr
   | Var Con
       (loc.polVarMp, loc.polVarMpCyc) = foVarMp @loc.foPol |==> @lhs.polVarMp
       
-      (loc.polOkL, loc.polErrL) = partition
-                                    (\(v,p) -> let v' = mkPolVar v in v' == p || v' == p)
-                                      [ (v, polEval p) | (v, p) <- varmpToAssocTyL @loc.polVarMpCyc ]
-      loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkL ]
+      (loc.polOkCyc, loc.polErrCyc)
+        = partition
+            (\(v,p) -> let v' = mkPolVar v in v' == p || mkPolNegate v' == p)
+              [ (v, polEval p) | (v, p) <- varmpToAssocTyL @loc.polVarMpCyc ]
+      loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkCyc ]
       lhs.polVarMp = @loc.polInvVarMp |=> @loc.polVarMp
-      
-      {- deal with errors -}
+      loc.cycVarMp = assocLToVarMp @loc.polErrCyc
+      loc.cycErrSq = Seq.fromList $ rngLift @range varmpOccurErr @loc.cycVarMp
 %%]
 
 
@@ -281,27 +385,114 @@ SEM TyExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   For a declaration group: gather an environment with signatures for each type constructor.
-  
-  ...
-  
+
+%%[17 ag
+ATTR AllDecl [ | gathTyConPolGam : PolGam | ]
+
+SEM Expr
+  | Let
+      decls.gathTyConPolGam = emptyGam
+
+SEM Decl
+  | Data
+      loc.polSig = @tyVars.polVarL `mkArrow` @loc.polCtxVar
+      lhs.gathTyConPolGam = gamAdd @tyNm (PolGamInfo @loc.polSig) @lhs.gathTyConPolGam
+
+ATTR AllTyVar [ | | polVarL USE {++} {[]} : TyL ]
+
+SEM TyVar
+  | Var
+      loc.polVar  = mkPolVar @loc.lUniq2
+      lhs.polVarL = [@loc.polVar]
+%%]
+
   For each data type: gather an environment for its type parameters.
+
+%%[17 ag
+ATTR AllTyVar [ | gathTyVarPolGam : PolGam | ]
+
+SEM Decl
+  | Data
+      tyVars.gathTyVarPolGam = emptyGam
+
+SEM FuncDep
+  | Dep
+      fromTvs.gathTyVarPolGam = emptyGam
+
+SEM TyVar
+  | Var
+      lhs.gathTyVarPolGam = gamAdd @nm (PolGamInfo @loc.polVar) @lhs.gathTyVarPolGam
+%%]
+
+  Distribute gathered environments.
+
+%%[17 ag
+ATTR AllDecl AllData AllTyExpr [ polGam : PolGam | | ]
+
+SEM Expr
+  | Let
+      decls.polGam = gamPushGam @decls.gathTyConPolGam @lhs.finPolGam
+
+SEM Decl
+  | Data
+      constrs.polGam = gamPushGam @tyVars.gathTyVarPolGam @lhs.polGam
+
+-- These other cases do not introduce new variables or type constructors, so they can use the finPolGam.
+SEM Decl
+  | TySig FFI Type
+      tyExpr.polGam = @lhs.finPolGam
+  | Class Instance
+      tyPrExpr.polGam = @lhs.finPolGam
+
+SEM Expr PatExpr
+  | TypeAs
+      tyExpr.polGam = @lhs.finPolGam
+
+SEM Expr
+  | AppImpl LamImpl
+      argPr.polGam = @lhs.finPolGam
+
+SEM Decl
+  | InstanceIntro
+      prExpr.polGam = @lhs.finPolGam
+%%]
+
   
-  ...
+  For each declaration group:
+    * Apply the substitution to incorporate the latest information in the gathered environment
+    * generalize the gathered environment and add the the final environment
+  Note that no new information will be available for type constructors from the inherited
+  environment (a.k.a. the finPolGam), because data type declarations are not nested.
   
-  For each declaration group: generalize and add to the final substitution
-  
-  ...
+%%[17 ag
+
+SEM Expr
+  | Let
+      (loc.gathPolGam1, loc.polVarMpCyc) = @decls.polVarMp |==> @decls.gathTyConPolGam
+      (loc.polOkCyc, loc.polErrCyc)
+        = partition
+            (\(v,p) -> let v' = mkPolVar v in v' == p || mkPolNegate v' == p)
+              [ (v, polEval p) | (v, p) <- varmpToAssocTyL @loc.polVarMpCyc ]
+      loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkCyc ]
+      loc.gathPolGam2 = @loc.polInvVarMp |=> @loc.gathPolGam1
+      loc.cycVarMp = assocLToVarMp @loc.polErrCyc
+      loc.cycErrSq = Seq.fromList $ rngLift @range varmpOccurErr @loc.cycVarMp
+      
+      loc.finGathPolGam = quantifyPolGam $ mapPolGam polEval @loc.gathPolGam2
+      loc.finPolGam     = gamPushGam @loc.finGathPolGam @lhs.finPolGam
+%%]
 
 
   Environment with final polarities for all type constructors that are yet in scope. The
   final polarities for type construtors of data type declarations of a Let are added to
   the finPolGam of the body of the Let.
+  
+  In other words: the finPolGam changes on the way down!
 
 %%[17 ag
 ATTR AllNT [ finPolGam : PolGam | | ]
 
 SEM AGItf
   | AGItf  expr.finPolGam = initPolGam
-
 %%]
 

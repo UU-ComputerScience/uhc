@@ -542,6 +542,9 @@ SEM Expr
                                             then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
                                                        >-<  ppGam (@lhs.finTyVarMp |=> @quValGam_ex_)
                                                        >-<  ppGam @lClGam
+%%[[17
+                                                       >-<  ppGam @loc.finGathPolGam
+%%]]
                                                        )
                                             else empty
 %%]
