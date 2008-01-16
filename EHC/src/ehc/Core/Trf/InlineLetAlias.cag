@@ -129,8 +129,15 @@ SEM CodeAGItf
   | AGItf       module      .   nmMp        =   Map.empty
 
 SEM CExpr
-  | Let         loc         .   allowTrf    =   @categ /= CBindStrict && @categ /= CBindFFI -- && @lhs.lev > cLevModule
-                            .   allowStrTrf =   @categ /= CBindFFI -- && @lhs.lev > cLevModule
+  | Let         loc         .   allowTrf    =   @categ /= CBindStrict
+                                                && @categ /= CBindFFI
+%%[[94
+                                                && @categ /= CBindFFE
+%%]]
+                            .   allowStrTrf =   @categ /= CBindFFI
+%%[[94
+                                                && @categ /= CBindFFE
+%%]]
                             .   nmMpNew     =   Map.foldWithKey
                                                   (\n r m
                                                     -> case r of

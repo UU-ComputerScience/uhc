@@ -74,6 +74,9 @@ ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
   | Let         loc         .   frontCBindL =   [(CBindFFI,@decls.ffiCBindL)]
+%%[[94
+                            .   backCBindL  =   [(CBindFFE,@decls.ffeCBindL)]
+%%]
                             .   howToBind   =   if @isStrict then CBindStrict else CBindRec
                             .   letCBindL   =   [(@howToBind,@decls.cbindL)]
                             .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
@@ -93,7 +96,6 @@ SEM Expr
   | Undefined   loc         .   cexpr       =   cundefined @lhs.opts
   | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId (cerror @lhs.opts ("FAIL " ++ show @caseId))
 %%]
-  | Let         loc         .   letCBindL   =   [(CBindFFI,@decls.ffiCBindL),(CBindRec,@decls.cbindL)]
 
 -- generated from ruler rules into EHRulerRules
   | IConst      loc         .   cexprBase   :=  CExpr_Int @int
@@ -522,8 +524,18 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR Decls Decl AllDataConstr [ | | cbindL, ffiCBindL USE {++} {[]}: CBindL ]
+ATTR
+  Decls Decl AllDataConstr
+    [ | | cbindL
+        , ffiCBindL
+%%[[94
+        , ffeCBindL
+%%]]
+          USE {++} {[]}: CBindL
+    ]
+%%]
 
+%%[8
 SEM Decl
   | Val         lhs         .   cbindL          =   [mkCBind1 @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
   | TySig       lhs         .   cbindL          =   []
@@ -535,23 +547,42 @@ SEM Decl
   | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindRec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL
 %%]
 
+%%[94
+  | FFE         lhs         .   ffeCBindL       =   [CBind_FFE @callconv @expEnt @nm @ty_sig_expanded]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let bindings + front bindings + body separately
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Front bindings are inserted before the other bindings, though only on top level.
-Meant for global defs like FFI
+Front/back bindings are inserted before/after the other bindings, though only on top level.
+Meant for global defs like FFI/FFE
 
 %%[8
-ATTR Expr [ | | letCBindL: {[(CBindCateg,CBindL)]}  frontCBindL: {[(CBindCateg,CBindL)]}  letCBody: CExpr ]
+ATTR
+  Expr
+    [ | | letCBindL
+        , frontCBindL
+%%[[94
+        , backCBindL
+%%]]
+            : {[(CBindCateg,CBindL)]}
+          letCBody: CExpr
+    ]
 
 SEM Expr
   | Let         lhs         .   letCBody        =   @body.letCBody
                             .   letCBindL       =   @letCBindL ++ @body.letCBindL
                             .   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
+%%[[94
+                            .   backCBindL      =   @backCBindL ++ @body.backCBindL
+%%]]
   | * - Let     lhs         .   letCBody        =   @cexpr
                             .   letCBindL       =   []
                             .   frontCBindL     =   []
+%%[[94
+                            .   backCBindL      =   []
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

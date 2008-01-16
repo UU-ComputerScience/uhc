@@ -107,6 +107,12 @@ DATA CBind
                 impEnt          : {String}
                 nm              : {HsName}
                 ty              : {Ty}
+%%[[94
+  | FFE         callconv        : {String}
+                expEnt          : {String}
+                nm              : {HsName}
+                ty              : {Ty}
+%%]]
 
 TYPE CBindL     =   [CBind]
 %%]

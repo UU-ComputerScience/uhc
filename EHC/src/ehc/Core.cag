@@ -184,7 +184,15 @@ cTupOff e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-data CBindCateg = CBindRec | CBindStrict | CBindPlain | CBindFFI deriving (Show,Eq)
+data CBindCateg
+  = CBindRec
+  | CBindStrict
+  | CBindPlain
+  | CBindFFI
+%%[[94
+  | CBindFFE
+%%]]
+  deriving (Show,Eq)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

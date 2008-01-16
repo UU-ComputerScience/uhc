@@ -119,8 +119,6 @@ SEM Declaration
     | ForeignImport
         loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @refname @type.eh
         lhs         .   eh          =   [@eh]
-    | ForeignExport
-        lhs         .   eh          =   []
 %%]
 %%[9
     | Class
@@ -154,6 +152,11 @@ SEM Declaration
 %%[11
     | Type
         loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @simpletype.typevariables)
+        lhs         .   eh          =   [@eh]
+%%]
+%%[94
+    | ForeignExport
+        loc         .   eh          =   rngLift @range EH.Decl_FFE @callconvention (maybe (show @name) id @exportname) @refname @type.eh
         lhs         .   eh          =   [@eh]
 %%]
 

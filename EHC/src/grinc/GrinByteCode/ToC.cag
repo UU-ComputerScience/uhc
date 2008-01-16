@@ -560,7 +560,8 @@ ATTR Instrs [ | | bcTrL: {[BCTrL]} ]
 SEM Instrs
   | Nil         lhs         .   bcTrL       =   [[]]
   | Cons        lhs         .   bcTrL       =   if @hd.hasCode
-                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas ([@hd.mn] ++ [ m | (AnnFunStart,m) <- @annL]))
+                                                then let i = (@lhs.cLoc,@hd.cLoc - @lhs.cLoc,ppCommas' ([@hd.mn] ++ [ k >|< "=" >|< m | (k,m) <- @annL, allow k]))
+                                                         allow k = not (k `elem` [AnnComment,AnnStackDepth])
                                                      in  case @tl.bcTrL of
                                                            (l:ls) -> (i:l) : ls
                                                 else if @hd.isEntry then [] : @tl.bcTrL else @tl.bcTrL

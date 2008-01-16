@@ -117,6 +117,9 @@ SEM CExpr
                                                   CBindRec     -> pp " rec"
                                                   CBindStrict  -> pp " !"
                                                   CBindFFI     -> pp " foreign"
+%%[[94
+                                                  CBindFFE     -> pp " foreignexport"
+%%]]
                                                   _            -> empty
                             .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
   | Lam         loc         .   pp          =   ppDef ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
@@ -144,6 +147,10 @@ SEM CBind
   | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.optPP >#< "=") (@expr.pp)
   | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
+%%[[94
+  | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
+                                                      ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @expEnt),ppTyWithCfg' CfgPP_HI @ty])
+%%]]
 
 SEM CBindL
   | Nil         lhs         .   ppL         =   []

@@ -7,7 +7,7 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.ToGrin} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty},{%{EH}GrinCode},Char)
+%%[8 hs module {%{EH}Core.ToGrin} import(Data.Maybe,Data.List,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty},{%{EH}GrinCode},Char)
 %%]
 
 %%[8 hs export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
@@ -20,6 +20,9 @@ WRAPPER CodeAGItf
 %%[8 hs import({%{EH}Gam}(DataGam,dataGamTagsOfTy))
 %%]
 %%[8 hs import(Debug.Trace)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
 %%[96 hs import({%{EH}BuiltinPrims})
@@ -550,7 +553,7 @@ SEM CBind
 tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Bool
 tyNmIsUnboxedForFFIRes opts
   = (`elem` ns)
-  where ns = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames opts ]
+  where ns = builtinKnownBoxedTyNmL opts
 %%]
 
 %%[8
@@ -605,6 +608,11 @@ SEM CBind
                                                         $ @nmArgPatL
                                                         )
                                                      ]
+%%]
+
+%%[94
+SEM CBind
+  | FFE         lhs         .   grBindL     = 	[]	-- not implemented yet
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -30,12 +30,13 @@
 # 16: + GADT (TBD)
 # 17: + Polarity inference (co/contravariance)
 # 20: + module system
+# 94: + full FFI (foreign function interface)
 # 95: + deriving construct
 # 96: + exception handling
 # 97: + numbers: Integer, Float, Double
 # 98: + IO
 # 99: + the rest to make uhc
-# 100: - debugging stuff
+# 100: - debugging/tracing stuff
 # 101: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
 
 # 50: + GADT experiment
@@ -49,7 +50,7 @@ EHC_PREL_VARIANT						:= 99
 EHC_UHC_VARIANT							:= 100
 EHC_PREL_VARIANTS						:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) 101
 EHC_PUB_NOCODE_VARIANTS					:= 1 2 3 4 5 6 7
-EHC_PUB_NOPREL_VARIANTS					:= 8 9 10 11 12 13 14 15 16 17 20 95 96 97 98
+EHC_PUB_NOPREL_VARIANTS					:= 8 9 10 11 12 13 14 15 16 17 20 94 95 96 97 98
 EHC_PUB_CODE_VARIANTS					:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
 EHC_PUB_VARIANTS						:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
 EHC_OTHER_NOCODE_VARIANTS				:= 4_2 6_4 7_2
@@ -184,7 +185,7 @@ RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 20 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < 101, 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50, 15 < 16, 15 < 17
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < 101, 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50, 15 < 16, 15 < 17
 
 ###########################################################################################
 # Misc

@@ -1347,7 +1347,7 @@ cpOptimiseGrinLocal modNm
                               nme  = ( grUnusedNameElim , "unused name elim" )
                               eve  = ( grEvalElim  , "eval elim" )
                               mte  = ( grUnusedMetaInfoElim  , "meta info elim" )
-                              unb  = ( grUnbox GrinBC.tagUnbox  , "unbox" )
+                              unb  = ( grUnbox GrinBC.tagAllowsUnboxedLife  , "unbox" )
                  optGrinNormal
                         = map fst optGrin
                  optGrinDump

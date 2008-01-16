@@ -62,6 +62,9 @@ ehScanOpts
 %%[20
                 ++ tokKeywStrsEH12
 %%]
+%%[94
+                ++ tokKeywStrsEH94
+%%]
 %%[95
                 ++ tokKeywStrsEH95
 %%]
@@ -165,6 +168,9 @@ hsScanOpts
 %%[20
                 ++ tokKeywStrsHS12
 %%]
+%%[94
+                ++ tokKeywStrsHS94
+%%]
 %%[1
         ,   scoKeywordsOps      =
                 scoKeywordsOps ehScanOpts
@@ -225,7 +231,10 @@ coreScanOpts
 %%]]
 %%[[20
                                     , "Integer" 
-%%]
+%%]]
+%%[[94
+                                    , "foreignexport" 
+%%]]
                                     ]
                                     ++ scoKeywordsTxt tyScanOpts
                                     ++ scoKeywordsTxt hsScanOpts
@@ -643,11 +652,7 @@ tokOpStrsHS7   = [  ]
 pLABEL          ,
     pLETSTRICT  ,
     pSAFE       ,
-    pUNSAFE     ,
-    pTHREADSAFE ,
     pCCALL      ,
-    pSTDCALL    ,
-    pDYNAMIC    ,
     pFOREIGN    ,
     pJAZY       ,
     pIMPORT     ,
@@ -659,18 +664,14 @@ pLABEL          ,
 pLABEL           = pKeyTk "label"
 pLETSTRICT       = pKeyTk "letstrict"
 pSAFE            = pKeyTk "safe"
-pUNSAFE          = pKeyTk "unsafe"
-pTHREADSAFE      = pKeyTk "threadsafe"
 pCCALL           = pKeyTk "ccall"
-pSTDCALL         = pKeyTk "stdcall"
-pDYNAMIC         = pKeyTk "dynamic"
 pFOREIGN         = pKeyTk "foreign"
 pJAZY            = pKeyTk "jazy"
 pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
 tokKeywStrsEH8 = [ "letstrict", "foreign", "import", "jazy" ]
-tokKeywStrsHS8 = [ "export", "label", "safe", "unsafe", "threadsafe", "ccall", "stdcall", "dynamic" ]
+tokKeywStrsHS8 = [ "export", "label", "safe", "ccall" ]
 %%]
 
 %%[9
@@ -725,15 +726,6 @@ tokOpStrsEH11   = [  ]
 tokOpStrsHS11   = [  ]
 %%]
 
-%%[15
-pDOTNET      
-  :: IsParser p Token => p Token
-%%]
-
-%%[15
-pDOTNET          = pKeyTk "dotnet"
-%%]
-
 %%[20
 pQUALIFIED      ,
     pQUESTQUEST ,
@@ -761,6 +753,28 @@ pDERIVING
 pDERIVING        = pKeyTk "deriving"
 
 tokKeywStrsEH95 = [ "deriving" ]
+%%]
+
+%%[94
+pDOTNET         ,
+    pUNSAFE     ,
+    pTHREADSAFE ,
+    pSTDCALL    ,
+    pJVM        ,
+    pDYNAMIC    ,
+    pCPLUSPLUS
+  :: IsParser p Token => p Token
+
+pUNSAFE          = pKeyTk "unsafe"
+pTHREADSAFE      = pKeyTk "threadsafe"
+pDOTNET          = pKeyTk "dotnet"
+pJVM             = pKeyTk "jvm"
+pSTDCALL         = pKeyTk "stdcall"
+pCPLUSPLUS       = pKeyTk "cplusplus"
+pDYNAMIC         = pKeyTk "dynamic"
+
+tokKeywStrsEH94 = [  ]
+tokKeywStrsHS94 = [ "unsafe", "threadsafe", "stdcall", "cplusplus", "dynamic", "jvm" ]
 %%]
 
 %%[90

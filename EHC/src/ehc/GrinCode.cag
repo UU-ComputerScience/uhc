@@ -7,10 +7,13 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin},EH.Util.Pretty)
+%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty)
 %%]
 
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
 %%[8 hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
@@ -53,7 +56,7 @@ DERIVING GrTag        : Show
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-grBuiltinTyNmL opts = [ hsnInt, hsnChar, ehbnPackedString $ ehcOptBuiltinNames opts ] ++ map hsnProd (0:[2..10])
+grBuiltinTyNmL opts = builtinKnownBoxedTyNmL opts ++ builtinKnownRecTyNmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

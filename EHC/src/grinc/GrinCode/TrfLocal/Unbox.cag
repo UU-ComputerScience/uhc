@@ -20,11 +20,11 @@ parameterised with a function telling whether a node represents an unboxed value
 
 %%[8 hs export(grUnbox)
 grUnbox :: (GrTag -> Unbox) -> GrModule -> GrModule
-grUnbox tagUnbox grmod
+grUnbox tagAllowsUnboxedLife grmod
   = trf_Syn_GrAGItf t
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
-                { tagUnbox_Inh_GrAGItf = tagUnbox
+                { tagAllowsUnboxedLife_Inh_GrAGItf = tagAllowsUnboxedLife
                 }
 %%]
 
@@ -41,7 +41,7 @@ WRAPPER GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR GrAGItf AllNT [ tagUnbox: {GrTag -> Unbox} | | ]
+ATTR GrAGItf AllNT [ tagAllowsUnboxedLife: {GrTag -> Unbox} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,13 +56,13 @@ ATTR AllNT [ | | trf: SELF ]
 %%[8
 SEM GrPatLam
   | VarNode     lhs . trf   =   case @fldL.trf of
-                                  [GrVar_KnownTag t, GrVar_Var v]  -> case @lhs.tagUnbox t of
+                                  [GrVar_KnownTag t, GrVar_Var v]  -> case @lhs.tagAllowsUnboxedLife t of
                                                                         Unbox_FirstField -> GrPatLam_Var v
                                                                         _                -> @trf                                  
                                   _ -> @trf
 
 SEM GrVal
-  | Node        lhs . trf   =   case (@fldL.trf,@lhs.tagUnbox @tag.trf) of
+  | Node        lhs . trf   =   case (@fldL.trf,@lhs.tagAllowsUnboxedLife @tag.trf) of
                                   ([f],Unbox_FirstField)
                                     -> f
                                   ([],Unbox_Tag t)

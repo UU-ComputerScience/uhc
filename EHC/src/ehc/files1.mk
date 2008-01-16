@@ -53,7 +53,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp Deriving Module Config BuiltinPrims \
 													CHR CHR/Key CHR/Constraint CHR/Solve \
 													Pred Pred/ToCHR Pred/CHR Pred/Evidence Pred/EvidenceToCore Pred/Heuristics Pred/CommonCHR Pred/RedGraph \
-													Base/Opts Base/Common Base/Builtin Base/HsName Base/Debug Base/Trie Base/CfgPP Base/ForceEval \
+													Base/Opts Base/Common Base/Builtin Base/Builtin2 Base/HsName Base/Debug Base/Trie Base/CfgPP Base/ForceEval \
 													NameAspect \
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
 													Base/Parser Ty/Parser EH/Parser HS/Parser HI/Parser Core/Parser GrinCode/Parser \
@@ -162,6 +162,7 @@ EHC_ON_RULES_VIEW_15					:= EP
 EHC_ON_RULES_VIEW_16					:= EP
 EHC_ON_RULES_VIEW_17					:= EP
 EHC_ON_RULES_VIEW_20					:= MD
+EHC_ON_RULES_VIEW_94					:= MD
 EHC_ON_RULES_VIEW_95					:= MD
 EHC_ON_RULES_VIEW_96					:= MD
 EHC_ON_RULES_VIEW_97					:= NUM
@@ -198,9 +199,10 @@ EHC_BY_RULER_RULES_13					:= $(EHC_BY_RULER_RULES_12)
 EHC_BY_RULER_RULES_14					:= $(EHC_BY_RULER_RULES_13)
 EHC_BY_RULER_RULES_15					:= $(EHC_BY_RULER_RULES_14)
 EHC_BY_RULER_RULES_16					:= $(EHC_BY_RULER_RULES_15)
-EHC_BY_RULER_RULES_17					:= $(EHC_BY_RULER_RULES_15)
-EHC_BY_RULER_RULES_20					:= $(EHC_BY_RULER_RULES_15)
-EHC_BY_RULER_RULES_95					:= $(EHC_BY_RULER_RULES_20)
+EHC_BY_RULER_RULES_17					:= $(EHC_BY_RULER_RULES_16)
+EHC_BY_RULER_RULES_20					:= $(EHC_BY_RULER_RULES_17)
+EHC_BY_RULER_RULES_94					:= $(EHC_BY_RULER_RULES_20)
+EHC_BY_RULER_RULES_95					:= $(EHC_BY_RULER_RULES_94)
 EHC_BY_RULER_RULES_96					:= $(EHC_BY_RULER_RULES_95)
 EHC_BY_RULER_RULES_97					:= $(EHC_BY_RULER_RULES_96) e.iint
 EHC_BY_RULER_RULES_98					:= $(EHC_BY_RULER_RULES_97)
