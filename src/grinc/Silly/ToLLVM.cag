@@ -101,8 +101,8 @@ SEM SilModule
                                                      
                 loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
                 loc.constants= [ ( GlobalVar "STR_RES" (Array 22 I8)
-                                  , StrConst "c\"Tag: %lld Value:%lld\\0A\\00\""
-                                             (Array 22 I8)
+                                  , StrConst "c\"%lld\\0A\\00\""
+                                             (Array 6 I8)
                                   )
                                ]
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) :
@@ -126,12 +126,7 @@ SEM SilModule
                                  , Stmt_Call
                                      (FuncDecl_FuncDecl "fun_main" Void False [])
                                      False []
-                                 , Stmt_Assignment 
-                                     (LocalVar "rp.0.val" @lhs.intType)
-                                     (Expression_Load 
-                                       (LocalVar "rpArr" @lhs.pointerType)
-                                     )
-                                 , Stmt_Assignment
+                                , Stmt_Assignment
                                      (LocalVar "rp.1" @lhs.pointerType)
                                      (Expression_GetElemPtr
                                        (LocalVar "rpArr" @lhs.pointerType) [1]
@@ -141,26 +136,15 @@ SEM SilModule
                                      (Expression_Load 
                                        (LocalVar "rp.1" @lhs.pointerType)
                                      )
-                                 , Stmt_Assignment
-                                     (LocalVar "rp.2" @lhs.pointerType)
-                                     (Expression_GetElemPtr
-                                       (LocalVar "rpArr" @lhs.pointerType) [2]
-                                     )
-                                 , Stmt_Assignment
-                                     (LocalVar "rp.2.val" @lhs.intType)
-                                     (Expression_Load 
-                                       (LocalVar "rp.2" @lhs.pointerType)
-                                     )                                                                                 
-                                 , Stmt_Assignment
+                                , Stmt_Assignment
                                      (LocalVar "cast.str.res" (pLift I8))
                                      (Expression_GetElemPtr 
-                                       (GlobalVar "STR_RES" (pLift $ Array 22 I8))
+                                       (GlobalVar "STR_RES" (pLift $ Array 6 I8))
                                        [0,0]
                                      )  
                                  , Stmt_Call
                                      @loc.printfDecl True
                                      [ LocalVar "cast.str.res" (pLift I8)
-                                     , LocalVar "rp.0.val" @lhs.intType
                                      , LocalVar "rp.1.val" @lhs.intType
                                      ] 
                                  , Stmt_Return (Constant 0 I32)  

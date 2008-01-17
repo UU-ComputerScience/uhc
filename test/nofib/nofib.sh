@@ -9,7 +9,7 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-clexe --verbose=0 -p-"
+DEF_EHC_FLAGS="-cexe --verbose=0 -p-"
 DEF_GHC_FLAGS="-O2"
 
 # Haskell main file for each benchmark
@@ -33,7 +33,7 @@ PRINT_INT_TEMPLATE="<PRINT_INT>"
 GHC_PRINT_INT="print $ "
 EHC_PRINT_INT=""
 
-LOG_FILE="no-fib.log"
+LOG_FILE="nofib.log"
 
 ###############################################################################
 # End of configuration

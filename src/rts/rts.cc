@@ -13,7 +13,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.TIMING
-#define TIMING		1
+#define TIMING		0
 
 #if TIMING
 #include <time.h>
@@ -96,9 +96,11 @@ GrWord heapalloc(int n)
 void memoryDumpResult_Sil()
 {
 #if USE_BOEHM_GC
-     printf("result SP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, RP[0], RP[1] );
+     //printf("result SP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, RP[0], RP[1] );
+     printf("%lld\n", RP[1] );
 #else
-     printf("result SP offset=%d HP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, HP-HeapAreaLow, RP[0], RP[1] );
+     //printf("result SP offset=%d HP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, HP-HeapAreaLow, RP[0], RP[1] );
+     printf("%lld\n", RP[1] );
 #endif
 }
 %%]
