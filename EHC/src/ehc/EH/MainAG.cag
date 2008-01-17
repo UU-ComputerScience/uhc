@@ -58,9 +58,6 @@
 %%[16 hs import({%{EH}Ty.Trf.Subst})
 %%]
 
-%%[17 hs import({%{EH}Ty.Trf.PolEval})
-%%]
-
 %%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 

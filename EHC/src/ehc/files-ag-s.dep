@@ -25,7 +25,6 @@ Ty/Trf/ElimEqual.cag
 Ty/Trf/InfuseAnn.cag
 Ty/Trf/InfuseExp.cag
 Ty/Trf/ForceEval.cag
-Ty/Trf/PolEval.cag
 Error/Pretty.cag
 Core/ToGrin.cag
 Core/ToJava.cag

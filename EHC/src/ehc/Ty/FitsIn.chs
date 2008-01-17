@@ -1240,6 +1240,22 @@ tyBetaRed1 fi tp
                 lamLen = length lamArgs
                 argLen = length args
                 subst  = assocLToVarMp (zip lamArgs args)
+%%[[17
+        -- normalization for polarity types
+        -- * removes double negations
+        -- * removes negation on 'basic' polarities
+        eval (Ty_Con nm) [arg]
+          | nm == hsnPolNegation
+              = case fun' of
+                  Ty_Con nm
+                    | nm == hsnPolNegation   -> mkres (head args')
+                    | nm == hsnCovariant     -> mkres mkPolContravariant
+                    | nm == hsnContravariant -> mkres mkPolCovariant
+                    | nm == hsnInvariant     -> mkres mkPolInvariant
+                  _ -> Nothing
+              where
+                (fun',args') = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) arg
+%%]]
         eval (Ty_Con nm) aa
               = case tyGamLookup nm tyGam of
                   Just tgi -> case tgiTy tgi of
