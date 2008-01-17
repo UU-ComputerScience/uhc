@@ -1,14 +1,3 @@
-Things to check/add/do:
-
-!!! Add error handling (using result of fitsIn)
-!!! Add proper propagation of substitutions
-!!! Add propagation/gathering of environments
-!!! Deal with cycles in the var map (which results mostly in Invariant polarities instead of errors)
-!!! Make sure the polarities are normalized (I think I can delay that though)
-!!! Some of the assumptions made in the introduction may not be an issue due to piggy backing on the
-    existing infrastructure for types (i.e. instantiation and so on)
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -372,7 +361,7 @@ SEM TyExpr
       (loc.polOkCyc, loc.polErrCyc)
         = partition
             (\(v,p) -> let v' = mkPolVar v in v' == p || mkPolNegate v' == p)
-              [ (v, polEval p) | (v, p) <- varmpToAssocTyL @loc.polVarMpCyc ]
+              (varmpToAssocTyL @loc.polVarMpCyc)
       loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkCyc ]
       lhs.polVarMp = @loc.polInvVarMp |=> @loc.polVarMp
       loc.cycVarMp = assocLToVarMp @loc.polErrCyc
@@ -472,13 +461,15 @@ SEM Expr
       (loc.polOkCyc, loc.polErrCyc)
         = partition
             (\(v,p) -> let v' = mkPolVar v in v' == p || mkPolNegate v' == p)
-              [ (v, polEval p) | (v, p) <- varmpToAssocTyL @loc.polVarMpCyc ]
+              (varmpToAssocTyL @loc.polVarMpCyc)
       loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkCyc ]
       loc.gathPolGam2 = @loc.polInvVarMp |=> @loc.gathPolGam1
       loc.cycVarMp = assocLToVarMp @loc.polErrCyc
       loc.cycErrSq = Seq.fromList $ rngLift @range varmpOccurErr @loc.cycVarMp
       
-      loc.finGathPolGam = quantifyPolGam $ mapPolGam polEval @loc.gathPolGam2
+      loc.finGathPolGam = quantifyPolGam
+                            $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
+                            $ @loc.gathPolGam2
       loc.finPolGam     = gamPushGam @loc.finGathPolGam @lhs.finPolGam
 %%]
 
