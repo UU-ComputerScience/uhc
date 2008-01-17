@@ -9,7 +9,7 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-cbexe --verbose=0 -p-"
+DEF_EHC_FLAGS="-clexe --verbose=0 -p-"
 DEF_GHC_FLAGS="-O2"
 
 # Haskell main file for each benchmark
@@ -123,8 +123,12 @@ function create_benchmarkfile {
   BENCHMARK_FILE=$1
   BENCHMARK_DIR=${BENCHMARK_FILE%/*}
   
-  mkdir $BENCHMARK_DIR/build
-  cp $BENCHMARK_DIR/*.hs $BENCHMARK_DIR/params $BENCHMARK_DIR/build/
+  if [ -d "$BENCHMARK_DIR/build" ]; then
+    rm -rf $BENCHMARK_DIR/build/*
+  else 
+    mkdir $BENCHMARK_DIR/build
+  fi
+  cp $BENCHMARK_DIR/*.hs $BENCHMARK_DIR/params $BENCHMARK_DIR/expected.out.* $BENCHMARK_DIR/build/
   BENCHMARK_FILE=$BENCHMARK_DIR/build/$MAIN_FILE
 
   if [ "${HC##*/}" = "ehc" ]; then
@@ -138,13 +142,12 @@ function create_benchmarkfile {
 
 function clean_up {
   BENCHMARK_DIR=${BENCHMARK_FILE%/*}
-  # rm -rf $BENCHMARK_DIR
+  rm -rf $BENCHMARK_DIR
 }  
 
 function run {
   SUITE=$1
   BENCHMARK="${2}"
-  echo "" > $LOG_FILE
   for i in `ls $SUITE/${BENCHMARK}/$MAIN_FILE`;
   do
     CURR_MAIN_FILE=$i
@@ -164,11 +167,31 @@ function run {
         ;;
     esac
     echo "Compiling $HC $FLAGS $EFLAGS $BENCHMARK_FILE"
-    # $HC $FLAGS $EFLAGS $BENCHMARK_FILE > $LOG_FILE 2>&1
-    $HC $FLAGS $EFLAGS $BENCHMARK_FILE
-    echo "Running ./$OBJFILE"
-    time ./$OBJFILE
-    clean_up
+    $HC $FLAGS $EFLAGS $BENCHMARK_FILE >> $LOG_FILE 2>&1
+    
+    if [ $? -eq 0 ]; then
+      BENCHMARK_DIR=${BENCHMARK_FILE%/*}
+      OUTPUT=$BENCHMARK_DIR/out.$$
+      EXPECTED=$BENCHMARK_DIR/expected.out.$TYPE
+
+      echo "Running ./$OBJFILE"
+      time ./$OBJFILE > $OUTPUT 
+      
+      RETVALUE=$?
+      if [ $RETVALUE -eq 0 ]; then
+        diff $OUTPUT $EXPECTED 
+        if [ $? -eq 0 ]; then
+          clean_up
+          echo -en '\E[32m'"\033[1mSUCCES\033[0m"
+        else
+          echo -en '\E[31m'"\033[1mERROR:\033[0m Output ($OUTPUT) not equal to expected output ($EXPECTED)"
+        fi 
+      else
+        echo -en '\E[31m'"\033[1mERROR:\033[0m Run-time error. Returncode: $RETVALUE"
+      fi
+    else
+        echo -en '\E[31m'"\033[1mERROR:\033[0m Compile error. Investigate log ($LOG_FILE)"
+    fi
     echo "" 
     echo "--- DONE no-fib: $CURR_MAIN_FILE ---"
   done
