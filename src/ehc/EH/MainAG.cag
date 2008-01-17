@@ -61,6 +61,9 @@
 %%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
+%%[94 hs import({%{EH}Foreign.Pretty})
+%%]
+
 %%[95 hs import({%{EH}Deriving})
 %%]
 
@@ -208,6 +211,9 @@ SEM Decl
   | Val
 %%[[9
     InstanceIntro
+%%]]
+%%[[94
+    FFE
 %%]]
                 expr        .   isTopLam            =   True
 

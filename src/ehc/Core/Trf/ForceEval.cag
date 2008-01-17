@@ -77,8 +77,8 @@ SEM CBind
   | Bind			lhs		.	trf 		=	forceEval @nm `seq` @expr.trf
   | FFI				lhs		.	trf 		=	forceEval @callconv `seq` forceEval @safety `seq` forceEval @impEnt
   												`seq` forceEval @nm `seq` forceEval' @ty
-  | FFE				lhs		.	trf 		=	forceEval @callconv `seq` forceEval @expEnt
-  												`seq` forceEval @nm `seq` forceEval' @ty
+  | FFE				lhs		.	trf 		=	forceEval @nm `seq` @callconv {- `seq` forceEval @expEnt -}
+  												`seq` forceEval @expNm `seq` forceEval' @ty
 
 SEM CPat
   | Var				lhs		.	trf 		=	forceEval' @pnm
@@ -125,7 +125,7 @@ SEM CExpr
 SEM CBind
   | Bind        lhs         .   cm          =   cmUnions [cm1 "CBind_Bind",@expr.cm,@bindMeta.cm,fevCount @nm]
   | FFI         lhs         .   cm          =   cmUnions [cm1 "CBind_FFI",fevCount @nm,fevCount @callconv,fevCount @safety,fevCount @impEnt,fevCount @ty]
-  | FFE         lhs         .   cm          =   cmUnions [cm1 "CBind_FFE",fevCount @nm,fevCount @callconv,fevCount @expEnt,fevCount @ty]
+  | FFE         lhs         .   cm          =   cmUnions [cm1 "CBind_FFE",fevCount @nm,fevCount @callconv,{- fevCount @expEnt, -}fevCount @expNm,fevCount @ty]
 
 SEM CPat
   | Var         lhs         .   cm          =   cmUnions [cm1 "CPat_Var",fevCount @pnm]

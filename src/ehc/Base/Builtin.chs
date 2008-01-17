@@ -96,6 +96,11 @@ mkHNmHidden :: HSNM x => x -> HsName
 mkHNmHidden = mkHNmPrefix hsnStrHiddenPrefix
 %%]
 
+%%[94 export(mkHNmExport)
+mkHNmExport :: HSNM x => x -> HsName
+mkHNmExport = mkHNmPrefix (hsnStrHiddenPrefix ++ "export_")
+%%]
+
 %%[3.strUn
 strUn                               =   hsnStrHiddenPrefix ++ "un"
 %%]

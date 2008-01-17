@@ -229,11 +229,10 @@ SEM Declaration
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
     | ForeignImport
-        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_FFI @eh) @idOccDefs
-%%]
-%%[88
-    | ForeignExport -- ??
-        loc             .   idOccDefGam =   gamSingleton @idOccDef (mkIdDefOcc @idOccDef IdAsp_Val_Var @lhs.nmLev @range)
+%%[[94
+      ForeignExport
+%%]]
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_Foreign @eh) @idOccDefs
 %%]
 
 %%[1
@@ -808,6 +807,13 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnPrelId] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
+%%[94
+SEM Declaration
+    | ForeignExport
+        loc             .   (refname,_,idUseOccGamExport,errIdUse)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Var @range
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifier use's: splitting according to level + def'd check + dependencies
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -949,6 +955,14 @@ SEM Declaration
     | Type
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
+                        .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
+%%]]
+%%[[94
+    | ForeignExport
+        loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (gamUnions [@idUseOccGamExport,@type.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
 %%]]
@@ -1110,7 +1124,7 @@ mkIdDefEH def
         -> [decl]
 %%]]
 %%[[8
-      IdAsp_Val_FFI decl
+      IdAsp_Val_Foreign decl
         -> [decl]
 %%]]
 %%[[9

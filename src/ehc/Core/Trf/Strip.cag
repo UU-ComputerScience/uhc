@@ -81,6 +81,6 @@ SEM CPatBind
 SEM CBind
   | Bind		lhs			.	cTrf		=	CBind_Bind hsnUnknown @bindMeta.cTrf @expr.cTrf
   | FFI 		lhs			.	cTrf		=	CBind_FFI "" "" "" hsnUnknown Ty_Any
-  | FFE 		lhs			.	cTrf		=	CBind_FFE "" "" hsnUnknown Ty_Any
+  | FFE 		lhs			.	cTrf		=	CBind_FFE hsnUnknown "" "" hsnUnknown Ty_Any
 %%]
 

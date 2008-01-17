@@ -156,7 +156,9 @@ SEM Declaration
 %%]
 %%[94
     | ForeignExport
-        loc         .   eh          =   rngLift @range EH.Decl_FFE @callconvention (maybe (show @name) id @exportname) @refname @type.eh
+        loc         .   (ent,entErrs)
+                                    =   parseForeignEnt $ maybe (show @name) id @exportname
+                    .   eh          =   rngLift @range EH.Decl_FFE @exportrefname @callconvention @ent (rngLift @range EH.Expr_Var @refname) @type.eh
         lhs         .   eh          =   [@eh]
 %%]
 

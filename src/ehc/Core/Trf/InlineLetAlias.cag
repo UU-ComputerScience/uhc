@@ -96,7 +96,7 @@ cmodTrfInlineLetAlias cmod
 cmodTrfInlineLetAlias :: HsNameS -> CModule -> CModule
 cmodTrfInlineLetAlias globNmS cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                             (Inh_CodeAGItf {globNmS_Inh_CodeAGItf = globNmS})
+                             (Inh_CodeAGItf {noTrfNmS_Inh_CodeAGItf = globNmS})
      in   cTrf_Syn_CodeAGItf t
 %%]
 
@@ -105,13 +105,13 @@ cmodTrfInlineLetAlias globNmS cmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-ATTR CodeAGItf CExpr CModule AllBind [ globNmS: HsNameS | | ]
+ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
 
 SEM CAlt
-  | Alt         loc         .   globNmS     =   Set.empty
+  | Alt         loc         .   noTrfNmS    =   Set.empty
 
 SEM CPatBind
-  | Bind        loc         .   globNmS     =   Set.empty
+  | Bind        loc         .   noTrfNmS    =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,9 +168,17 @@ ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
 
 SEM CExpr
   | Var Int Char
-  				lhs         .   mbRepl      =   Just @cTrf
+                lhs         .   mbRepl      =   Just @cTrf
   | * - Var Int Char
                 lhs         .   mbRepl      =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather additional names for which the def may not be eliminated: FFE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+ATTR AllBind [ | | bindsNoTrfNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -186,7 +194,7 @@ SEM CBind
                                             =   case @expr.mbRepl of
                                                   Just r | @nm /= hsnMain
 %%[[20
-                                                           && not (@nm `Set.member` @lhs.globNmS)
+                                                           && not (@nm `Set.member` @lhs.noTrfNmS)
 %%]]
                                                     -> (@nm `Map.singleton` r,[(@nm,@cTrf)])
                                                   _ -> (Map.empty,[(@nm,@cTrf)])
@@ -205,7 +213,26 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | Let         lhs         .   cTrf        =   if Map.null @nmMpNew
                                                 then @cTrf
-                                                else mkCExprLet @categ [ b | (n,b) <- @binds.bindL, not (n `Map.member` @nmMpNew)] @body.cTrf
-  | Var         lhs         .   cTrf        =   maybe @cTrf id . Map.lookup @nm $ @lhs.nmMp
+                                                else mkCExprLet @categ
+                                                       [ b | (n,b) <- @binds.bindL
+                                                           , not (n `Map.member` @nmMpNew)
+%%[[94
+                                                             || n `Set.member` @binds.bindsNoTrfNmS
+%%]]
+                                                       ] @body.cTrf
+  | Var         lhs         .   cTrf        =   maybe @cTrf id $ Map.lookup @nm $ @lhs.nmMp
 %%]
+
+%%[94
+SEM CBind
+  | FFE         loc         .   (replNm,bindsNoTrfNmS)
+                                            =   case Map.lookup @expNm @lhs.nmMp of
+                                                    Just e | isJust mbNm
+                                                      -> (fromJust mbNm,Set.empty)
+                                                      where mbNm = cexprMbVar e
+                                                    _ -> (@expNm,Set.singleton @expNm)
+                lhs         .   cTrf        =   CBind_FFE @nm @callconv @expEnt @replNm @ty
+
+%%]
+
 

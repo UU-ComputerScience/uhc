@@ -563,10 +563,11 @@ pDeclInstance   =    pKey "instance"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Parser dynamic variable
+%%% Parser for dynamic variable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[10
 pDynVar         ::   EHCParser HsName
 pDynVar         =    pKeyw hsnDynVar *> pVar
 %%]
+

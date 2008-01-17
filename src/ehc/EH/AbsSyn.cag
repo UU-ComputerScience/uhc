@@ -79,9 +79,10 @@ DATA Decl
 
 %%[94
 DATA Decl
-  | FFE             callconv        : {String}
-                    expEnt          : {String}
-                    nm              : {HsName}
+  | FFE             nm              : {HsName}
+                    callconv        : {String}
+                    expEnt          : {ForeignEnt}
+                    expr            : Expr
                     tyExpr          : TyExpr
 %%]
 
@@ -540,15 +541,31 @@ SET AllFuncDep      = FuncDep FuncDeps
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mono restrictions on data type annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+TYPE AnnDtMonoRestrictions = [AnnDtMonoRestrict]
+
+DATA AnnDtMonoRestrict
+  | Global nm   : {HsName}
+  | Local  from : {HsName}
+           to   : {HsName}
+
+DERIVING AnnDtMonoRestrict : Eq, Ord
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Groups of nonterminals
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AllNT
-SET AllNT           = AllTyExpr AllDecl AllPatExpr AllExpr
+SET AllNT           =   AllTyExpr AllDecl AllPatExpr AllExpr
 %%]
 
 %%[5.AllNT -1.AllNT
-SET AllNT           = AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
+SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
 %%]
 
 %%[6.AllNT -5.AllNT
@@ -567,18 +584,3 @@ SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr AllData
 %%]
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Mono restrictions on data type annotations
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7_2
-TYPE AnnDtMonoRestrictions = [AnnDtMonoRestrict]
-
-DATA AnnDtMonoRestrict
-  | Global nm   : {HsName}
-  | Local  from : {HsName}
-           to   : {HsName}
-
-DERIVING AnnDtMonoRestrict : Eq, Ord
-
-%%]

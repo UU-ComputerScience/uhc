@@ -34,6 +34,9 @@
 %%[20 hs export(cModMerge)
 %%]
 
+%%[94 hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%]
+
 %%[8 ag import({Core/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
@@ -347,10 +350,13 @@ mkCIf opts cn c t f
 %%% Inspection/deconstruction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cexprVar)
+%%[8 hs export(cexprMbVar,cexprVar)
+cexprMbVar :: CExpr -> Maybe HsName
+cexprMbVar (CExpr_Var n) = Just n
+cexprMbVar _             = Nothing
+
 cexprVar :: CExpr -> HsName
-cexprVar (CExpr_Var n) = n
-cexprVar _             = hsnUnknown
+cexprVar = maybe hsnUnknown id . cexprMbVar
 %%]
 
 %%[8 hs export(cexprTupFld)

@@ -116,9 +116,9 @@ SEM Type
 %%[5
 SEM Declaration
     | Data
-    	loc			.	locErrs		=	Seq.empty
+        loc         .   locErrs     =   Seq.empty
     | Newtype
-    	loc			.	locErrs		=	Seq.fromList @errNewtype
+        loc         .   locErrs     =   Seq.fromList @errNewtype
     | Data Newtype
         loc         .   errSq       =   Seq.unions [ @locErrs
                                                    , @simpletype.errSq
@@ -203,6 +203,15 @@ SEM Declaration
 SEM Declaration
     | Type
         loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @simpletype.errSq, @type.errSq ]
+%%]
+
+%%[94
+SEM Declaration
+    | ForeignExport
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errIdUse
+                                                   , Seq.fromList (rngLift @range mkNestErr (pp "Parse of foreign entity") @entErrs)
+                                                   , @type.errSq
+                                                   ]
 %%]
 
 %%[95

@@ -33,9 +33,6 @@ SEM Declaration
 %%]]
 %%[[8
     | ForeignImport
-%%[[94
-      ForeignExport
-%%]]
         loc             .   refname     =   @name
 %%]]
 %%[[9
@@ -64,9 +61,6 @@ SEM Declaration
     | Data Newtype
         loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
     | ForeignImport
-%%[[94
-      ForeignExport
-%%]]
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
     | Class Instance InstanceUseImplicitly
         loc             .   instancerefname
@@ -79,6 +73,13 @@ SEM Declaration
 %%]
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+
+%%[94
+SEM Declaration
+    | ForeignExport
+        loc             .   exportrefname
+                                        =   mkHNmExport @name
+%%]
 
 %%[95
 SEM Deriving
@@ -267,9 +268,10 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
                         .   idOccDefs   =   [@idOccDef]
 %%]
-%%[88
-    | ForeignExport -- ??
-        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+%%[94
+    | ForeignExport
+        loc             .   idOccDef    =   IdOcc @exportrefname IdOcc_Val
+                        .   idOccDefs   =   [@idOccDef]
 %%]
 
 %%[1
@@ -293,8 +295,8 @@ SEM Pattern
 
 %%[7
 SEM RecordPatternBinding
-	| Pun
-		loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
+    | Pun
+        loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
 %%]
 
 %%[8
