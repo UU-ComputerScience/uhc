@@ -23,7 +23,7 @@ scanHandle opts fn fh
         }
 %%]
 
-%%[5
+%%[5 export(scan)
 scanFile :: ScanOpts -> FilePath -> IO [Token]
 scanFile opts fn = 
         do txt <- readFile fn

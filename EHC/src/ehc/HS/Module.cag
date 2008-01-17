@@ -158,7 +158,7 @@ ATTR
     ]
 
 SEM Declaration
-    | TypeSignature FunctionBindings PatternBinding ForeignImport -- ForeignExport
+    | TypeSignature FunctionBindings PatternBinding ForeignImport
         lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty) | o <- @idOccDefs ]
     | Type
         lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty) | o <- @idOccDefs ]

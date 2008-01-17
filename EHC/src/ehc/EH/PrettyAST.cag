@@ -685,7 +685,7 @@ SEM DataConstr
 
 %%[94
 SEM Decl
-  | FFE         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFE"] [pp (show @expEnt),ppNm @nm] [@tyExpr.ppAST] @info
+  | FFE         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFE"] [ppNm @nm,pp @expEnt] [@expr.ppAST,@tyExpr.ppAST] @info
                         .  info     =   []
 %%]
 

@@ -13,6 +13,9 @@
 %%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
+%%[9 hs import({%{EH}Foreign.Pretty})
+%%]
+
 %%[8.WRAPPER ag import({Core/AbsSyn})
 WRAPPER
   CodeAGItf CExpr
@@ -149,7 +152,7 @@ SEM CBind
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 %%[[94
   | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
-                                                      ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @expEnt),ppTyWithCfg' CfgPP_HI @ty])
+                                                      ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
 %%]]
 
 SEM CBindL

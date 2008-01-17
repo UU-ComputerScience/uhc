@@ -108,9 +108,10 @@ DATA CBind
                 nm              : {HsName}
                 ty              : {Ty}
 %%[[94
-  | FFE         callconv        : {String}
-                expEnt          : {String}
-                nm              : {HsName}
+  | FFE         nm              : {HsName}
+                callconv        : {String}
+                expEnt          : {ForeignEnt}
+                expNm           : {HsName}
                 ty              : {Ty}
 %%]]
 

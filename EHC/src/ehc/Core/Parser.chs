@@ -13,6 +13,9 @@
 %%[20 export(pCModule,pCExpr)
 %%]
 
+%%[94 import({%{EH}Foreign.Parser})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scanner
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,7 +92,7 @@ pCBind
     <**> (   (\m e n -> mkCBind1Meta n m e) <$> pCMetaOpt <*> pCExpr
          <|> (\c s i t n -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[94
-         <|> (\c e t n -> CBind_FFE c e n t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\c e en t n -> CBind_FFE n c (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
          )
   where pS = tokMkStr <$> pStringTk

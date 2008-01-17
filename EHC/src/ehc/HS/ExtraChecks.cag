@@ -81,7 +81,7 @@ idDupCheckInfo
                                          || iaspIsValFld a
 %%]]
 %%[[8
-                                         || iaspIsValFFI a
+                                         || iaspIsValForeign a
 %%]]
           )                       )
         , ( "operator fixity"   , iaspIsValFix )

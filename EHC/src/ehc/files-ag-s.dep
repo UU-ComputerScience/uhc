@@ -1,5 +1,6 @@
 EH/MainAG.cag
 EH/ConstrInferTy.cag
+Foreign/Pretty.cag
 HS/MainAG.cag
 HS/ModImpExp.cag
 HI/MainAG.cag

@@ -50,7 +50,12 @@ SEM AGItf
                                                 in  CModule_Mod @lhs.moduleNm
                                                         (foldr (\(c,b) e -> mkCExprLet c b e)
                                                                (d b)
-                                                               (@extraCBindL ++ @expr.frontCBindL ++ @expr.letCBindL))
+                                                               (@extraCBindL ++ @expr.frontCBindL ++ @expr.letCBindL
+%%[[94
+                                                               ++ @expr.backCBindL
+%%]]
+                                                               )
+                                                        )
                                                         [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
                 loc         .   extraCBindL =   []
 %%]
@@ -338,7 +343,7 @@ SEM PatExpr
     Expr
 %%]]
                 loc         .   cpNm        =   maybe (RPatNmUniq @topNm) RPatNmOrig @mbTopNm
-  | App			loc			.	cpNm		=	@arg.cpNm
+  | App         loc         .   cpNm        =   @arg.cpNm
 %%]
 
 %%[8
@@ -462,13 +467,13 @@ SEM RecPatExpr
 SEM Expr
   | App AppImpred
                 loc         .   appImplsCoeL        =   (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL) ++ [CoeImplApp $ ipoId @imPrvOcc]
-                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
+                            .   appImplsLRCoe       =   lrcoeLFromList @appImplsCoeL
 %%]
 
 %%[12
 SEM Expr
   | AppImpl     loc         .   appImplsCoeL        =   []
-                			.	appImplsLRCoe		=	lrcoeLFromList @appImplsCoeL
+                            .   appImplsLRCoe       =   lrcoeLFromList @appImplsCoeL
 %%]
 
 %%[9
@@ -548,7 +553,9 @@ SEM Decl
 %%]
 
 %%[94
-  | FFE         lhs         .   ffeCBindL       =   [CBind_FFE @callconv @expEnt @nm @ty_sig_expanded]
+  | FFE         loc         .   nmCoerced       =   mkHNmPrefix "coerced_" @nm
+                lhs         .   cbindL          =   [mkCBind1 @nmCoerced @expr.cexpr]
+                            .   ffeCBindL       =   [CBind_FFE @nm @callconv @expEnt @nmCoerced @ty_sig_expanded]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

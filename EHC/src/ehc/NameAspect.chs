@@ -45,7 +45,7 @@ data IdAspect
   | IdAsp_Kind_Var
 %%]]
 %%[[8
-  | IdAsp_Val_FFI       {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Val_Foreign   {iaspDecl   :: !EH.Decl                         }
 %%]]
 %%[[9
   | IdAsp_Class_Class
@@ -105,10 +105,10 @@ iaspIsTypeSig (IdAsp_Type_Sig _) = True
 iaspIsTypeSig _                  = False
 %%]
 
-%%[8 hs export(iaspIsValFFI)
-iaspIsValFFI :: IdAspect -> Bool
-iaspIsValFFI (IdAsp_Val_FFI _) = True
-iaspIsValFFI _                 = False
+%%[8 hs export(iaspIsValForeign)
+iaspIsValForeign :: IdAspect -> Bool
+iaspIsValForeign (IdAsp_Val_Foreign _) = True
+iaspIsValForeign _                     = False
 %%]
 
 %%[9 hs export(iaspIsClassDef)
@@ -132,29 +132,29 @@ instance PP IdAspect where
   pp  IdAsp_Val_Con         = pp "data constructor"
 %%[[5
   pp  IdAsp_Val_Fld         = pp "data field"
-%%]
+%%]]
   pp  IdAsp_Type_Con        = pp "type constructor"
 %%[[3
   pp  IdAsp_Type_Var        = pp "type variable"
-%%]
+%%]]
 %%[[5
   pp (IdAsp_Type_Def _   )  = pp "type"
-%%]
+%%]]
 %%[[6
   pp (IdAsp_Type_Sig _   )  = pp "kind signature"
   pp  IdAsp_Kind_Con        = pp "kind constructor"
   pp  IdAsp_Kind_Var        = pp "kind variable"
-%%]
+%%]]
 %%[[8
-  pp (IdAsp_Val_FFI _    )  = pp "foreign function"
-%%]
+  pp (IdAsp_Val_Foreign _)  = pp "foreign"
+%%]]
 %%[[9
   pp  IdAsp_Class_Class     = pp "class"
   pp (IdAsp_Class_Def _ _)  = pp "class"
   pp  IdAsp_Inst_Inst       = pp "instance"
   pp (IdAsp_Inst_Def  _ _)  = pp "instance"
   pp (IdAsp_Dflt_Def  _  )  = pp "default"
-%%]
+%%]]
   pp  IdAsp_Any             = pp "ANY"
 %%]
 

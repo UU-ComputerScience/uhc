@@ -87,6 +87,11 @@ SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
 
+%%[94
+SEM Decl
+  | FFE         loc         .   knTy                =   @ty_sig_
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Final type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -888,11 +893,15 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.App
 %%[5.fiOpts.init
 SEM Decl
-  | Val         expr        .  fiOpts               =   strongFIOpts
+  | Val
+%%[[94
+    FFE
+%%]]
+  				expr        .  fiOpts               =   strongFIOpts
 %%[[16
                                                           {fioFitVarFailureToProveObl = True }
 %%]]
-                patExpr     .  fiOpts               =   strongFIOpts
+  | Val         patExpr     .  fiOpts               =   strongFIOpts
 %%[[16
                                                           {fioFitVarFailureToProveObl = True }
 %%]]
@@ -1067,6 +1076,9 @@ SEM DataFieldExpr
 
 SEM Decl
   | InstanceIntro Val
+%%[[94
+    FFE
+%%]]
                 loc         .   isFirstLet          =   True
 
 SEM RecExpr
@@ -1085,7 +1097,6 @@ SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The XX_App function name of a XX, if any

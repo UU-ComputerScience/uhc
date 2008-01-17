@@ -311,6 +311,19 @@ tyScanOpts
         }
 %%]
 
+%%[94
+foreignEntScanOpts :: ScanOpts
+foreignEntScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   [ "dynamic", "wrapper", "h", "static"
+                                    ]
+        ,   scoKeywordsOps      =   [  ]
+        ,   scoSpecChars        =   ".&"
+        ,   scoOpChars          =   ""
+        ,   scoDollarIdent      =   False
+        }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Scan file/handle to tokenlist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -762,6 +775,10 @@ pDOTNET         ,
     pSTDCALL    ,
     pJVM        ,
     pDYNAMIC    ,
+    pWRAPPER    ,
+    pSTATIC     ,
+    pH          ,
+    pAMPERSAND  ,
     pCPLUSPLUS
   :: IsParser p Token => p Token
 
@@ -772,6 +789,10 @@ pJVM             = pKeyTk "jvm"
 pSTDCALL         = pKeyTk "stdcall"
 pCPLUSPLUS       = pKeyTk "cplusplus"
 pDYNAMIC         = pKeyTk "dynamic"
+pWRAPPER         = pKeyTk "wrapper" -- not a HS keyword, but only for foreign function entity
+pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign function entity
+pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function entity
+pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
 
 tokKeywStrsEH94 = [  ]
 tokKeywStrsHS94 = [ "unsafe", "threadsafe", "stdcall", "cplusplus", "dynamic", "jvm" ]
