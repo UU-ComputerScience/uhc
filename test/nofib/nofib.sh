@@ -8,8 +8,8 @@
 #
 DEF_TYPE="normal"
 DEF_TARGET="all"
-DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-cexe --verbose=0 -p-"
+DEF_HC="../../bin/9/ehc"
+DEF_EHC_FLAGS="-clexe --verbose=0 -p-"
 DEF_GHC_FLAGS="-O2"
 
 # Haskell main file for each benchmark
@@ -23,7 +23,7 @@ PARAMS_FILE="params"
 # Haskell file containing the EHC prelude, which should be prepended to the
 # benchmark in case of EHC
 #
-EHC_PRELUDE_FILE="tools/Prelude8.hs"
+EHC_PRELUDE_FILE="tools/Prelude9.hs"
 
 # The two template representations in the benchmark files
 #
@@ -181,7 +181,7 @@ function run {
       if [ $RETVALUE -eq 0 ]; then
         diff $OUTPUT $EXPECTED 
         if [ $? -eq 0 ]; then
-          clean_up
+          #clean_up
           echo -e '\E[32m'"\033[1mSUCCES\033[0m"
         else
           echo -e '\E[31m'"\033[1mERROR:\033[0m Output ($OUTPUT) not equal to expected output ($EXPECTED)"
