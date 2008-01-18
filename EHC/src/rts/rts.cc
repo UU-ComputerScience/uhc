@@ -97,10 +97,19 @@ void memoryDumpResult_Sil()
 {
 #if USE_BOEHM_GC
      //printf("result SP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, RP[0], RP[1] );
+
+#if USE_64_BITS
      printf("%lld\n", RP[1] );
 #else
+     printf("%d\n", RP[1] );
+#endif
+#else
      //printf("result SP offset=%d HP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, HP-HeapAreaLow, RP[0], RP[1] );
+#if USE_64_BITS
      printf("%lld\n", RP[1] );
+#else
+     printf("%d\n", RP[1] );
+#endif
 #endif
 }
 %%]

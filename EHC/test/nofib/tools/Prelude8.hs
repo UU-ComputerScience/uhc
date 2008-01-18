@@ -152,7 +152,9 @@ concat           :: [[a]] -> [a]
 concat            = foldr (++) []
 
 concatMap        :: (a -> [b]) -> [a] -> [b]
-concatMap f       = concat . map f
+--concatMap f       = concat . map f
+concatMap f []    = []
+concatMap f (x:xs) = f x ++ concatMap f xs
 
 foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []      = z

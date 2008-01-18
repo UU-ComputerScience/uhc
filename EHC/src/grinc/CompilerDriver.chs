@@ -100,13 +100,14 @@ doCompileGrin input opts
   = drive (initialState opts input) putErrs
       ( do { caLoad (isLeft input) -- from phd boquist (fig 4.1)
            ; caAnalyse
+           ; options <- gets gcsOpts
+           ; when (ehcOptGrinDebug options) (caWriteHptMap "-initial")
            ; caKnownCalls       -- part I
            ; caOptimizePartly   -- optimisations (small subset)
            ; caNormalize        -- part II
            ; caOptimize         -- optimisations
            ; caFinalize         -- part III
-           ; options <- gets gcsOpts
-           ; when (ehcOptGrinDebug options) traceHptMap
+           ; when (ehcOptGrinDebug options) (caWriteHptMap "-final")
            ; when (ehcOptEmitLLVM options || ehcOptEmitLlc options)
              caOutput
            }
@@ -332,6 +333,15 @@ caWriteSilly suffix ppFun =
   do { silly <- gets gcsSilly
      ; caWriteFile suffix ppFun silly
      }
+
+caWriteHptMap :: String -> CompileAction ()
+caWriteHptMap fn
+  = do { hptMap <- gets gcsHptMap
+       ; input <- gets gcsPath
+       ; let fileName   = "hptmap-" ++ fpathBase input ++ fn
+             output = fpathSetSuff "txt" (fpathSetBase fileName input)
+       ; liftIO $ writeToFile (showHptMap hptMap) output
+       }
 
 caWriteGrin :: Bool -> String -> CompileAction ()
 caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
