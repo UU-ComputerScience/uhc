@@ -182,15 +182,15 @@ function run {
         diff $OUTPUT $EXPECTED 
         if [ $? -eq 0 ]; then
           clean_up
-          echo -en '\E[32m'"\033[1mSUCCES\033[0m"
+          echo -e '\E[32m'"\033[1mSUCCES\033[0m"
         else
-          echo -en '\E[31m'"\033[1mERROR:\033[0m Output ($OUTPUT) not equal to expected output ($EXPECTED)"
+          echo -e '\E[31m'"\033[1mERROR:\033[0m Output ($OUTPUT) not equal to expected output ($EXPECTED)"
         fi 
       else
-        echo -en '\E[31m'"\033[1mERROR:\033[0m Run-time error. Returncode: $RETVALUE"
+        echo -e '\E[31m'"\033[1mERROR:\033[0m Run-time error. Returncode: $RETVALUE"
       fi
     else
-        echo -en '\E[31m'"\033[1mERROR:\033[0m Compile error. Investigate log ($LOG_FILE)"
+        echo -e '\E[31m'"\033[1mERROR:\033[0m Compile error. Investigate log ($LOG_FILE)"
     fi
     echo "" 
     echo "--- DONE no-fib: $CURR_MAIN_FILE ---"

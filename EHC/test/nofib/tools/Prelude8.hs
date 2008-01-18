@@ -102,10 +102,12 @@ length           :: [a] -> Int
 length            = foldl' (\n _ -> n + 1) 0
 
 (!!)             :: [a] -> Int -> a
-xs     !! n | n<0 = error "Prelude.!!: negative index"
-[]     !! _       = error "Prelude.!!: index too large"
-(x:_)  !! 0       = x
-(_:xs) !! n       = xs !! (n-1)
+--xs     !! n | n<0 = error "Prelude.!!: negative index"
+--[]     !! _       = error "Prelude.!!: index too large"
+--(x:_)  !! 0       = x
+(x:xs) !! n       = if n == 0
+                    then x
+                    else xs !! (n-1)
 
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
