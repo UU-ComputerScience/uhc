@@ -4,8 +4,9 @@
 
 Polarities:
 
-  There are three basic polarities (covariant, contravariant and invariant), functions (for higher-order types),
-  polymorhpism and negation (also for higher-order types).
+  Polarities are similar to polymorphic kinds, except that instead of 'star' there are
+  three basic polarities (covariant, contravariant and invariant), and there is a negation
+  operator.
 
   Pol ::=   Covariant
         |   Contravariant
@@ -25,8 +26,8 @@ Polarities:
     Negate Contravariant = Covariant
     Negate Invariant     = Invariant
     
-  Polarities are required to be in normalized form. This is achieved by running the normalization
-  procedure after applying a substitution.
+  Polarities are required to be normalized after generalization; in the intermediate time they are
+  only normalized 'just-in-time'.
   
   The build-in type constructors have the following polarities:
   
@@ -36,8 +37,6 @@ Polarities:
 
 
 Unify rules:
-
-  The following description implies a predicative type system 
 
     mgu p1 p2
       | p1 == p2     = emptySubst
@@ -57,8 +56,6 @@ Unify rules:
     mgu Covariant Invariant     = Invariant
     mgu Contravariant Invariant = Invariant
   
-  (do we need direction here?)
-
   At first sight, the following cases seem reasonable as well, but should not be added:
 
     mgu Covariant Contravariant = Invariant
@@ -96,100 +93,103 @@ Encoding of polarities:
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Introduction
+%%% Usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  Some examples. Todo: convert to english.
+  Lookup the inferred signatures for type constructors in @lhs.finPolGam.
+  Instantiate this signature and match it up with the known polarity of the context to get
+  the polarities of arguments to this type constructor.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Examples
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Some examples.
 
     data GRose f a = Branch a (f (GRose f a))
 
-  Intern krijg je na een paar stappen:
+  After a number of inference steps:
 
-    f :: v1 -> v2
-    a :: v2
+    f ::: v1 -> v2
+    a ::: v2
 
-  Waardoor GRose intern het type:
+  Which gives the current (yet incomplete) type for GRose:
 
-    GRose :: (v1 -> v2) -> v2 -> v2
+    GRose ::: (v1 -> v2) -> v2 -> v2
 
-  krijgt. En een paar stappen later wordt voor f gevonden:
+  A couple of steps later, we infer for f:
 
-    f :: v2 -> v2
+    f ::: v2 -> v2
 
-  Zodat voor generalisatie:
+  Which a couple of steps later gives:
 
-    GRose :: (v2 -> v2) -> v2 -> v2
+    GRose ::: (v2 -> v2) -> v2 -> v2
 
-  Zodat er voor GRose gevonden wordt:
+  And after generalization:
 
-    GRose :: forall d . (d -> d) -> d -> d
+    GRose ::: forall d . (d -> d) -> d -> d
 
 
-  Interessanter is:
+  Slightly more interesting:
 
     data GRose' f a = Branch (f a (GRose' f a))
 
-  Daarvoor vind je:
+  And after a couple of steps:
 
-    f :: v2 -> v1 -> v1
-    a :: v2
+    f ::: v2 -> v1 -> v1
+    a ::: v2
 
-    GRose' :: forall d1 d2 . (d2 -> d1 -> d1) -> d2 -> d1
+    GRose' ::: forall d1 d2 . (d2 -> d1 -> d1) -> d2 -> d1
 
-  Wanneer je dan de volgende type expressie gaat typeren:
+  Suppose we are then going to type the following type expression:
 
     GRose' (->) Int
 
-  instantiaties:
+  Instantiations:
 
-    GRose' :: (Negate v1 -> v1 -> v1) -> Negate v1 -> v1
-    (->) :: Negate v1 -> v1 -> v1
-    Int :: Negate v1
+    GRose' ::: (Negate v1 -> v1 -> v1) -> Negate v1 -> v1
+    (->)   ::: Negate v1 -> v1 -> v1
+    Int    ::: Negate v1
 
-  v1 is de 'root' co/contravariantie dus Covariant, dus:
+  Assuming the type expression occurs in a Covariant context, i.e. v1 = Covariant:
 
-    GRose' :: (Contra -> Co -> Co) -> Contra -> Co
-    (->) :: Contra -> Co -> Co
-    Int :: Contra
+    GRose' ::: (Contra -> Co -> Co) -> Contra -> Co
+    (->)   ::: Contra -> Co -> Co
+    Int    ::: Contra
 
-  Terwijl voor:
+  And for:
 
     GRose' (,) Int
 
-  instantiaties:
+  Instantiations:
 
-    GRose' :: (v1 -> v1 -> v1) -> v1 -> v1
-    (,) :: v1 -> v1 -> v1
-    Int :: v1
+    GRose' ::: (v1 -> v1 -> v1) -> v1 -> v1
+    (,)    ::: v1 -> v1 -> v1
+    Int    ::: v1
 
-  Zodat alles covariant is.
+  Causing everything to be Covariant.
 
 
-  Tot slot nog een geval met een conflict:
+  Finally, a case with a conflict:
 
     data C a = Con (a -> a)
 
-  Daarvoor:
+  After some steps:
 
-    a :: v2
-    C :: v2 -> v1
-    (->) :: Negate v1 -> v1 -> v1
+    a    ::: v2
+    C    ::: v2 -> v1
+    (->) ::: Negate v1 -> v1 -> v1
 
-  Zodat:
+  Such that:
 
-    a :: v1
-    a :: Negate v1
+    a ::: v1
+    a ::: Negate v1
 
-  Dit geeft (v1 = Negate v1) wat v1 afbeeld op Invariant, zodat:
+  Which causes an 'occurrence-check' failure, such that we map v1 to Invariant:
 
     a :: Invariant
     C :: Invariant -> Invariant
-
-  Om dit laatste goed te typeren heb ik subtyping nodig, zodat ik moet toevoegen:
-
-    fitsIn Covariant Invariant = Invariant
-    fitsIn Contravariant Invariant = Invariant
-    (afzwakken naar Invariant)
 
 
 
