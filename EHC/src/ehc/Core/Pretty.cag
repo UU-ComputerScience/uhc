@@ -13,7 +13,7 @@
 %%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
-%%[9 hs import({%{EH}Foreign.Pretty})
+%%[94 hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[8.WRAPPER ag import({Core/AbsSyn})
