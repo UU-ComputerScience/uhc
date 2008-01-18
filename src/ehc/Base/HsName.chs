@@ -91,7 +91,7 @@ hsnShow :: String -> HsName -> String
 hsnShow _   (HNm s    )  = hsnHNmFldToString s
 hsnShow _   (HNPos p  )  = show p
 %%[[8
-hsnShow _   (HNmNr n mborg)  = "x_" ++ show n -- ++ (maybe "" (\hsn -> "_" ++ hsnShow "." hsn) mborg)
+hsnShow _   (HNmNr n mborg)  = "x_" ++ show n ++ (maybe "" (\hsn -> "_" ++ hsnShow "." hsn) mborg)
 %%]]
 %%[[20
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
