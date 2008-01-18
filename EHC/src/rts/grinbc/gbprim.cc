@@ -83,7 +83,7 @@ PRIM GB_Word gb_WriteMode
 %%% Misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[11
 PRIM GB_Word gb_primUnsafeId( GB_Word x )
 {
 	return x ;
@@ -253,7 +253,7 @@ PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
 }
 %%]
 
-%%[97
+%%[8
 PRIM GB_Word gb_primModInt( GB_Word x, GB_Word y )
 {
 	GB_Int divisor   = GB_GBInt2Int(y) ;
@@ -292,7 +292,7 @@ PRIM GB_Word gb_primRemInt( GB_Word x, GB_Word y )
 }
 %%]
 
-%%[97
+%%[8
 PRIM GB_Int gb_primNegInt( GB_Int x )
 {
 	return GB_Int_Neg(x) ;

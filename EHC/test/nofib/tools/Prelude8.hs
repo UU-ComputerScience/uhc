@@ -1,4 +1,11 @@
-
+-- This prelude can be compiled by EHC 8, and contains:
+-- * datatypes: Bool, Ordering, [], PackedString, Maybe, Either
+-- * very polymorphic functions:  9id, flip etc.)
+-- * functions on lists: (head, ++, filter, foldr etc.)
+-- * primitives for Int
+-- and for this prelude only (will be removed in Prelude9.hs)
+-- * classes Eq, Ord, Integral, Num, Enum specialized to Int
+-- * some overloaded functions specialized to Int
 
 infixr 9  .
 infixl 9  !!
@@ -19,9 +26,11 @@ infixr 0  $, $!, `seq`
 
 data Bool    = False | True
 
-(&&), (||)  :: Bool -> Bool -> Bool
+(&&) :: Bool -> Bool -> Bool
 False && x   = False
 True  && x   = x
+
+(||) :: Bool -> Bool -> Bool
 False || x   = x
 True  || x   = True
 
@@ -40,38 +49,6 @@ data Ordering = LT | EQ | GT
 
 data [] a = ''[]'' | a : [a]
 
--- Standard Int types --------------------------------------------------
-
-foreign import ccall primGtInt      :: Int -> Int -> Bool
-foreign import ccall primLtInt      :: Int -> Int -> Bool
-foreign import ccall primEqInt      :: Int -> Int -> Bool
-foreign import ccall primCmpInt     :: Int -> Int -> Ordering
-
-foreign import ccall primAddInt       :: Int -> Int -> Int
-foreign import ccall primSubInt       :: Int -> Int -> Int
-foreign import ccall primMulInt       :: Int -> Int -> Int
-foreign import ccall primNegInt       :: Int -> Int
-foreign import ccall primDivInt       :: Int -> Int -> Int
-foreign import ccall primModInt       :: Int -> Int -> Int
-foreign import ccall primQuotInt      :: Int -> Int -> Int
-foreign import ccall primRemInt       :: Int -> Int -> Int
-
-
--- Poor man's Eq and Num  (that is, all operators are only applicable to Int)
-
-(==)  =  primEqInt
-(>)   =  primGtInt
-(<)   =  primLtInt
-x >= y  =  x>y || x==y
-x <= y  =  x<y || x==y
-x /= y  =  not (primEqInt x y)
-
-(+)   =  primAddInt
-(-)   =  primSubInt
-(*)   =  primMulInt
-(/)   =  primDivInt
-
-
 -- Evaluation and strictness ------------------------------------------------
 
 seq :: a -> b -> b -- forall a . a -> forall b . b -> b
@@ -82,19 +59,9 @@ f $! x                = x `seq` f x
 asTypeOf       :: a -> a -> a
 asTypeOf        = const
 
-data PackedString
---foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
-foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
-foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
-foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
-
-packedStringToString :: PackedString -> [Char]
-packedStringToString p = if packedStringNull p 
-                          then []
-                          else packedStringHead p : packedStringToString (packedStringTail p)
-
 error :: [Char] -> a
 error s = undefined
+
 undefined :: forall a . a
 undefined = error "undefined"
 
@@ -133,13 +100,13 @@ until p f x     = if p x then x else until p f (f x)
 
 length           :: [a] -> Int
 length            = foldl' (\n _ -> n + 1) 0
-{-
+
 (!!)             :: [a] -> Int -> a
 xs     !! n | n<0 = error "Prelude.!!: negative index"
 []     !! _       = error "Prelude.!!: index too large"
 (x:_)  !! 0       = x
 (_:xs) !! n       = xs !! (n-1)
--}
+
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
 foldl' f a (x:xs) = (foldl' f $! f a x) xs
@@ -147,8 +114,6 @@ foldl' f a (x:xs) = (foldl' f $! f a x) xs
 cycle            :: [a] -> [a]
 cycle []          = error "Prelude.cycle: empty list"
 cycle xs          = xs' where xs'=xs++xs'
-
-
 
 
 -- Standard list functions {PreludeList} ------------------------------------
@@ -319,5 +284,119 @@ either              :: (a -> c) -> (b -> c) -> Either a b -> c
 either l r (Left x)  = l x
 either l r (Right y) = r y
 
--- main = until (>5) (+1) 0
-main = length "hallo!"
+
+--==========================PRIMITIVES==========================================
+-- Primitive Int functions --------------------------------------------------
+
+foreign import ccall primGtInt    :: Int -> Int -> Bool
+foreign import ccall primLtInt    :: Int -> Int -> Bool
+foreign import ccall primEqInt    :: Int -> Int -> Bool
+foreign import ccall primCmpInt   :: Int -> Int -> Ordering
+
+foreign import ccall primAddInt   :: Int -> Int -> Int
+foreign import ccall primSubInt   :: Int -> Int -> Int
+foreign import ccall primMulInt   :: Int -> Int -> Int
+foreign import ccall primNegInt   :: Int -> Int
+foreign import ccall primDivInt   :: Int -> Int -> Int
+foreign import ccall primModInt   :: Int -> Int -> Int
+foreign import ccall primQuotInt  :: Int -> Int -> Int
+foreign import ccall primRemInt   :: Int -> Int -> Int
+
+-- PackedString -------------------------------------------------------------
+
+data PackedString
+--foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
+foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
+foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
+
+packedStringToString :: PackedString -> [Char]
+packedStringToString p = if packedStringNull p 
+                          then []
+                          else packedStringHead p : packedStringToString (packedStringTail p)
+
+
+--==========================CLASSES============================================
+-- Eq (Specialised for Int)
+
+x /= y  =  not (x == y)
+
+(==)  =  primEqInt
+
+-- Ord (Specialised for Int)
+
+x >= y  =  x>y || x==y
+x <= y  =  x<y || x==y
+
+max x y   | x <= y      = y
+          | otherwise   = x
+
+min x y   | x <= y      = x
+          | otherwise   = y
+
+(>)   =  primGtInt
+(<)   =  primLtInt
+
+-- Integral (Specialised for Int)
+
+quot = primQuotInt
+rem  = primRemInt
+div  = primDivInt
+mod  = primModInt
+
+-- Num (Specialised for Int)
+
+negate          :: Int -> Int
+negate x        = 0 - x
+
+(+)   =  primAddInt
+(-)   =  primSubInt
+(*)   =  primMulInt
+
+-- Enum (Specialised for Int)
+
+enumFrom               :: Int -> [Int]
+enumFrom x             =  x : enumFrom (x+1)
+
+enumFromTo             :: Int -> Int -> [Int]
+enumFromTo x y 
+  | x > y = []
+  | otherwise          = x : enumFromTo (x+1) y
+
+enumFromThen           :: Int -> Int -> [Int]
+enumFromThen x y       = x : enumFromThen y (y+(y-x))
+
+enumFromThenTo         :: Int -> Int -> Int -> [Int]
+enumFromThenTo x y z 
+  | x > z = []
+  | otherwise          = x : enumFromThenTo y (y+(y-x)) z
+
+--===========OVERLOADED FUNCTIONS (implicitly instantiated to Int here)
+
+even n           =  n `rem` 2 == 0
+odd              =  not . even
+
+gcd x y         = gcd' (abs x) (abs y)
+                  where gcd' x 0 = x
+                        gcd' x y = gcd' y (x `rem` y)
+
+abs x        | x >= 0    = x
+             | otherwise = -x
+
+signum x     | x == 0    =  0
+             | x > 0     =  1
+             | otherwise = -1
+
+elem              = any . (==)
+notElem           = all . (/=)
+
+lookup k []       = Nothing
+lookup k ((x,y):xys)
+      | k==x      = Just y
+      | otherwise = lookup k xys
+
+sum               = foldl (+) 0
+product           = foldl (*) 1
+
+maximum           = foldl1 max
+minimum           = foldl1 min

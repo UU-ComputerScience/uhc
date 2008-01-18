@@ -23,7 +23,7 @@ PARAMS_FILE="params"
 # Haskell file containing the EHC prelude, which should be prepended to the
 # benchmark in case of EHC
 #
-EHC_PRELUDE_FILE="tools/IntListPreludeFuncs.hs"
+EHC_PRELUDE_FILE="tools/Prelude8.hs"
 
 # The two template representations in the benchmark files
 #
