@@ -18,7 +18,7 @@
 %%[8
 
 
-PRIM GrWord primNegateInt(GrWord x)
+PRIM GrWord primNegInt(GrWord x)
 {
 	return -x;	
 }
