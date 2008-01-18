@@ -100,11 +100,11 @@ SEM SilModule
                                                      )
                                                      
                 loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
-                loc.constants= [ ( GlobalVar "STR_RES" (Array 22 I8)
-                                  , StrConst "c\"%lld\\0A\\00\""
-                                             (Array 6 I8)
-                                  )
-                               ]
+                loc.constants= ( GlobalVar "STR_RES" (Array 22 I8)
+                               , StrConst (string2CString "%lld\\0A")
+                                          (Array 6 I8)
+                               )
+                               : @functions.constants
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) :
                                mkVarList GlobalVar @variables @lhs.globalType                              
                 loc.printfDecl =
@@ -240,7 +240,7 @@ SEM Statement
                                            @loc.dest2ptrVar  
 
   | Call        lhs.llvmCode = let fDecl = Data.Map.findWithDefault 
-                                             (error "No such function")
+                                             (error $ "No such function: " ++ hs2str @name)
                                              (hs2str @name) @lhs.fnAvailDecls
                                 in @args.llvmCode ++
                                    @loc.argStmts ++
@@ -556,7 +556,12 @@ SEM Variable
                 
 SEM Constant
   | LiteralInt  lhs.var      = Constant @value @lhs.intType
-  | LiteralStr  lhs.var      = error "Strings not supported by LLVM"
+  | LiteralStr  lhs.var      = @loc.var
+                loc.var      = GlobalVar (getPlainName @loc.varNm)
+                                         (getType @loc.varNm)
+                loc.(gUniq,varNm)    
+                             = newFresh @lhs.gUniq (pLift @loc.strType)
+                               -- error "Strings not supported by LLVM"
   | Alias       lhs.var      = let value = Data.Map.findWithDefault
                                              (error "Alias not in constantmap")
                                              @name @lhs.constantMap 
@@ -600,6 +605,30 @@ SEM Function
                               in FuncDecl_FuncDecl (hs2str @name) Void False prms
 %%]
   
+%%[8
+--------------------------------------------------------------------------------
+-- Passing up the string constants used in functions 
+--------------------------------------------------------------------------------
+ATTR Functions Function
+     Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variables Variable
+     Constant
+     [ | | constants USE {++} {[]}: {[(Var,Var)]} ]
+
+SEM Constant
+  | LiteralStr  lhs.constants = [ ( @loc.var 
+                                  , @loc.cstring
+                                  )
+                                ]
+                loc.cstring   = StrConst (string2CString @value)
+                                         @loc.strType 
+                loc.strType   = Array (length @value + 1) I8
+  | * - LiteralStr
+                lhs.constants = [ ]
+%%]
+
 %%[8
 --------------------------------------------------------------------------------
 -- Passing down platform depended types.
@@ -805,5 +834,11 @@ load2Value nr var
     let (nr1,var1,stmts1) = load nr var
         (nr2,var2,stmts2) = load2Value nr1 var1
      in (nr2,var2, stmts1 ++ stmts2)       
+
+-- Add c prefix for a string, add explict quotes and terminate with \0
+-- hello -> c"hello\0"
+string2CString :: String -> String
+string2CString str =
+  "c\"" ++ str ++ "\\00\""
 }
 %%]
