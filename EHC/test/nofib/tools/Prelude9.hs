@@ -304,7 +304,7 @@ foreign import ccall primCmpInt   :: Int -> Int -> Ordering
 foreign import ccall primAddInt   :: Int -> Int -> Int
 foreign import ccall primSubInt   :: Int -> Int -> Int
 foreign import ccall primMulInt   :: Int -> Int -> Int
-foreign import ccall primNegateInt :: Int -> Int
+foreign import ccall primNegInt   :: Int -> Int
 foreign import ccall primDivInt   :: Int -> Int -> Int
 foreign import ccall primModInt   :: Int -> Int -> Int
 foreign import ccall primQuotInt  :: Int -> Int -> Int
@@ -427,7 +427,7 @@ instance Num Int where
   (+)           = primAddInt
   (-)           = primSubInt
   (*)           = primMulInt
-  negate        = primNegateInt
+  negate        = primNegInt
   fromInt x     = x
   abs x        | x >= 0    = x
                | otherwise = negate x

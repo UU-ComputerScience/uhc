@@ -6,9 +6,9 @@ foreign import ccall "primAddInt" (+)  :: Int -> Int -> Int
 foreign import ccall "primSubInt" (-)  :: Int -> Int -> Int
 foreign import ccall "primEqInt" (==) :: Int -> Int -> Bool
 foreign import ccall "primGtInt" (>)  :: Int -> Int -> Bool
-foreign import ccall primNegateInt     :: Int -> Int
+foreign import ccall primNegInt     :: Int -> Int
 
-negate = primNegateInt
+negate = primNegInt
 
 (++) :: [a] -> [a] -> [a]
 []     ++ ys = ys

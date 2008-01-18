@@ -5,8 +5,8 @@ data ''[]'' a = a : [a] | ''[]''
 foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
 foreign import ccall "primSubInt" (-) :: Int -> Int -> Int
 
-foreign import ccall primNegateInt :: Int -> Int
-negate = primNegateInt
+foreign import ccall primNegInt :: Int -> Int
+negate = primNegInt
 
 foreign import ccall "primEqInt" (==) :: Int -> Int -> Bool
 foreign import ccall "primNeInt" (/=) :: Int -> Int -> Bool
