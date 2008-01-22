@@ -246,9 +246,7 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 #	if TIMING
 		clockStop = clock() ;
 #	endif
-#	if DUMP_INTERNALS
-		gb_prState( "exit state", 1 ) ;
-#	endif
+	IF_INFO_EXITSTATE_ON(gb_prState( "exit state", 1 ) ;) ;
 	return 0 ;
 }
 %%]
@@ -262,7 +260,7 @@ int main_GB_Exit(int argc, char** argv)
 #	if GB_COUNT_STEPS
 		speed = gb_StepCounter / clockDiff ;
 #	endif
-	printf("Time %.3f secs, instr/sec %.0f\n", clockDiff, speed ) ;
+	IF_INFO_EXITSTATE_ON(printf("Time %.3f secs, instr/sec %.0f\n", clockDiff, speed ) ;) ;
 #endif
 	return 0 ;
 }
