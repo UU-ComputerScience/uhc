@@ -619,7 +619,7 @@ PRIM GB_Word gb_primPackedStringHead( char *s )
 
 The implementation is left here for the GB based impl.
 
-%%[95
+%%[8
 GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;

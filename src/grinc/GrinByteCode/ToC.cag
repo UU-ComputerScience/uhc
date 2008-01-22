@@ -366,8 +366,7 @@ SEM Module
                                                     cafL    = zipWith3 (\b nr i -> ( i
                                                                                    , b >|< nr
                                                                                    , ppArr [ pp "GB_MkCAFHeader"
-                                                                                           , ppCurlysCommasBlock
-                                                                                             $ (:[])
+                                                                                           , pp
                                                                                              $ ppCast "GB_Word"
                                                                                              $ ppAddrArrAt @ppNmByteCodeTbl
                                                                                              $ panicJust "GrinByteCode.ToC.cafs"

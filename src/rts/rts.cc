@@ -246,7 +246,14 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 #	if TIMING
 		clockStop = clock() ;
 #	endif
-	IF_INFO_EXITSTATE_ON(gb_prState( "exit state", 1 ) ;) ;
+	if ( IF_INFO_IS(INFO_EXITSTATE) ) {
+		gb_prState( "exit state", 1 ) ;
+	} else {
+#		ifdef DUMP_INTERNALS
+			gb_prTOSAsInt() ;
+			printf( "\n" ) ;
+#		endif
+	}
 	return 0 ;
 }
 %%]

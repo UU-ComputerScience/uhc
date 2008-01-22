@@ -782,6 +782,16 @@ void gb_prWord( GB_Word x )
 	/* printf( "\n" ) ; */
 }
 
+void gb_prTOSAsInt( )
+{
+#		if USE_64_BITS
+			printf( "%ld"
+#		else
+			printf( "%d"
+#		endif
+				  , GB_GBInt2Int(GB_TOS) ) ;
+}
+
 void gb_prStack( int maxStkSz )
 {
     int i ;
@@ -1136,6 +1146,7 @@ void gb_interpretLoop()
 			/* l1tr16 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_16) :
 				GB_PCImmIn(int16_t,x) ;
+				// printf( "rr=%x off=%x res=%x\n", rr, x, GB_RegByteRel(GB_Word,rr,x) ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
@@ -1783,7 +1794,7 @@ void gb_InitTables
 	for ( i = 0 ; i < expNodeSz ; i++ )
 	{
 		expNode->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
-		IF_GB_TR_ON(3,{printf("link exp p %x v %x", &expNode->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
+		IF_GB_TR_ON(3,{printf("link nd=%x flds=%x exp i=%d/%x off=%x p=%x glob[off]=%x", expNode, expNode->content.fields, i, i, expNodeOffs[i], &expNode->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
 	}
 %%]]
 	
@@ -1800,6 +1811,9 @@ void gb_checkInterpreterAssumptions()
 	char* m = "interpreter sanity check" ;
 	GB_Ptr p ;
 	GB_Word x1, x2 ;
+	GB_Node n ;
+	
+	// printf( "size node=%d\n", sizeof(n)) ;
 	
 	if ( sizeof( GB_Word ) != sizeof( GB_Ptr ) ) {
 		gb_panic2_1( m, "size of word and pointer must be equal", 0 ) ;
@@ -1819,6 +1833,10 @@ void gb_checkInterpreterAssumptions()
 	}
 	if ( x1 & GB_Word_TagMask ) {
 		gb_panic2_2( m, "heap allocated pointers must have lower bits set to zero", GB_Word_SizeOfWordTag, x1 ) ;
+	}
+	
+	if ( Cast(GB_Word,&n) + sizeof(GB_NodeHeader) != Cast(GB_Word,n.content.fields) ) {
+		gb_panic2_1( m, "node header improperly aligned", Cast(GB_Word,n.content.fields) - Cast(GB_Word,&n) ) ;
 	}
 	
 /*
