@@ -146,8 +146,10 @@ extern int main_GB_Exit(int argc, char** argv) ;
 
 %%[8
 #if DUMP_INTERNALS
-#  define	IF_INFO_ON(info,x)				if ( gb_Opt_Info & info ) { x ; } else {}
+#  define	IF_INFO_IS(info)				( gb_Opt_Info & info )
+#  define	IF_INFO_ON(info,x)				if ( IF_INFO_IS( info ) ) { x ; } else {}
 #else
+#  define	IF_INFO_IS(info)				0
 #  define	IF_INFO_ON(info,x)
 #endif
 

@@ -9,7 +9,7 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-clexe --verbose=0 -p-"
+DEF_EHC_FLAGS="-cbexe --verbose=0 -p-"
 DEF_GHC_FLAGS="-O2"
 
 # Haskell main file for each benchmark

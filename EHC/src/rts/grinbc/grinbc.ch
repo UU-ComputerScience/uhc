@@ -49,7 +49,7 @@ typedef uint8_t  GB_Byte ;
 typedef struct GB_ByteArray {
   GB_Word	size ;
   void* 	ptr	;
-} GB_ByteArray ;
+} __attribute__ ((__packed__)) GB_ByteArray ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +61,7 @@ typedef struct GB_Chan {
   FILE*				file ;
   struct GB_Node*	name ;
   Bool				isText ;
-} GB_Chan ;
+} __attribute__ ((__packed__)) GB_Chan ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,8 +212,8 @@ typedef struct GB_Node {
 %%[[98
     GB_Chan			chan ;				/* when GB_NodeTag_Intl_Chan */
 %%]]
-  } content ;
-} GB_Node, *GB_NodePtr ;
+  } __attribute__ ((__packed__)) content ;
+} __attribute__ ((__packed__)) GB_Node, *GB_NodePtr ;
 
 #if NODEHEADER_VIA_STRUCT
 #define GB_NH_NrFlds(h)					((h).size-1)
@@ -1021,6 +1021,7 @@ extern void gb_checkInterpreterAssumptions() ;
 %%[8
 #if TRACE || DUMP_INTERNALS
 extern void gb_prWord( GB_Word x ) ;
+extern void gb_prTOSAsInt( ) ;
 #endif
 %%]
 

@@ -11,15 +11,13 @@ take _ []    = []
 length (h:t) = 1 + length t
 length []    = 0
 
-x == y = case x `compare` y of
-           EQ -> True
-           _  -> False
+x `eq` y = case x `compare` y of
+             EQ -> True
+             _  -> False
 
 not x = if x then False else True
 
-x /= y = not (x == y)
-
-notMultiple x y = not ((y / x) * x == y)
+notMultiple x y = not ((y / x) * x `eq` y)
 
 sieve (h:t) = h : sieve (filter (notMultiple h) t)
 
