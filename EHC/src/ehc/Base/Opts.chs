@@ -109,6 +109,7 @@ data EHCOpts
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
+      ,  ehcOptGenRTSInfo     ::  Int				-- flags to tell rts to dump internal info, currently: 1=on
 
       ,  ehcOptShowGrin       ::  Bool              -- show Grin pretty print on stdout
       ,  ehcOptEmitHS         ::  Bool
@@ -189,6 +190,7 @@ defaultEHCOpts
       ,  ehcOptOwn            =   3
       ,  ehcOptGenDebug       =   True
       ,  ehcOptGenTrace       =   False
+      ,  ehcOptGenRTSInfo     =   0
 
       ,  ehcOptShowGrin       =   False
       ,  ehcOptEmitHS         =   False
@@ -287,6 +289,7 @@ ehcCmdLineOpts
 %%]]
 %%[[8
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
+     ,  Option ""   ["gen-rtsinfo"]      (ReqArg oRTSInfo "<nr>")             "flags for rts info dumping (default=0)"
 %%][100
 %%]]
 %%[[9
@@ -401,6 +404,7 @@ ehcCmdLineOpts
                                 Just "5"    -> o { ehcOptOwn     = 5       }
                                 Nothing     -> o { ehcOptOwn     = 3       }
                                 _           -> o { ehcOptOwn     = 3       }
+         oRTSInfo    s   o =  o { ehcOptGenRTSInfo     = read s       }
          oVerbose    ms  o =  case ms of
                                 Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
                                 Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
@@ -453,6 +457,7 @@ boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
 oGrinDebug           o   = o { ehcOptGrinDebug      = True }
 %%[[8
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
+optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 %%][100
 %%]]
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }

@@ -605,8 +605,16 @@ void gb_setPC( GB_BytePtr c )
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Tracing on?
+
 %%[8
 int gb_Opt_TraceSteps = True ;
+%%]
+
+Info flags
+
+%%[8
+int gb_Opt_Info = 0 ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -826,6 +834,7 @@ void gb_prState( char* msg, int maxStkSz )
 	GB_ByteCodeInstrEntry* bci ;
 	if ( gb_lookupInfoForPC( pc, &bcm, &bce, &bci ) )
 	{
+		// printf("bcm=%x bce=%x bci=%x\n",bcm, bce, bci) ;
 		printf
 %%[[8
 			( "%s.%s + %d/0x%x: %s\n"
@@ -1877,14 +1886,18 @@ int gb_lookupInfoForPC
 	for ( mc = 0 ; mc < gb_AllModSize ; mc++ )
 	{
 		*m = gb_AllMod[mc].bcModule ;
-		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize )
+		// printf("*m=%x\n", *m) ;
+		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize && (*m)->bcEntry[0].bcInstr != NULL )
 		{
 			*e = Cast( GB_ByteCodeEntryPoint*, bsearch( pc, (*m)->bcEntry, (*m)->bcEntrySize, sizeof(GB_ByteCodeEntryPoint), gb_CmpEntryPoint ) ) ;
+			// printf("*m=%x *e=%x\n", *m, *e) ;
 			if ( *e && (*e)->bcInstr )
 			{
 				*i = Cast( GB_ByteCodeInstrEntry*, bsearch( pc, (*e)->bcInstr, (*e)->bcInstrSize, sizeof(GB_ByteCodeInstrEntry), gb_CmpInstrEntry ) ) ;
-				if ( *i )
+				// printf("*m=%x *e=%x *i=%x\n", *m, *e, *i) ;
+				if ( *i ) {
 					return True ;
+				}
 			}
 		}
 	}

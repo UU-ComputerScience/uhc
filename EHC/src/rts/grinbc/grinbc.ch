@@ -986,8 +986,16 @@ extern void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz ) ;
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Tracing on?
+
 %%[8
 extern int gb_Opt_TraceSteps ;
+%%]
+
+Info flags
+
+%%[8
+extern int gb_Opt_Info ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

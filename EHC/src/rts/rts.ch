@@ -36,6 +36,10 @@ Internal config
 %%]
 
 %%[8
+#define INFO_EXITSTATE			1
+%%]
+
+%%[8
 #include "utils.h"
 #include "bits.h"
 #include "grinbc/grinbc.h"
@@ -138,6 +142,16 @@ extern int main_GB_Exit(int argc, char** argv) ;
 %%]
 
 %%[100 -8.DUMP_INTERNALS
+%%]
+
+%%[8
+#if DUMP_INTERNALS
+#  define	IF_INFO_ON(info,x)				if ( gb_Opt_Info & info ) { x ; } else {}
+#else
+#  define	IF_INFO_ON(info,x)
+#endif
+
+#define	IF_INFO_EXITSTATE_ON(x)				IF_INFO_ON(INFO_EXITSTATE,x)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

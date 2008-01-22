@@ -406,6 +406,7 @@ SEM Module
                                                                                   $  [ pp "int nRtsOpts = 0 ;"
                                                                                      , pp "main_GB_Init1( argc, argv, &nRtsOpts ) ;"
                                                                                      , "gb_Opt_TraceSteps =" >#< ehcOptGenTrace @lhs.opts >#< ";"
+                                                                                     , "gb_Opt_Info =" >#< ehcOptGenRTSInfo @lhs.opts >#< ";"
                                                                                      , pp "argc -= nRtsOpts ; argv += nRtsOpts ;"
                                                                                      ]
                                                                                   ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{gb_prModEntries" >|< ppParens @ppNmModEntriesTbl >#< ";});"] else [])
