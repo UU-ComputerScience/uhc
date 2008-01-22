@@ -8,7 +8,7 @@
 #
 DEF_TYPE="normal"
 DEF_TARGET="all"
-DEF_HC="../../bin/9/ehc"
+DEF_HC="../../bin/8/ehc"
 DEF_EHC_FLAGS="-clexe --verbose=0 -p-"
 DEF_GHC_FLAGS="-O2"
 
@@ -23,7 +23,7 @@ PARAMS_FILE="params"
 # Haskell file containing the EHC prelude, which should be prepended to the
 # benchmark in case of EHC
 #
-EHC_PRELUDE_FILE="tools/Prelude9.hs"
+EHC_PRELUDE_FILE="tools/Prelude8.hs"
 
 # The two template representations in the benchmark files
 #
@@ -244,7 +244,7 @@ fi
 
 # $TARGET can be either a whole suite or just one test
 # Split to find out
-INDEX_SLASH=`expr index "$TARGET" /`
+INDEX_SLASH=`expr "$TARGET" : '.*/'`
 SUITE=${TARGET%/*}
 BENCHMARK=${TARGET#*/}
 if [ $INDEX_SLASH -eq 0 ]; then
