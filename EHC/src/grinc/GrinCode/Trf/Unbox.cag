@@ -12,7 +12,7 @@ parameterised with a function telling whether a node represents an unboxed value
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.TrfLocal.Unbox}
+%%[8 hs module {%{GRIN}GrinCode.Trf.Unbox}
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})

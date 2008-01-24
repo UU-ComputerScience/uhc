@@ -7,7 +7,7 @@ Creation of values that are not needed further downstream the code are eliminate
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.TrfLocal.UnusedNameElim}
+%%[8 hs module {%{GRIN}GrinCode.Trf.UnusedNameElim}
 %%]
 
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -16,7 +16,7 @@ Creation of values that are not needed further downstream the code are eliminate
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonAliasAG}, {GrinCode/TrfLocal/CommonFreeVar})
+%%[8 import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar})
 %%]
 
 %%[8 hs export(grUnusedNameElim)

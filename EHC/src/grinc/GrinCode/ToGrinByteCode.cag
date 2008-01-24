@@ -23,7 +23,7 @@
 %%[20 hs import({%{EH}Ty(tyRowCanonOrder)})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonFreeVar})
+%%[8 import({GrinCode/Trf/CommonFreeVar})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -371,7 +371,7 @@ SEM GrExpr
 %%% Named value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 import({GrinCode/TrfLocal/CommonIntroName})
+%%[8 import({GrinCode/Trf/CommonIntroName})
 %%]
 
 %%[8 hs

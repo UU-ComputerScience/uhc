@@ -5,7 +5,7 @@
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.TrfLocal.FlattenSeq}
+%%[8 hs module {%{GRIN}GrinCode.Trf.FlattenSeq}
 %%]
 
 %%[8 hs import(qualified EH.Util.FastSeq as Seq)

@@ -25,7 +25,7 @@ to a loop.
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.TrfLocal.Inline}
+%%[8 hs module {%{GRIN}GrinCode.Trf.Inline}
 %%]
 
 %%[8 hs import(qualified EH.Util.FastSeq as Seq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
@@ -44,10 +44,10 @@ to a loop.
 %%[8 hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[8 hs import({%{GRIN}GrinCode.TrfLocal.AliasRename})
+%%[8 hs import({%{GRIN}GrinCode.Trf.AliasRename})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonAliasAG}, {GrinCode/TrfLocal/CommonFreeVar}, {GrinCode/TrfLocal/CommonWillEval})
+%%[8 import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar}, {GrinCode/Trf/CommonWillEval})
 %%]
 
 %%[8.grInline hs export(grInline)
@@ -84,19 +84,19 @@ problem  : Direct circular dependency pattern for inherited attribute inlMp
             and synthesized attribute gathInlMp of nonterminal GrBindL
 pattern  : see help
 help     : The following attributes formed the cycle:
-           GrModule.Mod, inherited attribute bindL.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 92, column 33))
+           GrModule.Mod, inherited attribute bindL.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 92, column 33))
            GrBindL.Cons, inherited attribute lhs.inlMp
-           GrBindL.Cons, inherited attribute hd.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 54, column 26))
+           GrBindL.Cons, inherited attribute hd.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 54, column 26))
            GrBind.Bind, inherited attribute lhs.inlMp
-           GrBind.Bind, inherited attribute expr.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 54, column 26))
+           GrBind.Bind, inherited attribute expr.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 54, column 26))
            GrExpr.App, inherited attribute lhs.inlMp
-           GrExpr.App, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 152, column 22))
+           GrExpr.App, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 152, column 22))
            GrBind.Bind, synthesized attribute expr.trf
-           GrBind.Bind, synthesized attribute lhs.gathInlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 57, column 22))
+           GrBind.Bind, synthesized attribute lhs.gathInlMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 57, column 22))
            GrBindL.Cons, synthesized attribute hd.gathInlMp
-           GrBindL.Cons, synthesized attribute lhs.gathInlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 53, column 20))
+           GrBindL.Cons, synthesized attribute lhs.gathInlMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 53, column 20))
            GrModule.Mod, synthesized attribute bindL.gathInlMp
-           GrModule.Mod, inherited attribute bindL.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/Inline.ag"(line 92, column 33))
+           GrModule.Mod, inherited attribute bindL.inlMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/Inline.ag"(line 92, column 33))
 
 %%[8
 PRAGMA nocycle

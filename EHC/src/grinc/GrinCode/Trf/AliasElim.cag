@@ -17,7 +17,7 @@ Probably do it different????
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.TrfLocal.AliasElim}
+%%[8 hs module {%{GRIN}GrinCode.Trf.AliasElim}
 %%]
 
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
@@ -26,7 +26,7 @@ Probably do it different????
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonAliasAG},{GrinCode/TrfLocal/CommonRenameAG})
+%%[8 import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
 %%]
 
 %%[8 hs export(grAliasElim)
@@ -52,22 +52,22 @@ problem  : Direct circular dependency pattern for inherited attribute
             nmAliasMp and synthesized attribute trf of nonterminal GrExpr
 pattern  : see help
 help     : The following attributes formed the cycle:
-           GrExpr.Seq, inherited attribute body.nmAliasMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/AliasElim.ag"(line 37, column 33))
+           GrExpr.Seq, inherited attribute body.nmAliasMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/AliasElim.ag"(line 37, column 33))
            GrExpr.App, inherited attribute lhs.nmAliasMp
-           GrExpr.App, inherited attribute argL.nmAliasMp ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 1, column 38))
+           GrExpr.App, inherited attribute argL.nmAliasMp ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 1, column 38))
            GrValL.Cons, inherited attribute lhs.nmAliasMp
-           GrValL.Cons, inherited attribute hd.nmAliasMp ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 1, column 38))
+           GrValL.Cons, inherited attribute hd.nmAliasMp ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 1, column 38))
            GrVal.Var, inherited attribute lhs.nmAliasMp
-           GrVal.Var, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 42, column 33))
+           GrVal.Var, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 42, column 33))
            GrValL.Cons, synthesized attribute hd.trf
-           GrValL.Cons, local attribute trf ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 18, column 18))
-           GrValL.Cons, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 18, column 18))
+           GrValL.Cons, local attribute trf ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 18, column 18))
+           GrValL.Cons, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 18, column 18))
            GrExpr.App, synthesized attribute argL.trf
-           GrExpr.App, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 22, column 33))
+           GrExpr.App, synthesized attribute lhs.trf ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 22, column 33))
            GrExpr.Seq, synthesized attribute body.trf
-           GrExpr.Seq, local attribute trf ("build/8/lib-grinc/GRIN8//GrinCode/TrfLocal/CommonRenameAG.ag"(line 18, column 18))
-           GrExpr.Seq, local attribute newNmAliasMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/AliasElim.ag"(line 58, column 52))
-           GrExpr.Seq, inherited attribute body.nmAliasMp ("build/8/lib-grinc/GRIN8/GrinCode/TrfLocal/AliasElim.ag"(line 37, column 33))
+           GrExpr.Seq, local attribute trf ("build/8/lib-grinc/GRIN8//GrinCode/Trf/CommonRenameAG.ag"(line 18, column 18))
+           GrExpr.Seq, local attribute newNmAliasMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/AliasElim.ag"(line 58, column 52))
+           GrExpr.Seq, inherited attribute body.nmAliasMp ("build/8/lib-grinc/GRIN8/GrinCode/Trf/AliasElim.ag"(line 37, column 33))
 
 %%[8
 PRAGMA nocycle

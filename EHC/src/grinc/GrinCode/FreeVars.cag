@@ -16,7 +16,7 @@ Free variables + plus additional info.
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/TrfLocal/CommonIntroName}, {GrinCode/TrfLocal/CommonFreeVar})
+%%[8 import({GrinCode/Trf/CommonIntroName}, {GrinCode/Trf/CommonFreeVar})
 %%]
 
 %%[8 hs export(grFreeVars)
