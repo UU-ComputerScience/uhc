@@ -750,7 +750,6 @@ ruleset expr.base scheme expr "Expression type rules" =
     view I1 =
       judge F : expr
           | ty = (_|Ty) -> (ty|Ty)
-          | fiopt = strongFIOpts
       judge A : expr
           | knTy = tvarv
           | fiopt = instLRFIOpts

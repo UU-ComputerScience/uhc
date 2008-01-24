@@ -28,7 +28,7 @@
 %%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
 %%]
 
-%%[8 import({%{GRIN}GrinCode.TrfLocal.UnusedMetaInfoElim},{%{GRIN}GrinCode.TrfLocal.UnusedNameElim},{%{GRIN}GrinCode.TrfLocal.AliasElim},{%{GRIN}GrinCode.TrfLocal.Unbox},{%{GRIN}GrinCode.TrfLocal.FlattenSeq},{%{GRIN}GrinCode.TrfLocal.EvalElim},{%{GRIN}GrinCode.TrfLocal.Inline})
+%%[8 import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim},{%{GRIN}GrinCode.Trf.UnusedNameElim},{%{GRIN}GrinCode.Trf.AliasElim},{%{GRIN}GrinCode.Trf.Unbox},{%{GRIN}GrinCode.Trf.FlattenSeq},{%{GRIN}GrinCode.Trf.EvalElim},{%{GRIN}GrinCode.Trf.Inline})
 %%]
 
 %%[8 import ({%{GRIN}GrinByteCode.ToC}, qualified {%{GRIN}GrinByteCode} as GrinBC)
@@ -1272,28 +1272,6 @@ cpTranslateByteCode modNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-cpOptimizeGrin :: HsName -> EHCompilePhase ()
-cpOptimizeGrin modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpOptimizeGrin" mbGrin
-                 optGrin   = ( grUnusedNameElim   
-                             . grAliasElim   
-                             . grEvalElim   
-                             . grAliasElim   
-                             . grFlattenSeq   
-                             ) grin 
-
-         ;  when (  ehcOptOptimise opts >= OptimiseNormal
-                 && isJust mbGrin 
-                 && (ehcOptFullProgGRIN opts)
-                 )
-                 (cpUpdCU modNm $! ecuStoreGrin $! optGrin)
-         }
-%%]
-
-%%[8
 cpMsgGrinTrf :: HsName -> String -> EHCompilePhase ()
 cpMsgGrinTrf modNm m
   = do { cr <- get
@@ -1311,8 +1289,8 @@ cpFromGrinTrf modNm trf m
 %%]
 
 %%[8
-cpOptimiseGrinLocal :: HsName -> EHCompilePhase ()
-cpOptimiseGrinLocal modNm
+cpOptimiseGrinWithoutFullProgAnalysis :: HsName -> EHCompilePhase ()
+cpOptimiseGrinWithoutFullProgAnalysis modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  optGrin= if ehcOptOptimise opts >= OptimiseNormal
@@ -1602,22 +1580,21 @@ cpProcessCoreRest modNm
 %%]
 
 %%[8
-cpProcessGrinAll' :: HsName -> EHCompilePhase ()
-cpProcessGrinAll' modNm 
+cpProcessGrinAll :: HsName -> EHCompilePhase ()
+cpProcessGrinAll modNm 
   = cpSeq [ cpOutputGrin "grin2" modNm
-          , cpOptimiseGrinLocal modNm
+          , cpOptimiseGrinWithoutFullProgAnalysis modNm
           , cpTranslateGrin2ByteCode modNm
-          -- , cpOptimizeGrin modNm
           , cpOutputGrin "grin3" modNm
           , cpTranslateGrin modNm
           ]
 %%]
 
 %%[20
-cpProcessGrinModOnly' :: HsName -> EHCompilePhase ()
-cpProcessGrinModOnly' modNm 
+cpProcessGrinModOnly :: HsName -> EHCompilePhase ()
+cpProcessGrinModOnly modNm 
   = cpSeq [ cpOutputGrin "grin2" modNm
-          , cpOptimiseGrinLocal modNm
+          , cpOptimiseGrinWithoutFullProgAnalysis modNm
           , cpTranslateGrin2ByteCode modNm
 %%[[20
           , cpFlowOptim modNm
@@ -1627,11 +1604,10 @@ cpProcessGrinModOnly' modNm
 %%]]
           ]
 
-cpProcessGrinFullProg' :: HsName -> EHCompilePhase ()
-cpProcessGrinFullProg' modNm 
+cpProcessGrinFullProg :: HsName -> EHCompilePhase ()
+cpProcessGrinFullProg modNm 
   = cpSeq [ cpOutputGrin "grin2" modNm
-          -- , cpOptimizeGrin modNm
-          , cpOptimiseGrinLocal modNm
+          , cpOptimiseGrinWithoutFullProgAnalysis modNm
           , cpOutputGrin "grin3" modNm
           , cpTranslateGrin modNm
           ]
@@ -1978,7 +1954,7 @@ cpCompileCU targHSState modNm
                            , cpStepUID
                            , cpProcessCoreBasic modNm
                            , cpProcessCoreRest modNm
-                           , cpProcessGrinAll' modNm
+                           , cpProcessGrinAll modNm
                            , cpProcessGrinBC modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
                            , cpCompileWithLLVM modNm
@@ -2003,7 +1979,7 @@ cpCompileCU targHSState modNm
                            , cpProcessCoreBasic modNm
                            , cpStopAt CompilePoint_Core
                            , cpProcessCoreRest modNm
-                           , cpProcessGrinAll' modNm
+                           , cpProcessGrinAll modNm
                            , cpProcessGrinBC modNm
                            , cpCompileWithGCC GCC_CompileExec [] modNm
                            , cpCompileWithLLVM modNm
@@ -2012,7 +1988,7 @@ cpCompileCU targHSState modNm
                    }
            (ECUSGrin,_)
              -> do { cpMsg modNm VerboseNormal "Compiling Grin"
-                   ; cpSeq [ cpParseGrin modNm, cpProcessGrinAll' modNm, cpProcessGrinBC modNm ]
+                   ; cpSeq [ cpParseGrin modNm, cpProcessGrinAll modNm, cpProcessGrinBC modNm ]
                    }
            _ -> return ()
        }
@@ -2077,7 +2053,7 @@ cpCompileCU targHSState modNm
                           ]
                 p5 modNm
                   = cpSeq [ cpSeq (if not (ehcOptFullProgGRIN opts)
-                                   then [cpProcessCoreRest modNm, cpProcessGrinModOnly' modNm, cpProcessGrinBC modNm]
+                                   then [cpProcessCoreRest modNm, cpProcessGrinModOnly modNm, cpProcessGrinBC modNm]
                                         ++ (if isTopMod then [] else [cpCompileWithGCC GCC_CompileOnly [] modNm])
                                    else []
                                   )
@@ -2130,7 +2106,7 @@ cpCompileOrderedCUs
           = cpSeq [cpGetPrevCore m | m <- mL]
         biggrin opts mL (mImpL,mMain)
           = if ehcOptFullProgGRIN opts
-            then cpSeq [core mL, oneBigCore, cpProcessCoreRest mMain, cpProcessGrinFullProg' mMain]
+            then cpSeq [core mL, oneBigCore, cpProcessCoreRest mMain, cpProcessGrinFullProg mMain]
             else return ()
           where oneBigCore
                   = do { cr <- get

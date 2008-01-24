@@ -7,7 +7,7 @@ Remove the stuff required for full program analysis, but not for direct executio
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.TrfLocal.UnusedMetaInfoElim}
+%%[8 hs module {%{GRIN}GrinCode.Trf.UnusedMetaInfoElim}
 %%]
 
 %%[8 hs import(qualified EH.Util.FastSeq as Seq)
