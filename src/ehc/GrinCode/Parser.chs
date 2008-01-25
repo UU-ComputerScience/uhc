@@ -91,6 +91,8 @@ pVal            =    pSVal
                         <|>  GrVal_NodeAdapt <$> pGrNm <* pKey "|" <*> pList1Sep pComma pAdapt
 %%]]                        
                         <|>  GrVal_VarNode <$> ( (:) <$> (GrVal_Var <$> pGrNm) <*> pSValL )
+                        <|>  GrVal_BasicNode  <$  pKey "basicnode"  <*> pTag <*> pGrNm
+                        <|>  GrVal_EnumNode   <$  pKey "enumnode"   <*> pGrNm
                         <|>  pSucceed GrVal_Empty
                         )
 
@@ -106,7 +108,12 @@ pAlt            =    GrAlt_Alt <$> pPatAlt <* pKey "->" <*> pCurly pExprSeq
 pPatLam         ::   GRIParser GrPatLam
 pPatLam         =    GrPatLam_Var      <$> pGrNm
                 <|>  pParens
-                        (    GrPatLam_VarNode <$> ( (:) <$> (GrVar_Var <$> pGrNm <|> GrVar_KnownTag <$> pTag) <*> (map GrVar_Var <$> pGrNmL) )
+                        (    GrPatLam_VarNode    <$> ( (:) <$> (GrVar_Var <$> pGrNm <|> GrVar_KnownTag <$> pTag) <*> (map GrVar_Var <$> pGrNmL) )
+                        <|>  GrPatLam_BasicNode  <$  pKey "basicnode"  <*> pInt <*> pGrNm
+                        <|>  GrPatLam_EnumNode   <$  pKey "enumnode"   <*> pGrNm
+                        <|>  GrPatLam_BasicAnnot <$  pKey "basicannot" <*> pInt <*> pGrNm
+                        <|>  GrPatLam_EnumAnnot  <$  pKey "enumannot"  <*> pParens (pList pTag) <*> pGrNm
+                        <|>  GrPatLam_Annot      <$  pKey "annot"      <*> pParens (pList pTag) <*> pGrNm
                         <|>  pSucceed GrPatLam_Empty
                         )
 
