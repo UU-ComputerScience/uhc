@@ -81,6 +81,9 @@ DATA GrVal
   | Node        tag             : GrTag
                 fldL            : GrValL
   | VarNode     fldL            : GrValL
+  | BasicNode   tag             : GrTag
+                nm              : {HsName}
+  | EnumNode    nm              : {HsName}
 %%[[10
   | NodeAdapt   nm              : {HsName}
                 fldL            : GrAdaptL
@@ -113,6 +116,15 @@ DATA GrPatLam
   | Empty
   | Var         nm              : {HsName}
   | VarNode     fldL            : GrVarL
+  | BasicNode   size            : {Int}
+                nm              : {HsName}
+  | EnumNode    nm              : {HsName}
+  | BasicAnnot  size            : {Int}
+                nm              : {HsName}
+  | EnumAnnot   tagL            : GrTagL
+                nm              : {HsName}
+  | Annot       tagL            : GrTagL
+                nm              : {HsName}
 
 
 DATA GrTag
