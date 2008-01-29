@@ -1,13 +1,13 @@
 \documentclass[a4paper]{book}
 
 
-%include thesis-pkg.lhs
+%include thesis-pkg.cltex
 
 
 \begin{document}
 
 
-%include thesis-front.lhs
+%include thesis-front.cltex
 
 
 \pagenumbering{roman}
@@ -19,7 +19,7 @@
 \part{Preliminaries}
 
  
-\part{Generic Views for Generic Types}
+\part{Main part}
 
 
 \part{Conclusion}

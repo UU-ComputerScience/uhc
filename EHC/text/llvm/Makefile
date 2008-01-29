@@ -1,4 +1,4 @@
-LHS2TEXSOURCES=*.lhs
+LHS2TEXSOURCES=*.cltex
 
 .PHONY: thesis.pdf
 
@@ -14,7 +14,7 @@ thesis.pdf: thesis.tex thesis.bib
 	) 
      
 thesis.tex: $(LHS2TEXSOURCES) thesis.fmt thesis.sty
-	lhs2TeX --poly thesis.lhs > thesis.tex 
+	lhs2TeX --poly thesis.cltex > thesis.tex 
 
 quick: thesis.tex
 	pdflatex thesis.tex
