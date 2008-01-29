@@ -1,0 +1,17 @@
+%%[title
+Functional LLVM
+%%]
+
+%%[main
+\pagenumbering{roman}
+
+\tableofcontents
+
+\part{Preliminaries}
+\part{Main part}
+\part{Conclusion}
+
+\bibliography{thesis}
+\bibliographystyle{plain}
+\addcontentsline{toc}{chapter}{Bibliography}
+%%]

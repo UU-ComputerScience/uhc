@@ -244,3 +244,11 @@ text-variant-ldta08-abstrint:
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=entcs --set=blockstyle --set=shortStory --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=33 \
 	  text-variant-dflt-bib
+
+text-variant-llvm:
+	$(MAKE) \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=inclTOC --set=useHyperref --set=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=35 \
+	  text-variant-dflt-bib
+
+

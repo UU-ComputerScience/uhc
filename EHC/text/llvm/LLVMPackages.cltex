@@ -1,8 +1,7 @@
+%%[packages
 %include lhs2TeX.fmt
 %include lhs2TeX.sty
 %include polycode.fmt
-%include thesis.fmt
-%include thesis.sty
 
 \usepackage{a4wide}
 
@@ -46,5 +45,5 @@
 
 \usepackage{tabularx}
 
-
 \mathindent=\parindent
+%%]

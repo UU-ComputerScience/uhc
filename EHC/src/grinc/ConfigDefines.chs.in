@@ -57,4 +57,5 @@ rtsGlobalVarPrefix = RTS_GLOBAL_VAR_PREFIX
 
 rtsUseGC :: Bool
 rtsUseGC = mkB USE_BOEHM_GC
+
 %%]
