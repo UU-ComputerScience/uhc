@@ -12,7 +12,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status slides-ehcstruct \
 								gbm \
 								uniqueness slides-uniqueness \
-								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
+								llvm \
+                                                                icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
 								tr-abstrint ldta08-abstrint
 
@@ -29,6 +30,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicAbstrInt \
 								AppxNotation FrontMatter OldText \
 								Poster PosterLDL PosterTrOrPr \
+                                                                llvm/LLVM llvm/LLVMPackages llvm/LLVMCoverPage \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
@@ -74,6 +76,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 29: ehc doc
 # 31: poster Tree Oriented Programming (Siren 2008)
 # 33: paper "Abstract Interpretation"
+# 35: llvm thesis
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -96,7 +99,8 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 31, \
 		1 < 77, \
 		1 < 33, \
-		9 < 15, \
+		35, \
+                9 < 15, \
 		9 < 16, \
 		18 < 9, \
 		18 < 14, \

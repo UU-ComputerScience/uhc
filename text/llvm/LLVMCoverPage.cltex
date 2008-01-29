@@ -1,4 +1,5 @@
-\newcommand{\uu}[0]{\includegraphics[width=0.45\textwidth]{./images/uulogo.pdf}}
+%%[coverpage
+\newcommand{\uu}[0]{\includegraphics[width=0.45\textwidth]{./uulogo.pdf}}
 \newcommand{\cs}[0]{\large Center for Software Technology \\
                     \large Dept. of Information and Computing Sciences \\
                     \large Universiteit Utrecht \\
@@ -54,3 +55,4 @@
 \thispagestyle{empty}
 ~\\
 \newpage
+%%]
