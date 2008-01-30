@@ -1,4 +1,4 @@
-Elimintate redundent case statments:
+Eliminate redundent case statments:
     - Trivial: A case with one alternative
     - Evaluated: A case with all alternatives of the form 'unit v' with v the scrutinizer of the case
 

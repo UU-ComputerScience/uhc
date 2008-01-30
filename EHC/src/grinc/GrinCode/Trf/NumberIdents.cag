@@ -1,10 +1,10 @@
-Rename all identifiers to unique numbers. exceptions are the FFI names (and
-primitives) as well as the eval and apply function names (which do not exist anymore).
+Each HsName in the program is numbered.
+This is done by replacing them with a HsName with constructor HNmNr.
+In a HNmNr, also the original name is retained, which can be useful later for prettyprinting.
 
-To rename efficient we can use the fact that the scope of a variable is local
-to a binding, but it's easier not to.
-
-Note: after each binding we skip one number (binding needs two number in the HPTA)
+After numbering a toplevel function binding, the unique number is incremented by 2,
+to reserve a variable number which can be used for analysing the type of an Exception
+which may be thrown by the function.
 
 
 %%[0
@@ -141,11 +141,17 @@ SEM GrPatLam
   			   loc  .  var2id                     :  LookupList
   			        .  newNames                   :  {[HsName]}
   			        .  unique                     :  Int
-  | Var        (lhs.var2id, lhs.unique)  = if @loc.skip
+  | Var
+    BasicNode
+    EnumNode
+    BasicAnnot
+    EnumAnnot
+    Annot      (lhs.var2id, lhs.unique)  = if @loc.skip
                                            then (                        @lhs.var2id, @lhs.unique    )
                                            else (Map.insert @nm @newName @lhs.var2id, @lhs.unique + 1)
                loc  .  newName  : HsName
                loc  .  newName  = HNmNr @lhs.unique (Just @nm)
+  			   loc  .  skip     : Bool
   			   loc  .  skip     = case @nm of
   			                        HNmNr _ _ -> True
   			                        _         -> False
@@ -170,6 +176,7 @@ SEM GrBind
   			  loc   .  var2id2                  :  LookupList
   			        .  nn                       :  {[HsName]}
   			        .  unique3                  :  Int
+  			        .  skip                     :  Bool
   			        
   			  loc   .  skip                     =  case @nm of
   			                                         HNmNr _ _ -> True
@@ -190,9 +197,24 @@ SEM GrPatAlt
   | Node  lhs  .  grTrf  = GrPatAlt_Node @tag.grTrf @newNames
   
 SEM GrPatLam
-  | Var   lhs  .  grTrf  = if @loc.skip
-                            then @loc.copy
-                            else GrPatLam_Var  @newName
+  | Var           lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_Var  @newName
+  | BasicNode     lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_BasicNode @size @newName
+  | EnumNode      lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_EnumNode @newName
+  | BasicAnnot    lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_BasicAnnot @size @newName
+  | EnumAnnot     lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_EnumAnnot @tagL.copy @newName
+  | Annot         lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_Annot @tagL.copy @newName
 
 SEM GrBind
   | Bind  lhs  .  grTrf    = if @loc.skip
@@ -203,9 +225,12 @@ SEM GrBind
           loc  .  newExpr  = @expr.grTrf
 
 SEM GrVal
-  | Var  lhs  .  grTrf  = GrVal_Var (findNewVar @lhs.var2id @nm)
+  | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.var2id @nm)
+  | BasicNode   lhs  .  grTrf  = GrVal_BasicNode @tag.grTrf (findNewVar @lhs.var2id @nm)
+  | EnumNode    lhs  .  grTrf  = GrVal_EnumNode             (findNewVar @lhs.var2id @nm)
+
 SEM GrVar
-  | Var  lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.var2id @nm)
+  | Var         lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.var2id @nm)
 
 SEM GrExpr
   | App Eval FetchNode FetchField Throw UpdateUnit

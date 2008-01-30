@@ -141,7 +141,7 @@ SEM GrExpr
   | Throw        lhs.isNode = True
   | Catch        lhs.isNode = True
 
-SEM GrAltL
+SEM GrAltL GrValL
   | Nil          lhs.isNode = False
   | Cons         lhs.isNode = @hd.isNode || @tl.isNode
   
@@ -155,15 +155,19 @@ SEM GrVal
     LitStr
     Tag          loc.isNode = False
                  lhs.selfAsPtr = @loc.grTrf
+  | BasicNode
+    EnumNode     lhs.selfAsPtr = @loc.grTrf
   | Node
     VarNode
+    BasicNode
+    EnumNode
 %%[[10
     NodeAdapt    
 %%]]
                  loc.isNode = True
   | Var          loc.isNode = maybe False id (Map.lookup @nm @lhs.env)
   
-  | Node         lhs.selfAsPtr    =  GrVal_Node @tag @fldL.selfAsPtr
+  | Node         lhs.selfAsPtr    =  GrVal_Node      @tag.grTrf @fldL.selfAsPtr
   | VarNode      lhs.selfAsPtr    =  GrVal_VarNode   @fldL.selfAsPtr
 %%[[10
 
@@ -188,6 +192,10 @@ SEM GrValL
   | Nil         lhs.selfAsPtr = []
   | Cons        lhs.selfAsPtr = @hd.selfAsPtr : @tl.selfAsPtr
 
+SEM GrGlobal
+  | Global       val.env    = undefined
+                 val.unique = undefined
+
 SEM GrBind
   | Bind         expr.env   = Map.empty
   
@@ -199,8 +207,13 @@ SEM GrExpr
 ATTR GrPatLam [ | | boundVar : {HsName} ]
 
 SEM GrPatLam
-  | Var         lhs.boundVar  = @nm    
+  | Var
+    BasicAnnot
+    EnumAnnot
+    Annot       lhs.boundVar  = @nm    
   | Empty
+    BasicNode
+    EnumNode
     VarNode     lhs.boundVar  = wildcardNm
 
 ATTR GrVal [ | | getName : {HsName} ]

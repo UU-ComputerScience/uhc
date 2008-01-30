@@ -36,7 +36,7 @@ ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
 ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%]
 
-TODO: A unit statement can insert used variables for each variable not bounded
+TODO: A unit statement can insert used variables for each variable not bound
 to a wildcard or constant pattern. Example:
 
 unit (T a1 ... an); \_ ->     ==>    'a1' t/m 'an' are unused in this expression.
@@ -53,7 +53,13 @@ SEM GrBind
   | Bind  expr  .  usedVars  =  Set.empty
 
 SEM GrVal
-  | Var   lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
+  | Var
+    BasicNode
+    EnumNode   
+%%[[10
+    NodeAdapt
+%%]]
+             lhs   .  usedVars  =  Set.insert @nm @lhs.usedVars
 
 SEM GrExpr
   | FFI     lhs   .  usedVars  =  @argL.usedVars
@@ -131,9 +137,13 @@ SEM GrVar
 
 SEM GrPatLam
   | VarNode lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL.names)
-  | Var     lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
-  | * - Var VarNode
-            lhs  .  isDead  =  True
+  | Var
+    BasicNode
+    EnumNode
+    BasicAnnot
+    EnumAnnot
+    Annot   lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
+  | Empty   lhs  .  isDead  =  True
  
 SEM GrExpr [ | | sideEffect : Bool ]
   |     FFI Throw FetchUpdate UpdateUnit  lhs  .  sideEffect  =  True
@@ -152,7 +162,12 @@ with wildcards.
 
 %%[8.removeUnusedNamedBinding
 SEM GrPatLam
-  | Var      lhs  .  grTrf  =  GrPatLam_Var                  (mkWildcard @lhs.usedVars  @nm)
+  | Var        lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.usedVars  @nm)
+  | BasicNode  lhs  .  grTrf  =  GrPatLam_BasicNode  @size       (mkWildcard @lhs.usedVars  @nm)
+  | EnumNode   lhs  .  grTrf  =  GrPatLam_EnumNode               (mkWildcard @lhs.usedVars  @nm)
+  | BasicAnnot lhs  .  grTrf  =  GrPatLam_BasicAnnot @size       (mkWildcard @lhs.usedVars  @nm)
+  | EnumAnnot  lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
+  | Annot      lhs  .  grTrf  =  GrPatLam_Annot      @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
 
 SEM GrPatAlt
   | Node     lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf (map (mkWildcard @lhs.usedVars) @fldL)

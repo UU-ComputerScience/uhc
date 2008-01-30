@@ -101,7 +101,14 @@ ATTR GrPatLam GrVarL GrVar [ | | mbTag : {Maybe GrTag} ]
 
 SEM GrPatLam
  | VarNode   lhs . mbTag = @fldL.mbTag
- | Var Empty lhs . mbTag = Nothing
+ | Var 
+   Empty
+   BasicNode
+   EnumNode
+   BasicAnnot
+   EnumAnnot
+   Annot 
+             lhs . mbTag = Nothing
  
 SEM GrVarL
  | Cons   lhs . mbTag = @hd.mbTag
@@ -126,8 +133,8 @@ SEM GrPatAlt [ | | mbTag: {Maybe GrTag} ]
 
 SEM GrPatLam [ | |  names: {GrVarL} ]
   | VarNode              lhs  .  names  =  @fldL.self
-  | Var                  lhs  .  names  =  error "SplitFetch.ag: attempt to get names from GrPat_Var"
   | Empty                lhs  .  names  =  []
+  | * - VarNode Empty    lhs  .  names  =  error "SplitFetch.ag: attempt to get names"
 
 
 ATTR AllGrExpr [ floatingFetches : FetchEnv | | ]
