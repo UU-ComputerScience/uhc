@@ -8,7 +8,7 @@
 %%[8 hs import(Data.Maybe,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin})
+%%[8 hs import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin},qualified {%{GRIN}Config} as Cfg)
 %%]
 
 %%[8 hs import({%{EH}Error})
@@ -376,8 +376,10 @@ SEM GrExpr
 
 %%[8 hs
 data NmIntro
-  = NmIntro_Single    HsName
+  = NmIntro_Single    HsName BasicAnnot			-- name + size in bytes
   | NmIntro_Grp       GrTag [HsName]
+  | NmIntro_GrpTag    HsName
+  | NmIntro_GrpBasic  HsName BasicAnnot			-- name + size in bytes
   | NmIntro_None
 %%]
 
@@ -390,9 +392,14 @@ SEM GrPatAlt
                 lhs         .   nmIntro         =   NmIntro_None
 
 SEM GrPatLam
-  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm
-  | VarNode     lhs         .   nmIntro         =   NmIntro_Grp (error "VarNode-grpHead") (tail @fldL.introNmL)
-  | * - Var VarNode
+  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
+  | VarNode     lhs         .   nmIntro         =   NmIntro_Grp (panic "GrPatLam.VarNode.grpHead") (tail @fldL.introNmL)
+  | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
+  | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
+  | Annot       lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
+  | BasicAnnot  lhs         .   nmIntro         =   NmIntro_Single @nm @annot
+  | EnumAnnot   lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
+  | * - Var VarNode BasicNode EnumNode Annot BasicAnnot EnumAnnot
                 lhs         .   nmIntro         =   NmIntro_None
 %%]
 
@@ -408,7 +415,7 @@ patNmL2DepL2 :: [HsName] -> AssocL HsName Int
 patNmL2DepL2 nmL = zip nmL [0, (- GB.nrValWords) ..]
 
 patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> GB.ValAccessGam
-patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_LocalOffset (dep+d)) | (n,d) <- nmDepL ]
+patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) defaultBasicAnnot) | (n,d) <- nmDepL ]
 
 patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGam
 patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
@@ -424,7 +431,7 @@ SEM GrExpr
   | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrBind
-  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_LocalOffset (@stkDepth-o)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
+  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (@stkDepth-o) defaultBasicAnnot) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
@@ -621,7 +628,7 @@ SEM GrExpr
                                                 =   case GB.gviLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @val.grvalIntro of
                                                       GB.GrValIntroAlt_OnTOS ins inc _
                                                         | @altL.nrAlts == 1
-                                                          -> (ins Seq.:++: @altL.i,GB.nrValWords,True,inc)
+                                                          -> ( ins Seq.:++: @altL.i, GB.nrValWords, True, inc )
                                                         | otherwise
                                                           -> ( ins Seq.:++: insc Seq.:++: ins', GB.nrValWords, True, @enumStkInc+inc )
                                                           where ins' = Seq.fromList [GB.casecall,GB.label (GB.LocRef_Label @at1stOffLabel),GB.link $ GB.linkOffsets @nrOfAlts]
@@ -632,8 +639,12 @@ SEM GrExpr
   | Seq         loc         .   (seqIns,seqStkInc,newVaGam)
                                                 =   let nm ins inc nmIntro
                                                           = case nmIntro of
-                                                              (NmIntro_Single nm)
-                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_LocalOffset (@expr.stkDepth+inc))])
+                                                              (NmIntro_Single nm annot)
+                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth+inc) annot)])
+                                                              (NmIntro_GrpTag nm)
+                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_NodeTagLocal (@expr.stkDepth+inc))])
+                                                              (NmIntro_GrpBasic nm annot)
+                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_NodeFldLocal (@expr.stkDepth+inc) annot)])
                                                               (NmIntro_Grp _ nmL) | not (null nmL)
                                                                 -> (ins Seq.:++: fins, inc' + length nmL * GB.nrValWords,g)
                                                                 where fins = Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
@@ -641,9 +652,10 @@ SEM GrExpr
                                                                       g = patNmL2VAGam (@expr.stkDepth+inc) nmL
                                                               _ -> (ins,inc,Map.empty)
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
-                                                          (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp)
-                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal
+                                                          (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
+                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz == Cfg.sizeofGrWord
                                                               -> (Seq.empty,0,Map.singleton nmp (GB.Val_Int i))
+                                                              where bsz = basicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)
                                                               -> nm ins inc nmi
                                                               where (GB.GrValIntroAlt_OnTOS ins inc _) = GB.gviLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @expr.stkDepth gvi

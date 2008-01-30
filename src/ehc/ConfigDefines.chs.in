@@ -31,3 +31,20 @@ useBoehmGC = mkB USE_BOEHM_GC
 useGMP :: Bool
 useGMP = mkB USE_GMP
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sizes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#undef SIZEOF_INTPTR_T
+%%]
+
+%%[8 export(sizeofWord,sizeofWordAsInteger)
+sizeofWord :: Int
+sizeofWord = SIZEOF_INTPTR_T
+
+sizeofWordAsInteger :: Integer
+sizeofWordAsInteger = toInteger sizeofWord
+%%]
+

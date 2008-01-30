@@ -898,6 +898,8 @@ typedef __mpz_struct*  GB_mpz ;
 
 %%[8
 #define GB_InsExt_Halt							0xFF
+#define GB_InsExt_ConvertInt2Word				0xFC
+#define GB_InsExt_ConvertWord2Int				0xFD
 %%]
 
 %%[96

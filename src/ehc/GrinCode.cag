@@ -13,7 +13,7 @@
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, qualified {%{EH}Config} as Cfg)
 %%]
 
 %%[8 hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
@@ -40,9 +40,6 @@
 %%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[8 hs export(grBuiltinTyNmL)
-%%]
-
 %%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
 %%]
 
@@ -55,7 +52,8 @@ DERIVING GrTag        : Show
 %%% Special names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(grBuiltinTyNmL)
+grBuiltinTyNmL :: EHCOpts -> [HsName]
 grBuiltinTyNmL opts = builtinKnownBoxedTyNmL opts ++ builtinKnownRecTyNmL
 %%]
 
@@ -99,6 +97,35 @@ mkGrTagAnn :: Int -> Int -> GrTagAnn
 mkGrTagAnn = GrTagAnn
 
 emptyGrTagAnn = mkGrTagAnn 0 0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BasicNode annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(BasicAnnot(..),defaultBasicAnnot)
+data BasicAnnot
+  = BasicAnnot_Size        Int
+  | BasicAnnot_TaggedInPtr
+  | BasicAnnot_Dflt
+  deriving (Show,Eq)
+
+defaultBasicAnnot :: BasicAnnot
+defaultBasicAnnot = BasicAnnot_Size Cfg.sizeofWord
+%%]
+
+%%[8 hs export(basicAnnotSizeInBytes)
+basicAnnotSizeInBytes :: BasicAnnot -> Int
+basicAnnotSizeInBytes (BasicAnnot_Size        s) = s
+basicAnnotSizeInBytes (BasicAnnot_TaggedInPtr  ) = Cfg.sizeofWord
+basicAnnotSizeInBytes (BasicAnnot_Dflt         ) = Cfg.sizeofWord
+%%]
+
+%%[8 hs
+instance PP BasicAnnot where
+  pp (BasicAnnot_Size        s) = pp s
+  pp (BasicAnnot_TaggedInPtr  ) = pp "annottaggedinptr"
+  pp (BasicAnnot_Dflt         ) = pp "annotdflt"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

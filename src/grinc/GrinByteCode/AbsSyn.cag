@@ -94,6 +94,8 @@ DATA Instr
   | Meta		meta			: Meta
   | Label		locRef			: LocRef
   | LabelRef	locRef			: LocRef
+  | CvtInt2Word
+  | CvtWord2Int
 
 DATA Meta
   | CmtHeader	kind            : AnnKind

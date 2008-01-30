@@ -2,7 +2,7 @@
 %%% Prettyprint Grin ByteCode program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
+%%[8 hs module {%{GRIN}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},{%{GRIN}GrinByteCode})
 %%]
 
 %%[8 hs import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
@@ -102,7 +102,7 @@ SEM Instr
   | Ld St       imm         .   cLoc        =   @lhs.cLoc + 1
   | Op          imm         .   cLoc        =   @lhs.cLoc + 2
   | LdGlobal Call Eval Apply
-                lhs         .   cLoc        =   @linkCLoc + fromInteger Cfg.sizeofGrWord
+                lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofGrWord
   | LabelRef
                 lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
@@ -110,14 +110,14 @@ SEM Instr
   | CaseCall FetchUpdate LdNodeTag
                 lhs         .   cLoc        =   @lhs.cLoc + 1
   | CallC       nArg        .   cLoc        =   @lhs.cLoc + 2
-                lhs         .   cLoc        =   @linkCLoc + fromInteger Cfg.sizeofGrWord
+                lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofGrWord
   | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
   | RetCase     nRes        .   cLoc        =   @lhs.cLoc + 2
-  | Halt        lhs         .   cLoc        =   @lhs.cLoc + 2
+  | Halt CvtInt2Word CvtWord2Int
+                lhs         .   cLoc        =   @lhs.cLoc + 2
   | AllocStore Fetch
                 lhs         .   cLoc        =   @lhs.cLoc + 1
 %%]
-  | CaseCall    nCases      .   cLoc        =   @lhs.cLoc + 2
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Labels
@@ -507,18 +507,19 @@ SEM Instr
   | AllocStore Fetch
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | Call Eval Apply
-                lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
+                lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (Cfg.sizeofGrWord) $ linkVal @link]
   | TailCall RetCall
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp]
   | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp]
   | CaseCall FetchUpdate LdNodeTag
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
-  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
+  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, ppLink (Cfg.sizeofGrWord) $ linkVal @link]
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp -- >#< ppCmtC @lhs.opts @ann
-  | Halt        lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
-  | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (fromInteger Cfg.sizeofGrWord) $ linkVal @link]
+  | Halt CvtInt2Word CvtWord2Int
+                lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
+  | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (Cfg.sizeofGrWord) $ linkVal @link]
   | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
 %%]
   | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
@@ -658,6 +659,8 @@ SEM Instr
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
+  | CvtInt2Word lhs         .   mn          =   pp "ci2w"
+  | CvtWord2Int lhs         .   mn          =   pp "cw2i"
   | LdGlobal    lhs         .   mn          =   "ldg"           >|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
@@ -746,7 +749,8 @@ SEM Instr
   -- others
   | FetchUpdate loc         .   enc         =   0xF9
   | LdNodeTag   loc         .   enc         =   0xFC
-  | Halt        loc         .   enc         =   0xFE
+  | Halt CvtInt2Word CvtWord2Int
+            	loc         .   enc         =   0xFE
 %%]
 
 %%[8
@@ -758,6 +762,8 @@ SEM Instr
   | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
   | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   | Halt        loc         .   enc2        =   0xFF
+  | CvtInt2Word loc         .   enc2        =   0xFC
+  | CvtWord2Int loc         .   enc2        =   0xFD
 
 SEM Meta
   | CmtHeader   loc         .   enc         =   0xFF

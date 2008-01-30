@@ -16,9 +16,12 @@ sizeofPointer :: Int
 sizeofPointer = SIZEOF_INTPTR_T
 %%]
 
-%%[8 export(sizeofGrWord,use64Bits,use32Bits)
-sizeofGrWord :: Integer
-sizeofGrWord = SIZEOF_INTPTR_T
+%%[8 export(sizeofGrWord,sizeofGrWordAsInteger,use64Bits,use32Bits)
+sizeofGrWord :: Int
+sizeofGrWord = sizeofWord
+
+sizeofGrWordAsInteger :: Integer
+sizeofGrWordAsInteger = sizeofWordAsInteger
 
 use64Bits, use32Bits :: Bool
 (use64Bits,use32Bits)
@@ -29,7 +32,7 @@ use64Bits, use32Bits :: Bool
 
 %%[8 export(gbLabelOffsetSize)
 gbLabelOffsetSize :: Int
-gbLabelOffsetSize = fromInteger sizeofGrWord
+gbLabelOffsetSize = sizeofGrWord
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -137,6 +137,7 @@ typedef GB_Word GB_CFun();
 #define GB_Push(v)				{*(--sp) = (Cast(GB_Word,v)) ; }
 #define GB_Push2(v)				{*(sp-1) = (Cast(GB_Word,v)) ; sp-- ;}		/* avoid predecrement */
 #define GB_TOS					(*sp)
+#define GB_SetReg(r,x)			{r = Cast(GB_Word,x);}
 #define GB_SetTOS(x)			{*sp = Cast(GB_Word,x);}
 #define GB_SetTOSRel(o,x)		{ *GB_SPRel(o) = (x); }
 #define GB_SetTOSByteRel(o,x)	{ *Cast(GB_Ptr,GB_SPByteRel(GB_Word,o)) = (x); }
@@ -1190,6 +1191,41 @@ gb_interpreter_InsCallEntry:
 				pc = Cast(GB_BytePtr,x) ;
 				break ;
 			
+			/* l0rs08 */
+			/* l0rs16 */
+			/* l0rs32 */
+			/* l0rs64 */
+
+			/* load TOS relative content in reg RR */
+			/* l1rs08 */
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08) :
+				GB_PCImmIn(int8_t,x) ;
+				GB_SetReg( rr, GB_SPByteRelx( x ) ) ;
+				break ;
+
+			/* l1rs16 */
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16) :
+				GB_PCImmIn(int16_t,x) ;
+				GB_SetReg( rr, GB_SPByteRelx( x ) ) ;
+				break ;
+
+			/* l1rs32 */
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32) :
+				GB_PCImmIn(int32_t,x) ;
+				GB_SetReg( rr, GB_SPByteRelx( x ) ) ;
+				break ;
+
+			/* l1rs64 */
+			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64) :
+				GB_PCImmIn(int64_t,x) ;
+				GB_SetReg( rr, GB_SPByteRelx( x ) ) ;
+				break ;
+
+			/* l2rs08 */
+			/* l2rs16 */
+			/* l2rs32 */
+			/* l2rs64 */
+
 			/* callr */
 
 			/* tailcallt */
@@ -1466,6 +1502,14 @@ gb_interpreter_InsApplyEntry:
 				{
 					case GB_InsExt_Halt:
 						goto interpretIsDone ;
+						break ;
+
+					case GB_InsExt_ConvertInt2Word:
+						GB_SetTOS( GB_GBInt2Int( GB_TOS ) ) ;
+						break ;
+
+					case GB_InsExt_ConvertWord2Int:
+						GB_SetTOS( GB_Int2GBInt( GB_TOS ) ) ;
 						break ;
 
 %%[[96
@@ -1972,6 +2016,18 @@ static GB_Mnem gb_mnemTable[] =
   }
 , { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64)
   , "l1ts64"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08)
+  , "l1rs08"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_16)
+  , "l1rs16"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_32)
+  , "l1rs32"
+  }
+, { GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_Reg, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_64)
+  , "l1rs64"
   }
 , { GB_Ins_Ld(GB_InsOp_Deref2, GB_InsOp_LocB_TOS, GB_InsOp_LocE_SP, GB_InsOp_ImmSz_08)
   , "l2ts08"
