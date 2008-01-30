@@ -134,9 +134,9 @@ pPatAlt         =    GrPatAlt_LitInt   <$> pInt
                         )
 
 pBasicAnnot     ::   GRIParser BasicAnnot
-pBasicAnnot     =    BasicAnnot_Size        <$> pInt
-                <|>  BasicAnnot_TaggedInPtr <$  pKey "annottaggedinptr"
-                <|>  BasicAnnot_Dflt        <$  pKey "annotdflt"
+pBasicAnnot     =    BasicAnnot_Size          <$> pInt
+                <|>  BasicAnnot_FromTaggedPtr <$  pKey "annotfromtaggedptr"
+                <|>  BasicAnnot_Dflt          <$  pKey "annotdflt"
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"

@@ -78,8 +78,8 @@ mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
       GrValIntroAlt_OnTOS ins2 inc2 optimEffect
         -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
-      GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc)
-        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins) 1 optimEffect
+      GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc postins)
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins Seq.:++: postins) 1 optimEffect
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                    where (deref,src,imm)
                            = case ldsrc of

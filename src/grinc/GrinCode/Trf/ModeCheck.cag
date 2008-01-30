@@ -238,7 +238,7 @@ SEM GrPatAlt
     Otherwise   lhs.bindings    = []
   | Node        lhs.bindings    = zip @fldL (repeat ModeLocOrBas)
 %%[[10
-  | NodeSplit   lhs.bindings    = zip (@nm : @fldL) (repeat ModeLocOrBas)
+  | NodeSplit   lhs.bindings    = undefined -- zip (@nm : @fldL) (repeat ModeLocOrBas) -- does not compile: Jeroen
 %%]]
 
 

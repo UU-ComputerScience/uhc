@@ -202,13 +202,13 @@ SEM GrPatLam
                                     else GrPatLam_Var  @newName
   | BasicNode     lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
-                                    else GrPatLam_BasicNode @size @newName
+                                    else GrPatLam_BasicNode @annot @newName
   | EnumNode      lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_EnumNode @newName
   | BasicAnnot    lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
-                                    else GrPatLam_BasicAnnot @size @newName
+                                    else GrPatLam_BasicAnnot @annot @newName
   | EnumAnnot     lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_EnumAnnot @tagL.copy @newName

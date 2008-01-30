@@ -87,6 +87,7 @@ data EHCOpts
   = EHCOpts
       {  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
+      ,  ehcOptPriv           ::  Bool				-- privately used (in general during switch between 2 impls of 1 feature)
 %%[[1
       ,  ehcOptShowAst        ::  Bool              -- show decorated EH AST on stdout
 %%][100
@@ -164,6 +165,7 @@ data EHCOpts
 defaultEHCOpts
   = EHCOpts
       {  ehcOptShowHS         =   False
+      ,  ehcOptPriv           =   False
 %%[[1
       ,  ehcOptShowEH         =   True
 %%][99
@@ -258,6 +260,7 @@ ehcCmdLineOpts
                     (OptArg oPretty "hs|eh|grin|ast|-")
 %%]]
                     "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
+     ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
@@ -451,22 +454,7 @@ optInt tr s o
  = tr o $ read s
 %%]
 
-%%[8
-boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
-
-oGrinDebug           o   = o { ehcOptGrinDebug      = True }
-%%[[8
-optSetGenTrace       o b = o { ehcOptGenTrace       = b }
-optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
-%%][100
-%%]]
-optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
-optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
-optSetGenCmt         o b = o { ehcOptGenCmt         = b }
-optSetGenDebug       o b = o { ehcOptGenDebug       = b }
-optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
-optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b, ehcOptEmitGrin = b }
-
+%%[1
 optBoolean :: (EHCOpts -> Bool -> EHCOpts) -> Maybe String -> EHCOpts -> EHCOpts
 optBoolean tr ms o
  = case ms of
@@ -479,6 +467,27 @@ optBoolean tr ms o
      Just "on"    -> tr o True
      Just "1"     -> tr o True
      _            -> o
+
+boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
+%%]
+
+%%[1
+oPriv                o b = o { ehcOptPriv           = b }
+%%]
+
+%%[8
+oGrinDebug           o   = o { ehcOptGrinDebug      = True }
+%%[[8
+optSetGenTrace       o b = o { ehcOptGenTrace       = b }
+optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
+%%][100
+%%]]
+optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
+optSetGenUnbox       o b = o { ehcOptGenUnbox       = b }
+optSetGenCmt         o b = o { ehcOptGenCmt         = b }
+optSetGenDebug       o b = o { ehcOptGenDebug       = b }
+optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
+optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b, ehcOptEmitGrin = b }
 
 %%]
 

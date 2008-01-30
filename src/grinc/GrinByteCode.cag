@@ -5,7 +5,7 @@
 %%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg,{%{EH}GrinCode.Pretty})
 %%]
 
-%%[8 hs import(EH.Util.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
+%%[8 hs import(EH.Util.Utils,EH.Util.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
@@ -247,6 +247,13 @@ instance PP ValAccess where
 type ValAccessGam = Map.Map HsName ValAccess
 %%]
 
+%%[8 hs
+vaHasAnnot :: ValAccess -> Bool
+vaHasAnnot (Val_Local        _ _) = True
+vaHasAnnot (Val_NodeFldLocal _ _) = True
+vaHasAnnot _                      = False
+%%]
+
 %%[20 hs export(ImpNmMp)
 type ImpNmMp = Map.Map HsName Int
 %%]
@@ -303,7 +310,7 @@ ldsrc2ins' instrann s
       LoadSrc_Imm      c   -> (Seq.singleton $ instrann $ ldc  c  ,nrValWords)
       LoadSrc_Imm_Int  c   -> (Seq.singleton $ instrann $ ldi  c  ,nrValWords)
   where ldlm n o = replicate n (ldl o)
-        ldrm n o = [ l1tr o' | o' <- [o..o+n-1] ]
+        ldrm n o = [ l1tr o' | o' <- reverse [o..o+n-1] ]	-- hardcoded 'stack grows down' assumption
         ann (h:t) = instrann h : t
 
 ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
@@ -316,7 +323,23 @@ data Load
       { ldPreIns        :: !InsSeq
       , ldPreStackInc   :: !StackDepth
       , ldPreLoc        :: !LoadSrc
+      , ldPostIns       :: !InsSeq
       }
+
+loadWithPrePostFrom :: InsSeq -> StackDepth -> LoadSrc -> InsSeq -> Load
+loadWithPrePostFrom pre presz s post = Load pre presz s post
+
+loadWithPreFrom :: InsSeq -> StackDepth -> LoadSrc -> Load
+loadWithPreFrom pre presz s = loadWithPrePostFrom pre presz s Seq.empty
+
+loadWithPre0From :: InsSeq -> LoadSrc -> Load
+loadWithPre0From pre s = loadWithPreFrom pre 0 s
+
+loadWithPost0From :: LoadSrc -> InsSeq -> Load
+loadWithPost0From s post = loadWithPrePostFrom Seq.empty 0 s post
+
+loadFrom :: LoadSrc -> Load
+loadFrom s = loadWithPreFrom Seq.empty 0 s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -330,41 +353,43 @@ nmLd' optim env modNmConstInx stkDepth nm
       mva@(Just va)
         -> case va of
              Val_Local o annot
-               -> (mva,Load Seq.empty 0 src)
-               where off = stkDepth - o
-                     (src)
+               -> (mva,loadWithPost0From src post)
+               where (src,post)
                          = case annot of
-                             BasicAnnot_Size bsz
-                               | bsz == Cfg.sizeofGrWord
-                                           -> srcDflt
-                             BasicAnnot_Dflt -> srcDflt
-                         where srcDflt = if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off (nrByte2Word $ basicAnnotSizeInBytes annot)
+                             BasicAnnot_FromTaggedPtr    -> (srcDflt Cfg.sizeofGrWord ,Seq.singleton ci2w)
+                             BasicAnnot_Size bsz         -> (srcDflt bsz,Seq.empty)
+                             BasicAnnot_Dflt             -> (srcDflt Cfg.sizeofGrWord ,Seq.empty)
+                         where srcDflt n = offSrc (stkDepth - o) (nrByte2Word n)
              Val_NodeTagLocal o
-               -> (mva,Load l s LoadSrc_TOS_Tag)
-               where (l,s) = if o == 0 then (Seq.empty,0) else (Seq.singleton $ ldl o,nrValWords)
+               -> (mva,loadFrom (offSrc (stkDepth - o) nrValWords))
              Val_NodeFldLocal o annot
-               -> (mva,Load (Seq.singleton $ ldlr o) 0 (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word $ basicAnnotSizeInBytes annot))
+               -> (mva,l)
+               where l   = case annot of
+                             BasicAnnot_FromTaggedPtr    -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) (Seq.singleton ci2w)
+                             BasicAnnot_Size bsz         -> loadWithPre0From (Seq.singleton $ ldlr o) (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
+                             _                           -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
-               -> (mva,Load Seq.empty 0 (LoadSrc_Imm_Int i))
+               -> (mva,loadFrom (LoadSrc_Imm_Int i))
              Val_GlobEntry o
-               -> (mva,Load (Seq.singleton $ instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
+               -> (mva,loadWithPreFrom (Seq.singleton $ instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
 %%[[20
              Val_ImpEntry mo eo
-               -> (mva,Load (Seq.fromList [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords))
+               -> (mva,loadWithPre0From (Seq.fromList [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords))
 %%]]
-      _ -> (Nothing,Load (Seq.singleton $ instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
+      _ -> (Nothing,loadWithPreFrom (Seq.singleton $ instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
+  where offSrc off sz = if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off sz
 %%]
 
 %%[8 hs
 vaAndLd2Ins :: OptimCtxt -> HsName -> (Maybe ValAccess,Load) -> (InsSeq,StackDepth)
 vaAndLd2Ins optim nm vald
   = case vald of
-      (Just (Val_Local _ _),Load pins pdep LoadSrc_TOS)
+      (Just (Val_Local _ _),Load pins pdep LoadSrc_TOS postins)
         | not (ocxOmitTOSLd optim)
-          -> (pins Seq.:++: ins,pdep + dep)
+          -> (pins Seq.:++: ins Seq.:++: postins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse nm) (LoadSrc_TOS_Rel 0 nrValWords)
-      (_,Load pins pdep ls)
-          -> (pins Seq.:++: ins,pdep + dep)
+      (_,Load pins pdep ls postins)
+          -> (pins Seq.:++: ins Seq.:++: postins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (instrann $ show ls) ls
 %%]
 
@@ -384,6 +409,7 @@ data GrValIntro
   | GrValIntro_Int   !Integer
   | GrValIntro_Str   !String !Link
   | GrValIntro_Grp   !GrTag ![GrValIntro]
+  | GrValIntro_Basic !GrTag !HsName
   | GrValIntro_None
 %%]
 
@@ -415,7 +441,22 @@ gviLd' optim env modNmConstInx stkDepth intro
               GrValIntro_Str s l
                 -> GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect
               GrValIntro_Int i
-                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (Load Seq.empty 0 $ LoadSrc_Imm_Int i)
+                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (loadFrom $ LoadSrc_Imm_Int i)
+              GrValIntro_Basic gtag nm
+                -> case mbva of
+                     Just va | vaHasAnnot va
+                       -> case vaBasicAnnot va of
+                            BasicAnnot_FromTaggedPtr
+                              -> GrValIntroAlt_OnTOS (ins Seq.::+: cw2i) inc defaultOptimEffect
+                              where (ins,inc) = vaAndLd2Ins optim nm ml
+                            BasicAnnot_Size _
+                              -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
+                              where (ins,inc) = vaAndLd2Ins optim nm ml
+                                    (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
+                                    (sins,sinc) = ndStore (allocInc + inc + tinc)
+                            _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
+                     _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Nothing"
+                where ml@(mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
 {-
               GrValIntro_Grp gtag [i] | tagIsUnboxed gtag
                 -> ld optim dflt i
