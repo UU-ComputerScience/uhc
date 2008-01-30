@@ -384,12 +384,7 @@ data NmIntro
 %%]
 
 %%[8
-ATTR GrPatAlt GrPatLam [ | | nmIntro: NmIntro ]
-
-SEM GrPatAlt
-  | Node        lhs         .   nmIntro         =   NmIntro_Grp @tag.self @fldL
-  | * - Node
-                lhs         .   nmIntro         =   NmIntro_None
+ATTR GrPatLam [ | | nmIntro: NmIntro ]
 
 SEM GrPatLam
   | Var         lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
@@ -402,6 +397,12 @@ SEM GrPatLam
   | * - Var VarNode BasicNode EnumNode Annot BasicAnnot EnumAnnot
                 lhs         .   nmIntro         =   NmIntro_None
 %%]
+ATTR GrPatAlt [ | | nmIntro: NmIntro ]
+
+SEM GrPatAlt
+  | Node        lhs         .   nmIntro         =   NmIntro_Grp @tag.self @fldL
+  | * - Node
+                lhs         .   nmIntro         =   NmIntro_None
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Named value access
@@ -498,7 +499,8 @@ SEM GrVal
   | LitInt      lhs         .   grvalIntro      =   GB.GrValIntro_Int (toInteger @int)
   | LitStr      lhs         .   grvalIntro      =   GB.GrValIntro_Str @str (GB.linkConst @constInx)
   | Node        lhs         .   grvalIntro      =   GB.GrValIntro_Grp @tag.self @fldL.grvalIntroL
-  | * - Var LitStr Node LitInt
+  | BasicNode   lhs         .   grvalIntro      =   GB.GrValIntro_Basic @tag.self @nm
+  | * - Var LitStr Node LitInt BasicNode
                 lhs         .   grvalIntro      =   GB.GrValIntro_None
 
 SEM GrValL
@@ -604,7 +606,7 @@ SEM GrExpr
                                                              _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @nm)
                                                       _ -> case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ @argL.grvalIntroL of
                                                              GB.GrValIntroAlt_OnTOS ins inc _
-                                                               -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.callc @mbDebugStrInx inc], GB.nrValWords, False)
+                                                               -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse @nm, GB.callc @mbDebugStrInx inc], GB.nrValWords, False)
                                                                where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of

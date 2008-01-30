@@ -1296,7 +1296,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                  optGrin= if ehcOptOptimise opts >= OptimiseNormal
                           then if ehcOptFullProgGRIN opts
                                then mk [ flt, ale, eve, ale, nme ]     -- mk (evel ++ evel ++ [nme])
-                               else (  mk [ mte, unb ]
+                               else (  mk ([ mte ] ++ unb)
                                     ++ mk evel
 %%[[8
                                     ++ mk [ ( grInline  , "inline" ) ]
@@ -1317,7 +1317,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                                     )
                           else if ehcOptFullProgGRIN opts
                                then []
-                               else mk [ mte, unb, flt ]
+                               else mk ([ mte ] ++ unb ++ [ flt ])
                         where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
                               evel = [ flt, ale, eve, ale ]
                               flt  = ( grFlattenSeq, "flatten" )
@@ -1325,7 +1325,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                               nme  = ( grUnusedNameElim , "unused name elim" )
                               eve  = ( grEvalElim  , "eval elim" )
                               mte  = ( grUnusedMetaInfoElim  , "meta info elim" )
-                              unb  = ( grUnbox GrinBC.tagAllowsUnboxedLife  , "unbox" )
+                              unb  = if ehcOptPriv opts then [] else [( grUnbox GrinBC.tagAllowsUnboxedLife  , "unbox" )]
                  optGrinNormal
                         = map fst optGrin
                  optGrinDump

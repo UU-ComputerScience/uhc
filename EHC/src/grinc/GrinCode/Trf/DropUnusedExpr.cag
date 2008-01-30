@@ -163,9 +163,9 @@ with wildcards.
 %%[8.removeUnusedNamedBinding
 SEM GrPatLam
   | Var        lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.usedVars  @nm)
-  | BasicNode  lhs  .  grTrf  =  GrPatLam_BasicNode  @size       (mkWildcard @lhs.usedVars  @nm)
+  | BasicNode  lhs  .  grTrf  =  GrPatLam_BasicNode  @annot      (mkWildcard @lhs.usedVars  @nm)
   | EnumNode   lhs  .  grTrf  =  GrPatLam_EnumNode               (mkWildcard @lhs.usedVars  @nm)
-  | BasicAnnot lhs  .  grTrf  =  GrPatLam_BasicAnnot @size       (mkWildcard @lhs.usedVars  @nm)
+  | BasicAnnot lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot      (mkWildcard @lhs.usedVars  @nm)
   | EnumAnnot  lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
   | Annot      lhs  .  grTrf  =  GrPatLam_Annot      @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
 

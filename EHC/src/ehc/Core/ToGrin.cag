@@ -22,7 +22,7 @@ WRAPPER CodeAGItf
 %%[8 hs import(Debug.Trace)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[8 hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
 %%[96 hs import({%{EH}BuiltinPrims})
@@ -144,22 +144,6 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-%%]
-ATTR AllCodeNT [ lamMp: CArityMp | | ]
-
-%%[8.CodeAGItf.lamMp
-%%]
-SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   @module.lamNmMp
-
-%%[20 -8.CodeAGItf.lamMp
-%%]
-ATTR CodeAGItf [ lamMp: CArityMp | | ]
-
-SEM CodeAGItf
-  | AGItf       module      .   lamMp       =   @module.lamNmMp `Map.union` @lhs.lamMp
-
-%%[8
 ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CBind
@@ -172,41 +156,6 @@ SEM CBind
                 loc         .   resTy       =   snd @loc.argTyLresTy
                 lhs         .   bindArityMp =   @nm `Map.singleton` length @argTyL
 %%]
-ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: CArityMp ]
-ATTR AllBind [ | | bindCafMp USE {`Map.union`} {Map.empty}: CArityMp ]
-
-SEM CBind
-  | Bind        lhs         .   (bindLamMp,bindCafMp)
-                                            =   if @expr.isLam
-                                                then (@nm `Map.singleton` length @expr.grLamArgL,Map.empty)
-                                                else (Map.empty,@nm `Map.singleton` 0)
-  | FFI         loc         .   (argTyL,resTy)
-                                            =   tyArrowArgsRes @ty
-                lhs         .   bindLamMp   =   @nm `Map.singleton` length @argTyL
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gathering known function arity for other modules
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20
-%%]
-ATTR CodeAGItf CModule [ | | gathLamMp: CArityMp ]
-
-SEM CModule
-  | Mod         lhs         .   gathLamMp   =   @expr.lamNmMp
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% All function names (which only live on top level after lambda lifting), ditto CAF's
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-%%]
-ATTR CModule CExpr [ | | lamNmMp USE {`Map.union`} {Map.empty}: CArityMp ]
-ATTR CExpr [ | | cafNmMp USE {`Map.union`} {Map.empty}: CArityMp ]
-
-SEM CExpr
-  | Let         lhs         .   lamNmMp     =   @binds.bindLamMp `Map.union` @body.lamNmMp
-                            .   cafNmMp     =   @binds.bindCafMp `Map.union` @body.cafNmMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Variables which are passed as parameter
@@ -554,6 +503,11 @@ tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Bool
 tyNmIsUnboxedForFFIRes opts
   = (`elem` ns)
   where ns = builtinKnownBoxedTyNmL opts
+
+tyNmMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Bool
+tyNmMayLiveAsTaggedPtr opts n
+  = if ehcOptFullProgGRIN opts then False else n `elem` ns
+  where ns = builtinMayLiveUnboxedTyNmL
 %%]
 
 %%[8
@@ -563,10 +517,12 @@ SEM CBind
                                             =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
-                lhs         .   grBindL     =   let  mkPat ty n
+                lhs         .   grBindL     =   let  annotOfUnboxed t = if tyNmMayLiveAsTaggedPtr @lhs.opts t then BasicAnnot_FromTaggedPtr else BasicAnnot_Size Cfg.sizeofWord -- size must be derived from type, currently not yet
+                                                     mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | @isUnboxed t -> -- mkGrPatConNode (mkGrTagAnn 1 1) 0 t [n]
-                                                                                mkGrUnbox t n
+                                                            t | @isUnboxed t -> if ehcOptPriv @lhs.opts
+                                                                                then GrPatLam_BasicNode (annotOfUnboxed t) n
+                                                                                else mkGrUnbox t n
                                                             _                -> GrPatLam_Var n
                                                      resTyNm = tyConNm @resTy
                                                      resIsUnboxed = @isUnboxed resTyNm
@@ -587,9 +543,15 @@ SEM CBind
                                                                                      -- TODO: figure out how to handle these
                                                                                     [ ]  -- [ GrTag_Any ]
                                                      mkRes v
-                                                       = if resIsUnboxed
-                                                         then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
-                                                         else id
+                                                       = if ehcOptPriv @lhs.opts
+                                                         then if resIsUnboxed
+                                                              then \e -> GrExpr_Seq e (GrPatLam_BasicAnnot (annotOfUnboxed resTyNm) @nmRes)
+                                                                                      (GrExpr_Unit (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 resTyNm) v))
+                                                              else \e -> GrExpr_Seq e (GrPatLam_Annot resTagL @nmRes)
+                                                                                      (GrExpr_Unit (GrVal_Var v))
+                                                         else if resIsUnboxed
+                                                              then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
+                                                              else id
 %%[[8
                                                      mkEval (n,p)
                                                        = GrExpr_Seq (GrExpr_Eval n) p

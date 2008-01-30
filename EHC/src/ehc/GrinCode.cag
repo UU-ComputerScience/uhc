@@ -106,7 +106,7 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 %%[8 hs export(BasicAnnot(..),defaultBasicAnnot)
 data BasicAnnot
   = BasicAnnot_Size        Int
-  | BasicAnnot_TaggedInPtr
+  | BasicAnnot_FromTaggedPtr
   | BasicAnnot_Dflt
   deriving (Show,Eq)
 
@@ -116,16 +116,16 @@ defaultBasicAnnot = BasicAnnot_Size Cfg.sizeofWord
 
 %%[8 hs export(basicAnnotSizeInBytes)
 basicAnnotSizeInBytes :: BasicAnnot -> Int
-basicAnnotSizeInBytes (BasicAnnot_Size        s) = s
-basicAnnotSizeInBytes (BasicAnnot_TaggedInPtr  ) = Cfg.sizeofWord
-basicAnnotSizeInBytes (BasicAnnot_Dflt         ) = Cfg.sizeofWord
+basicAnnotSizeInBytes (BasicAnnot_Size          s) = s
+basicAnnotSizeInBytes (BasicAnnot_FromTaggedPtr  ) = Cfg.sizeofWord
+basicAnnotSizeInBytes (BasicAnnot_Dflt           ) = Cfg.sizeofWord
 %%]
 
 %%[8 hs
 instance PP BasicAnnot where
-  pp (BasicAnnot_Size        s) = pp s
-  pp (BasicAnnot_TaggedInPtr  ) = pp "annottaggedinptr"
-  pp (BasicAnnot_Dflt         ) = pp "annotdflt"
+  pp (BasicAnnot_Size          s) = pp s
+  pp (BasicAnnot_FromTaggedPtr  ) = pp "annotfromtaggedptr"
+  pp (BasicAnnot_Dflt           ) = pp "annotdflt"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

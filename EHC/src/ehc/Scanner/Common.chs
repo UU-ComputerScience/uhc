@@ -255,7 +255,7 @@ grinScanOpts
                                     , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
                                     , "basicnode", "enumnode", "annot", "basicannot", "enumannot"
-                                    , "annottaggedinptr", "annotdflt"
+                                    , "annotfromtaggedptr", "annotdflt"
                                     ]
         ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
         ,   scoSpecChars        =   "();{}#/\\|,"
