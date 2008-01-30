@@ -5,15 +5,11 @@ Normalisation for the Heap-points-to analysis
 - The scrutinized expression must be a variable, not a complete node.
 
 - The following locations in the code must contain a simple pattern (e.g \var)
-    - After an eval or apply call 
+    - After an eval or apply
     - After a case statement
     - After a catch statement
 
 - do we need it after an FFI?
-
-wildcard = 0
-eval     = 1
-apply    = 2    
 
 %%[0
 %include lhs2TeX.fmt
@@ -133,7 +129,7 @@ SEM GrPatLam [ | | isSimplePattern: Bool ]
   | * - Var  loc . isSimplePattern  =  False
 %%]
 
-All patterns which does not contain a simple pattern after these expressions
+All patterns which do not contain a simple pattern after these expressions
 are rewritten into a copy
 
 %%[8.simplePattern

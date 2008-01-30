@@ -64,6 +64,8 @@ testR pat val
                                GrVal_Node t  xs -> equalNodes vs (GrVal_Tag t:xs)
                                GrVal_VarNode xs -> equalNodes vs              xs
                                _                -> False
+       _ -> False
+                               
 
 equalNodes :: [GrVar] -> [GrVal] -> Bool
 equalNodes []     []      =  True
@@ -101,6 +103,7 @@ testL pat val
                               GrVal_Node     t xs -> Just (unifyNodes vs (GrVal_Tag t:xs))
                               GrVal_VarNode    xs -> Just (unifyNodes vs              xs )
                               _                   -> error "CopyProp: left: node-pattern does not match"
+      _  -> Nothing
                               
 unifyNodes :: [GrVar] -> [GrVal] -> Substitution -> Substitution
 unifyNodes []     []     s  =  s

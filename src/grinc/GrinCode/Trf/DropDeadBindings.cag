@@ -3,7 +3,6 @@ Also, remove corresponding alternatives from Case expressions.
 
 For example, if f returns AbsBottom, remove cases F/f and P/f from scrutinizations.
 
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt

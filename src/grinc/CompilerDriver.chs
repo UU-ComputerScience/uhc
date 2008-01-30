@@ -29,10 +29,10 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.TestUnbox})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.Unbox2})
-%%]
+--%%[8 import({%{GRIN}GrinCode.Trf.TestUnbox})
+--%%]
+--%%[8 import({%{GRIN}GrinCode.Trf.Unbox2})
+--%%]
 %%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
 %%]
 --%%[8 import({%{GRIN}GrinCode.Trf.ReturningCatch})
@@ -52,6 +52,8 @@
 %%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.AddFetch})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.ModeCheck})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.RightSkew})
 %%]
@@ -144,7 +146,16 @@ caLoad doParse = task_ VerboseNormal                "Loading"
          ; caWriteGrin           True               "11-cleaned"
          ; transformCodeUnq      buildAppBindings   "Renaming lazy apply tags"
          ; caWriteGrin           True               "12-renamed"
+         --; code <- gets gcsGrin
+         --; let mess = checkMode code
+         --; trace (unlines ("MESSAGES":mess)) (return ())
          ; transformCodeUnq      addFetch           "Adding fetches"
+         
+         ; code <- gets gcsGrin
+         ; let mess = checkMode code
+         ; trace (unlines ("Metatype checking after patch":mess)) (return ())
+         --; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
+         
          ; caWriteGrin           True               "13-fetchadded"
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
          ; caWriteGrin           True               "19-numbered"
@@ -171,9 +182,9 @@ caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
          ; caWriteGrin           True               "31-evalinlined"
          ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
          ; caWriteGrin           True               "32-undead"
-         ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
-         ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
-         ; caWriteGrin           True               "39-unboxed"
+         --; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         --; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
+         --; caWriteGrin           True               "39-unboxed"
          }
     )
 -- optimisations part I
@@ -192,9 +203,9 @@ caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
 caNormalize = task_ VerboseNormal                   "Normalizing"
     ( do { transformCodeUnqHpt   lowerGrin          "Lowering Grin"
          ; caWriteGrin           True               "51-lowered"
-         ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
-         ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
-         ; caWriteGrin           True               "59-unboxedagain"
+         --; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         --; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
+         --; caWriteGrin           True               "59-unboxedagain"
          }
     )
 
@@ -211,11 +222,11 @@ caOptimize = task_ VerboseNormal                    "Optimizing (full)"
 caFinalize = task_ VerboseNormal                    "Finalizing"
     ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
          ; caWriteGrin           True               "71-fetchSplitted"
-         ; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
-         ; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
-         ; caWriteGrin           True               "72-unboxedoncemore"
-         ; when doUnbox (transformCodeUnqHpt testUnbox "Testing Unboxed values")
-         ; caWriteGrin           True               "73-unboxtested"
+         --; doUnbox <- gets (ehcOptGenUnbox . gcsOpts)
+         --; when doUnbox (transformCodeUsingHpt unbox2 "Unboxing Int and Char")
+         --; caWriteGrin           True               "72-unboxedoncemore"
+         --; when doUnbox (transformCodeUnqHpt testUnbox "Testing Unboxed values")
+         --; caWriteGrin           True               "73-unboxtested"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"

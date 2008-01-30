@@ -115,6 +115,8 @@ SEM GrVal
   | Tag       lhs.valInfo  =  InNode  @tag.self []
   | Var       lhs.valInfo  =  InVar   (getNr @nm)
   | Node      lhs.valInfo  =  InNode  @tag.self @fldL.vars
+  | EnumNode  lhs.valInfo  =  InVar   (getNr @nm)
+  | BasicNode lhs.valInfo  =  InNode  @tag.self [Just(getNr @nm)]
   | Empty
     LitInt
     LitStr
@@ -154,6 +156,11 @@ SEM GrPatLam
   | Var        lhs.patInfo  =  InVar (getNr @nm)
   | VarNode    lhs.patInfo  =  InNode (@fldL.headTag) (tail @fldL.vars)
                lhs.tag      =  Just @fldL.headTag
+  | BasicNode  lhs.patInfo  =  InNode GrTag_Any [getNr @nm]
+  | EnumNode   lhs.patInfo  =  InVar (getNr @nm)
+  | BasicAnnot
+    EnumAnnot
+    Annot      lhs.patInfo  =  error "GrPatLam_Annot patInfo"
   | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  

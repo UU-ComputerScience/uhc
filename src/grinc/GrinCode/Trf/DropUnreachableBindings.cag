@@ -76,14 +76,20 @@ SEM GrPatAlt
     | Node        lhs.declared = Set.fromList (map getNr @fldL)
     
 SEM GrPatLam
-    | Var         lhs.declared = Set.singleton (getNr @nm)
+    | Var
+      BasicNode
+      EnumNode
+      BasicAnnot
+      EnumAnnot
+      Annot       lhs.declared = Set.singleton (getNr @nm)
     
 SEM GrVar
     | Var         lhs.declared = Set.singleton (getNr @nm)
     
 
 SEM GrBind
-    | Bind        loc.bindNr   = getNr @nm
+    | Bind        loc.bindNr   : Int
+                  loc.bindNr   = getNr @nm
                   lhs.usage    = Map.singleton (@loc.bindNr) (Set.difference @expr.used (Set.fromList (map getNr @argNmL)))
 
 SEM GrGlobal

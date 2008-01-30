@@ -67,6 +67,10 @@ ATTR Values [ | | prettyCs : {[PP_Doc]} ]
 
 ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 
+ATTR Statements Statement Alternatives Alternative
+         [ functionname : String | | ]
+
+
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
                                 >-< comment ["Tag constants"]
@@ -123,6 +127,7 @@ SEM Function
                                 >-< methodFooter @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name)
 
                 lhs.protoC    = methodHead (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters) >|< ";"
+                body.functionname = hsnShowAlphanumeric @name
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
@@ -131,7 +136,7 @@ SEM Statement
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
   | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyTE
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
-  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name)
+  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
   | Return      lhs.prettyC   = returnFromSillyFunction @retdiff @lhs.optOwn
   | Label       lhs.prettyC   = label @name
   | Smart       lhs.prettyC   = error "Statement_Smart found while generating C"
@@ -228,7 +233,8 @@ declareName tp nm
 
 trace :: String -> PP_Doc
 trace s
- = text ("printf(\"" ++ s ++ " SP=%d (%d)\\n\", SP, SP-Stack); fflush(stdout);")
+-- = text ("printf(\"" ++ s ++ " SP=%d (%d)\\n\", SP, SP-Stack); fflush(stdout);")
+   = text ("printf(\"" ++ s ++            "\\n\"              ); fflush(stdout);")
 
 caseDefault :: PP_Doc -> PP_Doc
 caseDefault x
@@ -315,7 +321,7 @@ methodHeader optOwn optTrace nm params
 
 methodFooter :: Int -> Bool -> String -> PP_Doc
 methodFooter optOwn optTrace nm
- | optOwn<=2 =  ppWhen optTrace (trace ("leave "++init (tail (show nm))))
+ | optOwn<=2 =  ppWhen (False && optTrace) (trace ("leave "++init (tail (show nm))))
                 >-< text "}"
                 >-< text ""
  | optOwn>=3 = text ""
@@ -332,8 +338,8 @@ jumpPrepare :: PP_Doc
 jumpPrepare
  =  pp machDepCForTailcallEnter
 
-jumpSillyFunctionFromSilly :: Int -> String -> PP_Doc
-jumpSillyFunctionFromSilly optOwn nm
+jumpSillyFunctionFromSilly :: Int -> String -> Bool -> String -> PP_Doc
+jumpSillyFunctionFromSilly optOwn nm optTraceCall functionname
  | optOwn<=2 = ppWhen optTraceAssign
                       (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
  	           >-< machDepCForTailcallLeave1
@@ -367,7 +373,10 @@ assignment v e
 
 switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef scrutinee body
- = "switch ("
+ = 
+    ppWhen optTraceAssign
+              (" printf(\"switch" >#< show scrutinee >#< " : %d \\n\", " >#< show scrutinee >#<  "); fflush(stdout);")
+   >-< "switch ("
    >|< scrutinee
    >|< ")"
    >#< "{"
@@ -377,7 +386,9 @@ switch optDef scrutinee body
 
 ifstat ::  PP_Doc -> PP_Doc -> PP_Doc
 ifstat scrutinee body
- = "if ("
+ =     ppWhen optTraceAssign
+              (" printf(\"if" >#< show scrutinee >#< " : %d \\n\", " >#< show scrutinee >#<  "); fflush(stdout);")
+   >-< "if ("
    >|< scrutinee
    >|< " & 1)"
    >-< body

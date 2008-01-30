@@ -172,13 +172,15 @@ envChanges equat env heap
                    ; exc <-  if    n<needs
                              then  return AbsBottom
                              else  readArray env (funnr+1)
-                   ; return  (if    n>needs
-                              then  ([],AbsBottom)  -- too many arguments
-                              else  (maybe (sfx, res)
-                                           (\ev -> ((ev,exc):sfx, res))
-                                           mbev
-                                    )
-                             )
+                   ; if    n>needs
+                     then  do 
+                           { (sfx2,res2) <- absApply res (drop n args) mbev
+                              ; return (take n sfx ++ sfx2, res2) 
+                           }
+                     else  return (maybe (sfx, res)
+                                         (\ev -> ((ev,exc):sfx, res))
+                                         mbev
+                                  )
                    }
 %%]
 
@@ -226,7 +228,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
        ; let procEnv equat
                 = do
                   { 
-                  -- ah <- getAssocs heap
+                  --ah <- getAssocs heap
                   --; ae  <- getAssocs env
                   --; _ <- trace ("equat " ++ show equat) (return ())
                   --; _ <- (if moniEqua equat then trace (unlines ("SOLUTION"      : map show ae)) else id)  $ return ()
@@ -310,6 +312,7 @@ limit env heap ts (AbsLocs ps m)
                   ; return (case lans of
                              AbsNodes ns2 -> (not (Map.null ns2))
                              AbsBottom    -> False
+                             _            -> False
                            )
                   }
       ; ps2 <- filterM validPtr (Set.toList ps)

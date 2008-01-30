@@ -15,7 +15,8 @@ SEM GrVal
 %%]]
 
 SEM GrExpr
-  | Seq         loc         .   gathBodyFviMp   =   @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
+  | Seq         loc         .   gathBodyFviMp   :   {FvInfoMp}
+                loc         .   gathBodyFviMp   =   @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
                             .   gathFviMp       =   fviMpUnions [@expr.gathFviMp, @gathBodyFviMp]
   | Call App    loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton' FvUse_Call @nm, @argL.gathFviMp]
   | FFI         loc         .   gathFviMp       =   @argL.gathFviMp
