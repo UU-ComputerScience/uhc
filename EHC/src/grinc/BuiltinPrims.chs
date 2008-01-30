@@ -83,11 +83,11 @@ mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                    where (deref,src,imm)
                            = case ldsrc of
-                               LoadSrc_TOS       -> (InsOp_Deref_One , InsOp_LocOSrc_TOS, 0)
-                               LoadSrc_TOS_Rel o -> (InsOp_Deref_One , InsOp_LocOSrc_SP , toInteger $ nrWord2Byte o)
-                               LoadSrc_Reg_Rel o -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
-                               LoadSrc_Imm     c -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
-                               LoadSrc_Imm_Int c -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
+                               LoadSrc_TOS         -> (InsOp_Deref_One , InsOp_LocOSrc_TOS, 0)
+                               LoadSrc_TOS_Rel o 1 -> (InsOp_Deref_One , InsOp_LocOSrc_SP , toInteger $ nrWord2Byte o)
+                               LoadSrc_Reg_Rel o 1 -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
+                               LoadSrc_Imm     c   -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
+                               LoadSrc_Imm_Int c   -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
   where g@(GrValIntroAlt_OnTOS ins1 inc1 _) = gviLd optim env modNmConstInx stkDepth a1
           
           

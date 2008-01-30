@@ -1095,7 +1095,7 @@ sts d       =   s1tt   d            -- pop tos content into displacement d relat
 
 \begin{GrinEncoding}{|iop2(ot)(dt)(od)(i)(os)(x)|}
  &
-|101 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(dt)(1)(0) ^ ixx1(od)(0)| &
+|110 ^ ixxjuxt(ot)(1)(0) ^ ixxjuxt(dt)(1)(0) ^ ixx1(od)(0)| &
 |00 ^ ixxjuxt(i)(1)(0) ^^ ixxjuxt(os)(1)(0) ^ ixxjuxt(x)(1)(0)| &
 ... &
 \\
@@ -1904,7 +1904,7 @@ To tie the knot for mutual recursive structures on a non-global level (linking s
 ... &
 \\
 \end{GrinEncoding}
-%%]
+
 
 \subsubsection{Halt}
 
@@ -1915,7 +1915,7 @@ To tie the knot for mutual recursive structures on a non-global level (linking s
  &
 \\
 \end{GrinEncoding}
-%%]
+
 
 \subsubsection{Reset thrown exception}
 
@@ -1929,6 +1929,74 @@ The variable is used to indicate exception handling throughout C primitive calls
  &
 \\
 \end{GrinEncoding}
+
+
+\subsubsection{Convert from tagged int to untagged int representation (plain word)}
+
+\begin{GrinEncoding}{|ci2w|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1100| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ci2w : gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Convert from untagged int representation (plain word) to tagged int}
+
+\begin{GrinEncoding}{|cw2i|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1101| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |cw2i : gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
 %%]
 
 %%[grinBExampleTranslations

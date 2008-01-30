@@ -231,7 +231,9 @@ defaultOptimEffect = OptimEffect {- False -}
 
 %%[8 hs export(ValAccess(..),ValAccessGam)
 data ValAccess
-  = Val_LocalOffset     StackDepth
+  = Val_Local           { vaStackDepth :: StackDepth, vaBasicAnnot :: BasicAnnot }		-- value on the stack
+  | Val_NodeTagLocal    { vaStackDepth :: StackDepth }									-- tag of node on the stack
+  | Val_NodeFldLocal    { vaStackDepth :: StackDepth, vaBasicAnnot :: BasicAnnot }		-- field 0 of node on the stack
   | Val_Int             Integer
   | Val_GlobEntry       { vaEntryInx :: Int }
 %%[[20
@@ -283,21 +285,26 @@ nmEnvLookup nm env
 
 %%[8 hs export(LoadSrc(..))
 data LoadSrc
-  = LoadSrc_TOS
-  | LoadSrc_Imm         { ldsrcImm      :: !Integer      }
-  | LoadSrc_Imm_Int     { ldsrcImm      :: !Integer      }
-  | LoadSrc_TOS_Rel     { ldsrcOff      :: !StackDepth   }
-  | LoadSrc_Reg_Rel     { ldsrcOff      :: !StackDepth   }
+  = LoadSrc_TOS         
+  | LoadSrc_Imm         { ldsrcImm      :: !Integer                            }
+  | LoadSrc_Imm_Int     { ldsrcImm      :: !Integer                            }
+  | LoadSrc_TOS_Rel     { ldsrcOff      :: !StackDepth   , ldsrcNrWords :: Int }
+  | LoadSrc_TOS_Tag
+  | LoadSrc_Reg_Rel     { ldsrcOff      :: !StackDepth   , ldsrcNrWords :: Int }
   deriving (Show)
 
 ldsrc2ins' :: (Instr -> Instr) -> LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins' instrann s
   = case s of
-      LoadSrc_TOS       -> (Seq.empty,0)
-      LoadSrc_TOS_Rel o -> (Seq.singleton $ instrann $ ldl  o,nrValWords)
-      LoadSrc_Reg_Rel o -> (Seq.singleton $ instrann $ l1tr o,nrValWords)
-      LoadSrc_Imm     c -> (Seq.singleton $ instrann $ ldc  c,nrValWords)
-      LoadSrc_Imm_Int c -> (Seq.singleton $ instrann $ ldi  c,nrValWords)
+      LoadSrc_TOS          -> (Seq.empty                          ,0         )
+      LoadSrc_TOS_Rel  o n -> (Seq.fromList  $ ann      $ ldlm n o,n         )
+      LoadSrc_TOS_Tag      -> (Seq.singleton $ instrann $ ldnt    ,nrValWords)
+      LoadSrc_Reg_Rel  o n -> (Seq.fromList  $ ann      $ ldrm n o,n         )
+      LoadSrc_Imm      c   -> (Seq.singleton $ instrann $ ldc  c  ,nrValWords)
+      LoadSrc_Imm_Int  c   -> (Seq.singleton $ instrann $ ldi  c  ,nrValWords)
+  where ldlm n o = replicate n (ldl o)
+        ldrm n o = [ l1tr o' | o' <- [o..o+n-1] ]
+        ann (h:t) = instrann h : t
 
 ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins = ldsrc2ins' id
@@ -322,16 +329,28 @@ nmLd' optim env modNmConstInx stkDepth nm
   = case nmEnvLookup nm env of
       mva@(Just va)
         -> case va of
-             Val_LocalOffset o
-               -> (mva,Load Seq.empty 0 (if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off))
+             Val_Local o annot
+               -> (mva,Load Seq.empty 0 src)
                where off = stkDepth - o
+                     (src)
+                         = case annot of
+                             BasicAnnot_Size bsz
+                               | bsz == Cfg.sizeofGrWord
+                                           -> srcDflt
+                             BasicAnnot_Dflt -> srcDflt
+                         where srcDflt = if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off (nrByte2Word $ basicAnnotSizeInBytes annot)
+             Val_NodeTagLocal o
+               -> (mva,Load l s LoadSrc_TOS_Tag)
+               where (l,s) = if o == 0 then (Seq.empty,0) else (Seq.singleton $ ldl o,nrValWords)
+             Val_NodeFldLocal o annot
+               -> (mva,Load (Seq.singleton $ ldlr o) 0 (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word $ basicAnnotSizeInBytes annot))
              Val_Int i
                -> (mva,Load Seq.empty 0 (LoadSrc_Imm_Int i))
              Val_GlobEntry o
                -> (mva,Load (Seq.singleton $ instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
 %%[[20
              Val_ImpEntry mo eo
-               -> (mva,Load (Seq.fromList [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel $ eo+nrValWords))
+               -> (mva,Load (Seq.fromList [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) 0 (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords))
 %%]]
       _ -> (Nothing,Load (Seq.singleton $ instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
 %%]
@@ -340,10 +359,10 @@ nmLd' optim env modNmConstInx stkDepth nm
 vaAndLd2Ins :: OptimCtxt -> HsName -> (Maybe ValAccess,Load) -> (InsSeq,StackDepth)
 vaAndLd2Ins optim nm vald
   = case vald of
-      (Just (Val_LocalOffset _),Load pins pdep LoadSrc_TOS)
+      (Just (Val_Local _ _),Load pins pdep LoadSrc_TOS)
         | not (ocxOmitTOSLd optim)
           -> (pins Seq.:++: ins,pdep + dep)
-          where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse nm) (LoadSrc_TOS_Rel 0)
+          where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse nm) (LoadSrc_TOS_Rel 0 nrValWords)
       (_,Load pins pdep ls)
           -> (pins Seq.:++: ins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (instrann $ show ls) ls
@@ -462,7 +481,14 @@ mask2 x = pow2 x - 1
 nrWord2Byte :: Integral c => c -> c
 nrWord2Byte sz
   = sz * wSz
-  where wSz = fromInteger Cfg.sizeofGrWord
+  where wSz = fromInteger Cfg.sizeofGrWordAsInteger
+%%]
+
+%%[8 hs export(nrByte2Word)
+nrByte2Word :: Integral c => c -> c
+nrByte2Word sz
+  = (sz-1) `div` wSz + 1
+  where wSz = fromInteger Cfg.sizeofGrWordAsInteger
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -525,15 +551,23 @@ ld ind locB locE c
   = Instr_Ld ind locB locE s i
   where (s,i) = imm c
 
+-- load constant on TOS
 ldc :: Integral c => c -> Instr
 ldc = ld InsOp_Deref_Zero InsOp_LocB_TOS InsOp_LocE_Imm
 
+-- load integer constant on TOS
 ldi :: Integral c => c -> Instr
 ldi = ld InsOp_Deref_Int InsOp_LocB_TOS InsOp_LocE_Imm
 
+-- load local relative to SP on TOS
 ldl :: Integral c => c -> Instr
 ldl c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_SP (nrWord2Byte c)
 
+-- load local relative to SP in reg
+ldlr :: Integral c => c -> Instr
+ldlr c = ld InsOp_Deref_One InsOp_LocB_Reg InsOp_LocE_SP (nrWord2Byte c)
+
+-- load relative to reg on TOS
 l1tr :: Integral c => c -> Instr
 l1tr c = ld InsOp_Deref_One InsOp_LocB_TOS InsOp_LocE_Reg (nrWord2Byte c)
 
@@ -663,6 +697,18 @@ op :: Integral c => InsOp_TyOp -> InsOp_DataOp -> InsOp_LocODst -> InsOp_Deref -
 op opTy opndTy locDst ind locSrc c
   = Instr_Op opTy opndTy locDst ind locSrc s1 i1
   where (s1,i1) = imm c
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: conversion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+ci2w :: Instr
+ci2w = Instr_CvtInt2Word
+
+cw2i :: Instr
+cw2i = Instr_CvtWord2Int
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

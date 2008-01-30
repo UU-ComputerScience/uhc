@@ -116,10 +116,10 @@ DATA GrPatLam
   | Empty
   | Var         nm              : {HsName}
   | VarNode     fldL            : GrVarL
-  | BasicNode   size            : {Int}
+  | BasicNode   annot           : {BasicAnnot}
                 nm              : {HsName}
   | EnumNode    nm              : {HsName}
-  | BasicAnnot  size            : {Int}
+  | BasicAnnot  annot           : {BasicAnnot}
                 nm              : {HsName}
   | EnumAnnot   tagL            : GrTagL
                 nm              : {HsName}
@@ -143,7 +143,6 @@ DATA GrTag
 
 TYPE GrTagL     =   [GrTag]
 %%]
-
 
 %%[10
 DATA GrSplit
