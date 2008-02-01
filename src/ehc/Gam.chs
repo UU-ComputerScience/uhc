@@ -762,6 +762,7 @@ data DataGamInfo
 %%[[8
       , dgiFldInConstrMp	:: !DataFldInConstrMp
       , dgiIsNewtype 		:: !Bool
+      , dgiMaxConstrArity   :: !Int
 %%]]
       }
 
@@ -779,9 +780,10 @@ mkDGI tyNm dty cNmL m nt
 %%]]
       m
 %%[[8
-      fm nt
+      fm nt mx
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
+        mx = if Map.null m then 0 else (ctagMaxArity $ dtiCTag $ head $ Map.elems m)
 %%]]
 %%]
 
@@ -1104,7 +1106,7 @@ instance ForceEval DataFldInConstr where
 %%]]
 
 instance ForceEval DataGamInfo where
-  forceEval x@(DataGamInfo n t nl tm cm nt) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
+  forceEval x@(DataGamInfo n t nl tm cm nt mx) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
 %%[[101
   fevCount (DataGamInfo n t nl tm cm nt) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt]
 %%]]

@@ -214,6 +214,11 @@ PRIM GB_Word gb_primAddInt( GB_Word x, GB_Word y )
   	return GB_Int_Add(x,y);
 }
 
+PRIM GB_Word gb_priv_primAddInt( GB_Word x, GB_Word y )
+{
+  	return x+y;
+}
+
 PRIM GB_Word gb_primSubInt( GB_Word x, GB_Word y )
 {
 	IF_GB_TR_ON(3,printf("gb_primSubInt %d(%d)-%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Sub(x,y)), GB_Int_Sub(x,y) );) ;

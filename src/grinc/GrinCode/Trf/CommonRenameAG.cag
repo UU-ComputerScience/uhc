@@ -59,13 +59,20 @@ SEM GrPatAlt
 %%]]
 
 SEM GrPatLam
-  | Var         lhs         .   trf             =   GrPatLam_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+  | Var         lhs         .   trf             =   GrPatLam_Var (nmAliasRepl @lhs.nmAliasMp @nm)
+  | BasicNode	lhs			.	trf				=	GrPatLam_BasicNode @annot (nmAliasRepl @lhs.nmAliasMp @nm)
+  | EnumNode	lhs			.	trf				=	GrPatLam_EnumNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | BasicAnnot	lhs			.	trf				=	GrPatLam_BasicAnnot @annot (nmAliasRepl @lhs.nmAliasMp @nm)
+  | EnumAnnot	lhs			.	trf				=	GrPatLam_EnumAnnot @tagL.trf (nmAliasRepl @lhs.nmAliasMp @nm)
+  | Annot		lhs			.	trf				=	GrPatLam_Annot @tagL.trf (nmAliasRepl @lhs.nmAliasMp @nm)
 
 SEM GrVar
   | Var         lhs         .   trf             =   GrVar_Var $ nmAliasRepl @lhs.nmAliasMp @nm
 
 SEM GrVal
   | Var         lhs         .   trf             =   GrVal_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+  | BasicNode	lhs			.	trf				=	GrVal_BasicNode @tag.trf (nmAliasRepl @lhs.nmAliasMp @nm)
+  | EnumNode	lhs			.	trf				=	GrVal_EnumNode (nmAliasRepl @lhs.nmAliasMp @nm)
 %%[[10
   | NodeAdapt   lhs         .   trf             =   GrVal_NodeAdapt (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
 %%]]
