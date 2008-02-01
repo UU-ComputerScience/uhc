@@ -12,15 +12,15 @@ parameterised with a function telling whether a node represents an unboxed value
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.Unbox}
+%%[8 hs module {%{GRIN}GrinCode.Trf.MayLiveUnboxed}
 %%]
 
 %%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 hs export(grUnbox)
-grUnbox :: (GrTag -> Unbox) -> GrModule -> GrModule
-grUnbox tagAllowsUnboxedLife grmod
+%%[8 hs export(grMayLiveUnboxed)
+grMayLiveUnboxed :: (GrTag -> Unbox) -> GrModule -> GrModule
+grMayLiveUnboxed tagAllowsUnboxedLife grmod
   = trf_Syn_GrAGItf t
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf

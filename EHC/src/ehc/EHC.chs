@@ -28,7 +28,7 @@
 %%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
 %%]
 
-%%[8 import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim},{%{GRIN}GrinCode.Trf.UnusedNameElim},{%{GRIN}GrinCode.Trf.AliasElim},{%{GRIN}GrinCode.Trf.Unbox},{%{GRIN}GrinCode.Trf.FlattenSeq},{%{GRIN}GrinCode.Trf.EvalElim},{%{GRIN}GrinCode.Trf.Inline})
+%%[8 import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim},{%{GRIN}GrinCode.Trf.UnusedNameElim},{%{GRIN}GrinCode.Trf.AliasElim},{%{GRIN}GrinCode.Trf.MayLiveUnboxed},{%{GRIN}GrinCode.Trf.FlattenSeq},{%{GRIN}GrinCode.Trf.EvalElim},{%{GRIN}GrinCode.Trf.Inline})
 %%]
 
 %%[8 import ({%{GRIN}GrinByteCode.ToC}, qualified {%{GRIN}GrinByteCode} as GrinBC)
@@ -1325,7 +1325,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                               nme  = ( grUnusedNameElim , "unused name elim" )
                               eve  = ( grEvalElim  , "eval elim" )
                               mte  = ( grUnusedMetaInfoElim  , "meta info elim" )
-                              unb  = if ehcOptPriv opts then [] else [( grUnbox GrinBC.tagAllowsUnboxedLife  , "unbox" )]
+                              unb  = {- if ehcOptPriv opts then [] else -} [( grMayLiveUnboxed GrinBC.tagAllowsUnboxedLife  , "unbox" )]
                  optGrinNormal
                         = map fst optGrin
                  optGrinDump

@@ -107,6 +107,7 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 data BasicAnnot
   = BasicAnnot_Size        Int
   | BasicAnnot_FromTaggedPtr
+  | BasicAnnot_ToTaggedPtr
   | BasicAnnot_Dflt
   deriving (Show,Eq)
 
@@ -125,6 +126,7 @@ basicAnnotSizeInBytes (BasicAnnot_Dflt           ) = Cfg.sizeofWord
 instance PP BasicAnnot where
   pp (BasicAnnot_Size          s) = pp s
   pp (BasicAnnot_FromTaggedPtr  ) = pp "annotfromtaggedptr"
+  pp (BasicAnnot_ToTaggedPtr    ) = pp "annottotaggedptr"
   pp (BasicAnnot_Dflt           ) = pp "annotdflt"
 %%]
 

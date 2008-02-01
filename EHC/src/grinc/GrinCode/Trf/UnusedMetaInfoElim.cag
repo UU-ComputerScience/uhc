@@ -47,5 +47,9 @@ SEM GrModule
 
 SEM GrExpr
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf []
+
+SEM GrPatLam
+  | Annot       lhs         .   trf             =   GrPatLam_Annot [] @nm
+  | EnumAnnot   lhs         .   trf             =   GrPatLam_EnumAnnot [] @nm
 %%]
 

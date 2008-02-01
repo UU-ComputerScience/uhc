@@ -317,6 +317,11 @@ ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins = ldsrc2ins' id
 %%]
 
+%%[8 hs
+instance PP LoadSrc where
+  pp = pp . show
+%%]
+
 %%[8 hs export(Load(..))
 data Load
   = Load
@@ -326,20 +331,20 @@ data Load
       , ldPostIns       :: !InsSeq
       }
 
-loadWithPrePostFrom :: InsSeq -> StackDepth -> LoadSrc -> InsSeq -> Load
-loadWithPrePostFrom pre presz s post = Load pre presz s post
+loadWithPrePostFrom :: [Instr] -> StackDepth -> LoadSrc -> [Instr] -> Load
+loadWithPrePostFrom pre presz s post = Load (Seq.fromList pre) presz s (Seq.fromList post)
 
-loadWithPreFrom :: InsSeq -> StackDepth -> LoadSrc -> Load
-loadWithPreFrom pre presz s = loadWithPrePostFrom pre presz s Seq.empty
+loadWithPreFrom :: [Instr] -> StackDepth -> LoadSrc -> Load
+loadWithPreFrom pre presz s = loadWithPrePostFrom pre presz s []
 
-loadWithPre0From :: InsSeq -> LoadSrc -> Load
+loadWithPre0From :: [Instr] -> LoadSrc -> Load
 loadWithPre0From pre s = loadWithPreFrom pre 0 s
 
-loadWithPost0From :: LoadSrc -> InsSeq -> Load
-loadWithPost0From s post = loadWithPrePostFrom Seq.empty 0 s post
+loadWithPost0From :: LoadSrc -> [Instr] -> Load
+loadWithPost0From s post = loadWithPrePostFrom [] 0 s post
 
 loadFrom :: LoadSrc -> Load
-loadFrom s = loadWithPreFrom Seq.empty 0 s
+loadFrom s = loadWithPreFrom [] 0 s
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -353,30 +358,32 @@ nmLd' optim env modNmConstInx stkDepth nm
       mva@(Just va)
         -> case va of
              Val_Local o annot
-               -> (mva,loadWithPost0From src post)
+               -> (mva,loadWithPrePostFrom [meta' AnnIdUse (nm >#< annot >#< src)] 0 src post)
                where (src,post)
                          = case annot of
-                             BasicAnnot_FromTaggedPtr    -> (srcDflt Cfg.sizeofGrWord ,Seq.singleton ci2w)
-                             BasicAnnot_Size bsz         -> (srcDflt bsz,Seq.empty)
-                             BasicAnnot_Dflt             -> (srcDflt Cfg.sizeofGrWord ,Seq.empty)
+                             BasicAnnot_FromTaggedPtr    -> (srcDflt Cfg.sizeofGrWord ,[ci2w])
+                             BasicAnnot_ToTaggedPtr      -> (srcDflt Cfg.sizeofGrWord ,[])
+                             BasicAnnot_Size bsz         -> (srcDflt bsz,[])
+                             BasicAnnot_Dflt             -> (srcDflt Cfg.sizeofGrWord ,[])
                          where srcDflt n = offSrc (stkDepth - o) (nrByte2Word n)
              Val_NodeTagLocal o
                -> (mva,loadFrom (offSrc (stkDepth - o) nrValWords))
              Val_NodeFldLocal o annot
                -> (mva,l)
                where l   = case annot of
-                             BasicAnnot_FromTaggedPtr    -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) (Seq.singleton ci2w)
-                             BasicAnnot_Size bsz         -> loadWithPre0From (Seq.singleton $ ldlr o) (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
+                             BasicAnnot_FromTaggedPtr    -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [ci2w]
+                             BasicAnnot_ToTaggedPtr      -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [cw2i]
+                             BasicAnnot_Size bsz         -> loadWithPre0From [ldlr o] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
                              _                           -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
                -> (mva,loadFrom (LoadSrc_Imm_Int i))
              Val_GlobEntry o
-               -> (mva,loadWithPreFrom (Seq.singleton $ instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)) nrValWords LoadSrc_TOS)
+               -> (mva,loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)] nrValWords LoadSrc_TOS)
 %%[[20
              Val_ImpEntry mo eo
-               -> (mva,loadWithPre0From (Seq.fromList [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)]) (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords))
+               -> (mva,loadWithPre0From [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)] (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords))
 %%]]
-      _ -> (Nothing,loadWithPreFrom (Seq.singleton $ instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth) nrValWords LoadSrc_TOS)
+      _ -> (Nothing,loadWithPreFrom [instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth] nrValWords LoadSrc_TOS)
   where offSrc off sz = if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off sz
 %%]
 
@@ -384,10 +391,10 @@ nmLd' optim env modNmConstInx stkDepth nm
 vaAndLd2Ins :: OptimCtxt -> HsName -> (Maybe ValAccess,Load) -> (InsSeq,StackDepth)
 vaAndLd2Ins optim nm vald
   = case vald of
-      (Just (Val_Local _ _),Load pins pdep LoadSrc_TOS postins)
+      (Just (Val_Local _ annot),Load pins pdep LoadSrc_TOS postins)
         | not (ocxOmitTOSLd optim)
           -> (pins Seq.:++: ins Seq.:++: postins,pdep + dep)
-          where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse nm) (LoadSrc_TOS_Rel 0 nrValWords)
+          where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse (nm >#< annot)) (LoadSrc_TOS_Rel 0 nrValWords)
       (_,Load pins pdep ls postins)
           -> (pins Seq.:++: ins Seq.:++: postins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (instrann $ show ls) ls
@@ -410,6 +417,7 @@ data GrValIntro
   | GrValIntro_Str   !String !Link
   | GrValIntro_Grp   !GrTag ![GrValIntro]
   | GrValIntro_Basic !GrTag !HsName
+  | GrValIntro_Enum  !HsName
   | GrValIntro_None
 %%]
 
@@ -442,13 +450,21 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect
               GrValIntro_Int i
                 -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (loadFrom $ LoadSrc_Imm_Int i)
+              GrValIntro_Enum nm
+                -> case mbva of
+                     Just va | vaHasAnnot va
+                       -> case vaBasicAnnot va of
+                            BasicAnnot_Dflt        -> basicAnnotDflt nm
+                            BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
+                            _                      -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
+                     _ -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Nothing"
+                where ml@(mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Basic gtag nm
                 -> case mbva of
                      Just va | vaHasAnnot va
                        -> case vaBasicAnnot va of
-                            BasicAnnot_FromTaggedPtr
-                              -> GrValIntroAlt_OnTOS (ins Seq.::+: cw2i) inc defaultOptimEffect
-                              where (ins,inc) = vaAndLd2Ins optim nm ml
+                            BasicAnnot_Dflt        -> basicAnnotDflt nm
+                            BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
                             BasicAnnot_Size _
                               -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
                               where (ins,inc) = vaAndLd2Ins optim nm ml
@@ -468,6 +484,12 @@ gviLd' optim env modNmConstInx stkDepth intro
                       (sins,sinc) = ndStore (allocInc + inc + tinc)
               _ -> dflt
           where dep' = stkDepth + dfltInc
+                basicAnnotDflt nm
+                  = GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
+                  where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
+                basicAnnotTaggedPtr nm ml
+                  = GrValIntroAlt_OnTOS (ins Seq.::+: cw2i) inc defaultOptimEffect
+                  where (ins,inc) = vaAndLd2Ins optim nm ml
 
 gviLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd optim env modNmConstInx stkDepth intro
@@ -744,7 +766,7 @@ op opTy opndTy locDst ind locSrc c
 %%% Constructing: conversion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(ci2w)
 ci2w :: Instr
 ci2w = Instr_CvtInt2Word
 
