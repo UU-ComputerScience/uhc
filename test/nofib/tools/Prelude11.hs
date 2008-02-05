@@ -647,8 +647,8 @@ odd              =  not . even
 
 -- gcd :: Integral a => a -> a -> a
 gcd x y         = gcd' (abs x) (abs y)
-                  where gcd' x 0 = x
-                        gcd' x y = gcd' y (x `rem` y)
+                  where gcd' x y | y==0      = x
+                                 | otherwise = gcd' y (x `rem` y)
 
 elem, notElem    :: Eq a => a -> [a] -> Bool
 elem              = any . (==)

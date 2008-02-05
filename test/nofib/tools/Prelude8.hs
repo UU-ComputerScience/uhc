@@ -381,8 +381,8 @@ even n           =  n `rem` 2 == 0
 odd              =  not . even
 
 gcd x y         = gcd' (abs x) (abs y)
-                  where gcd' x 0 = x
-                        gcd' x y = gcd' y (x `rem` y)
+                  where gcd' x y | y==0      = x
+                                 | otherwise = gcd' y (x `rem` y)
 
 abs x        | x >= 0    = x
              | otherwise = -x
