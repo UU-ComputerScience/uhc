@@ -1,3 +1,6 @@
+Obsolete transformation, replaced by SetGrinInvariant
+
+
 Make sure a Bind always returns a node (not a pointer)
 Also, make sure that a Case always scrutinizes a node.
 If not, add an extra Fetch to fetch the contents of a pointer.

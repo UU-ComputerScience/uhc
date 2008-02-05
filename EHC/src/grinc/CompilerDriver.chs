@@ -51,7 +51,9 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.AddFetch})
+--%%[8 import({%{GRIN}GrinCode.Trf.AddFetch})
+--%%]
+%%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.ModeCheck})
 %%]
@@ -146,17 +148,15 @@ caLoad doParse = task_ VerboseNormal                "Loading"
          ; caWriteGrin           True               "11-cleaned"
          ; transformCodeUnq      buildAppBindings   "Renaming lazy apply tags"
          ; caWriteGrin           True               "12-renamed"
-         --; code <- gets gcsGrin
-         --; let mess = checkMode code
-         --; trace (unlines ("MESSAGES":mess)) (return ())
-         ; transformCodeUnq      addFetch           "Adding fetches"
-         
+         ; transformCode         setGrinInvariant   "SetGrinInvariant"
+         ; caWriteGrin           True               "13-invariant"
+         --; transformCodeUnq      addFetch           "Adding fetches"
+         --; caWriteGrin           True               "14-fetchadded"
          ; code <- gets gcsGrin
          ; let mess = checkMode code
          ; trace (unlines ("Metatype checking after patch":mess)) (return ())
          --; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
-         
-         ; caWriteGrin           True               "13-fetchadded"
+         --; when (True) (error (unlines ("GRIN variable metatype invariant violated":mess)))
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
          ; caWriteGrin           True               "19-numbered"
          }

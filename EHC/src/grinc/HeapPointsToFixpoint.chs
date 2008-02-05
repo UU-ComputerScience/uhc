@@ -174,8 +174,8 @@ envChanges equat env heap
                              else  readArray env (funnr+1)
                    ; if    n>needs
                      then  do 
-                           { (sfx2,res2) <- absApply res (drop n args) mbev
-                              ; return (take n sfx ++ sfx2, res2) 
+                           { (sfx2,res2) <- absApply res (drop needs args) mbev
+                              ; return (take needs sfx ++ sfx2, res2) 
                            }
                      else  return (maybe (sfx, res)
                                          (\ev -> ((ev,exc):sfx, res))
@@ -211,7 +211,7 @@ procChange arr (i,e1) =
 
 --moniEqua (IsEvaluation d _ _) = d==5230
 --moniEqua (IsApplication d _ _) = d==788
-moniEqua _ = False
+moniEqua _ = True
 
 solveEquations :: Int -> Int -> Equations -> HeapEquations -> Limitations -> (Int,HptMap)
 solveEquations lenEnv lenHeap eqs1 eqs2 lims =
@@ -230,9 +230,9 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
                   { 
                   --ah <- getAssocs heap
                   --; ae  <- getAssocs env
-                  --; _ <- trace ("equat " ++ show equat) (return ())
                   --; _ <- (if moniEqua equat then trace (unlines ("SOLUTION"      : map show ae)) else id)  $ return ()
                   --; _ <- (if moniEqua equat then trace (unlines ("HEAPSOLUTION"  : map show ah)) else id)  $ return ()
+                  --; _ <- trace ("equat " ++ show equat) (return ())
                   ; cs <- envChanges equat env heap
                   --; _ <- trace ("changes " ++ show cs) (return ())
                   ; bs <- mapM (procChange env) cs

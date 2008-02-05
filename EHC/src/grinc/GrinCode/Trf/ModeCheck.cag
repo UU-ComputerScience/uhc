@@ -49,55 +49,51 @@ check env nm mode
             (checkMd (show nm) mode)
             (Map.lookup nm env) 
             
-unifyModes :: [Mode] -> (Mode, [String])
-unifyModes [] = (ModeUnknown, [])
-unifyModes (m:ms) = (m, concatMap (checkMd "unification" m) ms)
+unifyModes :: String -> [Mode] -> (Mode, [String])
+unifyModes s [] = (ModeUnknown, [])
+unifyModes s (m:ms) = (m, concatMap (checkMd ("case alternatives have unbalanced modes " ++ s ++ show (m:ms)) m) ms)
 }
 
 
 ATTR GrAGItf
      GrModule
-     GrBindL
-     GrBind
-     GrExpr
+     AllBind
+     AllGrExpr
      GrPatLam
-     GrVal
-     GrValL   
-     GrAlt
-     GrAltL   [ | | messages USE {++} {[]} : {[String]} ]
+     AllGrVal  [ | | messages USE {++} {[]} : {[String]} ]
 
 ATTR GrExpr
      GrAlt
-     GrVal    [ | | derivedMode : {Mode} ]
+     GrVal     [ | | derivedMode : {Mode} ]
 
 ATTR GrAltL
-     GrValL   [ | | derivedModes : {[Mode]} ]
+     GrValL    [ | | derivedModes : {[Mode]} ]
 
-ATTR GrBindL
-     GrBind
-     GrExpr
-     GrAltL
-     GrAlt
-     GrValL
-     GrVal    [ env : {Env} | | ]
+ATTR AllBind
+     AllGrExpr
+     AllGrVal  
+     AllGrPat  [ env : {Env} | | ]
 
 ATTR GrPatLam 
-     GrPatAlt [ inMode : Mode | | bindings : {[(HsName,Mode)]} ]
+     GrPatAlt  [ inMode : Mode | | bindings : {[(HsName,Mode)]} ]
      
 ATTR GrGlobal
      GrGlobalL [ | | bindings USE {++} {[]} : {[(HsName,Mode)]} ]
 
-ATTR GrVar GrVarL [ | | vars USE {++} {[]} : {[HsName]} ]
+ATTR GrVar 
+     GrVarL 
+%%[[10
+     AllSplit
+%%]     
+               [ | | vars USE {++} {[]} : {[HsName]} ]
 
 
 ATTR GrTag
      GrValL
-     GrVal    [ | | text : {String} ]
+     GrVal     [ | | text : {String} ]
 
-ATTR GrExpr
-     GrPatLam
-     GrAltL
-     GrAlt    [ inFun : {String} | | ]
+ATTR AllGrExpr
+     GrPatLam  [ inFun : {String} | | ]
 
 
 SEM GrModule
@@ -128,6 +124,9 @@ SEM GrVal
   | BasicNode lhs.text = @tag.text ++ show @nm
   | EnumNode  lhs.text = show @nm
   | VarNode   lhs.text = @fldL.text
+%%[[10
+  | NodeAdapt lhs.text = "NodeAdapt"
+%%]]
   
 SEM GrValL
   | Nil       lhs.text = ""
@@ -141,7 +140,7 @@ SEM GrExpr
   | UpdateUnit   lhs.derivedMode = @val.derivedMode
                  lhs.messages    = check @lhs.env @nm ModeLocOrBas
   | Case         (lhs.derivedMode
-                 ,loc.mes     )  = unifyModes @altL.derivedModes
+                 ,loc.mes     )  = unifyModes (@val.text) @altL.derivedModes
                  lhs.messages    = checkMd (@lhs.inFun ++ "Case " ++ @val.text) ModeNode @val.derivedMode ++ @loc.mes ++ @altL.messages
   | FetchNode    lhs.derivedMode = ModeNode
                  lhs.messages    = check @lhs.env @nm ModeLocOrBas
@@ -232,13 +231,19 @@ SEM GrVar
   | KnownTag
     Ignore      lhs.vars        = []
 
+%%[[10
+SEM GrSplit
+  | Sel         lhs.vars        = [ @nm ]
+%%]]
+
+
 SEM GrPatAlt
   | LitInt
     Tag         
     Otherwise   lhs.bindings    = []
   | Node        lhs.bindings    = zip @fldL (repeat ModeLocOrBas)
 %%[[10
-  | NodeSplit   lhs.bindings    = undefined -- zip (@nm : @fldL) (repeat ModeLocOrBas) -- does not compile: Jeroen
+  | NodeSplit   lhs.bindings    = zip (@nm : @fldL.vars) (repeat ModeLocOrBas)
 %%]]
 
 

@@ -1316,7 +1316,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                                     ++ mk [ nme ]
                                     )
                           else if ehcOptFullProgGRIN opts
-                               then []
+                               then mk [ flt ]
                                else mk ([ mte ] ++ unb ++ [ flt ])
                         where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
                               evel = [ flt, ale, eve, ale ]
