@@ -834,6 +834,7 @@ SEM GrPatLam
                                                       BasicAnnot_FromTaggedPtr
                                                         | @lhs.primArgForIntl  -> (Seq.empty,0)
                                                         | otherwise            -> (Seq.fromList [GB.ci2w],0)
+                                                      BasicAnnot_Size bsz      -> (Seq.empty,0) -- (Seq.fromList [GB.fetch GB.InsOp_LocB_TOS],GB.nrByte2Word bsz - GB.nrValWords)
                                                       _                        -> panic "GrPatLam.BasicNode.i"
   | EnumNode    (lhs.i,loc.patStkInc)           =   if @lhs.primArgForIntl
                                                     then (Seq.empty,0)
