@@ -1683,7 +1683,7 @@ GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_
 
 	GB_MkListNil( ioe_location ) ;
 	ioe_description = gb_primCStringToString( strErr ) ;
-	GB_MkIOExceptionIOError( ioe, ioe_handle, ioe_type, ioe_location, ioe_description, ioe_filename ) ;
+	GB_MkIOExceptionIOError( ioe, ioe_handle, GB_Int2GBInt(ioe_type), ioe_location, ioe_description, ioe_filename ) ;
 	GB_MkExceptionIOException( exc, ioe ) ;
 	
 	return gb_intl_throwExceptionFromPrim( exc ) ;

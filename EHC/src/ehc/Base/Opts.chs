@@ -165,10 +165,11 @@ data EHCOpts
 defaultEHCOpts
   = EHCOpts
       {  ehcOptShowHS         =   False
-      ,  ehcOptPriv           =   False
 %%[[1
+      ,  ehcOptPriv           =   False
       ,  ehcOptShowEH         =   True
 %%][99
+      ,  ehcOptPriv           =   True
       ,  ehcOptShowEH         =   False
 %%]]
 %%[[1
@@ -369,11 +370,15 @@ ehcCmdLineOpts
                                 Just "java"  -> o { ehcOptEmitJava     = True      }
                                 Just "grin"  -> o { ehcOptEmitGrin     = True      }
                                 Just m | m `elem` ["exe","exec"]
-                                             -> o { ehcOptEmitExec     = True, ehcOptEmitLlc = True
+                                             -> o { ehcOptEmitExec     = True
+                                                  , ehcOptEmitLlc      = True
                                                   , ehcOptFullProgGRIN = True
                                                   }
                                 Just m | m `elem` ["bexe","bexec"]
-                                             -> o { ehcOptEmitExecBC   = True, ehcOptEmitGrinBC = True }
+                                             -> o { ehcOptEmitExecBC   = True
+                                                  , ehcOptPriv         = True
+                                                  , ehcOptEmitGrinBC   = True
+                                                  }
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True
                                                   , ehcOptFullProgGRIN = True
                                                   }
@@ -382,7 +387,9 @@ ehcCmdLineOpts
                                                   , ehcOptFullProgGRIN = True
                                                   , ehcOptEmitExecLLVM = True
                                                   }                   
-                                Just "bc"    -> o { ehcOptEmitGrinBC   = True      }
+                                Just "bc"    -> o { ehcOptEmitGrinBC   = True 
+                                                  , ehcOptPriv         = True
+                                                  }
                                 Just "c"     -> o { ehcOptEmitLlc      = True
                                                   , ehcOptFullProgGRIN = True
                                                   }

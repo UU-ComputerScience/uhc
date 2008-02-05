@@ -783,7 +783,7 @@ mkDGI tyNm dty cNmL m nt
       fm nt mx
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
-        mx = if Map.null m then 0 else (ctagMaxArity $ dtiCTag $ head $ Map.elems m)
+        mx = if Map.null m then (-1) else (ctagMaxArity $ dtiCTag $ head $ Map.elems m)
 %%]]
 %%]
 

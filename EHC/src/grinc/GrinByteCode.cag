@@ -373,7 +373,7 @@ nmLd' optim env modNmConstInx stkDepth nm
                where l   = case annot of
                              BasicAnnot_FromTaggedPtr    -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [ci2w]
                              BasicAnnot_ToTaggedPtr      -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [cw2i]
-                             BasicAnnot_Size bsz         -> loadWithPre0From [ldlr o] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
+                             BasicAnnot_Size bsz         -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
                              _                           -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
                -> (mva,loadFrom (LoadSrc_Imm_Int i))
@@ -465,11 +465,11 @@ gviLd' optim env modNmConstInx stkDepth intro
                        -> case vaBasicAnnot va of
                             BasicAnnot_Dflt        -> basicAnnotDflt nm
                             BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
-                            BasicAnnot_Size _
+                            BasicAnnot_Size bsz
                               -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
                               where (ins,inc) = vaAndLd2Ins optim nm ml
-                                    (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
-                                    (sins,sinc) = ndStore (allocInc + inc + tinc)
+                                    (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz)
+                                    (sins,sinc) = ndStore (allocInc + (nrByte2Word bsz) + tinc)
                             _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Nothing"
                 where ml@(mbva,l) = nmLd' optim env modNmConstInx stkDepth nm

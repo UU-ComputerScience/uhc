@@ -242,7 +242,7 @@ typedef struct GB_Node {
 #define GB_MkAppHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_App, 0)
 
 #define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
-#define GB_MkConEnumNodeAsTag(tg)			GB_Int2GBInt(tg)
+#define GB_MkConEnumNodeAsTag(tg)			(tg /* GB_Int2GBInt(tg) */)
 
 #define GB_FillNodeFlds1(n,x1)				{                                (n)->content.fields[0] = Cast(GB_Word,x1);}
 #define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1         );(n)->content.fields[1] = Cast(GB_Word,x2);}

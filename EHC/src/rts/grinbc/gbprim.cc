@@ -99,7 +99,8 @@ PRIM GB_NodePtr gb_primIntToFloat( GB_Int x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Float_In(n) ;
-	n->content.flt = (float)GB_GBInt2Int(x) ;
+	// n->content.flt = (float)GB_GBInt2Int(x) ;
+	n->content.flt = (float)x ;
 	return n ;
 }
 
@@ -123,7 +124,8 @@ PRIM GB_NodePtr gb_primIntToDouble( GB_Int x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Double_In(n) ;
-	n->content.dbl = (double)GB_GBInt2Int(x) ;
+	// n->content.dbl = (double)GB_GBInt2Int(x) ;
+	n->content.dbl = (double)x ;
 	return n ;
 }
 
@@ -166,7 +168,8 @@ PRIM GB_NodePtr gb_primIntegerToDouble( GB_NodePtr n )
 
 PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
 {
-	return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
+	// return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
+	return ( mpz_get_si( n->content.mpz ) ) ;
 }
 
 PRIM GB_NodePtr gb_primCStringToInteger( char* s )
@@ -181,7 +184,8 @@ PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_set_si( n->content.mpz, GB_GBInt2Int( x ) ) ;
+	// mpz_set_si( n->content.mpz, GB_GBInt2Int( x ) ) ;
+	mpz_set_si( n->content.mpz, x ) ;
 	return n ;
 }
 
@@ -210,25 +214,23 @@ PRIM GB_NodePtr gb_primDoubleToInteger( GB_NodePtr nf )
 %%[8
 PRIM GB_Word gb_primAddInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primAddInt %d(%d)+%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Add(x,y)), GB_Int_Add(x,y) );) ;
-  	return GB_Int_Add(x,y);
-}
-
-PRIM GB_Word gb_priv_primAddInt( GB_Word x, GB_Word y )
-{
+	// IF_GB_TR_ON(3,printf("gb_primAddInt %d(%d)+%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Add(x,y)), GB_Int_Add(x,y) );) ;
+  	// return GB_Int_Add(x,y);
   	return x+y;
 }
 
 PRIM GB_Word gb_primSubInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primSubInt %d(%d)-%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Sub(x,y)), GB_Int_Sub(x,y) );) ;
-  	return GB_Int_Sub(x,y);
+	// IF_GB_TR_ON(3,printf("gb_primSubInt %d(%d)-%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Sub(x,y)), GB_Int_Sub(x,y) );) ;
+  	// return GB_Int_Sub(x,y);
+  	return x-y;
 }
 
 PRIM GB_Word gb_primMulInt( GB_Word x, GB_Word y )
 {
-	IF_GB_TR_ON(3,printf("gb_primMulInt %d(%d)*%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Mul(x,y)), GB_Int_Mul(x,y) );) ;
-  	return GB_Int_Mul(x,y);
+	// IF_GB_TR_ON(3,printf("gb_primMulInt %d(%d)*%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Mul(x,y)), GB_Int_Mul(x,y) );) ;
+  	// return GB_Int_Mul(x,y);
+  	return x*y;
 }
 
 /* DivInt and ModInt use euclidean division, ie.
@@ -239,8 +241,10 @@ PRIM GB_Word gb_primMulInt( GB_Word x, GB_Word y )
 
 PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
 {
-	GB_Int numerator = GB_GBInt2Int(x) ;
-	GB_Int divisor   = GB_GBInt2Int(y) ;
+	// GB_Int numerator = GB_GBInt2Int(x) ;
+	// GB_Int divisor   = GB_GBInt2Int(y) ;
+	GB_Int numerator = (x) ;
+	GB_Int divisor   = (y) ;
 	GB_Int div = numerator / divisor ;
 	GB_Int mod = numerator % divisor ;
 	
@@ -254,15 +258,18 @@ PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
 			div += 1 ;
 	}
 	
-  	return GB_Int2GBInt(div) ;
+  	// return GB_Int2GBInt(div) ;
+  	return (div) ;
 }
 %%]
 
 %%[8
 PRIM GB_Word gb_primModInt( GB_Word x, GB_Word y )
 {
-	GB_Int divisor   = GB_GBInt2Int(y) ;
-	GB_Int mod = GB_GBInt2Int(x) % divisor ;
+	// GB_Int divisor   = GB_GBInt2Int(y) ;
+	// GB_Int mod = GB_GBInt2Int(x) % divisor ;
+	GB_Int divisor   = (y) ;
+	GB_Int mod = (x) % divisor ;
 	
 	// todo: if ( divisor == 0 ) ...
 	
@@ -274,7 +281,8 @@ PRIM GB_Word gb_primModInt( GB_Word x, GB_Word y )
 			mod -= divisor ;
 	}
 	
-  	return GB_Int2GBInt(mod) ;
+  	// return GB_Int2GBInt(mod) ;
+  	return (mod) ;
 }
 
 /* QuotInt and RemInt use truncated division, ie.
@@ -286,21 +294,24 @@ PRIM GB_Word gb_primQuotInt( GB_Word x, GB_Word y )
 {
 	// todo: if ( divisor == 0 ) ...
 	
-  	return GB_Int_Quot(x,y);
+  	// return GB_Int_Quot(x,y);
+  	return x / y;
 }
 
 PRIM GB_Word gb_primRemInt( GB_Word x, GB_Word y )
 {
 	// todo: if ( divisor == 0 ) ...
 	
-  	return GB_Int_Rem(x,y);
+  	// return GB_Int_Rem(x,y);
+  	return x % y;
 }
 %%]
 
 %%[8
 PRIM GB_Int gb_primNegInt( GB_Int x )
 {
-	return GB_Int_Neg(x) ;
+	// return GB_Int_Neg(x) ;
+	return -(x) ;
 }
 %%]
 
@@ -340,12 +351,14 @@ PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
 %%[95
 PRIM GB_Word gb_primMaxInt()
 {
-  	return GB_Int2GBInt(Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+  	// return GB_Int2GBInt(Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+  	return (Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
 }
 
 PRIM GB_Word gb_primMinInt()
 {
-  	return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
+  	// return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
+  	return (Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
 }
 %%]
 
@@ -561,7 +574,8 @@ PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
 %%[99
 PRIM GB_Word gb_primCharIsUpper( GB_Int x )
 {
-	char c = GB_GBInt2Int( x ) ;
+	// char c = GB_GBInt2Int( x ) ;
+	char c = ( x ) ;
 	if ( c >= 'A' && c <= 'Z' )
 		return gb_True ;
   	return gb_False ;
@@ -569,7 +583,8 @@ PRIM GB_Word gb_primCharIsUpper( GB_Int x )
 
 PRIM GB_Word gb_primCharIsLower( GB_Int x )
 {
-	char c = GB_GBInt2Int( x ) ;
+	// char c = GB_GBInt2Int( x ) ;
+	char c = ( x ) ;
 	if ( c >= 'a' && c <= 'z' )
 		return gb_True ;
   	return gb_False ;
@@ -607,8 +622,9 @@ GB_NodePtr gb_primPackedStringTail( char *s )
 
 PRIM GB_Word gb_primPackedStringHead( char *s )
 {
-  	IF_GB_TR_ON(3,printf("gb_primPackedStringHead %x, %d, %s, %d\n", s, *s, s, GB_Int2GBInt(*s) ););
-  	return Cast(GB_Word,GB_Int2GBInt(*s)) ;
+  	// IF_GB_TR_ON(3,printf("gb_primPackedStringHead %x, %d, %s, %d\n", s, *s, s, GB_Int2GBInt(*s) ););
+  	// return Cast(GB_Word,GB_Int2GBInt(*s)) ;
+  	return Cast(GB_Word,(*s)) ;
 }
 
 %%]
@@ -641,6 +657,12 @@ GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
 }
 
 PRIM GB_NodePtr gb_primCStringToString( char* s )
+{
+  	return gb_primCStringToString1Char( s, GB_Int0 ) ;
+}
+
+// temporary:
+PRIM GB_NodePtr gb_priv_primCStringToString( char* s )
 {
   	return gb_primCStringToString1Char( s, GB_Int0 ) ;
 }
@@ -690,7 +712,8 @@ This version also prints a stacktrace
 %%[96.gb_primExitWith
 PRIM GB_Word gb_primExitWith( GB_Word exitCode )
 {
-	gb_exit( GB_GBInt2Int( exitCode ) ) ;
+	// gb_exit( GB_GBInt2Int( exitCode ) ) ;
+	gb_exit( exitCode ) ;
 	return exitCode ; // for now
 }
 %%]
@@ -700,7 +723,8 @@ Whereas this is left to the runtime wrapper (see EHC.Prelude.ehcRunMain) in this
 %%[99 -96.gb_primExitWith
 PRIM GB_Word gb_primExitWith( GB_Word exitCode )
 {
-	rts_exit( GB_GBInt2Int( exitCode ) ) ;
+	// rts_exit( GB_GBInt2Int( exitCode ) ) ;
+	rts_exit( exitCode ) ;
 	gb_panic( "impossible: exit failed" ) ;
 	return exitCode ;
 }
@@ -747,7 +771,8 @@ PRIM GB_Word gb_primByteArrayLength( GB_Word a )
 %%][96
 	GB_PassExcAsWord( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
 %%]]
-  	return GB_Int2GBInt(n->content.bytearray.size) ;
+  	// return GB_Int2GBInt(n->content.bytearray.size) ;
+  	return (n->content.bytearray.size) ;
 }
 
 /*
@@ -791,7 +816,8 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 {
 	char buf[sizeof(GB_Word)*10] ;
 	char *s = buf ;
-	int i = GB_GBInt2Int(intNd) ;
+	// int i = GB_GBInt2Int(intNd) ;
+	int i = (intNd) ;
 	if ( i < 0 )
 	{
 		i = -i ;
@@ -879,7 +905,8 @@ PRIM GB_Word gb_primEqChan( GB_NodePtr chan1, GB_NodePtr chan2 )
 
 PRIM GB_Word gb_primChanNumber( GB_NodePtr chan )
 {
-	return GB_Int2GBInt( fileno(chan->content.chan.file) ) ;
+	// return GB_Int2GBInt( fileno(chan->content.chan.file) ) ;
+	return ( fileno(chan->content.chan.file) ) ;
 }
 
 /*
@@ -1041,12 +1068,13 @@ GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, in
 	return NULL ;
 }
 
-PRIM GB_NodePtr gb_primChanGetChar( GB_NodePtr chan )
+PRIM GB_Word gb_primChanGetChar( GB_NodePtr chan )
 {
 	Bool isEof ;
 	int c ;
 	GB_PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
-	return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
+	// return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
+	return c ;
 }
 
 PRIM GB_NodePtr gb_primChanGetContents( GB_NodePtr chan )
@@ -1108,7 +1136,8 @@ PRIM GB_NodePtr gb_primFlushChan( GB_NodePtr chan )
 
 PRIM GB_NodePtr gb_primPutCharChan( GB_NodePtr chan, GB_Word c )
 {	
-	int c2 = putc( GB_GBInt2Int(c), chan->content.chan.file ) ;
+	// int c2 = putc( GB_GBInt2Int(c), chan->content.chan.file ) ;
+	int c2 = putc( (c), chan->content.chan.file ) ;
 	if (c2 == EOF) {
 		GB_PassExc( gb_ThrowWriteChanError( chan ) ) ;
 	}

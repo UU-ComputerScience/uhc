@@ -237,7 +237,7 @@ ppNodeFld n o = ppArrAt (ppNodeFlds n) o
 
 ppCnst :: EHCOpts -> (Int -> PP_Doc) -> Const -> PP_Doc
 ppCnst _    mk (Const_Str       i) = ppCast "GB_Word" $ mk i
-ppCnst opts _  (Const_CFunction n) = ppCast "GB_Word" $ ppAddrOf ("gb_" ++ (if ehcOptPriv opts then "priv_" else "") ++ n)
+ppCnst opts _  (Const_CFunction n) = ppCast "GB_Word" $ ppAddrOf ("gb_" ++ {- (if ehcOptPriv opts then "priv_" else "") ++ -} n)
 ppCnst _    _  (Const_CallInfo  n) = ppCast "GB_Word" $ ppAddrOf n
 
 ppLine :: PP_Doc -> PP_Doc
