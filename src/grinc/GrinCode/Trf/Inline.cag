@@ -1,4 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -45,6 +49,9 @@ to a loop.
 %%]
 
 %%[8 hs import({%{GRIN}GrinCode.Trf.AliasRename})
+%%]
+
+%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
 %%[8 import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar}, {GrinCode/Trf/CommonWillEval})

@@ -1,4 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Eliminate name aliases, to avoid unnecessary variable introductions, hence runtime loads
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -14,6 +18,9 @@ Rename names to other names.
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
 %%[8 import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})

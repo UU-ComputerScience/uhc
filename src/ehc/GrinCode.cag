@@ -188,10 +188,12 @@ fviMpFromList = fviMpFromList' FvUse_Other
 
 %%[8 hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
 data NmAlias
- = NmAlias_Nm		!HsName													-- name to name
- | NmAlias_Eval		!HsName													-- name to evaluated name
- | NmAlias_Const	{naliNm :: !HsName, naliVal  :: !GrVal        }			-- name to single constant (other than name)
- | NmAlias_Grp  	{naliNm :: !HsName, naliAlis :: ![NmAlias]	}			-- name to group of values, i.e. node constituents
+ = NmAlias_Nm       !HsName                                                 -- name to name
+ | NmAlias_Eval     !HsName                                                 -- name to evaluated name
+ | NmAlias_Const    {naliNm :: !HsName, naliVal  :: !GrVal        }         -- name to single constant (other than name)
+ | NmAlias_Grp      {naliNm :: !HsName, naliAlis :: ![NmAlias]    }         -- name to group of values, i.e. node constituents
+ | NmAlias_Basic    {naliNm :: !HsName, naliAli  :: !NmAlias, naliAnnot :: BasicAnnot  }
+                                                                            -- name to basic value, i.e. node element used for FFI
  | NmAlias_None
 
 type NmAliasMp = Map.Map HsName NmAlias

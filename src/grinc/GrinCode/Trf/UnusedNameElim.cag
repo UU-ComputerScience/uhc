@@ -1,4 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Eliminate dead/unused name introductions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -14,6 +18,9 @@ Creation of values that are not needed further downstream the code are eliminate
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
 %%[8 import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar})

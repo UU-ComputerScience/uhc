@@ -1,4 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Eliminate unnecessary evaluations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -16,6 +20,9 @@
 %%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+
+%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
 %%[8 import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonFreeVar},{GrinCode/Trf/CommonWillEval})
