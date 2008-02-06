@@ -41,8 +41,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SparseCase})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedTags})
-%%]
+--%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedTags})
+--%%]
 %%[8 import({%{GRIN}GrinCode.Trf.CaseElimination})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CleanupPass})
@@ -225,8 +225,8 @@ caFinalize = task_ VerboseNormal                    "Finalizing"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin           True               "76-unusedExprRemoved"
-         ; transformCode         dropUnusedTags     "Remove unused tags"
-         ; caWriteGrin           True               "77-unusedTagsRemoved"
+--         ; transformCode         dropUnusedTags     "Remove unused tags"
+--         ; caWriteGrin           True               "77-unusedTagsRemoved"
          ; transformCodeIterated propagate          "Copy propagation"
 --       ; transformCodeUnqHpt   returnCatch        "Ensure code exists after catch statement"
          ; caWriteGrin           True               "79-final"

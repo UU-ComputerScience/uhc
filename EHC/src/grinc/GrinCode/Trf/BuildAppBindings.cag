@@ -132,24 +132,21 @@ buildAppBinding unique size specnr
                           (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
     in (unique2, origFuncName, funcName, code)
 
-node2app (size,specnr) (unique, origNamesMap, evalMap, bindings) =
+node2app (size,specnr) (unique, origNamesMap, bindings) =
     let key = (applyFunctionTag size specnr, size)
         (unique2, origFuncName, funcName, code) = buildAppBinding unique size specnr
         origNameMap = (funcName, origFuncName)
-        evalMapElem = (key, EvApTagVar funcName)
-    in (unique2, origNameMap:origNamesMap, evalMapElem:evalMap, code:bindings)
+    in (unique2, origNameMap:origNamesMap, code:bindings)
 %%]
 
 %%[8.addAppBindings
 SEM GrModule
-  | Mod  loc  . (unique2, origNamesMap, evalTagMp2, binds)  = foldr node2app
-                                                                    (@lhs.unique, [], [], @bindL.grTrf)
-                                                                    @bindL.applyNodeSizes
+  | Mod  loc  . (unique2, origNamesMap, binds)  = foldr node2app
+                                                        (@lhs.unique, [], @bindL.grTrf)
+                                                        @bindL.applyNodeSizes
          lhs  . unique = @unique2
          lhs  . grTrf  = GrModule_Mod @moduleNm 
                                       @globalL.grTrf 
                                       @binds 
                                       @ctagsMp 
-                                      (@evalTagMp ++ @evalTagMp2) 
-                                      @applyTagMp
 %%]

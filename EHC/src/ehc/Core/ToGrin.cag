@@ -205,57 +205,11 @@ SEM CModule
                             .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
                                                        ( @allFPTags ++ (Map.toList $ arityMpFilterCaf @expr.gathArityMp) )
 
-                            .   applyTagMp  =   map makeApplyMapEntryP @allPTags
-                            .   evalTagMp   =   map makeEvalMapEntryC @allCTags
-                                                ++ [   makeEvalMapEntryH ]
-                                                ++ map makeEvalMapEntryP @allPTags
-                                                ++ map makeEvalMapEntryF @allFTags
-
                 lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                     [] -- TODO: this should contain all the caf variables
                                                     @expr.grBindL
                                                     @constrsMp
-                                                    @evalTagMp
-                                                    @applyTagMp
     
-%%]
-
-
-%%[8 hs
-
-makeEvApKeyP (nm, arity, k)
- = ( GrTag_PApp k nm
-   , arity-k
-   )
-
-makeApplyMapEntryP x@(nm, arity, k)
- = ( makeEvApKeyP x
-   , (if k==1
-      then EvApTagVar nm
-      else EvApTagTag (GrTag_PApp (k-1) nm)
-     )
-   )
-
-makeEvalMapEntryP x
- = ( makeEvApKeyP x
-   , EvApTagUnit
-   )
-
-makeEvalMapEntryC (CTag tyNm nm tag arity mxarity)
- = ( ( GrTag_Con (mkGrTagAnn arity mxarity) tag nm, arity )
-   , EvApTagUnit
-   )
-
-makeEvalMapEntryH
- = ( ( GrTag_Hole, 0 )
-   , EvApTagUnit
-   )
-
-makeEvalMapEntryF (nm, arity)
- = ( ( GrTag_Fun nm, arity )
-   , EvApTagVar nm
-   )
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -57,8 +57,7 @@ instance ForceEval EvApTagElt
 ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM GrModule
-  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @ctagsMp `seq` forceEval @evalTagMp `seq` forceEval @applyTagMp
-  												`seq` @globalL.trf `seq` @bindL.trf
+  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @ctagsMp `seq` @globalL.trf `seq` @bindL.trf
 
 SEM GrGlobal
   | Global			lhs		.	trf			=	forceEval @nm `seq` @val.trf

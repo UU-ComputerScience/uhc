@@ -43,7 +43,7 @@ ATTR AllNT [ | | trf: SELF ]
 
 %%[8
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf [] [] []
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf []
 
 SEM GrExpr
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf []

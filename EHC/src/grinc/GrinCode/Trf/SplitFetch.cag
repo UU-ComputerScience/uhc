@@ -80,11 +80,26 @@ SEM GrBind
 %% Node sizes %%
 %%%%%%%%%%%%%%%%
 
-%%[8.nodeSizes
-ATTR AllBind AllGrExpr [ nodeSizes: {Map.Map GrTag Int} | | ]
+%%[8 hs
+
+tagArity :: GrTag -> Map.Map Int Int -> Int
+tagArity (GrTag_Fun       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_App       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_PApp n    nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap) - n
+tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
+%%]
+
+%%[8
+
+ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
+ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]
+
+SEM GrBind
+  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
 
 SEM GrModule
-  | Mod  loc  .  nodeSizes = Map.fromList (map fst @evalTagMp)
+  | Mod  bindL.arityMap = @bindL.genArities
+
 %%]
 
 
@@ -176,7 +191,7 @@ SEM GrAlt
                                    ; tag     <- @pat.mbTag
                                    ; return (foldr (specializeFetch tag)
                                                    (@lhs.uniq, [], [])
-                                                   (take (nodeSizeTag tag @lhs.nodeSizes) fetches)
+                                                   (take (tagArity tag @lhs.arityMap) fetches)
                                             )
                                    }
          (expr.uniq, loc.renameList, loc.newExprInfo) = maybe (@lhs.uniq, [], []) id @mbExprInfo
@@ -194,7 +209,7 @@ SEM GrExpr
                                    Just t  -> t
                                    Nothing -> GrTag_Hole  -- TODO: is this the right panic result?
                                               -- error ("unknown tag in returning fetch " ++ show @nm ++ " tags can be " ++ show (getNodes (absFetch @lhs.hptMap @nm))) 
-                .  size        =  nodeSizeTag @knownTag @lhs.nodeSizes
+                .  size        =  tagArity @knownTag @lhs.arityMap
                 .  fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField @nm o @mbKnownTag, o+1)
                                   in take @size $ unfoldr buildFetchInfo 1
                 .  names       =  map (\n->HNmNr n Nothing) [@lhs.uniq .. @uniq  - 1]
@@ -227,9 +242,6 @@ type RenList = [(Int,HsName)]
 
 fromJust' s Nothing = error $ "fromJust':" ++ s
 fromJust' _ (Just v) = v
-
-nodeSizeTag t nodeSizes 
-  =  Map.findWithDefault 1 t nodeSizes
 
 getTagName (GrVal_Var v) =  v
 getTagName v             = error $ "getName: value not a variable: '" ++ show v ++ "'"

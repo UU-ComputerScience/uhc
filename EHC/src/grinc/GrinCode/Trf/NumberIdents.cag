@@ -258,29 +258,5 @@ SEM GrTag
 
 
 SEM GrModule
-  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp @newEvalTagMp @newAppTagMp
-         loc  . bind2idplus   = Map.insert hsnMain mainNr @lhs.bind2id
-         loc  . newEvalTagMp  = map (newMap @loc.bind2idplus) @evalTagMp
-              . newAppTagMp   = map (newMap @loc.bind2idplus) @applyTagMp
-%%]
-
-
-
-
-%%[8 hs
-newMap mp ((k,i), EvApTagVar nm)  =  ((substTag mp k,i), EvApTagVar (findNewVar mp nm))
-newMap mp ((k,i), EvApTagTag t)   =  ((substTag mp k,i), EvApTagTag (substTag mp t))                                 
-newMap mp ((k,i), EvApTagUnit)    =  ((substTag mp k,i), EvApTagUnit)                                 
-newMap mp ((k,i), EvApTagThrow)   =  ((            k,i), EvApTagThrow)                                 
-
-
-substTag mp (GrTag_Fun nm) = GrTag_Fun (findNewVar mp nm)
-substTag mp (GrTag_App nm) = GrTag_App (findNewVar mp nm)
-substTag mp (GrTag_PApp n nm) = GrTag_PApp n (findNewVar mp nm)
---substTag mp (GrTag_Con a i nm) = GrTag_Con a i (findNewVar mp nm)
-substTag mp x = x
-
-
-
-
+  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp
 %%]

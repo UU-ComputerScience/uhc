@@ -135,11 +135,6 @@ SEM GrModule
                                                                         >-< ""    
                                                                )
                                                                @ctagsMp)
-                                                >-< "evalmap"
-                                                >-< ppEvApTagMp @evalTagMp
-                                                >-< "applymap"
-                                                >-< ppEvApTagMp @applyTagMp
-
 
 SEM GrGlobal
   | Global      lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< "<-" >#< "store" >#< @val.pp
