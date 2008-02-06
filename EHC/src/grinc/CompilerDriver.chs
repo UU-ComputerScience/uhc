@@ -51,8 +51,6 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
 %%]
---%%[8 import({%{GRIN}GrinCode.Trf.AddFetch})
---%%]
 %%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.ModeCheck})
@@ -144,19 +142,17 @@ putErrs (CompileError e) = putStrLn e >> return ()
 caLoad doParse = task_ VerboseNormal                "Loading"
     ( do { when doParse caParseGrin
          ; caWriteGrin           True               "10-parsed"
-         ; transformCode         cleanupPass        "Cleanup pass"
-         ; caWriteGrin           True               "11-cleaned"
-         ; transformCodeUnq      buildAppBindings   "Renaming lazy apply tags"
-         ; caWriteGrin           True               "12-renamed"
+         ; transformCode         dropUnreachableBindings "Dropping unreachable bindings"
+         ; caWriteGrin           True               "11-reachable"
+         ; transformCode         cleanupPass        "Cleaning up"
+         ; caWriteGrin           True               "12-cleaned"
+         ; transformCodeUnq      buildAppBindings   "Building app bindings"
+         ; caWriteGrin           True               "13-appsbound"
          ; transformCode         setGrinInvariant   "SetGrinInvariant"
-         ; caWriteGrin           True               "13-invariant"
-         --; transformCodeUnq      addFetch           "Adding fetches"
-         --; caWriteGrin           True               "14-fetchadded"
+         ; caWriteGrin           True               "14-invariant"
          ; code <- gets gcsGrin
          ; let mess = checkMode code
-         ; trace (unlines ("Metatype checking after patch":mess)) (return ())
-         --; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
-         --; when (True) (error (unlines ("GRIN variable metatype invariant violated":mess)))
+         ; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
          ; caWriteGrin           True               "19-numbered"
          }
@@ -168,8 +164,6 @@ caAnalyse = task_ VerboseNormal                     "Analyzing"
          ; caWriteGrin           True               "21-normalized"
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin           True               "22-unskewed"
-         ; transformCode         dropUnreachableBindings "Dropping unreachable bindings"
-         ; caWriteGrin           True               "23-reachable"
          ; caHeapPointsTo
          ; caWriteGrin           True               "29-analyzed"
          }
