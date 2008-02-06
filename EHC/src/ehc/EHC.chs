@@ -28,7 +28,10 @@
 %%[8 import(qualified {%{EH}GrinCode} as Grin, {%{EH}GrinCode.Pretty}, qualified {%{EH}GrinCode.Parser} as GrinParser, {%{GRIN}GrinCode.ToGrinByteCode})
 %%]
 
-%%[8 import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim},{%{GRIN}GrinCode.Trf.UnusedNameElim},{%{GRIN}GrinCode.Trf.AliasElim},{%{GRIN}GrinCode.Trf.MayLiveUnboxed},{%{GRIN}GrinCode.Trf.FlattenSeq},{%{GRIN}GrinCode.Trf.EvalElim},{%{GRIN}GrinCode.Trf.Inline})
+%%[8 import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim},{%{GRIN}GrinCode.Trf.UnusedNameElim},{%{GRIN}GrinCode.Trf.AliasElim},{%{GRIN}GrinCode.Trf.MayLiveUnboxed})
+%%]
+
+%%[8 hs import({%{GRIN}GrinCode.Trf.ConstPropagation},{%{GRIN}GrinCode.Trf.FlattenSeq},{%{GRIN}GrinCode.Trf.EvalElim},{%{GRIN}GrinCode.Trf.Inline})
 %%]
 
 %%[8 import ({%{GRIN}GrinByteCode.ToC}, qualified {%{GRIN}GrinByteCode} as GrinBC)
@@ -1313,7 +1316,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                                          , "inline" ) ]
 %%]]
                                     ++ mk evel
-                                    ++ mk [ nme ]
+                                    ++ mk [ cpr, nme ]
                                     )
                           else if ehcOptFullProgGRIN opts
                                then mk [ flt ]
@@ -1325,6 +1328,7 @@ cpOptimiseGrinWithoutFullProgAnalysis modNm
                               nme  = ( grUnusedNameElim , "unused name elim" )
                               eve  = ( grEvalElim  , "eval elim" )
                               mte  = ( grUnusedMetaInfoElim  , "meta info elim" )
+                              cpr  = ( grConstPropagation, "const prop" )
                               unb  = {- if ehcOptPriv opts then [] else -} [( grMayLiveUnboxed GrinBC.tagAllowsUnboxedLife  , "unbox" )]
                  optGrinNormal
                         = map fst optGrin

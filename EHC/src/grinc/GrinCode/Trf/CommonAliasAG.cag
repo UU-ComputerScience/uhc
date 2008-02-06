@@ -19,9 +19,16 @@ SEM GrPatAlt
   | * - Node    lhs         .   nmAlias         =   NmAlias_None
 
 SEM GrPatLam
-  | Var         lhs         .   nmAlias         =   NmAlias_Nm @nm
-  | VarNode     lhs         .   nmAlias         =   NmAlias_Grp hsnUnknown $ map NmAlias_Nm (tail @fldL.introNmL)
-  | * - Var VarNode  lhs         .   nmAlias         =   NmAlias_None
+  | Var         lhs         .   nmAlias         =   NmAlias_Nm    @nm
+  | Annot       lhs         .   nmAlias         =   NmAlias_Nm    @nm                                                   -- annotation has no operational meaning for bytecode interpretation, hence is just an alias
+  | BasicAnnot  lhs         .   nmAlias         =   case @annot of
+                                                      BasicAnnot_Size bsz
+                                                        | bsz == Cfg.sizeofGrWord -> NmAlias_Nm @nm                     -- when size matches wordsize, no operational meaning for bytecode interpretation, hence is just an alias
+                                                      _                           -> NmAlias_None
+  | VarNode     lhs         .   nmAlias         =   NmAlias_Grp   hsnUnknown $ map NmAlias_Nm (tail @fldL.introNmL)
+  | BasicNode   lhs         .   nmAlias         =   NmAlias_Basic hsnUnknown (NmAlias_Nm @nm) @annot
+  | * - Var Annot BasicAnnot VarNode BasicNode
+                lhs         .   nmAlias         =   NmAlias_None
 %%]
 
 %%[8
@@ -33,9 +40,10 @@ SEM GrVal
                                                       GrTag_Con _ _ _
                                                         -> NmAlias_Grp hsnUnknown @fldL.nmAliasL
                                                       _ -> NmAlias_None
+  | BasicNode   lhs         .   nmAlias         =   NmAlias_Basic hsnUnknown (NmAlias_Nm @nm) BasicAnnot_Dflt
   | LitInt      lhs         .   nmAlias         =   NmAlias_Const hsnUnknown (GrVal_LitInt @int)
   | LitStr      lhs         .   nmAlias         =   NmAlias_Const hsnUnknown (GrVal_LitStr @str)
-  | * - Var Node LitInt LitStr
+  | * - Var Node BasicNode LitInt LitStr
                 lhs         .   nmAlias         =   NmAlias_None
 
 SEM GrExpr
