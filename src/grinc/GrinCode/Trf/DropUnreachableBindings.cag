@@ -110,24 +110,12 @@ At module level, we create a graph from the collected usage sets.
 Life bindings are those reachable from the main function.
 Bindings that appear not to be life are removed in the transformed program.
 
-%%[8 hs
-
-lifeEntry env set ((k,_), _) = lifeTag env set k
-
-lifeTag env set (GrTag_Fun nm) = maybe False (`Set.member` set) (Map.lookup nm env)
-lifeTag env set (GrTag_App nm) = maybe False (`Set.member` set) (Map.lookup nm env)
-lifeTag env set (GrTag_PApp n nm) = maybe False (`Set.member` set) (Map.lookup nm env)
-lifeTag env set _ = True
-
-%%]
-
-
 %%[8
 SEM GrModule
   | Mod  loc  .  usageL  = Map.toAscList (Map.map Set.toList (Map.union @globalL.usage @bindL.usage))
               .  biggest = fst (last @loc.usageL)
               .  graph   = array (0, @loc.biggest) @loc.usageL
-         lhs  .  grTrf   = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp (filter (lifeEntry @bindL.genEnv @loc.lifeSet) @evalTagMp) (filter (lifeEntry @bindL.genEnv @loc.lifeSet) @applyTagMp)
+         lhs  .  grTrf   = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp
 %%]
 
 %%[8

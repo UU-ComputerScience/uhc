@@ -25,8 +25,6 @@ pModule         =    GrModule_Mod <$ pKey "module" <*> (pGrNm <|> mkHNm <$> pStr
                      <*> pGlobalL
                      <*> pBindL
                      <*  pKey "ctags"     <*> pCTags
-                     <*  pKey "evalmap"   <*> pEvApTagMp
-                     <*  pKey "applymap"  <*> pEvApTagMp
 
 pGlobalL        ::   GRIParser GrGlobalL
 pGlobalL        =    pCurly_pSemics pGlobal
@@ -45,13 +43,6 @@ pCTags          ::   GRIParser CTagsMp
 pCTags          =    pCurly_pSemics
                         ((\tn ts -> (tn,map (\(n,t,a,ma) -> (n,CTag tn n t a ma)) ts))
                         <$> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,,) <$> pGrNm <*> pInt <*> pInt <*> pInt)
-                        )
-
-pEvApTagMp      ::   GRIParser EvApTagMp
-pEvApTagMp      =    pCurly_pSemics
-                        ((\t a ea -> ((t,a),ea))
-                        <$> pTag <*> pInt <* pKey "->"
-                            <*> (EvApTagTag <$> pTag <|> EvApTagUnit <$ pKey "unit" <|> EvApTagVar <$> pGrNm <|> EvApTagThrow <$ pKey "throw")
                         )
 
 pExprSeq        ::   GRIParser GrExpr

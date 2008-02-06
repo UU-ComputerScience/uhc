@@ -14,7 +14,7 @@ cleanup EHC generated GRIN:
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set, {%{EH}Base.Builtin}(hsnIsConstructorName))
+%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
 %%]
 
 debug:
@@ -33,7 +33,7 @@ ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 
 SEM GrModule
-  | Mod  lhs  .  grTrf         =  GrModule_Mod @moduleNm @newGlobals @bindL.grTrf @ctagsMp @newEvalTagMp @applyTagMp
+  | Mod  lhs  .  grTrf         =  GrModule_Mod @moduleNm @newGlobals @bindL.grTrf @ctagsMp
 %%]
 
 
@@ -46,9 +46,12 @@ Also, replace F-Tags for constructorfunctions by C-tags
 
 %%[8.P0tag_TO_Ftag
 
+ATTR AllDef AllExpr [ ctagMap : {Map.Map HsName CTag} | | ]
+
 SEM GrTag
   | Fun  lhs . grTrf = if   hsnIsConstructorName @nm
-                       then GrTag_Con emptyGrTagAnn 0 @nm  -- TODO: replace 0 by real tag number
+                       then let  t = fromJust (Map.lookup @nm @lhs.ctagMap)
+                            in   GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) @nm
                        else @loc.grTrf
   | PApp lhs . grTrf = if   @needs==0 
                        then (if   hsnIsConstructorName @nm
@@ -94,6 +97,7 @@ SEM GrModule
                                                              @cafNames
                                 in (if null @globalL.grTrf then globalL else @globalL.grTrf)
               .   allCTags    =   [ ct | (_,xs) <- @ctagsMp, (_,ct) <- xs ]
+              .   ctagMap     =   Map.fromList [ x | (_,xs) <- @ctagsMp, x <- xs ]
 
 %%]
 
@@ -104,8 +108,6 @@ SEM GrModule
 %%[8.hackPrimToExceptionStatments
 
 -- we need an node which eval interprets as 'throw exception'
-SEM GrModule
-  | Mod  loc  .  newEvalTagMp  =  ((throwTag,1), EvApTagThrow) : @evalTagMp
 
 SEM GrBind
   | Bind  lhs  .  grTrf    =  GrBind_Bind @nm @argNmL @newExpr

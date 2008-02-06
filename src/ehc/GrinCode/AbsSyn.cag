@@ -20,8 +20,6 @@ DATA GrModule
                 globalL         : GrGlobalL
                 bindL           : GrBindL
                 ctagsMp         : {CTagsMp}
-                evalTagMp       : {EvApTagMp}
-                applyTagMp      : {EvApTagMp}
 
 DATA GrGlobal
   | Global      nm              : {HsName}

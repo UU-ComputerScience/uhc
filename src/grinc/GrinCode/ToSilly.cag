@@ -159,7 +159,7 @@ SEM GrBind
 %%[8
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagConstants @evalTagMp)   -- constants
+                                (tagConstants (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names              -- variables
                                 ( Function_Function (HNm "initialize") False [] []
                                                     ( @globalL.initStats
@@ -476,7 +476,19 @@ SEM GrAGItf
 %%]
 
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Collect all tags
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
 
+ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set GrTag} ]
+
+ATTR GrTag [ | | self : SELF ]
+
+SEM GrTag
+  | *   lhs.genAllTags = Set.singleton @loc.self
+
+%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -584,11 +596,11 @@ arrayValue a i = Value_Var (Variable_Subs a i)
 arrayVariab :: Variable -> Int -> Variable
 arrayVariab a i = Variable_Subs a i
 
-tagConstants :: EvApTagMp -> [(String,Int)]
-tagConstants eas
- = let f ((t,s),k) = showGrTag t
+tagConstants :: Set.Set GrTag -> [(String,Int)]
+tagConstants tagset
+ = let f ((t,_),_) = showGrTag t
        needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "CEQ", "CGT", "CLT" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
-       inprog = map f eas
+       inprog = map showGrTag (Set.toList tagset)
    in  zip (needed ++ (inprog \\ needed)) [0..]
 
 showGrTag :: GrTag -> String
@@ -598,7 +610,7 @@ showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"
 showGrTag (GrTag_Hole) = "HOLE"
-showGrTag (GrTag_Unboxed) = "GrTag:Unboxed"
+showGrTag (GrTag_Unboxed) = "UNBOXED"
 showGrTag (GrTag_Any    ) = "GrTag:Any"
 showGrTag (GrTag_World    ) = "GrTag:World"
 

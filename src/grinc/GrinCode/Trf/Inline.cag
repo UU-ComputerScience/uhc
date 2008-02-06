@@ -336,7 +336,7 @@ SEM GrExpr
 ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
 
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @ctagsMp @evalTagMp @applyTagMp
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @ctagsMp
 
 SEM GrBind
   | Bind        lhs         .   trfSq           =   if @omitBind && @nm `Set.member` @lhs.inlNmS
@@ -344,5 +344,3 @@ SEM GrBind
                                                     else Seq.singleton @trf
   | Rec         lhs         .   trfSq           =   Seq.singleton $ GrBind_Rec $ Seq.toList @bindL.trfSq
 %%]
-
-
