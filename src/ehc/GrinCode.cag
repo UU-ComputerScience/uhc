@@ -40,7 +40,7 @@
 %%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[8 hs export(EvApTagKey,EvApTagElt(..),EvApTagMp)
+%%[8 hs export(EvApTagElt(..))
 %%]
 
 %%[8 ag import({GrinCode/AbsSyn})
@@ -104,9 +104,7 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type EvApTagKey   = (GrTag,Int)
 data EvApTagElt   = EvApTagTag GrTag | EvApTagVar HsName | EvApTagUnit | EvApTagThrow deriving (Eq,Show)
-type EvApTagMp    = AssocL EvApTagKey EvApTagElt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

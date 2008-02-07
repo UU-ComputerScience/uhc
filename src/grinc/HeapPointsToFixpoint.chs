@@ -102,6 +102,10 @@ envChanges equat env heap
                                       -- ;  res <- maybe (return res) (\v -> readArray env v >>= return . mappend res) ev
                                       ;  return [(d,res)]
                                       }
+      IsEnumeration   d v          -> do
+                                      {  av <- readArray env v
+                                      ;  return [(d, absEnum av)] 	
+                                      }
       IsEvaluation    d v      ev  -> do
                                       {  av <- readArray env v
                                       --;  _ <- trace ("absEval " ++ show equat) (return ())
@@ -132,6 +136,10 @@ envChanges equat env heap
                              }
           _            ->  return av
 
+    absEnum av
+      = case av of
+          AbsTags ts   -> AbsNodes (Map.fromList [ (t,[]) |  t <- Set.toList ts ])
+          _            -> AbsError ("cannot enumerate " ++ show av)
 
     --absEval :: AbstractValue -> ST s AbstractValue  
     absEval av

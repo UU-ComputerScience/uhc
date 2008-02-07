@@ -97,22 +97,6 @@ type PPGrNm = HsName -> PP_Doc
 ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = ppBlock "{ " "} " "; " pL
 
-ppEvApTagElt :: EvApTagElt -> PP_Doc
-ppEvApTagElt e
-  =  case e of
-        EvApTagTag t  -> ppGrTag t
-        EvApTagVar n  -> cfgppHsName CfgPP_Grin n
-        EvApTagUnit   -> pp "unit"
-        EvApTagThrow  -> pp "throw"
-
-ppEvApTagMp :: EvApTagMp -> PP_Doc
-ppEvApTagMp m
-  =  ppCurlysSemisV
-        (map  (\((tag,arity),evap)
-                  ->  ppGrTag tag >#< pp arity >#< "->" >#< ppEvApTagElt evap >-< ""
-              )
-              m
-        )      
 %%]
 ppGrNm :: PPGrNm
 ppGrNm = cfgppHsName CfgPP_Grin
