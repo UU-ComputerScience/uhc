@@ -422,15 +422,37 @@ mkRV m = hsnSetQual m . hsnFromString
       [ "fromInteger" ]
 %%]
 
-%%[97 export(hsnFromRational,hsnMkRatio)
-[hsnFromRational,hsnMkRatio]
+%%[97
+[hsnFloat,hsnDouble]
   = map
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlReal) -- (mkRV hsnModIntlReal)
+      (mkRV hsnModIntlPrelude)
 %%]]
-      [ "fromRational", "%" ]
+      [ "Float", "Double" ]
+%%]
+
+%%[97 export(hsnFromRational)
+[hsnFromRational]
+  = map
+%%[[97
+      mkRV
+%%][99
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlFractional)
+%%]]
+      [ "fromRational" ]
+%%]
+
+%%[97 export(hsnMkRatio)
+[hsnMkRatio]
+  = map
+%%[[97
+      mkRV
+%%][99
+      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlRatio)
+%%]]
+      [ ":%" ]
 %%]
 
 %%[98 export(hsnIO)
@@ -474,12 +496,14 @@ hsnIsInPrelude n
 %%]
 
 %%[99 export(hsnModPrelude)
+-- hsnModIntlRatio                         =   hsnPrefixQual hsnEHC (hsnFromString "Ratio")
+-- hsnModIntlReal                          =   hsnPrefixQual hsnEHC (hsnFromString "Real")
+-- hsnModIntlFractional                    =   hsnPrefixQual hsnEHC (hsnFromString "Fractional")
 hsnModIntlBase                          =   hsnPrefixQual hsnEHC (hsnFromString "Base")
 hsnModIntlEnum                          =   hsnPrefixQual hsnEHC (hsnFromString "Enum")
 hsnModIntlNum                           =   hsnPrefixQual hsnEHC (hsnFromString "Num")
-hsnModIntlReal                          =   hsnPrefixQual hsnEHC (hsnFromString "Real")
-hsnModIntlShow                          =   hsnPrefixQual hsnEHC (hsnFromString "Show")
 hsnModIntlRead                          =   hsnPrefixQual hsnEHC (hsnFromString "Read")
+hsnModIntlShow                          =   hsnPrefixQual hsnEHC (hsnFromString "Show")
 hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (hsnFromString "Prelude")
 hsnModPrelude                           =                         hsnFromString "Prelude"
 %%]
@@ -564,6 +588,8 @@ data EHBuiltinNames
       , ehbnPrimLtInt                   :: HsName
 %%]]
 %%[[97
+      , ehbnFloat                       :: HsName
+      , ehbnDouble                      :: HsName
       , ehbnPackedStringToInteger       :: HsName
 %%]]
 %%[[98
@@ -635,6 +661,8 @@ mkEHBuiltinNames f
       , ehbnPrimLtInt                   = f IdOcc_Val       hsnPrimLtInt
 %%]]
 %%[[97
+      , ehbnFloat                       = f IdOcc_Type      hsnFloat
+      , ehbnDouble                      = f IdOcc_Type      hsnDouble
       , ehbnPackedStringToInteger       = f IdOcc_Val       hsnPackedStringToInteger
 %%]]
 %%[[98

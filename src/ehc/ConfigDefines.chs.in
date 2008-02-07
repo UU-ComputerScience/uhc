@@ -33,7 +33,7 @@ useGMP = mkB USE_GMP
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Sizes
+%%% Size of word, the basic unit of ptr/int/...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -46,5 +46,22 @@ sizeofWord = SIZEOF_INTPTR_T
 
 sizeofWordAsInteger :: Integer
 sizeofWordAsInteger = toInteger sizeofWord
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Size of other known types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+#undef SIZEOF_FLOAT
+#undef SIZEOF_DOUBLE
+%%]
+
+%%[97 export(sizeofFloat,sizeofDouble)
+sizeofFloat :: Int
+sizeofFloat = SIZEOF_FLOAT
+
+sizeofDouble :: Int
+sizeofDouble = SIZEOF_DOUBLE
 %%]
 

@@ -13,7 +13,7 @@
 %%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, qualified {%{EH}Config} as Cfg)
+%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
 %%]
 
 %%[8 hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
@@ -97,37 +97,6 @@ mkGrTagAnn :: Int -> Int -> GrTagAnn
 mkGrTagAnn = GrTagAnn
 
 emptyGrTagAnn = mkGrTagAnn 0 0
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% BasicNode annotation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs export(BasicAnnot(..),defaultBasicAnnot)
-data BasicAnnot
-  = BasicAnnot_Size        Int
-  | BasicAnnot_FromTaggedPtr
-  | BasicAnnot_ToTaggedPtr
-  | BasicAnnot_Dflt
-  deriving (Show,Eq)
-
-defaultBasicAnnot :: BasicAnnot
-defaultBasicAnnot = BasicAnnot_Size Cfg.sizeofWord
-%%]
-
-%%[8 hs export(basicAnnotSizeInBytes)
-basicAnnotSizeInBytes :: BasicAnnot -> Int
-basicAnnotSizeInBytes (BasicAnnot_Size          s) = s
-basicAnnotSizeInBytes (BasicAnnot_FromTaggedPtr  ) = Cfg.sizeofWord
-basicAnnotSizeInBytes (BasicAnnot_Dflt           ) = Cfg.sizeofWord
-%%]
-
-%%[8 hs
-instance PP BasicAnnot where
-  pp (BasicAnnot_Size          s) = pp s
-  pp (BasicAnnot_FromTaggedPtr  ) = pp "annotfromtaggedptr"
-  pp (BasicAnnot_ToTaggedPtr    ) = pp "annottotaggedptr"
-  pp (BasicAnnot_Dflt           ) = pp "annotdflt"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

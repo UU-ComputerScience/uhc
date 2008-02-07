@@ -315,7 +315,15 @@ SEM Module
                                             =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm) >-< "#include \"rts.h\""
                                                     strNmL  = [ (@ppNmAString i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
                                                     strings = nl : [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
-                                                    callinfoNmL = [ (@strNmcallInfo ++ show i,"GB_MkCallInfo" >|< ppParensCommasBlock [pp $ fromEnum $ ciKind ci,maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci] >#< ppCmtC @lhs.opts (show ci))
+                                                    callinfoNmL = [ ( @strNmcallInfo ++ show i
+                                                                    , "GB_MkCallInfoWith"
+                                                                      >|< ppParensCommasBlock
+                                                                            [ pp $ fromEnum $ ciKind ci
+                                                                            , maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci
+                                                                            , pp (ciExtra ci)                                                                                
+                                                                            ]
+                                                                      >#< ppCmtC @lhs.opts (show ci)
+                                                                    )
                                                                   | (ci,i) <- sortOn snd $ Map.toList @instrs.callInfoMp
                                                                   ]
                                                     callinfos   = nl : [ "GB_CallInfo" >#< @ppNm n >#< "=" >#< def >#< ";" | (n,def) <- callinfoNmL ]

@@ -21,17 +21,19 @@ typedef  int32_t GB_SWord ;
 
 #endif
 
-typedef GB_Word* GB_Ptr ;
-typedef GB_Ptr*  GB_PtrPtr ;
-typedef uint8_t* GB_BytePtr ;
-typedef GB_SWord GB_Int ;
-typedef uint16_t GB_NodeTag ;
-typedef uint16_t GB_NodeSize ;
-typedef uint8_t  GB_Byte ;
+typedef GB_Word* 	GB_WordPtr ;
+typedef GB_WordPtr 	GB_Ptr ;
+typedef GB_Ptr*  	GB_PtrPtr ;
+typedef uint8_t* 	GB_BytePtr ;
+typedef GB_SWord 	GB_Int ;
+typedef uint16_t 	GB_NodeTag ;
+typedef uint16_t 	GB_NodeSize ;
+typedef uint8_t  	GB_Byte ;
 %%]
 
 %%[8
-#define GB_Deref(x)						(*Cast(GB_Ptr,x))
+#define GB_DerefCast(ty,x)				(*Cast(ty*,x))
+#define GB_Deref(x)						GB_DerefCast(GB_Word,x)	
 %%]
 
 %%[8
@@ -39,6 +41,18 @@ typedef uint8_t  GB_Byte ;
 										, Cast(GB_Byte,Bits_ExtrFromToSh(GB_Word,w,8,15)) \
 										, Cast(GB_Byte,Bits_ExtrFromToSh(GB_Word,w,16,23)) \
 										, Cast(GB_Byte,Bits_ExtrFromSh(GB_Word,w,24))
+%%]
+
+%%[97
+typedef float GB_Float ;
+typedef double GB_Double ;
+%%]
+
+%%[97
+typedef union GB_WordEquiv {
+  GB_Word 		wrd ;
+  GB_Float		flt ;
+} GB_WordEquiv ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -397,7 +411,9 @@ extern int gb_ThrownException_NrOfEvalWrappers ;
 											}
 
 #define GB_PassExc(action)					GB_PassExcWith(action,True,return gb_ThrownException)
-#define GB_PassExcAsWord(action)			GB_PassExcWith(action,True,return Cast(GB_Word,gb_ThrownException))
+#define GB_PassExcDflt(df,action)			GB_PassExcWith(action,True,return df)
+#define GB_PassExcCast(tp,action)			GB_PassExcWith(action,True,return Cast(tp,gb_ThrownException))
+#define GB_PassExcAsWord(action)			GB_PassExcCast(GB_Word,action)
 
 %%]
 
@@ -407,7 +423,7 @@ extern int gb_ThrownException_NrOfEvalWrappers ;
 
 Definition must match the one in Prelude.hs
 
-%%[98
+%%[96
 #define GB_Tag_IOException_IOError						0
 
 #define GB_MkIOExceptionIOError(n,x1,x2,x3,x4,x5)		GB_MkConNode5(n,GB_Tag_IOException_IOError,x1,x2,x3,x4,x5)
@@ -419,7 +435,7 @@ Definition must match the one in Prelude.hs
 
 Definition must match the one in Prelude.hs
 
-%%[98
+%%[96
 #define GB_Tag_Exception_ArithException   					0
 #define GB_Tag_Exception_ArrayException   					1
 #define GB_Tag_Exception_AssertionFailed  					2
@@ -561,16 +577,25 @@ Invariant is that a return address points to the address immediately after this 
 The type and size used should agree with the code generation part.
 
 %%[8
+typedef struct GB_CallInfo_CCall {
+  char*		type ;
+} GB_CallInfo_CCall ;
+
 typedef struct GB_CallInfo {
   uint8_t kind ;
   char*   name ;
+  union {
+    GB_CallInfo_CCall	ccall ;
+    void*				dflt ;
+  } extra ;
 } GB_CallInfo ;
 
 typedef GB_CallInfo* GB_CallInfoPtr ;
 
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
-#define GB_MkCallInfo(k,n)				{k,n}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,w)		{k,n,w}		// make CallInfo
+#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL)
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 
@@ -620,9 +645,15 @@ The 'Fix' variants allocate non-collectable.
 
 %%[8
 #if USE_BOEHM_GC
+#if TRACE || DUMP_INTERNALS
+extern GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes ) ;
+#define GB_HeapAlloc_Bytes(nBytes)		gb_HeapAlloc_Bytes_Traced(nBytes)
+#else
+#define GB_HeapAlloc_Bytes(nBytes)		Cast(GB_Ptr,GC_MALLOC(nBytes))
+#endif
+
 #define GB_HeapAlloc_Words(nWords)		GB_HeapAlloc_Bytes(nWords * sizeof(GB_Word))
 #define GB_HeapFixAlloc_Words(nWords)	GB_HeapFixAlloc_Bytes(nWords * sizeof(GB_Word))
-#define GB_HeapAlloc_Bytes(nBytes)		Cast(GB_Ptr,GC_MALLOC(nBytes))
 #define GB_HeapFixAlloc_Bytes(nBytes)	Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
 
 extern void gb_Node_Finalize( void* p, void* cd ) ;
@@ -734,6 +765,10 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
+#define GB_CmpBasic(x,y,lt,eq,gt)			((x) > (y) ? (gt) : ((x) == (y) ? (eq) : (lt)))
+%%]
+
+%%[97
 #define GB_Float_Op1_In1(op,z,x)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = op x->content.flt ; }
 #define GB_Float_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = x->content.flt op y->content.flt ; }
 
@@ -743,7 +778,7 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #define GB_Float_Mul_In(z,x,y)				GB_Float_Op2_In1(*,z,x,y)
 #define GB_Float_Div_In(z,x,y)				GB_Float_Op2_In1(/,z,x,y)
 
-#define GB_Float_Cmp(x,y,lt,eq,gt)			(x->content.flt > y->content.flt ? (gt) : (x->content.flt == y->content.flt ? (eq) : (lt)))
+#define GB_Float_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.flt,y->content.flt,lt,eq,gt)
 %%]
 
 %%[97
@@ -756,7 +791,7 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #define GB_Double_Mul_In(z,x,y)				GB_Double_Op2_In1(*,z,x,y)
 #define GB_Double_Div_In(z,x,y)				GB_Double_Op2_In1(/,z,x,y)
 
-#define GB_Double_Cmp(x,y,lt,eq,gt)			(x->content.dbl > y->content.dbl ? (gt) : (x->content.dbl == y->content.dbl ? (eq) : (lt)))
+#define GB_Double_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.dbl,y->content.dbl,lt,eq,gt)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

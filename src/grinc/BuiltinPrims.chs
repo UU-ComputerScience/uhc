@@ -9,7 +9,7 @@ Ideally, these tables should be merged.
 %%[8 module {%{GRIN}BuiltinPrims}
 %%]
 
-%%[8 import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.Builtin},{%{GRIN}GrinByteCode})
+%%[8 import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{GRIN}GrinByteCode})
 %%]
 
 %%[8 import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty)
@@ -75,11 +75,11 @@ mkGbInsOp = mkGbOp InsOp_DataOp_IntWord
 mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
 mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
   = case gviLd' optim env modNmConstInx (stkDepth+inc1) a2 of
-      GrValIntroAlt_OnTOS ins2 inc2 optimEffect
-        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect
+      GrValIntroAlt_OnTOS ins2 inc2 optimEffect _
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect [BasicAnnot_Dflt]
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
-      GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc postins)
-        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins Seq.:++: postins) 1 optimEffect
+      GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc postins) bann
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins Seq.:++: postins) 1 optimEffect [BasicAnnot_Dflt]
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                    where (deref,src,imm)
                            = case ldsrc of
@@ -88,7 +88,7 @@ mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
                                LoadSrc_Reg_Rel o 1 -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
                                LoadSrc_Imm     c   -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
                                LoadSrc_Imm_Int c   -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
-  where g@(GrValIntroAlt_OnTOS ins1 inc1 _) = gviLd optim env modNmConstInx stkDepth a1
+  where g@(GrValIntroAlt_OnTOS ins1 inc1 _ _) = gviLd optim env modNmConstInx stkDepth a1
           
           
 

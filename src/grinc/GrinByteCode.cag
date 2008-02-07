@@ -151,6 +151,19 @@ type StackDepth = Int
 
 Call Info
 
+%%[8 hs
+data CallInfoExtra
+  = CallInfoExtra_CCall [BasicTy]		-- type: (res : args)
+  | CallInfoExtra_None
+  deriving(Eq,Ord,Show)
+%%]
+
+%%[8 hs
+instance PP CallInfoExtra where
+  pp (CallInfoExtra_CCall t) = pp $ show $ map (head . show) t
+  pp CallInfoExtra_None      = pp "NULL"
+%%]
+
 %%[8 hs export(CallInfo(..),CallInfoKind(..))
 type MbStrInx = Maybe Int
 
@@ -158,6 +171,7 @@ data CallInfo
   = CallInfo
       { ciKind			:: !CallInfoKind
       , ciMbNmStrInx	:: !MbStrInx					-- index of string, if any
+      , ciExtra			:: !CallInfoExtra
       }
   deriving(Eq,Ord,Show)
 
@@ -177,13 +191,16 @@ data CallInfoKind
 %%]
 
 %%[8 hs export(mkCICall)
-mkCI :: CallInfoKind -> MbStrInx -> CallInfo
-mkCI k i = CallInfo k i
+mkCIExtra :: CallInfoExtra -> CallInfoKind -> MbStrInx -> CallInfo
+mkCIExtra e k i = CallInfo k i e
 
-mkCICall  = mkCI CallInfoKind_Call
-mkCICCall = mkCI CallInfoKind_CCall
-mkCIEval  = mkCI CallInfoKind_Eval
-mkCIApply = mkCI CallInfoKind_Apply
+mkCI :: CallInfoKind -> MbStrInx -> CallInfo
+mkCI k i = mkCIExtra CallInfoExtra_None k i
+
+mkCICall    = mkCI                              CallInfoKind_Call
+mkCICCall e = mkCIExtra (CallInfoExtra_CCall e) CallInfoKind_CCall
+mkCIEval    = mkCI                              CallInfoKind_Eval
+mkCIApply   = mkCI                              CallInfoKind_Apply
 %%]
 
 Entry point info
@@ -352,50 +369,50 @@ loadFrom s = loadWithPreFrom [] 0 s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(nmLd')
-nmLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> HsName -> (Maybe ValAccess,Load)
+nmLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> HsName -> (Maybe ValAccess,Load,BasicAnnot)
 nmLd' optim env modNmConstInx stkDepth nm
   = case nmEnvLookup nm env of
       mva@(Just va)
         -> case va of
              Val_Local o annot
-               -> (mva,loadWithPrePostFrom [meta' AnnIdUse (nm >#< annot >#< src)] 0 src post)
+               -> (mva,loadWithPrePostFrom [meta' AnnIdUse (nm >#< annot >#< src)] 0 src post,annot)
                where (src,post)
                          = case annot of
                              BasicAnnot_FromTaggedPtr    -> (srcDflt Cfg.sizeofGrWord ,[ci2w])
                              BasicAnnot_ToTaggedPtr      -> (srcDflt Cfg.sizeofGrWord ,[])
-                             BasicAnnot_Size bsz         -> (srcDflt bsz,[])
+                             BasicAnnot_Size bsz _       -> (srcDflt bsz,[])
                              BasicAnnot_Dflt             -> (srcDflt Cfg.sizeofGrWord ,[])
                          where srcDflt n = offSrc (stkDepth - o) (nrByte2Word n)
              Val_NodeTagLocal o
-               -> (mva,loadFrom (offSrc (stkDepth - o) nrValWords))
+               -> (mva,loadFrom (offSrc (stkDepth - o) nrValWords),BasicAnnot_Dflt)
              Val_NodeFldLocal o annot
-               -> (mva,l)
+               -> (mva,l,annot)
                where l   = case annot of
                              BasicAnnot_FromTaggedPtr    -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [ci2w]
                              BasicAnnot_ToTaggedPtr      -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [cw2i]
-                             BasicAnnot_Size bsz         -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
+                             BasicAnnot_Size bsz _       -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
                              _                           -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
-               -> (mva,loadFrom (LoadSrc_Imm_Int i))
+               -> (mva,loadFrom (LoadSrc_Imm_Int i),BasicAnnot_Dflt)
              Val_GlobEntry o
-               -> (mva,loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)] nrValWords LoadSrc_TOS)
+               -> (mva,loadWithPreFrom [instrann' AnnIdUse nm $ ldg InsOp_LocB_TOS (linkCode o)] nrValWords LoadSrc_TOS,BasicAnnot_Dflt)
 %%[[20
              Val_ImpEntry mo eo
-               -> (mva,loadWithPre0From [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)] (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords))
+               -> (mva,loadWithPre0From [instrann' AnnIdUse nm $ ldg InsOp_LocB_Reg (linkImpEntry mo)] (LoadSrc_Reg_Rel (eo + nrNodeHdrWords) nrValWords),BasicAnnot_Dflt)
 %%]]
-      _ -> (Nothing,loadWithPreFrom [instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth] nrValWords LoadSrc_TOS)
+      _ -> (Nothing,loadWithPreFrom [instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth] nrValWords LoadSrc_TOS,BasicAnnot_Dflt)
   where offSrc off sz = if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off sz
 %%]
 
 %%[8 hs
-vaAndLd2Ins :: OptimCtxt -> HsName -> (Maybe ValAccess,Load) -> (InsSeq,StackDepth)
+vaAndLd2Ins :: OptimCtxt -> HsName -> (Maybe ValAccess,Load,BasicAnnot) -> (InsSeq,StackDepth)
 vaAndLd2Ins optim nm vald
   = case vald of
-      (Just (Val_Local _ annot),Load pins pdep LoadSrc_TOS postins)
+      (Just (Val_Local _ annot),Load pins pdep LoadSrc_TOS postins,_)
         | not (ocxOmitTOSLd optim)
           -> (pins Seq.:++: ins Seq.:++: postins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (instrann' AnnIdUse (nm >#< annot)) (LoadSrc_TOS_Rel 0 nrValWords)
-      (_,Load pins pdep ls postins)
+      (_,Load pins pdep ls postins,_)
           -> (pins Seq.:++: ins Seq.:++: postins,pdep + dep)
           where (ins,dep) = ldsrc2ins' (instrann $ show ls) ls
 %%]
@@ -423,33 +440,33 @@ data GrValIntro
 
 %%[8 hs export(GrValIntroAlt(..))
 data GrValIntroAlt
-  = GrValIntroAlt_OnTOS     InsSeq StackDepth OptimEffect
-  | GrValIntroAlt_Delay     InsSeq StackDepth OptimEffect (Maybe ValAccess) Load
+  = GrValIntroAlt_OnTOS     InsSeq StackDepth OptimEffect [BasicAnnot]
+  | GrValIntroAlt_Delay     InsSeq StackDepth OptimEffect (Maybe ValAccess) Load BasicAnnot
 %%]
 
 %%[8 hs export(gviLd,gviLd',gviLdFold)
 gviLdFold' :: GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
 gviLdFold' dflt optim env modNmConstInx stkDepth introL
   = foldl ld dflt $ reverse $ introL
-  where ld (GrValIntroAlt_OnTOS ins dep _) intro
-          = GrValIntroAlt_OnTOS (ins Seq.:++: ins') (dep+dep') defaultOptimEffect
-          where (GrValIntroAlt_OnTOS ins' dep' _) = gviLd optim env modNmConstInx (stkDepth+dep) intro
+  where ld (GrValIntroAlt_OnTOS ins dep _ bann) intro
+          = GrValIntroAlt_OnTOS (ins Seq.:++: ins') (dep+dep') defaultOptimEffect (bann' ++ bann)
+          where (GrValIntroAlt_OnTOS ins' dep' _ bann') = gviLd optim env modNmConstInx (stkDepth+dep) intro
 
 gviLdFold :: OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-gviLdFold = gviLdFold' (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect)
+gviLdFold = gviLdFold' (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect [])
 
 gviLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd' optim env modNmConstInx stkDepth intro
-  = ld optim (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect) intro
-  where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _) intro
+  = ld optim (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect []) intro
+  where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _ _) intro
           = case intro of
               GrValIntro_Nm nm
-                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
-                where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
+                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l bann
+                where (mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Str s l
-                -> GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect
+                -> GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect [BasicAnnot_Dflt]
               GrValIntro_Int i
-                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (loadFrom $ LoadSrc_Imm_Int i)
+                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (loadFrom $ LoadSrc_Imm_Int i) BasicAnnot_Dflt
               GrValIntro_Enum nm
                 -> case mbva of
                      Just va | vaHasAnnot va
@@ -458,45 +475,45 @@ gviLd' optim env modNmConstInx stkDepth intro
                             BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
                             _                      -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Nothing"
-                where ml@(mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
+                where ml@(mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Basic gtag nm
                 -> case mbva of
                      Just va | vaHasAnnot va
                        -> case vaBasicAnnot va of
                             BasicAnnot_Dflt        -> basicAnnotDflt nm
                             BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
-                            BasicAnnot_Size bsz
-                              -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
+                            BasicAnnot_Size bsz _
+                              -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [bann]
                               where (ins,inc) = vaAndLd2Ins optim nm ml
                                     (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz)
                                     (sins,sinc) = ndStore (allocInc + (nrByte2Word bsz) + tinc)
                             _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Nothing"
-                where ml@(mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
+                where ml@(mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
 {-
               GrValIntro_Grp gtag [i] | tagIsUnboxed gtag
                 -> ld optim dflt i
 -}
               GrValIntro_Grp gtag is
-                -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect
-                where i@(GrValIntroAlt_OnTOS ins inc _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
+                -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [BasicAnnot_Dflt]
+                where i@(GrValIntroAlt_OnTOS ins inc _ _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
                       (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
                       (sins,sinc) = ndStore (allocInc + inc + tinc)
               _ -> dflt
           where dep' = stkDepth + dfltInc
                 basicAnnotDflt nm
-                  = GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l
-                  where (mbva,l) = nmLd' optim env modNmConstInx stkDepth nm
+                  = GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l bann
+                  where (mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
                 basicAnnotTaggedPtr nm ml
-                  = GrValIntroAlt_OnTOS (ins Seq.::+: cw2i) inc defaultOptimEffect
+                  = GrValIntroAlt_OnTOS (ins Seq.::+: cw2i) inc defaultOptimEffect [BasicAnnot_Dflt]
                   where (ins,inc) = vaAndLd2Ins optim nm ml
 
 gviLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
 gviLd optim env modNmConstInx stkDepth intro
   = case gviLd' optim env modNmConstInx stkDepth intro of
-      GrValIntroAlt_Delay ins inc optimEffect mbva l
-        -> GrValIntroAlt_OnTOS (ins Seq.:++: sins) (inc + sinc) optimEffect
-        where (sins,sinc) = vaAndLd2Ins optim hsnUnknown (mbva,l)
+      GrValIntroAlt_Delay ins inc optimEffect mbva l bann
+        -> GrValIntroAlt_OnTOS (ins Seq.:++: sins) (inc + sinc) optimEffect [bann]
+        where (sins,sinc) = vaAndLd2Ins optim hsnUnknown (mbva,l,bann)
       a -> a
 %%]
 
@@ -739,9 +756,9 @@ casecall :: Instr
 casecall
   = Instr_CaseCall
 
-callc :: Integral c => MbStrInx -> c -> Instr
-callc i nArg
-  = Instr_CallC s1 i1 (mkCICCall i)
+callc :: Integral c => MbStrInx -> [BasicTy] -> c -> Instr
+callc i ty nArg
+  = Instr_CallC s1 i1 (mkCICCall ty i)
   where (s1,i1) = imm nArg
 
 retcase :: Integral c => c -> c -> Instr

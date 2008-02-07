@@ -453,10 +453,10 @@ SEM CBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Bool
+tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Maybe BasicAnnot
 tyNmIsUnboxedForFFIRes opts
-  = (`elem` ns)
-  where ns = builtinKnownBoxedTyNmL opts
+  = \n -> Map.lookup n m
+  where m = builtinKnownBoxedTyMp opts
 
 tyNmMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Bool
 tyNmMayLiveAsTaggedPtr opts n
@@ -466,7 +466,7 @@ tyNmMayLiveAsTaggedPtr opts n
 
 %%[8
 SEM CBind
-  | FFI         loc         .   isUnboxed   =   tyNmIsUnboxedForFFIRes @lhs.opts
+  | FFI         loc         .   mbAnnot     =   tyNmIsUnboxedForFFIRes @lhs.opts
                             .   isEnumable  =   \n -> case dataGamLookup n @lhs.dataGam of
                                                         Just dgi -> dgiMaxConstrArity dgi == 0
                                                         _        -> False
@@ -474,23 +474,24 @@ SEM CBind
                                             =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
-                lhs         .   grBindL     =   let  annotOfUnboxed box t
+                lhs         .   grBindL     =   let  annotOfUnboxed box annot t
                                                        = if tyNmMayLiveAsTaggedPtr @lhs.opts t
                                                          then if box then BasicAnnot_ToTaggedPtr else BasicAnnot_FromTaggedPtr
-                                                         else BasicAnnot_Size Cfg.sizeofWord -- size must be derived from type, currently not yet
+                                                         else annot
                                                      mkPat ty n
                                                        =  case tyConNm ty of
-                                                            t | @isUnboxed t -> if ehcOptPriv @lhs.opts
-                                                                                then GrPatLam_BasicNode (annotOfUnboxed False t) n
+                                                            t | isJust mbAnn -> if ehcOptPriv @lhs.opts
+                                                                                then GrPatLam_BasicNode (annotOfUnboxed False (fromJust mbAnn) t) n
                                                                                 else mkGrUnbox t n
                                                               | @isEnumable t && ehcOptPriv @lhs.opts
                                                                              -> GrPatLam_EnumNode n
+                                                              where mbAnn = @mbAnnot t
                                                             _                -> GrPatLam_Var n
                                                      resTyNm = tyConNm @resTy
-                                                     resIsUnboxed = @isUnboxed resTyNm
+                                                     mbResAnn = @mbAnnot resTyNm
                                                      resTagLfromDataGam = dataGamTagsOfTy @resTy @lhs.dataGam
                                                      resTagL
-                                                       = if resIsUnboxed
+                                                       = if isJust mbResAnn
                                                          then -- Result type is one of the unboxable types Int, Char, PackedString
                                                               [ GrTag_Unboxed ]
                                                          else case resTagLfromDataGam of
@@ -506,15 +507,15 @@ SEM CBind
                                                                                     [ ]  -- [ GrTag_Any ]
                                                      mkRes v
                                                        = if ehcOptPriv @lhs.opts
-                                                         then if resIsUnboxed
-                                                              then \e -> GrExpr_Seq e (GrPatLam_BasicAnnot (annotOfUnboxed True resTyNm) @nmRes)
+                                                         then if isJust mbResAnn
+                                                              then \e -> GrExpr_Seq e (GrPatLam_BasicAnnot (annotOfUnboxed True (fromJust mbResAnn) resTyNm) @nmRes)
                                                                                       (GrExpr_Unit (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 resTyNm) v))
                                                               else if @isEnumable resTyNm
                                                               then \e -> GrExpr_Seq e (GrPatLam_EnumAnnot resTagL @nmRes)
                                                                                       (GrExpr_Unit (GrVal_EnumNode v))
                                                               else \e -> GrExpr_Seq e (GrPatLam_Annot resTagL @nmRes)
                                                                                       (GrExpr_Unit (GrVal_Var v))
-                                                         else if resIsUnboxed
+                                                         else if isJust mbResAnn
                                                               then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
                                                               else id
 %%[[8
