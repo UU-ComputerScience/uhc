@@ -1,4 +1,4 @@
-Eliminate Grin "Apply" and "Eval" expressions by inlining equivalent code, based on full-program HTP analysis
+Eliminate Grin "Apply" and "Eval" expressions by inlining equivalent code, based on full-program HPT analysis
 
 %%[0
 %include lhs2TeX.fmt
@@ -220,17 +220,6 @@ this from the available information. To that end we must create a new abstract
 value which returns the union of the abstract value of each case alternative.
 
 %%[8.applyCode hs
-
-
-
-type NodeElem
-      = ( ( GrTag                            -- t
-          , Int                              -- a
-          , [AbstractValue]                  -- avL
-          )
-        , EvApTagElt                         -- rhs
-        )
-
 
 buildApplyAlt
  :: ( ( GrTag                            -- t

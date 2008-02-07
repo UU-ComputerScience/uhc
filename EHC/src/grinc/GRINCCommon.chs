@@ -140,6 +140,7 @@ data Equation
   | IsEqual               Variable  Variable
   | IsSelection           Variable  Variable Int GrTag
   | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
+  | IsEnumeration         Variable  Variable
   | IsEvaluation          Variable  Variable                     Variable
   | IsApplication         Variable  [Variable]                   Variable
     deriving (Show, Eq)
