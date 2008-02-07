@@ -95,75 +95,89 @@ PRIM GB_Word gb_primUnsafeId( GB_Word x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_NodePtr gb_primIntToFloat( GB_Int x )
+PRIM GB_Float gb_primIntToFloat( GB_Int x )
 {
-	GB_NodePtr n ;
-	GB_NodeAlloc_Float_In(n) ;
+	// GB_NodePtr n ;
+	// GB_NodeAlloc_Float_In(n) ;
 	// n->content.flt = (float)GB_GBInt2Int(x) ;
-	n->content.flt = (float)x ;
-	return n ;
+	// n->content.flt = (float)x ;
+	return Cast(GB_Float,x) ;
 }
 
-PRIM GB_NodePtr gb_primDoubleToFloat( GB_NodePtr nd )
+PRIM GB_Float gb_primDoubleToFloat( GB_Double /*nd*/ x )
 {
-	GB_NodePtr nf ;
-	GB_NodeAlloc_Float_In(nf) ;
-	nf->content.flt = nd->content.dbl ;
-	return nf ;
+	//GB_NodePtr nf ;
+	//GB_NodeAlloc_Float_In(nf) ;
+	//nf->content.flt = nd->content.dbl ;
+	//return nf ;
+	return Cast(GB_Float,x) ;
 }
 
-PRIM GB_NodePtr gb_primFloatToDouble( GB_NodePtr nf )
+PRIM GB_Double gb_primFloatToDouble( GB_Float x )
 {
-	GB_NodePtr nd ;
-	GB_NodeAlloc_Double_In(nd) ;
-	nd->content.dbl = nf->content.flt ;
-	return nd ;
+	//GB_NodePtr nd ;
+	//GB_NodeAlloc_Double_In(nd) ;
+	//nd->content.dbl = nf->content.flt ;
+	//return nd ;
+	return Cast(GB_Double,x) ;
 }
 
-PRIM GB_NodePtr gb_primIntToDouble( GB_Int x )
+PRIM GB_Double gb_primIntToDouble( GB_Int x )
 {
-	GB_NodePtr n ;
-	GB_NodeAlloc_Double_In(n) ;
+	// GB_NodePtr n ;
+	// GB_NodeAlloc_Double_In(n) ;
 	// n->content.dbl = (double)GB_GBInt2Int(x) ;
-	n->content.dbl = (double)x ;
-	return n ;
+	// n->content.dbl = (double)x ;
+	// return n ;
+	return Cast(GB_Double,x) ;
 }
 
 #if USE_GMP
-PRIM GB_NodePtr gb_primRationalToFloat( GB_NodePtr nr )
+PRIM GB_Word gb_primRationalToFloat( GB_NodePtr nr )
 {
-	GB_NodePtr nf, numerator, divisor ;
-	GB_PassExc( numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExc( divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
-	GB_NodeAlloc_Float_In(nf) ;
-	nf->content.flt = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
-	return nf ;
+	// GB_NodePtr nf ;
+	GB_NodePtr numerator, divisor ;
+	GB_PassExcCast( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExcCast( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
+	// GB_NodeAlloc_Float_In(nf) ;
+	// nf->content.flt = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
+	// return nf ;
+	GB_WordEquiv res ;
+	res.flt = Cast( GB_Float, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
+	// printf( "%lf :%% %lf = %f\n", mpz_get_d( numerator->content.mpz ), mpz_get_d( divisor->content.mpz ), res.flt ) ;
+	GB_Word y = res.wrd ;
+	// printf( "y %x\n", y ) ;
+	return res.wrd ;
 }
 
-PRIM GB_NodePtr gb_primRationalToDouble( GB_NodePtr nr )
+PRIM GB_Double gb_primRationalToDouble( GB_NodePtr nr )
 {
-	GB_NodePtr nf, numerator, divisor ;
-	GB_PassExc( numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExc( divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
-	GB_NodeAlloc_Double_In(nf) ;
-	nf->content.dbl = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
-	return nf ;
+	// GB_NodePtr nf ;
+	GB_NodePtr numerator, divisor ;
+	GB_PassExcDflt( 0.0, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExcDflt( 0.0, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
+	// GB_NodeAlloc_Double_In(nf) ;
+	// nf->content.dbl = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
+	// return nf ;
+	return Cast( GB_Double, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
 }
 
-PRIM GB_NodePtr gb_primIntegerToFloat( GB_NodePtr n )
+PRIM GB_Float gb_primIntegerToFloat( GB_NodePtr n )
 {
-	GB_NodePtr nf ;
-	GB_NodeAlloc_Float_In(nf) ;
-	nf->content.flt = mpz_get_d( n->content.mpz ) ;		// not sure whether this works without explicit truncation or something like that...
-	return nf ;
+	// GB_NodePtr nf ;
+	// GB_NodeAlloc_Float_In(nf) ;
+	// nf->content.flt = mpz_get_d( n->content.mpz ) ;		// not sure whether this works without explicit truncation or something like that...
+	// return nf ;
+	return Cast( GB_Float, mpz_get_d( n->content.mpz ) ) ;
 }
 
-PRIM GB_NodePtr gb_primIntegerToDouble( GB_NodePtr n )
+PRIM GB_Double gb_primIntegerToDouble( GB_NodePtr n )
 {
-	GB_NodePtr nf ;
-	GB_NodeAlloc_Double_In(nf) ;
-	nf->content.dbl = mpz_get_d( n->content.mpz ) ;
-	return nf ;
+	// GB_NodePtr nf ;
+	// GB_NodeAlloc_Double_In(nf) ;
+	// nf->content.dbl = mpz_get_d( n->content.mpz ) ;
+	// return nf ;
+	return Cast( GB_Double, mpz_get_d( n->content.mpz ) ) ;
 }
 
 PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
@@ -189,19 +203,21 @@ PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primFloatToInteger( GB_NodePtr nf )
+PRIM GB_NodePtr gb_primFloatToInteger( GB_Float x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_set_d( n->content.mpz, nf->content.flt ) ;	// not sure whether this works without explicit coercion...
+	// mpz_set_d( n->content.mpz, nf->content.flt ) ;	// not sure whether this works without explicit coercion...
+	mpz_set_d( n->content.mpz, x ) ;	// not sure whether this works without explicit coercion...
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primDoubleToInteger( GB_NodePtr nf )
+PRIM GB_NodePtr gb_primDoubleToInteger( GB_Double x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_set_d( n->content.mpz, nf->content.dbl ) ;
+	// mpz_set_d( n->content.mpz, nf->content.dbl ) ;
+	mpz_set_d( n->content.mpz, x ) ;
 	return n ;
 }
 #endif
@@ -367,49 +383,54 @@ PRIM GB_Word gb_primMinInt()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Word gb_primEqFloat( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Word gb_primEqFloat( GB_Float x, GB_Float y )
 {
-	return GB_Float_Cmp(x,y, gb_False, gb_True, gb_False ) ;
+	return GB_CmpBasic(x,y, gb_False, gb_True, gb_False ) ;
 }
 
-PRIM GB_Word gb_primCmpFloat( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Word gb_primCmpFloat( GB_Float x, GB_Float y )
 {
-	return GB_Float_Cmp(x,y, gb_LT, gb_EQ, gb_GT ) ;
+	return GB_CmpBasic(x,y, gb_LT, gb_EQ, gb_GT ) ;
 }
 
-PRIM GB_NodePtr gb_primAddFloat( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Float gb_primAddFloat( GB_Float x, GB_Float y )
 {
-	GB_NodePtr n ;
-	GB_Float_Add_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Float_Add_In(n,x,y) ;
+	// return n ;
+	return x + y ;
 }
 
-PRIM GB_NodePtr gb_primSubFloat( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Float gb_primSubFloat( GB_Float x, GB_Float y )
 {
-	GB_NodePtr n ;
-	GB_Float_Sub_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Float_Sub_In(n,x,y) ;
+	// return n ;
+	return x - y ;
 }
 
-PRIM GB_NodePtr gb_primMulFloat( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Float gb_primMulFloat( GB_Float x, GB_Float y )
 {
-	GB_NodePtr n ;
-	GB_Float_Mul_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Float_Mul_In(n,x,y) ;
+	// return n ;
+	return x * y ;
 }
 
-PRIM GB_NodePtr gb_primDivFloat( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Float gb_primDivFloat( GB_Float x, GB_Float y )
 {
-	GB_NodePtr n ;
-	GB_Float_Div_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Float_Div_In(n,x,y) ;
+	// return n ;
+	return x / y ;
 }
 
-PRIM GB_NodePtr gb_primNegFloat( GB_NodePtr x )
+PRIM GB_Float gb_primNegFloat( GB_Float x )
 {
-	GB_NodePtr n ;
-	GB_Float_Neg_In(n,x) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Float_Neg_In(n,x) ;
+	// return n ;
+	return -x ;
 }
 
 %%]
@@ -419,49 +440,54 @@ PRIM GB_NodePtr gb_primNegFloat( GB_NodePtr x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Word gb_primEqDouble( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Word gb_primEqDouble( GB_Double x, GB_Double y )
 {
-	return GB_Double_Cmp(x,y, gb_False, gb_True, gb_False ) ;
+	return GB_CmpBasic(x,y, gb_False, gb_True, gb_False ) ;
 }
 
-PRIM GB_Word gb_primCmpDouble( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Word gb_primCmpDouble( GB_Double x, GB_Double y )
 {
-	return GB_Double_Cmp(x,y, gb_LT, gb_EQ, gb_GT ) ;
+	return GB_CmpBasic(x,y, gb_LT, gb_EQ, gb_GT ) ;
 }
 
-PRIM GB_NodePtr gb_primAddDouble( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Double gb_primAddDouble( GB_Double x, GB_Double y )
 {
-	GB_NodePtr n ;
-	GB_Double_Add_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Double_Add_In(n,x,y) ;
+	// return n ;
+	return x + y ;
 }
 
-PRIM GB_NodePtr gb_primSubDouble( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Double gb_primSubDouble( GB_Double x, GB_Double y )
 {
-	GB_NodePtr n ;
-	GB_Double_Sub_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Double_Sub_In(n,x,y) ;
+	// return n ;
+	return x - y ;
 }
 
-PRIM GB_NodePtr gb_primMulDouble( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Double gb_primMulDouble( GB_Double x, GB_Double y )
 {
-	GB_NodePtr n ;
-	GB_Double_Mul_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Double_Mul_In(n,x,y) ;
+	// return n ;
+	return x * y ;
 }
 
-PRIM GB_NodePtr gb_primDivDouble( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_Double gb_primDivDouble( GB_Double x, GB_Double y )
 {
-	GB_NodePtr n ;
-	GB_Double_Div_In(n,x,y) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Double_Div_In(n,x,y) ;
+	// return n ;
+	return x / y ;
 }
 
-PRIM GB_NodePtr gb_primNegDouble( GB_NodePtr x )
+PRIM GB_Double gb_primNegDouble( GB_Double x )
 {
-	GB_NodePtr n ;
-	GB_Double_Neg_In(n,x) ;
-	return n ;
+	// GB_NodePtr n ;
+	// GB_Double_Neg_In(n,x) ;
+	// return n ;
+	return -x ;
 }
 
 %%]
@@ -841,6 +867,36 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 %%]
 
 %%[97
+
+PRIM GB_NodePtr gb_primShowFloat( GB_Float w )
+{
+	char buf[sizeof(GB_Float)*10] ;
+	char *s = buf ;
+	GB_WordEquiv x ;
+	x.flt = w ;
+	// printf( "size %d\n", sizeof(GB_WordEquiv) ) ;
+	// printf( "show w as lx %lx\n", w) ;
+	// printf( "show w as f  %f\n", w) ;
+	// printf( "show as wrd %x\n", x.wrd) ;
+	// printf( "show as flt %f\n", x.flt) ;
+	// printf( "show as flt/lx %lx\n", x.flt ) ;
+	//printf( "show addr x.wrd %x\n", &x.wrd ) ;
+	//printf( "show addr x.flt %x\n", &x.flt ) ;
+	//x.flt = 5.5 ;
+	//printf( "show as flt=5.5 %f\n", x.flt) ;
+	//printf( "show as wrd=5.5 %x\n", x.wrd) ;
+	sprintf( s, "%f", x.flt ) ;
+	
+	GB_NodePtr n ;
+	int sz = strlen(buf) + 1 ; // ??? why +1
+	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	memcpy( n->content.bytearray.ptr, buf, sz ) ;
+	
+  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
+}
+%%]
+
+%%[97
 #if USE_GMP
 PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 {
@@ -1074,7 +1130,7 @@ PRIM GB_Word gb_primChanGetChar( GB_NodePtr chan )
 	int c ;
 	GB_PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
 	// return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
-	return c ;
+	return Cast(GB_Word,c) ;
 }
 
 PRIM GB_NodePtr gb_primChanGetContents( GB_NodePtr chan )

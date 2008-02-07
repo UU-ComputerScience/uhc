@@ -274,8 +274,10 @@ AC_SUBST(LLVMC_CMD,$llvmcCmd)
 # sizeof GrWord
 # AC_CHECK_SIZEOF([unsigned int])
 
-# sizeof GrWord*, Pointer
+# sizeof GrWord*, Pointer, ...
 # AC_CHECK_SIZEOF([nsigned int *])
+AC_CHECK_SIZEOF([float])
+AC_CHECK_SIZEOF([double])
 AC_CHECK_SIZEOF([intptr_t])
 AC_CHECK_SIZEOF([uintptr_t])
 

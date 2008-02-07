@@ -256,6 +256,10 @@ grinScanOpts
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
                                     , "basicnode", "enumnode", "annot", "basicannot", "enumannot"
                                     , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
+                                    , "word"
+%%[[97
+                                    , "float", "double"
+%%]]
                                     ]
         ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
         ,   scoSpecChars        =   "();{}#/\\|,"

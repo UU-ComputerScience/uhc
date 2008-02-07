@@ -58,8 +58,8 @@ module EHC.Prelude (
 -----------------------------}
 --  module Ratio,
 {-----------------------------
-    Ratio((:%)), (%), numerator, denominator,
 -----------------------------}
+    Ratio((:%)), (%), numerator, denominator,
 --  Non-standard exports
     IO(..), IOResult(..),
     IOException(..), IOErrorType(..),
@@ -132,8 +132,8 @@ module EHC.Prelude (
 -----------------------------}
     Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
 --  Fractional((/), recip, fromRational),
-{-----------------------------
     Fractional((/), recip, fromRational, fromDouble),
+{-----------------------------
     Floating(pi, exp, log, sqrt, (**), logBase, sin, cos, tan,
              asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
     RealFrac(properFraction, truncate, round, ceiling, floor),
@@ -1367,6 +1367,8 @@ instance Enum Double where
 {-----------------------------
 primitive primShowsFloat :: Int -> Float -> ShowS
 -----------------------------}
+foreign import ccall primShowFloat :: Float -> String
+-- TODO: replace this by a function Float -> PackedString
 
 {-----------------------------
 instance Read Float where
@@ -1376,6 +1378,8 @@ instance Read Float where
 instance Show Float where
     showsPrec   = primShowsFloat
 -----------------------------}
+instance Show Float where
+    show   = primShowFloat
 
 {-----------------------------
 primitive primShowsDouble :: Int -> Double -> ShowS

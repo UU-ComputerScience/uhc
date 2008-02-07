@@ -111,22 +111,85 @@ static   GB_Word     rr ;
 %%]
 
 %%[8
-#define GB_RegRel(r,o)			((r)+(o))
-#define GB_RegRelx(r,o)			GB_Deref(GB_RegRel(r,o))
-#define GB_PCRel(o)				GB_RegRel(pc,o)
+#define GB_RegRelCast(ty,r,o)		(Cast(ty*,r)+(o))
+#define GB_RegRel(r,o)				((r)+(o))
+#define GB_RegByteRelCastx(ty,r,o)	GB_DerefCast(ty,GB_RegRelCast(GB_Byte,r,o))
+#define GB_RegRelx(r,o)				GB_Deref(GB_RegRel(r,o))
+#define GB_PCRel(o)					GB_RegRel(pc,o)
 
-#define GB_SetRegRel(r,o,v)		{ *GB_RegRel(r,o) = v ; }
+#define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
 
-#define GB_RegByteRel(ty,r,o)	Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
-#define GB_RegByteRelx(r,o)		GB_Deref(GB_RegByteRel(GB_Word,r,o))
+#define GB_RegByteRel(ty,r,o)		Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
+#define GB_RegByteRelx(r,o)			GB_Deref(GB_RegByteRel(GB_Word,r,o))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Function types
+%%% C Function types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 typedef GB_Word GB_CFun();
+%%]
+
+%%[8
+typedef GB_Word (*GB_CFun_w0)(void);
+typedef GB_Word (*GB_CFun_w1w)(GB_Word);
+typedef GB_Word (*GB_CFun_w2ww)(GB_Word,GB_Word);
+typedef GB_Word (*GB_CFun_w3www)(GB_Word,GB_Word,GB_Word);
+typedef GB_Word (*GB_CFun_w4wwww)(GB_Word,GB_Word,GB_Word,GB_Word);
+%%]
+
+%%[97
+typedef GB_Float (*GB_CFun_f0)(void);
+typedef GB_Float (*GB_CFun_f1f)(GB_Float);
+typedef GB_Float (*GB_CFun_f2ff)(GB_Float,GB_Float);
+typedef GB_Float (*GB_CFun_f3fff)(GB_Float,GB_Float,GB_Float);
+typedef GB_Float (*GB_CFun_f4ffff)(GB_Float,GB_Float,GB_Float,GB_Float);
+
+typedef GB_Double (*GB_CFun_d0)(void);
+typedef GB_Double (*GB_CFun_d1d)(GB_Double);
+typedef GB_Double (*GB_CFun_d2dd)(GB_Double,GB_Double);
+typedef GB_Double (*GB_CFun_d3ddd)(GB_Double,GB_Double,GB_Double);
+typedef GB_Double (*GB_CFun_d4dddd)(GB_Double,GB_Double,GB_Double,GB_Double);
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Basic types for C function types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Equivalent of Base.BasicTy
+
+%%[8
+#define GB_CFun_BasicTy_Word	0
+%%]
+
+%%[97
+#define GB_CFun_BasicTy_Float	1
+#define GB_CFun_BasicTy_Double	2
+%%]
+
+%%[8
+#define GB_CFun_0(r)						(r)
+#define GB_CFun_1(r,a1)						GB_CFun_0(r) | (a1) << 2
+#define GB_CFun_2(r,a1,a2)					GB_CFun_1(r,a1) | (a2) << 4
+#define GB_CFun_3(r,a1,a2,a3)				GB_CFun_2(r,a1,a2) | (a3) << 6
+#define GB_CFun_4(r,a1,a2,a3,a4)			GB_CFun_3(r,a1,a2,a3) | (a4) << 8
+#define GB_CFun_5(r,a1,a2,a3,a4,a5)			GB_CFun_4(r,a1,a2,a3,a4) | (a5) << 10
+#define GB_CFun_6(r,a1,a2,a3,a4,a5,a6)		GB_CFun_5(r,a1,a2,a3,a4,a5) | (a6) << 12
+%%]
+
+%%[8
+#define GB_CFun_W0				GB_CFun_0(GB_CFun_BasicTy_Word)
+#define GB_CFun_W1W				GB_CFun_1(GB_CFun_BasicTy_Word,GB_CFun_BasicTy_Word)
+%%]
+
+%%[97
+#define GB_CFun_F0				GB_CFun_0(GB_CFun_BasicTy_Float)
+#define GB_CFun_F1F				GB_CFun_1(GB_CFun_BasicTy_Float,GB_CFun_BasicTy_Float)
+
+#define GB_CFun_D0				GB_CFun_0(GB_CFun_BasicTy_Double)
+#define GB_CFun_D1D				GB_CFun_1(GB_CFun_BasicTy_Double,GB_CFun_BasicTy_Double)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,6 +279,26 @@ int gb_ThrownException_NrOfEvalWrappers ;
 
 %%[8
 #define GB_Skip_CallInfoPtr		pc += sizeof(GB_CallInfo_Inline) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Allocation + tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if TRACE || DUMP_INTERNALS
+GB_Ptr gb_allocated_lowest_ptr = NULL-1 , gb_allocated_highest_ptr = NULL ;
+
+GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes )
+{
+	GB_Ptr p = Cast(GB_Ptr,GC_MALLOC(nBytes)) ;
+	if ( p < gb_allocated_lowest_ptr )
+		gb_allocated_lowest_ptr = p ;
+	if ( p > gb_allocated_highest_ptr )
+		gb_allocated_highest_ptr = p ;
+	return p ;
+}
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -728,6 +811,16 @@ Bool gb_prCallInfoIsVisible( GB_CallInfo* ci )
 }
 %%]
 
+	if ( ( GB_Word_IsInt(x)
+#		if USE_BOEHM_GC
+	       || x < Cast(GB_Word,StackAreaLow)
+#		else
+	       || x < Cast(GB_Word,HeapAreaLow)
+#		endif
+         )
+         && n != &gb_Nil
+	)
+
 %%[8
 #if GB_COUNT_STEPS
 unsigned long gb_StepCounter ;
@@ -761,14 +854,7 @@ void gb_prWord( GB_Word x )
 		printf( "Wd 0x%0.8x: "
 #	endif
 	      , x ) ;
-	if ( ( GB_Word_IsInt(x)
-#		if USE_BOEHM_GC
-	       || x < Cast(GB_Word,StackAreaLow)
-#		else
-	       || x < Cast(GB_Word,HeapAreaLow)
-#		endif
-         )
-         && n != &gb_Nil
+	if ( Cast(GB_Ptr,x) < gb_allocated_lowest_ptr || Cast(GB_Ptr,x) > gb_allocated_highest_ptr
 	)
 	{
 #		if USE_64_BITS
@@ -911,11 +997,33 @@ The code is split up in preamble + call + postamble, where call is only necessar
 						break ;																																									\
 				} \
 				IF_GB_TR_ON(3,printf("GB_CallC_Code2 f %x res %x\n", f, res ););
+#define GB_CallC_CodeWithType(f,nargs,args,res,argTyStr) \
+				IF_GB_TR_ON(3,printf("GB_CallC_CodeWithType1 f=%x nargs=%d ty=%s\n", f, nargs, tyStr );); \
+				switch ( nargs ) {																																								\
+					case 0 :																																									\
+						res = Cast(GB_CFun_w0*,f)( ) ;																																			\
+						break ;																																									\
+					case 1 :																																									\
+						switch () {																																								\
+							case 'w' :																																									\
+								res = Cast(GB_CFun_w1w*,f)( GB_RegByteRelCastx(GB_Word,args,0) ) ;																									\
+								break ;																																									\
+						}																																										\
+						break ;																																									\
+					case 2 :																																									\
+						res = Cast(GB_CFun_w2ww*,f)( GB_RegByteRelCastx(GB_Word,args,0), GB_RegByteRelCastx(GB_Word,args,sizeof(GB_Word)) ) ;													\
+						break ;																																									\
+					default :																																									\
+						gb_panic1_1( "no C call for nr of args", nargs ) ;																														\
+						break ;																																									\
+				} \
+				IF_GB_TR_ON(3,printf("GB_CallC_CodeWithType12 res=%x\n", res ););
 #define GB_CallC_Code_Preamble(nargs) \
 				GB_SetTOS(nargs) ;											/* push nr of args			 						*/		\
 				GB_Push(pc) ;												/* setup call admin to look the same as normal 		*/		\
 				GB_BP_Link ;
 #define GB_CallC_Code_Postamble(nargs,res) \
+				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););														\
 				GB_BP_UnlinkSP ;																										\
 				GB_PopCastedIn(GB_BytePtr,pc) ;																							\
 				GB_PopIn(nargs) ;											/* get nr of args									*/		\
@@ -1264,7 +1372,9 @@ gb_interpreter_InsCallEntry:
 			case GB_Ins_CallC :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args										*/
+				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->extra.ccall.type) ;}) ;
 				p = GB_SPRel(1) ;											/* args												*/
 				x = GB_TOS ;												/* function											*/
 				GB_CallC_Code_Preamble(x2) ;
