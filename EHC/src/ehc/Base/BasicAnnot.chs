@@ -5,6 +5,9 @@
 %%[8 hs module {%{EH}Base.BasicAnnot}
 %%]
 
+%%[8 hs import(Data.Bits)
+%%]
+
 %%[8 hs import(EH.Util.Pretty)
 %%]
 
@@ -34,6 +37,44 @@ instance Show BasicTy where
 %%[[97
   show BasicTy_Float  = "float"
   show BasicTy_Double = "double"
+%%]]
+%%]
+
+%%[8 export(basicTyChar)
+basicTyChar :: BasicTy -> Char
+basicTyChar = head . show
+%%]
+
+%%[8 export(basicTyGBTy)
+basicTyGBTy :: BasicTy -> String
+basicTyGBTy BasicTy_Word   = "GB_Word"
+%%[[97
+basicTyGBTy BasicTy_Float  = "GB_Float"
+basicTyGBTy BasicTy_Double = "GB_Double"
+%%]]
+%%]
+
+%%[8 export(allBasicTy)
+allBasicTy :: [BasicTy]
+allBasicTy
+  = [ BasicTy_Word
+%%[[97
+    , BasicTy_Float
+    , BasicTy_Double
+%%]]
+    ]
+%%]
+
+Encoding of arguments
+
+%%[8 export(basicTyLEncoding)
+basicTyLEncoding :: [BasicTy] -> Integer
+basicTyLEncoding
+  = foldr (.|.) 0 . zipWith (\sh t -> toInteger (fromEnum t + 1) `shiftL` sh) [0,shInc..]
+%%[[8
+  where shInc = 1
+%%][97
+  where shInc = 2
 %%]]
 %%]
 
