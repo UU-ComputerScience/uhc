@@ -184,8 +184,8 @@ charAlphanumeric  c  | isDigit c = [c]
 
 %%[8
 dontStartWithDigit :: String -> String
-dontStartWithDigit xs | isDigit(head xs) = "y"++xs
-                      | otherwise        = xs
+dontStartWithDigit xs@(a:_) | isDigit a || a=='_' = "y"++xs
+                            | otherwise           = xs
 
 hsnAlphanumeric :: HsName -> HsName
 %%[[8
