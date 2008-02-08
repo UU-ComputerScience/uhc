@@ -1,3 +1,82 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Internal config
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define USE_REGS_FOR_PC_SP 		1
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Register usage (adapted from lvm evaluator.c)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if defined(__GNUC__) && !defined(DEBUG)
+#ifdef __i386__
+# define PC_REG asm("%esi")
+# define SP_REG asm("%edi")
+# define FP_REG
+#endif
+#ifdef __x86_64__
+#define PC_REG asm("6")
+#define SP_REG asm("7")
+#define FP_REG
+#undef USE_REGS_FOR_PC_SP
+#endif
+#ifdef __mips__
+#define PC_REG asm("$16")
+#define SP_REG asm("$17")
+#define FP_REG asm("$18")
+#endif
+#ifdef __sparc__
+#define PC_REG asm("%l0")
+#define SP_REG asm("%l1")
+#define FP_REG asm("%l2")
+#endif
+#ifdef __alpha__
+#ifdef __CRAY__
+#define PC_REG asm("r9")
+#define SP_REG asm("r10")
+#define FP_REG asm("r11")
+#define INSTR_BASE_REG asm("r12")
+#else
+#define PC_REG asm("$9")
+#define SP_REG asm("$10")
+#define FP_REG asm("$11")
+#define INSTR_BASE_REG asm("$12")
+#endif
+#endif
+#if defined(PPC) || defined(_ARCH_PPC) || defined(_POWER) || defined(_IBMR2)
+#define RR_REG asm("25")
+#define PC_REG asm("26")
+#define SP_REG asm("27")
+#define FP_REG asm("28")
+#endif
+#ifdef __hppa__
+#define PC_REG asm("%r18")
+#define SP_REG asm("%r17")
+#define FP_REG asm("%r16")
+#endif
+#ifdef __mc68000__
+#define PC_REG asm("a5")
+#define SP_REG asm("a4")
+#define FP_REG asm("d7")
+#endif
+#ifdef __arm__
+#define PC_REG asm("r9")
+#define SP_REG asm("r8")
+#define FP_REG asm("r7")
+#endif
+#ifdef __ia64__
+#define PC_REG asm("36")
+#define SP_REG asm("37")
+#define FP_REG asm("38")
+#define INSTR_BASE_REG asm("39")
+#endif
+#endif  /* GNUC & DEBUG */
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Word, and Pointer to Word.
@@ -53,6 +132,88 @@ typedef union GB_WordEquiv {
   GB_Word 		wrd ;
   GB_Float		flt ;
 } GB_WordEquiv ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Registers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Registers:
+pc: program counter
+sp: stack pointer (used for temporaries, locals, expression calculation)
+bp: base pointer (used for exception handling)
+rr: user available scratch register
+
+%%[8
+#if USE_REGS_FOR_PC_SP
+register GB_BytePtr  pc PC_REG ;
+register GB_Ptr      sp SP_REG ;
+#else
+extern   GB_BytePtr  pc ;
+extern   GB_Ptr      sp ;
+#endif
+
+extern   GB_Ptr      bp ;
+
+#if defined(RR_REG) && USE_REGS_FOR_PC_SP
+register GB_Word     rr RR_REG ;
+#else
+extern   GB_Word     rr ;
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stack
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_TOS					(*sp)
+#define GB_SetTOS(x)			{*sp = Cast(GB_Word,x);}
+#define GB_Push(v)				{*(--sp) = (Cast(GB_Word,v)) ; }
+
+#define GB_Popn(n)				(sp+=(n))
+#define GB_Pop					(sp++)
+#define GB_PopCastIn(ty,v)		{(v) = Cast(ty,*GB_Pop) ;}
+#define GB_PopIn(v)				GB_PopCastIn(GB_Word,v)
+%%]
+#define GB_PopCast(ty)			(Cast(ty *,sp)++)
+#define GB_PopCastIn(ty,v)		{(v) = (GB_PopCast(ty)) ;}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Base pointer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_BP_Set				{ bp = sp ; }
+#define GB_BP_Link				{ GB_Push(bp) ; GB_BP_Set ; }
+#define GB_BP_Unlink			{ bp = Cast(GB_Ptr,GB_Deref(bp)) ; }
+#define GB_BP_UnlinkSP			{ sp = bp ; GB_BP_Unlink ; sp++ ; }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% General pointer/register access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define GB_RegRelCast(ty,r,o)		(Cast(ty*,r)+(o))
+#define GB_RegRel(r,o)				((r)+(o))
+#define GB_RegByteRelCastx(ty,r,o)	GB_DerefCast(ty,GB_RegRelCast(GB_Byte,r,o))
+#define GB_RegRelx(r,o)				GB_Deref(GB_RegRel(r,o))
+
+#define GB_RegByteRel(ty,r,o)		Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
+#define GB_RegByteRelx(r,o)			GB_Deref(GB_RegByteRel(GB_Word,r,o))
+%%]
+
+%%[8
+#define GB_SPRel(o)					GB_RegRel(sp,o)
+#define GB_SPRelx(o)				GB_Deref(GB_SPRel(o))
+%%]
+
+%%[8
+#define GB_PCRel(o)					GB_RegRel(pc,o)
+
+#define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
+#define GB_SetRegByteRel(ty,r,o,v)	{ *GB_RegByteRel(ty,r,o) = v ; }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -160,7 +160,7 @@ data CallInfoExtra
 
 %%[8 hs
 instance PP CallInfoExtra where
-  pp (CallInfoExtra_CCall t) = pp $ show $ map (head . show) t
+  pp (CallInfoExtra_CCall t) = pp $ show $ map basicTyChar t
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
@@ -758,8 +758,9 @@ casecall
 
 callc :: Integral c => MbStrInx -> [BasicTy] -> c -> Instr
 callc i ty nArg
-  = Instr_CallC s1 i1 (mkCICCall ty i)
+  = Instr_CallC s1 i1 ce (mkCICCall ty i)
   where (s1,i1) = imm nArg
+        (_ ,ce) = imm $ basicTyLEncoding ty
 
 retcase :: Integral c => c -> c -> Instr
 retcase nRes retOffSurr

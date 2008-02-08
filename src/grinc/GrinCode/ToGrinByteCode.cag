@@ -671,7 +671,7 @@ SEM GrExpr
                                                            GB.GrValIntroAlt_OnTOS ins inc _ bann
                                                              -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse (@nm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr), GB.callc @mbDebugStrInx banns inc], GB.nrValWords, False)
                                                              where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
-                                                                   bannStr = map (head . show) banns
+                                                                   bannStr = map basicTyChar banns
                                                                    banns = map basicAnnotTy (@lhs.patBasicAnnot : bann)
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of

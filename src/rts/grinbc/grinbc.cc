@@ -4,123 +4,22 @@
 
 %%[8
 #include "../rts.h"
+#include "gbccall.h"
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Internal config
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#define USE_REGS_FOR_PC_SP 		1
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Register usage (adapted from lvm evaluator.c)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#if defined(__GNUC__) && !defined(DEBUG)
-#ifdef __i386__
-# define PC_REG asm("%esi")
-# define SP_REG asm("%edi")
-# define FP_REG
-#endif
-#ifdef __x86_64__
-#define PC_REG asm("6")
-#define SP_REG asm("7")
-#define FP_REG
-#undef USE_REGS_FOR_PC_SP
-#endif
-#ifdef __mips__
-#define PC_REG asm("$16")
-#define SP_REG asm("$17")
-#define FP_REG asm("$18")
-#endif
-#ifdef __sparc__
-#define PC_REG asm("%l0")
-#define SP_REG asm("%l1")
-#define FP_REG asm("%l2")
-#endif
-#ifdef __alpha__
-#ifdef __CRAY__
-#define PC_REG asm("r9")
-#define SP_REG asm("r10")
-#define FP_REG asm("r11")
-#define INSTR_BASE_REG asm("r12")
-#else
-#define PC_REG asm("$9")
-#define SP_REG asm("$10")
-#define FP_REG asm("$11")
-#define INSTR_BASE_REG asm("$12")
-#endif
-#endif
-#if defined(PPC) || defined(_ARCH_PPC) || defined(_POWER) || defined(_IBMR2)
-#define RR_REG asm("25")
-#define PC_REG asm("26")
-#define SP_REG asm("27")
-#define FP_REG asm("28")
-#endif
-#ifdef __hppa__
-#define PC_REG asm("%r18")
-#define SP_REG asm("%r17")
-#define FP_REG asm("%r16")
-#endif
-#ifdef __mc68000__
-#define PC_REG asm("a5")
-#define SP_REG asm("a4")
-#define FP_REG asm("d7")
-#endif
-#ifdef __arm__
-#define PC_REG asm("r9")
-#define SP_REG asm("r8")
-#define FP_REG asm("r7")
-#endif
-#ifdef __ia64__
-#define PC_REG asm("36")
-#define SP_REG asm("37")
-#define FP_REG asm("38")
-#define INSTR_BASE_REG asm("39")
-#endif
-#endif  /* GNUC & DEBUG */
-
-%%]
-
-Registers:
-pc: program counter
-sp: stack pointer (used for temporaries, locals, expression calculation)
-bp: base pointer (used for exception handling)
-rr: user available scratch register, but not much used yet
 
 %%[8
 #if USE_REGS_FOR_PC_SP
-register GB_BytePtr  pc PC_REG ;
-register GB_Ptr      sp SP_REG ;
 #else
-static   GB_BytePtr  pc ;
-static   GB_Ptr      sp ;
+GB_BytePtr  pc ;
+GB_Ptr      sp ;
 #endif
 
-static   GB_Ptr      bp ;
+GB_Ptr      bp ;
 
 #if defined(RR_REG) && USE_REGS_FOR_PC_SP
-register GB_Word     rr RR_REG ;
 #else
-static   GB_Word     rr ;
+GB_Word     rr ;
 #endif
-%%]
-
-%%[8
-#define GB_RegRelCast(ty,r,o)		(Cast(ty*,r)+(o))
-#define GB_RegRel(r,o)				((r)+(o))
-#define GB_RegByteRelCastx(ty,r,o)	GB_DerefCast(ty,GB_RegRelCast(GB_Byte,r,o))
-#define GB_RegRelx(r,o)				GB_Deref(GB_RegRel(r,o))
-#define GB_PCRel(o)					GB_RegRel(pc,o)
-
-#define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
-
-#define GB_RegByteRel(ty,r,o)		Cast(ty*,((Cast(GB_BytePtr,r))+(o)))
-#define GB_RegByteRelx(r,o)			GB_Deref(GB_RegByteRel(GB_Word,r,o))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,28 +28,6 @@ static   GB_Word     rr ;
 
 %%[8
 typedef GB_Word GB_CFun();
-%%]
-
-%%[8
-typedef GB_Word (*GB_CFun_w0)(void);
-typedef GB_Word (*GB_CFun_w1w)(GB_Word);
-typedef GB_Word (*GB_CFun_w2ww)(GB_Word,GB_Word);
-typedef GB_Word (*GB_CFun_w3www)(GB_Word,GB_Word,GB_Word);
-typedef GB_Word (*GB_CFun_w4wwww)(GB_Word,GB_Word,GB_Word,GB_Word);
-%%]
-
-%%[97
-typedef GB_Float (*GB_CFun_f0)(void);
-typedef GB_Float (*GB_CFun_f1f)(GB_Float);
-typedef GB_Float (*GB_CFun_f2ff)(GB_Float,GB_Float);
-typedef GB_Float (*GB_CFun_f3fff)(GB_Float,GB_Float,GB_Float);
-typedef GB_Float (*GB_CFun_f4ffff)(GB_Float,GB_Float,GB_Float,GB_Float);
-
-typedef GB_Double (*GB_CFun_d0)(void);
-typedef GB_Double (*GB_CFun_d1d)(GB_Double);
-typedef GB_Double (*GB_CFun_d2dd)(GB_Double,GB_Double);
-typedef GB_Double (*GB_CFun_d3ddd)(GB_Double,GB_Double,GB_Double);
-typedef GB_Double (*GB_CFun_d4dddd)(GB_Double,GB_Double,GB_Double,GB_Double);
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -197,25 +74,16 @@ Equivalent of Base.BasicTy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Push(v)				{*(--sp) = (Cast(GB_Word,v)) ; }
 #define GB_Push2(v)				{*(sp-1) = (Cast(GB_Word,v)) ; sp-- ;}		/* avoid predecrement */
-#define GB_TOS					(*sp)
 #define GB_SetReg(r,x)			{r = Cast(GB_Word,x);}
-#define GB_SetTOS(x)			{*sp = Cast(GB_Word,x);}
 #define GB_SetTOSRel(o,x)		{ *GB_SPRel(o) = (x); }
 #define GB_SetTOSByteRel(o,x)	{ *Cast(GB_Ptr,GB_SPByteRel(GB_Word,o)) = (x); }
-#define GB_Popn(n)				(sp+=(n))
-#define GB_Pop					(sp++)
-#define GB_PopCastedIn(ty,v)	{(v) = Cast(ty,*GB_Pop) ;}
 #define GB_TOSCastedIn(ty,v)	{(v) = Cast(ty,GB_TOS) ;}
-#define GB_PopIn(v)				GB_PopCastedIn(GB_Word,v)
 
 #define GB_PopnUpdTOS(n,x)		{sp += (n) ; GB_SetTOS(x) ; }
 
-#define GB_SPRel(o)				GB_RegRel(sp,o)
-#define GB_SPRelx(o)			GB_Deref(GB_SPRel(o))
-
 #define GB_SetSPRel(o,v)		GB_SetRegRel(sp,o,v)
+#define GB_SetSPByteRel(o,v)	GB_SetRegRel(sp,o,v)
 
 #define GB_SPByteRel(ty,o)		GB_RegByteRel(ty,sp,o)
 #define GB_SPByteRelx(o)		GB_Deref(GB_SPByteRel(GB_Word,o))
@@ -226,17 +94,6 @@ Equivalent of Base.BasicTy
 								IF_GB_TR_ON(3,printf("pfr %x pto %x sp %x\n",pfr,pto,sp);) ;			\
 								MemCopyBackward(pfr,pto,sp) ;
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Base pointer
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#define GB_BP_Set				{ bp = sp ; }
-#define GB_BP_Link				{ GB_Push(bp) ; GB_BP_Set ; }
-#define GB_BP_Unlink			{ bp = Cast(GB_Ptr,GB_Deref(bp)) ; }
-#define GB_BP_UnlinkSP			{ sp = bp ; GB_BP_Unlink ; sp++ ; }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,9 +125,9 @@ int gb_ThrownException_NrOfEvalWrappers ;
 								    case GB_InsOp_ImmSz_16 : \
 								      GB_PCImmIn(int16_t,x) ; break ; \
 								    case GB_InsOp_ImmSz_32 : \
-								      GB_PCImmIn(int16_t,x) ; break ; \
+								      GB_PCImmIn(int32_t,x) ; break ; \
 								    case GB_InsOp_ImmSz_64 : \
-								      GB_PCImmIn(int16_t,x) ; break ; \
+								      GB_PCImmIn(int64_t,x) ; break ; \
 								  } \
 								}
 %%]
@@ -1025,7 +882,7 @@ The code is split up in preamble + call + postamble, where call is only necessar
 #define GB_CallC_Code_Postamble(nargs,res) \
 				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););														\
 				GB_BP_UnlinkSP ;																										\
-				GB_PopCastedIn(GB_BytePtr,pc) ;																							\
+				GB_PopCastIn(GB_BytePtr,pc) ;																							\
 				GB_PopIn(nargs) ;											/* get nr of args									*/		\
 				sp = GB_RegRel(sp,nargs) ;									/* pop args											*/		\
 				GB_Push(res) ;
@@ -1339,7 +1196,7 @@ gb_interpreter_InsCallEntry:
 			/* tailcallt */
 			case GB_Ins_TailCall(GB_InsOp_LocB_TOS) :
 				GB_RetTailCall_Code
-					( GB_PopCastedIn(GB_BytePtr,dst)
+					( GB_PopCastIn(GB_BytePtr,dst)
 					, pc = dst
 					, bpSave = GB_Deref(bp) ; retSave = GB_Deref(GB_RegRel(bp,1)) // retSave = GB_Deref(GB_RegByteRel(GB_Word,spSave,x5))
 					, sp = GB_RegByteRel(GB_Word,bp,x4-x3) ; GB_BP_Set
@@ -1372,18 +1229,22 @@ gb_interpreter_InsCallEntry:
 			case GB_Ins_CallC :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args										*/
+				GB_Word callenc ;
+				GB_PCImmIn2(GB_InsOp_ImmSz_32,callenc) ; 			/* call encoding										*/
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: callenc=%x\n", callenc) ;}) ;
 				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->extra.ccall.type) ;}) ;
-				p = GB_SPRel(1) ;											/* args												*/
-				x = GB_TOS ;												/* function											*/
-				GB_CallC_Code_Preamble(x2) ;
-				GB_CallC_Code(x,x2,p,x) ;
+				// p = GB_SPRel(1) ;											/* args												*/
+				// x = GB_TOS ;												/* function											*/
+				// GB_CallC_Code_Preamble(x2) ;
+				// GB_CallC_Code(x,x2,p,x) ;
+				gb_callc( x2, callenc ) ;
 %%[[96
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 				GB_PassExcWith(,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 %%]]
-				GB_CallC_Code_Postamble(x2,x) ;
+				// GB_CallC_Code_Postamble(x2,x) ;
 				break ;
 
 			/* retcase */
@@ -1578,7 +1439,7 @@ gb_interpreter_InsApplyEntry:
 
 			/* fetcht */
 			case GB_Ins_Fetch(GB_InsOp_LocB_TOS) :
-				GB_PopCastedIn(GB_NodePtr,n) ;
+				GB_PopCastIn(GB_NodePtr,n) ;
 				p = Cast(GB_Ptr,&(n->content.fields[GB_Node_NrFlds(n)])) ;
 				p2 = n->content.fields ;
 				MemCopyBackward(p,p2,sp) ;
@@ -1589,7 +1450,7 @@ gb_interpreter_InsApplyEntry:
 			/* fetchupd */
 			case GB_Ins_FetchUpdate :
 				GB_PopIn(x) ;
-				GB_PopCastedIn(GB_NodePtr,n) ;
+				GB_PopCastIn(GB_NodePtr,n) ;
 				n->content.fields[0] = x ;
 				h = n->header ;
 				h = GB_MkHeader(GB_NH_Fld_Size(h),GB_NodeNdEv_Yes,GB_NodeTagCat_Ind,GB_NH_Fld_Tag(h)) ;
@@ -1698,7 +1559,6 @@ gb_interpreter_InsApplyEntry:
 	interpretIsDone: ;
 
 }
-
 %%]			
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

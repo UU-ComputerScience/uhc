@@ -41,6 +41,7 @@ include $(SRC_PREFIX)lvm/files.mk
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
+include $(SRC_PREFIX)gen/files.mk
 include $(SRC_PREFIX)grinc/variant.mk
 include $(SRC_PREFIX)ehc/files1.mk
 include $(SRC_PREFIX)grini/files.mk
