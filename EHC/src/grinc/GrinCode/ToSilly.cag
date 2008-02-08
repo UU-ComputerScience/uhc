@@ -227,6 +227,7 @@ SEM GrExpr
  | Unit    lhs.stats  = if @isLastExpr
                           then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                           else internal1 "Unit" @lhs.targets @val.values
+           lhs.localsSet = Set.fromList @lhs.targets
 
  | FFI     lhs.stats  = if @isLastExpr
                          then yielding  "FFI" (@lhs.optOwn>=1) @loc.callres @lhs.numberParameters
@@ -374,9 +375,12 @@ SEM GrVal
                         in  if length vs==1
                             then head vs
                             else error ("cannot generate value code for non-singleton VarNode " ++ show vs)
+                            
+ | BasicNode lhs.values = [@tag.value, Value_Var (mkVar @nm)]
+ | EnumNode  lhs.values = [Value_Var (mkVar @nm)]
  | * - LitInt LitStr Var Tag Node VarNode
            lhs.value  = error "GrVal:other value"
- | * - Node VarNode Var
+ | * - Node VarNode Var BasicNode EnumNode
            lhs.values = error "GrVal:other values"
 
 SEM GrValL
@@ -439,12 +443,14 @@ SEM GrExpr
              body . targets = @lhs.targets
 
 SEM GrPatLam
-  | Var     lhs  .  patternNames = [@nm]
---  | Node    lhs  .  patternNames = wildcardNr : @fldL
-  | VarNode lhs  .  patternNames = @fldL.patternNames
---  | Tag     lhs  .  patternNames = [wildcardNr]
-  | * - Var VarNode lhs  .  patternNames  =  []
---  | * - Var Node VarNode Tag lhs  .  patternNames  =  []
+  | Empty       lhs  .  patternNames = []
+  | Var
+    EnumNode
+    EnumAnnot
+    Annot       lhs  .  patternNames = [@nm]
+  | BasicNode   lhs  .  patternNames = [wildcardNr, @nm]
+  | BasicAnnot  lhs  .  patternNames = [wildcardNr, @nm]  -- TODO: this can be simplified to [@nm] if FFI would not return UNBOXED
+  | VarNode     lhs  .  patternNames = @fldL.patternNames
 
 SEM GrVarL
   | Nil   lhs.patternNames = []
