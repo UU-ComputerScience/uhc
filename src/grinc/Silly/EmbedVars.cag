@@ -182,12 +182,22 @@ data SmartTree = SmartTree EIV [(SmartTree,Maybe Int)]
 
 smartAssignment :: [(Int,Value)] -> [Statement]
 smartAssignment = concat . map smartAss . foldr smartAdd [] . convertTups
+{-
+smartAssignment tups = let convs  = trace ("smart tups=" ++ show tups)  $ convertTups tups
+                           trees  = trace ("smart convs="++ show convs) $ foldr smartAdd [] convs
+                           statss = trace ("smart trees="++ show trees) $ map smartAss trees
+                           res    = trace ("smart stats="++ show statss)$ concat statss
+                       in  res
+-}
+
+isJust Nothing = False
+isJust (Just _)= True
 
 convertTups :: [(Int,Value)] -> [(EIV,Maybe Int,Int)]
 convertTups tups = [ (dependency, mbindex, destination) 
                    | (destination, value) <- tups
                    , let (dependency,mbindex) = smartDep value
-                   , either (\dep->dep/=destination) (\v->True) dependency
+                   , either (\dep->dep/=destination || isJust mbindex) (\v->True) dependency
                    ]
 
 smartDep :: Value -> (EIV,Maybe Int)

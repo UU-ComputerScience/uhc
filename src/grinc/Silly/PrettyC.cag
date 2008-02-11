@@ -133,7 +133,7 @@ SEM Statement
   | Comment     lhs.prettyC   = comment @comment
   | Assignment  lhs.prettyC   = assignment  @dest.prettyC  @source.prettyC
   | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC
-  | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @scrutinee.prettyC @body.prettyC
+  | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyTE
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
@@ -236,9 +236,9 @@ trace s
 -- = text ("printf(\"" ++ s ++ " SP=%d (%d)\\n\", SP, SP-Stack); fflush(stdout);")
    = text ("printf(\"" ++ s ++            "\\n\"              ); fflush(stdout);")
 
-caseDefault :: PP_Doc -> PP_Doc
-caseDefault x
- =  "default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
+caseDefault :: PP_Doc -> String -> PP_Doc
+caseDefault x funname
+ =  "default: printf(\"in function" >#< funname >#< "undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
 
 comment :: [String] -> PP_Doc
 comment []  = text ""
@@ -371,17 +371,17 @@ assignment v e
    >|< ppWhen optTraceAssign
               (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
 
-switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
-switch optDef scrutinee body
+switch :: Bool -> String -> PP_Doc -> PP_Doc -> PP_Doc
+switch optDef funname scrutinee body
  = 
     ppWhen optTraceAssign
-              (" printf(\"switch" >#< show scrutinee >#< " : %d \\n\", " >#< show scrutinee >#<  "); fflush(stdout);")
+              (" printf(\"switch" >#< show scrutinee >#< " : %d\\n\", " >#< show scrutinee >#<  "); fflush(stdout);")
    >-< "switch ("
    >|< scrutinee
    >|< ")"
    >#< "{"
    >-< indent 4 body
-   >-< ppWhen optDef (indent 4 (caseDefault scrutinee))
+   >-< ppWhen optDef (indent 4 (caseDefault scrutinee funname))
    >-< "}"
 
 ifstat ::  PP_Doc -> PP_Doc -> PP_Doc
