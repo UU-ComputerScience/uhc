@@ -1450,11 +1450,14 @@ cpPreprocessWithCPP modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               fpCPP = fpathSetSuff (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
-       ; when (ehcOptCPP opts)
+       ; when (  ehcOptCPP opts
+              || modNm == hsnModIntlPrelude		-- 20080211, AD: builtin hack, for now, to avoid implementation of pragmas
+              )
               (do { let preCPP
                           = concat $ intersperse " "
                             $ (  [ Cfg.shellCmdCpp ]
                               ++ [ "-traditional-cpp", "-fno-show-column", "-P", "-D__EHC__" ]
+                              ++ (if ehcOptFullProgGRIN opts then ["-D__FULL_PROGRAM_ANALYSIS__"] else [])
                               ++ [ fpathToStr fp, fpathToStr fpCPP ]
                               )
                   ; when (ehcOptVerbosity opts >= VerboseALot)

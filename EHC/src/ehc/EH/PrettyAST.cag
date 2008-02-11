@@ -85,10 +85,11 @@ SEM Expr
                                         ]
                         .  info_4   =   []
                         .  info_5   =   []
-  | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4_2 ++ @info_6 ++ @info_9)
+  | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4 ++ @info_4_2 ++ @info_6 ++ @info_9)
                                         >-< @body.ppAST
                 loc     .  info_2   =   []
                         .  info_3   =   []
+                        .  info_4   =   []
                         .  info_4_2 =   []
                         .  info_6   =   []
                         .  info_9   =   []
@@ -237,6 +238,8 @@ SEM Expr
                                         ]
   | Var         loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         , mkInfo1 "foTrace fo" (vlist $ foTrace @fo_)
+                                        ]
+  | Let         loc     .  info_4   :=  [ mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
                                         ]
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]

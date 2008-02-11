@@ -154,7 +154,13 @@ gccOpts = "@GCC_EHC_OPTIONS@"
 
 %%[8 export(libnamesGccEhcExtraExternalLibs)
 libnamesGccEhcExtraExternalLibs :: [String]
-libnamesGccEhcExtraExternalLibs = words "@GCC_EHC_EXTRA_EXTERN_LIBS@"
+libnamesGccEhcExtraExternalLibs
+  = words
+      (  "@GCC_EHC_EXTRA_EXTERN_LIBS@"
+%%[[97
+      ++ " m"
+%%]]
+      )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

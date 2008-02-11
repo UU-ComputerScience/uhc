@@ -165,11 +165,10 @@ data EHCOpts
 defaultEHCOpts
   = EHCOpts
       {  ehcOptShowHS         =   False
+      ,  ehcOptPriv           =   True
 %%[[1
-      ,  ehcOptPriv           =   False
       ,  ehcOptShowEH         =   True
 %%][99
-      ,  ehcOptPriv           =   True
       ,  ehcOptShowEH         =   False
 %%]]
 %%[[1
@@ -376,7 +375,7 @@ ehcCmdLineOpts
                                                   }
                                 Just m | m `elem` ["bexe","bexec"]
                                              -> o { ehcOptEmitExecBC   = True
-                                                  , ehcOptPriv         = True
+                                                  -- , ehcOptPriv         = True
                                                   , ehcOptEmitGrinBC   = True
                                                   }
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True
@@ -388,7 +387,7 @@ ehcCmdLineOpts
                                                   , ehcOptEmitExecLLVM = True
                                                   }                   
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True 
-                                                  , ehcOptPriv         = True
+                                                  -- , ehcOptPriv         = True
                                                   }
                                 Just "c"     -> o { ehcOptEmitLlc      = True
                                                   , ehcOptFullProgGRIN = True

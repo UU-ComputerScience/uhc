@@ -495,7 +495,7 @@ hsnIsInPrelude n
       _         -> False
 %%]
 
-%%[99 export(hsnModPrelude)
+%%[99 export(hsnModPrelude,hsnModIntlPrelude)
 -- hsnModIntlRatio                         =   hsnPrefixQual hsnEHC (hsnFromString "Ratio")
 -- hsnModIntlReal                          =   hsnPrefixQual hsnEHC (hsnFromString "Real")
 -- hsnModIntlFractional                    =   hsnPrefixQual hsnEHC (hsnFromString "Fractional")
