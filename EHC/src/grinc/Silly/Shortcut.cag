@@ -48,8 +48,6 @@ ATTR Statement Statements Alternative Alternatives [ allDefMap : {Map.Map Variab
 ATTR Statement Statements Alternative Alternatives [ | env : {Map.Map Variable Value} | ]
 ATTR Value Values [ env : {Map.Map Variable Value} | | ]
 
-ATTR Value Variable [ | | isSimple : {Bool} ]
-ATTR       Variable [ | | isVerySimple : {Bool} ]
 ATTR Value          [ | | isntCall : {Bool} ]
 
 
@@ -67,6 +65,10 @@ SEM Function
               -- loc.envs       =  Statement_Comment (map show (Map.toList @body.env))
 
 
+--SEM Statements
+--  | Cons      lhs.trf = Statement_Comment ["env: " ++ show @lhs.env] : @hd.trf : @tl.trf
+
+
 SEM Statement
   | Assignment  lhs.defMap  =  Map.adjust (+1) @dest.self @lhs.defMap
   | Assignment2 lhs.defMap  =  Map.adjust (+1) @dest1.self (Map.adjust (+1) @dest2.self @lhs.defMap)
@@ -78,37 +80,32 @@ SEM Statement
   | Assignment  (lhs.trf, lhs.env)  =  if @source.isntCall
                                           && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
                                                            (Map.lookup @dest.self @lhs.allUseMap)
-                                                           @source.isSimple
-                                        then ( Statement_Comment [" (inlined)"]  --  ++ show @source.trf ]
+                                                           (isSimpleValue @source.trf)
+                                        then ( Statement_Comment [" (inlined)" ++ show @source.trf ]
                                              , Map.insert @dest.self @source.trf @lhs.env 
                                              )
                                         else ( Statement_Assignment @dest.self @source.trf
                                              , @lhs.env
                                              )
+
                                              
 SEM Value
   | Var          lhs.trf  = maybe (Value_Var @var.self) id (Map.lookup @var.self @lhs.env)
+  | Call         lhs.isntCall  =  False
+  | * - Call     lhs.isntCall  =  True
 
-
-SEM Variable
-  | Subs         lhs.isSimple  =  @array.isVerySimple
-  | * - Subs     lhs.isSimple  =  True
-  
-  | SP           lhs.isVerySimple = True
-  | * - SP       lhs.isVerySimple = False
-
-SEM Value
-  | Alloc         lhs.isSimple  =  False
-  | Var           lhs.isSimple  =  @var.isSimple
-  | * - Alloc Var lhs.isSimple  =  True
-  
-  | Call          lhs.isntCall  =  False
-  | * - Call      lhs.isntCall  =  True
-
-                                  
 %%]
 
 %%[8 hs
+isSimpleVariable :: Variable -> Bool
+isSimpleVariable (Variable_Subs Variable_SP _) = True
+isSimpleVariable (Variable_Subs _           _) = False
+isSimpleVariable _                             = True
+
+isSimpleValue :: Value -> Bool
+isSimpleValue (Value_Alloc _) = False
+isSimpleValue (Value_Var v)   = isSimpleVariable v
+isSimpleValue _               = True
 
 virtualizable (Just def) (Just use) simpleVal = def==1 && ( use==2 || simpleVal )
 virtualizable _ _ _ = False
