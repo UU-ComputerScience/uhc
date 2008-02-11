@@ -15,6 +15,7 @@
 %%]
 
 %%[97
+#include "math.h"
 #if USE_GMP
 #include "gmp.h"
 #endif

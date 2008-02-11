@@ -133,9 +133,9 @@ module EHC.Prelude (
     Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
 --  Fractional((/), recip, fromRational),
     Fractional((/), recip, fromRational, fromDouble),
-{-----------------------------
     Floating(pi, exp, log, sqrt, (**), logBase, sin, cos, tan,
              asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
+{-----------------------------
     RealFrac(properFraction, truncate, round, ceiling, floor),
     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
               encodeFloat, exponent, significand, scaleFloat, isNaN,
@@ -265,7 +265,6 @@ class (Num a) => Fractional a where
     x / y         = x * recip y
 
 
-{-----------------------------
 class (Fractional a) => Floating a where
     pi                  :: a
     exp, log, sqrt      :: a -> a
@@ -289,6 +288,7 @@ class (Fractional a) => Floating a where
     acosh x              = log (x + sqrt (x*x - 1))
     atanh x              = (log (1 + x) - log (1 - x)) / 2
 
+{-----------------------------
 class (Real a, Fractional a) => RealFrac a where
     properFraction   :: (Integral b) => a -> (b,a)
     truncate, round  :: (Integral b) => a -> b
@@ -891,8 +891,6 @@ signumReal x | x == 0    =  0
              | x > 0     =  1
              | otherwise = -1
 
-{-----------------------------
------------------------------}
 instance Real Int where
     toRational x = toInteger x % 1
 
@@ -960,8 +958,6 @@ instance Ix Integer where
     inRange (m,n) i      = m <= i && i <= n
 -----------------------------}
 
-{-----------------------------
------------------------------}
 instance Enum Int where
     succ           = boundedSucc
     pred           = boundedPred
@@ -996,14 +992,10 @@ boundedEnumFromThenTo n n' m
   delta = n'-n
   ns = iterate (+delta) n
 
-{-----------------------------
------------------------------}
 -- takeWhile and one more
 takeWhile1 :: (a -> Bool) -> [a] -> [a]
 takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
 
-{-----------------------------
------------------------------}
 instance Enum Integer where
     succ x         = x + 1
     pred x         = x - 1
@@ -1072,8 +1064,6 @@ instance Show Integer where
 
 -- Standard Floating types --------------------------------------------------
 
-{-----------------------------
------------------------------}
 data Float     -- builtin datatype of single precision floating point numbers
 data Double    -- builtin datatype of double precision floating point numbers
 
@@ -1196,7 +1186,7 @@ primitive primFloatToDouble :: Float -> Double  -- used by runtime optimizer
 -----------------------------}
 foreign import ccall primDivFloat      :: Float -> Float -> Float
 foreign import ccall primDoubleToFloat :: Double -> Float
--- foreign import ccall primFloatToDouble :: Float -> Double  -- used by runtime optimizer
+foreign import ccall primFloatToDouble :: Float -> Double
 
 {-----------------------------
 -----------------------------}
@@ -1251,26 +1241,37 @@ primitive primSinFloat,  primAsinFloat, primCosFloat,
           primLogFloat,  primExpFloat,  primSqrtFloat :: Float -> Float
 -----------------------------}
 
-{-----------------------------
 instance Floating Float where
-    exp   = primExpFloat
-    log   = primLogFloat
-    sqrt  = primSqrtFloat
-    sin   = primSinFloat
-    cos   = primCosFloat
-    tan   = primTanFloat
-    asin  = primAsinFloat
-    acos  = primAcosFloat
-    atan  = primAtanFloat
------------------------------}
+    exp   = primDoubleToFloat . primExpDouble  . primFloatToDouble
+    log   = primDoubleToFloat . primLogDouble  . primFloatToDouble
+    sqrt  = primDoubleToFloat . primSqrtDouble . primFloatToDouble
+    sin   = primDoubleToFloat . primSinDouble  . primFloatToDouble
+    cos   = primDoubleToFloat . primCosDouble  . primFloatToDouble
+    tan   = primDoubleToFloat . primTanDouble  . primFloatToDouble
+    asin  = primDoubleToFloat . primAsinDouble . primFloatToDouble
+    acos  = primDoubleToFloat . primAcosDouble . primFloatToDouble
+    atan  = primDoubleToFloat . primAtanDouble . primFloatToDouble
 
 {-----------------------------
 primitive primSinDouble,  primAsinDouble, primCosDouble,
           primAcosDouble, primTanDouble,  primAtanDouble,
           primLogDouble,  primExpDouble,  primSqrtDouble :: Double -> Double
 -----------------------------}
+-- basic
+foreign import ccall "sin"  primSinDouble   :: Double -> Double
+foreign import ccall "cos"  primCosDouble   :: Double -> Double
+foreign import ccall "tan"  primTanDouble   :: Double -> Double
+foreign import ccall "asin" primAsinDouble  :: Double -> Double
+foreign import ccall "acos" primAcosDouble  :: Double -> Double
+foreign import ccall "atan" primAtanDouble  :: Double -> Double
+foreign import ccall "exp"  primExpDouble   :: Double -> Double
+foreign import ccall "log"  primLogDouble   :: Double -> Double
+foreign import ccall "sqrt" primSqrtDouble  :: Double -> Double
+-- extra
+foreign import ccall "sinh" primSinhDouble  :: Double -> Double
+foreign import ccall "cosh" primCoshDouble  :: Double -> Double
+foreign import ccall "tanh" primTanhDouble  :: Double -> Double
 
-{-----------------------------
 instance Floating Double where
     exp   = primExpDouble
     log   = primLogDouble
@@ -1281,7 +1282,12 @@ instance Floating Double where
     asin  = primAsinDouble
     acos  = primAcosDouble
     atan  = primAtanDouble
+    sinh  = primSinhDouble
+    cosh  = primCoshDouble
+    tanh  = primTanhDouble
 
+
+{-----------------------------
 instance RealFrac Float where
     properFraction = floatProperFraction
 
@@ -1342,7 +1348,9 @@ instance RealFloat Double where
     isDenormalized _ = False
     isNegativeZero _ = False
     isIEEE      _ = False
+-----------------------------}
 
+{-----------------------------
 instance Enum Float where
     succ x                = x+1
     pred x                = x-1
@@ -1352,7 +1360,9 @@ instance Enum Float where
     enumFromThen          = numericEnumFromThen
     enumFromTo            = numericEnumFromTo
     enumFromThenTo        = numericEnumFromThenTo
+-----------------------------}
 
+{-----------------------------
 instance Enum Double where
     succ x                = x+1
     pred x                = x-1
@@ -1384,6 +1394,7 @@ instance Show Float where
 {-----------------------------
 primitive primShowsDouble :: Int -> Double -> ShowS
 -----------------------------}
+foreign import ccall primShowDouble :: Double -> String
 
 {-----------------------------
 instance Read Double where
@@ -1393,6 +1404,8 @@ instance Read Double where
 instance Show Double where
     showsPrec   = primShowsDouble
 -----------------------------}
+instance Show Double where
+    show   = primShowDouble
 
 -- Some standard functions --------------------------------------------------
 
@@ -2655,3 +2668,11 @@ emptyRec = EmptyRec
 -- End of Hugs standard prelude ----------------------------------------------
 
 main = return () -- dummy
+
+-- test of --cpp option for Prelude:
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+-- FULL_PROGRAM_ANALYSIS
+#else
+-- no FULL_PROGRAM_ANALYSIS
+#endif

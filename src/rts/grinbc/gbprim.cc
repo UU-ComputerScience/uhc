@@ -133,21 +133,15 @@ PRIM GB_Double gb_primIntToDouble( GB_Int x )
 }
 
 #if USE_GMP
-PRIM GB_Word gb_primRationalToFloat( GB_NodePtr nr )
+PRIM GB_Float gb_primRationalToFloat( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
 	GB_PassExcCast( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
 	GB_PassExcCast( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
-	// GB_NodeAlloc_Float_In(nf) ;
-	// nf->content.flt = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
-	// return nf ;
-	GB_WordEquiv res ;
-	res.flt = Cast( GB_Float, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
-	// printf( "%lf :%% %lf = %f\n", mpz_get_d( numerator->content.mpz ), mpz_get_d( divisor->content.mpz ), res.flt ) ;
-	GB_Word y = res.wrd ;
-	// printf( "y %x\n", y ) ;
-	return res.wrd ;
+	GB_Float res ;
+	res = Cast( GB_Float, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
+	return res ;
 }
 
 PRIM GB_Double gb_primRationalToDouble( GB_NodePtr nr )
@@ -872,20 +866,21 @@ PRIM GB_NodePtr gb_primShowFloat( GB_Float w )
 {
 	char buf[sizeof(GB_Float)*10] ;
 	char *s = buf ;
-	GB_WordEquiv x ;
-	x.flt = w ;
-	// printf( "size %d\n", sizeof(GB_WordEquiv) ) ;
-	// printf( "show w as lx %lx\n", w) ;
-	// printf( "show w as f  %f\n", w) ;
-	// printf( "show as wrd %x\n", x.wrd) ;
-	// printf( "show as flt %f\n", x.flt) ;
-	// printf( "show as flt/lx %lx\n", x.flt ) ;
-	//printf( "show addr x.wrd %x\n", &x.wrd ) ;
-	//printf( "show addr x.flt %x\n", &x.flt ) ;
-	//x.flt = 5.5 ;
-	//printf( "show as flt=5.5 %f\n", x.flt) ;
-	//printf( "show as wrd=5.5 %x\n", x.wrd) ;
-	sprintf( s, "%f", x.flt ) ;
+	sprintf( s, "%f", w ) ;
+	
+	GB_NodePtr n ;
+	int sz = strlen(buf) + 1 ; // ??? why +1
+	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	memcpy( n->content.bytearray.ptr, buf, sz ) ;
+	
+  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
+}
+
+PRIM GB_NodePtr gb_primShowDouble( GB_Double w )
+{
+	char buf[sizeof(GB_Double)*10] ;
+	char *s = buf ;
+	sprintf( s, "%lf", w ) ;
 	
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ; // ??? why +1
