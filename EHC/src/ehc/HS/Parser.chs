@@ -308,8 +308,7 @@ pDeclarationValue
                <$> varop <*> pPatternOp <*> rhs
            )
   <?> "pDeclarationValue"
-  where rhs      =   pRhs pEQUAL
-        pLhsTail ::  HSParser [Pattern]
+  where pLhsTail ::  HSParser [Pattern]
         pLhsTail =   pList1 pPatternBaseCon
         pLhs     ::  HSParser LeftHandSide
         pLhs     =   mkRngNm LeftHandSide_Function <$> var <*> pLhsTail
@@ -320,10 +319,25 @@ pDeclarationValue
                            <$> pPatternOp <*> varop <*> pPatternOp
                        )
                      <*> pLhsTail
-        mkP  p     rhs = Declaration_PatternBinding emptyRange p rhs
-        mkF  lhs   rhs = Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange lhs rhs]
+        mkP  p       rhs = Declaration_PatternBinding emptyRange (p2p p) rhs'
+                         where (p2p,rhs') = mkTyPat rhs
+        mkF  lhs     rhs = Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange (l2l lhs) rhs']
+                         where (l2l,rhs') = mkTyLhs rhs
         mkLI l o r     = LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r
         mkLP r l t     = LeftHandSide_Parenthesized r l t
+%%[[1
+        rhs         =   pRhs pEQUAL
+        mkTyLhs rhs = (id,rhs)
+        mkTyPat     = mkTyLhs
+%%][4
+        rhs      =   pMbTy <+> pRhs pEQUAL
+        pMbTy    ::  HSParser (Maybe (Token,Type))
+        pMbTy    =   pMb (pDCOLON <+> pType)
+        mkTyLhs (Just (tok,ty),rhs) = (\l -> LeftHandSide_Typed (mkRange1 tok) l ty,rhs)
+        mkTyLhs (_            ,rhs) = (id                                          ,rhs)
+        mkTyPat (Just (tok,ty),rhs) = (\p -> Pattern_Typed      (mkRange1 tok) p ty,rhs)
+        mkTyPat (_            ,rhs) = (id                                          ,rhs)
+%%]]
 %%]
 
 %%[8

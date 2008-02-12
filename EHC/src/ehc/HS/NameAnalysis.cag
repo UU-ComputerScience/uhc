@@ -238,7 +238,15 @@ SEM Declaration
 %%[1
 SEM FunctionBinding
     | FunctionBinding
-        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range (IdAsp_Val_Fun @lefthandside.eh @righthandside.eh @lUniq) @idOccDefs
+        loc             .   idOccDefGam =   mkDefGam @lhs.nmLev @range
+                                              (IdAsp_Val_Fun @lefthandside.eh
+%%[[1
+                                                             @righthandside.eh
+%%][4
+                                                             (@lefthandside.ehTyMk @righthandside.eh)
+%%]]
+                                                             @lUniq)
+                                              @idOccDefs
 %%]
 
 %%[1
@@ -252,6 +260,13 @@ SEM Pattern
         loc             .   idOccDefGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
 %%]]
+%%]
+
+%%[4
+SEM LeftHandSide
+    | Typed
+        loc             .   idOccDefGamType
+                                        =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
 %%]
 
 %%[7
@@ -397,6 +412,12 @@ SEM Expression
 
 %%[4
 SEM Pattern
+    | Typed
+        type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
+%%]
+
+%%[4
+SEM LeftHandSide
     | Typed
         type            .   idGam       =   gamAddGam @idOccDefGamType @lhs.idGam
 %%]

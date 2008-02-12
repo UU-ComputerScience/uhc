@@ -976,6 +976,12 @@ DATA LeftHandSide
         range                    : Range
         lefthandside             : LeftHandSide
         patterns                 : Patterns
+%%[[4
+    | Typed
+        range                    : Range
+        lefthandside             : LeftHandSide
+        type                     : Type
+%%]]
 
 DATA RightHandSide
     | Expression

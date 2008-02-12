@@ -84,6 +84,12 @@ SEM Pattern
         type            .   nmLev       =   @lhs.nmLev + 1
 %%]
 
+%%[4
+SEM LeftHandSide
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+
 %%[1
 SEM FunctionBinding
     | FunctionBinding

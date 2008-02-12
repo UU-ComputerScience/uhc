@@ -26,11 +26,13 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Let
+-- 20080212, AD: incompatible because of addition of marked lines, for lexically scoped type variables
 %%[5.Let
 SEM Expr
   | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
                 (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @decls.tyVarMp |==> @valGam_g_
                 loc         .   gTyTvL              =   ftv @gSubsValGam_
+                                                        ++ ftv (@decls.tyVarMp |=> @lhs.tyGam)		-- 20080212 incompatibility with ruler version
                             .   quValGam_           =   valGamQuantify @gTyTvL @lSubsValGam
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
