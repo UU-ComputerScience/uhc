@@ -121,6 +121,14 @@ AC_ARG_WITH(cabal-config-options,
 [ cabalConfigureOptions="$withval" ],)
 AC_SUBST(CABAL_CONFIGURE_OPTIONS, "$cabalConfigureOptions")
 
+### 'with' option for additional ehc unixtool (gcc, cpp) prefix.
+### Usually empty, but set for (e.g.) cygwin
+AC_ARG_WITH(additional-ehc-unixtool-prefix,
+[AC_HELP_STRING([--with-ehc-unixtool-prefix=<additional prefix for unixtools used by ehc>],
+                [Additional prefix for unixtools used by ehc.])],
+[ additionalEhcUnixtoolPrefix="$withval" ],)
+AC_SUBST(EHC_UNIXTOOL_PREFIX, "$additionalEhcUnixtoolPrefix")
+
 ### 'with' option for ghc
 AC_ARG_WITH(ghc,
 [AC_HELP_STRING([--with-ghc=<haskell compiler>],
