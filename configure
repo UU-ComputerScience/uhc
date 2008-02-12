@@ -677,6 +677,7 @@ UUAGC_OPTIONS
 UUAGC_EHC_AST_OPTIONS
 UUAGC_EHC_SEM_OPTIONS
 CABAL_CONFIGURE_OPTIONS
+EHC_UNIXTOOL_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
@@ -1330,6 +1331,8 @@ Optional Packages:
   --with-cabal-config-options=<cabal configure options for compiling ehc>
                           Additional options to pass to cabal's ./setup
                           configure when compiling EHC.
+  --with-ehc-unixtool-prefix=<additional prefix for unixtools used by ehc>
+                          Additional prefix for unixtools used by ehc.
   --with-ghc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
@@ -2150,6 +2153,17 @@ fi
 CABAL_CONFIGURE_OPTIONS="$cabalConfigureOptions"
 
 
+### 'with' option for additional ehc unixtool (gcc, cpp) prefix.
+### Usually empty, but set for (e.g.) cygwin
+
+# Check whether --with-additional-ehc-unixtool-prefix was given.
+if test "${with_additional_ehc_unixtool_prefix+set}" = set; then
+  withval=$with_additional_ehc_unixtool_prefix;  additionalEhcUnixtoolPrefix="$withval"
+fi
+
+EHC_UNIXTOOL_PREFIX="$additionalEhcUnixtoolPrefix"
+
+
 ### 'with' option for ghc
 
 # Check whether --with-ghc was given.
@@ -2523,7 +2537,7 @@ LLVMC_CMD=$llvmcCmd
 # sizeof GrWord
 # AC_CHECK_SIZEOF([unsigned int])
 
-# sizeof GrWord*, Pointer
+# sizeof GrWord*, Pointer, ...
 # AC_CHECK_SIZEOF([nsigned int *])
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -6811,6 +6825,7 @@ UUAGC_OPTIONS!$UUAGC_OPTIONS$ac_delim
 UUAGC_EHC_AST_OPTIONS!$UUAGC_EHC_AST_OPTIONS$ac_delim
 UUAGC_EHC_SEM_OPTIONS!$UUAGC_EHC_SEM_OPTIONS$ac_delim
 CABAL_CONFIGURE_OPTIONS!$CABAL_CONFIGURE_OPTIONS$ac_delim
+EHC_UNIXTOOL_PREFIX!$EHC_UNIXTOOL_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
@@ -6845,7 +6860,6 @@ SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
 SUFFIX_LIB!$SUFFIX_LIB$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
-SLASH!$SLASH$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -6887,6 +6901,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+SLASH!$SLASH$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
 LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
@@ -6902,7 +6917,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 13; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 14; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

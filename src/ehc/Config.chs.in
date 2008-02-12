@@ -88,7 +88,7 @@ fileprefixInstall = "@INSTALL_PREFIX@/"
 
 %%[8 export(shellCmdGcc)
 shellCmdGcc :: String
-shellCmdGcc = "@GCC_CMD@@SUFFIX_EXEC@"
+shellCmdGcc = "@EHC_UNIXTOOL_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%[8 export(shellCmdLLVMC)
@@ -100,7 +100,7 @@ shellCmdLLVMC = if null "@LLVMC_CMD@"
 
 %%[99 export(shellCmdCpp)
 shellCmdCpp :: String
-shellCmdCpp = "@CPP_CMD@@SUFFIX_EXEC@"
+shellCmdCpp = "@EHC_UNIXTOOL_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
