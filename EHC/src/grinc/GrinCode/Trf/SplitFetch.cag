@@ -40,6 +40,8 @@ has lower arity than C1.
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
+%%[8 import({GrinCode/Trf/CommonArity})
+%%]
 %%[8 hs import(Debug.Trace)
 %%]
 
@@ -75,33 +77,6 @@ SEM GrGlobal
 SEM GrBind  
   | Bind    expr . renameMap = Map.empty  
 %%]
-
-%%%%%%%%%%%%%%%%
-%% Node sizes %%
-%%%%%%%%%%%%%%%%
-
-%%[8 hs
-
-tagArity :: GrTag -> Map.Map Int Int -> Int
-tagArity (GrTag_Fun       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_App       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_PApp n    nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap) - n
-tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
-%%]
-
-%%[8
-
-ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
-ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]
-
-SEM GrBind
-  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
-
-SEM GrModule
-  | Mod  bindL.arityMap = @bindL.genArities
-
-%%]
-
 
 %%%%%%%%%%%%%%%%%%
 %%% SplitFetch %%%
@@ -169,6 +144,7 @@ SEM GrExpr
                                     ; let res = if      isJust @pat.mbTag then (map f fetches, Nothing                          )
                                                 else if isJust mbTag      then (map g fetches, Nothing                          )
                                                 else                           ([f fetch0]   , Just (fst fetch0, map f fetch1n) )
+                                    --; return (trace ("fetch " ++ show p ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) res)
                                     ; return res
                                     }
          lhs   .  grTrf             = maybe @grTrf 
@@ -253,7 +229,8 @@ buildSeqs body = foldr buildSeq body
     where
     buildSeq (v, e) b = GrExpr_Seq e (GrPatLam_Var v) b
 
-checkSingleTag hptMap p = if singleton nodes
+checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p ++ show nodes) $
+                          if singleton nodes
                           then Just (fst $ head nodes)
                           else Nothing
     where

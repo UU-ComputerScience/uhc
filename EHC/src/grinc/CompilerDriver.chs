@@ -208,6 +208,7 @@ caOptimize = task_ VerboseNormal                    "Optimizing (full)"
     ( do { transformCodeIterated propagate          "Copy propagation"
          ; caWriteGrin           True               "61-after-cp"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin           True               "69-optimized"
          }
     )

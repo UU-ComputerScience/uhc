@@ -8,6 +8,8 @@ WRAPPER GrAGItf
 %%]
 %%[8 import({GrinCode/AbsSyn})
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.CopyPropagation} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map) export(propagate)
 
@@ -27,19 +29,37 @@ propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
+ATTR GrPatLam
+     GrVarL
+     GrVar
+     GrTagL
+     GrTag   [ | | self: SELF ]
 ATTR GrAGItf GrModule AllBind GrExpr AllAlt [ | | changed USE {||} {False}: Bool ]
 
 SEM GrExpr
-  | Seq loc   .  mbLeft   =  testLeft @pat.grTrf @expr.mbUnitValue     -- test if left-law is applicable, and determine the substitution to be used
+  | Seq loc   .  mbLeft   =  testLeft @pat.self @expr.mbUnitValue     -- test if left-law is applicable, and determine the substitution to be used
         loc   .  isLeft   =  isJust @loc.mbLeft
-        loc   .  isRight  =  testRight @pat.grTrf @body.mbUnitValue    -- test if right-law is applicable
+        loc   .  isRight  =  testRight @pat.self @body.mbUnitValue    -- test if right-law is applicable
         lhs   .  changed  =  @expr.changed || @body.changed || @loc.isLeft || @loc.isRight
-        body  .  subst    =  maybe id id @loc.mbLeft $ @lhs.subst      -- merge substitution neccessary for left-law with inherited substitution
+        loc   .  (st1,st2) = maybe (id,id) id @loc.mbLeft
+        loc   .  newsubst =  @loc.st1 @lhs.subst             -- merge substitution neccessary for left-law with inherited substitution
+        loc   .  newpatsubst = @loc.st2 @body.patsubst
+        body  .  subst    =  @loc.newsubst
+        pat   .  subst    =  @loc.newpatsubst
+        lhs   .  patsubst =  @loc.newpatsubst
         lhs   .  grTrf    =  if @loc.isLeft            -- first try left-law
                               then @body.grTrf         -- if it is possible, @expr can be ignored because it contains the copied unit
                               else if @loc.isRight     -- otherwise try right-law
                                     then @expr.grTrf   -- if it is possible, @body can be ignored because it contains the copied unit
                                     else @loc.grTrf    -- no transformations possible
+      
+--        lhs   .  grTrf    =  if @loc.isRight           -- first try right-law
+--                              then @expr.grTrf         -- if it is possible, @body can be ignored because it contains the copied unit
+--                              else if @loc.isLeft      -- otherwise try left-law
+--                                    then @body.grTrf   -- if it is possible, @expr can be ignored because it contains the copied unit
+--                                    else @loc.grTrf    -- no transformations possible
+
+  | *-Seq  lhs . patsubst  =  Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -85,19 +105,19 @@ equalVars _                   _              =  False
 %%%%%%%%%%%%%%%%%%%%%
 
 %%[8.leftUnit hs
-testLeft :: GrPatLam -> Maybe GrVal -> Maybe SubstTrafo
+testLeft :: GrPatLam -> Maybe GrVal -> Maybe SubstTrafoPair
 testLeft pat mbVal
   =  do { val <- mbVal
         ; testL pat val
         }
 
-testL :: GrPatLam -> GrVal -> Maybe SubstTrafo
+testL :: GrPatLam -> GrVal -> Maybe SubstTrafoPair
 testL pat val
   = case pat of
       GrPatLam_Empty      -> case val of
-                              GrVal_Empty         -> Just id
+                              GrVal_Empty         -> Just (id,id)
                               _                   -> error "CopyProp: left: empty-pattern does not match"
-      GrPatLam_Var     v  ->                         Just (Map.insert v val)
+      GrPatLam_Var     v  ->                         Just (Map.insert v val, id)
       GrPatLam_VarNode vs -> case val of
                               GrVal_Var      _    -> Nothing
                               GrVal_Node     t xs -> Just (unifyNodes vs (GrVal_Tag t:xs))
@@ -105,18 +125,22 @@ testL pat val
                               _                   -> error "CopyProp: left: node-pattern does not match"
       _  -> Nothing
                               
-unifyNodes :: [GrVar] -> [GrVal] -> Substitution -> Substitution
-unifyNodes []     []     s  =  s
-unifyNodes []     xs     s  =  s  -- ignore superfluous values
-unifyNodes ps     []     s  =  error "CopyProp: unify: too many patterns"
-unifyNodes (p:ps) (x:xs) s  =  unifyNodes ps xs (unifyVars p x s)
+
+unifyNodes :: [GrVar] -> [GrVal] -> SubstTrafoPair
+unifyNodes []     []      =  (id,id)
+unifyNodes []     xs      =  (id,id)  -- ignore superfluous values
+unifyNodes ps     []      =  error "CopyProp: unify: too many patterns"
+unifyNodes (p:ps) (x:xs)  =  let (a1,a2) = unifyNodes ps xs 
+                                 (b1,b2) = unifyVars p x
+                             in  (a1 . b1, a2 . b2)
                               
-unifyVars :: GrVar -> GrVal -> Substitution -> Substitution
-unifyVars GrVar_Ignore        _              s              =  s
-unifyVars (GrVar_KnownTag t1) (GrVal_Tag t2) s | t1==t2     =  s
-                                               | otherwise  =  error "CopyProp: unify: tags do not match"
-unifyVars (GrVar_KnownTag _ ) _              s              =  s
-unifyVars (GrVar_Var v1)      x              s              =  Map.insert v1 x s
+unifyVars :: GrVar -> GrVal -> SubstTrafoPair
+unifyVars GrVar_Ignore        _                            =  (id, id)
+unifyVars (GrVar_KnownTag t1) (GrVal_Tag t2)  | t1==t2     =  (id, id)
+                                              | otherwise  =  error "CopyProp: unify: tags do not match"
+unifyVars (GrVar_KnownTag t1) (GrVal_Var v2)               =  (id, Map.insert v2 (GrVal_Tag t1))
+unifyVars (GrVar_KnownTag _ ) _                            =  (id,id)
+unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, id)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -137,6 +161,7 @@ SEM GrExpr
 %%[8 hs
 type Substitution = Map.Map HsName GrVal
 type SubstTrafo = Substitution -> Substitution
+type SubstTrafoPair = (SubstTrafo, SubstTrafo)
 
 getHsName nm subst 
   =  case Map.lookup nm subst of
@@ -144,9 +169,20 @@ getHsName nm subst
       Just repl  -> case repl of
                       GrVal_Var v -> v
                       _           -> nm
+
+mbSubstTag nm subst 
+  =  case Map.lookup nm subst of
+      Nothing    -> Nothing
+      Just repl  -> case repl of
+                      GrVal_Tag t -> Just t
+                      _           -> Nothing
+
 %%]
 %%[8.applySubstitutions
+
 ATTR AllExpr [ subst: Substitution | | ]
+ATTR GrExpr  [ | | patsubst : Substitution ]
+
 
 SEM GrVal
   | Var      lhs  .  grTrf  =  Map.findWithDefault   @grTrf @nm @lhs.subst
@@ -157,6 +193,10 @@ SEM GrExpr
   | FetchNode  lhs  .  grTrf  = GrExpr_FetchNode  (getHsName @nm @lhs.subst)
   | FetchField lhs  .  grTrf  = GrExpr_FetchField (getHsName @nm @lhs.subst) @offset @mbTag
   | UpdateUnit lhs  .  grTrf  = GrExpr_UpdateUnit (getHsName @nm @lhs.subst) @val.grTrf
+
+SEM GrVar
+  | Var        lhs  .  grTrf  = maybe (GrVar_Var @nm) (\t -> GrVar_KnownTag t) (mbSubstTag @nm @lhs.subst)
+
 
 SEM GrBind
   | Bind  expr . subst     = Map.empty

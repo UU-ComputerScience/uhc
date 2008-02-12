@@ -7,6 +7,8 @@ Eliminate Grin "Apply" and "Eval" expressions by inlining equivalent code, based
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
+%%[8 import({GrinCode/Trf/CommonArity})
+%%]
 
 %%[8.wrapper
 WRAPPER GrAGItf
@@ -87,13 +89,6 @@ buildEvalAlt
     , [AbstractValue]
     , GrAlt                   -- code
     )
-
-
-tagArity :: GrTag -> Map.Map Int Int -> Int
-tagArity (GrTag_Fun       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_App       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_PApp n    nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap) - n
-tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
 
 tagEvalRhs t@(GrTag_Fun nm) = if   t == throwTag   -- TODO: test for *numbered* version of throwTag, or even better: make it a real tag instead of abusing #F
                               then EvApTagThrow
@@ -384,15 +379,6 @@ ATTR GrAGItf
 ATTR GrAGItf       [ | | grTrf: GrModule ]
 ATTR AllNT         [ | | grTrf: SELF ]
 
-ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
-ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]
-
-SEM GrBind
-  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
-
-SEM GrModule
-  | Mod  bindL.arityMap = @bindL.genArities
- 
 SEM GrExpr
   | Eval  loc  .  (unique, hptMap, grTrf)  = evalCode   @lhs.unique @lhs.arityMap @lhs.hptMap @nm
   | App   loc  .  (unique, hptMap, grTrf)  = applyCode  @lhs.unique @lhs.arityMap @lhs.hptMap @nm @argL.grTrf

@@ -1,0 +1,27 @@
+Used in GrInline.cag and SplitFetch.cag
+
+
+%%[8 hs
+
+tagArity :: GrTag -> Map.Map Int Int -> Int
+tagArity (GrTag_Fun       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_App       nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_PApp n    nm) arityMap = fromJust (Map.lookup (getNr nm) arityMap) - n
+tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
+tagArity  GrTag_Hole          _        = 0
+tagArity t                    _        = error ("CommonArity: tagArity " ++ show t)
+
+%%]
+
+%%[8
+
+ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
+ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]
+
+SEM GrBind
+  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
+
+SEM GrModule
+  | Mod  bindL.arityMap = @bindL.genArities
+
+%%]
