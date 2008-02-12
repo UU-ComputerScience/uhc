@@ -63,7 +63,7 @@ SEM Expr
 %%]]
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
   | Parens      loc     .   pp      =   ppParens @expr.pp
-  | TypeAs      loc     .   pp      =   @expr.pp >#< "::" >#< @tyExpr.pp
+  | TypeAs      loc     .   pp      =   ppParens @expr.pp >#< "::" >#< @tyExpr.pp
 %%]
 
 %%[1.Base.ExprComplex

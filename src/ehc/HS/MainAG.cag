@@ -211,7 +211,59 @@ SEM Expression
 SEM ContextItem
     | Class
         loc         .   isAsPred    =   False
+
+SEM LeftHandSide
+    | Typed
+        loc         .   isAsPred    =   False
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generate either a plain type variable or a wildcard
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+ATTR Type AllRowTypeUpdate [ doGenVarWild: Bool | | ]
+
+SEM LeftHandSide
+    | Typed
+        loc         .   doGenVarWild=   True
+
+SEM Types
+    | Cons
+        loc         .   doGenVarWild=   False
+
+SEM Pattern
+    | Typed
+        loc         .   doGenVarWild=   False
+
+SEM Expression
+    | Typed
+        loc         .   doGenVarWild=   False
+
+SEM Declaration
+    | *
+        loc         .   doGenVarWild=   False
+%%]
+%%[5
+SEM AnnotatedType
+    | Type
+        loc         .   doGenVarWild=   False
+%%]
+
+SEM Type
+    | InfixApplication
+        leftType    .   doGenVarWild=   @operator.isPrArrow
+    | NormalApplication
+        arguments   .   doGenVarWild=   False
+
+
+SEM Pattern
+    | *
+        loc         .   doGenVarWild=   False
+
+SEM ContextItem
+    | Class
+        loc         .   doGenVarWild=   False
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data decl has fields?

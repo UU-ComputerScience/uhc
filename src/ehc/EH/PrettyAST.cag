@@ -119,8 +119,9 @@ SEM Expr
                         .  info_2   =   []
                         .  info_9   =   []
                         .  info_4_2 =   []
-  | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","TypeAs"] [] [@expr.ppAST,@tyExpr.ppAST] @info_3
+  | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","TypeAs"] [] [@expr.ppAST,@tyExpr.ppAST] (@info_3 ++ @info_4)
                 loc     .  info_3   =   []
+                loc     .  info_4   =   []
 
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
@@ -239,6 +240,8 @@ SEM Expr
   | Var         loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         , mkInfo1 "foTrace fo" (vlist $ foTrace @fo_)
                                         ]
+  | TypeAs      loc     .  info_4   :=  [ mkInfo1 "tyExpr.tyGam" (ppGam (@tyExpr.tyGam))
+                                        ]
   | Let         loc     .  info_4   :=  [ mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
                                         ]
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
@@ -256,6 +259,7 @@ SEM Expr
 SEM PatExpr
   | TypeAs      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","TypeAs"] [] [@patExpr.ppAST,@tyExpr.ppAST] @info
                 loc     .  info     =   [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+                                        , mkInfo1 "lhs.tyGam" (ppGam (@lhs.tyGam))
                                         , mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
                                         , mkInfo1 "patExpr.ty" (ppTyS @patExpr.tyVarMp @patExpr.ty)
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))

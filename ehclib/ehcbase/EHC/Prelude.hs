@@ -135,8 +135,8 @@ module EHC.Prelude (
     Fractional((/), recip, fromRational, fromDouble),
     Floating(pi, exp, log, sqrt, (**), logBase, sin, cos, tan,
              asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
-{-----------------------------
     RealFrac(properFraction, truncate, round, ceiling, floor),
+{-----------------------------
     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
               encodeFloat, exponent, significand, scaleFloat, isNaN,
               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
@@ -288,12 +288,12 @@ class (Fractional a) => Floating a where
     acosh x              = log (x + sqrt (x*x - 1))
     atanh x              = (log (1 + x) - log (1 - x)) / 2
 
-{-----------------------------
 class (Real a, Fractional a) => RealFrac a where
     properFraction   :: (Integral b) => a -> (b,a)
     truncate, round  :: (Integral b) => a -> b
     ceiling, floor   :: (Integral b) => a -> b
 
+{-----------------------------
     -- Minimal complete definition: properFraction
     truncate x        = m where (m,_) = properFraction x
 
@@ -309,7 +309,25 @@ class (Real a, Fractional a) => RealFrac a where
 
     floor x           = if r < 0 then n - 1 else n
                         where (n,r) = properFraction x
+-----------------------------}
+    -- Minimal complete definition: properFraction
+    truncate x :: xt  = m where (m::xt,_) = properFraction x
 
+    round x :: xt     = let (n::xt,r) = properFraction x
+                            m     = if r < 0 then n - 1 else n + 1
+                        in case signum (abs r - 0.5) of
+                            -1 -> n
+                            0  -> if even n then n else m
+                            1  -> m
+
+    ceiling x :: xt   = if r > 0 then n + 1 else n
+                        where (n::xt,r) = properFraction x
+
+    floor x :: xt     = if r < 0 then n - 1 else n
+                        where (n::xt,r) = properFraction x
+
+
+{-----------------------------
 class (RealFrac a, Floating a) => RealFloat a where
     floatRadix       :: a -> Integer
     floatDigits      :: a -> Int

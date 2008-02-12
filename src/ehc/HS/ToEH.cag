@@ -259,7 +259,11 @@ SEM Type
 %%]
 %%[3
     | Variable
+%%[[1
         lhs         .   eh          =   rngLift @range EH.TyExpr_Var @name
+%%][4
+        lhs         .   eh          =   rngLift @range (if @lhs.doGenVarWild then EH.TyExpr_VarWild else EH.TyExpr_Var) @name
+%%]]
     | NamedWildcard
         lhs         .   eh          =   rngLift @range EH.TyExpr_VarWild @name
 %%]
@@ -828,7 +832,14 @@ ATTR FunctionBinding [ | | eh: {EH.Decl} ]
 SEM FunctionBinding
     | FunctionBinding
         lhs         .   eh          =   let (h,t) = hdAndTl @lefthandside.eh
-                                        in  rngLift @range EH.Decl_Val h (foldr (rngLift @range EH.Expr_Lam) @righthandside.eh t)
+                                        in  rngLift @range EH.Decl_Val h						-- this def is not used, instead it is constructed via IdAsp_Val_Fun
+                                              (foldr (rngLift @range EH.Expr_Lam)
+%%[[1
+                                                     @righthandside.eh
+%%][4
+                                                     (@lefthandside.ehTyMk @righthandside.eh)
+%%]]
+                                                     t)
 %%]
 
 %%[1
@@ -841,6 +852,20 @@ SEM LeftHandSide
         lhs         .   eh          =   [rngLift @range EH.PatExpr_Var @refname,@leftPattern.eh,@rightPattern.eh]
     | Parenthesized
         lhs         .   eh          =   @lefthandside.eh ++ @patterns.eh
+%%]
+%%[4
+    | Typed
+        lhs         .   eh          =   @lefthandside.eh
+%%]
+
+%%[4
+ATTR LeftHandSide [ | | ehTyMk: {EH.Expr -> EH.Expr} ]
+
+SEM LeftHandSide
+    | Typed
+        lhs         .   ehTyMk      =   rngLift @range EH.Expr_TypeAs @type.eh
+    | * - Typed
+        lhs         .   ehTyMk      =   id
 %%]
 
 %%[1

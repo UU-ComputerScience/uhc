@@ -459,6 +459,10 @@ SEM LeftHandSide
     | Parenthesized
         loc         .   pp          =   ppParens @lefthandside.pp >#< ppSpaces @patterns.ppL
 %%]
+%%[4
+    | Typed
+        loc         .   pp          =   @lefthandside.pp >#< "::" >#< @type.pp
+%%]
 
 %%[1
 SEM RightHandSide
