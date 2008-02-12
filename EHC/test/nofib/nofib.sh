@@ -9,8 +9,9 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-cbexe --verbose=0 -p-"
+DEF_EHC_FLAGS="-cexe --verbose=0 --optimise=0 -p-"
 DEF_GHC_FLAGS="-O2"
+DEF_EHC_PRELUDE_FILE="tools/Prelude8.hs"
 
 # Haskell main file for each benchmark
 #
@@ -19,11 +20,6 @@ MAIN_FILE="Main.hs"
 # params file for each benchmark
 #
 PARAMS_FILE="params"
-
-# Haskell file containing the EHC prelude, which should be prepended to the
-# benchmark in case of EHC
-#
-EHC_PRELUDE_FILE="tools/Prelude8.hs"
 
 # The two template representations in the benchmark files
 #
@@ -181,7 +177,7 @@ function run {
       if [ $RETVALUE -eq 0 ]; then
         diff $OUTPUT $EXPECTED 
         if [ $? -eq 0 ]; then
-          #clean_up
+          clean_up
           echo -e '\E[32m'"\033[1mSUCCES\033[0m"
         else
           echo -e '\E[31m'"\033[1mERROR:\033[0m Output ($OUTPUT) not equal to expected output ($EXPECTED)"
@@ -242,6 +238,11 @@ if [ "$4" != "" ]; then
   FLAGS=$4
 fi
 
+EHC_PRELUDE_FILE=$DEF_EHC_PRELUDE_FILE
+if [ "$5" != "" ]; then
+  EHC_PRELUDE_FILE=$5
+fi
+
 # $TARGET can be either a whole suite or just one test
 # Split to find out
 INDEX_SLASH=`expr "$TARGET" : '.*/'`
@@ -273,9 +274,10 @@ case "$SUITE" in
 
   "help" | * )
   echo "Usage: no-fib [target/benchmark] [type] [compiler] [compilerflags]"
-  echo "       target:         all|imaginary|spectral|real|help   [all]"
-  echo "       type:           slow|normal|fast                   [normal]"
-  echo "       compiler:       path to the compiler executable    [$DEF_HC]"
-  echo "       compilerflags:  flags passed to the compiler       [$DEF_FLAGS]"
+  echo "       target:         all|imaginary|spectral|real|help    [all]"
+  echo "       type:           slow|normal|fast                    [normal]"
+  echo "       compiler:       path to the compiler executable     [$DEF_HC]"
+  echo "       compilerflags:  flags passed to the compiler        [$DEF_FLAGS]"
+  echo "       preludeFile:    which prelude to use then using EHC [$DEF_EHC_PRELUDE_FILE]"
   ;;
 esac 
