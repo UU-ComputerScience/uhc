@@ -16,6 +16,7 @@
 
 %%[97
 #include "math.h"
+#include "float.h"
 #if USE_GMP
 #include "gmp.h"
 #endif

@@ -191,27 +191,21 @@ PRIM GB_NodePtr gb_primCStringToInteger( char* s )
 PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	// mpz_set_si( n->content.mpz, GB_GBInt2Int( x ) ) ;
-	mpz_set_si( n->content.mpz, x ) ;
+	GB_NodeAlloc_Mpz_SetInt_In( n, x ) ;
 	return n ;
 }
 
 PRIM GB_NodePtr gb_primFloatToInteger( GB_Float x )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	// mpz_set_d( n->content.mpz, nf->content.flt ) ;	// not sure whether this works without explicit coercion...
-	mpz_set_d( n->content.mpz, x ) ;	// not sure whether this works without explicit coercion...
+	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
 	return n ;
 }
 
 PRIM GB_NodePtr gb_primDoubleToInteger( GB_Double x )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	// mpz_set_d( n->content.mpz, nf->content.dbl ) ;
-	mpz_set_d( n->content.mpz, x ) ;
+	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
 	return n ;
 }
 #endif
@@ -484,8 +478,166 @@ PRIM GB_Double gb_primNegDouble( GB_Double x )
 	return -x ;
 }
 
+PRIM GB_Word gb_primIsNaNDouble( GB_Double x )
+{
+	if ( isnan(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primIsDenormalizedDouble( GB_Double x )
+{
+	if ( ! isnormal(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primIsInfiniteDouble( GB_Double x )
+{
+	if ( isinf(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primIsNegativeZeroDouble( GB_Double x )
+{
+	 
+	if ( fpclassify(x) == FP_ZERO && signbit(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primDigitsDouble( )
+{
+	return DBL_MANT_DIG ;
+}
+
+PRIM GB_Word gb_primMaxExpDouble( )
+{
+	return DBL_MAX_EXP ;
+}
+
+PRIM GB_Word gb_primMinExpDouble( )
+{
+	return DBL_MIN_EXP ;
+}
+
+PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
+{
+	int exp ;
+	GB_Double mant = frexp( x, &exp ) ;
+	if ( fpclassify(x) == FP_ZERO ) {
+		exp = 0 ;
+	} else {
+		exp -= DBL_MANT_DIG ;
+	}
+	GB_NodePtr n, ni ;
+	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, DBL_MANT_DIG ) ) ;
+	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;
+	return n ;
+}
+
+PRIM GB_Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
+{
+	GB_Double d = ldexp( mpz_get_d( frac->content.mpz ), exp ) ;
+	return d ;
+}
+
 %%]
 
+PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
+{
+	int exp ;
+	GB_Double mant = frexp( x, &exp ) ;
+	printf( "mant %lf %lf %ld %ld\n", mant, ldexp( mant, DBL_MANT_DIG ), llrint( ldexp( mant, DBL_MANT_DIG ) ), llrint( ldexp( mant, BitsPerInt64-1 ) )  ) ;
+	int64_t mantlong = llrint( ldexp( mant, DBL_MANT_DIG ) ) ;
+	printf( "mantlong %ld\n", mantlong ) ;
+	if ( mantlong == 0L ) {
+		exp = 0 ;
+	}
+	GB_NodePtr n, ni ;
+	GB_NodeAlloc_Mpz_SetInt_In( ni, mantlong ) ;
+	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp-DBL_MANT_DIG)) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
+{
+	int exp ;
+	GB_Double mant = frexp( x, &exp ) ;
+	int shift = BitsPerInt64-1 ;
+	// printf( "shift %d\n", shift ) ;
+	int64_t mantlong = llrint( ldexp( mant, shift ) ) ;
+	int sign = 1 ;
+	if ( mantlong < 0 ) {
+		sign = -1 ;
+		mantlong = -mantlong ;
+	} 
+	if ( mantlong == 0L ) {
+		exp = 0 ;
+	} else {
+		// for ( ; shift > 0 && mantlong > 0 && ! (mantlong & 1L) ; shift--, mantlong >>= 1 ) ;
+		// exp -= shift ;
+	}
+	GB_NodePtr n, ni ;
+	GB_NodeAlloc_Mpz_SetInt_In( ni, mantlong * sign ) ;
+	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
+{
+	int exp ;
+	GB_Double mant = frexp( x, &exp ) ;
+	int shift = BitsPerInt64-1 ;
+	// printf( "shift %d\n", shift ) ;
+	int64_t mantlong = llrint( ldexp( mant, shift ) ) ;
+	int sign = 1 ;
+	if ( mantlong < 0 ) {
+		sign = -1 ;
+		mantlong = -mantlong ;
+	} 
+	if ( mantlong == 0L ) {
+		exp = 0 ;
+	} else {
+		// for ( ; shift > 0 && mantlong > 0 && ! (mantlong & 1L) ; shift--, mantlong >>= 1 ) ;
+		// exp -= shift ;
+		mantlong >>= shift - DBL_MANT_DIG ;
+		exp -= DBL_MANT_DIG ;
+	}
+	GB_NodePtr n, ni ;
+	GB_NodeAlloc_Mpz_SetInt_In( ni, mantlong * sign ) ;
+	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;
+	return n ;
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Double/Float
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+We do not know for sure whether we use IEEE or not.
+This should be dependending on some compile time C info, but not yet sorted out.
+
+%%[97
+PRIM GB_Word gb_primIsIEEE( )
+{
+	return gb_True ;
+}
+
+%%]
+
+%%[97
+PRIM GB_Word gb_primRadixDoubleFloat( )
+{
+	return FLT_RADIX ;
+}
+
+%%]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Integer, via GMP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
