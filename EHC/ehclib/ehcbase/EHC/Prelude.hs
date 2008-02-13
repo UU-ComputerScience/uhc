@@ -137,10 +137,10 @@ module EHC.Prelude (
              asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
     RealFrac(properFraction, truncate, round, ceiling, floor),
 {-----------------------------
+-----------------------------}
     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
               encodeFloat, exponent, significand, scaleFloat, isNaN,
               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
------------------------------}
     Monad((>>=), (>>), return, fail),
 {-----------------------------
 -----------------------------}
@@ -327,7 +327,6 @@ class (Real a, Fractional a) => RealFrac a where
                         where (n::xt,r) = properFraction x
 
 
-{-----------------------------
 class (RealFrac a, Floating a) => RealFloat a where
     floatRadix       :: a -> Integer
     floatDigits      :: a -> Int
@@ -361,6 +360,7 @@ class (RealFrac a, Floating a) => RealFloat a where
                       = pi    -- must be after the previous test on zero y
       | x==0 && y==0  = y     -- must be after the other double zero tests
       | otherwise     = x + y -- x or y is a NaN, return a NaN (via +)
+{-----------------------------
 -----------------------------}
 
 -- Numeric functions --------------------------------------------------------
@@ -411,9 +411,9 @@ fromIntegral   :: (Integral a, Num b) => a -> b
 fromIntegral    = fromInteger . toInteger
 
 {-----------------------------
+-----------------------------}
 realToFrac     :: (Real a, Fractional b) => a -> b
 realToFrac      = fromRational . toRational
------------------------------}
 
 -- Index and Enumeration classes --------------------------------------------
 
@@ -1179,10 +1179,13 @@ instance Num Double where
 {-----------------------------
 instance Real Float where
     toRational = floatToRational
+-----------------------------}
 
+{-----------------------------
 instance Real Double where
     toRational = doubleToRational
 -----------------------------}
+instance Real Double
 
 {-----------------------------
 -- Calls to these functions are optimised when passed as arguments to
@@ -1192,10 +1195,10 @@ doubleToRational :: Double -> Rational
 floatToRational  x = realFloatToRational x 
 doubleToRational x = realFloatToRational x
 
+-----------------------------}
 realFloatToRational x = (m%1)*(b%1)^^n
                         where (m,n) = decodeFloat x
                               b     = floatRadix x
------------------------------}
 
 {-----------------------------
 primitive primDivFloat      :: Float -> Float -> Float
@@ -1253,28 +1256,33 @@ rationalToRealFloat x = x'
        b     = floatRadix x'
 -----------------------------}
 
-{-----------------------------
-primitive primSinFloat,  primAsinFloat, primCosFloat,
-          primAcosFloat, primTanFloat,  primAtanFloat,
-          primLogFloat,  primExpFloat,  primSqrtFloat :: Float -> Float
------------------------------}
+-- basic
+foreign import ccall "sinf"  primSinFloat   :: Float -> Float
+foreign import ccall "cosf"  primCosFloat   :: Float -> Float
+foreign import ccall "tanf"  primTanFloat   :: Float -> Float
+foreign import ccall "asinf" primAsinFloat  :: Float -> Float
+foreign import ccall "acosf" primAcosFloat  :: Float -> Float
+foreign import ccall "atanf" primAtanFloat  :: Float -> Float
+foreign import ccall "expf"  primExpFloat   :: Float -> Float
+foreign import ccall "logf"  primLogFloat   :: Float -> Float
+foreign import ccall "sqrtf" primSqrtFloat  :: Float -> Float
+-- extra
+foreign import ccall "sinhf" primSinhFloat  :: Float -> Float
+foreign import ccall "coshf" primCoshFloat  :: Float -> Float
+foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
 
 instance Floating Float where
-    exp   = primDoubleToFloat . primExpDouble  . primFloatToDouble
-    log   = primDoubleToFloat . primLogDouble  . primFloatToDouble
-    sqrt  = primDoubleToFloat . primSqrtDouble . primFloatToDouble
-    sin   = primDoubleToFloat . primSinDouble  . primFloatToDouble
-    cos   = primDoubleToFloat . primCosDouble  . primFloatToDouble
-    tan   = primDoubleToFloat . primTanDouble  . primFloatToDouble
-    asin  = primDoubleToFloat . primAsinDouble . primFloatToDouble
-    acos  = primDoubleToFloat . primAcosDouble . primFloatToDouble
-    atan  = primDoubleToFloat . primAtanDouble . primFloatToDouble
+    exp   = primExpFloat
+    log   = primLogFloat
+    sqrt  = primSqrtFloat
+    sin   = primSinFloat
+    cos   = primCosFloat
+    tan   = primTanFloat
+    asin  = primAsinFloat
+    acos  = primAcosFloat
+    atan  = primAtanFloat
+    sinh  = primSinhFloat
 
-{-----------------------------
-primitive primSinDouble,  primAsinDouble, primCosDouble,
-          primAcosDouble, primTanDouble,  primAtanDouble,
-          primLogDouble,  primExpDouble,  primSqrtDouble :: Double -> Double
------------------------------}
 -- basic
 foreign import ccall "sin"  primSinDouble   :: Double -> Double
 foreign import ccall "cos"  primCosDouble   :: Double -> Double
@@ -1308,10 +1316,13 @@ instance Floating Double where
 {-----------------------------
 instance RealFrac Float where
     properFraction = floatProperFraction
+-----------------------------}
 
+{-----------------------------
 instance RealFrac Double where
     properFraction = floatProperFraction
 -----------------------------}
+instance RealFrac Double
 
 {-----------------------------
 floatProperFraction x
@@ -1322,6 +1333,8 @@ floatProperFraction x
                          (w,r) = quotRem m (b^(-n))
 -----------------------------}
 
+foreign import ccall primIsIEEE  :: Bool
+foreign import ccall primRadixDoubleFloat  :: Int
 {-----------------------------
 primitive primFloatRadix  :: Integer
 primitive primFloatDigits :: Int
@@ -1353,6 +1366,16 @@ primitive primDoubleMinExp,
 primitive primDoubleEncode :: Integer -> Int -> Double
 primitive primDoubleDecode :: Double -> (Integer, Int)
 -----------------------------}
+foreign import ccall primIsNaNDouble  :: Double -> Bool
+foreign import ccall primIsNegativeZeroDouble  :: Double -> Bool
+foreign import ccall primIsDenormalizedDouble  :: Double -> Bool
+foreign import ccall primIsInfiniteDouble  :: Double -> Bool
+foreign import ccall primDigitsDouble  :: Int
+foreign import ccall primMaxExpDouble  :: Int
+foreign import ccall primMinExpDouble  :: Int
+foreign import ccall primDecodeDouble  :: Double -> (Integer, Int)
+foreign import ccall primEncodeDouble  :: Integer -> Int -> Double
+foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
 
 {-----------------------------
 instance RealFloat Double where
@@ -1367,6 +1390,18 @@ instance RealFloat Double where
     isNegativeZero _ = False
     isIEEE      _ = False
 -----------------------------}
+instance RealFloat Double where
+    floatRadix  _ = toInteger primRadixDoubleFloat
+    floatDigits _ = primDigitsDouble
+    floatRange  _ = (primMinExpDouble, primMaxExpDouble)
+    encodeFloat   = primEncodeDouble
+    decodeFloat   = primDecodeDouble
+    isNaN         = primIsNaNDouble
+    isInfinite    = primIsInfiniteDouble
+    isDenormalized= primIsDenormalizedDouble
+    isNegativeZero= primIsNegativeZeroDouble
+    isIEEE      _ = primIsIEEE
+    atan2         = primAtan2Double
 
 {-----------------------------
 instance Enum Float where

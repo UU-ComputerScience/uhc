@@ -870,6 +870,14 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #endif
 %%]
 
+%%[97
+#if USE_GMP
+#define GB_NodeAlloc_Mpz_SetInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_si( n->content.mpz, (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetDbl_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_d( n->content.mpz, (x) ) ; }
+#endif
+%%]
+
+
 %%[98
 #define GB_NodeFixAlloc_Chan_In(n)			{ GB_NodeFixAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; }
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \

@@ -897,8 +897,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  mberr
                        fP fi (Ty_Impls _)                  (Ty_Impls Impls_Nil)
                             =  mberr
-                       fP fi (Ty_Pred _)                   (Ty_Impls Impls_Nil)
-                            =  mberr
+                       -- fP fi (Ty_Pred _)                   (Ty_Impls Impls_Nil)
+                       --      =  mberr
                        fP fi _                             _
                             =  Nothing
 %%]
