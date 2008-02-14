@@ -348,10 +348,24 @@ patchUnresolvedWithAssumption env unresCnstrMp evidMp
                       = Map.partitionWithKey canRes unresCnstrMp
                       where canRes (Prove p) _ = Map.null $ Map.filter tvCatIsFixed $ tyFtvMp $ predTy $ cpoPr p
                             canRes _         _ = True
-        assumeCnstrs  = concat $ zipWith mk (Map.toList unresCnstrMp') us
-                      where mk (Prove p,_) u = [mkAssumeConstraint (cpoPr p) u (cpoScope p)]
-                            mk _           _ = []
+        assumeCnstrs  = concat $ zipWith mk (shareUnresolvedAssumptionsByScope $ Map.keys unresCnstrMp') us
+                      where mk (Prove p,sc) u = [mkAssumeConstraint (cpoPr p) u sc]
+                            mk _            _ = []
         assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
+%%]
+
+Find assume's wich have a common scope prefix, then share these.
+Assumption: we will never share outer scopes because we only get passed inner scopes, because these will be abstracted over in bindings of a let expression.
+
+%%[9
+shareUnresolvedAssumptionsByScope :: [Constraint CHRPredOcc info] -> AssocL (Constraint CHRPredOcc info) PredScope
+shareUnresolvedAssumptionsByScope unres
+  = [ ( c
+      , foldr1 (\s1 s2 -> panicJust "shareUnresolvedAssumptionsByScope" $ pscpCommon s1 s2)
+               [ cpoScope $ cnstrPred c | c <- cs ]
+      )
+    | cs@(c:_) <- groupSortOn (cpoPr . cnstrPred) unres
+    ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
