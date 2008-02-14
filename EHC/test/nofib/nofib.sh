@@ -260,6 +260,10 @@ case "$SUITE" in
   run "real" "*"
   ;;
 
+  "trivial" )
+  run $SUITE "${BENCHMARK}" 
+  ;;
+
   "imaginary" )
   run $SUITE "${BENCHMARK}" 
   ;;
@@ -273,11 +277,11 @@ case "$SUITE" in
   ;;
 
   "help" | * )
-  echo "Usage: no-fib [target/benchmark] [type] [compiler] [compilerflags]"
-  echo "       target:         all|imaginary|spectral|real|help    [all]"
-  echo "       type:           slow|normal|fast                    [normal]"
-  echo "       compiler:       path to the compiler executable     [$DEF_HC]"
-  echo "       compilerflags:  flags passed to the compiler        [$DEF_FLAGS]"
-  echo "       preludeFile:    which prelude to use then using EHC [$DEF_EHC_PRELUDE_FILE]"
+  echo "Usage: no-fib [target/benchmark] [type] [compiler] [compilerflags] [prelude]"
+  echo "       target:         all|trivial|imaginary|spectral|real|help    [all]"
+  echo "       type:           slow|normal|fast                            [normal]"
+  echo "       compiler:       path to the compiler executable             [$DEF_HC]"
+  echo "       compilerflags:  flags passed to the compiler                [$DEF_FLAGS]"
+  echo "       preludeFile:    which prelude to use                        [$DEF_EHC_PRELUDE_FILE]"
   ;;
 esac 

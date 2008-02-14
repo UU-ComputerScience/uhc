@@ -43,7 +43,8 @@ heapChange (WillStore locat tag args) env
        where
        getEnv Nothing   =  return AbsBottom
        getEnv (Just v)  =  readArray env v
-       tagFun (GrTag_Fun nm)  =  Just (getNr nm)
+       tagFun (GrTag_Fun nm)  =  Just (getNr nm)     -- track overwrite results of Fun
+       tagFun (GrTag_App nm)  =  Just (getNr nm)     -- also track overwrite results of App
        tagFun _               =  Nothing
 heapChange (WillEquate locat var) env 
  = do  { absNode         <- readArray env var
@@ -60,6 +61,7 @@ isPAppTag _                = False
 
 isFinalTag :: GrTag -> Bool
 isFinalTag  GrTag_Any        = True
+isFinalTag  GrTag_Hole       = True
 isFinalTag  GrTag_Unboxed    = True
 isFinalTag (GrTag_PApp _ _)  = True
 isFinalTag (GrTag_Con _ _ _) = True
@@ -76,11 +78,13 @@ filterTaggedNodes p (AbsNodes nodes) = let newNodes = Map.filterWithKey (const .
 filterTaggedNodes p av               = av
 
 
-getApplyNodesParameters :: AbstractValue -> [ [AbstractValue] ]
-getApplyNodesParameters (AbsNodes nodes) = Map.elems (Map.filterWithKey (const . isApplyTag) nodes)
-getApplyNodesParameters _ = []
+getApplyNodeVars :: AbstractValue -> [ Variable ]
+getApplyNodeVars (AbsNodes nodes) = map tag2var (Map.keys (Map.filterWithKey (const . isApplyTag) nodes))
+getApplyNodeVars _ = []
 
-
+tag2var :: GrTag -> Variable
+tag2var (GrTag_App nm) = getNr nm
+tag2var _              = error "tag2var on non-App"
 
 envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ST s [(Variable,AbstractValue)]
 envChanges equat env heap
@@ -145,27 +149,30 @@ envChanges equat env heap
     absEval av
       = case av of
           AbsLocs ls m -> do { vs <- mapM (readArray heap) (Set.toList ls)
-                             ; let xs :: [AbstractValue]
-                                   xs = map (filterTaggedNodes isFinalTag) vs
-                             ; let ys :: [[AbstractValue]]
-                                   ys = concat (map getApplyNodesParameters vs)
-                             ; ws <- mapM absAux ys
-                             ; return (mconcat (xs++ws))
+                             ; rs <- findFinalValues vs
+                             ; return rs
                              }
           AbsBottom   ->  return av
           AbsError _  ->  return av
           _           ->  return $ AbsError ("Variable passed to eval is not a location: " ++ show av)
-         
-    --absAux :: [AbstractValue] -> ST s AbstractValue
-    absAux avs 
-      = do { (f:args)  <- mapM absDeref avs
-           ; (_,res)   <- absApply f args Nothing     -- deliberately ignore sfx returned by absApply as they are dereferenced one level to much
-           ; return res
+
+    --findFinalValues :: [AbstractValue] -> ST s [AbstractValue]
+    findFinalValues []
+      = return AbsBottom
+    findFinalValues vs
+      = do { let xs :: [AbstractValue]
+                 xs = map (filterTaggedNodes isFinalTag) vs
+           ; let ns :: [Variable]
+                 ns = concat (map getApplyNodeVars vs)
+           ; zs <- mapM (readArray env) ns
+           ; ws <- findFinalValues zs
+           ; return (mconcat (ws:xs))
            }
-                                   
+
     --absApply :: AbstractValue -> [AbstractValue] -> Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
     absApply f args mbev
-      = do { ts <- mapM addArgs (getNodes (filterTaggedNodes isPAppTag f))
+      = do { let as = getNodes (filterTaggedNodes isPAppTag f)
+           ; ts <- mapM addArgs as
            ; let (sfxs,avs) = unzip ts
            ; return (concat sfxs, mconcat avs)
            }
@@ -183,9 +190,10 @@ envChanges equat env heap
                    ; if    n>needs
                      then  do 
                            { (sfx2,res2) <- absApply res (drop needs args) mbev
-                              ; return (take needs sfx ++ sfx2, res2) 
+                           ; return (take needs sfx ++ sfx2, res2) 
                            }
-                     else  return (maybe (sfx, res)
+                     else  -- trace ("sfx=" ++ show sfx ++ " res=" ++ show res) $
+                           return (maybe (sfx, res)
                                          (\ev -> ((ev,exc):sfx, res))
                                          mbev
                                   )
@@ -249,13 +257,13 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
              procHeap equat
                 = do
                   { 
-                  --   _ <- trace ("hpequ " ++ show equat) (return ())
+                  --  _ <- trace ("hpequ " ++ show equat) (return ())
                   -- ; ah <- getAssocs heap
                   -- ; ae  <- getAssocs env
                   -- ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
                   -- ; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
                   ; cs <- heapChange equat env
-                  -- ; _ <- trace ("hpchs " ++ show cs) (return ())
+                  --; _ <- trace ("hpchs " ++ show cs) (return ())
                   ; b  <- procChange heap cs
                   ; return b
                   }
@@ -274,7 +282,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
 
        --; trace (unlines ("EXTENDED LIMITATIONS"   : map show lims2)) $ return ()
 
-       ; mapM (procLimit env heap) lims2      
+       --; mapM (procLimit env heap) lims2      
 
        --; ah <- getAssocs heap
        --; ae  <- getAssocs env
