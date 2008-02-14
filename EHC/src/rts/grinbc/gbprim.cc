@@ -367,6 +367,48 @@ PRIM GB_Word gb_primMinInt()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Double/Float
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+We do not know for sure whether we use IEEE or not.
+This should be dependending on some compile time C info, but not yet sorted out.
+
+%%[97
+PRIM GB_Word gb_primIsIEEE( )
+{
+	return gb_True ;
+}
+
+%%]
+
+%%[97
+PRIM GB_Word gb_primRadixDoubleFloat( )
+{
+	return FLT_RADIX ;
+}
+
+%%]
+
+%%[97
+#define gb_intlDecode(ty,x)																	\
+{																							\
+	int exp ;																				\
+	int mantdig = ( sizeof(ty) == sizeof(GB_Double) ? DBL_MANT_DIG : FLT_MANT_DIG ) ;		\
+	ty mant = ( sizeof(ty) == sizeof(GB_Double) ? frexp( x, &exp ) : frexpf( x, &exp) ) ;	\
+	if ( fpclassify(x) == FP_ZERO ) {														\
+		exp = 0 ;																			\
+	} else {																				\
+		exp -= mantdig ;																	\
+	}																						\
+	GB_NodePtr n, ni ;																		\
+	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, mantdig ) ) ;								\
+	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;												\
+	return n ;																				\
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Float
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -419,6 +461,63 @@ PRIM GB_Float gb_primNegFloat( GB_Float x )
 	// GB_Float_Neg_In(n,x) ;
 	// return n ;
 	return -x ;
+}
+
+PRIM GB_Word gb_primIsNaNFloat( GB_Float x )
+{
+	if ( isnan(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primIsDenormalizedFloat( GB_Float x )
+{
+	if ( ! isnormal(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primIsInfiniteFloat( GB_Float x )
+{
+	if ( isinf(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primIsNegativeZeroFloat( GB_Float x )
+{
+	 
+	if ( fpclassify(x) == FP_ZERO && signbit(x) )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+PRIM GB_Word gb_primDigitsFloat( )
+{
+	return FLT_MANT_DIG ;
+}
+
+PRIM GB_Word gb_primMaxExpFloat( )
+{
+	return FLT_MAX_EXP ;
+}
+
+PRIM GB_Word gb_primMinExpFloat( )
+{
+	return FLT_MIN_EXP ;
+}
+
+PRIM GB_NodePtr gb_primDecodeFloat( GB_Float x )
+	gb_intlDecode(GB_Float,x)
+
+PRIM GB_Float gb_primEncodeFloat( GB_NodePtr frac, GB_Word exp )
+{
+	GB_Float d = ldexp( mpz_get_d( frac->content.mpz ), exp ) ;
+	return d ;
 }
 
 %%]
@@ -527,19 +626,7 @@ PRIM GB_Word gb_primMinExpDouble( )
 }
 
 PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
-{
-	int exp ;
-	GB_Double mant = frexp( x, &exp ) ;
-	if ( fpclassify(x) == FP_ZERO ) {
-		exp = 0 ;
-	} else {
-		exp -= DBL_MANT_DIG ;
-	}
-	GB_NodePtr n, ni ;
-	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, DBL_MANT_DIG ) ) ;
-	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;
-	return n ;
-}
+	gb_intlDecode(GB_Double,x)
 
 PRIM GB_Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
 {
@@ -549,95 +636,6 @@ PRIM GB_Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
 
 %%]
 
-PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
-{
-	int exp ;
-	GB_Double mant = frexp( x, &exp ) ;
-	printf( "mant %lf %lf %ld %ld\n", mant, ldexp( mant, DBL_MANT_DIG ), llrint( ldexp( mant, DBL_MANT_DIG ) ), llrint( ldexp( mant, BitsPerInt64-1 ) )  ) ;
-	int64_t mantlong = llrint( ldexp( mant, DBL_MANT_DIG ) ) ;
-	printf( "mantlong %ld\n", mantlong ) ;
-	if ( mantlong == 0L ) {
-		exp = 0 ;
-	}
-	GB_NodePtr n, ni ;
-	GB_NodeAlloc_Mpz_SetInt_In( ni, mantlong ) ;
-	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp-DBL_MANT_DIG)) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
-{
-	int exp ;
-	GB_Double mant = frexp( x, &exp ) ;
-	int shift = BitsPerInt64-1 ;
-	// printf( "shift %d\n", shift ) ;
-	int64_t mantlong = llrint( ldexp( mant, shift ) ) ;
-	int sign = 1 ;
-	if ( mantlong < 0 ) {
-		sign = -1 ;
-		mantlong = -mantlong ;
-	} 
-	if ( mantlong == 0L ) {
-		exp = 0 ;
-	} else {
-		// for ( ; shift > 0 && mantlong > 0 && ! (mantlong & 1L) ; shift--, mantlong >>= 1 ) ;
-		// exp -= shift ;
-	}
-	GB_NodePtr n, ni ;
-	GB_NodeAlloc_Mpz_SetInt_In( ni, mantlong * sign ) ;
-	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
-{
-	int exp ;
-	GB_Double mant = frexp( x, &exp ) ;
-	int shift = BitsPerInt64-1 ;
-	// printf( "shift %d\n", shift ) ;
-	int64_t mantlong = llrint( ldexp( mant, shift ) ) ;
-	int sign = 1 ;
-	if ( mantlong < 0 ) {
-		sign = -1 ;
-		mantlong = -mantlong ;
-	} 
-	if ( mantlong == 0L ) {
-		exp = 0 ;
-	} else {
-		// for ( ; shift > 0 && mantlong > 0 && ! (mantlong & 1L) ; shift--, mantlong >>= 1 ) ;
-		// exp -= shift ;
-		mantlong >>= shift - DBL_MANT_DIG ;
-		exp -= DBL_MANT_DIG ;
-	}
-	GB_NodePtr n, ni ;
-	GB_NodeAlloc_Mpz_SetInt_In( ni, mantlong * sign ) ;
-	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;
-	return n ;
-}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Double/Float
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-We do not know for sure whether we use IEEE or not.
-This should be dependending on some compile time C info, but not yet sorted out.
-
-%%[97
-PRIM GB_Word gb_primIsIEEE( )
-{
-	return gb_True ;
-}
-
-%%]
-
-%%[97
-PRIM GB_Word gb_primRadixDoubleFloat( )
-{
-	return FLT_RADIX ;
-}
-
-%%]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Integer, via GMP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -127,6 +127,7 @@ module EHC.Prelude (
 -----------------------------}
     Num((+), (-), (*), negate, abs, signum, fromInteger, fromInt),
     Real(toRational),
+    doubleToRational,
 --  Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
 {-----------------------------
 -----------------------------}
@@ -1180,6 +1181,7 @@ instance Num Double where
 instance Real Float where
     toRational = floatToRational
 -----------------------------}
+instance Real Float
 
 {-----------------------------
 instance Real Double where
@@ -1190,12 +1192,13 @@ instance Real Double
 {-----------------------------
 -- Calls to these functions are optimised when passed as arguments to
 -- fromRational.
+-----------------------------}
 floatToRational  :: Float  -> Rational
 doubleToRational :: Double -> Rational
 floatToRational  x = realFloatToRational x 
 doubleToRational x = realFloatToRational x
 
------------------------------}
+realFloatToRational :: RealFloat a => a -> Rational
 realFloatToRational x = (m%1)*(b%1)^^n
                         where (m,n) = decodeFloat x
                               b     = floatRadix x
@@ -1314,24 +1317,23 @@ instance Floating Double where
 
 
 {-----------------------------
+-----------------------------}
 instance RealFrac Float where
     properFraction = floatProperFraction
------------------------------}
 
 {-----------------------------
+-----------------------------}
 instance RealFrac Double where
     properFraction = floatProperFraction
------------------------------}
-instance RealFrac Double
 
 {-----------------------------
+-----------------------------}
 floatProperFraction x
    | n >= 0      = (fromInteger m * fromInteger b ^ n, 0)
    | otherwise   = (fromInteger w, encodeFloat r n)
                    where (m,n) = decodeFloat x
                          b     = floatRadix x
                          (w,r) = quotRem m (b^(-n))
------------------------------}
 
 foreign import ccall primIsIEEE  :: Bool
 foreign import ccall primRadixDoubleFloat  :: Int
@@ -1343,6 +1345,16 @@ primitive primFloatMinExp,
 primitive primFloatEncode :: Integer -> Int -> Float
 primitive primFloatDecode :: Float -> (Integer, Int)
 -----------------------------}
+foreign import ccall primIsNaNFloat  :: Float -> Bool
+foreign import ccall primIsNegativeZeroFloat  :: Float -> Bool
+foreign import ccall primIsDenormalizedFloat  :: Float -> Bool
+foreign import ccall primIsInfiniteFloat  :: Float -> Bool
+foreign import ccall primDigitsFloat  :: Int
+foreign import ccall primMaxExpFloat  :: Int
+foreign import ccall primMinExpFloat  :: Int
+foreign import ccall primDecodeFloat  :: Float -> (Integer, Int)
+foreign import ccall primEncodeFloat  :: Integer -> Int -> Float
+foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
 
 {-----------------------------
 instance RealFloat Float where
@@ -1357,6 +1369,18 @@ instance RealFloat Float where
     isNegativeZero _ = False
     isIEEE      _ = False
 -----------------------------}
+instance RealFloat Float where
+    floatRadix  _ = toInteger primRadixDoubleFloat
+    floatDigits _ = primDigitsFloat
+    floatRange  _ = (primMinExpFloat, primMaxExpFloat)
+    encodeFloat   = primEncodeFloat
+    decodeFloat   = primDecodeFloat
+    isNaN         = primIsNaNFloat
+    isInfinite    = primIsInfiniteFloat
+    isDenormalized= primIsDenormalizedFloat
+    isNegativeZero= primIsNegativeZeroFloat
+    isIEEE      _ = primIsIEEE
+    atan2         = primAtan2Float
 
 {-----------------------------
 primitive primDoubleRadix  :: Integer

@@ -79,7 +79,8 @@ SEM AGItf
   | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
-  | Instance    loc         .   cSubst              =   @lhs.cSubst
+  | Instance    loc         .   cSubst              =   cSubstApp @lhs.cSubst
+                                                        $ evidKeyBindMpToCSubst @chrEvidBindMp
 
 SEM Expr
   | Let         loc         .   cSubst              =   cSubstApp @lhs.cSubst

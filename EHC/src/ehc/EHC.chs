@@ -1451,7 +1451,7 @@ cpPreprocessWithCPP modNm
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               fpCPP = fpathSetSuff (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
        ; when (  ehcOptCPP opts
-              || modNm == hsnModIntlPrelude		-- 20080211, AD: builtin hack, for now, to avoid implementation of pragmas
+              || modNm == hsnModIntlPrelude		-- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               )
               (do { let preCPP
                           = concat $ intersperse " "
@@ -1517,14 +1517,15 @@ cpTransformCore modNm trfNmL
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  tr     = ehcOptTrf opts
-                 ps     = concat
-                          $ intersperse [cpStepUID]
-                          $ zipWith trf [1..]
-                          $ filter (maybe True id . trfOptOverrides tr)
-                          $ trfNmL
-                 trf    = if ehcOptDumpCoreStages opts
-                          then \n t -> [cpCore1Trf modNm t,cpOutputCore ("core-" ++ show n ++ "-" ++ t) modNm]
-                          else \_ t -> [cpCore1Trf modNm t]
+                 ps     = dmp 0 "fromeh"
+                          : (concat
+                            $ intersperse [cpStepUID]
+                            $ zipWith trf [1..]
+                            $ filter (maybe True id . trfOptOverrides tr)
+                            $ trfNmL
+                            )
+                 trf n t= [cpCore1Trf modNm t,dmp n t]
+                 dmp n t= when (ehcOptDumpCoreStages opts) (cpOutputCore ("core-" ++ show n ++ "-" ++ t) modNm)
          ;  cpSeq ps
          }
 %%]

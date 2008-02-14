@@ -77,10 +77,21 @@ toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
 toEvidence f a = rec (f a)
   where  rec (HeurAlts p [])                 =  Evid_Unresolved p
          rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
-         rec (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
+         rec (HeurAlts p rs)                 =  case rrs of
+                                                  []       -> Evid_Unresolved p
+                                                  [(i,ev)] -> Evid_Proof p i ev
+                                                  _        -> Evid_Ambig p rrs
+                                             where rrs = filter (not . null . snd) (reds rs)
          red (HeurRed i alts)                =  (i,map rec alts)
          reds rs                             =  map red rs
 %%]
+toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
+toEvidence f a = rec (f a)
+  where  rec (HeurAlts p [])                 =  Evid_Unresolved p
+         rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
+         rec (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
+         red (HeurRed i alts)                =  (i,map rec alts)
+         reds rs                             =  map red rs
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Local / Binary choice
@@ -143,6 +154,14 @@ contextBinChoice order = contextChoice (const local)
   where  local []  = []
          local is  = [mx]         
                    where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determine whether ambiguous really is ambiguous
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+%%]
+reallyAmbig :: 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Heuristic that only selects solvable alternatives (using backtracking)
