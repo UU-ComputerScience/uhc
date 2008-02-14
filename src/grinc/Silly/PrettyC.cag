@@ -311,11 +311,15 @@ methodHead nm params
                       else commaSeparated (map (declareName "GrWord") params)
     in  "void" >#< nm >|< "(" >|< parameters >|< ")"
 
+
+paramTrace :: String -> PP_Doc
+paramTrace x = text ("printf(\"" ++  x ++            " = %d\\n\" , " ++ x ++ "); fflush(stdout);")
+
 methodHeader :: Int -> Bool -> String -> [String] -> PP_Doc
 methodHeader optOwn optTrace nm params
  | optOwn<=2 =  methodHead nm params
                 >#< "{"
-                >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
+                >-< ppWhen optTrace (foldr (>-<) (trace ("enter " ++ init (tail (show nm)))) (map paramTrace params) )
  | optOwn>=3 = label nm
                 >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
 
