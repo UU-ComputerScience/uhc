@@ -79,12 +79,13 @@ filterTaggedNodes p av               = av
 
 
 getApplyNodeVars :: AbstractValue -> [ Variable ]
-getApplyNodeVars (AbsNodes nodes) = map tag2var (Map.keys (Map.filterWithKey (const . isApplyTag) nodes))
-getApplyNodeVars _ = []
+getApplyNodeVars (AbsNodes nodes) = [ getNr nm 
+                                    | t <- Map.keys nodes
+                                    , isApplyTag t
+                                    , let GrTag_App nm = t 
+                                    ]
+getApplyNodeVars _                = []
 
-tag2var :: GrTag -> Variable
-tag2var (GrTag_App nm) = getNr nm
-tag2var _              = error "tag2var on non-App"
 
 envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ST s [(Variable,AbstractValue)]
 envChanges equat env heap
@@ -282,7 +283,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
 
        --; trace (unlines ("EXTENDED LIMITATIONS"   : map show lims2)) $ return ()
 
-       --; mapM (procLimit env heap) lims2      
+       ; mapM (procLimit env heap) lims2      
 
        --; ah <- getAssocs heap
        --; ae  <- getAssocs env
