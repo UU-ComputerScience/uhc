@@ -4,8 +4,6 @@ The EHC prelude is copied/adapted from the Hugs prelude.
 
 module EHC.Prelude (
 --  module PreludeList,
-{-----------------------------
------------------------------}
     map, (++), concat, filter,
     head, last, tail, init, null, length, (!!),
     foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
@@ -28,8 +26,6 @@ module EHC.Prelude (
     shows,
     showChar, showString,
 --  module PreludeIO,
-{-----------------------------
------------------------------}
     FilePath, IOError, ioError, userError, catch,
     putChar, putStr, putStrLn, print, hPrint,
     getChar, getLine, getContents, interact,
@@ -42,8 +38,6 @@ module EHC.Prelude (
     Ix(range, index, unsafeIndex, inRange, rangeSize),
 -----------------------------}
 --  module Char,
-{-----------------------------
------------------------------}
     isSpace, isUpper, isLower,
     isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum,
 {-----------------------------
@@ -57,8 +51,6 @@ module EHC.Prelude (
     readFloat, lexDigits, 
 -----------------------------}
 --  module Ratio,
-{-----------------------------
------------------------------}
     Ratio((:%)), (%), numerator, denominator,
 --  Non-standard exports
     IO(..), IOResult(..),
@@ -104,15 +96,9 @@ module EHC.Prelude (
     primAddInt, primGtInt,
     
 --  List type: []((:), [])
-{-----------------------------
------------------------------}
     ''[]''(..),
 --  Tuple types: (,), (,,), etc.
-{-----------------------------
------------------------------}
 --  Trivial type: ()
-{-----------------------------
------------------------------}
 --  Functions: (->)
 {-----------------------------
     Rec, emptyRec, EmptyRow, -- non-standard, should only be exported if TREX
@@ -123,42 +109,29 @@ module EHC.Prelude (
          enumFromTo, enumFromThenTo),
     Bounded(minBound, maxBound),
 --  Num((+), (-), (*), negate, abs, signum, fromInteger),
-{-----------------------------
------------------------------}
     Num((+), (-), (*), negate, abs, signum, fromInteger, fromInt),
     Real(toRational),
-    doubleToRational,
 --  Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
-{-----------------------------
------------------------------}
     Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
 --  Fractional((/), recip, fromRational),
     Fractional((/), recip, fromRational, fromDouble),
     Floating(pi, exp, log, sqrt, (**), logBase, sin, cos, tan,
              asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
     RealFrac(properFraction, truncate, round, ceiling, floor),
-{-----------------------------
------------------------------}
     RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
               encodeFloat, exponent, significand, scaleFloat, isNaN,
               isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
     Monad((>>=), (>>), return, fail),
-{-----------------------------
------------------------------}
     Functor(fmap),
     mapM, mapM_, sequence, sequence_, (=<<),
     maybe, either,
     (&&), (||), not, otherwise,
     subtract, even, odd, gcd, lcm, (^), (^^),
-{-----------------------------
     fromIntegral, realToFrac,
------------------------------}
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
     asTypeOf, error, undefined,
     seq, ($!),
 
-{-----------------------------
------------------------------}
     boundedSucc,
     boundedPred,
     boundedEnumFrom,
@@ -262,7 +235,7 @@ class (Num a) => Fractional a where
 
     -- Minimal complete definition: fromRational and ((/) or recip)
     recip x       = 1 / x
-    fromDouble    = fromRational . fromDouble
+    fromDouble x  = fromRational (fromDouble x)
     x / y         = x * recip y
 
 
@@ -361,16 +334,12 @@ class (RealFrac a, Floating a) => RealFloat a where
                       = pi    -- must be after the previous test on zero y
       | x==0 && y==0  = y     -- must be after the other double zero tests
       | otherwise     = x + y -- x or y is a NaN, return a NaN (via +)
-{-----------------------------
------------------------------}
 
 -- Numeric functions --------------------------------------------------------
 
 subtract       :: Num a => a -> a -> a
 subtract        = flip (-)
 
-{-----------------------------
------------------------------}
 even, odd        :: (Integral a) => a -> Bool
 even n           =  n `rem` 2 == 0
 odd              =  not . even
@@ -394,8 +363,6 @@ lcm _ 0         = 0
 lcm 0 _         = 0
 lcm x y         = abs ((x `quot` gcd x y) * y)
 
-{-----------------------------
------------------------------}
 (^)            :: (Num a, Integral b) => a -> b -> a
 x ^ 0           = 1
 x ^ n  | n > 0  = f x (n-1) x
@@ -411,8 +378,6 @@ x ^^ n          = if n >= 0 then x ^ n else recip (x^(-n))
 fromIntegral   :: (Integral a, Num b) => a -> b
 fromIntegral    = fromInteger . toInteger
 
-{-----------------------------
------------------------------}
 realToFrac     :: (Real a, Fractional b) => a -> b
 realToFrac      = fromRational . toRational
 
@@ -459,8 +424,6 @@ class Enum a where
 
 -- Read and Show classes ------------------------------------------------------
 
-{-----------------------------
------------------------------}
 type ReadS a = String -> [(a,String)]
 type ShowS   = String -> String
 
@@ -611,22 +574,12 @@ data Char               -- builtin datatype of ISO Latin characters
 -----------------------------}
 type String = [Char]    -- strings are lists of characters
 
-{-----------------------------
-primitive primEqChar    :: Char -> Char -> Bool
-primitive primCmpChar   :: Char -> Char -> Ordering
------------------------------}
 foreign import ccall "primEqInt"   primEqChar    :: Char -> Char -> Bool
 foreign import ccall "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
 
-{-----------------------------
------------------------------}
 instance Eq Char  where (==)    = primEqChar
 instance Ord Char where compare = primCmpChar
 
-{-----------------------------
-primitive primCharToInt :: Char -> Int
-primitive primIntToChar :: Int -> Char
------------------------------}
 foreign import ccall "primUnsafeId"  primCharToInt   :: Char -> Int
 foreign import ccall "primUnsafeId"  primIntToChar   :: Int -> Char
 
@@ -655,8 +608,6 @@ instance Read Char where
                      readl s            = [(c:cs,u) | (c ,t) <- readLitChar s,
 -----------------------------}
 
-{-----------------------------
------------------------------}
 instance Show Char where
     showsPrec p '\'' = showString "'\\''"
     showsPrec p c    = showChar '\'' . showLitChar c . showChar '\''
@@ -666,15 +617,9 @@ instance Show Char where
                           showl ('"':cs) = showString "\\\"" . showl cs
                           showl (c:cs)   = showLitChar c . showl cs
 
-{-----------------------------
------------------------------}
 instance Bounded Char where
     minBound = '\0'
     maxBound = '\xff' -- primMaxChar
-
-{-----------------------------
-primitive primMaxChar :: Char
------------------------------}
 
 isSpace, isDigit :: Char -> Bool
 
@@ -688,12 +633,6 @@ isSpace c              =  c == ' '  ||
 
 isDigit c              =  c >= '0'   &&  c <= '9'
 
-{-----------------------------
-primitive isUpper      :: Char -> Bool
-primitive isLower      :: Char -> Bool
-primitive isAlpha      :: Char -> Bool
-primitive isAlphaNum   :: Char -> Bool
------------------------------}
 foreign import ccall "primCharIsUpper"   isUpper    :: Char -> Bool
 foreign import ccall "primCharIsLower"   isLower    :: Char -> Bool
 
@@ -769,8 +708,6 @@ instance Monad [ ] where
     return x     = [x]
     fail s       = []
 
-{-----------------------------
------------------------------}
 instance Read a => Read [a]  where
     readsPrec p = readList
 
@@ -789,12 +726,6 @@ data Int      -- builtin datatype of fixed size integers
 data Integer  -- builtin datatype of arbitrary size integers
 -----------------------------}
 
-{-----------------------------
-primitive primEqInt      :: Int -> Int -> Bool
-primitive primCmpInt     :: Int -> Int -> Ordering
-primitive primEqInteger  :: Integer -> Integer -> Bool
-primitive primCmpInteger :: Integer -> Integer -> Ordering
------------------------------}
 
 foreign import ccall primGtInt      :: Int -> Int -> Bool
 foreign import ccall primLtInt      :: Int -> Int -> Bool
@@ -810,33 +741,13 @@ instance Ord Int     where
   (<)     = primLtInt
   (>)     = primGtInt
 instance Ord Integer where compare = primCmpInteger
-{-----------------------------
------------------------------}
 
-{-----------------------------
-primitive primPlusInt,
-          primMinusInt,
-          primMulInt       :: Int -> Int -> Int
-primitive primNegInt       :: Int -> Int
-primitive primIntegerToInt :: Integer -> Int
------------------------------}
 foreign import ccall primAddInt       :: Int -> Int -> Int
 foreign import ccall primSubInt       :: Int -> Int -> Int
 foreign import ccall primMulInt       :: Int -> Int -> Int
 foreign import ccall primNegInt       :: Int -> Int
 foreign import ccall primIntegerToInt :: Integer -> Int
 
-{-----------------------------
-instance Num Int where
-    (+)           = primPlusInt
-    (-)           = primMinusInt
-    negate        = primNegInt
-    (*)           = primMulInt
-    abs           = absReal
-    signum        = signumReal
-    fromInteger   = primIntegerToInt
-    fromInt x     = x
------------------------------}
 instance Num Int where
     (+)           = primAddInt
     (-)           = primSubInt
@@ -847,42 +758,19 @@ instance Num Int where
     fromInteger   = primIntegerToInt
     fromInt x     = x
 
-{-----------------------------
-primitive primMinInt, primMaxInt :: Int
------------------------------}
 foreign import ccall primMaxInt :: Int
 foreign import ccall primMinInt :: Int
 
-{-----------------------------
------------------------------}
 instance Bounded Int where
     minBound = primMinInt
     maxBound = primMaxInt
 
-{-----------------------------
-primitive primPlusInteger,
-          primMinusInteger,
-          primMulInteger   :: Integer -> Integer -> Integer
-primitive primNegInteger   :: Integer -> Integer
-primitive primIntToInteger :: Int -> Integer
------------------------------}
 foreign import ccall primAddInteger       :: Integer -> Integer -> Integer
 foreign import ccall primSubInteger       :: Integer -> Integer -> Integer
 foreign import ccall primMulInteger       :: Integer -> Integer -> Integer
 foreign import ccall primNegInteger       :: Integer -> Integer
 foreign import ccall primIntToInteger     :: Int -> Integer
 
-{-----------------------------
-instance Num Integer where
-    (+)           = primPlusInteger
-    (-)           = primMinusInteger
-    negate        = primNegInteger
-    (*)           = primMulInteger
-    abs           = absReal
-    signum        = signumReal
-    fromInteger x = x
-    fromInt       = primIntToInteger
------------------------------}
 instance Num Integer where
     (+)           = primAddInteger
     (-)           = primSubInteger
@@ -916,32 +804,23 @@ instance Real Int where
 instance Real Integer where
     toRational x = x % 1
 
-{-----------------------------
-primitive primDivInt,
-          primQuotInt,
-          primRemInt,
-          primModInt  :: Int -> Int -> Int
-primitive primQrmInt  :: Int -> Int -> (Int,Int)
------------------------------}
 foreign import ccall primDivInt       :: Int -> Int -> Int
 foreign import ccall primModInt       :: Int -> Int -> Int
+foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
 foreign import ccall primQuotInt      :: Int -> Int -> Int
 foreign import ccall primRemInt       :: Int -> Int -> Int
+foreign import ccall primQuotRemInt   :: Int -> Int -> (Int,Int)
 
 instance Integral Int where
+    divMod    = primDivModInt
+    quotRem   = primQuotRemInt
     div       = primDivInt
     quot      = primQuotInt
     rem       = primRemInt
     mod       = primModInt
-{-----------------------------
-    quotRem   = primQrmInt
------------------------------}
     toInteger = primIntToInteger
     toInt x   = x
 
-{-----------------------------
-primitive primQrmInteger  :: Integer -> Integer -> (Integer,Integer)
------------------------------}
 foreign import ccall primQuotInteger          :: Integer -> Integer -> Integer
 foreign import ccall primRemInteger           :: Integer -> Integer -> Integer
 foreign import ccall primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
@@ -949,12 +828,6 @@ foreign import ccall primDivInteger           :: Integer -> Integer -> Integer
 foreign import ccall primModInteger           :: Integer -> Integer -> Integer
 foreign import ccall primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
 
-{-----------------------------
-instance Integral Integer where
-    quotRem     = primQrmInteger
-    toInteger x = x
-    toInt       = primIntegerToInt
------------------------------}
 instance Integral Integer where
     divMod      = primDivModInteger
     quotRem     = primQuotRemInteger
@@ -1042,9 +915,6 @@ numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
 iterate' f x = x : (iterate' f $! f x)
 
-{-----------------------------
-primitive primShowsInt :: Int -> Int -> ShowS
------------------------------}
 --foreign import ccall primShowInt :: Int -> String
 -- TODO: replace this by a function Int -> PackedString
 
@@ -1053,10 +923,6 @@ primitive primShowsInt :: Int -> Int -> ShowS
 instance Read Int where
     readsPrec p = readSigned readDec
 
-{-----------------------------
-instance Show Int where
-    showsPrec   = primShowsInt
------------------------------}
 showInt :: Int -> String
 showInt x | x<0  = '-' : showInt(-x)
           | x==0 = "0"
@@ -1066,9 +932,6 @@ instance Show Int where
 --  show   = primShowInt
     show   = showInt
 
-{-----------------------------
-primitive primShowsInteger :: Int -> Integer -> ShowS
------------------------------}
 foreign import ccall primShowInteger :: Integer -> String
 
 {-----------------------------
@@ -1086,33 +949,17 @@ instance Show Integer where
 data Float     -- builtin datatype of single precision floating point numbers
 data Double    -- builtin datatype of double precision floating point numbers
 
-{-----------------------------
-primitive primEqFloat   :: Float -> Float -> Bool
-primitive primCmpFloat  :: Float -> Float -> Ordering
-primitive primEqDouble  :: Double -> Double -> Bool
-primitive primCmpDouble :: Double -> Double -> Ordering
------------------------------}
 foreign import ccall primEqFloat   :: Float -> Float -> Bool
 foreign import ccall primCmpFloat  :: Float -> Float -> Ordering
 foreign import ccall primEqDouble  :: Double -> Double -> Bool
 foreign import ccall primCmpDouble :: Double -> Double -> Ordering
 
-{-----------------------------
------------------------------}
 instance Eq  Float  where (==) = primEqFloat
 instance Eq  Double where (==) = primEqDouble
 
 instance Ord Float  where compare = primCmpFloat
 instance Ord Double where compare = primCmpDouble
 
-{-----------------------------
-primitive primPlusFloat,
-          primMinusFloat,
-          primMulFloat       :: Float -> Float -> Float
-primitive primNegFloat       :: Float -> Float
-primitive primIntToFloat     :: Int -> Float
-primitive primIntegerToFloat :: Integer -> Float
------------------------------}
 foreign import ccall primAddFloat       :: Float -> Float -> Float
 foreign import ccall primSubFloat       :: Float -> Float -> Float
 foreign import ccall primMulFloat       :: Float -> Float -> Float
@@ -1120,17 +967,6 @@ foreign import ccall primNegFloat       :: Float -> Float
 foreign import ccall primIntToFloat     :: Int -> Float
 foreign import ccall primIntegerToFloat :: Integer -> Float
 
-{-----------------------------
-instance Num Float where
-    (+)           = primPlusFloat
-    (-)           = primMinusFloat
-    negate        = primNegFloat
-    (*)           = primMulFloat
-    abs           = absReal
-    signum        = signumReal
-    fromInteger   = primIntegerToFloat
-    fromInt       = primIntToFloat
------------------------------}
 instance Num Float where
     (+)           = primAddFloat
     (-)           = primSubFloat
@@ -1141,14 +977,6 @@ instance Num Float where
     fromInteger   = primIntegerToFloat
     fromInt       = primIntToFloat
 
-{-----------------------------
-primitive primPlusDouble,
-          primMinusDouble,
-          primMulDouble       :: Double -> Double -> Double
-primitive primNegDouble       :: Double -> Double
-primitive primIntToDouble     :: Int -> Double
-primitive primIntegerToDouble :: Integer -> Double
------------------------------}
 foreign import ccall primAddDouble       :: Double -> Double -> Double
 foreign import ccall primSubDouble       :: Double -> Double -> Double
 foreign import ccall primMulDouble       :: Double -> Double -> Double
@@ -1156,17 +984,6 @@ foreign import ccall primNegDouble       :: Double -> Double
 foreign import ccall primIntToDouble     :: Int -> Double
 foreign import ccall primIntegerToDouble :: Integer -> Double
 
-{-----------------------------
-instance Num Double where
-    (+)         = primPlusDouble
-    (-)         = primMinusDouble
-    negate      = primNegDouble
-    (*)         = primMulDouble
-    abs         = absReal
-    signum      = signumReal
-    fromInteger = primIntegerToDouble
-    fromInt     = primIntToDouble
------------------------------}
 instance Num Double where
     (+)         = primAddDouble
     (-)         = primSubDouble
@@ -1177,17 +994,11 @@ instance Num Double where
     fromInteger = primIntegerToDouble
     fromInt     = primIntToDouble
 
-{-----------------------------
 instance Real Float where
     toRational = floatToRational
------------------------------}
-instance Real Float
 
-{-----------------------------
 instance Real Double where
     toRational = doubleToRational
------------------------------}
-instance Real Double
 
 {-----------------------------
 -- Calls to these functions are optimised when passed as arguments to
@@ -1203,29 +1014,17 @@ realFloatToRational x = (m%1)*(b%1)^^n
                         where (m,n) = decodeFloat x
                               b     = floatRadix x
 
-{-----------------------------
-primitive primDivFloat      :: Float -> Float -> Float
-primitive primDoubleToFloat :: Double -> Float
-primitive primFloatToDouble :: Float -> Double  -- used by runtime optimizer
------------------------------}
 foreign import ccall primDivFloat      :: Float -> Float -> Float
 foreign import ccall primDoubleToFloat :: Double -> Float
 foreign import ccall primFloatToDouble :: Float -> Double
 
-{-----------------------------
------------------------------}
 instance Fractional Float where
     (/)          = primDivFloat
     fromRational = primRationalToFloat
     fromDouble   = primDoubleToFloat
 
-{-----------------------------
-primitive primDivDouble :: Double -> Double -> Double
------------------------------}
 foreign import ccall primDivDouble :: Double -> Double -> Double
 
-{-----------------------------
------------------------------}
 instance Fractional Double where
     (/)          = primDivDouble
     fromRational = primRationalToDouble
@@ -1316,18 +1115,12 @@ instance Floating Double where
     tanh  = primTanhDouble
 
 
-{-----------------------------
------------------------------}
 instance RealFrac Float where
     properFraction = floatProperFraction
 
-{-----------------------------
------------------------------}
 instance RealFrac Double where
     properFraction = floatProperFraction
 
-{-----------------------------
------------------------------}
 floatProperFraction x
    | n >= 0      = (fromInteger m * fromInteger b ^ n, 0)
    | otherwise   = (fromInteger w, encodeFloat r n)
@@ -1337,14 +1130,7 @@ floatProperFraction x
 
 foreign import ccall primIsIEEE  :: Bool
 foreign import ccall primRadixDoubleFloat  :: Int
-{-----------------------------
-primitive primFloatRadix  :: Integer
-primitive primFloatDigits :: Int
-primitive primFloatMinExp,
-          primFloatMaxExp :: Int
-primitive primFloatEncode :: Integer -> Int -> Float
-primitive primFloatDecode :: Float -> (Integer, Int)
------------------------------}
+
 foreign import ccall primIsNaNFloat  :: Float -> Bool
 foreign import ccall primIsNegativeZeroFloat  :: Float -> Bool
 foreign import ccall primIsDenormalizedFloat  :: Float -> Bool
@@ -1356,19 +1142,6 @@ foreign import ccall primDecodeFloat  :: Float -> (Integer, Int)
 foreign import ccall primEncodeFloat  :: Integer -> Int -> Float
 foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
 
-{-----------------------------
-instance RealFloat Float where
-    floatRadix  _ = primFloatRadix
-    floatDigits _ = primFloatDigits
-    floatRange  _ = (primFloatMinExp, primFloatMaxExp)
-    encodeFloat = primFloatEncode
-    decodeFloat = primFloatDecode
-    isNaN       _ = False
-    isInfinite  _ = False
-    isDenormalized _ = False
-    isNegativeZero _ = False
-    isIEEE      _ = False
------------------------------}
 instance RealFloat Float where
     floatRadix  _ = toInteger primRadixDoubleFloat
     floatDigits _ = primDigitsFloat
@@ -1382,14 +1155,6 @@ instance RealFloat Float where
     isIEEE      _ = primIsIEEE
     atan2         = primAtan2Float
 
-{-----------------------------
-primitive primDoubleRadix  :: Integer
-primitive primDoubleDigits :: Int
-primitive primDoubleMinExp,
-          primDoubleMaxExp :: Int
-primitive primDoubleEncode :: Integer -> Int -> Double
-primitive primDoubleDecode :: Double -> (Integer, Int)
------------------------------}
 foreign import ccall primIsNaNDouble  :: Double -> Bool
 foreign import ccall primIsNegativeZeroDouble  :: Double -> Bool
 foreign import ccall primIsDenormalizedDouble  :: Double -> Bool
@@ -1401,19 +1166,6 @@ foreign import ccall primDecodeDouble  :: Double -> (Integer, Int)
 foreign import ccall primEncodeDouble  :: Integer -> Int -> Double
 foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
 
-{-----------------------------
-instance RealFloat Double where
-    floatRadix  _ = primDoubleRadix
-    floatDigits _ = primDoubleDigits
-    floatRange  _ = (primDoubleMinExp, primDoubleMaxExp)
-    encodeFloat   = primDoubleEncode
-    decodeFloat   = primDoubleDecode
-    isNaN       _ = False
-    isInfinite  _ = False
-    isDenormalized _ = False
-    isNegativeZero _ = False
-    isIEEE      _ = False
------------------------------}
 instance RealFloat Double where
     floatRadix  _ = toInteger primRadixDoubleFloat
     floatDigits _ = primDigitsDouble
@@ -1427,7 +1179,6 @@ instance RealFloat Double where
     isIEEE      _ = primIsIEEE
     atan2         = primAtan2Double
 
-{-----------------------------
 instance Enum Float where
     succ x                = x+1
     pred x                = x-1
@@ -1437,9 +1188,7 @@ instance Enum Float where
     enumFromThen          = numericEnumFromThen
     enumFromTo            = numericEnumFromTo
     enumFromThenTo        = numericEnumFromThenTo
------------------------------}
 
-{-----------------------------
 instance Enum Double where
     succ x                = x+1
     pred x                = x-1
@@ -1449,11 +1198,7 @@ instance Enum Double where
     enumFromThen          = numericEnumFromThen
     enumFromTo            = numericEnumFromTo
     enumFromThenTo        = numericEnumFromThenTo
------------------------------}
 
-{-----------------------------
-primitive primShowsFloat :: Int -> Float -> ShowS
------------------------------}
 foreign import ccall primShowFloat :: Float -> String
 -- TODO: replace this by a function Float -> PackedString
 
@@ -1468,9 +1213,6 @@ instance Show Float where
 instance Show Float where
     show   = primShowFloat
 
-{-----------------------------
-primitive primShowsDouble :: Int -> Double -> ShowS
------------------------------}
 foreign import ccall primShowDouble :: Double -> String
 
 {-----------------------------
@@ -1544,8 +1286,6 @@ data Integral a => Ratio a = !a :% !a deriving (Eq)
 data Ratio a = !a :% !a deriving (Eq)
 type Rational              = Ratio Integer
 
-{-----------------------------
------------------------------}
 (%)                       :: Integral a => a -> a -> Ratio a
 x % y                      = reduce (x * signum y) (abs y)
 
@@ -1561,8 +1301,6 @@ denominator (x :% y)       = y
 instance Integral a => Ord (Ratio a) where
     compare (x:%y) (x':%y') = compare (x*y') (x'*y)
 
-{-----------------------------
------------------------------}
 instance Integral a => Num (Ratio a) where
     (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
     (x:%y) * (x':%y') = reduce (x*x') (y*y')
@@ -1578,18 +1316,14 @@ instance Integral a => Num (Ratio a) where
 intToRatio :: Integral a => Int -> Ratio a
 intToRatio x = fromInt x :% 1
 
-{-----------------------------
 instance Integral a => Real (Ratio a) where
     toRational (x:%y) = toInteger x :% toInteger y
------------------------------}
 
 instance Integral a => Fractional (Ratio a) where
     (x:%y) / (x':%y')   = (x*y') % (y*x')
     recip (x:%y)        = y % x
     fromRational (x:%y) = fromInteger x :% fromInteger y
-{-----------------------------
     fromDouble          = doubleToRatio
------------------------------}
 
 {-----------------------------
 -- Hugs optimises code of the form fromRational (doubleToRatio x)
@@ -1606,8 +1340,16 @@ doubleToRatio x
                                 denom = 10 ^ (-n_dec)
                                 pow   = 10 ^ n_dec
 -----------------------------}
+doubleToRatio :: Integral a => Double -> Ratio a
+doubleToRatio x
+            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
+            | otherwise = fromRational (round (x * fromInteger denom) % denom)
+                          where (m,n) = decodeFloat x
+                                n_dec :: Integer
+                                n_dec = ceiling (logBase 10 (encodeFloat 1 n :: Double))
+                                denom = 10 ^ (-n_dec)
+                                pow   = 10 ^ n_dec
 
-{-----------------------------
 instance Integral a => RealFrac (Ratio a) where
     properFraction (x:%y) = (fromIntegral q, r:%y)
                             where (q,r) = quotRem x y
@@ -1622,16 +1364,22 @@ instance Integral a => Enum (Ratio a) where
     enumFromThen   = numericEnumFromThen
     enumFromThenTo = numericEnumFromThenTo
 
+{-----------------------------
 instance (Read a, Integral a) => Read (Ratio a) where
     readsPrec p = readParen (p > 7)
                             (\r -> [(x%y,u) | (x,s)   <- readsPrec 8 r,
                                               ("%",t) <- lex s,
                                               (y,u)   <- readsPrec 8 t ])
+-----------------------------}
 
+{-----------------------------
 instance Integral a => Show (Ratio a) where
     showsPrec p (x:%y) = showParen (p > 7)
                              (showsPrec 8 x . showString " % " . showsPrec 8 y)
 -----------------------------}
+instance (Show a,Integral a) => Show (Ratio a) where
+    showsPrec p (x:%y) = showParen (p > 7)
+                             (showsPrec 8 x . showString " % " . showsPrec 8 y)
 
 -- Standard list functions {PreludeList} ------------------------------------
 
@@ -2024,8 +1772,6 @@ readLitChar ('\\':s)    = readEsc s
 readLitChar (c:s)       = [(c,s)]
 -----------------------------}
 
-{-----------------------------
------------------------------}
 showLitChar               :: Char -> ShowS
 showLitChar c | c > '\DEL' = showChar '\\' .
                              protectEsc isDigit (shows (fromEnum c))
@@ -2056,8 +1802,6 @@ readHex = readInt 16 isHexDigit hex
 
 fromEnum_0 :: Int
 fromEnum_0 = fromEnum '0'
-{-----------------------------
------------------------------}
 
 -- readInt reads a string of digits using an arbitrary base.  
 -- Leading minus signs must be handled elsewhere.
@@ -2292,11 +2036,6 @@ instance Show IOException where
 
 type FilePath = String  -- file pathnames are represented by strings
 
-{-----------------------------
-primitive primbindIO             :: IO a -> (a -> IO b) -> IO b
-primitive primretIO              :: a -> IO a
------------------------------}
-
 ioFromPrim :: (IOWorld -> a) -> IO a
 ioFromPrim f
   = IO (\w -> letstrict x = f w in IOResult x)
@@ -2403,25 +2142,11 @@ readFile name    = openFile name ReadMode >>= hGetContents
 interact  :: (String -> String) -> IO ()
 interact f = getContents >>= (putStr . f)
 
-{-----------------------------
-primitive stdin       :: Handle
-primitive stdout      :: Handle
-primitive stderr      :: Handle
------------------------------}
-
 stdin, stdout, stderr :: Handle
 stdin  = primOpenChan "<stdin>"  ReadMode  (Just 0)
 stdout = primOpenChan "<stdout>" WriteMode (Just 1)
 stderr = primOpenChan "<stderr>" WriteMode (Just 2)
 
-{-----------------------------
-primitive openFile    :: FilePath -> IOMode -> IO Handle
-primitive hClose      :: Handle -> IO ()
-primitive hGetContents :: Handle -> IO String
-primitive hGetChar    :: Handle -> IO Char
-primitive hPutChar    :: Handle -> Char -> IO ()
-primitive hPutStr     :: Handle -> String -> IO ()
------------------------------}
 foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> Handle
 foreign import ccall primCloseChan          :: Handle -> ()
 foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
@@ -2519,11 +2244,9 @@ data Handle
 data Object a -- builtin datatype of external object references.
               -- (needed as primitive since they're supported in FFI decls.)
 
-instance Eq Handle where (==) = primEqHandle
-{-----------------------------
-primitive primEqHandle :: Handle -> Handle -> Bool
------------------------------}
 foreign import ccall "primEqChan" primEqHandle :: Handle -> Handle -> Bool
+
+instance Eq Handle where (==) = primEqHandle
 
 {-----------------------------
 instance Show Handle where
@@ -2602,6 +2325,7 @@ primitive throw "primThrowException" :: Exception -> a
 primitive primCatchException :: a -> Either Exception a
 -----------------------------}
 foreign import ccall primThrowException :: forall a . Exception -> a
+foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
 
 throw :: Exception -> a
 throw e = primThrowException e
@@ -2614,7 +2338,6 @@ catchException (IO m) k = IO $ \ s ->
              (s . fromObj)
 -----------------------------}
 
-foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
 
 catchTracedException :: IO a -> (([(Int,String)],Exception) -> IO a) -> IO a
 catchTracedException (IO m) k = IO $ \s ->
