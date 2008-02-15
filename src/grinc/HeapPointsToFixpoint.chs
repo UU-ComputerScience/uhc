@@ -79,11 +79,7 @@ filterTaggedNodes p av               = av
 
 
 getApplyNodeVars :: AbstractValue -> [ Variable ]
-getApplyNodeVars (AbsNodes nodes) = [ getNr nm 
-                                    | t <- Map.keys nodes
-                                    , isApplyTag t
-                                    , let GrTag_App nm = t 
-                                    ]
+getApplyNodeVars (AbsNodes nodes) = [ getNr nm  | (GrTag_App nm) <- Map.keys nodes ]
 getApplyNodeVars _                = []
 
 
@@ -133,14 +129,6 @@ envChanges equat env heap
          _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)
          
     
-    --absDeref :: AbstractValue -> ST s AbstractValue  
-    absDeref av
-      = case av of
-          AbsLocs ls m -> do { vs <- mapM (readArray heap) (Set.toList ls)
-                             ; return (mconcat vs)
-                             }
-          _            ->  return av
-
     absEnum av
       = case av of
           AbsTags ts   -> AbsNodes (Map.fromList [ (t,[]) |  t <- Set.toList ts ])
