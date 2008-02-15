@@ -962,6 +962,19 @@ rngAdd r1 r2
       _ -> Range_Unknown
 %%]
 
+%%[99 export(rangePlus)
+posMax, posMin :: Pos -> Pos -> Pos
+posMax (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `max` l2) (c1 `max` c2) f1
+posMin (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `min` l2) (c1 `min` c2) f1
+
+rangePlus :: Range -> Range -> Range
+rangePlus (Range_Range b1 e1) (Range_Range b2 e2) = Range_Range (b1 `posMin` b2) (e1' `posMax` e2')
+                                                  where e1' = if e1 == noPos then b1 else e1
+                                                        e2' = if e2 == noPos then b2 else e2
+rangePlus Range_Unknown       r2                  = r2
+rangePlus r1                  _                   = r1
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lifting of Range
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

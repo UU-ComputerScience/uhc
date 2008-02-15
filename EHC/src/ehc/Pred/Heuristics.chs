@@ -77,11 +77,7 @@ toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
 toEvidence f a = rec (f a)
   where  rec (HeurAlts p [])                 =  Evid_Unresolved p
          rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
-         rec (HeurAlts p rs)                 =  case rrs of
-                                                  []       -> Evid_Unresolved p
-                                                  [(i,ev)] -> Evid_Proof p i ev
-                                                  _        -> Evid_Ambig p rrs
-                                             where rrs = filter (not . null . snd) (reds rs)
+         rec (HeurAlts p rs)                 =  reallyAmbigEvid p (reds rs)
          red (HeurRed i alts)                =  (i,map rec alts)
          reds rs                             =  map red rs
 %%]
@@ -103,7 +99,7 @@ localChoice choose (HeurAlts p reds) =
   case filter ((`elem` redinfos) . redInfo) reds of
     []                  -> Evid_Unresolved p
     [r@(HeurRed i _)]   -> Evid_Proof p i (snd $ ch r)
-    rs                  -> Evid_Ambig p (chs rs)
+    rs                  -> reallyAmbigEvid p (chs rs)
   where redinfos          = choose p (map redInfo reds)
         ch (HeurRed i rs) = (i,map (localChoice choose) rs)
         chs rs            = map ch rs
@@ -138,7 +134,7 @@ contextChoice choose (HeurAlts p reds) =
   case choose p reds of
          []                 -> Evid_Unresolved p
          [r@(HeurRed i _)]  -> Evid_Proof p i (snd $ ch r)
-         rs                 -> Evid_Ambig p (chs rs)
+         rs                 -> reallyAmbigEvid p (chs rs)
   where ch (HeurRed i rs) = (i,map (contextChoice choose) rs)
         chs rs            = map ch rs
          
@@ -160,8 +156,13 @@ contextBinChoice order = contextChoice (const local)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
+reallyAmbigEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
+reallyAmbigEvid p evs
+  = case filter (not . null . snd) evs of
+      []       -> Evid_Unresolved p
+      [(i,ev)] -> Evid_Proof p i ev
+      _        -> Evid_Ambig p evs
 %%]
-reallyAmbig :: 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Heuristic that only selects solvable alternatives (using backtracking)

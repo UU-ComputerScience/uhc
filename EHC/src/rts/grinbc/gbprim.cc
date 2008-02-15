@@ -243,49 +243,33 @@ PRIM GB_Word gb_primMulInt( GB_Word x, GB_Word y )
    These routines are taken from lvm.
 */
 
-PRIM GB_Word gb_primDivInt( GB_Word x, GB_Word y )
+PRIM GB_Word gb_primDivInt( GB_Int numerator, GB_Int divisor )
 {
-	// GB_Int numerator = GB_GBInt2Int(x) ;
-	// GB_Int divisor   = GB_GBInt2Int(y) ;
-	GB_Int numerator = (x) ;
-	GB_Int divisor   = (y) ;
 	GB_Int div = numerator / divisor ;
-	GB_Int mod = numerator % divisor ;
 	
 	// todo: if ( divisor == 0 ) ...
 	
 	/* adjust to euclidean division */
-	if ( mod < 0 ) {
-		if ( divisor > 0 )
-			div -= 1 ;
-		else
-			div += 1 ;
+	if ( div < 0 ) {
+		div -= 1 ;
 	}
 	
-  	// return GB_Int2GBInt(div) ;
   	return (div) ;
 }
 %%]
 
 %%[8
-PRIM GB_Word gb_primModInt( GB_Word x, GB_Word y )
+PRIM GB_Word gb_primModInt( GB_Int numerator, GB_Int divisor )
 {
-	// GB_Int divisor   = GB_GBInt2Int(y) ;
-	// GB_Int mod = GB_GBInt2Int(x) % divisor ;
-	GB_Int divisor   = (y) ;
-	GB_Int mod = (x) % divisor ;
+	GB_Int mod = numerator % divisor ;
 	
 	// todo: if ( divisor == 0 ) ...
 	
 	/* adjust to euclidean modulus */
-	if ( mod < 0 ) {
-		if ( divisor > 0 )
-			mod += divisor ;
-		else
-			mod -= divisor ;
+	if ( mod > 0 && divisor < 0 || mod < 0 && divisor > 0 ) {
+		mod += divisor ;
 	}
 	
-  	// return GB_Int2GBInt(mod) ;
   	return (mod) ;
 }
 
@@ -294,21 +278,41 @@ PRIM GB_Word gb_primModInt( GB_Word x, GB_Word y )
    RemInt D d  = D - d*(QuotInt D d)
 */
 
-PRIM GB_Word gb_primQuotInt( GB_Word x, GB_Word y )
+PRIM GB_Int gb_primQuotInt( GB_Int x, GB_Int y )
 {
 	// todo: if ( divisor == 0 ) ...
 	
   	// return GB_Int_Quot(x,y);
-  	return x / y;
+  	GB_Int res = x / y ;
+  	return res ;
 }
 
-PRIM GB_Word gb_primRemInt( GB_Word x, GB_Word y )
+PRIM GB_Int gb_primRemInt( GB_Int x, GB_Int y )
 {
 	// todo: if ( divisor == 0 ) ...
 	
   	// return GB_Int_Rem(x,y);
-  	return x % y;
+  	GB_Int res = x % y ;
+  	return res ;
 }
+
+PRIM GB_NodePtr gb_primQuotRemInt( GB_Int x, GB_Int y )
+{
+	GB_NodePtr n ;
+	GB_Int q = x / y ;
+	GB_Int r = x % y ;
+  	// printf( "gb_primQuotRemInt %d %d %d %d\n", x, y, q, r ) ;
+	GB_MkTupNode2_In(n,GB_Int2GBInt(q),GB_Int2GBInt(r)) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDivModInt( GB_Int x, GB_Int y )
+{
+	GB_NodePtr n ;
+	GB_MkTupNode2_In(n, GB_Int2GBInt( gb_primDivInt(x,y) ), GB_Int2GBInt( gb_primModInt(x,y) )) ;
+	return n ;
+}
+
 %%]
 
 %%[8
@@ -320,7 +324,7 @@ PRIM GB_Int gb_primNegInt( GB_Int x )
 %%]
 
 %%[8
-PRIM GB_Word gb_primEqInt( GB_Word x, GB_Word y )
+PRIM GB_Word gb_primEqInt( GB_Int x, GB_Int y )
 {
 	if ( x == y )
 		return gb_True ;

@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Dummy range definition
+%%% Range definition, useful only when leafs of AST are provided with range info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.range
@@ -9,4 +9,17 @@ SEM AllNT
 
 %%[99 -1.range
 %%]
+ATTR AllNTList [ | | range USE {emptyRange} {`rangePlus`}: Range ]
+ATTR AllNTWithoutList [ | | range USE {emptyRange} {`rangePlus`} {@fldrange}: Range ]
 
+SEM AllNT
+  | *           loc         .   childRange     		=   @range `rangePlus` @children.childRange
+
+ATTR AllNTList [ | | range USELOC {@fldrange} {`rangePlus`}: Range ]
+ATTR AllNTList [ | | range USE VIALOC WITH {@fldrange} {emptyRange} {`rangePlus`}: Range ]
+
+children: lhs.r = c1.r + c2.r
+leaf    : lhs.r = emptyRange
+
+children: loc.r = c1.r + c2.r + @fld
+leaf    : loc.r = emptyRange  + @fld
