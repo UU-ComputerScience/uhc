@@ -26,6 +26,9 @@ For debug/trace:
 %%[4 import(EH.Util.Pretty)
 %%]
 
+%%[9 import({%{EH}Core.Coercion})
+%%]
+
 %%[9 import(qualified Data.Set as Set)
 %%]
 

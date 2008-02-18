@@ -45,6 +45,9 @@ For debug/trace:
 %%[4 import({%{EH}Base.Debug})
 %%]
 
+%%[9 import({%{EH}Core.Coercion})
+%%]
+
 %%[9 import(EH.Util.Utils)
 %%]
 

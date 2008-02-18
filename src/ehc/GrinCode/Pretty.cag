@@ -187,8 +187,10 @@ SEM GrPatLam
   | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " @fldL.ppL
   | BasicNode   lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicnode", pp @annot, @lhs.ppGrNm @nm]
   | EnumNode    lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumnode" , @lhs.ppGrNm @nm]
+  | OpaqueNode  lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaquenode" , @lhs.ppGrNm @nm]
   | BasicAnnot  lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicannot", pp @annot, @lhs.ppGrNm @nm]
   | EnumAnnot   lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumannot" , ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+  | OpaqueAnnot lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaqueannot" , @lhs.ppGrNm @nm]
   | Annot       lhs         .   pp          =   ppListSep "(" ")" " " [pp "annot" , ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
 
 SEM GrVarL

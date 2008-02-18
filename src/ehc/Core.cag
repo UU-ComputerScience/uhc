@@ -597,7 +597,7 @@ offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%% Hole construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(mkCExprPrHole,mkCExprHole)
+%%[9 hs export(mkCExprPrHole,mkCExprHole,mkCExprLetHole)
 mkCExprHole :: EHCOpts -> UID -> CExpr
 mkCExprHole opts = CExpr_Var . mkHNm
 
@@ -606,124 +606,6 @@ mkCExprPrHole opts = mkCExprHole opts . poiId
 
 mkCExprLetHole :: UID -> CExpr -> CExpr
 mkCExprLetHole i b = i `CExpr_HoleLet` b
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Coercion
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 hs export(Coe(..), mkCoe, coeId, coeIsId, mkLamLetCoe, mkLetRecCoe)
-data Coe = Coe !(CExpr -> CExpr) | CoeC !CExpr | CoeImplApp !ImplsVarId | CoeImplLam !ImplsVarId
-
-coeId :: Coe
-coeId = CoeC CExpr_CoeArg
-
-coeIsId :: Coe -> Bool
-coeIsId (CoeC CExpr_CoeArg) = True
-coeIsId _                   = False
-
-mkCoe :: (CExpr -> CExpr) -> Coe
-mkCoe = Coe
-
-mkLamLetCoe :: HsName -> UID -> Coe
-mkLamLetCoe n i = mkCoe (\e -> n `mkCExprLam1` mkCExprLetHole i e)
-
-mkLetRecCoe :: CBindL -> Coe
-mkLetRecCoe [] = coeId
-mkLetRecCoe b  = mkCoe (\e -> mkCExprLet CBindRec b e)
-
-instance Show Coe where
-  show _ = "COE"
-%%]
-
-%%[9 hs export(mkAppCoe1With,mkAppCoe1,mkAppCoeWith,mkAppCoe)
-mkAppCoe1With :: CExpr -> CMeta -> Coe
-mkAppCoe1With a m = mkCoe (\e -> mkCExprApp1Meta e a m)
-
-mkAppCoe1 :: CExpr -> Coe
-mkAppCoe1 a = mkAppCoe1With a CMeta_Val
-
-mkAppCoeWith :: [(CExpr,CMeta)] -> Coe
-mkAppCoeWith as = mkCoe (\e -> mkCExprAppMeta e as)
-
-mkAppCoe :: [CExpr] -> Coe
-mkAppCoe as = mkAppCoeWith (cmetaLift as)
-%%]
-
-%%[9 hs export(mkLamCoe1With,mkLamCoe1)
-mkLamCoe1With :: HsName -> CMeta -> Coe
-mkLamCoe1With n m = mkCoe (\e -> mkCExprLam1Meta n m e)
-
-mkLamCoe1 :: HsName -> Coe
-mkLamCoe1 n = mkLamCoe1With n CMeta_Val
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Coercion for lamda
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-A LRCoe represents a coercion in a much more finegrained manner:
-- a right Coe list, a list of coercions for building the rhs side of a subsumption, which must be the lambda
-- a left Coe list a list of coercions for building the lhs side of a subsumption, which must be an application or other expr using the args of the left Coe
-
-%%[9 hs export(LRCoeKind(..),lrcoeKindOfCoe)
-data LRCoeKind = LRCoeId | LRCoeOther deriving Eq
-
-lrcoeKindAnd :: LRCoeKind -> LRCoeKind -> LRCoeKind
-lrcoeKindAnd LRCoeId LRCoeId = LRCoeId
-lrcoeKindAnd _       _       = LRCoeOther
-
-lrcoeKindOfCoe :: Coe -> LRCoeKind
-lrcoeKindOfCoe c = if coeIsId c then LRCoeId else LRCoeOther
-%%]
-
-%%[9 hs export(LRCoe(..),emptyLRCoe)
-data LRCoe
-  = LRCoe
-      { lrcoeKind		:: LRCoeKind
-      , lrcoeLeftL		:: [Coe]
-      , lrcoeRightL 	:: [Coe]
-      }
-
-emptyLRCoe :: LRCoe
-emptyLRCoe = LRCoe LRCoeId [] []
-%%]
-
-%%[9 hs export(lrcoeIsId)
-lrcoeIsId :: LRCoe -> Bool
-lrcoeIsId c = lrcoeKind c == LRCoeId
-%%]
-
-%%[9 hs export(mkLRCoe)
-mkLRCoe :: Coe -> Coe -> LRCoe
-mkLRCoe l r = LRCoe LRCoeOther [l] [r]
-
-mkIdLRCoe' :: Coe -> Coe -> LRCoe
-mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
-%%]
-
-%%[9 hs export(mkIdLRCoeWith)
-mkIdLRCoeWith :: HsName -> CMeta -> LRCoe
-mkIdLRCoeWith n m = mkIdLRCoe' (mkAppCoeWith [(CExpr_Var n,m)]) (mkLamCoe1With n m)
-%%]
-
-%%[9 hs export(lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)
-lrcoeLFromList :: [Coe] -> LRCoe
-lrcoeLFromList c = LRCoe LRCoeOther c []
-
-lrcoeRFromList :: [Coe] -> LRCoe
-lrcoeRFromList c = LRCoe LRCoeOther [] c
-
-lrcoeLSingleton :: Coe -> LRCoe
-lrcoeLSingleton c = LRCoe (lrcoeKindOfCoe c) [c] []
-
-lrcoeRSingleton :: Coe -> LRCoe
-lrcoeRSingleton c = LRCoe (lrcoeKindOfCoe c) [] [c]
-%%]
-
-%%[9 hs export(lrcoeUnion)
-lrcoeUnion :: LRCoe -> LRCoe -> LRCoe
-lrcoeUnion (LRCoe k1 l1 r1) (LRCoe k2 l2 r2) = LRCoe (lrcoeKindAnd k1 k2) (l1 ++ l2) (r1 ++ r2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -747,4 +629,6 @@ cModMerge mL
 %%[8 hs
 type CaseFailSubst = Map.Map UID CExpr
 %%]
+
+
 

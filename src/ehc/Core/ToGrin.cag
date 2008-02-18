@@ -486,7 +486,10 @@ SEM CBind
                                                               | @isEnumable t && ehcOptPriv @lhs.opts
                                                                              -> GrPatLam_EnumNode n
                                                               where mbAnn = @mbAnnot t
-                                                            _                -> GrPatLam_Var n
+                                                            _                -> case dataGamTagsOfTy ty @lhs.dataGam of
+                                                                                  Just [] | ehcOptPriv @lhs.opts -> GrPatLam_OpaqueNode n
+                                                                                  _       | ehcOptPriv @lhs.opts -> GrPatLam_OpaqueNode n
+                                                                                          | otherwise            -> GrPatLam_Var n
                                                      resTyNm = tyConNm @resTy
                                                      mbResAnn = @mbAnnot resTyNm
                                                      resTagLfromDataGam = dataGamTagsOfTy @resTy @lhs.dataGam
@@ -513,6 +516,9 @@ SEM CBind
                                                               else if @isEnumable resTyNm
                                                               then \e -> GrExpr_Seq e (GrPatLam_EnumAnnot resTagL @nmRes)
                                                                                       (GrExpr_Unit (GrVal_EnumNode v))
+                                                              else if null (maybe [] id resTagLfromDataGam)
+                                                              then \e -> GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
+                                                                                      (GrExpr_Unit (GrVal_Var v))
                                                               else \e -> GrExpr_Seq e (GrPatLam_Annot resTagL @nmRes)
                                                                                       (GrExpr_Unit (GrVal_Var v))
                                                          else if isJust mbResAnn

@@ -43,7 +43,7 @@
 %%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
-%%[9 hs import({%{EH}Core.Subst})
+%%[9 hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
 %%]
 
 %%[9 hs import({%{EH}Ty.Trf.MergePreds})
