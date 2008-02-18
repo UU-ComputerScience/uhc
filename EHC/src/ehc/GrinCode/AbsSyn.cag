@@ -117,12 +117,14 @@ DATA GrPatLam
   | BasicNode   annot           : {BasicAnnot}
                 nm              : {HsName}
   | EnumNode    nm              : {HsName}
+  | OpaqueNode  nm              : {HsName}
   | BasicAnnot  annot           : {BasicAnnot}
                 nm              : {HsName}
   | EnumAnnot   tagL            : GrTagL
                 nm              : {HsName}
   | Annot       tagL            : GrTagL
                 nm              : {HsName}
+  | OpaqueAnnot nm              : {HsName}
 
 
 DATA GrTag

@@ -62,8 +62,10 @@ SEM GrPatLam
   | Var         lhs         .   trf             =   GrPatLam_Var (nmAliasRepl @lhs.nmAliasMp @nm)
   | BasicNode	lhs			.	trf				=	GrPatLam_BasicNode @annot (nmAliasRepl @lhs.nmAliasMp @nm)
   | EnumNode	lhs			.	trf				=	GrPatLam_EnumNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | OpaqueNode	lhs			.	trf				=	GrPatLam_OpaqueNode (nmAliasRepl @lhs.nmAliasMp @nm)
   | BasicAnnot	lhs			.	trf				=	GrPatLam_BasicAnnot @annot (nmAliasRepl @lhs.nmAliasMp @nm)
   | EnumAnnot	lhs			.	trf				=	GrPatLam_EnumAnnot @tagL.trf (nmAliasRepl @lhs.nmAliasMp @nm)
+  | OpaqueAnnot	lhs			.	trf				=	GrPatLam_OpaqueAnnot (nmAliasRepl @lhs.nmAliasMp @nm)
   | Annot		lhs			.	trf				=	GrPatLam_Annot @tagL.trf (nmAliasRepl @lhs.nmAliasMp @nm)
 
 SEM GrVar

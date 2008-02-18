@@ -58,7 +58,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
 													Base/Parser Ty/Parser EH/Parser HS/Parser Foreign/Parser HI/Parser Core/Parser GrinCode/Parser \
 													Ty/FitsInCommon Ty/FitsIn Ty/Utils \
-													Core/Utils \
+													Core/Coercion Core/Utils \
 													Gam/Utils \
 													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
 													Base/HtmlCommon \

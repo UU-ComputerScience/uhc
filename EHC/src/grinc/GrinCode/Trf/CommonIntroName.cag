@@ -14,7 +14,7 @@ SEM GrPatAlt
 SEM GrPatLam
   | Var         lhs         .   introNmL        =   [@nm]
   | VarNode     lhs         .   introNmL        =   tail @fldL.introNmL
-  | BasicNode EnumNode BasicAnnot EnumAnnot Annot
+  | BasicNode EnumNode BasicAnnot EnumAnnot Annot OpaqueNode OpaqueAnnot
                 lhs         .   introNmL        =   [@nm]
 
 SEM GrVar

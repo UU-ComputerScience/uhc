@@ -406,11 +406,11 @@ nmIntroBasicAnnot _                      = BasicAnnot_Dflt
 ATTR GrPatLam [ | | nmIntro: NmIntro ]
 
 SEM GrPatLam
-  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
+  | Var OpaqueNode Annot OpaqueAnnot
+  				lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
   | VarNode     lhs         .   nmIntro         =   NmIntro_Grp (panic "GrPatLam.VarNode.grpHead") (tail @fldL.introNmL)
   | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
   | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
-  | Annot       lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
   | BasicAnnot  lhs         .   nmIntro         =   let ann = case @annot of
                                                                 BasicAnnot_ToTaggedPtr
                                                                   | @lhs.primResForIntl -> BasicAnnot_Dflt
@@ -418,7 +418,7 @@ SEM GrPatLam
                                                     in  NmIntro_Single @nm ann
   | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr
                                                     in  NmIntro_Single @nm ann
-  | * - Var VarNode BasicNode EnumNode Annot BasicAnnot EnumAnnot
+  | * - Var VarNode BasicNode EnumNode Annot BasicAnnot EnumAnnot OpaqueNode OpaqueAnnot
                 lhs         .   nmIntro         =   NmIntro_None
 %%]
 ATTR GrPatAlt [ | | nmIntro: NmIntro ]

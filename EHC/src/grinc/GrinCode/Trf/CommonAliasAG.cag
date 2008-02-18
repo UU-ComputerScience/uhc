@@ -19,15 +19,15 @@ SEM GrPatAlt
   | * - Node    lhs         .   nmAlias         =   NmAlias_None
 
 SEM GrPatLam
-  | Var         lhs         .   nmAlias         =   NmAlias_Nm    @nm
-  | Annot       lhs         .   nmAlias         =   NmAlias_Nm    @nm                                                   -- annotation has no operational meaning for bytecode interpretation, hence is just an alias
+  | Var Annot OpaqueAnnot OpaqueNode
+  				lhs         .   nmAlias         =   NmAlias_Nm    @nm				                                 	-- annotation has no operational meaning for bytecode interpretation, hence is just an alias
   | BasicAnnot  lhs         .   nmAlias         =   case @annot of
                                                       BasicAnnot_Size bsz _
                                                         | bsz == Cfg.sizeofGrWord -> NmAlias_Nm @nm                     -- when size matches wordsize, no operational meaning for bytecode interpretation, hence is just an alias
                                                       _                           -> NmAlias_None
   | VarNode     lhs         .   nmAlias         =   NmAlias_Grp   hsnUnknown $ map NmAlias_Nm (tail @fldL.introNmL)
   | BasicNode   lhs         .   nmAlias         =   NmAlias_Basic hsnUnknown (NmAlias_Nm @nm) @annot
-  | * - Var Annot BasicAnnot VarNode BasicNode
+  | * - Var Annot BasicAnnot VarNode BasicNode OpaqueAnnot OpaqueNode
                 lhs         .   nmAlias         =   NmAlias_None
 %%]
 
