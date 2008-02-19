@@ -20,6 +20,11 @@
 #if USE_GMP
 #include "gmp.h"
 #endif
+
+#ifndef FP_ZERO
+#warning FP_ZERO not defined (assuming value 2). Using floating point numbers may give problems.
+#define FP_ZERO 2
+#endif
 %%]
 
 Internal config
