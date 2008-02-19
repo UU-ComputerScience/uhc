@@ -4,6 +4,16 @@
 %%]
 
 %%[8.LLVMModule
+{- 
+  Modules consist of 
+    * comments:  Just plain comments added to the LLVM IR.
+    * constants: The first element of the tuple is the declaration of the 
+                 constant while the second element is the value of the
+                 constant.
+    * globals:   Always zero initialized.
+    * fwdDecls:  Functions used in this module, defined in other modules.
+    * funcs:     Functions defined in this module. 
+-}
 DATA LLVMModule
   |  LLVMModule  comments   : {[String]}
                  constants  : {[(Var,Var)]}
@@ -14,38 +24,90 @@ DATA LLVMModule
 %%]
 
 %%[8.LLVMFunc
-TYPE Funcs  = [Func]
-
+{- 
+  Functions have
+    * funcDecl: The signature of this declared function.
+    * internal: Boolean indicating if this function is extern visible or not.
+    * body:     The body of the functions.
+-}
 DATA Func
   |  Func    funcDecl       : FuncDecl
              internal       : {Bool}
              body           : Stmts
+
+TYPE Funcs  = [Func]
 %%]
 
 %%[8.LLVMFuncDecl
-TYPE FuncDecls = [FuncDecl]
-
+{-
+  FuncDecl have the followin elements
+    * name:       Unique identifier for the function.
+    * returnType: Type of the returned value
+    * varargs:    Boolean indicating if this function uses varargs
+    * params:     Signature of the parameters 
+-}
 DATA FuncDecl
   | FuncDecl     name       : {String}
                  returnType : {LLVMType} 
                  varargs    : {Bool}
                  params     : {[Var]}
+
+TYPE FuncDecls = [FuncDecl]
 %%]
 
 %%[8.LLVMStmt
 TYPE Stmts = [Stmt]
 
 DATA Stmt
+  {-
+    Assignment
+    Assign an expression to an variable
+      * dest:   Variable to assign to
+      * source: Source expression
+  -}
   | Assignment   dest       : {Var}
                  source     : Expression
+                 
+  {-
+    Branch
+    Always branch to the target label
+  -}               
   | Branch       target     : {Var}
+  
+  {-
+    BranchIf
+    Branch to label targetTrue if cond is true otherwise to label targetFalse
+      * cond:        condition that will be tested, must be of type i1
+      * targetTrue:  label to branch to if cond is true
+      * targetFalse: label to branch to if cond is false
+  -}
   | BranchIf     cond       : {Var}
                  targetTrue : {Var}
                  targetFalse: {Var}
-  | Call         func       : FuncDecl  -- Calls that have a void return type
+                 
+  {-
+    Call
+    Call a function without storing the return value, usually functions
+    returning Void.
+      * func:      Signature of the function to call
+      * tailJumps: Boolean to signal if the function should be tail called
+      * args:      Concrete arguments for the parameters 
+  -}               
+  | Call         func       : FuncDecl
                  tailJumps  : {Bool}
                  args       : {[Var]}
-  | Comment      comment    : {[String]}     
+                 
+  {-
+    Comment
+    Plain comment.
+  -}               
+  | Comment      comment    : {[String]}
+  
+  {-
+    Label
+    Set a label on this position.
+      * name: Identifier of this label, unique for this module
+  -}     
   | Label        name       : {Var}           
   | Store        value      : {Var}
                  ptr        : {Var}
@@ -59,7 +121,7 @@ DATA Stmt
 DATA Expression
   | Alloca       tp         : {LLVMType}
                  size       : {Int}
-  | BinOp        op         : {BinaryOperator}
+  | BinOp        op         : {BinOp}
                  left       : {Var}
                  right      : {Var}
   | Compare      op         : {CmpOp}

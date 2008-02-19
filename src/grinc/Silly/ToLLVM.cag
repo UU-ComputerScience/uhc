@@ -25,8 +25,8 @@ WRAPPER SilModule
 silly2llvm :: SilModule -> LLVMModule
 silly2llvm silmod = 
   let intType    = if sizeofPointer == 8
-                   then I64
-                   else I32
+                   then i64
+                   else i32
       ptrType    = pLift intType
       gblType    = pLift ptrType
       t = wrap_SilModule (sem_SilModule silmod)
@@ -100,18 +100,18 @@ SEM SilModule
                                                      )
                                                      
                 loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
-                loc.constants= ( GlobalVar "STR_RES" (Array 22 I8)
-                               , StrConst (string2CString "%lld\\0A")
-                                          (Array 6 I8)
+                loc.constants= ( GlobalVar "STR_RES" (Array 22 i8)
+                               , StrConstant (string2CString "%lld\\0A")
+                                          (Array 6 i8)
                                )
                                : @functions.constants
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) :
                                mkVarList GlobalVar @variables @lhs.globalType                              
                 loc.printfDecl =
-                               FuncDecl_FuncDecl "printf" I32 True
-                                                 [(LocalVar "str" (pLift I8))]                                               
+                               FuncDecl_FuncDecl "printf" i32 True
+                                                 [(LocalVar "str" (pLift i8))]                                               
                 loc.main     = Func_Func 
-                                 (FuncDecl_FuncDecl "main" I32 False []) False
+                                 (FuncDecl_FuncDecl "main" i32 False []) False
                                  [ Stmt_Assignment 
                                      (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc True @lhs.intType 
@@ -137,17 +137,17 @@ SEM SilModule
                                        (LocalVar "rp.1" @lhs.pointerType)
                                      )
                                 , Stmt_Assignment
-                                     (LocalVar "cast.str.res" (pLift I8))
+                                     (LocalVar "cast.str.res" (pLift i8))
                                      (Expression_GetElemPtr 
-                                       (GlobalVar "STR_RES" (pLift $ Array 6 I8))
+                                       (GlobalVar "STR_RES" (pLift $ Array 6 i8))
                                        [0,0]
                                      )  
                                  , Stmt_Call
                                      @loc.printfDecl True
-                                     [ LocalVar "cast.str.res" (pLift I8)
+                                     [ LocalVar "cast.str.res" (pLift i8)
                                      , LocalVar "rp.1.val" @lhs.intType
                                      ] 
-                                 , Stmt_Return (Constant 0 I32)  
+                                 , Stmt_Return (Constant 0 i32)  
                                  ]                    
                                
 SEM Functions
@@ -334,7 +334,7 @@ SEM Statement
                               Right ( Expression_Compare CMPEQ 
                                                          @loc.scrutineeUnboxVar
                                                          @loc.fstConst
-                                    , I1)               
+                                    , i1)               
                                
                 loc.(uniqNr5, resumeLabel) =
                                newFresh @loc.uniqNr4 Label              
@@ -650,9 +650,9 @@ SEM Constant
                                   , @loc.cstring
                                   )
                                 ]
-                loc.cstring   = StrConst (string2CString @value)
-                                         @loc.strType 
-                loc.strType   = Array (length @value + 1) I8
+                loc.cstring   = StrConstant (string2CString @value)
+                                            @loc.strType 
+                loc.strType   = Array (length @value + 1) i8
   | * - LiteralStr
                 lhs.constants = [ ]
 %%]

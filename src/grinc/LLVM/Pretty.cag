@@ -163,7 +163,7 @@ ppCall tailCall ppFuncSig =
   let tailAnot = if tailCall then "tail " else ""
    in tailAnot >|< "call" >#< ppFuncSig   
    
-ppBinOp :: BinaryOperator -> Var -> Var -> PP_Doc
+ppBinOp :: BinOp -> Var -> Var -> PP_Doc
 ppBinOp op left right =
   show op >#< show (getType left) >#< getName left 
   >|< "," >#< getName right
