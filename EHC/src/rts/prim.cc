@@ -126,12 +126,6 @@ PRIM GrWord primUnsafeId(GrWord x)
 {   return x ;
 }
 
-PRIM void primExitFun( GrWord x)
-{
-
-  printf( "Exit function %d\n", x);
-}
-
 PRIM void primPatternMatchFailure()
 {
     printf("Pattern match failure\n");

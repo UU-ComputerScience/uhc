@@ -1,52 +1,66 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
+%%[0 hs
+{
+{-| 
+  This module supplies bindings to generate LLVM IR from Haskell 
+  (<http://www.llvm.org/docs/LangRef.html>). 
+   
+  The following data types are defined in this file:
+  
+    * Compare Operators ('CmpOp')
+    
+    * Binary operators ('BinOp')
+    
+    * Different type of variables ('Var')
+    
+    * LLVM types ('LLVMType')
+ 
+  The LLVM AST data types that are exported from this module can be found in
+  thie file @LLVM\/AbsSyn.cag@  
+    
+  Note: this module is developed in a demand driven way. It is no complete
+       LLVM binding library in Haskell, but enough to generate code for EHC.
+-}
+}
 %%]
 
 %%[8 hs module {%{GRIN}LLVM}
-{- 
-  In this module we extend the LLVM AG bindings with some normal Haskell
-  data types and helper functions. Furthermore, we this module is the interface
-  to the LLVM AG data and functions
-   
-  The following data is defined in this module:
-    * Compare Operators (CmpOp)
-    * Binary operators (BinOp)
-    * Different type of variables (Var)
-    * LLVM types (LLVMType)
-    
-  Note: This module is developed in a demand driven way. It is no complete
-        LLVM binding library in Haskell!
--}
 %%]
 
-%%[8 hs export( LLVMModule(..), Func(..), FuncDecl(..), Stmt(..), Expression(..), Alt(..), Funcs, FuncDecls , Stmts, Alts, CmpOp(..), BinOp(..), Var(..), LLVMType(..), i64, i32, i8, i1, isGlobal, getName, getPlainName, getType, pLift, pLower, isInt, isPointer)
+%%[8 hs export( LLVMModule(..), Func(..), FuncDecl(..), Stmt(..))
 %%]
-
+%%[8 hs export( Expression(..), Alt(..), Funcs, FuncDecls , Stmts, Alts)
+%%]
 %%[8 import({LLVM/AbsSyn})
 %%]
 
-%%[8 hs
-{- 
-  LLVM Compare functions, parameter of the Compare Constructor of type
-  Expression
+%%[8 hs export( CmpOp(..) )
+{-| 
+  LLVM compare functions, parameter of the 'Expression_Compare' constructor 
+  of type 'Expression'
 -}
 data CmpOp
+  -- | Equality
   = CMPEQ
+  -- | Non equality
   | CMPNE
+  -- | Unsigned greater then
   | CMPUGT
+  -- | Unsigned greater then or equal
   | CMPUGE
+  -- | Unsigned less then
   | CMPULT
+  -- | Unsigned less then or equal
   | CMPULE
+  -- | Signed greater then
   | CMPSGT
+  -- | Signed greater then or equal
   | CMPSGE
+  -- | Signed less then
   | CMPSLT
+  -- | Signed less then or equal
   | CMPSLE
   deriving (Eq)
 
-{- 
-  The show instance shows the LLVM IR textual representation
--}
 instance Show CmpOp where
   show CMPEQ  = "eq"
   show CMPNE  = "ne"
@@ -60,22 +74,29 @@ instance Show CmpOp where
   show CMPSLE = "sle"
 %%]
 
-%%[8 hs
-{- 
-  LLVM Binary operators, parameter of the BinOp Constructor of type
-  Expression
+%%[8 hs export( BinOp(..) )
+{-| 
+  LLVM binary operators, parameter of the 'Expression_BinOp' constructor of type
+  'Expression'
 -}
 data BinOp
+  -- | Add two integer of floating point values.
   = ADD
+  -- | Left shift the left operand a number of bits as dictated by the right
+  --   operand. If the right operand is equal or greater then the amount of
+  --   bits in the left operand, the result is undefined.
   | SHL
+  -- | Right shift the left operand a number of bits as dictated by the right
+  --   operand. The most significant bits of the result will be equal to the
+  --   sign bit of the left operand. If the right operand is equal or greater 
+  --   then the amount of bits in the left operand, the result is undefined. 
   | SHR
+  -- | Bitwise logical and operation.
   | AND
+  -- | Bitwise logical or operation.
   | OR
   deriving (Eq)
 
-{- 
-  The show instance shows the LLVM IR textual representation
--}
 instance Show BinOp where
   show ADD = "add"
   show SHL = "shl"
@@ -84,37 +105,34 @@ instance Show BinOp where
   show OR  = "or"
 %%]
 
-%%[8 hs
-{-
-  LLVM Variables
-    - GlobalVar references to variables with a global scope
-    - LocalVar references to variables local for a function or parameters
-    - Constant refers to an integer constant as (i64 32)
-    - StrConstantant defines a string as local constant.
+%%[8 hs export( Var(..), isGlobal, getName, getPlainName, getType )
+{-|
+  LLVM variables
 -}
 data Var
+  -- | references to variables with a global scope.
   = GlobalVar   String LLVMType
+  -- | references to variables local for a function or parameters.
   | LocalVar    String LLVMType
+  -- | refers to an integer constant as (i64 32).
   | Constant    Int    LLVMType
+  -- | defines a string as local constant.
   | StrConstant String LLVMType
   deriving (Eq)
   
-{-
-  Show the LLVM IR textual representation.
--}  
 instance Show Var where
   show x                = show (getType x) ++ " " ++ getName x
   
-{-
-  Test if a Var is global.
+{-|
+  Test if a 'Var' is global.
 -}  
 isGlobal :: Var -> Bool
 isGlobal (GlobalVar _ _) = True
 isGlobal _               = False  
   
-{-
-  Return the variable name or value of the constant
-  in LLVM IR textual representation.
+{-|
+  Return the variable name or value of the 'Var'
+  in LLVM IR textual representation (e.g. @\@x@, @%y@ or @42@).
 -}
 getName :: Var -> String
 getName (GlobalVar x _)    = "@" ++ x
@@ -122,9 +140,9 @@ getName (LocalVar  x _)    = "%" ++ x
 getName (Constant  x _)    = show x
 getName (StrConstant  x _) = x 
 
-{-
-  Return the variable name or value of the constant
-  in a plain textual representation
+{-|
+  Return the variable name or value of the 'Var'
+  in a plain textual representation (e.g. @x@, @y@ or @42@).
 -}
 getPlainName :: Var -> String
 getPlainName (GlobalVar x _)    = x
@@ -132,8 +150,8 @@ getPlainName (LocalVar  x _)    = x
 getPlainName (Constant  x _)    = show x
 getPlainName (StrConstant  x _) = x   
 
-{-
-  Return the type of the variable
+{-|
+  Return the 'LLVMType' of the 'Var'
 -}
 getType :: Var -> LLVMType
 getType (GlobalVar _ y)    = y
@@ -142,29 +160,39 @@ getType (Constant _ y)     = y
 getType (StrConstant _ y)  = y  
 %%]
 
-%%[8 hs
-{-
-  Data type for possible types of LLVM expressions.
+%%[8 hs export( LLVMType(..), i64, i32, i8, i1, pLift, pLower, isInt, isPointer)
+{-|
+  LLVM types.
 -}
 data LLVMType
+  -- | An integer with a given width in bits.
   = LLInt Int
+  -- | A pointer to a 'LLVMType'
   | Pointer LLVMType
+  -- | An array of 'LLVMType'
   | Array Int LLVMType
+  -- | A 'Var' can represent a label (address) 
   | Label
+  -- | Void
   | Void
   deriving (Eq)
  
-{-
-  Shortcuts for often used LLVMType values
--} 
+-- | Shortcut for 64 bit integer 
+i64 :: LLVMType
 i64 = LLInt 64
+
+-- | Shortcut for 32 bit integer
+i32 :: LLVMType
 i32 = LLInt 32
+
+-- | Shortcut for 8 bit integer (byte)
+i8 :: LLVMType
 i8  = LLInt 8
+
+-- | Shortcut for 1 bit integer (boolean)
+i1 :: LLVMType
 i1  = LLInt 1
- 
-{-
-  Show the LLVM IR textual representation.
--}    
+   
 instance Show LLVMType where
   show (LLInt size)       = "i" ++ show size
   show (Pointer x)        = show x ++ "*"
@@ -172,8 +200,8 @@ instance Show LLVMType where
   show Label              = "label"
   show Void               = "void"
   
-{- 
-  Add a pointer indirection to the supplied type. The Label and Void LLVMType
+{-| 
+  Add a pointer indirection to the supplied type. 'Label' and 'Void'
   cannot be lifted.
 -}   
 pLift :: LLVMType -> LLVMType
@@ -181,23 +209,23 @@ pLift (Label) = error "Labels are unliftable"
 pLift (Void)  = error "Voids are unliftable"
 pLift x       = Pointer x
 
-{-
-  Remove the pointer indirection of the supplied type. Only Pointer constructors
-  can be lowered.
+{-|
+  Remove the pointer indirection of the supplied type. Only 'Pointer' 
+  constructors can be lowered.
 -}
 pLower :: LLVMType -> LLVMType
 pLower (Pointer x) = x
 pLower x           = error $ show x ++ " is a unlowerable type, need a pointer"
 
-{-
-  Test if the given LLVMType is an integer
+{-|
+  Test if the given 'LLVMType' is an integer
 -}
 isInt :: LLVMType -> Bool
 isInt (LLInt _) = True
 isInt _         = False
 
-{-
-  Test if the given LLVMType is a pointer
+{-|
+  Test if the given 'LLVMType' is a 'Pointer'
 -}
 isPointer :: LLVMType -> Bool
 isPointer (Pointer _) = True

@@ -160,19 +160,73 @@ DATA Expression
   | BinOp        op         : {BinOp}
                  left       : {Var}
                  right      : {Var}
+  
+  {-
+    Compare
+    Perform a compare operation on the operands left and right
+      * op:    operator
+      * left:  left operand
+      * right: right operand
+  -}
   | Compare      op         : {CmpOp}
                  left       : {Var}
                  right      : {Var}
+                 
+  {- 
+    Malloc
+    Allocate amount * sizeof(tp) bytes on the heap
+      * tp:     LLVMType to reserve room for
+      * amount: The nr of tp's which must be allocated
+  -} 
   | Malloc       tp         : {LLVMType}
                  amount     : {Int}
+                 
+  {-
+    Load
+    Load the value at location ptr
+  -}               
   | Load         ptr        : {Var}
+  
+  {-
+    GetElemPtr
+    Navigate in an structure, selecting elements
+      * ptr:     Location of the structure
+      * indexes: A list of indexes to select the correct value. For example
+                 the first element of the third element of the structure ptr
+                 is selected with [3,1] (zero indexed)
+  -}
   | GetElemPtr   ptr        : {Var}
                  indexes    : {[Int]}
+                 
+  {- Cast
+     Cast the variable from to the to type. This is an abstraction of three
+     cast operators in LLVM, inttoptr, prttoint and bitcast.
+       * from: Variable to cast
+       * to:   type to cast to
+  -}                
   | Cast         from       : {Var}
                  to         : {LLVMType}
+                 
+  {-
+    Call
+    Call a function. The result is the value of the expression.
+      * func:      Signature of the function to call
+      * tailJumps: Boolean to signal if the function should be tail called
+      * args:      Concrete arguments for the parameters 
+  -}                   
   | Call         func       : FuncDecl
                  tailJumps  : {Bool}
                  args       : {[Var]}
+                 
+  {- 
+    Phi
+    Merge variables from different basic blocks which are predecessors of this
+    basic block in a new variable of type tp.
+      * tp:         type of the merged variable, must match the types of the
+                    precessors variables.
+      * precessors: A list of variables and the basic block that they originate
+                    from.
+  -}               
   | Phi          tp         : {LLVMType}
                  precessors : {[(Var,Var)]} 
 %%]
@@ -180,6 +234,13 @@ DATA Expression
 %%[8.LLVMAlt
 TYPE Alts = [Alt]
 
+{-
+  Alt
+  An alternative of an case statement.
+    * when: A tuple containing the constant integer value that corresponds to
+            this arm and as second element the label of this arm.
+    * body: body of the case arm.
+-}
 DATA Alt
   |  Alt         when       : {(Var,Var)}
                  body       : Stmts

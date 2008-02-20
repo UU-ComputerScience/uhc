@@ -71,6 +71,7 @@ SHUFFLE				:= $(SHUFFLE_BLD_EXEC)
 SHUFFLE_HS			:= $(SHUFFLE) --hs --preamble=no --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
 SHUFFLE_HS_PRE		:= $(SHUFFLE) --hs --preamble=yes --lhs2tex=no --line=yes --compiler=$(GHC_VERSION)
 SHUFFLE_AG			:= $(SHUFFLE) --ag --preamble=no --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
+SHUFFLE_AG_PRE			:= $(SHUFFLE) --ag --preamble=yes --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
 SHUFFLE_C			:= $(SHUFFLE) --plain --preamble=no --lhs2tex=no --line=no --compiler=$(GHC_VERSION)
 # setting --line=yes for AG is not possible because of uuagc's weird interpretation of the layout rule
 
