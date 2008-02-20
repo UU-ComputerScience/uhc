@@ -318,6 +318,15 @@ SEM Decl
   | Data        constrs     .   isNewtype           =   @isNewtype
 %%]
 
+%%[8
+ATTR Expr [ | | isNewtype: Bool ]
+
+SEM Expr
+  | Con         loc         .   (dgi,_)             =   dataGamLookupErr @nm @lhs.dataGam
+                            .   isNewtype           =   dgiIsNewtype @dgi
+  | * - Con		lhs			.	isNewtype			=	False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DataFieldExpr: additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
