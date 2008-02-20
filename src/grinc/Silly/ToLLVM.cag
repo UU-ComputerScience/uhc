@@ -22,6 +22,9 @@ WRAPPER SilModule
 %%]
 
 %%[8 hs
+{-
+-}
+  
 silly2llvm :: SilModule -> LLVMModule
 silly2llvm silmod = 
   let intType    = if sizeofPointer == 8
@@ -177,7 +180,6 @@ SEM Statement
   -- A Silly assign will translate to a store. We have the following steps
   --   * If the RHS is an expression, assign the RHS to a fresh var
   --   * Do the same for the LHS
-  --   * If the LHS is a localvar, then we just assign to a temporary
   --   * check if the LHS is a pointertype, otherwise cast to pointer
   --   * check if the RHS type fits in the pointertype of the LHS, otherwise
   --     cast the LHS
