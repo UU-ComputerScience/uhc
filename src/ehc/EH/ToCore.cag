@@ -86,7 +86,11 @@ SEM Expr
                             .   letCBindL   =   [(@howToBind,@decls.cbindL)]
                             .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
   | App AppImpred
-                loc         .   cexpr       =   mkCExprApp1 @func.cexpr @arg.cexpr
+%%[[12
+    AppImpl
+%%]]
+                loc         .   cexprapp    =   mkCExprApp1 @func.cexpr @arg.cexpr
+                            .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
   | Lam         loc         .   cexpr       =   mkCExprLam1 @arg.topNm
                                                     (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
@@ -117,7 +121,7 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   cexpr       :=  mkCExprApp1
+                loc         .   cexprapp   :=  mkCExprApp1
                                                     (coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst @appImplsCoeL []
                                                       `coeEvalOn` @func.cexpr)
                                                     @arg.cexpr
@@ -506,17 +510,19 @@ SEM Expr
 ATTR Expr [ | | appArgCoeL: {[Coe]}  appFunCExpr: CExpr ]
 
 SEM Expr
-  | App
+  | App AppImpred
 %%[[12
     AppImpl
 %%]]
-                lhs         .   appArgCoeL      =   @func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe1 @arg.cexpr]
-                            .   appFunCExpr     =   @func.appFunCExpr
+                lhs         .   (appArgCoeL,appFunCExpr)
+                                                =   if @func.isNewtype
+                                                    then ([],@arg.cexpr)
+                                                    else (@func.appArgCoeL ++ @appImplsCoeL ++ [mkAppCoe1 @arg.cexpr],@func.appFunCExpr)
   | AppTop      lhs         .   (appArgCoeL,appFunCExpr)
                                                 =   if null @lamArgCoeL
                                                     then (@expr.appArgCoeL,@expr.appFunCExpr)
                                                     else ([],@cexpr)
-  | * - App AppTop
+  | * - App AppImpred AppTop
 %%[[12
     AppImpl
 %%]]
