@@ -109,14 +109,14 @@ SEM Stmt
                 lhs.pretty = error "Undefined Stmt"
                 
 SEM Expression
-  | Alloca      lhs.pretty = ppAlloca @tp @size
+  | Alloca      lhs.pretty = ppAlloca @tp @amount
   | BinOp       lhs.pretty = ppBinOp @op @left @right
   | Call        lhs.pretty = ppCall @tailJumps (@func.prettyCall @args)
   | Cast        lhs.pretty = ppCast @from @to
   | Compare     lhs.pretty = ppCmpOp @op @left @right  
   | GetElemPtr  lhs.pretty = ppGetElementPtr @ptr @indexes
   | Load        lhs.pretty = ppLoad @ptr
-  | Malloc      lhs.pretty = ppMalloc @tp @size
+  | Malloc      lhs.pretty = ppMalloc @tp @amount
   | Phi         lhs.pretty = ppPhi @tp @precessors
   | * - Alloca BinOp Call Cast Compare GetElemPtr Load Malloc Phi
                 lhs.pretty = error "Undefined Expression"                                        
@@ -195,12 +195,12 @@ ppCast from to
       = "bitcast" >#< show from >#< "to" >#< show to
       
 ppMalloc :: LLVMType -> Int -> PP_Doc
-ppMalloc tp size = 
-  "malloc" >#< show tp >|< ", i32" >#< show size     
+ppMalloc tp amount = 
+  "malloc" >#< show tp >|< ", i32" >#< show amount     
 
 ppAlloca :: LLVMType -> Int -> PP_Doc
-ppAlloca tp size = 
-  "alloca" >#< show tp >|< ", i32" >#< show size 
+ppAlloca tp amount = 
+  "alloca" >#< show tp >|< ", i32" >#< show amount 
   
 ppGetElementPtr :: Var -> [Int] -> PP_Doc
 ppGetElementPtr ptr idx =

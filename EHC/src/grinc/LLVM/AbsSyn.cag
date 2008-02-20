@@ -108,19 +108,55 @@ DATA Stmt
     Set a label on this position.
       * name: Identifier of this label, unique for this module
   -}     
-  | Label        name       : {Var}           
+  | Label        name       : {Var}
+  
+  {- 
+    Store
+    Store variable value in pointer ptr. If value is of type t then ptr must
+    be of type t*.
+      * value: Variable/Constant to store.
+      * ptr:   Location to store the value in
+  -}         
   | Store        value      : {Var}
                  ptr        : {Var}
+  {-
+    Switch
+      * scrutinee: Variable or constant which must be of integer type that is
+                   determines which arm is chosen.
+      * default:   The default label if there is no match in target.
+      * target:    A list of (value,label) where the value is an integer 
+                   constant and label the corresponding label to jump to if the 
+                   scrutinee matches the value.
+  -}
   | Switch       scrutinee  : {Var}
                  default    : {Var}
-                 targets    : {[(Var,Var)]}                 
+                 targets    : {[(Var,Var)]}
+  
+  {-
+    Return
+      * result: The variable or constant to return
+  -}                  
   | Return       result     : {Var}
 %%]
 
 %%[8.LLVMExpression
 DATA Expression
+  {- 
+    Alloca
+    Allocate amount * sizeof(tp) bytes on the stack
+      * tp:     LLVMType to reserve room for
+      * amount: The nr of tp's which must be allocated
+  -} 
   | Alloca       tp         : {LLVMType}
-                 size       : {Int}
+                 amount     : {Int}
+                 
+  {-
+    BinOp
+    Perform the binary operator op on the operands left and right
+      * op:    operator
+      * left:  left operand
+      * right: right operand
+  -}
   | BinOp        op         : {BinOp}
                  left       : {Var}
                  right      : {Var}
@@ -128,7 +164,7 @@ DATA Expression
                  left       : {Var}
                  right      : {Var}
   | Malloc       tp         : {LLVMType}
-                 size       : {Int}
+                 amount     : {Int}
   | Load         ptr        : {Var}
   | GetElemPtr   ptr        : {Var}
                  indexes    : {[Int]}
