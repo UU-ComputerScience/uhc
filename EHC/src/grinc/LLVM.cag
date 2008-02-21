@@ -4,19 +4,6 @@
   This module supplies bindings to generate LLVM IR from Haskell 
   (<http://www.llvm.org/docs/LangRef.html>). 
    
-  The following data types are defined in this file:
-  
-    * Compare Operators ('CmpOp')
-    
-    * Binary operators ('BinOp')
-    
-    * Different type of variables ('Var')
-    
-    * LLVM types ('LLVMType')
- 
-  The LLVM AST data types that are exported from this module can be found in
-  thie file @LLVM\/AbsSyn.cag@  
-    
   Note: this module is developed in a demand driven way. It is no complete
        LLVM binding library in Haskell, but enough to generate code for EHC.
 -}
@@ -230,4 +217,83 @@ isInt _         = False
 isPointer :: LLVMType -> Bool
 isPointer (Pointer _) = True
 isPointer _           = False
+%%]
+
+%%[8 hs export( CallType(..) )
+{-|
+  Different types to call a function.
+-}
+data CallType
+  -- | Normal call, allocate a new stack frame.
+  = StdCall
+  -- | Tail call, perform the call in the current stack frame.
+  | TailCall
+  deriving (Eq,Show)
+%%]
+
+%%[8 hs export( ParameterListType(..) )
+{-|
+  Functions can have a fixed amount of parameters, or a variable amount.
+-}
+data ParameterListType
+  -- | Fixed amount of arguments.
+  = FixedArgs
+  -- | Variable amount of arguments.
+  | VarArgs
+  deriving (Eq,Show)
+%%]
+
+%%[8 hs export( LinkageType(..) )
+{-|
+  Linkage type of a symbol. The description of the constructors is copied from
+  the LLVM Assembly Language Reference Manual 
+  <http://www.llvm.org/docs/LangRef.html#linkage>, because they correspond to 
+  the LLVM linkage types.
+-}
+data LinkageType
+  -- | Global values with internal linkage are only directly accessible by 
+  --   objects in the current module. In particular, linking code into a module
+  --   with an internal global value may cause the internal to be renamed as 
+  --   necessary to avoid collisions. Because the symbol is internal to the 
+  --   module, all references can be updated. This corresponds to the notion 
+  --   of the @static@ keyword in C.
+  = Internal
+  -- | Globals with @linkonce@ linkage are merged with other globals of the 
+  --   same name when linkage occurs. This is typically used to implement 
+  --   inline functions, templates, or other code which must be generated 
+  --   in each translation unit that uses it. Unreferenced linkonce globals are
+  --   allowed to be discarded.
+  | LinkOnce
+  -- | @weak@ linkage is exactly the same as linkonce linkage, except that 
+  --   unreferenced weak globals may not be discarded. This is used for globals
+  --   that may be emitted in multiple translation units, but that are not 
+  --   guaranteed to be emitted into every translation unit that uses them. One
+  --   example of this are common globals in C, such as @int X;@ at global 
+  --   scope.
+  | Weak
+  -- | @appending@ linkage may only be applied to global variables of pointer 
+  --   to array type. When two global variables with appending linkage are 
+  --   linked together, the two global arrays are appended together. This is 
+  --   the LLVM, typesafe, equivalent of having the system linker append 
+  --   together @sections@ with identical names when .o files are linked.
+  | Appending
+  -- | The semantics of this linkage follow the ELF model: the symbol is weak 
+  --   until linked, if not linked, the symbol becomes null instead of being an
+  --   undefined reference.
+  | ExternWeak
+  -- | The symbol participates in linkage and can be used to resolve external 
+  --   symbol references.
+  | ExternallyVisible
+  deriving (Eq)
+  
+instance Show LinkageType where
+  show Internal          = "internal"
+  show LinkOnce          = "linkonce"
+  show Weak              = "weak"       
+  show Appending         = "appending"
+  show ExternWeak        = "extern_weak"
+  -- ExternallyVisible does not have a textual representation, it is 
+  -- the linkage type a function resolves to if no other is specified
+  -- in LLVM.  
+  show ExternallyVisible = ""
 %%]
