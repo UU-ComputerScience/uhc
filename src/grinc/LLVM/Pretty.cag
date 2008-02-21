@@ -69,13 +69,10 @@ SEM Funcs
  
   
 SEM Func
-  | Func        lhs.pretty = let annot = if @internal
-                                         then "define internal"
-                                         else "define"
-                              in annot >#< @funcDecl.prettySig
-                                 >-< "{"
-                                 >-< indent 4 @body.pretty
-                                 >-< "}"
+  | Func        lhs.pretty = "define" >#< show @linkage >#< @funcDecl.prettySig
+                             >-< "{"
+                             >-< indent 4 @body.pretty
+                             >-< "}"
   
 SEM FuncDecls   
   | Cons        lhs.prettySigs = 
@@ -86,14 +83,13 @@ SEM FuncDecls
   
 SEM FuncDecl
   | FuncDecl    lhs.prettySig =
-                             if @varargs
-                             then ppVarargsFunctionSignature @name @returnType
-                                                             @params   
-                             else ppFunctionSignature @name @returnType @params
+                             case @varargs of
+                               VarArgs   -> ppVarargsFunctionSignature @name @returnType @params   
+                               FixedArgs -> ppFunctionSignature @name @returnType @params
                 lhs.prettyCall = 
-                             if @varargs
-                             then ppVarargsFunctionCall @name @returnType @params
-                             else ppFunctionSignature @name @returnType
+                             case @varargs of
+                               VarArgs   -> ppVarargsFunctionCall @name @returnType @params
+                               FixedArgs -> ppFunctionSignature @name @returnType
                              
 SEM Stmt
   | Assignment  lhs.pretty = ppAssignment @dest @source.pretty
@@ -158,10 +154,11 @@ ppVarargsFunctionCall fnName returnType varArgParams params =
    in show returnType >#< "(" >#< ppTpList >#< ")*" 
       >#< "@" >|< fnName >|< "(" >#< ppParams >#< ")"                 
    
-ppCall :: Bool -> PP_Doc -> PP_Doc
+ppCall :: CallType -> PP_Doc -> PP_Doc
 ppCall tailCall ppFuncSig =
-  let tailAnot = if tailCall then "tail " else ""
-   in tailAnot >|< "call" >#< ppFuncSig   
+  let tailAnot (StdCall)  = ""
+      tailAnot (TailCall) = "tail "
+   in tailAnot tailCall >|< "call" >#< ppFuncSig   
    
 ppBinOp :: BinOp -> Var -> Var -> PP_Doc
 ppBinOp op left right =

@@ -27,12 +27,12 @@ DATA LLVMModule
 {- 
   Functions have
     * funcDecl: The signature of this declared function.
-    * internal: Boolean indicating if this function is extern visible or not.
+    * internal: LinkageType of the function.
     * body:     The body of the functions.
 -}
 DATA Func
   |  Func    funcDecl       : FuncDecl
-             internal       : {Bool}
+             linkage        : {LinkageType}
              body           : Stmts
 
 TYPE Funcs  = [Func]
@@ -43,13 +43,13 @@ TYPE Funcs  = [Func]
   FuncDecl have the followin elements
     * name:       Unique identifier for the function.
     * returnType: Type of the returned value
-    * varargs:    Boolean indicating if this function uses varargs
+    * varargs:    ParameterListType indicating if this function uses varargs
     * params:     Signature of the parameters 
 -}
 DATA FuncDecl
   | FuncDecl     name       : {String}
                  returnType : {LLVMType} 
-                 varargs    : {Bool}
+                 varargs    : {ParameterListType}
                  params     : {[Var]}
 
 TYPE FuncDecls = [FuncDecl]
@@ -90,11 +90,11 @@ DATA Stmt
     Call a function without storing the return value, usually functions
     returning Void.
       * func:      Signature of the function to call
-      * tailJumps: Boolean to signal if the function should be tail called
+      * tailJumps: CallType to signal if the function should be tail called
       * args:      Concrete arguments for the parameters 
   -}               
   | Call         func       : FuncDecl
-                 tailJumps  : {Bool}
+                 tailJumps  : {CallType}
                  args       : {[Var]}
                  
   {-
@@ -211,11 +211,11 @@ DATA Expression
     Call
     Call a function. The result is the value of the expression.
       * func:      Signature of the function to call
-      * tailJumps: Boolean to signal if the function should be tail called
+      * tailJumps: CallType to signal if the function should be tail called
       * args:      Concrete arguments for the parameters 
   -}                   
   | Call         func       : FuncDecl
-                 tailJumps  : {Bool}
+                 tailJumps  : {CallType}
                  args       : {[Var]}
                  
   {- 
