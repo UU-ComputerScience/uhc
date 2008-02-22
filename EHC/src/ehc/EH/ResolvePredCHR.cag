@@ -129,14 +129,16 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
           where mk (Prove p) = Prove $ p {cpoPr = predCanonic env $ cpoPr p}
                 mk c         = c
         env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMpCanon}}
+        dbgp = ppParensCommas $ Map.keys toProveHereCnstrMpCanon
+        dbg m= id -- Debug.tr m dbgp
         ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),chrSimplifyResult)
-          = chrSimplifyToEvidence (env' {fiUniq = u1}) chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMpCanon prevRes
+          = dbg "chrSimplifyToEvidence" $ chrSimplifyToEvidence (env' {fiUniq = u1}) chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMpCanon prevRes
         (chrSolveRemCnstrMp2,chrSolveEvidMp2,cannotResCnstrMp)
-          = patchUnresolvedWithAssumption (env' {fiUniq = u2}) chrSolveRemCnstrMp chrSolveEvidMp
+          = dbg "patchUnresolvedWithAssumption" $ patchUnresolvedWithAssumption (env' {fiUniq = u2}) chrSolveRemCnstrMp chrSolveEvidMp
         (chrSolveEvidCoreMp,ambigEvids)
-          = evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
+          = dbg "evidMpToCore" $ evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
         (chrSolveEvidBindMp,chrSolveScopeBindMp)
-          = evidKeyCoreMpToBinds chrSolveEvidCoreMp
+          = dbg "evidKeyCoreMpToBinds" $ evidKeyCoreMpToBinds chrSolveEvidCoreMp
         ambigErrs = if null ambigEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ ambigevidPredOcc a,map pp $ ambigevidInfos a) | a <- ambigEvids]]
 %%[[9
         range = emptyRange
