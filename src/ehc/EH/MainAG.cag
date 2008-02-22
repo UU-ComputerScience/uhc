@@ -19,7 +19,7 @@
 %%[3 hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
 %%]
 
-%%[4 hs import({%{EH}Base.Debug},Debug.Trace)
+%%[4 hs import({%{EH}Base.Debug} as Debug,Debug.Trace)
 %%]
 
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Set(Set), Data.Map(Map))
