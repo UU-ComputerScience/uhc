@@ -857,12 +857,18 @@ tyRecExtrWithLkup lookup lbl t
        Just (r,e) -> Just (hsnRec `mkConApp` [r],e)
 %%]
 
-%%[7 hs export(tyRowExtr,tyRecExtr,tyRecExts,tyRecRow,tyRowExts)
-tyRecRow :: Ty -> Ty
-tyRecRow t
+%%[8 hs
+%%]
+
+%%[7 hs export(tyRowExtr,tyRecExtr,tyRecExts,tyMbRecRow,tyRecRow,tyRowExts)
+tyMbRecRow :: Ty -> Maybe Ty
+tyMbRecRow t
   =  case tyAppFunArgs t of
-       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n -> row
-       _                                           -> Ty_Any
+       (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n -> Just row
+       _                                           -> Nothing
+
+tyRecRow :: Ty -> Ty
+tyRecRow = maybe Ty_Any id . tyMbRecRow
 
 tyRowExts :: Ty -> (Ty,AssocL HsName Ty)
 tyRowExts = tyRowExtsWithLkup (const Nothing)
