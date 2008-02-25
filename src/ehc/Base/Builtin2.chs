@@ -52,10 +52,21 @@ builtinKnownBoxedTyNmL opts
   = Map.keys $ builtinKnownBoxedTyMp opts
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records currently are mapped onto fixed names when generating GRIN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This will (have to) change when extensible records are properly supported in the backend.
+
+%%[8 hs export(builtinRecNm)
+builtinRecNm :: Int -> HsName
+builtinRecNm = hsnProd
+%%]
+
 %%[8 hs export(builtinKnownRecTyNmL)
 builtinKnownRecTyNmL :: [HsName]
 builtinKnownRecTyNmL
-  = map hsnProd (0:[2..10])
+  = map builtinRecNm (0:[2..10])
 %%]
 
 

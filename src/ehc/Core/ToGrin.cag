@@ -479,17 +479,21 @@ SEM CBind
                                                          then if box then BasicAnnot_ToTaggedPtr else BasicAnnot_FromTaggedPtr
                                                          else annot
                                                      mkPat ty n
-                                                       =  case tyConNm ty of
-                                                            t | isJust mbAnn -> if ehcOptPriv @lhs.opts
+                                                       =  case tyMbCon ty of
+                                                            Just t
+                                                              | isJust mbAnn -> if ehcOptPriv @lhs.opts
                                                                                 then GrPatLam_BasicNode (annotOfUnboxed False (fromJust mbAnn) t) n
                                                                                 else mkGrUnbox t n
                                                               | @isEnumable t && ehcOptPriv @lhs.opts
                                                                              -> GrPatLam_EnumNode n
                                                               where mbAnn = @mbAnnot t
-                                                            _                -> case dataGamTagsOfTy ty @lhs.dataGam of
+                                                            _ | isJust mbRec -> case tyRecExts ty of
+                                                                                   (_,exts) -> GrPatLam_Var n
+                                                              | otherwise    -> case dataGamTagsOfTy ty @lhs.dataGam of
                                                                                   Just [] | ehcOptPriv @lhs.opts -> GrPatLam_OpaqueNode n
                                                                                   _       | ehcOptPriv @lhs.opts -> GrPatLam_OpaqueNode n
                                                                                           | otherwise            -> GrPatLam_Var n
+                                                              where mbRec = tyMbRecRow ty
                                                      resTyNm = tyConNm @resTy
                                                      mbResAnn = @mbAnnot resTyNm
                                                      resTagLfromDataGam = dataGamTagsOfTy @resTy @lhs.dataGam
@@ -516,6 +520,12 @@ SEM CBind
                                                               else if @isEnumable resTyNm
                                                               then \e -> GrExpr_Seq e (GrPatLam_EnumAnnot resTagL @nmRes)
                                                                                       (GrExpr_Unit (GrVal_EnumNode v))
+                                                              else if isJust (tyMbRecRow @resTy)
+                                                              then \e -> let arity = length $ snd $ tyRecExts @resTy
+                                                                             nm    = builtinRecNm arity
+                                                                             tag   = GrTag_Con (mkGrTagAnn arity arity) 0 nm
+                                                                         in  GrExpr_Seq e (GrPatLam_Annot [tag] @nmRes)
+                                                                                          (GrExpr_Unit (GrVal_Var v))
                                                               else if null (maybe [] id resTagLfromDataGam)
                                                               then \e -> GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
                                                                                       (GrExpr_Unit (GrVal_Var v))
