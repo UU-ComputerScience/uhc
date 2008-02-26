@@ -56,7 +56,7 @@ pLabel :: HIParser Label
 pLabel = pKeyTk "label" *> (Label_Lab <$> pDollNm <|> Label_Var <$> pUIDHI)
 
 pPredScope :: HIParser PredScope
-pPredScope = pKeyTk "scope" *> (PredScope_Lev <$> pBracks_pCommas pInt <|> PredScope_Var <$> pUIDHI)
+pPredScope = pKeyTk "scope" *> ((PredScope_Lev . rllFromList) <$> pBracks_pCommas pInt <|> PredScope_Var <$> pUIDHI)
 
 pCHRPredOcc :: HIParser CHRPredOcc
 pCHRPredOcc = CHRPredOcc <$ pOCURLY <*> pPred <* pCOMMA <*> pPredScope <* pCCURLY
