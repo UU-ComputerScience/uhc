@@ -119,7 +119,7 @@ instance PP CHRPredOcc where
   pp po = ppParensCommas [pp (cpoPr po), pp (cpoScope po)]
 
 instance PP PredScope where
-  pp (PredScope_Lev l) = ppListSep "<" ">" "," l
+  pp (PredScope_Lev l) = ppListSep "<" ">" "," $ rllToList l
   pp (PredScope_Var v) = "<sc_" >|< v >|< ">"
 
 instance PP ImplsProveOcc where
@@ -157,7 +157,7 @@ instance PPForHI CHRPredOcc where
   ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoScope po)]
 
 instance PPForHI PredScope where
-  ppForHI (PredScope_Lev l) = "scope" >#< (ppBracketsCommas $ map pp l)
+  ppForHI (PredScope_Lev l) = "scope" >#< (ppBracketsCommas $ map pp $ rllToList l)
   ppForHI (PredScope_Var v) = "scope" >#< ppForHI v
 
 instance PPForHI LabelOffset where

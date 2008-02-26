@@ -75,9 +75,16 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | AppTop Lam  loc         .   implsIsEmpty        =   False -- otherwise AG depends on @knTySubs, creating a cycle
+  | AppTop Lam  loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
 %%]
+  | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @imSubsTy
+  | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @lhs.knTy
+  | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicatedWithLkup (varmpTyLookupCyc2 @lhs.tyVarMp) @lhs.knTy
   | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @knTySubs
+  
+  foVarMp @foKnRes |=> @imTy
+foVarMp @fo_fitF_ |=> @imTy
+
 
 %%[9
 SEM Decl
@@ -101,11 +108,11 @@ ATTR CaseAlts [ predScopeCounter : Int | | ]
 
 SEM Expr
   | Case
-      alts.predScopeCounter = 0
+      alts.predScopeCounter                         = 0
 
 SEM CaseAlts
   | Cons
-      (tl.predScopeCounter, hd.predScope) = pscpEnter @lhs.predScopeCounter @lhs.predScope
+      (tl.predScopeCounter, hd.predScope)           = pscpEnter @lhs.predScopeCounter @lhs.predScope
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -226,12 +226,12 @@ instance Show LabelOffset where
 
 %%[9 hs export(PredScope(..),initPredScope)
 data PredScope
-  = PredScope_Lev ![Int]
+  = PredScope_Lev !(RLList Int)
   | PredScope_Var !TyVarId
   deriving (Eq,Ord)
 
 initPredScope :: PredScope
-initPredScope = PredScope_Lev []
+initPredScope = PredScope_Lev rllEmpty
 %%]
 
 %%[9 hs export(pscpMbVar)
@@ -248,31 +248,35 @@ instance Show PredScope where
 
 %%[9 hs export(pscpEnter,pscpLeave)
 pscpEnter :: Int -> PredScope -> (Int,PredScope)
-pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (s ++ [x]))
+pscpEnter x (PredScope_Lev s) = (x+1,PredScope_Lev (s `rllConcat` rllSingleton x))
 
 pscpLeave :: PredScope -> PredScope
-pscpLeave (PredScope_Lev s) = PredScope_Lev $ init s
+pscpLeave (PredScope_Lev s) = PredScope_Lev $ fst $ fromJust $ rllInitLast s
 %%]
 
 %%[9 hs export(pscpIsVisibleIn,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
-pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `isPrefixOf` sInner
+pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `rllIsPrefixOf` sInner
 pscpIsVisibleIn _                      _                      = False
 
 pscpCommon :: PredScope -> PredScope -> Maybe PredScope
 pscpCommon (PredScope_Lev s1) (PredScope_Lev s2)
   = Just $ PredScope_Lev $ commonPrefix s1 s2
-  where commonPrefix (x:xs)  (y:ys)  | x == y     = x : commonPrefix xs ys
-                                     | otherwise  = []
-        commonPrefix _       _                    = []
+  where commonPrefix xxs     yys     | isJust ht1 && isJust ht2 && x == y     = rllSingleton x `rllConcat` commonPrefix xs ys
+                                     | otherwise                              = rllEmpty
+                                     where ht1 = rllHeadTail xxs
+                                           ht2 = rllHeadTail yys
+                                           (x,xs) = fromJust ht1
+                                           (y,ys) = fromJust ht2
+        -- commonPrefix _       _                    = rllEmpty
 pscpCommon _                  _                  
   = Nothing        
 %%]
 
 %%[9 hs export(pscpParents)
 pscpParents :: PredScope -> [PredScope]
-pscpParents (PredScope_Lev s@(_:_)) = map PredScope_Lev $ inits $ init s
-pscpParents _                       = []
+pscpParents (PredScope_Lev s) | not (rllNull s) = map PredScope_Lev $ rllInits $ rllInit s
+pscpParents _                                   = []
 %%]
 
 %%[9 hs export(pscpCmp,pscpCmpByLen)
@@ -281,7 +285,7 @@ pscpCmp (PredScope_Lev s) (PredScope_Lev t) = Just $ s `compare` t
 pscpCmp _                 _                 = Nothing                 
 
 pscpCmpByLen :: PredScope -> PredScope -> Ordering                  
-pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (length s) `compare` (length t)                    
+pscpCmpByLen (PredScope_Lev s) (PredScope_Lev t) = (rllLength s) `compare` (rllLength t)                    
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1082,13 +1086,16 @@ implsIsEmpty (Impls_Cons _ _ _ _ _) = False
 implsIsEmpty _                      = True
 %%]
 
-%%[9 hs export(tyIsPredicated)
+%%[9 hs export(tyIsPredicated,tyIsPredicatedWithLkup)
 tyIsPredicated :: Ty -> Bool
 tyIsPredicated (Ty_Impls i) = not $ implsIsEmpty i
 tyIsPredicated t            = isPr a
                             where a = tyArrowArgs t
                                   isPr (Ty_Pred p:_) = True
                                   isPr _             = False
+
+tyIsPredicatedWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Bool
+tyIsPredicatedWithLkup lookup = tyVarLift lookup tyIsPredicated tyIsPredicated
 %%]
 
 %%[10 hs export(labelMbVar)
