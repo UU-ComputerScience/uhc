@@ -101,9 +101,9 @@ data Var
   = GlobalVar   String LLVMType
   -- | references to variables local for a function or parameters.
   | LocalVar    String LLVMType
-  -- | refers to an integer constant as (i64 32).
+  -- | refers to an integer constant as (i64 42).
   | Constant    Int    LLVMType
-  -- | defines a string as local constant.
+  -- | defines a string as global constant.
   | StrConstant String LLVMType
   deriving (Eq)
   

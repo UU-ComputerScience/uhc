@@ -2,6 +2,7 @@
 %include lhs2TeX.fmt
 %include lhs2TeX.sty
 %include polycode.fmt
+\usepackage{mainsty}
 
 \usepackage{a4wide}
 
@@ -29,6 +30,30 @@
 
 \usepackage[pdftex]{graphicx}
 
+% Font mathpazo
+%
+\usepackage{mathpazo}
+
+%\usepackage{tabularx}
+
+% For code highlighting
+%
+\usepackage{listings}
+
+\lstdefinestyle{figureLst}
+    {numbers={left}, tabsize={2}, frame={single}}
+
+\usepackage{amsmath}
+
+\newcommand{\hsbox}[1]{
+	\framebox[\textwidth][l]{         
+		\begin{math} 
+			\mathhs 
+			#1 
+		\end{math} 
+	}%
+}
+
 \usepackage[pdftex,a4paper,colorlinks,
             pdfauthor={John van Schie},
             pdftitle={Functional LLVM},
@@ -40,10 +65,6 @@
             bookmarksnumbered,
             bookmarksopen
            ]{hyperref}
-
-\usepackage{mathpazo}
-
-\usepackage{tabularx}
 
 \mathindent=\parindent
 %%]
