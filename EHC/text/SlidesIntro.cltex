@@ -704,10 +704,10 @@ infers kind @Eq :: Forall a . a -> a -> *@
 96 &
   & exception handling
   \\
-97 & numbers: Integer, Float, Double *
+97 & numbers: Integer, Float, Double
   & 
   \\
-98 & IO *
+98 & IO
   & 
   \\
 99 & the rest for full Haskell *

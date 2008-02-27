@@ -1895,6 +1895,11 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicEHCStructure.complexityMaintenance
 
+\section{Related work}
+\label{sec-ehcstruct-relatedwork}
+
+%%@TopicEHCStructure.relatedWork
+
 \section{Experiences}
 \label{sec-ehcstruct-experiences}
 
