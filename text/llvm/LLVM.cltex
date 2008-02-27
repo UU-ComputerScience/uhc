@@ -3,15 +3,16 @@ Functional LLVM
 %%]
 
 %%[main
-\pagenumbering{roman}
-
 \tableofcontents
 
 \part{Preliminaries}
+
 \part{Main part}
+%%@LLVMChapterNaive.chapter
+
 \part{Conclusion}
 
-\bibliography{thesis}
+\bibliography{main}
 \bibliographystyle{plain}
 \addcontentsline{toc}{chapter}{Bibliography}
 %%]

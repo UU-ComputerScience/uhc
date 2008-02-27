@@ -1,6 +1,10 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
+%%[0 hs
+{
+{-| 
+  This module transforms a 'SilModule' to a 'LLVMModule' via an AG
+  transformation. TODO more about the transformation later.
+-}
+}
 %%]
 
 %%[8 hs module {%{GRIN}Silly.ToLLVM}
@@ -637,7 +641,7 @@ initializeFuncDecl =
   FuncDecl_FuncDecl "initialize" Void FixedArgs []
 
 {-|
-Function declaration for the Silly generated fun_main function.
+Function declaration for the GRIN generated fun_main function.
 -}
 fun_mainFuncDecl :: FuncDecl
 fun_mainFuncDecl =
