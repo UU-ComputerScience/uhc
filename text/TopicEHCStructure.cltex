@@ -36,7 +36,7 @@ As a result, modifying GHC requires much knowledge
 of GHC's internals.
 
 In \thispaper\ we show how we deal with the complexity of compiling Haskell
-in the the Essential Haskell (EH) Compiler (EHC)
+in the Essential Haskell (EH) Compiler (EHC)
 \cite{dijkstra04ehc-web,dijkstra05phd}.
 EH intends
 \begin{itemize}
@@ -313,7 +313,7 @@ In \secRef{sec-ehcstruct-complexity-design} and \ref{sec-ehcstruct-complexity-ma
 
 %%[explainUUAGC
 
-Higer-order functional languages are famous for their ability to 
+Higher-order functional languages are famous for their ability to 
 parameterize functions not only with numbers and data structures,
 but also with functions and operators.
 The standard textbook example involves the functions |sum| and |product|,
@@ -369,7 +369,7 @@ This is not widely done, due to the following problems:
       function first. Moreover, whenever we change the abstract syntax,
       we need to change the |fold| function, and every algebra.
 \item Generated code can be described as a semantics of the language, but often
-      we need additional semantices: pretty-printed listings, warning messages,
+      we need an alternative semantics: pretty-printed listings, warning messages,
       and various derived structures for internal use (symbol tables etc.).
       This can be done in one pass by having the semantic functions in the algebra return
       tuples, but this makes them hard to handle.
@@ -760,7 +760,7 @@ Transformations on the Core language include:
 \item \textit{Constant propagation}
 and   \textit{Rename identifiers to unique names}
 \item Lambda lifting, split up in:
-      \textit{Full lazyness of subexpressions},
+      \textit{Full laziness of subexpressions},
       \textit{Lambda/CAF globals passed as argument},
       \textit{Float lambda expressions to global level}
 \end{itemize}
@@ -852,6 +852,66 @@ We are working towards a release of EHC as a Haskell compiler: variant 99 in the
 At the moment, we can compile a prelude and run programs with a bytecode interpreter.
 We intend to work on AG optimisations, on using LLVM \cite{lattner07www-llvm} as a backend,
 and on GRIN global transformations.
+
+%%]
+
+%%[relatedWork
+\Paragraph{Compiler building environments}
+
+Various compiler construction environments exist
+\cite{www06catalog-comp-constr}, originally developed some time ago.
+We mention
+Cocktail \cite{www07cocktail,grosch91cocolab-toolbox},
+Eli \cite{www05eli,gray92eli} and
+Gentle \cite{www07gentle,schroer97gentle-comp-sys}.
+Of these environments Cocktail provides the most comprehensive
+and best maintained set of tools for lexical analysis, parsing, attribute grammars and tree transformations.
+With the exception of Cocktail these environments are focussed upon development in C;
+Cocktail allows codegeneration for various popular imperative languages.
+More specifically for Java, Polyglot \cite{www08polyglot,nystrom03polyglot-comp-framew} is an extensible compiler frontend,
+with many experimental Java extensions.
+
+In contrast, our toolset is built upon Haskell, and wherever possible
+exploits Haskell's assets such as its strong type system
+to provide various combinator libraries for (e.g.) parsing
+instead of traditional generator based solutions.
+Haskell is also used to specify attribute computations.
+This allows our tools to be relative lightweight yet comprehensive.
+It also strongly ties our tools to Haskell,
+benificial in our view because of the compact and descriptive nature of Haskell code fragments.
+
+\Paragraph{Tree based systems and Attribute Grammar systems}
+
+Computations over abstract syntax trees and tree transformation form a major part of any compiler;
+Cocktail also incorporates an attribute grammar system, based on work by Kastens \cite{kastens80order-attrgam},
+as well as tools for transforming trees.
+Stratego \cite{visser05stratego-www,visser01stratego-system05}
+(based on ASF/SDF \cite{www05asf-sdf}) is a specialized tool for tree transformations.
+JastAdd \cite{ekman07jastadd-system,www08jastadd,hedin03jastadd-aspects}
+is an attribute grammar and tree rewrite system built on top of Java,
+used to build a Java compiler \cite{ekman07jastadd-java}.
+
+%Elegant \cite{augusteijn90elegant,www08elegant}
+
+In contrast, our attribute grammar system is also used for the many tree transformations present in EHC;
+support for making a replica of the tree being analysed makes this work suprisingly well.
+Occasionally we miss pattern matching features offered by specialized tree transformation tools,
+but on the other hand we are not limited by the sometimes restricted computational expressiveness offered by these tools.
+
+\Paragraph{Specifying declaratively}
+
+Ruler intends to bridge the gap between formal specifications and their implementation, like Tinkertype \cite{levin99tinkertype}.
+Similarly, Ott \cite{sewell07ott-tool-semantic} provides a typerule based frontend, not for an implementation but for various theorem proving systems.
+Twelf \cite{www05twelf} is a theorem proving system, amongst others used to ultimately specify ML formally in order to proof type safety.
+Ruler, on the other hand, is meant as an implementation tool and documentation tool.
+
+\Paragraph{Embedded solutions}
+
+All mentioned tools sofar are external tools, in the sense that they generate from a separate specification for a specific implementation language.
+Monads often have been used for Haskell embedded attribution, e.g. a reader monad corresponds directly to inherited attribution.
+A similar effect can be accomplished with boilerplate code avoiding approaches \cite{laemmel03boilerplate}.
+Both approaches work well for relatively small examples but do not scale well when separate computations have to be merged into one,
+for example when such computations need eachothers (intermediate) results.
 
 %%]
 
