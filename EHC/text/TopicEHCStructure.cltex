@@ -867,7 +867,7 @@ Gentle \cite{www07gentle,schroer97gentle-comp-sys}.
 Of these environments Cocktail provides the most comprehensive
 and best maintained set of tools for lexical analysis, parsing, attribute grammars and tree transformations.
 With the exception of Cocktail these environments are focussed upon development in C;
-Cocktail allows codegeneration for various popular imperative languages.
+Cocktail allows codegeneration for various imperative languages.
 More specifically for Java, Polyglot \cite{www08polyglot,nystrom03polyglot-comp-framew} is an extensible compiler frontend,
 with many experimental Java extensions.
 
@@ -878,7 +878,7 @@ instead of traditional generator based solutions.
 Haskell is also used to specify attribute computations.
 This allows our tools to be relative lightweight yet comprehensive.
 It also strongly ties our tools to Haskell,
-benificial in our view because of the compact and descriptive nature of Haskell code fragments.
+which is benificial in our view because of the compact and descriptive nature of Haskell code fragments.
 
 \Paragraph{Tree based systems and Attribute Grammar systems}
 
@@ -901,9 +901,9 @@ but on the other hand we are not limited by the sometimes restricted computation
 \Paragraph{Specifying declaratively}
 
 Ruler intends to bridge the gap between formal specifications and their implementation, like Tinkertype \cite{levin99tinkertype}.
-Similarly, Ott \cite{sewell07ott-tool-semantic} provides a typerule based frontend, not for an implementation but for various theorem proving systems.
+Ott \cite{sewell07ott-tool-semantic} provides a typerule based frontend, not for an implementation but for various theorem proving systems.
 Twelf \cite{www05twelf} is a theorem proving system, amongst others used to ultimately specify ML formally in order to proof type safety.
-Ruler, on the other hand, is meant as an implementation tool and documentation tool.
+Ruler, on the other hand, is currently only used as an implementation tool and documentation tool.
 
 \Paragraph{Embedded solutions}
 
