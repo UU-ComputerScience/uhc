@@ -266,6 +266,13 @@ SEM Expr
   | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
 %%]
 
+20080228, AD:
+An type at apptop may not introduce an implicits.
+This is to avoid a scope introduction (see implsIsEmpty).
+Consequences are yet unclear.
+- Does not work, that is enforcing empty predicates here: im = mkImplsNil
+  Likely caused by partiap apps yielding types taking more predicates (?)
+
 %%[9.AppTop
 SEM Expr
   | AppTop      loc         .   (imTy,knTopTy,resTy)=   let  [i,r] = mkNewUIDL 2 @lUniq
