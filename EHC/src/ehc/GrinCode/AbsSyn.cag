@@ -55,7 +55,6 @@ DATA GrExpr
                 argL            : GrValL
   | FFI         nm              : {String}
                 argL            : GrValL
-                tagL            : GrTagL
   | Eval        nm              : {HsName}
   | App         nm              : {HsName}
                 argL            : GrValL
@@ -82,6 +81,8 @@ DATA GrVal
   | BasicNode   tag             : GrTag
                 nm              : {HsName}
   | EnumNode    nm              : {HsName}
+  | OpaqueNode  nm              : {HsName}
+  | PtrNode     nm              : {HsName}
 %%[[10
   | NodeAdapt   nm              : {HsName}
                 fldL            : GrAdaptL
@@ -117,24 +118,25 @@ DATA GrPatLam
   | BasicNode   annot           : {BasicAnnot}
                 nm              : {HsName}
   | EnumNode    nm              : {HsName}
+  | PtrNode     nm              : {HsName}
   | OpaqueNode  nm              : {HsName}
   | BasicAnnot  annot           : {BasicAnnot}
                 nm              : {HsName}
   | EnumAnnot   tagL            : GrTagL
                 nm              : {HsName}
-  | Annot       tagL            : GrTagL
+  | PtrAnnot    tagL            : GrTagL
                 nm              : {HsName}
   | OpaqueAnnot nm              : {HsName}
 
 
 DATA GrTag
-  | Con           grtgAnn         : {GrTagAnn}
-                  int             : {Int}
-                  nm              : {HsName}
-  | Fun           nm              : {HsName}
-  | PApp          needs           : {Int}
-                  nm              : {HsName}
-  | App           nm              : {HsName}
+  | Con         grtgAnn         : {GrTagAnn}
+                int             : {Int}
+                nm              : {HsName}
+  | Fun         nm              : {HsName}
+  | PApp        needs           : {Int}
+                nm              : {HsName}
+  | App         nm              : {HsName}
   | Unboxed
   | Hole
   | Rec

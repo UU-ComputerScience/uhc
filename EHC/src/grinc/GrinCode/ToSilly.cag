@@ -234,7 +234,7 @@ SEM GrExpr
                          else internal1 "FFI" @lhs.targets @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
-           loc.callres = maybe id (:) @tagL.mbOnlyTagValue $ [Value_Call @nm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
+           loc.callres = maybe id (:) Nothing {- 20080228 AD: @tagL.mbOnlyTagValue -} $ [Value_Call @nm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
 
 
  | Store   lhs.stats  = let ph = head @lhs.targets
@@ -447,7 +447,7 @@ SEM GrPatLam
   | Var
     EnumNode
     EnumAnnot
-    Annot       lhs  .  patternNames = [@nm]
+    PtrAnnot    lhs  .  patternNames = [@nm]
   | BasicNode   lhs  .  patternNames = [wildcardNr, @nm]
   | BasicAnnot  lhs  .  patternNames = [wildcardNr, @nm]  -- TODO: this can be simplified to [@nm] if FFI would not return UNBOXED
   | VarNode     lhs  .  patternNames = @fldL.patternNames

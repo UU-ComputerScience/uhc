@@ -62,7 +62,6 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pValL
-                                                            <*> pCurly_pSemics pTag
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
                                     <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq
@@ -84,6 +83,8 @@ pVal            =    pSVal
                         <|>  GrVal_VarNode <$> ( (:) <$> (GrVal_Var <$> pGrNm) <*> pSValL )
                         <|>  GrVal_BasicNode  <$  pKey "basicnode"  <*> pTag <*> pGrNm
                         <|>  GrVal_EnumNode   <$  pKey "enumnode"   <*> pGrNm
+                        <|>  GrVal_PtrNode    <$  pKey "ptrnode"    <*> pGrNm
+                        <|>  GrVal_OpaqueNode <$  pKey "opaquenode" <*> pGrNm
                         <|>  pSucceed GrVal_Empty
                         )
 
@@ -102,11 +103,12 @@ pPatLam         =    GrPatLam_Var      <$> pGrNm
                         (    GrPatLam_VarNode      <$> ( (:) <$> (GrVar_Var <$> pGrNm <|> GrVar_KnownTag <$> pTag) <*> (map GrVar_Var <$> pGrNmL) )
                         <|>  GrPatLam_BasicNode    <$  pKey "basicnode"    <*> pBasicAnnot <*> pGrNm
                         <|>  GrPatLam_EnumNode     <$  pKey "enumnode"     <*> pGrNm
+                        <|>  GrPatLam_PtrNode      <$  pKey "ptrnode"      <*> pGrNm
                         <|>  GrPatLam_OpaqueNode   <$  pKey "opaquenode"   <*> pGrNm
                         <|>  GrPatLam_BasicAnnot   <$  pKey "basicannot"   <*> pBasicAnnot <*> pGrNm
                         <|>  GrPatLam_EnumAnnot    <$  pKey "enumannot"    <*> pParens (pList pTag) <*> pGrNm
                         <|>  GrPatLam_OpaqueAnnot  <$  pKey "opaqueannot"  <*> pGrNm
-                        <|>  GrPatLam_Annot        <$  pKey "annot"        <*> pParens (pList pTag) <*> pGrNm
+                        <|>  GrPatLam_PtrAnnot     <$  pKey "ptrannot"     <*> pParens (pList pTag) <*> pGrNm
                         <|>  pSucceed GrPatLam_Empty
                         )
 

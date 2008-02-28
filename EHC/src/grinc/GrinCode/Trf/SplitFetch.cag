@@ -97,7 +97,7 @@ SEM GrPatLam
    EnumNode
    BasicAnnot
    EnumAnnot
-   Annot 
+   PtrAnnot 
              lhs . mbTag = Nothing
  
 SEM GrVarL

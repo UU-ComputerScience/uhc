@@ -34,7 +34,7 @@
 %%[4 hs import(qualified Data.Map as Map) export(TvCatMp) 
 %%]
 
-%%[4_2 hs export(tyMbQu,tyIsQu,tyIsVar,tyIsAlts) 
+%%[4_2 hs export(tyMbQu,tyIsQu,tyIsAlts) 
 %%]
 
 %%[4_2 hs export(TyPlus(..),TyPlusL,tyPlusTy) 
@@ -425,7 +425,7 @@ showTyQu  TyQu_KiExists   =  "Exists"
 %%% Properties of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 hs
+%%[4 hs export(tyIsVar)
 tyIsVar :: Ty -> Bool
 tyIsVar = isJust . tyMbVar
 

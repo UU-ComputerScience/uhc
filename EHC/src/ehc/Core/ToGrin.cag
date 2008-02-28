@@ -22,6 +22,9 @@ WRAPPER CodeAGItf
 %%[8 hs import(Debug.Trace)
 %%]
 
+%%[8 hs import(EH.Util.Utils)
+%%]
+
 %%[8 hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
@@ -474,66 +477,51 @@ SEM CBind
                                             =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
-                lhs         .   grBindL     =   let  annotOfUnboxed box annot t
+                lhs         .   grBindL     =   let  ffiMbTyConNm ty     = tyMbCon $ fst $ tyAppFunArgs ty
+                                                     ffiTyConNm          = maybe hsnUnknown id . ffiMbTyConNm
+                                                     mbTagL ty           = case dataGamTagsOfTy ty @lhs.dataGam of
+                                                                             Just ts        -> Just [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                                             _ | tyIsVar ty -> Just [ GrTag_Any ]
+                                                                               | otherwise  -> Nothing
+                                                     isOpaqueTagL mbTagL = null (maybe [] id mbTagL)
+                                                     annotOfUnboxed box annot t
                                                        = if tyNmMayLiveAsTaggedPtr @lhs.opts t
                                                          then if box then BasicAnnot_ToTaggedPtr else BasicAnnot_FromTaggedPtr
                                                          else annot
                                                      mkPat ty n
-                                                       =  case tyMbCon ty of
+                                                       =  case ffiMbTyConNm ty of
                                                             Just t
-                                                              | isJust mbAnn -> if ehcOptPriv @lhs.opts
-                                                                                then GrPatLam_BasicNode (annotOfUnboxed False (fromJust mbAnn) t) n
-                                                                                else mkGrUnbox t n
-                                                              | @isEnumable t && ehcOptPriv @lhs.opts
-                                                                             -> GrPatLam_EnumNode n
+                                                              | isJust mbAnn  -> GrPatLam_BasicNode (annotOfUnboxed False (fromJust mbAnn) t) n
+                                                              | @isEnumable t -> GrPatLam_EnumNode n
                                                               where mbAnn = @mbAnnot t
                                                             _ | isJust mbRec -> case tyRecExts ty of
                                                                                    (_,exts) -> GrPatLam_Var n
-                                                              | otherwise    -> case dataGamTagsOfTy ty @lhs.dataGam of
-                                                                                  Just [] | ehcOptPriv @lhs.opts -> GrPatLam_OpaqueNode n
-                                                                                  _       | ehcOptPriv @lhs.opts -> GrPatLam_OpaqueNode n
-                                                                                          | otherwise            -> GrPatLam_Var n
+                                                              | isOpaqueTagL (mbTagL ty)
+                                                                             -> GrPatLam_OpaqueNode n
+                                                              | otherwise    -> GrPatLam_PtrNode n
                                                               where mbRec = tyMbRecRow ty
-                                                     resTyNm = tyConNm @resTy
-                                                     mbResAnn = @mbAnnot resTyNm
-                                                     resTagLfromDataGam = dataGamTagsOfTy @resTy @lhs.dataGam
-                                                     resTagL
+                                                     mkRes resTy v e
                                                        = if isJust mbResAnn
-                                                         then -- Result type is one of the unboxable types Int, Char, PackedString
-                                                              [ GrTag_Unboxed ]
-                                                         else case resTagLfromDataGam of
-                                                                Just ts          -> -- Result type is datatype with known constructors, e.g. for Bool or Ordering
-                                                                                    [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
-                                                                _                -> -- Result type is any other type 
-                                                                                       -- This can be the case for:
-                                                                                       --  * type-synonyms (e.g. String)
-                                                                                       --  * types with implicit constructors (e.g. Double)
-                                                                                       --  * a few primitives (unsafeCoerce, throwException, catchException)
-                                                                                       --  * ffi's with structured results (quotRemInteger, flushChannel)
-                                                                                     -- TODO: figure out how to handle these
-                                                                                    [ ]  -- [ GrTag_Any ]
-                                                     mkRes v
-                                                       = if ehcOptPriv @lhs.opts
-                                                         then if isJust mbResAnn
-                                                              then \e -> GrExpr_Seq e (GrPatLam_BasicAnnot (annotOfUnboxed True (fromJust mbResAnn) resTyNm) @nmRes)
-                                                                                      (GrExpr_Unit (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 resTyNm) v))
-                                                              else if @isEnumable resTyNm
-                                                              then \e -> GrExpr_Seq e (GrPatLam_EnumAnnot resTagL @nmRes)
-                                                                                      (GrExpr_Unit (GrVal_EnumNode v))
-                                                              else if isJust (tyMbRecRow @resTy)
-                                                              then \e -> let arity = length $ snd $ tyRecExts @resTy
-                                                                             nm    = builtinRecNm arity
-                                                                             tag   = GrTag_Con (mkGrTagAnn arity arity) 0 nm
-                                                                         in  GrExpr_Seq e (GrPatLam_Annot [tag] @nmRes)
-                                                                                          (GrExpr_Unit (GrVal_Var v))
-                                                              else if null (maybe [] id resTagLfromDataGam)
-                                                              then \e -> GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
-                                                                                      (GrExpr_Unit (GrVal_Var v))
-                                                              else \e -> GrExpr_Seq e (GrPatLam_Annot resTagL @nmRes)
-                                                                                      (GrExpr_Unit (GrVal_Var v))
-                                                         else if isJust mbResAnn
-                                                              then \e -> GrExpr_Seq e (mkGrUnboxFFI @nmRes) (GrExpr_Unit (mkGrBox resTyNm (GrVal_Var v)))
-                                                              else id
+                                                         then GrExpr_Seq e (GrPatLam_BasicAnnot (annotOfUnboxed True (fromJust mbResAnn) resTyNm) @nmRes)
+                                                                           (GrExpr_Unit (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 resTyNm) v))
+                                                         else if @isEnumable resTyNm
+                                                         then GrExpr_Seq e (GrPatLam_EnumAnnot resTagL @nmRes)
+                                                                           (GrExpr_Unit (GrVal_EnumNode v))
+                                                         else if isJust (tyMbRecRow resTy)
+                                                         then let arity = length $ snd $ tyRecExts resTy
+                                                                  nm    = builtinRecNm arity
+                                                                  tag   = GrTag_Con (mkGrTagAnn arity arity) 0 nm
+                                                              in  GrExpr_Seq e (GrPatLam_PtrAnnot [tag] @nmRes)
+                                                                               (GrExpr_Unit (GrVal_PtrNode v))
+                                                         else if isOpaqueTagL mbResTagL
+                                                         then GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
+                                                                           (GrExpr_Unit (GrVal_OpaqueNode v))
+                                                         else GrExpr_Seq e (GrPatLam_PtrAnnot resTagL @nmRes)
+                                                                           (GrExpr_Unit (GrVal_PtrNode v))
+                                                       where resTyNm  = ffiTyConNm resTy
+                                                             mbResAnn = @mbAnnot resTyNm
+                                                             mbResTagL= mbTagL resTy
+                                                             resTagL  = panicJust "ToGrin.FFI.resTagL" mbResTagL
 %%[[8
                                                      mkEval (n,p)
                                                        = GrExpr_Seq (GrExpr_Eval n) p
@@ -542,7 +530,7 @@ SEM CBind
                                                        = GrExpr_Seq (if needEval then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n)) p
 %%]]
                                                 in   [GrBind_Bind @nm @nmArgL
-                                                        (foldr mkEval (mkRes @nmRes (GrExpr_FFI @impEnt (map GrVal_Var @nmArgPatL) resTagL))
+                                                        (foldr mkEval (mkRes @resTy @nmRes (GrExpr_FFI @impEnt (map GrVal_Var @nmArgPatL)))
 %%[[8
                                                         $ zip @nmArgL
 %%][96
