@@ -254,7 +254,7 @@ grinScanOpts
                                     , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "fetchupdate"
                                     , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                     , "C", "F", "P", "A", "R", "H", "U", "W"
-                                    , "basicnode", "enumnode", "opaquenode", "annot", "basicannot", "enumannot", "opaqueannot"
+                                    , "basicnode", "enumnode", "opaquenode", "ptrnode", "basicannot", "enumannot", "opaqueannot", "ptrannot"
                                     , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
                                     , "word"
 %%[[97

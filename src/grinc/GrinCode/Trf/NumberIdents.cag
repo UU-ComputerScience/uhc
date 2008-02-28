@@ -146,7 +146,7 @@ SEM GrPatLam
     EnumNode
     BasicAnnot
     EnumAnnot
-    Annot      (lhs.var2id, lhs.unique)  = if @loc.skip
+    PtrAnnot   (lhs.var2id, lhs.unique)  = if @loc.skip
                                            then (                        @lhs.var2id, @lhs.unique    )
                                            else (Map.insert @nm @newName @lhs.var2id, @lhs.unique + 1)
                loc  .  newName  : HsName
@@ -212,9 +212,9 @@ SEM GrPatLam
   | EnumAnnot     lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_EnumAnnot @tagL.copy @newName
-  | Annot         lhs  .  grTrf  = if @loc.skip
+  | PtrAnnot      lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
-                                    else GrPatLam_Annot @tagL.copy @newName
+                                    else GrPatLam_PtrAnnot @tagL.copy @newName
 
 SEM GrBind
   | Bind  lhs  .  grTrf    = if @loc.skip
@@ -245,7 +245,7 @@ SEM GrExpr
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.var2id @src) (findNewVar @lhs.var2id @dst)
   | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
   | Catch       lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
-  | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm @argL.grTrf @tagL.grTrf
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm @argL.grTrf
 
 SEM GrTag
   | Con Fun PApp App

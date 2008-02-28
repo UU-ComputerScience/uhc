@@ -109,7 +109,7 @@ SEM GrExpr
 
   | App    loc.grTrf               = @argL.conversion (GrExpr_App  @nm @argL.selfAsPtr)
   | Call   loc.grTrf               = @argL.conversion (GrExpr_Call @nm @argL.selfAsPtr)
-  | FFI    loc.grTrf               = @argL.conversion (GrExpr_FFI  @nm @argL.selfAsPtr @tagL.grTrf)
+  | FFI    loc.grTrf               = @argL.conversion (GrExpr_FFI  @nm @argL.selfAsPtr)
 --  | Store  loc.grTrf               = @val.conversion  (GrExpr_Store @val.selfAsPtr)
 
   | Eval   loc.grTrf               = let nameIsNode = maybe False id (Map.lookup @nm @lhs.env)
@@ -213,7 +213,7 @@ SEM GrPatLam
   | Var
     BasicAnnot
     EnumAnnot
-    Annot       lhs.boundVar  = @nm    
+    PtrAnnot    lhs.boundVar  = @nm    
   | Empty
     BasicNode
     EnumNode

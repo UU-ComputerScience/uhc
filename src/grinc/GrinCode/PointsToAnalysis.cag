@@ -162,7 +162,7 @@ SEM GrPatLam
     BasicAnnot lhs.patInfo  =  InBasic (getNr @nm)
   | EnumNode
     EnumAnnot  lhs.patInfo  =  InEnum  (getNr @nm)
-  | Annot      lhs.patInfo  =  InVar (getNr @nm)
+  | PtrAnnot   lhs.patInfo  =  InVar (getNr @nm)
   | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  
@@ -386,12 +386,12 @@ SEM GrExpr
 %%[8.ffi
 
 SEM GrExpr
-  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- @tagL.self ] )
+  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
          lhs . equations =  case @lhs.targetInfo of
                               InVar tvar        -> [ IsKnown tvar (AbsNodes @loc.nodemap) ]
                               InNode ttag tnms  -> zipWith IsKnown tnms (fromJust (Map.lookup ttag @loc.nodemap))
                               InBasic tvar -> [ IsKnown tvar AbsBasic ]
-                              InEnum  tvar -> [ IsKnown tvar (AbsTags (Set.fromList @tagL.self)) ]
+                              InEnum  tvar -> [ IsKnown tvar (AbsTags (Set.fromList [] {- 20080228 AD: @tagL.self -})) ]
 
 %%]
 

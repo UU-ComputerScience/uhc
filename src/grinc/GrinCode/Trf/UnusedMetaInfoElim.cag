@@ -45,11 +45,13 @@ ATTR AllNT [ | | trf: SELF ]
 SEM GrModule
   | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf []
 
-SEM GrExpr
-  | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf []
+SEM GrVal
+  | PtrNode OpaqueNode
+                lhs         .   trf             =   GrVal_Var @nm
 
 SEM GrPatLam
-  | Annot       lhs         .   trf             =   GrPatLam_Annot [] @nm
+  | PtrAnnot PtrNode OpaqueAnnot OpaqueNode
+                lhs         .   trf             =   GrPatLam_Var @nm
   | EnumAnnot   lhs         .   trf             =   GrPatLam_EnumAnnot [] @nm
 %%]
 
