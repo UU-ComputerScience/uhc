@@ -1198,7 +1198,7 @@ SEM KiExpr
 
 %%[9
 SEM Decls
-  | Cons        hd          .   gUniq               =   agFakeDependOn @hd.predSameScopeCounter @lhs.gUniq
+  | Cons        hd          .   gUniq               =   @lhs.gUniq -- agFakeDependOn @hd.predSameScopeCounter @lhs.gUniq
 %%]
 
 %%[7

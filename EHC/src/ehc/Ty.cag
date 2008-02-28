@@ -540,12 +540,15 @@ mkTyFreshProd = mkTyFreshProdFrom uidStart
 %%% Construction of implicitly parameterized (or predicated) type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(mkImplsTail,mkImplsVar)
+%%[9 hs export(mkImplsTail,mkImplsVar,mkImplsNil)
 mkImplsTail :: ImplsVarId -> Impls
 mkImplsTail v = Impls_Tail v []
 
 mkImplsVar :: ImplsVarId -> Ty
 mkImplsVar v = Ty_Impls (mkImplsTail v)
+
+mkImplsNil :: Ty
+mkImplsNil = Ty_Impls Impls_Nil
 %%]
 
 %%[9 hs

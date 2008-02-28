@@ -75,8 +75,10 @@ SEM Expr
 
 %%[9
 SEM Expr
-  | AppTop Lam  loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
+  | Lam  		loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
+  | AppTop   	loc         .   implsIsEmpty        =   True -- otherwise AG depends on @lhs.knTy, creating a cycle
 %%]
+  | AppTop Lam  loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
   | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @imSubsTy
   | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @lhs.knTy
   | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicatedWithLkup (varmpTyLookupCyc2 @lhs.tyVarMp) @lhs.knTy
