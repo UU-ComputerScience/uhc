@@ -289,14 +289,14 @@ We use the following preprocessing tools:
 \item \textbf{UUAGC} (Utrecht University Attribute Grammar Compiler),
 which enables us to specify abstract syntax trees and tree walks over them using an attribute grammar (AG) formalism
 \cite{baars04ag-www,dijkstra05phd,dijkstra04thag,swierstra99comb-lang}.
+\item \textbf{Shuffle}, 
+which deals with the compiler organisation and logistics of many different language features,
+and provides a form of literate programming.
 \item \textbf{Ruler},
 a translator for an even more specialized language than AG,
 which enables a high-level specification of type inferencing,
 generating both AG code and \LaTeX\ documentation
 \cite{dijkstra06ruler}.
-\item \textbf{Shuffle}, 
-which deals with the compiler organisation and logistics of many different language features,
-and provides a form of literate programming.
 \end{itemize}
 \begin{CenterFigure}{}{Chain of tools used to build EHC}{fig-ehcstruct-toolchain}
 \hspace*{-5mm}\raisebox{-15mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
@@ -800,7 +800,7 @@ and if a problem arises one can use a previous variant in order to isolate the p
 Experimentation also benefits because one can pick a suitable variant to build upon,
 without being hindered by subsequent variants.
 
-However, on the downside, there are builtin system wide assumptions, for example about how type checking is done.
+However, on the downside, there are builtin systemwide assumptions, for example about how type checking is done.
 We are currently investigating this issue in the context of |Ruler|.
 
 \Paragraph{Use in research and education}
@@ -894,11 +894,11 @@ used to build a Java compiler \cite{ekman07jastadd-java}.
 %Elegant \cite{augusteijn90elegant,www08elegant}
 
 In contrast, our attribute grammar system is also used for the many tree transformations present in EHC;
-support for making a replica of the tree being analysed makes this work suprisingly well.
+support for making a modified replica of the tree being analysed makes this work suprisingly well.
 Occasionally we miss pattern matching features offered by specialized tree transformation tools,
 but on the other hand we are not limited by the sometimes restricted computational expressiveness offered by these tools.
 
-\Paragraph{Specifying declaratively}
+\Paragraph{Declarative specification}
 
 Ruler intends to bridge the gap between formal specifications and their implementation, like Tinkertype \cite{levin99tinkertype}.
 Ott \cite{sewell07ott-tool-semantic} provides a typerule based frontend, not for an implementation but for various theorem proving systems.
@@ -907,11 +907,11 @@ Ruler, on the other hand, is currently only used as an implementation tool and d
 
 \Paragraph{Embedded solutions}
 
-All mentioned tools sofar are external tools, in the sense that they generate from a separate specification for a specific implementation language.
+All tools mentioned sofar are external tools, in the sense that they generate from a separate specification for a specific implementation language.
 Monads often have been used for Haskell embedded attribution, e.g. a reader monad corresponds directly to inherited attribution.
 A similar effect can be accomplished with boilerplate code avoiding approaches \cite{laemmel03boilerplate}.
-Both approaches work well for relatively small examples but do not scale well when separate computations have to be merged into one,
-for example when such computations need eachothers (intermediate) results.
+Both approaches work fine for relatively small examples but do not scale well when separate computations have to be merged into one,
+for example when such computations need each others (intermediate) results.
 
 %%]
 
