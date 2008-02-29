@@ -95,7 +95,7 @@ data NodeInfo a
   =  InVar   Variable 
   |  InNode  GrTag [a]
   |  InBasic Variable
-  |  InEnum  Variable
+  |  InEnum  Variable [GrTag]
   deriving Show
   
 fromInVar :: NodeInfo a -> Variable
@@ -114,11 +114,13 @@ ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[
 
 
 SEM GrVal
-  | Tag       lhs.valInfo  =  InNode  @tag.self []
-  | Var       lhs.valInfo  =  InVar   (getNr @nm)
-  | Node      lhs.valInfo  =  InNode  @tag.self @fldL.vars
-  | BasicNode lhs.valInfo  =  InNode  @tag.self [Just(getNr @nm)]
-  | EnumNode  lhs.valInfo  =  InEnum  (getNr @nm)
+  | Tag        lhs.valInfo  =  InNode  @tag.self []
+  | Var        lhs.valInfo  =  InVar   (getNr @nm)
+  | Node       lhs.valInfo  =  InNode  @tag.self @fldL.vars
+  | BasicNode  lhs.valInfo  =  InNode  @tag.self [Just(getNr @nm)]
+  | EnumNode   lhs.valInfo  =  InEnum  (getNr @nm) []
+  | OpaqueNode lhs.valInfo  =  InNode  GrTag_Unboxed [Just(getNr @nm)]
+  | PtrNode    lhs.valInfo  =  InEnum  (getNr @nm) []   -- TODO should in fact be InPtr
   | Empty
     LitInt
     LitStr
@@ -160,9 +162,12 @@ SEM GrPatLam
                lhs.tag      =  Just @fldL.headTag
   | BasicNode
     BasicAnnot lhs.patInfo  =  InBasic (getNr @nm)
-  | EnumNode
-    EnumAnnot  lhs.patInfo  =  InEnum  (getNr @nm)
-  | PtrAnnot   lhs.patInfo  =  InVar (getNr @nm)
+  | OpaqueNode
+    OpaqueAnnot lhs.patInfo =  InBasic (getNr @nm)
+  | EnumNode    lhs.patInfo =  InEnum (getNr @nm) [GrTag_Any]
+  | EnumAnnot   lhs.patInfo =  InEnum (getNr @nm) @tagL.self
+  | PtrNode     lhs.patInfo =  InEnum (getNr @nm) [GrTag_Any]  -- TODO: should be InPtr?
+  | PtrAnnot    lhs.patInfo =  InEnum (getNr @nm) (filter (/=GrTag_Any) @tagL.self)   -- TODO: should be InPtr?
   | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  
@@ -234,9 +239,10 @@ SEM GrExpr
                                  (InVar tvar        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
                                  (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
                                  (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
-                                 (InVar tvar        ,  InEnum svar       )  -> [ IsEnumeration tvar svar ]
+                                 (InVar tvar        ,  InEnum svar _     )  -> [ IsEnumeration tvar svar ]
                                  (InBasic tvar      ,  _                 )  -> [ IsKnown tvar AbsBasic ]
-                                 (InEnum  tvar      ,  _                 )  -> [ IsKnown tvar (AbsTags Set.empty) ]  -- TODO: instead of empty, this should be the evaluation result of svar, but that would require a variant of IsEvaluation, and the result is not needed anyway
+                                 (InEnum  tvar ttags,  _                 )  -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
+                                 --(InOpq   tvar      ,  _                 )  -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any []))]
 
                                  
   | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
@@ -388,10 +394,12 @@ SEM GrExpr
 SEM GrExpr
   | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
          lhs . equations =  case @lhs.targetInfo of
-                              InVar tvar        -> [ IsKnown tvar (AbsNodes @loc.nodemap) ]
-                              InNode ttag tnms  -> zipWith IsKnown tnms (fromJust (Map.lookup ttag @loc.nodemap))
-                              InBasic tvar -> [ IsKnown tvar AbsBasic ]
-                              InEnum  tvar -> [ IsKnown tvar (AbsTags (Set.fromList [] {- 20080228 AD: @tagL.self -})) ]
+                              InVar tvar         -> [ IsKnown tvar (AbsNodes @loc.nodemap) ]
+                              InNode ttag tnms   -> zipWith IsKnown tnms [AbsBasic]
+                              InBasic tvar       -> [ IsKnown tvar AbsBasic ]
+                              InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
+                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any [])) ]
+
 
 %%]
 
@@ -405,10 +413,11 @@ The target cannot be a node; these have been simplified earlier by the NormForHP
 -}
 SEM GrExpr
   | Eval  lhs . equations = case @lhs.targetInfo of
-                              InVar tvar   -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
-                              InBasic tvar -> [ IsKnown tvar AbsBasic ]
-                              InEnum  tvar -> [ IsKnown tvar (AbsTags Set.empty) ]  -- TODO: instead of empty, this should be the evaluation result of @nm, but that would require a variant of IsEvluation, and the result is not needed anyway
-                              _            -> error "HPT: Eval target must be variable (NormForHPT should have made it so)"
+                              InVar tvar         -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
+                              InBasic tvar       -> [ IsKnown tvar AbsBasic ]
+                              InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
+                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any [])) ]
+                              _                  -> error "HPT: Eval target must be variable (NormForHPT should have made it so)"
 %%]
 
 

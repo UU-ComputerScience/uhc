@@ -81,7 +81,7 @@ ATTR GrModule AllBind [ | bind2idFrag: LookupList | ]
 SEM GrAGItf
   | AGItf  module  .  bind2idFrag  = Map.empty
                    .  var2id       = Map.empty
-           loc     .  bind2id      = Map.insert hsnMain mainNr @module.bind2idFrag
+           loc     .  bind2id      = Map.insert hsnMainFullProg mainNr @module.bind2idFrag
 
 %%]
 
@@ -99,18 +99,18 @@ addMbToMap fm mbk mbv = maybe fm id mbMap
 %%[8.bindings
 SEM GrBind
   | Bind  loc . bindName    :  HsName
-          loc . bindName    =  if @nm == hsnMain
+          loc . bindName    =  if @nm == hsnMainFullProg
                                then mainNr
                                else case @nm of
                                      HNmNr nr (Just orig) -> @nm
                                      _                    -> HNmNr @lhs.unique (Just (hsnPrefix "fun_" @nm))
           loc . unique2     :  Int
-          loc . unique2     =  if @nm == hsnMain
+          loc . unique2     =  if @nm == hsnMainFullProg
                                then @lhs.unique
                                else case @nm of
                                      HNmNr nr (Just orig) -> @lhs.unique
                                      _                    -> @lhs.unique + 2
-          loc . bind2idFrag =  if @nm == hsnMain
+          loc . bind2idFrag =  if @nm == hsnMainFullProg
                                then @lhs.bind2idFrag
                                else case @nm of
                                      HNmNr nr (Just orig) -> Map.insert orig @nm @lhs.bind2idFrag
@@ -144,8 +144,11 @@ SEM GrPatLam
   | Var
     BasicNode
     EnumNode
+    OpaqueNode
+    PtrNode
     BasicAnnot
     EnumAnnot
+    OpaqueAnnot
     PtrAnnot   (lhs.var2id, lhs.unique)  = if @loc.skip
                                            then (                        @lhs.var2id, @lhs.unique    )
                                            else (Map.insert @nm @newName @lhs.var2id, @lhs.unique + 1)
@@ -206,12 +209,21 @@ SEM GrPatLam
   | EnumNode      lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_EnumNode @newName
+  | OpaqueNode    lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_OpaqueNode @newName
+  | PtrNode       lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_PtrNode @newName
   | BasicAnnot    lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_BasicAnnot @annot @newName
   | EnumAnnot     lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_EnumAnnot @tagL.copy @newName
+  | OpaqueAnnot   lhs  .  grTrf  = if @loc.skip
+                                    then @loc.copy
+                                    else GrPatLam_OpaqueAnnot @newName
   | PtrAnnot      lhs  .  grTrf  = if @loc.skip
                                     then @loc.copy
                                     else GrPatLam_PtrAnnot @tagL.copy @newName
@@ -228,6 +240,8 @@ SEM GrVal
   | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.var2id @nm)
   | BasicNode   lhs  .  grTrf  = GrVal_BasicNode @tag.grTrf (findNewVar @lhs.var2id @nm)
   | EnumNode    lhs  .  grTrf  = GrVal_EnumNode             (findNewVar @lhs.var2id @nm)
+  | OpaqueNode  lhs  .  grTrf  = GrVal_OpaqueNode           (findNewVar @lhs.var2id @nm)
+  | PtrNode     lhs  .  grTrf  = GrVal_PtrNode              (findNewVar @lhs.var2id @nm)
 
 SEM GrVar
   | Var         lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.var2id @nm)

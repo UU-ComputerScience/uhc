@@ -26,7 +26,7 @@ module EHC.Prelude (
     shows,
     showChar, showString,
 --  module PreludeIO,
-    FilePath, IOError, ioError, userError, catch,
+    FilePath, IOError, ioError, userError,
     putChar, putStr, putStrLn, print, hPrint,
     getChar, getLine, getContents, interact,
 {-----------------------------
@@ -70,7 +70,12 @@ module EHC.Prelude (
 {-----------------------------
     threadToIOResult,
 -----------------------------}
-    catchException, throw,
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+#else
+    catchException, throw, catch,
+#endif
+
 {-----------------------------
     Dynamic(..), TypeRep(..), Key(..), TyCon(..), Obj,
 -----------------------------}
@@ -730,9 +735,12 @@ data Integer  -- builtin datatype of arbitrary size integers
 foreign import ccall primGtInt      :: Int -> Int -> Bool
 foreign import ccall primLtInt      :: Int -> Int -> Bool
 foreign import ccall primEqInt      :: Int -> Int -> Bool
-foreign import ccall primEqInteger  :: Integer -> Integer -> Bool
 foreign import ccall primCmpInt     :: Int -> Int -> Ordering
+
+
+foreign import ccall primEqInteger  :: Integer -> Integer -> Bool
 foreign import ccall primCmpInteger :: Integer -> Integer -> Ordering
+foreign import ccall primIntegerToInt :: Integer -> Int
 
 instance Eq  Int     where (==)    = primEqInt
 instance Eq  Integer where (==)    = primEqInteger
@@ -746,7 +754,6 @@ foreign import ccall primAddInt       :: Int -> Int -> Int
 foreign import ccall primSubInt       :: Int -> Int -> Int
 foreign import ccall primMulInt       :: Int -> Int -> Int
 foreign import ccall primNegInt       :: Int -> Int
-foreign import ccall primIntegerToInt :: Integer -> Int
 
 instance Num Int where
     (+)           = primAddInt
@@ -765,6 +772,24 @@ instance Bounded Int where
     minBound = primMinInt
     maxBound = primMaxInt
 
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+instance Num Integer where
+    (+)           = undefined
+    (-)           = undefined
+    negate        = undefined
+    (*)           = undefined
+    abs           = undefined
+    signum        = undefined
+    fromInteger x = undefined
+    fromInt       = undefined
+    
+primIntToInteger     :: Int -> Integer
+primIntToInteger n = undefined
+    
+#else
+
 foreign import ccall primAddInteger       :: Integer -> Integer -> Integer
 foreign import ccall primSubInteger       :: Integer -> Integer -> Integer
 foreign import ccall primMulInteger       :: Integer -> Integer -> Integer
@@ -780,6 +805,10 @@ instance Num Integer where
     signum        = signumReal
     fromInteger x = x
     fromInt       = primIntToInteger
+
+
+#endif
+
 
 {-----------------------------
 absReal x    | x >= 0    = x
@@ -804,6 +833,39 @@ instance Real Int where
 instance Real Integer where
     toRational x = x % 1
 
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall primDivInt       :: Int -> Int -> Int
+foreign import ccall primModInt       :: Int -> Int -> Int
+--foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
+foreign import ccall primQuotInt      :: Int -> Int -> Int
+foreign import ccall primRemInt       :: Int -> Int -> Int
+--foreign import ccall primQuotRemInt   :: Int -> Int -> (Int,Int)
+
+instance Integral Int where
+    divMod    = undefined
+    quotRem   = undefined
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
+
+
+instance Integral Integer where
+    divMod      = undefined
+    quotRem     = undefined
+    div         = undefined
+    mod         = undefined
+    quot        = undefined
+    rem         = undefined
+    toInteger x = undefined
+    toInt       = undefined
+
+
+#else
+
 foreign import ccall primDivInt       :: Int -> Int -> Int
 foreign import ccall primModInt       :: Int -> Int -> Int
 foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
@@ -821,6 +883,8 @@ instance Integral Int where
     toInteger = primIntToInteger
     toInt x   = x
 
+
+
 foreign import ccall primQuotInteger          :: Integer -> Integer -> Integer
 foreign import ccall primRemInteger           :: Integer -> Integer -> Integer
 foreign import ccall primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
@@ -837,6 +901,9 @@ instance Integral Integer where
     rem         = primRemInteger
     toInteger x = x
     toInt       = primIntegerToInt
+
+#endif
+
 
 {-----------------------------
 instance Ix Int where
@@ -1267,8 +1334,18 @@ until p f x     = if p x then x else until p f (f x)
 asTypeOf       :: a -> a -> a
 asTypeOf        = const
 
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall primErrorSimple :: Bool -> a
+
+error          :: String -> a
+error s         = primErrorSimple True
+#else
 error          :: String -> a
 error s         = throw (ErrorCall s)
+#endif
 
 {-----------------------------
 undefined      :: a
@@ -1276,7 +1353,7 @@ undefined       = error "Prelude.undefined"
 -----------------------------}
 
 undefined :: forall a . a
-undefined = error "Prelude.undefined"
+undefined = primErrorSimple False
 
 -- Standard functions on rational numbers {PreludeRatio} --------------------
 
@@ -2053,16 +2130,25 @@ primretIO :: a -> IO a
 primretIO x
   = IO (\_ -> IOResult x)
 
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
 ioError :: IOError -> IO a
-ioError e = IO (\s -> throw (IOException e))
+ioError = error "ioError"
 
-userError :: String -> IOError
-userError str = IOError Nothing UserError "" str Nothing
-
+#else
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = catchException m $ \e -> case e of
                 IOException err -> h err
                 _ -> throw e
+
+ioError :: IOError -> IO a
+ioError e = IO (\s -> throw (IOException e))
+
+#endif
+
+userError :: String -> IOError
+userError str = IOError Nothing UserError "" str Nothing
 
 putChar   :: Char -> IO ()
 putChar    = hPutChar stdout
@@ -2082,6 +2168,17 @@ getContents  = hGetContents stdin
 getLine   :: IO String
 getLine    = hGetLine stdin
 
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+hGetLine :: Handle -> IO String
+hGetLine h = do c <- hGetChar h
+                hGetLine' c
+  where
+   hGetLine' '\n' = return ""
+   hGetLine' c = do cs <- hGetLine h
+                    return (c:cs)
+
+#else
 hGetLine :: Handle -> IO String
 hGetLine h = do c <- hGetChar h
                 hGetLine' c
@@ -2093,7 +2190,7 @@ hGetLine h = do c <- hGetChar h
                    if isEOFError ex then return '\n' else ioError ex
                 hGetLine' c
    isEOFError ex = ioe_type ex == EOF   -- defined in System.IO.Error
-
+#endif
 {-----------------------------
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
@@ -2130,17 +2227,57 @@ writeFile        = writeFile' WriteMode
 appendFile      :: FilePath -> String -> IO ()
 appendFile       = writeFile' AppendMode
 
+#ifdef __FULL_PROGRAM_ANALYSIS__
+writeFile'      :: IOMode -> FilePath -> String -> IO ()
+writeFile' mode name s = do
+  h <- openFile name mode
+  hPutStr h s
+  hClose h
+#else
 writeFile'      :: IOMode -> FilePath -> String -> IO ()
 writeFile' mode name s = do
   h <- openFile name mode
   catchException (hPutStr h s) (\e -> hClose h >> throw e)
   hClose h
+#endif
 
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents
 
 interact  :: (String -> String) -> IO ()
 interact f = getContents >>= (putStr . f)
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+stdin, stdout, stderr :: Handle
+stdin = 0
+stdout = 1
+stderr = 2
+
+primOpenChan :: String -> IOMode -> Maybe Int -> Handle
+primOpenChan name mode mbInt = primOpenChanSimple 0
+
+foreign import ccall primOpenChanSimple :: Int -> Handle
+
+primPutCharChan        :: Handle -> Char -> ()
+primPutCharChan h c = primPutCharChanSimple h c
+
+foreign import ccall primPutCharChanSimple :: Handle -> Char -> ()
+
+
+primCloseChan          :: Handle -> ()
+primCloseChan h = ()
+
+primWriteChan          :: Handle -> ByteArray -> ()
+primWriteChan h ba = ()
+
+hPutStr, hPutStrLn     :: Handle -> String -> IO ()
+hPutStr   h s = do if null s then return () else do {hPutChar h (head s); hPutStr h (tail s) }
+
+hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
+
+#else
 
 stdin, stdout, stderr :: Handle
 stdin  = primOpenChan "<stdin>"  ReadMode  (Just 0)
@@ -2151,6 +2288,15 @@ foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> 
 foreign import ccall primCloseChan          :: Handle -> ()
 foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
 foreign import ccall primPutCharChan        :: Handle -> Char -> ()
+
+hPutStr, hPutStrLn     :: Handle -> String -> IO ()
+hPutStr   h s = do let (shd,stl) = splitAt 1000 s
+                   ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
+                   if null stl then return () else hPutStr h stl
+hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
+
+#endif
+
 foreign import ccall primFlushChan          :: Handle -> ()
 foreign import ccall primChanGetChar        :: Handle -> Char
 foreign import ccall primChanGetContents    :: Handle -> String
@@ -2161,11 +2307,6 @@ openFile  f m = ioFromPrim (\_ -> primOpenChan f m Nothing)
 hPutChar     :: Handle -> Char -> IO ()
 hPutChar h c = ioFromPrim (\_ -> primPutCharChan h c)
 
-hPutStr, hPutStrLn     :: Handle -> String -> IO ()
-hPutStr   h s = do let (shd,stl) = splitAt 1000 s
-                   ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
-                   if null stl then return () else hPutStr h stl
-hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
 
 hFlush     :: Handle -> IO ()
 hFlush h = ioFromPrim (\_ -> primFlushChan h)
@@ -2211,7 +2352,6 @@ packedStringToString p = if packedStringNull p
                           then []
                           else packedStringHead p : packedStringToString (packedStringTail p)
 
-foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
 
 -- ByteArray -----------------------------------------------------
 
@@ -2219,7 +2359,17 @@ data ByteArray
 
 foreign import ccall primByteArrayLength   :: ByteArray -> Int
 foreign import ccall primByteArrayToString :: ByteArray -> String
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall packedStringToInteger :: PackedString -> Integer
+
+#else
 foreign import ccall primStringToByteArray :: String -> Int -> ByteArray
+foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
+
+#endif
 
 -- Hooks for primitives: -----------------------------------------------------
 -- Do not mess with these!
@@ -2239,10 +2389,11 @@ data Word64
 data ForeignObj  -- builtin datatype of C pointers with finalizers (deprecated)
 data ForeignPtr a -- builtin datatype of C pointers with finalizers
 data StablePtr a
-data Handle
 
-data Object a -- builtin datatype of external object references.
-              -- (needed as primitive since they're supported in FFI decls.)
+#ifdef __FULL_PROGRAM_ANALYSIS__
+type Handle = Int
+#else
+data Handle
 
 foreign import ccall "primEqChan" primEqHandle :: Handle -> Handle -> Bool
 
@@ -2263,6 +2414,15 @@ instance Show Handle where
         else if n == 2 then showString "<stderr>"
         else                showString ("<handle:" ++ show (primGetHandleNumber h) ++ ">")
       where n = primGetHandleNumber h
+
+#endif
+
+
+
+
+data Object a -- builtin datatype of external object references.
+              -- (needed as primitive since they're supported in FFI decls.)
+
 
 {-----------------------------
 primitive primGetHandleNumber :: Handle -> Int
@@ -2299,7 +2459,7 @@ fromObj = unsafeCoerce
 {-----------------------------
 newtype IO a = IO ((a -> IOResult) -> IOResult)
 -----------------------------}
-data IOWorld
+
 newtype IO a = IO (IOWorld -> IOResult a)
 
 {-----------------------------
@@ -2324,6 +2484,20 @@ data IOFinished a
 primitive throw "primThrowException" :: Exception -> a
 primitive primCatchException :: a -> Either Exception a
 -----------------------------}
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+type IOWorld = Int
+
+-- Wrapper around 'main', invoked as 'ehcRunMain main'
+ehcRunMain :: IO a -> IO a
+ehcRunMain m = m
+
+#else
+
+data IOWorld
+
 foreign import ccall primThrowException :: forall a . Exception -> a
 foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
 
@@ -2394,6 +2568,9 @@ ehcRunMain m =
                   ; exitWith 1
                   }
     )
+
+#endif
+
 
 {-----------------------------
 threadToIOResult :: IO a -> IOResult

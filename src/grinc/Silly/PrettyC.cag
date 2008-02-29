@@ -63,7 +63,13 @@ ATTR Alternative  [ | | prettyTE : PP_Doc ]
 
 ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
 
+ATTR Constant [ | | isAny : {Bool} ]
 ATTR Values [ | | prettyCs : {[PP_Doc]} ]
+
+
+ATTR Alternatives [ | | hasAny USE {||} {False} : {Bool} ]
+ATTR Alternative  [ | | hasAny : {Bool} ]
+
 
 ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 
@@ -108,8 +114,11 @@ SEM SilModule
                                 -- >-< ppWhen (@loc.optOwn>=4) (text "register GrWord  auxPtr asm (\"%ecx\");")
 
                                 >-< indent 4 (    callSillyFunctionFromC @loc.optOwn 1 "initialize"
-
+%%[[8
                                              >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_main"
+%%][99
+                                             >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_mainFullProg"
+%%]]                                             
                                              >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
                                              >-<  "return 0;"
 
@@ -133,7 +142,7 @@ SEM Statement
   | Comment     lhs.prettyC   = comment @comment
   | Assignment  lhs.prettyC   = assignment  @dest.prettyC  @source.prettyC
   | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC
-  | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
+  | Switch      lhs.prettyC   = switch (@lhs.optCaseDefault && not @body.hasAny) @lhs.functionname @scrutinee.prettyC @body.prettyC
   | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyTE
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
@@ -144,7 +153,9 @@ SEM Statement
 
 
 SEM Alternative
-  | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
+  | Alternative lhs.prettyC   = if @when.isAny 
+                                 then defaultAlternative        @body.prettyC
+                                 else alternative @when.prettyC @body.prettyC
                 lhs.prettyTE  = (text "{" >|< indent 4 @body.prettyC) >-< text "}"
 
 SEM Alternatives
@@ -153,8 +164,6 @@ SEM Alternatives
   | Nil         lhs.prettyE   = error "nil case in prettyE"
   | Cons        lhs.prettyE   = @hd.prettyTE
     
-
-
 
 SEM Values
   | Nil         lhs.prettyCs  = []
@@ -177,6 +186,14 @@ SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
   | LiteralStr  lhs.prettyC   = "((GrWord)" >|< text (show @value) >|< ")"
   | Alias       lhs.prettyC   = text @name
+
+SEM Constant
+  | LiteralInt  lhs.isAny     = False
+  | LiteralStr  lhs.isAny     = False
+  | Alias       lhs.isAny     = @name == "ANY"
+
+SEM Alternative
+  | Alternative lhs.hasAny    = @when.isAny
 
 SEM Variable
   | Global
@@ -364,7 +381,8 @@ assignment2 v1 v2 e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              -- (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              (" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
 
 assignment :: PP_Doc -> PP_Doc -> PP_Doc
 assignment v e
@@ -373,7 +391,8 @@ assignment v e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              -- (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              (" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
 
 switch :: Bool -> String -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef funname scrutinee body
@@ -401,6 +420,12 @@ alternative :: PP_Doc -> PP_Doc -> PP_Doc
 alternative when body
  = "case"
    >#< when
+   >|< ":"
+   >-< indent 4 (body >-< "break;")
+
+defaultAlternative :: PP_Doc -> PP_Doc
+defaultAlternative body
+ = "default"
    >|< ":"
    >-< indent 4 (body >-< "break;")
 

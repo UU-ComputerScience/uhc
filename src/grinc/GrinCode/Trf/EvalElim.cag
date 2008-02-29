@@ -18,6 +18,8 @@
 -- for debugging:
 %%[8 hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
@@ -50,14 +52,16 @@ WRAPPER GrAGItf
 
 %%[8 hs
 data IsEval
-  = IsEval_Eval
+  = IsEval_EvalToNode
+  | IsEval_EvalToPointer
   | IsEval_Apply    !HsName !GrValL
   | IsEval_None
   deriving Eq
 
 isEvalEvaluated :: IsEval -> Bool
-isEvalEvaluated IsEval_None = False
-isEvalEvaluated _           = True
+isEvalEvaluated IsEval_None          = False
+isEvalEvaluated IsEval_EvalToPointer = False
+isEvalEvaluated _                    = True
 
 type IsEvalMp = Map.Map HsName IsEval
 %%]
@@ -65,16 +69,18 @@ type IsEvalMp = Map.Map HsName IsEval
 For debugging
 %%[8 hs
 instance Show IsEval where
-  show IsEval_Eval = "IsEval_Eval"
+  show IsEval_EvalToNode = "IsEval_EvalToNode"
+  show IsEval_EvalToPointer = "IsEval_EvalToPointer"
   show IsEval_None = "IsEval_None"
   show (IsEval_Apply f _) = "IsEval_Apply " ++ show f
 %%]
 
 %%[8
-ATTR AllGrExpr [ isEvalMp: IsEvalMp | | ]
+ATTR AllExpr [ isEvalMp: IsEvalMp | | ]
 
 SEM GrExpr
-  | Seq         body        .   isEvalMp        =   case @pat.nmAlias of
+  | Seq         body        .   isEvalMp        =   -- trace ("pat=" ++ show @pat.trf ++ " alias=" ++ show @pat.nmAlias ++ " isEval: " ++ show @expr.isEval) $
+                                                    case @pat.nmAlias of
                                                       NmAlias_Nm nmp | isEvalEvaluated @expr.isEval
                                                         -> Map.insert nmp @expr.isEval @lhs.isEvalMp
                                                       _ -> @lhs.isEvalMp `Map.difference` Map.fromList (zip @pat.introNmL @pat.introNmL)
@@ -91,15 +97,19 @@ ATTR GrExpr GrVal [ | | isEval: IsEval ]
 
 SEM GrExpr
   | FFI Call Eval
-                lhs         .   isEval          =   IsEval_Eval
+                lhs         .   isEval          =   IsEval_EvalToNode
   | App         lhs         .   isEval          =   case @appTrf of
                                                       GrExpr_App f as -> IsEval_Apply f as
-  | * - Store FFI Unit Call Eval App
+  | * - FFI Call Eval App
+        Store Unit
                 lhs         .   isEval          =   IsEval_None
 
 SEM GrVal
-  | LitInt      lhs         .   isEval          =   IsEval_Eval
-  | * - Node LitInt
+  | LitInt      lhs         .   isEval          =   IsEval_EvalToPointer
+  | Var         lhs         .   isEval          =   maybe IsEval_None
+                                                          id 
+                                                          (Map.lookup @nm @lhs.isEvalMp)
+  | * - Node LitInt Var
                 lhs         .   isEval          =   IsEval_None
 %%]
 
@@ -144,31 +154,33 @@ ATTR GrVal [ | | mbGrExpr: {Maybe GrExpr} ]
 SEM GrVal
   | Node        (lhs.mbGrExpr,lhs.isEval)       =   case (@tag.trf,@fldL.trf) of
                                                       (GrTag_Fun nm,_) | @lhs.willEval					-- a to be evaluated saturated call closure -> immediate call
-                                                        -> (Just $ GrExpr_Call nm @fldL.trf,IsEval_Eval)
-                                                      (GrTag_App _,(GrVal_Var f:fs)) | @lhs.willEval		-- a to be evaluated apply closure -> immediate apply
+                                                        -> (Just $ GrExpr_Call nm @fldL.trf, IsEval_EvalToNode)
+                                                      (GrTag_App _,(GrVal_Var f:fs)) | False && @lhs.willEval		-- a to be evaluated apply closure -> immediate apply
                                                         -> (Just $ GrExpr_Seq (GrExpr_Eval f) (GrPatLam_Var f') (GrExpr_App f fs),IsEval_Apply f' fs)
                                                         where f' = hsnSuffix f "!"
                                                       (GrTag_Con _ _ _,_)								-- constructor node is evaluated
-                                                        -> (Nothing,IsEval_Eval)
+                                                        -> (Nothing, IsEval_EvalToPointer)
                                                       (GrTag_Rec ,_)									-- record as well
-                                                        -> (Nothing,IsEval_Eval)
+                                                        -> (Nothing, IsEval_EvalToPointer)
                                                       (GrTag_PApp nMiss nm,_)						   	-- partial app also, cannot be evaluated further, unless 0 missing
                                                         | @lhs.willEval && nMiss == 0
-                                                          -> (Just $ GrExpr_Call nm @fldL.trf,IsEval_Eval)
+                                                          -> (Just $ GrExpr_Call nm @fldL.trf, IsEval_EvalToNode)
                                                         | otherwise
-                                                          -> (Nothing,IsEval_Eval)
+                                                          -> (Nothing, IsEval_EvalToPointer)
                                                       (t,_)
-                                                        -> (Nothing,IsEval_None)
+                                                        -> (Nothing, IsEval_None)
   | * - Node    lhs         .   mbGrExpr        =   Nothing
 %%]
 
 %%[8
 SEM GrExpr
   | Store Unit  lhs         .   trf             =   maybe @trf id @val.mbGrExpr
-  | Eval        lhs         .   trf             =   case Map.lookup @nm @lhs.isEvalMp of
-                                                      Just e | isEvalEvaluated e
-                                                        -> GrExpr_Unit (GrVal_Var @nm)
-                                                      _ -> @trf
+  | Eval        lhs         .   trf             =   let a = Map.lookup @nm @lhs.isEvalMp
+                                                    in  -- trace ("isEval: " ++ show @nm ++ " = " ++ show a) $ 
+                                                        case a of
+                                                          Just e | isEvalEvaluated e
+                                                            -> GrExpr_Unit (GrVal_Var @nm)
+                                                          _ -> @trf
   | App         loc         .   appTrf          =   case Map.lookup @nm @lhs.isEvalMp of
                                                       Just (IsEval_Apply f as) | not $ @nm `Map.member` @lhs.fviMp
                                                         -> GrExpr_App f (as ++ @argL.trf)

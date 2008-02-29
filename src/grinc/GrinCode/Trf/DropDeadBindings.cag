@@ -10,6 +10,9 @@ For example, if f returns AbsBottom, remove cases F/f and P/f from scrutinizatio
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
+
 
 %%[8.wrapper
 WRAPPER GrAGItf
@@ -25,7 +28,28 @@ dropDeadBindings (input,hptMap)
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
     in  grTrf_Syn_GrAGItf syn
 
+
 %%]
+
+
+
+%%[8 hs
+
+
+isNotErrorFun (HNm s) = let nm = hsnHNmFldToString s
+                        in  -- trace ("isNoterrorFun: " ++ nm) $ 
+                            nm /= "fun_error" && nm /= "fun_primErrorSimple"
+
+
+
+
+canBeDropped :: HsName -> Bool
+%%[[20
+canBeDropped (HNmNr _ (Just (HNmQ ns))) = isNotErrorFun (last ns)
+%%]]
+canBeDropped _ = True
+%%]
+
 
 %%[8
 ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
@@ -34,14 +58,21 @@ ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 
 
 %%[8
+
+ATTR GrBind [ | | functionName : HsName ]
+SEM GrBind
+  | Bind  lhs.functionName = @nm
+  | Rec   lhs.functionName = HNmNr 0 Nothing
+
 ATTR AllBind [ | | isDead USE {&&} {True}: Bool ]
 
 SEM GrBind
   | Bind    lhs.isDead =  isBottom (getEnvVar @lhs.hptMap (getNr @nm))
   
 SEM GrBindL
-  | Cons               lhs.grTrf  =  if @hd.isDead
-                                      then @tl.grTrf
+  | Cons               lhs.grTrf  =  if @hd.isDead && canBeDropped @hd.functionName
+                                      then -- trace ("Dropped: " ++ show @hd.functionName) $ 
+                                                       @tl.grTrf
                                       else @hd.grTrf : @tl.grTrf   
 %%]
 

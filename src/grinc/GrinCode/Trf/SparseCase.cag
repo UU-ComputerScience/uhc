@@ -1,4 +1,4 @@
-Sparse case optimisation: remove alternatives with the use of the hpt info 
+Sparse case optimisation: remove alternatives that, according to HPT, cannot happen
 
 %%[0
 %include lhs2TeX.fmt
@@ -29,6 +29,19 @@ ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%% Spares Case %%%
 %%%%%%%%%%%%%%%%%%%
 
+%%[8 hs
+
+isFinalTag :: GrTag -> Bool
+isFinalTag  GrTag_Any        = True
+isFinalTag  GrTag_Hole       = True
+isFinalTag  GrTag_Unboxed    = True
+isFinalTag (GrTag_PApp _ _)  = True
+isFinalTag (GrTag_Con _ _ _) = True
+isFinalTag _                 = False
+
+%%]
+
+
 %%[8.spareCase
 ATTR AllAlt [ possibleTags: {[GrTag]} | | ]
 ATTR GrAlt [ | | isPossible: Bool ]
@@ -37,8 +50,11 @@ SEM GrAltL
   | Cons  lhs  .  grTrf       =  if @hd.isPossible then @hd.grTrf : @tl.grTrf else @tl.grTrf
 
 SEM GrAlt
-  | Alt   lhs  .  isPossible  =  @pat.tag `elem` @lhs.possibleTags
-                                 || @pat.tag == GrTag_Unboxed
+  | Alt   lhs  .  isPossible  =  -- if GrTag_Any `elem` @lhs.possibleTags
+                                 -- then not (isFinalTag @pat.tag) || @pat.tag == GrTag_Any
+                                 -- else 
+                                       @pat.tag `elem` @lhs.possibleTags
+                                       -- || @pat.tag == GrTag_Unboxed
 
 SEM GrExpr
   | Case  altL  .  possibleTags  =  getTags . getEnvVar @lhs.hptMap $ @val.varId

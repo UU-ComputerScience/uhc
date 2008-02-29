@@ -102,7 +102,9 @@ buildEvalAlt locatVar fetchVar tag avs arityMap hptMap u
     arity = tagArity tag arityMap
     rhs   = tagEvalRhs tag
     tf u args t  = error "no tag at the right hand side of eval map expected"
-    uf u args    = (u, [], [], GrExpr_Unit (GrVal_Var fetchVar))
+    uf u args    = if tag==GrTag_Any
+                    then (u, [], [], GrExpr_Unit (GrVal_Var locatVar))
+                    else (u, [], [], GrExpr_Unit (GrVal_Var fetchVar))
     vf u args functVar  
                  = -- process a function call
                    let 

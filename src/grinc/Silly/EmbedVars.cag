@@ -108,9 +108,15 @@ SEM Function
 
 SEM Variable
   | Unembedded      lhs . localsSet = case @name of
-                                       HNmNr n (Just (HNm s)) -> if take 6 s == "global" 
+                                       HNmNr _ (Just (HNm s)) -> if take 6 s == "global" 
                                                                   then Set.empty
                                                                   else Set.singleton @name
+%%[[20
+                                       HNmNr _ (Just (HNmQ ns)) -> let HNm s = last ns
+                                                                   in if take 6 s == "global" 
+                                                                       then Set.empty
+                                                                       else Set.singleton @name
+%%]]                                                                  
                                        _                      -> Set.singleton @name
 
 SEM Variable

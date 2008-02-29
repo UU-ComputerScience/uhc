@@ -157,6 +157,14 @@ SEM GrBind
 %%]
 
 %%[8
+
+
+ATTR AllGrExpr [ functionName : HsName | | ]
+
+SEM GrBind
+  | Bind    expr.functionName = @nm
+
+
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
                                 (tagConstants (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
@@ -234,10 +242,12 @@ SEM GrExpr
                          else internal1 "FFI" @lhs.targets @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
-           loc.callres = maybe id (:) Nothing {- 20080228 AD: @tagL.mbOnlyTagValue -} $ [Value_Call @nm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
+           loc.callres   = [Value_Call @nm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
 
 
- | Store   lhs.stats  = let ph = head @lhs.targets
+ | Store   lhs.stats  = let ph = case @lhs.targets of
+                                   [] -> error ("ToSilly: Store has no target in " ++ show @lhs.functionName)
+                                   (x:_) -> x
                             vs = @val.values
                             n  = length vs
                             --n2 = @lhs.maxConstrParameters
@@ -262,8 +272,12 @@ SEM GrExpr
            lhs.localsSet= error "FetchNode found while generating Silly"
            
  | FetchField
-           lhs.stats  = [ Statement_Comment ["Fetch"]
-                        , Statement_Assignment (mkVar (head @lhs.targets))
+           lhs.stats  = let ph = case @lhs.targets of
+                                   [] -> error ("ToSilly: FetchField has no target in " ++ show @lhs.functionName)
+                                   (x:_) -> x
+                        in    
+                        [ Statement_Comment ["Fetch"]
+                        , Statement_Assignment (mkVar ph)
                                                (if   @offset==1 && maybe False (==GrTag_Unboxed) @mbTag && not (elem @nm @lhs.realNodes)
                                                 then Value_BoxVar (mkVar @nm)
                                                 else arrayValue (mkVar @nm) @offset
@@ -272,7 +286,7 @@ SEM GrExpr
            lhs.localsSet = Set.fromList @lhs.targets
 
  | Case    lhs.stats  = [ Statement_Comment ["Case"]
-                        , if @altL.hasAnies
+                        , if False && @altL.hasAnies
 
                            then Statement_If     @val.value
 
@@ -376,12 +390,24 @@ SEM GrVal
                             then head vs
                             else error ("cannot generate value code for non-singleton VarNode " ++ show vs)
                             
- | BasicNode lhs.values = [@tag.value, Value_Var (mkVar @nm)]
- | EnumNode  lhs.values = [Value_Var (mkVar @nm)]
- | * - LitInt LitStr Var Tag Node VarNode
-           lhs.value  = error "GrVal:other value"
- | * - Node VarNode Var BasicNode EnumNode
-           lhs.values = error "GrVal:other values"
+ | BasicNode  lhs.values = [@tag.value, Value_Var (mkVar @nm)]
+ | OpaqueNode lhs.values = [Value_Con (Constant_Alias "UNBOXED"), Value_Var (mkVar @nm)]
+ | EnumNode   lhs.values = [Value_Var (mkVar @nm)]
+ | Tag        lhs.values = [@tag.value]
+
+ | PtrNode    lhs.values = [Value_Var (mkVar @nm)]    -- TODO: this treats a ptr as an enum, which is not right
+ -- | PtrNode    lhs.values = error "ToSilly: PtrNode values"
+ | Empty      lhs.values = error "ToSilly: Empty values"
+ | LitInt     lhs.values = error ("ToSilly: LitInt values" ++ show @int)
+ | LitStr     lhs.values = error ("ToSilly: LitStr values" ++ show @str)
+ -- | Tag        lhs.values = error ("ToSilly: Tag values" ++ show @tag.value)
+
+ | BasicNode  lhs.value  = error "ToSilly: BasicNode value"
+ | EnumNode   lhs.value  = error "ToSilly: EnumNode value"
+ | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
+ | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
+ | Empty      lhs.value  = error "ToSilly: Empty value"
+          
 
 SEM GrValL
  | Nil    lhs.values = []
@@ -444,13 +470,17 @@ SEM GrExpr
 
 SEM GrPatLam
   | Empty       lhs  .  patternNames = []
-  | Var
-    EnumNode
-    EnumAnnot
-    PtrAnnot    lhs  .  patternNames = [@nm]
-  | BasicNode   lhs  .  patternNames = [wildcardNr, @nm]
-  | BasicAnnot  lhs  .  patternNames = [wildcardNr, @nm]  -- TODO: this can be simplified to [@nm] if FFI would not return UNBOXED
+  | Var         lhs  .  patternNames = [@nm]
   | VarNode     lhs  .  patternNames = @fldL.patternNames
+  | BasicNode   lhs  .  patternNames = [wildcardNr, @nm]
+  | EnumNode    lhs  .  patternNames = [@nm]
+  | OpaqueNode  lhs  .  patternNames = [wildcardNr, @nm]
+  | PtrNode     lhs  .  patternNames = [@nm]
+  
+  | BasicAnnot  lhs  .  patternNames = [@nm]
+  | EnumAnnot   lhs  .  patternNames = [@nm]
+  | OpaqueAnnot lhs  .  patternNames = [@nm]
+  | PtrAnnot    lhs  .  patternNames = [@nm]
 
 SEM GrVarL
   | Nil   lhs.patternNames = []
@@ -605,7 +635,7 @@ arrayVariab a i = Variable_Subs a i
 tagConstants :: Set.Set GrTag -> [(String,Int)]
 tagConstants tagset
  = let f ((t,_),_) = showGrTag t
-       needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "CEQ", "CGT", "CLT" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
+       needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "CEQ", "CGT", "CLT", "Ccomma0" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
        inprog = map showGrTag (Set.toList tagset)
    in  zip (needed ++ (inprog \\ needed)) [0..]
 
@@ -617,7 +647,7 @@ showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"
 showGrTag (GrTag_Hole) = "HOLE"
 showGrTag (GrTag_Unboxed) = "UNBOXED"
-showGrTag (GrTag_Any    ) = "GrTag:Any"
+showGrTag (GrTag_Any    ) = "ANY"
 showGrTag (GrTag_World    ) = "GrTag:World"
 
 %%]

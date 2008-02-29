@@ -4,7 +4,7 @@ is replaced by
    fetchfield n 0; \x ->
    fetchfield n 1; \y ->
    fetchfield n 2; \z ->
-   
+
 This is done if the tag is statically known, because either
 1. x is a constant tag
 2. hpt analysis reveals that the list of possible tags for n is singleton
@@ -13,6 +13,7 @@ Otherwise, all but the first fetchfield operations are right hoisted to the bran
 where the tag *is* known.
 
 If such a case expression does not follows, we return a node containing a black hole, as a panic result.
+
 
 Thus,
    fetchnode n; \(x y z) ->
@@ -30,6 +31,13 @@ is replaced by
 Note that y and z are renamed in the respective branches to ensure global unique names.
 Also note that in the C2 branch, less fetchfield expressions are generated because C2
 has lower arity than C1.
+
+
+A special situation is when the pattern is *not*  of the form \(x y z), as in
+  fetchnode n; \x -> ...
+This can occur if x is an opaque node.
+In this case, the replacement is
+  fetchfield n 0; \x -> ...
 
 
 
@@ -95,8 +103,11 @@ SEM GrPatLam
    Empty
    BasicNode
    EnumNode
+   OpaqueNode
+   PtrNode
    BasicAnnot
    EnumAnnot
+   OpaqueAnnot
    PtrAnnot 
              lhs . mbTag = Nothing
  
@@ -124,7 +135,10 @@ SEM GrPatAlt [ | | mbTag: {Maybe GrTag} ]
 SEM GrPatLam [ | |  names: {GrVarL} ]
   | VarNode              lhs  .  names  =  @fldL.self
   | Empty                lhs  .  names  =  []
-  | * - VarNode Empty    lhs  .  names  =  error "SplitFetch.ag: attempt to get names"
+  | Var                  lhs  .  names  =  [ GrVar_Var @nm ]   -- only for opaque nodes
+  | * - VarNode 
+        Empty 
+        Var              lhs  .  names  =  error "SplitFetch.ag: attempt to get names"
 
 
 ATTR AllGrExpr [ floatingFetches : FetchEnv | | ]
@@ -139,7 +153,7 @@ SEM GrExpr
                                           fetches@(fetch0:fetch1n) = foldr buildFetchInfo (const []) @pat.names 0
                                     ; let mbTag     = checkSingleTag @lhs.hptMap p
                                           f (v,o)   = (v, GrExpr_FetchField p o @pat.mbTag)
-                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)))
+                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust' ("gv0 met Nothing") mbTag)))
                                           g (v,o)   = (v, GrExpr_FetchField p o mbTag)
                                     ; let res = if      isJust @pat.mbTag then (map f fetches, Nothing                          )
                                                 else if isJust mbTag      then (map g fetches, Nothing                          )

@@ -8,6 +8,57 @@
 #define CEQ 4
 #define CGT 5
 #define CLT 6
+#define Ccomma0 7
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Integer related primitives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+
+PRIM GrWord packedStringToInteger(GrWord s)
+{
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = atoi( (char*)s );
+    return res;
+}
+
+
+PRIM GrWord primIntToInteger(GrWord n)
+{
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = n;
+    return res;
+}
+
+PRIM GrWord primIntegerToInt(GrWord p)
+{
+	GrWord res;
+    res = ((Pointer)p)[0];
+    return res;
+}
+
+PRIM GrWord primCmpInteger(GrWord x, GrWord y)
+{   if (((Pointer)x)[0] > ((Pointer)y)[0])
+        return CGT;
+    if (((Pointer)x)[0] == ((Pointer)y)[0])
+        return CEQ;
+    return CLT;
+}
+
+PRIM GrWord primEqInteger(GrWord x, GrWord y)
+{
+    if (((Pointer)x)[0] == ((Pointer)y)[0])
+        return CTrue;
+    return CFalse;
+}
+
+
 
 %%]
 
@@ -168,6 +219,40 @@ PRIM GrWord primPackedStringHead(GrWord s)
 }
 
 
+PRIM GrWord primOpenChanSimple(GrWord n)
+{
+	return (GrWord) stdout;	
+}
+
+
+GrWord *cafUnit = {Ccomma0};
+
+PRIM GrWord primPutCharChanSimple(GrWord h, GrWord c)
+{
+	//FILE *f = (FILE *) h;
+	
+	// printf("primPutCharChanSimple is called\n"); fflush(stdout);
+	putc(c, stdout);
+	//return (GrWord) cafUnit;
+	return Ccomma0;
+}
+
+PRIM GrWord primErrorSimple(GrWord x)
+{
+	printf("Error function called from Haskell\n");
+	fflush(stdout);
+	exit(1);
+	return 0;	
+}
+
+PRIM GB_Word primMinInt()
+{
+	return -32767;	
+}
+PRIM GB_Word primMaxInt()
+{
+	return 32767;	
+}
 
 
 %%]

@@ -55,7 +55,9 @@ SEM GrBind
 SEM GrVal
   | Var
     BasicNode
-    EnumNode   
+    EnumNode
+    OpaqueNode
+    PtrNode
 %%[[10
     NodeAdapt
 %%]]
@@ -136,14 +138,17 @@ SEM GrVar
   | Var  lhs. names = [ @nm ]
 
 SEM GrPatLam
-  | VarNode   lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL.names)
+  | VarNode     lhs  .  isDead  =  not (any (`Set.member` @lhs.usedVars) @fldL.names)
   | Var
     BasicNode
     EnumNode
+    OpaqueNode
+    PtrNode
     BasicAnnot
     EnumAnnot
-    PtrAnnot  lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
-  | Empty     lhs  .  isDead  =  True
+    OpaqueAnnot
+    PtrAnnot    lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
+  | Empty       lhs  .  isDead  =  True
  
 SEM GrExpr [ | | sideEffect : Bool ]
   |     FFI Throw FetchUpdate UpdateUnit  lhs  .  sideEffect  =  True
@@ -162,12 +167,15 @@ with wildcards.
 
 %%[8.removeUnusedNamedBinding
 SEM GrPatLam
-  | Var        lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.usedVars  @nm)
-  | BasicNode  lhs  .  grTrf  =  GrPatLam_BasicNode  @annot      (mkWildcard @lhs.usedVars  @nm)
-  | EnumNode   lhs  .  grTrf  =  GrPatLam_EnumNode               (mkWildcard @lhs.usedVars  @nm)
-  | BasicAnnot lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot      (mkWildcard @lhs.usedVars  @nm)
-  | EnumAnnot  lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
-  | PtrAnnot   lhs  .  grTrf  =  GrPatLam_PtrAnnot   @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
+  | Var         lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.usedVars  @nm)
+  | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode  @annot      (mkWildcard @lhs.usedVars  @nm)
+  | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode               (mkWildcard @lhs.usedVars  @nm)
+  | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode             (mkWildcard @lhs.usedVars  @nm)
+  | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode                (mkWildcard @lhs.usedVars  @nm)
+  | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot      (mkWildcard @lhs.usedVars  @nm)
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
+  | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot            (mkWildcard @lhs.usedVars  @nm)
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot   @tagL.grTrf (mkWildcard @lhs.usedVars  @nm)
 
 SEM GrPatAlt
   | Node     lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf (map (mkWildcard @lhs.usedVars) @fldL)
