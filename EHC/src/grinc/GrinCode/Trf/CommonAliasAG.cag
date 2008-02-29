@@ -26,8 +26,12 @@ SEM GrPatLam
                                                       _                           -> NmAlias_None
   | VarNode     lhs         .   nmAlias         =   NmAlias_Grp   hsnUnknown $ map NmAlias_Nm (tail @fldL.introNmL)
   | BasicNode   lhs         .   nmAlias         =   NmAlias_Basic hsnUnknown (NmAlias_Nm @nm) @annot
-  | * - Var BasicAnnot VarNode BasicNode
+  | * - Var 
+        BasicAnnot 
+        VarNode 
+        BasicNode
                 lhs         .   nmAlias         =   NmAlias_None
+
 %%]
 
 %%[8

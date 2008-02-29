@@ -15,12 +15,10 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(wildcardNm, wildcardNr, mainNr, getNr, throwTag)
+%%[8 export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (Just wildcardNm)
-
-mainNr     = HNmNr 1 (Just (hsnPrefix "fun_" hsnMain))
 
 getNr :: HsName -> Int
 getNr (HNmNr i _) = i
@@ -28,7 +26,18 @@ getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
 getNr a           = error $ "getNr tried on " ++ show a
 
 throwTag      =  GrTag_Fun (HNm "rethrow")
+
+%%[[8
+hsnMainFullProg = hsnMain
+%%][99
+hsnMainFullProg = hsnSuffix hsnMain "FullProg"
+%%]]
+
+mainNr     = HNmNr 1 (Just (hsnPrefix "fun_" hsnMainFullProg))
+
+
 %%]
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,15 +101,15 @@ instance Monoid AbstractValue where
 
 
 conNumber :: GrTag -> Int
-conNumber GrTag_Hole     = 1
-conNumber GrTag_Rec      = 2
-conNumber GrTag_World    = 3
-conNumber GrTag_Unboxed  = 4
-conNumber GrTag_Any      = 5
-conNumber (GrTag_App _)     = 6
-conNumber (GrTag_Fun _)     = 7
-conNumber (GrTag_PApp _ _)  = 8
-conNumber (GrTag_Con _ _ _) = 9
+conNumber GrTag_Any      = 9   -- should be last
+conNumber GrTag_Hole     = 8
+conNumber GrTag_Rec      = 7
+conNumber GrTag_World    = 6
+conNumber GrTag_Unboxed  = 5
+conNumber (GrTag_App _)     = 4
+conNumber (GrTag_Fun _)     = 3
+conNumber (GrTag_PApp _ _)  = 2
+conNumber (GrTag_Con _ _ _) = 1
 
 conName :: GrTag -> HsName
 conName (GrTag_App nm) = nm
@@ -116,12 +125,16 @@ instance Ord GrTag where
   compare t1 t2 = let x = conNumber t1
                       y = conNumber t2
                   in  case compare x y of 
-                        EQ -> if  x < 6
-                              then EQ
-                              else case compare (conName t1) (conName t2) of
-                                     EQ -> if  x<8
-                                           then EQ
-                                           else compare (conInt t1) (conInt t2)
+                        EQ -> if  x >= 5
+                              then -- Hole/Rec/World/Unboxed/Any
+                                   EQ
+                              else -- App/Fun/PApp/Con, all have a name
+                                   case compare (conName t1) (conName t2) of
+                                     EQ -> if  x >= 3
+                                           then -- App/Fun
+                                                EQ
+                                           else -- Papp/Con, both have an int
+                                                compare (conInt t1) (conInt t2)
                                      a  -> a
                         a  -> a
 
@@ -205,7 +218,7 @@ absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
                              AbsLocs l m   -> mconcat $ map (limit m . getHeapLoc a) (Set.toList l)
                              AbsBottom     -> AbsNodes Map.empty
-                             AbsError s     -> error $ "analysis error: " ++ s
+                             AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
                              AbsNodes _     -> error $ "variable " ++ show i ++ "is a node variable"
 absFetch a x = error ("absFetch tried on " ++ show x)
@@ -217,14 +230,14 @@ getTags av = case av of
 getNodes av = case av of
                   AbsNodes n  -> Map.toAscList n
                   AbsBottom   -> []
-                  AbsError s  -> error $ "analysis error: " ++  s
+                  AbsError s  -> error $ "analysis error getNodes: " ++  s
                   _           -> error $ "not a node: " ++ show av
 
 isBottom av = case av of
                   AbsBottom   ->  True
                   AbsLocs l m ->  Set.null l
                   AbsNodes n  ->  Map.null n
-                  AbsError s  ->  error $ "analysis error: " ++ s
+                  AbsError s  ->  error $ "analysis error isBottom: " ++ s
                   otherwise   ->  False
 
 addEnvVar :: HptMap -> Int -> AbstractValue -> HptMap

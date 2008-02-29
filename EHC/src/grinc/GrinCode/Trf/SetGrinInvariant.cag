@@ -100,5 +100,8 @@ SEM GrVal
 SEM GrVal
   | Node      lhs.grTrf  = GrVal_Node @tag.ptrOnly @fldL.ptrOnly
 
+SEM GrExpr
+  | App       lhs.grTrf  = GrExpr_App @nm @argL.ptrOnly
+
 %%]
 
