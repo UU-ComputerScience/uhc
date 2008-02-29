@@ -53,6 +53,7 @@
 
 \newpage
 \thispagestyle{empty}
-~\\
+% This newline adds an underfull hbox. Why it is here anyways is not clear to me.
+%~\\
 \newpage
 %%]

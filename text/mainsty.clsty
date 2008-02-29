@@ -663,12 +663,39 @@ Anonymity, blinding things
 
 %%[35
 \newcommand{\comment}[1]{}
-\newcommand{\todo}[1]{\textcolor{red}{TODO: \textbf{#1} \\}}
+\newcommand{\todo}[1]{\textcolor{red}{TODO: \textbf{#1}}}
 
-\newcommand{\etal}[0]{\emph{et al.}}
 \newcommand{\refA}[1]{Appendix~\ref{#1}}
 \newcommand{\refC}[1]{Chapter~\ref{#1}}
 \newcommand{\refS}[1]{Section~\ref{#1}}
 \newcommand{\refF}[1]{Figure~\ref{#1}}
 \newcommand{\refT}[1]{Table~\ref{#1}}
+
+% Language definitions
+\lstdefinelanguage[EHC]{C}[ANSI]{C}
+  { morekeywords={bool, size_t}
+  , morekeywords=[2]{GrWord}
+  , ndkeywordstyle={\itshape} 
+  }
+
+\lstset{ defaultdialect={[EHC]C} }
+
+\newcommand{\inlCode}[2]{
+	\lstinline[language={#1}]!#2!
+}
+
+% Add a frame around a piece of Lhs2TeX code to include it
+% in a figure.
+\newcommand{\hsbox}[1]{
+	\framebox[\textwidth][l]{         
+		\begin{math} 
+			\mathhs 
+			#1 
+		\end{math} 
+	}%
+}
+
+% Style for a listing in a figure. Framed and numbered.
+\lstdefinestyle{figureLst}
+    {tabsize={2}, frame={single}}
 %%]
