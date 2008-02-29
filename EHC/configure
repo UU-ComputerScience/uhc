@@ -2156,9 +2156,9 @@ CABAL_CONFIGURE_OPTIONS="$cabalConfigureOptions"
 ### 'with' option for additional ehc unixtool (gcc, cpp) prefix.
 ### Usually empty, but set for (e.g.) cygwin
 
-# Check whether --with-additional-ehc-unixtool-prefix was given.
-if test "${with_additional_ehc_unixtool_prefix+set}" = set; then
-  withval=$with_additional_ehc_unixtool_prefix;  additionalEhcUnixtoolPrefix="$withval"
+# Check whether --with-ehc-unixtool-prefix was given.
+if test "${with_ehc_unixtool_prefix+set}" = set; then
+  withval=$with_ehc_unixtool_prefix;  additionalEhcUnixtoolPrefix="$withval"
 fi
 
 EHC_UNIXTOOL_PREFIX="$additionalEhcUnixtoolPrefix"

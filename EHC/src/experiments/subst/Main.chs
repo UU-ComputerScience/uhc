@@ -2,6 +2,10 @@
 %%% Experiment: substitution variations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Variants:
+1 - Basic, greedy subst applied immediately, leading to expansion of types
+2 - Via memory simulation
+
 %%[1 module Main
 %%]
 
@@ -130,6 +134,12 @@ varmpSingleton n v = VarMp (Map.singleton n v)
 
 varmpUnion :: VarMp -> VarMp -> VarMp
 varmpUnion (VarMp x) (VarMp y) = VarMp (x `Map.union` y)
+%%]
+
+%%[1
+instance Substitutable VarMp where
+  s |=>  (VarMp m)  = s `varmpUnion` VarMp (Map.map (s |=>) m)
+  ftv    (VarMp m)  = Map.fold (\v fv -> fv `Set.union` ftv v) Set.empty m
 %%]
 instance Substituter VarMp VarId Val where
   k |? (VarMp s)      = Map.lookup k s
@@ -315,7 +325,7 @@ valMatch v w
          m  _           _                        =  return (err "clash")
          bind i v  |  i `Set.member` ftv v       =  return (err "occur check")
                    |  otherwise                  =  do  st <- get
-                                                        put (st {stVarMp = varmpSingleton i v `varmpUnion` stVarMp st})
+                                                        put (st {stVarMp = varmpSingleton i v |=> stVarMp st})
                                                         return v
 %%]
 
