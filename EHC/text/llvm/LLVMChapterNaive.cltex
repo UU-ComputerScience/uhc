@@ -1,15 +1,15 @@
 %%[chapter
 \chapter{The Naive Translation}
+The naive LLVM backend allows the EHC pipe line to generate binaries using the LLVM compiler framework. To get the backend in place quickly, we deliberately chose ease of implementation over efficiency. We treat optimization of the backend as a separate part later in the process. In this chapter we discuss the decisions made in the implementation of the LLVM assembly generator (\refS{sec:naive-assembly-generator}) and the run-time system (\refS{sec:naive-run-time-system}). 
 
-\section{Implementation}
-In this section we describe the implementation of the naive backend
+\section{The LLVM assembly generator}
+\label{sec:naive-assembly-generator}
+The predecessor of LLVM, Silly, is an abstract language. It abstracts over different cases which need to be made explicit in order to execute the code. In this section we discuss the Silly to LLVM assembly transformation. Furthermore we show that it is fairly straightforward to generate LLVM assembly code from a Silly AST while leaving many options for optimization open.
 
 \subsection{Typing the LLVM assembly language}
-The predecessors of the generated LLVM code, Silly and GRIN, are not explictly typed languages. Some of the language constructs are implicitly typed, such as integer constants, but most constructs are untyped. Because the LLVM assembly language is strongly typed, we need to infer and correct the types from a Silly program when compiling it. The data type to express LLVM types is shown in \refF{fig:data-llvm-types}. The first three constructors describe types of values, the |Label| type is used for variables that denote addresses to branch to, while |Void| is used when a function does not return a value. 
+The predecessors of the generated LLVM code, Silly and GRIN, are implicit typed languages. Some of the language constructs are implicitly typed, such as integer constants, but most constructs are untyped. Because the LLVM assembly language is strongly typed, we need to infer and correct the types from a Silly program when compiling it. The data type to express LLVM types is shown in \refF{fig:data-llvm-types}. The first three constructors describe types of values, the |Label| type is used for variables that denote addresses to branch to, while |Void| is used when a function returns \inlCode{C}{void}. 
 
-The |LLVMType| data type is not very rich, without constructors for floating point values, characters or structures. In Silly everything is build up from one or more values of the so called |GrWord| type. A |GrWord| is defined as a signed integer large enough to hold a pointer, allowing storage of both pointers and integers in a |GrWord| value. For example a Cons node from a list of integers consists of 3 consecutive |GrWord| cells, one for the |CCons| tag, one for the integer value of the node and finally a pointer to the tail of the list. In the generated LLVM assembly code and the rest of this thesis, we define a |GrWord| as a |LLInt| value with as width parameter the pointer bit size of the platform.
-
-The |GrWord| achitecture of Silly allows to make the LLVM program type correct bottom-up. We listed the base cases in \refT{tbl:llvm-type-base}
+The |LLVMType| data type is not very rich, without constructors for floating point values, characters or structures. In Silly everything is build up from one or more values of the so called \inlCode{C}{GrWord} type. A \inlCode{C}{GrWord} is defined as a signed integer large enough to hold a pointer, allowing storage of both pointers and integers in a \inlCode{C}{GrWord} value. For example a Cons node from a list of integers consists of 3 consecutive \inlCode{C}{GrWord} cells, one for the \inlCode{C}{CCons} tag, one for the integer value of the node, and finally a pointer to the tail of the list. In the generated LLVM assembly code and the rest of this thesis, we define a \inlCode{C}{GrWord} as a singed integer with a bit size equal to a native pointer.
 
 \begin{table}[h]
 	\begin{center}
@@ -27,7 +27,7 @@ The |GrWord| achitecture of Silly allows to make the LLVM program type correct b
 	\label{tbl:llvm-type-base}
 \end{table}
 
-Each Silly Variable, Value, and Constant synthesize their type. If the node in the Silly AST is base case, we type it right away. When not typing a base case, we need the types of the children to compute the type of the node. For example an indexing operation on a local variable. Indexing is not a base case, so we need the type of the children, in this case a base case with a |Pointer GrWord| type. Because indexing is no type changing operation, the synthesized type is a |Pointer GrWord|.  
+The Silly AST can be typed bottom-up with a single attribute. Each Silly Variable, Value, and Constant synthesize their type (encapsulated in a |Var|, see \refF{fig:to-llvm-attributes}). If the node in the Silly AST is base case (\refT{tbl:llvm-type-base}), we type it right away. When not typing a base case, we need the types of the children to compute the type of the node. For example an indexing operation on a local variable. Indexing is not a base case, so we need the type of the children, in this case a base case with a |Pointer GrWord| type. Because indexing is no type changing operation, the synthesized type is a |Pointer GrWord|.  
 
 \begin{figure}[tb]
 	\hsbox{
@@ -44,10 +44,10 @@ Each Silly Variable, Value, and Constant synthesize their type. If the node in t
 	\label{fig:data-llvm-types}  
 \end{figure}
 
-\subsection{Generating LLVM Assembly code}
+\subsection{Generating LLVM assembly code}
 The structure of the LLVM assembly language and Silly is fairly similar, making it an option to write a pretty printer for the transformation. Although this is a simple approach, it also limits us to the textual representation of LLVM assembly. For this reason, we transform the Silly AST to a LLVM AST and pretty print the latter one.
 
-The Silly to LLVM transformation consists of two steps. First the Silly construct are translated to an equivalent sequence of LLVM constructs. This translation is straight forward as most Silly have a direct LLVM counterpart. The second step adds glue code to combine the generated LLVM code with the synthesized LLVM code from the children nodes. This glue code is needed because some conversions are implicit in Silly. For example assigning a variable to another variable. The variable at the left hand side is interpreted as a location, while the variable at the right hand side is a value. Still the abstract syntax for a variable is equal at both sides of the equal sign. These conversions must be explicit in LLVM code and thus in generated code a cast is added if the variable at the left hand side is not a pointer. Various other Silly constructs require such glue code to make the LLVM assembly type correct.
+The Silly to LLVM transformation consists of two steps. First the Silly constructs are translated to an equivalent sequence of LLVM constructs. This translation is straightforward as most have a direct counterpart. The second step adds glue code to combine the generated LLVM code with the synthesized LLVM code from the children nodes. This glue code is needed because some conversions are implicit in Silly. For example, assigning a variable to another variable. The variable at the left hand side is interpreted as a location, while the variable at the right hand side is a value. Still, the abstract syntax for a variable is equal at both sides of the equal sign. These conversions must be explicit in LLVM code and thus a cast is added in the generated code if the variable at the left hand side is not a pointer.
 
 \begin{figure}[tb]
 	\hsbox{
@@ -62,24 +62,35 @@ The Silly to LLVM transformation consists of two steps. First the Silly construc
 	\label{fig:to-llvm-attributes}  
 \end{figure}
 
-Because the Silly to LLVM transformation is a top down tree walk, it is conveinient for an attribute grammar implementation. We implented the transformation the Utrecht University Attribute Grammar~\cite{baars04ag-www}, a preprocessor for Haskell. The two main attributes are shown in \refF{fig:to-llvm-attributes}. The synthesized attribute |llvmCode| assembles the bottom-up generated LLVMModule. Different levels of the Silly AST generate their LLVM counterparts. Silly expressions (values, variables) are an exeption to this rule as they synthesize LLVM statements. This is  related to the second attribute, |llvmVar|, which is only defined on values, variables and constants. |llvmVar| is defined as the variable which holds the result of the synthesized |llvmCode|. The generation of both attributes in a Silly node with one or more expressions as children is always via the following structure:
+Because the Silly to LLVM transformation is a bottom-up tree traversal, it is convenient for an attribute grammar implementation. We implemented the transformation using the Utrecht University Attribute Grammar~\cite{baars:04}, a preprocessor for Haskell. The two main attributes are shown in \refF{fig:to-llvm-attributes}. The synthesized attribute |llvmCode| assembles the bottom-up generated |LLVMModule|. Different levels of the Silly AST generate their LLVM counterparts. Values and variables are an exception to this rule as they synthesize LLVM statements. This is  related to the second attribute, |llvmVar|, which is only defined on values, variables and constants. The attribute |llvmVar| is defined as the variable which holds the result of the synthesized |llvmCode|. Generation of the attributes of a Silly node with one or more expressions as children is performed as follows:
 \begin{enumerate}
-	\item Inspect the synthesized |llvmVar| attributes of the children and check if they are correctly typed. If not, generate a statment in which the synthesized |llvmVar| is cast to the correct type and assign this to a fresh local variable of the correct type.
+	\item Inspect the synthesized |llvmVar| attributes of the children and check if they are correctly typed. If not, generate a statement in which the synthesized |llvmVar| is cast to the correct type and assign this to a fresh local variable of the correct type.
 	\item Construct a chain of one or more expressions that performs the required actions on the results of the previous step. These expressions are assigned to fresh variables.
     \item The |llvmVar| synthesized by this node is the final fresh variable generated in step 2. The new |llvmCode| is the concatenation of the |llvmCode| attributes from the children and the statements generated by step 1 and 2.
 \end{enumerate}
 
 \subsection{Multiple return values}
-Return values in Silly are often closures consisting of multiple |GrWord| cells. Because the 2.2 version of LLVM does not support multiple return values directly, we have the following options for implementation:
-\begin{itemize}
-  \item RP
-  \item Generate reference arguments.
-\end{itemize}
+Return values in Silly are often closures consisting of multiple \inlCode{C}{GrWord} cells. Unfortunately most calling conventions reserve a single register location for a return value of a function. This makes sense for a C like language which supports only one return value, reserving more registers for parameters or as scratch. 
 
-These are slow, because they both do not store stuff in registers.
-Fixed in 2.3
+To support multiple return values in LLVM we have the following options:
+\begin{enumerate}
+  \item During the initialization of the program, allocate an global array. Functions write the \inlCode{C}{GrWord} cells they return in this array and do not use the return register as assigned by the calling convention.
+  \item Add an extra reference parameters for each function that may return multiple \inlCode{C}{GrWord} cells. The function stores the values that it returns in the extra parameters. Optimizations for this scheme are passing a pointer to an array as an extra argument instead of separate parameters for the elements or storing one value in the register as supplied by the calling convention and the other in extra reference parameters.
+  \item Create a new calling convention with built in support for multiple return values in registers.
+\end{enumerate}
+
+All approaches have their separate advantages and disadvantages.
+
+The global array approach adds memory access to all functions. Memory access is expensive when compared to register access and thus should be used sparingly in functions. Although each function accesses the array, allocation is done at the initialization of the program and not in each function, reducing the cost of function calls. This is also a disadvantage. Many functions share the array and thus many different values are stored in it. This renders analysis over the array useless.
+
+Reference parameters are like the global array approach, but the array is not shared between function calls. This adds an extra allocation if the return value does not fit in one register, but the LLVM compiler can analyze this array much better possibly promote to register values. 
+
+The third option is a new calling convention that returns multiple return values in registers. This is the most efficient option but also the most complex one. The calling convention must work efficiently on multiple platforms and interface with other calling conventions. This requires knowledge of different platforms to work well.
+
+For the naive backend, we chose the global array approach. We expect the cost of allocations to exceed the gain of possible LLVM analysis. This due to the large amount of function calls in most functional programs.
 
 \section{The Run-time System}
+\label{sec:naive-run-time-system}
 Run-time systems offer services for the running Haskell program. Examples of such services are garbage collection, primitive functions, dynamic loading and dynamic compilation API's. The run-time system of the naive backend offers just enough service to successful run a Haskell program: primitive functions and garbage collection. In this section we describe the design and implementation of the system and elaborate on the choices made.
   
 \subsection{Implementation}
@@ -90,9 +101,9 @@ Run-time systems offer services for the running Haskell program. Examples of suc
   \caption{The structure of the run-time system}
   \label{fig:rts-structure}  
 \end{figure}
-\refF{fig:rts-structure} describes the architecture of the run-time system. On the top level, we have multiple source files that define and export functions. These functions are compiled by the a compiler that can compile the source language to object files. The object files are combined in a library, to which the compiled Haskell code can link to, resulting in an executable. Although the current system is solely implemented in C, the architecture allows us to write specific parts in an other language. This is illustrated in \refF{fig:rts-structure} by the dashed C++ and Haskell (HS) files. We are only restricted by calling convention (in our implementation the C calling convention) and marshaling from data between the languages. Furthermore, this architecture allows us to use one run-time system for the C and the LLVM backend.
+\refF{fig:rts-structure} describes the architecture of the run-time system. On the top level, we have multiple source files that define and export functions. These functions are compiled by the a compiler that can compile the source language to object files. The object files are combined in a library, to which the compiled Haskell code can link to, resulting in an executable. Although the current system is entirely implemented in C, the architecture allows us to write specific parts in an other language. This is illustrated in \refF{fig:rts-structure} by the dashed C++ and Haskell (HS) files. We are only restricted by calling convention (in our implementation the C calling convention) and marshalling data between the languages. Furthermore, this architecture allows us to use one run-time system for the C and the LLVM backend.
 
-The design offers advantages, but also some disadvantages. The system fails to provide a clean interface for the Haskell program. This is a drawback for the naive back-end, because in LLVM code external functions must be declared. Thus each run-time function that is utilised, must be either declared in the Haskell code or inserted by the compiler. Both options are utilised, as the primitive functions are declared in the prelude and the garbage collection functions are added by the Silly-to-LLVM transformation. Another problem is that the code of the run-time functions are not exposed to the LLVM compiler chain. The LLVM tools are not able to inline the run-time functions and can not analyze the code. This makes the usage of often used functions like allocation more costly than they need to be.
+The design offers advantages, but also some disadvantages. The system fails to provide a clean interface for the Haskell program. This is a drawback for the naive backend, because in LLVM code external functions must be declared. Thus, each run-time function that is used, must be either declared in the Haskell code or inserted by the compiler. Both options are used, as the primitive functions are declared in the prelude and the garbage collection functions are added by the Silly-to-LLVM transformation. Another problem is that the code of the run-time functions are not exposed to the LLVM compiler chain. The LLVM tools are not able to inline the run-time functions and can not analyze the code. This makes the usage of often used functions like allocation more expensive than necessary.
 
 \subsubsection{Interaction between the run-time system and Haskell}
 The services of the run-time system are available because they use a common calling convention. But calling functions is only useful if there is a way for the program and the run-time system to interact. We distinguish three different values that could be passed between the program and the run-time:
@@ -103,7 +114,7 @@ The services of the run-time system are available because they use a common call
   \item Possible unevaluated nodes, a closure consisting of a tag and the payload.
 \end{enumerate}
 
-Pure functions that accept basic values as parameters and returns a basic value (e.g. a function that multiplies two integers) work flawless. Most of the run-time system consists of these type of functions. The types are declared in the Haskell code and thus the heap-points-to analysis\todo{ref HPT} can use this information for analyzing values returned by these functions. Because the heap-points-to analysis is directed only by the type of run-time functions, impure functions can break the analysis and break the generated code.
+Pure functions that accept basic values as parameters and returns a basic value (e.g. a function that multiplies two integers) work flawlessly. Most of the run-time system consists of such functions. The types are declared in the Haskell code and thus the heap-points-to analysis\todo{ref HPT} can use this information for analyzing values returned by these functions. Because the heap-points-to analysis is directed only by the type of run-time functions, impure functions can break the analysis and break the generated code.
 
 \begin{figure}[tb]
   \begin{lstlisting}[style={figureLst}, language={C}]
@@ -125,13 +136,13 @@ GrWord primGtInt(GrWord x, GrWord y)
 
 Run-time functions that accept or return tag values are a special case of the functions that accept or return basic values. It is obvious that both the run-time system and the compiled Haskell program must share the same mapping between constructors and their tag values. The current implementation of this mapping can be seen in \refF{lst:primGtInt}. The unsigned integer values of the tags |CFalse| and |CTrue| are hard-coded in the run-time system (line 1 and 2) and the same is done in the compiler for these tags. The mappings of these tags are synchronized by hand and are subject of possible synchronisation errors in the future.
 
-The final class of run-time functions, functions that receive nodes as parameter or return nodes, are more problematic than the above cases. When a function has a node as parameter, it may be evaluated or unevaluated. A run-time function could inspect the tag of the node to determine if the node is in weak head normal form. If it is unevaluated, evaluating it with an non inlined |eval| function is an option, but would make the function impure, breaking the heaps-points-to analysis. Evaluating the arguments of run time functions in advance solves this problem, but would make the functions more strict than they need to be. Creating a node in the run-time system and returning it to the Haskell world is problematic. The heaps-points-to analysis is unaware of this closure and this can result in missing arms in generated |eval| and |apply| functions. Currently we are able to avoid creating closures in the run-time system, but it is desirable for later versions.
+The final class of run-time functions, functions that receive nodes as parameter or return nodes, are more problematic than the above cases. When a function has a node as parameter, it may be evaluated or unevaluated. A run-time function could inspect the tag of the node to determine if the node is in weak head normal form. If it is unevaluated, evaluating it with an non inlined |eval| function is an option, but makes the function impure, breaking the heaps-points-to analysis. Evaluating the arguments of run time functions in advance solves this problem, but makes the functions more strict than they need to be. Creating a node in the run-time system and returning it to the Haskell world is problematic. The heaps-points-to analysis is unaware of this closure and this can result in missing arms in generated |eval| and |apply| functions. Currently we avoid creating closures in the run-time system, but it is desirable for later versions.
 
 \subsubsection{Synopsis}
 The current implementation of the run-time system is small, reasonable efficient, and able to support the execution of Haskell programs. Future versions need to focus on efficiency and the interaction between the run-time system and the program.    
 
 \subsection{Garbage Collection}
-The initial implementation allocated closures but did not worry about de-allocation. This scheme works for the smallest toy examples, but for a more elaborate example fills the memory quickly with garbage closures. Real Haskell programs depend on a garbage collector to de-allocate obsolete closures that fill the heap.
+The initial implementation allocated closures but did not worry about de-allocation. This scheme works for the smallest toy examples, but fills the memory quickly with garbage closures for a more elaborate example. Real Haskell programs depend on a garbage collector to de-allocate obsolete closures that fill the heap.
 
 The naive backend utilizes the Boehm-Demers-Weiser garbage collector~\cite{boehm88gc-c}, a conservative collector designed to work in an uncooperative environment. Conservative collectors do not need support from the language to perform their job. These collectors traverse the stack and interpret each value as a pointer. The values that these pointers point to, are recursively inspected for pointers to values. Each value that can be reached this way from the stack is considered live and thus not garbage. This makes garbage collection very easy to integrate in our backend. \refF{lst:llvm-gc-file} contains all code needed to plug in the garbage collection in the backend. It defines three wrapper functions that wrap C macro functions, because there is no way to call a C macro function in LLVM as they are replaced by their definition at link-time. By replacing the calls from |malloc| to |llvmgc_malloc| and linking in the garbage collection library, we add the collector to the backend.
 
