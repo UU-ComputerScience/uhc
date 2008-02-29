@@ -1353,7 +1353,11 @@ undefined       = error "Prelude.undefined"
 -----------------------------}
 
 undefined :: forall a . a
+#ifdef __FULL_PROGRAM_ANALYSIS__
 undefined = primErrorSimple False
+#else
+undefined       = error "Prelude.undefined"
+#endif
 
 -- Standard functions on rational numbers {PreludeRatio} --------------------
 
