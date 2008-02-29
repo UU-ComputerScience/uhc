@@ -2,7 +2,7 @@
 SRC_RULER2_PREFIX	:= $(SRC_PREFIX)ruler2/
 RULER2_DEMO_PREFIX	:= $(SRC_RULER2_PREFIX)demo/
 
-# location of shuffle build
+# location of ruler build
 RULER2_BLD_PREFIX	:= $(BLD_PREFIX)ruler2/
 
 # this file
