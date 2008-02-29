@@ -47,6 +47,9 @@ include $(SRC_PREFIX)ehc/files1.mk
 include $(SRC_PREFIX)grini/files.mk
 include $(SRC_PREFIX)grinc/files.mk
 
+-include $(SRC_PREFIX)experiments/files.mk
+-include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
+
 include extlibs/bgc/files.mk
 include extlibs/gmp/files.mk
 include $(SRC_PREFIX)rts/files.mk
