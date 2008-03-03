@@ -56,30 +56,30 @@ ATTR SilModule
      [ | | llvmCode : {LLVMModule} ]
 
 ATTR Functions
-     [ | | llvmCode : {Funcs} ]
+     [ | | llvmCode : {LLVMFunctions} ]
 
 ATTR Function
-     [ | | llvmCode : {Func} ] 
+     [ | | llvmCode : {LLVMFunction} ] 
    
 ATTR Statements Statement Alternative
      Values Value Variables Variable
-     [ | | llvmCode : {Stmts} ]
+     [ | | llvmCode : {LLVMStatements} ]
   
 ATTR Alternatives
-     [ | | llvmCode : {[Stmts]} ]  
+     [ | | llvmCode : {[LLVMStatements]} ]  
      
 ATTR Values
      Variables
-     [ | | llvmVar : {[Var]} ]
+     [ | | llvmVar : {[LLVMVar]} ]
 
 ATTR Value Variable Constant
-     [ | | llvmVar : {Var} ]   
+     [ | | llvmVar : {LLVMVar} ]   
  
 ATTR Alternatives
-     [ | | jumpTargets : {[(Var,Var)]} ]
+     [ | | jumpTargets : {[(LLVMVar,LLVMVar)]} ]
      
 ATTR Alternative
-     [ | | jumpTarget : {(Var,Var)} ]  
+     [ | | jumpTarget : {(LLVMVar,LLVMVar)} ]  
      
 ATTR AllNT
      [ gUniq: UID | | ]      
@@ -100,21 +100,21 @@ SEM SilModule
                                , StrConstant (string2CString "%lld\\0A") (Array 6 i8)
                                ) : @functions.constants
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
-                loc.main     = Func_Func mainFuncDecl ExternallyVisible
-                                 [ Stmt_Assignment (LocalVar "rpArr" @lhs.pointerType)
+                loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
+                                 [ LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc True @lhs.intType (1 + @functions.maxRPIndex))
-                                 , Stmt_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
-                                 , Stmt_Call initializeFuncDecl StdCall []
-                                 , Stmt_Call fun_mainFuncDecl StdCall []
-                                 , Stmt_Assignment (LocalVar "rp.1" @lhs.pointerType)
-                                     (Expression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
-                                 , Stmt_Assignment (LocalVar "rp.1.val" @lhs.intType)
-                                     (Expression_Load (LocalVar "rp.1" @lhs.pointerType))
-                                , Stmt_Assignment (LocalVar "cast.str.res" (pLift i8))
-                                     (Expression_GetElemPtr (GlobalVar "STR_RES" (pLift $ Array 6 i8)) [0,0])  
-                                 , Stmt_Call stdlibPrintfFuncDecl TailCall
+                                 , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
+                                 , LLVMStatement_Call initializeFuncDecl StdCall []
+                                 , LLVMStatement_Call fun_mainFuncDecl StdCall []
+                                 , LLVMStatement_Assignment (LocalVar "rp.1" @lhs.pointerType)
+                                     (LLVMExpression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
+                                 , LLVMStatement_Assignment (LocalVar "rp.1.val" @lhs.intType)
+                                     (LLVMExpression_Load (LocalVar "rp.1" @lhs.pointerType))
+                                , LLVMStatement_Assignment (LocalVar "cast.str.res" (pLift i8))
+                                     (LLVMExpression_GetElemPtr (GlobalVar "STR_RES" (pLift $ Array 6 i8)) [0,0])  
+                                 , LLVMStatement_Call stdlibPrintfFuncDecl TailCall
                                      [ LocalVar "cast.str.res" (pLift i8), LocalVar "rp.1.val" @lhs.intType ] 
-                                 , Stmt_Return (Constant 0 i32)  
+                                 , LLVMStatement_Return (Constant 0 i32)  
                                  ]                    
                                
 SEM Functions
@@ -125,9 +125,9 @@ SEM Functions
   | Nil         lhs.llvmCode = []
 
 SEM Function
-  | Function    lhs.llvmCode = let locals = map (\nm -> Stmt_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
-                                                                        (Expression_Alloca @lhs.intType 1) ) @locals
-                                in Func_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
+  | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
+                                                         (LLVMExpression_Alloca @lhs.intType 1) ) @locals
+                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
@@ -146,7 +146,7 @@ SEM Statement
   --     cast the LHS
   --   * Store
   | Assignment  lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.lhsptrCode ++ @loc.fitsCode ++
-                               [Stmt_Store @loc.fitsVar @loc.lhsptrVar] 
+                               [LLVMStatement_Store @loc.fitsVar @loc.lhsptrVar] 
                 
                 loc.uniqSeed  : {UID}
                 loc.uniqNr1   : {UID}
@@ -160,9 +160,9 @@ SEM Statement
                                makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar                                         
 
   | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest1.llvmCode ++ @loc.dest1ptrCode ++ @loc.fits1Code ++
-                               [ Stmt_Store @loc.fits1Var @loc.dest1ptrVar ] ++
+                               [ LLVMStatement_Store @loc.fits1Var @loc.dest1ptrVar ] ++
                                @dest2.llvmCode ++ @loc.dest2ptrCode ++ @loc.fits2Code ++
-                               [ Stmt_Store @loc.fits2Var @loc.dest2ptrVar] 
+                               [ LLVMStatement_Store @loc.fits2Var @loc.dest2ptrVar] 
                 
                 loc.uniqSeed  : {UID}
                 loc.uniqNr1   : {UID}
@@ -186,7 +186,7 @@ SEM Statement
                                              (hs2str @name) @lhs.fnAvailDecls
                                 in @args.llvmCode ++
                                    @loc.castCode ++
-                                   [ Stmt_Call fDecl (bool2calltype @tailJumps) @loc.castVars ]
+                                   [ LLVMStatement_Call fDecl (bool2calltype @tailJumps) @loc.castVars ]
  
                 loc.uniqSeed  : {UID}
                 loc.gUniq     : {UID}
@@ -200,14 +200,14 @@ SEM Statement
                                                 in ( nr, val : getVars xs, stmt ++ (getCode xs) ) ) 
                                      (@loc.uniqSeed,[],[]) @args.llvmVar  
                                    
-  | Comment     lhs.llvmCode = [Stmt_Comment @comment]
+  | Comment     lhs.llvmCode = [LLVMStatement_Comment @comment]
   
   | If          lhs.llvmCode = @scrutinee.llvmCode ++ @loc.scrutToIntCode ++ @loc.scrutUnboxCode ++ @loc.cmpCode ++ 
-                               [ Stmt_BranchIf @loc.cmpVar @loc.fstLabel @loc.sndLabel ] ++                               
+                               [ LLVMStatement_BranchIf @loc.cmpVar @loc.fstLabel @loc.sndLabel ] ++                               
                                @loc.altCode ++
-                               [ Stmt_Label  @loc.resumeLabel]
+                               [ LLVMStatement_Label  @loc.resumeLabel]
                                
-                loc.altCode  = concatMap ( ++ [Stmt_Branch @loc.resumeLabel] ) @body.llvmCode                  
+                loc.altCode  = concatMap ( ++ [LLVMStatement_Branch @loc.resumeLabel] ) @body.llvmCode                  
                 loc.(fstAlt,sndAlt) =
                                let f (x:y:[]) = (x,y)
                                    f _ = error "Not exactly 2 alts for If"
@@ -229,23 +229,24 @@ SEM Statement
                               cast2int @loc.uniqSeed @scrutinee.llvmVar @lhs.intType
 
                 loc.(uniqNr2, scrutUnboxVar, scrutUnboxCode) =                               
-                              assign2var @loc.uniqNr1 ( Expression_BinOp AND @loc.scrutToIntVar 
+                              assign2var @loc.uniqNr1 ( LLVMExpression_BinOp AND @loc.scrutToIntVar 
                                                                          (Constant 1 @lhs.intType)
                                                       , @lhs.intType )
                                
                 loc.(uniqNr3, cmpVar, cmpCode) =
-                              assign2var @loc.uniqNr2 ( Expression_Compare CMPEQ @loc.scrutUnboxVar @loc.fstConst, i1)               
+                              assign2var @loc.uniqNr2 ( LLVMExpression_Compare CMPEQ @loc.scrutUnboxVar @loc.fstConst
+                                                      , i1)               
                                
                 loc.(uniqNr4, resumeLabel) =
                                newFresh @loc.uniqNr3 Label              
 
   | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
-                               [ Stmt_Switch @scrutinee.llvmVar @loc.defaultLabel @loc.targets ] ++ 
-                               @loc.altStmts ++ @loc.defaultBody ++ 
-                               [ Stmt_Branch @loc.resumeLabel] ++
-                               [ Stmt_Label  @loc.resumeLabel ]
+                               [ LLVMStatement_Switch @scrutinee.llvmVar @loc.defaultLabel @loc.targets ] ++ 
+                               @loc.altLLVMStatements ++ @loc.defaultBody ++ 
+                               [ LLVMStatement_Branch @loc.resumeLabel] ++
+                               [ LLVMStatement_Label  @loc.resumeLabel ]
                     
-                loc.altStmts = concatMap ( ++ [Stmt_Branch @loc.resumeLabel] ) @body.llvmCode  
+                loc.altLLVMStatements = concatMap ( ++ [LLVMStatement_Branch @loc.resumeLabel] ) @body.llvmCode  
                 
                 loc.targets = @body.jumpTargets
                                                                             
@@ -267,7 +268,7 @@ SEM Statement
   | Label       lhs.llvmCode = error $ "Generated label instructions not"
                                      ++ " allowed in LLVM. Is -g set to 0?"
   
-  | Return      lhs.llvmCode = [Stmt_Return $ LocalVar (error "ReturnNoVar") Void ]  
+  | Return      lhs.llvmCode = [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]  
                                     
   | Smart       lhs.llvmCode = error "Smart should be generated for ASM only"
                                     
@@ -286,7 +287,7 @@ SEM Alternatives
                                []
                 
 SEM Alternative
-  | Alternative lhs.llvmCode = Stmt_Label @loc.label : @body.llvmCode
+  | Alternative lhs.llvmCode = LLVMStatement_Label @loc.label : @body.llvmCode
                 lhs.jumpTarget = (@when.llvmVar, @loc.label)
                                         
                 loc.uniqSeed  : {UID}
@@ -328,7 +329,7 @@ SEM Value
                                load2value @loc.uniqSeed @var.llvmVar     
                                
                 loc.(uniqNr2,llvmVar,llvmCode) =
-                               assign2var @loc.uniqNr1 ( Expression_BinOp SHR @loc.loadedVar (Constant 1 @lhs.intType)
+                               assign2var @loc.uniqNr1 ( LLVMExpression_BinOp SHR @loc.loadedVar (Constant 1 @lhs.intType)
                                                        , getType @loc.loadedVar )                                    
   
   {-|
@@ -339,7 +340,7 @@ SEM Value
   | Call        lhs.llvmVar  = @loc.llvmVar
                 lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ @loc.llvmCode
  
-                loc.fnDecl  = FuncDecl_FuncDecl @name @lhs.intType FixedArgs @loc.formalParams
+                loc.fnDecl  = LLVMFunctionDecl_LLVMFunctionDecl @name @lhs.intType FixedArgs @loc.formalParams
  
                 loc.uniqSeed  : {UID}
                 (loc.uniqSeed, args.gUniq) =
@@ -355,7 +356,7 @@ SEM Value
                 -- Assign the call expression to a fresh variable
                 --                     
                 loc.(uniqNr2,llvmVar,llvmCode) =
-                               assign2var @loc.uniqNr1 (Expression_Call @loc.fnDecl StdCall @loc.castVars, @lhs.intType)
+                               assign2var @loc.uniqNr1 (LLVMExpression_Call @loc.fnDecl StdCall @loc.castVars, @lhs.intType)
                                                    
                 -- We generate the formal parameters by generating new names
                 -- for the actual ones
@@ -380,10 +381,10 @@ SEM Value
                 (loc.uniqSeed,con.gUniq) =
                                mkNewLevUID @lhs.gUniq                            
                 loc.(uniqNr1,shlVar,shlCode) =
-                               assign2var @loc.uniqSeed ( Expression_BinOp SHL @con.llvmVar (Constant 1 @lhs.intType)
+                               assign2var @loc.uniqSeed ( LLVMExpression_BinOp SHL @con.llvmVar (Constant 1 @lhs.intType)
                                                         , getType @con.llvmVar)
                 loc.(uniqNr2,orVar,orCode) =
-                               assign2var @loc.uniqNr1 ( Expression_BinOp OR @loc.shlVar (Constant 1 @lhs.intType)
+                               assign2var @loc.uniqNr1 ( LLVMExpression_BinOp OR @loc.shlVar (Constant 1 @lhs.intType)
                                                        , getType @loc.shlVar )                                        
 
   {-|
@@ -437,7 +438,7 @@ SEM Variable
                 loc.(uniqNr2,ptrVar,ptrCode) =
                                cast2ptr @loc.uniqNr1 @loc.loadVar @lhs.pointerType  
                 loc.(uniqNr3,offsetVar,offsetCode) =
-                               assign2var @loc.uniqNr2 (Expression_GetElemPtr @loc.ptrVar [@index], getType @loc.ptrVar)
+                               assign2var @loc.uniqNr2 (LLVMExpression_GetElemPtr @loc.ptrVar [@index], getType @loc.ptrVar)
  
    | * - Global Local Param RP Subs
                 lhs.llvmVar  = error "Variable contains an impossible construct"
@@ -446,7 +447,7 @@ SEM Variable
 SEM Constant
   | LiteralInt  lhs.llvmVar  = Constant @value @lhs.intType
   | LiteralStr  lhs.llvmVar  = @loc.llvmVar
-                loc.llvmVar  : {Var}
+                loc.llvmVar  : {LLVMVar}
                 loc.llvmVar  = GlobalVar (getPlainName @loc.varNm)
                                          (getType @loc.varNm)
                 loc.(gUniq,varNm)    
@@ -469,13 +470,13 @@ ATTR Functions Function
      Alternatives Alternative
      Values Value
      Variables Variable
-     [ fnAvailDecls : {Data.Map.Map String FuncDecl} | | ]
+     [ fnAvailDecls : {Data.Map.Map String LLVMFunctionDecl} | | ]
 
 ATTR Functions
-     [ | | fnDecls : {[(String,FuncDecl)]} ]
+     [ | | fnDecls : {[(String,LLVMFunctionDecl)]} ]
 
 ATTR Function
-     [ | | fnDecl : {(String,FuncDecl)} ]
+     [ | | fnDecl : {(String,LLVMFunctionDecl)} ]
 
 SEM SilModule
   | SilModule   functions.fnAvailDecls
@@ -489,10 +490,10 @@ SEM Functions
 
 SEM Function
   | Function    lhs.fnDecl = (hs2str @name, @loc.fnDecl)
-                loc.fnDecl : {FuncDecl}
+                loc.fnDecl : {LLVMFunctionDecl}
                 loc.fnDecl = let prms = mkVarList LocalVar @parameters 
                                                            @lhs.intType
-                              in FuncDecl_FuncDecl (hs2str @name) Void FixedArgs prms
+                              in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms
 %%]
   
 %%[8
@@ -505,7 +506,7 @@ ATTR Functions Function
      Values Value
      Variables Variable
      Constant
-     [ | | constants USE {++} {[]}: {[(Var,Var)]} ]
+     [ | | constants USE {++} {[]}: {[(LLVMVar,LLVMVar)]} ]
 
 SEM Constant
   | LiteralStr  lhs.constants = [ ( @loc.llvmVar , @loc.cstring) ]
@@ -589,7 +590,7 @@ ATTR Functions Function
      Alternatives Alternative
      Values Value
      Variables Variable
-     [ | | externFuncs USE {++} {[]}: {[FuncDecl]} ]
+     [ | | externFuncs USE {++} {[]}: {[LLVMFunctionDecl]} ]
                        
 SEM Value
   | Call        lhs.externFuncs = [@loc.fnDecl]                  
@@ -598,25 +599,26 @@ SEM Value
 %%[8
 {
 -------------------------------------------------------------------------------
--- Functions for extraction of values from the (UID,[Var],Stmts) tuples
--- as used in 'Expression_Call' and 'Stmt_Call' argument preparation.
+-- Functions for extraction of values from the (UID,[LLVMVar],LLVMStatements) 
+-- tuples as used in 'LLVMExpression_Call' and 'LLVMStatement_Call' argument 
+-- preparation.
 -------------------------------------------------------------------------------
 {-|
 Return the 'UID' element from the tuple. 
 -}
-getUID :: (UID,[Var],Stmts) -> UID
+getUID :: (UID,[LLVMVar],LLVMStatements) -> UID
 getUID (x,_,_) = x
 
 {-|
-Return the ['Var'] element from the tuple. 
+Return the ['LLVMVar'] element from the tuple. 
 -}
-getVars :: (UID,[Var],Stmts) -> [Var]
+getVars :: (UID,[LLVMVar],LLVMStatements) -> [LLVMVar]
 getVars (_,x,_) = x
 
 {-|
-Return the 'Stmts' element from the tuple. 
+Return the 'LLVMStatements' element from the tuple. 
 -}
-getCode :: (UID,[Var],Stmts) -> Stmts
+getCode :: (UID,[LLVMVar],LLVMStatements) -> LLVMStatements
 getCode (_,_,x) = x
 }
 %%]
@@ -624,69 +626,69 @@ getCode (_,_,x) = x
 %%[8
 {
 -------------------------------------------------------------------------------
--- Some 'FuncDecl's for usage in calls and forward declarations.
+-- Some 'LLVMLLVMFunctionDecl_LLVMFunctionDecltionDecl's for usage in calls and forward declarations.
 -------------------------------------------------------------------------------
 {-|
 Function declaration for the entry point of the binary.
 -}
-mainFuncDecl :: FuncDecl
+mainFuncDecl :: LLVMFunctionDecl
 mainFuncDecl =
-  FuncDecl_FuncDecl "main" i32 FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "main" i32 FixedArgs []
 
 {-|
 Function declaration for the Silly generated initialize function.
 -}
-initializeFuncDecl :: FuncDecl
+initializeFuncDecl :: LLVMFunctionDecl
 initializeFuncDecl =
-  FuncDecl_FuncDecl "initialize" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "initialize" Void FixedArgs []
 
 {-|
 Function declaration for the GRIN generated fun_main function.
 -}
-fun_mainFuncDecl :: FuncDecl
+fun_mainFuncDecl :: LLVMFunctionDecl
 fun_mainFuncDecl =
-  FuncDecl_FuncDecl "fun_main" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "fun_main" Void FixedArgs []
 
 {-|
 Function declaration of printf from the standard C library.
 -}
-stdlibPrintfFuncDecl :: FuncDecl
+stdlibPrintfFuncDecl :: LLVMFunctionDecl
 stdlibPrintfFuncDecl = 
-  FuncDecl_FuncDecl "printf" i32 VarArgs [(LocalVar "str" (pLift i8))]
+  LLVMFunctionDecl_LLVMFunctionDecl "printf" i32 VarArgs [(LocalVar "str" (pLift i8))]
 
 {-|
 Function declaration for a run-time function that reports an pattern match
 failure and terminates the program.
 -}
-primPatternMatchFailureFuncDecl :: FuncDecl
+primPatternMatchFailureFuncDecl :: LLVMFunctionDecl
 primPatternMatchFailureFuncDecl =
-  FuncDecl_FuncDecl "primPatternMatchFailure" Void FixedArgs [] 
+  LLVMFunctionDecl_LLVMFunctionDecl "primPatternMatchFailure" Void FixedArgs [] 
 
 {-|
 Function declaration for a run-time function that initializes the garbage
 collector.
 -}
-gcInitFuncDecl :: FuncDecl
+gcInitFuncDecl :: LLVMFunctionDecl
 gcInitFuncDecl =
-  FuncDecl_FuncDecl "llvmgc_init" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_init" Void FixedArgs []
   
 {-|
 Function declaration for a run-time malloc function that is managed by the
 garbage collector. The 'LLVMType' is used as argument type and for the
 return type, supporting both 32 and 64 bit memory allocation.
 -}  
-gcMallocFuncDecl :: LLVMType -> FuncDecl
+gcMallocFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcMallocFuncDecl intType =
-  FuncDecl_FuncDecl "llvmgc_malloc" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
 
 {-|
 Function declaration for a run-time function that mallocs a piece of memory that
 is added as root for garbage collection (in addition to the stack). The 'LLVMType' is used as 
 argument type and for the return type, supporting both 32 and 64 bit memory allocation.
 -}
-gcMallocUncollectableFuncDecl :: LLVMType -> FuncDecl
+gcMallocUncollectableFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcMallocUncollectableFuncDecl intType =
-  FuncDecl_FuncDecl "llvmgc_malloc_uncollectable" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc_uncollectable" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
 }
 %%]
 
@@ -696,36 +698,36 @@ gcMallocUncollectableFuncDecl intType =
 -- Cast functions
 -------------------------------------------------------------------------------
 {-|
-Cast a 'Var' to the given 'LLVMType' 'LLVMInt' type. Note: There is no check
+Cast a 'LLVMVar' to the given 'LLVMType' 'LLVMInt' type. Note: There is no check
 on the 'LLVMType' if it is an integer type. If you pass an non integer type,
 then the result of the cast is undefined.
 -}
-cast2int :: UID -> Var -> LLVMType -> (UID,Var,Stmts)   
+cast2int :: UID -> LLVMVar -> LLVMType -> (UID,LLVMVar,LLVMStatements)   
 cast2int nr var intType =
   if isInt (getType var)
   then (nr,var,[])
   else let (nr', fresh) = newFresh nr intType
-        in (nr', fresh, [Stmt_Assignment fresh $ Expression_Cast var intType])
+        in (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast var intType])
  
 {-|
-Cast a 'Var' to the given 'LLVMType' 'Pointer' type. Note: There is no check
+Cast a 'LLVMVar' to the given 'LLVMType' 'Pointer' type. Note: There is no check
 on the 'LLVMType' if it is a pointer type. If you pass an non pointer type,
 then the result of the cast is undefined.
 -}       
-cast2ptr :: UID -> Var -> LLVMType -> (UID,Var,Stmts)
+cast2ptr :: UID -> LLVMVar -> LLVMType -> (UID,LLVMVar,LLVMStatements)
 cast2ptr nr var ptrType
   | isPointer (getType var) =
     (nr,var,[])
   | otherwise =
     let (nr', fresh) = newFresh nr ptrType
-     in (nr', fresh, [Stmt_Assignment fresh $ Expression_Cast var ptrType])         
+     in (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast var ptrType])         
 
 {-|
-Cast a 'Var' in such a way that is fits in the location as defined by the second
-'Var'. For example, the first var is an i32 and the second var is an i32**. Then
+Cast a 'LLVMVar' in such a way that is fits in the location as defined by the second
+'LLVMVar'. For example, the first var is an i32 and the second var is an i32**. Then
 a cast will be generated to transform the first var to an i32*.
 -}   
-makeFitting :: UID -> Var -> Var -> (UID,Var,Stmts)
+makeFitting :: UID -> LLVMVar -> LLVMVar -> (UID,LLVMVar,LLVMStatements)
 makeFitting nr what hole 
   -- Case 1 it already fits, no casting needed
   | getType what == pLower (getType hole) =
@@ -734,7 +736,7 @@ makeFitting nr what hole
   | otherwise = 
     let targetType   = pLower $ getType hole 
         (nr', fresh) = newFresh nr targetType
-     in (nr', fresh, [Stmt_Assignment fresh $ Expression_Cast what targetType])
+     in (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast what targetType])
 }
 %%]
 
@@ -744,18 +746,18 @@ makeFitting nr what hole
 -- Variable loading functions.
 -------------------------------------------------------------------------------
 {-|
-Load a 'Var'.
+Load a 'LLVMVar'.
 -}
-load :: UID -> Var -> (UID,Var,Stmts)
+load :: UID -> LLVMVar -> (UID,LLVMVar,LLVMStatements)
 load nr var =
   let loadType     = pLower (getType var)
       (nr', fresh) = newFresh nr loadType
-   in (nr', fresh, [Stmt_Assignment fresh (Expression_Load var)])
+   in (nr', fresh, [LLVMStatement_Assignment fresh (LLVMExpression_Load var)])
    
 {-|
-Load a 'Var' to an integer.
+Load a 'LLVMVar' to an integer.
 -}   
-load2value :: UID -> Var -> (UID,Var,Stmts)
+load2value :: UID -> LLVMVar -> (UID,LLVMVar,LLVMStatements)
 load2value nr var 
   | isInt (getType var) = (nr,var,[])
   | otherwise           =
@@ -768,23 +770,23 @@ load2value nr var
 %%[8
 {
 -------------------------------------------------------------------------------
--- Assign an 'Expression' to a 'Var'.
+-- Assign an 'LLVMExpression' to a 'LLVMVar'.
 -------------------------------------------------------------------------------
 {-|
 Return a fresh local variable of the requested 'LLVMType'
 -}
-newFresh :: UID -> LLVMType -> (UID,Var)
+newFresh :: UID -> LLVMType -> (UID,LLVMVar)
 newFresh nr tp = 
   (uidNext nr, LocalVar ("fresh" ++ show nr) tp)
 
 {-|
-Assign the given 'Expression' with the given 'LLVMType' to 
-a fresh local 'Var'.
+Assign the given 'LLVMExpression' with the given 'LLVMType' to 
+a fresh local 'LLVMVar'.
 -}
-assign2var :: UID -> (Expression,LLVMType) -> (UID,Var,Stmts)
+assign2var :: UID -> (LLVMExpression,LLVMType) -> (UID,LLVMVar,LLVMStatements)
 assign2var nr (expr,tp) =
   let (nr', fresh) = newFresh nr tp
-   in (nr', fresh, [Stmt_Assignment fresh expr])
+   in (nr', fresh, [LLVMStatement_Assignment fresh expr])
 }
 %%]
 
@@ -794,12 +796,12 @@ assign2var nr (expr,tp) =
 -- Often used constants.
 -------------------------------------------------------------------------------
 {-|
-The default arm for a 'Stmt_Switch'.
+The default arm for a 'LLVMStatement_Switch'.
 -}
-defaultCase :: UID -> (UID,Var,Stmts)
+defaultCase :: UID -> (UID,LLVMVar,LLVMStatements)
 defaultCase nr =
   let (nr1, fresh1) = newFresh nr Label
-   in (nr1, fresh1, [ Stmt_Label fresh1, Stmt_Call primPatternMatchFailureFuncDecl StdCall [] ])
+   in (nr1, fresh1, [ LLVMStatement_Label fresh1, LLVMStatement_Call primPatternMatchFailureFuncDecl StdCall [] ])
 }
 %%]
 
@@ -809,16 +811,16 @@ defaultCase nr =
 -- Construct LLVM Data
 -------------------------------------------------------------------------------
 {-|
-Create a LLVM 'Expression' that allocates @nr * sizeof( LLVMType )@ bytes.
+Create a 'LLVMExpression' that allocates @nr * sizeof( LLVMType )@ bytes.
 -}
-mkMalloc :: Bool -> LLVMType -> Int -> Expression
+mkMalloc :: Bool -> LLVMType -> Int -> LLVMExpression
 mkMalloc unCollectable intType nr =
   if rtsUseGC
   then let size = nr * sizeofPointer
         in if unCollectable
-           then Expression_Call (gcMallocUncollectableFuncDecl intType) StdCall [Constant size intType]
-           else Expression_Call (gcMallocFuncDecl intType) StdCall [Constant size intType]
-  else Expression_Malloc intType nr
+           then LLVMExpression_Call (gcMallocUncollectableFuncDecl intType) StdCall [Constant size intType]
+           else LLVMExpression_Call (gcMallocFuncDecl intType) StdCall [Constant size intType]
+  else LLVMExpression_Malloc intType nr
 }
 %%]
 
@@ -837,7 +839,7 @@ hs2str = hsnShowAlphanumeric
 Return a list of variables with a given constructor, a list of HsNames and
 one type. used primary for parameter lists
 -}
-mkVarList :: (String -> LLVMType -> Var) -> [HsName] -> LLVMType -> [Var]
+mkVarList :: (String -> LLVMType -> LLVMVar) -> [HsName] -> LLVMType -> [LLVMVar]
 mkVarList constr names tp =
   zipWith (\x y -> constr (hs2str x) y) names (repeat tp)
 
@@ -852,10 +854,10 @@ string2CString str =
   "c\"" ++ str ++ "\\00\""
  
 {-|
-Convert a Bool to a 'CallType', True indicating a 'TailCall' while any other
+Convert a Bool to a 'LLVMCallType', True indicating a 'TailCall' while any other
 value indicates 'StdCall'
 -} 
-bool2calltype :: Bool -> CallType
+bool2calltype :: Bool -> LLVMCallType
 bool2calltype (True)  = TailCall
 bool2calltype (False) = StdCall 
 }

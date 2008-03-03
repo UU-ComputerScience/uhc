@@ -13,19 +13,19 @@
 %%[8 hs module {%{GRIN}LLVM}
 %%]
 
-%%[8 hs export( LLVMModule(..), Func(..), FuncDecl(..), Stmt(..))
+%%[8 hs export( LLVMModule(..), LLVMFunction(..), LLVMFunctionDecl(..), LLVMStatement(..) )
 %%]
-%%[8 hs export( Expression(..), Alt(..), Funcs, FuncDecls , Stmts, Alts)
+%%[8 hs export( LLVMExpression(..), LLVMFunctions, LLVMFunctionDecls , LLVMStatements )
 %%]
 %%[8 import({LLVM/AbsSyn})
 %%]
 
-%%[8 hs export( CmpOp(..) )
+%%[8 hs export( LLVMCmpOp(..) )
 {-| 
   LLVM compare functions, parameter of the 'Expression_Compare' constructor 
   of type 'Expression'
 -}
-data CmpOp
+data LLVMCmpOp
   -- | Equality
   = CMPEQ
   -- | Non equality
@@ -48,7 +48,7 @@ data CmpOp
   | CMPSLE
   deriving (Eq)
 
-instance Show CmpOp where
+instance Show LLVMCmpOp where
   show CMPEQ  = "eq"
   show CMPNE  = "ne"
   show CMPUGT = "ugt"
@@ -61,12 +61,12 @@ instance Show CmpOp where
   show CMPSLE = "sle"
 %%]
 
-%%[8 hs export( BinOp(..) )
+%%[8 hs export( LLVMBinOp(..) )
 {-| 
   LLVM binary operators, parameter of the 'Expression_BinOp' constructor of type
   'Expression'
 -}
-data BinOp
+data LLVMBinOp
   -- | Add two integer of floating point values.
   = ADD
   -- | Left shift the left operand a number of bits as dictated by the right
@@ -84,7 +84,7 @@ data BinOp
   | OR
   deriving (Eq)
 
-instance Show BinOp where
+instance Show LLVMBinOp where
   show ADD = "add"
   show SHL = "shl"
   show SHR = "ashr"
@@ -92,11 +92,11 @@ instance Show BinOp where
   show OR  = "or"
 %%]
 
-%%[8 hs export( Var(..), isGlobal, getName, getPlainName, getType )
+%%[8 hs export( LLVMVar(..), isGlobal, getName, getPlainName, getType )
 {-|
   LLVM variables
 -}
-data Var
+data LLVMVar
   -- | references to variables with a global scope.
   = GlobalVar   String LLVMType
   -- | references to variables local for a function or parameters.
@@ -107,40 +107,40 @@ data Var
   | StrConstant String LLVMType
   deriving (Eq)
   
-instance Show Var where
+instance Show LLVMVar where
   show x                = show (getType x) ++ " " ++ getName x
   
 {-|
-  Test if a 'Var' is global.
+  Test if a 'LLVMVar' is global.
 -}  
-isGlobal :: Var -> Bool
+isGlobal :: LLVMVar -> Bool
 isGlobal (GlobalVar _ _) = True
 isGlobal _               = False  
   
 {-|
-  Return the variable name or value of the 'Var'
+  Return the variable name or value of the 'LLVMVar'
   in LLVM IR textual representation (e.g. @\@x@, @%y@ or @42@).
 -}
-getName :: Var -> String
+getName :: LLVMVar -> String
 getName (GlobalVar x _)    = "@" ++ x
 getName (LocalVar  x _)    = "%" ++ x
 getName (Constant  x _)    = show x
 getName (StrConstant  x _) = x 
 
 {-|
-  Return the variable name or value of the 'Var'
+  Return the variable name or value of the 'LLVMVar'
   in a plain textual representation (e.g. @x@, @y@ or @42@).
 -}
-getPlainName :: Var -> String
+getPlainName :: LLVMVar -> String
 getPlainName (GlobalVar x _)    = x
 getPlainName (LocalVar  x _)    = x
 getPlainName (Constant  x _)    = show x
 getPlainName (StrConstant  x _) = x   
 
 {-|
-  Return the 'LLVMType' of the 'Var'
+  Return the 'LLVMType' of the 'LLVMVar'
 -}
-getType :: Var -> LLVMType
+getType :: LLVMVar -> LLVMType
 getType (GlobalVar _ y)    = y
 getType (LocalVar _ y)     = y
 getType (Constant _ y)     = y  
@@ -158,7 +158,7 @@ data LLVMType
   | Pointer LLVMType
   -- | An array of 'LLVMType'
   | Array Int LLVMType
-  -- | A 'Var' can represent a label (address) 
+  -- | A 'LLVMVar' can represent a label (address) 
   | Label
   -- | Void
   | Void
@@ -219,11 +219,11 @@ isPointer (Pointer _) = True
 isPointer _           = False
 %%]
 
-%%[8 hs export( CallType(..) )
+%%[8 hs export( LLVMCallType(..) )
 {-|
   Different types to call a function.
 -}
-data CallType
+data LLVMCallType
   -- | Normal call, allocate a new stack frame.
   = StdCall
   -- | Tail call, perform the call in the current stack frame.
@@ -231,11 +231,11 @@ data CallType
   deriving (Eq,Show)
 %%]
 
-%%[8 hs export( ParameterListType(..) )
+%%[8 hs export( LLVMParameterListType(..) )
 {-|
   Functions can have a fixed amount of parameters, or a variable amount.
 -}
-data ParameterListType
+data LLVMParameterListType
   -- | Fixed amount of arguments.
   = FixedArgs
   -- | Variable amount of arguments.
@@ -243,14 +243,14 @@ data ParameterListType
   deriving (Eq,Show)
 %%]
 
-%%[8 hs export( LinkageType(..) )
+%%[8 hs export( LLVMLinkageType(..) )
 {-|
   Linkage type of a symbol. The description of the constructors is copied from
   the LLVM Assembly Language Reference Manual 
   <http://www.llvm.org/docs/LangRef.html#linkage>, because they correspond to 
   the LLVM linkage types.
 -}
-data LinkageType
+data LLVMLinkageType
   -- | Global values with internal linkage are only directly accessible by 
   --   objects in the current module. In particular, linking code into a module
   --   with an internal global value may cause the internal to be renamed as 
@@ -286,7 +286,7 @@ data LinkageType
   | ExternallyVisible
   deriving (Eq)
   
-instance Show LinkageType where
+instance Show LLVMLinkageType where
   show Internal          = "internal"
   show LinkOnce          = "linkonce"
   show Weak              = "weak"       

@@ -16,10 +16,10 @@
 -}
 DATA LLVMModule
   |  LLVMModule  comments   : {[String]}
-                 constants  : {[(Var,Var)]}
-                 globals    : {[Var]} 
-                 fwdDecls   : FuncDecls
-                 funcs      : Funcs
+                 constants  : {[(LLVMVar,LLVMVar)]}
+                 globals    : {[LLVMVar]} 
+                 fwdDecls   : LLVMFunctionDecls
+                 funcs      : LLVMFunctions
 
 %%]
 
@@ -30,49 +30,47 @@ DATA LLVMModule
     * internal: LinkageType of the function.
     * body:     The body of the functions.
 -}
-DATA Func
-  |  Func    funcDecl       : FuncDecl
-             linkage        : {LinkageType}
-             body           : Stmts
+DATA LLVMFunction
+  |  Func    funcDecl       : LLVMFunctionDecl
+             linkage        : {LLVMLinkageType}
+             body           : LLVMStatements
 
-TYPE Funcs  = [Func]
+TYPE LLVMFunctions  = [LLVMFunction]
 %%]
 
 %%[8.LLVMFuncDecl
 {-
-  FuncDecl have the followin elements
+  A function declaration has the following elements
     * name:       Unique identifier for the function.
     * returnType: Type of the returned value
     * varargs:    ParameterListType indicating if this function uses varargs
     * params:     Signature of the parameters 
 -}
-DATA FuncDecl
-  | FuncDecl     name       : {String}
-                 returnType : {LLVMType} 
-                 varargs    : {ParameterListType}
-                 params     : {[Var]}
+DATA LLVMFunctionDecl
+  | LLVMFunctionDecl  name       : {String}
+                      returnType : {LLVMType} 
+                      varargs    : {LLVMParameterListType}
+                      params     : {[LLVMVar]}
 
-TYPE FuncDecls = [FuncDecl]
+TYPE LLVMFunctionDecls = [LLVMFunctionDecl]
 %%]
 
 %%[8.LLVMStmt
-TYPE Stmts = [Stmt]
-
-DATA Stmt
+DATA LLVMStatement
   {-
     Assignment
     Assign an expression to an variable
       * dest:   Variable to assign to
       * source: Source expression
   -}
-  | Assignment   dest       : {Var}
-                 source     : Expression
+  | Assignment   dest       : {LLVMVar}
+                 source     : LLVMExpression
                  
   {-
     Branch
     Always branch to the target label
   -}               
-  | Branch       target     : {Var}
+  | Branch       target     : {LLVMVar}
   
   {-
     BranchIf
@@ -81,9 +79,9 @@ DATA Stmt
       * targetTrue:  label to branch to if cond is true
       * targetFalse: label to branch to if cond is false
   -}
-  | BranchIf     cond       : {Var}
-                 targetTrue : {Var}
-                 targetFalse: {Var}
+  | BranchIf     cond       : {LLVMVar}
+                 targetTrue : {LLVMVar}
+                 targetFalse: {LLVMVar}
                  
   {-
     Call
@@ -93,9 +91,9 @@ DATA Stmt
       * tailJumps: CallType to signal if the function should be tail called
       * args:      Concrete arguments for the parameters 
   -}               
-  | Call         func       : FuncDecl
-                 tailJumps  : {CallType}
-                 args       : {[Var]}
+  | Call         func       : LLVMFunctionDecl
+                 tailJumps  : {LLVMCallType}
+                 args       : {[LLVMVar]}
                  
   {-
     Comment
@@ -108,7 +106,7 @@ DATA Stmt
     Set a label on this position.
       * name: Identifier of this label, unique for this module
   -}     
-  | Label        name       : {Var}
+  | Label        name       : {LLVMVar}
   
   {- 
     Store
@@ -117,8 +115,8 @@ DATA Stmt
       * value: Variable/Constant to store.
       * ptr:   Location to store the value in
   -}         
-  | Store        value      : {Var}
-                 ptr        : {Var}
+  | Store        value      : {LLVMVar}
+                 ptr        : {LLVMVar}
   {-
     Switch
       * scrutinee: Variable or constant which must be of integer type that is
@@ -128,19 +126,21 @@ DATA Stmt
                    constant and label the corresponding label to jump to if the 
                    scrutinee matches the value.
   -}
-  | Switch       scrutinee  : {Var}
-                 default    : {Var}
-                 targets    : {[(Var,Var)]}
+  | Switch       scrutinee  : {LLVMVar}
+                 default    : {LLVMVar}
+                 targets    : {[(LLVMVar,LLVMVar)]}
   
   {-
     Return
       * result: The variable or constant to return
   -}                  
-  | Return       result     : {Var}
+  | Return       result     : {LLVMVar}
+
+TYPE LLVMStatements = [LLVMStatement]
 %%]
 
 %%[8.LLVMExpression
-DATA Expression
+DATA LLVMExpression
   {- 
     Alloca
     Allocate amount * sizeof(tp) bytes on the stack
@@ -157,9 +157,9 @@ DATA Expression
       * left:  left operand
       * right: right operand
   -}
-  | BinOp        op         : {BinOp}
-                 left       : {Var}
-                 right      : {Var}
+  | BinOp        op         : {LLVMBinOp}
+                 left       : {LLVMVar}
+                 right      : {LLVMVar}
   
   {-
     Compare
@@ -168,9 +168,9 @@ DATA Expression
       * left:  left operand
       * right: right operand
   -}
-  | Compare      op         : {CmpOp}
-                 left       : {Var}
-                 right      : {Var}
+  | Compare      op         : {LLVMCmpOp}
+                 left       : {LLVMVar}
+                 right      : {LLVMVar}
                  
   {- 
     Malloc
@@ -185,7 +185,7 @@ DATA Expression
     Load
     Load the value at location ptr
   -}               
-  | Load         ptr        : {Var}
+  | Load         ptr        : {LLVMVar}
   
   {-
     GetElemPtr
@@ -195,7 +195,7 @@ DATA Expression
                  the first element of the third element of the structure ptr
                  is selected with [3,1] (zero indexed)
   -}
-  | GetElemPtr   ptr        : {Var}
+  | GetElemPtr   ptr        : {LLVMVar}
                  indexes    : {[Int]}
                  
   {- Cast
@@ -204,7 +204,7 @@ DATA Expression
        * from: Variable to cast
        * to:   type to cast to
   -}                
-  | Cast         from       : {Var}
+  | Cast         from       : {LLVMVar}
                  to         : {LLVMType}
                  
   {-
@@ -214,9 +214,9 @@ DATA Expression
       * tailJumps: CallType to signal if the function should be tail called
       * args:      Concrete arguments for the parameters 
   -}                   
-  | Call         func       : FuncDecl
-                 tailJumps  : {CallType}
-                 args       : {[Var]}
+  | Call         func       : LLVMFunctionDecl
+                 tailJumps  : {LLVMCallType}
+                 args       : {[LLVMVar]}
                  
   {- 
     Phi
@@ -228,22 +228,7 @@ DATA Expression
                     from.
   -}               
   | Phi          tp         : {LLVMType}
-                 precessors : {[(Var,Var)]} 
-%%]
-
-%%[8.LLVMAlt
-TYPE Alts = [Alt]
-
-{-
-  Alt
-  An alternative of an case statement.
-    * when: A tuple containing the constant integer value that corresponds to
-            this arm and as second element the label of this arm.
-    * body: body of the case arm.
--}
-DATA Alt
-  |  Alt         when       : {(Var,Var)}
-                 body       : Stmts
-                                  
+                 precessors : {[(LLVMVar,LLVMVar)]} 
+                 
 DERIVING * : Show, Eq
 %%]
