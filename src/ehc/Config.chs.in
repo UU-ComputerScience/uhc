@@ -11,9 +11,6 @@
 %%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
-%%[8 export(fileprefixInplaceInstall)
-%%]
-
 %%[8 export(libnamesGcc, libnamesGccPerVariant, mbSuffixExec)
 %%]
 
@@ -72,10 +69,14 @@ verInfo v = verProg v ++ verDist v ++ ", " ++ verSvn v
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export ( fileprefixInplaceInstall, fileprefixInplace )
 fileprefixInplaceInstall :: String
 fileprefixInplaceInstall = "@INPLACE_PREFIX@/"
+
+fileprefixInplace :: String
+fileprefixInplace = "@INPLACE_TOP@/"
 %%]
+
 
 %%[99
 fileprefixInstall :: String
@@ -91,11 +92,9 @@ shellCmdGcc :: String
 shellCmdGcc = "@EHC_UNIXTOOL_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
-%%[8 export(shellCmdLLVMC)
-shellCmdLLVMC :: String
-shellCmdLLVMC = if null "@LLVMC_CMD@"
-                then error "EHC is compiled without support for LLVM exectution generation"
-                else "@LLVMC_CMD@@SUFFIX_EXEC@"
+%%[8 export(shellCmdLLVM)
+shellCmdLLVM :: String
+shellCmdLLVM = "@EHC_UNIXTOOL_PREFIX@" ++ fileprefixInplace ++ "bin/llvm-compilerdriver"
 %%]
 
 %%[99 export(shellCmdCpp)

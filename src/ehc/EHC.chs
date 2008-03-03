@@ -1360,10 +1360,10 @@ cpCompileWithLLVM modNm
   = do { cr <- get
        ; let  (_,_,opts,fp) = crBaseInfo modNm cr
               fpLL          = fpathSetSuff "ll" fp
-              fpExec        = maybe (fpathRemoveSuff fp) 
-                                    (\s -> fpathSetSuff s fp) 
+              fpExec        = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) 
                                     Cfg.mbSuffixExec
-              libs          = [ Cfg.fileprefixInplaceInstall 
+              libs          = map (\lib -> "-l " ++ lib) $
+                              [ Cfg.fileprefixInplaceInstall 
                                 ++ "%%@{%{VARIANT}%%}/lib/prim.o"
                               , Cfg.fileprefixInplaceInstall 
                                 ++ "%%@{%{VARIANT}%%}/lib/llvm-gc.o"
@@ -1372,12 +1372,10 @@ cpCompileWithLLVM modNm
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]
-              ldOpts        = ["-O5", "-native"]
        ; when ( ehcOptEmitExecLLVM opts )
          (  do { let compileLL 
                        = concat $ intersperse " "
-                         $  [Cfg.shellCmdLLVMC]
-                         ++ ldOpts
+                         $  [ Cfg.shellCmdLLVM ]
                          ++ libs
                          ++ outputOpts
                          ++ inputOpts
