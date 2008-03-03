@@ -691,8 +691,12 @@ gccCmd
 GCC_CMD
 cppCmd
 CPP_CMD
-llvmcCmd
-LLVMC_CMD
+llvmAs
+LLVM_AS_CMD
+llvmOpt
+LLVM_OPT_CMD
+llvmLd
+LLVM_LD_CMD
 CC
 CFLAGS
 LDFLAGS
@@ -718,6 +722,7 @@ LIBTOOL_DYNAMIC_CMD
 EHC_GCC_OPTS_STATIC
 TOP_ABS
 TOP_ABS2
+INPLACE_TOP
 INSTALL_PREFIX
 INPLACE_PREFIX
 INPLACE_INSTALL_DIR
@@ -1345,9 +1350,12 @@ Optional Packages:
   --with-cpp=<cpp preprocessor>
                           Use a command different from 'cpp' to compile with
                           CPP.
-  --with-llvmc=<LLVM compiler>
-                          Use a command different from 'llvmc' to compile LLVM
-                          source code.
+  --with-llvm-as=<LLVM Assembler>
+                          Path to the LLVM Assembler
+  --with-llvm-opt=<LLVM bitcode optimizer>
+                          Path to the LLVM bitcode optimizer
+  --with-llvm-ld=<LLVM Linker>
+                          Path to the LLVM Linker
 
 Some influential environment variables:
   CC          C compiler command
@@ -2457,24 +2465,24 @@ fi
 CPP_CMD=$cppCmd
 
 
-# gcc
+# LLVM Assembler
 
-# Check whether --with-llvmc was given.
-if test "${with_llvmc+set}" = set; then
-  withval=$with_llvmc;  llvmCmd="$withval"
+# Check whether --with-llvm-as was given.
+if test "${with_llvm_as+set}" = set; then
+  withval=$with_llvm_as;  llvmAs="$withval"
 else
 
-  if test "$LLVMC" = ""; then
-    # Extract the first word of "llvmc", so it can be a program name with args.
-set dummy llvmc; ac_word=$2
+  if test "$LLVM_AS" = ""; then
+    # Extract the first word of "llvm-as", so it can be a program name with args.
+set dummy llvm-as; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_llvmcCmd+set}" = set; then
+if test "${ac_cv_path_llvmAs+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  case $llvmcCmd in
+  case $llvmAs in
   [\\/]* | ?:[\\/]*)
-  ac_cv_path_llvmcCmd="$llvmcCmd" # Let the user override the test with a path.
+  ac_cv_path_llvmAs="$llvmAs" # Let the user override the test with a path.
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
@@ -2484,7 +2492,7 @@ do
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_llvmcCmd="$as_dir/$ac_word$ac_exec_ext"
+    ac_cv_path_llvmAs="$as_dir/$ac_word$ac_exec_ext"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
@@ -2495,10 +2503,10 @@ IFS=$as_save_IFS
   ;;
 esac
 fi
-llvmcCmd=$ac_cv_path_llvmcCmd
-if test -n "$llvmcCmd"; then
-  { echo "$as_me:$LINENO: result: $llvmcCmd" >&5
-echo "${ECHO_T}$llvmcCmd" >&6; }
+llvmAs=$ac_cv_path_llvmAs
+if test -n "$llvmAs"; then
+  { echo "$as_me:$LINENO: result: $llvmAs" >&5
+echo "${ECHO_T}$llvmAs" >&6; }
 else
   { echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
@@ -2506,19 +2514,129 @@ fi
 
 
   else
-    llvmcCmd=$LLVMC
+    llvmAs=$LLVM_AS
   fi
 
 
 fi
 
-if test "$llvmcCmd" = "no"; then
-  llvmcCmd=""
-  llvmcExists="no"
+LLVM_AS_CMD=$llvmAs
+
+
+# LLVM Optimizer
+
+# Check whether --with-opt was given.
+if test "${with_opt+set}" = set; then
+  withval=$with_opt;  llvmOpt="$withval"
 else
-  llvmcExists="yes"
+
+  if test "$LLVM_OPT" = ""; then
+    # Extract the first word of "opt", so it can be a program name with args.
+set dummy opt; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmOpt+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmOpt in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmOpt="$llvmOpt" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmOpt="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
 fi
-LLVMC_CMD=$llvmcCmd
+llvmOpt=$ac_cv_path_llvmOpt
+if test -n "$llvmOpt"; then
+  { echo "$as_me:$LINENO: result: $llvmOpt" >&5
+echo "${ECHO_T}$llvmOpt" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmOpt=$LLVM_OPT
+  fi
+
+
+fi
+
+LLVM_OPT_CMD=$llvmOpt
+
+
+# LLVM Linker
+
+# Check whether --with-llvm-ld was given.
+if test "${with_llvm_ld+set}" = set; then
+  withval=$with_llvm_ld;  llvmLd="$withval"
+else
+
+  if test "$LLVM_LD" = ""; then
+    # Extract the first word of "llvm-ld", so it can be a program name with args.
+set dummy llvm-ld; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmLd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmLd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmLd="$llvmLd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmLd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmLd=$ac_cv_path_llvmLd
+if test -n "$llvmLd"; then
+  { echo "$as_me:$LINENO: result: $llvmLd" >&5
+echo "${ECHO_T}$llvmLd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmLd=$LLVM_LD
+  fi
+
+
+fi
+
+LLVM_LD_CMD=$llvmLd
 
 
 ### Checks for libraries.
@@ -6120,6 +6238,8 @@ TOP_ABS2="$hardtop_plat2"
 ### install locations
 inplaceInstallDir="install"
 installPrefix=${prefix}
+INPLACE_TOP="$hardtop"
+
 INSTALL_PREFIX=${installPrefix}
 
 INPLACE_PREFIX="$hardtop_plat/$inplaceInstallDir"
@@ -6139,6 +6259,8 @@ EXTLIBS_GMP_PKG_NAME="gmp"
 ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
 ac_config_files="$ac_config_files src/grinc/Config.chs src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
+
+ac_config_files="$ac_config_files bin/llvm-compilerdriver"
 
 ac_config_headers="$ac_config_headers src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch"
 
@@ -6699,6 +6821,7 @@ do
     "src/grinc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/grinc/Config.chs" ;;
     "src/ehc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
     "src/helium/Utils/OSSpecific.hs") CONFIG_FILES="$CONFIG_FILES src/helium/Utils/OSSpecific.hs" ;;
+    "bin/llvm-compilerdriver") CONFIG_FILES="$CONFIG_FILES bin/llvm-compilerdriver" ;;
     "src/grinc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/grinc/ConfigDefines.chs" ;;
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
@@ -6839,8 +6962,12 @@ gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
 cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
-llvmcCmd!$llvmcCmd$ac_delim
-LLVMC_CMD!$LLVMC_CMD$ac_delim
+llvmAs!$llvmAs$ac_delim
+LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
+llvmOpt!$llvmOpt$ac_delim
+LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
+llvmLd!$llvmLd$ac_delim
+LLVM_LD_CMD!$LLVM_LD_CMD$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
@@ -6856,10 +6983,6 @@ MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
-SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
-SUFFIX_LIB!$SUFFIX_LIB$ac_delim
-PREFIX_LIB!$PREFIX_LIB$ac_delim
-PATHS_SEP!$PATHS_SEP$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -6901,12 +7024,17 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
+SUFFIX_LIB!$SUFFIX_LIB$ac_delim
+PREFIX_LIB!$PREFIX_LIB$ac_delim
+PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
 LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
+INPLACE_TOP!$INPLACE_TOP$ac_delim
 INSTALL_PREFIX!$INSTALL_PREFIX$ac_delim
 INPLACE_PREFIX!$INPLACE_PREFIX$ac_delim
 INPLACE_INSTALL_DIR!$INPLACE_INSTALL_DIR$ac_delim
@@ -6917,7 +7045,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 14; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 19; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -7311,6 +7439,11 @@ echo "$as_me: $ac_file is unchanged" >&6;}
 
   esac
 
+
+  case $ac_file$ac_mode in
+    "bin/llvm-compilerdriver":F) chmod +x bin/llvm-compilerdriver ;;
+
+  esac
 done # for ac_tag
 
 

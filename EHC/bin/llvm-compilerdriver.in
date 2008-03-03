@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+# Compiler driver for generating LLVM Binaries
+# 
+
+###############################################################################
+# Config options
+###############################################################################
+
+# Program to assemble .ll files
+#
+LLVM_AS="@LLVM_AS_CMD@"
+
+# Program to optimize .bc files
+#
+LLVM_OPT="@LLVM_OPT_CMD@ -std-compile-opts"
+
+# Program to link time optimize .bc files
+#
+LLVM_LD="@LLVM_LD_CMD@ -O5"
+
+###############################################################################
+# End of config options
+###############################################################################
+TMP_TEMPLATE="llvm-driver.XXXXXXXX"
+
+LIBS=""
+OUTPUT=""
+# process command-line options
+#
+while getopts "l:o:" opt; do
+    case $opt in 
+        l )    LIBS="$LIBS $OPTARG" ;;
+        o )    OUTPUT="$OPTARG" ;;
+        \? )   echo 'usage: llvm-compilerdriver [-l lib] [-o file] file'
+               exit 1 ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+INPUT_LL=$1
+
+TMP_FILE1=`mktemp -t $TMP_TEMPLATE`   && \
+TMP_FILE2=`mktemp -t $TMP_TEMPLATE`   && \
+$LLVM_AS -f -o $TMP_FILE1 $INPUT_LL   && \
+$LLVM_OPT -f -o $TMP_FILE2 $TMP_FILE1 && \
+$LLVM_LD -o $TMP_FILE1 $TMP_FILE2     && \
+mv $TMP_FILE1.bc $TMP_FILE1           && \
+$LLVM_OPT -f -o $TMP_FILE2 $TMP_FILE1 && \
+$LLVM_LD -native -o $OUTPUT $TMP_FILE2 $LIBS && \
+rm $TMP_FILE1 && \
+rm $TMP_FILE2

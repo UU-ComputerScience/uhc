@@ -245,26 +245,50 @@ else
 fi
 AC_SUBST(CPP_CMD,$cppCmd)
 
-# gcc
-AC_ARG_WITH(llvmc,
-[AC_HELP_STRING([--with-llvmc=<LLVM compiler>],
-                [Use a command different from 'llvmc' to compile LLVM source code.])],
-[ llvmCmd="$withval" ],
+# LLVM Assembler 
+AC_ARG_WITH(llvm-as,
+[AC_HELP_STRING([--with-llvm-as=<LLVM Assembler>],
+                [Path to the LLVM Assembler])],
+[ llvmAs="$withval" ],
 [ 
-  if test "$LLVMC" = ""; then
-    AC_PATH_PROG(llvmcCmd,llvmc)
+  if test "$LLVM_AS" = ""; then
+    AC_PATH_PROG(llvmAs,llvm-as)
   else
-    llvmcCmd=$LLVMC
+    llvmAs=$LLVM_AS
   fi
 ]
 )
-if test "$llvmcCmd" = "no"; then
-  llvmcCmd=""
-  llvmcExists="no"
-else
-  llvmcExists="yes"
-fi
-AC_SUBST(LLVMC_CMD,$llvmcCmd)
+AC_SUBST(LLVM_AS_CMD,$llvmAs)
+
+# LLVM Optimizer 
+AC_ARG_WITH(opt,
+[AC_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],
+                [Path to the LLVM bitcode optimizer])],
+[ llvmOpt="$withval" ],
+[
+  if test "$LLVM_OPT" = ""; then
+    AC_PATH_PROG(llvmOpt,opt)
+  else
+    llvmOpt=$LLVM_OPT
+  fi
+]
+)
+AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
+
+# LLVM Linker 
+AC_ARG_WITH(llvm-ld,
+[AC_HELP_STRING([--with-llvm-ld=<LLVM Linker>],
+                [Path to the LLVM Linker])],
+[ llvmLd="$withval" ],
+[
+  if test "$LLVM_LD" = ""; then
+    AC_PATH_PROG(llvmLd,llvm-ld)
+  else
+    llvmLd=$LLVM_LD
+  fi
+]
+)
+AC_SUBST(LLVM_LD_CMD,$llvmLd)
 
 ### Checks for libraries.
 
@@ -428,6 +452,7 @@ AC_SUBST(TOP_ABS2, "$hardtop_plat2")
 ### install locations
 inplaceInstallDir="install"
 installPrefix=${prefix}
+AC_SUBST(INPLACE_TOP, "$hardtop")
 AC_SUBST(INSTALL_PREFIX, ${installPrefix})
 AC_SUBST(INPLACE_PREFIX, "$hardtop_plat/$inplaceInstallDir")
 AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
@@ -440,6 +465,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
+AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
 AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch])
 AC_OUTPUT
 

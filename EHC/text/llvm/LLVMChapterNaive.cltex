@@ -52,10 +52,10 @@ The Silly to LLVM transformation consists of two steps. First the Silly construc
 \begin{figure}[tb]
 	\hsbox{
 		\begin{code}
-		ATTR  SilModule                              [ ^^ | ^^ |  llvmCode  :  LLVMModule ]
-		ATTR  Function                               [ ^^ | ^^ |  llvmCode  :  Func       ]
-		ATTR  Statement Alternative Value Variable   [ ^^ | ^^ |  llvmCode  :  Stmts      ]
-		ATTR  Value Variable Constant                [ ^^ | ^^ |  llvmVar   :  Var        ]
+		ATTR  SilModule                              [ ^^ | ^^ |  llvmCode  :  LLVMModule      ]
+		ATTR  Function                               [ ^^ | ^^ |  llvmCode  :  LLVMFunction    ]
+		ATTR  Statement Alternative Value Variable   [ ^^ | ^^ |  llvmCode  :  LLVMStatements  ]
+		ATTR  Value Variable Constant                [ ^^ | ^^ |  llvmVar   :  LLVMVar         ]
 		\end{code}
     }
     \caption{Attributes for LLVM Assembly generation.}
