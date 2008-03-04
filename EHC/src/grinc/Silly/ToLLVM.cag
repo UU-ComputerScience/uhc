@@ -15,6 +15,8 @@
 %%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
+%%[8 hs import({%{EH}Base.Opts})
+%%]
 %%[8 hs import({%{GRIN}ConfigDefines})
 %%]
 %%[8 import({Silly/AbsSyn})
@@ -31,8 +33,8 @@ WRAPPER SilModule
   have the size @sizeof(intptr_t)@, so that we can store both integers and
   pointers in them and cast freely.
 -} 
-silly2llvm :: SilModule -> LLVMModule
-silly2llvm silmod = 
+silly2llvm :: EHCOpts -> SilModule -> LLVMModule
+silly2llvm opts silmod = 
   let -- LLVMType of integers
       intType    = if sizeofPointer == 8 
                    then i64
@@ -46,12 +48,16 @@ silly2llvm silmod =
                                         , pointerType_Inh_SilModule = ptrType
                                         , globalType_Inh_SilModule = gblType
                                         , gUniq_Inh_SilModule = uidStart
+                                        , opts_Inh_SilModule = opts
                                         } 
                          )
    in llvmCode_Syn_SilModule t
 %%]
 
 %%[8
+ATTR AllNT
+    [ opts : {EHCOpts} | | ]
+
 ATTR SilModule
      [ | | llvmCode : {LLVMModule} ]
 
@@ -127,7 +133,20 @@ SEM Functions
 SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
                                                          (LLVMExpression_Alloca @lhs.intType 1) ) @locals
-                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
+                                   enter  = [ LLVMStatement_Assignment (LocalVar "enter.str" (pLift i8))
+                                                                       (LLVMExpression_GetElemPtr @loc.globalVarEnter [0,0])
+                                            , LLVMStatement_Call stdlibPrintfFuncDecl StdCall 
+                                                                 [ (LocalVar "enter.str" (pLift i8)) ]
+                                            ]
+                                   exit   = [ LLVMStatement_Assignment (LocalVar "exit.str" (pLift i8))
+                                                                       (LLVMExpression_GetElemPtr @loc.globalVarExit [0,0])
+                                            , LLVMStatement_Call stdlibPrintfFuncDecl StdCall 
+                                                                 [ (LocalVar "exit.str" (pLift i8)) ]
+                                            ]
+                                in if ehcOptGenTrace @lhs.opts
+                                   then LLVMFunction_Func @loc.fnDecl Internal $ enter ++ locals ++ (init @body.llvmCode)
+                                                                                 ++ exit ++ [(last @body.llvmCode)]
+                                   else LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
@@ -508,6 +527,21 @@ ATTR Functions Function
      Constant
      [ | | constants USE {++} {[]}: {[(LLVMVar,LLVMVar)]} ]
 
+SEM Function
+  | Function    lhs.constants      = if ehcOptGenTrace @lhs.opts
+                                     then ( @loc.globalVarEnter, @loc.cstringEnter ) : 
+                                          ( @loc.globalVarExit,  @loc.cstringExit  ) : @body.constants
+                                     else @body.constants
+                loc.globalVarEnter = let (uniq,var) = newFresh @lhs.gUniq (pLift $ stringType @loc.enter)
+                                      in GlobalVar (getPlainName var) (getType var)
+                loc.cstringEnter   = StrConstant (string2CString @loc.enter) (stringType @loc.enter)
+                loc.enter          = "[ENTER]" ++ hs2str @name ++ "\n" 
+                
+                loc.globalVarExit  = let (uniq,var) = newFresh (uidNext @lhs.gUniq) (pLift $ stringType @loc.exit)
+                                      in GlobalVar (getPlainName var) (getType var)
+                loc.cstringExit    = StrConstant (string2CString @loc.exit) (stringType @loc.exit)
+                loc.exit           = "[EXIT]" ++ hs2str @name ++ "\n"
+
 SEM Constant
   | LiteralStr  lhs.constants = [ ( @loc.llvmVar , @loc.cstring) ]
                 loc.cstring   = StrConstant (string2CString @value)
@@ -583,7 +617,7 @@ SEM Variable
 
 %%[8
 --------------------------------------------------------------------------------
--- Pass function declarations that are defined exetern
+-- Pass function declarations that are defined extern
 --------------------------------------------------------------------------------
 ATTR Functions Function 
      Statements Statement
@@ -852,6 +886,14 @@ explict quotes and terminate with \\0
 string2CString :: String -> String
 string2CString str =
   "c\"" ++ str ++ "\\00\""
+ 
+{-|
+Generate the C type of a Haskell string. For example \"Hello World\" would result
+in an @Array 12 i8@.
+-} 
+stringType :: String -> LLVMType
+stringType str =
+  Array (length str + 1) i8
  
 {-|
 Convert a Bool to a 'LLVMCallType', True indicating a 'TailCall' while any other
