@@ -330,7 +330,7 @@ methodHead nm params
 
 
 paramTrace :: String -> PP_Doc
-paramTrace x = text ("printf(\"" ++  x ++            " = %d\\n\" , " ++ x ++ "); fflush(stdout);")
+paramTrace x = text ("printf(\"    " ++  x ++            " = %d\\n\" , " ++ x ++ "); fflush(stdout);")
 
 methodHeader :: Int -> Bool -> String -> [String] -> PP_Doc
 methodHeader optOwn optTrace nm params
@@ -381,8 +381,8 @@ assignment2 v1 v2 e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              -- (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
-              (" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
+              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              --(" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
 
 assignment :: PP_Doc -> PP_Doc -> PP_Doc
 assignment v e
@@ -391,8 +391,8 @@ assignment v e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              -- (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
-              (" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
+              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              --(" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
 
 switch :: Bool -> String -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef funname scrutinee body

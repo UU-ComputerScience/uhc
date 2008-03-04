@@ -11,13 +11,13 @@
 %%[3 import(qualified Data.Set as Set)
 %%]
 
-%%[8 export(hsnShowAlphanumeric)
+%%[8 export(hsnShowAlphanumeric, hsnShowAlphanumericShort)
 %%]
 
 %%[8 import(EH.Util.FPath,Char,Data.Maybe,qualified Data.Map as Map)
 %%]
 
-%%[8 export(stringAlphanumeric,  hsnAlphanumeric)
+%%[8 export(OrigName(..))
 %%]
 
 %%[10 export(hsnConcat)
@@ -64,6 +64,17 @@ hsnHNmFldToString :: String -> String
 hsnHNmFldToString = id
 %%]
 
+%%[8
+data OrigName = OrigNone
+              | OrigLocal  HsName
+              | OrigGlobal HsName
+              | OrigFunc   HsName
+  deriving (Eq,Ord)
+%%]
+
+
+
+
 %%[1
 instance PP HsName where
   pp h = pp (show h)
@@ -77,7 +88,7 @@ data HsName
   |   HNPos !Int
 %%]
 %%[8
-  |   HNmNr !Int !(Maybe HsName)
+  |   HNmNr !Int !OrigName
 %%]
 %%[20
   |   HNmQ  ![HsName]
@@ -91,16 +102,14 @@ hsnShow :: String -> HsName -> String
 hsnShow _   (HNm s    )  = hsnHNmFldToString s
 hsnShow _   (HNPos p  )  = show p
 %%[[8
-hsnShow _   (HNmNr n mborg)  = "x_" ++ show n ++ (maybe "" (\hsn -> "_" ++ hsnShow "." hsn) mborg)
+hsnShow _   (HNmNr n OrigNone        )  = "x_"        ++ show n
+hsnShow _   (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow "." hsn
+hsnShow _   (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow "." hsn
+hsnShow _   (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow "." hsn
 %%]]
 %%[[20
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
 %%]]
-%%]
-
-%%[8
-hsnShowAlphanumeric :: HsName -> String
-hsnShowAlphanumeric = show . hsnAlphanumeric
 %%]
 
 %%[7
@@ -187,20 +196,29 @@ dontStartWithDigit :: String -> String
 dontStartWithDigit xs@(a:_) | isDigit a || a=='_' = "y"++xs
                             | otherwise           = xs
 
-hsnAlphanumeric :: HsName -> HsName
+hsnShowAlphanumeric :: HsName -> String
+hsnShowAlphanumericShort :: HsName -> String
+
+hsnShowAlphanumericShort (HNmNr n (OrigFunc   orig)) = hsnShowAlphanumeric orig
+hsnShowAlphanumericShort x = hsnShowAlphanumeric x
+
 %%[[8
-hsnAlphanumeric (HNm s) = hsnFromString (dontStartWithDigit(stringAlphanumeric s))
+hsnShowAlphanumeric (HNm s) = dontStartWithDigit(stringAlphanumeric s)
 %%][99
-hsnAlphanumeric (HNm s) = hsnFromString (dontStartWithDigit(stringAlphanumeric $ hsnHNmFldToString s))
+hsnShowAlphanumeric (HNm s) = dontStartWithDigit(stringAlphanumeric $ hsnHNmFldToString s)
 %%]]
-hsnAlphanumeric (HNPos p) = hsnFromString ("y"++show p)
---hsnAlphanumeric (HNmNr n mbOrig) = hsnFromString ("x"++show n)
-hsnAlphanumeric (HNmNr n Nothing) = hsnFromString ("x"++show n)
-hsnAlphanumeric (HNmNr n (Just orig)) = hsnAlphanumeric orig
+hsnShowAlphanumeric (HNPos p)                   = "y" ++ show p
+hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
+hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = hsnShowAlphanumeric orig
+hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
+hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
 %%]
 %%[20
-hsnAlphanumeric (HNmQ ns) = hsnFromString $ hsnShow "_" $ HNmQ (map hsnAlphanumeric ns)
+hsnShowAlphanumeric (HNmQ ns) = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
 %%]
+
+
+
 
 %%[8
 hsnToFPath :: HsName -> FPath

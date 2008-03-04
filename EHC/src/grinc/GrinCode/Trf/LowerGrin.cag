@@ -56,18 +56,19 @@ newNames hptMap uniq (HNmNr v _) = case getEnvVar hptMap v of
                                      AbsLocs _ _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
                                      AbsNodes nl -> let count    = maxNodeSize nl
                                                         newVars  = [uniq .. uniq + count - 1]
-                                                    in (uniq + count, map (\n->HNmNr n Nothing) newVars, (v, newVars))
+                                                    in (uniq + count, map (\n->HNmNr n OrigNone) newVars, (v, newVars))
                                      av          -> error ("LowerGrin: Newnames: abstract value " ++ show av ++ " for " ++ show v ++ " is not locations or nodes")
 
 -- TODO: use arity information in the ctags map!
 maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
 
 isSingleVar :: HptMap -> HsName -> Bool
-isSingleVar hptMap name = case getEnvVar hptMap (getNr name) of
-                             AbsLocs _ _ -> True
-                             -- AbsNodes nm -> Map.member GrTag_Any nm
-                             AbsNodes nm -> False
-                             a           -> error $ "LowerGrin: " ++ show name ++ " is " ++ show a
+isSingleVar hptMap (HNmNr nr _) = case getEnvVar hptMap nr of
+                                   AbsLocs _ _ -> True
+                                   AbsNodes nm -> False
+                                   a           -> if nr==0
+                                                  then True
+                                                  else error $ "LowerGrin: variable " ++ show nr ++ " is " ++ show a
 %%]
 
 
@@ -83,12 +84,20 @@ SEM GrAGItf
 -- In a lambda pattern  \n  , if HPT says that n refers to a node, replace it by  (\t x y) 
 -- and add   n -> (\t x y)  to subst
 SEM GrPatLam
-  | Var       loc . (uniq, names, newMap)       = newNames @lhs.hptMap @lhs.uniq @nm
-              loc . newPat      =  GrPatLam_VarNode (map GrVar_Var @loc.names)
-              loc . newNode     =  GrVal_VarNode    (map GrVal_Var @loc.names)
-              lhs . (nameMapping, grTrf, subst) = if isSingleVar @lhs.hptMap @nm
-                                                   then (          @lhs.nameMapping, @loc.grTrf  ,                             @lhs.subst )
-                                                   else (@newMap : @lhs.nameMapping, @loc.newPat , Map.insert @nm @loc.newNode @lhs.subst )
+  | Var       lhs . (uniq, nameMapping, grTrf, subst) = if isSingleVar @lhs.hptMap @nm
+                                                        then ( @lhs.uniq
+                                                             , @lhs.nameMapping
+                                                             , @loc.grTrf
+                                                             , @lhs.subst 
+                                                             )
+                                                        else let  (uniq2, names, newMap) = newNames @lhs.hptMap @lhs.uniq @nm
+                                                                  newPat  =  GrPatLam_VarNode (map GrVar_Var names)
+                                                                  newNode =  GrVal_VarNode    (map GrVal_Var names)
+                                                             in ( uniq2
+                                                                , newMap : @lhs.nameMapping
+                                                                , newPat
+                                                                , Map.insert @nm newNode @lhs.subst
+                                                                )
 
 
 -- At a case with scrutinee n

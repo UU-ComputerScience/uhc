@@ -202,7 +202,7 @@ SEM GrExpr
                 .  size        =  tagArity @knownTag @lhs.arityMap
                 .  fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField @nm o @mbKnownTag, o+1)
                                   in take @size $ unfoldr buildFetchInfo 1
-                .  names       =  map (\n->HNmNr n Nothing) [@lhs.uniq .. @uniq  - 1]
+                .  names       =  map (\n->HNmNr n OrigNone) [@lhs.uniq .. @uniq  - 1]
                 .  uniq        =  if @isLastExpr then @lhs.uniq + @size else @lhs.uniq
                 .  node        =  GrVal_Node @knownTag (map GrVal_Var @names)
            lhs  .  grTrf       =  if @isLastExpr
@@ -255,7 +255,7 @@ singleton _   = False
 
 specializeFetch :: GrTag -> (HsName, GrExpr) -> (Int, RenList, [(HsName, GrExpr)]) -> (Int, RenList, [(HsName, GrExpr)])
 specializeFetch tag (var, GrExpr_FetchField nm offset _) (u, renL, fetchesL)
-  = let newVar = HNmNr u Nothing 
+  = let newVar = HNmNr u OrigNone
     in ( u+1
        , (getNr var, newVar) : renL
        , (newVar, GrExpr_FetchField nm offset (Just tag)) : fetchesL

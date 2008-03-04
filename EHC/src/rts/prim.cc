@@ -76,7 +76,7 @@ PRIM GrWord primNegInt(GrWord x)
 
 PRIM GrWord primAddInt(GrWord x, GrWord y)
 {   
-	//printf("add %d %d\n", x, y );
+	printf("add %d %d\n", x, y );
 	return x+y;
 }
 
