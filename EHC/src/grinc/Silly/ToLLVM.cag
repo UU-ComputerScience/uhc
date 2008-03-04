@@ -114,6 +114,11 @@ SEM SilModule
                                      (mkMalloc True @lhs.intType (1 + @functions.maxRPIndex))
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
+%%[[8
+                                 , LLVMStatement_Call fun_mainFuncDecl StdCall []
+%%][99
+                                 , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
+%%]]                                 
                                  , LLVMStatement_Call fun_mainFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "rp.1" @lhs.pointerType)
                                      (LLVMExpression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
@@ -685,6 +690,9 @@ Function declaration for the GRIN generated fun_main function.
 fun_mainFuncDecl :: LLVMFunctionDecl
 fun_mainFuncDecl =
   LLVMFunctionDecl_LLVMFunctionDecl "fun_main" Void FixedArgs []
+  
+fun_mainFullProgFuncDecl =  
+  LLVMFunctionDecl_LLVMFunctionDecl "fun_mainFullProg" Void FixedArgs []
 
 {-|
 Function declaration of printf from the standard C library.
