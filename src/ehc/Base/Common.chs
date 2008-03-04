@@ -1108,6 +1108,12 @@ instance ForceEval Fixity
     fevCount x | x `seq` True = cm1 "Fixity"
 %%]]
 
+instance ForceEval OrigName where
+  forceEval x@(OrigLocal  n) | forceEval x `seq` True = x
+  forceEval x@(OrigGlobal n) | forceEval x `seq` True = x
+  forceEval x@(OrigFunc   n) | forceEval x `seq` True = x
+  forceEval x                                         = x
+
 instance ForceEval HsName where
   forceEval x@(HNm     s) | forceEval s `seq` True = x
   forceEval x@(HNmNr _ n) | forceEval n `seq` True = x

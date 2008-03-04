@@ -150,15 +150,22 @@ SEM GrPatLam
     PtrAnnot    lhs  .  isDead  =  not (@nm `Set.member` @lhs.usedVars)
   | Empty       lhs  .  isDead  =  True
  
-SEM GrExpr [ | | sideEffect : Bool ]
-  |     FFI Throw FetchUpdate UpdateUnit  lhs  .  sideEffect  =  True
-  | * - UpdateUnit FFI Throw FetchUpdate  lhs  .  sideEffect  =  False
+ 
+ATTR AllGrExpr [ | | sideEffect USE {||} {False} : Bool ]
 
+SEM GrExpr 
+  | FFI 
+    Throw 
+    FetchUpdate 
+    UpdateUnit    lhs  .  sideEffect  =  True
+--  | Case          lhs  .  sideEffect  =  False
+  
 SEM GrExpr
-  | Seq  lhs  .  grTrf      =  if @expr.throws then @expr.grTrf
-                               else if @isDead then @body.grTrf
-                               else                 @grTrf
-         loc  .  isDead     =  @pat.isDead && not @expr.sideEffect
+  | Seq  lhs  .  grTrf      =  if @expr.throws 
+                               then @expr.grTrf
+                               else if @pat.isDead && not @expr.sideEffect 
+                               then @body.grTrf
+                               else @loc.grTrf
 %%]
 
 

@@ -18,7 +18,7 @@
 %%[8 export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg)
 
 wildcardNm = HNm "_"
-wildcardNr = HNmNr 0 (Just wildcardNm)
+wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
 
 getNr :: HsName -> Int
 getNr (HNmNr i _) = i
@@ -33,7 +33,7 @@ hsnMainFullProg = hsnMain
 hsnMainFullProg = hsnSuffix hsnMain "FullProg"
 %%]]
 
-mainNr     = HNmNr 1 (Just (hsnPrefix "fun_" hsnMainFullProg))
+mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 
 
 %%]

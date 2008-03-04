@@ -1,4 +1,4 @@
-%%[0
+¥%[0
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
@@ -42,26 +42,6 @@ grin2silly hptmap gr opts
                         )
    in silModule_Syn_GrAGItf t 
 %%]
-
-%%[20 hs import({%{EH}Base.Builtin},{%{GRIN}Config})
--- primitive related names which should be globally available, in unqualified form
-
-primGlobalNames :: Set.Set HsName
-primGlobalNames
-  = Set.fromList
-  $ map (hsnPrefix rtsGlobalVarPrefix . hsnQualified)
-  $ [ hsnTrue, hsnFalse
-%%[[99
-    , hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
-%%]]
-    ]
-
-hsnToGlobal :: HsName -> HsName
-hsnToGlobal n
-  = if n2 `Set.member` primGlobalNames then n2 else n
-  where n2 = hsnQualified n
-%%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
@@ -356,11 +336,7 @@ SEM GrAlt
 
 
 SEM GrGlobal
-%%[[8
  | Global  loc.globNm      = @nm
-%%][20
- | Global  loc.globNm      = hsnToGlobal @nm
-%%]]
  		   lhs.names       = [@globNm]
            lhs.initStats   = let vs = @val.values
                                  n  = length vs
@@ -372,11 +348,7 @@ SEM GrGlobal
 SEM GrVal
  | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
  | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
-%%[[8
  | Var     loc.value  = Value_Var (mkVar @nm)
-%%][20
- | Var     loc.value  = Value_Var (mkVar (hsnToGlobal @nm))
-%%]]
            lhs.value  = @loc.value
            lhs.values = [@loc.value]
  | Tag     lhs.value  = @tag.value
@@ -414,10 +386,10 @@ SEM GrValL
  | Cons   lhs.values = @hd.value : @tl.values
 
 SEM GrTag
- | Con     loc.constant = Constant_Alias ("C" ++ hsnShowAlphanumeric @nm)
- | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumeric @nm)
+ | Con     loc.constant = Constant_Alias ("C" ++ hsnShowAlphanumericShort @nm)
+ | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumericShort @nm)
  | App     loc.constant = Constant_Alias ("A" ++ hsnShowAlphanumeric @nm)
- | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumeric @nm)
+ | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumericShort @nm)
  | Hole    loc.constant = Constant_Alias ("HOLE")
  | Con Fun App PApp Hole
            lhs.constant = @loc.constant
@@ -574,7 +546,7 @@ internal3 what name targets values
             )
        else Statement_Assignment v2 e
     | (v1,v2,e) <-zip3 (map (arrayVariab name) [0..])
-                       [mkVar x | x <- targets]
+                       ([mkVar x | x <- targets] ++  replicate (length values-length targets) Variable_None)
                        values
     , isRealVar v1 || isRealVar v2
     ]
@@ -640,9 +612,9 @@ tagConstants tagset
    in  zip (needed ++ (inprog \\ needed)) [0..]
 
 showGrTag :: GrTag -> String
-showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumeric nm
-showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumeric nm
-showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumeric nm
+showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumericShort nm
+showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumericShort nm
+showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumericShort nm
 showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"
 showGrTag (GrTag_Hole) = "HOLE"

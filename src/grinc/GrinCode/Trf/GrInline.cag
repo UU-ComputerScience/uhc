@@ -57,7 +57,7 @@ buildAlternative
     )
 
 buildAlternative tag args arity rhsElem unique uf vf tf =
-    let patNames        = map (\e -> HNmNr (fst e) Nothing) entrHead
+    let patNames        = map (\e -> HNmNr (fst e) OrigNone) entrHead
 
         uniqHead        = unique + arity
         entrHead        = zip [unique..] args
@@ -109,7 +109,7 @@ buildEvalAlt locatVar fetchVar tag avs arityMap hptMap u
                  = -- process a function call
                    let 
                        -- create new name from unique number
-                       boundVar   = HNmNr u Nothing
+                       boundVar   = HNmNr u OrigNone
                        -- wrap the newly created names for use in Grin-values and -patterns
                        boundVal   = GrVal_Var boundVar
                        boundPat   = GrPatLam_Var boundVar
@@ -126,9 +126,9 @@ buildEvalAlt locatVar fetchVar tag avs arityMap hptMap u
                        -- do we need to handle exceptions?  
                         then let
                                  -- create some more new names
-                                 throwVar   = HNmNr (u+1) Nothing
-                                 catchVar   = HNmNr (u+2) Nothing
-                                 noVar      = HNmNr 0 Nothing
+                                 throwVar   = HNmNr (u+1) OrigNone
+                                 catchVar   = HNmNr (u+2) OrigNone
+                                 noVar      = HNmNr 0 OrigNone
                                  noPat      = GrPatLam_Var noVar
                                  -- and wrap them for use in Grin
                                  throwVal   = GrVal_Var throwVar
@@ -168,7 +168,7 @@ evalCode
 
 evalCode unique arityMap hptMap locatVar
  = let -- create new name from unique number
-       fetchVar      = HNmNr unique Nothing
+       fetchVar      = HNmNr unique OrigNone
        -- wrap the newly created names for use in Grin-values and -patterns
        fetchVal      = GrVal_Var fetchVar
        fetchPat      = GrPatLam_Var fetchVar
@@ -333,7 +333,7 @@ applyCodePart unique arityMap hptMap nodes appVar appArgs
         (elems, usedArgs, restArgs)          = getElements origTags appArgs id
         (unique2, hptDelta, code, resultAV)  = buildApplyCase unique hptMap appVar usedArgs elems
         hptMap2                              = addEnvVars hptMap hptDelta
-        newVar                               = HNmNr unique2 Nothing
+        newVar                               = HNmNr unique2 OrigNone
 
     in  if null restArgs
          then (unique2, hptMap2, code)

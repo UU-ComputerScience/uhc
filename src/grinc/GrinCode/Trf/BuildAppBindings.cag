@@ -122,10 +122,10 @@ buildAppBinding unique size specnr
         minArg  = funcNr + 2
         maxArg  = minArg + size - 1
         unique2 = maxArg + 2
-        funcName                  = HNmNr funcNr (Just origFuncName)
+        funcName                  = HNmNr funcNr (OrigLocal origFuncName)    -- not OrigFunc, so app functions get a separate namespace
         origFuncName              = applyFunctionName size specnr
-        args@(partialApp:appArgs) = map (\n->HNmNr n Nothing) [minArg .. maxArg]
-        evalPartialApp            = HNmNr (maxArg + 1) Nothing
+        args@(partialApp:appArgs) = map (\n->HNmNr n OrigNone) [minArg .. maxArg]
+        evalPartialApp            = HNmNr (maxArg + 1) OrigNone
         code = GrBind_Bind funcName args body
         body = GrExpr_Seq (GrExpr_Eval partialApp)
                           (GrPatLam_Var evalPartialApp)
