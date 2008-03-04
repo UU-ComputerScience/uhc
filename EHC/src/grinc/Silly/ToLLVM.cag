@@ -92,7 +92,7 @@ ATTR AllNT
            
 SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
-                                                     @loc.constants 
+                                                     (@loc.constants : @functions.constants) 
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl : gcInitFuncDecl
                                                      : gcMallocFuncDecl @lhs.intType
@@ -102,9 +102,12 @@ SEM SilModule
                                                      ( @loc.main : @functions.llvmCode )
                                                      
                 loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
-                loc.constants= ( GlobalVar "STR_RES" (Array 22 i8)
-                               , StrConstant (string2CString "%lld\\0A") (Array 6 i8)
-                               ) : @functions.constants
+                loc.resultStr = if sizeofPointer == 8
+                                then "%lld\n"
+                                else "%d\n"
+                loc.constants= ( GlobalVar "STR_RES" (stringType @loc.resultStr)
+                               , StrConstant (string2CString @loc.resultStr) (stringType @loc.resultStr)
+                               ) 
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
                                  [ LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
@@ -117,7 +120,7 @@ SEM SilModule
                                  , LLVMStatement_Assignment (LocalVar "rp.1.val" @lhs.intType)
                                      (LLVMExpression_Load (LocalVar "rp.1" @lhs.pointerType))
                                 , LLVMStatement_Assignment (LocalVar "cast.str.res" (pLift i8))
-                                     (LLVMExpression_GetElemPtr (GlobalVar "STR_RES" (pLift $ Array 6 i8)) [0,0])  
+                                     (LLVMExpression_GetElemPtr (GlobalVar "STR_RES" (pLift $ stringType @loc.resultStr)) [0,0])  
                                  , LLVMStatement_Call stdlibPrintfFuncDecl TailCall
                                      [ LocalVar "cast.str.res" (pLift i8), LocalVar "rp.1.val" @lhs.intType ] 
                                  , LLVMStatement_Return (Constant 0 i32)  
