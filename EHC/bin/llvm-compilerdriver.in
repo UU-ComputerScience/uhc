@@ -19,6 +19,14 @@ LLVM_OPT="@LLVM_OPT_CMD@ -std-compile-opts"
 #
 LLVM_LD="@LLVM_LD_CMD@ -O5"
 
+# Binary to compile .bc files to .s files
+#
+LLC="@LLVM_LLC_CMD@ -mtriple=@TARGET_TRIPLE@"
+
+# Native linker
+#
+NATIVE_LD="@GCC_CMD@"
+
 ###############################################################################
 # End of config options
 ###############################################################################
@@ -47,6 +55,7 @@ $LLVM_OPT -f -o $TMP_FILE2 $TMP_FILE1 && \
 $LLVM_LD -o $TMP_FILE1 $TMP_FILE2     && \
 mv $TMP_FILE1.bc $TMP_FILE1           && \
 $LLVM_OPT -f -o $TMP_FILE2 $TMP_FILE1 && \
-$LLVM_LD -native -o $OUTPUT $TMP_FILE2 $LIBS && \
+$LLC -f -o $OUTPUT.s $TMP_FILE2 && \
+$NATIVE_LD -o $OUTPUT $OUTPUT.s $LIBS && \
 rm $TMP_FILE1 && \
 rm $TMP_FILE2

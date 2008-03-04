@@ -697,6 +697,8 @@ llvmOpt
 LLVM_OPT_CMD
 llvmLd
 LLVM_LD_CMD
+llvmLlc
+LLVM_LLC_CMD
 CC
 CFLAGS
 LDFLAGS
@@ -722,6 +724,7 @@ LIBTOOL_DYNAMIC_CMD
 EHC_GCC_OPTS_STATIC
 TOP_ABS
 TOP_ABS2
+TARGET_TRIPLE
 INPLACE_TOP
 INSTALL_PREFIX
 INPLACE_PREFIX
@@ -1356,6 +1359,8 @@ Optional Packages:
                           Path to the LLVM bitcode optimizer
   --with-llvm-ld=<LLVM Linker>
                           Path to the LLVM Linker
+  --with-llc=<LLVM Compiler>
+                          Path to the LLVM Compiler
 
 Some influential environment variables:
   CC          C compiler command
@@ -2637,6 +2642,64 @@ fi
 fi
 
 LLVM_LD_CMD=$llvmLd
+
+
+# LLVM Compiler
+
+# Check whether --with-llc was given.
+if test "${with_llc+set}" = set; then
+  withval=$with_llc;  llvmLlc="$withval"
+else
+
+  if test "$LLC" = ""; then
+    # Extract the first word of "llc", so it can be a program name with args.
+set dummy llc; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmLlc+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmLlc in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmLlc="$llvmLlc" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmLlc="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmLlc=$ac_cv_path_llvmLlc
+if test -n "$llvmLlc"; then
+  { echo "$as_me:$LINENO: result: $llvmLlc" >&5
+echo "${ECHO_T}$llvmLlc" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmLlc=$LLC
+  fi
+
+
+fi
+
+LLVM_LLC_CMD=$llvmLlc
 
 
 ### Checks for libraries.
@@ -6235,6 +6298,10 @@ TOP_ABS="$hardtop_plat"
 TOP_ABS2="$hardtop_plat2"
 
 
+### Platform information, needed for LLVM code generation
+TARGET_TRIPLE="$host"
+
+
 ### install locations
 inplaceInstallDir="install"
 installPrefix=${prefix}
@@ -6968,6 +7035,8 @@ llvmOpt!$llvmOpt$ac_delim
 LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
 llvmLd!$llvmLd$ac_delim
 LLVM_LD_CMD!$LLVM_LD_CMD$ac_delim
+llvmLlc!$llvmLlc$ac_delim
+LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
@@ -6981,8 +7050,6 @@ EGREP!$EGREP$ac_delim
 MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
-GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
-SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7024,6 +7091,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
+SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
 SUFFIX_LIB!$SUFFIX_LIB$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
@@ -7034,6 +7103,7 @@ LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
+TARGET_TRIPLE!$TARGET_TRIPLE$ac_delim
 INPLACE_TOP!$INPLACE_TOP$ac_delim
 INSTALL_PREFIX!$INSTALL_PREFIX$ac_delim
 INPLACE_PREFIX!$INPLACE_PREFIX$ac_delim
@@ -7045,7 +7115,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 19; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 22; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
