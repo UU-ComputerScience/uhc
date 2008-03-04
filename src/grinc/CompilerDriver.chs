@@ -308,7 +308,8 @@ caGrin2Silly = do
 caSilly2LLVM :: CompileAction ()
 caSilly2LLVM = do
     { code <- gets gcsSilly
-    ; let llvm = silly2llvm code
+    ; opts    <- gets gcsOpts
+    ; let llvm = silly2llvm opts code
     ; modify (gcsUpdateLLVM llvm)
     }
 %%]
