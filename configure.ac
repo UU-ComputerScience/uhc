@@ -290,6 +290,21 @@ AC_ARG_WITH(llvm-ld,
 )
 AC_SUBST(LLVM_LD_CMD,$llvmLd)
 
+# LLVM Compiler
+AC_ARG_WITH(llc,
+[AC_HELP_STRING([--with-llc=<LLVM Compiler>],
+                [Path to the LLVM Compiler])],
+[ llvmLlc="$withval" ],
+[
+  if test "$LLC" = ""; then
+    AC_PATH_PROG(llvmLlc, llc)
+  else
+    llvmLlc=$LLC
+  fi
+]
+)
+AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+
 ### Checks for libraries.
 
 ### Checks for header files.
@@ -448,6 +463,9 @@ case $HostPlatform in
 esac
 AC_SUBST(TOP_ABS, "$hardtop_plat")
 AC_SUBST(TOP_ABS2, "$hardtop_plat2")
+
+### Platform information, needed for LLVM code generation
+AC_SUBST(TARGET_TRIPLE, "$host")
 
 ### install locations
 inplaceInstallDir="install"
