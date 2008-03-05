@@ -380,11 +380,15 @@ ehcCmdLineOpts
                                                   }
                                 Just "llvm"  -> o { ehcOptEmitLLVM     = True
                                                   , ehcOptFullProgGRIN = True
+                                                  , ehcOptEmitExecBC   = False
+                                                  , ehcOptEmitGrinBC   = False
                                                   }
                                 Just m | m `elem` ["lexe", "lexec"]
                                              -> o { ehcOptEmitLLVM     = True
                                                   , ehcOptFullProgGRIN = True
                                                   , ehcOptEmitExecLLVM = True
+                                                  , ehcOptEmitExecBC   = False
+                                                  , ehcOptEmitGrinBC   = False                                                  
                                                   }                   
                                 Just "bc"    -> o { ehcOptEmitGrinBC   = True 
                                                   -- , ehcOptPriv         = True
