@@ -2,11 +2,6 @@
 #include "../rts.h"
 %%]
 
-%%[97
-// Include alloca explicit because it is not part of the C99 standard.
-#include <alloca.h>
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Primitives for grin bytecode interpreter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
