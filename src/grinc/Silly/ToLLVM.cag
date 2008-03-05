@@ -95,6 +95,7 @@ SEM SilModule
                                                      (@loc.constants : @functions.constants) 
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl : gcInitFuncDecl
+                                                     : gcPrintStatsFuncDecl
                                                      : gcMallocFuncDecl @lhs.intType
                                                      : gcMallocUncollectableFuncDecl @lhs.intType
                                                      : primPatternMatchFailureFuncDecl : @functions.externFuncs 
@@ -120,6 +121,7 @@ SEM SilModule
                                  , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
 %%]]                                 
                                  , LLVMStatement_Call fun_mainFuncDecl StdCall []
+                                 , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "rp.1" @lhs.pointerType)
                                      (LLVMExpression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
                                  , LLVMStatement_Assignment (LocalVar "rp.1.val" @lhs.intType)
@@ -734,6 +736,10 @@ argument type and for the return type, supporting both 32 and 64 bit memory allo
 gcMallocUncollectableFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcMallocUncollectableFuncDecl intType =
   LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc_uncollectable" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
+
+gcPrintStatsFuncDecl :: LLVMFunctionDecl
+gcPrintStatsFuncDecl =
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmc_print_statistics" Void FixedArgs []
 }
 %%]
 
