@@ -2086,7 +2086,7 @@ cpCompileOrderedCUs
             modNmL = map head modNmLL
             (_,opts) = crBaseInfo' cr
             Just (mm@(mImpL,mMain)) = initlast modNmL
-      ; cpSeq [anal modNmL, biggrin opts modNmL mm, gcc mm]
+      ; cpSeq [anal modNmL, biggrin opts modNmL mm, gcc mm, llvm mm]
       }
   where anal ms
           = cpSeq (merge (map comp ms) (map flow ms))
@@ -2120,6 +2120,8 @@ cpCompileOrderedCUs
                        }
         gcc (mImpL,mMain)
           = cpSeq [cpCompileWithGCC GCC_CompileExec mImpL mMain]
+        llvm (_,mMain)
+          = cpSeq [cpCompileWithLLVM mMain]
         
 %%]
 
