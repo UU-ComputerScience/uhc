@@ -5,10 +5,12 @@
 
 #define CFalse 2
 #define CTrue 3
-#define CEQ 4
-#define CGT 5
-#define CLT 6
-#define Ccomma0 7
+#define Ccolon 4
+#define Csubbus 5
+#define CEQ 6
+#define CGT 7
+#define CLT 8
+#define Ccomma0 9
 
 %%]
 
@@ -76,7 +78,7 @@ PRIM GrWord primNegInt(GrWord x)
 
 PRIM GrWord primAddInt(GrWord x, GrWord y)
 {   
-	printf("add %d %d\n", x, y );
+	//printf("add %d %d\n", x, y );
 	return x+y;
 }
 
@@ -103,6 +105,11 @@ PRIM GrWord primDivInt(GrWord x, GrWord y)
 PRIM GrWord primModInt(GrWord x, GrWord y)
 {   
 	//printf("mod %d %d\n", x, y );
+	return x%y;
+}
+
+PRIM GrWord primRemInt(GrWord x, GrWord y)
+{   
 	return x%y;
 }
 %%]
@@ -237,21 +244,36 @@ PRIM GrWord primPutCharChanSimple(GrWord h, GrWord c)
 	return Ccomma0;
 }
 
-PRIM GrWord primErrorSimple(GrWord x)
+PRIM GrWord primError(GrWord s)
 {
-	printf("Error function called from Haskell\n");
+	GrWord c;
+	char x;
+
+	printf("\nError function called from Haskell with message: ");
 	fflush(stdout);
+	
+	while (  ((GrWord*)s)[0] == Ccolon )
+	{
+		c = ((GrWord*)s)[1];	
+		x = ((GrWord*)c)[1];
+		putc(x,stdout);
+		s = ((GrWord*)s)[2];	
+	}
+	putc('\n', stdout);
+	fflush(stdout);
+	
 	exit(1);
 	return 0;	
 }
 
+
 PRIM GB_Word primMinInt()
 {
-	return -32767;	
+	return 0x10000000;
 }
 PRIM GB_Word primMaxInt()
 {
-	return 32767;	
+	return 0x0FFFFFFF;
 }
 
 

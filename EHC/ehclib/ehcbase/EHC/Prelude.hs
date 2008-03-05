@@ -1,9 +1,82 @@
-{----------------------------------------------------------------------------
-The EHC prelude is copied/adapted from the Hugs prelude.
-----------------------------------------------------------------------------}
+module EHC.Prelude   -- adapted from thye Hugs prelude
+(
+-- Classes
+    Eq         ((==), (/=)),
+    Ord        (compare, (<), (<=), (>=), (>), max, min),
+    Bounded    (minBound, maxBound),
+    Num        ((+), (-), (*), negate, abs, signum, fromInteger, fromInt),
+    Real       (toRational),
+    Integral   (quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
+    Fractional ((/), recip, fromRational, fromDouble),
+    Floating   (pi, exp, log, sqrt, (**), logBase, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
+    RealFrac   (properFraction, truncate, round, ceiling, floor),
+    RealFloat  (floatRadix, floatDigits, floatRange, decodeFloat, encodeFloat, exponent, significand, scaleFloat, isNaN, isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
+    -- Ix      (range, index, unsafeIndex, inRange, rangeSize),
+    Enum       (succ, pred, toEnum, fromEnum, enumFrom, enumFromThen, enumFromTo, enumFromThenTo),
+    Functor    (fmap),
+    Monad      ((>>=), (>>), return, fail),
+    Show       (show, showsPrec, showList),
+    Read       (readsPrec, readList),
 
-module EHC.Prelude (
---  module PreludeList,
+-- Types
+    ''[]''     (..),
+    Bool       (False, True),
+    Maybe      (Nothing, Just),
+    Either     (Left, Right),
+    Ordering   (LT, EQ, GT),
+    Ratio      ((:%)), (%), 
+    Char, 
+    Int, 
+    String, 
+    Integer, 
+    Float, 
+    Double, 
+    IO,
+    ShowS,
+    ReadS,
+    Rational, 
+
+    Handle, 
+    FilePath, 
+    IOError,
+    IO            (..), 
+    IOResult      (..),
+    IOMode        (..),
+    IOException   (..), 
+    IOErrorType   (..),
+    
+    Exception     (..),
+    ArithException(..),
+    ArrayException(..),
+    AsyncException(..),
+    ExitCode      (..),
+
+--  dangerous functions
+    asTypeOf, error, undefined, seq, ($!),
+	forceString,
+ 
+-- functions on specific types    
+    -- Bool
+    (&&), (||), not, otherwise,
+    -- Char
+    isSpace, isUpper, isLower, isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum, showLitChar, -- readLitChar, lexLitChar,
+    -- Ratio
+    numerator, denominator,
+    -- Maybe
+    maybe, 
+    -- Either
+    either,
+ 
+-- overloaded functions
+    mapM, mapM_, sequence, sequence_, (=<<),
+    subtract, even, odd, gcd, lcm, (^), (^^),
+    fromIntegral, realToFrac,
+    boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
+    shows, showChar, showString,
+    --reads, read, lex, readParen, showParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+
+--  standard functions
+    fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
     map, (++), concat, filter,
     head, last, tail, init, null, length, (!!),
     foldl, foldl1, scanl, scanl1, foldr, foldr1, scanr, scanr1,
@@ -13,148 +86,36 @@ module EHC.Prelude (
     any, all, elem, notElem, lookup,
     sum, product, maximum, minimum, concatMap, 
     zip, zip3, zipWith, zipWith3, unzip, unzip3,
---  module PreludeText, 
-{-----------------------------
-    ReadS, ShowS,
-    Read(readsPrec, readList),
-    Show(show, showsPrec, showList),
-    reads, shows, read, lex,
-    showChar, showString, readParen, showParen,
------------------------------}
-    ShowS,
-    Show(show, showsPrec, showList),
-    shows,
-    showChar, showString,
---  module PreludeIO,
-    FilePath, IOError, ioError, userError,
-    putChar, putStr, putStrLn, print, hPrint,
-    getChar, getLine, getContents, interact,
-{-----------------------------
-    readFile, writeFile, appendFile, readIO, readLn,
------------------------------}
-    readFile, writeFile, appendFile,
---  module Ix,
-{-----------------------------
-    Ix(range, index, unsafeIndex, inRange, rangeSize),
------------------------------}
---  module Char,
-    isSpace, isUpper, isLower,
-    isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum,
-{-----------------------------
-    readLitChar, showLitChar, lexLitChar,
------------------------------}
-    showLitChar,
---  module Numeric
-{-----------------------------
-    readSigned, readInt,
-    readDec, readOct, readHex, readSigned,
-    readFloat, lexDigits, 
------------------------------}
---  module Ratio,
-    Ratio((:%)), (%), numerator, denominator,
---  Non-standard exports
-    IO(..), IOResult(..),
-    IOException(..), IOErrorType(..),
-    Exception(..),
-    ArithException(..), ArrayException(..), AsyncException(..),
-    ExitCode(..),
-    FunPtr, Ptr, Addr,
-    Word, StablePtr, ForeignObj, ForeignPtr,
-    Int8, Int16, Int32, Int64,
-    Word8, Word16, Word32, Word64,
-    Handle, Object,
-{-----------------------------
-    basicIORun, blockIO, IOFinished(..),
------------------------------}
-    ehcRunMain,
-{-----------------------------
-    threadToIOResult,
------------------------------}
 
+-- IO functions
+    ioError, userError,
+    putChar, putStr, putStrLn, print, hPrint, getChar, getLine, getContents, interact,
+    readFile, writeFile, appendFile,
+    stdin, stdout, stderr, openFile, hClose, hGetContents, hGetChar, hGetLine, hPutChar, hPutStr, hPutStrLn, hFlush,
+
+-- Exception related
 #ifdef __FULL_PROGRAM_ANALYSIS__
 #else
     catchException, throw, catch,
 #endif
 
-{-----------------------------
-    Dynamic(..), TypeRep(..), Key(..), TyCon(..), Obj,
------------------------------}
-
-    IOMode(..),
-    stdin, stdout, stderr,
-    openFile,
-    hClose,
-    hGetContents, hGetChar, hGetLine,
-    hPutChar,
-    hPutStr, hPutStrLn,
-    hFlush,
-
-    Bool(False, True),
-    Maybe(Nothing, Just),
-    Either(Left, Right),
-    Ordering(LT, EQ, GT),
-    Char, String, Int, Integer, Float, Double, Rational, IO,
-
-    packedStringToString,
-    packedStringToInteger,
+--  EHC specific functions
+    ehcRunMain,
+    packedStringToString, packedStringToInteger
     
-    primAddInt, primGtInt,
-    
---  List type: []((:), [])
-    ''[]''(..),
---  Tuple types: (,), (,,), etc.
---  Trivial type: ()
---  Functions: (->)
-{-----------------------------
-    Rec, emptyRec, EmptyRow, -- non-standard, should only be exported if TREX
------------------------------}
-    Eq((==), (/=)),
-    Ord(compare, (<), (<=), (>=), (>), max, min),
-    Enum(succ, pred, toEnum, fromEnum, enumFrom, enumFromThen,
-         enumFromTo, enumFromThenTo),
-    Bounded(minBound, maxBound),
---  Num((+), (-), (*), negate, abs, signum, fromInteger),
-    Num((+), (-), (*), negate, abs, signum, fromInteger, fromInt),
-    Real(toRational),
---  Integral(quot, rem, div, mod, quotRem, divMod, toInteger),
-    Integral(quot, rem, div, mod, quotRem, divMod, toInteger, toInt),
---  Fractional((/), recip, fromRational),
-    Fractional((/), recip, fromRational, fromDouble),
-    Floating(pi, exp, log, sqrt, (**), logBase, sin, cos, tan,
-             asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
-    RealFrac(properFraction, truncate, round, ceiling, floor),
-    RealFloat(floatRadix, floatDigits, floatRange, decodeFloat,
-              encodeFloat, exponent, significand, scaleFloat, isNaN,
-              isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
-    Monad((>>=), (>>), return, fail),
-    Functor(fmap),
-    mapM, mapM_, sequence, sequence_, (=<<),
-    maybe, either,
-    (&&), (||), not, otherwise,
-    subtract, even, odd, gcd, lcm, (^), (^^),
-    fromIntegral, realToFrac,
-    fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
-    asTypeOf, error, undefined,
-    seq, ($!),
+) where
 
-    boundedSucc,
-    boundedPred,
-    boundedEnumFrom,
-    boundedEnumFromTo,
-    boundedEnumFromThen,
-    boundedEnumFromThenTo
-    
-  ) where
 
--- Standard value bindings {Prelude} ----------------------------------------
+--------------------------------------------------------------
+-- Operator precedences
+--------------------------------------------------------------
 
 infixr 9  .
 infixl 9  !!
 infixr 8  ^, ^^, **
 infixl 7  *, /, `quot`, `rem`, `div`, `mod`, :%, %
 infixl 6  +, -
---infixr 5  :    -- this fixity declaration is hard-wired into Hugs
-infixr 5  :    -- this fixity declaration is not hard-wired into EHC
+infixr 5  :
 infixr 5  ++
 infix  4  ==, /=, <, <=, >=, >, `elem`, `notElem`
 infixr 3  &&
@@ -163,7 +124,83 @@ infixl 1  >>, >>=
 infixr 1  =<<
 infixr 0  $, $!, `seq`
 
--- Equality and Ordered classes ---------------------------------------------
+--------------------------------------------------------------
+-- Dangerous functions
+--------------------------------------------------------------
+
+asTypeOf       :: a -> a -> a
+asTypeOf        = const
+
+seq :: a -> b -> b -- forall a . a -> forall b . b -> b
+x `seq` y = letstrict x' = x in y
+
+f $! x                = x `seq` f x
+
+foreign import ccall "primUnsafeId" unsafeCoerce :: a -> b
+
+
+forceString :: String -> String
+forceString s = stringSum s `seq` s
+
+stringSum :: String -> Int
+stringSum [] = 0
+stringSum (x:xs) = primCharToInt x + stringSum xs
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall primError :: String -> a
+
+error          :: String -> a
+error s         = primError (forceString s)
+#else
+error          :: String -> a
+error s         = throw (ErrorCall s)
+#endif
+
+undefined :: forall a . a
+undefined       = error "Prelude.undefined"
+
+----------------------------------------------------------------
+-- PackedString
+----------------------------------------------------------------
+
+data PackedString
+
+-- foreign import ccall "primCStringToString"  packedStringToString  :: PackedString -> [Char]
+foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
+foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
+foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
+
+packedStringToString :: PackedString -> [Char]
+packedStringToString p = if packedStringNull p 
+                          then []
+                          else packedStringHead p : packedStringToString (packedStringTail p)
+
+----------------------------------------------------------------
+-- ByteArray
+----------------------------------------------------------------
+
+data ByteArray
+
+foreign import ccall primByteArrayLength   :: ByteArray -> Int
+foreign import ccall primByteArrayToString :: ByteArray -> String
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall packedStringToInteger :: PackedString -> Integer
+
+#else
+foreign import ccall primStringToByteArray :: String -> Int -> ByteArray
+foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
+
+#endif
+
+
+--------------------------------------------------------------
+-- class Eq, Ord, Bounded
+--------------------------------------------------------------
 
 class Eq a where
     (==), (/=) :: a -> a -> Bool
@@ -197,11 +234,56 @@ class Bounded a where
     minBound, maxBound :: a
     -- Minimal complete definition: All
 
--- Numeric classes ----------------------------------------------------------
+boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
+boundedSucc x
+  | x == maxBound = error "succ: applied to maxBound"
+  | otherwise     = x+1
+boundedPred x
+  | x == minBound = error "pred: applied to minBound"
+  | otherwise     = x-1
 
-{-----------------------------
-class (Eq a, Show a) => Num a where
------------------------------}
+boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
+boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
+boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
+
+boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
+boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
+boundedEnumFromThen n m =
+    enumFromThenTo n m (if n <= m then maxBound else minBound)
+boundedEnumFromThenTo n n' m
+  | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
+  | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
+ where
+  delta = n'-n
+  ns = iterate (+delta) n
+
+-- takeWhile and one more
+takeWhile1 :: (a -> Bool) -> [a] -> [a]
+takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
+
+numericEnumFrom        :: Num a => a -> [a]
+numericEnumFromThen    :: Num a => a -> a -> [a]
+numericEnumFromTo      :: (Ord a, Fractional a) => a -> a -> [a]
+numericEnumFromThenTo  :: (Ord a, Fractional a) => a -> a -> a -> [a]
+numericEnumFrom n            = iterate' (+1) n
+numericEnumFromThen n m      = iterate' (+(m-n)) n
+numericEnumFromTo n m        = takeWhile (<= m+1/2) (numericEnumFrom n)
+numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
+                               where p | n' >= n   = (<= m + (n'-n)/2)
+                                       | otherwise = (>= m + (n'-n)/2)
+
+iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
+iterate' f x = x : (iterate' f $! f x)
+
+
+--------------------------------------------------------------
+-- Numeric classes: Num, Real, Integral, 
+--                  Fractional, Floating, 
+--                  RealFrac, RealFloat
+--------------------------------------------------------------
+
+-- class (Eq a, Show a) => Num a where
 class (Eq a) => Num a where
     (+), (-), (*)  :: a -> a -> a
     negate         :: a -> a
@@ -340,7 +422,9 @@ class (RealFrac a, Floating a) => RealFloat a where
       | x==0 && y==0  = y     -- must be after the other double zero tests
       | otherwise     = x + y -- x or y is a NaN, return a NaN (via +)
 
--- Numeric functions --------------------------------------------------------
+--------------------------------------------------------------
+-- Overloaded numeric functions
+--------------------------------------------------------------
 
 subtract       :: Num a => a -> a -> a
 subtract        = flip (-)
@@ -354,15 +438,7 @@ gcd 0 0         = error "Prelude.gcd: gcd 0 0 is undefined"
 gcd x y         = gcd' (abs x) (abs y)
                   where gcd' x 0 = x
                         gcd' x y = gcd' y (x `rem` y)
-{-----------------------------
-gcd            :: Integral a => a -> a -> a
-gcd x y | x == y && x == 0
-                = error "Prelude.gcd: gcd 0 0 is undefined"
-        | True  = gcd' (abs x) (abs y)
-                  where gcd' x y | y == 0 = x
-                                 | True   = gcd' y (x `rem` y)
 
------------------------------}
 lcm            :: (Integral a) => a -> a -> a
 lcm _ 0         = 0
 lcm 0 _         = 0
@@ -386,7 +462,20 @@ fromIntegral    = fromInteger . toInteger
 realToFrac     :: (Real a, Fractional b) => a -> b
 realToFrac      = fromRational . toRational
 
--- Index and Enumeration classes --------------------------------------------
+absReal :: (Ord a,Num a) => a -> a
+absReal x    | x >= 0    = x
+             | otherwise = -x
+
+signumReal :: (Ord a,Num a) => a -> a
+signumReal x | x == 0    =  0
+             | x > 0     =  1
+             | otherwise = -1
+
+
+
+--------------------------------------------------------------
+-- class Ix, Enum
+--------------------------------------------------------------
 
 {-----------------------------
 class (Ord a) => Ix a where
@@ -427,7 +516,9 @@ class Enum a where
     enumFromThen x y      = map toEnum [ fromEnum x, fromEnum y ..]
     enumFromThenTo x y z  = map toEnum [ fromEnum x, fromEnum y .. fromEnum z ]
 
--- Read and Show classes ------------------------------------------------------
+--------------------------------------------------------------
+-- class Read, Show
+--------------------------------------------------------------
 
 type ReadS a = String -> [(a,String)]
 type ShowS   = String -> String
@@ -462,7 +553,9 @@ class Show a where
                       where showl []     = showChar ']'
                             showl (x:xs) = showChar ',' . shows x . showl xs
 
--- Monad classes ------------------------------------------------------------
+--------------------------------------------------------------
+-- class Functor, Monad
+--------------------------------------------------------------
 
 class Functor f where
     fmap :: (a -> b) -> (f a -> f b)
@@ -483,42 +576,28 @@ sequence (c:cs) = do x  <- c
                      xs <- sequence cs
                      return (x:xs)
 
-{-----------------------------
-sequence_        :: forall a . Monad m => [m a] -> m ()
------------------------------}
+-- overloaded Functor and Monad function
+
+-- sequence_        :: forall a . Monad m => [m a] -> m ()
 sequence_        :: Monad m => [m a] -> m ()
 sequence_         = foldr (>>) (return ())
 
-{-----------------------------
-mapM             :: Monad m => (a -> m b) -> [a] -> m [b]
------------------------------}
+--mapM             :: Monad m => (a -> m b) -> [a] -> m [b]
 mapM             :: forall a b . Monad m => (a -> m b) -> [a] -> m [b]
 mapM f            = sequence . map f
 
-{-----------------------------
-mapM_            :: Monad m => (a -> m b) -> [a] -> m ()
------------------------------}
+--mapM_            :: Monad m => (a -> m b) -> [a] -> m ()
 mapM_            :: forall a b . Monad m => (a -> m b) -> [a] -> m ()
 mapM_ f           = sequence_ . map f
 
 (=<<)            :: Monad m => (a -> m b) -> m a -> m b
 f =<< x           = x >>= f
 
--- Evaluation and strictness ------------------------------------------------
 
-{-----------------------------
-primitive seq           :: a -> b -> b
 
-primitive ($!) "strict" :: (a -> b) -> a -> b
--- f $! x                = x `seq` f x
------------------------------}
-
-seq :: a -> b -> b -- forall a . a -> forall b . b -> b
-x `seq` y = letstrict x' = x in y
-
-f $! x                = x `seq` f x
-
--- Trivial type -------------------------------------------------------------
+--------------------------------------------------------------
+-- Unit type
+--------------------------------------------------------------
 
 -- data () = () deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
 
@@ -551,12 +630,12 @@ instance Bounded () where
     maxBound = ()
 -----------------------------}
 
--- Boolean type -------------------------------------------------------------
+--------------------------------------------------------------
+-- Boolean type
+--------------------------------------------------------------
 
 data Bool    = False | True
-{-----------------------------
-               deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
------------------------------}
+               -- deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
                deriving (Eq, Ord, Enum, Show)
 
 (&&), (||)  :: Bool -> Bool -> Bool
@@ -572,31 +651,33 @@ not False    = True
 otherwise   :: Bool
 otherwise    = True
 
--- Character type -----------------------------------------------------------
+--------------------------------------------------------------
+-- Char type
+--------------------------------------------------------------
 
-{-----------------------------
-data Char               -- builtin datatype of ISO Latin characters
------------------------------}
+-- type Char builtin
 type String = [Char]    -- strings are lists of characters
 
 foreign import ccall "primEqInt"   primEqChar    :: Char -> Char -> Bool
 foreign import ccall "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
-
-instance Eq Char  where (==)    = primEqChar
-instance Ord Char where compare = primCmpChar
-
 foreign import ccall "primUnsafeId"  primCharToInt   :: Char -> Int
 foreign import ccall "primUnsafeId"  primIntToChar   :: Int -> Char
+foreign import ccall "primCharIsUpper"   isUpper    :: Char -> Bool
+foreign import ccall "primCharIsLower"   isLower    :: Char -> Bool
+
+instance Eq Char  where 
+    (==)    = primEqChar
+
+instance Ord Char where 
+    compare = primCmpChar
 
 instance Enum Char where
     toEnum           = primIntToChar
     fromEnum         = primCharToInt
-{-----------------------------
-    enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
-    enumFromThen     = boundedEnumFromThen
------------------------------}
+    --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
+    --enumFromThen     = boundedEnumFromThen
 
-{-----------------------------
+{-
 instance Ix Char where
     range (c,c')      = [c..c']
     unsafeIndex (c,_) i = fromEnum i - fromEnum c
@@ -611,7 +692,7 @@ instance Read Char where
                where readl ('"':s)      = [("",s)]
                      readl ('\\':'&':s) = readl s
                      readl s            = [(c:cs,u) | (c ,t) <- readLitChar s,
------------------------------}
+-}
 
 instance Show Char where
     showsPrec p '\'' = showString "'\\''"
@@ -626,8 +707,7 @@ instance Bounded Char where
     minBound = '\0'
     maxBound = '\xff' -- primMaxChar
 
-isSpace, isDigit :: Char -> Bool
-
+isSpace :: Char -> Bool
 isSpace c              =  c == ' '  ||
                           c == '\t' ||
                           c == '\n' ||
@@ -636,25 +716,23 @@ isSpace c              =  c == ' '  ||
                           c == '\v' ||
                           c == '\xa0'
 
+isDigit :: Char -> Bool
 isDigit c              =  c >= '0'   &&  c <= '9'
 
-foreign import ccall "primCharIsUpper"   isUpper    :: Char -> Bool
-foreign import ccall "primCharIsLower"   isLower    :: Char -> Bool
 
-isAlpha c = isUpper c || isLower c
+isAlpha :: Char -> Bool
+isAlpha c    = isUpper c || isLower c
+
+isAlphaNum :: Char -> Bool
 isAlphaNum c = isAlpha c || isDigit c
 
--- Maybe type ---------------------------------------------------------------
+
+--------------------------------------------------------------
+-- Maybe type
+--------------------------------------------------------------
 
 data Maybe a = Nothing | Just a
-{-----------------------------
-               deriving (Eq, Ord, Read, Show)
------------------------------}
-               deriving (Eq, Ord, Show)
-
-maybe             :: b -> (a -> b) -> Maybe a -> b
-maybe n f Nothing  = n
-maybe n f (Just x) = f x
+               deriving (Eq, Ord, Show)  -- TODO: Read
 
 instance Functor Maybe where
     fmap f Nothing  = Nothing
@@ -666,31 +744,32 @@ instance Monad Maybe where
     return        = Just
     fail s        = Nothing
 
--- Either type --------------------------------------------------------------
+maybe             :: b -> (a -> b) -> Maybe a -> b
+maybe n f Nothing  = n
+maybe n f (Just x) = f x
+
+--------------------------------------------------------------
+-- Either type
+--------------------------------------------------------------
 
 data Either a b = Left a | Right b
-{-----------------------------
-                  deriving (Eq, Ord, Read, Show)
------------------------------}
-                  deriving (Eq, Ord, Show)
+                  deriving (Eq, Ord, Show) -- TODO: Read
 
 either              :: (a -> c) -> (b -> c) -> Either a b -> c
 either l r (Left x)  = l x
 either l r (Right y) = r y
 
--- Ordering type ------------------------------------------------------------
+--------------------------------------------------------------
+-- Ordering type
+--------------------------------------------------------------
 
 data Ordering = LT | EQ | GT
-{-----------------------------
-                deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
------------------------------}
-                deriving (Eq, Ord, Enum, Show)
+                deriving (Eq, Ord, Enum, Show) -- TODO: Ix, Read, Bounded
 
--- Lists --------------------------------------------------------------------
+--------------------------------------------------------------
+-- Lists
+--------------------------------------------------------------
 
-{-----------------------------
--- data [a] = [] | a : [a] deriving (Eq, Ord)
------------------------------}
 data [] a = ''[]'' | a : [a]
 
 instance Eq a => Eq [a] where
@@ -719,41 +798,36 @@ instance Read a => Read [a]  where
 instance Show a => Show [a]  where
     showsPrec p = showList
 
--- Tuples -------------------------------------------------------------------
+primCompAux      :: Ord a => a -> a -> Ordering -> Ordering
+primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
 
--- data (a,b) = (a,b) deriving (Eq, Ord, Ix, Read, Show)
--- etc..
 
--- Standard Integral types --------------------------------------------------
-
-{-----------------------------
-data Int      -- builtin datatype of fixed size integers
-data Integer  -- builtin datatype of arbitrary size integers
------------------------------}
-
+--------------------------------------------------------------
+-- Int type
+--------------------------------------------------------------
+-- type Int builtin
 
 foreign import ccall primGtInt      :: Int -> Int -> Bool
 foreign import ccall primLtInt      :: Int -> Int -> Bool
 foreign import ccall primEqInt      :: Int -> Int -> Bool
 foreign import ccall primCmpInt     :: Int -> Int -> Ordering
 
-
-foreign import ccall primEqInteger  :: Integer -> Integer -> Bool
-foreign import ccall primCmpInteger :: Integer -> Integer -> Ordering
-foreign import ccall primIntegerToInt :: Integer -> Int
-
-instance Eq  Int     where (==)    = primEqInt
-instance Eq  Integer where (==)    = primEqInteger
-instance Ord Int     where
-  compare = primCmpInt
-  (<)     = primLtInt
-  (>)     = primGtInt
-instance Ord Integer where compare = primCmpInteger
-
 foreign import ccall primAddInt       :: Int -> Int -> Int
 foreign import ccall primSubInt       :: Int -> Int -> Int
 foreign import ccall primMulInt       :: Int -> Int -> Int
 foreign import ccall primNegInt       :: Int -> Int
+
+foreign import ccall primMaxInt :: Int
+foreign import ccall primMinInt :: Int
+
+
+instance Eq Int where 
+    (==)    = primEqInt
+
+instance Ord Int where
+    compare = primCmpInt
+    (<)     = primLtInt
+    (>)     = primGtInt
 
 instance Num Int where
     (+)           = primAddInt
@@ -765,13 +839,99 @@ instance Num Int where
     fromInteger   = primIntegerToInt
     fromInt x     = x
 
-foreign import ccall primMaxInt :: Int
-foreign import ccall primMinInt :: Int
-
 instance Bounded Int where
     minBound = primMinInt
     maxBound = primMaxInt
 
+instance Real Int where
+    toRational x = toInteger x % 1
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall primDivInt       :: Int -> Int -> Int
+foreign import ccall primModInt       :: Int -> Int -> Int
+--foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
+foreign import ccall primQuotInt      :: Int -> Int -> Int
+foreign import ccall primRemInt       :: Int -> Int -> Int
+--foreign import ccall primQuotRemInt   :: Int -> Int -> (Int,Int)
+
+instance Integral Int where
+    divMod    = undefined
+    quotRem   = undefined
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
+
+#else
+
+foreign import ccall primDivInt       :: Int -> Int -> Int
+foreign import ccall primModInt       :: Int -> Int -> Int
+foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
+foreign import ccall primQuotInt      :: Int -> Int -> Int
+foreign import ccall primRemInt       :: Int -> Int -> Int
+foreign import ccall primQuotRemInt   :: Int -> Int -> (Int,Int)
+
+instance Integral Int where
+    divMod    = primDivModInt
+    quotRem   = primQuotRemInt
+    div       = primDivInt
+    quot      = primQuotInt
+    rem       = primRemInt
+    mod       = primModInt
+    toInteger = primIntToInteger
+    toInt x   = x
+
+#endif
+
+{-
+instance Ix Int where
+    range (m,n)          = [m..n]
+    unsafeIndex (m,_) i  = i - m
+    inRange (m,n) i      = m <= i && i <= n
+-}
+
+instance Enum Int where
+    succ           = boundedSucc
+    pred           = boundedPred
+    toEnum         = id
+    fromEnum       = id
+    enumFrom       = boundedEnumFrom
+    enumFromTo     = boundedEnumFromTo
+    enumFromThen   = boundedEnumFromThen
+    enumFromThenTo = boundedEnumFromThenTo
+
+instance Read Int where
+    readsPrec p = readSigned readDec
+
+--foreign import ccall primShowInt :: Int -> String
+
+showInt :: Int -> String   -- TODO: replace by primitive
+showInt x | x<0  = '-' : showInt(-x)
+          | x==0 = "0"
+          | otherwise = (map primIntToChar . map (+48) . reverse . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
+
+instance Show Int where
+--  show   = primShowInt
+    show   = showInt
+
+
+
+--------------------------------------------------------------
+-- Integer type
+--------------------------------------------------------------
+
+foreign import ccall primEqInteger  :: Integer -> Integer -> Bool
+foreign import ccall primCmpInteger :: Integer -> Integer -> Ordering
+foreign import ccall primIntegerToInt :: Integer -> Int
+
+instance Eq  Integer where 
+    (==)    = primEqInteger
+    
+instance Ord Integer where
+    compare = primCmpInteger
 
 #ifdef __FULL_PROGRAM_ANALYSIS__
 
@@ -806,52 +966,13 @@ instance Num Integer where
     fromInteger x = x
     fromInt       = primIntToInteger
 
-
 #endif
-
-
-{-----------------------------
-absReal x    | x >= 0    = x
-             | otherwise = -x
-
-signumReal x | x == 0    =  0
-             | x > 0     =  1
-             | otherwise = -1
------------------------------}
-absReal :: (Ord a,Num a) => a -> a
-absReal x    | x >= 0    = x
-             | otherwise = -x
-
-signumReal :: (Ord a,Num a) => a -> a
-signumReal x | x == 0    =  0
-             | x > 0     =  1
-             | otherwise = -1
-
-instance Real Int where
-    toRational x = toInteger x % 1
 
 instance Real Integer where
     toRational x = x % 1
 
+
 #ifdef __FULL_PROGRAM_ANALYSIS__
-
-foreign import ccall primDivInt       :: Int -> Int -> Int
-foreign import ccall primModInt       :: Int -> Int -> Int
---foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
-foreign import ccall primQuotInt      :: Int -> Int -> Int
-foreign import ccall primRemInt       :: Int -> Int -> Int
---foreign import ccall primQuotRemInt   :: Int -> Int -> (Int,Int)
-
-instance Integral Int where
-    divMod    = undefined
-    quotRem   = undefined
-    div       = primDivInt
-    quot      = primQuotInt
-    rem       = primRemInt
-    mod       = primModInt
-    toInteger = primIntToInteger
-    toInt x   = x
-
 
 instance Integral Integer where
     divMod      = undefined
@@ -863,27 +984,7 @@ instance Integral Integer where
     toInteger x = undefined
     toInt       = undefined
 
-
 #else
-
-foreign import ccall primDivInt       :: Int -> Int -> Int
-foreign import ccall primModInt       :: Int -> Int -> Int
-foreign import ccall primDivModInt    :: Int -> Int -> (Int,Int)
-foreign import ccall primQuotInt      :: Int -> Int -> Int
-foreign import ccall primRemInt       :: Int -> Int -> Int
-foreign import ccall primQuotRemInt   :: Int -> Int -> (Int,Int)
-
-instance Integral Int where
-    divMod    = primDivModInt
-    quotRem   = primQuotRemInt
-    div       = primDivInt
-    quot      = primQuotInt
-    rem       = primRemInt
-    mod       = primModInt
-    toInteger = primIntToInteger
-    toInt x   = x
-
-
 
 foreign import ccall primQuotInteger          :: Integer -> Integer -> Integer
 foreign import ccall primRemInteger           :: Integer -> Integer -> Integer
@@ -904,56 +1005,12 @@ instance Integral Integer where
 
 #endif
 
-
-{-----------------------------
-instance Ix Int where
-    range (m,n)          = [m..n]
-    unsafeIndex (m,_) i  = i - m
-    inRange (m,n) i      = m <= i && i <= n
-
+{-
 instance Ix Integer where
     range (m,n)          = [m..n]
     unsafeIndex (m,_) i  = toInt (i - m)
     inRange (m,n) i      = m <= i && i <= n
------------------------------}
-
-instance Enum Int where
-    succ           = boundedSucc
-    pred           = boundedPred
-    toEnum         = id
-    fromEnum       = id
-    enumFrom       = boundedEnumFrom
-    enumFromTo     = boundedEnumFromTo
-    enumFromThen   = boundedEnumFromThen
-    enumFromThenTo = boundedEnumFromThenTo
-
-boundedSucc, boundedPred :: (Num a, Bounded a, Enum a) => a -> a
-boundedSucc x
-  | x == maxBound = error "succ: applied to maxBound"
-  | otherwise     = x+1
-boundedPred x
-  | x == minBound = error "pred: applied to minBound"
-  | otherwise     = x-1
-
-boundedEnumFrom       :: (Ord a, Bounded a, Enum a) => a -> [a]
-boundedEnumFromTo     :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
-boundedEnumFromThenTo :: (Ord a, Num a, Bounded a, Enum a) => a -> a -> a -> [a]
-boundedEnumFromThen   :: (Ord a, Bounded a, Enum a) => a -> a -> [a]
-
-boundedEnumFrom n     = takeWhile1 (/= maxBound) (iterate succ n)
-boundedEnumFromTo n m = takeWhile (<= m) (boundedEnumFrom n)
-boundedEnumFromThen n m =
-    enumFromThenTo n m (if n <= m then maxBound else minBound)
-boundedEnumFromThenTo n n' m
-  | n' >= n   = if n <= m then takeWhile1 (<= m - delta) ns else []
-  | otherwise = if n >= m then takeWhile1 (>= m - delta) ns else []
- where
-  delta = n'-n
-  ns = iterate (+delta) n
-
--- takeWhile and one more
-takeWhile1 :: (a -> Bool) -> [a] -> [a]
-takeWhile1 p (x:xs) = x : if p x then takeWhile1 p xs else []
+-}
 
 instance Enum Integer where
     succ x         = x + 1
@@ -968,53 +1025,24 @@ instance Enum Integer where
                                 where p | n' >= n   = (<= m)
                                         | otherwise = (>= m)
 
-numericEnumFrom        :: Num a => a -> [a]
-numericEnumFromThen    :: Num a => a -> a -> [a]
-numericEnumFromTo      :: (Ord a, Fractional a) => a -> a -> [a]
-numericEnumFromThenTo  :: (Ord a, Fractional a) => a -> a -> a -> [a]
-numericEnumFrom n            = iterate' (+1) n
-numericEnumFromThen n m      = iterate' (+(m-n)) n
-numericEnumFromTo n m        = takeWhile (<= m+1/2) (numericEnumFrom n)
-numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
-                               where p | n' >= n   = (<= m + (n'-n)/2)
-                                       | otherwise = (>= m + (n'-n)/2)
-
-iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
-iterate' f x = x : (iterate' f $! f x)
-
---foreign import ccall primShowInt :: Int -> String
--- TODO: replace this by a function Int -> PackedString
-
-{-----------------------------
------------------------------}
-instance Read Int where
-    readsPrec p = readSigned readDec
-
-showInt :: Int -> String
-showInt x | x<0  = '-' : showInt(-x)
-          | x==0 = "0"
-          | otherwise = (map primIntToChar . map (+48) . reverse . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
-
-instance Show Int where
---  show   = primShowInt
-    show   = showInt
 
 foreign import ccall primShowInteger :: Integer -> String
 
-{-----------------------------
+{-
 instance Read Integer where
     readsPrec p = readSigned readDec
 
-instance Show Integer where
-    showsPrec   = primShowsInteger
------------------------------}
+-}
 instance Show Integer where
     show   = primShowInteger
 
--- Standard Floating types --------------------------------------------------
 
-data Float     -- builtin datatype of single precision floating point numbers
-data Double    -- builtin datatype of double precision floating point numbers
+--------------------------------------------------------------
+-- Float and Double type
+--------------------------------------------------------------
+
+data Float     -- opaque datatype of 32bit IEEE floating point numbers
+data Double    -- opaque datatype of 64bit IEEE floating point numbers
 
 foreign import ccall primEqFloat   :: Float -> Float -> Bool
 foreign import ccall primCmpFloat  :: Float -> Float -> Ordering
@@ -1067,10 +1095,7 @@ instance Real Float where
 instance Real Double where
     toRational = doubleToRational
 
-{-----------------------------
--- Calls to these functions are optimised when passed as arguments to
--- fromRational.
------------------------------}
+-- TODO: Calls to these functions should be optimised when passed as arguments to fromRational
 floatToRational  :: Float  -> Rational
 doubleToRational :: Double -> Rational
 floatToRational  x = realFloatToRational x 
@@ -1125,7 +1150,8 @@ rationalToRealFloat x = x'
        b     = floatRadix x'
 -----------------------------}
 
--- basic
+-- primitive Float functions
+
 foreign import ccall "sinf"  primSinFloat   :: Float -> Float
 foreign import ccall "cosf"  primCosFloat   :: Float -> Float
 foreign import ccall "tanf"  primTanFloat   :: Float -> Float
@@ -1152,7 +1178,8 @@ instance Floating Float where
     atan  = primAtanFloat
     sinh  = primSinhFloat
 
--- basic
+-- primitive Double functions
+
 foreign import ccall "sin"  primSinDouble   :: Double -> Double
 foreign import ccall "cos"  primCosDouble   :: Double -> Double
 foreign import ccall "tan"  primTanDouble   :: Double -> Double
@@ -1162,7 +1189,6 @@ foreign import ccall "atan" primAtanDouble  :: Double -> Double
 foreign import ccall "exp"  primExpDouble   :: Double -> Double
 foreign import ccall "log"  primLogDouble   :: Double -> Double
 foreign import ccall "sqrt" primSqrtDouble  :: Double -> Double
--- extra
 foreign import ccall "sinh" primSinhDouble  :: Double -> Double
 foreign import ccall "cosh" primCoshDouble  :: Double -> Double
 foreign import ccall "tanh" primTanhDouble  :: Double -> Double
@@ -1293,17 +1319,99 @@ instance Show Double where
 instance Show Double where
     show   = primShowDouble
 
--- Some standard functions --------------------------------------------------
 
-{-----------------------------
-fst            :: (a,b) -> a
------------------------------}
+--------------------------------------------------------------
+-- Ratio and Rational type
+--------------------------------------------------------------
+
+data Ratio a = !a :% !a deriving (Eq)
+
+type Rational              = Ratio Integer
+
+(%)                       :: Integral a => a -> a -> Ratio a
+x % y                      = reduce (x * signum y) (abs y)
+
+reduce                    :: Integral a => a -> a -> Ratio a
+reduce x y | y == 0        = error "Ratio.%: zero denominator"
+           | otherwise     = (x `quot` d) :% (y `quot` d)
+                             where d = gcd x y
+
+numerator, denominator    :: Integral a => Ratio a -> a
+numerator (x :% y)         = x
+denominator (x :% y)       = y
+
+instance Integral a => Ord (Ratio a) where
+    compare (x:%y) (x':%y') = compare (x*y') (x'*y)
+
+instance Integral a => Num (Ratio a) where
+    (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
+    (x:%y) * (x':%y') = reduce (x*x') (y*y')
+    negate (x :% y)   = negate x :% y
+    abs (x :% y)      = abs x :% y
+    signum (x :% y)   = signum x :% 1
+    fromInteger x     = fromInteger x :% 1
+    fromInt           = intToRatio
+
+intToRatio :: Integral a => Int -> Ratio a  -- TODO: optimise fromRational (intToRatio x)
+intToRatio x = fromInt x :% 1
+
+instance Integral a => Real (Ratio a) where
+    toRational (x:%y) = toInteger x :% toInteger y
+
+instance Integral a => Fractional (Ratio a) where
+    (x:%y) / (x':%y')   = (x*y') % (y*x')
+    recip (x:%y)        = y % x
+    fromRational (x:%y) = fromInteger x :% fromInteger y
+    fromDouble          = doubleToRatio
+
+doubleToRatio :: Integral a => Double -> Ratio a   -- TODO: optimies fromRational (doubleToRatio x)
+doubleToRatio x
+            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
+            | otherwise = fromRational (round (x * fromInteger denom) % denom)
+                          where (m,n) = decodeFloat x
+                                n_dec :: Integer
+                                n_dec = ceiling (logBase 10 (encodeFloat 1 n :: Double))
+                                denom = 10 ^ (-n_dec)
+                                pow   = 10 ^ n_dec
+
+instance Integral a => RealFrac (Ratio a) where
+    properFraction (x:%y) = (fromIntegral q, r:%y)
+                            where (q,r) = quotRem x y
+
+instance Integral a => Enum (Ratio a) where
+    succ x         = x+1
+    pred x         = x-1
+    toEnum         = fromInt
+    fromEnum       = fromInteger . truncate   -- may overflow
+    enumFrom       = numericEnumFrom
+    enumFromTo     = numericEnumFromTo
+    enumFromThen   = numericEnumFromThen
+    enumFromThenTo = numericEnumFromThenTo
+
+{-
+instance (Read a, Integral a) => Read (Ratio a) where
+    readsPrec p = readParen (p > 7)
+                            (\r -> [(x%y,u) | (x,s)   <- readsPrec 8 r,
+                                              ("%",t) <- lex s,
+                                              (y,u)   <- readsPrec 8 t ])
+-}
+
+instance (Show a,Integral a) => Show (Ratio a) where
+    showsPrec p (x:%y) = showParen (p > 7)
+                             (showsPrec 8 x . showString " % " . showsPrec 8 y)
+
+
+
+
+--------------------------------------------------------------
+-- Some standard functions
+--------------------------------------------------------------
+
+--fst            :: (a,b) -> a
 fst            :: forall b . (a,b) -> a
 fst (x,_)       = x
 
-{-----------------------------
-snd            :: (a,b) -> b
------------------------------}
+--snd            :: (a,b) -> b
 snd            :: forall a . (a,b) -> b
 snd (_,y)       = y
 
@@ -1331,138 +1439,11 @@ f $ x           = f x
 until          :: (a -> Bool) -> (a -> a) -> a -> a
 until p f x     = if p x then x else until p f (f x)
 
-asTypeOf       :: a -> a -> a
-asTypeOf        = const
 
+--------------------------------------------------------------
+-- Standard list functions
+--------------------------------------------------------------
 
-
-#ifdef __FULL_PROGRAM_ANALYSIS__
-
-foreign import ccall primErrorSimple :: Bool -> a
-
-error          :: String -> a
-error s         = primErrorSimple True
-#else
-error          :: String -> a
-error s         = throw (ErrorCall s)
-#endif
-
-{-----------------------------
-undefined      :: a
-undefined       = error "Prelude.undefined"
------------------------------}
-
-undefined :: forall a . a
-#ifdef __FULL_PROGRAM_ANALYSIS__
-undefined = primErrorSimple False
-#else
-undefined       = error "Prelude.undefined"
-#endif
-
--- Standard functions on rational numbers {PreludeRatio} --------------------
-
-{-----------------------------
-data Integral a => Ratio a = !a :% !a deriving (Eq)
------------------------------}
-data Ratio a = !a :% !a deriving (Eq)
-type Rational              = Ratio Integer
-
-(%)                       :: Integral a => a -> a -> Ratio a
-x % y                      = reduce (x * signum y) (abs y)
-
-reduce                    :: Integral a => a -> a -> Ratio a
-reduce x y | y == 0        = error "Ratio.%: zero denominator"
-           | otherwise     = (x `quot` d) :% (y `quot` d)
-                             where d = gcd x y
-
-numerator, denominator    :: Integral a => Ratio a -> a
-numerator (x :% y)         = x
-denominator (x :% y)       = y
-
-instance Integral a => Ord (Ratio a) where
-    compare (x:%y) (x':%y') = compare (x*y') (x'*y)
-
-instance Integral a => Num (Ratio a) where
-    (x:%y) + (x':%y') = reduce (x*y' + x'*y) (y*y')
-    (x:%y) * (x':%y') = reduce (x*x') (y*y')
-    negate (x :% y)   = negate x :% y
-    abs (x :% y)      = abs x :% y
-    signum (x :% y)   = signum x :% 1
-    fromInteger x     = fromInteger x :% 1
-    fromInt           = intToRatio
-
-{-----------------------------
------------------------------}
--- Hugs optimises code of the form fromRational (intToRatio x)
-intToRatio :: Integral a => Int -> Ratio a
-intToRatio x = fromInt x :% 1
-
-instance Integral a => Real (Ratio a) where
-    toRational (x:%y) = toInteger x :% toInteger y
-
-instance Integral a => Fractional (Ratio a) where
-    (x:%y) / (x':%y')   = (x*y') % (y*x')
-    recip (x:%y)        = y % x
-    fromRational (x:%y) = fromInteger x :% fromInteger y
-    fromDouble          = doubleToRatio
-
-{-----------------------------
--- Hugs optimises code of the form fromRational (doubleToRatio x)
--- Since this function is private, and only used to convert floating point
--- literals, it yields a decimal fraction, hopefully the one the user
--- specified in the first place (but some precision may be lost).  A real
--- Haskell implementation would use Rational to represent these literals.
-doubleToRatio :: Integral a => Double -> Ratio a
-doubleToRatio x
-            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
-            | otherwise = fromRational (round (x * fromInteger denom) % denom)
-                          where (m,n) = decodeFloat x
-                                n_dec = ceiling (logBase 10 (encodeFloat 1 n))
-                                denom = 10 ^ (-n_dec)
-                                pow   = 10 ^ n_dec
------------------------------}
-doubleToRatio :: Integral a => Double -> Ratio a
-doubleToRatio x
-            | n>=0      = (round (x / fromInteger pow) * fromInteger pow) % 1
-            | otherwise = fromRational (round (x * fromInteger denom) % denom)
-                          where (m,n) = decodeFloat x
-                                n_dec :: Integer
-                                n_dec = ceiling (logBase 10 (encodeFloat 1 n :: Double))
-                                denom = 10 ^ (-n_dec)
-                                pow   = 10 ^ n_dec
-
-instance Integral a => RealFrac (Ratio a) where
-    properFraction (x:%y) = (fromIntegral q, r:%y)
-                            where (q,r) = quotRem x y
-
-instance Integral a => Enum (Ratio a) where
-    succ x         = x+1
-    pred x         = x-1
-    toEnum         = fromInt
-    fromEnum       = fromInteger . truncate   -- may overflow
-    enumFrom       = numericEnumFrom
-    enumFromTo     = numericEnumFromTo
-    enumFromThen   = numericEnumFromThen
-    enumFromThenTo = numericEnumFromThenTo
-
-{-----------------------------
-instance (Read a, Integral a) => Read (Ratio a) where
-    readsPrec p = readParen (p > 7)
-                            (\r -> [(x%y,u) | (x,s)   <- readsPrec 8 r,
-                                              ("%",t) <- lex s,
-                                              (y,u)   <- readsPrec 8 t ])
------------------------------}
-
-{-----------------------------
-instance Integral a => Show (Ratio a) where
-    showsPrec p (x:%y) = showParen (p > 7)
-                             (showsPrec 8 x . showString " % " . showsPrec 8 y)
------------------------------}
-instance (Show a,Integral a) => Show (Ratio a) where
-    showsPrec p (x:%y) = showParen (p > 7)
-                             (showsPrec 8 x . showString " % " . showsPrec 8 y)
-
--- Standard list functions {PreludeList} ------------------------------------
 
 head             :: [a] -> a
 head (x:_)        = x
@@ -1642,9 +1623,7 @@ maximum           = foldl1 max
 minimum           = foldl1 min
 
 concatMap        :: (a -> [b]) -> [a] -> [b]
-{-----------------------------
-concatMap f       = concat . map f
------------------------------}
+-- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
 concatMap _ []      = []
 concatMap f (x:xs)  = f x ++ concatMap f xs
 
@@ -1670,23 +1649,23 @@ unzip3                   :: [(a,b,c)] -> ([a],[b],[c])
 unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
                                   ([],[],[])
 
--- PreludeText ----------------------------------------------------------------
+--------------------------------------------------------------
+-- PreludeText
+--------------------------------------------------------------
 
-{-----------------------------
-reads        :: Read a => ReadS a
-reads         = readsPrec 0
------------------------------}
+--reads        :: Read a => ReadS a
+--reads         = readsPrec 0
 
 shows        :: Show a => a -> ShowS
 shows         = showsPrec 0
 
-{-----------------------------
+{-
 read         :: Read a => String -> a
 read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
                       [x] -> x
                       []  -> error "Prelude.read: no parse"
                       _   -> error "Prelude.read: ambiguous parse"
------------------------------}
+-}
 
 showChar     :: Char -> ShowS
 showChar      = (:)
@@ -1697,25 +1676,24 @@ showString    = (++)
 showParen    :: Bool -> ShowS -> ShowS
 showParen b p = if b then showChar '(' . p . showChar ')' else p
 
-{-----------------------------
+{-
 showField    :: Show a => String -> a -> ShowS
 showField m@(c:_) v
   | isAlpha c || c == '_' = showString m . showString " = " . shows v
   | otherwise = showChar '(' . showString m . showString ") = " . shows v
------------------------------}
+-}
 
 readParen    :: Bool -> ReadS a -> ReadS a
-{-----------------------------
+{-
 readParen b g = if b then mandatory else optional
                 where optional r  = g r ++ mandatory r
                       mandatory r = [(x,u) | ("(",s) <- lex r,
                                              (x,t)   <- optional s,
                                              (")",u) <- lex t    ]
------------------------------}
+-}
 readParen = undefined
 
-{-----------------------------
-
+{-
 readField    :: Read a => String -> ReadS a
 readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
                        ("=",s2) <- lex s1,
@@ -1727,10 +1705,10 @@ readFieldName m@(c:_) s0
   | otherwise = [ (f,s3) | ("(",s1) <- lex s0,
                            (f,s2)   <- lex s1, f == m,
                            (")",s3) <- lex s2 ]
+-}
 
------------------------------}
 lex                    :: ReadS String
-{-----------------------------
+{-
 lex ""                  = [("","")]
 lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
 lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
@@ -1772,7 +1750,7 @@ lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
                                                    (ds,u) <- lexDigits t] ++
                            [(e:ds,t)   | (ds,t) <- lexDigits s]
                 lexExp s = [("",s)]
------------------------------}
+-}
 lex = undefined
 
 lexDigits               :: ReadS String
@@ -1782,7 +1760,7 @@ nonnull                 :: (Char -> Bool) -> ReadS String
 nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
 
 lexLitChar          :: ReadS String
-{-----------------------------
+{-
 lexLitChar ""       =  []
 lexLitChar (c:s)
  | c /= '\\'        =  [([c],s)]
@@ -1803,15 +1781,13 @@ lexLitChar (c:s)
 
    table = ('\DEL',"DEL") : asciiTab
    prefix c (t,s) = (c:t, s)
------------------------------}
+-}
 lexLitChar = undefined
 
 isOctDigit c  =  c >= '0' && c <= '7'
 isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
                            || c >= 'a' && c <= 'f'
 
-{-----------------------------
------------------------------}
 lexmatch                   :: (Eq a) => [a] -> [a] -> ([a],[a])
 lexmatch (x:xs) (y:ys) | x == y  =  lexmatch xs ys
 lexmatch xs     ys               =  (xs,ys)
@@ -1823,7 +1799,7 @@ asciiTab = zip ['\NUL'..' ']
             "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US",
             "SP"]
 
-{-----------------------------
+{-
 readLitChar            :: ReadS Char
 readLitChar ('\\':s)    = readEsc s
  where
@@ -1851,7 +1827,7 @@ readLitChar ('\\':s)    = readEsc s
                                 []     -> []
        readEsc _        = []
 readLitChar (c:s)       = [(c,s)]
------------------------------}
+-}
 
 showLitChar               :: Char -> ShowS
 showLitChar c | c > '\DEL' = showChar '\\' .
@@ -1869,7 +1845,8 @@ showLitChar '\v'           = showString "\\v"
 showLitChar '\SO'          = protectEsc ('H'==) (showString "\\SO")
 showLitChar c              = showString ('\\' : snd (asciiTab!!fromEnum c))
 
-protectEsc p f             = f . cont
+-- the composition with cont makes CoreToGrin break the GrinModeInvariant so we forget about protecting escapes for the moment
+protectEsc p f             = f  -- . cont
  where cont s@(c:_) | p c  = "\\&" ++ s
        cont s              = s
 
@@ -1893,19 +1870,17 @@ readInt radix isDig digToInt s =
         | (ds,r) <- nonnull isDig s ]
 
 readSigned:: Real a => ReadS a -> ReadS a
-{-----------------------------
+{-
 readSigned readPos = readParen False read'
                      where read' r  = read'' r ++
                                       [(-x,t) | ("-",s) <- lex r,
                                                 (x,t)   <- read'' s]
                            read'' r = [(n,s)  | (str,s) <- lex r,
                                                 (n,"")  <- readPos str]
------------------------------}
+-}
 readSigned readPos = undefined
 
-{-----------------------------
-
-
+{-
 -- This floating point reader uses a less restrictive syntax for floating
 -- point than the Haskell lexer.  The `.' is optional.
 readFloat     :: RealFrac a => ReadS a
@@ -1926,7 +1901,10 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
                        readExp' ('-':s) = [(-k,t) | (k,t) <- readDec s]
                        readExp' ('+':s) = readDec s
                        readExp' s       = readDec s
------------------------------}
+-}
+
+
+
 
 ----------------------------------------------------------------
 -- Exception datatype and operations
@@ -1939,9 +1917,7 @@ data Exception                              -- alphabetical order of constructor
   | AsyncException      AsyncException      -- 3
   | BlockedOnDeadMVar                       -- 4
   | Deadlock                                -- 5
-{-----------------------------
-  | DynException        Dynamic
------------------------------}
+  -- | DynException        Dynamic
   | ErrorCall           String              -- 6
   | ExitException       ExitCode            -- 7 
   | IOException         IOException         -- 8 -- IO exceptions (from 'ioError')
@@ -1959,9 +1935,7 @@ instance Show Exception where
   showsPrec _ (AsyncException e)  = shows e
   showsPrec _ BlockedOnDeadMVar   = showString "thread blocked indefinitely"
   showsPrec _ Deadlock            = showString "<<deadlock>>"
-{-----------------------------
-  showsPrec _ (DynException _)    = showString "unknown exception"
------------------------------}
+  --showsPrec _ (DynException _)    = showString "unknown exception"
   showsPrec _ (ErrorCall s)       = showString s
   showsPrec _ (ExitException err) = showString "exit: " . shows err
   showsPrec _ (IOException err)   = shows err
@@ -2001,35 +1975,32 @@ instance Show ArrayException where
 data AsyncException
   = StackOverflow
   | HeapOverflow
-{-----------------------------
   | ThreadKilled
------------------------------}
   deriving (Eq, Ord)
 
 instance Show AsyncException where
   showsPrec _ StackOverflow   = showString "stack overflow"
   showsPrec _ HeapOverflow    = showString "heap overflow"
-{-----------------------------
   showsPrec _ ThreadKilled    = showString "thread killed"
------------------------------}
 
 showException :: String -> String -> ShowS
 showException tag msg =
   showString tag . (if null msg then id else showString ": " . showString msg)
 
 data ExitCode = ExitSuccess | ExitFailure Int
-{-----------------------------
-                deriving (Eq, Ord, Read, Show)
------------------------------}
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show)  -- TODO: Read
 
--- data type describing IOErrors / exceptions.
+
+
+----------------------------------------------------------------
+-- IOError
+----------------------------------------------------------------
+
 type IOError = IOException
 
 data IOException
   = IOError
-      { ioe_handle      :: Maybe Handle   -- the handle used by the action
-                                          -- flagging the error
+      { ioe_handle      :: Maybe Handle   -- the handle used by the action flagging the error
       , ioe_type        :: IOErrorType    -- what kind of (std) error
       , ioe_location    :: String         -- location of the error
       , ioe_description :: String         -- error-specific string
@@ -2037,24 +2008,6 @@ data IOException
       } 
       deriving (Eq)
 
-{-----------------------------
-data IOErrorType
-  = AlreadyExists
-  | DoesNotExist
-  | ResourceBusy
-  | ResourceExhausted
-  | EOF
-  | IllegalOperation
-  | PermissionDenied
-  | UserError
-     -- GHC compatibility
-  | ProtocolError
-  | UnsupportedOperation
-  | OtherError
-     -- DOTNET only
-  | DotNetException
-    deriving (Eq)
------------------------------}
 data IOErrorType        -- alphabetical order of constructors required, assumed Int encoding in comment
   = AlreadyExists       -- 0
   | AlreadyInUse        -- 1 -- ResourceBusy
@@ -2067,23 +2020,6 @@ data IOErrorType        -- alphabetical order of constructors required, assumed 
   | UserError           -- 8
     deriving (Eq)
 
-{-----------------------------
-instance Show IOErrorType where
-  show x = 
-    case x of
-      AlreadyExists     -> "already exists"
-      NoSuchThing       -> "does not exist"
-      AlreadyInUse      -> "resource busy"
-      ResourceExhausted -> "resource exhausted"
-      EOF               -> "end of file"
-      IllegalOperation  -> "illegal operation"
-      PermissionDenied  -> "permission denied"
-      UserError         -> "user error"
-      ProtocolError     -> "protocol error"
-      UnsupportedOperation -> "unsupported operation"
-      OtherError        -> "failed"
-      DotNetException   -> ".NET exception"
------------------------------}
 instance Show IOErrorType where
   show x = 
     case x of
@@ -2111,28 +2047,51 @@ instance Show IOException where
        "" -> id
        _  -> showString " (" . showString s . showString ")")
 
--- Monadic I/O: --------------------------------------------------------------
 
---data IO a             -- builtin datatype of IO actions
+userError :: String -> IOError
+userError str = IOError Nothing UserError "" str Nothing
 
-type FilePath = String  -- file pathnames are represented by strings
+
+----------------------------------------------------------------
+-- Monadic I/O implementation
+----------------------------------------------------------------
+
+newtype IO a = IO (IOWorld -> IOResult a)
+
+newtype IOResult a = IOResult a
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+type IOWorld = Int
+#else
+data IOWorld
+#endif
 
 ioFromPrim :: (IOWorld -> a) -> IO a
 ioFromPrim f
-  = IO (\w -> letstrict x = f w in IOResult x)
+  = IO (\w -> letstrict x = f w 
+              in IOResult x
+       )
 
 primbindIO :: IO a -> (a -> IO b) -> IO b
 primbindIO (IO io) f
   = IO (\w -> case io w of
-                IOResult x
-                  -> letstrict x' = x
-                     in case f x' of
-                          IO fx -> fx w
+                IOResult x -> letstrict x' = x
+                              in case f x' of
+                                  IO fx -> fx w
        )
 
 primretIO :: a -> IO a
 primretIO x
   = IO (\_ -> IOResult x)
+
+instance Functor IO where
+    fmap f x = x >>= (return . f)
+
+instance Monad IO where
+    (>>=)  = primbindIO
+    return = primretIO
+    -- fail s = ioError (userError s)
+
 
 
 #ifdef __FULL_PROGRAM_ANALYSIS__
@@ -2151,27 +2110,157 @@ ioError e = IO (\s -> throw (IOException e))
 
 #endif
 
-userError :: String -> IOError
-userError str = IOError Nothing UserError "" str Nothing
 
-putChar   :: Char -> IO ()
-putChar    = hPutChar stdout
+----------------------------------------------------------------
+-- I/O Handle
+----------------------------------------------------------------
 
-hPrint     :: Show a => Handle -> a -> IO ()
-hPrint h    = hPutStrLn h . show
+#ifdef __FULL_PROGRAM_ANALYSIS__
+type Handle = Int
+#else
+data Handle   -- opaque
 
-print     :: Show a => a -> IO ()
-print      = hPrint stdout
+foreign import ccall "primEqChan" primEqHandle :: Handle -> Handle -> Bool
+
+instance Eq Handle where (==) = primEqHandle
+
+instance Show Handle where
+    showsPrec _ h
+      = if      n == 0 then showString "<stdin>"
+        else if n == 1 then showString "<stdout>"
+        else if n == 2 then showString "<stderr>"
+        else                showString ("<handle:" ++ show (primGetHandleNumber h) ++ ">")
+      where n = primGetHandleNumber h
+
+foreign import ccall "primChanNumber" primGetHandleNumber :: Handle -> Int
+
+#endif
+
+
+
+----------------------------------------------------------------
+-- Monadic I/O primitives
+----------------------------------------------------------------
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+foreign import ccall primOpenChanSimple :: Int -> Handle
+foreign import ccall primPutCharChanSimple :: Handle -> Char -> ()
+
+primOpenChan :: String -> IOMode -> Maybe Int -> Handle
+primOpenChan name mode mbInt = primOpenChanSimple 0
+
+primPutCharChan        :: Handle -> Char -> ()
+primPutCharChan h c = primPutCharChanSimple h c
+
+primCloseChan          :: Handle -> ()
+primCloseChan h = ()
+
+primWriteChan          :: Handle -> ByteArray -> ()
+primWriteChan h ba = ()
+
+#else
+
+foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> Handle
+foreign import ccall primCloseChan          :: Handle -> ()
+foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
+foreign import ccall primPutCharChan        :: Handle -> Char -> ()
+
+#endif
+
+foreign import ccall primExitWith           :: forall a . Int -> a
+foreign import ccall primFlushChan          :: Handle -> ()
+foreign import ccall primChanGetChar        :: Handle -> Char
+foreign import ccall primChanGetContents    :: Handle -> String
+
+
+
+openFile    :: FilePath -> IOMode -> IO Handle
+openFile  f m = ioFromPrim (\_ -> primOpenChan f m Nothing)
+
+hPutChar     :: Handle -> Char -> IO ()
+hPutChar h c = ioFromPrim (\_ -> primPutCharChan h c)
+
+hFlush     :: Handle -> IO ()
+hFlush h = ioFromPrim (\_ -> primFlushChan h)
+
+hGetChar     :: Handle -> IO Char
+hGetChar h = ioFromPrim (\_ -> primChanGetChar h)
+
+hGetContents     :: Handle -> IO String
+hGetContents h = ioFromPrim (\_ -> primChanGetContents h)
+
+hClose     :: Handle -> IO ()
+hClose h = ioFromPrim (\_ -> primCloseChan h)
+
+exitWith :: Int -> IO a
+exitWith e = ioFromPrim (\_ -> primExitWith e)
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+hPutStr :: Handle -> String -> IO ()
+hPutStr   h s = do if null s then return () else do {hPutChar h (head s); hPutStr h (tail s) }
+#else
+hPutStr :: Handle -> String -> IO ()
+hPutStr   h s = do let (shd,stl) = splitAt 1000 s
+                   ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
+                   if null stl then return () else hPutStr h stl
+#endif
+
+
+
+----------------------------------------------------------------
+-- Monadic I/O standard functions
+----------------------------------------------------------------
+
+-- stdin, stdout, stderr
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+stdin, stdout, stderr :: Handle
+stdin  = 0
+stdout = 1
+stderr = 2
+#else
+stdin, stdout, stderr :: Handle
+stdin  = primOpenChan "<stdin>"  ReadMode  (Just 0)
+stdout = primOpenChan "<stdout>" WriteMode (Just 1)
+stderr = primOpenChan "<stderr>" WriteMode (Just 2)
+#endif
+
+
+-- specializations for stdin, stdout
 
 getChar   :: IO Char
 getChar    = hGetChar stdin
 
-getContents :: IO String
-getContents  = hGetContents stdin
-
 getLine   :: IO String
 getLine    = hGetLine stdin
 
+getContents :: IO String
+getContents  = hGetContents stdin
+
+putChar   :: Char -> IO ()
+putChar    = hPutChar stdout
+
+print     :: Show a => a -> IO ()
+print      = hPrint stdout
+
+putStr    :: String -> IO ()
+putStr     = hPutStr   stdout
+
+putStrLn   :: String -> IO ()
+putStrLn   = hPutStrLn stdout
+
+interact  :: (String -> String) -> IO ()
+interact f = getContents >>= (putStr . f)
+
+
+-- combinations with newline and show
+
+hPutStrLn :: Handle -> String -> IO ()
+hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
+
+hPrint     :: Show a => Handle -> a -> IO ()
+hPrint h    = hPutStrLn h . show
 
 #ifdef __FULL_PROGRAM_ANALYSIS__
 hGetLine :: Handle -> IO String
@@ -2193,9 +2282,10 @@ hGetLine h = do c <- hGetChar h
    getRest = do c <- catch (hGetChar h) $ \ ex ->
                    if isEOFError ex then return '\n' else ioError ex
                 hGetLine' c
-   isEOFError ex = ioe_type ex == EOF   -- defined in System.IO.Error
+   isEOFError ex = ioe_type ex == EOF
 #endif
-{-----------------------------
+
+{-
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
 readIO s         = case [x | (x,t) <- reads s, ("","") <- lex t] of
@@ -2208,12 +2298,15 @@ readLn          :: Read a => IO a
 readLn           = do l <- getLine
                       r <- readIO l
                       return r
------------------------------}
+-}
 
-{-----------------------------
-data IOMode      =  ReadMode | WriteMode | AppendMode | ReadWriteMode
-                    deriving (Eq, Ord, Ix, Bounded, Enum, Read, Show)
------------------------------}
+
+----------------------------------------------------------------
+-- Monadic I/O file functions
+----------------------------------------------------------------
+
+type FilePath = String  -- file pathnames are represented by strings
+
 data IOMode             -- alphabetical order of constructors required, assumed Int encoding in comment
   = AppendBinaryMode    -- 0
   | AppendMode          -- 1
@@ -2225,274 +2318,31 @@ data IOMode             -- alphabetical order of constructors required, assumed 
   | WriteMode           -- 7
     deriving (Eq, Ord, Bounded, Enum, Show)
 
-writeFile       :: FilePath -> String -> IO ()
-writeFile        = writeFile' WriteMode
-
-appendFile      :: FilePath -> String -> IO ()
-appendFile       = writeFile' AppendMode
-
-#ifdef __FULL_PROGRAM_ANALYSIS__
-writeFile'      :: IOMode -> FilePath -> String -> IO ()
-writeFile' mode name s = do
-  h <- openFile name mode
-  hPutStr h s
-  hClose h
-#else
-writeFile'      :: IOMode -> FilePath -> String -> IO ()
-writeFile' mode name s = do
-  h <- openFile name mode
-  catchException (hPutStr h s) (\e -> hClose h >> throw e)
-  hClose h
-#endif
-
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents
 
-interact  :: (String -> String) -> IO ()
-interact f = getContents >>= (putStr . f)
+writeFile       :: FilePath -> String -> IO ()
+writeFile        = writeFile2 WriteMode
 
+appendFile      :: FilePath -> String -> IO ()
+appendFile       = writeFile2 AppendMode
 
+writeFile2      :: IOMode -> FilePath -> String -> IO ()
+writeFile2 mode name s 
+    = do h <- openFile name mode
 #ifdef __FULL_PROGRAM_ANALYSIS__
-
-stdin, stdout, stderr :: Handle
-stdin = 0
-stdout = 1
-stderr = 2
-
-primOpenChan :: String -> IOMode -> Maybe Int -> Handle
-primOpenChan name mode mbInt = primOpenChanSimple 0
-
-foreign import ccall primOpenChanSimple :: Int -> Handle
-
-primPutCharChan        :: Handle -> Char -> ()
-primPutCharChan h c = primPutCharChanSimple h c
-
-foreign import ccall primPutCharChanSimple :: Handle -> Char -> ()
-
-
-primCloseChan          :: Handle -> ()
-primCloseChan h = ()
-
-primWriteChan          :: Handle -> ByteArray -> ()
-primWriteChan h ba = ()
-
-hPutStr, hPutStrLn     :: Handle -> String -> IO ()
-hPutStr   h s = do if null s then return () else do {hPutChar h (head s); hPutStr h (tail s) }
-
-hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
-
+         hPutStr h s
 #else
-
-stdin, stdout, stderr :: Handle
-stdin  = primOpenChan "<stdin>"  ReadMode  (Just 0)
-stdout = primOpenChan "<stdout>" WriteMode (Just 1)
-stderr = primOpenChan "<stderr>" WriteMode (Just 2)
-
-foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> Handle
-foreign import ccall primCloseChan          :: Handle -> ()
-foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
-foreign import ccall primPutCharChan        :: Handle -> Char -> ()
-
-hPutStr, hPutStrLn     :: Handle -> String -> IO ()
-hPutStr   h s = do let (shd,stl) = splitAt 1000 s
-                   ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
-                   if null stl then return () else hPutStr h stl
-hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
-
+         catchException (hPutStr h s) (\e -> hClose h >> throw e)
 #endif
-
-foreign import ccall primFlushChan          :: Handle -> ()
-foreign import ccall primChanGetChar        :: Handle -> Char
-foreign import ccall primChanGetContents    :: Handle -> String
-
-openFile    :: FilePath -> IOMode -> IO Handle
-openFile  f m = ioFromPrim (\_ -> primOpenChan f m Nothing)
-
-hPutChar     :: Handle -> Char -> IO ()
-hPutChar h c = ioFromPrim (\_ -> primPutCharChan h c)
+         hClose h
 
 
-hFlush     :: Handle -> IO ()
-hFlush h = ioFromPrim (\_ -> primFlushChan h)
-
-hClose     :: Handle -> IO ()
-hClose h = ioFromPrim (\_ -> primCloseChan h)
-
-putStr, putStrLn     :: String -> IO ()
-putStr   = hPutStr   stdout
-putStrLn = hPutStrLn stdout
-
-hGetChar     :: Handle -> IO Char
-hGetChar h = ioFromPrim (\_ -> primChanGetChar h)
-
-hGetContents     :: Handle -> IO String
-hGetContents h = ioFromPrim (\_ -> primChanGetContents h)
-
-
-{-----------------------------
-instance Functor IO where
-    fmap f x = x >>= (return . f)
------------------------------}
-
-instance Monad IO where
-    (>>=)  = primbindIO
-    return = primretIO
-    
-{-----------------------------
-    fail s = ioError (userError s)
------------------------------}
-
--- PackedString -----------------------------------------------------
-
-data PackedString
-
--- foreign import ccall "primCStringToString"  packedStringToString  :: PackedString -> [Char]
-foreign import ccall "primPackedStringNull" packedStringNull :: PackedString -> Bool
-foreign import ccall "primPackedStringHead" packedStringHead :: PackedString -> Char
-foreign import ccall "primPackedStringTail" packedStringTail :: PackedString -> PackedString
-
-packedStringToString :: PackedString -> [Char]
-packedStringToString p = if packedStringNull p 
-                          then []
-                          else packedStringHead p : packedStringToString (packedStringTail p)
-
-
--- ByteArray -----------------------------------------------------
-
-data ByteArray
-
-foreign import ccall primByteArrayLength   :: ByteArray -> Int
-foreign import ccall primByteArrayToString :: ByteArray -> String
-
+----------------------------------------------------------------
+-- main program
+----------------------------------------------------------------
 
 #ifdef __FULL_PROGRAM_ANALYSIS__
-
-foreign import ccall packedStringToInteger :: PackedString -> Integer
-
-#else
-foreign import ccall primStringToByteArray :: String -> Int -> ByteArray
-foreign import ccall "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
-
-#endif
-
--- Hooks for primitives: -----------------------------------------------------
--- Do not mess with these!
-
-data FunPtr a -- builtin datatype of C function pointers
-data Ptr a    -- builtin datatype of C pointers
-data Addr     -- builtin datatype of C pointers (deprecated)
-data Word     -- builtin datatype of unsigned ints (deprecated)
-data Int8
-data Int16
-data Int32
-data Int64
-data Word8
-data Word16
-data Word32
-data Word64
-data ForeignObj  -- builtin datatype of C pointers with finalizers (deprecated)
-data ForeignPtr a -- builtin datatype of C pointers with finalizers
-data StablePtr a
-
-#ifdef __FULL_PROGRAM_ANALYSIS__
-type Handle = Int
-#else
-data Handle
-
-foreign import ccall "primEqChan" primEqHandle :: Handle -> Handle -> Bool
-
-instance Eq Handle where (==) = primEqHandle
-
-{-----------------------------
-instance Show Handle where
-    showsPrec _ h = case primGetHandleNumber h of
-        0 -> showString "<stdin>"
-        1 -> showString "<stdout>"
-        2 -> showString "<stderr>"
-        _ -> showString "<handle>"
------------------------------}
-instance Show Handle where
-    showsPrec _ h
-      = if      n == 0 then showString "<stdin>"
-        else if n == 1 then showString "<stdout>"
-        else if n == 2 then showString "<stderr>"
-        else                showString ("<handle:" ++ show (primGetHandleNumber h) ++ ">")
-      where n = primGetHandleNumber h
-
-#endif
-
-
-
-
-data Object a -- builtin datatype of external object references.
-              -- (needed as primitive since they're supported in FFI decls.)
-
-
-{-----------------------------
-primitive primGetHandleNumber :: Handle -> Int
-
-primitive unsafeCoerce "primUnsafeCoerce" :: a -> b
------------------------------}
-foreign import ccall "primChanNumber" primGetHandleNumber :: Handle -> Int
-foreign import ccall "primUnsafeId" unsafeCoerce :: a -> b
-
-{-----------------------------
-data Dynamic = Dynamic TypeRep Obj
-
-data TypeRep = TypeRep !Key TyCon [TypeRep]
-
-instance Eq TypeRep where
-  (TypeRep k1 _ _) == (TypeRep k2 _ _) = k1 == k2
-
-data TyCon = TyCon !Key String
-
-instance Eq TyCon where
-  (TyCon t1 _) == (TyCon t2 _) = t1 == t2
-
-newtype Key = Key Int deriving( Eq )
-
-data Obj = Obj
-
-toObj :: a -> Obj
-toObj   = unsafeCoerce
-
-fromObj :: Obj -> a
-fromObj = unsafeCoerce
------------------------------}
-
-{-----------------------------
-newtype IO a = IO ((a -> IOResult) -> IOResult)
------------------------------}
-
-newtype IO a = IO (IOWorld -> IOResult a)
-
-{-----------------------------
-data IOResult 
-  = Hugs_ExitWith    Int
-  | Hugs_Catch       IOResult (Exception -> IOResult) (Obj -> IOResult)
-  | Hugs_ForkThread  IOResult IOResult
-  | Hugs_DeadThread
-  | Hugs_YieldThread IOResult
-  | Hugs_Return      Obj
-  | Hugs_BlockThread (Obj -> IOResult) ((Obj -> IOResult) -> IOResult) 
------------------------------}
-newtype IOResult a = IOResult a
-
-{-----------------------------
-data IOFinished a
-  = Finished_ExitWith Int
-  | Finished_Return   a
------------------------------}
-
-{-----------------------------
-primitive throw "primThrowException" :: Exception -> a
-primitive primCatchException :: a -> Either Exception a
------------------------------}
-
-
-#ifdef __FULL_PROGRAM_ANALYSIS__
-
-type IOWorld = Int
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
@@ -2500,22 +2350,11 @@ ehcRunMain m = m
 
 #else
 
-data IOWorld
-
 foreign import ccall primThrowException :: forall a . Exception -> a
 foreign import ccall primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
 
 throw :: Exception -> a
 throw e = primThrowException e
-
-{-----------------------------
-catchException :: IO a -> (Exception -> IO a) -> IO a
-catchException (IO m) k = IO $ \ s ->
-  Hugs_Catch (m hugsReturn)
-             (\ e -> case (k e) of { IO k' -> k' s })
-             (s . fromObj)
------------------------------}
-
 
 catchTracedException :: IO a -> (([(Int,String)],Exception) -> IO a) -> IO a
 catchTracedException (IO m) k = IO $ \s ->
@@ -2525,39 +2364,6 @@ catchTracedException (IO m) k = IO $ \s ->
 catchException :: IO a -> (Exception -> IO a) -> IO a
 catchException m k =
   catchTracedException m (\(_,e) -> k e)
-
-{-----------------------------
-hugsReturn :: a -> IOResult
-hugsReturn x = Hugs_Return (toObj x)
-
--- reify current thread, execute 'm <thread>' and switch to next thread
-blockIO :: ((a -> IOResult) -> IO ()) -> IO a
-blockIO m = IO (\ s -> Hugs_BlockThread (s . fromObj) m')
- where
-  m' k = threadToIOResult (m (k . toObj))
-
-hugsIORun  :: IO a -> Either Int a
-hugsIORun m = 
-  case basicIORun (runAndShowError m) of
-    Finished_ExitWith i -> Left i
-    Finished_Return   a -> Right a
- where
-  runAndShowError :: IO a -> IO a
-  runAndShowError m = m `catchException` exceptionHandler
-  exceptionHandler :: Exception -> IO a
-  exceptionHandler (ExitException ExitSuccess) = primExitWith 0
-  exceptionHandler (ExitException (ExitFailure n)) = primExitWith n
-  exceptionHandler err = runAndShowError $ do
-        putChar '\n'
-        putStr "Program error: "
-        putStrLn (show err)
-        primExitWith 1
------------------------------}
-
-{-----------------------------
-basicIORun :: IO a -> IOFinished a
-basicIORun (IO m) = loop [m hugsReturn]
------------------------------}
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
@@ -2575,85 +2381,4 @@ ehcRunMain m =
 
 #endif
 
-
-{-----------------------------
-threadToIOResult :: IO a -> IOResult
-threadToIOResult (IO m) = m (const Hugs_DeadThread)
-
--- This is the queue of *runnable* threads.
--- There may be blocked threads attached to MVars
--- An important invariant is that at most one thread will result in
--- Hugs_Return - and its Obj value has type \alpha
-loop :: [IOResult] -> IOFinished a
-loop []                      = error "no more threads (deadlock?)"
-loop [Hugs_Return   a]       = Finished_Return (fromObj a)
-loop (Hugs_Return   a:r)     = loop (r ++ [Hugs_Return a])
-loop (Hugs_Catch m f s:r)    = loop (hugs_catch m f s : r)
-loop (Hugs_ExitWith i:_)     = Finished_ExitWith i
-loop (Hugs_DeadThread:r)     = loop r
-loop (Hugs_ForkThread a b:r) = loop (a:b:r)
-loop (Hugs_YieldThread a:r)  = loop (r ++ [a])
-loop (Hugs_BlockThread a b:r)= loop (b a : r)
-loop _                       = error "Fatal error in Hugs scheduler"
-
-hugs_catch :: IOResult -> (Exception -> IOResult) -> (Obj -> IOResult) -> IOResult
-hugs_catch m f s = case primCatchException (catch' m) of
-  Left  exn                   -> f exn
-  Right (Hugs_Return a)       -> s a
-  Right (Hugs_ForkThread a b) -> Hugs_ForkThread (Hugs_Catch a f s) b
-  Right (Hugs_YieldThread a)  -> Hugs_YieldThread (Hugs_Catch a f s)
-  Right (Hugs_BlockThread a b)-> Hugs_BlockThread (\x -> Hugs_Catch (a x) f s) b
-  Right r                     -> r
- where
-  catch' :: IOResult -> IOResult
-  catch' (Hugs_Catch m' f' s') = catch' (hugs_catch m' f' s')
-  catch' x                     = x
------------------------------}
-
-{-----------------------------
-primExitWith     :: Int -> IO a
-primExitWith c    = IO (\ s -> Hugs_ExitWith c)
------------------------------}
-
-foreign import ccall primExitWith :: forall a . Int -> a
-
-exitWith :: Int -> IO a
-exitWith e = ioFromPrim (\_ -> primExitWith e)
-
-primCompAux      :: Ord a => a -> a -> Ordering -> Ordering
-primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
-
-{-----------------------------
-primPmInt        :: Num a => Int -> a -> Bool
-primPmInt n x     = fromInt n == x
-
-primPmInteger    :: Num a => Integer -> a -> Bool
-primPmInteger n x = fromInteger n == x
-
-primPmFlt        :: Fractional a => Double -> a -> Bool
-primPmFlt n x     = fromDouble n == x
-
--- The following primitives are only needed if (n+k) patterns are enabled:
-primPmNpk        :: Integral a => Int -> a -> Maybe a
-primPmNpk n x     = if n'<=x then Just (x-n') else Nothing
-                    where n' = fromInt n
-
-primPmSub        :: Integral a => Int -> a -> a
-primPmSub n x     = x - fromInt n
-
--- Trex
-emptyRec :: Rec EmptyRow
-emptyRec = EmptyRec
------------------------------}
-
--- End of Hugs standard prelude ----------------------------------------------
-
 main = return () -- dummy
-
--- test of --cpp option for Prelude:
-
-#ifdef __FULL_PROGRAM_ANALYSIS__
--- FULL_PROGRAM_ANALYSIS
-#else
--- no FULL_PROGRAM_ANALYSIS
-#endif

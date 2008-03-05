@@ -32,25 +32,6 @@ dropDeadBindings (input,hptMap)
 %%]
 
 
-
-%%[8 hs
-
-
-isNotErrorFun (HNm s) = let nm = hsnHNmFldToString s
-                        in  -- trace ("isNoterrorFun: " ++ nm) $ 
-                            nm /= "error" && nm /= "primErrorSimple"
-
-
-
-
-canBeDropped :: HsName -> Bool
-%%[[20
-canBeDropped (HNmNr _ (OrigFunc (HNmQ ns))) = isNotErrorFun (last ns)
-%%]]
-canBeDropped _ = True
-%%]
-
-
 %%[8
 ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
 ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
@@ -70,9 +51,8 @@ SEM GrBind
   | Bind    lhs.isDead =  isBottom (getEnvVar @lhs.hptMap (getNr @nm))
   
 SEM GrBindL
-  | Cons               lhs.grTrf  =  if @hd.isDead && canBeDropped @hd.functionName
-                                      then -- trace ("Dropped: " ++ show @hd.functionName) $ 
-                                                       @tl.grTrf
+  | Cons               lhs.grTrf  =  if @hd.isDead
+                                      then             @tl.grTrf
                                       else @hd.grTrf : @tl.grTrf   
 %%]
 

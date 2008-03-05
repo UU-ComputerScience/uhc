@@ -236,7 +236,7 @@ getNodes av = case av of
 isBottom av = case av of
                   AbsBottom   ->  True
                   AbsLocs l m ->  Set.null l
-                  AbsNodes n  ->  Map.null n
+                  AbsNodes n  ->  False -- Map.null n
                   AbsError s  ->  error $ "analysis error isBottom: " ++ s
                   otherwise   ->  False
 

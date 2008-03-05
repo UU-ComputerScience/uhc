@@ -213,8 +213,10 @@ SEM GrExpr
                                ++ @loc.overwr                         
 
  | Unit    lhs.stats  = if @isLastExpr
-                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
-                          else internal1 "Unit" @lhs.targets @val.values
+                         then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
+                         else maybe  (internal1 "Unit" @lhs.targets @val.values)
+                                     (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
+                                     @lhs.mbPtrTarget
            lhs.localsSet = Set.fromList @lhs.targets
 
  | FFI     lhs.stats  = if @isLastExpr
@@ -429,16 +431,21 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8
 
-ATTR AllGrExpr [ targets : {[HsName]} | | ]
-ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]} ]
+ATTR AllGrExpr [ targets : {[HsName]} mbPtrTarget: {Maybe HsName} | | ]
+ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]}  mbPtrName: {Maybe HsName} ]
 ATTR GrVar [ | |  patternName: {HsName} ]
 
 SEM GrBind
   | Bind     expr . targets = []
+             expr . mbPtrTarget = Nothing
 
 SEM GrExpr
   | Seq      expr . targets = @pat.patternNames
              body . targets = @lhs.targets
+             
+             expr . mbPtrTarget = @pat.mbPtrName
+             body . mbPtrTarget = @lhs.mbPtrTarget
+             
 
 SEM GrPatLam
   | Empty       lhs  .  patternNames = []
@@ -453,6 +460,11 @@ SEM GrPatLam
   | EnumAnnot   lhs  .  patternNames = [@nm]
   | OpaqueAnnot lhs  .  patternNames = [@nm]
   | PtrAnnot    lhs  .  patternNames = [@nm]
+  
+SEM GrPatLam
+  | PtrNode     lhs  .  mbPtrName    = Just @nm
+  | * - PtrNode lhs  .  mbPtrName    = Nothing
+  
 
 SEM GrVarL
   | Nil   lhs.patternNames = []
@@ -607,7 +619,7 @@ arrayVariab a i = Variable_Subs a i
 tagConstants :: Set.Set GrTag -> [(String,Int)]
 tagConstants tagset
  = let f ((t,_),_) = showGrTag t
-       needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "CEQ", "CGT", "CLT", "Ccomma0" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
+       needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "Ccolon", "Csubbus", "CEQ", "CGT", "CLT", "Ccomma0" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
        inprog = map showGrTag (Set.toList tagset)
    in  zip (needed ++ (inprog \\ needed)) [0..]
 
