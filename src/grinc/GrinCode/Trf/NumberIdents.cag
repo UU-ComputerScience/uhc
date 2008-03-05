@@ -136,9 +136,11 @@ protectPrimitive x = let u = hsnQualified x
                         else x
 
 builtinGlobalNamesUnqualifiedList
- = map hsnQualified $ [ hsnTrue, hsnFalse
+ = map hsnQualified $ 
+   [ hsnTrue, hsnFalse
+   , hsnDataListAltCons, hsnDataListAltNil
 %%[[99
-    , hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
+   , hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
 %%]]
    ]
 
