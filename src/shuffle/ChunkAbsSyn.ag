@@ -57,6 +57,7 @@ SET AllChunkOption		= ChunkOption ChunkOptions
 DATA Line
   | AsIs                words       : Words
   | Named               cref        : {CRef}
+                        mbSelect    : {Maybe Select}
   | Groups              extraLine   : Int
                         groups      : Groups
 

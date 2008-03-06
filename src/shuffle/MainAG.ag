@@ -6,7 +6,6 @@ import Monad
 import Array
 import Data.List
 import qualified Data.Map as Map
--- import EH.Util.Utils (tr, trp, wordsBy)
 import Common
 import CDoc
 import CDocCommon
@@ -15,6 +14,10 @@ import CDocInline
 import qualified Data.Set as Set
 import qualified UU.DData.Seq as Seq
 import EH.Util.Utils(initlast)
+
+-- for debugging:
+-- import EH.Util.Utils (tr, trp, wordsBy)
+-- import EH.Util.Pretty
 }
 
 -------------------------------------------------------------------------
@@ -368,14 +371,14 @@ ATTR AllChunk AllLine AllGroup AGItf [ | | gathNmChMp USE {`Map.union`} {Map.emp
 ATTR AllChunk AllLine AllGroup AGItf [ nmChMp: NmChMp | | ]
 
 SEM Chunk
-  | Ver         loc         .   nmChInfo    =   NmChInfo @chFullNm ChHere @lines.mbCD
+  | Ver         loc         .   nmChInfo    =   NmChInfo @chFullNm ChHere @lines.mbCDoc @lines.mkCDoc
                 lhs         .   gathNmChMp  =   Map.insert @chFullNm @nmChInfo @lines.gathNmChMp
-  | Named       loc         .   nmChInfo    =   NmChInfo @cref ChHere @lines.mbCD
+  | Named       loc         .   nmChInfo    =   NmChInfo @cref ChHere @lines.mbCDoc @lines.mkCDoc
                 lhs         .   gathNmChMp  =   Map.insert @cref @nmChInfo @lines.gathNmChMp
 
 SEM Group
   | Group       loc         .   gathNmChMp  =   case @userRef of
-                                                  Just (r,_) -> Map.singleton r (NmChInfo r ChHere @mbCD)
+                                                  Just (r,_) -> Map.singleton r (NmChInfo r ChHere @mbCDoc @mkCDoc)
                                                   _          -> Map.empty
                 lhs         .   gathNmChMp  =   Map.union @lines.gathNmChMp @gathNmChMp
 
@@ -406,32 +409,32 @@ type HideMp = Map.Map Nm HideInfo
 -------------------------------------------------------------------------
 
 {
-mbCDCmb :: Maybe CDoc -> Maybe CDoc -> Maybe CDoc
-mbCDCmb c1 c2 = maybe c1 (Just . (maybe CDoc_Emp id c1 `CDoc_Ver`)) c2
+mbCDocCmb :: Maybe CDoc -> Maybe CDoc -> Maybe CDoc
+mbCDocCmb c1 c2 = maybe c1 (Just . (maybe CDoc_Emp id c1 `CDoc_Ver`)) c2
 }
 
-ATTR AllLine AllGroup [ | | mbCD USE {`mbCDCmb`} {Nothing}: {Maybe CDoc} ]
-ATTR AllGroup [ | | mbCDL USE {++} {[]}: {[(Version,Maybe CDoc)]} ]
+ATTR AllLine AllGroup [ | | mbCDoc USE {`mbCDocCmb`} {Nothing}: {Maybe CDoc} ]
+ATTR AllGroup [ | | mbCDocL USE {++} {[]}: {[(Version,Maybe CDoc)]} ]
 
 SEM Line
   | AsIs        loc         .   cdoc        =   if cdIsEmpty @words.cdoc then CDoc_Str "" else @words.cdoc
-  | Named       loc         .   cdoc        =   CDoc_Ref @cref ChHere
-  | AsIs Named  lhs         .   mbCD        =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
-  | Groups      lhs         .   mbCD        =   maybe Nothing snd $ initlast $ sortOnVOMp @lhs.allowedVersions @groups.mbCDL
+  | Named       loc         .   cdoc        =   CDoc_Ref @cref @mbSelect ChHere
+  | AsIs Named  loc         .   mbCDoc      =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
+  | Groups      lhs         .   mbCDoc      =   maybe Nothing snd $ initlast $ sortOnVOMp @lhs.allowedVersions @groups.mbCDocL
 
 SEM Group
-  | Group       loc         .   mbCDbase    =   fmap (chWrap @chOptions.chWrap) @lines.mbCD
+  | Group       loc         .   mbCDocbase  =   fmap (chWrap @chOptions.chWrap) @lines.mbCDoc
                             .   isAllowed   =   verMember @version @lhs.allowedVersions
-                (loc.mbCD,loc.gathHideMp)   =   case @chOptions.chDest of
+                (loc.mbCDoc,loc.gathHideMp) =   case @chOptions.chDest of
                                                   _ | not @isAllowed
                                                          -> (Nothing,Map.empty)
-                                                  ChHere -> (@mbCDbase,Map.empty)
-                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCDbase @lhs.chFullNm))
+                                                  ChHere -> (@mbCDocbase,Map.empty)
+                                                  h      -> (Just (mkHideNmRef (cd n)),Map.singleton n (HideInfo n i @lhs.seqNr @chOptions.chDest @mbCDocbase @lhs.chFullNm))
                                                          where (n,i) = case @userRef of
                                                                          Just (r,Just i ) -> (r,cd i)
                                                                          Just (r,Nothing) -> (r,cd r)
                                                                          _                -> (mkNm (show h) `nmApd` mkNm @lhs.seqNr,CDoc_Emp)
-                lhs         .   mbCDL       =   if @isAllowed then [(@version,@mbCD)] else []
+                lhs         .   mbCDocL     =   if @isAllowed then [(@version,@mbCDoc)] else []
 
 ATTR AllWord [ | | cdoc USE {.|.} {CDoc_Emp} : CDoc ]
 
@@ -441,6 +444,35 @@ SEM Word
 
 SEM Inline
   | URI         lhs         .   cdoc        =   CDoc_Inl @str
+
+-------------------------------------------------------------------------
+-- Content replica making, MkCDoc only, no hidden stuff
+-------------------------------------------------------------------------
+
+{
+mkCDocCmb :: MkCDoc -> MkCDoc -> MkCDoc
+mkCDocCmb c1 c2 = \sel -> maybe (c1 sel) (Just . (maybe CDoc_Emp id (c1 sel) `CDoc_Ver`)) (c2 sel)
+
+mkCDocEmpty :: MkCDoc
+mkCDocEmpty = const Nothing
+}
+
+ATTR AllLine AllGroup [ | | mkCDoc USE {`mkCDocCmb`} {mkCDocEmpty}: {MkCDoc} ]
+ATTR AllGroup [ | | mkCDocL USE {++} {[]}: {[(Version,MkCDoc)]} ]
+
+SEM Line
+  | AsIs Named  lhs         .   mkCDoc      =   const @mbCDoc
+  | Groups      lhs         .   mkCDoc      =   \sel -> let mkCDocSortL = sortOnVOMp' (voAllLE_4 (@lhs.opts {optGenVersion=sel})) @groups.mkCDocL
+                                                        in  maybe Nothing (\(_,((_,valid),mk)) -> if valid then mk sel else Nothing)
+                                                            $ initlast
+                                                            -- $ (\v -> trp "ZZ" (show sel >|< ":" >#< ppCommas [ (show vers >#< valid) | ((vers,valid),_) <- v ]) v)
+                                                            $ mkCDocSortL 
+
+SEM Group
+  | Group       loc         .   mkCDoc      =   \sel -> case @chOptions.chDest of
+                                                          ChHere -> fmap (chWrap @chOptions.chWrap) (@lines.mkCDoc sel)
+                                                          _      -> Nothing
+                lhs         .   mkCDocL     =   [(@version,@mkCDoc)]
 
 -------------------------------------------------------------------------
 -- Gathering of hidden text
@@ -469,6 +501,7 @@ data VerChunkInfo
       , vciImps     :: [String]
       , vciExps     :: [String]
       , vciMbCD     :: Maybe CDoc
+      , vciMkCD     :: MkCDoc
       , vciXRefL    :: [XRef]
       } deriving Show
 type VerChunkInfoM = [(Version,[VerChunkInfo])]
@@ -585,7 +618,9 @@ SEM Chunk
                                                     @chunkLineNr @lhs.seqNr
                                                     @version @subNm @minusL
                                                     @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
-                                                    (fmap @addBlankLine @lines.mbCD) (Seq.toList @lines.xrefL)
+                                                    (fmap @addBlankLine @lines.mbCDoc)
+                                                    @lines.mkCDoc
+                                                    (Seq.toList @lines.xrefL)
                 loc         .   isAllowed   =   isAllowedCompilerVersion @compRestrict (optCompiler @lhs.opts)
                 lhs         .   verChInfoL  =   if @isAllowed then [@chInfo] else []
 
@@ -627,7 +662,7 @@ SEM AGItf
                                                -> let fileBase = fromJust (optBaseName @lhs.opts)
                                                       v = optGenVersion @lhs.opts
                                                       d = bld @lhs.opts @wrapLhs2tex fileBase chunks
-                                                      m = Map.fromList [ (vciFullNm i,NmChInfo (vciFullNm i) (vciChDest i) (vciMbCD i)) | (_,l) <- chunks, i <- l ]
+                                                      m = Map.fromList [ (vciFullNm i,NmChInfo (vciFullNm i) (vciChDest i) (vciMbCD i) (vciMkCD i)) | (_,l) <- chunks, i <- l ]
                                                       h = [ (hiChFullNm h,mkHideNmDef (cd n) (hiDescr h) (cd (hiMbCD h)))
                                                           | (n,h) <- sortBy (\(_,h1) (_,h2) -> hiSeqNr h1 `compare` hiSeqNr h2) . Map.toList $ @chunks.gathHideMp
                                                           ]

@@ -39,7 +39,11 @@
 %else
 %endif
 
+%if omitlag2TeX
+%else
 %include lag2TeX.fmt
+%endif
+
 %include spacing.fmt
 
 %if style == poly

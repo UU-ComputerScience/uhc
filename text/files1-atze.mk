@@ -13,8 +13,9 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								gbm \
 								uniqueness slides-uniqueness \
 								llvm \
-                                                                icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
+								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
+								icfp08-subst \
 								tr-abstrint ldta08-abstrint
 
 # subtext
@@ -28,10 +29,11 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
 								TopicAbstrInt \
+								TopicSubst \
 								AppxNotation FrontMatter OldText \
 								Poster PosterLDL PosterTrOrPr \
-                                                                llvm/LLVM llvm/LLVMPackages llvm/LLVMCoverPage llvm/LLVMFormat \
-                                                                llvm/LLVMChapterNaive \
+								llvm/LLVM llvm/LLVMPackages llvm/LLVMCoverPage llvm/LLVMFormat \
+								llvm/LLVMChapterNaive \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
@@ -78,6 +80,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 31: poster Tree Oriented Programming (Siren 2008)
 # 33: paper "Abstract Interpretation"
 # 35: llvm thesis
+# 36: icfp08 paper on substitution/unification
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -101,7 +104,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 77, \
 		1 < 33, \
 		35, \
-                9 < 15, \
+		9 < 15, \
 		9 < 16, \
 		18 < 9, \
 		18 < 14, \
@@ -111,6 +114,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		18 < 28, \
 		26 < 24, \
 		26 < 25, \
+		26 < 36, \
 		30 < 7, \
 		30 < 29
 		

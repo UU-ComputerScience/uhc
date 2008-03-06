@@ -15,8 +15,9 @@ module Common
   , CRef, CPos(..)
   , ChKind(..), ChDest(..), ChWrap(..)
   , Version(..), VersionOrder
+  , Select
   , verMember
-  , VOMp, sortOnVOMp
+  , VOMp, sortOnVOMp, sortOnVOMp'
   , KVMap
   , CompilerRestriction(..)
   )
@@ -218,8 +219,20 @@ verMember :: Version -> VOMp -> Bool
 verMember VAll _ = True
 verMember v    s = Map.member v s
 
+
+sortOnVOMp' :: VOMp -> [(Version,x)] -> [((Version,Bool),x)]
+-- sortOnVOMp' m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,(v,x)))
+sortOnVOMp' m l = map snd $ sortOn fst $ [ (maybe 0 id o,((v,isJust o || v == VAll),x)) | (v,x) <- l, let o = Map.lookup v m ]
+
 sortOnVOMp :: VOMp -> [(Version,x)] -> [x]
 sortOnVOMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,x))
+-- sortOnVOMp m l = map snd $ sortOn fst $ [ (o,x) | (v,x) <- l, let mbO = Map.lookup v m ]
+
+-------------------------------------------------------------------------
+-- Version selection
+-------------------------------------------------------------------------
+
+type Select = Version
 
 -------------------------------------------------------------------------
 -- Compiler restrictions

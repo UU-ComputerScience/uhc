@@ -12,15 +12,21 @@ BLD_EXPERIMENTS_SUBST_PREFIX				:= $(BLD_EXPERIMENTS_PREFIX)subst/
 BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX		:= $(BLD_EXPERIMENTS_SUBST_PREFIX)$(EXPERIMENTS_VARIANT_PREFIX)
 RUN_EXPERIMENTS_SUBST_PREFIX				:= $(BLD_EXPERIMENTS_SUBST_PREFIX)runs/
 
+# run parameters
+DO_TIMING									:= no
+
 # runs
-RUN_EXPERIMENTS_SUBST_RUNS					:= b/15 b/20 b/23 b/25 b/26
+RUN_EXPERIMENTS_SUBST_RUNS					:= b/15 b/23 b/28
+#RUN_EXPERIMENTS_SUBST_RUNS					:= b/15 b/20 b/23 b/25
+#RUN_EXPERIMENTS_SUBST_RUNS					:= a/1600
+#RUN_EXPERIMENTS_SUBST_RUNS					:= a/500
 
 # variants
-EXPERIMENTS_SUBST_VARIANTS					:= 1
+EXPERIMENTS_SUBST_VARIANTS					:= 1 2 3 21
 
 # flags to tools
 EXPERIMENTS_SUBST_SHUFFLE_DEFS				:= 
-EXPERIMENTS_SUBST_SHUFFLE_ORDER				:= 1 < 2 < 3 < 4
+EXPERIMENTS_SUBST_SHUFFLE_ORDER				:= 1 < 2 < 3, 2 < 21
 GHC_PLAIN_OPTS_WHEN_EXPERIMENTS_SUBST		:= 
 GHC_PROF_OPTS_WHEN_EXPERIMENTS_SUBST		:= -prof -auto-all -caf-all
 RTS_OPTS_WHEN_EXPERIMENTS_SUBST1			:= +RTS -hc -i0.02 -RTS
@@ -48,9 +54,15 @@ EXPERIMENTS_SUBST_BLD_EXEC					:= $(BIN_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPER
 EXPERIMENTS_SUBST_BLD_EXEC_PROF				:= $(BIN_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPERIMENTS_SUBST_EXEC_PROF_NAME)$(EXEC_SUFFIX)
 EXPERIMENTS_SUBST_ALL_EXECS					:= $(patsubst %,$(BIN_EXPERIMENTS_SUBST_PREFIX)%/$(EXPERIMENTS_SUBST_EXEC_NAME)$(EXEC_SUFFIX),$(EXPERIMENTS_SUBST_VARIANTS))
 
+# ruler src, used for paper only, not for executables
+EXPERIMENTS_SUBST_SRC_RUL					:= $(addprefix $(SRC_EXPERIMENTS_SUBST_PREFIX),RulerSubst.rul)
+EXPERIMENTS_SUBST_RUL_DRV_LTEX				:= $(patsubst $(SRC_EXPERIMENTS_SUBST_PREFIX)%.rul,$(TEXT_TMP_VARIANT_PREFIX)%.ltex,$(EXPERIMENTS_SUBST_SRC_RUL))
+EXPERIMENTS_SUBST_RUL_DRV_TEX				:= $(EXPERIMENTS_SUBST_RUL_DRV_LTEX:.ltex=.tex)
+
 # all src
 EXPERIMENTS_SUBST_ALL_CHUNK_SRC				:= $(EXPERIMENTS_SUBST_HS_ALL_SRC_CHS)
-EXPERIMENTS_SUBST_ALL_SRC					:= $(EXPERIMENTS_SUBST_ALL_CHUNK_SRC) $(EXPERIMENTS_SUBST_RULES_ALL_SRC) $(EXPERIMENTS_SUBST_MKF)
+EXPERIMENTS_SUBST_ALL_RULES_SRC				:= $(EXPERIMENTS_SUBST_SRC_RUL)
+EXPERIMENTS_SUBST_ALL_SRC					:= $(EXPERIMENTS_SUBST_ALL_CHUNK_SRC) $(EXPERIMENTS_SUBST_ALL_RULES_SRC) $(EXPERIMENTS_SUBST_MKF)
 
 # distribution
 EXPERIMENTS_SUBST_DIST_FILES				:= $(EXPERIMENTS_SUBST_ALL_SRC)
@@ -90,10 +102,27 @@ experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	    echo "== rundir $${rundir} ==" ; \
 	    mkdir -p $${rundir} ; \
 	    runoutput="$${rundir}/out"  ; \
-	    runtiming="$${rundir}/time"  ; \
-	    time ((cd $${rundir} ; $${expexec} $${run}) > $${runoutput}) 2> $${runtiming} ; \
-	    time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run}) >> $${runoutput}) 2>> $${runtiming} ; \
+	    runtime="$${rundir}/time"  ; \
+	    runtimesraw="$${rundir}/times-raw"  ; \
+	    runtimes="$${rundir}/times"  ; \
+	    time ((cd $${rundir} ; $${expexec} $${run} q $${v}) > $${runoutput}) 2> $${runtime} ; \
+	    time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
 	    (cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
-	    time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run}) >> $${runoutput}) 2>> $${runtiming} ; \
+	    time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
+	    if test $(DO_TIMING) = "yes" ; \
+	    then \
+	      rm -f $${runtimesraw} ; \
+	      for t in 1 ; \
+	      do \
+	        (cd $${rundir} ; /usr/bin/time -l $${expexec} $${run} q $${v} > /dev/null) 2>> $${runtimesraw} ; \
+	        sed -n -e 's/ *\([0-9.]*\) real.*/secs:\1/p' -e 's/ *\([0-9]*\)  maximum resident set size.*/bytes:\1/p' < $${runtimesraw} > $${runtimes} ; \
+	        echo "$${v} & $${run}" ; \
+	        sed -n -e 's/ *\([0-9.]*\) real.*/\&\1/p' -e 's/ *\([0-9]*\)  maximum resident set size.*/\&\1/p' < $${runtimesraw} ; \
+	        echo "\\\\\\\\" ; \
+	      done \
+	    fi \
 	  done \
 	done
+
+
+
