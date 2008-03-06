@@ -1,0 +1,226 @@
+%%[abstract
+Implementations of language processing systems often use unification and substitution to compute desired properties of input language fragments,
+for example to infer a type for a program fragment.
+The necessity of unification and substution arises when a formal specification of such properties is turned into an algorithmic specification,
+the first being of declarative nature, the latter being of computational nature.
+In an algorithmic specification substitutions frequently are used functionally, leading to an actual implementation free from side effects but inefficient.
+Alternatively, by allowing side effects, efficiency can be regained at the cost of loosing the pure functional behavior of substitutions.
+We present a third 'best of both worlds' solution, which is both functional and efficient by simulating side effects functionally.
+To our knowledge this solution has never been presented; this paper intends to remedy this.
+%%]
+
+%%[introduction
+Both the functional side effect free and efficient side effect full solution for unification and substitution are well known and often used.
+Robinson \cite{robinson65unif-resoution,robinson71unification,robinson76fast-unif} originally described the basic solution,
+Martinelli \cite{martelli82eff-unif-alg} the efficient solution with side effects.
+
+Functional in Haskell: \cite{jones00thih}
+
+Side effect in Haskell: \cite{peytonjones04pract-inf-rank,www07ghc-dev-wiki}
+
+Our: \cite{dijkstra04ehc-web,dijkstra07ehcstruct}, original not: \cite{dijkstra05phd}
+
+%{
+%include experimentsubst.fmt
+
+Example formal system, declarative.
+\rulerCmdUse{subst.D.tree.basic}
+
+Algorithmic
+\rulerCmdUse{subst.A.tree.basic}
+%}
+
+Restriction:
+first order unification,
+without infinite types
+
+Our contribution:
+\begin{Itemize}
+\item
+Efficient side effect free implementation of unification + substitution.
+\end{Itemize}
+%%]
+
+%%[relatedWork
+Both the purely functional and side effect variants of unification and substitution are already described by respectively
+Robinson \cite{robinson71unification,robinson76fast-unif}
+and Paterson \cite{paterson78unif-linear}
+
+The best algorithm: Martinelli \cite{martelli82eff-unif-alg}
+
+Analysis: \cite{hansen06anal-fast-unif}
+
+Source tracking: \cite{venkatesh05unif-sourcetrack}
+
+Complexity: \cite{kanellakis91unification}
+
+Basic survey: \cite{knight89unif-survey}
+
+Survey: \cite{gallier91unif-survey}
+
+Book/survey: \cite{baader01unif-th}
+%%]
+
+%%[frameworkCode
+\Paragraph{Value}
+
+Blabla
+
+%%@1.Val@1 wrap=code
+
+\Paragraph{Tree}
+
+Blabla
+
+%%@1.Tree@1 wrap=code
+
+\Paragraph{Environment}
+
+Blabla
+
+%%@1.Env@1 wrap=code
+
+\Paragraph{Compute monad}
+
+Blabla
+
+%%[[wrap=code
+%%@1.St@1
+%%@1.Compute@1
+%%]]
+
+%%]
+
+%%[substByCopying
+\Paragraph{Substitution}
+
+Mapping variables to values:
+
+%%@1.VarMp@1 wrap=code
+
+Looking up:
+
+%%@1.varmpLookup@1 wrap=code
+
+\Paragraph{Substituting}
+
+Class |Substitutable|:
+
+%%@1.Substitutable@1 wrap=code
+
+Instance of |Substitutable| for |Val|:
+
+%%@1.Substitutable.Val@1 wrap=code
+
+Instance of |Substitutable| for |VarMp|:
+
+%%@1.Substitutable.VarMp@1 wrap=code
+
+\Paragraph{Value matching}
+
+Blabla
+
+%%@1.valMatch@1 wrap=code
+
+\Paragraph{Computing a Val over a Tree}
+
+Blabla
+
+%%@1.newVar@1 wrap=code
+
+%%@1.newVars wrap=code
+
+\begin{CodeFigure}{}{Computation of Val over Tree}{exp-subst-treecompute}
+%%@1.treeCompute@1 wrap=code
+\end{CodeFigure}
+
+Detail of |treeCompute|:
+
+%%@treeCompute.First@1 wrap=code
+
+%%]
+
+%%[substBySharing
+\Paragraph{Value matching}
+
+Blabla
+
+%%@1.Val@3 wrap=code
+
+%%@3.Ref wrap=code
+
+%%@3.Ref.IO wrap=code
+
+%%@1.newVar@3 wrap=code
+
+%%@1.valMatch@3 wrap=code
+
+Detail of |treeCompute|:
+
+%%@treeCompute.First@3 wrap=code
+
+%%]
+
+%%[substByFuncSharedMem
+\Paragraph{Value matching}
+
+Blabla
+
+%%@1.valMatch@2 wrap=code
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

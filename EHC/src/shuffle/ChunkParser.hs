@@ -49,7 +49,7 @@ shuffleScanOpts
   = Map.fromList
         [ ( ScLexMeta 0
           , ScanOpts
-              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=" ])
+              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=", "@" ])
               , scoSpecChars        =   Set.fromList "(),%{}"
               , scoOpChars          =   Set.fromList "+-=*&^$#@!\\|><~`;:?/_."
               }
@@ -289,7 +289,7 @@ pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (pFoldr (sem_Lines_Cons,sem_Lines_Nil) (sem_Line_AsIs sem_Words_Nil <$ pNl)) <*> pChunks
 
 pVersion            ::  ShPr Version
-pVersion            =     mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
 
 pOptVersion         ::  ShPr Version
 pOptVersion         =   pMaybe VAll id pVersion
@@ -412,14 +412,16 @@ pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 
 pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
-                    <|> (\n (o,r)
-                          -> sem_Line_Groups 0 (sem_Groups_Cons (sem_Group_Group VAll o r (sem_Lines_Cons (sem_Line_Named n) sem_Lines_Nil)) sem_Groups_Nil))
-                             <$  pBegNameRef <*> pN <*> pD <* pNl
+                    <|> (\n iv (o,r)
+                          -> sem_Line_Groups 0 (sem_Groups_Cons (sem_Group_Group VAll o r (sem_Lines_Cons (sem_Line_Named n iv) sem_Lines_Nil)) sem_Groups_Nil))
+                             <$  pBegNameRef <*> pN <*> pIntlVersion <*> pD <* pNl
                     <|> sem_Line_Groups 1
                              <$  pBegGroup   <*> pFoldr1Sep (sem_Groups_Cons,sem_Groups_Nil) pElseGroup pG <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
                              <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)
+                          pIntlVersion
+                             =   pMb (pKey "@" *> pVersion)
                           pD =   pChunkOptions
                              <+> pMaybe Nothing Just ((pNm2 <|> mkNm <$> pStr) <+> pMaybe Nothing Just (pKey "=" *> pMaybe "" id pStr))
                           pG =   (\v (o,r) ls -> sem_Group_Group v o r ls) <$> pOptVersion <*> pD <* pNl <*> pLines

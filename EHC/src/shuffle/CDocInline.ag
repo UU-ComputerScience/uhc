@@ -66,10 +66,12 @@ ATTR AGCDocItf CDoc [ | | ilIO USE {`inlineCDocAdd`} {inlineCDocEmp}: InlineCDoc
 
 SEM CDoc
   | Inl         loc         .   ilNm        =   Nm @uref
-                lhs         .   ilRepl      =   CDoc_Ref @ilNm ChHere
+                lhs         .   ilRepl      =   CDoc_Ref @ilNm Nothing ChHere
                             .   ilIO        =   \(m,e)
                                                     -> let dflt = (m,Map.insert @lhs.cpos (Err_UndefURI @lhs.cpos @uref) e)
-                                                           mkc n c m = Map.insert n (NmChInfo n ChHere (Just (cd c))) m
+                                                           mkc n c m
+                                                                = Map.insert n (NmChInfo n ChHere res (const res)) m
+                                                                where res = Just (cd c)
                                                        in  case takeWhile (/= ':') @uref of
                                                              "file"
                                                                -> do { let mu = parseURIReference @uref

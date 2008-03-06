@@ -14,6 +14,18 @@ import IO
 INCLUDE "CDocAbsSyn.ag"
 
 -------------------------------------------------------------------------
+-- Make CDoc
+-------------------------------------------------------------------------
+
+{
+type FromSel a   = Select -> a
+type MkCDoc      = FromSel (Maybe CDoc)
+
+instance Show MkCDoc where
+  show _ = "MkCDoc"
+}
+
+-------------------------------------------------------------------------
 -- Chunk doc utils
 -------------------------------------------------------------------------
 
@@ -50,7 +62,7 @@ cdPut h d
   = case d of
       CDoc_Emp              -> return ()
       CDoc_Str s            -> hPutStr h s
-      CDoc_Ref r d          -> hPutStr h (showUndef r)
+      CDoc_Ref r s d        -> hPutStr h (showUndef r)
       CDoc_Hor d1 d2        -> do cdPut h d1
                                   cdPut h d2
       CDoc_Ver CDoc_Emp d2  -> cdPut h d2

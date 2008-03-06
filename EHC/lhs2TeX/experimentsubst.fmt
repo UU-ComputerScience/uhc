@@ -1,0 +1,4 @@
+%format bind = "\mathbf{bind}"
+%format fst = "\mathbf{fst}"
+%format snd = "\mathbf{snd}"
+%format Subst = "{\mathcal{S}}"

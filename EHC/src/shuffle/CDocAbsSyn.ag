@@ -10,6 +10,7 @@ DATA CDoc
   | Emp
   | Inl                 uref        : {URef}
   | Ref                 cref        : {CRef}
+                        mbSelect    : {Maybe Select}
                         chDest      : {ChDest}
   | Str                 str         : {String}
   | Hor                 ldoc        : CDoc

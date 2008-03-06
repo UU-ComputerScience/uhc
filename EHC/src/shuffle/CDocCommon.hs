@@ -21,7 +21,8 @@ data NmChInfo
   = NmChInfo
       { nciNm       :: CRef
       , nciChDest   :: ChDest
-      , nciMbCD     :: Maybe CDoc
+      , nciMbCDoc   :: Maybe CDoc
+      , nciMkCDoc   :: MkCDoc
       }
 
 type NmChMp = Map.Map CRef NmChInfo
