@@ -619,7 +619,25 @@ arrayVariab a i = Variable_Subs a i
 tagConstants :: Set.Set GrTag -> [(String,Int)]
 tagConstants tagset
  = let f ((t,_),_) = showGrTag t
-       needed = ["HOLE", "UNBOXED", "CFalse", "CTrue", "Ccolon", "Csubbus", "CEQ", "CGT", "CLT", "Ccomma0" ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
+       needed = [ "HOLE"
+                , "UNBOXED"
+                , "CFalse"
+                , "CTrue"
+                , "Ccolon"
+                , "Csubbus"
+                , "CEQ", "CGT", "CLT"
+                , "Ccomma0"
+%%[[98
+                , "CEHC_Prelude_AppendBinaryMode"
+                , "CEHC_Prelude_AppendMode"                
+                , "CEHC_Prelude_ReadBinaryMode"                
+                , "CEHC_Prelude_ReadMode"                
+                , "CEHC_Prelude_ReadWriteBinaryMode"                
+                , "CEHC_Prelude_ReadWriteMode"                
+                , "CEHC_Prelude_WriteBinaryMode"                
+                , "CEHC_Prelude_WriteMode"                
+%%]]
+                 ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
        inprog = map showGrTag (Set.toList tagset)
    in  zip (needed ++ (inprog \\ needed)) [0..]
 

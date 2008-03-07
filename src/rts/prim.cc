@@ -12,6 +12,17 @@
 #define CLT 8
 #define Ccomma0 9
 
+#define CEHC_Prelude_AppendBinaryMode 10
+#define CEHC_Prelude_AppendMode 11        
+#define CEHC_Prelude_ReadBinaryMode 12
+#define CEHC_Prelude_ReadMode 13        
+#define CEHC_Prelude_ReadWriteBinaryMode 14
+#define CEHC_Prelude_ReadWriteMode 15        
+#define CEHC_Prelude_WriteBinaryMode 16                
+#define CEHC_Prelude_WriteMode 17        
+
+
+
 %%]
 
 
@@ -226,24 +237,6 @@ PRIM GrWord primPackedStringHead(GrWord s)
 }
 
 
-PRIM GrWord primOpenChanSimple(GrWord n)
-{
-	return (GrWord) stdout;	
-}
-
-
-GrWord *cafUnit = {Ccomma0};
-
-PRIM GrWord primPutCharChanSimple(GrWord h, GrWord c)
-{
-	//FILE *f = (FILE *) h;
-	
-	// printf("primPutCharChanSimple is called\n"); fflush(stdout);
-	putc(c, stdout);
-	//return (GrWord) cafUnit;
-	return Ccomma0;
-}
-
 PRIM GrWord primError(GrWord s)
 {
 	GrWord c;
@@ -267,14 +260,135 @@ PRIM GrWord primError(GrWord s)
 }
 
 
-PRIM GB_Word primMinInt()
+PRIM GrWord primMinInt()
 {
 	return 0x10000000;
 }
-PRIM GB_Word primMaxInt()
+PRIM GrWord primMaxInt()
 {
 	return 0x0FFFFFFF;
 }
+
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exiting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[96
+
+PRIM GrWord primExitWith(GrWord n)
+{
+	exit(n);
+  	return 0;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[98
+
+PRIM GrWord primStdin()
+{
+  	return (GrWord)stdin;
+}
+
+PRIM GrWord primStdout()
+{
+  	return (GrWord)stdout;
+}
+
+PRIM GrWord primStderr()
+{
+  	return (GrWord)stderr;
+}
+
+PRIM GrWord primHFileno(GrWord chan)
+{
+	return fileno((FILE*)chan);
+}
+
+
+PRIM GrWord primOpenFile(GrWord str, GrWord mode)
+{
+	char filename[1024];
+	char *d, *modestring;
+	GrWord c;
+	char x;
+	FILE *f;
+
+	d = filename;
+	while (  ((GrWord*)str)[0] == Ccolon )
+	{
+		c = ((GrWord*)str)[1];	
+		x = ((GrWord*)c)[1];
+		*d++ = x;
+		str = ((GrWord*)str)[2];	
+	}
+	*d = 0;
+
+	
+	switch(mode - CEHC_Prelude_AppendBinaryMode)
+	{
+	case 0: modestring = "ab"; break;
+	case 1: modestring = "a"; break;
+	case 2: modestring = "rb"; break;
+	case 3: modestring = "r"; break;
+	case 4: modestring = "r+b"; break;
+	case 5: modestring = "r+"; break;
+	case 6: modestring = "wb"; break;
+	case 7: modestring = "w"; break;
+	default:  printf("primOpenFile: illegal mode %d\n", mode); fflush(stdout);
+	          return 0;	
+}
+
+	//printf("try to open [%s] with mode [%s]\n", filename, modestring );  fflush(stdout);
+	f = fopen(filename, modestring);
+	return (GrWord) f;	
+}
+
+PRIM GrWord primHClose(GrWord chan)
+{
+	fclose( (FILE*)chan );
+	return Ccomma0;	
+}
+
+PRIM GrWord primHFlush(GrWord chan)
+{
+	fflush( (FILE*)chan );
+	return Ccomma0;	
+}
+
+PRIM GrWord primHGetChar(GrWord h)
+{
+	int c;
+	c = getc( (FILE*)h );
+	//printf ("character read: %c\n", c );
+	return c;
+}
+
+PRIM GrWord primHPutChar(GrWord h, GrWord c)
+{
+	putc(c, (FILE*)h );
+	return Ccomma0;
+}
+
+PRIM GrWord primHIsEOF(GrWord h)
+{
+	int c;
+	c = getc( (FILE*)h );
+	if (c==EOF)
+		return CTrue;
+	
+	ungetc( c, (FILE*)h );
+	return CFalse;
+}
+
 
 
 %%]
