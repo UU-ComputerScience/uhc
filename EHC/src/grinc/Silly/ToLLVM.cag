@@ -23,6 +23,8 @@
 %%]
 %%[8 hs import(qualified Data.Map)
 %%]
+%%[8 hs import(qualified Data.List)
+%%]
 %%[8
 WRAPPER SilModule
 %%]
@@ -215,6 +217,11 @@ SEM Statement
                                              (hs2str @name) @lhs.fnAvailDecls
                                 in @args.llvmCode ++
                                    @loc.castCode ++
+                                   ( if ehcOptGenTrace @lhs.opts
+                                     then ([ LLVMStatement_Assignment @loc.fresh (LLVMExpression_GetElemPtr @loc.global [0,0])
+                                           , LLVMStatement_Call stdlibPrintfFuncDecl StdCall (@loc.fresh : @loc.castVars) ] ++)
+                                     else ([] ++)
+                                   )
                                    [ LLVMStatement_Call fDecl (bool2calltype @tailJumps) @loc.castVars ]
  
                 loc.uniqSeed  : {UID}
@@ -227,8 +234,18 @@ SEM Statement
                 loc.(uniqNr1,castVars,castCode) =  
                                foldr (\x xs -> let (nr,val,stmt) = cast2int (getUID xs) x @lhs.intType
                                                 in ( nr, val : getVars xs, stmt ++ (getCode xs) ) ) 
-                                     (@loc.uniqSeed,[],[]) @args.llvmVar  
-                                   
+                                     (@loc.uniqSeed,[],[]) @args.llvmVar
+
+                loc.(uniqNr2,fresh) = newFresh @loc.uniqNr1 (pLift i8)
+               
+                lhs.constants = if ehcOptGenTrace @lhs.opts
+                                then (@loc.global, @loc.strConst) : @args.constants
+                                else @args.constants
+                loc.global   = let (_,var) = newFresh @loc.uniqNr2 (pLift $ stringType @loc.callStr)
+                                in GlobalVar (getPlainName var) (getType var)
+                loc.strConst = StrConstant (string2CString @loc.callStr) (stringType @loc.callStr)  
+                loc.callStr  = "Call " ++ hs2str @name ++ " " ++ concat (Data.List.intersperse " " (replicate (length @loc.castVars) "%d")) ++ "\n"    
+                               
   | Comment     lhs.llvmCode = [LLVMStatement_Comment @comment]
   
   | If          lhs.llvmCode = @scrutinee.llvmCode ++ @loc.scrutToIntCode ++ @loc.scrutUnboxCode ++ @loc.cmpCode ++ 
