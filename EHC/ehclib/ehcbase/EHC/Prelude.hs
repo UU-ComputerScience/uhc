@@ -2060,11 +2060,7 @@ newtype IO a = IO (IOWorld -> IOResult a)
 
 newtype IOResult a = IOResult a
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
-type IOWorld = Int
-#else
 data IOWorld
-#endif
 
 ioFromPrim :: (IOWorld -> a) -> IO a
 ioFromPrim f
@@ -2112,180 +2108,221 @@ ioError e = IO (\s -> throw (IOException e))
 
 
 ----------------------------------------------------------------
--- I/O Handle
+-- I/O types: Handle, FilePath, IOMode
 ----------------------------------------------------------------
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
-type Handle = Int
-#else
-data Handle   -- opaque
+data Handle   -- opaque, contains GB_Chan  or  FILE*
 
-foreign import ccall "primEqChan" primEqHandle :: Handle -> Handle -> Bool
+foreign import ccall primHFileno  :: Handle -> Int
 
-instance Eq Handle where (==) = primEqHandle
+instance Eq Handle where
+    h1==h2 = primHFileno h1 == primHFileno h2
 
 instance Show Handle where
     showsPrec _ h
       = if      n == 0 then showString "<stdin>"
         else if n == 1 then showString "<stdout>"
         else if n == 2 then showString "<stderr>"
-        else                showString ("<handle:" ++ show (primGetHandleNumber h) ++ ">")
-      where n = primGetHandleNumber h
+        else                showString ("<handle:" ++ show n ++ ">")
+      where n = primHFileno h
 
-foreign import ccall "primChanNumber" primGetHandleNumber :: Handle -> Int
+type FilePath = String  -- file pathnames are represented by strings
 
-#endif
-
+data IOMode             -- alphabetical order of constructors required, assumed Int encoding in comment
+  = AppendBinaryMode    -- 0
+  | AppendMode          -- 1
+  | ReadBinaryMode      -- 2
+  | ReadMode            -- 3
+  | ReadWriteBinaryMode -- 4
+  | ReadWriteMode       -- 5
+  | WriteBinaryMode     -- 6
+  | WriteMode           -- 7
+    deriving (Eq, Ord, Bounded, Enum, Show)
 
 
 ----------------------------------------------------------------
--- Monadic I/O primitives
+-- I/O primitives and their wrapping in the I/O monad
 ----------------------------------------------------------------
+
+foreign import ccall primHClose        :: Handle -> ()
+foreign import ccall primHFlush        :: Handle -> ()
+foreign import ccall primHGetChar      :: Handle -> Char
+foreign import ccall primHPutChar      :: Handle -> Char -> ()
 
 #ifdef __FULL_PROGRAM_ANALYSIS__
-
-foreign import ccall primOpenChanSimple :: Int -> Handle
-foreign import ccall primPutCharChanSimple :: Handle -> Char -> ()
-
-primOpenChan :: String -> IOMode -> Maybe Int -> Handle
-primOpenChan name mode mbInt = primOpenChanSimple 0
-
-primPutCharChan        :: Handle -> Char -> ()
-primPutCharChan h c = primPutCharChanSimple h c
-
-primCloseChan          :: Handle -> ()
-primCloseChan h = ()
-
-primWriteChan          :: Handle -> ByteArray -> ()
-primWriteChan h ba = ()
-
+foreign import ccall primOpenFile      :: String -> IOMode -> Handle
+foreign import ccall primStdin         :: Handle
+foreign import ccall primStdout        :: Handle
+foreign import ccall primStderr        :: Handle
+foreign import ccall primHIsEOF        :: Handle -> Bool
 #else
-
-foreign import ccall primOpenChan           :: String -> IOMode -> Maybe Int -> Handle
-foreign import ccall primCloseChan          :: Handle -> ()
-foreign import ccall primWriteChan          :: Handle -> ByteArray -> ()
-foreign import ccall primPutCharChan        :: Handle -> Char -> ()
-
+foreign import ccall primOpenFileOrStd :: String -> IOMode -> Maybe Int -> Handle
 #endif
 
-foreign import ccall primExitWith           :: forall a . Int -> a
-foreign import ccall primFlushChan          :: Handle -> ()
-foreign import ccall primChanGetChar        :: Handle -> Char
-foreign import ccall primChanGetContents    :: Handle -> String
 
+hClose       :: Handle -> IO ()
+hClose h     =  ioFromPrim (\_ -> primHClose h)
 
-
-openFile    :: FilePath -> IOMode -> IO Handle
-openFile  f m = ioFromPrim (\_ -> primOpenChan f m Nothing)
-
-hPutChar     :: Handle -> Char -> IO ()
-hPutChar h c = ioFromPrim (\_ -> primPutCharChan h c)
-
-hFlush     :: Handle -> IO ()
-hFlush h = ioFromPrim (\_ -> primFlushChan h)
+hFlush       :: Handle -> IO ()
+hFlush h     =  ioFromPrim (\_ -> primHFlush h)
 
 hGetChar     :: Handle -> IO Char
-hGetChar h = ioFromPrim (\_ -> primChanGetChar h)
+hGetChar h   =  ioFromPrim (\_ -> primHGetChar h)
+
+hPutChar     :: Handle -> Char -> IO ()
+hPutChar h c =  ioFromPrim (\_ -> primHPutChar h c)
+
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+openFile     :: FilePath -> IOMode -> IO Handle
+openFile f m =  ioFromPrim (\_ -> primOpenFile (forceString f) m)
+
+stdin, stdout, stderr :: Handle
+stdin  = primStdin
+stdout = primStdout
+stderr = primStderr
+
+hIsEOF       :: Handle -> IO Bool
+hIsEOF h     =  ioFromPrim (\_ -> primHIsEOF h)
+
+#else
+
+openFile     :: FilePath -> IOMode -> IO Handle
+openFile f m =  ioFromPrim (\_ -> primOpenFileOrStd f m Nothing)
+
+stdin, stdout, stderr :: Handle
+stdin  = primOpenFileOrStd "<stdin>"  ReadMode  (Just 0)
+stdout = primOpenFileOrStd "<stdout>" WriteMode (Just 1)
+stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
+
+#endif
+
+
+----------------------------------------------------------------
+-- exit is also an IO primitive
+----------------------------------------------------------------
+
+foreign import ccall primExitWith      :: forall a . Int -> a
+
+exitWith     :: Int -> IO a
+exitWith e   =  ioFromPrim (\_ -> primExitWith e)
+
+----------------------------------------------------------------
+-- additional I/O primitives and their wrapping in the I/O monad
+----------------------------------------------------------------
+
+#ifdef __FULL_PROGRAM_ANALYSIS__
+
+#else
+foreign import ccall primHPutByteArray   :: Handle -> ByteArray -> ()
+foreign import ccall primHGetContents    :: Handle -> String
+#endif
+
+
+
+----------------------------------------------------------------
+-- String I/O can be expressed in terms of basic primitives,
+--  or for efficiency using additional primitives
+----------------------------------------------------------------
 
 hGetContents     :: Handle -> IO String
-hGetContents h = ioFromPrim (\_ -> primChanGetContents h)
+hPutStr          :: Handle -> String -> IO ()
 
-hClose     :: Handle -> IO ()
-hClose h = ioFromPrim (\_ -> primCloseChan h)
-
-exitWith :: Int -> IO a
-exitWith e = ioFromPrim (\_ -> primExitWith e)
 
 #ifdef __FULL_PROGRAM_ANALYSIS__
-hPutStr :: Handle -> String -> IO ()
-hPutStr   h s = do if null s then return () else do {hPutChar h (head s); hPutStr h (tail s) }
+
+hGetContents h = do b <- hIsEOF h
+                    if b
+                     then return ""
+                     else do { c <- hGetChar h
+                             ; cs <- hGetContents h
+                             ; return (c:cs) 
+                             }
+
+hPutStr h s = do if null s 
+                  then return () 
+                  else do { hPutChar h (head s)
+                          ; hPutStr  h (tail s)
+                          }
+
 #else
-hPutStr :: Handle -> String -> IO ()
-hPutStr   h s = do let (shd,stl) = splitAt 1000 s
-                   ioFromPrim (\_ -> primWriteChan h (primStringToByteArray shd 1000))
-                   if null stl then return () else hPutStr h stl
+
+hGetContents h   = ioFromPrim (\_ -> primHGetContents h)
+
+hPutStr h s = do let (shd,stl) = splitAt 1000 s
+                 ioFromPrim (\_ -> primHPutByteArray h (primStringToByteArray shd 1000))
+                 if null stl then return () else hPutStr h stl
+                   
 #endif
 
 
 
 ----------------------------------------------------------------
--- Monadic I/O standard functions
+-- I/O utilities
 ----------------------------------------------------------------
-
--- stdin, stdout, stderr
-
-#ifdef __FULL_PROGRAM_ANALYSIS__
-stdin, stdout, stderr :: Handle
-stdin  = 0
-stdout = 1
-stderr = 2
-#else
-stdin, stdout, stderr :: Handle
-stdin  = primOpenChan "<stdin>"  ReadMode  (Just 0)
-stdout = primOpenChan "<stdout>" WriteMode (Just 1)
-stderr = primOpenChan "<stderr>" WriteMode (Just 2)
-#endif
-
 
 -- specializations for stdin, stdout
 
-getChar   :: IO Char
-getChar    = hGetChar stdin
+getChar     :: IO Char
+getChar     = hGetChar stdin
 
-getLine   :: IO String
-getLine    = hGetLine stdin
+getLine     :: IO String
+getLine     = hGetLine stdin
 
 getContents :: IO String
-getContents  = hGetContents stdin
+getContents = hGetContents stdin
 
-putChar   :: Char -> IO ()
-putChar    = hPutChar stdout
+putChar     :: Char -> IO ()
+putChar     = hPutChar stdout
 
-print     :: Show a => a -> IO ()
-print      = hPrint stdout
+print       :: Show a => a -> IO ()
+print       = hPrint stdout
 
-putStr    :: String -> IO ()
-putStr     = hPutStr   stdout
+putStr      :: String -> IO ()
+putStr      = hPutStr   stdout
 
-putStrLn   :: String -> IO ()
-putStrLn   = hPutStrLn stdout
+putStrLn    :: String -> IO ()
+putStrLn    = hPutStrLn stdout
 
-interact  :: (String -> String) -> IO ()
-interact f = getContents >>= (putStr . f)
+interact    :: (String -> String) -> IO ()
+interact f  = getContents >>= (putStr . f)
 
 
 -- combinations with newline and show
 
-hPutStrLn :: Handle -> String -> IO ()
-hPutStrLn h s = do {hPutStr h s ; hPutChar h '\n'}
+hPutStrLn     :: Handle -> String -> IO ()
+hPutStrLn h s =  do { hPutStr h s
+                    ; hPutChar h '\n'
+                    }
 
-hPrint     :: Show a => Handle -> a -> IO ()
-hPrint h    = hPutStrLn h . show
+hPrint        :: Show a => Handle -> a -> IO ()
+hPrint h      =  hPutStrLn h . show
 
+hGetLine :: Handle -> IO String
+hGetLine h = do { c <- hGetChar h
+                ; hGetLine2 c
+                }
+  where
+   hGetLine2 '\n' = return ""
+   hGetLine2 c    = do { cs <- hGetLine h
+                       ; return (c:cs)
+                       }
 #ifdef __FULL_PROGRAM_ANALYSIS__
-hGetLine :: Handle -> IO String
-hGetLine h = do c <- hGetChar h
-                hGetLine' c
-  where
-   hGetLine' '\n' = return ""
-   hGetLine' c = do cs <- hGetLine h
-                    return (c:cs)
-
+   getRest        = hGetLine h
 #else
-hGetLine :: Handle -> IO String
-hGetLine h = do c <- hGetChar h
-                hGetLine' c
-  where
-   hGetLine' '\n' = return ""
-   hGetLine' c = do cs <- getRest
-                    return (c:cs)
-   getRest = do c <- catch (hGetChar h) $ \ ex ->
-                   if isEOFError ex then return '\n' else ioError ex
-                hGetLine' c
+   getRest        = do c <- catch (hGetChar h) 
+                                  (\ ex -> if isEOFError ex 
+                                           then return '\n' 
+                                           else ioError ex
+                                  )
+                       hGetLine2 c
    isEOFError ex = ioe_type ex == EOF
 #endif
 
+
 {-
+-- combinations with Read
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
 readIO s         = case [x | (x,t) <- reads s, ("","") <- lex t] of
@@ -2301,22 +2338,8 @@ readLn           = do l <- getLine
 -}
 
 
-----------------------------------------------------------------
--- Monadic I/O file functions
-----------------------------------------------------------------
 
-type FilePath = String  -- file pathnames are represented by strings
-
-data IOMode             -- alphabetical order of constructors required, assumed Int encoding in comment
-  = AppendBinaryMode    -- 0
-  | AppendMode          -- 1
-  | ReadBinaryMode      -- 2
-  | ReadMode            -- 3
-  | ReadWriteBinaryMode -- 4
-  | ReadWriteMode       -- 5
-  | WriteBinaryMode     -- 6
-  | WriteMode           -- 7
-    deriving (Eq, Ord, Bounded, Enum, Show)
+-- file open&process&close wrapped in one function
 
 readFile        :: FilePath -> IO String
 readFile name    = openFile name ReadMode >>= hGetContents

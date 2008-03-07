@@ -62,7 +62,7 @@ SEM Statement
   | Smart     lhs . trf      = Statement_Comment ["Smart"]
   | Smart     lhs . trfStats = let dp = @lhs.distance+ @lhs.numberParameters
                                    smartTups = zip [dp+1,dp ..] @vals.trf
-                                in smartAssignment (filter hasRealVal smartTups)
+                                in smartAssignment smartTups
   | * - Smart lhs . trfStats = [@loc.trf]
   
 
@@ -170,9 +170,6 @@ postPad n s = let w = length s
 %%% The Smart Assignation strategy (probably reinvented a topological sort algorithm here)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[8 hs
-
-hasRealVal (_, Value_Con (Constant_Alias "UNBOXED")) = False
-hasRealVal _                                         = True
 
 type EIV = Either Int Value
 data SmartTree = SmartTree EIV [(SmartTree,Maybe Int)]

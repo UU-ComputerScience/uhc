@@ -244,11 +244,22 @@ buildSeqs body = foldr buildSeq body
     buildSeq (v, e) b = GrExpr_Seq e (GrPatLam_Var v) b
 
 checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p ++ show nodes) $
-                          if singleton nodes
-                          then Just (fst $ head nodes)
-                          else Nothing
-    where
-    nodes = getNodes (absFetch hptMap p)
+                          let absVal = absFetch hptMap p
+                              nodes = getNodes absVal
+                          in  if   isLocs hptMap p && isNode absVal && singleton nodes
+                              then Just (fst $ head nodes)
+                              else Nothing
+    
+
+isLocs hptMap p = case p of 
+                    (HNmNr i _) -> case getEnvVar hptMap i of
+                                     (AbsLocs _ _) -> True
+                                     _ -> False
+                    _ -> False
+
+
+isNode (AbsNodes _) = True
+isNode _            = False
 
 singleton [a] = True
 singleton _   = False
