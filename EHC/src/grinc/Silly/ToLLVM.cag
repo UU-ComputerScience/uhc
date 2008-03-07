@@ -384,7 +384,13 @@ SEM Value
       * Assign the result of the call to a fresh variable
   -}                             
   | Call        lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ @loc.llvmCode
+                lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ 
+                               ( if ehcOptGenTrace @lhs.opts
+                                 then ([ LLVMStatement_Assignment @loc.fresh (LLVMExpression_GetElemPtr @loc.global [0,0])
+                                       , LLVMStatement_Call stdlibPrintfFuncDecl StdCall (@loc.fresh : @loc.castVars) ] ++)
+                                 else ([] ++)
+                               ) 
+                               @loc.llvmCode
  
                 loc.fnDecl  = LLVMFunctionDecl_LLVMFunctionDecl @name @lhs.intType FixedArgs @loc.formalParams
  
@@ -410,6 +416,15 @@ SEM Value
                                foldr (\x xs -> let (nr,fresh) = newFresh (fst xs) (getType x)
                                                 in (nr, fresh : (snd xs)) ) 
                                      (@loc.uniqNr2,[]) @loc.castVars
+                                     
+                loc.(uniqNr4,fresh) = newFresh @loc.uniqNr3 (pLift i8)                                     
+                lhs.constants = if ehcOptGenTrace @lhs.opts
+                                then (@loc.global, @loc.strConst) : @args.constants
+                                else @args.constants
+                loc.global   = let (_,var) = newFresh @loc.uniqNr4 (pLift $ stringType @loc.callStr)
+                                in GlobalVar (getPlainName var) (getType var)
+                loc.strConst = StrConstant (string2CString @loc.callStr) (stringType @loc.callStr)  
+                loc.callStr  = "PRIMCall " ++ @name ++ " " ++ concat (Data.List.intersperse " " (replicate (length @loc.castVars) "%d")) ++ "\n"                                        
 
   {-|
     A Con just wraps a constant. No actions needed.
