@@ -215,7 +215,7 @@ SEM GrExpr
  | Unit    lhs.stats  = if @isLastExpr
                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                          else maybe  (internal1 "Unit" @lhs.targets @val.values)
-                                     (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
+                                     (\t -> Statement_Comment ["Unit to PtrNode"] : storeManaged (mkVar t) (length @val.values) (length @val.values) @val.values)
                                      @lhs.mbPtrTarget
            lhs.localsSet = Set.fromList @lhs.targets
 
@@ -235,7 +235,7 @@ SEM GrExpr
                             --n2 = @lhs.maxConstrParameters
                             n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap ph)))
                         in Statement_Comment ["Store"]
-                           : store (mkVar ph) n n2 vs
+                           : storeManaged (mkVar ph) n n2 vs
 
            lhs.localsSet = Set.fromList @lhs.targets
 
@@ -343,7 +343,7 @@ SEM GrGlobal
            lhs.initStats   = let vs = @val.values
                                  n  = length vs
                                  n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @globNm)))
-                             in  store (Variable_Global @globNm) n n2 vs
+                             in  storeUnmanaged (Variable_Global @globNm) n n2 vs
 
 
 
@@ -587,9 +587,9 @@ isRealVar _             = True
 -- that are actually possible for this function.
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
-allocate :: Char -> Int -> Int -> Value
-allocate 'C' n1 _  = Value_Alloc (1+n1)
-allocate _   n1 n2 = Value_Alloc (1+(max n1 n2))
+allocate :: Char -> SillyAllocManageType -> Int -> Int -> Value
+allocate 'C' tp n1 _  = Value_Alloc (1+n1) tp
+allocate _   tp n1 n2 = Value_Alloc (1+(max n1 n2)) tp
        
 -- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char
@@ -600,12 +600,21 @@ tagcat _ = ' '
 mkVar :: HsName -> Variable
 mkVar = Variable_Unembedded
 
-store :: Variable -> Int -> Int -> [Value] -> Statements
-store v n1 n2 vs
+storeUnmanaged :: Variable -> Int -> Int -> [Value] -> Statements
+storeUnmanaged =
+  store NotManaged
+
+storeManaged :: Variable -> Int -> Int -> [Value] -> Statements
+storeManaged =
+  store GCManaged
+  
+
+store :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
+store tp v n1 n2 vs
        =  let cat = tagcat vs
           in  if    cat=='U'
               then [Statement_Assignment v (Value_UnboxCon (head (tail vs)))]
-              else Statement_Assignment v (allocate cat n1 n2)
+              else Statement_Assignment v (allocate cat tp n1 n2)
                    : zipWith Statement_Assignment
                              (map (arrayVariab v) [0..])
                              vs

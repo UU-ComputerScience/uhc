@@ -12,6 +12,8 @@
 %%]
 %%[8 hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Variables, Values )
 %%]
+%%[8 hs export(SillyAllocManageType(..))
+%%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
 
@@ -26,7 +28,11 @@ instance Show (Int -> [Value])
 
 instance Eq (Int -> [Value])
  where  x==y = False
+%%]
 
-
-
+%%[8 hs
+data SillyAllocManageType
+  = NotManaged
+  | GCManaged
+  deriving( Eq, Show, Ord )  
 %%]

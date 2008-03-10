@@ -103,9 +103,9 @@ isSimpleVariable (Variable_Subs _           _) = False
 isSimpleVariable _                             = True
 
 isSimpleValue :: Value -> Bool
-isSimpleValue (Value_Alloc _) = False
-isSimpleValue (Value_Var v)   = isSimpleVariable v
-isSimpleValue _               = True
+isSimpleValue (Value_Alloc _ _) = False
+isSimpleValue (Value_Var v)     = isSimpleVariable v
+isSimpleValue _                 = True
 
 virtualizable (Just def) (Just use) simpleVal = def==1 && ( use==2 || simpleVal )
 virtualizable _ _ _ = False
