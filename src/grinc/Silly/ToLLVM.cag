@@ -119,11 +119,6 @@ SEM SilModule
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
 %%[[8
                                  , LLVMStatement_Call fun_mainFuncDecl StdCall []
-%%][99
-                                 , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
-%%]]                                 
-                                 , LLVMStatement_Call fun_mainFuncDecl StdCall []
-                                 , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "rp.1" @lhs.pointerType)
                                      (LLVMExpression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
                                  , LLVMStatement_Assignment (LocalVar "rp.1.val" @lhs.intType)
@@ -131,7 +126,11 @@ SEM SilModule
                                 , LLVMStatement_Assignment (LocalVar "cast.str.res" (pLift i8))
                                      (LLVMExpression_GetElemPtr (GlobalVar "STR_RES" (pLift $ stringType @loc.resultStr)) [0,0])  
                                  , LLVMStatement_Call stdlibPrintfFuncDecl TailCall
-                                     [ LocalVar "cast.str.res" (pLift i8), LocalVar "rp.1.val" @lhs.intType ] 
+                                     [ LocalVar "cast.str.res" (pLift i8), LocalVar "rp.1.val" @lhs.intType ]
+%%][99
+                                 , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
+%%]]                                 
+                                 , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
                                  , LLVMStatement_Return (Constant 0 i32)  
                                  ]                    
                                
