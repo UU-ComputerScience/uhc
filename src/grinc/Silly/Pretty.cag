@@ -93,7 +93,7 @@ SEM Value
   | UnboxCon       lhs.pretty = text "UNBOXCON" >#< @con.pretty
   | BoxVar         lhs.pretty = text "BOXVAR" >#< @var.pretty
   | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
-  | Alloc          lhs.pretty = text "ALLOC" >#< show @size
+  | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
   | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
   | Label          lhs.pretty = text "LABEL" >#< show @name
 

@@ -114,7 +114,7 @@ SEM SilModule
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
                                  [ LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
-                                     (mkMalloc True @lhs.intType (1 + @functions.maxRPIndex))
+                                     (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
 %%[[8
@@ -359,7 +359,7 @@ SEM Value
                 lhs.llvmCode = @loc.llvmCode
                 
                 loc.(uniqNr1,llvmVar,llvmCode) =
-                               assign2var @lhs.gUniq (mkMalloc False @lhs.intType @size, @lhs.pointerType)
+                               assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
 
   {-|
     Perform the required arithmic (>>1) on the inherited llvmVar
@@ -895,13 +895,13 @@ defaultCase nr =
 {-|
 Create a 'LLVMExpression' that allocates @nr * sizeof( LLVMType )@ bytes.
 -}
-mkMalloc :: Bool -> LLVMType -> Int -> LLVMExpression
-mkMalloc unCollectable intType nr =
+mkMalloc :: SillyAllocManageType -> LLVMType -> Int -> LLVMExpression
+mkMalloc manageType intType nr =
   if rtsUseGC
   then let size = nr * sizeofPointer
-        in if unCollectable
-           then LLVMExpression_Call (gcMallocUncollectableFuncDecl intType) StdCall [Constant size intType]
-           else LLVMExpression_Call (gcMallocFuncDecl intType) StdCall [Constant size intType]
+        in case manageType of
+           NotManaged -> LLVMExpression_Call (gcMallocUncollectableFuncDecl intType) StdCall [Constant size intType]
+           GCManaged  -> LLVMExpression_Call (gcMallocFuncDecl intType) StdCall [Constant size intType]
   else LLVMExpression_Malloc intType nr
 }
 %%]

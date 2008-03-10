@@ -82,6 +82,7 @@ DATA Value
   |  Cast        val        : Value
                  word       : {Bool}
   |  Alloc       size       : {Int}
+                 gcManaged  : {SillyAllocManageType}
   |  Label       name       : {String}
   |  Call        name       : String
                  args       : Values
