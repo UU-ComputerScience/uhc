@@ -957,21 +957,21 @@ WWW home page:
 %%]
 
 %%[36
-\title{Efficient Functional Substitution}
+\title{Efficient Functional Unification and Substitution}
 %if acm && useSigplanconfSty
-\authorinfo{Atze Dijkstra}
+\authorinfo{Atze Dijkstra \and S.~Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
-  {\{atze\}@@cs.uu.nl}
+  {\{atze,doaitse\}@@cs.uu.nl}
 %else
-\author{Atze Dijkstra}
+\author{Atze Dijkstra and S.~Doaitse Swierstra}
 \institute{Department of Information and Computing Sciences,\\
 Universiteit Utrecht,\\
 P.O.Box 80.089, \\
 Padualaan 14, Utrecht, Netherlands,\\
-\email{@{atze}@@cs.uu.nl@},\\
+\email{@{atze,doaitse}@@cs.uu.nl@},\\
 WWW home page:
 \texttt{http://www.cs.uu.nl}
 }
@@ -1968,52 +1968,52 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 %{
 % format ! = "\Varid{!}"
 %format VarMp = "\Varid{VarMp}"
+%include experimentsubst.fmt
+
+\rulerCmdDef{exp-subst-variant1}{\textsc{functional}}
+\rulerCmdDef{exp-subst-variant2}{\textsc{functional sharing}}
+\rulerCmdDef{exp-subst-variant21}{\textsc{functional sharing opt}}
+\rulerCmdDef{exp-subst-variant22}{\textsc{functional sharing 2}}
+\rulerCmdDef{exp-subst-variant221}{\textsc{functional sharing occur}}
+\rulerCmdDef{exp-subst-variant3}{\textsc{sharing}}
 
 \section{Introduction}
 
 %%@TopicSubst.introduction
 
-\section{Related work}
+% \section{Related work}
 
-%%@TopicSubst.relatedWork
+ %%@TopicSubst.relatedWork
 
-\section{Experiment setup}
+\section{Preliminaries}
+\label{sec-expsubst-prelim}
 
-\subsection{Framework}
+%%@TopicSubst.preliminaries
 
-%%@TopicSubst.frameworkCode
-
-\subsection{Performance test cases}
-
-\section{Substitution implementations}
-
-\subsection{Substitution by copying}
+\section{Substitution by copying}
+\label{sec-expsubst-purefunc}
 
 %%@TopicSubst.substByCopying
 
-\subsection{Substitution by sharing}
+\section{Substitution by sharing}
+\label{sec-expsubst-ioref}
 
 %%@TopicSubst.substBySharing
 
-\subsection{Substitution by functional shared memory}
+\section{Substitution by functional shared memory}
+\label{sec-expsubst-funcmem}
 
 %%@TopicSubst.substByFuncSharedMem
 
-\section{Results}
+\section{Performance results}
+\label{sec-expsubst-results}
 
-\subsection{Performance comparison}
+%%@TopicSubst.performanceResults
 
-\subsection{Optimizations}
+\section{Conclusion}
+\label{sec-expsubst-discussion}
 
-Update |VarMp|:
-
-%%@Substitutable.Val.sbs@21 wrap=code
-
-But undesirable in general because we still end up doing work twice because we do not unify based on the original tyvars but on their content.
-For applying a substitution it works because a chain of lookups is collapsed.
-For chains of tyvars it can be done.
-
-\section{Discussion}
+%%@TopicSubst.discussion
 %}
 %%]
 

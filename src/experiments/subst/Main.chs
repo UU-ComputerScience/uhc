@@ -40,10 +40,13 @@ main
                         'b' -> (mkTree2 (read dep), treeCompute)
                         _   -> error [kind]
 %%[[1
-         (r,_)   <-  runStateT (c t) emptySt
+         let (r,_) = runState (c t) emptySt
 %%][2
-         (q,st)  <-  runStateT (c t) emptySt
-         let r =  stVM st |=> q
+         let  (q,st) = runState (c t) emptySt
+              r =  stVMp st |@ q
+%%][22
+         let  (q,st) = runState (c t) emptySt
+              r =  evl (stVMp st) q `seq` q
 %%][3
          (r,_)   <-  runStateT (c t) emptySt
 %%]]
@@ -54,19 +57,50 @@ main
          putStrLn (r `seq` "done")
 %%]
 
+%%[22
+evl :: VMp -> Val -> ()
+evl m x@(Var i)
+  | isJust mbv && (evl m (fromJust mbv) `seq` True) = ()
+  | otherwise = ()
+  where mbv = i |? m
+evl m (Pair x y)
+  | evl m x `seq` evl m y `seq` True = ()
+evl _ x = ()
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Substitutable.infixr
-infixr 6 |=>
-
+infixr 6 |@
 %%]
 
 %%[1.Substitutable
-class Substitutable v where
-  (|=>)         ::  VarMp -> v -> v
-  ftv           ::  v -> Set VarId
+class Substitutable x where
+  (|@)          ::  VMp -> x -> x
+%%[[1
+  ftv           ::  x -> Set VarId
+%%][221
+%%]]
+%%]
+
+%%[221
+ftv :: VMp -> Val -> Set VarId
+ftv m (Var i)         =  case i |? m of
+                           Just v  -> ftv (vmDelete i m) v
+                           _       -> Set.singleton i
+ftv m (Pair v w)      =  ftv m v `Set.union` ftv m w
+ftv m _               =  Set.empty
+%%]
+
+%%[3.ftv
+ftv :: Val -> Set VarId
+ftv (Var i r)       =  case refRead r of
+                         Just v  -> ftv v
+                         _       -> Set.singleton i
+ftv (Pair v w)      =  ftv v `Set.union` ftv w
+ftv _               =  Set.empty
 %%]
 
 %%[3 -(1.Substitutable 1.Substitutable.infixr)
@@ -76,7 +110,7 @@ class Substitutable v where
 %%% Variable identification
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1.VarId
 type VarId = Int
 %%]
 
@@ -86,7 +120,7 @@ type VarId = Int
 
 %%[1.Val
 data Val                        -- concrete syntax:
-  =  Comb   !Val    !Val        -- (v,w)
+  =  Pair   !Val    !Val        -- (v,w)
   |  Const                      -- c
 %%[[1
   |  Var    !VarId
@@ -116,32 +150,35 @@ valErr x = Err (pp x)
 %%]
 
 %%[1.Substitutable.Val
-instance Substitutable Val where
 %%[[Substitutable.Val.sbs
-  s |=> v
+instance Substitutable Val where
+  s |@ v
 %%[[1
     =  sbs s v
-    where  sbs  s  (Comb v w)    =  Comb (sbs s v) (sbs s w)
+    where  sbs  s  (Pair v w)    =  Pair (sbs s v) (sbs s w)
            sbs  s  v@(Var i)     =  case i |? s of
                                       Just v'  -> v'
                                       _        -> v
            sbs  s  v             =  v
 %%][2
     =  sbs Set.empty s v
-    where  sbs  vis  s  (Comb v w)    =  Comb v' w'
-             where  v' = sbs vis s v
-                    w' = sbs vis s w
-           sbs  vis  s  v@(Var i)     =
+    where  sbs vis s (Pair v w)  =  Pair v' w'
+             where  v'  = sbs vis s v
+                    w'  = sbs vis s w
+           sbs vis s v@(Var i)   =
              case i |? s of
-               Just v' | Set.notMember i vis
-                  -> sbs (Set.insert i vis) s v'
-               _  -> v
-           sbs  vis  s  v             =  v
+               Just v'
+                 |  Set.member i vis
+                      -> valErr "infinite"
+                 |  otherwise
+                      -> sbs (Set.insert i vis) s v'
+               _      -> v
+           sbs vis s v           =  v
 %%][21
     =  fst $ sbs Set.empty s v
-    where  sbs  vis  s  (Comb v w)    =  (Comb v' w', s3)
-             where  (v',s2) = sbs vis s   v
-                    (w',s3) = sbs vis s2  w
+    where  sbs  vis  s  (Pair v w)    =  (Pair v' w', s3)
+             where  (v',s2)  = sbs vis s   v
+                    (w',s3)  = sbs vis s2  w
            sbs  vis  s  v@(Var i)     = 
              case i |? s of
                Just v' | Set.notMember i vis
@@ -154,18 +191,13 @@ instance Substitutable Val where
 
 %%[[1
   ftv (Var i)         =  Set.singleton i
-%%]]
-  ftv (Comb v w)      =  ftv v `Set.union` ftv w
+  ftv (Pair v w)      =  ftv v `Set.union` ftv w
   ftv _               =  Set.empty
+%%][221
+%%]]
 %%]
 
 %%[3 -1.Substitutable.Val
-ftv :: Val -> Set VarId
-ftv (Var i r)       =  case refRead r of
-                         Just v  -> ftv v
-                         _       -> Set.singleton i
-ftv (Comb v w)      =  ftv v `Set.union` ftv w
-ftv _               =  Set.empty
 %%]
 
 %%[1
@@ -177,7 +209,7 @@ instance PP Val where
                      Just v  -> pp v
                      _       -> "v" >|< pp i
 %%]]
-  pp (Comb v w)  = ppParens (v >|< "," >|< w)
+  pp (Pair v w)  = ppParens (v >|< "," >|< w)
   pp (Const)     = pp "c"
   pp (Err s)     = "err:" >#< s
 %%]
@@ -187,23 +219,32 @@ instance PP Val where
 %%% Substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.VarMp
-newtype VarMp = VarMp (Map VarId Val)
+%%[1.VMp
+newtype VMp = VMp (Map VarId Val)
+%%]
+
+%%[1.VMp.sigs
+emptyVM          ::  VMp
+(|?)             ::  VarId -> VMp -> Maybe Val    -- lookup
+vmUnit           ::  VarId -> Val -> VMp
+vmUnion          ::  VMp -> VMp -> VMp
+%%]
+
+%%[221
+vmDelete :: VarId -> VMp -> VMp
+vmDelete i (VMp m) = VMp (Map.delete i m)
 %%]
 
 %%[1.emptyVM
-emptyVM          ::  VarMp
-emptyVM          =   VarMp Map.empty
+emptyVM          =   VMp Map.empty
 %%]
 
 %%[1.varmpLookup
-(|?)                ::  VarId -> VarMp -> Maybe Val
-k |? (VarMp s)      =   Map.lookup k s
+k |? (VMp s)      =   Map.lookup k s
 %%]
 
 %%[2.varmpLookup -1.varmpLookup
-(|?)                ::  VarId -> VarMp -> Maybe Val
-k |? (VarMp s)
+k |? (VMp s)
   = lk Set.empty k s
   where  lk visited k s
            =  case Map.lookup k s of
@@ -218,25 +259,28 @@ k |? (VarMp s)
 %%]
 
 %%[1.vmUnit
-vmUnit :: VarId -> Val -> VarMp
-vmUnit n v = VarMp (Map.singleton n v)
+vmUnit n v = VMp (Map.singleton n v)
 
-vmUnion :: VarMp -> VarMp -> VarMp
-vmUnion (VarMp x) (VarMp y) = VarMp (x `Map.union` y)
+vmUnion (VMp x) (VMp y) = VMp (x `Map.union` y)
 %%]
 
-%%[1.Substitutable.VarMp
-instance Substitutable VarMp where
+%%[1.Substitutable.VMp
+%%[[Substitutable.VMp.sbs
+instance Substitutable VMp where
 %%[[1
-  s |=>  (VarMp m)  =  s `vmUnion` VarMp (Map.map (s |=>) m)
+  s |@   (VMp m)    =  s `vmUnion` VMp (Map.map (s |@) m)
 %%][2
-  s |=>  s2         =  s `vmUnion` s2
+  s |@   s2         =  s `vmUnion` s2
 %%]]
-  ftv    (VarMp m)  =  Map.fold  (\v fv -> fv `Set.union` ftv v)
+%%]]
+%%[[1
+  ftv    (VMp m)    =  Map.fold  (\v fv -> fv `Set.union` ftv v)
                                  Set.empty m
+%%][221
+%%]]
 %%]
 
-%%[3 -(1.VarMp 1.emptyVM 2.varmpLookup 1.vmUnit 1.Substitutable.VarMp)
+%%[3 -(1.VMp.sigs 1.VMp 1.emptyVM 2.varmpLookup 1.vmUnit 1.Substitutable.VMp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -254,8 +298,11 @@ emptyEnv = Env Map.empty
 
 %%[1.Substitutable.Env
 instance Substitutable Env where
-  s |=>  (Env m)  = Env (Map.map (s |=>) m)
+  s |@   (Env m)  = Env (Map.map (s |@) m)
+%%[[1
   ftv    (Env m)  = Map.fold (\v fv -> fv `Set.union` ftv v) Set.empty m
+%%][221
+%%]]
 %%]
 
 %%[3 -1.Substitutable.Env
@@ -281,7 +328,7 @@ data Tree                                -- concrete syntax:
   =  Constant                            -- C
   |  UseBind     !String                 -- n
   |  DefBind     !String  !Tree  !Tree   -- bind n = x in y
-  |  Pair        !Tree    !Tree          -- (x,y)
+  |  Tuple       !Tree    !Tree          -- (x,y)
   |  First       !Tree                   -- fst x
   |  Second      !Tree                   -- snd x
 %%[[4
@@ -295,7 +342,7 @@ instance PP Tree where
   pp (Constant        )  = pp "constant"
   pp (UseBind  n      )  = pp n
   pp (DefBind  n x y  )  = "bind" >#< n >#< "=" >#< x >#< "in" >-< y
-  pp (Pair     x y    )  = "(" >|< x >-< "," >|< y >|< ")"
+  pp (Tuple    x y    )  = "(" >|< x >-< "," >|< y >|< ")"
   pp (First    x      )  = "fst" >#< x
   pp (Second   x      )  = "snd" >#< x
 %%[[4
@@ -315,7 +362,7 @@ mkuse2 dep = mkuse (dep-2)
 mkuse3 dep = mkuse (dep-3)
 %%]
 
-Sequence of intro's, Comb's, deconstructed in subsequent uses
+Sequence of intro's, Pair's, deconstructed in subsequent uses
 
 %%[1
 mkTree1 :: Int -> Tree
@@ -325,10 +372,10 @@ mkTree1 maxDepth
           = DefBind bnam bval buse
           where bnam = mkv dep
                 bval | dep == minDepth      =  Constant
-                     | dep == (minDepth+1)  =  Pair
+                     | dep == (minDepth+1)  =  Tuple
                                                  (mkuse1 dep)
                                                  (mkuse1 dep)
-                     | otherwise            =  Pair
+                     | otherwise            =  Tuple
                                                  (Second (mkuse1 dep))
                                                  (First  (mkuse1 dep))
                 buse | dep == maxDepth      =  UseBind bnam
@@ -346,15 +393,15 @@ mkTree2 maxDepth
           = DefBind bnam bval buse
           where bnam = mkv dep
                 bval | dep == minDepth      =  Constant
-                     | dep == (minDepth+1)  =  Pair
+                     | dep == (minDepth+1)  =  Tuple
                                                  (mkuse1 dep)
                                                  (mkuse1 dep)
-                     | dep == (minDepth+2)  =  Pair
+                     | dep == (minDepth+2)  =  Tuple
                                                  (First (mkuse1 dep))
                                                  (mkuse1 dep)
-                     | otherwise            =  Pair
+                     | otherwise            =  Tuple
                                                  (Second (mkuse1 dep))
-                                                 (Pair
+                                                 (Tuple
                                                     (mkuse2 dep)
                                                     (mkuse2 dep))
                 buse | dep == maxDepth      =  UseBind bnam
@@ -370,15 +417,15 @@ mkTree2 maxDepth
           = DefBind bnam bval buse
           where bnam = mkv dep
                 bval | dep == minDepth      =  Constant
-                     | dep == (minDepth+1)  =  Pair
+                     | dep == (minDepth+1)  =  Tuple
                                                  (mkuse1 dep)
                                                  (mkuse1 dep)
-                     | dep == (minDepth+2)  =  Pair
+                     | dep == (minDepth+2)  =  Tuple
                                                  (First (mkuse1 dep))
                                                  (mkuse1 dep)
-                     | otherwise            =  Pair
+                     | otherwise            =  Tuple
                                                  (Second (mkuse1 dep))
-                                                 (Pair
+                                                 (Tuple
                                                     (Apply
                                                        (mkuse1 dep)
                                                        (mkuse3 dep))
@@ -396,7 +443,7 @@ mkTree2 maxDepth
 data St  =  St  {  stUniq     :: !VarId
                 ,  stEnv      :: !Env
 %%[[1
-                ,  stVM       :: !VarMp
+                ,  stVMp      :: !VMp
 %%][3
 %%]]
                 }
@@ -417,6 +464,10 @@ err x = return (valErr x)
 %%]
 
 %%[1.Compute
+type Compute v = State St v
+%%]
+
+%%[3.Compute -1.Compute
 type Compute v = StateT St IO v
 %%]
 
@@ -429,7 +480,7 @@ treeCompute t =
         do  st <- get
             case envLookup n (stEnv st) of
 %%[[1
-              Just v -> return (stVM st |=> v)
+              Just v -> return (stVMp st |@ v)
 %%][2
               Just v -> return v
 %%]]
@@ -443,68 +494,67 @@ treeCompute t =
             st <- get
             put (st {stEnv = env})
             return y'
-      Pair x y       ->
+      Tuple x y       ->
         do  x' <- treeCompute x
             y' <- treeCompute y
 %%[[1
             st <- get
-            return (Comb (stVM st |=> x') y')
+            return (Pair (stVMp st |@ x') y')
 %%][2
-            return (Comb x' y')
+            return (Pair x' y')
 %%]]
 %%[[treeCompute.First
       First x        ->
         do  x'     <- treeCompute x
-            [i,j]  <- newVars 2
-            valMatch (Comb i j) x'
+            [v,w]  <- newVars 2
+            valUnify (Pair v w) x'
 %%[[1
             st     <- get
-            return (stVM st |=> i)
+            return (stVMp st |@ v)
 %%][2
-            return i
+            return v
 %%]]
 %%]]
       Second x       ->
         do  x'     <- treeCompute x
-            [i,j]  <- newVars 2
-            valMatch (Comb i j) x'
+            [v,w]  <- newVars 2
+            valUnify (Pair v w) x'
 %%[[1
             st     <- get
-            return (stVM st |=> j)
+            return (stVMp st |@ w)
 %%][2
-            return j
+            return w
 %%]]
 %%[[4
       Apply x y      ->
         do  x'     <- treeCompute x
-            [i,j]  <- newVars 2
-            valMatch (Comb i j) x'
+            [v,w]  <- newVars 2
+            valUnify (Pair v w) x'
             y'     <- treeCompute y
 %%[[1
             st     <- get
-            valMatch (stVM st |=> i) y'
+            valUnify (stVMp st |@ v) y'
 %%][2
-            valMatch i y'
+            valUnify v y'
 %%]]
 %%[[1
             st     <- get
-            return (stVM st |=> j)
+            return (stVMp st |@ w)
 %%][2
-            return j
+            return w
 %%]]
 %%]]
 %%]
 
 %%[1.newVar
-newVar  ::  Compute Val
+newVar      ::  Compute Val
 newVar  =   do  st  <- get
-                let i = stUniq st
-                put (st {stUniq = i+1})
+                put (st {stUniq = stUniq st + 1})
 %%[[1
-                return (Var i)
+                return (Var (stUniq st))
 %%][3
                 r   <- newRef
-                return (Var i r)
+                return (Var (stUniq st) r)
 %%]]
 %%]
 
@@ -516,80 +566,88 @@ newVars  n  =   do  v   <- newVar
                     return (v : vs)
 %%]
 
-%%[3.Ref.IO
-newRef  ::  Compute Ref
+%%[3.Ref.IO.sigs
+newRef     ::  Compute Ref
+refRead    ::  Ref -> RefContent
+refWrite   ::  Ref -> RefContent -> Compute ()
+%%]
+
+%%[3.newRef
 newRef  =   do  r <- lift $ newIORef Nothing
                 return (Ref r)
-
-refRead          ::  Ref -> RefContent
-refRead (Ref r)  =   unsafePerformIO $ readIORef r
-
-refWrite            ::  Ref -> RefContent -> Compute ()
-refWrite (Ref r) c  =   lift $ writeIORef r c
 %%]
-refRead          ::  Ref -> Compute RefContent
-refRead (Ref r)  =   lift $ readIORef r
 
+%%[3.Ref.IO
+refRead   (Ref r)    =   unsafePerformIO $ readIORef r
 
-%%[1.valMatch
-valMatch :: Val -> Val -> Compute Val
-valMatch v1 v2
-  = do { st <- get ; m st v1 v2 } where
-  m  st  x@(Const)    (Const)                     =  return x
+refWrite  (Ref r) c  =   lift $ writeIORef r c
+%%]
+
+%%[1.valUnify
+valUnify :: Val -> Val -> Compute Val
+valUnify v1 v2
+  = do { st <- get ; uni st v1 v2 } where
+  uni  st  x@(Const)    (Const)                     =  return x
 %%[[1
-  m  st  x@(Var i)    (Var j)    |  i == j        =  return x
+  uni  st  x@(Var i)    (Var j)    |  i == j        =  return x
 %%][3
-  m  st  x@(Var i _)  (Var j _)  |  i == j        =  return x
+  uni  st  x@(Var i _)  (Var j _)  |  i == j        =  return x
 %%]]
 %%[[2
-  m  st  (Var i)      y          |  isJust mbv    =  m st v y
-     where  mbv  = i |? stVM st
-            v    = fromJust mbv
-  m  st  x            (Var j)    |  isJust mbv    =  m st x v
-     where  mbv  = j |? stVM st
-            v    = fromJust mbv
+  uni  st  (Var i)      y          |  isJust mbv    =  uni st v y
+       where  mbv  = i |? stVMp st
+              v    = fromJust mbv
+  uni  st  x            (Var j)    |  isJust mbv    =  uni st x v
+       where  mbv  = j |? stVMp st
+              v    = fromJust mbv
 %%][3
-  m  st  (Var _ r)    y          |  isJust mbv    =  m st v y
-     where  mbv  = refRead r
-            v    = fromJust mbv
-  m  st  x            (Var _ r)  |  isJust mbv    =  m st x v
-     where  mbv  = refRead r
-            v    = fromJust mbv
+  uni  st  (Var _ r)    y          |  isJust mbv    =  uni st v y
+       where  mbv  = refRead r
+              v    = fromJust mbv
+  uni  st  x            (Var _ r)  |  isJust mbv    =  uni st x v
+       where  mbv  = refRead r
+              v    = fromJust mbv
 %%]]
 %%[[1
-  m  st  (Var i)      y                           =  bind st i y
-  m  st  x            (Var i)                     =  bind st i x
+  uni  st  (Var i)      y                           =  bindv st i y
+  uni  st  x            (Var i)                     =  bindv st i x
 %%][3
-  m  st  x@(Var _ _)  y                           =  bind st x y
-  m  st  x            y@(Var _ _)                 =  bind st y x
+  uni  st  x@(Var _ _)  y                           =  bindv st x y
+  uni  st  x            y@(Var _ _)                 =  bindv st y x
 %%]]
-  m  st  (Comb p q)   (Comb r s)                  =
-    do  pr   <- m st p r
-        st2  <- get
+  uni  st  (Pair p q)   (Pair r s)                  =
+      do  pr   <- uni st p r
+          st2  <- get
 %%[[1
-        qs   <- m st2 (stVM st2 |=> q) (stVM st2 |=> s)
-        st3  <- get
-        return (Comb (stVM st3 |=> pr) qs)
+          qs   <- uni st2 (stVMp st2 |@ q) (stVMp st2 |@ s)
+          st3  <- get
+          return (Pair (stVMp st3 |@ pr) qs)
 %%][2
-        qs   <- m st2 q s
-        return (Comb pr qs)
+          qs   <- uni st2 q s
+          return (Pair pr qs)
 %%]]
-  m  _   _            _                           =  err "clash"
+  uni  _   _            _                           =  err "no match"
 %%[[1
-  bind st i v 
-    |  Set.member i (ftv v)                       =  err "infin"
-    |  otherwise                                  =
-         do  put (st {stVM = vmUnit i v |=> stVM st})
-             return v
+  bindv st i v 
+      |  Set.member i (ftv v)                       =  err "infinite"
+      |  otherwise                                  =
+           do  put (st {stVMp = vmUnit i v |@ stVMp st})
+               return v
 %%][2
-  bind st i v                                     = 
-                    do  put (st {stVM = vmUnit i v |=> stVM st})
-                        return v
+  bindv st i v                                      = 
+    do  put (st {stVMp = vmUnit i v |@ stVMp st})
+        return v
+%%][221
+  bindv st i v 
+      |  Set.member i (ftv (stVMp st) v)            =  err "infinite"
+      |  otherwise                                  =
+           do  put (st {stVMp = vmUnit i v |@ stVMp st})
+               return v
 %%][3
-  bind st (Var i r) v  |  Set.member i (ftv v)    =  err "infin"
-                       |  otherwise               =
-                            do  refWrite r (Just v)
-                                return v
+  bindv st (Var i r) v  |  Set.member i (ftv v)     =  err "infinite"
+                        |  otherwise                =
+                             do  refWrite r (Just v)
+                                 return v
 %%]]
 %%]
 
