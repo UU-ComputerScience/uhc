@@ -1973,9 +1973,11 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 \rulerCmdDef{exp-subst-variant1}{\textsc{functional}}
 \rulerCmdDef{exp-subst-variant2}{\textsc{functional sharing}}
 \rulerCmdDef{exp-subst-variant21}{\textsc{functional sharing opt}}
-\rulerCmdDef{exp-subst-variant22}{\textsc{functional sharing 2}}
-\rulerCmdDef{exp-subst-variant221}{\textsc{functional sharing occur}}
+\rulerCmdDef{exp-subst-variant22}{\textsc{functional sharing no top subst}}
+\rulerCmdDef{exp-subst-variant221}{\textsc{functional sharing occur check}}
 \rulerCmdDef{exp-subst-variant3}{\textsc{sharing}}
+\rulerCmdDef{linear}{\textsc{linear}}
+\rulerCmdDef{exponential}{\textsc{exponential}}
 
 \section{Introduction}
 

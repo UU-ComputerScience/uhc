@@ -1108,7 +1108,7 @@ instance ForceEval DataFldInConstr where
 instance ForceEval DataGamInfo where
   forceEval x@(DataGamInfo n t nl tm cm nt mx) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
 %%[[101
-  fevCount (DataGamInfo n t nl tm cm nt) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt]
+  fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
 %%]]
 
 instance ForceEval FixityGamInfo

@@ -31,26 +31,27 @@ Example commandline invocation:
 
 This creates tree b with depth 15, and prints the computed value
 
-%%[1.main
+%%[1.topleveltest
 main :: IO ()
 main
-  =  do  args@((kind:'/':dep):(whichoutput:_):variant:_) <- getArgs
-         let (t,c) = case kind of
-                        'a' -> (mkTree1 (read dep), treeCompute)
-                        'b' -> (mkTree2 (read dep), treeCompute)
-                        _   -> error [kind]
+  =  do  ((kind:'/':dep):(output:_):variant:_)
+           <- getArgs
+         let  t =  case kind of
+                     'a'  -> mkLinearTree (read dep)
+                     'b'  -> mkExponentialTree (read dep)
+                     _    -> error [kind]
 %%[[1
-         let (r,_) = runState (c t) emptySt
+              (r,_) = runState (treeCompute t) emptySt
 %%][2
-         let  (q,st) = runState (c t) emptySt
+              (q,st) = runState (treeCompute t) emptySt
               r =  stVMp st |@ q
 %%][22
-         let  (q,st) = runState (c t) emptySt
+              (q,st) = runState (treeCompute t) emptySt
               r =  evl (stVMp st) q `seq` q
 %%][3
-         (r,_)   <-  runStateT (c t) emptySt
+         (r,_)   <-  runStateT (treeCompute t) emptySt
 %%]]
-         when  (whichoutput == 'p')
+         when  (output == 'p')
                (do  putPPLn (pp t)
                     putPPLn (pp r)
                )
@@ -162,30 +163,30 @@ instance Substitutable Val where
            sbs  s  v             =  v
 %%][2
     =  sbs Set.empty s v
-    where  sbs vis s (Pair v w)  =  Pair v' w'
-             where  v'  = sbs vis s v
-                    w'  = sbs vis s w
-           sbs vis s v@(Var i)   =
+    where  sbs visited s (Pair v w)  =  Pair v' w'
+             where  v'  = sbs visited s v
+                    w'  = sbs visited s w
+           sbs visited s v@(Var i)   =
              case i |? s of
                Just v'
-                 |  Set.member i vis
+                 |  Set.member i visited
                       -> valErr "infinite"
                  |  otherwise
-                      -> sbs (Set.insert i vis) s v'
+                      -> sbs (Set.insert i visited) s v'
                _      -> v
-           sbs vis s v           =  v
+           sbs visited s v           =  v
 %%][21
     =  fst $ sbs Set.empty s v
-    where  sbs  vis  s  (Pair v w)    =  (Pair v' w', s3)
-             where  (v',s2)  = sbs vis s   v
-                    (w',s3)  = sbs vis s2  w
-           sbs  vis  s  v@(Var i)     = 
+    where  sbs  visited  s  (Pair v w)    =  (Pair v' w', s3)
+             where  (v',s2)  = sbs visited s   v
+                    (w',s3)  = sbs visited s2  w
+           sbs  visited  s  v@(Var i)     = 
              case i |? s of
-               Just v' | Set.notMember i vis
+               Just v' | Set.notMember i visited
                   -> (v'',vmUnit i v'' `vmUnion` s')
-                  where (v'',s') = sbs (Set.insert i vis) s v'
+                  where (v'',s') = sbs (Set.insert i visited) s v'
                _  -> (v,s)
-           sbs  vis  s  v             =  (v,s)
+           sbs  visited  s  v             =  (v,s)
 %%]]
 %%]]
 
@@ -365,8 +366,8 @@ mkuse3 dep = mkuse (dep-3)
 Sequence of intro's, Pair's, deconstructed in subsequent uses
 
 %%[1
-mkTree1 :: Int -> Tree
-mkTree1 maxDepth
+mkLinearTree :: Int -> Tree
+mkLinearTree maxDepth
   = mk minDepth
   where mk dep
           = DefBind bnam bval buse
@@ -385,9 +386,9 @@ mkTree1 maxDepth
 
 Growing types, each further definition constructs a Val double the size of the previous.
 
-%%[1.mkTree2
-mkTree2 :: Int -> Tree
-mkTree2 maxDepth
+%%[1.mkExponentialTree
+mkExponentialTree :: Int -> Tree
+mkExponentialTree maxDepth
   = mk minDepth
   where mk dep
           = DefBind bnam bval buse
@@ -409,9 +410,9 @@ mkTree2 maxDepth
         minDepth = 1
 %%]
 
-%%[4 -1.mkTree2
-mkTree2 :: Int -> Tree
-mkTree2 maxDepth
+%%[4 -1.mkExponentialTree
+mkExponentialTree :: Int -> Tree
+mkExponentialTree maxDepth
   = mk minDepth
   where mk dep
           = DefBind bnam bval buse
@@ -440,13 +441,13 @@ mkTree2 maxDepth
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.St
-data St  =  St  {  stUniq     :: !VarId
-                ,  stEnv      :: !Env
+data St = St  {  stUniq     :: !VarId
+              ,  stEnv      :: !Env
 %%[[1
-                ,  stVMp      :: !VMp
+              ,  stVMp      :: !VMp
 %%][3
 %%]]
-                }
+              }
 %%]
 
 %%[1
@@ -486,28 +487,28 @@ treeCompute t =
 %%]]
               _      -> err $ "not found: " ++ show n
       DefBind n x y  ->
-        do  x' <- treeCompute x
-            st <- get
+        do  v   <- treeCompute x
+            st  <- get
             let env = stEnv st
-            put (st {stEnv = envUnit n x' `envUnion` env})
-            y' <- treeCompute y
-            st <- get
+            put (st {stEnv = envUnit n v `envUnion` env})
+            w   <- treeCompute y
+            st  <- get
             put (st {stEnv = env})
-            return y'
+            return w
       Tuple x y       ->
-        do  x' <- treeCompute x
-            y' <- treeCompute y
+        do  v   <- treeCompute x
+            w   <- treeCompute y
 %%[[1
-            st <- get
-            return (Pair (stVMp st |@ x') y')
+            st  <- get
+            return (Pair (stVMp st |@ v) w)
 %%][2
-            return (Pair x' y')
+            return (Pair v w)
 %%]]
 %%[[treeCompute.First
       First x        ->
-        do  x'     <- treeCompute x
+        do  vw     <- treeCompute x
             [v,w]  <- newVars 2
-            valUnify (Pair v w) x'
+            valUnify (Pair v w) vw
 %%[[1
             st     <- get
             return (stVMp st |@ v)
@@ -516,9 +517,9 @@ treeCompute t =
 %%]]
 %%]]
       Second x       ->
-        do  x'     <- treeCompute x
+        do  vw     <- treeCompute x
             [v,w]  <- newVars 2
-            valUnify (Pair v w) x'
+            valUnify (Pair v w) vw
 %%[[1
             st     <- get
             return (stVMp st |@ w)
@@ -549,12 +550,13 @@ treeCompute t =
 %%[1.newVar
 newVar      ::  Compute Val
 newVar  =   do  st  <- get
-                put (st {stUniq = stUniq st + 1})
+                let fresh = stUniq st
+                put (st {stUniq = fresh + 1})
 %%[[1
-                return (Var (stUniq st))
+                return (Var fresh)
 %%][3
                 r   <- newRef
-                return (Var (stUniq st) r)
+                return (Var fresh r)
 %%]]
 %%]
 

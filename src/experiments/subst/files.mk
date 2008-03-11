@@ -116,12 +116,10 @@ experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	      do \
 	        (cd $${rundir} ; /usr/bin/time -l $${expexec} $${run} q $${v} > /dev/null) 2>> $${runtimesraw} ; \
 	        sed -n -e 's/ *\([0-9.]*\) real.*/secs:\1/p' -e 's/ *\([0-9]*\)  maximum resident set size.*/bytes:\1/p' < $${runtimesraw} > $${runtimes} ; \
-	        echo "\\\\rulerCmdUse{exp-subst-variant$${v}} & $${run}" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
 	        runreal=`sed -n -e 's/ *\([0-9.]*\) real.*/\1/p' < $${runtimesraw}` ; \
 	        runmem=`sed -n -e 's/ *\([0-9]*\)  maximum resident set size.*/\1/p' < $${runtimesraw}` ; \
-	        echo "&$${runreal}" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
-	        echo "&$$(($${runmem} / 1048576)) & $$((($${runmem} % 1048576) / 104857))" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
-	        echo "\\\\\\\\" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
+	        echo "\\\\rulerCmdDef{exp-subst-run-time-$${v}-$${run}}{$${runreal}}" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
+	        echo "\\\\rulerCmdDef{exp-subst-run-mem-$${v}-$${run}}{$$(($${runmem} / 1048576)).$$((($${runmem} % 1048576) / 104857))}" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
 	      done \
 	    else \
           time ((cd $${rundir} ; $${expexec} $${run} q $${v}) > $${runoutput}) 2> $${runtime} ; \

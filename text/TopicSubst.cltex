@@ -1,10 +1,10 @@
 %%[abstract
 Implementations of language processing systems often use unification and substitution to compute desired properties of input language fragments,
-for example to infer a type for a program fragment.
+for example to infer a type for an expression.
 Purely functional implementations of unification and substitution usually directly correspond to the formal specification of language properties,
 hence are understandable but inefficient.
 On the other hand, efficient implementations of unification and substitution forgo pure functionality and rely on side effects to achieve higher performance.
-We present a third 'best of both worlds' solution, which is both functional and efficient by simulating side effects functionally,
+We present a third `best of both worlds' solution, which is both functional and efficient by simulating side effects functionally,
 and compare the three solutions side by side on implementation and performance.
 %%]
 
@@ -39,7 +39,7 @@ Types may contain type variables representing yet unknown type information;
 unification then either succeeds with possible new bindings for such type variables, called the \IxAsDef{substitution},
 or it fails with a type mismatch.
 For example, for the application of |first| to |(3,4)| in
-|x2| types |(Int,Int)| and |(v1,v2)| match with bindings for type variables |v1| and |v2|;
+the definition of |x2| types |(Int,Int)| and |(v1,v2)| match with bindings for type variables |v1| and |v2|;
 for |x1| the given argument type |Int| and expected argument type |(v1,v2)| do not match.
 
 Formally, the unification problem is described as follows (see Knight \cite{knight89unif-survey}).
@@ -53,7 +53,7 @@ t       =       f (t1, .., t_n)
 
 Function symbols either take arguments or take no arguments, in which case they act as \IxAsDef{constant symbol}s.
 
-A \IxAsDef{substitution} is a function from variables to terms,
+A \IxAsDef{substitution} is a mapping from variables to terms,
 denoted by |{Subst, Subst', Subst'', ..}| and the actual set of variable bindings by |[v1 :-> t1, .., v_n :-> t_n]|.
 A substitution is also a function from terms to terms via its application to terms,
 denoted by |Subst^(t)| or juxtaposition |Subst ^ t| when it is clear that substitution application is meant.
@@ -68,7 +68,8 @@ Two terms |s| and |t| are \IxAsDef{unifiable} if there exists a substitution |Su
 The substitution |Subst| is then called the \IxAsDef{unifier}, |Subst ^ t| the \IxAsDef{unification}.
 A unifier |Subst| is called the \IxAsDef{most general unifier} (MGU) if for any other unifier |Subst'|,
 there is substitution |Subst''| such that |Subst'' ^ Subst = Subst'|.
-Two terms |s| and |t| are \IxAsDef{inifinitely unifiable} if their unifier possibly binds variables to infinitely long terms.
+Two terms |s| and |t| may be \IxAsDef{infinitely unifiable} if their unifier binds variables to infinitely long terms;
+in this paper we prevent this from happening.
 
 \Paragraph{The problem}
 From the above definitions we already can see why a purely functional implementation will be inefficient.
@@ -83,14 +84,14 @@ In summary, variable replacement is the culprit, and this then has to be avoided
 \Paragraph{A solution with side effects and its derived problems}
 The growth of terms via duplicate copies of substituted variables can be avoided by never replacing variables.
 Instead we let variables act as pointers to a possible replacement term.
-This is easily accomplished in imperative languages, but more difficult to do purely functional because of
+This is easily accomplished in imperative languages, but more difficult in purely functional ones because of
 the side effects involved:
 initially a variable will have no replacement bound to it,
 only later such a replacement will be found and the variable be updated to point to the replacement.
 
 In a functional language like Haskell we achieve this by leaving the side effect free functional world:
 the |IO| monad (Haskells imperative environment) and |IORef|s (Haskells pointer mechanism) are then used.
-This is the approach taken by GHC \cite{peytonjones04pract-inf-rank,www07ghc-dev-wiki} by its type inferencer, with the following consequences:
+This is the approach taken in GHC \cite{peytonjones04pract-inf-rank,www07ghc-dev-wiki} by its type inferencer, with the following consequences:
 
 \begin{Itemize}
 \item
@@ -129,8 +130,12 @@ whereas the one with side effects is used when efficiency is important, such as 
 Much work has been done on unification, in fact so much that we only mention some entry points into existing literature,
 amongst which some surveys \cite{knight89unif-survey,baader01unif-th,gallier91unif-survey} and
 seminal work by Robinson \cite{robinson65unif-resoution,robinson71unification,robinson76fast-unif},
-Paterson and Wegner \cite{paterson78unif-linear},
+Paterson and Wegman \cite{paterson78unif-linear},
 and Martelli and Montanari \cite{martelli82eff-unif-alg}.
+
+{\color{red}
+Observable sharing \cite{claessen99observable-share}.
+}
 
 \Paragraph{Outline of the remainder of this paper}
 In \secRef{sec-expsubst-prelim} we proceed with the preliminaries for our work,
@@ -161,7 +166,7 @@ Book/survey: \cite{baader01unif-th}
 %%]
 
 %%[preliminaries
-Our experimental environment consists of an implementation for a small system resembling the structure found in many compilers.
+Our experimental environment consists of an implementation for a small system resembling a structure found in many compilers.
 We thus mimic the actual runtime environment we are interested in, but keep it as simple as possible.
 \figRef{subst.D.tree.basic} shows the formal specification for this system.
 It should be familiar to those acquainted with type systems,
@@ -218,7 +223,7 @@ bind v4 =  (snd v3,(v2,v2))  in  v4
 
 The first examples provide typical programming language input, with many small definitions,
 whereas the second example provides a worst case scenario.
-We call the tests respectively \emph{linear} and \emph{exponential}.
+We label the tests respectively \rulerCmdUse{linear} and \rulerCmdUse{exponential}.
 
 
 The rules in \figRef{subst.D.tree.basic} are declarative of nature, notationally indicated by the suffix |D| in the names of the rules.
@@ -279,19 +284,20 @@ Here we stick to the more familiar by using a state monad:
 
 %%[[wrap=code
 %%@1.St@1
+
 %%@1.Compute@1
 %%]]
 
 The |Compute| state monad threads
 \begin{Itemize}
 \item
-a variable mapping |VMp| holding both the inherited and synthesized substitution |Subst|,
-\item
 a counter used for creating fresh variables,
 \item
-and an environment |Env| holding |Gamma|.
+an environment |Env| holding |Gamma|,
+\item
+and a variable mapping |VMp| holding both the inherited and synthesized substitution |Subst|.
 \end{Itemize}
-Strictly the |Env| should not be threaded,
+Strictly speaking the |Env| needs not be threaded,
 but we prefer to avoid the additional complexity of placing this part of the state into a reader monad.
 
 \Paragraph{Substituting}
@@ -327,7 +333,7 @@ A unification may also fail,
 which we simply signal by the |Err| alternative of |Val|,
 returned by the function |err|.
 
-\begin{CodeFigure}{}{Val unification}{exp-subst-valunify-copying}
+\begin{CodeFigure}{}{Val unification in the \rulerCmdUse{exp-subst-variant1} solution}{exp-subst-valunify-copying}
 %%@1.valUnify@1 wrap=code
 \end{CodeFigure}
 
@@ -351,7 +357,7 @@ Function |newVars| then conveniently returns a group of such variables:
 
 %%@1.newVars@1 wrap=code
 
-Again, we omit definitions for |Env| and assume their names are understandable enough to indicate their meaning.
+Again, we omit definitions for functions on |Env| and assume their names are understandable enough to indicate their meaning.
 
 \Paragraph{Computing a Val over a Tree}
 
@@ -365,6 +371,14 @@ use these to match the value of |x| and return its first component with the most
 We also slightly deviate from the rule by threading the full |Compute| state through |valUnify| instead of computing additional bindings only,
 which in that case would need to be combined outside |valUnify|.
 
+Finally, |treeCompute| is invoked by a toplevel test environment which first constructs a tree as specified by commandline arguments,
+then calls |treeCompute|, enforces a deep evaluation of the result and prints the result, also depending on commandline arguments.
+See \figRef{exp-subst-toplevel} for further details not further explained here.
+
+\begin{CodeFigure}{}{Toplevel test environment}{exp-subst-toplevel}
+%%@1.topleveltest@1 wrap=code
+\end{CodeFigure}
+
 This completes our basic reference implementation,
 often used for its simplicity in explanations,
 avoided in real world use because of the time and memory spent in copying and substituting over the content pointed to
@@ -375,7 +389,7 @@ by variables.
 %%[substBySharing
 We avoid the copying of |Val|s during substitution in the previous solution by sharing the content bound to variables.
 Variables become pointers in a directed acyclic graph (DAG) representation of |Val| instead of
-a tree representation as used by our previous solution \cite{paterson78unif-linear}.
+a tree representation as used by the \rulerCmdUse{exp-subst-variant1} solution \cite{paterson78unif-linear}.
 We use an |IORef| to encode such a pointer \cite{peytonjones04pract-inf-rank},
 with utility functions like |newRef| for hiding its use.
 We label this solution by \rulerCmdUse{exp-subst-variant3}.
@@ -384,6 +398,8 @@ We label this solution by \rulerCmdUse{exp-subst-variant3}.
 %%@1.Val@3  
 
 %%@3.Ref    
+
+%%@1.St@3
 
 %%@3.Compute
 
@@ -394,7 +410,7 @@ We label this solution by \rulerCmdUse{exp-subst-variant3}.
 
 In essence, we now store the substitution which maps variables to values directly in a |Var|.
 Hence we do not need the |VMp| in the |Compute| state anymore.
-On the other hand, we need to combine |Compute| with the |IO| monad because of the use of |IORef|.
+On the other hand, we need to combine the |State| monad with the |IO| monad because of the use of |IORef|.
 A fresh variable now also gets a fresh shared memory location |Ref|,
 initialized to hold nothing:
 
@@ -403,9 +419,9 @@ initialized to hold nothing:
 Unification now has to be aware that variables are pointers;
 we present it together with the unmodified code
 in \figRef{exp-subst-valunify-sharing}.
-Relative to the \rulerCmdUse{exp-subst-variant1} we need to modify the following:
+Relative to the \rulerCmdUse{exp-subst-variant1} solution we need to modify the following:
 
-\begin{CodeFigure}{}{Val unification with use of |Ref|}{exp-subst-valunify-sharing}
+\begin{CodeFigure}{}{Val unification in the \rulerCmdUse{exp-subst-variant3} solution}{exp-subst-valunify-sharing}
 %%@1.valUnify@3 wrap=code
 \end{CodeFigure}
 
@@ -418,13 +434,16 @@ Binding a variable in |bindv| now also involves updating the reference with the 
 \item
 There is no |VMp| threaded through the |Compute| state,
 hence we need not maintain the
-invariant that is always applied,
+invariant that it is always applied,
 for example when comparing |Pair|s.
 This is now guaranteed via the |Ref| mechanism.
 \end{Itemize}
 
 The implementation of |treeCompute| now is simpler,
-again we highlight the |First| case branch for \ruleRef{t.first}.
+because we need not apply the |VMp| here either.
+As before, we highlight the |First| case branch for \ruleRef{t.first};
+also for the other alternatives the only difference with the \rulerCmdUse{exp-subst-variant1} solution
+is the removal of the application of |VMp|.
 
 %%@treeCompute.First@3 wrap=code
 
@@ -448,41 +467,50 @@ We have lost the parameterizability of the binding by introducing side effects a
 We regain purely functional behavior of the unification and substitution machinery by letting a |Var| itself
 --once again-- be unaware of its content,
 and thus decouple it from the particular baked in way |IORef|s implement the notion of pointers to memory content.
-Instead we implement our own dereferencing mechanism by combining |VMp|s from our \rulerCmdUse{exp-subst-variant1} solution with
+Instead we implement our own dereferencing mechanism by combining |VMp|s from the \rulerCmdUse{exp-subst-variant1} solution with
 the pointer based approach of the \rulerCmdUse{exp-subst-variant3} solution.
-We use the first definition of |Val| and use our 'do it yourself' memory represented by a |VMp| as shown in
+We use the |Val| definition of the \rulerCmdUse{exp-subst-variant1} solution,
+and adapt the |valUnify| function of the \rulerCmdUse{exp-subst-variant3} solution:
+instead of |IORef|s we create 'do it yourself' memory in the |VMp| as shown in
 \figRef{exp-subst-valunify-explmem}.
 The key difference with \rulerCmdUse{exp-subst-variant3} is that the dereferencing required for a variable now is implemented via a lookup in the threaded |stVMp|.
-The key commonality with \rulerCmdUse{exp-subst-variant3} is that we not replace a variable; we do not apply the substution to a variable but only use the variable itself.
+The key commonality with \rulerCmdUse{exp-subst-variant3} is that we do not replace a variable;
+we do not apply the substution to a variable but only use the variable itself.
 
-\begin{CodeFigure}{}{Val unification with DIY memory}{exp-subst-valunify-explmem}
+\begin{CodeFigure}{}{Val unification in the \rulerCmdUse{exp-subst-variant2} solution}{exp-subst-valunify-explmem}
 %\setlength{\mathindent}{0pt}
 %%@1.valUnify@2 wrap=code
 \end{CodeFigure}
 
 We now also can avoid the expensive copying because we follow pointers instead of accessing a copied value directly.
-The implementation of the |Substitutable VMp| instance now need no longer update the 'previous' VMp,
+The implementation of the |Substitutable VMp| instance need no longer update the `previous' VMp,
 a subtle but most effective memory saving change:
 
 %%@Substitutable.VMp.sbs@2 wrap=code
 
 
+%%@TopicSubst.performanceResultsFigure
+
 \Paragraph{Dereferencing and infinite values}
-The consequence of derefencing via a table lookup is loss of performance because such a lookup is expensive compared to a plain memory dereference.
-Our design choice is to avoid excessive dereferencing by not using |ftv| at all during unification.
+The consequence of derefencing via a table lookup is performance loss because such a lookup is expensive compared to a plain memory dereference.
+Our design choice is to avoid excessive dereferencing by not using |ftv| at all during unification,
+and consequently omitting the occur check from unification.
 In turn this means that unification may return a substitution with cycles,
 and we have to deal with infinite values and the occur check elsewhere,
 that is, all functions traversing a |Val| need to be aware that an infinite value may indirectly occur via a substitution.
 For example, we need to check during application of a substitution to a |Val|.
-We adapt the application of the subsitution to return an error whenever a substitution for a variable occurs twice,
-thus detecting a cycle:
+We adapt the application of a subsitution to a |Val| to implement the occur check:
+we return an error whenever a substitution for a variable occurs twice,
+marked by its presence in the set of dereferenced variables |visited|,
+thus preventing to form cycles:
 
 %%@Substitutable.Val.sbs@2 wrap=code
 
 Actually, the necessity for such a check depends on the context in which unification and substitution are used.
-In this case we could have done without this check because a binding for a variable leading to an infinite value, like |v :-> (v,v)|,
+In this case we could have done without the check because a binding for a variable leading to an infinite value, like |v :-> (v,v)|,
 only arises when we would have had recursive references to bindings in the |Tree| language.
-Other languages of course have, for example in Haskell the following would lead to an infinite type for the argument of |f|,
+Other languages of course have a need for the check,
+for example in Haskell the following would lead to an infinite type for the argument of |f|,
 unless accompanied by an explicit type signature:
 
 %%[[wrap=code
@@ -508,60 +536,129 @@ We come back to its effect on performance (by putting the occur check back into 
 
 %%]
 
+%%[performanceResultsFigure
+{
+\input timings.tex
+\begin{figure*}[t]
+\begin{center}
+\begin{tabular}{ll||rr||rr||rr||rr||rr||}
+ &
+ & \multicolumn{2}{p{.10\linewidth}||}{\rulerCmdUse{exp-subst-variant1}}
+ & \multicolumn{2}{p{.10\linewidth}||}{\rulerCmdUse{exp-subst-variant3}}
+ & \multicolumn{2}{p{.10\linewidth}||}{\rulerCmdUse{exp-subst-variant2}}
+ & \multicolumn{2}{p{.10\linewidth}||}{\rulerCmdUse{exp-subst-variant22}}
+ & \multicolumn{2}{p{.10\linewidth}||}{\rulerCmdUse{exp-subst-variant221}}
+\\ 
+\textbf{test}
+ & \textbf{depth}
+ & \textbf{sec} & \textbf{Mb}
+ & \textbf{sec} & \textbf{Mb}
+ & \textbf{sec} & \textbf{Mb}
+ & \textbf{sec} & \textbf{Mb}
+ & \textbf{sec} & \textbf{Mb}
+\\ \hline
+\rulerCmdUse{linear}
+ & 500
+ & \rulerCmdUse{exp-subst-run-time-1-a/500} & \rulerCmdUse{exp-subst-run-mem-1-a/500}
+ & \rulerCmdUse{exp-subst-run-time-3-a/500} & \rulerCmdUse{exp-subst-run-mem-3-a/500}
+ & \rulerCmdUse{exp-subst-run-time-2-a/500} & \rulerCmdUse{exp-subst-run-mem-2-a/500}
+ & \rulerCmdUse{exp-subst-run-time-22-a/500} & \rulerCmdUse{exp-subst-run-mem-22-a/500}
+ & \rulerCmdUse{exp-subst-run-time-221-a/500} & \rulerCmdUse{exp-subst-run-mem-221-a/500}
+\\ 
+ & 1100
+ & \rulerCmdUse{exp-subst-run-time-1-a/1100} & \rulerCmdUse{exp-subst-run-mem-1-a/1100}
+ & \rulerCmdUse{exp-subst-run-time-3-a/1100} & \rulerCmdUse{exp-subst-run-mem-3-a/1100}
+ & \rulerCmdUse{exp-subst-run-time-2-a/1100} & \rulerCmdUse{exp-subst-run-mem-2-a/1100}
+ & \rulerCmdUse{exp-subst-run-time-22-a/1100} & \rulerCmdUse{exp-subst-run-mem-22-a/1100}
+ & \rulerCmdUse{exp-subst-run-time-221-a/1100} & \rulerCmdUse{exp-subst-run-mem-221-a/1100}
+\\ 
+ & 1600
+ & \rulerCmdUse{exp-subst-run-time-1-a/1600} & \rulerCmdUse{exp-subst-run-mem-1-a/1600}
+ & \rulerCmdUse{exp-subst-run-time-3-a/1600} & \rulerCmdUse{exp-subst-run-mem-3-a/1600}
+ & \rulerCmdUse{exp-subst-run-time-2-a/1600} & \rulerCmdUse{exp-subst-run-mem-2-a/1600}
+ & \rulerCmdUse{exp-subst-run-time-22-a/1600} & \rulerCmdUse{exp-subst-run-mem-22-a/1600}
+ & \rulerCmdUse{exp-subst-run-time-221-a/1600} & \rulerCmdUse{exp-subst-run-mem-221-a/1600}
+\\ \hline
+\rulerCmdUse{exponential}
+ & 20
+ & \rulerCmdUse{exp-subst-run-time-1-b/20} & \rulerCmdUse{exp-subst-run-mem-1-b/20}
+ & \rulerCmdUse{exp-subst-run-time-3-b/20} & \rulerCmdUse{exp-subst-run-mem-3-b/20}
+ & \rulerCmdUse{exp-subst-run-time-2-b/20} & \rulerCmdUse{exp-subst-run-mem-2-b/20}
+ & \rulerCmdUse{exp-subst-run-time-22-b/20} & \rulerCmdUse{exp-subst-run-mem-22-b/20}
+ & \rulerCmdUse{exp-subst-run-time-221-b/20} & \rulerCmdUse{exp-subst-run-mem-221-b/20}
+\\ 
+ & 25
+ & \rulerCmdUse{exp-subst-run-time-1-b/25} & \rulerCmdUse{exp-subst-run-mem-1-b/25}
+ & \rulerCmdUse{exp-subst-run-time-3-b/25} & \rulerCmdUse{exp-subst-run-mem-3-b/25}
+ & \rulerCmdUse{exp-subst-run-time-2-b/25} & \rulerCmdUse{exp-subst-run-mem-2-b/25}
+ & \rulerCmdUse{exp-subst-run-time-22-b/25} & \rulerCmdUse{exp-subst-run-mem-22-b/25}
+ & \rulerCmdUse{exp-subst-run-time-221-b/25} & \rulerCmdUse{exp-subst-run-mem-221-b/25}
+\\ 
+ & 28
+ & \rulerCmdUse{exp-subst-run-time-1-b/28} & \rulerCmdUse{exp-subst-run-mem-1-b/28}
+ & \rulerCmdUse{exp-subst-run-time-3-b/28} & \rulerCmdUse{exp-subst-run-mem-3-b/28}
+ & \rulerCmdUse{exp-subst-run-time-2-b/28} & \rulerCmdUse{exp-subst-run-mem-2-b/28}
+ & \rulerCmdUse{exp-subst-run-time-22-b/28} & \rulerCmdUse{exp-subst-run-mem-22-b/28}
+ & \rulerCmdUse{exp-subst-run-time-221-b/28} & \rulerCmdUse{exp-subst-run-mem-221-b/28}
+\end{tabular}
+\end{center}
+\caption{Performance results}
+\label{exp-subst-performance}
+\end{figure*}
+}
+%%]
+
 %%[performanceResults
-We did compare the three solutions by running two test trees, labeled \emph{linear} and \emph{exponential}, with various depths.
-Both tests are described earlier and are characterized by manipulation of |Val|s linear (respective exponential) in the number of bindings introduced (which equals depth of the tree)
+We did compare the three solutions,
+\rulerCmdUse{exp-subst-variant1}, \rulerCmdUse{exp-subst-variant3} and \rulerCmdUse{exp-subst-variant2},
+by running two test trees, \rulerCmdUse{linear} and \rulerCmdUse{exponential}, with various depths.
+Both tests are described in \secRef{sec-expsubst-prelim}
+and are characterized by manipulation of |Val|s linear, or exponential, respectively in the number of bindings introduced (which equals the depth of the tree)
 by the test |Tree|s.
-In \figRef{exp-subst-performance} these are respectively labeled with |a| and |b| together with the depth of the test |Tree|.
-The variants described are labeled \rulerCmdUse{exp-subst-variant1}, \rulerCmdUse{exp-subst-variant3} and \rulerCmdUse{exp-subst-variant2}.
-The remaining variants are introduced and discussed hereafter as part of the performance analysis.
+The results are shown in \figRef{exp-subst-performance}.
+The \rulerCmdUse{exp-subst-variant1}, \rulerCmdUse{exp-subst-variant3} and \rulerCmdUse{exp-subst-variant2} variants are already described;
+the remaining variants are introduced and discussed hereafter as part of the performance analysis.
 The memory sizes in \figRef{exp-subst-performance} correspond to the maximum resident set size as reported by the Unix time command,
 and is because of the GHC garbage collection an overestimate of the actual memory requirements.
 However, it still gives an indication of the proportial memory use.
 Tests were run on a MacBook Pro 2.2Ghz Intel Core 2 Duo with 2GB memory, MacOS X 10.5.2, the programs compiled with GHC 6.8.2 without optimization flags.
 
-{
-\begin{TabularFigure}{}{Performance results}{exp-subst-performance}{l||lrr@@{.}l}
-\textbf{variant} & \textbf{test} & \textbf{time (sec)} & \multicolumn{2}{l}{\textbf{mem (Mb)}} \\ \hline
-\input timings.tex
-\end{TabularFigure}
-}
-
 We observe the following:
 
 \begin{Itemize}
 \item
-On the linear test case all but the copying variant perform equally well, using small amounts of memory.
+On the linear test cases all but the \rulerCmdUse{exp-subst-variant1} variant perform equally well, using small amounts of memory.
 \item
 On the exponential test case the \rulerCmdUse{exp-subst-variant3} variant runs best,
 the \rulerCmdUse{exp-subst-variant1} variant worst, especially in terms of memory.
 The \rulerCmdUse{exp-subst-variant2} variant sits in between.
-Inspection and further experimenting did show this was due to the toplevel substution still applied.
+Inspection and further experiments showed this was due to the toplevel substution still applied.
 Variant \rulerCmdUse{exp-subst-variant22} has this substitution removed and replaced by code forcing a deep evaluation over the |Val| and substitution jointly.
 The results are now similar to those of \rulerCmdUse{exp-subst-variant3}, even a bit faster.
 \item
-All tests were also run with GHC optimization on.
-The absolute numbers drop, but only by a relative small factor of max 1.5, the relative performance remains the same.
+When tests are run with GHC optimization on,
+the absolute numbers drop, but only by a relative small factor of max 1.5, the relative performance remains the same.
 We therefore did not include these numbers.
 \item
-Omitting the occur check in \rulerCmdUse{exp-subst-variant22} is worthwhile.
-Variant \rulerCmdUse{exp-subst-variant221} includes the occur check and is significantly slower for the exponential test.
-This is an apparent trade-off between efficiency and responsibility of doing the occur check: hidden in unification or to be done outside.
+Omitting the occur check in \rulerCmdUse{exp-subst-variant2} is worthwhile.
+Variant \rulerCmdUse{exp-subst-variant221} includes the occur check relative to the fasted variant
+\rulerCmdUse{exp-subst-variant22}: it is significantly slower for the exponential test.
+This is an apparent trade-off between efficiency and responsibility of doing the occur check: encapsulated in unification or to be done outside of unification.
 \end{Itemize}
 
 %%]
 
 %%[discussion
-Avoiding copying and the resulting memory allocation, and using sharing mechanisms instead pays off.
+Avoiding copying and the resulting memory allocation, and using sharing mechanisms instead, pays off.
 This is the overall conclusion which can be drawn.
 Furthermore, using a solution with |IORef| based side effect can be avoided without performance penalties;
 there is no need to fall back on the |IO| monad to achieve acceptable levels of performance.
 
-Our 'best of both worlds' solution has been implemented as part of EHC, the essential Haskell Compiler
+Our `best of both worlds' solution has been implemented as part of EHC, the essential Haskell Compiler
 \cite{dijkstra04ehc-web,dijkstra07ehcstruct};
 The programs discussed in this paper can also be found there as part of its experiments subdirectory.
 Because we have based our implementation on attribute grammars, avoiding the dependency on |IO| and side effects,
-the efficient functional solution was critical to the success of the implementation of the type system.
+the efficient functional solution was critical to the success of the implementation of the type system in EHC.
 %%]
 
 %%[XX
