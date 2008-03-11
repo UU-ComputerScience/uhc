@@ -15,18 +15,21 @@ RUN_EXPERIMENTS_SUBST_PREFIX				:= $(BLD_EXPERIMENTS_SUBST_PREFIX)runs/
 # run parameters
 DO_TIMING									:= no
 
+# tex run output
+RUN_EXPERIMENTS_SUBST_TEX					:= $(RUN_EXPERIMENTS_SUBST_PREFIX)/timings.tex
+
 # runs
-RUN_EXPERIMENTS_SUBST_RUNS					:= b/15 b/23 b/28
+RUN_EXPERIMENTS_SUBST_RUNS					:= a/500 a/1100 a/1600 b/20 b/25 b/28 
 #RUN_EXPERIMENTS_SUBST_RUNS					:= b/15 b/20 b/23 b/25
 #RUN_EXPERIMENTS_SUBST_RUNS					:= a/1600
 #RUN_EXPERIMENTS_SUBST_RUNS					:= a/500
 
 # variants
-EXPERIMENTS_SUBST_VARIANTS					:= 1 2 3 21
+EXPERIMENTS_SUBST_VARIANTS					:= 1 3 2 22 221
 
 # flags to tools
 EXPERIMENTS_SUBST_SHUFFLE_DEFS				:= 
-EXPERIMENTS_SUBST_SHUFFLE_ORDER				:= 1 < 2 < 3, 2 < 21
+EXPERIMENTS_SUBST_SHUFFLE_ORDER				:= 1 < 2 < 3, 2 < 21, 2 < 22 < 221
 GHC_PLAIN_OPTS_WHEN_EXPERIMENTS_SUBST		:= 
 GHC_PROF_OPTS_WHEN_EXPERIMENTS_SUBST		:= -prof -auto-all -caf-all
 RTS_OPTS_WHEN_EXPERIMENTS_SUBST1			:= +RTS -hc -i0.02 -RTS
@@ -89,7 +92,8 @@ experiment-subst-variant-dflt: $(EXPERIMENTS_SUBST_ALL_DPDS)
 	$(GHC) --make $(GHC_OPTS) $(GHC_PROF_OPTS_WHEN_EXPERIMENTS_SUBST) -package $(LIB_EH_UTIL_PKG_NAME) -i$(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX) $(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPERIMENTS_SUBST_MAIN).hs -o $(EXPERIMENTS_SUBST_BLD_EXEC_PROF)
 
 experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
-	@for v in $(EXPERIMENTS_SUBST_VARIANTS) ; \
+	@rm -f $(RUN_EXPERIMENTS_SUBST_TEX) ; \
+	for v in $(EXPERIMENTS_SUBST_VARIANTS) ; \
 	do \
 	  echo "== version $${v} ==" ; \
 	  expexec="$(BINABS_EXPERIMENTS_SUBST_PREFIX)$${v}/$(EXPERIMENTS_SUBST_EXEC_NAME)$(EXEC_SUFFIX)" ; \
@@ -105,10 +109,6 @@ experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	    runtime="$${rundir}/time"  ; \
 	    runtimesraw="$${rundir}/times-raw"  ; \
 	    runtimes="$${rundir}/times"  ; \
-	    time ((cd $${rundir} ; $${expexec} $${run} q $${v}) > $${runoutput}) 2> $${runtime} ; \
-	    time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
-	    (cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
-	    time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
 	    if test $(DO_TIMING) = "yes" ; \
 	    then \
 	      rm -f $${runtimesraw} ; \
@@ -116,10 +116,18 @@ experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	      do \
 	        (cd $${rundir} ; /usr/bin/time -l $${expexec} $${run} q $${v} > /dev/null) 2>> $${runtimesraw} ; \
 	        sed -n -e 's/ *\([0-9.]*\) real.*/secs:\1/p' -e 's/ *\([0-9]*\)  maximum resident set size.*/bytes:\1/p' < $${runtimesraw} > $${runtimes} ; \
-	        echo "$${v} & $${run}" ; \
-	        sed -n -e 's/ *\([0-9.]*\) real.*/\&\1/p' -e 's/ *\([0-9]*\)  maximum resident set size.*/\&\1/p' < $${runtimesraw} ; \
-	        echo "\\\\\\\\" ; \
+	        echo "\\\\rulerCmdUse{exp-subst-variant$${v}} & $${run}" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
+	        runreal=`sed -n -e 's/ *\([0-9.]*\) real.*/\1/p' < $${runtimesraw}` ; \
+	        runmem=`sed -n -e 's/ *\([0-9]*\)  maximum resident set size.*/\1/p' < $${runtimesraw}` ; \
+	        echo "&$${runreal}" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
+	        echo "&$$(($${runmem} / 1048576)) & $$((($${runmem} % 1048576) / 104857))" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
+	        echo "\\\\\\\\" >> $(RUN_EXPERIMENTS_SUBST_TEX) ; \
 	      done \
+	    else \
+          time ((cd $${rundir} ; $${expexec} $${run} q $${v}) > $${runoutput}) 2> $${runtime} ; \
+          time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
+          (cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
+          time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
 	    fi \
 	  done \
 	done

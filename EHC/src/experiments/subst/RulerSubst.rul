@@ -3,13 +3,14 @@ preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include experimentsubst.f
 viewhierarchy = D < A
 
 format tex env = Gamma
+format tex Env = Gamma
 
 external c
 
 data Tree [tree]
   view D =
       Constant [t.constant]
-    | Pair     [t.pair]        x  :: Tree
+    | Tuple    [t.tuple]       x  :: Tree
                                y  :: Tree
     | First    [t.first]       x  :: Tree
     | Second   [t.second]      x  :: Tree
@@ -37,7 +38,7 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.syn = Subst
         | Subst.inh = Subst
 
-  rule t.pair =
+  rule t.tuple =
     view D =
       judge F : tree = env :- x : v
       judge S : tree = env :- y : w

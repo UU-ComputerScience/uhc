@@ -222,7 +222,12 @@ SEM LeftHandSide
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
-ATTR Type AllRowTypeUpdate [ doGenVarWild: Bool | | ]
+ATTR
+  Type
+%%[[7
+  AllRowTypeUpdate
+%%]]
+    [ doGenVarWild: Bool | | ]
 
 SEM LeftHandSide
     | Typed

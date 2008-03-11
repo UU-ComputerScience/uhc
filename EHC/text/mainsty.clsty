@@ -359,6 +359,7 @@
   \begin{TabularFigure}{#1}{#2}{#3}{c}
   \begin{minipage}{0.9\textwidth}
   %\vspace{.5ex}
+  \setlength{\mathindent}{0pt}
 }{%
   %\vspace{.5ex}
   \end{minipage}

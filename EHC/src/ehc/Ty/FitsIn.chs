@@ -45,13 +45,16 @@ For debug/trace:
 %%[4 import({%{EH}Base.Debug})
 %%]
 
+%%[4 import(qualified Data.Set as Set)
+%%]
+
 %%[9 import({%{EH}Core.Coercion})
 %%]
 
 %%[9 import(EH.Util.Utils)
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Pred},{%{EH}Core},{%{EH}Core.Subst})
+%%[9 import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Core.Pretty},{%{EH}Pred},{%{EH}Core},{%{EH}Core.Subst})
 %%]
 
 %%[9 import({%{EH}Pred.CommonCHR})
@@ -92,7 +95,9 @@ data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts
                         ,  fiUniq            ::  !UID
                         ,  fiVarMp           ::  !VarMp
                         ,  fiVarMpLoc        ::  !VarMp
-                        ,  fiTrace			 ::  [PP_Doc]		-- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
+                        ,  fiExpLTvS         ::  !(Set.Set TyVarId)
+                        ,  fiExpRTvS         ::  !(Set.Set TyVarId)
+                        ,  fiTrace           ::  [PP_Doc]       -- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
 %%[[9
                         ,  fiEnv             ::  !FIEnv
 %%]]
@@ -104,6 +109,8 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
                         ,  fiUniq            =   uidStart
                         ,  fiVarMp           =   emptyVarMp
                         ,  fiVarMpLoc        =   emptyVarMp
+                        ,  fiExpLTvS         =   Set.empty
+                        ,  fiExpRTvS         =   Set.empty
                         ,  fiTrace           =   []
 %%[[9
                         ,  fiEnv             =   emptyFE
@@ -137,7 +144,29 @@ fiLookupVar' lkup v m1 m2
       j       -> j
 
 fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
-fiLookupTyVarCyc  fi v    =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
+fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
+%%]
+fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
+fiLookupTyVarCyc  fi v | fiVarIsExpanded v fi =  Nothing
+                       | otherwise            =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
+
+%%[4
+fiInhibitVarExpandL :: TyVarId -> FIIn -> FIIn
+fiInhibitVarExpandL v fi = fi {fiExpLTvS = v `Set.insert` fiExpLTvS fi}
+
+fiVarIsExpandedL :: TyVarId -> FIIn -> Bool
+fiVarIsExpandedL v fi = v `Set.member` fiExpLTvS fi
+
+fiInhibitVarExpandR :: TyVarId -> FIIn -> FIIn
+fiInhibitVarExpandR v fi = fi {fiExpRTvS = v `Set.insert` fiExpRTvS fi}
+
+fiVarIsExpandedR :: TyVarId -> FIIn -> Bool
+fiVarIsExpandedR v fi = v `Set.member` fiExpRTvS fi
+%%]
+
+%%[4
+fiSwapCoCo :: FIIn -> FIIn
+fiSwapCoCo fi = fi {fiExpLTvS = fiExpRTvS fi, fiExpRTvS = fiExpLTvS fi}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,10 +175,10 @@ fiLookupTyVarCyc  fi v    =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fi
 
 %%[4
 ppTyWithFI :: FIIn -> Ty -> PP_Doc
-ppTyWithFI fi t	=  ppTyS (fiVarMpLoc fi |=> fiVarMp fi) t
+ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |=> fiVarMp fi) t
 
 ppTyWithFIFO :: FIIn -> FIOut -> Ty -> PP_Doc
-ppTyWithFIFO fi fo t	=  ppTyS (foVarMp fo |=> fiVarMp fi) t
+ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |=> fiVarMp fi) t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -341,17 +370,17 @@ fitsInFI fi ty1 ty2
   =  foRes {foTrace = reverse $ foTrace foRes}
   where
 %%[[9
-			-- options
+            -- options
             globOpts                =  feEHCOpts $ fiEnv fi
 %%]]
-			-- range where fitsIn takes place
+            -- range where fitsIn takes place
 %%[[1
             range                   =  emptyRange
 %%][99
             range                   =  feRange $ fiEnv fi
 %%]]
 
-			-- tracing
+            -- tracing
             trfiAdd  tr   fi        =  fi {fiTrace = tr ++ fiTrace fi}
             trfi msg rest fi        =  trfiAdd [trfitIn msg rest] fi
             trfoAdd  tr   fo        =  fo {foTrace = tr ++ foTrace fo}
@@ -373,6 +402,11 @@ fitsInFI fi ty1 ty2
             occurBind fi v t
                 | v `elem` ftv t    =  err fi [rngLift range Err_UnifyOccurs (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
                 | otherwise         =  bind fi v t
+
+%%[4
+            -- 20080309, AD: naming of function is not right, type info neither, error yes. Should indicate a double expansion of tyvar, indicating infinite type.
+            errInfinite fi v t      =  err fi [rngLift range Err_UnifyOccurs (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
+%%]
 
 %%[9.fitsIn.lookupImplsVar
             lookupImplsVarCyc fi v  =  fiLookupVar' varmpImplsLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
@@ -402,7 +436,7 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[4.fitsIn.unquant
-			-- removal of quantifier
+            -- removal of quantifier
             unquant fi t hide howToInst
                 =   (fi {fiUniq = u},uqt,back)
                 where  (u,uq)         = mkNewLevUID (fiUniq fi)
@@ -740,7 +774,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             fVar f fi t1@(Ty_Var v1 f1)     t2@(Ty_Var v2 f2)
                 | v1 == v2 && f1 == f2                        = res fi t1
             fVar f fi t1@(Ty_Var v1 f1)     t2
-                | isJust mbTy1                                = fVar f ({- fiBind v1 t1' -} fi2) t1' t2
+                | isJust mbTy1                                = if fiVarIsExpandedL v1 fi
+                                                                then errInfinite fi v1 t1'
+                                                                else fVar f (fiInhibitVarExpandL v1 fi2) t1' t2
 %%[[9
                 | not ((fioBindIsYes mbvs || v1 `Set.member` fioBindNoSet mbvs) || v1 `Set.member` fioDontBind (fiFIOpts fi))
                                                               = fVar f (fiInhibitBind v1 fi2) t1 t2
@@ -752,7 +788,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                       mbvs    = fioBindLVars (fiFIOpts fi)
 %%]]
             fVar f fi t1                    t2@(Ty_Var v2 f2)
-                | isJust mbTy2                                = fVar f ({- fiBind v2 t2' -} fi2) t1 t2'
+                | isJust mbTy2                                = if fiVarIsExpandedR v2 fi
+                                                                then errInfinite fi v2 t2'
+                                                                else fVar f (fiInhibitVarExpandR v2 fi2) t1 t2'
 %%[[9
                 | not ((fioBindIsYes mbvs || v2 `Set.member` fioBindNoSet mbvs) || v2 `Set.member` fioDontBind (fiFIOpts fi))
                                                               = fVar f (fiInhibitBind v2 fi2) t1 t2
@@ -768,13 +806,13 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[9
-            fVarPred2 f fi tpr1                         	(Ty_Impls (Impls_Tail iv2 _))
+            fVarPred2 f fi tpr1                             (Ty_Impls (Impls_Tail iv2 _))
                 | isJust mbTl                                 = f fi tpr1 (Ty_Impls (fromJust mbTl))
                 where mbTl = lookupImplsVarCyc fi iv2
-            fVarPred2 f fi (Ty_Impls (Impls_Tail iv1 _)) 	tpr2
+            fVarPred2 f fi (Ty_Impls (Impls_Tail iv1 _))    tpr2
                 | isJust mbTl                                 = f fi (Ty_Impls (fromJust mbTl)) tpr2
                 where mbTl = lookupImplsVarCyc fi iv1
-            fVarPred2 f fi tpr1                          	tpr2
+            fVarPred2 f fi tpr1                             tpr2
                 = f fi tpr1 tpr2
             fVarPred1 f fi (Ty_Impls (Impls_Tail iv1 _))
                 | isJust mbTl                                 = f fi (Ty_Impls (fromJust mbTl))
@@ -786,7 +824,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[4.fitsIn.Base
             f fi t1                     t2
                 | fioMode (fiFIOpts fi) == FitSubRL = f  fi' t2 t1
-                where  fi'       = fi  {fiFIOpts = fioSwapOpts $ fioSwapCoCo ContraVariant $ fiFIOpts fi}
+                where  fi'       = fiSwapCoCo $ fi  {fiFIOpts = fioSwapOpts $ fioSwapCoCo ContraVariant $ fiFIOpts fi}
             f fi Ty_Any                 t2          = res fi t2
             f fi t1                     Ty_Any      = res fi t1
             f fi t1@(Ty_Con s1)         t2@(Ty_Con s2)
@@ -993,7 +1031,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where  fi2  = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo  = fVar f fi2 tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi3  = (fofi ffo fi) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
+                       fi3  = (fofi ffo $ fiSwapCoCo fi) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
                        afo  = fVar ff fi3 ta1 ta2
 %%]
 
@@ -1003,7 +1041,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where  fi2  = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo  = fVar f fi2 tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi3  = (fofi ffo fi2) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
+                       fi3  = (fofi ffo $ fiSwapCoCo fi2) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
                        afo  = fVar ff fi3 ta1 ta2
                        rfo  = case foMbAppSpineInfo ffo of
                                 Nothing | not $ lrcoeIsId $ foLRCoe afo
@@ -1103,14 +1141,14 @@ fitsInFold opts env uniq varmp tyl
 fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,VarMp)
 fitPredIntoPred fi pr1 pr2
   = f pr1 pr2
-  where f (Pred_Var pv1)    	pr2@(Pred_Var pv2) | pv1 == pv2     = Just (pr2,emptyVarMp)
-        f (Pred_Var pv1)    	pr2                | isJust mbPr    = f (fromJust mbPr) pr2
+  where f (Pred_Var pv1)        pr2@(Pred_Var pv2) | pv1 == pv2     = Just (pr2,emptyVarMp)
+        f (Pred_Var pv1)        pr2                | isJust mbPr    = f (fromJust mbPr) pr2
                                                                     where mbPr = varmpPredLookup pv1 (fiVarMp fi)
-        f pr1              		(Pred_Var pv2)     | isJust mbPr    = f pr1 (fromJust mbPr)
+        f pr1                   (Pred_Var pv2)     | isJust mbPr    = f pr1 (fromJust mbPr)
                                                                     where mbPr = varmpPredLookup pv2 (fiVarMp fi)
-        f (Pred_Var pv1)    	pr2@(Pred_Var pv2)                  = Just (pr2,pv1 `varmpPredUnit` pr2)
-        f pr1               	(Pred_Var pv2)                      = Nothing
-        f (Pred_Var pv1)    	pr2                                 = Just (pr2,pv1 `varmpPredUnit` pr2)
+        f (Pred_Var pv1)        pr2@(Pred_Var pv2)                  = Just (pr2,pv1 `varmpPredUnit` pr2)
+        f pr1                   (Pred_Var pv2)                      = Nothing
+        f (Pred_Var pv1)        pr2                                 = Just (pr2,pv1 `varmpPredUnit` pr2)
 %%[[10
         f (Pred_Lacks (Ty_Var rv1 TyVarCateg_Plain) l1) pr2 | isJust mbTy
           = f (Pred_Lacks (fromJust mbTy) l1) pr2
@@ -1172,7 +1210,7 @@ fitPredIntoPred fi pr1 pr2
             tlOut = varMpOut |=> foTy foL
             trOut = varMpOut |=> foTy foR
 %%]]
-        f pr1               	pr2
+        f pr1                   pr2
           = if foHasErrs fo
             then Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
