@@ -159,6 +159,7 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ProveObl     i   sc)  = cm1 "RedHow_ProveObl"        `cmUnion` fevCount i `cmUnion` fevCount sc
   fevCount (RedHow_Assumption   vun sc)  = cm1 "RedHow_Assumption"      `cmUnion` fevCount vun `cmUnion` fevCount sc
   fevCount (RedHow_ByScope            )  = cm1 "RedHow_ByScope"
+%%[[16
   fevCount (RedHow_ByEqSymmetry       )  = cm1 "RedHow_ByEqSymmetry"
   fevCount (RedHow_ByEqTrans          )  = cm1 "RedHow_ByEqTrans"
   fevCount (RedHow_ByEqCongr          )  = cm1 "RedHow_ByEqCongr"
@@ -166,6 +167,8 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ByPredSeqUnpack    )  = cm1 "RedHow_ByPredSeqUnpack"
   fevCount (RedHow_ByEqFromAssume     )  = cm1 "RedHow_ByEqFromAssume"
   fevCount (RedHow_ByEqIdentity       )  = cm1 "RedHow_ByEqIdentity"
+%%][101
+%%]]
   fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
   fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
 %%]]
