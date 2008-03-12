@@ -946,6 +946,12 @@ SEM Expr
 %%[5
 ATTR AllCase [ fiOpts: FIOpts | | ]
 
+SEM Decl
+  | Val         expr        .  fiOpts               :=  (if @hasTySig then strongFIOpts else weakFIOpts)
+%%[[16
+                                                          {fioFitVarFailureToProveObl = True }
+%%]]
+
 SEM CaseAlt
   | Pat         patExpr     .  fiOpts               =   strongFIOpts
 %%[[16

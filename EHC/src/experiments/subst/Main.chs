@@ -19,6 +19,9 @@ Variants:
 %%[1 import(EH.Util.Pretty)
 %%]
 
+%%[31 import(Data.STRef, Control.Monad.ST)
+%%]
+
 %%[3 import(Data.IORef, System.IO.Unsafe)
 %%]
 
@@ -50,6 +53,8 @@ main
               r =  evl (stVMp st) q `seq` q
 %%][3
          (r,_)   <-  runStateT (treeCompute t) emptySt
+%%][31
+         (r,_)   <-  unsafeSTToIO $ runStateT (treeCompute t) emptySt
 %%]]
          when  (output == 'p')
                (do  putPPLn (pp t)
@@ -138,6 +143,11 @@ valIsErr _       = False
 %%[3.Ref
 type     RefContent  = Maybe Val
 newtype  Ref         = Ref (IORef RefContent)
+%%]
+
+%%[31 -3.Ref
+type     RefContent  = Maybe Val
+newtype  Ref         = Ref (STRef St RefContent)
 %%]
 
 %%[3
@@ -472,6 +482,10 @@ type Compute v = State St v
 type Compute v = StateT St IO v
 %%]
 
+%%[31.Compute -3.Compute
+type Compute v = StateT St (ST St) v
+%%]
+
 %%[1.treeCompute
 treeCompute :: Tree -> Compute Val
 treeCompute t =
@@ -579,10 +593,21 @@ newRef  =   do  r <- lift $ newIORef Nothing
                 return (Ref r)
 %%]
 
+%%[31 -3.newRef
+newRef  =   do  r <- lift $ newSTRef Nothing
+                return (Ref r)
+%%]
+
 %%[3.Ref.IO
 refRead   (Ref r)    =   unsafePerformIO $ readIORef r
 
 refWrite  (Ref r) c  =   lift $ writeIORef r c
+%%]
+
+%%[31 -3.Ref.IO
+refRead   (Ref r)    =   unsafePerformIO $ unsafeSTToIO $ readSTRef r
+
+refWrite  (Ref r) c  =   lift $ writeSTRef r c
 %%]
 
 %%[1.valUnify
