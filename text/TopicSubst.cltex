@@ -1,8 +1,8 @@
 %%[abstract
-Implementations of language processing systems often use unification and substitution to compute desired properties of input language fragments,
-for example to infer a type for an expression.
+Implementations of language processing systems often use unification and substitution to compute desired properties of input language fragments;
+for example when inferring types for an expression.
 Purely functional implementations of unification and substitution usually directly correspond to the formal specification of language properties,
-hence are understandable but inefficient.
+and hence easy to understand but also usually quite inefficient.
 On the other hand, efficient implementations of unification and substitution forgo pure functionality and rely on side effects to achieve higher performance.
 We present a third `best of both worlds' solution, which is both functional and efficient by simulating side effects functionally,
 and compare the three solutions side by side on implementation and performance.
@@ -34,7 +34,8 @@ whereas for |x1, x2| and |x3| we need to check whether it is permitted to pass t
 Obviously this is not the case for |x1|, but for the others it is.
 
 In implementations of type systems the reconstruction of yet unknown type information and the check whether known types match is usually done
-with the help of \IxAsDef{unification} of types.
+with the help of \IxAsDef{unification} of types,
+the unification paradigm being one of many strategies to solve equations on types imposed by the formal specification of a type system.
 Types may contain type variables representing yet unknown type information;
 unification then either succeeds with possible new bindings for such type variables, called the \IxAsDef{substitution},
 or it fails with a type mismatch.
@@ -72,19 +73,20 @@ Two terms |s| and |t| may be \IxAsDef{infinitely unifiable} if their unifier bin
 in this paper we prevent this from happening.
 
 \Paragraph{The problem}
-From the above definitions we already can see why a purely functional implementation will be inefficient.
+From the above definitions we already can see why a straightforward functional implementation will be inefficient.
 When we directly translate the definition of the substitution application |Subst ^ t| to a corresponding function application in
 a functional language like Haskell,
 each such application will construct a copy |s| of |t|, differing only in the free |v_i| for which |Subst| has a binding.
 Furthermore, whenever |v_i| occurs twice in |t|, two copies of |Subst^(v_i)| will be present in |s|, which in turn will duplicate the work
-of subsequent substitution applications.
-In summary, variable replacement is the culprit, and this then has to be avoided by efficient substitution implementations.
+of subsequent substitutions.
+In summary, variable replacement is the culprit,
+and thus has to be avoided in more efficient implementations of the subsitution process.
 
 
 \Paragraph{A solution with side effects and its derived problems}
 The growth of terms via duplicate copies of substituted variables can be avoided by never replacing variables.
 Instead we let variables act as pointers to a possible replacement term.
-This is easily accomplished in imperative languages, but more difficult in purely functional ones because of
+This is easily accomplished in imperative languages, but is more difficult in purely functional ones because of
 the side effects involved:
 initially a variable will have no replacement bound to it,
 only later such a replacement will be found and the variable be updated to point to the replacement.
@@ -95,23 +97,24 @@ This is the approach taken in GHC \cite{peytonjones04pract-inf-rank,www07ghc-dev
 
 \begin{Itemize}
 \item
-Side effects infect: term reconstruction (type inferencing) and related functionality all have to be aware of side effects and lose the benefits of pure functions.
+Side effects infect: term reconstruction (type inferencing) and related functionality all have to be aware of side effects and loose the benefits of pure functions.
 \item
 Once updated, a variable is changed forever after.
 This hampers the use of backtracking mechanisms.
 \end{Itemize}
 
-Whether these consequences are bad depends on the point of view and the necessities of the program using unification.
+How much we suffer from these consequences depends on the necessities of the program using unification.
 We found ourselves in a situation where we were hindered by the lack of efficiency of the basic functional solution,
 and did not want to corrupt the cleanliness of our compiler implementation \cite{dijkstra04ehc-web,dijkstra07ehcstruct,dijkstra05phd}.
 Furthermore we wanted the freedom to experiment with temporary assumptions about type variables, instead of fixing knowledge about such variables in one pass directly.
-So we needed a third solution which was both functional and efficient.
+So we designed a third solution which is both functionally transparant and efficient.
+We come back to our rationale and context of this paper in \secRef{sec-expsubst-discussion} after dealing with the technical content.
 
 \Paragraph{Our contribution: a solution without side effects}
 A pointer mechanism infecting an otherwise functional program with side effects can be avoided by simulating memory purely functional.
 The essence of an efficient substitution mechanism is to share the binding of a variable instead of copying it.
 This can be implemented without relying on imperative constructs such as |IO| in Haskell.
-Our contribution then is:
+Our contribution thus is:
 
 \begin{Itemize}
 \item
@@ -122,7 +125,8 @@ We look at both the implementation and performance.
 \end{Itemize}
 
 \Paragraph{Related work}
-We are not aware of other published work describing solutions for unification and substitution similar to the one to be presented here.
+We are not aware of other published work describing a solution for unification and substitution similar to the one to be presented here
+side by side with alternate solutions.
 The purely functional solution is frequently used in textbook examples \cite{jones00thih,typing:types-prog-lang:pierce},
 whereas the one with side effects is used when efficiency is important, such as in production quality compilers
 \cite{peytonjones04pract-inf-rank,www07ghc-dev-wiki}.
@@ -133,8 +137,17 @@ seminal work by Robinson \cite{robinson65unif-resoution,robinson71unification,ro
 Paterson and Wegman \cite{paterson78unif-linear},
 and Martelli and Montanari \cite{martelli82eff-unif-alg}.
 
+Observable sharing \cite{claessen99observable-share} adds equality of identity to values,
+of which the low level implementation requires mechanism with side effects.
+This is similar to the solution based on side effect in this paper;
+the difference lies in the identity still being hidden, whereas we also need this identity.
+
 {\color{red}
 Observable sharing \cite{claessen99observable-share}.
+\\
+Prolog, builtin in WAN machine.
+\\
+Strictly a functional paradigm issue.
 }
 
 \Paragraph{Outline of the remainder of this paper}
@@ -143,7 +156,8 @@ in particular a mini system, formally described, and implemented using the three
 In \secRef{sec-expsubst-purefunc} we present the purely functional implementation,
 in \secRef{sec-expsubst-ioref} the one with side effects,
 and in \secRef{sec-expsubst-funcmem} our solution, which we baptise \rulerCmdUse{exp-subst-variant2}.
-We conclude with results in \secRef{sec-expsubst-results} and discussion in \secRef{sec-expsubst-discussion}.
+We look at performance results in \secRef{sec-expsubst-results}, discuss in
+\secRef{sec-expsubst-discussion} and conclude in \secRef{sec-expsubst-conclusion}.
 
 %%]
 
@@ -167,9 +181,9 @@ Book/survey: \cite{baader01unif-th}
 
 %%[preliminaries
 Our experimental environment consists of an implementation for a small system resembling a structure found in many compilers.
-We thus mimic the actual runtime environment we are interested in, but keep it as simple as possible.
-\figRef{subst.D.tree.basic} shows the formal specification for this system.
-It should be familiar to those acquainted with type systems,
+We thus mimic the actual runtime environment we are interested in, while keeping things as simple as possible.
+\figRef{subst.D.tree.basic} shows the rules for this system;
+it should be familiar to those acquainted with type systems,
 as it has been inspired by our experience with type systems and the resulting necessities.
 However, we want to focus on unification mechanisms without wandering off to type systems,
 so our example system neutrally specifies which values |Val| are to be associated with a tree |Tree| as its property.
@@ -183,9 +197,9 @@ the exclamation mark enforces strictness and can be ignored for the purpose of u
 
 %%@1.Tree@1 wrap=code
 
-With a |Tree| we associate a |Val|, which reflects some properties of the Tree.
-Again, a |Val| is inspired by type systems, but for the purposes of this paper it is just some structure complex enough to discuss
-unification and substitution solutions.
+The rules associate a |Val| with a |Tree|.
+Again, a |Val| is inspired by type systems, but for the purposes of this paper it is just some structure,
+complex enough to discuss unification and substitution.
 Therefore, in the remainder of this paper |Val|s are the terms participating in unification and substitution.
 
 %%[[wrap=code
@@ -194,8 +208,8 @@ Therefore, in the remainder of this paper |Val|s are the terms participating in 
 %%@1.VarId
 %%]]
 
-|Val| has two alternatives in its structure which not directly correspond to the |Tree|:
-an alternative |Var| for encoding variables as used by unification and substitution,
+|Val| has two alternatives in its structure which do not directly correspond to the |Tree|:
+an alternative |Var| for encoding variables as used in unification and substitution,
 and an alternative |Err| for signalling errors.
 
 For example, for the following tree:
@@ -234,13 +248,14 @@ This is typical of declarative rules: a restriction is just stated.
 The algorithmic variant however needs to computationally check the restriction and compute its constituents.
 The rules in \figRef{subst.A.tree.basic} do this in a way typical of algorithmic variants: the constraining structure |(v,w)| is unified with the given structure requiring to be checked.
 The constraining |Val| is built from variables guaranteed to be unique (called \IxAsDef{fresh}),
-the extraction is done by simply using the unique variables together with a substitution holding possible additional information about the variable.
+whereas the extraction is done by simply using the unique variables together with a substitution holding possible additional information about the variable.
 
 \rulerCmdUse{subst.A.tree.basic}
 
 The algorithmic version threads a substitution |Subst| through its rules,
-which gathers information about the |Var|s participating in the construction of |Val| over the tree.
-We maintain the invariant that |Subst| is already applied to the result |Val|.
+while gathering information about the |Var|s participating in the construction of |Val| over the tree.
+We maintain the invariant that |Subst| is already applied to the result value |t|,
+that is |Subst ^ t = t|.
 
 A substitution |Subst| is represented by a variable mapping |VMp|, mapping identifiers |VarId| of variables to terms |Val|:
 
@@ -276,7 +291,7 @@ The rules describe a direction in which information flows over a tree, upward or
 We normally use attribute grammars
 \cite{baars04ag-www}
 to describe this flow because --in our opinion-- attribute grammars are best suited to describe tree oriented computations.
-Here we stick to the more familiar by using a state monad:
+Here we stick to the more familiar approach which uses a state monad:
 
 \begin{CodeFigure}{}{Computation of Val over Tree}{exp-subst-treecompute}
 %%@1.treeCompute@1 wrap=code
@@ -288,21 +303,21 @@ Here we stick to the more familiar by using a state monad:
 %%@1.Compute@1
 %%]]
 
-The |Compute| state monad threads
+The |Compute| state monad threads the following three values through the computation:
 \begin{Itemize}
 \item
 a counter used for creating fresh variables,
 \item
 an environment |Env| holding |Gamma|,
 \item
-and a variable mapping |VMp| holding both the inherited and synthesized substitution |Subst|.
+and a variable mapping |VMp| corresponding to both the inherited and synthesized substitution |Subst|.
 \end{Itemize}
 Strictly speaking the |Env| needs not be threaded,
 but we prefer to avoid the additional complexity of placing this part of the state into a reader monad.
 
 \Paragraph{Substituting}
 
-In |Val| occur substitutable variables, and thus also in |Env|.
+In a |Val| substitutable variables may occur, and thus also in |Env|.
 Substitutabilty is expressed by the class |Substitutable|:
 
 %%@1.Substitutable@1 wrap=code
@@ -459,7 +474,7 @@ the one stored in the |Var| itself.
 This is problematic if we want to have more than one binding during the computation,
 for example when we want to compute a tentative value and later backtrack on it
 \cite{dijkstra05phd,dijkstra06exploit-tyann-tr}.
-We have lost the parameterizability of the binding by introducing side effects and giving up pure functional behavior of substitutions.
+We have lost the parameterizability of the binding by introducing side effects and giving up purely functional behavior of substitutions.
 
 %%]
 
@@ -483,7 +498,7 @@ we do not apply the substution to a variable but only use the variable itself.
 \end{CodeFigure}
 
 We now also can avoid the expensive copying because we follow pointers instead of accessing a copied value directly.
-The implementation of the |Substitutable VMp| instance need no longer update the `previous' VMp,
+The implementation of the |Substitutable VMp| instance needs no longer to update the `previous' VMp,
 a subtle but most effective memory saving change:
 
 %%@Substitutable.VMp.sbs@2 wrap=code
@@ -632,11 +647,11 @@ On the linear test cases all but the \rulerCmdUse{exp-subst-variant1} variant pe
 On the exponential test case the \rulerCmdUse{exp-subst-variant3} variant runs best,
 the \rulerCmdUse{exp-subst-variant1} variant worst, especially in terms of memory.
 The \rulerCmdUse{exp-subst-variant2} variant sits in between.
-Inspection and further experiments showed this was due to the toplevel substution still applied.
+Inspection and further experiments showed this was due to the toplevel substution still being applied.
 Variant \rulerCmdUse{exp-subst-variant22} has this substitution removed and replaced by code forcing a deep evaluation over the |Val| and substitution jointly.
 The results are now similar to those of \rulerCmdUse{exp-subst-variant3}, even a bit faster.
 \item
-When tests are run with GHC optimization on,
+When tests are run with GHC optimization switched on,
 the absolute numbers drop, but only by a relative small factor of max 1.5, the relative performance remains the same.
 We therefore did not include these numbers.
 \item
@@ -649,6 +664,44 @@ This is an apparent trade-off between efficiency and responsibility of doing the
 %%]
 
 %%[discussion
+\Paragraph{Implementation alternative: use of |ST| and |STRef|}
+In order to get rid of |IO| and |IORef| in solution \rulerCmdUse{exp-subst-variant3} we did consider the use of |ST| and |STRef| instead.
+|ST| may be seen as a more general |IO|; vice versa |IO| corresponds to a |ST| specialized to the |RealWorld|.
+This did not turn out very well because the use of our state |St| and the restrictions imposed upon any state by |ST| do not combine.
+Using the and |ST| means running it via |runST|, which in turn means hiding of state;
+we want it to be visible so we can use its content.
+This can be remedied by adding even more use of unsafe |IO| constructs or more clever monadic compositions by the use of monad transformers.
+Both approaches defeat the purpose of getting rid of |IO| and achieving simplicity.
+
+\Paragraph{Context}
+In the introduction we expressed the desire to get rid of |IO| and use of mechanisms with side effect.
+One could ask why we do want this because |IO| works well enough, is it not?
+Our longterm goal is to be able to describe and implement languages aspectwise,
+with tools and mechanisms to build description and implementation compositionally from such aspects.
+Currently we achieve this by using attribute grammars and type rule domain specific languages,
+which allow us to specify aspectwise,
+with tools to construct working compilers
+\cite{dijkstra07ehcstruct}.
+This solution roughly corresponds to the use of monads for each aspect with monad transformers combining these
+\cite{jones95overl-highpoly}.
+The difference lies in the obligation of the use of monad transformers to specify their construction on the type level,
+and thereby fixing the ordering of use of state and computation of results.
+Both become difficult to do, if not impossible, when the number of basic monads, each of which corresponds to an independent implementation of a language aspect,
+increases and their interaction becomes more complex.
+Adding side effect to this mix limits --in our view-- the practical applicability of monads for the implementation of complex languages.
+
+The gist of these observations is that we want to avoid monads and side effects in particular,
+in order to have better compositionality.
+Our solution \rulerCmdUse{exp-subst-variant2} contributes to just that by separating the notion of value and what we get to know about it
+as part of a particular strategy of finding out more about such a value.
+Of course, some interaction cannot be avoided, a |Val| has |Var| alternative after all,
+but at least any knowledge about a |Var|
+is never irrevocably hardcoded in the |Var|:
+it is manipulated separately, thus allowing its compositional use.
+
+%%]
+
+%%[conclusion
 Avoiding copying and the resulting memory allocation, and using sharing mechanisms instead, pays off.
 This is the overall conclusion which can be drawn.
 Furthermore, using a solution with |IORef| based side effect can be avoided without performance penalties;
@@ -657,7 +710,7 @@ there is no need to fall back on the |IO| monad to achieve acceptable levels of 
 Our `best of both worlds' solution has been implemented as part of EHC, the essential Haskell Compiler
 \cite{dijkstra04ehc-web,dijkstra07ehcstruct};
 The programs discussed in this paper can also be found there as part of its experiments subdirectory.
-Because we have based our implementation on attribute grammars, avoiding the dependency on |IO| and side effects,
+Because we have based our EHC implementation on attribute grammars, avoiding the dependency on |IO| and side effects,
 the efficient functional solution was critical to the success of the implementation of the type system in EHC.
 %%]
 

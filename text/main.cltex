@@ -959,19 +959,19 @@ WWW home page:
 %%[36
 \title{Efficient Functional Unification and Substitution}
 %if acm && useSigplanconfSty
-\authorinfo{Atze Dijkstra \and S.~Doaitse Swierstra}
+\authorinfo{Atze Dijkstra \and Arie Middelkoop \and S.~Doaitse Swierstra}
   {Department of Information and Computing Sciences \\
    Universiteit Utrecht \\
    P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
   }
-  {\{atze,doaitse\}@@cs.uu.nl}
+  {\{atze,ariem,doaitse\}@@cs.uu.nl}
 %else
-\author{Atze Dijkstra and S.~Doaitse Swierstra}
+\author{Atze Dijkstra and Arie Middelkoop and S.~Doaitse Swierstra}
 \institute{Department of Information and Computing Sciences,\\
 Universiteit Utrecht,\\
 P.O.Box 80.089, \\
 Padualaan 14, Utrecht, Netherlands,\\
-\email{@{atze,doaitse}@@cs.uu.nl@},\\
+\email{@{atze,ariem,doaitse}@@cs.uu.nl@},\\
 WWW home page:
 \texttt{http://www.cs.uu.nl}
 }
@@ -2012,10 +2012,15 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicSubst.performanceResults
 
-\section{Conclusion}
+\section{Discussion}
 \label{sec-expsubst-discussion}
 
 %%@TopicSubst.discussion
+
+\section{Conclusion}
+\label{sec-expsubst-conclusion}
+
+%%@TopicSubst.conclusion
 %}
 %%]
 
