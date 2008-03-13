@@ -1367,6 +1367,8 @@ cpCompileWithLLVM modNm
                                 ++ "%%@{%{VARIANT}%%}/lib/prim.o"
                               , Cfg.fileprefixInplaceInstall 
                                 ++ "%%@{%{VARIANT}%%}/lib/llvm-gc.o"
+                              , Cfg.fileprefixInplaceInstall 
+                                ++ "%%@{%{VARIANT}%%}/lib/timing.o"
                               , Cfg.fileprefixInplaceInstall
                                 ++ "non-threaded/lib/libgc.a"
                               ]

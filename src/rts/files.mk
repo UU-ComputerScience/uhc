@@ -20,9 +20,9 @@ INSABS_RTS_INC_PREFIX		:= $(INSABS_PREFIX)$(EHC_VARIANT_PREFIX)include/
 INSABS_LIB_RTS				:= $(INSABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
 
 # main + sources + dpds, for .c/.h
-RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,rts prim utils llvm-gc grinbc/grinbc)
+RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,rts prim utils llvm-gc timing grinbc/grinbc)
 RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim)
-RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,rts config bits utils grinbc/grinbc)
+RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,rts config bits utils timing grinbc/grinbc)
 MAIN_C_MAIN_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,mainSil)
 
 RTS_C_RTS_GBCCALL_DRV_C		:= $(addprefix $(RTS_BLD_RTS_PREFIX),grinbc/gbccall.c)
