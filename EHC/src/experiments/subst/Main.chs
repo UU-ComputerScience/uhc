@@ -584,7 +584,9 @@ newVars  n  =   do  v   <- newVar
 
 %%[3.Ref.IO.sigs
 newRef     ::  Compute Ref
+%%[[refRead.sig
 refRead    ::  Ref -> RefContent
+%%]]
 refWrite   ::  Ref -> RefContent -> Compute ()
 %%]
 
@@ -598,9 +600,16 @@ newRef  =   do  r <- lift $ newSTRef Nothing
                 return (Ref r)
 %%]
 
-%%[3.Ref.IO
+%%[3.refRead
 refRead   (Ref r)    =   unsafePerformIO $ readIORef r
+%%]
 
+%%[32.refRead
+refRead' :: Ref -> RefContent
+refRead' (Ref r) = readIORef r
+%%]
+
+%%[3
 refWrite  (Ref r) c  =   lift $ writeIORef r c
 %%]
 
@@ -634,6 +643,14 @@ valUnify v1 v2
   uni  st  x            (Var _ r)  |  isJust mbv    =  uni st x v
        where  mbv  = refRead r
               v    = fromJust mbv
+%%][32
+%%[[valUnify.uni.Var
+  uni  st  (Var _ r)    y
+      do  mbv <- refRead' r
+          case mbv of
+            Just v  ->  uni st v y  ^^
+            _       ->  ??          ^^ wrong branch after all
+%%]]
 %%]]
 %%[[1
   uni  st  (Var i)      y                           =  bindv st i y

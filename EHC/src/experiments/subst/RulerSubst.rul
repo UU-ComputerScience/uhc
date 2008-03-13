@@ -4,6 +4,8 @@ viewhierarchy = D < A
 
 format tex env = Gamma
 format tex Env = Gamma
+format tex Subst.inh = Subst.in
+format tex Subst.syn = Subst.out
 
 external c
 
