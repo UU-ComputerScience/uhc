@@ -7,5 +7,7 @@
 
 %format t_n
 %format v_n
+%format se_1
+%format se_2
 
 %format |@     		= "\mathrel{|@}"
