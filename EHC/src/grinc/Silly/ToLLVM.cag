@@ -25,6 +25,8 @@
 %%]
 %%[8 hs import(qualified Data.List)
 %%]
+%%[8 hs import(Data.Char)
+%%]
 %%[8
 WRAPPER SilModule
 %%]
@@ -94,7 +96,7 @@ ATTR AllNT
            
 SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
-                                                     (@loc.constants : @functions.constants) 
+                                                     ( (@loc.globalResStr,@loc.resConst) : @functions.constants ) 
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl : gcInitFuncDecl
                                                      : gcPrintStatsFuncDecl
@@ -105,15 +107,15 @@ SEM SilModule
                                                      ( @loc.main : @functions.llvmCode )
                                                      
                 loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
-                loc.resultStr = if sizeofPointer == 8
-                                then "%lld\n"
-                                else "%d\n"
-                loc.constants= ( GlobalVar "STR_RES" (stringType @loc.resultStr)
-                               , StrConstant (string2CString @loc.resultStr) (stringType @loc.resultStr)
-                               ) 
+                loc.(globalResStr,resConst) = 
+                                string2LLVMString @lhs.gUniq $
+                                  if sizeofPointer == 8
+                                  then "%lld\n"
+                                  else "%d\n"
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
-                                 [ LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
+                                 [ LLVMStatement_Call gcInitFuncDecl StdCall []
+                                 , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
@@ -124,7 +126,7 @@ SEM SilModule
                                  , LLVMStatement_Assignment (LocalVar "rp.1.val" @lhs.intType)
                                      (LLVMExpression_Load (LocalVar "rp.1" @lhs.pointerType))
                                 , LLVMStatement_Assignment (LocalVar "cast.str.res" (pLift i8))
-                                     (LLVMExpression_GetElemPtr (GlobalVar "STR_RES" (pLift $ stringType @loc.resultStr)) [0,0])  
+                                     (LLVMExpression_GetElemPtr @loc.globalResStr [0,0])  
                                  , LLVMStatement_Call stdlibPrintfFuncDecl TailCall
                                      [ LocalVar "cast.str.res" (pLift i8), LocalVar "rp.1.val" @lhs.intType ]
 %%][99
@@ -240,10 +242,10 @@ SEM Statement
                 lhs.constants = if ehcOptGenTrace @lhs.opts
                                 then (@loc.global, @loc.strConst) : @args.constants
                                 else @args.constants
-                loc.global   = let (_,var) = newFresh @loc.uniqNr2 (pLift $ stringType @loc.callStr)
-                                in GlobalVar (getPlainName var) (getType var)
-                loc.strConst = StrConstant (string2CString @loc.callStr) (stringType @loc.callStr)  
-                loc.callStr  = "Call " ++ hs2str @name ++ " " ++ concat (Data.List.intersperse " " (replicate (length @loc.castVars) "%d")) ++ "\n"    
+                loc.(global,strConst) =
+                                string2LLVMString @loc.uniqNr2 $ 
+                                  "Call " ++ hs2str @name ++ "( " ++ 
+                                  concat (Data.List.intersperse ", " (replicate (length @loc.castVars) "%d")) ++ " )\n"    
                                
   | Comment     lhs.llvmCode = [LLVMStatement_Comment @comment]
   
@@ -383,13 +385,7 @@ SEM Value
       * Assign the result of the call to a fresh variable
   -}                             
   | Call        lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ 
-                               ( if ehcOptGenTrace @lhs.opts
-                                 then ([ LLVMStatement_Assignment @loc.fresh (LLVMExpression_GetElemPtr @loc.global [0,0])
-                                       , LLVMStatement_Call stdlibPrintfFuncDecl StdCall (@loc.fresh : @loc.castVars) ] ++)
-                                 else ([] ++)
-                               ) 
-                               @loc.llvmCode
+                lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ @loc.llvmCode
  
                 loc.fnDecl  = LLVMFunctionDecl_LLVMFunctionDecl @name @lhs.intType FixedArgs @loc.formalParams
  
@@ -414,16 +410,7 @@ SEM Value
                 loc.(uniqNr3,formalParams) =  
                                foldr (\x xs -> let (nr,fresh) = newFresh (fst xs) (getType x)
                                                 in (nr, fresh : (snd xs)) ) 
-                                     (@loc.uniqNr2,[]) @loc.castVars
-                                     
-                loc.(uniqNr4,fresh) = newFresh @loc.uniqNr3 (pLift i8)                                     
-                lhs.constants = if ehcOptGenTrace @lhs.opts
-                                then (@loc.global, @loc.strConst) : @args.constants
-                                else @args.constants
-                loc.global   = let (_,var) = newFresh @loc.uniqNr4 (pLift $ stringType @loc.callStr)
-                                in GlobalVar (getPlainName var) (getType var)
-                loc.strConst = StrConstant (string2CString @loc.callStr) (stringType @loc.callStr)  
-                loc.callStr  = "PRIMCall " ++ @name ++ " " ++ concat (Data.List.intersperse " " (replicate (length @loc.castVars) "%d")) ++ "\n"                                        
+                                     (@loc.uniqNr2,[]) @loc.castVars                                
 
   {-|
     A Con just wraps a constant. No actions needed.
@@ -506,12 +493,7 @@ SEM Variable
                 
 SEM Constant
   | LiteralInt  lhs.llvmVar  = Constant @value @lhs.intType
-  | LiteralStr  lhs.llvmVar  = @loc.llvmVar
-                loc.llvmVar  : {LLVMVar}
-                loc.llvmVar  = GlobalVar (getPlainName @loc.varNm)
-                                         (getType @loc.varNm)
-                loc.(gUniq,varNm)    
-                             = newFresh @lhs.gUniq (pLift @loc.strType)
+  | LiteralStr  lhs.llvmVar  = @loc.globStrVar
   | Alias       lhs.llvmVar  = let value = Data.Map.findWithDefault
                                              (error "Alias not in constantmap")
                                              @name @lhs.constantMap 
@@ -570,24 +552,19 @@ ATTR Functions Function
 
 SEM Function
   | Function    lhs.constants      = if ehcOptGenTrace @lhs.opts
-                                     then ( @loc.globalVarEnter, @loc.cstringEnter ) : 
-                                          ( @loc.globalVarExit,  @loc.cstringExit  ) : @body.constants
+                                     then ( @loc.globalVarEnter, @loc.cStringEnter ) : 
+                                          ( @loc.globalVarExit,  @loc.cStringExit  ) : @body.constants
                                      else @body.constants
-                loc.globalVarEnter = let (uniq,var) = newFresh @lhs.gUniq (pLift $ stringType @loc.enter)
-                                      in GlobalVar (getPlainName var) (getType var)
-                loc.cstringEnter   = StrConstant (string2CString @loc.enter) (stringType @loc.enter)
-                loc.enter          = "[ENTER]" ++ hs2str @name ++ "\n" 
+                loc.(globalVarEnter,cStringEnter) = 
+                                     string2LLVMString @lhs.gUniq $ "[ENTER]" ++ hs2str @name ++ "\n" 
                 
-                loc.globalVarExit  = let (uniq,var) = newFresh (uidNext @lhs.gUniq) (pLift $ stringType @loc.exit)
-                                      in GlobalVar (getPlainName var) (getType var)
-                loc.cstringExit    = StrConstant (string2CString @loc.exit) (stringType @loc.exit)
-                loc.exit           = "[EXIT]" ++ hs2str @name ++ "\n"
+                loc.(globalVarExit,cStringExit) =
+                                     string2LLVMString (uidNext @lhs.gUniq) $ "[EXIT]" ++ hs2str @name ++ "\n"
 
 SEM Constant
-  | LiteralStr  lhs.constants = [ ( @loc.llvmVar , @loc.cstring) ]
-                loc.cstring   = StrConstant (string2CString @value)
-                                            @loc.strType 
-                loc.strType   = Array (length @value + 1) i8
+  | LiteralStr  lhs.constants = [ ( @loc.globStrVar , @loc.strConst) ]
+                loc.(globStrVar,strConst) =
+                                string2LLVMString @lhs.gUniq @value
   | * - LiteralStr
                 lhs.constants = [ ]
 %%]
@@ -926,23 +903,17 @@ mkVarList constr names tp =
   zipWith (\x y -> constr (hs2str x) y) names (repeat tp)
 
 {-|
-Convert a Haskell string to a LLVM C string by adding a c prefix, adding 
-explict quotes and terminate with \\0
-
-@hello -> c\"hello\\0\"@
+Generate a valid global variable which contains a LLVM representation of a Haskell String. 
 -}
-string2CString :: String -> String
-string2CString str =
-  "c\"" ++ str ++ "\\00\""
- 
-{-|
-Generate the C type of a Haskell string. For example \"Hello World\" would result
-in an @Array 12 i8@.
--} 
-stringType :: String -> LLVMType
-stringType str =
-  Array (length str + 1) i8
- 
+string2LLVMString :: UID -> String -> (LLVMVar,LLVMVar)
+string2LLVMString uid hsStr =
+  let hsStr'       = concatMap escapeHex hsStr
+      llvmType     = Array (length hsStr + 1) i8
+      llvmStr      = "c\"" ++ hsStr' ++ "\\00\""
+      (uid',fresh) = newFresh uid llvmType
+   in (GlobalVar (getPlainName fresh) (pLift $ llvmType), StrConstant llvmStr llvmType)
+  where escapeHex c | isAlphaNum c  = [c]
+                    | otherwise     = "\\" ++ strHex 2 (ord c)
 {-|
 Convert a Bool to a 'LLVMCallType', True indicating a 'TailCall' while any other
 value indicates 'StdCall'
