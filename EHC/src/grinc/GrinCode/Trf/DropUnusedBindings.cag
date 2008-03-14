@@ -31,9 +31,7 @@ WRAPPER GrAGItf
 type EdgeF   = [Edge] -> [Edge]
 type VertexF = [Vertex] -> [Vertex]
 
-type CallInfo = Map.Map Vertex CallType
-data CallType = Call | TailCall | BothCall deriving (Eq, Show)
-
+type CallInfo = Set.Set Vertex
 
 type NodeInfo  = (Vertex, CallInfo)
 type NodeInfoF = [NodeInfo] -> [NodeInfo]
@@ -52,7 +50,7 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 %%]
 
-%%[8.graphInfo import({GrinCode/LastExpr})
+%%[8.graphInfo
 ATTR AllBind            [ | | biggest USE {`max`} {minBound}: Int
                               smallest USE {`min`} {maxBound}: Int
                               nodes USE {.} {id}: NodeInfoF
@@ -64,18 +62,16 @@ SEM GrBind
           lhs   .  smallest  = @bindNr
                 .  biggest   = @bindNr
                 .  nodes     = ( (@bindNr, @expr.calls) :)
-          expr  .  calls     = Map.empty
+          expr  .  calls     = Set.empty
 
 SEM GrExpr
-  | Call  loc  .  mergeCall  =  (\p n -> if p == n then p else BothCall)
-               .  callType   =  if @isLastExpr then TailCall else Call
-               .  calls      =  Map.insertWith @mergeCall (getNr @nm) @callType @lhs.calls
+  | Call  loc  .  calls      =  Set.insert (getNr @nm) @lhs.calls
 %%]
 
 %%[8.graph
 SEM GrModule
   | Mod  loc  .  nodes  = @bindL.nodes []
-              .  graph  = let buildNode prev outlist = Map.keys outlist
+              .  graph  = let buildNode prev outlist = Set.toList outlist
                           in accumArray buildNode [] (@bindL.smallest, @bindL.biggest) @loc.nodes
                           
 %%]

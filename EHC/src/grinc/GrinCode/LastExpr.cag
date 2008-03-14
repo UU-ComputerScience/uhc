@@ -3,21 +3,7 @@
 %include afp.fmt
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Find Last Grin Expression of a binding %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-To keep track of whether the expression should return a value or should copy it
-to target names.
-
-TargetVariables
-
-%%[8 hs
-type TargetNames = Maybe [HsName]
-type TargetName  = Maybe HsName
-%%]
-
-Last expression
+Auxiliary attribute that determines whether an expression is the last expression in one of the possible paths in a function body
 
 %%[8
 ATTR AllGrExpr [ hasNext: {Bool} | | ]
@@ -32,6 +18,3 @@ SEM GrExpr
 SEM GrExpr
   | * - Seq Case Catch  loc . isLastExpr = not @lhs.hasNext
 %%]
-
-  |     Seq Case Catch  loc . isLastExpr = False
-

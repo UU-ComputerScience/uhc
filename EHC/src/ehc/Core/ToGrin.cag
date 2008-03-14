@@ -463,7 +463,7 @@ tyNmIsUnboxedForFFIRes opts
 
 tyNmMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Bool
 tyNmMayLiveAsTaggedPtr opts n
-  = if ehcOptFullProgGRIN opts then False else n `elem` ns
+  = if ehcOptFullProgAnalysis opts then False else n `elem` ns
   where ns = builtinMayLiveUnboxedTyNmL
 %%]
 

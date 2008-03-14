@@ -9,7 +9,7 @@ This is done if the tag is statically known, because either
 1. x is a constant tag
 2. hpt analysis reveals that the list of possible tags for n is singleton
 
-Otherwise, all but the first fetchfield operations are right hoisted to the branch of a case expression
+Otherwise, all but the first fetchfield operations are "floated" to the alternative of a case expression
 where the tag *is* known.
 
 If such a case expression does not follows, we return a node containing a black hole, as a panic result.
@@ -31,14 +31,6 @@ is replaced by
 Note that y and z are renamed in the respective branches to ensure global unique names.
 Also note that in the C2 branch, less fetchfield expressions are generated because C2
 has lower arity than C1.
-
-
-A special situation is when the pattern is *not*  of the form \(x y z), as in
-  fetchnode n; \x -> ...
-This can occur if x is an opaque node.
-In this case, the replacement is
-  fetchfield n 0; \x -> ...
-
 
 
 %%[0
@@ -134,11 +126,7 @@ SEM GrPatAlt [ | | mbTag: {Maybe GrTag} ]
 
 SEM GrPatLam [ | |  names: {GrVarL} ]
   | VarNode              lhs  .  names  =  @fldL.self
-  | Empty                lhs  .  names  =  []
-  | Var                  lhs  .  names  =  [ GrVar_Var @nm ]   -- only for opaque nodes
-  | * - VarNode 
-        Empty 
-        Var              lhs  .  names  =  error "SplitFetch.ag: attempt to get names"
+  | * - VarNode          lhs  .  names  =  error "SplitFetch.ag: attempt to get names from a non-VarNode"
 
 
 ATTR AllGrExpr [ floatingFetches : FetchEnv | | ]
@@ -152,21 +140,21 @@ SEM GrExpr
                                           buildFetchInfo _             r n  =           r (n+1)
                                           fetches@(fetch0:fetch1n) = foldr buildFetchInfo (const []) @pat.names 0
                                     ; let mbTag     = checkSingleTag @lhs.hptMap p
-                                          f (v,o)   = (v, GrExpr_FetchField p o @pat.mbTag)
-                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust' ("gv0 met Nothing") mbTag)))
+                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)))
                                           g (v,o)   = (v, GrExpr_FetchField p o mbTag)
+                                          f (v,o)   = (v, GrExpr_FetchField p o @pat.mbTag)
                                     ; let res = if      isJust @pat.mbTag then (map f fetches, Nothing                          )
                                                 else if isJust mbTag      then (map g fetches, Nothing                          )
                                                 else                           ([f fetch0]   , Just (fst fetch0, map f fetch1n) )
-                                    --; return (trace ("fetch " ++ show p ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) res)
-                                    ; return res
+                                    ; return $ -- trace ("fetch " ++ show p ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) 
+                                               res
                                     }
          lhs   .  grTrf             = maybe @grTrf 
                                             (buildSeqs @body.grTrf . fst)        -- build FetchFields for the known fetches
-                                            @fetchesInfo
+                                            @loc.fetchesInfo
          body  .  floatingFetches   = maybe @lhs.floatingFetches 
                                             (addFetchInfo @lhs.floatingFetches . snd)   -- add (tag,unknowns) to the floating fetches
-                                            @fetchesInfo
+                                            @loc.fetchesInfo
                                             
   | Case  loc  .  (mbRes, newMap)   = Map.updateLookupWithKey (\k v -> Nothing) 
                                                               (getTagName @val.grTrf) 
@@ -190,7 +178,24 @@ SEM GrAlt
          lhs   .  grTrf      =  GrAlt_Alt @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
 %%]
 
-%%[8.lastFetch import({GrinCode/LastExpr})
+%%[8.lastFetch
+
+
+ATTR AllExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
+SEM GrAlt
+  | Alt      expr . hasNext = False
+
+SEM GrExpr
+  | Seq      expr . hasNext = True
+             body . hasNext = False
+
+
+
+
 SEM GrExpr
   | Catch  loc  . hasNext      =  False
   | FetchNode FetchField
@@ -203,9 +208,9 @@ SEM GrExpr
                 .  fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField @nm o @mbKnownTag, o+1)
                                   in take @size $ unfoldr buildFetchInfo 1
                 .  names       =  map (\n->HNmNr n OrigNone) [@lhs.uniq .. @uniq  - 1]
-                .  uniq        =  if @isLastExpr then @lhs.uniq + @size else @lhs.uniq
+                .  uniq        =  if not @lhs.hasNext then @lhs.uniq + @size else @lhs.uniq
                 .  node        =  GrVal_Node @knownTag (map GrVal_Var @names)
-           lhs  .  grTrf       =  if @isLastExpr
+           lhs  .  grTrf       =  if not @lhs.hasNext
                                   then buildSeqs (GrExpr_Unit @node) (zip @names @fetches)
                                   else @grTrf
 %%]
@@ -243,7 +248,7 @@ buildSeqs body = foldr buildSeq body
     where
     buildSeq (v, e) b = GrExpr_Seq e (GrPatLam_Var v) b
 
-checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p ++ show nodes) $
+checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p) $
                           let absVal = absFetch hptMap p
                               nodes = getNodes absVal
                           in  if   isLocs hptMap p && isNode absVal && singleton nodes
