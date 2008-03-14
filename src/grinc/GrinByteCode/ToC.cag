@@ -434,10 +434,8 @@ SEM Module
                                                                                      , pp "return main_GB_Exit( argc, argv) ;"
                                                                                      ]
                                                                                  )
-                                                    etc     = if ehcOptEmitLlc @lhs.opts
-                                                              then empty
-                                                              else ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
-                                                                   >-< "void silly_main(void){}"
+                                                    etc     = ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
+                                                              >-< "void silly_main(void){}"
 %%[[20
                                                     expnd   = ppLine $ "GB_NodePtr" >#< @ppNmExpNode >#< ";"
                                                                        >-< "static int" >#< @ppNmExpNodeOffs >|< "[] ="

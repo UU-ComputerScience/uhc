@@ -71,7 +71,7 @@ SEM GrBind
 
 
 
-For each binding (globals and functions) we determine which other globals and functions it uses: the "usage".
+For each definition (globals and bindings) we determine which other globals and functions it uses: the "usage".
 
 %%[8
 ATTR AllDef             [ | | usage    USE {`Map.union`} {Map.empty}: UsageMap ]
