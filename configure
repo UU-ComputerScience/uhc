@@ -6236,7 +6236,8 @@ case $HostPlatform in
         # libtool usage
         #libtoolStatic="no"
         # ehcGccOptsStatic="-static"
-	    libtoolStatic="libtool --mode=link gcc -static -o"
+	# libtoolStatic="libtool --mode=link gcc -static -o"
+        libtoolStatic="no"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
