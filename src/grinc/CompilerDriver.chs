@@ -26,7 +26,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.GrInline})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.InlineNumbered})
+%%[8 import({%{GRIN}GrinCode.Trf.LateInline})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
 %%]
@@ -53,8 +53,6 @@
 %%[8 import({%{GRIN}GrinCode.Trf.RightSkew})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedBindings})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings})
 %%]
@@ -161,9 +159,6 @@ caAnalyse = task_ VerboseNormal                     "Analyzing"
     ( do { transformCodeUnq      normForHPT         "Normalizing"
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin           True               "21-normalized"
-         ; transformCodeUnq      inlineNumbered     "InlineNumbered"
-         ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin           True               "22-inlined"
          ; caHeapPointsTo
          ; caWriteGrin           True               "29-analyzed"
          }
@@ -176,6 +171,9 @@ caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
          ; caWriteGrin           True               "31-evalinlined"
          ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
          ; caWriteGrin           True               "32-undead"
+         ; transformCodeUnq      lateInline         "LateInline"
+         ; transformCodeIterated rightSkew          "Unskewing"
+         ; caWriteGrin           True               "33-lateinlined"
          }
     )
 -- optimisations part I
@@ -186,8 +184,6 @@ caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
          ; caWriteGrin           True               "42-evaluatedCaseRemoved"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin           True               "43-unusedExprRemoved"
-         ; transformCode         dropUnusedBindings "Dropping unused bindings"
-         ; caWriteGrin           True               "49-partlyOptimized"
          }
     )
 -- simplification part II

@@ -40,7 +40,7 @@ ATTR SilModule   [ opts : {EHCOpts} | | ]
 
 ATTR AllNT [ | | trf: SELF     ]
 
-ATTR Variable [ | | self: SELF ]
+ATTR Variable [ multi : {Int} | | self: SELF ]
 
 ATTR Statement Statements Alternative Alternatives [  | defMap : {Map.Map Variable Int} | ]
 ATTR Statement Statements Alternative Alternatives Variable Variables Value Values [  | useMap : {Map.Map Variable Int} | ]
@@ -69,19 +69,37 @@ SEM Function
 --  | Cons      lhs.trf = Statement_Comment ["env: " ++ show @lhs.env] : @hd.trf : @tl.trf
 
 
+-- the "multi" attribute is a bit of a hack:
+-- it makes uses in a Subs context count as 2, thus making is non-virtualizable for non-simple values
+
+SEM Value
+  | BoxVar Var  var.multi = 1
+  | Offset      var.multi = 2
+
+SEM Variable
+  | Subs        array.multi = 2
+
+SEM Statement
+  | Assignment  dest.multi = 1
+  | Assignment2 dest1.multi = 1
+                dest2.multi = 1
+
+
+
+
 SEM Statement
   | Assignment  lhs.defMap  =  Map.adjust (+1) @dest.self @lhs.defMap
   | Assignment2 lhs.defMap  =  Map.adjust (+1) @dest1.self (Map.adjust (+1) @dest2.self @lhs.defMap)
 
 SEM Variable
-  | Unembedded  lhs.useMap  =  Map.adjust (+1) @loc.trf @lhs.useMap
+  | Unembedded  lhs.useMap  =  Map.adjust (+ @lhs.multi) @loc.trf @lhs.useMap
 
 SEM Statement
   | Assignment  (lhs.trf, lhs.env)  =  if @source.isntCall
                                           && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
                                                            (Map.lookup @dest.self @lhs.allUseMap)
                                                            (isSimpleValue @source.trf)
-                                        then ( Statement_Comment [" (inlined)" ++ show @source.trf ]
+                                        then ( Statement_Comment [" (inlined)" ++ show @dest.self ++ " = " ++ show @source.trf ]
                                              , Map.insert @dest.self @source.trf @lhs.env 
                                              )
                                         else ( Statement_Assignment @dest.self @source.trf
@@ -90,7 +108,7 @@ SEM Statement
 
                                              
 SEM Value
-  | Var          lhs.trf  = maybe (Value_Var @var.self) id (Map.lookup @var.self @lhs.env)
+  | Var          lhs.trf  =  Map.findWithDefault (Value_Var @var.self) @var.self @lhs.env
   | Call         lhs.isntCall  =  False
   | * - Call     lhs.isntCall  =  True
 
@@ -104,6 +122,7 @@ isSimpleVariable _                             = True
 
 isSimpleValue :: Value -> Bool
 isSimpleValue (Value_Alloc _ _) = False
+isSimpleValue (Value_Offset _ _)= False
 isSimpleValue (Value_Var v)     = isSimpleVariable v
 isSimpleValue _                 = True
 
