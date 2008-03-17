@@ -138,6 +138,17 @@ SEM GrBind
 
 %%[8
 
+ATTR GrExpr GrVal [ | | hasEmptyBody : {Bool} ]
+
+SEM GrExpr
+  | Unit    lhs.hasEmptyBody = @val.hasEmptyBody
+  | *-Unit  lhs.hasEmptyBody = False
+
+SEM GrVal
+  | Empty   lhs.hasEmptyBody = True
+  | *-Empty lhs.hasEmptyBody = False
+
+
 
 ATTR AllGrExpr [ functionName : HsName | | ]
 
@@ -166,17 +177,19 @@ SEM GrModule
 
 
 SEM GrBind
-  | Bind   lhs.functions =  [ Function_Function
-                                -- name
-                                @nm
-                                @expr.tailJumps
-                                -- parameters
-                                @argNmL
-                                -- locals
-                                @loc.locals
-                                -- body
-                                (@expr.stats ++ [@loc.return])   
-                            ]
+  | Bind   lhs.functions =  if @expr.hasEmptyBody
+                            then []
+                            else [ Function_Function
+                                   -- name
+                                   @nm
+                                   @expr.tailJumps
+                                   -- parameters
+                                   @argNmL
+                                   -- locals
+                                   @loc.locals
+                                   -- body
+                                   (@expr.stats ++ [@loc.return])   
+                                 ]
 
           expr . numberParameters = length @argNmL
           loc  . locals  = filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet)

@@ -1,3 +1,6 @@
+This transformation is obsolete, because LateInline already drops functions
+that are never called.
+
 This transformation drops all not directly called functions. Because only
 direct calls are counted (not the implicit ones through F, P and A thunks), 
 this should be used after inlining eval and apply.
@@ -11,8 +14,6 @@ which depends on the abstract interpretation.
 For example, packedStringHead is not needed when a packed string is tranformed
 to a string, but only counted afterwards.
 
-TODO: This transformation is currently broken, 
-since DropDeadBindings removed functions that are still called
 
 
 %%[0

@@ -129,6 +129,22 @@ SEM GrPatLam [ | |  names: {GrVarL} ]
   | * - VarNode          lhs  .  names  =  error "SplitFetch.ag: attempt to get names from a non-VarNode"
 
 
+ATTR GrVal [ | | mbValName : {Maybe HsName} ]
+
+SEM GrVal
+  | Var      lhs.mbValName = Just @nm
+  | *-Var    lhs.mbValName = Nothing
+
+
+ATTR GrExpr [ | | hasCase : {Maybe HsName} ]
+
+SEM GrExpr
+  | Case         lhs.hasCase = @val.mbValName
+  | Seq          lhs.hasCase = let mbExpr = @expr.hasCase
+                               in  maybe @body.hasCase Just @expr.hasCase
+  | * - Case Seq lhs.hasCase = Nothing
+
+
 ATTR AllGrExpr [ floatingFetches : FetchEnv | | ]
 
 SEM GrBind
@@ -139,12 +155,14 @@ SEM GrExpr
                                     ; let buildFetchInfo (GrVar_Var v) r n  =  (v, n) : r (n+1)
                                           buildFetchInfo _             r n  =           r (n+1)
                                           fetches@(fetch0:fetch1n) = foldr buildFetchInfo (const []) @pat.names 0
+                                          newName   = Map.findWithDefault p (getNr p) @lhs.renameMap
                                     ; let mbTag     = checkSingleTag @lhs.hptMap p
+                                          f (v,o)   = (v, GrExpr_FetchField newName o @pat.mbTag)
                                           g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)))
-                                          g (v,o)   = (v, GrExpr_FetchField p o mbTag)
-                                          f (v,o)   = (v, GrExpr_FetchField p o @pat.mbTag)
+                                          g (v,o)   = (v, GrExpr_FetchField newName o mbTag)
                                     ; let res = if      isJust @pat.mbTag then (map f fetches, Nothing                          )
                                                 else if isJust mbTag      then (map g fetches, Nothing                          )
+                                                else if maybe True (/=fst fetch0) @body.hasCase then (map f fetches, Nothing    )
                                                 else                           ([f fetch0]   , Just (fst fetch0, map f fetch1n) )
                                     ; return $ -- trace ("fetch " ++ show p ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) 
                                                res
