@@ -103,7 +103,7 @@ SEM SilModule
   | SilModule   functions.nextCaseLab = 1
 
 SEM Statement
-  | Switch If   loc.totalEndLab  = @lhs.nextCaseLab + @body.length - 1
+  | Switch      loc.totalEndLab  = @lhs.nextCaseLab + @body.length - 1
                 body.myEndLab    = @lhs.nextCaseLab
                 body.nextCaseLab = @loc.totalEndLab + 1
                 body.totalEndLab = @loc.totalEndLab
@@ -170,16 +170,14 @@ SEM Statement
                                 @source.loadInA >-< @dest1.storeFromA >-< @dest2.storeFromA
   | Switch      loc.prettyS   = ";" >#< "SWITCH" >#< @scrutinee.pretty >-<
                                 @scrutinee.loadInA >-< @body.prettyS
-  | If          loc.prettyS   = ";" >#< "IF" >#< @scrutinee.pretty >-<
-                                @scrutinee.loadInA 
-                                >-< instruction2 "andl" (immediate (1::Int)) eax
-                                >-< @body.prettyS
+  | IfThenElse  loc.prettyS   = ";" >#< "IF" >#< @condition.pretty >-<
+                                @condition.loadInA >-< @thenpart.prettyS >-< @elsepart.prettyS
   | Call Jump   loc.prettyS   = ";" >#< @loc.pretty >-<
                                 instruction1 "jmp" (hsnShowAlphanumeric @name)
   | Return      loc.prettyS   = ";" >#< @loc.pretty >-<
                                 instruction1 "jmp" (dereference (indirectOffset (@retdiff *(-4)) esp))
   | Label       loc.prettyS   = label @name
-  | Smart       loc.prettyS   = error "Statement_Smart found while generating S"
+  | Smart       loc.prettyS   = error "Silly.PrettyS: Statement_Smart found"
 
 
 
@@ -209,8 +207,6 @@ SEM Values
 
 SEM Value
   | Con         loc.prettyS   = @con.prettyS
-  | UnboxCon    loc.prettyS   = "((" >#< @con.prettyS >#< ")<<1)|1 "
-  | BoxVar      loc.prettyS   = "(" >#< @var.prettyS >#< ")>>1 "
   | Var         loc.prettyS   = @var.prettyS
   | Offset      loc.prettyS   = @var.prettyS >|< "+" ++ show @off
   | Cast        loc.prettyS   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyS >|< "))"
@@ -251,11 +247,6 @@ SEM Variable
 SEM Value
   | Var         lhs.loadInA    =  @var.loadInA
   | Con         lhs.loadInA    =  @con.loadInA
-  | BoxVar      lhs.loadInA    =  @var.loadInA
-                                  >-< instruction1 "shrl" eax
-  | UnboxCon    lhs.loadInA    =  @con.loadInA
-                                  >-< instruction2 "addl" eax eax
-                                  >-< instruction2 "orl" (immediate (1::Int)) eax
   | Alloc       lhs.loadInA    =  let n = @size * 4
                                   in  instruction2 "movl" (immediate n) (indirect esp)
                                       >-< instruction1 "call" "_GC_malloc"
@@ -344,7 +335,7 @@ SEM Statement
   | Assignment  loc.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Assignment2 loc.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Switch      loc.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
-  | If          loc.pretty = "IF"     >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
+  | IfThenElse  loc.pretty = "IF"     >#< @condition.pretty >-< "{" >-< @thenpart.pretty >-< "}" >-< "{" >-< @elsepart.pretty >-< "}"
   | Call        loc.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Jump        loc.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
   | Return      loc.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
@@ -376,8 +367,6 @@ SEM Variable
 
 SEM Value
   | Con            loc.pretty = text "CON" >#< @con.pretty
-  | UnboxCon       loc.pretty = text "UNBOXCON" >#< @con.pretty
-  | BoxVar         loc.pretty = text "BOXVAR" >#< @var.pretty
   | Offset         loc.pretty = @var.pretty >#< "+" >#< show @off
   | Alloc          loc.pretty = text "ALLOC" >#< show @size
   | Call           loc.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
@@ -578,13 +567,6 @@ switch optDef scrutinee body
    >-< indent 4 body
    >-< ppWhen optDef (indent 4 (caseDefault scrutinee))
    >-< "}"
-
-ifstat ::  PP_Doc -> PP_Doc -> PP_Doc
-ifstat scrutinee body
- = "if ("
-   >|< scrutinee
-   >|< " & 1)"
-   >-< body
 
 alternative :: PP_Doc -> PP_Doc -> PP_Doc
 alternative when body

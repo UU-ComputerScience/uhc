@@ -58,18 +58,9 @@ optTraceAssign = False
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
          [ | | prettyC USE {>-<} {empty} : PP_Doc ]
 
-ATTR Alternatives [ | | prettyTE : PP_Doc   prettyE : PP_Doc ]
-ATTR Alternative  [ | | prettyTE : PP_Doc ]
-
 ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
 
-ATTR Constant [ | | isAny : {Bool} ]
 ATTR Values [ | | prettyCs : {[PP_Doc]} ]
-
-
-ATTR Alternatives [ | | hasAny USE {||} {False} : {Bool} ]
-ATTR Alternative  [ | | hasAny : {Bool} ]
-
 
 ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
 
@@ -142,28 +133,16 @@ SEM Statement
   | Comment     lhs.prettyC   = comment @comment
   | Assignment  lhs.prettyC   = assignment  @dest.prettyC  @source.prettyC
   | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC
-  | Switch      lhs.prettyC   = switch (@lhs.optCaseDefault && not @body.hasAny) @lhs.functionname @scrutinee.prettyC @body.prettyC
-  | If          lhs.prettyC   = ifstat                     @scrutinee.prettyC @body.prettyTE
+  | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
   | Return      lhs.prettyC   = returnFromSillyFunction @retdiff @lhs.optOwn
   | Label       lhs.prettyC   = label @name
-  | Smart       lhs.prettyC   = error "Statement_Smart found while generating C"
-
-
+  | Smart       lhs.prettyC   = error "Silly.PrettyC: Statement_Smart"
+  | IfThenElse  lhs.prettyC   = error "Silly.PrettyC: Statement_IfThenElse"
 
 SEM Alternative
-  | Alternative lhs.prettyC   = if @when.isAny 
-                                 then defaultAlternative        @body.prettyC
-                                 else alternative @when.prettyC @body.prettyC
-                lhs.prettyTE  = (text "{" >|< indent 4 @body.prettyC) >-< text "}"
-
-SEM Alternatives
-  | Nil         lhs.prettyTE  = error "nil case in prettyTE"
-  | Cons        lhs.prettyTE  = @hd.prettyTE >-< text "else" >-< @tl.prettyE
-  | Nil         lhs.prettyE   = error "nil case in prettyE"
-  | Cons        lhs.prettyE   = @hd.prettyTE
-    
+  | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
 
 SEM Values
   | Nil         lhs.prettyCs  = []
@@ -171,8 +150,6 @@ SEM Values
 
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
-  | UnboxCon    lhs.prettyC   = "((" >#< @con.prettyC >#< ")<<1)|1 "
-  | BoxVar      lhs.prettyC   = "(" >#< @var.prettyC >#< ")>>1 "
   | Var         lhs.prettyC   = @var.prettyC
   | Offset      lhs.prettyC   = @var.prettyC >|< "+" ++ show @off
   | Cast        lhs.prettyC   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyC >|< "))"
@@ -186,14 +163,6 @@ SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
   | LiteralStr  lhs.prettyC   = "((GrWord)" >|< text (show @value) >|< ")"
   | Alias       lhs.prettyC   = text @name
-
-SEM Constant
-  | LiteralInt  lhs.isAny     = False
-  | LiteralStr  lhs.isAny     = False
-  | Alias       lhs.isAny     = @name == "ANY"
-
-SEM Alternative
-  | Alternative lhs.hasAny    = @when.isAny
 
 SEM Variable
   | Global
@@ -422,12 +391,5 @@ alternative when body
    >#< when
    >|< ":"
    >-< indent 4 (body >-< "break;")
-
-defaultAlternative :: PP_Doc -> PP_Doc
-defaultAlternative body
- = "default"
-   >|< ":"
-   >-< indent 4 (body >-< "break;")
-
 
 %%]

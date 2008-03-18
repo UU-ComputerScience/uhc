@@ -248,7 +248,11 @@ SEM Statement
                                   concat (Data.List.intersperse ", " (replicate (length @loc.castVars) "%d")) ++ " )\n"    
                                
   | Comment     lhs.llvmCode = [LLVMStatement_Comment @comment]
-  
+
+{-
+    "If" is an obsolete statement form. 
+    To be removed later, but kept as inspiration for the yet to be implemented IfThenElse statement
+
   | If          lhs.llvmCode = @scrutinee.llvmCode ++ @loc.scrutToIntCode ++ @loc.scrutUnboxCode ++ @loc.cmpCode ++ 
                                [ LLVMStatement_BranchIf @loc.cmpVar @loc.fstLabel @loc.sndLabel ] ++                               
                                @loc.altCode ++
@@ -286,6 +290,7 @@ SEM Statement
                                
                 loc.(uniqNr4, resumeLabel) =
                                newFresh @loc.uniqNr3 Label              
+-}
 
   | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
                                [ LLVMStatement_Switch @scrutinee.llvmVar @loc.defaultLabel @loc.targets ] ++ 
@@ -317,9 +322,11 @@ SEM Statement
   
   | Return      lhs.llvmCode = [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]  
                                     
-  | Smart       lhs.llvmCode = error "Smart should be generated for ASM only"
+  | Smart       lhs.llvmCode = error "Silly.ToLLVM: Smart should occur only in intermediate Silly"
                                     
-  | * - Assignment Assignment2 Call Comment If Jump Label Return Smart Switch
+  | IfThenElse  lhs.llvmCode = error "Silly.ToLLVM: IfThenElse not yet implemented"
+
+  | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
                 lhs.llvmCode = error "Unimplemented Statement"
 
 SEM Alternatives
@@ -364,22 +371,6 @@ SEM Value
                                assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
 
   {-|
-    Perform the required arithmic (>>1) on the inherited llvmVar
-  -} 
-  | BoxVar      lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @var.llvmCode ++ @loc.loadCode ++ @loc.llvmCode
-                                               
-                (loc.uniqSeed,var.gUniq) =
-                               mkNewLevUID @lhs.gUniq 
-     
-                loc.(uniqNr1,loadedVar,loadCode) =
-                               load2value @loc.uniqSeed @var.llvmVar     
-                               
-                loc.(uniqNr2,llvmVar,llvmCode) =
-                               assign2var @loc.uniqNr1 ( LLVMExpression_BinOp SHR @loc.loadedVar (Constant 1 @lhs.intType)
-                                                       , getType @loc.loadedVar )                                    
-  
-  {-|
     For a call we need to do the following steps:
       * Cast the parameter values to integers
       * Assign the result of the call to a fresh variable
@@ -419,22 +410,6 @@ SEM Value
                 lhs.llvmCode = []
   
   {-|
-    Perform the required arithmic ((<<1) | 0x01) on the inherited llvmVar
-  -} 
-  | UnboxCon    lhs.llvmVar  = @loc.orVar
-                lhs.llvmCode = @con.llvmCode ++ @loc.shlCode ++ @loc.orCode                      
-                                               
-                loc.uniqSeed  : {UID}
-                (loc.uniqSeed,con.gUniq) =
-                               mkNewLevUID @lhs.gUniq                            
-                loc.(uniqNr1,shlVar,shlCode) =
-                               assign2var @loc.uniqSeed ( LLVMExpression_BinOp SHL @con.llvmVar (Constant 1 @lhs.intType)
-                                                        , getType @con.llvmVar)
-                loc.(uniqNr2,orVar,orCode) =
-                               assign2var @loc.uniqNr1 ( LLVMExpression_BinOp OR @loc.shlVar (Constant 1 @lhs.intType)
-                                                       , getType @loc.shlVar )                                        
-
-  {-|
     The llvmVar inherited from the @var child needs to be loaded to an integer value
   -}                                                                               
   | Var         lhs.llvmVar  = @loc.llvmVar
@@ -448,7 +423,7 @@ SEM Value
                                then load @loc.uniqSeed @var.llvmVar
                                else (@loc.uniqSeed,@var.llvmVar,[])                              
                 
-  | * - Alloc BoxVar Call Con Var UnboxCon
+  | * - Alloc Call Con Var
                 lhs.llvmVar  = error $ "No Label, Cast or Offset Value expected"
                 lhs.llvmCode = error $ "No Label, Cast or Offset Value expected"       
  

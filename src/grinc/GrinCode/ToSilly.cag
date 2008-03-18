@@ -6,24 +6,20 @@
 %%[8 hs module {%{GRIN}GrinCode.ToSilly} export(grin2silly)
 %%]
 
-%%[8 hs import(EH.Util.Pretty, {%{GRIN}GRINCCommon} hiding (Variable(..)), Data.List((\\)), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Config})
-%%]
-%%[8 hs import({%{GRIN}Silly})
-%%]
-%%[8 hs import(EH.Util.Utils,{%{EH}Base.Common} )
-%%]
-%%[8 hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
-%%]
-%%[8 hs import({%{EH}Base.Opts})
-%%]
 %%[8 import({GrinCode/AbsSyn})
 %%]
 %%[8 import({GrinCode/LastExpr})
 %%]
+
 %%[8 hs import(Debug.Trace)
 %%]
-
-%%[20 hs import(qualified Data.Set as Set, Data.Bits)
+%%[8 hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%]
+%%[8 hs import(EH.Util.Pretty, EH.Util.Utils)
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%]
+%%[8 hs import({%{GRIN}GRINCCommon} hiding (Variable(..)), {%{GRIN}Config}, {%{GRIN}Silly})
 %%]
 
 %%[8
@@ -69,70 +65,14 @@ ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
 
 ATTR GrBindL GrBind GrExpr GrAlt GrAltL GrGlobal GrGlobalL [ maxConstrParameters : {Int} | | ]
 
-ATTR GrTagL [ | | mbOnlyTagValue : {Maybe Value}  isEmpty : {Bool} ]
-
-ATTR GrAlt GrAltL [ | | hasAnies USE {||} {False} : {Bool} ]
-ATTR GrPatAlt GrTag  [ | | isAny: {Bool} ]
-ATTR GrTag GrVal  [ | | isUnboxed: {Bool} ]
-
-SEM GrTagL
-  | Nil            lhs . isEmpty        = True
-                   lhs . mbOnlyTagValue = Nothing
-  | Cons           lhs . isEmpty        = False
-                   lhs . mbOnlyTagValue = if @tl.isEmpty
-                                           then Just @hd.value
-                                           else Nothing
-
-SEM GrAlt
-  | Alt            loc . hasAnies = @pat.isAny
- 
-SEM GrTag
-  | Any            lhs . isAny = True
-  | * - Any        lhs . isAny = False
-  | Unboxed        lhs . isUnboxed = True
-  | * - Unboxed    lhs . isUnboxed = False
-
-SEM GrVal
-  | Node           lhs . isUnboxed = @tag.isUnboxed
-  | * - Node       lhs . isUnboxed = False
-
-SEM GrPatAlt
-  | Tag            lhs . isAny = @tag.isAny
-  | * - Tag        lhs . isAny = False
-  
-
 ATTR GrValL [ | | length : {Int} ]
+
 SEM GrValL
   | Nil lhs.length = 0
   | Cons lhs.length = 1 + @tl.length
 
 
-ATTR GrBind GrBindL GrExpr GrAlt GrAltL
-         [  |  retNr : {Int} |  ]
-
-
-
-ATTR GrExpr GrAltL GrAlt
-  [ realNodes: {[HsName]} | | ]
-  
-ATTR GrExpr
-  [  | | mbExtraRealNode: {Maybe HsName} ]
-
-
-SEM GrExpr
-  | FetchField      lhs.mbExtraRealNode = if  @offset==0
-                                           then Just @nm
-                                           else Nothing
-  | * - FetchField  lhs.mbExtraRealNode = Nothing
-  
-SEM GrExpr
-  | Seq             body.realNodes      = maybe id (:) @expr.mbExtraRealNode $ @lhs.realNodes
-
-SEM GrBind
-  | Bind            expr.realNodes      = []
-
-
-
+ATTR GrBind GrBindL GrExpr GrAlt GrAltL [  |  retNr : {Int} |  ]
 
 %%]
 
@@ -206,24 +146,14 @@ SEM GrExpr
 
  | UpdateUnit
            loc.name   = mkVar @nm
-           loc.overwr = if @val.isUnboxed
-                          -- Overwriting the parameter that is an pointer
-                          -- with an integer saves us a compile time cast
-                          -- but it introduces a bug in LLVM
-                          --then [ Statement_Assignment @loc.name (Value_UnboxCon (head(tail @val.values))) ]
-                          then []
-                          else []
-                                
            lhs.stats   = if @isLastExpr
                           then internal2 "Update" @loc.name @val.values
-                               ++ @loc.overwr
                                ++ yielding "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                           else 
                                []
                                -- ++ internal2 "Update" @loc.name @val.values
                                -- ++ internal1 "Unit" @lhs.targets @val.values 
                                ++ internal3 "UpdateUnit" @loc.name @lhs.targets @val.values
-                               ++ @loc.overwr                         
 
  | Unit    lhs.stats  = if @isLastExpr
                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
@@ -260,8 +190,6 @@ SEM GrExpr
                                      (map (arrayVariab (mkVar @dst)) [0..n])
                                      (map (arrayValue  (mkVar @src)) [0..n])
 
-
-
  | FetchNode
            lhs.stats  = error "FetchNode found while generating Silly"
            lhs.localsSet= error "FetchNode found while generating Silly"
@@ -273,23 +201,13 @@ SEM GrExpr
                         in    
                         [ Statement_Comment ["Fetch"]
                         , Statement_Assignment (mkVar ph)
-                                               (if   @offset==1 && maybe False (==GrTag_Unboxed) @mbTag && not (elem @nm @lhs.realNodes)
-                                                then Value_BoxVar (mkVar @nm)
-                                                else arrayValue (mkVar @nm) @offset
-                                               )
+                                               (arrayValue (mkVar @nm) @offset)
                         ]
            lhs.localsSet = Set.fromList @lhs.targets
 
  | Case    lhs.stats  = [ Statement_Comment ["Case"]
-                        , if False && @altL.hasAnies
-
-                           then Statement_If     @val.value
-
-                                                 @altL.alternatives
-
-                           else Statement_Switch @val.value
-
-                                                 @altL.alternatives
+                        , Statement_Switch @val.value
+                                           @altL.alternatives
                         ]
                         
            lhs.localsSet = Set.union (Set.fromList @lhs.targets) @altL.localsSet
@@ -413,7 +331,7 @@ SEM GrTag
  | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
  | Any     lhs.value    = error "GrTag:Any value"
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
- | Any     lhs.constant = Constant_Alias "ANY"
+ | Any     lhs.constant = error "GrTag:Any constant"
 
  | * - Con Fun App PApp Hole Unboxed Any
            lhs.constant = error "GrTag:other constant"
@@ -519,7 +437,8 @@ ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set Gr
 ATTR GrTag [ | | self : SELF ]
 
 SEM GrTag
-  | *   lhs.genAllTags = Set.singleton @loc.self
+  | Any    lhs.genAllTags = Set.empty
+  | *-Any  lhs.genAllTags = Set.singleton @loc.self
 
 %%]
 
@@ -594,7 +513,7 @@ isRealVar _             = True
 
 -- n1 is the number of parameters of the tag
 -- n2 is the maximum number of parameters of all constructorfunctions
--- tags other than C may be overwritten later with a C-tag, which might have more parameters.
+-- F-tags and A-tags may be overwritten later with a C-tag or a P-tag, which might have more parameters.
 -- We anticipate here for the maximum number of parameters.
 -- Obvious improvement: do not take the global maximum, but only the maximum over the constructors
 -- that are actually possible for this function.
@@ -625,12 +544,10 @@ storeManaged =
 store :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
 store tp v n1 n2 vs
        =  let cat = tagcat vs
-          in  if    cat=='U'
-              then [Statement_Assignment v (Value_UnboxCon (head (tail vs)))]
-              else Statement_Assignment v (allocate cat tp n1 n2)
-                   : zipWith Statement_Assignment
-                             (map (arrayVariab v) [0..])
-                             vs
+          in  Statement_Assignment v (allocate cat tp n1 n2)
+              : zipWith Statement_Assignment
+                        (map (arrayVariab v) [0..])
+                        vs
 
 arrayValue :: Variable -> Int -> Value
 arrayValue a i = Value_Var (Variable_Subs a i)
@@ -671,7 +588,7 @@ showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"
 showGrTag (GrTag_Hole) = "HOLE"
 showGrTag (GrTag_Unboxed) = "UNBOXED"
-showGrTag (GrTag_Any    ) = "ANY"
+showGrTag (GrTag_Any    ) = "GrTag:Any"
 showGrTag (GrTag_World    ) = "GrTag:World"
 
 %%]
