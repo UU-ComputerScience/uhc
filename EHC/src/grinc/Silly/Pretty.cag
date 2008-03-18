@@ -58,7 +58,7 @@ SEM Statement
   | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Assignment2 lhs.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
-  | If          lhs.pretty = "IF"     >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
+  | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< @thenpart.pretty >-< "}" >-< "ELSE {" >-< @elsepart.pretty >-< "}"
   | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
   | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
@@ -90,8 +90,6 @@ SEM Variable
 
 SEM Value
   | Con            lhs.pretty = text "CON" >#< @con.pretty
-  | UnboxCon       lhs.pretty = text "UNBOXCON" >#< @con.pretty
-  | BoxVar         lhs.pretty = text "BOXVAR" >#< @var.pretty
   | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
   | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
   | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"

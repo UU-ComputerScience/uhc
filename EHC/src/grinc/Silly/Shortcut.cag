@@ -73,7 +73,7 @@ SEM Function
 -- it makes uses in a Subs context count as 2, thus making is non-virtualizable for non-simple values
 
 SEM Value
-  | BoxVar Var  var.multi = 1
+  | Var         var.multi = 1
   | Offset      var.multi = 2
 
 SEM Variable

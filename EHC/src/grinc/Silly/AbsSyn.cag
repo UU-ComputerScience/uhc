@@ -34,8 +34,9 @@ DATA Statement
   |  Assignment2 dest1      : Variable
                  dest2      : Variable
                  source     : Value
-  |  If          scrutinee  : Value
-                 body       : Alternatives
+  |  IfThenElse  condition  : Value
+                 thenpart   : Statement
+                 elsepart   : Statement
   |  Switch      scrutinee  : Value
                  body       : Alternatives
   |  Call        name       : {HsName}
@@ -74,8 +75,6 @@ DATA Variable
 
 DATA Value
   |  Con         con        : Constant
-  |  UnboxCon    con        : Value
-  |  BoxVar      var        : Variable
   |  Var         var        : Variable
   |  Offset      var        : Variable
                  off        : {Int}
