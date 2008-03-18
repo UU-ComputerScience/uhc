@@ -132,6 +132,8 @@ data EHCOpts
       ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
       ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
       ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
+      
+      ,  ehcUseInplace        ::  Bool              -- use inplace runtime libraries
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
@@ -209,6 +211,8 @@ defaultEHCOpts
       ,  ehcOptFullProgAnalysis =   False
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptDumpGrinStages   =   False
+      
+      ,  ehcUseInplace          =   True
 %%]]
 %%[[8
       ,  ehcOptEmitBytecode     =   False
@@ -307,6 +311,8 @@ ehcCmdLineOpts
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
      -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
      -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
+     
+     , Option ""    ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
 %%]]
      ]
 %%]
@@ -449,6 +455,8 @@ ehcCmdLineOpts
          oCPP            o =  o { ehcOptCPP                     = True    }
          oLimitTyBetaRed o l = o { ehcOptTyBetaRedCutOffAt = l }
          oLimitCtxtRed   o l = o { ehcOptPrfCutOffAt       = l }
+         
+         oUseInplace     o b = o { ehcUseInplace = b }
 %%]]
 %%]
 

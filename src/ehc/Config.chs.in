@@ -5,16 +5,13 @@
 %%[1 module {%{EH}Config} export( Version(..), version, verNumeric, verDist, verInfo )
 %%]
 
-%%[8 import({%{EH}ConfigDefines}) export(module {%{EH}ConfigDefines})
+%%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
 %%]
 
 %%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
 %%[8 export(libnamesGcc, libnamesGccPerVariant, mbSuffixExec)
-%%]
-
-%%[99 export(fileprefixInstall)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,18 +66,20 @@ verInfo v = verProg v ++ verDist v ++ ", " ++ verSvn v
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export ( fileprefixInplaceInstall, fileprefixInplace )
+%%[8 export ( fileprefixInplaceInstall, fileprefixInplace, fileprefixInstall, selectFileprefixInstall )
 fileprefixInplaceInstall :: String
 fileprefixInplaceInstall = "@INPLACE_PREFIX@/"
 
 fileprefixInplace :: String
 fileprefixInplace = "@INPLACE_TOP@/"
-%%]
 
-
-%%[99
 fileprefixInstall :: String
 fileprefixInstall = "@INSTALL_PREFIX@/"
+
+selectFileprefixInstall :: EHCOpts -> String
+selectFileprefixInstall opts
+  | ehcUseInplace opts = fileprefixInplaceInstall
+  | otherwise          = fileprefixInstall
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
