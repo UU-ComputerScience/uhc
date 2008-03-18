@@ -99,6 +99,30 @@ mkGrTagAnn = GrTagAnn
 emptyGrTagAnn = mkGrTagAnn 0 0
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alternative categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[8 hs export(GrAltAnn(..))
+
+-- Annotation for Grin Alternatives
+--   Normal:  this alternative has classic semantics
+--   Ident:   this alternative just returns the scrutinee, but has classic semantics
+--   Reenter: this alternative returns a value which has to be scrutinized again against the other alternatives
+
+data GrAltAnn
+  = GrAltAnnNormal
+  | GrAltAnnIdent
+  | GrAltAnnReenter
+  deriving (Eq,Ord,Show)
+
+%%]
+
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Misc info passed to backend
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -193,7 +193,7 @@ SEM GrAlt
          (expr.uniq, loc.renameList, loc.newExprInfo) = maybe (@lhs.uniq, [], []) id @mbExprInfo
          expr  .  renameMap  =  Map.union (Map.fromList @loc.renameList) @lhs.renameMap
          lhs   .  newVars    =  @loc.renameList
-         lhs   .  grTrf      =  GrAlt_Alt @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
+         lhs   .  grTrf      =  GrAlt_Alt @ann @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
 %%]
 
 %%[8.lastFetch
