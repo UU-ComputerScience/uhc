@@ -223,6 +223,44 @@ else
 fi
 AC_SUBST(GCC_CMD,$gccCmd)
 
+AC_RUN_IFELSE([AC_LANG_PROGRAM(
+[[#include <stdio.h>]], [[
+FILE *fp;
+fp = fopen("conftest.cc", "w");
+if (fp == 0) return(1);
+fprintf(fp, "cc_major_version=%d;cc_minor_version=%d;cc_patch_version=%d",
+__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+fclose(fp);
+]])],
+[eval `cat conftest.cc`],
+[cc_major_version=no],
+)
+  
+AC_MSG_CHECKING([Version of $CC])
+if test "$cc_major_version" = "no"; then
+  AC_MSG_RESULT([no])
+  AC_MSG_FAILURE([Requires that $CC is usable], [1])
+else
+  cc_version="$cc_major_version.$cc_minor_version.$cc_patch_version"
+  AC_MSG_RESULT([$cc_version])
+fi
+
+case $cc_version in
+  4.1.3)
+    cc_std_flag="-std=c99"
+    ;;
+  4.0.1)
+    cc_std_flag=""
+    ;;
+  3.4.4)
+    cc_std_flag="-std=gnu99"
+    ;;
+  *)
+    cc_std_flag=""
+    ;;
+esac
+AC_SUBST(CC_STD_FLAG,$cc_std_flag)
+
 # cpp
 AC_ARG_WITH(cpp,
 [AC_HELP_STRING([--with-cpp=<cpp preprocessor>],

@@ -395,6 +395,9 @@ ehcCmdLineOpts
                                              -> o { ehcOptEmitLLVM         = True
                                                   , ehcOptEmitExecLLVM     = True
                                                   , ehcOptFullProgAnalysis = True
+                                                  -- disable next options, otherwise
+                                                  -- gcc will be invoked
+                                                  , ehcOptEmitExecBytecode = False 
                                                   }                   
 
                                 _            -> o

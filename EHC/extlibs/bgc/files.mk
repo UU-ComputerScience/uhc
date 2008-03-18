@@ -20,6 +20,7 @@ EHC_RTS_DPDS_EXTLIBS			+= $(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(E
 
 # building location
 BLDABS_EXTLIBS_BGC_PREFIX		:= $(BLDABS_PREFIX)bgc/
+BLDABS_EXTLIBS_BGC_NONTHREAD_PREFIX		:= $(BLDABS_PREFIX)bgc-non-threaded/
 
 # install location
 INSABS_EXTLIBS_BGC_PREFIX		:= $(INSABS_PREFIX)
@@ -29,7 +30,8 @@ INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX	:= $(INSABS_PREFIX)non-threaded/
 LIBUTIL_DIST_FILES				:= $(EXTLIBS_BGC_MKF) $(EXTLIBS_BGC_ARCHIVE)
 
 # target
-lib-bgc: $(EXTLIBS_BGC_INS_FLAG)
+#lib-bgc: $(EXTLIBS_BGC_INS_FLAG) $(EXTLIBS_BGC_INS_NONTHREAD_FLAG)
+lib-bgc: $(EXTLIBS_BGC_INS_NONTHREAD_FLAG)
 
 # rules
 $(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
@@ -37,11 +39,14 @@ $(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
 	cd $(BLDABS_EXTLIBS_BGC_PREFIX) && \
 	tar xfz $(EXTLIBS_BGC_ARCHIVE) && \
 	cd $(EXTLIBS_BGC_NAME) && \
-	./configure --prefix=$(INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX) --disable-threads && \
+	./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
 	make && \
 	make install && \
-	make clean && \
-	./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
+	mkdir -p $(BLDABS_EXTLIBS_BGC_NONTHREAD_PREFIX) && \
+	cd $(BLDABS_EXTLIBS_BGC_NONTHREAD_PREFIX) && \
+	tar xfz $(EXTLIBS_BGC_ARCHIVE) && \
+	cd $(EXTLIBS_BGC_NAME) && \
+	./configure --prefix=$(INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX) --disable-threads && \
 	make && \
 	make install && \
 	touch $@

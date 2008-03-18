@@ -689,6 +689,14 @@ uuagcCmd
 UUAGC_CMD
 gccCmd
 GCC_CMD
+CC
+CFLAGS
+LDFLAGS
+CPPFLAGS
+ac_ct_CC
+EXEEXT
+OBJEXT
+CC_STD_FLAG
 cppCmd
 CPP_CMD
 llvmAs
@@ -699,13 +707,6 @@ llvmLd
 LLVM_LD_CMD
 llvmLlc
 LLVM_LLC_CMD
-CC
-CFLAGS
-LDFLAGS
-CPPFLAGS
-ac_ct_CC
-EXEEXT
-OBJEXT
 CPP
 GREP
 EGREP
@@ -2405,321 +2406,6 @@ fi
 GCC_CMD=$gccCmd
 
 
-# cpp
-
-# Check whether --with-cpp was given.
-if test "${with_cpp+set}" = set; then
-  withval=$with_cpp;  cppCmd="$withval"
-else
-
-  if test "$CPP" = ""; then
-    # Extract the first word of "cpp", so it can be a program name with args.
-set dummy cpp; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_cppCmd+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $cppCmd in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_cppCmd="$cppCmd" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_cppCmd="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-cppCmd=$ac_cv_path_cppCmd
-if test -n "$cppCmd"; then
-  { echo "$as_me:$LINENO: result: $cppCmd" >&5
-echo "${ECHO_T}$cppCmd" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  else
-    cppCmd=$CPP
-  fi
-
-
-fi
-
-if test "$cppCmd" = "no"; then
-  cppCmd=""
-  cppExists="no"
-else
-  cppExists="yes"
-  cppVersion=`$cppCmd --version`
-fi
-CPP_CMD=$cppCmd
-
-
-# LLVM Assembler
-
-# Check whether --with-llvm-as was given.
-if test "${with_llvm_as+set}" = set; then
-  withval=$with_llvm_as;  llvmAs="$withval"
-else
-
-  if test "$LLVM_AS" = ""; then
-    # Extract the first word of "llvm-as", so it can be a program name with args.
-set dummy llvm-as; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_llvmAs+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $llvmAs in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_llvmAs="$llvmAs" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_llvmAs="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-llvmAs=$ac_cv_path_llvmAs
-if test -n "$llvmAs"; then
-  { echo "$as_me:$LINENO: result: $llvmAs" >&5
-echo "${ECHO_T}$llvmAs" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  else
-    llvmAs=$LLVM_AS
-  fi
-
-
-fi
-
-LLVM_AS_CMD=$llvmAs
-
-
-# LLVM Optimizer
-
-# Check whether --with-opt was given.
-if test "${with_opt+set}" = set; then
-  withval=$with_opt;  llvmOpt="$withval"
-else
-
-  if test "$LLVM_OPT" = ""; then
-    # Extract the first word of "opt", so it can be a program name with args.
-set dummy opt; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_llvmOpt+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $llvmOpt in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_llvmOpt="$llvmOpt" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_llvmOpt="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-llvmOpt=$ac_cv_path_llvmOpt
-if test -n "$llvmOpt"; then
-  { echo "$as_me:$LINENO: result: $llvmOpt" >&5
-echo "${ECHO_T}$llvmOpt" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  else
-    llvmOpt=$LLVM_OPT
-  fi
-
-
-fi
-
-LLVM_OPT_CMD=$llvmOpt
-
-
-# LLVM Linker
-
-# Check whether --with-llvm-ld was given.
-if test "${with_llvm_ld+set}" = set; then
-  withval=$with_llvm_ld;  llvmLd="$withval"
-else
-
-  if test "$LLVM_LD" = ""; then
-    # Extract the first word of "llvm-ld", so it can be a program name with args.
-set dummy llvm-ld; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_llvmLd+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $llvmLd in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_llvmLd="$llvmLd" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_llvmLd="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-llvmLd=$ac_cv_path_llvmLd
-if test -n "$llvmLd"; then
-  { echo "$as_me:$LINENO: result: $llvmLd" >&5
-echo "${ECHO_T}$llvmLd" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  else
-    llvmLd=$LLVM_LD
-  fi
-
-
-fi
-
-LLVM_LD_CMD=$llvmLd
-
-
-# LLVM Compiler
-
-# Check whether --with-llc was given.
-if test "${with_llc+set}" = set; then
-  withval=$with_llc;  llvmLlc="$withval"
-else
-
-  if test "$LLC" = ""; then
-    # Extract the first word of "llc", so it can be a program name with args.
-set dummy llc; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_llvmLlc+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $llvmLlc in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_llvmLlc="$llvmLlc" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_llvmLlc="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-llvmLlc=$ac_cv_path_llvmLlc
-if test -n "$llvmLlc"; then
-  { echo "$as_me:$LINENO: result: $llvmLlc" >&5
-echo "${ECHO_T}$llvmLlc" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  else
-    llvmLlc=$LLC
-  fi
-
-
-fi
-
-LLVM_LLC_CMD=$llvmLlc
-
-
-### Checks for libraries.
-
-### Checks for header files.
-
-# Checks for typedefs, structures, and compiler characteristics.
-
-# Checks for library functions.
-
-### what to make
-#AC_SUBST(UUST_SUBDIRS,"shc lib")
-
-### type configuration, machine characteristics
-
-# sizeof GrWord
-# AC_CHECK_SIZEOF([unsigned int])
-
-# sizeof GrWord*, Pointer, ...
-# AC_CHECK_SIZEOF([nsigned int *])
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3640,6 +3326,417 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <stdio.h>
+int
+main ()
+{
+
+FILE *fp;
+fp = fopen("conftest.cc", "w");
+if (fp == 0) return(1);
+fprintf(fp, "cc_major_version=%d;cc_minor_version=%d;cc_patch_version=%d",
+__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+fclose(fp);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  eval `cat conftest.cc`
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+cc_major_version=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+{ echo "$as_me:$LINENO: checking Version of $CC" >&5
+echo $ECHO_N "checking Version of $CC... $ECHO_C" >&6; }
+if test "$cc_major_version" = "no"; then
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+  { { echo "$as_me:$LINENO: error: Requires that $CC is usable
+See \`config.log' for more details." >&5
+echo "$as_me: error: Requires that $CC is usable
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cc_version="$cc_major_version.$cc_minor_version.$cc_patch_version"
+  { echo "$as_me:$LINENO: result: $cc_version" >&5
+echo "${ECHO_T}$cc_version" >&6; }
+fi
+
+case $cc_version in
+  4.1.3)
+    cc_std_flag="-std=c99"
+    ;;
+  4.0.1)
+    cc_std_flag=""
+    ;;
+  3.4.4)
+    cc_std_flag="-std=gnu99"
+    ;;
+  *)
+    cc_std_flag=""
+    ;;
+esac
+CC_STD_FLAG=$cc_std_flag
+
+
+# cpp
+
+# Check whether --with-cpp was given.
+if test "${with_cpp+set}" = set; then
+  withval=$with_cpp;  cppCmd="$withval"
+else
+
+  if test "$CPP" = ""; then
+    # Extract the first word of "cpp", so it can be a program name with args.
+set dummy cpp; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_cppCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $cppCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_cppCmd="$cppCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_cppCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+cppCmd=$ac_cv_path_cppCmd
+if test -n "$cppCmd"; then
+  { echo "$as_me:$LINENO: result: $cppCmd" >&5
+echo "${ECHO_T}$cppCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    cppCmd=$CPP
+  fi
+
+
+fi
+
+if test "$cppCmd" = "no"; then
+  cppCmd=""
+  cppExists="no"
+else
+  cppExists="yes"
+  cppVersion=`$cppCmd --version`
+fi
+CPP_CMD=$cppCmd
+
+
+# LLVM Assembler
+
+# Check whether --with-llvm-as was given.
+if test "${with_llvm_as+set}" = set; then
+  withval=$with_llvm_as;  llvmAs="$withval"
+else
+
+  if test "$LLVM_AS" = ""; then
+    # Extract the first word of "llvm-as", so it can be a program name with args.
+set dummy llvm-as; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmAs+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmAs in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmAs="$llvmAs" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmAs="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmAs=$ac_cv_path_llvmAs
+if test -n "$llvmAs"; then
+  { echo "$as_me:$LINENO: result: $llvmAs" >&5
+echo "${ECHO_T}$llvmAs" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmAs=$LLVM_AS
+  fi
+
+
+fi
+
+LLVM_AS_CMD=$llvmAs
+
+
+# LLVM Optimizer
+
+# Check whether --with-opt was given.
+if test "${with_opt+set}" = set; then
+  withval=$with_opt;  llvmOpt="$withval"
+else
+
+  if test "$LLVM_OPT" = ""; then
+    # Extract the first word of "opt", so it can be a program name with args.
+set dummy opt; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmOpt+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmOpt in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmOpt="$llvmOpt" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmOpt="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmOpt=$ac_cv_path_llvmOpt
+if test -n "$llvmOpt"; then
+  { echo "$as_me:$LINENO: result: $llvmOpt" >&5
+echo "${ECHO_T}$llvmOpt" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmOpt=$LLVM_OPT
+  fi
+
+
+fi
+
+LLVM_OPT_CMD=$llvmOpt
+
+
+# LLVM Linker
+
+# Check whether --with-llvm-ld was given.
+if test "${with_llvm_ld+set}" = set; then
+  withval=$with_llvm_ld;  llvmLd="$withval"
+else
+
+  if test "$LLVM_LD" = ""; then
+    # Extract the first word of "llvm-ld", so it can be a program name with args.
+set dummy llvm-ld; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmLd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmLd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmLd="$llvmLd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmLd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmLd=$ac_cv_path_llvmLd
+if test -n "$llvmLd"; then
+  { echo "$as_me:$LINENO: result: $llvmLd" >&5
+echo "${ECHO_T}$llvmLd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmLd=$LLVM_LD
+  fi
+
+
+fi
+
+LLVM_LD_CMD=$llvmLd
+
+
+# LLVM Compiler
+
+# Check whether --with-llc was given.
+if test "${with_llc+set}" = set; then
+  withval=$with_llc;  llvmLlc="$withval"
+else
+
+  if test "$LLC" = ""; then
+    # Extract the first word of "llc", so it can be a program name with args.
+set dummy llc; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_llvmLlc+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $llvmLlc in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_llvmLlc="$llvmLlc" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_llvmLlc="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+llvmLlc=$ac_cv_path_llvmLlc
+if test -n "$llvmLlc"; then
+  { echo "$as_me:$LINENO: result: $llvmLlc" >&5
+echo "${ECHO_T}$llvmLlc" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    llvmLlc=$LLC
+  fi
+
+
+fi
+
+LLVM_LLC_CMD=$llvmLlc
+
+
+### Checks for libraries.
+
+### Checks for header files.
+
+# Checks for typedefs, structures, and compiler characteristics.
+
+# Checks for library functions.
+
+### what to make
+#AC_SUBST(UUST_SUBDIRS,"shc lib")
+
+### type configuration, machine characteristics
+
+# sizeof GrWord
+# AC_CHECK_SIZEOF([unsigned int])
+
+# sizeof GrWord*, Pointer, ...
+# AC_CHECK_SIZEOF([nsigned int *])
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -7028,6 +7125,14 @@ uuagcCmd!$uuagcCmd$ac_delim
 UUAGC_CMD!$UUAGC_CMD$ac_delim
 gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
+CC!$CC$ac_delim
+CFLAGS!$CFLAGS$ac_delim
+LDFLAGS!$LDFLAGS$ac_delim
+CPPFLAGS!$CPPFLAGS$ac_delim
+ac_ct_CC!$ac_ct_CC$ac_delim
+EXEEXT!$EXEEXT$ac_delim
+OBJEXT!$OBJEXT$ac_delim
+CC_STD_FLAG!$CC_STD_FLAG$ac_delim
 cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
 llvmAs!$llvmAs$ac_delim
@@ -7038,19 +7143,11 @@ llvmLd!$llvmLd$ac_delim
 LLVM_LD_CMD!$LLVM_LD_CMD$ac_delim
 llvmLlc!$llvmLlc$ac_delim
 LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
-CC!$CC$ac_delim
-CFLAGS!$CFLAGS$ac_delim
-LDFLAGS!$LDFLAGS$ac_delim
-CPPFLAGS!$CPPFLAGS$ac_delim
-ac_ct_CC!$ac_ct_CC$ac_delim
-EXEEXT!$EXEEXT$ac_delim
-OBJEXT!$OBJEXT$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7092,6 +7189,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
@@ -7116,7 +7214,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 22; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 23; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
