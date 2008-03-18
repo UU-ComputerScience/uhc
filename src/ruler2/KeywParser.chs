@@ -49,7 +49,7 @@ keywordsTextEscapable
   =  keywordsTextProps
      ++ [ "judge", "judgeshape", "judgespec", "judgeuse", "relation"
         , "rule", "rules", "ruleset"
-        , "scheme", "view", "hole", "holes", "viewsel", "rulesgroup"
+        , "scheme", "view", "hole", "holes", "viewsel", "rulesgroup", "group"
         , "explain"
         , "data"
         -- related to global info

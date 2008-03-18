@@ -213,7 +213,7 @@ SEM Decl
                                                                     ndHd = @nm `nmApd` nHd
                                                                     nTl = Nm "tl"
                                                                     ndTl = @nm `nmApd` nTl
-                                                                    vw = mkVwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])]
+                                                                    vw = mkVwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])] []
                                                                     j3 = REInfoJudge @nm @nm Set.empty Set.empty (mkg jaNm [a3])
                                                                     a3 = mkJAInfo @nm e3
                                                                     e3 = mkExprApp (Expr_ChildOrder 0 (Expr_Var ndHd))
@@ -328,7 +328,7 @@ SEM AGItf
 ATTR AllDecl [ | | vwRlGam USE {`gamUnion`} {emptyGam}: {VwRlGam Expr} ]
 
 SEM Decl
-  | RulView         lhs     .   vwRlGam     =   gamSingleton @nm (mkVwRlInfo @nm @pos @jdIntros.jdBldL)
+  | RulView         lhs     .   vwRlGam     =   gamSingleton @nm (mkVwRlInfo @nm @pos @jdIntros.jdBldL @group)
 
 ATTR AllDecl AllRuleJudgeIntroDecl [ | | jdBldL USE {++} {[]}: {[RlJdBld Expr]} ]
 

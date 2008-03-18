@@ -50,6 +50,7 @@ DATA Decl
   | RulView             pos         : {SPos}
                         nm          : {Nm}
                         jdIntros    : RuleJudgeIntros
+                        group       : {[[Nm]]}
   | ShpJudge            pos         : {SPos}
                         fmKind      : {FmKind}
                         expr        : Expr
