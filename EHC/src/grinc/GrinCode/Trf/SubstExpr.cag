@@ -1,0 +1,59 @@
+%%[8 import({GrinCode/AbsSyn})
+%%]
+%%[8 hs import(Debug.Trace)
+%%]
+
+
+%%[8
+WRAPPER GrExpr
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.SubstExpr} import(qualified Data.Map as Map, {%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substExpr)
+
+type Env = Map.Map HsName HsName
+
+substExpr :: Env -> GrExpr -> GrExpr
+substExpr env expr  = let t = wrap_GrExpr (sem_GrExpr expr) 
+                                          (Inh_GrExpr { env_Inh_GrExpr = env })
+                      in grTrf_Syn_GrExpr t
+
+%%]
+
+%%[8
+ATTR AllExpr   [ env : Env | | grTrf: SELF ]
+%%]
+
+
+%%[8 hs
+
+findNewVar fm e             = Map.findWithDefault e e fm
+
+%%]
+
+
+%%[8
+
+SEM GrVal
+  | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.env @nm)
+  | BasicNode   lhs  .  grTrf  = GrVal_BasicNode @tag.grTrf (findNewVar @lhs.env @nm)
+  | EnumNode    lhs  .  grTrf  = GrVal_EnumNode             (findNewVar @lhs.env @nm)
+  | OpaqueNode  lhs  .  grTrf  = GrVal_OpaqueNode           (findNewVar @lhs.env @nm)
+  | PtrNode     lhs  .  grTrf  = GrVal_PtrNode              (findNewVar @lhs.env @nm)
+
+SEM GrVar
+  | Var         lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.env @nm)
+
+SEM GrExpr
+  | App Eval FetchNode FetchField Throw UpdateUnit
+                loc  .  newName  =  findNewVar @lhs.env @nm
+  | App         lhs  .  grTrf    =  GrExpr_App     @newName @argL.grTrf
+  | Eval        lhs  .  grTrf    =  GrExpr_Eval    @newName
+  | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
+  | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
+  | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
+  | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.env @src) (findNewVar @lhs.env @dst)
+  | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
+
+
+%%]
+
