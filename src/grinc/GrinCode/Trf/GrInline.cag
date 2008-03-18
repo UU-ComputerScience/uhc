@@ -61,7 +61,7 @@ buildAlternative tag args arity rhsElem unique uf vf tf =
 
         uniqHead        = unique + arity
         entrHead        = zip [unique..] args
-        codeHead        = GrAlt_Alt (GrPatAlt_Node tag patNames)
+        codeHead        = GrAlt_Alt (if rhsElem==EvApTagUnit then GrAltAnnIdent else GrAltAnnNormal) (GrPatAlt_Node tag patNames)
         
         (uniqBody,
          entrBody,

@@ -64,8 +64,10 @@ DATA GrExpr
                 handler         : GrExpr
 
 DATA GrAlt
-  | Alt         pat             : GrPatAlt
+  | Alt         ann             : {GrAltAnn}
+                pat             : GrPatAlt
                 expr            : GrExpr
+                
 
 TYPE GrAltL     =   [GrAlt]
 

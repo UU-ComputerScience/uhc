@@ -95,7 +95,15 @@ pValL           ::   GRIParser GrValL
 pValL           =    pList pVal
 
 pAlt            ::   GRIParser GrAlt
-pAlt            =    GrAlt_Alt <$> pPatAlt <* pKey "->" <*> pCurly pExprSeq
+pAlt            =    GrAlt_Alt <$> pAltAnn <*> pPatAlt <* pKey "->" <*> pCurly pExprSeq
+
+pAltAnn         ::   GRIParser GrAltAnn
+pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
+                     <|>  GrAltAnnIdent   <$ pKey "ident"
+                     <|>  GrAltAnnReenter <$ pKey "reenter"
+                     <|>  pSucceed GrAltAnnNormal
+                     )
+                     
 
 pPatLam         ::   GRIParser GrPatLam
 pPatLam         =    GrPatLam_Var      <$> pGrNm

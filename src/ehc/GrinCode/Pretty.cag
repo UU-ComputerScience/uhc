@@ -97,6 +97,11 @@ type PPGrNm = HsName -> PP_Doc
 ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = ppBlock "{ " "} " "; " pL
 
+ppGrAltAnn :: GrAltAnn -> PP_Doc
+ppGrAltAnn GrAltAnnNormal  = pp ""
+ppGrAltAnn GrAltAnnIdent   = pp "ident "
+ppGrAltAnn GrAltAnnReenter = pp "reenter "
+
 %%]
 ppGrNm :: PPGrNm
 ppGrNm = cfgppHsName CfgPP_Grin
@@ -150,7 +155,7 @@ SEM GrExpr
                                                 indent 2 (ppCurlysSemisV [@handler.pp])
 
 SEM GrAlt
-  | Alt         lhs         .   pp          =   @pat.pp >-< indent 2 ("->" >#< ppCurlysSemisV [@expr.pp])
+  | Alt         lhs         .   pp          =   ppGrAltAnn @ann >|< @pat.pp >-< indent 2 ("->" >#< ppCurlysSemisV [@expr.pp])
 
 SEM GrVal
   | Empty       lhs         .   pp          =   pp "()"

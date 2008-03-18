@@ -133,7 +133,7 @@ SEM GrAlt
                                                           newNode  = GrVal_Node @pat.patTag (map snd mappings)
                                                       in  Map.fromList ((nm,newNode) : mappings)  `Map.union`  @lhs.subst
                                                  
-               lhs . grTrf  =  GrAlt_Alt (GrPatAlt_Tag @pat.patTag) @expr.grTrf
+               lhs . grTrf  =  GrAlt_Alt @ann (GrPatAlt_Tag @pat.patTag) @expr.grTrf
 
 
 -- Perform the variable substitution

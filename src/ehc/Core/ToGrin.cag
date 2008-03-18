@@ -272,9 +272,9 @@ simplArgL uniq arityMp vL
 saturateAltL :: UID -> GrExpr -> GrAltL -> GrAltL
 saturateAltL uniq dflt altL
   =  case altL of
-       (GrAlt_Alt (GrPatAlt_LitInt _) _ : _)
-         | null [ a | a@(GrAlt_Alt (GrPatAlt_Otherwise) _) <- altL ]
-           -> altL ++ [GrAlt_Alt (GrPatAlt_Otherwise) dflt]
+       (GrAlt_Alt _ (GrPatAlt_LitInt _) _ : _)
+         | null [ a | a@(GrAlt_Alt _ (GrPatAlt_Otherwise) _) <- altL ]
+           -> altL ++ [GrAlt_Alt GrAltAnnNormal (GrPatAlt_Otherwise) dflt]
        _   -> altL
 %%]
 
@@ -561,7 +561,7 @@ ATTR CAlt    [ | | grAlt: GrAlt ]
 ATTR CAltL   [ | | grAltL: GrAltL ]
 
 SEM CAlt
-  | Alt         lhs         .   grAlt       =   GrAlt_Alt @pat.grPat @expr.grExpr
+  | Alt         lhs         .   grAlt       =   GrAlt_Alt GrAltAnnNormal @pat.grPat @expr.grExpr
 
 SEM CAltL
   | Cons        lhs         .   grAltL      =   @hd.grAlt : @tl.grAltL
