@@ -1388,13 +1388,13 @@ cpCompileWithLLVM modNm
               fpExec        = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) 
                                     Cfg.mbSuffixExec
               libs          = map (\lib -> "-l " ++ lib) $
-                              [ Cfg.fileprefixInplaceInstall 
+                              [ Cfg.selectFileprefixInstall opts 
                                 ++ "%%@{%{VARIANT}%%}/lib/prim.o"
-                              , Cfg.fileprefixInplaceInstall 
+                              , Cfg.selectFileprefixInstall opts 
                                 ++ "%%@{%{VARIANT}%%}/lib/llvm-gc.o"
-                              , Cfg.fileprefixInplaceInstall 
+                              , Cfg.selectFileprefixInstall opts 
                                 ++ "%%@{%{VARIANT}%%}/lib/timing.o"
-                              , Cfg.fileprefixInplaceInstall
+                              , Cfg.selectFileprefixInstall opts
                                 ++ "non-threaded/lib/libgc.a"
                               ]
               inputOpts     = [ fpathToStr fpLL ]
@@ -1435,8 +1435,8 @@ cpCompileWithGCC how othModNmL modNm
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
                                                -- , map ("-l" ++) (Cfg.libnamesGccPerVariant ++ Cfg.libnamesGcc)
-                                               , map (\l -> Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib/lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
-                                                 ++ map (\l -> Cfg.fileprefixInplaceInstall ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
+                                               , map (\l -> Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/lib/lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
+                                                 ++ map (\l -> Cfg.selectFileprefixInstall opts ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , if   ehcOptEmitExecC opts
                                                  then [ ]
@@ -1448,16 +1448,16 @@ cpCompileWithGCC how othModNmL modNm
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ Cfg.shellCmdGcc ]
-                                 ++ [ {- "-L" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/lib"
-                                    , "-L" ++ Cfg.fileprefixInplaceInstall ++ "lib"
-                                    , -} "-I" ++ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include"
-                                    , "-I" ++ Cfg.fileprefixInplaceInstall ++ "include"
+                                 ++ [ {- "-L" ++ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/lib"
+                                    , "-L" ++ Cfg.selectFileprefixInstall opts ++ "lib"
+                                    , -} "-I" ++ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include"
+                                    , "-I" ++ Cfg.selectFileprefixInstall opts ++ "include"
                                     ]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
-                                 ++ [ Cfg.fileprefixInplaceInstall ++ "%%@{%{VARIANT}%%}/include/mainSil.c"
+                                 ++ [ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include/mainSil.c"
                                     | ehcOptEmitExecC opts
                                     ]
                                  ++ linkLibOpt
