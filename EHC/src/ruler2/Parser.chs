@@ -85,14 +85,15 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
                                                        <*> pMbViewSel'
                                                        <*> pMbString
                                                        <*  pKey "="             <*> (pDeclRuleDflt <|> pDecls1' pDeclRulView)
-        pDeclRuleDflt       =   (\d -> [Decl_RulView emptySPos nmNone d])
+        pDeclRuleDflt       =   (\d -> [Decl_RulView emptySPos nmNone d []])
                                                        <$> pRuleJudgeIntros
         pDeclRulView        =   (\(v,p) d -> Decl_RulView p v d)
                                                        <$  pKey "view"          <*> pNmVwSPos
                                                        <*  pKey "="             <*> pRuleJudgeIntros
+                                                       <*> opt (pKey "group" *> pListSep pComma (pList1 pNm)) []
 {-
-        mkDeclRulView p v pre post
-                            =   Decl_RulView p v [RuleJudgeIntro_PrePost pre post]
+        mkDeclRulView p v pre post order
+                            =   Decl_RulView p v [RuleJudgeIntro_PrePost pre post] order
         pRuleViewJudges     =   (,) <$> pRExprs <* sep <*> pRExprs
                             <|> pKey "judges" *> pLay2Sep pOParen (pKey "|") pCParen sep pRExprBase -- experimental
                             where pRExprs    = pList pRExpr

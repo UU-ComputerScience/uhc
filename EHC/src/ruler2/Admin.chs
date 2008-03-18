@@ -664,13 +664,14 @@ data VwRlInfo e
       , vwrlFullPreGam, vwrlFullPostGam     				:: REGam e
       , vwrlPreScc                          				:: [[Nm]]
       , vwrlMbChGam                         				:: Maybe RlChGam
+      , vwrlAuxGroups                                       :: [[Nm]]
       }
 
 emptyVwRlInfo :: VwRlInfo e
-emptyVwRlInfo = VwRlInfo nmNone emptySPos [] [] [] emptyGam emptyGam emptyGam emptyGam [] Nothing
+emptyVwRlInfo = VwRlInfo nmNone emptySPos [] [] [] emptyGam emptyGam emptyGam emptyGam [] Nothing []
 
-mkVwRlInfo :: Nm -> SPos -> [RlJdBld e] -> VwRlInfo e
-mkVwRlInfo n p b = emptyVwRlInfo { vwrlNm = n, vwrlPos = p, vwrlJdBldL = b }
+mkVwRlInfo :: Nm -> SPos -> [RlJdBld e] -> [[Nm]] -> VwRlInfo e
+mkVwRlInfo n p b g = emptyVwRlInfo { vwrlNm = n, vwrlPos = p, vwrlJdBldL = b, vwrlAuxGroups = g }
 
 vwrlPreGam :: VwRlInfo e -> REGam e
 vwrlPreGam v = gamUnions [ g | (RlJdBldDirect _ g _) <- vwrlJdBldL v ]
@@ -694,6 +695,7 @@ instance PP e => PP (VwRlInfo e) where
                                        >-< ppGam (vwrlFullPostGam i)
                                        >-< pp (show (vwrlPreScc i))
                                        >-< maybe empty (ppGam . gamMap ppGam) (vwrlMbChGam i)
+                                       >-< pp (show (vwrlAuxGroups i))
                                       )
 
 type VwRlGam e = Gam Nm (VwRlInfo e)
@@ -707,16 +709,25 @@ vrwlIsEmpty i
   = gamIsEmpty (vwrlFullPreGam i) && gamIsEmpty (vwrlFullPostGam i)
 
 vwrlScc :: VwRlInfo e -> [[Nm]]
-vwrlScc 
-  = unNm . Scc.scc . concat . dpd . vwrlFullPreGam
-  where dpd g
-          = d
+vwrlScc i
+  = map reorder . unNm . Scc.scc . concat . dpd . vwrlFullPreGam $ i
+  where dpd g = d' ++ d
           where d = [ (jd n,map nm . Set.toList $ is) : zip (map nm . Set.toList $ os) (repeat [jd n])
                     | (REInfoJudge n _ is os _) <- gamElemsShadow g
                     ]
+                d' = [ zipWith (\a b -> (a, [b])) grp (tl ++ [hd])
+                     | grp@(hd:tl) <- map (map jd) auxGrps
+                     , not (null grp)
+                     ]
         nm n = nmSetSel n "n"
         jd n = nmSetSel n "j"
         unNm scc = [ l' | l <- scc, let l' = [ nmInit n | n <- l, nmSel n == "j" ], not (null l') ]
+        auxGrps = vwrlAuxGroups i
+        reorder cfg = foldr reorderForGroup cfg auxGrps
+        reorderForGroup grp cfg
+          = let (mem, nmem) = partition (`elem` grp) cfg
+                smem = sortBy (\x y -> compare (elemIndex x grp) (elemIndex y grp)) mem
+            in smem ++ nmem
 
 vwrlUndefs :: VwRlInfo e -> Set.Set Nm
 vwrlUndefs i
