@@ -40,6 +40,7 @@ $(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
 	./configure --prefix=$(INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX) --disable-threads && \
 	make && \
 	make install && \
+	make clean && \
 	./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
 	make && \
 	make install && \
