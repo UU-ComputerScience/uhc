@@ -726,10 +726,12 @@ EHC_GCC_OPTS_STATIC
 TOP_ABS
 TOP_ABS2
 TARGET_TRIPLE
+EHC_EXEC_NAME
+UHC_EXEC_NAME
 INPLACE_TOP
-INSTALL_PREFIX
 INPLACE_PREFIX
 INPLACE_INSTALL_DIR
+INSTALL_LIB_SUFFIX
 RTS_PKG_NAME
 EXTLIBS_BGC_PKG_NAME
 EXTLIBS_GMP_PKG_NAME
@@ -6403,16 +6405,21 @@ TOP_ABS2="$hardtop_plat2"
 TARGET_TRIPLE="$host"
 
 
+### names of compiler executables
+EHC_EXEC_NAME="ehc"
+
+UHC_EXEC_NAME="uhc"
+
+
 ### install locations
 inplaceInstallDir="install"
-installPrefix=${prefix}
 INPLACE_TOP="$hardtop"
-
-INSTALL_PREFIX=${installPrefix}
 
 INPLACE_PREFIX="$hardtop_plat/$inplaceInstallDir"
 
 INPLACE_INSTALL_DIR="$inplaceInstallDir"
+
+INSTALL_LIB_SUFFIX="lib/uhc"
 
 
 ### package names assumed by compiler driver
@@ -7206,10 +7213,12 @@ EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
 TARGET_TRIPLE!$TARGET_TRIPLE$ac_delim
+EHC_EXEC_NAME!$EHC_EXEC_NAME$ac_delim
+UHC_EXEC_NAME!$UHC_EXEC_NAME$ac_delim
 INPLACE_TOP!$INPLACE_TOP$ac_delim
-INSTALL_PREFIX!$INSTALL_PREFIX$ac_delim
 INPLACE_PREFIX!$INPLACE_PREFIX$ac_delim
 INPLACE_INSTALL_DIR!$INPLACE_INSTALL_DIR$ac_delim
+INSTALL_LIB_SUFFIX!$INSTALL_LIB_SUFFIX$ac_delim
 RTS_PKG_NAME!$RTS_PKG_NAME$ac_delim
 EXTLIBS_BGC_PKG_NAME!$EXTLIBS_BGC_PKG_NAME$ac_delim
 EXTLIBS_GMP_PKG_NAME!$EXTLIBS_GMP_PKG_NAME$ac_delim
@@ -7217,7 +7226,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 23; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 25; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

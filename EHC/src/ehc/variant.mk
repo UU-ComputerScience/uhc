@@ -17,7 +17,7 @@ LIB_EHC_BASE							:= EH
 LIB_EHC_QUAL							:= $(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))
 LIB_EHC_QUAL_PREFIX						:= $(LIB_EHC_QUAL).
 LIB_EHC_HS_PREFIX						:= $(subst .,$(PATH_SEP),$(LIB_EHC_QUAL_PREFIX))
-LIB_EHC_PKG_NAME						:= $(subst .,-,$(LIB_EHC_QUAL))
+LIB_EHC_PKG_NAME						:= $(GHC_PKG_NAME_PREFIX)$(subst .,-,$(LIB_EHC_QUAL))
 LIB_EHC_INS_FLAG						:= $(INSABS_FLAG_PREFIX)$(LIB_EHC_PKG_NAME)
 
 EHC_BASE								:= $(LIB_EHC_BASE)C

@@ -100,6 +100,8 @@ explanation:
 	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
 	echo  "" ; \
 	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
+	echo  "" ; \
+	echo  "make install             : make 100/ehc and library, install globally" ; \
 
 all: afp-full ehcs doc grinis
 	$(MAKE) initial-test-expect
@@ -147,8 +149,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(patsubst $(BLD_PREFIX)%/$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX),%,$(EHCLIB_ALL_LIBS))
-	@echo $(EHCLIB_ALL_LIBS)
+	@echo $(EHC_GMP_VARIANTS)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst
@@ -180,3 +181,15 @@ $(WWW_SRC_TGZ): $(DIST_TGZ)
 heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 	mkdir -p hdoc/helium
 	haddock --html --odir=hdoc/helium $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
+
+install-test:
+	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
+
+install:
+	rm -f $(EHC_FOR_UHC_BLD_EXEC)
+	$(MAKE) INSABS_RTS_LIB_PREFIX=$(INSTALL_UHC_LIB_PREFIX) INSABS_RTS_INC_PREFIX=$(INSTALL_UHC_INC_PREFIX) INSABS_PREFIX=$(INSTALL_UHC_PREFIX) INS_PREFIX=$(INSTALL_UHC_PREFIX) \
+		CABAL_OPT_INSTALL_LOC="--global" \
+		GHC_PKG_NAME_PREFIX= \
+		$(EHC_FOR_UHC_BLD_EXEC)
+	install $(EHC_FOR_UHC_BLD_EXEC) $(UHC_INSTALL_EXEC)
+	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib

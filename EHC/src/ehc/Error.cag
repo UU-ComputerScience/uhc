@@ -99,7 +99,7 @@ mkErr_NamesNotIntrod r m ns = mkErr_NamesNotIntrod' r m (zip (map pp ns) (repeat
 
 %%[99 hs
 instance ForceEval Err
-%%[[101
+%%[[102
   where
     fevCount x | x `seq` True = cm1 "Err_*"
 %%]]

@@ -509,13 +509,16 @@ AC_SUBST(TOP_ABS2, "$hardtop_plat2")
 ### Platform information, needed for LLVM code generation
 AC_SUBST(TARGET_TRIPLE, "$host")
 
+### names of compiler executables
+AC_SUBST(EHC_EXEC_NAME, "ehc")
+AC_SUBST(UHC_EXEC_NAME, "uhc")
+
 ### install locations
 inplaceInstallDir="install"
-installPrefix=${prefix}
 AC_SUBST(INPLACE_TOP, "$hardtop")
-AC_SUBST(INSTALL_PREFIX, ${installPrefix})
 AC_SUBST(INPLACE_PREFIX, "$hardtop_plat/$inplaceInstallDir")
 AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
+AC_SUBST(INSTALL_LIB_SUFFIX, "lib/uhc")
 
 ### package names assumed by compiler driver
 AC_SUBST(RTS_PKG_NAME, "EH-RTS")

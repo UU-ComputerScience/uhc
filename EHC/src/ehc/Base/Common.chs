@@ -1103,7 +1103,7 @@ data Backend
 
 %%[99
 instance ForceEval Fixity
-%%[[101
+%%[[102
   where
     fevCount x | x `seq` True = cm1 "Fixity"
 %%]]
@@ -1119,7 +1119,7 @@ instance ForceEval HsName where
   forceEval x@(HNmNr _ n) | forceEval n `seq` True = x
   forceEval x@(HNmQ    l) | forceEval l `seq` True = x
   forceEval x                                      = x
-%%[[101
+%%[[102
   fevCount (HNm     s) = cm1 "HNm"   `cmUnion` fevCount s
   fevCount (HNmNr i n) = cm1 "HNmNr" `cmUnion` fevCount n
   fevCount (HNmQ    l) = cm1 "HNmQ"  `cmUnion` fevCount l
@@ -1129,7 +1129,7 @@ instance ForceEval HsName where
 instance ForceEval CTag where
   forceEval x@(CTag tn n t a ma) | forceEval tn `seq` forceEval n `seq` True = x
   forceEval x = x
-%%[[101
+%%[[102
   fevCount (CTag tn n t a ma) = cmUnions [cm1 "CTag",fevCount tn,fevCount n,fevCount t,fevCount a,fevCount ma]
   fevCount CTagRec            = cm1 "CTagRec"
 %%]]
@@ -1137,7 +1137,7 @@ instance ForceEval CTag where
 instance ForceEval Range where
   forceEval x@(Range_Range b e) | forceEval b `seq` forceEval e `seq` True = x
   forceEval x = x
-%%[[101
+%%[[102
   fevCount (Range_Range b e) = cm1 "Range_Range" `cmUnion` fevCount b `cmUnion` fevCount e
   fevCount Range_Unknown     = cm1 "Range_Unknown"
   fevCount Range_Builtin     = cm1 "Range_Builtin"
@@ -1145,30 +1145,30 @@ instance ForceEval Range where
 
 instance ForceEval Pos where
   forceEval x@(Pos l c f) | forceEval l `seq` forceEval c `seq` forceEval f `seq` True = x
-%%[[101
+%%[[102
   fevCount (Pos l c f) = cm1 "Pos" `cmUnion` fevCount l `cmUnion` fevCount c `cmUnion` fevCount f
 %%]]
 
 instance ForceEval IdOcc
-%%[[101
+%%[[102
   where
     fevCount (IdOcc x y) = cm1 "IdOcc" `cmUnion` fevCount x `cmUnion` fevCount y
 %%]]
 
-%%[[101
+%%[[102
 instance ForceEval IdOccKind where
   fevCount x | x `seq` True = cm1 "IdOccKind_*"
 %%]]
 
 instance ForceEval UID where
   forceEval x@(UID l) | forceEval l `seq` True = x
-%%[[101
+%%[[102
   fevCount (UID l) = cm1 "UID" `cmUnion` fevCount l
 %%]]
 
 instance ForceEval a => ForceEval (RLList a) where
   forceEval x@(RLList l) | forceEval l `seq` True = x
-%%[[101
+%%[[102
   fevCount (RLList l) = cm1 "RLList" `cmUnion` fevCount l
 %%]]
 %%]

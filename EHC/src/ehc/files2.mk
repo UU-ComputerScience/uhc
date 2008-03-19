@@ -45,5 +45,5 @@ ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(GRINC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV
 #	$(MAKE) EHC_VARIANT_RULER_SEL="($(EHC_VARIANT)).(expr.base).(e.int e.char)" ehc-variant-dflt
 
 # rules for uhc
-$(BIN_PREFIX)uhc$(EXEC_SUFFIX): $(BIN_PREFIX)$(EHC_UHC_VARIANT)/ehc$(EXEC_SUFFIX)
+$(UHC_BLD_EXEC): $(EHC_FOR_UHC_BLD_EXEC)
 	cp $< $@

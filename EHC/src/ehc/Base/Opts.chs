@@ -28,6 +28,9 @@
 %%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin}) export(cmdLineTrfs,trfOptOverrides)
 %%]
 
+%%[8 import(EH.Util.FPath)
+%%]
+
 %%[9 import(qualified Data.Set as Set)
 %%]
 
@@ -60,7 +63,7 @@ cmdLineTrfs
     , ("CLGA"   , "Core Lambda Global as Arg")
     , ("CCGA"   , "Core CAF Global as Arg")
     , ("CLFG"   , "Core Lambda Float to Global")
-%%[[101
+%%[[102
     , ("CS"     , "Core Strip (debug)")
 %%]]
     ]
@@ -81,6 +84,8 @@ trfOptOverrides opts trf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Convention: most option names/fields start with 'ehcOpt'
 
 %%[1.EHCOpts
 data EHCOpts
@@ -132,8 +137,8 @@ data EHCOpts
       ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
       ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
       ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
+      ,  ehcOptUseInplace     ::  Bool              -- use inplace runtime libraries
       
-      ,  ehcUseInplace        ::  Bool              -- use inplace runtime libraries
 %%]]
 %%[[9
       ,  ehcCfgInstFldHaveSelf::  Bool				-- functions/fields of instance get as arg the dictionary as well
@@ -152,7 +157,7 @@ data EHCOpts
                               ::  Bool              -- stop when Core parse error occurs (otherwise errors are ignored, repaired .core is used)
 %%]]
 %%[[99
-      ,  ehcProgName          ::  String			-- name of this program
+      ,  ehcProgName          ::  FPath  			-- name of this program
       ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
       ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
@@ -211,8 +216,8 @@ defaultEHCOpts
       ,  ehcOptFullProgAnalysis =   False
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptDumpGrinStages   =   False
+      ,  ehcOptUseInplace       =   True
       
-      ,  ehcUseInplace          =   True
 %%]]
 %%[[8
       ,  ehcOptEmitBytecode     =   False
@@ -241,7 +246,7 @@ defaultEHCOpts
       ,  ehcDebugStopAtCoreError=   False
 %%]]
 %%[[99
-      ,  ehcProgName            =   ""
+      ,  ehcProgName            =   emptyFPath
       ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
@@ -458,8 +463,7 @@ ehcCmdLineOpts
          oCPP            o =  o { ehcOptCPP                     = True    }
          oLimitTyBetaRed o l = o { ehcOptTyBetaRedCutOffAt = l }
          oLimitCtxtRed   o l = o { ehcOptPrfCutOffAt       = l }
-         
-         oUseInplace     o b = o { ehcUseInplace = b }
+         oUseInplace     o b = o { ehcOptUseInplace = b }
 %%]]
 %%]
 

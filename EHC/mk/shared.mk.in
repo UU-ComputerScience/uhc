@@ -37,7 +37,8 @@
 # 98: + IO
 # 99: + the rest to make uhc
 # 100: - debugging/tracing stuff
-# 101: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
+# 101: same as 100, but built for installation
+# 102: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
 
 # 50: + GADT experiment
 # 4_2: + 2 pass type inference, quantifier propagation experiment
@@ -46,23 +47,32 @@
 # EHC variant partitioning into public/non-public (experimental, ...) + code/noncode variants
 ###########################################################################################
 
-EHC_PREL_VARIANT								:= 99
-EHC_UHC_VARIANT									:= 100
-EHC_PREL_VARIANTS								:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT)
-EHC_PUB_NOCODE_VARIANTS					:= 1 2 3 4 5 6 7
-EHC_PUB_NOPREL_VARIANTS					:= 8 9 10 11 12 13 14 15 17 20 94 95 96 97 98
-EHC_PUB_CODE_VARIANTS						:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
-EHC_PUB_VARIANTS								:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
-EHC_OTHER_NOCODE_VARIANTS				:= 4_2 6_4 7_2
-EHC_OTHER_CODE_VARIANTS					:= 101
-EHC_OTHER_VARIANTS							:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
-EHC_CODE_VARIANTS								:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
-EHC_VARIANTS										:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
+EHC_PREL_VARIANT				:= 99
+EHC_UHC_VARIANT					:= 100
+EHC_UHC_INSTALL_VARIANT			:= 101
+EHC_OTHER_CODE_VARIANTS			:= 102
+EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
+EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
+EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
+EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 94 95 96 97 98
+EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
+EHC_PUB_VARIANTS				:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
+EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
+EHC_OTHER_VARIANTS				:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
+EHC_CODE_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
+EHC_VARIANTS					:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
 
-GRIN_PUB_VARIANTS								:= $(EHC_PUB_CODE_VARIANTS)
-GRIN_VARIANTS										:= $(GRIN_PUB_VARIANTS)
+GRIN_PUB_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS)
+GRIN_VARIANTS					:= $(GRIN_PUB_VARIANTS)
 
-TEST_VARIANTS										:= $(EHC_PUB_NOCODE_VARIANTS) 8 9 10 11 $(EHC_PREL_VARIANT)
+TEST_VARIANTS					:= $(EHC_PUB_NOCODE_VARIANTS) 8 9 10 11 $(EHC_PREL_VARIANT)
+
+###########################################################################################
+# Names of compiler executables
+###########################################################################################
+
+EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
+UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
 
 ###########################################################################################
 # Locations in source, build and install
@@ -85,6 +95,12 @@ INSABS_PREFIX		:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@/
 INSABS_FLAG_PREFIX	:= $(INSABS_PREFIX)ins-flg-
 INSABS_LIB_PREFIX	:= $(INSABS_PREFIX)lib/
 INSABS_INC_PREFIX	:= $(INSABS_PREFIX)include/
+
+# location for uhc installs, as specified by configure
+INSTALL_UHC_PREFIX		:= @prefix@/@INSTALL_LIB_SUFFIX@/
+INSTALL_UHC_BIN_PREFIX	:= @prefix@/bin/
+INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
+INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
 
 # location for building
 BLD_PREFIX			:= $(TOP_PREFIX)build/
@@ -130,55 +146,65 @@ BIBTEX				:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_CO
 MAKEINDEX			:= makeindex
 
 ###########################################################################################
-# Options to commands
+# Regular options to commands
 ###########################################################################################
 
 # GHC options
-GHC_EHC_PKG_UULIB	:= uulib
-GHC_OPTS			:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package $(GHC_EHC_PKG_UULIB)
-GHC_OPTS_OPTIM		:= -O2
-GHC_OPTS_WHEN_EHC	:= @GHC_EHC_OPTIONS@
+GHC_EHC_PKG_UULIB						:= uulib
+GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package $(GHC_EHC_PKG_UULIB)
+GHC_OPTS_OPTIM							:= -O2
+GHC_OPTS_WHEN_EHC						:= @GHC_EHC_OPTIONS@
 
 # SHUFFLE options
-SHUFFLE_OPTS_WHEN_EHC			:= @SHUFFLE_EHC_OPTIONS@
-SHUFFLE_OPTS_WHEN_UHC			:= --agmodheader=yes
+SHUFFLE_OPTS_WHEN_EHC					:= @SHUFFLE_EHC_OPTIONS@
+SHUFFLE_OPTS_WHEN_UHC					:= --agmodheader=yes
 
 # UUAGC options
-UUAGC_OPTS_WHEN_EHC				:= @UUAGC_OPTIONS@
-UUAGC_OPTS_WHEN_EHC_AST_DATA	:= @UUAGC_EHC_AST_OPTIONS@
-UUAGC_OPTS_WHEN_EHC_AST_SEM		:= @UUAGC_EHC_SEM_OPTIONS@
+UUAGC_OPTS_WHEN_EHC						:= @UUAGC_OPTIONS@
+UUAGC_OPTS_WHEN_EHC_AST_DATA			:= @UUAGC_EHC_AST_OPTIONS@
+UUAGC_OPTS_WHEN_EHC_AST_SEM				:= @UUAGC_EHC_SEM_OPTIONS@
 
 # UUAGC options for production version (i.e. uhc, ehc variant >= $(EHC_PREL_VARIANT))
-UUAGC_OPTS_WHEN_UHC				:=
-UUAGC_OPTS_WHEN_UHC_AST_DATA	:= --strictdata
-UUAGC_OPTS_WHEN_UHC_AST_SEM		:= --Wignore --strictwrap -O
+UUAGC_OPTS_WHEN_UHC						:=
+UUAGC_OPTS_WHEN_UHC_AST_DATA			:= --strictdata
+UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --Wignore --strictwrap -O
 
 # GCC options
-GCC_OPTS_WHEN_EHC	:= @GCC_EHC_OPTIONS@
+GCC_OPTS_WHEN_EHC						:= @GCC_EHC_OPTIONS@
 
 # cabal options
-CABAL_CONFIGURE_OPTS_WHEN_EHC	:= @CABAL_CONFIGURE_OPTIONS@
-CABAL_SETUP_OPTS	:= --ghc --with-compiler=$(GHC) $(CABAL_CONFIGURE_OPTS_WHEN_EHC)
-CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES := @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
+CABAL_CONFIGURE_OPTS_WHEN_EHC			:= @CABAL_CONFIGURE_OPTIONS@
+CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(GHC) $(CABAL_CONFIGURE_OPTS_WHEN_EHC)
+CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
 
 # C compiler options, some are also extended by sub makefiles
-EHC_GCC_CC_OPTS			:= -I$(INSABS_INC_PREFIX) $(GCC_OPTS_WHEN_EHC)
-EHC_GCC_LD_OPTS			:= -L$(INSABS_LIB_PREFIX)
-RTS_GCC_CC_OPTS			:= @CC_STD_FLAG@
-RTS_GCC_CC_OPTS_OPTIM		:= $(RTS_GCC_CC_OPTS) -O3
+EHC_GCC_CC_OPTS							:= -I$(INSABS_INC_PREFIX) $(GCC_OPTS_WHEN_EHC)
+EHC_GCC_LD_OPTS							:= -L$(INSABS_LIB_PREFIX)
+RTS_GCC_CC_OPTS							:= @CC_STD_FLAG@
+RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
 
 # library building, using libtool
-LIBTOOL_STATIC		:= @LIBTOOL_STATIC_CMD@
-LIBTOOL_DYNAMIC		:= @LIBTOOL_DYNAMIC_CMD@
+LIBTOOL_STATIC							:= @LIBTOOL_STATIC_CMD@
+LIBTOOL_DYNAMIC							:= @LIBTOOL_DYNAMIC_CMD@
 
 # lhs2tex options
-LHS2TEX_OPTS_DFLT	:= 
-LHS2TEX_OPTS_POLY	:= $(LHS2TEX_OPTS_DFLT) --poly
-LHS2TEX_OPTS_NEWC	:= $(LHS2TEX_OPTS_DFLT) --newcode
+LHS2TEX_OPTS_DFLT						:= 
+LHS2TEX_OPTS_POLY						:= $(LHS2TEX_OPTS_DFLT) --poly
+LHS2TEX_OPTS_NEWC						:= $(LHS2TEX_OPTS_DFLT) --newcode
 
 # ruler2 options
-RULER2_OPTS_DFLT	:= $(RULER2_OPTS_VERSION)
-RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
+RULER2_OPTS_DFLT						:= $(RULER2_OPTS_VERSION)
+RULER2_OPTS								:= $(RULER2_OPTS_DFLT)
+
+###########################################################################################
+# Installation configuration: options to commands, naming of libraries
+###########################################################################################
+
+# cabal options
+CABAL_OPT_INSTALL_LOC 					:= --user
+
+# prefix for library name, to make them globally unique
+GHC_PKG_NAME_PREFIX						:= 
 
 ###########################################################################################
 # Shuffle order for EHC variants
@@ -186,31 +212,11 @@ RULER2_OPTS			:= $(RULER2_OPTS_DFLT)
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < 101, 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50, 15 < 16, 15 < 17
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), $(EHC_UHC_VARIANT) < 102, 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50, 15 < 16, 15 < 17
 
 ###########################################################################################
-# Misc
+# Cabal
 ###########################################################################################
-
-# target suffix for core
-CORE_TARG_SUFFIX	:= grin2
-
-# subst's
-SUBST_BAR_IN_TT		:= sed -e '/begin{TT[^}]*}/,/end{TT[^}]*}/s/|/||/g'
-SUBST_EHC			:= perl $(BIN_PREFIX)substehc.pl
-SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
-SUBST_SH			:= perl $(BIN_PREFIX)substsh.pl
-
-# indentation of (test) output
-INDENT2				:= sed -e 's/^/  /'
-INDENT4				:= sed -e 's/^/    /'
-
-# make programming utils
-head				= $(word 1,$(1))
-tail				= $(wordlist 2,$(words $(1)),$(1))
-comma				:= ,
-empty				:=
-space				:= $(empty) $(empty)
 
 # generate cabal file
 # $1: pkg name
@@ -243,6 +249,30 @@ GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMai
 # $1: src
 # $2: exec
 GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
+
+###########################################################################################
+# Misc
+###########################################################################################
+
+# target suffix for core
+CORE_TARG_SUFFIX	:= grin2
+
+# subst's
+SUBST_BAR_IN_TT		:= sed -e '/begin{TT[^}]*}/,/end{TT[^}]*}/s/|/||/g'
+SUBST_EHC			:= perl $(BIN_PREFIX)substehc.pl
+SUBST_LINE_CMT		:= sed -e 's/{-\# LINE[^\#]*\#-}//' -e '/{-\#  \#-}/d'
+SUBST_SH			:= perl $(BIN_PREFIX)substsh.pl
+
+# indentation of (test) output
+INDENT2				:= sed -e 's/^/  /'
+INDENT4				:= sed -e 's/^/    /'
+
+# make programming utils
+head				= $(word 1,$(1))
+tail				= $(wordlist 2,$(words $(1)),$(1))
+comma				:= ,
+empty				:=
+space				:= $(empty) $(empty)
 
 # subst _ by x
 # $1: text

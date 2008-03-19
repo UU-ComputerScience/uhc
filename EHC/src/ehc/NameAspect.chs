@@ -208,13 +208,13 @@ instance ForceEval IdAspect where
   forceEval x@(IdAsp_Val_Sig d    ) | d `seq` True = x
   forceEval x@(IdAsp_Inst_Def d n ) | d `seq` True = x
   forceEval x                       = x
-%%[[101
+%%[[102
   fevCount x | x `seq` True = cm1 "IdAspect_*"
 %%]]
 
 instance ForceEval IdDefOcc where
   forceEval x@(IdDefOcc o a l r as) | forceEval a `seq` forceEval as `seq` forceEval r `seq` True = x
-%%[[101
+%%[[102
   fevCount (IdDefOcc o a l r as) = cmUnions [cm1 "IdDefOcc",fevCount o,fevCount a,fevCount as,fevCount r,fevCount l]
 %%]]
 %%]

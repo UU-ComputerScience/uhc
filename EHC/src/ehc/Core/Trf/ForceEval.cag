@@ -20,7 +20,7 @@ PRAGMA strictcase
 instance ForceEval CModule where
   forceEval x | trf_Syn_CModule t `seq` True = x
     where t = wrap_CModule (sem_CModule x) Inh_CModule
-%%[[101
+%%[[102
   fevCount x = cm_Syn_CModule t
     where t = wrap_CModule (sem_CModule x) Inh_CModule
 %%]]
@@ -28,13 +28,13 @@ instance ForceEval CModule where
 instance ForceEval CExpr where
   forceEval x | trf_Syn_CExpr t `seq` True = x
     where t = wrap_CExpr (sem_CExpr x) Inh_CExpr
-%%[[101
+%%[[102
   fevCount x = cm_Syn_CExpr t
     where t = wrap_CExpr (sem_CExpr x) Inh_CExpr
 %%]]
 
 instance ForceEval CBindCateg
-%%[[101
+%%[[102
   where
     fevCount x | x `seq` True = cm1 "CBindCateg"
 %%]]
@@ -95,7 +95,7 @@ SEM CPatBind
 
 %%]
 
-%%[101
+%%[102
 ATTR AllCodeNT [ | | cm USE {`cmUnion`} {emptyCM}: {CountMp} ]
 
 SEM CModule

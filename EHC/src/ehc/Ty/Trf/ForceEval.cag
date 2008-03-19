@@ -20,7 +20,7 @@ PRAGMA strictcase
 instance ForceEval Ty where
   forceEval x | repl_Syn_Ty t `seq` True = x
               where t = wrap_Ty (sem_Ty x) (Inh_Ty)
-%%[[101
+%%[[102
   fevCount x = cm_Syn_Ty t
               where t = wrap_Ty (sem_Ty x) (Inh_Ty)
 %%]]
@@ -28,7 +28,7 @@ instance ForceEval Ty where
 instance ForceEval Pred where
   forceEval x | repl_Syn_Pred t `seq` True = x
               where t = wrap_Pred (sem_Pred x) (Inh_Pred)
-%%[[101
+%%[[102
   fevCount x = cm_Syn_Pred t
               where t = wrap_Pred (sem_Pred x) (Inh_Pred)
 %%]]
@@ -36,7 +36,7 @@ instance ForceEval Pred where
 instance ForceEval Label where
   forceEval x | repl_Syn_Label t `seq` True = x
               where t = wrap_Label (sem_Label x) (Inh_Label)
-%%[[101
+%%[[102
   fevCount x = cm_Syn_Label t
               where t = wrap_Label (sem_Label x) (Inh_Label)
 %%]]
@@ -44,7 +44,7 @@ instance ForceEval Label where
 instance ForceEval PredScope  where
   forceEval x@(PredScope_Lev l) | forceEval l `seq` True = x
   forceEval x@(PredScope_Var v) | forceEval v `seq` True = x
-%%[[101
+%%[[102
   fevCount (PredScope_Lev l) = cm1 "PredScope_Lev" `cmUnion` fevCount l
   fevCount (PredScope_Var v) = cm1 "PredScope_Var" `cmUnion` fevCount v
 %%]]
@@ -52,32 +52,32 @@ instance ForceEval PredScope  where
 instance ForceEval LabelOffset where
   forceEval x@(LabelOffset_Off o) | forceEval o `seq` True = x
   forceEval x@(LabelOffset_Var v) | forceEval v `seq` True = x
-%%[[101
+%%[[102
   fevCount (LabelOffset_Off x) = cm1 "LabelOffset_Off" `cmUnion` fevCount x
   fevCount (LabelOffset_Var v) = cm1 "LabelOffset_Var" `cmUnion` fevCount v
 %%]]
 
 instance ForceEval CHRPredOcc where
   forceEval x@(CHRPredOcc y z) | forceEval y `seq` forceEval z `seq` True = x
-%%[[101
+%%[[102
   fevCount (CHRPredOcc y z) = cm1 "CHRPredOcc" `cmUnion` fevCount y `cmUnion` fevCount z
 %%]]
 
 instance ForceEval PredOccId where
   forceEval x@(PredOccId i j) | forceEval i `seq` forceEval j `seq` True = x
-%%[[101
+%%[[102
   fevCount (PredOccId i j) = cm1 "PredOccId" `cmUnion` fevCount i `cmUnion` fevCount j
 %%]]
 
 instance ForceEval ImplsProveOcc where
   forceEval x@(ImplsProveOcc i s) | forceEval i `seq` forceEval s `seq` True = x
-%%[[101
+%%[[102
   fevCount (ImplsProveOcc i s) = cm1 "ImplsProveOcc" `cmUnion` fevCount i `cmUnion` fevCount s
 %%]]
 
 %%]
 
-%%[101 hs
+%%[102 hs
 instance ForceEval TyQu where
   fevCount x | x `seq` True = cm1 "TyQu_*"
 %%]
@@ -123,7 +123,7 @@ SEM RowExts
   | Exts			lhs		.	repl		=	forceEval' @exts
 
 
-%%[101
+%%[102
 ATTR AllTyAndFlds  [ | | cm USE {`cmUnion`} {(emptyCM)}: CountMp ]
 
 SEM Ty

@@ -415,7 +415,7 @@ instance ForceEval Guard where
   forceEval x@(NotEqualScope          sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(EqualScope             sc1 sc2    ) | forceEval sc1 `seq` forceEval sc2 `seq` True = x
   forceEval x@(NonEmptyRowLacksLabel  r o t l    ) | forceEval r `seq` forceEval o `seq` forceEval t `seq` forceEval l `seq` True = x
-%%[[101
+%%[[102
   fevCount (HasStrictCommonScope   sc1 sc2 sc3) = cm1 "HasStrictCommonScope"  `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
   fevCount (IsStrictParentScope    sc1 sc2 sc3) = cm1 "IsStrictParentScope"   `cmUnion` fevCount sc1 `cmUnion` fevCount sc2 `cmUnion` fevCount sc3
   fevCount (IsVisibleInScope       sc1 sc2    ) = cm1 "IsVisibleInScope"      `cmUnion` fevCount sc1 `cmUnion` fevCount sc2

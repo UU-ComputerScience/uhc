@@ -14,10 +14,10 @@
    allocation methods (perhaps via an external library through the FFI).
 -}
 
-%%[101 module {%{EH}Debug.HighWaterMark} import(Foreign.C.Types (CULong))
+%%[102 module {%{EH}Debug.HighWaterMark} import(Foreign.C.Types (CULong))
 %%]
 
-%%[101 export(megaBytesAllocated)
+%%[102 export(megaBytesAllocated)
 foreign import ccall "get_mblocks_allocated" 
                      getMBlocksAllocated :: IO CULong 
 
