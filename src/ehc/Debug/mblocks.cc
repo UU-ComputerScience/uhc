@@ -1,6 +1,6 @@
 From HighWaterMark by Bernie Pope.
 
-%%[101
+%%[102
 
 #include "stdio.h"
 #include <Stg.h>

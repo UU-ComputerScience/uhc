@@ -34,7 +34,7 @@ EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS)
 EHCLIB_DIST_FILES						:= $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 
 # targets
-ehclib-variant-dflt: $(EHCLIB_HS_ALL_DRV_HS) $(EHC_BLD_EXEC)
+ehclib-variant-dflt: $(EHCLIB_HS_ALL_DRV_HS)
 	$(EHC_BLD_EXEC) $(EHCLIB_HS_MAIN_DRV_HS)
 
 # dispatch rules

@@ -170,7 +170,7 @@ instance ForceEval HIInfo where
 				  }
               )
               = x
-%%][101
+%%][102
   fevCount  (HIInfo
                 { hiiExps             = e
                 , hiiHiddenExps       = he

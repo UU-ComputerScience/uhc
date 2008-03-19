@@ -107,7 +107,7 @@
 %%]
 
 
-%%[101 import({%{EH}Core.Trf.Strip}, {%{EH}Debug.HighWaterMark})
+%%[102 import({%{EH}Core.Trf.Strip}, {%{EH}Debug.HighWaterMark})
 %%]
 
 
@@ -122,21 +122,25 @@ main
          ;  progName  <- getProgName
          ;  let  ehcOpts        = defaultEHCOpts
 %%[[99
-                                    {ehcProgName = progName}
+                                    { ehcProgName      = p
+                                    , ehcOptUseInplace = fpathBase p == Cfg.verProg Cfg.version
+                                    }
+                                where p = mkFPath progName
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts           = foldl (flip ($)) ehcOpts o
          ;  if ehcOptHelp opts
-%%]
-%%[1.main.ehcOptHelp
+%%[[1
             then  putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
-%%]
-%%[8.main.ehcOptHelp -1.main.ehcOptHelp
-            then  do  {  putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:") ehcCmdLineOpts)
+%%][8
+            then  do  {  putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version
+                                             ++ "\n\nUsage: " ++ progName
+                                             ++ " [options] [file[.eh|.hs]]\n\noptions:"
+                                             )
+                                             ehcCmdLineOpts)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
                       }
-%%]
-%%[1.main.tl
+%%]]
             else  if ehcOptVersion opts
             then  putStrLn (Cfg.verInfo Cfg.version)
 %%[[99
@@ -237,8 +241,6 @@ data EHCompileUnit
       , ecuMbHSSem           :: !(Maybe HSSem.Syn_AGItf)
       , ecuMbEH              :: !(Maybe EH.AGItf)
       , ecuMbEHSem           :: !(Maybe EHSem.Syn_AGItf)
-%%[[101
-%%]]
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
@@ -257,6 +259,9 @@ data EHCompileUnit
       , ecuMbOptim           :: !(Maybe Optim)
       , ecuHIInfo            :: !HI.HIInfo
 %%]]
+%%[[101
+      , ecuDirIsWritable     :: !Bool
+%%]]
       }
 %%]
       , ecuMbEHSem2          :: !(Maybe EHSem.Syn_AGItf)
@@ -273,7 +278,7 @@ emptyECU
       , ecuMbHSSem           = Nothing
       , ecuMbEH              = Nothing
       , ecuMbEHSem           = Nothing
-%%[[101
+%%[[102
 %%]]
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
@@ -292,6 +297,9 @@ emptyECU
       , ecuMbPrevHISem       = Nothing
       , ecuMbOptim           = Nothing
       , ecuHIInfo            = HI.emptyHIInfo
+%%]]
+%%[[101
+      , ecuDirIsWritable     = False
 %%]]
       }
 %%]
@@ -448,6 +456,11 @@ ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%]]
 %%]
 
+%%[101
+ecuStoreDirIsWritable :: EcuUpdater Bool
+ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile run combinators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -515,7 +528,7 @@ fileSuffMpHs
 %%% Show sizes, mem usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[101
+%%[102
 showSizeCore :: Core.CModule -> String
 showSizeCore x = fevShow "Core" x
 
@@ -889,7 +902,7 @@ cpFlowEHSem1 modNm
                      ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowEHSem1")
 %%]]
-%%[[101
+%%[[102
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (do { lift $ putStrLn $ fevShow "gathDataGam" dg
                                 ; lift $ putStrLn $ fevShow "gathValGam" vg
@@ -1004,7 +1017,7 @@ cpSetupMod _ = return ()
 %%[20 -8.cpSetupMod
 cpSetupMod :: HsName -> EHCompilePhase ()
 cpSetupMod modNm
-  = cpSeq [cpGetModfTimes modNm,cpGetPrevHI modNm,cpFoldHI modNm]
+  = cpSeq [cpGetMetaInfo modNm,cpGetPrevHI modNm,cpFoldHI modNm]
 %%]
 
 %%[20
@@ -1054,13 +1067,16 @@ cpGetHsMod modNm
          -- ; lift $ putWidthPPLn 120 (pp mod)
          }
 
-cpGetModfTimes :: HsName -> EHCompilePhase ()
-cpGetModfTimes modNm
+cpGetMetaInfo :: HsName -> EHCompilePhase ()
+cpGetMetaInfo modNm
   =  do  {  cr <- get
          ;  let  ecu    = crCU modNm cr
-         ;  tm ecuStoreHSTime   (                      ecuFilePath ecu)
-         ;  tm ecuStoreHITime   (fpathSetSuff "hi"   $ ecuFilePath ecu)
-         ;  tm ecuStoreCoreTime (fpathSetSuff "core" $ ecuFilePath ecu)
+         ;  tm ecuStoreHSTime        (                      ecuFilePath ecu)
+         ;  tm ecuStoreHITime        (fpathSetSuff "hi"   $ ecuFilePath ecu)
+         ;  tm ecuStoreCoreTime      (fpathSetSuff "core" $ ecuFilePath ecu)
+%%[[101
+         ;  wr ecuStoreDirIsWritable (                      ecuFilePath ecu)
+%%]]
          }
   where tm store fp
           = do { let n = fpathToStr fp
@@ -1070,6 +1086,13 @@ cpGetModfTimes modNm
                           ; cpUpdCU modNm $ store t
                           })
                }
+%%[[101
+        wr store fp
+          = do { pm <- lift $ getPermissions (maybe "." id $ fpathMbDir fp)
+               -- ; lift $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))
+               ; cpUpdCU modNm $ store (writable pm)
+               }
+%%]]
 %%]
 
 %%[20
@@ -1110,6 +1133,13 @@ crModNeedsCompile modNm cr
     || not (null newer)
   where ecu = crCU modNm cr
         (newer,_) = crPartitionNewerOlderImports modNm cr
+%%]
+
+%%[101
+crModCanCompile :: HsName -> EHCompileRun -> Bool
+crModCanCompile modNm cr
+  = ecuDirIsWritable ecu
+  where ecu = crCU modNm cr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1192,7 +1222,7 @@ cpTranslateEH2Core modNm
                  core   = EHSem.cmodule_Syn_AGItf ehSem
 %%[[8
                  errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
-%%][101
+%%][102
                  -- core   = Core.CModule_Mod modNm (Core.CExpr_Int 1) []
                  errs   = []
 %%]]
@@ -1204,7 +1234,7 @@ cpTranslateEH2Core modNm
                             (lift $ putPPFile (fpathToStr (fpathSetSuff "eh2" fp)) (EHSem.pp_Syn_AGItf ehSem) 1000)
                      ; when (ehcOptShowEH opts)
                             (lift $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
-%%][101
+%%][102
 %%]]
 %%[[8
                      ; when (ehcOptShowAst opts)
@@ -1325,10 +1355,10 @@ cpTransformGrin modNm
                  forBytecode = not (ehcOptFullProgAnalysis opts)
                  optimizing  = ehcOptOptimise opts >= OptimiseNormal
          
-                 trafos  =     if forBytecode               then mk [mte,unb]               else []
-                           ++  if optimizing                then mk evel                    else mk [flt]
-                           ++  if forBytecode && optimizing then inline ++ mk (evel++[cpr]) else []
-                           ++  if optimizing                then mk [nme]                   else []
+                 trafos  =     (if forBytecode               then mk [mte,unb]               else [])
+                           ++  (if optimizing                then mk evel                    else mk [flt])
+                           ++  (if forBytecode && optimizing then inline ++ mk (evel++[cpr]) else [])
+                           ++  (if optimizing                then mk [nme]                   else [])
 
                    where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
                          inl  = ( grInline                       , "inline"           )
@@ -1435,24 +1465,29 @@ cpCompileWithGCC how othModNmL modNm
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
                                                -- , map ("-l" ++) (Cfg.libnamesGccPerVariant ++ Cfg.libnamesGcc)
-                                               , map (\l -> Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/lib/lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
+                                               , map (\l -> Cfg.selectFileprefixInstall opts ++ perVariantSuffix ++ l ++ ".a") Cfg.libnamesGccPerVariant
                                                  ++ map (\l -> Cfg.selectFileprefixInstall opts ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , if   ehcOptEmitExecC opts
                                                  then [ ]
                                                  else [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
+%%[[8
+                                            where perVariantSuffix = "%%@{%{VARIANT}%%}/lib/lib"
+%%][101
+                                            where perVariantSuffix = "lib/lib"
+%%]]
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
                                             where o = fpO fp
          ;  when (ehcOptEmitExecC opts || ehcOptEmitExecBytecode opts)
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ Cfg.shellCmdGcc ]
-                                 ++ [ {- "-L" ++ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/lib"
-                                    , "-L" ++ Cfg.selectFileprefixInstall opts ++ "lib"
-                                    , -} "-I" ++ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include"
-                                    , "-I" ++ Cfg.selectFileprefixInstall opts ++ "include"
-                                    ]
+%%[[8
+                                 ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include" ]
+%%][101
+%%]]
+                                 ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "include" ]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
@@ -1491,7 +1526,12 @@ cpPreprocessWithCPP modNm
                          (do { cpMsg modNm VerboseALot "CPP"
                              ; lift $ putStrLn preCPP
                              })
+%%[[99
                   ; cpSystem preCPP
+%%][101
+                  ; when (crModCanCompile modNm cr)
+                         (cpSystem preCPP)
+%%]]
                   ; cpUpdCU modNm (ecuStoreFilePath fpCPP)
                   })
        }
@@ -1523,14 +1563,14 @@ cpCore1Trf modNm trfNm
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
-%%[[101
+%%[[102
                               "CS"      -> cmodTrfStrip
 %%]]
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id
                           ) core
          ;  cpMsg' modNm VerboseALot "Transforming" (lookup trfNm cmdLineTrfs) fp
-%%[[101
+%%[[102
 %%]]
          ;  cpUpdCU modNm $! ecuStoreCore $! core2
          }
@@ -1592,7 +1632,7 @@ cpProcessCoreBasic modNm
   = cpSeq [ cpTransformCore
               modNm
                 (
-%%[[101
+%%[[102
                   -- [ "CS" ] ++
 %%]]
                   [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" ]
@@ -1865,7 +1905,7 @@ cpMemUsage :: EHCompilePhase ()
 cpMemUsage
 %%[[8
   = return ()
-%%][101
+%%][102
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
        ; size <- lift $ megaBytesAllocated
@@ -2113,7 +2153,12 @@ cpCompileOrderedCUs
         merge cs       []       = cs
         comp m
           = do { cr <- get
-               ; let targ = if crModNeedsCompile m cr then HSAllSem else HSAllSemHI
+               ; let targ = if crModNeedsCompile m cr
+%%[[101
+                               && crModCanCompile m cr
+%%]]
+                            then HSAllSem
+                            else HSAllSemHI
                ; cpSeq [cpCompileCU (Just targ) m]
                }
         flow m
@@ -2239,7 +2284,11 @@ doCompileRun :: String -> EHCOpts -> IO ()
 doCompileRun fn opts
   = do { let fp             = mkTopLevelFPath "hs" fn
              topModNm       = mkHNm (fpathBase fp)
-             searchPath     = mkInitSearchPath fp ++ ehcOptSearchPath opts
+             searchPath     = mkInitSearchPath fp
+                              ++ ehcOptSearchPath opts
+%%[[101
+                              ++ (if ehcOptUseInplace opts then [] else [Cfg.fileprefixInstall ++ "ehclib/ehcbase"])
+%%]]
              opts2          = opts { ehcOptSearchPath = searchPath }
              hsInh          = HSSem.Inh_AGItf { HSSem.opts_Inh_AGItf            = opts2
                                               , HSSem.idGam_Inh_AGItf           = HSSem.tyGam2IdDefOccGam initTyGam

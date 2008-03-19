@@ -49,7 +49,7 @@ SEM Expr
                                              >#< (@decls.pp >-< @extraPP)
 %%[[1
                                              >-< @errLetPP
-%%][101
+%%][102
 %%]]
 %%[[1
                                              >-< "in" >#< @body.pp
@@ -110,7 +110,7 @@ SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp
 %%[[1
                                         >-< @errPP
-%%][101
+%%][102
 %%]]
                                         >-< @tl.pp
 
@@ -118,7 +118,7 @@ SEM AGItf
   | AGItf       lhs     .   pp      =   @extraPP >-< @expr.pp
 %%[[1
                                         >-< @errTopPP
-%%][101
+%%][102
 %%]]
                 loc     .   extraPP =   empty
 %%]
@@ -339,13 +339,13 @@ SEM Decl
 %%[[9
                                                     >-< @errInstPP
                                                     >-< @errDeclsPP
-%%][101
+%%][102
 %%]]
   | InstanceIntro
                 loc     .   pp      =   "instance"  >#< @expr.pp >#< "<:" >#< @prExpr.pp
 %%[[9
                                                     >-< @errInstPP
-%%][101
+%%][102
 %%]]
 %%]
 

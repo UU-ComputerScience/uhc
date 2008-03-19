@@ -1044,13 +1044,13 @@ instance PP PolGamInfo where
 %%[99
 instance ForceEval v => ForceEval (LGamElt v) where
   forceEval x@(LGamElt l v) | forceEval v `seq` True = x
-%%[[101
+%%[[102
   fevCount (LGamElt l v) = cm1 "LGamElt" `cmUnion` fevCount l `cmUnion` fevCount v
 %%]]
 
 instance (ForceEval k, ForceEval v) => ForceEval (LGam k v) where
   forceEval x@(LGam l m) | forceEval m `seq` True = x
-%%[[101
+%%[[102
   fevCount (LGam l m) = cm1 "LGam" `cmUnion` fevCount l `cmUnion` fevCount m
 %%]]
 %%]
@@ -1058,24 +1058,24 @@ instance (ForceEval k, ForceEval v) => ForceEval (LGam k v) where
 %%[99
 instance ForceEval ValGamInfo where
   forceEval x@(ValGamInfo t) | forceEval t `seq` True = x
-%%[[101
+%%[[102
   fevCount (ValGamInfo x) = cm1 "ValGamInfo" `cmUnion` fevCount x
 %%]]
 
 instance ForceEval KiGamInfo where
   forceEval x@(KiGamInfo k) | forceEval k `seq` True = x
-%%[[101
+%%[[102
   fevCount (KiGamInfo x) = cm1 "KiGamInfo" `cmUnion` fevCount x
 %%]]
 
 instance ForceEval TyKiGamInfo where
   forceEval x@(TyKiGamInfo k) | forceEval k `seq` True = x
-%%[[101
+%%[[102
   fevCount (TyKiGamInfo x) = cm1 "TyKiGamInfo" `cmUnion` fevCount x
 %%]]
 
 instance ForceEval TyKiKey
-%%[[101
+%%[[102
   where
     fevCount (TyKiKey_Name  n) = cm1 "TyKiKey_Name"  `cmUnion` fevCount n
     fevCount (TyKiKey_TyVar v) = cm1 "TyKiKey_TyVar" `cmUnion` fevCount v
@@ -1083,36 +1083,36 @@ instance ForceEval TyKiKey
 
 instance ForceEval TyGamInfo where
   forceEval x@(TyGamInfo t) | forceEval t `seq` True = x
-%%[[101
+%%[[102
   fevCount (TyGamInfo x) = cm1 "TyGamInfo" `cmUnion` fevCount x
 %%]]
 
 instance ForceEval DataFldInfo
-%%[[101
+%%[[102
   where
     fevCount (DataFldInfo x) = cm1 "DataFldInfo" `cmUnion` fevCount x
 %%]]
 
 instance ForceEval DataTagInfo where
   forceEval x@(DataTagInfo m n t p) | forceEval m `seq` forceEval p `seq` True = x
-%%[[101
+%%[[102
   fevCount (DataTagInfo m n t p) = cmUnions [cm1 "DataTagInfo",fevCount m,fevCount n,fevCount t,fevCount p]
 %%]]
 
 instance ForceEval DataFldInConstr where
   forceEval x@(DataFldInConstr m) | forceEval m `seq` True = x
-%%[[101
+%%[[102
   fevCount (DataFldInConstr x) = cm1 "DataFldInConstr" `cmUnion` fevCount x
 %%]]
 
 instance ForceEval DataGamInfo where
   forceEval x@(DataGamInfo n t nl tm cm nt mx) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
-%%[[101
+%%[[102
   fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
 %%]]
 
 instance ForceEval FixityGamInfo
-%%[[101
+%%[[102
   where
     fevCount (FixityGamInfo p f) = cm1 "FixityGamInfo" `cmUnion` fevCount p `cmUnion` fevCount f
 %%]]
