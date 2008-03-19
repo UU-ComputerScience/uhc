@@ -246,6 +246,9 @@ else
 fi
 
 case $cc_version in
+  4.2.3)
+    cc_std_flag="-std=gnu99"
+    ;;
   4.1.3)
     cc_std_flag="-std=c99"
     ;;
