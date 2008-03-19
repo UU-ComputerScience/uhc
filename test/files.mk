@@ -36,6 +36,8 @@ test-lists:
 #                Because: some platforms don't know about the -E option (richer regex) to sed
 test-expect test-regress: test-lists
 	@how=`echo $@ | sed -e 's/.*expect.*/exp/' -e 's/.*regress.*/reg/'` ; \
+	nerrors=0; \
+	nwarnings=0; \
 	cd $(TEST_REGRESS_SRC_PREFIX) ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
@@ -124,10 +126,12 @@ test-expect test-regress: test-lists
 	          if ! cmp $${te} $${th} > /dev/null ; \
 	          then \
 	            diff $${te} $${th} | $(INDENT4) ; \
+		    nerrors=$$[ $$nerrors + 1 ]; \
 	          fi \
 	        elif test ! -r $${te} ; \
 	        then \
 	          echo "-- no $${te} to compare to" | $(INDENT2) ; \
+		  nwarnings=$$[ $$nwarnings + 1 ]; \
 	        fi \
 	      fi ; \
 	      $${cleanup} ; \
@@ -135,5 +139,8 @@ test-expect test-regress: test-lists
 	    TEST_FILES="" ; \
 	  else \
 	    echo "-- no $${ehc} to compile with" | $(INDENT2) ; \
+            exit 1; \
 	  fi \
-	done
+	done; \
+	echo "== completed with $$nerrors errors and $$nwarnings warnings =="; \
+	exit $$nerrors;
