@@ -1425,7 +1425,7 @@ cpCompileWithLLVM modNm
                               , Cfg.selectFileprefixInstall opts 
                                 ++ "%%@{%{VARIANT}%%}/lib/timing.o"
                               , Cfg.selectFileprefixInstall opts
-                                ++ "non-threaded/lib/libgc.a"
+                                ++ "lib/libgc.a"
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]

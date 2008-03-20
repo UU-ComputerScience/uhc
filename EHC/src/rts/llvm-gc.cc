@@ -59,7 +59,7 @@ void* llvmgc_malloc_uncollectable( size_t nbytes )
 
 void llvmc_print_statistics( )
 {
-  #if USE_BOEHM_GC && 0 
+  #if USE_BOEHM_GC
     #if GC_TIMING
       timing_finalize();
       fprintf( stderr, "-----Timing statistics-----\n" );
