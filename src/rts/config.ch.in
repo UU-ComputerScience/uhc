@@ -39,7 +39,7 @@
 
 %%[8
 /* Timing of GC */
-#define GC_TIMING 1
+#define GC_TIMING 0
 %%]
 
 
