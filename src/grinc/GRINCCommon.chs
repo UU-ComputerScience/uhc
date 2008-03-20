@@ -101,15 +101,19 @@ instance Monoid AbstractValue where
 
 
 conNumber :: GrTag -> Int
-conNumber GrTag_Any      = 9   -- should be last
-conNumber GrTag_Hole     = 8
-conNumber GrTag_Rec      = 7
-conNumber GrTag_World    = 6
-conNumber GrTag_Unboxed  = 5
-conNumber (GrTag_App _)     = 4
-conNumber (GrTag_Fun _)     = 3
-conNumber (GrTag_PApp _ _)  = 2
+-- Final tags first
 conNumber (GrTag_Con _ _ _) = 1
+conNumber (GrTag_PApp _ _)  = 2
+conNumber GrTag_Rec         = 3
+conNumber GrTag_Unboxed     = 4
+conNumber GrTag_World       = 5
+conNumber GrTag_Any         = 6
+-- "Hole" separates final tags from unevaluated tags (this fact is exploited Grin2Silly, for generating code for Reenter alternatives)
+conNumber GrTag_Hole        = 7
+-- Unevaluated tags last
+conNumber (GrTag_Fun _)     = 8
+conNumber (GrTag_App _)     = 9
+
 
 conName :: GrTag -> HsName
 conName (GrTag_App nm) = nm
@@ -125,12 +129,12 @@ instance Ord GrTag where
   compare t1 t2 = let x = conNumber t1
                       y = conNumber t2
                   in  case compare x y of 
-                        EQ -> if  x >= 5
-                              then -- Hole/Rec/World/Unboxed/Any
+                        EQ -> if  x >= 3 && x <= 7
+                              then -- Rec/Unboxed/World/Any/Hole
                                    EQ
                               else -- App/Fun/PApp/Con, all have a name
                                    case compare (conName t1) (conName t2) of
-                                     EQ -> if  x >= 3
+                                     EQ -> if  x >= 8
                                            then -- App/Fun
                                                 EQ
                                            else -- Papp/Con, both have an int

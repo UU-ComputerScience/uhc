@@ -35,8 +35,8 @@ DATA Statement
                  dest2      : Variable
                  source     : Value
   |  IfThenElse  condition  : Value
-                 thenpart   : Statement
-                 elsepart   : Statement
+                 thenpart   : Statements
+                 elsepart   : Statements
   |  Switch      scrutinee  : Value
                  body       : Alternatives
   |  Call        name       : {HsName}
@@ -85,6 +85,8 @@ DATA Value
   |  Label       name       : {String}
   |  Call        name       : String
                  args       : Values
+  |  CompareGT   val        : Value
+                 con        : Constant
 
 
 SET AllNT       =   SilModule Functions Function Statements Statement Alternatives Alternative Constant Variables Variable Values Value

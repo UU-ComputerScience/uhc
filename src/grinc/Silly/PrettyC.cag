@@ -9,6 +9,8 @@
 
 %%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyC)
 %%]
+%%[8 hs import(Data.Maybe)
+%%]
 %%[8 hs import({%{EH}Base.Common})
 %%]
 %%[8 hs import({%{EH}Base.Opts})
@@ -139,10 +141,19 @@ SEM Statement
   | Return      lhs.prettyC   = returnFromSillyFunction @retdiff @lhs.optOwn
   | Label       lhs.prettyC   = label @name
   | Smart       lhs.prettyC   = error "Silly.PrettyC: Statement_Smart"
-  | IfThenElse  lhs.prettyC   = error "Silly.PrettyC: Statement_IfThenElse"
+  | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
+                                           @thenpart.prettyC 
+                                           (if @elsepart.isEmpty then Nothing else Just @elsepart.prettyC)
 
 SEM Alternative
   | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
+
+ATTR Statements [ | | isEmpty : Bool ]
+
+SEM Statements
+  | Nil         lhs.isEmpty = True
+  | Cons        lhs.isEmpty = False
+ 
 
 SEM Values
   | Nil         lhs.prettyCs  = []
@@ -158,6 +169,7 @@ SEM Value
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
   | Alloc       lhs.prettyC   = "heapalloc(" >|< show @size >|< ")"
   | Label       lhs.prettyC   = "((GrWord)(&&" >|< @name >|< "))"
+  | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
 
 SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
@@ -363,6 +375,21 @@ assignment v e
               (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
               --(" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
 
+
+ifthenelse ::  PP_Doc -> PP_Doc -> Maybe PP_Doc -> PP_Doc
+ifthenelse cond s1 mbs2
+ = "if ("
+   >|< cond
+   >|< ")"
+   >#< "{"
+   >-< indent 4 s1
+   >|< "}"
+   >-< ppWhen (isJust mbs2)
+              ( "else {"
+              >|< indent 4 (fromJust mbs2)
+              >|< "}"
+              ) 
+
 switch :: Bool -> String -> PP_Doc -> PP_Doc -> PP_Doc
 switch optDef funname scrutinee body
  = 
@@ -375,15 +402,6 @@ switch optDef funname scrutinee body
    >-< indent 4 body
    >-< ppWhen optDef (indent 4 (caseDefault scrutinee funname))
    >-< "}"
-
-ifstat ::  PP_Doc -> PP_Doc -> PP_Doc
-ifstat scrutinee body
- =     ppWhen optTraceAssign
-              (" printf(\"if" >#< show scrutinee >#< " : %d \\n\", " >#< show scrutinee >#<  "); fflush(stdout);")
-   >-< "if ("
-   >|< scrutinee
-   >|< " & 1)"
-   >-< body
 
 alternative :: PP_Doc -> PP_Doc -> PP_Doc
 alternative when body

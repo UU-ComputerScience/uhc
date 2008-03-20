@@ -115,7 +115,7 @@ SEM GrVar
 ATTR AllGrTag GrVarL GrVar [ | | self:SELF ]
 
 SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
-  | FetchNode     lhs  .  fetchPointer  =  Just @nm
+  | FetchNode     lhs  .  fetchPointer  =  Just (Map.findWithDefault @nm (getNr @nm) @lhs.renameMap)
   | * - FetchNode lhs  .  fetchPointer  =  Nothing
 
 
@@ -143,6 +143,35 @@ SEM GrExpr
   | Seq          lhs.hasCase = let mbExpr = @expr.hasCase
                                in  maybe @body.hasCase Just @expr.hasCase
   | * - Case Seq lhs.hasCase = Nothing
+
+
+ATTR AllGrExpr [ targetArity : Int | | ]
+ATTR GrPatLam  [ | | arity : Int ]
+ATTR GrVarL    [ | | length : Int ]
+
+
+
+                              
+
+
+SEM GrBind
+  | Bind      expr.targetArity     = let  absVal = getEnvVar @lhs.hptMap (getNr @nm)
+                                          nodes = getNodes absVal
+                                          argss = map snd nodes
+                                          ls    = map length argss
+                                     in   maximum ls
+  
+SEM GrExpr
+  | Seq       expr.targetArity     = @pat.arity
+
+SEM GrPatLam
+  | Empty     lhs.arity = 0
+  | Var       lhs.arity = 1
+  | VarNode   lhs.arity = @fldL.length
+
+SEM GrVarL
+  | Nil       lhs.length = 0
+  | Cons      lhs.length = 1 + @tl.length
 
 
 ATTR AllGrExpr [ floatingFetches : FetchEnv | | ]
@@ -217,20 +246,22 @@ SEM GrExpr
 SEM GrExpr
   | Catch  loc  . hasNext      =  False
   | FetchNode FetchField
-           loc  .  mbKnownTag  =  checkSingleTag @lhs.hptMap @nm
-                .  knownTag    =  case @mbKnownTag of
-                                   Just t  -> t
-                                   Nothing -> GrTag_Hole  -- TODO: is this the right panic result?
-                                              -- error ("unknown tag in returning fetch " ++ show @nm ++ " tags can be " ++ show (getNodes (absFetch @lhs.hptMap @nm))) 
-                .  size        =  tagArity @knownTag @lhs.arityMap
-                .  fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField @nm o @mbKnownTag, o+1)
-                                  in take @size $ unfoldr buildFetchInfo 1
-                .  names       =  map (\n->HNmNr n OrigNone) [@lhs.uniq .. @uniq  - 1]
-                .  uniq        =  if not @lhs.hasNext then @lhs.uniq + @size else @lhs.uniq
-                .  node        =  GrVal_Node @knownTag (map GrVal_Var @names)
-           lhs  .  grTrf       =  if not @lhs.hasNext
-                                  then buildSeqs (GrExpr_Unit @node) (zip @names @fetches)
-                                  else @grTrf
+           (loc.uniq
+           ,lhs.grTrf)         =  if not @lhs.hasNext
+                                  then let newname     =  Map.findWithDefault @nm (getNr @nm) @lhs.renameMap
+                                           mbKnownTag  =  checkSingleTag @lhs.hptMap newname
+                                           size        =  maybe @lhs.targetArity  -- 100   -- TODO: get a better arity somewhere
+                                                                (\t -> tagArity t @lhs.arityMap)
+                                                                mbKnownTag
+                                           fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField newname o mbKnownTag, o+1)
+                                                          in take size $ unfoldr buildFetchInfo (maybe 0 (const 1) mbKnownTag)
+                                           newuniq     =  @lhs.uniq + size
+                                           names       =  map (\n->HNmNr n OrigNone) [@lhs.uniq .. newuniq  - 1]
+                                           node        =  maybe (GrVal_VarNode (map GrVal_Var names))
+                                                                (\t -> GrVal_Node t (map GrVal_Var names))
+                                                                mbKnownTag
+                                       in  (newuniq, buildSeqs (GrExpr_Unit node) (zip names fetches) )
+                                  else (@lhs.uniq, @loc.grTrf)
 %%]
 
 %%[8.applySubst
@@ -239,7 +270,7 @@ SEM GrVal
 
 SEM GrExpr
   | FetchNode FetchField Eval Throw UpdateUnit
-               loc  . newName    = maybe @nm id (Map.lookup (getNr @nm) @lhs.renameMap)
+               loc  . newName    = Map.findWithDefault @nm (getNr @nm) @lhs.renameMap
   | FetchNode  loc  . grTrf      = GrExpr_FetchNode  @newName
   | FetchField loc  . grTrf      = GrExpr_FetchField @newName @offset @mbTag
   | UpdateUnit loc  . grTrf      = GrExpr_UpdateUnit @newName @val.grTrf

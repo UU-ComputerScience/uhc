@@ -170,7 +170,7 @@ data EHCOpts
 defaultEHCOpts
   = EHCOpts
       {  ehcOptShowHS           =   False
-      ,  ehcOptPriv             =   True
+      ,  ehcOptPriv             =   False
 %%[[1
       ,  ehcOptShowEH           =   True
 %%][99
@@ -375,13 +375,11 @@ ehcCmdLineOpts
 
                                 Just "bc"    -> o { ehcOptEmitBytecode     = True 
                                                   , ehcOptFullProgAnalysis = False
-                                                  -- , ehcOptPriv          = True
                                                   }
                                 Just m | m `elem` ["bexe","bexec"]
                                              -> o { ehcOptEmitBytecode     = True
                                                   , ehcOptEmitExecBytecode = True
                                                   , ehcOptFullProgAnalysis = False
-                                                  -- , ehcOptPriv          = True
                                                   }
 
                                 Just "c"     -> o { ehcOptEmitC            = True

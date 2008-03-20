@@ -292,6 +292,8 @@ SEM Statement
                                newFresh @loc.uniqNr3 Label              
 -}
 
+  | IfThenElse  lhs.llvmCode = error "Silly.ToLLVM: IfThenElse not yet implemented"
+
   | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
                                [ LLVMStatement_Switch @scrutinee.llvmVar @loc.defaultLabel @loc.targets ] ++ 
                                @loc.altLLVMStatements ++ @loc.defaultBody ++ 
@@ -324,8 +326,6 @@ SEM Statement
                                     
   | Smart       lhs.llvmCode = error "Silly.ToLLVM: Smart should occur only in intermediate Silly"
                                     
-  | IfThenElse  lhs.llvmCode = error "Silly.ToLLVM: IfThenElse not yet implemented"
-
   | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
                 lhs.llvmCode = error "Unimplemented Statement"
 
@@ -422,8 +422,10 @@ SEM Value
                                if getType @var.llvmVar /= @lhs.intType
                                then load @loc.uniqSeed @var.llvmVar
                                else (@loc.uniqSeed,@var.llvmVar,[])                              
+
+  | CompareGT   lhs.llvmCode = error "Silly.ToLLVM: CompareGT not yet implemented"
                 
-  | * - Alloc Call Con Var
+  | * - Alloc Call Con Var CompareGT
                 lhs.llvmVar  = error $ "No Label, Cast or Offset Value expected"
                 lhs.llvmCode = error $ "No Label, Cast or Offset Value expected"       
  

@@ -58,7 +58,7 @@ SEM Statement
   | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Assignment2 lhs.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
-  | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< @thenpart.pretty >-< "}" >-< "ELSE {" >-< @elsepart.pretty >-< "}"
+  | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
   | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
   | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
@@ -94,6 +94,7 @@ SEM Value
   | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
   | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
   | Label          lhs.pretty = text "LABEL" >#< show @name
+  | CompareGT      lhs.pretty = @val.pretty >#< ">" >#< @con.pretty
 
 SEM Values
   | Nil            lhs.pretty = empty
