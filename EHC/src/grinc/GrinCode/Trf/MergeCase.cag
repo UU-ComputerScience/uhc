@@ -1,0 +1,90 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+
+%%[8 hs import(qualified Data.Map as Map)
+%%]
+%%[8 hs import({%{GRIN}GrinCode.Trf.SubstExpr})
+%%]
+
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.MergeCase} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(mergeCase)
+
+mergeCase :: GrModule -> GrModule
+mergeCase grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                       (Inh_GrAGItf)
+                  in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+
+%%[8
+
+ATTR GrExpr [ | | mbIsCase : {Maybe GrExpr} mbStartsWithCase : {Maybe (GrExpr,GrPatLam,GrExpr)} ]
+
+SEM GrExpr
+  | Case       lhs.mbIsCase   =   Just @loc.grTrf
+  | * - Case   lhs.mbIsCase   =   Nothing
+  
+  | Seq        lhs.mbStartsWithCase  =  maybe Nothing
+                                              (\c -> Just (c, @pat.grTrf, @body.grTrf))  
+                                              @expr.mbIsCase
+  | * - Seq    lhs.mbStartsWithCase  =  Nothing
+                                    
+
+SEM GrExpr
+  | Seq        lhs.grTrf   =  maybe @loc.grTrf
+                                    (\(GrExpr_Case val1 alts1)
+                                         -> maybe (maybe @loc.grTrf
+                                                         (\(GrExpr_Case val2 alts2)
+                                                              -> if   patIsVal @pat.grTrf val2
+                                                                 then combineCase val1 val2 alts1 alts2
+                                                                 else @loc.grTrf
+                                                         )
+                                                         @body.mbIsCase
+                                                  )
+                                                  (\(GrExpr_Case val2 alts2,pat2,rest2) 
+                                                       -> if   patIsVal @pat.grTrf val2
+                                                          then let newcase = combineCase val1 val2 alts1 alts2
+                                                               in  GrExpr_Seq newcase pat2 rest2
+                                                          else @loc.grTrf
+                                                  )
+                                                  @body.mbStartsWithCase
+                                    )
+                                    @expr.mbIsCase
+                      
+
+%%]
+
+%%[8 hs
+
+combineCase :: GrVal -> GrVal -> [GrAlt] -> [GrAlt] -> GrExpr
+combineCase scrut@(GrVal_Var nm1) (GrVal_Var nm2) alts1 alts2 
+   = let -- remove Ident alternatives, and relabel Normal alternatives as Reenter
+         newalts1 = [ GrAlt_Alt GrAltAnnReenter pat expr 
+                    | GrAlt_Alt GrAltAnnNormal  pat expr <- alts1 
+                    ]
+         env = Map.singleton nm2 nm1
+     in  substExpr env (GrExpr_Case scrut (newalts1++alts2))
+
+patIsVal :: GrPatLam -> GrVal -> Bool
+patIsVal (GrPatLam_Var nm1) (GrVal_Var nm2) = nm1==nm2
+patIsVal _ _ = False
+
+
+
+
+
+%%]

@@ -8,8 +8,6 @@
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
-%%[8 import({GrinCode/LastExpr})
-%%]
 
 %%[8 hs import(Debug.Trace)
 %%]
@@ -49,10 +47,14 @@ ATTR GrAGItf GrModule GrGlobalL GrGlobal GrBindL GrBind GrExpr GrAlt GrAltL [ hp
 ATTR GrAGItf GrModule   [ | | silModule                  : {SilModule}    ]
 ATTR GrBindL GrBind     [ | | functions    USE {++} {[]} : {Functions}    ]
 ATTR GrExpr             [ | | stats        USE {++} {[]} : {Statements}   ]
-ATTR GrAltL             [ | | alternatives               : {Alternatives} ]
-ATTR GrAlt              [ | | alternative                : {Alternative}  ]
-ATTR GrVal GrPatAlt GrTag  [ | | value                      : {Value}        ]
-ATTR GrPatAlt GrTag        [ | | constant                   : {Constant}     ]
+ATTR GrAltL             [ | | alternatives               : {Alternatives}
+                              reenteralts                : {Alternatives} ]
+ATTR GrAlt              [ | | alternative                : {Alternative}  
+                              isReenter                  : {Bool}         ]
+ATTR GrVal 
+     GrPatAlt 
+     GrTag              [ | | value                      : {Value}        ]
+ATTR GrPatAlt GrTag     [ | | constant                   : {Constant}     ]
 ATTR GrValL GrVal       [ | | values                     : {Values}       ]
 ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
                               names        USE {++} {[]} : {[HsName]}     ]
@@ -87,6 +89,31 @@ SEM GrExpr
 SEM GrVal
   | Empty   lhs.hasEmptyBody = True
   | *-Empty lhs.hasEmptyBody = False
+
+
+ATTR GrVal [ | | valueName : HsName ]
+ATTR AllAlt [ scrutineeName : HsName | | ]
+
+SEM GrExpr
+  | Case    altL . scrutineeName = @val.valueName
+
+
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
+SEM GrExpr
+  | Seq      expr . hasNext = True
+             body . hasNext = @lhs.hasNext
+
+SEM GrAlt
+  | Alt      (expr . hasNext
+             ,expr . targets) = if   @ann == GrAltAnnReenter
+                                then (True, [ @lhs.scrutineeName ])
+                                else (@lhs.hasNext, @lhs.targets)
+
+
 
 
 
@@ -146,23 +173,22 @@ SEM GrExpr
 
  | UpdateUnit
            loc.name   = mkVar @nm
-           lhs.stats   = if @isLastExpr
+           lhs.stats   = if not @lhs.hasNext
                           then internal2 "Update" @loc.name @val.values
                                ++ yielding "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                           else 
-                               []
-                               -- ++ internal2 "Update" @loc.name @val.values
+                               --    internal2 "Update" @loc.name @val.values
                                -- ++ internal1 "Unit" @lhs.targets @val.values 
-                               ++ internal3 "UpdateUnit" @loc.name @lhs.targets @val.values
+                               internal3 "UpdateUnit" @loc.name @lhs.targets @val.values
 
- | Unit    lhs.stats  = if @isLastExpr
+ | Unit    lhs.stats  = if not @lhs.hasNext
                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                          else maybe  (internal1 "Unit" @lhs.targets @val.values)
                                      (\t -> Statement_Comment ["Unit to PtrNode"] : storeManaged (mkVar t) (length @val.values) (length @val.values) @val.values)
                                      @lhs.mbPtrTarget
            lhs.localsSet = Set.fromList @lhs.targets
 
- | FFI     lhs.stats  = if @isLastExpr
+ | FFI     lhs.stats  = if not @lhs.hasNext
                          then yielding  "FFI" (@lhs.optOwn>=1) @loc.callres @lhs.numberParameters
                          else internal1 "FFI" @lhs.targets @loc.callres
 
@@ -205,14 +231,19 @@ SEM GrExpr
                         ]
            lhs.localsSet = Set.fromList @lhs.targets
 
- | Case    lhs.stats  = [ Statement_Comment ["Case"]
-                        , Statement_Switch @val.value
-                                           @altL.alternatives
-                        ]
+ | Case    lhs.stats  = let comm     = Statement_Comment ["Case"]
+                            reenters = if  null @altL.reenteralts
+                                       then []
+                                       else [ ifstat ]
+                            condition   = Value_CompareGT @val.value (Constant_Alias "HOLE")
+                            ifstat      = Statement_IfThenElse condition [switch1] []
+                            switch1     = Statement_Switch @val.value @altL.reenteralts
+                            switch2     = Statement_Switch @val.value @altL.alternatives
+                        in  comm : reenters ++ [switch2]
                         
            lhs.localsSet = Set.union (Set.fromList @lhs.targets) @altL.localsSet
 
- | Call    lhs.stats  = if @isLastExpr && @lhs.optOwn>=1
+ | Call    lhs.stats  = if not @lhs.hasNext && @lhs.optOwn>=1
                          then [ Statement_Comment ["Call (Own controlled tail) "]
                               , Statement_Smart (reverse @argL.values ++ map (Value_Var . Variable_Subs Variable_BP) [1, 0] )
                               , Statement_Assignment  Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2- @loc.nMyParams-2))
@@ -230,13 +261,13 @@ SEM GrExpr
                                                       ]
                                                    )
                                         ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
-                                           , Statement_Call @nm @isLastExpr [] 
+                                           , Statement_Call @nm (not @lhs.hasNext) [] 
                                            ]
                                         ++ if @lhs.optOwn>=3
                                             then [ Statement_Label @loc.label ]
                                             else []
                                         )
-                                   else [Statement_Call @nm @isLastExpr @argL.values]
+                                   else [Statement_Call @nm (not @lhs.hasNext) @argL.values]
                                   )
                               ++ [ Statement_Assignment v e
                                  | (v,e) <-zip  [mkVar x  | x <- @lhs.targets]
@@ -260,12 +291,15 @@ SEM GrExpr
 
 
 SEM GrAltL
-  | Nil    lhs.alternatives = []
-  | Cons   lhs.alternatives = @hd.alternative : @tl.alternatives
+  | Nil    (lhs.reenteralts, lhs.alternatives) = ([], [])
+  | Cons   (lhs.reenteralts, lhs.alternatives) = if   @hd.isReenter
+                                                 then (@hd.alternative : @tl.reenteralts,                   @tl.alternatives)
+                                                 else (                  @tl.reenteralts, @hd.alternative : @tl.alternatives)
 
 SEM GrAlt
  | Alt     lhs.alternative = Alternative_Alternative @pat.constant
                                                      @expr.stats
+           lhs.isReenter   = @ann == GrAltAnnReenter
 
 
 SEM GrGlobal
@@ -312,7 +346,9 @@ SEM GrVal
  | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
  | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
  | Empty      lhs.value  = error "ToSilly: Empty value"
-          
+
+ | Var        lhs.valueName = @nm
+ | *-Var      lhs.valueName = error "ToSilly: valueName taken of non-Var"          
 
 SEM GrValL
  | Nil    lhs.values = []
@@ -348,7 +384,7 @@ SEM GrPatAlt
 
 SEM GrExpr
  | Seq     lhs.tailJumps = @body.tailJumps
- | Call    lhs.tailJumps = @isLastExpr
+ | Call    lhs.tailJumps = not @lhs.hasNext
  | Case    lhs.tailJumps = @altL.tailJumps
  | * - Seq Call Case
            lhs.tailJumps = False
@@ -558,8 +594,8 @@ arrayVariab a i = Variable_Subs a i
 tagConstants :: Set.Set GrTag -> [(String,Int)]
 tagConstants tagset
  = let f ((t,_),_) = showGrTag t
-       needed = [ "HOLE"
-                , "UNBOXED"
+       needed = -- Make sure these are the same as in Rts/Prim.cc
+                [ "UNBOXED"
                 , "CFalse"
                 , "CTrue"
                 , "Ccolon"
@@ -577,7 +613,7 @@ tagConstants tagset
                 , "CEHC_Prelude_WriteMode"                
 %%]]
                  ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
-       inprog = map showGrTag (Set.toList tagset)
+       inprog = map showGrTag (Set.toAscList (Set.insert GrTag_Hole tagset))
    in  zip (needed ++ (inprog \\ needed)) [0..]
 
 showGrTag :: GrTag -> String

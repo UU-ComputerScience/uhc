@@ -28,6 +28,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.LateInline})
 %%]
+%%[8 import({%{GRIN}GrinCode.Trf.MergeCase})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
@@ -181,9 +183,16 @@ caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
     ( do { transformCodeUsingHpt sparseCase         "Removing impossible case alternatives"
          ; caWriteGrin           True               "41-sparseCaseRemoved"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
-         ; caWriteGrin           True               "42-evaluatedCaseRemoved"
+         ; caWriteGrin           True               "43-evaluatedCaseRemoved"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; caWriteGrin           True               "43-unusedExprRemoved"
+         ; caWriteGrin           True               "44-unusedExprRemoved"
+         
+         ; options <- gets gcsOpts
+         ; when (ehcOptPriv options)
+                ( do { transformCode         mergeCase          "Merging cases"
+                     ; caWriteGrin           True               "45-caseMerged"
+                    }
+                )
          }
     )
 -- simplification part II

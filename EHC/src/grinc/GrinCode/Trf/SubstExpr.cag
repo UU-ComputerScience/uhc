@@ -1,8 +1,11 @@
+This is a transformation on GrExpr, not on a complete GrModule.
+It substitutes variable names by other names (names of variables only, not function names).
+Used in LateInline and MergeCase.
+
 %%[8 import({GrinCode/AbsSyn})
 %%]
 %%[8 hs import(Debug.Trace)
 %%]
-
 
 %%[8
 WRAPPER GrExpr
