@@ -18,6 +18,10 @@ test-lists:
 	shopt -s nullglob ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
+	  if test $${v} = $(UHC_EXEC_NAME) ; \
+	  then \
+	    v=$(EHC_UHC_INSTALL_VARIANT) ; \
+	  fi ; \
 	  ehs= ; \
 	  vv=`echo $${v} | sed -e 's/_[0-9]//'` ; \
 	  if test $${vv} -lt $(EHC_PREL_VARIANT) ; \
@@ -41,9 +45,18 @@ test-expect test-regress: test-lists
 	cd $(TEST_REGRESS_SRC_PREFIX) ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
+	  if test $${v} = $(EHC_UHC_INSTALL_VARIANT) -o $${v} = $(UHC_EXEC_NAME) ; \
+	  then \
+	    ehc=$(UHC_INSTALL_EXEC) ; \
+	    gri="echo gri not implemented" ; \
+	    optPreludePath="" ; \
+	    v=$(EHC_UHC_INSTALL_VARIANT) ; \
+	  else \
+	    ehc=$(TEST_BIN_PREFIX)$${v}/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
+	    gri=$(TEST_BIN_PREFIX)$${v}/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
+	    optPreludePath="--search-path=$(TEST_TOP_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)" ; \
+	  fi ; \
 	  echo "== version $${v} ==" ; \
-	  ehc=$(TEST_BIN_PREFIX)$${v}/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
-	  gri=$(TEST_BIN_PREFIX)$${v}/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
 	  if test -x $${ehc} ; \
 	  then \
 	    if test "x$${TEST_FILES}" = "x" ; \
@@ -113,7 +126,7 @@ test-expect test-regress: test-lists
 	        else \
 	          texe=$${tb}$(EXEC_SUFFIX) ; \
 	          cleanup="$${cleanup} $${texe}" ; \
-	          $${ehc} --search-path=$(TEST_TOP_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX) $${t} > $${th} 2>&1 ; \
+	          $${ehc} $${optPreludePath} $${t} > $${th} 2>&1 ; \
 	          if test $$? = 0 -a -x $${texe} ; \
 	          then \
 	            echo "== grin bytecode (GBM) execution ==" >> $${th} ; \
@@ -126,12 +139,12 @@ test-expect test-regress: test-lists
 	          if ! cmp $${te} $${th} > /dev/null ; \
 	          then \
 	            diff $${te} $${th} | $(INDENT4) ; \
-		    nerrors=$$[ $$nerrors + 1 ]; \
+	            nerrors=$$[ $$nerrors + 1 ]; \
 	          fi \
 	        elif test ! -r $${te} ; \
 	        then \
 	          echo "-- no $${te} to compare to" | $(INDENT2) ; \
-		  nwarnings=$$[ $$nwarnings + 1 ]; \
+	          nwarnings=$$[ $$nwarnings + 1 ]; \
 	        fi \
 	      fi ; \
 	      $${cleanup} ; \
@@ -139,7 +152,7 @@ test-expect test-regress: test-lists
 	    TEST_FILES="" ; \
 	  else \
 	    echo "-- no $${ehc} to compile with" | $(INDENT2) ; \
-            exit 1; \
+	    exit 1; \
 	  fi \
 	done; \
 	echo "== completed with $$nerrors errors and $$nwarnings warnings =="; \
