@@ -1324,36 +1324,24 @@ tyAnnSubst mp
 %%]
 
 
-Smart constructors for polarities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Smart constructors for polarities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 hs export(mkPolCovariant, mkPolContravariant, mkPolInvariant, mkPolNegate, mkPolVar, hsnPolNegation, hsnCovariant, hsnContravariant, hsnInvariant)
+%%[17 hs export(polCovariant, polContravariant, polInvariant, mkPolNegate, mkPolVar)
+polCovariant :: Ty
+polCovariant = semCon hsnCovariant
 
-hsnCovariant :: HsName
-hsnCovariant = mkHNm "+Covariant"
+polContravariant :: Ty
+polContravariant = semCon hsnContravariant
 
-hsnContravariant :: HsName
-hsnContravariant = mkHNm "-Contravariant"
-
-hsnInvariant :: HsName
-hsnInvariant = mkHNm "*Invariant"
-
-hsnPolNegation :: HsName
-hsnPolNegation = mkHNm "^Negate"
-
-mkPolCovariant :: Ty
-mkPolCovariant = Ty_Con hsnCovariant
-
-mkPolContravariant :: Ty
-mkPolContravariant = Ty_Con hsnContravariant
-
-mkPolInvariant :: Ty
-mkPolInvariant = Ty_Con hsnInvariant
+polInvariant :: Ty
+polInvariant = semCon hsnInvariant
 
 mkPolNegate :: Ty -> Ty
-mkPolNegate = Ty_App (Ty_Con hsnPolNegation)
+mkPolNegate = mk1ConApp hsnPolNegation
 
 mkPolVar :: UID -> Ty
 mkPolVar = mkTyVar
-
 %%]
 

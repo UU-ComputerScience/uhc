@@ -117,6 +117,11 @@ pBinding
   <|> Binding_TyKinds   <$  pNmIs "tykind"   <* pOCURLY
                                              <*> pListSep pSEMI ((,) <$ pOCURLY <*> pTyKiKey <* pSEMI <*> pTy <* pCCURLY)
                                              <* pCCURLY
+  <|> Binding_TyPolarities
+                        <$  pNmIs "typolarity"
+                                             <* pOCURLY
+                                             <*> pListSep pSEMI ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pTy <* pCCURLY)
+                                             <* pCCURLY
   <|> Binding_Arities   <$  pNmIs "arity"    <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
   <|> Binding_GrInlines <$  pNmIs "grInline" <*> pCurlySemiBlock ((\n a g -> (n,(a,g))) <$ pOCURLY <*> pDollNm <* pSEMI <*> pCurlySemiBlock pDollNm <* pSEMI <*> pCurlys pExprSeq <* pCCURLY)
   <|> Binding_Val       <$> pNmIs "value"    <* pOCURLY <*> pTy <* pCCURLY

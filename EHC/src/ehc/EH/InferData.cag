@@ -168,7 +168,7 @@ SEM DataConstr
 %%[[99
                                          @range
 %%]]
-                                         @loc.cycVarMp
+                                         @loc.eqsVarMp @loc.cycVarMp
 %%]
 
 %%[16 hs

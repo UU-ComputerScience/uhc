@@ -118,10 +118,10 @@ WRAPPER AGItf
 %%]
 
 %%[99
-PRAGMA strictcase
-PRAGMA strictsem
-PRAGMA gencostcentres
 %%]
+PRAGMA strictsem
+PRAGMA strictcase
+PRAGMA gencostcentres
 
 %%[100
 PRAGMA sepsemmods
@@ -164,7 +164,7 @@ SEM Expr
 ATTR AGItf Expr [ | | gathTyGam: TyGam ]
 
 SEM Expr
-  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @tyGam_l_
+  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
   | * - Let     lhs         .   gathTyGam           =   emptyGam
 %%]
 
@@ -190,6 +190,14 @@ ATTR AGItf Expr [ | | gathClGam: ClGam ]
 SEM Expr
   | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGam
   | * - Let     lhs         .   gathClGam           =   emptyGam
+%%]
+
+%%[20
+ATTR AGItf Expr [ | | gathPolGam: PolGam ]
+
+SEM Expr
+  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam
+  | * - Let     lhs         .   gathPolGam          =   emptyGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -368,6 +376,7 @@ SEM *
        loc.knImpls : TyL
        loc.funTy : Ty
        loc.tyGam_l_ : TyGam
+       loc.lQuTyGam : TyGam
        loc.chrFIIn : FIIn
        loc.tqoGam : {Gam HsName TyMergePredOut}
        loc.toProveHereCnstrMpCanon : {Map.Map (Constraint CHRPredOcc RedHowAnnotation) [RedHowAnnotation]}

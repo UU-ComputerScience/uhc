@@ -159,19 +159,17 @@ SET AllTyVar        = TyVar TyVars
 %%]
 
 %%[1.AllTyExpr
-SET AllTyExpr       = TyExpr
-%%]
-
-%%[5.AllTyExpr -1.AllTyExpr
-SET AllTyExpr       = TyExpr TyExprs
-%%]
-
-%%[7.AllTyExpr -5.AllTyExpr
-SET AllTyExpr       = TyExpr TyExprs RowTyExpr
-%%]
-
-%%[9.AllTyExpr -7.AllTyExpr
-SET AllTyExpr       = TyExpr TyExprs RowTyExpr PrExpr PrExprs
+SET AllTyExpr
+    = TyExpr
+%%[[5
+      TyExprs
+%%]]
+%%[[7
+      RowTyExpr
+%%]]
+%%[[9
+      PrExpr PrExprs
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -358,11 +356,11 @@ DATA Expr
 %%]
 
 %%[1.AllExpr
-SET AllExpr         = Expr
-%%]
-
-%%[7.AllExpr -1.AllExpr
-SET AllExpr         = Expr RecExpr DataFieldExpr
+SET AllExpr
+    = Expr
+%%[[7
+      RecExpr DataFieldExpr
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -411,11 +409,11 @@ DATA PatExpr
 %%]
 
 %%[1.AllPatExpr
-SET AllPatExpr      = PatExpr
-%%]
-
-%%[7.AllPatExpr -1.AllPatExpr
-SET AllPatExpr      = PatExpr RecPatExpr DataFieldPatExpr
+SET AllPatExpr
+    = PatExpr
+%%[[7
+      RecPatExpr DataFieldPatExpr
+%%]]
 %%]
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -484,27 +482,31 @@ DATA DataConstrEq
 TYPE DataConstrEqs  = [DataConstrEq]
 %%]
 
-%%[5.SetsData
+%%[5
 SET AllDataConstr   = DataConstr DataConstrs
-SET AllData         = AllDataConstr
 %%]
 
-%%[7.SetsData -5.SetsData
-SET AllDataConstr   = DataConstr DataConstrs
+%%[7
 SET AllDataField    = DataField DataFields
-SET AllData         = AllDataField AllDataConstr
 %%]
 
-%%[16.SetsData -7.SetsData
+%%[16
 SET AllDataConstrEq = DataConstrEq DataConstrEqs
-SET AllDataConstr   = DataConstr DataConstrs
-SET AllDataField    = DataField DataFields
-SET AllData         = AllDataField AllDataConstr AllDataConstrEq
+%%]
+
+%%[5.SetsData
+SET AllData
+    = AllDataConstr
+%%[[7
+      AllDataField
+%%]]
+%%[[16
+      AllDataConstrEq
+%%]]
 %%]
 
 %%[50.SetsData -7.SetsData
 SET AllDataConstrEq = DataConstrEq DataConstrEqs
-SET AllDataConstr   = DataConstr DataConstrs
 SET AllDataField    = DataField DataFields
 SET AllData         = AllDataField AllDataConstr AllDataConstrEq
 %%]
@@ -548,9 +550,9 @@ SET AllFuncDep      = FuncDep FuncDeps
 TYPE AnnDtMonoRestrictions = [AnnDtMonoRestrict]
 
 DATA AnnDtMonoRestrict
-  | Global nm   : {HsName}
-  | Local  from : {HsName}
-           to   : {HsName}
+  | Global          nm              : {HsName}
+  | Local           from            : {HsName}
+                    to              : {HsName}
 
 DERIVING AnnDtMonoRestrict : Eq, Ord
 
@@ -561,26 +563,22 @@ DERIVING AnnDtMonoRestrict : Eq, Ord
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.AllNT
-SET AllNT           =   AllTyExpr AllDecl AllPatExpr AllExpr
-%%]
-
-%%[5.AllNT -1.AllNT
-SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
-%%]
-
-%%[6.AllNT -5.AllNT
-SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
-                        AllKiExpr
-%%]
-
-%%[9.AllNT -6.AllNT
-SET AllNT           =   AllData AllCase AllTyExpr AllTyVar AllDecl AllPatExpr AllExpr
-                        AllKiExpr
-%%[[15
-                        AllFuncDep
+SET AllNT
+    = AllTyExpr AllDecl AllPatExpr AllExpr
+%%[[5
+      AllData AllCase AllTyVar
 %%]]
+%%[[6
+      AllKiExpr
+%%]]
+%%[[15
+      AllFuncDep
+%%]]
+%%]
 
-SET NTPrf           =   AllDecl AllCase AllExpr AllPatExpr AllData
+%%[9
+SET NTPrf
+    = AllDecl AllCase AllExpr AllPatExpr AllData
 %%]
 
 

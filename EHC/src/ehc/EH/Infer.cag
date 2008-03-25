@@ -297,8 +297,9 @@ SEM Expr
                             .   (gSubsTyKiGam,cycTyKiVarMp_g)
                 									=   @decls.kiVarMp |==> @tyKiGam_g_
                             .   gKiTvL              =   ftv @gSubsTyKiGam
+                            .   lQuTyGam            =   @decls.tyVarMp |=> @tyGam_l_
                             .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 . tyKiGamQuantify @gKiTvL $ @lSubsTyKiGam
-                body        .   tyGam               =   gamAddGam @tyGam_l_ @tyGam_g_
+                body        .   tyGam               =   gamAddGam @lQuTyGam @tyGam_g_
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
 %%]
 
@@ -588,13 +589,32 @@ ATTR AGItf [ tyGam: TyGam | | ]
 
 This is incomplete for variant 7_2.
 
-%%[6.initTyGam
+%%[6.initTyKiGam
 SEM AGItf
-  | AGItf       loc         .   tyKiGam            =   agFakeDependOn @expr.gUniq initTyKiGam
+  | AGItf       loc         .   tyKiGam            	=   agFakeDependOn @expr.gUniq initTyKiGam
 %%]
 
-%%[20 -6.initTyGam
+%%[20 -6.initTyKiGam
 ATTR AGItf [ tyKiGam: TyKiGam | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of polGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Environment with final polarities for all type constructors that are yet in scope. The
+  final polarities for type construtors of data type declarations of a Let are added to
+  the polGam of the body of the Let.
+  
+  In other words: the polGam changes on the way down!
+
+%%[17.initPolGam
+SEM AGItf
+  | AGItf       loc         .   polGam              =   agFakeDependOn @expr.gUniq initPolGam
+%%]
+
+%%[20 -17.initPolGam
+ATTR AGItf [ polGam: PolGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

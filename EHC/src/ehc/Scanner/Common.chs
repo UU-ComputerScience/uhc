@@ -289,6 +289,9 @@ hiScanOpts
                                     , "NonEmptyRowLacksLabel"
                                     , "redhowlabel"
 %%]]
+%%[[17
+                                    , "typolarity"
+%%]]
 %%[[13
                                     , "redhowlambda"
 %%]]

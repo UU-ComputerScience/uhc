@@ -231,6 +231,14 @@ hsnIsUnknown                        =   (==hsnUnknown)
 hsnDynVar                           =   hsnFromString "?"
 %%]
 
+%%[17 export(hsnPolNegation, hsnCovariant, hsnContravariant, hsnInvariant)
+hsnCovariant, hsnContravariant, hsnInvariant, hsnPolNegation :: HsName
+hsnCovariant      = mkHNm "+Covariant"
+hsnContravariant  = mkHNm "-Contravariant"
+hsnInvariant      = mkHNm "*Invariant"
+hsnPolNegation    = mkHNm "^Negate"
+%%]
+
 %%[97 export(hsnInteger)
 hsnInteger                          =   hsnFromString "Integer"
 %%]

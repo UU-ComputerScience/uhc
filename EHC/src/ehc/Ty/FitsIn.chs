@@ -1290,9 +1290,9 @@ tyBetaRed1 fi tp
               = case fun' of
                   Ty_Con nm
                     | nm == hsnPolNegation   -> mkres (head args')
-                    | nm == hsnCovariant     -> mkres mkPolContravariant
-                    | nm == hsnContravariant -> mkres mkPolCovariant
-                    | nm == hsnInvariant     -> mkres mkPolInvariant
+                    | nm == hsnCovariant     -> mkres polContravariant
+                    | nm == hsnContravariant -> mkres polCovariant
+                    | nm == hsnInvariant     -> mkres polInvariant
                   _ -> Nothing
               where
                 (fun',args') = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) arg

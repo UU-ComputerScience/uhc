@@ -61,6 +61,7 @@ data HIInfo
       , hiiValGam           :: !ValGam
       , hiiTyGam            :: !TyGam
       , hiiTyKiGam          :: !TyKiGam
+      , hiiPolGam           :: !PolGam
       , hiiDataGam          :: !DataGam
       , hiiClGam            :: !Pr.ClGam
       , hiiCHRStore         :: !ScopedPredStore
@@ -69,7 +70,7 @@ data HIInfo
       }
 
 emptyHIInfo :: HIInfo
-emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
+emptyHIInfo = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore Map.empty Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,6 +106,7 @@ hiFromHIInfo i
       (hiiValGam        i)
       (hiiTyGam         i)
       (hiiTyKiGam       i)
+      (hiiPolGam        i)
       (hiiDataGam       i)
       (hiiClGam         i)
       (hiiCHRStore      i)
@@ -124,19 +126,21 @@ hiFromAllGams
      -> ValGam
      -> TyGam
      -> TyKiGam
+     -> PolGam
      -> DataGam
      -> Pr.ClGam
      -> ScopedPredStore
      -> CArityMp
      -> GrInlMp
      -> Seq.FastSeq Binding
-hiFromAllGams exps hiddenExps fg idg vg tg tkg dg ig chrStore arityMp inlMp
+hiFromAllGams exps hiddenExps fg idg vg tg tkg pg dg ig chrStore arityMp inlMp
   =          Seq.fromList [Binding_Export VisibleYes exps]
     Seq.:++: Seq.fromList [Binding_Export VisibleNo hiddenExps]
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
     Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
     Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
+    Seq.:++: Seq.fromList [Binding_TyPolarities [ (n,pgiPol i) | (n,i) <- gamToAssocL pg ]]
     Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
     Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
@@ -162,6 +166,7 @@ instance ForceEval HIInfo where
 				  , hiiValGam           = vg
 				  , hiiTyGam            = tg
 				  , hiiTyKiGam          = tkg
+				  , hiiPolGam           = pg
 				  , hiiDataGam          = dg
 				  , hiiClGam            = cg
 				  , hiiCHRStore         = cs
@@ -179,6 +184,7 @@ instance ForceEval HIInfo where
                 , hiiValGam           = vg
                 , hiiTyGam            = tg
                 , hiiTyKiGam          = tkg
+				, hiiPolGam           = pg
                 , hiiDataGam          = dg
                 , hiiClGam            = cg
                 , hiiCHRStore         = cs
@@ -194,6 +200,7 @@ instance ForceEval HIInfo where
                        ,fevCount vg
                        ,fevCount tg
                        ,fevCount tkg
+                       ,fevCount pg
                        ,fevCount dg
                        ,fevCount cg
                        ,fevCount cs

@@ -808,13 +808,15 @@ SEM Body
     | Body
         loc             .   (mainrefname,mainrefnames,idUseOccGamMain,errIdUse)
                                         =   mkUseOccGam @lhs.opts @idGam
-%%[[8
-                                              [hsnMain]
-%%][98
-                                              [hsnMain,hsnIO]
-%%][99
-                                              [hsnMain,hsnIO,hsnEhcRunMain]
+                                              (  [hsnMain]
+%%[[98
+                                              ++ [hsnIO]					-- this is assumed to be 2nd
 %%]]
+%%[[99
+                                              ++ [hsnEhcRunMain]
+%%]]
+                                              ++ (if @declarations.needsError then [hsnError] else [])
+                                              )
                                               IdOcc_Val IdAsp_Val_Var @range
 %%]
 
@@ -822,17 +824,32 @@ SEM Body
 SEM Declaration
     | Data
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam [] IdOcc_Val IdAsp_Val_Var @range
     | Newtype
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnPrelId] IdOcc_Val IdAsp_Val_Var @range
 %%]
+    | Data
+        loc             .   (_,_,idUseOccGamVal,errIdUseVal)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
 
 %%[94
 SEM Declaration
     | ForeignExport
         loc             .   (refname,_,idUseOccGamExport,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Var @range
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is the presence of 'error' required?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllDeclaration [ | | needsError USE {||} {False}: Bool ]
+
+SEM Declaration
+	| Data
+		lhs				.	needsError	=	@constructors.hasFlds
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

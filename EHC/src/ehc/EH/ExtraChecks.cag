@@ -66,17 +66,17 @@ SEM Expr
 
 %%[4
 SEM Expr
-  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr $ @cycTyVarMp_l `varmpUnion` @cycTyVarMp_g
+  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @decls.tyVarMp $ @cycTyVarMp_l `varmpUnion` @cycTyVarMp_g
 %%]
 
 %%[5
 SEM Expr
-  | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @cycVarMp
+  | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @lhs.tyVarMp @cycVarMp
 %%]
 
 %%[6
 SEM Expr
-  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr $ @cycTyKiVarMp_l `varmpUnion` @cycTyKiVarMp_g
+  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l `varmpUnion` @cycTyKiVarMp_g
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

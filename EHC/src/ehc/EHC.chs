@@ -861,8 +861,9 @@ cpFlowEHSem1 modNm
                  vg       = prepFlow $! EHSem.gathValGam_Syn_AGItf     ehSem
                  tg       = prepFlow $! EHSem.gathTyGam_Syn_AGItf      ehSem
                  tkg      = prepFlow $! EHSem.gathTyKiGam_Syn_AGItf    ehSem
+                 pg       = prepFlow $! EHSem.gathPolGam_Syn_AGItf     ehSem
                  kg       = prepFlow $! EHSem.gathKiGam_Syn_AGItf      ehSem
-                 pg       = prepFlow $! EHSem.gathClGam_Syn_AGItf      ehSem
+                 clg      = prepFlow $! EHSem.gathClGam_Syn_AGItf      ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
 %%[[20
@@ -872,16 +873,18 @@ cpFlowEHSem1 modNm
                               , EHSem.valGam_Inh_AGItf     = vg  `gamUnionFlow`  EHSem.valGam_Inh_AGItf     ehInh
                               , EHSem.tyGam_Inh_AGItf      = tg  `gamUnionFlow`  EHSem.tyGam_Inh_AGItf      ehInh
                               , EHSem.tyKiGam_Inh_AGItf    = tkg `gamUnionFlow`  EHSem.tyKiGam_Inh_AGItf    ehInh
+                              , EHSem.polGam_Inh_AGItf     = pg  `gamUnionFlow`  EHSem.polGam_Inh_AGItf     ehInh
                               , EHSem.kiGam_Inh_AGItf      = kg  `gamUnionFlow`  EHSem.kiGam_Inh_AGItf      ehInh
-                              , EHSem.clGam_Inh_AGItf      = pg  `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
+                              , EHSem.clGam_Inh_AGItf      = clg `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
                               , EHSem.chrStore_Inh_AGItf   = cs  `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                               }
                  hii'     = hii
                               { HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
                               , HI.hiiTyKiGam     	= tkg
+                              , HI.hiiPolGam     	= pg
                               , HI.hiiDataGam       = dg
-                              , HI.hiiClGam         = pg
+                              , HI.hiiClGam         = clg
                               , HI.hiiCHRStore      = cs
                               }
 %%]]
@@ -908,8 +911,9 @@ cpFlowEHSem1 modNm
                                 ; lift $ putStrLn $ fevShow "gathValGam" vg
                                 ; lift $ putStrLn $ fevShow "gathTyGam" tg
                                 ; lift $ putStrLn $ fevShow "gathTyKiGam" tkg
+                                ; lift $ putStrLn $ fevShow "gathPolGam" pg
                                 ; lift $ putStrLn $ fevShow "gathKiGam" kg
-                                ; lift $ putStrLn $ fevShow "gathClGam" pg
+                                ; lift $ putStrLn $ fevShow "gathClGam" clg
                                 ; lift $ putStrLn $ fevShow "gathChrStore" cs
                                 ; lift $ putStrLn $ fevShow "cmodule" $ EHSem.cmodule_Syn_AGItf   ehSem
                                 })
@@ -917,13 +921,6 @@ cpFlowEHSem1 modNm
                      })
          }
 %%]
-                 dg       = emptyGam
-                 vg       = emptyGam
-                 tg       = emptyGam
-                 tkg      = emptyGam
-                 kg       = emptyGam
-                 pg       = emptyGam
-                 cs       = emptyCHRStore
 
 %%[20
 cpFlowHISem :: HsName -> EHCompilePhase ()
@@ -933,11 +930,12 @@ cpFlowHISem modNm
                  hiSem  = panicJust "cpFlowHISem.hiSem" $ ecuMbPrevHISem ecu
                  ehInh  = crsiEHInh crsi
                  ehInh' = ehInh
-                            { EHSem.valGam_Inh_AGItf     = (prepFlow $! HISem.valGam_Syn_AGItf     hiSem) `gamUnionFlow` EHSem.valGam_Inh_AGItf     ehInh
-                            , EHSem.tyGam_Inh_AGItf      = (prepFlow $! HISem.tyGam_Syn_AGItf      hiSem) `gamUnionFlow` EHSem.tyGam_Inh_AGItf      ehInh
-                            , EHSem.tyKiGam_Inh_AGItf    = (prepFlow $! HISem.tyKiGam_Syn_AGItf    hiSem) `gamUnionFlow` EHSem.tyKiGam_Inh_AGItf    ehInh
-                            , EHSem.dataGam_Inh_AGItf    = (prepFlow $! HISem.dataGam_Syn_AGItf    hiSem) `gamUnionFlow` EHSem.dataGam_Inh_AGItf    ehInh
-                            , EHSem.clGam_Inh_AGItf      = (prepFlow $! HISem.clGam_Syn_AGItf      hiSem) `gamUnionFlow` EHSem.clGam_Inh_AGItf      ehInh
+                            { EHSem.valGam_Inh_AGItf     = (prepFlow $! HISem.valGam_Syn_AGItf     hiSem) `gamUnionFlow`  EHSem.valGam_Inh_AGItf     ehInh
+                            , EHSem.tyGam_Inh_AGItf      = (prepFlow $! HISem.tyGam_Syn_AGItf      hiSem) `gamUnionFlow`  EHSem.tyGam_Inh_AGItf      ehInh
+                            , EHSem.tyKiGam_Inh_AGItf    = (prepFlow $! HISem.tyKiGam_Syn_AGItf    hiSem) `gamUnionFlow`  EHSem.tyKiGam_Inh_AGItf    ehInh
+                            , EHSem.polGam_Inh_AGItf     = (prepFlow $! HISem.polGam_Syn_AGItf     hiSem) `gamUnionFlow`  EHSem.polGam_Inh_AGItf     ehInh
+                            , EHSem.dataGam_Inh_AGItf    = (prepFlow $! HISem.dataGam_Syn_AGItf    hiSem) `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
+                            , EHSem.clGam_Inh_AGItf      = (prepFlow $! HISem.clGam_Syn_AGItf      hiSem) `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
                             , EHSem.chrStore_Inh_AGItf   = (prepFlow $! HISem.chrStore_Syn_AGItf   hiSem) `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
                  hsInh  = crsiHSInh crsi
@@ -2315,6 +2313,7 @@ doCompileRun fn opts
                                               , EHSem.dataGam_Inh_AGItf         = emptyGam
                                               , EHSem.tyGam_Inh_AGItf           = initTyGam
                                               , EHSem.tyKiGam_Inh_AGItf         = initTyKiGam
+                                              , EHSem.polGam_Inh_AGItf          = initPolGam
                                               , EHSem.kiGam_Inh_AGItf           = initKiGam
                                               , EHSem.clGam_Inh_AGItf           = initClGam
                                               , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
