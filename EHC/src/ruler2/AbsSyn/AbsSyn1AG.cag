@@ -154,6 +154,7 @@ DATA RExpr
                         mbRNm       : {Maybe Nm}
                         schemeNm    : {Nm}
                         eqns        : RExprEqn
+                        isSmallExpr : {Bool}
   | Del                 pos         : {SPos}
                         nms         : {[Nm]}
 

@@ -114,9 +114,11 @@ DATA Jd
   | Expr                nm          : {Nm}
                         scNm        : {Nm}
                         expr        : Expr
+                        isSmall     : {Bool}
   | LTX                 nm          : {Nm}
                         scNm        : {Nm}
                         expr        : Expr
+                        isSmall     : {Bool}
 
 TYPE Jds = [Jd]
 

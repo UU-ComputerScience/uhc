@@ -214,15 +214,15 @@ SEM Decl
                                                                     nTl = Nm "tl"
                                                                     ndTl = @nm `nmApd` nTl
                                                                     vw = mkVwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])] []
-                                                                    j3 = REInfoJudge @nm @nm Set.empty Set.empty (mkg jaNm [a3])
+                                                                    j3 = REInfoJudge @nm @nm Set.empty Set.empty (mkg jaNm [a3]) False
                                                                     a3 = mkJAInfo @nm e3
                                                                     e3 = mkExprApp (Expr_ChildOrder 0 (Expr_Var ndHd))
                                                                                    [Expr_ChildOrder 1 (Expr_Var ndTl)]
                                                                     n2 = maybe nl id $ scVwGamNodeAt nl @firstVwNm scGam
-                                                                    j2 = REInfoJudge nHd nl Set.empty Set.empty (mkg jaNm [a2])
+                                                                    j2 = REInfoJudge nHd nl Set.empty Set.empty (mkg jaNm [a2]) False
                                                                     a2 = mkJAInfo n2 e2
                                                                     e2 = Expr_Var ndHd
-                                                                    j1 = REInfoJudge nTl @nm Set.empty Set.empty (mkg jaNm [a1])
+                                                                    j1 = REInfoJudge nTl @nm Set.empty Set.empty (mkg jaNm [a1]) False
                                                                     a1 = mkJAInfo @nm e1
                                                                     e1 = Expr_Var ndTl
                                                 in  case @scDeriv of
@@ -292,7 +292,7 @@ SEM RExpr
                                             =   case gamLookup @lhs.viewNm (scVwGam @scInfo) of
                                                     Just i -> (i,[])
                                                     Nothing -> (emptyVwScInfo,[Err_UndefNm @pos @cxStr "view" [@lhs.viewNm]])
-                            .   reInfo      =   REInfoJudge @nm @schemeNm Set.empty Set.empty @eqns.jaGam
+                            .   reInfo      =   REInfoJudge @nm @schemeNm Set.empty Set.empty @eqns.jaGam @isSmallExpr
                             .   errJd       =   case gamKeys (@eqns.jaGam `gamDifference` vwscFullAtGam @vwScInfo) of
                                                   [] -> []
                                                   ks -> [Err_NoXXFor @pos @cxStr2 "scheme hole definition" ks]
