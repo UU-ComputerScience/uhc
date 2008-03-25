@@ -20,6 +20,10 @@
 %%[20 hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
 %%]
 
+-- debug
+%%[20 hs import({%{EH}Base.Debug},EH.Util.Utils)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,6 +59,7 @@ ATTR
       valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used (name -> type)
       tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with types (name -> type)
       tyKiGam           USE {`gamUnion`}        {emptyGam}          : TyKiGam					-- all types with kinds (type -> kind)
+      polGam            USE {`gamUnion`}        {emptyGam}          : PolGam					-- all types with polarities (name -> polarity)
       dataGam           USE {`gamUnion`}        {emptyGam}          : DataGam					-- additional structural info for datatypes
       clGam             USE {`gamUnion`}        {emptyGam}          : {Pr.ClGam}    			-- classes
       chrStore          USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore			-- CHR
@@ -82,6 +87,8 @@ SEM Binding
         lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty)
     | TyKinds
         lhs             .   tyKiGam     =   gamFromAssocL [(t,TyKiGamInfo k) | (t,k) <- @tyKinds]
+    | TyPolarities
+        lhs             .   polGam      =   gamFromAssocL [(n,mkPGI p) | (n,p) <- @tyPolarities]
     | DataCon
         lhs             .   dataGam     =   gamSingleton @nm (mkDGI @nm
                                                                     @ty (assocLKeys @tags)

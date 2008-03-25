@@ -134,7 +134,7 @@ SEM TyVar
 
 %%[6
 SEM TyVar
-  | Var         (loc.tgi_,lhs.tyGam)                := 	tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam) @lhs.tyGam
+  | Var         (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam) @lhs.tyGam
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
 %%]
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd emptyVarMp (tgiTy @tgi_) @lhs.tyKiGam
@@ -417,10 +417,19 @@ Type
 
 %%[11
 SEM Decl
+  | Type        loc         .   typeVar				= 	mkTyVar @lUniq
+                            .   typeTgi             =   mkTGI @typeVar
+                lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
+                loc         .   foTy_               =   fitsIn  weakFIOpts emptyFE @lUniq2 @lhs.tyVarMp
+                                                                @tyExpr.ty (tgiTy @typeTgi)
+                lhs         .   tyVarMp             =   foVarMp @foTy_ |=> @lhs.tyVarMp
+%%]
+%%[11
+%%]
+SEM Decl
   | Type        tyExpr      .   tyGam               =   @lhs.patTyGam
                 loc         .   typeTgi             =   mkTGI @tyExpr.ty
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
-%%]
 
 Kind
 

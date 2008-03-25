@@ -20,6 +20,9 @@
 %%[2 import(qualified Data.Set as Set,EH.Util.Pretty)
 %%]
 
+%%[4 import({%{EH}Error})
+%%]
+
 %%[9 import(qualified Data.Map as Map)
 %%]
 
@@ -238,3 +241,22 @@ tyFixTyVars t
 ppS :: Substitutable x TyVarId VarMp => (x -> PP_Doc) -> VarMp -> x -> PP_Doc
 ppS pp c x = (pp $ c |=> x) >#< ppParens (pp x)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This should be in module VarMp, but because of use of |=> cannot.
+
+%%[4.varmpOccurErr export(varmpOccurErr)
+varmpOccurErr :: VarMp -> VarMp -> [Err]
+varmpOccurErr m mc = [ Err_OccurCycle v (varmpDel [v] m |=> t) | (v,t) <- varmpToAssocTyL mc ]
+%%]
+varmpOccurErr m = map (uncurry Err_OccurCycle) $ varmpToAssocTyL m
+
+%%[99 -4.varmpOccurErr export(varmpOccurErr)
+varmpOccurErr :: Range -> VarMp -> VarMp -> [Err]
+varmpOccurErr r m mc = [ Err_OccurCycle r v (varmpDel [v] m |=> t) | (v,t) <- varmpToAssocTyL mc ]
+%%]
+varmpOccurErr r m = map (uncurry (Err_OccurCycle r)) $ varmpToAssocTyL m
+

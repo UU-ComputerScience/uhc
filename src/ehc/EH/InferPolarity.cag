@@ -96,7 +96,7 @@ Encoding of polarities:
 %%% Usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  Lookup the inferred signatures for type constructors in @lhs.finPolGam.
+  Lookup the inferred signatures for type constructors in @lhs.polGam.
   Instantiate this signature and match it up with the known polarity of the context to get
   the polarities of arguments to this type constructor.
 
@@ -207,7 +207,7 @@ Encoding of polarities:
   The inference here is performed on Ty_Exprs. A similar procedure is required to use the
   results for Tys. However, this procedure is less complicated since type variables do not
   have to be taken into account and the signature for each type constructor is known
-  (available through finPolGam).
+  (available through polGam).
   
   Essentially, the inference process is just regular 'kind' inference, with a very basic
   subtyping. The key difference is the Negation-construct and normalization.
@@ -228,27 +228,32 @@ ATTR AllData AllTyExpr [ knPolCtx : Ty | | ]
 
 %%[17 ag
 SEM Decl
-  | Data
-      loc.polCtxVar    = mkPolVar @loc.lUniq4
-      constrs.knPolCtx = @loc.polCtxVar
+  | Data        loc         .   polCtxVar           =   mkPolVar @lUniq4
+                constrs     .   knPolCtx            =   @polCtxVar
+  | Type        loc         .   (polCtxVar,polTypeVar)
+                                                    =   let [v1,v2] = mkNewUIDL 2 @lUniq3
+                                                        in  (mkPolVar v1,mkPolVar v2)
+                tyExpr      .   knPolCtx            =   @polCtxVar
 
 SEM Decl
-  | TySig FFI Type
-      tyExpr.knPolCtx = mkPolCovariant
+  | TySig FFI
+%%[[94
+    FFE
+%%]]
+                tyExpr      .   knPolCtx            =   polCovariant
   | Class Instance
-      tyPrExpr.knPolCtx = mkPolCovariant
+                tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq17_1 -- polCovariant
 
 SEM Expr PatExpr
-  | TypeAs
-      tyExpr.knPolCtx = mkPolCovariant
+  | TypeAs      tyExpr      .   knPolCtx            =   polCovariant
 
 SEM Expr
   | AppImpl LamImpl
-      argPr.knPolCtx = mkPolContravariant
+                argPr       .   knPolCtx            =   polContravariant
 
 SEM Decl
   | InstanceIntro
-      prExpr.knPolCtx = mkPolCovariant
+                prExpr      .   knPolCtx            =   mkPolVar @lUniq17_1 -- polCovariant
 %%]
 
   Now we can define the polarity for sub expressions based on the above defined context.
@@ -265,31 +270,60 @@ SEM Decl
 
 %%[17 ag
 ATTR TyExpr [ | | pol : Ty ]
+%%]
 
+%%[17 ag
 SEM TyExpr
-  | App
-      -- known polarity shape for the function part of the type application
-      loc.polArgVar = mkPolVar @loc.lUniq4
-      loc.knFuncPol = [@loc.polArgVar] `mkArrow` @lhs.knPolCtx
+  | App     -- known polarity shape for the function part of the type application
+                loc         .   polArgVar           =   mkPolVar @lUniq4
+                            .   knFuncPol           =   [@polArgVar] `mkArrow` @lhs.knPolCtx
       
-      func.knPolCtx = @loc.knFuncPol
-      arg.knPolCtx  = @func.polVarMp |=> @loc.polArgVar
-      lhs.pol       = @arg.polVarMp |=> @lhs.knPolCtx
+                func        .   knPolCtx            =   @knFuncPol
+                arg         .   knPolCtx            =   @polArgVar
+                lhs         .   pol                 =   @lhs.knPolCtx
 %%]
 
   Type variable or type constructor: perform a lookup in the environment and match with
   the known context to instantiate the polarity signature.
   
   Name errors do not need to be reported. They are already reported by the kind inferencer.
-  
-%%[17 ag
-SEM TyExpr
-  | Con Var
-      loc.polFromEnv = maybe Ty_Any pgiPol (gamLookup @nm @lhs.polGam)
-      loc.foPol      = fitsIn weakFIOpts emptyFE @lUniq2 @lhs.polVarMp @loc.polFromEnv @lhs.knPolCtx
-      lhs.pol        = foTy @loc.foPol
+
+%%[17 hs
+polGamLookupOrAdd :: UID -> HsName -> PolGam -> PolGam -> (PolGamInfo,PolGam)
+polGamLookupOrAdd uniq nm polGamLkup polGam
+  =  case polGamLookup nm polGamLkup of
+       Nothing    ->  let  t    =  mkPolVar uniq
+                           pgi  =  mkPGI t
+                      in   (pgi,gamAdd nm pgi polGam)
+       Just pgi   ->  (pgi,polGam)
 %%]
 
+%%[17 ag
+SEM TyExpr
+  | Con Var     loc         .   (pgi_,nmPolErrs)    =   polGamLookupErr @nm @lhs.polGam
+
+%%]
+SEM TyExpr
+  | Var VarWild (loc.pgi_,lhs.polGam)               =   polGamLookupOrAdd @lUniq @nm @lhs.polGam @lhs.polGam
+
+%%[17 ag
+SEM TyExpr
+  | Con Var     loc         .   polFromEnv          =   pgiPol @pgi_
+                            .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq2 @lhs.polVarMp @polFromEnv @lhs.knPolCtx
+                lhs         .   pol                 =   foTy @foPol
+                            .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
+%%]
+
+  A type level lambda binds polarity to its argument, propagating it via the environment.
+  This is standard.
+
+%%[17 ag
+SEM TyExpr
+  | Lam         loc         .   polArgVar           =   mkPolVar @lUniq2
+                tyExpr		.	polGam				=	gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
+                lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
+%%]
+  
   An analysis of the actual type expression of a wild card is needed to properly deal with
   it. To bypass this analysis, we assume that wildcards have kind star. Wildcards of higher
   kind are not supported by the code below.
@@ -297,7 +331,7 @@ SEM TyExpr
 %%[17 ag
 SEM TyExpr
   | Wild VarWild
-      lhs.pol = @lhs.knPolCtx
+                lhs         .   pol                 =   @lhs.knPolCtx
 %%]
 
   For row types, the polarity of each member is the polarity of the entire row. The copy
@@ -309,7 +343,7 @@ SEM TyExpr
 %%[17 ag
 SEM TyExpr
   | Row Impls NoImpls Pred
-      lhs.pol = @lhs.knPolCtx
+                lhs         .   pol                 =   @lhs.knPolCtx
 %%]
   
   The same story is not the case for predicate expressions due to the arrow. The polarity
@@ -319,9 +353,8 @@ SEM TyExpr
 
 %%[17 ag
 SEM PrExpr
-  | Arrow
-      arg.knPolCtx = mkPolNegate @lhs.knPolCtx
-      res.knPolCtx = @lhs.knPolCtx
+  | Arrow       arg         .   knPolCtx            =   mkPolNegate @lhs.knPolCtx
+                res         .   knPolCtx            =   @lhs.knPolCtx
 %%]
 
 
@@ -338,36 +371,15 @@ SEM PrExpr
 ATTR AllDecl AllData AllTyExpr [ | polVarMp : VarMp | ]
 
 SEM Expr
-  | Let
-      decls.polVarMp = emptyVarMp
+  | Let         decls       .   polVarMp            =   emptyVarMp
 
 SEM Expr PatExpr
-  | TypeAs
-      tyExpr.polVarMp = emptyVarMp
+  | TypeAs      tyExpr      .   polVarMp            =   emptyVarMp
 
 SEM Expr
   | AppImpl LamImpl
-      argPr.polVarMp = emptyVarMp
+                argPr       .   polVarMp            =   emptyVarMp
 %%]
-
-  Combine substitutions. For cyclic occurrences of v such that v = negate(v), v is mapped
-  to invariant (instead of returning an error).
-  
-%%[17 ag
-SEM TyExpr
-  | Var Con
-      (loc.polVarMp, loc.polVarMpCyc) = foVarMp @loc.foPol |==> @lhs.polVarMp
-      
-      (loc.polOkCyc, loc.polErrCyc)
-        = partition
-            (\(v,p) -> let v' = mkPolVar v in v' == p || mkPolNegate v' == p)
-              (varmpToAssocTyL @loc.polVarMpCyc)
-      loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkCyc ]
-      lhs.polVarMp = @loc.polInvVarMp |=> @loc.polVarMp
-      loc.cycVarMp = assocLToVarMp @loc.polErrCyc
-      loc.cycErrSq = Seq.fromList $ rngLift @range varmpOccurErr @loc.cycVarMp
-%%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environments
@@ -376,114 +388,82 @@ SEM TyExpr
   For a declaration group: gather an environment with signatures for each type constructor.
 
 %%[17 ag
-ATTR AllDecl [ | gathTyConPolGam : PolGam | ]
+ATTR AllDecl [ | patPolGam : PolGam | ]
 
-SEM Expr
-  | Let
-      decls.gathTyConPolGam = emptyGam
-
+-- signature
 SEM Decl
-  | Data
-      loc.polSig = @tyVars.polVarL `mkArrow` @loc.polCtxVar
-      lhs.gathTyConPolGam = gamAdd @tyNm (PolGamInfo @loc.polSig) @lhs.gathTyConPolGam
+  | Data        loc         .   polSig              =   @tyVars.polVarL `mkArrow` @polCtxVar
+  | Type        loc         .   polSig              =   @polTypeVar
 
+-- in environment
+SEM Decl
+  | Data Type	lhs         .   patPolGam           =   gamAdd @tyNm (mkPGI @polSig) @lhs.patPolGam
+
+-- inferencing
+SEM Decl
+  | Type        loc         .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq4 @tyExpr.polVarMp @tyExpr.pol @polSig
+                lhs         .   polVarMp            =   foVarMp @foPol |=> @tyExpr.polVarMp
+%%]
+
+
+%%[17 ag
 ATTR AllTyVar [ | | polVarL USE {++} {[]} : TyL ]
 
 SEM TyVar
-  | Var
-      loc.polVar  = mkPolVar @loc.lUniq2
-      lhs.polVarL = [@loc.polVar]
+  | Var         loc         .   polVar              =   mkPolVar @lUniq2
+                lhs         .   polVarL             =   [@polVar]
 %%]
 
   For each data type: gather an environment for its type parameters.
 
 %%[17 ag
-ATTR AllTyVar [ | gathTyVarPolGam : PolGam | ]
-
-SEM Decl
-  | Data
-      tyVars.gathTyVarPolGam = emptyGam
-
-SEM FuncDep
-  | Dep
-      fromTvs.gathTyVarPolGam = emptyGam
+ATTR AllTyVar [ | | gathTyVarPolGam USE {`gamUnion`} {emptyGam}: PolGam ]
 
 SEM TyVar
-  | Var
-      lhs.gathTyVarPolGam = gamAdd @nm (PolGamInfo @loc.polVar) @lhs.gathTyVarPolGam
+  | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @polVar)
 %%]
 
   Distribute gathered environments.
 
 %%[17 ag
-ATTR AllDecl AllData AllTyExpr [ polGam : PolGam | | ]
-
-SEM Expr
-  | Let
-      decls.polGam = gamPushGam @decls.gathTyConPolGam @lhs.finPolGam
+ATTR AllDecl AllData AllExpr AllPatExpr AllCase [ polGam : PolGam | | ]
+ATTR AllTyExpr [ | polGam : PolGam | ]
 
 SEM Decl
-  | Data
-      constrs.polGam = gamPushGam @tyVars.gathTyVarPolGam @lhs.polGam
+  | Data        constrs     .   polGam              =   gamPushGam @tyVars.gathTyVarPolGam @lhs.polGam
 
--- These other cases do not introduce new variables or type constructors, so they can use the finPolGam.
-SEM Decl
-  | TySig FFI Type
-      tyExpr.polGam = @lhs.finPolGam
-  | Class Instance
-      tyPrExpr.polGam = @lhs.finPolGam
-
-SEM Expr PatExpr
-  | TypeAs
-      tyExpr.polGam = @lhs.finPolGam
-
-SEM Expr
-  | AppImpl LamImpl
-      argPr.polGam = @lhs.finPolGam
-
-SEM Decl
-  | InstanceIntro
-      prExpr.polGam = @lhs.finPolGam
 %%]
-
   
+  Combine substitutions. For cyclic occurrences of v such that v = negate(v), v is mapped
+  to invariant (instead of returning an error).
+
   For each declaration group:
     * Apply the substitution to incorporate the latest information in the gathered environment
     * generalize the gathered environment and add the the final environment
   Note that no new information will be available for type constructors from the inherited
-  environment (a.k.a. the finPolGam), because data type declarations are not nested.
+  environment (a.k.a. the polGam), because data type declarations are not nested.
   
 %%[17 ag
-
 SEM Expr
-  | Let
-      (loc.gathPolGam1, loc.polVarMpCyc) = @decls.polVarMp |==> @decls.gathTyConPolGam
-      (loc.polOkCyc, loc.polErrCyc)
-        = partition
-            (\(v,p) -> let v' = mkPolVar v in v' == p || mkPolNegate v' == p)
-              (varmpToAssocTyL @loc.polVarMpCyc)
-      loc.polInvVarMp = assocLToVarMp [(v, mkPolInvariant) | (v,_) <- @loc.polOkCyc ]
-      loc.gathPolGam2 = @loc.polInvVarMp |=> @loc.gathPolGam1
-      loc.cycVarMp = assocLToVarMp @loc.polErrCyc
-      loc.cycErrSq = Seq.fromList $ rngLift @range varmpOccurErr @loc.cycVarMp
+  | Let         decls       .   patPolGam           =   gamPushNew @lhs.polGam
+                            .   polGam              =   @decls.patPolGam
+                loc         .   (polGam_l,_)        =   gamPop @decls.patPolGam
+                (loc.lSubsPolGam1, loc.polVarMpCyc) =   @decls.polVarMp |==> @polGam_l
+                (loc.polOkCyc, loc.polErrCyc)       =   partition
+                                                            (\(v,p) -> let v' = mkPolVar v
+                                                                           p' = varmpDel [v] @decls.polVarMp |=> p
+                                                                       in  mkPolNegate v' == p'
+                                                            )
+                                                            (varmpToAssocTyL @polVarMpCyc)
+                loc         .   polInvVarMp         =   assocLToVarMp [(v, polInvariant) | (v,_) <- @polOkCyc ]
+                            .   lSubsPolGam2        =   @polInvVarMp |=> @lSubsPolGam1
+                            .   cycVarMp            =   assocLToVarMp @polErrCyc
+                            .   cycErrSq            =   Seq.fromList $ rngLift @range varmpOccurErr @decls.polVarMp @cycVarMp
       
-      loc.finGathPolGam = quantifyPolGam
-                            $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
-                            $ @loc.gathPolGam2
-      loc.finPolGam     = gamPushGam @loc.finGathPolGam @lhs.finPolGam
+                            .   finGathPolGam       =   quantifyPolGam
+                                                        $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
+                                                        $ @lSubsPolGam2
+                body        .   polGam              =   gamPushGam @finGathPolGam @lhs.polGam
 %%]
 
-
-  Environment with final polarities for all type constructors that are yet in scope. The
-  final polarities for type construtors of data type declarations of a Let are added to
-  the finPolGam of the body of the Let.
-  
-  In other words: the finPolGam changes on the way down!
-
-%%[17 ag
-ATTR AllNT [ finPolGam : PolGam | | ]
-
-SEM AGItf
-  | AGItf  expr.finPolGam = initPolGam
-%%]
 

@@ -469,20 +469,6 @@ varmpClosure startWith tvof m
                           ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Error
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.varmpOccurErr export(varmpOccurErr)
-varmpOccurErr :: VarMp -> [Err]
-varmpOccurErr = map (uncurry Err_OccurCycle) . varmpToAssocTyL
-%%]
-
-%%[99 -4.varmpOccurErr export(varmpOccurErr)
-varmpOccurErr :: Range -> VarMp -> [Err]
-varmpOccurErr r = map (uncurry (Err_OccurCycle r)) . varmpToAssocTyL
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Remove alpha rename of tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

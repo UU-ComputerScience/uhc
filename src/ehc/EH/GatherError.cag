@@ -191,14 +191,20 @@ SEM DataConstr
   | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@fields.errSq, @eqs.errSq, foErrSq @fo_, Seq.fromList @loc.occErrL, @loc.undefVarsErrSq]
 
 SEM DataConstrEq
-  | Eq          lhs         .   errSq      =    rngLift @range mkNestErr' @pp [foErrSq @loc.fo_, foErrSq @loc.foRhsTy, @tyVar.errSq, @tyExpr.errSq]
+  | Eq          lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @loc.fo_, foErrSq @loc.foRhsTy, @tyVar.errSq, @tyExpr.errSq]
 %%]
 
 %%[17
+SEM Decl
+  | Type        lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@tyExpr.errSq, foErrSq @foKi_, foErrSq @foPol]
+
+SEM TyExpr
+  | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList $ firstNotEmpty [@nmErrs,@nmErrs2,@nmPolErrs], foErrSq @loc.foPol]
+  | Var         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @loc.foPol]
+%%]
 SEM TyExpr
   | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList $ firstNotEmpty [@nmErrs,@nmErrs2], foErrSq @loc.foPol, @loc.cycErrSq]
   | Var         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @loc.foPol, @loc.cycErrSq]
-%%]
 
 %%[50
 SEM DataConstr

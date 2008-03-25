@@ -85,7 +85,7 @@ SEM Expr
                                         ]
                         .  info_4   =   []
                         .  info_5   =   []
-  | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4 ++ @info_4_2 ++ @info_6 ++ @info_9)
+  | Let         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","Let"] [] [@decls.ppAST] (@info_2 ++ @info_3 ++ @info_4 ++ @info_4_2 ++ @info_6 ++ @info_9 ++ @info_17)
                                         >-< @body.ppAST
                 loc     .  info_2   =   []
                         .  info_3   =   []
@@ -93,6 +93,7 @@ SEM Expr
                         .  info_4_2 =   []
                         .  info_6   =   []
                         .  info_9   =   []
+                        .  info_17  =   []
   | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","App"] [] [@func.ppAST,@arg.ppAST] (@info_1 ++ @info_2 ++ @info_4_2 ++ @info_9)
                 loc     .  info_1   =   [ mkInfo1 "knTy" (ppTy @lhs.knTy)
                                         ]
@@ -386,7 +387,7 @@ SEM DataConstr
                                         ]
 
 SEM Expr
-  | Let         loc     .  info_6   :=  [ mkInfo1 "tyGam_l_" (ppGam @tyGam_l_)
+  | Let         loc     .  info_6   :=  [ mkInfo1 "lQuTyGam" (ppGam @lQuTyGam)
                                         , mkInfo1 "decls.kiVarMp" (pp @decls.kiVarMp)
                                         ]
 %%]
@@ -673,6 +674,17 @@ SEM DataConstrEqs
 SEM DataConstr
   | Constr      loc     .  ppAST    :=  ppNestInfo @lhs.opts  ["DataConstr","Constr"] [ppNm @conNm] [@fields.ppAST,@eqs.ppAST] @info
                 loc     .  info     =   [ -- mkInfo1 "eqs.eqTyVarMp" (pp @eqs.eqTyVarMp)
+                                        ]
+%%]
+
+%%[17
+SEM Expr
+  | Let         loc     .  info_17  :=  [ mkInfo1 "polGam_l" (ppGam @polGam_l)
+                                        , mkInfo1 "decls.polVarMp" (pp @decls.polVarMp)
+                                        , mkInfo1 "lSubsPolGam1" (ppGam @lSubsPolGam1)
+                                        , mkInfo1 "polVarMpCyc" (pp @polVarMpCyc)
+                                        , mkInfo1 "polOkCyc" (pp @polOkCyc)
+                                        , mkInfo1 "polErrCyc" (pp @polErrCyc)
                                         ]
 %%]
 

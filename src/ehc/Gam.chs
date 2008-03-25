@@ -1111,6 +1111,12 @@ instance ForceEval DataGamInfo where
   fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
 %%]]
 
+instance ForceEval PolGamInfo where
+  forceEval x@(PolGamInfo p) | forceEval p `seq` True = x
+%%[[102
+  fevCount (PolGamInfo p) = cmUnions [cm1 "PolGamInfo",fevCount p]
+%%]]
+
 instance ForceEval FixityGamInfo
 %%[[102
   where
@@ -1198,21 +1204,31 @@ initKiGam
 %%% Polarity gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 export(PolGamInfo(..), PolGam, initPolGam, mapPolGam, quantifyPolGam)
+%%[17 export(PolGamInfo(..), PolGam, initPolGam, mapPolGam, quantifyPolGam,mkPGI)
 data PolGamInfo = PolGamInfo { pgiPol :: Ty } deriving Show
+
+mkPGI :: Ty -> PolGamInfo
+mkPGI t = PolGamInfo t
+
+emptyPGI :: PolGamInfo
+emptyPGI = mkPGI Ty_Any
 
 type PolGam = Gam HsName PolGamInfo
 
 initPolGam :: PolGam
 initPolGam
   = assocLToGam
-      [ (hsnArrow,   PolGamInfo $ quant $ [mkPolNegate var, var] `mkArrow` var)
-      , (hsnInt,     PolGamInfo $ quant var)
-      , (hsnChar,    PolGamInfo $ quant var)
+      [ (hsnArrow,   mkPGI $ quant $ [mkPolNegate var, var] `mkArrow` var)
+      , (hsnInt,     mkPGI $ quant var)
+      , (hsnChar,    mkPGI $ quant var)
+      , (hsnRec,     mkPGI $ quant $ [var] `mkArrow` var)
+%%[[97
+      , (hsnInteger, mkPGI $ quant var)
+%%]]
       ]
   where
     u     = uidStart
-    quant = Ty_Quant TyQu_Forall u
+    quant = mkTyQu TyQu_Forall [u]
     var   = mkPolVar u
 
 mapPolGam :: (Ty -> Ty) -> PolGam -> PolGam
@@ -1225,4 +1241,16 @@ quantifyPolGam gam
         notElemFtvs tv = not $ elem tv fvs
      in mapPolGam (tyQuantify notElemFtvs) gam
 %%]
+
+%%[17 export(polGamLookup,polGamLookupErr)
+polGamLookup :: HsName -> PolGam -> Maybe PolGamInfo
+polGamLookup = gamLookup
+
+polGamLookupErr :: HsName -> PolGam -> (PolGamInfo,ErrL)
+polGamLookupErr n g
+  = case polGamLookup n g of
+      Nothing  -> (emptyPGI,[rngLift emptyRange mkErr_NamesNotIntrod "polarity" [n]])
+      Just i   -> (i,[])
+%%]
+
 

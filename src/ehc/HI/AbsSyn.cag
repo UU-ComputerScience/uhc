@@ -52,6 +52,8 @@ DATA Binding
         ty                      : Ty
     | TyKinds
         tyKinds                 : {AssocL TyKiKey Ty}
+    | TyPolarities
+        tyPolarities            : {AssocL HsName Ty}
     | Class
         nm                      : HsName
         prToEvidTy              : Ty
