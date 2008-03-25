@@ -168,6 +168,14 @@ SEM GrPatLam
   | Empty     lhs.arity = 0
   | Var       lhs.arity = 1
   | VarNode   lhs.arity = @fldL.length
+  | BasicNode
+    EnumNode
+    OpaqueNode
+    PtrNode
+    BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot  lhs.arity = error "SplitFetch: arity of special node requested"
 
 SEM GrVarL
   | Nil       lhs.length = 0
@@ -228,7 +236,7 @@ SEM GrAlt
 %%[8.lastFetch
 
 
-ATTR AllExpr [ hasNext: {Bool} | | ]
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
 
 SEM GrBind
   | Bind     expr . hasNext = False
@@ -240,9 +248,6 @@ SEM GrExpr
   | Seq      expr . hasNext = True
              body . hasNext = False
 
-
-
-
 SEM GrExpr
   | Catch  loc  . hasNext      =  False
   | FetchNode FetchField
@@ -250,7 +255,7 @@ SEM GrExpr
            ,lhs.grTrf)         =  if not @lhs.hasNext
                                   then let newname     =  Map.findWithDefault @nm (getNr @nm) @lhs.renameMap
                                            mbKnownTag  =  checkSingleTag @lhs.hptMap newname
-                                           size        =  maybe @lhs.targetArity  -- 100   -- TODO: get a better arity somewhere
+                                           size        =  maybe @lhs.targetArity
                                                                 (\t -> tagArity t @lhs.arityMap)
                                                                 mbKnownTag
                                            fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField newname o mbKnownTag, o+1)

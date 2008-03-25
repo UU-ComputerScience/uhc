@@ -60,3 +60,14 @@ SEM GrExpr
 
 %%]
 
+%%[8
+-- The transformation is meant to be performed on GrExpr.
+-- The following definitions just serve to keep UUAGC from complaining about missing definitions.
+
+SEM GrGlobal
+  | Global      val  .  env    = Map.empty
+
+SEM GrBind
+  | Bind        expr .  env    = Map.empty
+
+%%]

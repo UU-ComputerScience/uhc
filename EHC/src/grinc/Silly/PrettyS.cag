@@ -58,7 +58,7 @@ optTraceAssign = False
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
          [ | | prettyS USE {>-<} {empty} : PP_Doc ]
          
-ATTR Functions Function Statements Statement Alternatives Alternative Value Values Variable Variables Constant
+ATTR Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
          [ constantMap : {Map.Map String Int} | | ]
 
 ATTR Alternatives [ | | prettyTE : PP_Doc   prettyE : PP_Doc ]

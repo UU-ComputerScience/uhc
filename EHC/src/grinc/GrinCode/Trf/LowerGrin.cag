@@ -148,7 +148,10 @@ SEM GrExpr
     UpdateUnit
     Eval 
     Throw      loc  . newName   = maybe @nm 
-                                        (\(GrVal_Var nm) -> nm) 
+                                        -- (\(GrVal_Var nm) -> nm) 
+                                        (\v -> case v of (GrVal_Var nm) -> nm
+                                                         _ -> error $ "LowerGrin: not a GrVal_Var: " ++ show v ++ " as replacement of " ++ show @nm
+                                        )
                                         (Map.lookup @nm @lhs.subst)
   | FetchNode  lhs  . grTrf     = GrExpr_FetchNode  @newName
   | FetchField lhs  . grTrf     = GrExpr_FetchField @newName @offset @mbTag
