@@ -42,7 +42,7 @@ embedVars options input
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
-ATTR Statement Statements Alternative Alternatives Variable Variables Value Values [ distance : {Int}  embed : {EmbedFunction} | | ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int}  embed : {EmbedFunction} | | ]
 ATTR Statement Statements Alternative Alternatives Variable [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 ATTR Statement Statements Alternative Alternatives [ numberParameters : {Int} | | ]
 ATTR Statement  [ | | trfStats: {[Statement]} ]

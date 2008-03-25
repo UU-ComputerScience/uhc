@@ -46,10 +46,19 @@ ATTR AllNT [ | unique: Int | grTrf: SELF ]
 
 Change last expression of binding to last of alternative (or of catch body or handler)
 
-%%[8.lastOfAlt import({GrinCode/LastExpr})
+%%[8.lastOfAlt
+
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
 SEM GrExpr
-  | Case    altL . hasNext  = False
-  | Catch   loc  . hasNext  = False
+  | Seq      expr . hasNext = True
+             body . hasNext = @lhs.hasNext
+  | Case     altL . hasNext = False
+  | Catch    loc  . hasNext = False
+
 %%]
 
 Keep track if we are inside an alternative
@@ -90,7 +99,7 @@ Transform the last statement of an alternative which is no simple unit
 
 %%[8.lastUnit
 SEM GrExpr
-  | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && @isLastExpr && (not @simpleUnit)
+  | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && not @lhs.hasNext && not @simpleUnit
                              .  (var, unique)  = newVar' @doUnitTrans @lhs.unique
                              .  (val2, pat2)   = newGrIdent @var
                         lhs  .  grTrf          = if @doUnitTrans 

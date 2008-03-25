@@ -88,6 +88,9 @@ SEM GrExpr
 SEM GrBind
   | Bind        expr        .   isEvalMp        =   Map.empty
 
+SEM GrGlobal
+  | Global      val         .   isEvalMp        =   Map.empty
+
 SEM GrAlt
   | Alt         expr        .   isEvalMp        =   @lhs.isEvalMp `Map.difference` Map.fromList (zip @pat.introNmL @pat.introNmL)
 %%]

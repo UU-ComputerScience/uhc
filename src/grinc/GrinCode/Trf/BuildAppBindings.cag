@@ -96,12 +96,17 @@ SEM GrVal
   | Node      lhs  . atagId     =  if   @tag.isGenApplyTag 
                                    then @lhs.atagId + 1
                                    else @lhs.atagId
-  
+
 SEM GrModule
   | Mod       globalL . atagId   = 0
   
-  
 %%]
+
+%%[10
+SEM GrSplit
+  | Sel       off  . atagId     =  error "BuildAppBindings: GrpSplit.Sel.atagId"
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Building the appN bindings %%

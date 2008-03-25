@@ -346,6 +346,10 @@ SEM GrVal
  | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
  | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
  | Empty      lhs.value  = error "ToSilly: Empty value"
+%%[[10
+ | NodeAdapt  lhs.value  = error "ToSilly: NodeAdapt value"
+              lhs.values = error "ToSilly: NodeAdapt values"
+%%]]
 
  | Var        lhs.valueName = @nm
  | *-Var      lhs.valueName = error "ToSilly: valueName taken of non-Var"          
@@ -399,7 +403,8 @@ SEM GrExpr
 %%[8
 
 ATTR AllGrExpr [ targets : {[HsName]} mbPtrTarget: {Maybe HsName} | | ]
-ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]}  mbPtrName: {Maybe HsName} ]
+ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]}  ]
+ATTR GrPatLam        [ | |  mbPtrName: {Maybe HsName} ]
 ATTR GrVar [ | |  patternName: {HsName} ]
 
 SEM GrBind
