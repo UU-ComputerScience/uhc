@@ -103,7 +103,7 @@ SEM RlDecl
 
 SEM Jd
   | Expr            loc     .   exprRW      =   exprRewrite (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam @lhs.rwGam emptyGam @expr.self
-                    lhs     .   self        =   Jd_LTX @nm @scNm @exprRW
+                    lhs     .   self        =   Jd_LTX @nm @scNm @exprRW @isSmall
 
 {-
                     lhs     .   self        =   Jd_LTX @nm @scNm (exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam @expr.self)

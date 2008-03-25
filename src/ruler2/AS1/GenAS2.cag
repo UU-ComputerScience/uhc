@@ -176,7 +176,7 @@ SEM AGItf
                                                                     = [ AS2.Jd_Ats (reNm jInfo) (reScNm jInfo) (mkAts jInfo) | jInfo <- jdsOf order reGam ]
                                                                     where mkAts jInfo = [ AS2.JdAt_At aNm (jaExpr a) | (aNm,a) <- gamAssocsShadow (reJAGam jInfo) ]
                                                                   mkExprJds vwRlInfo order reGam
-                                                                    = [ AS2.Jd_Expr (reNm jInfo) (reScNm jInfo) (mkExpr vwRlInfo jInfo) | jInfo <- jdsOf order reGam ]
+                                                                    = [ AS2.Jd_Expr (reNm jInfo) (reScNm jInfo) (mkExpr vwRlInfo jInfo) (reIsSmall jInfo) | jInfo <- jdsOf order reGam ]
                                                                     where mkExpr vwRlInfo jInfo
                                                                             = wrapFullJd $ exprSubst (@lhs.opts {optSubstOnce=True}) jg' $ e
                                                                             where (scInfo,vwScInfo) = fromJust (scVwGamLookup (reScNm jInfo) nVw @scGam)

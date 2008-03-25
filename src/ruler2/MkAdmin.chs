@@ -225,7 +225,7 @@ reGamUpdInOut nVw scGam pg
   = gamMap
        (\i ->
            case i of
-               REInfoJudge _ sn _ _ jg | isJust mvi
+               REInfoJudge _ sn _ _ jg _ | isJust mvi
                  -> i  {reInNmS = jaGamUseInS jg aInhS, reOutNmS = jaGamUseInS jg aSynS}
                  where mvi = scVwGamLookup sn nVw scGam
                        aDirMp = gamAtDirMp (snd . maybe (panic "reGamUpdInOut") id $ mvi) jg

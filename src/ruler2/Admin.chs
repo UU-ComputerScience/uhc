@@ -530,6 +530,7 @@ data REInfo e
       , reScNm              :: Nm
       , reInNmS, reOutNmS   :: Set.Set Nm
       , reJAGam             :: JAGam e
+      , reIsSmall           :: Bool
       }
   | REInfoDel
       { reNms               :: [Nm]
@@ -552,8 +553,8 @@ instance Show (REInfo e) where
   show _ = "REInfo"
 
 instance PP e => PP (REInfo e) where
-  pp (REInfoJudge n sn i o g) = "REJdg" >#< pp n >#< pp sn >#< (pp (show i) >#< pp (show o) >-< ppGam g)
-  pp (REInfoDel   ns        ) = "REDel" >#< ppCommas ns
+  pp (REInfoJudge n sn i o g _) = "REJdg" >#< pp n >#< pp sn >#< (pp (show i) >#< pp (show o) >-< ppGam g)
+  pp (REInfoDel   ns          ) = "REDel" >#< ppCommas ns
 
 type REGam e = Gam Nm (REInfo e)
 
@@ -562,11 +563,11 @@ reGamUnionShadow g gamPrev
   = gamFoldWithKey
       (\n i gamPrev
         -> case i of
-             REInfoJudge _ sn _ _ jg
+             REInfoJudge _ sn _ _ jg _
                -> gamInsertShadow n (iPrev {reJAGam = jg `gamUnionShadow` jaGamPrev}) gamPrev
                where (jaGamPrev,iPrev)
                        = case gamLookup n gamPrev of
-                           Just iPrev@(REInfoJudge _ snPrev _ _ _) | snPrev == sn
+                           Just iPrev@(REInfoJudge _ snPrev _ _ _ _) | snPrev == sn
                              -> (reJAGam iPrev,iPrev)
                            _ -> (emptyGam,i)
              REInfoDel ns
@@ -713,7 +714,7 @@ vwrlScc i
   = map reorder . unNm . Scc.scc . concat . dpd . vwrlFullPreGam $ i
   where dpd g = d' ++ d
           where d = [ (jd n,map nm . Set.toList $ is) : zip (map nm . Set.toList $ os) (repeat [jd n])
-                    | (REInfoJudge n _ is os _) <- gamElemsShadow g
+                    | (REInfoJudge n _ is os _ _) <- gamElemsShadow g
                     ]
                 d' = [ zipWith (\a b -> (a, [b])) grp (tl ++ [hd])
                      | grp@(hd:tl) <- map (map jd) auxGrps

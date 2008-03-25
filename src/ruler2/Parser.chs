@@ -201,11 +201,12 @@ pBlock1 open sep close p =  pOffside open close explicit implicit
         pNmV                =   Nm <$> pVarid
         pSym                =   Nm <$> pSymStr
         pRExpr              =   pKey "judge" *> pRExprBase
-        pRExprBase          =   (\mrnp (n,p) e
+        pRExprBase          =   (\msmall mrnp (n,p) e
                                     -> let (mrn,p') = maybe (Nothing,p) (\(n,p) -> (Just n,p)) mrnp
-                                       in  RExpr_Judge p' mrn n e
+                                           small = maybe False (const True) msmall
+                                       in  RExpr_Judge p' mrn n e small
                                 )
-                                <$> pMb (pNmSPos <* pKey ":") <*> pNmSPos <*> pRExprEqn
+                                <$> pMb (pKey "*") <*> pMb (pNmSPos <* pKey ":") <*> pNmSPos <*> pRExprEqn
                             <|> (\(n,p) nl -> RExpr_Del p (n:nl))
                                 <$ pKey "-" <*> pNmSPos <*> pList pNm
         pRExprEqn           =   RExprEqn_Attrs <$> pAttrEqns
