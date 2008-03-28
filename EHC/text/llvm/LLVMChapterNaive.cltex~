@@ -1,0 +1,110 @@
+%%[chapter
+\chapter{The Naive Translation}
+\todo{Tell what is to expected of this chapter}
+
+\section{Invariants of Silly}
+\subsection{Haskell Data}
+The structure of the generated LLVM code is based on its predecessor the Simple Imperative Language (Silly). In this section we explain important aspects of the Silly structure and how they influence the LLVM code.
+
+Silly uses only one building block to represent Haskell data or closures. Everything is build up from one or more |GrWord| cells. A |GrWord| is a signed integer large enough to hold a pointer, and thus allows to store both pointers and integers in a |GrWord|. This makes allocation easy and algins the data. For example a Cons node from a list of integers consists of 3 consecutive |GrWord| cells, one for the |CCons| tag, one for the integer value of the node and finally a pointer to the tail of the list. The definition of |GrWord| is trivial for the C backend with the build in |intptr_t| type, but such a type is not available in LLVM. Instead we rely on a configure script to determine the size of a pointer on the platform and use an integer with this size as |GrWord| in the LLVM backend.
+
+\subsection{Functions}
+Functions in Silly all return |void|.
+\begin{itemize}
+  \item fun\_functions do not return a value, parameters always GrWords
+\end{itemize}
+
+\section{Types}
+The LLVM intermediate representation is strongly typed, in contrast with it's predecessors GRIN and Silly.
+\begin{itemize}
+  \item \todo{GRIN is untyped, LLVM is strongly typed}
+  \item \todo{How to re-introduce types}
+  \item \todo{No aliasing, so we need expressions or values}
+\end{itemize}
+
+\section{The Run-time System}
+Run-time systems offer services for the running Haskell program. Examples of such services are garbage collection, primitive functions, dynamic loading and dynamic compilation API's. The run-time system of the naive backend offers just enough service to succesful run a Haskell program: primitive functions and garbage collection. In this section we describe the design and implementation of the system and elaborate on the choices made.
+  
+\subsection{Implementation}
+\begin{figure}[tb]
+  \begin{center}
+    \includegraphics[scale=0.7]{rts_structure.png}
+  \end{center}
+  \caption{The structure of the run-time system}
+  \label{fig:rts-structure}  
+\end{figure}
+\refF{fig:rts-structure} describes the architecture of the run-time system. On the top level, we have multiple source files that define and export functions. These functions are compiled by the a compiler that can compile the source language to object files. The object files are combined in a library, to which the compiled Haskell code can link to, resulting in an executable. Although the current system is solely implemented in C, the architecture allows us to write specific parts in an other language. This is illustrated in \refF{fig:rts-structure} by the dashed C++ and Haskell (HS) files. We are only restricted by calling convention (in our implementation the C calling convention) and marshalling from data between the languages. Furthermore, this architecture allows us to use one run-time system for the C and the LLVM backend.
+
+The design offers advantages, but also some disadvantages. The system fails to provide a clean interface for the Haskell program. This is a drawback for the naive back-end, because in LLVM code external functions must be declared. Thus each run-time function that is utilised, must be either declared in the Haskell code or inserted by the compiler. Both options are utilised, as the primitive functions are declared in the prelude and the garbage collection functions are added by the Silly-to-LLVM transformation. Another problem is that the code of the run-time functions are not exposed to the LLVM compiler chain. The LLVM tools are not able to inline the run-time functions and can not analyze the code. This makes the usage of often used functions like allocation more costly than they need to be.
+
+\subsubsection{Interaction between the run-time system and Haskell}
+The services of the run-time system are available because they use a common calling convention. But calling functions is only useful if there is a way for the program and the run-time system to interact. We distinguish three different values that could be passed between the program and the run-time:
+
+\begin{enumerate}
+  \item Basic values, values that can be considered primitive such as integers, floats and pointers.
+  \item Tag values, an unsigned integer that is unique for each constructor in the program.  
+  \item Possible unevaluated nodes, a closure consiting of a tag and the payload.
+\end{enumerate}
+
+Pure functions that accept basic values as parameters and returns a basic value (e.g. a function that muliplies two integers) work flawless. Most of the run-time system consists of these type of functions. The types are declared in the Haskell code and thus the heap-points-to analysis\todo{ref HPT} can use this information for analyzing values returned by these functions. Because the heap-points-to analysis is directed only by the type of run-time functions, impure functions can break the analysis and break the generated code.
+
+\begin{figure}[tb]
+  \begin{lstlisting}[style={figureLst}, language={C}]
+#define CFalse 2
+#define CTrue 3
+  
+GrWord primGtInt(GrWord x, GrWord y)
+{   
+  if (x>y)
+  { 
+    return CTrue;
+  }
+  return CFalse;
+} 
+  \end{lstlisting}
+  \caption{Primitive function |primGtInt| from the run-time system}
+  \label{lst:primGtInt}  
+\end{figure}
+
+Run-time functions that accept or return tag values are a special case of the functions that accept or return basic values. It is obvious that both the run-time system and the compiled Haskell program must share the same mapping between constructors and their tag values. The current implementation of this mapping can be seen in \refF{lst:primGtInt}. The unsigned integer values of the tags |CFalse| and |CTrue| are hardcoded in the run-time system (line 1 and 2) and the same is done in the compiler for these tags. The mappings of these tags are synchronized by hand and are subject of possible synchronisation errors in the future.
+
+The final class of run-time functions, functions that receive nodes as parameter or return nodes, are more problematic than the above cases. When a function has a node as parameter, it may be evaluated or unevaluated. A run-time function could inspect the tag of the node to determine if the node is in weak head normal form. If it is unevaluated, evaluating it with an uninlined |eval| function is an option, but would make the function impure, breaking the heaps-points-to analysis. Evaluating the arguments of run time functions in advance solves this problem, but would make the functions more strict than they need to be. Creating a node in the run-time system and returning it to the Haskell world is problematic. The heaps-points-to analysis is unaware of this closure and this can result in missing arms in generated |eval| and |apply| functions. Currently we are able to avoid creating closures in the run-time system, but it is desirable for later versions.
+
+\subsubsection{Synopsis}
+The current implementation of the run-time system is small, reasonable efficient, and able to support the execution of Haskell programs. Future versions need to focus on efficiency and the interaction between the run-time system and the program.    
+
+\subsection{Garbage Collection}
+The initial implementation allocated closures but did not worry about de-allocation. This scheme works for the smallest toy examples, but for a more elaborate example fills the memory quickly with garbage closures. Real Haskell programs depend on a garbage collector to de-allocate obsolete closures that fill the heap.
+
+The naive backend utilies the Boehm-Demers-Weiser garbage collector~\cite{boehm88gc-c}, a conservative collector designed to work in an uncooperative environment. Conservative collectors do not need support from the language to perform their job. These collectors traverse the stack and interpret each value as a pointer. The values that these pointers point to, are recursively inspected for pointers to values. Each value that can be reached this way from the stack is considered live and thus not garbage. This makes garbage collection very easy to integrate in our backend. \refF{lst:llvm-gc-file} contains all code needed to plug in the garbage collection in the backend. It defines three wrapper functions that wrap C macro functions, because there is no way to call a C macro function in LLVM as they are replaced by their definition at link-time. By replacing the calls from |malloc| to |llvmgc_malloc| and linking in the garbage collection library, we add the collector to the backend.
+
+\begin{figure}[tb]
+  \begin{lstlisting}[style={figureLst}, language={C}]
+#include <inttypes.h>
+#include "gc.h"
+/* Init the garbage collector */
+void llvmgc_init()
+{
+  GC_INIT();
+}
+/* Malloc nBytes */
+void* llvmgc_malloc( size_t nBytes )
+{
+  return GC_MALLOC( nBytes );
+}
+/* Allocate nBytes and add them to the garbage collection roots */
+void* llvmgc_malloc_uncollectable( size_t nBytes )
+{
+  return GC_MALLOC_UNCOLLECTABLE( nBytes );
+}
+  \end{lstlisting}
+  \caption{The garbage collection run-time interface}
+  \label{lst:llvm-gc-file}  
+\end{figure}
+
+The genericity of conservative garbage collection is also a disadvantage. Conservative collectors lack the information if a value is a pointer and can only do an educated guess. Although this is safe, it can result in memory leaks, leaving garbage uncollected. Precise garbage collectors, collectors that rely on pointer identification information provided by the compiler, do not have this drawback. 
+
+Another inefficiency of conservative garbage collection rises because the implementation does not abstracts over memory, instead it only abstracts over memory management. A great amount of closures on the heap have a short life-time. When the collector frees the memory used by a closure that became unreachable, it leaves the memory fragmented. When this happens often, we use more chunks of memory than needed because of the fragmentation. This problem is often solved by copying collectors, which compact the heap by copying the live memory to a shadow heap. Copying changes addresses of objects, requiring an update of references to objects that were copied. This excludes conservative collectors, because wrong guesses are no longer safe when the value is updated with a pointer value.
+
+We conclude that the current conservative garbage collection is not the most efficient one, but is very easy to integrate. The garbage collector is a likely target for replacement in the future, but for the naive backend it is sufficient.
+%%]
