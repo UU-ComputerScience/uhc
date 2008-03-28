@@ -88,8 +88,8 @@ experiment-subst-variant:
 
 experiment-subst-variant-dflt: $(EXPERIMENTS_SUBST_ALL_DPDS)
 	mkdir -p $(dir $(EXPERIMENTS_SUBST_BLD_EXEC)) && \
-	$(GHC) --make $(GHC_OPTS) $(GHC_PLAIN_OPTS_WHEN_EXPERIMENTS_SUBST) -package $(LIB_EH_UTIL_PKG_NAME) -i$(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX) $(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPERIMENTS_SUBST_MAIN).hs -o $(EXPERIMENTS_SUBST_BLD_EXEC) && \
-	$(GHC) --make $(GHC_OPTS) $(GHC_PROF_OPTS_WHEN_EXPERIMENTS_SUBST) -package $(LIB_EH_UTIL_PKG_NAME) -i$(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX) $(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPERIMENTS_SUBST_MAIN).hs -o $(EXPERIMENTS_SUBST_BLD_EXEC_PROF)
+	$(GHC) --make $(GHC_OPTS) $(GHC_PLAIN_OPTS_WHEN_EXPERIMENTS_SUBST) -package $(LIB_EH_UTIL_PKG_NAME) -i$(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX) $(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPERIMENTS_SUBST_MAIN).hs -o $(EXPERIMENTS_SUBST_BLD_EXEC)
+#	$(GHC) --make $(GHC_OPTS) $(GHC_PROF_OPTS_WHEN_EXPERIMENTS_SUBST) -package $(LIB_EH_UTIL_PKG_NAME) -i$(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX) $(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX)$(EXPERIMENTS_SUBST_MAIN).hs -o $(EXPERIMENTS_SUBST_BLD_EXEC_PROF)
 
 experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	@if test $(DO_TIMING) = "yes" ; \
@@ -126,9 +126,9 @@ experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	      done \
 	    else \
           time ((cd $${rundir} ; $${expexec} $${run} q $${v}) > $${runoutput}) 2> $${runtime} ; \
-          time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
-          (cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
-          time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
+          #time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
+          #(cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
+          #time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
 	    fi \
 	  done \
 	done

@@ -214,7 +214,7 @@ SEM PatExpr
   | Expr        loc         .   eqFldNm             =   ehbnClassEqFldEq $ ehcOptBuiltinNames @lhs.opts
                             .   (eqTy,nmErrs)       =   valGamLookupTy @eqFldNm @lhs.valGam
                             .   knExprTy            =   mkTyVar @lUniq
-                            .   fo_                 =   fitsIn strongFIOpts @fe @lUniq2 @lhs.tyVarMp
+                            .   fo_                 =   fitsIn strongFIOpts @fe @lUniq_97_fitsIn_ty @lhs.tyVarMp
                                                             @eqTy
                                                             ([@knExprTy,@lhs.knTy] `mkArrow` (semCon $ ehbnDataBool $ ehcOptBuiltinNames @lhs.opts))
                 expr        .   knTy                =   @knExprTy

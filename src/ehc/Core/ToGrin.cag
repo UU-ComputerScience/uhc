@@ -313,7 +313,7 @@ SEM CExpr
                                                       )
                                                 else  (case @categ of
                                                           CBindRec     ->  mkSt (map (\(GrBind_Bind n _ _) -> n) @binds.grBindL)
-                                                                           . mkVs @binds.grBindL
+                                                                           $ mkVs @binds.grBindL
                                                                            $ @body.grExpr
                                                                            where  h             = GrVal_Node GrTag_Hole []
                                                                                   mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPatLam_Var n) e) e nmL

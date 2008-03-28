@@ -23,6 +23,10 @@
 %%[9 import(Control.Monad.State)
 %%]
 
+%%[9 import({%{EH}Base.Debug} as Debug)
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Translation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -159,16 +163,25 @@ evidMpToCore env evidMp
 %%[9 export(evidKeyCoreMpToBinds)
 evidKeyCoreMpToBinds :: EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds m
-  = ( Map.unionsWith (++)
+  = dbg "evidKeyCoreMpToBinds.res"
+    $!
+    ( dbg "evidKeyCoreMpToBinds.res1"
+      $! Map.unionsWith (++)
       $ map (\(b,uses)
                -> let deepestScope = fst . maximumBy (\(_,sc1) (_,sc2) -> sc1 `pscpCmpByLen` sc2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (mkCBind1Meta (mkHNm i) CMeta_Dict e,u)    | (i,(e,u,_ )) <- Map.toList dependentOnAssumes   ]
-    , Map.fromListWith (++)
-      $ [ (sc,[mkCBind1Meta (mkHNm i) CMeta_Dict e]) | (i,(e,_,sc)) <- Map.toList independentOfAssumes ]
+      $ [ (mkCBind1Meta (mkHNm i) CMeta_Dict e,u)    | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   ]
+    , dbg "evidKeyCoreMpToBinds.res2"
+      $! Map.fromListWith (++)
+      $ [ (sc,[mkCBind1Meta (mkHNm i) CMeta_Dict e]) | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes ]
     )
-  where (independentOfAssumes, dependentOnAssumes) = Map.partition (\(_,uses,_) -> Set.null uses) m
+  where (independentOfAssumes, dependentOnAssumes)
+          = dbg "evidKeyCoreMpToBinds.partition"
+            $! Map.partition (\(_,uses,_) -> Set.null uses)
+            $ dbg "evidKeyCoreMpToBinds.m"
+            $! m
+        dbg m = id -- Debug.tr m (pp m)
 %%]
 
 %%[9 export(evidKeyBindMpToCSubst)

@@ -172,7 +172,7 @@ SEM PrExpr
 
 %%[11
 SEM Decl
-  | Type        lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExpr.errSq, foErrSq @foKi_]
+  | Type        lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExpr.errSq, foErrSq @foTy_, foErrSq @foKi_]
 %%]
 
 %%[12
