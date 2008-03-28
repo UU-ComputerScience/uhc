@@ -538,7 +538,7 @@ SEM Expression
     | InfixApplicationChainTop
         loc         .   eh          =   @ehFromOpChain
     | SectionApplication
-        loc         .   eh          =   let n  = mkHNm "x"
+        loc         .   eh          =   let n  = mkHNmHidden $ mkHNm ("x_" ++ show @lUniq_1_nm)
                                             ne = rngLift @range EH.Expr_Var n
                                             np = rngLift @range EH.PatExpr_Var n
                                         in  case (@leftExpression.eh,@rightExpression.eh) of

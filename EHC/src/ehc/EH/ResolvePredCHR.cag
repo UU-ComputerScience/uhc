@@ -98,14 +98,14 @@ SEM Decl
                                                                        = [ [ mkPredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId basePrfCtxtId u2) @predScope
                                                                            | ((_,t),u2) <- zip a1 (mkNewUIDL (length a1) u1)
                                                                            ]
-                                                                         | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq8)
+                                                                         | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq_95_altsPrOcc)
                                                                          ]
                                                                   extraPrOcc
                                                                        = [ mkPredOcc (Pred_Class (dccMkTy cx)) (mkPrId basePrfCtxtId u) @predScope
-                                                                         | (cx,u) <- zip cxl (mkNewUIDL (length cxl) @lUniq10)
+                                                                         | (cx,u) <- zip cxl (mkNewUIDL (length cxl) @lUniq_95_extraPrOcc)
                                                                          ]
                                                                        where cxl = dclExtraCtxt derivDCL
-                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq9 emptyVarMp dataTy @derivHdDataTy
+                                                                  foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy emptyVarMp dataTy @derivHdDataTy
                                                                   derivDCL = panicJust ("Decl.Instance.Deriving.derivMp: " ++ show @instClsNm) $ Map.lookup @instClsNm @derivMp
                                                           _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[],[],emptyDerivCls)
 %%]]
@@ -138,7 +138,7 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
         (chrSolveEvidCoreMp,ambigEvids)
           = dbg "evidMpToCore" $ evidMpToCore (env' {fiUniq = u3}) chrSolveEvidMp2
         (chrSolveEvidBindMp,chrSolveScopeBindMp)
-          = dbg "evidKeyCoreMpToBinds" $ evidKeyCoreMpToBinds chrSolveEvidCoreMp
+          = dbg "evidKeyCoreMpToBinds" $ evidKeyCoreMpToBinds (dbg "simplify.chrSolveEvidCoreMp" chrSolveEvidCoreMp)
         ambigErrs = if null ambigEvids then [] else [rngLift range Err_OverlapPreds [ (cpoPr $ ambigevidPredOcc a,map pp $ ambigevidInfos a) | a <- ambigEvids]]
 %%[[9
         range = emptyRange
@@ -162,7 +162,7 @@ SEM AGItf
                             .   toProveCnstrMp      =   @expr.tyVarMp `chrAppSubst` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
                             .   (_,chrSolveMainRemCnstrMp,_,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,_,chrSolveMainErrs,chrSimplifyResult,chrSolveMainEvidCoreMp)
-                                                    =   simplify (@chrProveFIIn {fiUniq = @lUniq2}) @chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveHereCnstrMp emptySimplifyResult
+                                                    =   simplify (@chrProveFIIn {fiUniq = @lUniq_9_simplify}) @chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace)
                                                     =   debugInfo @chrSimplifyResult
                             .   cannotProveCnstrMp	=	@chrSolveMainRemCnstrMp

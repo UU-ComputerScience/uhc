@@ -133,7 +133,7 @@ data Val                        -- concrete syntax:
 %%][3
   |  Var    !VarId  !Ref
 %%]]
-  |  Err    !PP_Doc
+  |  Err    !String
   deriving Show
 %%]
 valIsErr :: Val -> Bool
@@ -153,11 +153,6 @@ newtype  Ref         = Ref (STRef St RefContent)
 %%[3
 instance Show Ref where
   show _ = "Ref"
-%%]
-
-%%[1
-valErr :: PP x => x -> Val
-valErr x = Err (pp x)
 %%]
 
 %%[1.Substitutable.Val
@@ -180,7 +175,7 @@ instance Substitutable Val where
              case i |? s of
                Just v'
                  |  Set.member i visited
-                      -> valErr "infinite"
+                      -> Err "infinite"
                  |  otherwise
                       -> sbs (Set.insert i visited) s v'
                _      -> v
@@ -470,8 +465,8 @@ emptySt  =   St 0 emptyEnv
 %%]
 
 %%[1.err
-err :: PP x => x -> Compute Val
-err x = return (valErr x)
+err :: String -> Compute Val
+err x = return (Err x)
 %%]
 
 %%[1.Compute

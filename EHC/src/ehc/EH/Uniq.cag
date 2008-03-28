@@ -304,7 +304,7 @@ SEM PatExpr
 
 %%[9
 SEM AGItf
-  | AGItf           (expr.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq
+  | AGItf           (expr.gUniq,loc.lUniq,loc.lUniq_9_simplify)     :=  mkNewLevUID2    @lhs.gUniq
 
 SEM Expr
   | Let             (decls.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4,loc.lUniq5,loc.lUniq6)
@@ -367,43 +367,45 @@ SEM Expr
                                                                     =   mkNewLevUID4    @lhs.gUniq
 %%]
 
+%%[16
+SEM DataConstrEq
+  | Eq              (tyVar.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)   =   mkNewLevUID3    @lhs.gUniq
+%%]
+
 %%[17
 SEM Decl
-  | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+  | Data            (tyVars.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq_17_polCtx)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
-  | Type            (tyExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+  | Type            (tyExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq_17_seed_pol,loc.lUniq_17_fitsIn_pol)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
 
 SEM TyExpr  
-  | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+  | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq_17_polArg)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
-  | Con Var         (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
-  | Lam             (tyExpr.gUniq,loc.lUniq,loc.lUniq2)             :=  mkNewLevUID2    @lhs.gUniq
+  | Con Var         (lhs.gUniq,loc.lUniq,loc.lUniq_17_fitsIn_pol)   :=  mkNewLevUID2    @lhs.gUniq
+  | Lam             (tyExpr.gUniq,loc.lUniq,loc.lUniq_17_polArg)    :=  mkNewLevUID2    @lhs.gUniq
 
 SEM TyVar
-  | Var             (lhs.gUniq,loc.lUniq,loc.lUniq2)                :=  mkNewLevUID2    @lhs.gUniq
+  | Var             (lhs.gUniq,loc.lUniq,loc.lUniq_17_pol)          :=  mkNewLevUID2    @lhs.gUniq
 
 SEM Decl
-  | Instance        (loc.gUniq3,loc.lUniq17_1)                      =   mkNewLevUID     @gUniq2
-  | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq17_1) :=  mkNewLevUID3    @lhs.gUniq
-  | Class           (tyPrExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq17_1)
+  | Instance        (loc.gUniq3,loc.lUniq_17_polCtx)                =   mkNewLevUID     @gUniq2
+  | InstanceIntro   (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq_17_polCtx)
+  																	:=  mkNewLevUID3    @lhs.gUniq
+  | Class           (tyPrExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq_17_polCtx)
                                                                     :=  mkNewLevUID3    @lhs.gUniq
 %%]
 
 %%[95
 SEM Decl
-  | Instance        (tyPrExpr.gUniq,loc.lUniq6,loc.lUniq7,loc.lUniq8,loc.lUniq9,loc.lUniq10)
-                                                                    :=  mkNewLevUID5    @gUniq3
+  | Instance        (tyPrExpr.gUniq,loc.lUniq_95_altsPrOcc,loc.lUniq_95_fitsIn_dataTy,loc.lUniq_95_extraPrOcc)
+                                                                    :=  mkNewLevUID3    @gUniq3
 %%]
 
 %%[97
 SEM PatExpr
-  | Expr            (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    =   mkNewLevUID3    @lhs.gUniq
-%%]
-
-%%[16
-SEM DataConstrEq
-  | Eq              (tyVar.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)   =   mkNewLevUID3    @lhs.gUniq
+  | Expr            (expr.gUniq,loc.lUniq,loc.lUniq_97_fitsIn_ty)
+  																	=   mkNewLevUID2    @lhs.gUniq
 %%]
 
 %%[50
@@ -413,5 +415,6 @@ SEM DataConstrEq
 
 %%[98
 SEM AGItf
-  | AGItf           (expr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3)    :=  mkNewLevUID3    @lhs.gUniq
+  | AGItf           (expr.gUniq,loc.lUniq_9_simplify,loc.lUniq_98_fitsIn_ty)
+  																	:=  mkNewLevUID2    @lhs.gUniq
 %%]
