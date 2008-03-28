@@ -1,0 +1,24 @@
+%%[chapter
+\chapter{Introduction}
+
+\section{Generating Executables}
+\begin{itemize}
+  \item There are many programming languages and thus many compilers for these programming languages. The goal of each compiler is to generate reasonable efficient executable code. 
+  \item 4 possible ways to generate executables: Assembly language, High level languages, Virtual machines and typed assembly languages.
+  \item Why is LLVM an attractive target. (short, probably one paragraph).
+\end{itemize}
+
+\section{Generating Executables for Lazy Functional Languages}
+\begin{itemize}
+  \item Lazy functional programs allocated a lot of memory (realy a lot). This is because of closures and lazyness. It is very important that allocation and de-allocation is done very efficiently.
+  \item Recursion must be very effective, because it is utilized very often in functional programs. Thus we require tail calls.
+  \item Some more aspects of function languages?
+\end{itemize}
+
+\section{Generating Executables for Lazy Function Languages with LLVM}
+\begin{itemize}
+  \item Research Question: Is LLVM suitable for generating reasonable efficient binaries from Haskell Source code. Does it perform optimizations for us? \todo{Refine this}.
+  \item We are going to research this by building a EHC backend and measure the speed and space of the binaries.
+  \item Adding an extra optimization and describing a few others.
+\end{itemize}
+%%]

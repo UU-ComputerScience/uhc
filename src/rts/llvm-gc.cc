@@ -2,7 +2,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <locale.h>
-#include <unistd.h>
+//#include <unistd.h>
 
 #include "config.h"
 #include "gc.h"
@@ -15,7 +15,7 @@ void llvmgc_init()
     // The environment pointer passed to main is at the bottom of the stack, so
     // we use this as 'cold' stack bottom.
     //
-    GC_stackbottom = (char*) __environ;
+    //GC_stackbottom = (char*) __environ;
     
     // Format output by local settings of the machine.
     // 
