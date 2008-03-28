@@ -3,9 +3,12 @@ Functional LLVM
 %%]
 
 %%[main
+%%@LLVMChapterAbstract.chapter
 \tableofcontents
 
 \part{Preliminaries}
+%%@LLVMChapterIntroduction.chapter
+%%@LLVMChapterEHCPipeline.chapter
 
 \part{Main part}
 %%@LLVMChapterNaive.chapter

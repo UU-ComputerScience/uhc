@@ -33,7 +33,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								AppxNotation FrontMatter OldText \
 								Poster PosterLDL PosterTrOrPr \
 								llvm/LLVM llvm/LLVMPackages llvm/LLVMCoverPage llvm/LLVMFormat \
-								llvm/LLVMChapterNaive \
+								llvm/LLVMChapterAbstract llvm/LLVMChapterIntroduction \
+								llvm/LLVMChapterEHCPipeline llvm/LLVMChapterNaive \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
