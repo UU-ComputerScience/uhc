@@ -316,21 +316,6 @@ AC_ARG_WITH(opt,
 )
 AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
 
-# LLVM Linker 
-AC_ARG_WITH(llvm-ld,
-[AC_HELP_STRING([--with-llvm-ld=<LLVM Linker>],
-                [Path to the LLVM Linker])],
-[ llvmLd="$withval" ],
-[
-  if test "$LLVM_LD" = ""; then
-    AC_PATH_PROG(llvmLd,llvm-ld)
-  else
-    llvmLd=$LLVM_LD
-  fi
-]
-)
-AC_SUBST(LLVM_LD_CMD,$llvmLd)
-
 # LLVM Compiler
 AC_ARG_WITH(llc,
 [AC_HELP_STRING([--with-llc=<LLVM Compiler>],
