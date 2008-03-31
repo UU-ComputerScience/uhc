@@ -44,12 +44,9 @@ shift $(($OPTIND - 1))
 
 INPUT_LL=$1
 
-TMP_FILE1=`mktemp -t $TMP_TEMPLATE`   && \
-TMP_FILE2=`mktemp -t $TMP_TEMPLATE`   && \
-$LLVM_AS -f -o $TMP_FILE1 $INPUT_LL   && \
-$LLVM_OPT -f -o $TMP_FILE2 $TMP_FILE1 && \
-cp $TMP_FILE2 $OUTPUT.bc
-$LLC -f -o $OUTPUT.s $OUTPUT.bc && \
-$NATIVE_LD -o $OUTPUT $OUTPUT.s $LIBS && \
-rm $TMP_FILE1 && \
-rm $TMP_FILE2
+#TMP_FILE1=`mktemp -t $TMP_TEMPLATE`   && \
+#TMP_FILE2=`mktemp -t $TMP_TEMPLATE`   && \
+$LLVM_AS -f -o $INPUT_LL.bc $INPUT_LL   && \
+$LLVM_OPT -f -o $INPUT_LL_opt.bc $INPUT_LL.bc && \
+$LLC -f -o $OUTPUT.s $INPUT_LL_opt.bc && \
+$NATIVE_LD -o $OUTPUT $OUTPUT.s $LIBS
