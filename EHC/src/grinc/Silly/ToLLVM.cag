@@ -819,7 +819,8 @@ The default arm for a 'LLVMStatement_Switch'.
 defaultCase :: UID -> (UID,LLVMVar,LLVMStatements)
 defaultCase nr =
   let (nr1, fresh1) = newFresh nr Label
-   in (nr1, fresh1, [ LLVMStatement_Label fresh1, LLVMStatement_Call primPatternMatchFailureFuncDecl StdCall [] ])
+   in (nr1, fresh1, [ LLVMStatement_Label fresh1, LLVMStatement_Call primPatternMatchFailureFuncDecl StdCall [] 
+                    , LLVMStatement_Unreachable ])
 }
 %%]
 

@@ -43,10 +43,10 @@ done
 shift $(($OPTIND - 1))
 
 INPUT_LL=$1
+OUTPUT_BASE=${OUTPUT%.*}
+INPUT_BASE=${OUTPUT%.*}
 
-#TMP_FILE1=`mktemp -t $TMP_TEMPLATE`   && \
-#TMP_FILE2=`mktemp -t $TMP_TEMPLATE`   && \
-$LLVM_AS -f -o $INPUT_LL.bc $INPUT_LL   && \
-$LLVM_OPT -f -o $INPUT_LL_opt.bc $INPUT_LL.bc && \
-$LLC -f -o $OUTPUT.s $INPUT_LL_opt.bc && \
-$NATIVE_LD -o $OUTPUT $OUTPUT.s $LIBS
+$LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
+$LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
+$LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
+$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS
