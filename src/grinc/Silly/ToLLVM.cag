@@ -248,50 +248,29 @@ SEM Statement
                                
   | Comment     lhs.llvmCode = [LLVMStatement_Comment @comment]
 
-{-
-    "If" is an obsolete statement form. 
-    To be removed later, but kept as inspiration for the yet to be implemented IfThenElse statement
-
-  | If          lhs.llvmCode = @scrutinee.llvmCode ++ @loc.scrutToIntCode ++ @loc.scrutUnboxCode ++ @loc.cmpCode ++ 
-                               [ LLVMStatement_BranchIf @loc.cmpVar @loc.fstLabel @loc.sndLabel ] ++                               
-                               @loc.altCode ++
-                               [ LLVMStatement_Label  @loc.resumeLabel]
-                               
-                loc.altCode  = concatMap ( ++ [LLVMStatement_Branch @loc.resumeLabel] ) @body.llvmCode                  
-                loc.(fstAlt,sndAlt) =
-                               let f (x:y:[]) = (x,y)
-                                   f _ = error "Not exactly 2 alts for If"
-                                in f @body.jumpTargets                                              
-                loc.(fstConst,fstLabel) =
-                                     @loc.fstAlt
-                loc.(sndConst,sndLabel) =
-                                     @loc.sndAlt  
-                                                                     
+  | IfThenElse  lhs.llvmCode = @condition.llvmCode ++
+                               [ LLVMStatement_BranchIf @condition.llvmVar @loc.thenLabel @loc.elseLabel
+                               , LLVMStatement_Label @loc.thenLabel ] ++                               
+                               @thenpart.llvmCode ++
+                               [ LLVMStatement_Branch @loc.resumeLabel
+                               , LLVMStatement_Label @loc.elseLabel ] ++
+                               @elsepart.llvmCode ++
+                               [ LLVMStatement_Branch @loc.resumeLabel
+                               , LLVMStatement_Label @loc.resumeLabel]                        
+                                                                    
                 loc.uniqSeed  : {UID}
                 loc.uniqNr1   : {UID}
                 loc.uniqNr2   : {UID}
                 loc.uniqNr3   : {UID}
-                loc.uniqNr4   : {UID}
-                (loc.uniqSeed, scrutinee.gUniq, body.gUniq) =
-                               mkNewLevUID2 @lhs.gUniq 
+                (loc.uniqSeed, condition.gUniq, thenpart.gUniq, elsepart.gUniq) =
+                               mkNewLevUID3 @lhs.gUniq 
                                
-                loc.(uniqNr1, scrutToIntVar, scrutToIntCode) =
-                              cast2int @loc.uniqSeed @scrutinee.llvmVar @lhs.intType
-
-                loc.(uniqNr2, scrutUnboxVar, scrutUnboxCode) =                               
-                              assign2var @loc.uniqNr1 ( LLVMExpression_BinOp AND @loc.scrutToIntVar 
-                                                                         (Constant 1 @lhs.intType)
-                                                      , @lhs.intType )
-                               
-                loc.(uniqNr3, cmpVar, cmpCode) =
-                              assign2var @loc.uniqNr2 ( LLVMExpression_Compare CMPEQ @loc.scrutUnboxVar @loc.fstConst
-                                                      , i1)               
-                               
-                loc.(uniqNr4, resumeLabel) =
-                               newFresh @loc.uniqNr3 Label              
--}
-
-  | IfThenElse  lhs.llvmCode = error "Silly.ToLLVM: IfThenElse not yet implemented"
+                loc.(uniqNr1, thenLabel) =
+                               newFresh @loc.uniqSeed Label             
+                loc.(uniqNr2, elseLabel) =
+                               newFresh @loc.uniqNr1 Label
+                loc.(uniqNr3, resumeLabel) =
+                               newFresh @loc.uniqNr2 Label              
 
   | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
                                [ LLVMStatement_Switch @scrutinee.llvmVar @loc.defaultLabel @loc.targets ] ++ 
@@ -422,8 +401,18 @@ SEM Value
                                then load @loc.uniqSeed @var.llvmVar
                                else (@loc.uniqSeed,@var.llvmVar,[])                              
 
-  | CompareGT   lhs.llvmCode = error "Silly.ToLLVM: CompareGT not yet implemented"
+  | CompareGT   lhs.llvmVar  = @loc.cmpRes
+                lhs.llvmCode = @val.llvmCode ++ @loc.lhsToIntCode ++ @loc.cmpCode
                 
+                (loc.uniqSeed, val.gUniq) =
+                               mkNewLevUID @lhs.gUniq
+                               
+                loc.(uniqNr1, lhsIntVar, lhsToIntCode) =
+                              cast2int @loc.uniqSeed @val.llvmVar @lhs.intType
+                               
+                loc.(uniqNr2, cmpRes, cmpCode) =
+                              assign2var @loc.uniqNr1 ( LLVMExpression_Compare CMPSGT @loc.lhsIntVar @con.llvmVar, i1)
+                                                            
   | * - Alloc Call Con Var CompareGT
                 lhs.llvmVar  = error $ "No Label, Cast or Offset Value expected"
                 lhs.llvmCode = error $ "No Label, Cast or Offset Value expected"       
