@@ -136,6 +136,12 @@ DATA LLVMStatement
   -}                  
   | Return       result     : {LLVMVar}
 
+  {-
+    Unreachable
+      An instruction for the optimizer that the code following is not reachable
+  -}
+  | Unreachable
+
 TYPE LLVMStatements = [LLVMStatement]
 %%]
 

@@ -99,7 +99,8 @@ SEM LLVMStatement
   | Store       lhs.pretty = ppStore @value @ptr
   | Switch      lhs.pretty = ppSwitch @scrutinee @default @targets
   | Return      lhs.pretty = ppReturn @result
-  | * - Assignment Branch BranchIf Comment Call Label Store Switch Return
+  | Unreachable lhs.pretty = text "unreachable"
+  | * - Assignment Branch BranchIf Comment Call Label Store Switch Return Unreachable
                 lhs.pretty = error "Undefined Stmt"
                 
 SEM LLVMExpression
