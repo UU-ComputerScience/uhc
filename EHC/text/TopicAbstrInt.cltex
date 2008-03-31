@@ -1455,8 +1455,8 @@ When both are nodes, their corresponding fields should be unified.
 For the last two cases we have auxiliary functions:
 %if shortStory
 \begin{code}
-mkSelectEqs :: Variable -> GrTag -> [Variable] -> Equations
-mkSelectEqs sv tt tns
+mkSelEqs :: Variable -> GrTag -> [Variable] -> Equations
+mkSelEqs sv tt tns
   = [  IsSelection tv sv i tt  |  (tv,i) <- zip tns [0..]     ^^ ]
 mkUnifyEqs  :: [Maybe Variable] -> [Variable] -> Equations
 mkUnifyEqs sns tns
@@ -1576,7 +1576,7 @@ ATTR Bind BindL Expr Alt AltL Term TermL
   SYN allCalls  USE (++) [] ::  ^^ [(Variable,  [Maybe Variable])]
 SEM GrExpr  | Call  
   lhs.allCalls  =  [ (getNr @nm, @argL.vars) ]
-SEM GrVal   | Node   
+SEM GrTerm  | Node   
   lhs.allCalls  =  [ (getNr nm, @fldL.vars) |  nm <- @tag.names  ]
 \end{code}
 %else
@@ -1589,7 +1589,7 @@ locations where calls and nodes are actually introduced:
 \begin{code}  
 SEM GrExpr  | Call    
   lhs.allCalls  =  [ (getNr @nm, @argL.vars) ]
-SEM GrVal   | Node   
+SEM GrTerm  | Node   
   lhs.allCalls  =  maybe [] (\n->[(n, @fldL.vars)]) @tag.mbFPAnr
 ATTR GrTag  SYN mbFPAnr :: Maybe Int
 SEM GrTag  | Fun PApp App   lhs.mbFPAnr = Just (getNr @nm)
