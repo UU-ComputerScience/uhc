@@ -66,11 +66,6 @@ verInfo v = verProg v ++ verDist v ++ ", " ++ verSvn v
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export ( fileprefixInplace )
-fileprefixInplace :: String
-fileprefixInplace = "@INPLACE_TOP@/"
-%%]
-
 %%[8 export(fileprefixInplaceInstall, fileprefixInstall)
 fileprefixInplaceInstall :: String
 fileprefixInplaceInstall = "@INPLACE_PREFIX@/"
@@ -97,7 +92,7 @@ shellCmdGcc = "@EHC_UNIXTOOL_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 
 %%[8 export(shellCmdLLVM)
 shellCmdLLVM :: String
-shellCmdLLVM = "@EHC_UNIXTOOL_PREFIX@" ++ fileprefixInplace ++ "bin/llvm-compilerdriver"
+shellCmdLLVM = "@EHC_UNIXTOOL_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
 %%]
 
 %%[99 export(shellCmdCpp)

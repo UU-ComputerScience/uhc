@@ -482,14 +482,17 @@ case $HostPlatform in
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
         hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        shellrun="/bin/bash "
         ;;
   *)
         hardtop_plat=${hardtop}
         hardtop_plat2=${hardtop}
+        shellrun=""
         ;;
 esac
 AC_SUBST(TOP_ABS, "$hardtop_plat")
 AC_SUBST(TOP_ABS2, "$hardtop_plat2")
+AC_SUBST(SHELLRUN, "$shellrun")
 
 ### Platform information, needed for LLVM code generation
 AC_SUBST(TARGET_TRIPLE, "$host")
