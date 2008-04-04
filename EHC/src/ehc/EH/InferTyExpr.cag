@@ -129,7 +129,7 @@ SEM TyVar
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
-                loc         .   tv                  =   tyVar . tgiTy $ @tgi_
+                loc         .   tv                  =   tyVar $ tgiTy @tgi_
 %%]
 
 %%[6
@@ -420,9 +420,9 @@ SEM Decl
   | Type        loc         .   typeVar				= 	mkTyVar @lUniq
                             .   typeTgi             =   mkTGI @typeVar
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
-                loc         .   foTy_               =   fitsIn  weakFIOpts emptyFE @lUniq2 @lhs.tyVarMp
+                loc         .   foTy_               =   fitsIn  weakFIOpts emptyFE @lUniq2 @lhs.tyTyVarMp
                                                                 @tyExpr.ty (tgiTy @typeTgi)
-                lhs         .   tyVarMp             =   foVarMp @foTy_ |=> @lhs.tyVarMp
+                lhs         .   tyTyVarMp           =   foVarMp @foTy_ |=> @lhs.tyTyVarMp
 %%]
 %%[11
 %%]

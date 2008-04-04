@@ -167,7 +167,8 @@ UUAGC_OPTS_WHEN_EHC_AST_SEM				:= @UUAGC_EHC_SEM_OPTIONS@
 # UUAGC options for production version (i.e. uhc, ehc variant >= $(EHC_PREL_VARIANT))
 UUAGC_OPTS_WHEN_UHC						:=
 UUAGC_OPTS_WHEN_UHC_AST_DATA			:= --strictdata
-UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --Wignore --strictwrap -O
+#UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --Wignore --strictwrap -O
+UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --strictwrap -O
 
 # GCC options
 GCC_OPTS_WHEN_EHC						:= @GCC_EHC_OPTIONS@

@@ -69,7 +69,8 @@ SEM Decl
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
                                 .   patClGam2       =   gamAdd @clsNm @clgi2 @lhs.patClGam2
-                                .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
+                decls           .   gathDataGam     =   emptyGam
+                lhs             .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
                                                         then @lhs.gathDataGam
                                                         else let dgi = mkDGI @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag}) False
                                                              in  gamAdd @dataDictNm dgi @lhs.gathDataGam

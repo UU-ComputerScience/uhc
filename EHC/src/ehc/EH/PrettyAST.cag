@@ -147,7 +147,9 @@ SEM PatExpr
                         .  info_2   =   []
   
 SEM TyExpr
-  | Con         lhs     .  ppAST    =   ppNest ["TyExpr","Con"] [ppNm @nm] []
+  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Con"] [ppNm @nm] [] (@info_1)
+                loc     .  info_1   =   [mkInfo1 "lhs.tyGam" (pp @lhs.tyGam)
+                                        ]
   | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","App"] [] [@func.ppAST,@arg.ppAST] (@info_2 ++ @info_6)
                 loc     .  info_2   =   []
                         .  info_6   =   []

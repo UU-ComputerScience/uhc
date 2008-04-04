@@ -93,11 +93,17 @@ class Substitutable x where
 
 %%[221
 ftv :: VMp -> Val -> Set VarId
-ftv m (Var i)         =  case i |? m of
-                           Just v  -> ftv (vmDelete i m) v
-                           _       -> Set.singleton i
-ftv m (Pair v w)      =  ftv m v `Set.union` ftv m w
-ftv m _               =  Set.empty
+ftv m v
+  = fst $ fv Set.empty m v
+  where  fv vs m (Var i) | i `Set.notMember` vs
+                                 =  case i |? m of
+                                      Just v  -> fv vs2 (vmDelete i m) v
+                                      _       -> (Set.singleton i,vs2)
+                                 where vs2 = Set.insert i vs
+         fv vs m (Pair v w)      =  (fvs2 `Set.union` fvs3,vs3)
+                                 where  (fvs2,vs2) = fv vs  m v
+                                        (fvs3,vs3) = fv vs2 m w
+         fv vs m _               =  (Set.empty,vs)
 %%]
 
 %%[3.ftv
@@ -175,7 +181,7 @@ instance Substitutable Val where
              case i |? s of
                Just v'
                  |  Set.member i visited
-                      -> Err "infinite"
+                      -> Err "inf"
                  |  otherwise
                       -> sbs (Set.insert i visited) s v'
                _      -> v
@@ -231,9 +237,9 @@ newtype VMp = VMp (Map VarId Val)
 
 %%[1.VMp.sigs
 emptyVM          ::  VMp
-(|?)             ::  VarId -> VMp -> Maybe Val    -- lookup
-vmUnit           ::  VarId -> Val -> VMp
-vmUnion          ::  VMp -> VMp -> VMp
+(|?)             ::  VarId  -> VMp  -> Maybe Val    -- lookup
+vmUnit           ::  VarId  -> Val  -> VMp
+vmUnion          ::  VMp    -> VMp  -> VMp
 %%]
 
 %%[221
@@ -464,9 +470,14 @@ emptySt  =   St 0 emptyEnv
 %%]]
 %%]
 
-%%[1.err
+%%[1
+%%]
 err :: String -> Compute Val
 err x = return (Err x)
+
+%%[222 -1.err
+err :: String -> Compute Bool
+err x = return False
 %%]
 
 %%[1.Compute
@@ -494,7 +505,7 @@ treeCompute t =
 %%][2
               Just v -> return v
 %%]]
-              _      -> err $ "not found: " ++ show n
+              _      -> return (Err ("not found: " ++ show n))
       DefBind n x y  ->
         do  v   <- treeCompute x
             st  <- get
@@ -571,11 +582,12 @@ newVar  =   do  st  <- get
 
 %%[1.newVars
 newVars     ::  Int -> Compute [Val]
+newVars  n  =   sequence [newVar | _ <- [1..n] ]
+%%]
 newVars  0  =   return []
 newVars  n  =   do  v   <- newVar
                     vs  <- newVars (n-1)
                     return (v : vs)
-%%]
 
 %%[3.Ref.IO.sigs
 newRef     ::  Compute Ref
@@ -615,78 +627,128 @@ refWrite  (Ref r) c  =   lift $ writeSTRef r c
 %%]
 
 %%[1.valUnify
-valUnify :: Val -> Val -> Compute Val
-valUnify v1 v2
-  = do { st <- get ; uni st v1 v2 } where
-  uni  st  x@(Const)    (Const)                     =  return x
 %%[[1
-  uni  st  x@(Var i)    (Var j)    |  i == j        =  return x
+valUnify :: Val -> Val -> Compute Val
+%%][222
+valUnify :: Val -> Val -> Compute Bool
+%%]]
+valUnify v1 v2
+%%[[1
+  = uni v1 v2  where
+%%][2
+  = do { st <- get ; uni st v1 v2 } where
 %%][3
-  uni  st  x@(Var i _)  (Var j _)  |  i == j        =  return x
+  = uni v1 v2  where
+%%]]
+%%[[1
+  uni      x@(Const)    (Const)                     =  return x
+%%][2
+  uni  st  x@(Const)    (Const)                     =  return x
+%%][222
+  uni  st  x@(Const)    (Const)                     =  return True
+%%][3
+  uni      x@(Const)    (Const)                     =  return x
+%%]]
+%%[[1
+  uni      x@(Var i)    (Var j)    |  i == j        =  return x
+%%][2
+  uni  st  x@(Var i)    (Var j)    |  i == j        =  return x
+%%][222
+  uni  st  x@(Var i)    (Var j)    |  i == j        =  return True
+%%][3
+  uni      x@(Var i _)  (Var j _)  |  i == j        =  return x
 %%]]
 %%[[2
   uni  st  (Var i)      y          |  isJust mbv    =  uni st v y
        where  mbv  = i |? stVMp st
               v    = fromJust mbv
-  uni  st  x            (Var j)    |  isJust mbv    =  uni st x v
-       where  mbv  = j |? stVMp st
-              v    = fromJust mbv
 %%][3
-  uni  st  (Var _ r)    y          |  isJust mbv    =  uni st v y
-       where  mbv  = refRead r
-              v    = fromJust mbv
-  uni  st  x            (Var _ r)  |  isJust mbv    =  uni st x v
+  uni      (Var _ r)    y          |  isJust mbv    =  uni v y
        where  mbv  = refRead r
               v    = fromJust mbv
 %%][32
 %%[[valUnify.uni.Var
-  uni  st  (Var _ r)    y
+  uni      (Var _ r)    y
       do  mbv <- refRead' r
           case mbv of
-            Just v  ->  uni st v y  ^^
+            Just v  ->  uni v y  ^^
             _       ->  ??          ^^ wrong branch after all
 %%]]
 %%]]
 %%[[1
+  uni      (Var i)      y                           =  bindv i y
+%%][2
   uni  st  (Var i)      y                           =  bindv st i y
-  uni  st  x            (Var i)                     =  bindv st i x
 %%][3
-  uni  st  x@(Var _ _)  y                           =  bindv st x y
-  uni  st  x            y@(Var _ _)                 =  bindv st y x
+  uni      x@(Var _ _)  y                           =  bindv x y
 %%]]
+%%[[1
+  uni      x            y@(Var _)                   =  uni y x
+%%][2
+  uni  st  x            y@(Var _)                   =  uni st y x
+%%][3
+  uni      x            y@(Var _ _)                 =  uni y x
+%%]]
+%%[[1
+  uni      (Pair p q)   (Pair r s)                  =
+      do  pr   <- uni p r
+          st1  <- get
+          qs   <- uni (stVMp st1 |@ q) (stVMp st1 |@ s)
+          st2  <- get
+          return (Pair (stVMp st2 |@ pr) qs)
+%%][2
   uni  st  (Pair p q)   (Pair r s)                  =
       do  pr   <- uni st p r
           st2  <- get
-%%[[1
-          qs   <- uni st2 (stVMp st2 |@ q) (stVMp st2 |@ s)
-          st3  <- get
-          return (Pair (stVMp st3 |@ pr) qs)
-%%][2
           qs   <- uni st2 q s
           return (Pair pr qs)
+%%][222
+  uni  st  (Pair p q)   (Pair r s)                  =
+      do  pr   <- uni st p r
+          st2  <- get
+          qs   <- uni st2 q s
+          return (pr && qs)
+%%][3
+  uni      (Pair p q)   (Pair r s)                  =
+      do  pr   <- uni p r
+          qs   <- uni q s
+          return (Pair pr qs)
 %%]]
-  uni  _   _            _                           =  err "no match"
 %%[[1
-  bindv st i v 
-      |  Set.member i (ftv v)                       =  err "infinite"
+  uni      _            _                           =  err "fail"
+%%][2
+  uni  _   _            _                           =  err "fail"
+%%][3
+  uni      _            _                           =  err "fail"
+%%]]
+%%[[1
+  bindv i v 
+      |  Set.member i (ftv v)                       =  err "inf"
       |  otherwise                                  =
-           do  put (st {stVMp = vmUnit i v |@ stVMp st})
+           do  st <- get
+               put (st {stVMp = vmUnit i v |@ stVMp st})
                return v
 %%][2
   bindv st i v                                      = 
     do  put (st {stVMp = vmUnit i v |@ stVMp st})
         return v
+%%][222
+  bindv st i v                                      = 
+    do  put (st {stVMp = vmUnit i v |@ stVMp st})
+        return True
 %%][221
   bindv st i v 
-      |  Set.member i (ftv (stVMp st) v)            =  err "infinite"
+      |  Set.member i (ftv (stVMp st) v)            =  err "inf"
       |  otherwise                                  =
            do  put (st {stVMp = vmUnit i v |@ stVMp st})
                return v
 %%][3
-  bindv st (Var i r) v  |  Set.member i (ftv v)     =  err "infinite"
-                        |  otherwise                =
-                             do  refWrite r (Just v)
-                                 return v
+  bindv (Var i r) v
+      |  Set.member i (ftv v)                       =  err "inf"
+      |  otherwise                                  =
+           do  refWrite r (Just v)
+               return v
 %%]]
+  err x = return (Err x)
 %%]
 

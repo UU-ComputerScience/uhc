@@ -29,7 +29,7 @@ EXPERIMENTS_SUBST_VARIANTS					:= 1 3 2 22 221
 
 # flags to tools
 EXPERIMENTS_SUBST_SHUFFLE_DEFS				:= 
-EXPERIMENTS_SUBST_SHUFFLE_ORDER				:= 1 < 2 < 3, 2 < 21, 2 < 22 < 221, 3 < 31
+EXPERIMENTS_SUBST_SHUFFLE_ORDER				:= 1 < 2 < 3, 2 < 21, 2 < 22 < 221, 22 < 222, 3 < 31
 GHC_PLAIN_OPTS_WHEN_EXPERIMENTS_SUBST		:= 
 GHC_PROF_OPTS_WHEN_EXPERIMENTS_SUBST		:= -prof -auto-all -caf-all
 RTS_OPTS_WHEN_EXPERIMENTS_SUBST1			:= +RTS -hc -i0.02 -RTS
@@ -126,12 +126,12 @@ experiment-subst-run: $(EXPERIMENTS_SUBST_ALL_EXECS)
 	      done \
 	    else \
           time ((cd $${rundir} ; $${expexec} $${run} q $${v}) > $${runoutput}) 2> $${runtime} ; \
-          #time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
-          #(cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
-          #time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
 	    fi \
 	  done \
 	done
 
 
+          #time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST1) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
+          #(cd $${rundir} && hp2ps $(HP2PS_OPTS_WHEN_EXPERIMENTS_SUBST) $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).hp && ps2pdf $(EXPERIMENTS_SUBST_EXEC_PROF_NAME).ps ) ; \
+          #time ((cd $${rundir} ; $${expprof} $(RTS_OPTS_WHEN_EXPERIMENTS_SUBST2) $${run} q $${v}) >> $${runoutput}) 2>> $${runtime} ; \
 

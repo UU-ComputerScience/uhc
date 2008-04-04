@@ -90,10 +90,10 @@ evidMpToCore env evidMp
       $ evidMp'
     , concat ambigs
     )
-  where (evidMp',ambigs) = unzip [ ((i,ev3),as) | (i,ev) <- filter (not.ignore) (Map.toList evidMp), let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
+  where (evidMp',ambigs) = dbg "evidMpToCore.mk1.evidMp'" $ unzip [ ((i,ev3),as) | (i,ev) <- filter (not.ignore) (Map.toList evidMp), let (ev2,as) = splitAmbig ev ; ev3 = strip ev2 ]
         mke (RedHow_ProveObl i _,ev) st = fst $ mk1 st (Just i) ev
         mk1 st mbevk ev@(Evid_Proof p info evs)
-                      = ins (insk || isJust mbevk) evk evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
+                      = dbg "evidMpToCore.mk1.a" $ ins (insk || isJust mbevk) evk evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
                       where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn st evs
                             (c,sc)          = ann info rs
                             (u',evk,insk,evnm,uses)
@@ -105,8 +105,8 @@ evidMpToCore env evidMp
                                                                         where (u1,u2) = mkNewUID u
                             choosek k = maybe k id mbevk
                             choosen n = maybe n mkHNm mbevk
-        mk1 st _    _ = (st,ToCoreRes (cundefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
-        mkn st        = foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
+        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (cundefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
+        mkn st        = dbg "evidMpToCore.mkn" $ foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
         mknm          = CExpr_Var
         ins insk k evnm ev c sc uses st
@@ -156,6 +156,7 @@ evidMpToCore env evidMp
         splitAmbig  (Evid_Ambig p   ess@((i,es):_)) = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[AmbigEvid p (map fst ess)])
         splitAmbig  ev                              = (ev,[])
         splitAmbigs es                              = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
+        dbg m = id -- Debug.tr m empty
 %%]
                           Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrCExpr r >#< tcrCExpr (vr r)) $ (        mkk r                  st,vr r)
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st

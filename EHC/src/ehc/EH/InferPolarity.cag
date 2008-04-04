@@ -368,11 +368,12 @@ SEM PrExpr
   expressions. The polarity variables are chosen uniquely enough to not cause conflicts.
   
 %%[17 ag
-ATTR AllDecl AllData AllTyExpr [ | polVarMp : VarMp | ]
+ATTR AllDecl AllData AllTyExpr AllExpr AllPatExpr AllCase [ | polVarMp : VarMp | ]
 
-SEM Expr
-  | Let         decls       .   polVarMp            =   emptyVarMp
+SEM AGItf
+  | AGItf 		expr		.	polVarMp 			= 	emptyVarMp
 
+%%]
 SEM Expr PatExpr
   | TypeAs      tyExpr      .   polVarMp            =   emptyVarMp
 
@@ -380,11 +381,13 @@ SEM Expr
   | AppImpl LamImpl
                 argPr       .   polVarMp            =   emptyVarMp
 
+SEM Expr
+  | Let         decls       .   polVarMp            =   emptyVarMp
+
 SEM Decl
   | Class Instance
                 loc         .   polVarMp            =   emptyVarMp
                 lhs         .   polVarMp            =   @lhs.polVarMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environments

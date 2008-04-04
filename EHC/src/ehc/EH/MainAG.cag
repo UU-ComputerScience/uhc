@@ -118,9 +118,9 @@ WRAPPER AGItf
 %%]
 
 %%[99
-%%]
 PRAGMA strictsem
 PRAGMA strictcase
+%%]
 PRAGMA gencostcentres
 
 %%[100
@@ -300,6 +300,7 @@ SEM *
        loc.lUniq : UID
        loc.gUniq : UID
        loc.gUniq2 : UID
+       loc.gUniq3 : UID
        loc.lUniq1 : UID
        loc.lUniq2 : UID
        loc.lUniq3 : UID
@@ -310,6 +311,15 @@ SEM *
        loc.lUniq8 : UID
        loc.lUniq9 : UID
        loc.lUniq10 : UID
+       loc.lUniq_17_pol : UID
+       loc.lUniq_17_polCtx : UID
+       loc.lUniq_17_seed_pol : UID
+       loc.lUniq_17_fitsIn_pol : UID
+       loc.lUniq_17_polArg : UID
+       loc.lUniq_95_altsPrOcc : UID
+       loc.lUniq_95_fitsIn_dataTy : UID
+       loc.lUniq_95_extraPrOcc : UID
+       loc.lUniq_97_fitsIn_ty : UID
        loc.uniq1 : UID
        loc.uniq2 : UID
        loc.uniq3 : UID
@@ -441,6 +451,19 @@ SEM *
        loc.eqsVarMp : VarMp
        loc.dataConTy1 : Ty
        loc.foRhsTy : FIOut
+       loc.foPol : FIOut
+       loc.polCtxVar : Ty
+       loc.polTypeVar : Ty
+       loc.polSig : Ty
+       loc.typeTgi : TyGamInfo
+       loc.finGathPolGam : PolGam
+       loc.polGam_l : PolGam
+       loc.lSubsPolGam1 : PolGam
+       loc.pgi_ : PolGamInfo
+       loc.nmPolErrs : ErrL
+       loc.polVarMpCyc : VarMp
+       loc.polOkCyc : {AssocL UID Ty}
+       loc.polErrCyc : {AssocL UID Ty}
 
 %%]
 
