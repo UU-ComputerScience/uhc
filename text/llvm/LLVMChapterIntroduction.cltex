@@ -2,23 +2,51 @@
 \chapter{Introduction}
 
 \section{Generating Executables}
+Programming languages are popular research topics. Often, researchers have their own small compiler to experiment with new languages. When such a language becomes widely used, the research compiler needs to be replaced with a production quality compiler. Production compilers need to generate reasonable efficient executable code, because an interpreter is often not fast enough. There are several options to generate executables:
+
+\begin{enumerate}
+  \item Assembly code.
+  \item High level languages.
+  \item Managed virtual machines.
+  \item Typed assembly languages.
+\end{enumerate}
+
+Generating native code by emitting assembly code is an option which produces extremely fast executables because there is no overhead by abstractions. But this lack of abstractions and the platform-dependence of the language makes assembly code hard to program and maintain. 
+
+The problems encountered with generating assembly code are the reason that many compiler developers target a high level language. The generation of executables is delegated to a compiler for that high level language. Especially C is a popular target for compiler developers: the language is portable, known for the minimal language overhead, and most C compilers optimize quite aggressively.
+ 
+Managed virtual machines are often an attractive backend target, because they supply a much richer low level environment than a physical machine. As with high level languages, these virtual environments provide portability and optimize the generated code. They perform memory management and create interoperability with any other language that targets the same virtual environment. Especially the interoperability is a huge advantage. There are many great libraries for the discussed virtual environments, e.g. for graphical user interfaces, database access, and multi-threading. 
+
+Finally, a compiler developer can utilize a typed assembly language. These languages aim at supporting as many languages and platforms as possible. They do not abstract over the physical machine as virtual machines do, but over machine specific assembly languages. This means that there is no memory model and no security guarantees but also not the costs associated with them.
+
+Each option differs in amount of provided abstractions. The best choice for a compiler depends on the required control over the generated executable code.
+
+\section{Generating Executables for Haskell}
+In this thesis we focus on a generating fast executables from Haskell, a pure lazy functional language. The model of a language with lazy semantics is different from the sequential model of a processor. This creates the following restrictions that influence the choice for a suitable way to generate executables:
+
 \begin{itemize}
-  \item There are many programming languages and thus many compilers for these programming languages. The goal of each compiler is to generate reasonable efficient executable code. 
-  \item 4 possible ways to generate executables: Assembly language, High level languages, Virtual machines and typed assembly languages.
-  \item Why is LLVM an attractive target. (short, probably one paragraph).
+  \item Haskell programs tend to allocate much more memory in contrast to their imperative counterpart. Every function application, ignoring a possible strictness analysis by the front end, is wrapped in a closure and unevaluated until needed. A large part of the closures are live for a short time. The high allocation rate of Haskell programs favors targets without memory management optimized for imperative programs. This eliminates most managed virtual machines as their memory allocation schemes and garbage collectors are not customizable. 
+  \item There are no while- or for loops in Haskell. Function calls are the main way to control the flow of the program. This implies that tail call support is crucial for a Haskell backend. Unfortunately C, and most other high level languages, do not support tail calls\footnote{A possible workaround is to abandon the C stack and manage a stack in the program.}. This means that each recursive call results in the allocation of a new stack frame, and thus results in unacceptable memory consumption.
 \end{itemize}
 
-\section{Generating Executables for Lazy Functional Languages}
-\begin{itemize}
-  \item Lazy functional programs allocated a lot of memory (realy a lot). This is because of closures and lazyness. It is very important that allocation and de-allocation is done very efficiently.
-  \item Recursion must be very effective, because it is utilized very often in functional programs. Thus we require tail calls.
-  \item Some more aspects of function languages?
-\end{itemize}
+Based upon these observations, a typed assembly language is the most suitable option for a Haskell backend, offering enough control over the abstractions.
 
-\section{Generating Executables for Lazy Function Languages with LLVM}
+\section{Generating Executables for Haskell with LLVM}
+The claimed suitability of a typed assembly language for implementing a Haskell backend needs verification. This verification answers the following research questions:
+
+\begin{enumerate}
+  \item \emph{In what extend offers a typed assembly language enough control to implement a Haskell backend?}
+  \item \emph{How effective are optimizations performed by the typed assembly compiler when applied on the typed assembly code generated from a functional program?}
+\end{enumerate}
+
+In this thesis, we present the research performed to answer the above research questions. 
+
 \begin{itemize}
-  \item Research Question: Is LLVM suitable for generating reasonable efficient binaries from Haskell Source code. Does it perform optimizations for us? \todo{Refine this}.
-  \item We are going to research this by building a EHC backend and measure the speed and space of the binaries.
-  \item Adding an extra optimization and describing a few others.
+  \item \refC{cha:ehc} discuss the EHC~\cite{dijkstra:05} project. EHC uses a different compilation strategy than the known STG machine~\cite{jones:92} and this influences the executable code that is generated. By stepping through the EHC pipeline, we show the transformations performed on the Haskell code until the starting point of the LLVM instruction generation.  
+  \item For this project, we target the Low Level Virtual Machine (LLVM)~\cite{lattner:04} instruction set as the typed assembly language. We describe the LLVM project and its characteristics in more detail in \refC{cha:llvm}.
+  \item \refC{cha:naive} presents the naive backend. The naive backend is a LLVM instruction emitting backend for EHC that compiles Haskell programs of the nofib benchmark suite~\cite{partain:93} and includes a garbage collector. The code generated is unoptimized by the backend itself, but results in faster executables than the other backends of EHC. 
+  \item In \refC{cha:results} we present the benchmark results of the naive backend and compare these with the results of the other backends of EHC and with GHC, a production quality Haskell compiler.  
+  \item \todo{Extra optimizations: Do not know what to tell here yet, so postpone it a bit.}
+  \item We conclude this thesis in \refC{cha:conclusion} with future work and concluding remarks about the research questions.
 \end{itemize}
 %%]

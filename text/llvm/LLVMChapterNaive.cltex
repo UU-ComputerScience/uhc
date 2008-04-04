@@ -1,5 +1,6 @@
 %%[chapter
 \chapter{The Naive Translation}
+\label{cha:naive}
 The naive LLVM backend allows the EHC pipe line to generate binaries using the LLVM compiler framework. To get the backend in place quickly, we deliberately chose ease of implementation over efficiency. We treat optimization of the backend as a separate part later in the process. In this chapter we discuss the decisions made in the implementation of the LLVM assembly generator (\refS{sec:naive-assembly-generator}) and the run-time system (\refS{sec:naive-run-time-system}). 
 
 \section{The LLVM assembly generator}
