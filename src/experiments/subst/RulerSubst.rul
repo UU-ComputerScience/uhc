@@ -40,6 +40,36 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.syn = Subst
         | Subst.inh = Subst
 
+  rule t.usebind =
+    view D =
+      judge V : isInEnv = env :- n : v
+      ---
+      judge R : tree = env :- n : v
+    view A =
+      ---
+      judge R : tree
+        | Subst.syn = Subst
+        | Subst.inh = Subst
+        | Val = Subst v
+
+  rule t.defbind =
+    view D =
+      judge B : tree = env :- x : v
+      judge V : tree = (n :-> v, env) :- y : w
+      ---
+      judge R : tree = env :- (bind n `=` x in y) : w
+    view A =
+      judge B : tree
+        | Subst.inh = Subst
+        | Subst.syn = Subst.x
+      judge V : tree
+        | Subst.inh = Subst.x
+        | Subst.syn = Subst.y
+      ---
+      judge R : tree
+        | Subst.syn = Subst.y
+        | Subst.inh = Subst
+
   rule t.tuple =
     view D =
       judge F : tree = env :- x : v
@@ -87,36 +117,6 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
       ---
       judge R : tree
         | Val = Subst.m Subst.x w
-
-  rule t.defbind =
-    view D =
-      judge B : tree = env :- x : v
-      judge V : tree = (n :-> v, env) :- y : w
-      ---
-      judge R : tree = env :- (bind n `=` x in y) : w
-    view A =
-      judge B : tree
-        | Subst.inh = Subst
-        | Subst.syn = Subst.x
-      judge V : tree
-        | Subst.inh = Subst.x
-        | Subst.syn = Subst.y
-      ---
-      judge R : tree
-        | Subst.syn = Subst.y
-        | Subst.inh = Subst
-
-  rule t.usebind =
-    view D =
-      judge V : isInEnv = env :- n : v
-      ---
-      judge R : tree = env :- n : v
-    view A =
-      ---
-      judge R : tree
-        | Subst.syn = Subst
-        | Subst.inh = Subst
-        | Val = Subst v
 
 relation isInEnv =
   view D =

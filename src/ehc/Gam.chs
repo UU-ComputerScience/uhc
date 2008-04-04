@@ -1017,12 +1017,7 @@ instance PP ValGamInfo where
   pp vgi = ppTy (vgiTy vgi)
 %%]
 
-%%[4.PP.TyGamInfo
-instance PP TyGamInfo where
-  pp tgi = ppTy (tgiTy tgi)
-%%]
-
-%%[6.PP.TyGamInfo -4.PP.TyGamInfo
+%%[1.PP.TyGamInfo
 instance PP TyGamInfo where
   pp tgi = ppTy (tgiTy tgi)
 %%]

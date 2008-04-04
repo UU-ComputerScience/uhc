@@ -117,7 +117,7 @@ instance Show HsName where
   show = hsnShow "."
 %%]
 
-%%[5 export(hsnInitLast)
+%%[1
 hsnToList :: HsName -> [HsName]
 %%[[20
 hsnToList (HNmQ ns) = ns
@@ -125,12 +125,12 @@ hsnToList (HNmQ ns) = ns
 hsnToList n         = [n]
 %%]
 
-%%[5
+%%[1 export(hsnInitLast)
 hsnInitLast :: HsName -> ([HsName],HsName)
 hsnInitLast = maybe (panic "hsnInitLast") id . initlast . hsnToList
 %%]
 
-%%[5 export(hsnPrefix,hsnSuffix,mkHNmPrefix)
+%%[1 export(hsnPrefix,hsnSuffix,mkHNmPrefix)
 hsnPrefix                           ::  String -> HsName -> HsName
 hsnPrefix   p   hsn
   = case hsnInitLast hsn of
@@ -306,7 +306,7 @@ instance HSNM String where
                   _               -> ws
 %%]
 
-%%[5
+%%[1
 instance HSNM ([HsName],HsName) where
   mkHNm (l,n) = mkHNm (l ++ [n])
 

@@ -195,6 +195,9 @@ data FIEnv
 %%[[11
         ,   feTyGam         :: !TyGam
 %%]]
+%%[[17
+        ,   fePolGam        :: !PolGam
+%%]]
 %%[[99
         ,   feRange         :: !Range
 %%]]
@@ -209,6 +212,9 @@ emptyFE
         ,   fePredScope     =   initPredScope
 %%[[11
         ,   feTyGam         =   emptyGam
+%%]]
+%%[[17
+        ,   fePolGam        =   emptyGam
 %%]]
 %%[[99
         ,   feRange         =   emptyRange

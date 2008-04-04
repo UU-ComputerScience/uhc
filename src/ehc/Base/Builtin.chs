@@ -83,7 +83,7 @@ hsnProdArity    (HNm s)             =   case hsnHNmFldToString s of
                                           _      -> 0
 %%]
 
-%%[3.strHiddenPrefix export(hsnStrHiddenPrefix)
+%%[1.strHiddenPrefix export(hsnStrHiddenPrefix)
 hsnStrHiddenPrefix                  =   "$"
 %%]
 
@@ -91,7 +91,7 @@ hsnStrHiddenPrefix                  =   "$"
 hsnStrSpecialPrefix                 =   "_"
 %%]
 
-%%[5 export(mkHNmHidden)
+%%[1 export(mkHNmHidden)
 mkHNmHidden :: HSNM x => x -> HsName
 mkHNmHidden = mkHNmPrefix hsnStrHiddenPrefix
 %%]

@@ -54,6 +54,11 @@ SEM Expr
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
+%%[17
+%%]
+SEM Expr
+  | Let         decls       .   patValGam           :=  agFakeDependOn @decls.patPolGam $ gamPushGam @gathTySigGam_l_ @lhs.valGam
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,6 +190,9 @@ SEM AGItf
 
 %%[20 -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .   valGam              =   agFakeDependOn @expr.gathPolGam @lhs.valGam
 %%]
 
 %%[1.patValGam
@@ -203,7 +211,11 @@ SEM Decl
 ATTR AllDecl [ | tyVarMp: VarMp  patTyVarMp: VarMp | ]
 
 SEM AGItf
+%%[[2
   | AGItf       expr        .   tyVarMp             =   emptyVarMp
+%%][17
+  | AGItf       expr        .   tyVarMp             =   agFakeDependOn @expr.polVarMp emptyVarMp
+%%]]
 %%]
 
 %%[5
@@ -297,7 +309,7 @@ SEM Expr
                             .   (gSubsTyKiGam,cycTyKiVarMp_g)
                 									=   @decls.kiVarMp |==> @tyKiGam_g_
                             .   gKiTvL              =   ftv @gSubsTyKiGam
-                            .   lQuTyGam            =   @decls.tyVarMp |=> @tyGam_l_
+                            .   lQuTyGam            =   {- @decls.tyVarMp |=> -} @tyGam_l_
                             .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 . tyKiGamQuantify @gKiTvL $ @lSubsTyKiGam
                 body        .   tyGam               =   gamAddGam @lQuTyGam @tyGam_g_
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
@@ -311,6 +323,14 @@ SEM Decl
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
 
+%%[11
+ATTR AllDecl [ | tyTyVarMp: VarMp | ]
+
+SEM Expr
+  | Let         decls       .   tyTyVarMp           =   emptyVarMp
+                loc         .   lQuTyGam            :=  @decls.tyTyVarMp |=> @tyGam_l_
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,6 +341,7 @@ SEM AGItf
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @predScope
                                                             , feTyGam = @expr.gathTyGam
+                                                            , fePolGam = @expr.gathPolGam
 %%[[99
                                                             , feRange = emptyRange
 %%]]
@@ -336,6 +357,9 @@ SEM Decl
 SEM Decl
   | *           loc         .   fe                  =   emptyFE
                                                             { feTyGam = @lhs.tyGam
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -350,6 +374,9 @@ SEM Decl
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -357,6 +384,9 @@ SEM Decl
                             .   fe2                 =   emptyFE
 %%[[11
                                                             { feTyGam = @lhs.tyGam
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -385,6 +415,9 @@ SEM Expr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -398,6 +431,9 @@ SEM Expr
                                                             , fePredScope = @predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
 %%]]
 %%[[99
                                                             , feRange = @range
@@ -413,6 +449,9 @@ SEM Expr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -425,6 +464,9 @@ SEM RecExpr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -436,6 +478,9 @@ SEM DataFieldExpr
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
 %%]]
 %%[[99
                                                             , feRange = @range
@@ -451,6 +496,9 @@ SEM PatExpr
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
 %%]]
 %%[[99
                                                             , feRange = @range
@@ -468,6 +516,9 @@ SEM RecPatExpr
 %%[[11
                                                             , feTyGam = @lhs.tyGam
 %%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
 %%[[99
                                                             , feRange = @range
 %%]]
@@ -483,6 +534,9 @@ SEM DataFieldPatExpr
                                                             , fePredScope = @lhs.predScope
 %%[[11
                                                             , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
 %%]]
 %%[[99
                                                             , feRange = @range
@@ -500,7 +554,11 @@ SEM TyExpr
 SEM PrExpr
   | *           loc         .   fe2                 =   emptyFE
 %%[[11
-                                                            { feTyGam = @lhs.tyGam }
+                                                            { feTyGam = @lhs.tyGam
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+                                                            }
 %%]]
 %%]
 
@@ -550,19 +608,23 @@ SEM Decl
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.initTyGam
-SEM AGItf
-  | AGItf       loc         .   tyGam               =   initTyGam
+%%[20
+ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
-%%[2.initTyGam -1.initTyGam
+%%[1.initTyGam
 SEM AGItf
+%%[[1
+  | AGItf       loc         .   tyGam               =   initTyGam
+%%][2
   | AGItf       loc         .   tyGam               =   agFakeDependOn @expr.gUniq initTyGam		-- fake dependency for uuagc --cycle
+%%][20
+%%]]
 %%]
 
 This is not maintained w.r.t. tyKiGam:
 
-%%[7_2.initTyGam -2.initTyGam
+%%[7_2.initTyGam -1.initTyGam
 SEM AGItf
   | AGItf       loc         .   tyGam               :=  assocLToGam
                                                           [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
@@ -577,10 +639,6 @@ SEM AGItf
                                                           , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
                                                           , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
                                                           ]
-%%]
-
-%%[20 -2.initTyGam
-ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1067,11 +1125,14 @@ ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ clGam: ClGam | | ]
 
 %%[9.initClGam
 SEM AGItf
-  | AGItf       loc         .   clGam              =   initClGam
+  | AGItf       loc         .   clGam              	=   initClGam
 %%]
 
 %%[20 -9.initClGam
 ATTR AGItf [ clGam: ClGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   clGam              	=   agFakeDependOn @expr.polVarMp initClGam
 %%]
 
 %%[9
