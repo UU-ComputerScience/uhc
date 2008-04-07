@@ -26,6 +26,10 @@ which may be thrown by the function.
 WRAPPER GrAGItf
 %%]
 
+%%[8
+PRAGMA nocycle
+%%]
+
 %%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
 
 numberIdents :: (GrModule,Int) -> (GrModule,Int)

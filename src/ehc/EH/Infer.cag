@@ -54,11 +54,6 @@ SEM Expr
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
-%%[17
-%%]
-SEM Expr
-  | Let         decls       .   patValGam           :=  agFakeDependOn @decls.patPolGam $ gamPushGam @gathTySigGam_l_ @lhs.valGam
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,16 +179,14 @@ ATTR AllPatExpr [ | valGam: ValGam | ]
 %%]
 
 %%[1.initValGam
-SEM AGItf
-  | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
 %%[20 -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
 
-SEM AGItf
-  | AGItf       expr        .   valGam              =   agFakeDependOn @expr.gathPolGam @lhs.valGam
 %%]
+SEM AGItf
+  | AGItf       loc         .   valGam              =   @lhs.valGam
 
 %%[1.patValGam
 ATTR AllDecl [ | patValGam: ValGam | ]
@@ -211,11 +204,7 @@ SEM Decl
 ATTR AllDecl [ | tyVarMp: VarMp  patTyVarMp: VarMp | ]
 
 SEM AGItf
-%%[[2
   | AGItf       expr        .   tyVarMp             =   emptyVarMp
-%%][17
-  | AGItf       expr        .   tyVarMp             =   agFakeDependOn @expr.polVarMp emptyVarMp
-%%]]
 %%]
 
 %%[5
@@ -616,9 +605,8 @@ ATTR AGItf [ tyGam: TyGam | | ]
 SEM AGItf
 %%[[1
   | AGItf       loc         .   tyGam               =   initTyGam
-%%][2
-  | AGItf       loc         .   tyGam               =   agFakeDependOn @expr.gUniq initTyGam		-- fake dependency for uuagc --cycle
 %%][20
+  | AGItf       loc         .   tyGam               =   @lhs.tyGam
 %%]]
 %%]
 
@@ -649,11 +637,14 @@ This is incomplete for variant 7_2.
 
 %%[6.initTyKiGam
 SEM AGItf
-  | AGItf       loc         .   tyKiGam            	=   agFakeDependOn @expr.gUniq initTyKiGam
+  | AGItf       loc         .   tyKiGam            	=   initTyKiGam
 %%]
 
 %%[20 -6.initTyKiGam
 ATTR AGItf [ tyKiGam: TyKiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   tyKiGam            	=   @lhs.tyKiGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -668,11 +659,14 @@ ATTR AGItf [ tyKiGam: TyKiGam | | ]
 
 %%[17.initPolGam
 SEM AGItf
-  | AGItf       loc         .   polGam              =   agFakeDependOn @expr.gUniq initPolGam
+  | AGItf       loc         .   polGam              =   initPolGam
 %%]
 
 %%[20 -17.initPolGam
 ATTR AGItf [ polGam: PolGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   polGam              =   @lhs.polGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -690,14 +684,14 @@ SEM AGItf
 
 %%[6.initKiGam
 SEM AGItf
-  | AGItf       loc         .   kiGam               =   agFakeDependOn @expr.gUniq initKiGam		-- fake dependency for uuagc --cycle
+  | AGItf       loc         .   kiGam               =   initKiGam		-- fake dependency for uuagc --cycle
 %%]
 
 %%[20 -6.initKiGam
 ATTR AGItf [ kiGam: KiGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   kiGam               =   agFakeDependOn @expr.gUniq @lhs.kiGam		-- fake dependency for uuagc --cycle
+  | AGItf       loc         .   kiGam               =   @lhs.kiGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -710,7 +704,7 @@ ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 
 %%[1
 SEM Decls
-  | Cons		lhs			.	gathTySigGam		= 	agFakeDependOn @lhs.opts $ @hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
+  | Cons		lhs			.	gathTySigGam		= 	@hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
@@ -1132,7 +1126,7 @@ SEM AGItf
 ATTR AGItf [ clGam: ClGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   clGam              	=   agFakeDependOn @expr.polVarMp initClGam
+  | AGItf       loc         .   clGam              	=   @lhs.clGam
 %%]
 
 %%[9
@@ -1283,19 +1277,19 @@ SEM Decls
 %%]
 
 %%[7
+%%]
 SEM CaseAlts
   | Cons        hd          .   kiVarMp             =   agFakeDependOn @hd.gathDataGam @lhs.kiVarMp
-%%]
 
 %%[9
+%%]
 SEM TyExprs
   | Cons        hd          .   clGam               =   agFakeDependOn @hd.tyVarWildL @lhs.clGam
-%%]
 
 %%[7
+%%]
 SEM DataFieldPatExpr
   | Ext         dataFieldPatExpr
                             .   kiVarMp             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiVarMp
 
-%%]
 

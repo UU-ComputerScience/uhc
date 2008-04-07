@@ -39,7 +39,7 @@ SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
                                                                  @fields.kiL (repeat kiStar)
-                lhs         .   kiVarMp             =   agFakeDependOn @lhs.dataTy $ foVarMp @fo_ |=> @fldsKiVarMp
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @fldsKiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -120,9 +120,9 @@ SEM Decl
 %%]
 
 %%[7
+%%]
 SEM Decl
   | Data        loc         .   dataTy              :=  agFakeDependOn @dataAltTy $ @tyNm `mkConApp` @tyVars.tyL
-%%]
 
 %%[7
 SEM Decl
@@ -474,14 +474,3 @@ SEM DataConstr
 %%]
 SEM DataConstr
   | Constr      loc         .   arity        		:   {Int}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fake dependencies
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[17
-SEM DataConstr
-  | Constr      lhs         .   polGam              <   loc.dataAltTyL
-                lhs         .   knPolCtx            <   loc.dataAltTyL
-                lhs         .   polVarMp            <   loc.dataAltTyL
-%%]

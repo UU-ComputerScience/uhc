@@ -32,9 +32,9 @@ SEM CaseAlts
 %%]
 
 %%[6
+%%]
 SEM Expr
   | Case        alts        .   patTyVarMp          :=  agFakeDependOn @alts.kiVarMp @expr.tyVarMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of Case Expr

@@ -67,7 +67,8 @@ instance PP TyMergePredOut where
 
 %%[9
 SEM TyAGItf
-  | AGItf       ty          .   coco        =   agFakeDependOn @ty.frTvSL CoVariant
+  | AGItf       ty          .   coco        =   CoVariant
+  				ty			.	frTvSL		<	ty.coco
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

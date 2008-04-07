@@ -1,0 +1,65 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fake AG dependencies to avoid INDUCED cycles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Dependencies are declared for the first variant where both dependencees are available.
+
+%%[1
+SEM Decls
+  | Cons        lhs         .   opts                <   lhs.gathTySigGam
+
+SEM Expr
+  | Parens      lhs			.	opts				<	lhs.gUniq
+%%]
+
+%%[2
+SEM AGItf
+  | AGItf       expr        .   gUniq               <   loc.tyGam
+%%]
+
+%%[6
+SEM AGItf
+  | AGItf       expr        .   gUniq               <   loc.tyKiGam
+                expr        .   gUniq               <   loc.kiGam
+
+SEM Expr
+  | Case        alts        .   kiVarMp             <   alts.patTyVarMp
+%%]
+
+%%[6
+SEM DataConstr
+  | Constr      lhs         .   dataTy              <   lhs.kiVarMp
+%%]
+
+%%[7
+SEM CaseAlts
+  | Cons        hd          .   gathDataGam         <   hd.kiVarMp
+
+SEM DataFieldPatExpr
+  | Ext         dataFieldPatExpr
+                            .   tyGam               <   dataFieldPatExpr.kiVarMp
+
+SEM Decl
+  | Data        loc         .   dataAltTy           <   loc.dataTy
+%%]
+
+%%[9
+SEM TyExprs
+  | Cons        hd          .   tyVarWildL          <   hd.clGam
+%%]
+
+%%[17
+SEM DataConstr
+  | Constr      lhs         .   polGam              <   loc.dataAltTyL
+                lhs         .   knPolCtx            <   loc.dataAltTyL
+                lhs         .   polVarMp            <   loc.dataAltTyL
+
+SEM AGItf
+  | AGItf       expr        .   gathPolGam          <   expr.valGam
+                expr        .   polVarMp            <   expr.tyVarMp
+                expr        .   gUniq               <   loc.polGam
+                expr        .   polVarMp            <   loc.clGam
+%%]
+
+does not work until fixed. Now assumes expr.valGam is synthesized.
+

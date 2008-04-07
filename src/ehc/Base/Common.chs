@@ -1177,10 +1177,10 @@ instance ForceEval a => ForceEval (RLList a) where
 %%% Fake AG dependency: first param is not used, only introduces an AG dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(agFakeDependOn)
+%%[1
+%%]
 agFakeDependOn :: a -> b -> b
 agFakeDependOn _ x = x
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable name (used by CHR)
