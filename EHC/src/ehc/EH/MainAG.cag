@@ -117,6 +117,9 @@ WRAPPER AGItf
 %%[17 ag import({EH/InferPolarity})
 %%]
 
+%%[99 ag import({EH/FakeDependencies})
+%%]
+
 %%[99
 PRAGMA strictsem
 PRAGMA strictcase

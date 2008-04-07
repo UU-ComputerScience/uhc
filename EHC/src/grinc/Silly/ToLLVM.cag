@@ -31,6 +31,10 @@
 WRAPPER SilModule
 %%]
 
+%%[8
+PRAGMA nocycle
+%%]
+
 %%[8 hs export( silly2llvm )
 {-|
   Transform a 'SilModule' to a 'LLVMModule'. In this module, we use cells which

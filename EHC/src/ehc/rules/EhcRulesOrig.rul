@@ -2603,7 +2603,7 @@ relation bind1ValIdToTy =
   view E =
     holes [ nm: Nm, ty: Ty | | valGam: ValGam ]
     judgespec valGam === [nm :-> ty]
-    judgeuse ag  valGam `=` agFakeDependOn "@lhs.opts" $ gamSingleton (nm) (ValGamInfo (ty))	-- fake dependency for uuagc
+    judgeuse ag  valGam `=` {- agFakeDependOn "@lhs.opts" $ -} gamSingleton (nm) (ValGamInfo (ty))	-- fake dependency for uuagc
 
 relation bind1TyIdToTy =
   view I1 =
