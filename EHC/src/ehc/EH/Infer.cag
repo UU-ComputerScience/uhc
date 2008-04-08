@@ -179,14 +179,16 @@ ATTR AllPatExpr [ | valGam: ValGam | ]
 %%]
 
 %%[1.initValGam
+SEM AGItf   
+  | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
 %%[20 -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
 
-%%]
 SEM AGItf
   | AGItf       loc         .   valGam              =   @lhs.valGam
+%%]
 
 %%[1.patValGam
 ATTR AllDecl [ | patValGam: ValGam | ]
