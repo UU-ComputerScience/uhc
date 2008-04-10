@@ -147,7 +147,11 @@ int main_Sil_Run(int argc, char** argv)
 
 int main_Sil_Exit(int argc, char** argv)
 {
+%%[[8
 	memoryDumpResult_Sil() ;
+%%][99
+%%]]
+	
 #	if TIMING
 		double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
 		printf("Time %.3f secs\n", clockDiff ) ;
