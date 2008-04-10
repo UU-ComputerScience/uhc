@@ -61,9 +61,6 @@
 %%[4 export(CoContraVariance(..), cocoOpp)
 %%]
 
-%%[4 export(FIMode(..),fimOpp,fimSwapCoCo)
-%%]
-
 %%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
@@ -174,7 +171,7 @@ instance HSNM UID where
 type UIDL = [UID]
 %%]
 
-%%[2
+%%[2 export(UIDS)
 type UIDS = Set.Set UID
 %%]
 
@@ -200,11 +197,11 @@ uidStart = UID [0]
 %%]
 
 %%[1.UID.Utils
-mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)         = mkNewLevUID   u'} in (u'',u1,u2)
-mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)         = mkNewLevUID   u'} in (u'',u1,u2,u3)
-mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)      = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
-mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
-mkNewLevUID6 u = let { (u',u1,u2,u3)    = mkNewLevUID3  u; (u'',u4,u5,u6)   = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6)
+mkNewLevUID2 u = let { (u',u1)          = mkNewLevUID   u; (u'',u2)          = mkNewLevUID   u'} in (u'',u1,u2)
+mkNewLevUID3 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3)          = mkNewLevUID   u'} in (u'',u1,u2,u3)
+mkNewLevUID4 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4)       = mkNewLevUID2  u'} in (u'',u1,u2,u3,u4)
+mkNewLevUID5 u = let { (u',u1,u2)       = mkNewLevUID2  u; (u'',u3,u4,u5)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5)
+mkNewLevUID6 u = let { (u',u1,u2,u3)    = mkNewLevUID3  u; (u'',u4,u5,u6)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6)
 mkNewLevUID7 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7)    = mkNewLevUID3  u'} in (u'',u1,u2,u3,u4,u5,u6,u7)
 mkNewLevUID8 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7,u8) = mkNewLevUID4  u'} in (u'',u1,u2,u3,u4,u5,u6,u7,u8)
 
@@ -716,59 +713,6 @@ assocLElts = map snd
 %%[1 export(assocLGroupSort)
 assocLGroupSort :: Ord k => AssocL k v -> AssocL k [v]
 assocLGroupSort = map (foldr (\(k,v) (_,vs) -> (k,v:vs)) (undefined,[])) . groupSortOn fst
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fitting mode (should be in FitsIn, but here it avoids mut rec modules)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.FIMode
-data FIMode  =  FitSubLR
-             |  FitSubRL
-             |  FitUnify
-%%]
-%%[4_2
-             |  FitMeet
-             |  FitJoin
-%%]
-%%[4
-             deriving (Eq,Ord)
-%%]
-
-%%[4
-fimOpp :: FIMode -> FIMode
-fimOpp m
-  =  case m of
-       FitSubLR  -> FitSubRL
-       FitSubRL  -> FitSubLR
-%%]
-%%[4_2
-       FitMeet   -> FitJoin
-       FitJoin   -> FitMeet
-%%]
-%%[4
-       _         -> m
-%%]
-
-%%[4
-fimSwapCoCo :: CoContraVariance -> FIMode -> FIMode
-fimSwapCoCo coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
-%%]
-
-%%[4
-instance Show FIMode where
-  show FitSubLR  = "<="
-  show FitSubRL  = ">="
-  show FitUnify  = "=="
-%%]
-%%[4_2
-  show FitMeet   = "=^="
-  show FitJoin   = "=v="
-%%]
-
-%%[4
-instance PP FIMode where
-  pp m = pp (show m)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1376,6 +1320,59 @@ rllHeadTail (RLList ((x,c):t)) = Just (x,RLList ((x,c-1):t))
 %%[9
 instance Show a => Show (RLList a) where
   show = show . rllToList
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fitting mode (should be in FitsIn, but here it avoids mut rec modules)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIMode export(FIMode(..))
+data FIMode  =  FitSubLR
+             |  FitSubRL
+             |  FitUnify
+%%]
+%%[4_2
+             |  FitMeet
+             |  FitJoin
+%%]
+%%[4
+             deriving (Eq,Ord)
+%%]
+
+%%[4 export(fimOpp)
+fimOpp :: FIMode -> FIMode
+fimOpp m
+  =  case m of
+       FitSubLR  -> FitSubRL
+       FitSubRL  -> FitSubLR
+%%]
+%%[4_2
+       FitMeet   -> FitJoin
+       FitJoin   -> FitMeet
+%%]
+%%[4
+       _         -> m
+%%]
+
+%%[4 export(fimSwapCoCo)
+fimSwapCoCo :: CoContraVariance -> FIMode -> FIMode
+fimSwapCoCo coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
+%%]
+
+%%[4
+instance Show FIMode where
+  show FitSubLR  = "<="
+  show FitSubRL  = ">="
+  show FitUnify  = "=="
+%%]
+%%[4_2
+  show FitMeet   = "=^="
+  show FitJoin   = "=v="
+%%]
+
+%%[4
+instance PP FIMode where
+  pp m = pp (show m)
 %%]
 
 

@@ -132,8 +132,8 @@ mkStr r s
 mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
 mkIf' (bn:tn:fn:_) r c t e
 %%][8
-mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe (Set.Set UID) -> Expr
-mkIf'' (bn:tn:fn:_) r c t e i
+mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe UIDS -> UIDS -> Expr
+mkIf'' (bn:tn:fn:_) r c t e i failS
 %%]]
   = case c of
 %%[[5
@@ -146,7 +146,7 @@ mkIf'' (bn:tn:fn:_) r c t e i
       _ -> mkCase' r
              ( rngLift r Expr_TypeAs (rngLift r TyExpr_Con bn) c )
 %%[[8
-             i False
+             i failS False
 %%]]
              [ mkAlt r (rngLift r PatExpr_Con tn) t
              , mkAlt r (rngLift r PatExpr_Con fn) e
@@ -155,7 +155,7 @@ mkIf'' (bn:tn:fn:_) r c t e i
 
 %%[8 hs
 mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
-mkIf' ns r c t e = mkIf'' ns r c t e Nothing
+mkIf' ns r c t e = mkIf'' ns r c t e Nothing Set.empty
 %%]
 
 %%[5 hs
@@ -177,13 +177,13 @@ mkCase' r c as = rngLift r Expr_Case c as
 %%]
 
 %%[8 -5.mkCase hs
-mkCase' :: Range -> Expr  -> Maybe (Set.Set UID) -> Bool -> [CaseAlt] -> Expr
-mkCase' r c id istup as
-  = rngLift r Expr_Case c as id istup
+mkCase' :: Range -> Expr  -> Maybe UIDS -> UIDS -> Bool -> [CaseAlt] -> Expr
+mkCase' r c id failS istup as
+  = rngLift r Expr_Case c as id failS istup
 
 mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
 mkCase r c as
-  = mkCase' r c Nothing False [ mkAlt r p e | (p,e) <- as ]
+  = mkCase' r c Nothing Set.empty False [ mkAlt r p e | (p,e) <- as ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

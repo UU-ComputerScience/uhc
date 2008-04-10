@@ -228,21 +228,29 @@ ATTR AllData AllTyExpr [ knPolCtx : Ty | | ]
 
 %%[17 ag
 SEM Decl
-  | Data        loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
-                constrs     .   knPolCtx            =   @polCtxVar
+  | Data Class  loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
   | Type        loc         .   (polCtxVar,polTypeVar)
                                                     =   let [v1,v2] = mkNewUIDL 2 @lUniq_17_seed_pol
                                                         in  (mkPolVar v1,mkPolVar v2)
-                tyExpr      .   knPolCtx            =   @polCtxVar
+
+SEM TyExprs
+  | Cons        loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+%%]
+
+%%[17 ag
+SEM Decl
+  | Data        constrs     .   knPolCtx            =   @polCtxVar
+  | Type        tyExpr      .   knPolCtx            =   @polCtxVar
 
 SEM Decl
-  | TySig FFI
+  | TySig       tyExpr      .   knPolCtx            =   maybe polCovariant id @lhs.mbKnPolCtx
+  | FFI
 %%[[94
     FFE
 %%]]
                 tyExpr      .   knPolCtx            =   polCovariant
-  | Class Instance
-                tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+  | Class       tyPrExpr    .   knPolCtx            =   @polCtxVar -- polCovariant
+  | Instance    tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
 
 SEM Expr PatExpr
   | TypeAs      tyExpr      .   knPolCtx            =   polCovariant
@@ -254,6 +262,22 @@ SEM Expr
 SEM Decl
   | InstanceIntro
                 prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+
+SEM TyExprs
+  | Cons        hd          .   knPolCtx            =   @polCtxVar
+%%]
+
+%%[17 ag
+ATTR AllDecl [ mbKnPolCtx : {Maybe Ty} | | ]
+%%]
+
+%%[17 ag
+SEM Expr
+  | Let         decls       .   mbKnPolCtx          =   Nothing
+
+SEM Decl
+  | Class       decls       .   mbKnPolCtx          =   Just @polCtxVar
+  | * - Class   loc         .   mbKnPolCtx          =   Nothing
 %%]
 
   Now we can define the polarity for sub expressions based on the above defined context.
@@ -371,7 +395,7 @@ SEM PrExpr
 ATTR AllDecl AllData AllTyExpr AllExpr AllPatExpr AllCase [ | polVarMp : VarMp | ]
 
 SEM AGItf
-  | AGItf 		expr		.	polVarMp 			= 	emptyVarMp
+  | AGItf       expr        .   polVarMp            =   emptyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -387,10 +411,13 @@ ATTR AllDecl [ | patPolGam : PolGam | ]
 SEM Decl
   | Data        loc         .   polSig              =   @tyVars.polVarL `mkArrow` @polCtxVar
   | Type        loc         .   polSig              =   @polTypeVar
+  | Class       loc         .   polSig              =   @tyPrExpr.polVarL `mkArrow` @polCtxVar
 
 -- in environment
 SEM Decl
   | Data Type   lhs         .   patPolGam           =   gamAdd @tyNm (mkPGI @polSig) @lhs.patPolGam
+  | Class       lhs         .   patPolGam           =   gamAdd (hsnClass2Polarity @clsNm) (mkPGI @polSig) @lhs.patPolGam
+  | Instance    lhs         .   patPolGam           =   @lhs.patPolGam
 
 -- inferencing
 SEM Decl
@@ -400,20 +427,32 @@ SEM Decl
 
 
 %%[17 ag
-ATTR AllTyVar [ | | polVarL USE {++} {[]} : TyL ]
+ATTR AllTyVar TyExprs [ | | polVarL USE {++} {[]} : TyL ]
+ATTR TyExpr PrExpr [ | | polVarL: TyL ]
 
 SEM TyVar
   | Var         loc         .   polVar              =   mkPolVar @lUniq_17_pol
                 lhs         .   polVarL             =   [@polVar]
+
+SEM PrExpr
+  | Lacks       lhs         .   polVarL             =   []
+
+SEM TyExpr
+  | Var         lhs         .   polVarL             =   [@lhs.knPolCtx]
+  | * - Var Pred
+                lhs         .   polVarL             =   []
 %%]
 
   For each data type: gather an environment for its type parameters.
 
 %%[17 ag
-ATTR AllTyVar [ | | gathTyVarPolGam USE {`gamUnion`} {emptyGam}: PolGam ]
+ATTR AllTyVar TyExprs TyExpr PrExpr [ | | gathTyVarPolGam USE {`gamUnion`} {emptyGam}: PolGam ]
 
 SEM TyVar
   | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @polVar)
+  
+SEM TyExpr
+  | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @lhs.knPolCtx)
 %%]
 
   Distribute gathered environments.
@@ -424,9 +463,8 @@ ATTR AllTyExpr [ polGam : PolGam | | ]
 
 SEM Decl
   | Data        constrs     .   polGam              =   gamPushGam @tyVars.gathTyVarPolGam @lhs.polGam
-  | Class Instance
-                decls       .   patPolGam           =   gamPushNew @lhs.polGam
-                lhs         .   patPolGam           =   @lhs.patPolGam
+  | Class       decls       .   polGam              =   gamPushGam @tyPrExpr.gathTyVarPolGam @lhs.polGam
+  | Instance    decls       .   polGam              =   gamPushNew @lhs.polGam
 %%]
   
   Combine substitutions. For cyclic occurrences of v such that v = negate(v), v is mapped
