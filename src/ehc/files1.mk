@@ -315,7 +315,7 @@ $(EHC_AG_DS_MAIN_DRV_HS) $(LIB_EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
 $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 	@(echo "module $(LIB_EHC_PKG_NAME).$(EHC_HS_SIG_MAIN) where" ; \
 	  echo "sig = \"`cat $^ | md5`\"" ; \
-	  echo "timestamp = \"`date '+%s'`\"" \
+	  echo "timestamp = \"`date '+%G%m%d %z %H%M%S'`\"" \
 	) > $@
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG)

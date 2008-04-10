@@ -25,7 +25,7 @@ data RCEEnv
       { rceValGam           :: !ValGam
       , rceDataGam          :: !DataGam
       , rceCaseFailSubst    :: !CaseFailSubst
-      , rceCaseIds          :: !(Set.Set UID)
+      , rceCaseIds          :: !UIDS
       , rceCaseCont         :: !CExpr
       , rceEHCOpts          :: !EHCOpts
       }
@@ -403,7 +403,7 @@ type RCEAltL = [RAlt]
 
 %%[8 hs
 data RCESplitCateg
-  = RCESplitVar | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
+  = RCESplitVar UIDS | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
 %%[[97
   | RCESplitBoolExpr
 %%]]
@@ -438,27 +438,27 @@ rceRebinds nm alts = [ mkCBind1 n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatNms
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
   = mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
-  where remMatch  = rceMatch env args' [RAlt_Alt remPats e | (RAlt_Alt (RPat_Var _ : remPats) e) <- alts]
+  where remMatch  = rceMatch env args' [RAlt_Alt remPats e f | (RAlt_Alt (RPat_Var _ : remPats) e f) <- alts]
 
 rceMatchIrrefutable :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
-rceMatchIrrefutable env (arg:args') [RAlt_Alt (RPat_Irrefutable n b : remPats) e]
+rceMatchIrrefutable env (arg:args') [RAlt_Alt (RPat_Irrefutable n b : remPats) e f]
   = mkCExprLet CBindPlain b remMatch
-  where remMatch  = rceMatch env args' [RAlt_Alt remPats e]
+  where remMatch  = rceMatch env args' [RAlt_Alt remPats e f]
 
 rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
 rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
   = CAlt_Alt altPat (mkCExprLet CBindPlain (rceRebinds arg alts) subMatch)
   where (subAlts,subAltSubNms)
           =  unzip
-               [ (RAlt_Alt (pats ++ ps) e, map (rpatNmNm . rcpPNm) pats)
-               | (RAlt_Alt (RPat_Con _ _ (RPatConBind_One _ pbinds) : ps) e) <- alts
+               [ (RAlt_Alt (pats ++ ps) e f, map (rpatNmNm . rcpPNm) pats)
+               | (RAlt_Alt (RPat_Con _ _ (RPatConBind_One _ pbinds) : ps) e f) <- alts
                , let pats = [ p | (RPatBind_Bind _ _ _ p) <- pbinds ]
                ]
         subMatch
           =  rceMatch env (head subAltSubNms ++ args) subAlts
         altPat
           =  case alt of
-               RAlt_Alt (RPat_Con n t (RPatConBind_One r pbL) : _) _
+               RAlt_Alt (RPat_Con n t (RPatConBind_One r pbL) : _) _ _
                  ->  CPat_Con (rpatNmNm n) t r pbL'
                      where  pbL' = [ CPatBind_Bind l o n (CPat_Var (rpatNmNm $ rcpPNm p)) | (RPatBind_Bind l o n p) <- pbL ]
 
@@ -472,20 +472,34 @@ rceMatchCon env (arg:args) alts
                   $ alts
 
 rceMatchConMany :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
-rceMatchConMany env (arg:args) [RAlt_Alt (RPat_Con n t (RPatConBind_Many bs) : ps) e]
+rceMatchConMany env (arg:args) [RAlt_Alt (RPat_Con n t (RPatConBind_Many bs) : ps) e f]
   = mkCExprStrictIn arg' (CExpr_Var arg)
                     (\_ -> foldr (\mka e -> rceMatch env [arg'] (mka e)) (rceMatch env (arg':args) altslast) altsinit)
   where arg'     = hsnSuffix arg "!"
-        altsinit = [ \e -> [RAlt_Alt (RPat_Con n t b     : []) e] | b <- bsinit ]
-        altslast =         [RAlt_Alt (RPat_Con n t blast : ps) e]
+        altsinit = [ \e -> [RAlt_Alt (RPat_Con n t b     : []) e f] | b <- bsinit ]
+        altslast =         [RAlt_Alt (RPat_Con n t blast : ps) e f]
         (bsinit,blast) = panicJust "rceMatchConMany" $ initlast bs
 
 rceMatchConst :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConst env (arg:args) alts
   = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindPlain (rceRebinds arg alts) (CExpr_Case n alts' (rceCaseCont env)))
   where arg' = hsnSuffix arg "!"
-        alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e) <- alts ]
+        alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e _) <- alts ]
+%%]
 
+%%[97 hs
+rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
+rceMatchBoolExpr env (arg:args) alts
+  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) m
+  where m = [ ( hsnSuffix arg $ "!" ++ show u
+              , mkCExprApp b [CExpr_Var arg]
+              , rceMatch env args [RAlt_Alt remPats e f]
+              )
+            | (u,RAlt_Alt (RPat_BoolExpr _ b : remPats) e f) <- zip [0..] alts
+            ]
+%%]
+
+%%[8 hs
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
   |  raltIsVar          alt  = rceMatchVar          env args alts
@@ -503,7 +517,7 @@ rceMatchSplits env args alts@(alt:_)
 rceMatch :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
 rceMatch env [] alts  
-  =  case [ e | (RAlt_Alt [] e) <- alts ] of
+  =  case [ e | (RAlt_Alt [] e _) <- alts ] of
        (e:_)  -> cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e
        _      -> rceCaseCont env
 rceMatch env args alts
@@ -517,7 +531,7 @@ rceMatch env args alts
                      where nc  = hsnPrefix "_casecont_" (rpatNmNm $ rcpPNm $ rcaPat $ head alts)
         )
         (rceCaseCont env)
-     $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar
+     $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar (raaFailS a)
                         else if raltIsConst         a  then RCESplitConst
                         else if raltIsIrrefutable   a  then RCESplitIrrefutable
 %%[[97
@@ -535,17 +549,5 @@ rceUpdEnv e env
                              $ rceCaseFailSubst env
         , rceCaseCont      = e
         }
-%%]
-
-%%[97 hs
-rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
-rceMatchBoolExpr env (arg:args) alts
-  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) m
-  where m = [ ( hsnSuffix arg $ "!" ++ show u
-              , mkCExprApp b [CExpr_Var arg]
-              , rceMatch env args [RAlt_Alt remPats e]
-              )
-            | (u,RAlt_Alt (RPat_BoolExpr _ b : remPats) e) <- zip [0..] alts
-            ]
 %%]
 

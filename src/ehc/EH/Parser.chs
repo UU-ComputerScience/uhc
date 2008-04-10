@@ -16,6 +16,9 @@
 %%[4 import ({%{EH}Ty})
 %%]
 
+%%[8 import(qualified Data.Set as Set)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,7 +306,7 @@ pExprBase       =    mkEH Expr_IConst     <$>  pInt
 %%[[5
                 <|>  mkEH Expr_Case
 %%][8
-                <|>  (\e a -> mkEH Expr_Case e a Nothing False)
+                <|>  (\e a -> mkEH Expr_Case e a Nothing Set.empty False)
 %%]]
                      <$   pKey "case" <*> pExpr <* pKey "of" <*> pCaseAlts
 %%]
@@ -364,7 +367,7 @@ pExprPrefix     =    mkEH Expr_Let <$ pLET
                                    , mkEH CaseAlt_Pat (mkEH PatExpr_Con hsnFalse) e
                                    ]
 %%[[8
-                                   Nothing False
+                                   Nothing Set.empty False
 %%]]
                      )
                      <$ pIF <*> pExpr <* pTHEN <*> pExpr <* pELSE

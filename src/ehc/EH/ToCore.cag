@@ -92,7 +92,7 @@ SEM Expr
                 loc         .   cexprapp    =   mkCExprApp1 @func.cexpr @arg.cexpr
                             .   cexpr       =   if @func.isNewtype then @arg.cexpr else @cexprapp
   | Lam         loc         .   cexpr       =   mkCExprLam1 @arg.topNm
-                                                    (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr])
+                                                    (rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] @body.cexpr @body.caseFailS])
   | Case        loc         .   cexpr       =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ n | (CExpr_Var n) <- fuL2ExprL (reverse @expr.fuCExprL) ]
@@ -487,7 +487,7 @@ SEM Expr
     LamImpl
 %%]]
                 loc         .   lamBodyCoeL         =   mkLamBodyCoe
-                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e]))
+                                                            (mkCoe (\e -> rceMatch @rceEnv [@arg.topNm] [RAlt_Alt [@arg.rpat] e Set.empty]))
                                                             @body.appArgCoeL
 %%]
 
@@ -763,8 +763,8 @@ ATTR CaseAlt [ | | ralt: RAlt  ralt': RAlt ]
 ATTR CaseAlts [ | | raltL: {[RAlt]}  raltL': {[RAlt]} ]
 
 SEM CaseAlt
-  | Pat         lhs         .   ralt        =   RAlt_Alt [@patExpr.rpat] @expr.cexpr
-                            .   ralt'       =   RAlt_Alt (fsL2PatL $ reverse @patExpr.fsRPatL) @expr.cexpr
+  | Pat         lhs         .   ralt        =   RAlt_Alt [@patExpr.rpat] @expr.cexpr @expr.caseFailS
+                            .   ralt'       =   RAlt_Alt (fsL2PatL $ reverse @patExpr.fsRPatL) @expr.cexpr @expr.caseFailS
 
 SEM CaseAlts
   | Nil         lhs         .   raltL       =   []
@@ -835,4 +835,16 @@ SEM Expr
 SEM Expr
   | LamImpl     arg         .   ceParentNm  =   @arg.topNm
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Can a CExpr fail, that is, has a guard which can fail? Indicated by non-emptyness of caseId's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR Expr [ | | caseFailS USE {`Set.union`} {Set.empty}: UIDS ]
+
+SEM Expr
+  | Case		lhs			.	caseFailS	=	@caseFailS
+%%]
+  | CaseAltFail	lhs			.	caseFailS	=	Set.singleton @caseId
 

@@ -569,7 +569,7 @@ SEM Expression
         loc         .   eh          =   EH.mkCase' @range @expression.eh @alternatives.eh
 %%][8
     | Case
-        loc         .   eh          =   EH.mkCase' @range @expression.eh (Just $ Set.singleton @caseId) False @alternatives.eh
+        loc         .   eh          =   EH.mkCase' @range @expression.eh (Just $ Set.singleton @caseId) Set.empty False @alternatives.eh
 %%]]
     | List
         loc         .   eh          =   foldr (\l r -> ehExpConApp @range (@refnames !! 0) [l,r]) (rngLift @range EH.Expr_Con (@refnames !! 1)) @expressions.eh
@@ -697,18 +697,26 @@ SEM Alternative
         lhs         .   eh          =   [EH.mkAlt @range @pattern.eh @righthandside.eh]
     | Empty
         lhs         .   eh          =   []
+%%]
 
+%%[5
+%%[[5
 ATTR GuardedExpressions [ | | eh USE {:} {[]}: {[EH.Expr -> EH.Expr]} ]
-
 ATTR GuardedExpression [ | | eh: {EH.Expr -> EH.Expr} ]
+%%][8
+ATTR GuardedExpressions [ | | eh USE {:} {[]}: {[UIDS -> EH.Expr -> EH.Expr]} ]
+ATTR GuardedExpression [ | | eh: {UIDS -> EH.Expr -> EH.Expr} ]
+%%]]
+%%]
 
+%%[5
 SEM GuardedExpression -- ToDo: or _Guard?
 %%[[5
     | GuardedExpression
         lhs         .   eh          =   EH.mkIf' (@typerefname : @valrefnames) @range @guard.eh @expression.eh
 %%][8
     | GuardedExpression
-        lhs         .   eh          =   \e -> EH.mkIf'' (@typerefname : @valrefnames) @range @guard.eh @expression.eh e Nothing -- (Just @lhs.caseId)
+        lhs         .   eh          =   \failS e -> EH.mkIf'' (@typerefname : @valrefnames) @range @guard.eh @expression.eh e Nothing failS -- (Just @lhs.caseId)
 %%]]
 %%]
 
@@ -879,7 +887,9 @@ SEM RightHandSide
         lhs         .   eh          =   @mkSccLet (foldr ($) (EH.mkError @range "guarded expr") @guardedexpressions.eh)
 %%][8
     | Guarded
-        lhs         .   eh          =   @mkSccLet (foldr ($) (rngLift @range EH.Expr_CaseAltFail @lhs.caseId) @guardedexpressions.eh)
+        lhs         .   eh          =   @mkSccLet (foldr (\(mk,failS) e -> mk failS e)
+                                                         (rngLift @range EH.Expr_CaseAltFail @lhs.caseId)
+                                                         (zip @guardedexpressions.eh (Set.singleton @lhs.caseId : repeat Set.empty)))
 %%]]
 %%]
 

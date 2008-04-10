@@ -1325,10 +1325,10 @@ tyAnnSubst mp
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Smart constructors for polarities
+%%% Polarities, construction + inspection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 hs export(polCovariant, polContravariant, polInvariant, mkPolNegate, mkPolVar)
+%%[4 hs export(polCovariant, polContravariant, polInvariant)
 polCovariant :: Ty
 polCovariant = semCon hsnCovariant
 
@@ -1337,11 +1337,31 @@ polContravariant = semCon hsnContravariant
 
 polInvariant :: Ty
 polInvariant = semCon hsnInvariant
+%%]
 
+%%[17 hs export(mkPolNegate, mkPolVar)
 mkPolNegate :: Ty -> Ty
 mkPolNegate = mk1ConApp hsnPolNegation
 
 mkPolVar :: UID -> Ty
 mkPolVar = mkTyVar
 %%]
+
+%%[4 hs export(polIsCovariant, polIsContravariant, polIsInvariant)
+polIs :: HsName -> Ty -> Bool
+polIs nm = maybe False (== nm) . tyMbCon
+
+polIsCovariant, polIsContravariant, polIsInvariant :: Ty -> Bool
+polIsCovariant     = polIs hsnCovariant
+polIsContravariant = polIs hsnContravariant
+polIsInvariant     = polIs hsnInvariant
+%%]
+
+%%[4 hs
+%%]
+cocoOpp :: CoContraVariance -> CoContraVariance
+cocoOpp  CoVariant      =   ContraVariant
+cocoOpp  ContraVariant  =   CoVariant
+cocoOpp  _              =   CoContraVariant
+
 

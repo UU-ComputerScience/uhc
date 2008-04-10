@@ -316,7 +316,8 @@ DATA Expr
   | Case            expr            : Expr
                     alts            : CaseAlts
 %%[[8
-                    mbCaseIds       : {Maybe (Set.Set UID)}
+                    mbCaseIds       : {Maybe UIDS}
+                    caseFailS       : {UIDS}			-- can fail on these fail ids, encodes that this case implements a guard
                     isTupOfArg      : {Bool}
 %%]]
 %%]
@@ -437,21 +438,17 @@ SET AllCase         = CaseAlt CaseAlts
 %%[5.DataConstr1
 DATA DataConstr
   | Constr          conNm           : {HsName}
-                    fields          : TyExprs
-%%]
-%%[7.DataConstr1 -5.DataConstr1
-DATA DataConstr
-  | Constr          conNm           : {HsName}
 %%[[95
                     mbFixityPrio    : {Maybe Int}       -- Nothing: not infix
 %%]]
+%%[[5
+                    fields          : TyExprs
+%%][7
                     fields          : DataFields
+%%]]
 %%[[16
                     eqs             : DataConstrEqs
 %%]]
-%%]
-%%[50.DataConstr
-                    eqs             : DataConstrEqs
 %%]
 
 %%[5.DataConstr2

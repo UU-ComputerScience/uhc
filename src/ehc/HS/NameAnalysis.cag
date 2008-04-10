@@ -1201,6 +1201,7 @@ mergeFunDefL ds
                       (doccRange od) (mkRngProdOpt (doccRange od) $ map (rngLift (doccRange od) EH.Expr_Var) $ xNmL)
 %%[[8
                       (Just $ Set.fromList $ map (iaspUniq . doccAsp) ds)
+                      Set.empty
                       (length xNmL > 1)
 %%]]
                     $ zipWith (EH.mkAlt (doccRange od))

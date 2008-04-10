@@ -379,6 +379,9 @@ SEM Decl
   | Type            (tyExpr.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq_17_seed_pol,loc.lUniq_17_fitsIn_pol)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
 
+SEM TyExprs  
+  | Cons            (hd.gUniq,loc.lUniq_17_polCtx)					=	mkNewLevUID     @lhs.gUniq
+
 SEM TyExpr  
   | App             (func.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq_17_polArg)
                                                                     :=  mkNewLevUID4    @lhs.gUniq
