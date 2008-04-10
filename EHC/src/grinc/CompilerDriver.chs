@@ -187,12 +187,14 @@ caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin           True               "44-unusedExprRemoved"
          
-         ; options <- gets gcsOpts
-         ; when (ehcOptPriv options)
-                ( do { transformCode         mergeCase          "Merging cases"
-                     ; caWriteGrin           True               "45-caseMerged"
-                    }
-                )
+		 ; transformCode         mergeCase          "Merging cases"
+         ; caWriteGrin           True               "45-caseMerged"         
+         --; options <- gets gcsOpts
+         --; when (ehcOptPriv options)
+         --       ( do { transformCode         mergeCase          "Merging cases"
+         --            ; caWriteGrin           True               "45-caseMerged"
+         --           }
+         --       )
          }
     )
 -- simplification part II
@@ -231,11 +233,11 @@ caOutput = task_ VerboseNormal "Writing code"
     ( do { options <- gets gcsOpts
     
          ; caGrin2Silly
-         ; caWriteSilly "sil1" pretty
+         ; when (ehcOptDumpGrinStages options) (caWriteSilly "sil1" pretty)
          ; transformSilly   shortcut      "Shortcut single-use variables"
-         ; caWriteSilly "sil2" pretty
+         ; when (ehcOptDumpGrinStages options) (caWriteSilly "sil2" pretty)
          ; transformSilly   embedVars     "Embed Variables"
-         ; caWriteSilly "sil3" pretty
+         ; when (ehcOptDumpGrinStages options) (caWriteSilly "sil3" pretty)
          ; transformSilly   shortcut      "Shortcut single-use variables"
          ; when (ehcOptEmitLLVM options)
             (do { caSilly2LLVM
