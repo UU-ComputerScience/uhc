@@ -21,9 +21,6 @@ Conversion from Pred to CHR.
 %%[9 import({%{EH}Ty.FitsIn})
 %%]
 
-%%[9 import({%{EH}Ty.Trf.Canonic})
-%%]
-
 -- debug
 %%[9 import(EH.Util.Pretty,EH.Util.Utils)
 %%]

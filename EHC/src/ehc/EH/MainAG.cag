@@ -52,9 +52,6 @@
 %%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve},{%{EH}Pred.EvidenceToCore})
 %%]
 
-%%[9 hs import({%{EH}Ty.Trf.Canonic})
-%%]
-
 %%[16 hs import({%{EH}Ty.Trf.Subst})
 %%]
 
