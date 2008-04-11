@@ -51,6 +51,9 @@ For debug/trace:
 %%[9 import({%{EH}Core.Coercion})
 %%]
 
+%%[9 import({%{EH}Ty.Trf.Canonic})
+%%]
+
 %%[9 import(EH.Util.Utils)
 %%]
 
@@ -254,7 +257,7 @@ fiAppSpineLookup fi n gappSpineGam
       (mbasi,_)
         -> mbasi
   where upd pgi asi
-          = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ foVarMp fo |=> foTy fo) (asgiVertebraeL asi)}
+          = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic emptyFI $ foVarMp fo |=> foTy fo) (asgiVertebraeL asi)}
           where pol = pgiPol pgi
                 (polargs,polres) = tyArrowArgsRes pol
                 (_,u1,u2) = mkNewLevUID2 uidStart
@@ -1315,12 +1318,12 @@ tyBetaRed1 fi tp
         -- normalization for polarity types
         -- * removes double negations
         -- * removes negation on 'basic' polarities
-        eval pol@(Ty_Con nm) [arg]
+        eval (Ty_Con nm) [arg]
           | nm == hsnPolNegation
               = case fun' of
                   Ty_Con nm
                     | nm == hsnPolNegation   -> mkres (head args')
-                    | otherwise              -> mkres (polOpp pol)
+                    | otherwise              -> mkres (polOpp arg)
                   _ -> Nothing
               where
                 (fun',args') = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) arg
@@ -1356,4 +1359,12 @@ tyBetaRedFull fi ty
                   as' = map redl as
         choose a [] = a
         choose a as = last as
+%%]
+
+%%[9 hs export(tyCanonic,predCanonic)
+tyCanonic :: FIIn -> Ty -> Ty
+tyCanonic fi = tyCanonic' (emptyTyCanonicOpts {tcoTyBetaRedFull = tyBetaRedFull fi})
+
+predCanonic :: FIIn -> Pred -> Pred
+predCanonic fi = predCanonic' (emptyTyCanonicOpts {tcoTyBetaRedFull = tyBetaRedFull fi})
 %%]
