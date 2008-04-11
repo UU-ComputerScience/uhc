@@ -1284,10 +1284,9 @@ cpTranslateGrin2Bytecode modNm
 %%[[20
          -- ;  lift $ putStrLn (show (crsiModOffMp crsi))
 %%]]
+
          ;  when (isJust mbGrin && (ehcOptEmitBytecode opts))
-                 (do { cpUpdCU modNm $! ecuStoreBytecode bc
-                     ; lift $ putPPFile (fpathToStr $ fpathSetSuff "grin-bc" $ fp) (ppGrModule grin) 400
-                     })
+                 (cpUpdCU modNm $! ecuStoreBytecode bc)
          ;  when (ehcOptErrAboutBytecode opts)
                  (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
          }
@@ -1387,7 +1386,7 @@ cpTransformGrin modNm
                               
                  optGrinNormal = map fst trafos
                  optGrinDump   = out 0 "from core" : concat [ [o,out n nm] | (n,(o,nm)) <- zip [1..] trafos ]
-                        where out n nm = cpOutputGrin ("grin-" ++ show n ++ "-" ++ filter isAlpha nm) modNm
+                        where out n nm = cpOutputGrin ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
          ;  when (isJust $ ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          }
@@ -1656,9 +1655,9 @@ cpProcessCoreRest modNm
 %%[8
 cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
-  = cpSeq [ cpOutputGrin "grin2" modNm
+  = cpSeq [ cpOutputGrin "-000-initial" modNm
           , cpTransformGrin modNm
-          , cpOutputGrin "grin3" modNm
+          , cpOutputGrin "-099-final" modNm
           , cpTranslateGrin2Bytecode modNm
           , cpTranslateGrin modNm
           ]
@@ -1711,13 +1710,11 @@ cpOutputGrin suff modNm
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOutputGrin" mbGrin
                  grinPP = ppGrModule grin
-                 fpG    = fpathSetSuff suff fp
+                 fpG    = fpathSetSuff "grin" (fpathSetBase (fpathBase fp ++ suff) fp)
          ;  when (ehcOptEmitGrin opts)
                  (do { cpMsg modNm VerboseALot "Emit Grin"
                      ; lift $ putPPFile (fpathToStr fpG) grinPP 1000
                      })
-         ;  when (ehcOptShowGrin opts)
-                 (lift $ putPPLn grinPP)
          }
 %%]
 

@@ -29,19 +29,6 @@ ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%% Spares Case %%%
 %%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-
-isFinalTag :: GrTag -> Bool
-isFinalTag  GrTag_Any        = True
-isFinalTag  GrTag_Hole       = True
-isFinalTag  GrTag_Unboxed    = True
-isFinalTag (GrTag_PApp _ _)  = True
-isFinalTag (GrTag_Con _ _ _) = True
-isFinalTag _                 = False
-
-%%]
-
-
 %%[8.spareCase
 ATTR AllAlt [ possibleTags: {[GrTag]} | | ]
 ATTR GrAlt [ | | isPossible: Bool ]

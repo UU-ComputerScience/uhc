@@ -149,7 +149,7 @@ int main_Sil_Exit(int argc, char** argv)
 {
 %%[[8
 	memoryDumpResult_Sil() ;
-%%][99
+%%][100
 %%]]
 	
 #	if TIMING
