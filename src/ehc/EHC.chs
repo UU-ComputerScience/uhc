@@ -1486,6 +1486,7 @@ cpCompileWithGCC how othModNmL modNm
 %%][101
 %%]]
                                  ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "include" ]
+                                 ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "include/gc" ]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
