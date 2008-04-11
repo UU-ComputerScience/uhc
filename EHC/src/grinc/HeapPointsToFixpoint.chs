@@ -55,34 +55,6 @@ heapChange (WillEquate locat var) env
 
 %%[8.envChanges
 
-isPAppTag :: GrTag -> Bool
-isPAppTag (GrTag_PApp _ _) = True
-isPAppTag _                = False
-
-isFinalTag :: GrTag -> Bool
-isFinalTag  GrTag_Any        = True
-isFinalTag  GrTag_Hole       = True
-isFinalTag  GrTag_Unboxed    = True
-isFinalTag (GrTag_PApp _ _)  = True
-isFinalTag (GrTag_Con _ _ _) = True
-isFinalTag _                 = False
-
-isApplyTag (GrTag_App _)     = True
-isApplyTag _                 = False
-
-
-filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
-filterTaggedNodes p (AbsNodes nodes) = let newNodes = Map.filterWithKey (const . p) nodes
-                                       in -- if Map.null newNodes then AbsBottom else 
-                                          AbsNodes newNodes
-filterTaggedNodes p av               = av
-
-
-getApplyNodeVars :: AbstractValue -> [ Variable ]
-getApplyNodeVars (AbsNodes nodes) = [ getNr nm  | (GrTag_App nm) <- Map.keys nodes ]
-getApplyNodeVars _                = []
-
-
 envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ST s [(Variable,AbstractValue)]
 envChanges equat env heap
   = case equat of
