@@ -268,7 +268,7 @@ SEM TyAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% App spine info, coco variance
+%%% App spine info, polarity variance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4_2
@@ -280,7 +280,7 @@ SEM Ty
   | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineVertebraeInfoL
 
 SEM Ty
-  | App             arg     .   fio                 =   fioSwapCoCo (asCoCo @asi) @lhs.fio
+  | App             arg     .   fio                 =   fioSwapPolarity (asPolarity @asi) @lhs.fio
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

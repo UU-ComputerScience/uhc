@@ -1200,7 +1200,7 @@ initKiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[17 export(PolGamInfo(..), PolGam, initPolGam, mapPolGam, quantifyPolGam,mkPGI)
-data PolGamInfo = PolGamInfo { pgiPol :: Ty } deriving Show
+data PolGamInfo = PolGamInfo { pgiPol :: Polarity } deriving Show
 
 mkPGI :: Ty -> PolGamInfo
 mkPGI t = PolGamInfo t

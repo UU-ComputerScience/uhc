@@ -141,12 +141,12 @@ SEM *
 		loc.nmPolErrs  					: ErrL
 		loc.patFunTy  					: Ty
 		loc.pgi_  						: PolGamInfo
-		loc.polCtxVar  					: Ty
-		loc.polErrCyc  					: {AssocL UID Ty}
+		loc.polCtxVar  					: Polarity
+		loc.polErrCyc  					: {AssocL UID Polarity}
 		loc.polGam_l  					: PolGam
-		loc.polOkCyc  					: {AssocL UID Ty}
-		loc.polSig  					: Ty
-		loc.polTypeVar  				: Ty
+		loc.polOkCyc  					: {AssocL UID Polarity}
+		loc.polSig  					: Polarity
+		loc.polTypeVar  				: Polarity
 		loc.polVarMpCyc  				: VarMp
 		loc.positionalFldNmL  			: {[HsName]}
 		loc.positionalNm  				: HsName

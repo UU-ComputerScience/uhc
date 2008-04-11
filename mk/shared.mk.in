@@ -39,6 +39,7 @@
 # 100: - debugging/tracing stuff
 # 101: same as 100, but built for installation
 # 102: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
+# 103: 99 + Holgers debugger work
 
 # 50: + GADT experiment
 # 4_2: + 2 pass type inference, quantifier propagation experiment
@@ -50,7 +51,7 @@
 EHC_PREL_VARIANT				:= 99
 EHC_UHC_VARIANT					:= 100
 EHC_UHC_INSTALL_VARIANT			:= 101
-EHC_OTHER_CODE_VARIANTS			:= 102
+EHC_OTHER_CODE_VARIANTS			:= 102 103
 EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
@@ -213,7 +214,14 @@ GHC_PKG_NAME_PREFIX						:=
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), $(EHC_UHC_VARIANT) < 102, 4_99 < 4_2, 6 < 6_4, 7 < 7_2, 10 < 50, 15 < 16
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
+						$(EHC_UHC_VARIANT) < 102, \
+						$(EHC_PREL_VARIANT) < 103, \
+						4_99 < 4_2, \
+						6 < 6_4, \
+						7 < 7_2, \
+						10 < 50, \
+						15 < 16
 
 ###########################################################################################
 # Cabal

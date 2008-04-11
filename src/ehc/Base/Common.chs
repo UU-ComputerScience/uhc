@@ -58,9 +58,6 @@
 %%[4 export(listCombineUniq)
 %%]
 
-%%[4 export(CoContraVariance(..), cocoOpp)
-%%]
-
 %%[7777 export(Seq,mkSeq,unitSeq,concatSeq,"(<+>)",seqToList,emptySeq,concatSeqs,filterSeq)
 %%]
 
@@ -557,28 +554,6 @@ ppParNeed :: PP p => ParNeed -> ParNeed -> p -> PP_Doc
 ppParNeed locNeed globNeed p
   = par (pp p)
   where par = if globNeed > locNeed then ppParens else id
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Co/Contra variance
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.CoContraVariance
-data CoContraVariance =  CoVariant | ContraVariant | CoContraVariant deriving (Show,Eq)
-%%]
-
-%%[4
-instance PP CoContraVariance where
-  pp CoVariant        = pp "CC+"
-  pp ContraVariant    = pp "CC-"
-  pp CoContraVariant  = pp "CCo"
-%%]
-
-%%[4.cocoOpp
-cocoOpp :: CoContraVariance -> CoContraVariance
-cocoOpp  CoVariant      =   ContraVariant
-cocoOpp  ContraVariant  =   CoVariant
-cocoOpp  _              =   CoContraVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1320,59 +1295,6 @@ rllHeadTail (RLList ((x,c):t)) = Just (x,RLList ((x,c-1):t))
 %%[9
 instance Show a => Show (RLList a) where
   show = show . rllToList
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fitting mode (should be in FitsIn, but here it avoids mut rec modules)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.FIMode export(FIMode(..))
-data FIMode  =  FitSubLR
-             |  FitSubRL
-             |  FitUnify
-%%]
-%%[4_2
-             |  FitMeet
-             |  FitJoin
-%%]
-%%[4
-             deriving (Eq,Ord)
-%%]
-
-%%[4 export(fimOpp)
-fimOpp :: FIMode -> FIMode
-fimOpp m
-  =  case m of
-       FitSubLR  -> FitSubRL
-       FitSubRL  -> FitSubLR
-%%]
-%%[4_2
-       FitMeet   -> FitJoin
-       FitJoin   -> FitMeet
-%%]
-%%[4
-       _         -> m
-%%]
-
-%%[4 export(fimSwapCoCo)
-fimSwapCoCo :: CoContraVariance -> FIMode -> FIMode
-fimSwapCoCo coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
-%%]
-
-%%[4
-instance Show FIMode where
-  show FitSubLR  = "<="
-  show FitSubRL  = ">="
-  show FitUnify  = "=="
-%%]
-%%[4_2
-  show FitMeet   = "=^="
-  show FitJoin   = "=v="
-%%]
-
-%%[4
-instance PP FIMode where
-  pp m = pp (show m)
 %%]
 
 
