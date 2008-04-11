@@ -46,4 +46,5 @@ ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(GRINC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV
 
 # rules for uhc
 $(UHC_BLD_EXEC): $(EHC_FOR_UHC_BLD_EXEC)
+	mkdir -p $(@D)
 	cp $< $@

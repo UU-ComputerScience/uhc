@@ -16,7 +16,7 @@
 %%[2 import({%{EH}VarMp})
 %%]
 
-%%[4 import({%{EH}Base.Opts}) export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
+%%[4 import({%{EH}Base.Opts})
 %%]
 
 %%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
@@ -113,50 +113,67 @@ foAppSpineInfo fo = maybe emptyAppSpineInfo id $ foMbAppSpineInfo fo
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.AppSpine
-data AppSpineVertebraeInfo
-  =  AppSpineVertebraeInfo
-       { asCoCo         :: CoContraVariance
-       , asFIO          :: FIOpts -> FIOpts
-       }
-
-unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-unknownAppSpineVertebraeInfoL = repeat (AppSpineVertebraeInfo CoContraVariant fioMkUnify)
-
-arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-arrowAppSpineVertebraeInfoL = [AppSpineVertebraeInfo ContraVariant fioMkStrong, AppSpineVertebraeInfo CoVariant id]
-
-prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo CoVariant id
+%%[9 export(AppSpineFOUpdCoe)
+type AppSpineFOUpdCoe = EHCOpts -> [FIOut] -> FIOut
 %%]
 
-%%[9.AppSpine -4.AppSpine
+%%[4.AppSpine export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
 data AppSpineVertebraeInfo
   =  AppSpineVertebraeInfo
-       { asCoCo         :: CoContraVariance
+       { asPolarity     :: Polarity
        , asFIO          :: FIOpts -> FIOpts
-       , asFOUpdCoe     :: EHCOpts -> [FIOut] -> FIOut
+%%[[9
+       , asMbFOUpdCoe   :: Maybe AppSpineFOUpdCoe
+%%]]
        }
+%%]
 
+%%[9 export(asFOUpdCoe)
+dfltFOUpdCoe :: AppSpineFOUpdCoe
 dfltFOUpdCoe _ x = last x
 
+asFOUpdCoe :: AppSpineVertebraeInfo -> AppSpineFOUpdCoe
+asFOUpdCoe = maybe dfltFOUpdCoe id . asMbFOUpdCoe
+%%]
+
+%%[4.vertebraeInfoL
 unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-unknownAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo CoContraVariant fioMkUnify dfltFOUpdCoe
+unknownAppSpineVertebraeInfoL = repeat (AppSpineVertebraeInfo polInvariant fioMkUnify)
+
+arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
+arrowAppSpineVertebraeInfoL = [AppSpineVertebraeInfo polContravariant fioMkStrong, AppSpineVertebraeInfo polCovariant id]
+
+prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
+prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id
+%%]
+
+%%[9.vertebraeInfoL -4.vertebraeInfoL
+unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
+unknownAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polInvariant fioMkUnify Nothing
 
 arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 arrowAppSpineVertebraeInfoL
-  = [ AppSpineVertebraeInfo ContraVariant fioMkStrong
-          dfltFOUpdCoe
-    , AppSpineVertebraeInfo CoVariant id
-          (\opts [ffo,afo]
-              -> let (u',u1) = mkNewUID (foUniq afo)
-                     c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
-                 in  afo { foLRCoe = c, foUniq = u' }
-          )
+  = [ AppSpineVertebraeInfo polContravariant fioMkStrong
+          (Just dfltFOUpdCoe)
+    , AppSpineVertebraeInfo polCovariant id
+          (Just (\opts [ffo,afo]
+                  -> let (u',u1) = mkNewUID (foUniq afo)
+                         c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
+                     in  afo { foLRCoe = c, foUniq = u' }
+          )     )
     ]
 
 prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo CoVariant id dfltFOUpdCoe
+prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id (Just dfltFOUpdCoe)
+%%]
+
+%%[17 export(asUpdateByPolarity)
+asUpdateByPolarity :: Polarity -> AppSpineVertebraeInfo -> AppSpineVertebraeInfo
+asUpdateByPolarity pol as
+  = as {asPolarity = pol, asFIO = mkfio}
+  where mkfio | polIsContravariant pol = fioMkStrong
+              | polIsCovariant     pol = id
+              | otherwise              = fioMkUnify
 %%]
 
 %%[4.AppSpineGam export(AppSpineInfo(asgiVertebraeL), emptyAppSpineInfo, asgiShift1SpinePos, asgiSpine)

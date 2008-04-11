@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{EH}Ty},EH.Util.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import({%{EH}Ty},EH.Util.Pretty) export(FIOpts(..), strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4 export(fioIsSubsume)
@@ -663,7 +663,7 @@ implFIOpts  :: FIOpts
 implFIOpts = strongFIOpts {fioAllowRPredElim = False}
 %%]
 
-%%[4
+%%[4 export(fioSwapPolarity, fioSwapOpts)
 fioSwapOpts :: FIOpts -> FIOpts
 fioSwapOpts fio
   = fio
@@ -676,8 +676,8 @@ fioSwapOpts fio
 %%]]
       }
 
-fioSwapCoCo :: CoContraVariance -> FIOpts -> FIOpts
-fioSwapCoCo coco fio = fio {fioMode = fimSwapCoCo coco (fioMode fio)}
+fioSwapPolarity :: Polarity -> FIOpts -> FIOpts
+fioSwapPolarity pol fio = fio {fioMode = fimSwapPol pol (fioMode fio)}
 %%]
 
 %%[4.fioMkStrong

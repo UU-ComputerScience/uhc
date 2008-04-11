@@ -237,6 +237,32 @@ instance PP FIEnv where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lookup of AppSpine + Polarity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+fiAppSpineLookup :: FIIn -> HsName -> AppSpineGam -> Maybe AppSpineInfo
+%%[[4
+fiAppSpineLookup fi n gappSpineGam = asGamLookup n appSpineGam
+%%][17
+fiAppSpineLookup fi n gappSpineGam
+  = case (asGamLookup n appSpineGam,polGamLookup n (fePolGam $ fiEnv fi)) of
+      (Just asi, Just pgi)
+        -> Just $ upd pgi asi
+      (_,Just pgi)
+        -> Just $ upd pgi emptyAppSpineInfo
+      (mbasi,_)
+        -> mbasi
+  where upd pgi asi
+          = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ foVarMp fo |=> foTy fo) (asgiVertebraeL asi)}
+          where pol = pgiPol pgi
+                (polargs,polres) = tyArrowArgsRes pol
+                (_,u1,u2) = mkNewLevUID2 uidStart
+                fo = fitsIn weakFIOpts emptyFE u1 emptyVarMp pol (map mkPolVar (mkNewUIDL (length polargs) u2) `mkArrow` polCovariant)
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Subsumption
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -394,7 +420,7 @@ fitsInFI fi ty1 ty2
 
             -- results
             res' fi tv t            =  trfo "res" (ppTyWithFI fi tv)
-                                       $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = asGamLookup (tyConNm t) appSpineGam}
+                                       $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
             res  fi    t            =  res' fi t t
 
             -- errors
@@ -830,7 +856,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[4.fitsIn.Base
             f fi t1                     t2
                 | fioMode (fiFIOpts fi) == FitSubRL = f  fi' t2 t1
-                where  fi'       = fiSwapCoCo $ fi  {fiFIOpts = fioSwapOpts $ fioSwapCoCo ContraVariant $ fiFIOpts fi}
+                where  fi'       = fiSwapCoCo $ fi  {fiFIOpts = fioSwapOpts $ fioSwapPolarity polContravariant $ fiFIOpts fi}
             f fi Ty_Any                 t2          = res fi t2
             f fi t1                     Ty_Any      = res fi t1
             f fi t1@(Ty_Con s1)         t2@(Ty_Con s2)
@@ -1033,26 +1059,24 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[4.fitsIn.App
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
-                = manyFO [ffo,afo,foCmbApp ffo afo]
-                where  fi2  = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
-                       ffo  = fVar f fi2 tf1 tf2
-                       (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi3  = (fofi ffo $ fiSwapCoCo fi) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
-                       afo  = fVar ff fi3 ta1 ta2
-%%]
-
-%%[9.fitsIn.App -4.fitsIn.App
-            f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
                 = manyFO [ffo,afo,trfo "comp" ("ty:" >#< ppTyWithFIFO fi rfo (foTy rfo)) rfo]
-                where  fi2  = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
-                       ffo  = fVar f fi2 tf1 tf2
+                where  fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+                       ffo    = fVar f fi2 tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi3  = (fofi ffo $ fiSwapCoCo fi2) {fiFIOpts = asFIO as $ fioSwapCoCo (asCoCo as) $ fiFIOpts fi}
-                       afo  = fVar ff fi3 ta1 ta2
-                       rfo  = case foMbAppSpineInfo ffo of
-                                Nothing | not $ lrcoeIsId $ foLRCoe afo
-                                  -> err fi3 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
-                                _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
+                       fi3    = (fofi ffo $ fiSwapCoCo fi2) {fiFIOpts = asFIO as $ fioSwapPolarity (asPolarity as) $ fiFIOpts fi}
+                       afo    = fVar ff fi3 ta1 ta2
+%%[[4
+                       rfo    = foCmbApp ffo afo
+%%][9
+                       rfo    = case (foMbAppSpineInfo ffo,asMbFOUpdCoe as) of
+                                  (Nothing,_) | hasSubCoerce
+                                    -> errCoerce
+                                  (Just _,Nothing) | hasSubCoerce
+                                    -> errCoerce
+                                  _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
+                              where errCoerce = err fi3 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
+                                    hasSubCoerce = not $ lrcoeIsId $ foLRCoe afo
+%%]]
 %%]
 
 %%[7.fitsIn.Ext
@@ -1291,14 +1315,12 @@ tyBetaRed1 fi tp
         -- normalization for polarity types
         -- * removes double negations
         -- * removes negation on 'basic' polarities
-        eval (Ty_Con nm) [arg]
+        eval pol@(Ty_Con nm) [arg]
           | nm == hsnPolNegation
               = case fun' of
                   Ty_Con nm
                     | nm == hsnPolNegation   -> mkres (head args')
-                    | nm == hsnCovariant     -> mkres polContravariant
-                    | nm == hsnContravariant -> mkres polCovariant
-                    | nm == hsnInvariant     -> mkres polInvariant
+                    | otherwise              -> mkres (polOpp pol)
                   _ -> Nothing
               where
                 (fun',args') = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) arg

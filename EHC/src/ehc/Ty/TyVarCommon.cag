@@ -72,29 +72,29 @@ SEM Ty
 %%% Determine co- contravariance of place in type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.coco
-ATTR AllTy [ coco: CoContraVariance | | ]
+%%[4.pol
+ATTR AllTy [ pol : Polarity | | ]
 
 SEM Ty
-  | App         func        .   coco        =   @lhs.coco
-                arg         .   coco        =   if          @appIsLikeProd  then  @lhs.coco
-                                                else  if    @isArrowRoot    then  @cocoArrowRes
-                                                else  if    @isArrowArg     then  ContraVariant
-                                                                            else  CoContraVariant
+  | App         func        .   pol         =   @lhs.pol
+                arg         .   pol         =   if          @appIsLikeProd  then  @lhs.pol
+                                                else  if    @isArrowRoot    then  @polArrowRes
+                                                else  if    @isArrowArg     then  polContravariant
+                                                                            else  polInvariant
 %%[[4
-                loc         .   cocoArrowRes=   CoVariant
+                loc         .   polArrowRes =   polCovariant
 %%][9
-                loc         .   cocoArrowRes=   if @func.isPred then @lhs.coco else CoVariant
+                loc         .   polArrowRes =   if @func.isPred then @lhs.pol else polCovariant
 %%]]
 %%]
 
 %%[9
 SEM Ty
-  | Pred        pr          .   coco        =   CoContraVariant
+  | Pred        pr          .   pol         =   polInvariant
 
 SEM Pred
-  | Pred        ty          .   coco        =   CoVariant
-  | Class       ty          .   coco        =   CoContraVariant
+  | Pred        ty          .   pol         =   polCovariant
+  | Class       ty          .   pol         =   polInvariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -105,10 +105,10 @@ SEM Pred
 ATTR Ty [ | | isQuLoc USE {&&} {False}: Bool ]
 
 SEM Ty
-  | Var         loc         .   isQuLoc     =   @lhs.coco == CoVariant
-  | Quant       loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
-  | App         loc         .   isQuLoc     =   @lhs.coco == CoVariant
-                                                || (@lhs.coco == ContraVariant
+  | Var         loc         .   isQuLoc     =   polIsCovariant @lhs.pol
+  | Quant       loc         .   isQuLoc     =   not (polIsInvariant @lhs.pol)
+  | App         loc         .   isQuLoc     =   polIsCovariant @lhs.pol
+                                                || (polIsContravariant @lhs.pol
                                                     && (@isProdRoot
                                                         || @isArrowRoot
 %%[[9
@@ -119,7 +119,7 @@ SEM Ty
 %%]
 SEM Ty
   | Var App Quant
-                loc         .   isQuLoc     =   @lhs.coco /= CoContraVariant
+                loc         .   isQuLoc     =   not (polIsInvariant @lhs.pol)
 
 %%[6_4.isQuLoc -4.isQuLoc
 ATTR AllTy [ isQuLoc: Bool | | ]
@@ -146,7 +146,7 @@ SEM Ty
 
 %%[9
 SEM Ty
-  | Pred        loc         .   isQuLoc     =   @lhs.coco == CoVariant
+  | Pred        loc         .   isQuLoc     =   polIsCovariant @lhs.pol
 %%]
 
 %%[9

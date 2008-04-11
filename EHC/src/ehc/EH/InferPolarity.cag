@@ -71,6 +71,7 @@ Encoding of polarities:
 
   The polarities are internally encoded using the Ty Abstract Syntax, to allow reuse of functionality that is already
   available for types.
+  The type synomym Polarity is used to indicate its use.
 
   Covariant, Invariant, Contravariant:
 
@@ -218,7 +219,7 @@ Encoding of polarities:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[17 ag
-ATTR AllData AllTyExpr [ knPolCtx : Ty | | ]
+ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
 %%]
 
   First the polarity as known at the root of a type expression. As mentioned before, for
@@ -268,7 +269,7 @@ SEM TyExprs
 %%]
 
 %%[17 ag
-ATTR AllDecl [ mbKnPolCtx : {Maybe Ty} | | ]
+ATTR AllDecl [ mbKnPolCtx : {Maybe Polarity} | | ]
 %%]
 
 %%[17 ag
@@ -293,7 +294,7 @@ SEM Decl
   along the way.
 
 %%[17 ag
-ATTR TyExpr [ | | pol : Ty ]
+ATTR TyExpr [ | | pol : Polarity ]
 %%]
 
 %%[17 ag
@@ -427,8 +428,8 @@ SEM Decl
 
 
 %%[17 ag
-ATTR AllTyVar TyExprs [ | | polVarL USE {++} {[]} : TyL ]
-ATTR TyExpr PrExpr [ | | polVarL: TyL ]
+ATTR AllTyVar TyExprs [ | | polVarL USE {++} {[]} : {[Polarity]} ]
+ATTR TyExpr PrExpr [ | | polVarL: {[Polarity]} ]
 
 SEM TyVar
   | Var         loc         .   polVar              =   mkPolVar @lUniq_17_pol
