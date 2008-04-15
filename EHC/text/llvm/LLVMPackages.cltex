@@ -39,6 +39,8 @@
 %
 \usepackage{listings}
 
+\usepackage{subfigure}
+
 \usepackage{amsmath}
 
 \usepackage[pdftex,a4paper,colorlinks,

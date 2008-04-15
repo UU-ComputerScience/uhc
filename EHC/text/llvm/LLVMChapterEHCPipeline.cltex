@@ -1,17 +1,40 @@
 %%[chapter
 \chapter{EHC}
 \label{cha:ehc}
-A compiler consists of more than a code generator, such as a parser, type-checker, and optimizer. We choose the EHC~\cite{dijkstra:05} compiler project as the compiler in which we embed a LLVM code generator because it is designed to be extended (see \refS{sec:ehc-extending}). In the EHC compiler is the code generator placed at the tail of the compiler pipeline, generating code based on output of previous stages. The EHC frontend targets GRIN~\cite{boquist:99} instead of the well known STG~\cite{jones:92} model to avoid indirect jumps. This choice influences the generated code heavily. In this chapter, we discuss the EHC compiler pipeline stages, show the intermediate representations of stages, and the transformations performed by them.
+A compiler consists of more than a code generator, such as a parser, type-checker, and optimizer. We choose the EHC~\cite{dijkstra:05} compiler project as the compiler in which we embed a LLVM code generator, because it is designed to be extended (see \refS{sec:ehc-extending}). In the EHC compiler is the code generator placed at the tail of the compiler pipeline, generating code based on output of previous stages. The EHC frontend targets GRIN~\cite{boquist:99} instead of the well known STG~\cite{jones:92} model to avoid indirect jumps. This choice influences the generated code heavily. In this chapter, we discuss the EHC compiler pipeline stages (\refS{sec:ehc-pipeline}), show the intermediate representations of stages, and the transformations performed by them.
 
 \section{Extending EHC}
 \label{sec:ehc-extending}
+The EHC project constructs a sequence of compilers. The first compiler of the sequence, called version 1, only accepts an explicitly typed lambda calculus. Its successor extends version 1 by adding type inference. Each compiler extends its predecessor with a feature from the Haskell language and each one is buildable out of the repository. The sequence of compilers continious until all features of the Haskell language and some extentions are implemented. This design to control the complexity of the EHC compiler makes experimenting with non-standard features easier, as one can choose a subset of Haskell to work with.
+
+A compiler is generated from soucefiles which contain chunks. Each chunk is annotated with a version number, indicating from which version the chunk should be included in the compiler. Furthermore chunks can have names, allowing them to overwrite chunks of predecessors with the same name. All chunks for a version are extracted by the shuffle tool, generating a source file which is compiled by a regular compiler.
 
 \section{The EHC Pipeline}
+\label{sec:ehc-pipeline}
+A compilation process can be modeled as a pipeline. The start of the pipeline is the input of the source program and the final stage is the produced executable. In between the source program and the executable are the intermediate intermediate representations of the program. The EHC pipeline is shown in \refF{fig:ehc-pipeline} and has the following stages:
 
+\begin{figure}[tb]
+  \centering
+    \includegraphics[width=0.95\textwidth]{ehc-pipeline}
+  \caption{Dataflow in the EHC pipeline.}
+  \label{fig:ehc-pipeline}
+\end{figure}
+
+\begin{enumerate}
+  \item First the Haskell input parsed and desugared to \emph{Essential Haskell}. Essential Haskell was the original input language of EHC and is still accepted by the compiler as input language.
+  \item The Essential Haskell code is type infered and if found type correct, transformed to \emph{Core}. The Core language is a lambda calculus with some extensions, where expressions are lambda lifted and type classes are translated to dictionaries. In contrast to several other Haskell compilers' intermediate languages, such as GHC's Core~\cite{tolmach} and Henk~\cite{jones:97}, the Core language is not typed. This is due to practical reasons, as transformations on typed code imply transformations on types.
+  \item \emph{GRIN} is the first intermediate representation that is part of the EHC backend. The language is a untyped first order strict functional language that makes the sequential order of a Haskell program explicit. In contrast to the Spineless Tagless G-machine (STG)~\cite{jones:92}, GRIN uses the eval/apply model~\cite{marlow:04}. Together with tagging of closures, this reduces the amount of costly indirect jumps~\cite{fog:07}~\cite{marlow:07} in the generated code. EHC includes a GRIN interpreter to execute the program.
+  \item The Simple imperative language (\emph{Silly}) transforms the GRIN tree to a more imperative form with assignments, statements and expressions. The purpose of Silly is to act as a base for imperative languages. 
+  \item Silly constructs map directly on C and the Silly tree is pretty printed as a C program. This program is compiled with an external compiler and produces the native executable. 
+\end{enumerate}
+
+The LLVM Assembly language benefits from the preperations performed by Silly, thus we embed the LLVM code generator after Silly in the pipeline (\refF{fig:ehc-pipeline}). The external LLVM Assembly compiler than compiles the program to a native executable.
+
+In the following sections, we discuss the GRIN and Silly phases in more detail because they heavily influence the code generated by the LLVM code generator.
+
+\subsection{Running Example}
 
 \begin{itemize}
-  \item Why write this chapter. What is the purpose of it, what do I want to tell in this Chapter
-  \item EHC is a series of compilers (short paragraph)
   \item The EHC Pipeline:
         \begin{itemize}
           \item A running example (fib)

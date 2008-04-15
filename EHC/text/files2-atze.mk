@@ -245,12 +245,6 @@ text-variant-ldta08-abstrint:
 	  TEXT_SHUFFLE_VARIANT=33 \
 	  text-variant-dflt-bib
 
-text-variant-llvm:
-	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=inclTOC --set=useHyperref --set=refToPDF" \
-	  TEXT_SHUFFLE_VARIANT=35 \
-	  text-variant-dflt-bib
-
 text-variant-icfp08-subst:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC_EXPERIMENTS_SUBST=yes TEXT_CFG_TEXT_INCLUDES_EXPERIMENTS_SUBST_TEX=yes TEXT_SHUFFLE_ORDER="1 < 2 < 3, 3 < 32, 2 < 21, 1 < 26 < 36" \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp08 --set=kscode --set=natbib --set=storyUnificSubst --set=acm --set=blockstyle --set=asArticle --set=omitlag2TeX" \
