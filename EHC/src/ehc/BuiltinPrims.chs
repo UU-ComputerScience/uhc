@@ -40,5 +40,6 @@ prims
       [ 
         ( "primCatchException", Prim [False,False] )
       , ( "primThrowException", Prim [False] )
+      , ( "primIsEvaluated", Prim [False] )
       ]
 %%]

@@ -411,5 +411,139 @@ PRIM GrWord primHIsEOF(GrWord h)
 }
 
 
+%%]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[103
+
+   struct OracleEntry {
+     struct OracleEntry *last,*next;
+     int count;
+   };
+
+
+   struct OracleEntry *oracleStartnode, *oracleCurrent;
+
+
+   static struct OracleEntry * newOracle(struct OracleEntry *l, struct OracleEntry *n) {
+     struct OracleEntry * o = malloc(sizeof(struct OracleEntry));
+     o -> last  = l;
+     o -> next  = n;
+     o -> count = 0;
+     return o;
+   }
+
+   // ()
+PRIM GrWord gb_primInitOracle()
+{
+  printf("init oracle list\n");
+  oracleStartnode = newOracle(0, 0);
+  oracleCurrent   = oracleStartnode;
+  oracleStartnode -> next = oracleStartnode;
+  oracleStartnode -> last = oracleStartnode;
+  return (GrWord)gb_Unit;
+}
+
+
+   // Oracle -> Oracle
+PRIM GrWord gb_primOracleEnter(GrWord o)
+{
+  struct OracleEntry *oldOracle = oracleCurrent;
+  oracleCurrent = (struct OracleEntry *) o;
+
+  oracleCurrent->last->count++;
+  printf("oracle entered\n");
+  return (GrWord) oldOracle;
+}
+
+
+   // Oracle -> a -> a
+PRIM GrWord gb_primOracleLeave(GrWord o, GrWord x)
+{
+  oracleCurrent->last->count += oracleCurrent->count;
+  oracleCurrent->last->next = oracleCurrent->next;
+  oracleCurrent->next->last = oracleCurrent->last;
+  free(oracleCurrent);
+  printf("left oracle\n");
+  oracleCurrent = (struct OracleEntry *) o;
+  return x;
+}
+
+
+
+
+   // Oracle -> a -> a
+PRIM GrWord gb_primOracleEnterandLeave(GrWord o, GrWord x)
+{
+  struct oracleEntry *oe = (struct OracleEntry *) o;
+  oe->last->count += oe->count+1;
+  oe->last->next = oe->next;
+  oe->next->last = oe->last;
+  free(oe);
+  printf("oracle entered and left\n");
+  return x;
+}
+
+
+   // Oracle
+PRIM GrWord gb_primOracleNewEntry()
+{
+  struct OracleEntry * l = oracleCurrent->last;
+  struct OracleEntry * o = newOracle(l, oracleCurrent);
+  printf("new oracle entry\n");
+  oracleCurrent->last = o;
+  l->next = o;
+  return (GrWord)o;
+}
+
+
+   // Int
+PRIM GrWord gb_primWhatIsNextOracle()
+{
+  struct OracleEntry * n = oracleCurrent->next;
+  if(n->count) {
+    n->count--;
+   printf("current is True(1)");
+    return 1;
+  } else {
+    oracleCurrent->next=n->next;
+    printf("current is False(0)");
+    return 0;
+  }
+}
+
+PRIM GrWord gb_primDumpOracle()
+{
+  int l = 0;
+  struct OracleEntry * o = oracleStartnode->next;
+  printf("[");
+  while(1) {
+    l++;
+    printf("%i", o->count);
+    if((o=o->next)==oracleStartnode)
+      break;
+    printf(",");
+  }
+  printf("]\n");
+  return l;
+}
+
+
+PRIM GrWord gb_primIsEvaluated(GrWord x)
+{
+  if ( GB_Word_IsPtr(x)) {
+    GB_NodePtr n = Cast(GB_NodePtr,x);
+    GB_NodeHeader h = n->header;
+    if(GB_NH_Fld_NdEv(h) ==  GB_NodeNdEv_Yes)
+      return 0;
+  }
+  return 1;
+}
 
 %%]
+

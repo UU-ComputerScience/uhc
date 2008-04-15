@@ -1,5 +1,9 @@
 module EHC.Prelude   -- adapted from thye Hugs prelude
 (
+-- Debugging primitives
+    Oracle, primInitOracle, primOracleEnter, primOracleLeave,    
+    primOracleNewEntry, primWhatIsNextOracle, primDumpOracle,
+    thunkIsEvaluated,
 -- Classes
     Eq         ((==), (/=)),
     Ord        (compare, (<), (<=), (>=), (>), max, min),
@@ -2405,3 +2409,28 @@ ehcRunMain m =
 #endif
 
 main = return () -- dummy
+
+
+----------------------------------------------------------------
+-- Debugging primitives
+----------------------------------------------------------------
+
+{-
+  This should only be available in variant 103.
+-}
+data Oracle
+
+foreign import ccall primInitOracle      :: ()
+foreign import ccall primOracleEnter     :: Oracle -> Oracle
+foreign import ccall primOracleLeave     :: Oracle -> a -> a
+foreign import ccall primOracleNewEntry  :: Oracle 
+
+foreign import ccall primWhatIsNextOracle
+    :: Int
+
+foreign import ccall primDumpOracle      :: Int -- length
+
+foreign import ccall primIsEvaluated     :: a -> Int -- 0: F-Closure, 1: WHNF closure
+
+thunkIsEvaluated :: a -> Int
+thunkIsEvaluated t = primIsEvaluated t
