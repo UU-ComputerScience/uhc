@@ -191,7 +191,11 @@ SEM Expr
   | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
                                                 >-< indent 2 (vlist @alts.ppL)
                                                 >-< @extraPP
+%%[[5
                         .   extraPP =   empty
+%%][8
+                        .   extraPP =   maybe empty (ppCmt . ppCommas' . Set.toList) @mbCaseIds
+%%]]
 
 SEM PatExpr
   | SConst      loc     .   pp      =   pp (show @str)

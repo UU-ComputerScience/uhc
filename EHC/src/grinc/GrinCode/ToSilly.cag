@@ -202,7 +202,7 @@ SEM GrExpr
                             vs = @val.values
                             n  = length vs
                             --n2 = @lhs.maxConstrParameters
-                            n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap ph)))
+                            n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))
                         in Statement_Comment ["Store"]
                            : storeManaged (mkVar ph) n n2 vs
 
@@ -210,7 +210,7 @@ SEM GrExpr
 
  | FetchUpdate 
            lhs.stats  = let -- use hptMap to determine size, because hptMap can now be used even after changing numbered variables back to names
-                            n = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @src)))
+                            n = 1+ maximum0 (map (length . snd) (getNodes (absFetch @lhs.hptMap @src)))
                          in Statement_Comment ["FetchUpdate"]
                             : zipWith Statement_Assignment
                                      (map (arrayVariab (mkVar @dst)) [0..n])
@@ -236,10 +236,10 @@ SEM GrExpr
                                        then []
                                        else [ ifstat ]
                             condition   = Value_CompareGT @val.value (Constant_Alias "HOLE")
-                            ifstat      = Statement_IfThenElse condition [switch1] []
-                            switch1     = Statement_Switch @val.value @altL.reenteralts
-                            switch2     = Statement_Switch @val.value @altL.alternatives
-                        in  comm : reenters ++ [switch2]
+                            ifstat      = Statement_IfThenElse condition switch1 []
+                            switch1     = switchStatement (ehcOptGenCaseDefault @lhs.opts) @val.value @altL.reenteralts
+                            switch2     = switchStatement (ehcOptGenCaseDefault @lhs.opts) @val.value @altL.alternatives
+                        in  comm : reenters ++ switch2
                         
            lhs.localsSet = Set.union (Set.fromList @lhs.targets) @altL.localsSet
 
@@ -307,7 +307,7 @@ SEM GrGlobal
  		   lhs.names       = [@globNm]
            lhs.initStats   = let vs = @val.values
                                  n  = length vs
-                                 n2 = maximum (map (length.snd) (getNodes (absFetch @lhs.hptMap @globNm)))
+                                 n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
                              in  storeUnmanaged (Variable_Global @globNm) n n2 vs
 
 
@@ -460,7 +460,8 @@ ATTR GrAGItf
   [ opts : {EHCOpts} | | ]
 
 ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
-  [ optOwn : {Int}   | | ]
+  [ optOwn : {Int} 
+    opts   : {EHCOpts}  | | ]
 
 SEM GrAGItf
   | AGItf loc.optOwn  = ehcOptOwn @lhs.opts
@@ -538,6 +539,11 @@ internal3 what name targets values
 
 
 
+switchStatement :: Bool -> Value -> Alternatives -> Statements
+switchStatement False scrut [Alternative_Alternative when body]
+  = body
+switchStatement gendef scrut alts
+  = [ Statement_Switch scrut alts ]
 
 
 
@@ -552,6 +558,9 @@ isRealVar Variable_None = False
 isRealVar (Variable_Unembedded (HNmNr 0 _)) = False
 isRealVar _             = True
 
+maximum0 [] = 0
+maximum0 xs = maximum xs
+
 -- n1 is the number of parameters of the tag
 -- n2 is the maximum number of parameters of all constructorfunctions
 -- F-tags and A-tags may be overwritten later with a C-tag or a P-tag, which might have more parameters.
@@ -561,8 +570,8 @@ isRealVar _             = True
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
 allocate :: Char -> SillyAllocManageType -> Int -> Int -> Value
-allocate 'C' tp n1 _  = Value_Alloc (1+n1) tp
-allocate _   tp n1 n2 = Value_Alloc (1+(max n1 n2)) tp
+allocate 'C' tp n1 _  = Value_Alloc (n1) tp
+allocate _   tp n1 n2 = Value_Alloc ((max n1 n2)) tp
        
 -- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char

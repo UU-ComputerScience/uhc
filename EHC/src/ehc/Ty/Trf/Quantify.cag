@@ -112,12 +112,12 @@ tyQuantifyWithOpts opts tvIsBound baseQuant ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Init of coco
+%%% Init of pol
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[4
 SEM TyAGItf
-  | AGItf       ty          .   coco        =   CoVariant
+  | AGItf       ty          .   pol         =   polCovariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,8 +314,8 @@ SEM TyAGItf
   | AGItf       loc         .   hereQu          =   TyQu_Forall
 
 SEM Ty
-  | App         loc         .   qAsExist        =   @appIsLikeProd || @lhs.coco == ContraVariant && not @appIsArrow
-  | Var         loc         .   qAsExist        =   @lhs.coco == ContraVariant
+  | App         loc         .   qAsExist        =   @appIsLikeProd || polIsContravariant @lhs.pol && not @appIsArrow
+  | Var         loc         .   qAsExist        =   polIsContravariant @lhs.pol
   | App Var     loc         .   hereQu          =   if @qAsExist then TyQu_Exists else TyQu_Forall
   | Quant       loc         .   hereQu          =   @qu.self
 %%]
@@ -332,16 +332,16 @@ SEM Ty
 
 %%[9.hereQu
 SEM Ty
-  | App         loc         .   qAsExist        :=  (@appIsLikeProd || @lhs.coco == ContraVariant && not @appIsArrow)
-  | Var         loc         .   qAsExist        :=  @lhs.coco == ContraVariant
+  | App         loc         .   qAsExist        :=  (@appIsLikeProd || polIsContravariant @lhs.pol && not @appIsArrow)
+  | Var         loc         .   qAsExist        :=  polIsContravariant @lhs.pol
 %%]
 SEM Ty
-  | App         loc         .   qAsExist        :=  @hasNoInsPrL && (@appIsLikeProd || @lhs.coco == ContraVariant && not @appIsArrow)
-  | Var         loc         .   qAsExist        :=  @hasNoInsPrL && @lhs.coco == ContraVariant
+  | App         loc         .   qAsExist        :=  @hasNoInsPrL && (@appIsLikeProd || polIsContravariant @lhs.pol && not @appIsArrow)
+  | Var         loc         .   qAsExist        :=  @hasNoInsPrL && polIsContravariant @lhs.pol
 
 %%[9
 SEM Ty
-  | Pred        loc         .   qAsExist        =   @lhs.coco == ContraVariant
+  | Pred        loc         .   qAsExist        =   polIsContravariant @lhs.pol
                             .   hereQu          =   if @qAsExist then tyquExists @lhs.baseQu else @lhs.baseQu
 %%]
 

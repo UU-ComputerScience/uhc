@@ -47,7 +47,7 @@ DERIVING *     : Show, Eq
 
 %%[8 hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
 data RAlt
-  = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !CExpr }
+  = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !CExpr, raaFailS :: UIDS }
 
 data RPat
   = RPat_Var			{ rcpPNm :: !RPatNm }
@@ -87,11 +87,11 @@ rcaTag = rpatConTag . head . rcaPats
 
 %%[8 hs export(raltIsVar,raltIsConst)
 raltIsVar :: RAlt -> Bool
-raltIsVar (RAlt_Alt (RPat_Var _ : _) _)  = True
-raltIsVar _                              = False
+raltIsVar (RAlt_Alt (RPat_Var _ : _) _ _)  = True
+raltIsVar _                                = False
 
 raltIsConst :: RAlt -> Bool
-raltIsConst (RAlt_Alt (p : _) _)
+raltIsConst (RAlt_Alt (p : _) _ _)
   = c p
   where c (RPat_Int   _ _) = True
         c (RPat_Char  _ _) = True
@@ -100,20 +100,20 @@ raltIsConst (RAlt_Alt (p : _) _)
 
 %%[8 hs export(raltIsConMany)
 raltIsConMany :: RAlt -> Bool
-raltIsConMany (RAlt_Alt (RPat_Con _ _ (RPatConBind_Many _) : _) _) = True
-raltIsConMany _                                                    = False
+raltIsConMany (RAlt_Alt (RPat_Con _ _ (RPatConBind_Many _) : _) _ _) = True
+raltIsConMany _                                                      = False
 %%]
 
 %%[8 hs export(raltIsIrrefutable)
 raltIsIrrefutable :: RAlt -> Bool
-raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _) = True
-raltIsIrrefutable _                                       = False
+raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _ _) = True
+raltIsIrrefutable _                                         = False
 %%]
 
 %%[97 hs export(raltIsBoolExpr)
 raltIsBoolExpr :: RAlt -> Bool
-raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _)  = True
-raltIsBoolExpr _                                     = False
+raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _ _)  = True
+raltIsBoolExpr _                                       = False
 %%]
 
 %%[8 hs export(rpatConBindUnFlatten)

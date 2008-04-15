@@ -98,13 +98,13 @@ doCompileGrin input opts
       ( do { caLoad (isLeft input) -- from phd boquist (fig 4.1)
            ; caAnalyse
            ; options <- gets gcsOpts
-           ; when (ehcOptDumpGrinStages options) (caWriteHptMap "-initial")
+           ; when (ehcOptDumpGrinStages options) (caWriteHptMap "-130-hpt")
            ; caKnownCalls       -- part I
            ; caOptimizePartly   -- optimisations (small subset)
            ; caNormalize        -- part II
            ; caOptimize         -- optimisations
            ; caFinalize         -- part III
-           ; when (ehcOptDumpGrinStages options) (caWriteHptMap "-final")
+           ; when (ehcOptDumpGrinStages options) (caWriteHptMap "-180-hpt")
            ; when (ehcOptEmitLLVM options || ehcOptEmitC options)
              caOutput
            }
@@ -136,23 +136,23 @@ putErrs (CompileError e) = putStrLn e >> return ()
 -- create initial GRIN
 caLoad doParse = task_ VerboseNormal                "Loading"
     ( do { when doParse caParseGrin
-         ; caWriteGrin           True               "10-parsed"
+         ; caWriteGrin                              "-110-parsed"
          ; transformCode         dropUnreachableBindings "Dropping unreachable bindings"
-         ; caWriteGrin           True               "11-reachable"
+         ; caWriteGrin                              "-111-reachable"
          ; transformCode         cleanupPass        "Cleaning up"
-         ; caWriteGrin           True               "12-cleaned"
+         ; caWriteGrin                              "-112-cleaned"
          ; transformCodeUnq      buildAppBindings   "Building app bindings"
-         ; caWriteGrin           True               "13-appsbound"
+         ; caWriteGrin                              "-113-appsbound"
          ; transformCodeInline                      "Inline small functions"
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin           True               "14-inlined"
+         ; caWriteGrin                              "-114-inlined"
          ; transformCode         setGrinInvariant   "SetGrinInvariant"
-         ; caWriteGrin           True               "15-invariant"
+         ; caWriteGrin                              "-115-invariant"
          ; code <- gets gcsGrin
          ; let mess = checkMode code
          ; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
-         ; caWriteGrin           True               "19-numbered"
+         ; caWriteGrin                              "-119-numbered"
          }
     )
 
@@ -160,9 +160,9 @@ caLoad doParse = task_ VerboseNormal                "Loading"
 caAnalyse = task_ VerboseNormal                     "Analyzing"
     ( do { transformCodeUnq      normForHPT         "Normalizing"
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin           True               "21-normalized"
+         ; caWriteGrin                              "-121-normalized"
          ; caHeapPointsTo
-         ; caWriteGrin           True               "29-analyzed"
+         ; caWriteGrin                              "-129-analyzed"
          }
     )
 
@@ -170,59 +170,61 @@ caAnalyse = task_ VerboseNormal                     "Analyzing"
 caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
     ( do { transformCodeUnqHpt   inlineEA           "Inlining Eval and Apply calls" 
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin           True               "31-evalinlined"
+         ; caWriteGrin                              "-131-evalinlined"
          ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
-         ; caWriteGrin           True               "32-undead"
+         ; caWriteGrin                              "-132-undead"
          ; transformCodeUnq      lateInline         "LateInline"
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin           True               "33-lateinlined"
+         ; caWriteGrin                              "-133-lateinlined"
          }
     )
 -- optimisations part I
 caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
     ( do { transformCodeUsingHpt sparseCase         "Removing impossible case alternatives"
-         ; caWriteGrin           True               "41-sparseCaseRemoved"
+         ; caWriteGrin                              "-141-sparseCaseRemoved"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
-         ; caWriteGrin           True               "43-evaluatedCaseRemoved"
+         ; caWriteGrin                              "-143-evaluatedCaseRemoved"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; caWriteGrin           True               "44-unusedExprRemoved"
+         ; caWriteGrin                              "-144-unusedExprRemoved"
          
-         ; options <- gets gcsOpts
-         ; when (ehcOptPriv options)
-                ( do { transformCode         mergeCase          "Merging cases"
-                     ; caWriteGrin           True               "45-caseMerged"
-                    }
-                )
+		 ; transformCode         mergeCase          "Merging cases"
+         ; caWriteGrin                              "-145-caseMerged"         
+         --; options <- gets gcsOpts
+         --; when (ehcOptPriv options)
+         --       ( do { transformCode         mergeCase          "Merging cases"
+         --            ; caWriteGrin                              "-145-caseMerged"
+         --           }
+         --       )
          }
     )
 -- simplification part II
 caNormalize = task_ VerboseNormal                   "Normalizing"
     ( do { transformCodeUnqHpt   lowerGrin          "Lowering Grin"
-         ; caWriteGrin           True               "51-lowered"
+         ; caWriteGrin                              "-151-lowered"
          }
     )
 
 -- optimisations part II
 caOptimize = task_ VerboseNormal                    "Optimizing (full)"
     ( do { transformCodeIterated propagate          "Copy propagation"
-         ; caWriteGrin           True               "61-after-cp"
+         ; caWriteGrin                              "-161-after-cp"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin           True               "69-optimized"
+         ; caWriteGrin                              "-169-optimized"
          }
     )
 
 -- simplification part III
 caFinalize = task_ VerboseNormal                    "Finalizing"
     ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
-         ; caWriteGrin           True               "71-fetchSplitted"
+         ; caWriteGrin                              "-171-fetchSplitted"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
          ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; caWriteGrin           True               "76-unusedExprRemoved"
+         ; caWriteGrin                              "-176-unusedExprRemoved"
          ; transformCodeIterated propagate          "Copy propagation"
 --       ; transformCodeUnqHpt   returnCatch        "Ensure code exists after catch statement"
-         ; caWriteGrin           True               "79-final"
+         ; caWriteGrin                              "-179-final"
          }
     )
 
@@ -231,21 +233,21 @@ caOutput = task_ VerboseNormal "Writing code"
     ( do { options <- gets gcsOpts
     
          ; caGrin2Silly
-         ; caWriteSilly "sil1" pretty
+         ; when (ehcOptDumpGrinStages options) (caWriteSilly "-201" "sil" pretty)
          ; transformSilly   shortcut      "Shortcut single-use variables"
-         ; caWriteSilly "sil2" pretty
+         ; when (ehcOptDumpGrinStages options) (caWriteSilly "-202" "sil" pretty)
          ; transformSilly   embedVars     "Embed Variables"
-         ; caWriteSilly "sil3" pretty
+         ; when (ehcOptDumpGrinStages options) (caWriteSilly "-203" "sil" pretty)
          ; transformSilly   shortcut      "Shortcut single-use variables"
          ; when (ehcOptEmitLLVM options)
             (do { caSilly2LLVM
-                ; caWriteLLVM "ll" (const prettyLLVMModule)
+                ; caWriteLLVM
                 }
             )
          ; when (ehcOptEmitC options)
-           (caWriteSilly "c" prettyC)
+           (caWriteSilly "" "c" prettyC)
          --; when (ehcOptEmitC options)
-         --  (caWriteSilly "s" prettyS)
+         --  (caWriteSilly "" "s" prettyS)
          }
     )
 %%]
@@ -311,50 +313,44 @@ caSilly2LLVM = do
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-caWriteFile :: String -> (EHCOpts -> a -> PP_Doc) -> a -> CompileAction()
-caWriteFile suffix ppFun struct =
+caWriteFile :: String -> String -> (EHCOpts -> a -> PP_Doc) -> a -> CompileAction()
+caWriteFile extra suffix ppFun struct =
   do { input <- gets gcsPath
      ; opts  <- gets gcsOpts
-     ; do { let output = fpathSetSuff suffix input
+     ; do { let fileName  = fpathBase input ++ extra
+                output    = fpathSetSuff suffix (fpathSetBase fileName input)
           ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
           ; liftIO $ writePP (ppFun opts) struct output
           }
      }
 
-caWriteLLVM  :: String -> (EHCOpts -> LLVMModule -> PP_Doc) -> CompileAction()
-caWriteLLVM suffix ppFun =
+caWriteLLVM  :: CompileAction()
+caWriteLLVM  =
   do { llvm <- gets gcsLLVM
-     ; caWriteFile suffix ppFun llvm
+     ; caWriteFile "" "ll" (const prettyLLVMModule) llvm
      } 
+
+caWriteGrin :: String -> CompileAction ()
+caWriteGrin extra
+  = do { (gets (ehcOptDumpGrinStages . gcsOpts) >>= guard)
+       ; grin <- gets gcsGrin
+       ; caWriteFile extra "grin" (const ppGrModule) grin
+       }
      
-caWriteSilly :: String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
-caWriteSilly suffix ppFun =
+caWriteSilly :: String -> String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
+caWriteSilly extra suffix ppFun =
   do { silly <- gets gcsSilly
-     ; caWriteFile suffix ppFun silly
+     ; caWriteFile extra suffix ppFun silly
      }
 
 caWriteHptMap :: String -> CompileAction ()
 caWriteHptMap fn
   = do { hptMap <- gets gcsHptMap
        ; input <- gets gcsPath
-       ; let fileName   = "hptmap-" ++ fpathBase input ++ fn
+       ; let fileName   = fpathBase input ++ fn
              output = fpathSetSuff "txt" (fpathSetBase fileName input)
        ; liftIO $ writeToFile (showHptMap hptMap) output
        }
-
-caWriteGrin :: Bool -> String -> CompileAction ()
-caWriteGrin debug fn = harden_ $ do -- bug: when writePP throws an exeption harden will block it
-    { when debug (gets (ehcOptDumpGrinStages . gcsOpts) >>= guard)
-    ; input <- gets gcsPath
-    ; let prefix     = if debug then "debug-" else ""
-          fileName   = prefix ++ fpathBase input ++ if null fn then "-out" else fn
-          output     = fpathSetSuff "grin" (fpathSetBase fileName input)
-          message    = "Writing " ++ fpathToStr output
-    ; if debug then putDebugMsg message else putMsg VerboseALot message Nothing
-    ; code <- gets gcsGrin
-    ; options <- gets gcsOpts
-    ; liftIO $ writePP ppGrModule code output
-    }
 %%]
 
 

@@ -72,6 +72,11 @@ ppTyPr = ppTyWithCfg cfgPPTyPred
 
 %%]
 
+%%[4 hs
+instance PP FIMode where
+  pp m = pp (show m)
+%%]
+
 %%[4_2 hs
 instance PP TyHardness where
   pp = pp . show

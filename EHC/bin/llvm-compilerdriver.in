@@ -23,6 +23,10 @@ LLC="@LLVM_LLC_CMD@ -mtriple=@TARGET_TRIPLE@"
 #
 NATIVE_LD="@GCC_CMD@"
 
+# Strip the symbol table
+#
+STRIP="strip"
+
 ###############################################################################
 # End of config options
 ###############################################################################
@@ -49,4 +53,5 @@ INPUT_BASE=${OUTPUT%.*}
 $LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
 $LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
 $LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
-$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS
+$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
+$STRIP $OUTPUT

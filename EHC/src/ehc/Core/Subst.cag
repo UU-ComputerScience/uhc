@@ -188,7 +188,7 @@ coeEvalOn coe ce
        CoeLam n m       -> mkCExprLam1Meta n m ce
        CoeLamLet n i    -> n `mkCExprLam1` mkCExprLetHole i ce
        CoeLetRec b      -> mkCExprLet CBindRec b ce
-       -- CoeCaseAlt e n p -> rceMatch e [n] [RAlt_Alt [p] ce]
+       -- CoeCaseAlt e n p -> rceMatch e [n] [RAlt_Alt [p] ce False]
        CoeCompose c1 c2	-> c1 `coeEvalOn` (c2 `coeEvalOn` ce)
        CoeC e           -> e `cAppCoeArg` ce
        CoeImplApp iv    -> CExpr_ImplsApp ce iv

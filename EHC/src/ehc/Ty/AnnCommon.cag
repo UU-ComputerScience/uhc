@@ -303,7 +303,7 @@ SEM TyAGItf
   | AGItf  ty.kindVariance   = CoVariant
 
 SEM Ty
-  | App  func.kindVariance   = cocoOpp @lhs.kindVariance
+  | App  func.kindVariance   = polOpp @lhs.kindVariance
   | Ann  lhs.kindVarianceMap = Map.insert @ann @lhs.kindVariance @ty.kindVarianceMap
 
 %%]

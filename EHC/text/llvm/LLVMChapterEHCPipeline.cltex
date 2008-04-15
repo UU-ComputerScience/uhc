@@ -1,4 +1,34 @@
 %%[chapter
-\chapter{The EHC Pipeline}
+\chapter{EHC}
 \label{cha:ehc}
+A compiler consists of more than a code generator, such as a parser, type-checker, and optimizer. We choose the EHC~\cite{dijkstra:05} compiler project as the compiler in which we embed a LLVM code generator because it is designed to be extended (see \refS{sec:ehc-extending}). In the EHC compiler is the code generator placed at the tail of the compiler pipeline, generating code based on output of previous stages. The EHC frontend targets GRIN~\cite{boquist:99} instead of the well known STG~\cite{jones:92} model to avoid indirect jumps. This choice influences the generated code heavily. In this chapter, we discuss the EHC compiler pipeline stages, show the intermediate representations of stages, and the transformations performed by them.
+
+\section{Extending EHC}
+\label{sec:ehc-extending}
+
+\section{The EHC Pipeline}
+
+
+\begin{itemize}
+  \item Why write this chapter. What is the purpose of it, what do I want to tell in this Chapter
+  \item EHC is a series of compilers (short paragraph)
+  \item The EHC Pipeline:
+        \begin{itemize}
+          \item A running example (fib)
+          \item Only run EHC 8 because otherwise it is littered with IO, dictionaries etc.
+          \item The frontend does the following
+                \begin{itemize}
+                  \item Parse
+                  \item Desugar
+                  \item Typecheck
+                \end{itemize}
+          \item GRIN
+                \begin{itemize}
+                  \item Fib in GRIN
+                  \item Syntax of GRIN
+                  \item Purpose of GRIN (indirect jumps, sequentialize the code)
+                \end{itemize}
+          \item Silly (See GRIN).
+        \end{itemize}
+\end{itemize}
 %%]

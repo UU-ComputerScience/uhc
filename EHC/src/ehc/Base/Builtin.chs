@@ -231,11 +231,15 @@ hsnIsUnknown                        =   (==hsnUnknown)
 hsnDynVar                           =   hsnFromString "?"
 %%]
 
-%%[17 export(hsnPolNegation, hsnCovariant, hsnContravariant, hsnInvariant)
-hsnCovariant, hsnContravariant, hsnInvariant, hsnPolNegation :: HsName
+%%[4 export(hsnCovariant, hsnContravariant, hsnInvariant)
+hsnCovariant, hsnContravariant, hsnInvariant :: HsName
 hsnCovariant      = mkHNm "+Covariant"
 hsnContravariant  = mkHNm "-Contravariant"
 hsnInvariant      = mkHNm "*Invariant"
+%%]
+
+%%[17 export(hsnPolNegation)
+hsnPolNegation :: HsName
 hsnPolNegation    = mkHNm "^Negate"
 %%]
 
@@ -523,12 +527,17 @@ hsnModPrelude                           =                         hsnFromString 
 %%[9 export(hsnClass2Dict)
 -- Dict datatype name for class name, only used when `not ehcCfgClassViaRec'
 hsnClass2Dict :: HsName -> HsName
-hsnClass2Dict = hsnPrefix "Dict-"
+hsnClass2Dict = mkHNmHidden . hsnPrefix "Dict-"
 %%]
 
 %%[9 export(hsnClass2Kind)
 hsnClass2Kind :: HsName -> HsName
-hsnClass2Kind = hsnPrefix "ClassKind-"
+hsnClass2Kind = mkHNmHidden . hsnPrefix "ClassKind-"
+%%]
+
+%%[9 export(hsnClass2Polarity)
+hsnClass2Polarity :: HsName -> HsName
+hsnClass2Polarity = mkHNmHidden . hsnPrefix "ClassPolarity-"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

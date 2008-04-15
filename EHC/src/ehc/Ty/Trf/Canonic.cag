@@ -14,7 +14,7 @@ This matters at:
 This matters for:
 - comparing types, in particular within predicates during proving
 
-%%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsIn})
+%%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty})
 %%]
 
 %%[9 hs import(Data.Maybe,qualified Data.Set as Set)
@@ -38,31 +38,48 @@ PRAGMA strictcase
 %%% Haskell importable interface to making canonical type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(tyCanonic)
-tyCanonic :: FIIn -> Ty -> Ty
-tyCanonic fi ty
+%%[9 hs export(TyCanonicOpts(..),emptyTyCanonicOpts)
+data TyCanonicOpts
+  = TyCanonicOpts
+%%[[11
+      { tcoTyBetaRedFull 	:: Ty -> Ty
+      }
+%%]]
+
+emptyTyCanonicOpts :: TyCanonicOpts
+emptyTyCanonicOpts
+  = TyCanonicOpts
+%%[[11
+      {	tcoTyBetaRedFull 	= \t -> t
+      }
+%%]]
+%%]
+
+%%[9 hs export(tyCanonic')
+tyCanonic' :: TyCanonicOpts -> Ty -> Ty
+tyCanonic' opts ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf
 %%[[11
-                   { fi_Inh_TyAGItf = fi
+                   { opts_Inh_TyAGItf = opts
                    }
 %%]]
                  )
      in   repl_Syn_TyAGItf t
 %%]
 
-%%[9 hs export(predCanonic)
-predCanonic :: FIIn -> Pred -> Pred
+%%[9 hs export(predCanonic')
+predCanonic' :: TyCanonicOpts -> Pred -> Pred
 %%[[16
-predCanonic fi (Pred_Eq t1 t2)
+predCanonic' opts (Pred_Eq t1 t2)
   = Pred_Eq (tmpoTy $ tyMergePreds [] t1') (tmpoTy $ tyMergePreds [] t2')
     where
-      t1' = tyCanonic fi t1
-      t2' = tyCanonic fi t2
+      t1' = tyCanonic' opts t1
+      t2' = tyCanonic' opts t2
 %%]]
-predCanonic fi pr
-  = case tyCanonic fi $ Ty_Pred pr of
+predCanonic' opts pr
+  = case tyCanonic' opts $ Ty_Pred pr of
       Ty_Pred pr' -> pr'
 %%]
 
@@ -71,7 +88,7 @@ predCanonic fi pr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[11
-ATTR TyAGItf AllTy [ fi: FIIn | | ]
+ATTR TyAGItf AllTy [ opts: TyCanonicOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,9 +143,9 @@ SEM Ty
 %%[11
 SEM Ty
   | App             lhs     .   repl            :=  if @isSpineRoot
-                                                    then tyBetaRedFull @lhs.fi @replNoImplNil
+                                                    then tcoTyBetaRedFull @lhs.opts @replNoImplNil
                                                     else @replNoImplNil
-  | Con             lhs     .   repl            =   tyBetaRedFull @lhs.fi @repl
+  | Con             lhs     .   repl            =   tcoTyBetaRedFull @lhs.opts @repl
 %%]
 
 

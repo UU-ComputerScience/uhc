@@ -54,6 +54,9 @@ SEM DataConstr
                 lhs         .   knPolCtx            <   loc.dataAltTyL
                 lhs         .   polVarMp            <   loc.dataAltTyL
 
+SEM TyExpr
+  | Pred		lhs			.	knPolCtx			< 	prExpr.tyGam
+
 SEM AGItf
   | AGItf       expr        .   gathPolGam          <   expr.valGam
                 expr        .   polVarMp            <   expr.tyVarMp
@@ -61,5 +64,4 @@ SEM AGItf
                 expr        .   polVarMp            <   loc.clGam
 %%]
 
-does not work until fixed. Now assumes expr.valGam is synthesized.
 

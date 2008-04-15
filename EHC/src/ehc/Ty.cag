@@ -1325,23 +1325,101 @@ tyAnnSubst mp
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Smart constructors for polarities
+%%% Co/Contra variance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 hs export(polCovariant, polContravariant, polInvariant, mkPolNegate, mkPolVar)
-polCovariant :: Ty
+%%[4.CoContraVariance hs
+%%]
+type CoContraVariance =  Polarity
+data CoContraVariance =  CoVariant | ContraVariant | CoContraVariant deriving (Show,Eq)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Polarities, construction + inspection
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 hs export(Polarity)
+type Polarity = Ty
+%%]
+
+%%[4 hs export(polCovariant, polContravariant, polInvariant)
+polCovariant :: Polarity
 polCovariant = semCon hsnCovariant
 
-polContravariant :: Ty
+polContravariant :: Polarity
 polContravariant = semCon hsnContravariant
 
-polInvariant :: Ty
+polInvariant :: Polarity
 polInvariant = semCon hsnInvariant
+%%]
 
-mkPolNegate :: Ty -> Ty
+%%[17 hs export(mkPolNegate, mkPolVar)
+mkPolNegate :: Polarity -> Polarity
 mkPolNegate = mk1ConApp hsnPolNegation
 
-mkPolVar :: UID -> Ty
+mkPolVar :: UID -> Polarity
 mkPolVar = mkTyVar
+%%]
+
+%%[4 hs export(polIsCovariant, polIsContravariant, polIsInvariant)
+polIs :: HsName -> Polarity -> Bool
+polIs nm = maybe False (== nm) . tyMbCon
+
+polIsCovariant, polIsContravariant, polIsInvariant :: Polarity -> Bool
+polIsCovariant     = polIs hsnCovariant
+polIsContravariant = polIs hsnContravariant
+polIsInvariant     = polIs hsnInvariant
+%%]
+
+%%[4 hs export(polOpp)
+polOpp :: Polarity -> Polarity
+polOpp pol | polIsCovariant     pol = polContravariant
+           | polIsContravariant pol = polCovariant
+           | otherwise              = polInvariant
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fitting mode (should be in FitsIn, but here it avoids mut rec modules)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.FIMode hs export(FIMode(..))
+data FIMode  =  FitSubLR
+             |  FitSubRL
+             |  FitUnify
+%%[[4_2
+             |  FitMeet
+             |  FitJoin
+%%]]
+             deriving (Eq,Ord)
+%%]
+
+%%[4 hs export(fimOpp)
+fimOpp :: FIMode -> FIMode
+fimOpp m
+  =  case m of
+       FitSubLR  -> FitSubRL
+       FitSubRL  -> FitSubLR
+%%[[4_2
+       FitMeet   -> FitJoin
+       FitJoin   -> FitMeet
+%%]]
+       _         -> m
+%%]
+
+%%[4 hs export(fimSwapPol)
+fimSwapPol :: Polarity -> FIMode -> FIMode
+fimSwapPol pol m = if polIsContravariant pol then fimOpp m else m
+%%]
+fimSwapPol coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
+
+%%[4 hs
+instance Show FIMode where
+  show FitSubLR  = "<="
+  show FitSubRL  = ">="
+  show FitUnify  = "=="
+%%[[4_2
+  show FitMeet   = "=^="
+  show FitJoin   = "=v="
+%%]]
 %%]
 

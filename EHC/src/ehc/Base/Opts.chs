@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{EH}Ty},EH.Util.Pretty) export(FIOpts(..), fioSwapCoCo, fioSwapOpts, strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import({%{EH}Ty},EH.Util.Pretty) export(FIOpts(..), strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
 %%]
 
 %%[4 export(fioIsSubsume)
@@ -115,7 +115,6 @@ data EHCOpts
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenRTSInfo     ::  Int				-- flags to tell rts to dump internal info, currently: 1=on
 
-      ,  ehcOptShowGrin       ::  Bool              -- show Grin pretty print on stdout
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
       ,  ehcOptEmitCore       ::  Bool
@@ -197,7 +196,6 @@ defaultEHCOpts
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenRTSInfo       =   0
 
-      ,  ehcOptShowGrin         =   False
       ,  ehcOptEmitHS           =   False
       ,  ehcOptEmitEH           =   False
       ,  ehcOptEmitCore         =   True
@@ -257,13 +255,7 @@ defaultEHCOpts
 %%[1
 ehcCmdLineOpts
   =  [  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
-     ,  Option "p"  ["pretty"]
-%%[[1
-                    (OptArg oPretty "hs|eh|ast|-")
-%%][8
-                    (OptArg oPretty "hs|eh|grin|ast|-")
-%%]]
-                    "show pretty printed EH/Grin source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
+     ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
      ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
@@ -279,8 +271,8 @@ ehcCmdLineOpts
 %%]]
 %%[[8
      ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
-     ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate core transformation stages (no)"
-     ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate grin transformation stages (no)"
+     ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate Core transformation stages (no)"
+     ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off core transformations"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
@@ -332,9 +324,6 @@ ehcCmdLineOpts
 %%[[1
                                 Just "ast"   -> o { ehcOptShowAst      = True      }
 %%][100
-%%]]
-%%[[8
-                                Just "grin"  -> o { ehcOptShowGrin     = True      }
 %%]]
                                 _            -> o
          oShowTopTy  ms  o =  case ms of
@@ -663,7 +652,7 @@ implFIOpts  :: FIOpts
 implFIOpts = strongFIOpts {fioAllowRPredElim = False}
 %%]
 
-%%[4
+%%[4 export(fioSwapPolarity, fioSwapOpts)
 fioSwapOpts :: FIOpts -> FIOpts
 fioSwapOpts fio
   = fio
@@ -676,8 +665,8 @@ fioSwapOpts fio
 %%]]
       }
 
-fioSwapCoCo :: CoContraVariance -> FIOpts -> FIOpts
-fioSwapCoCo coco fio = fio {fioMode = fimSwapCoCo coco (fioMode fio)}
+fioSwapPolarity :: Polarity -> FIOpts -> FIOpts
+fioSwapPolarity pol fio = fio {fioMode = fimSwapPol pol (fioMode fio)}
 %%]
 
 %%[4.fioMkStrong
