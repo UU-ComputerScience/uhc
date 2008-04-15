@@ -53,13 +53,13 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 
 --  dangerous functions
     asTypeOf, error, undefined, seq, ($!),
-	forceString,
+        forceString,
  
 -- functions on specific types    
     -- Bool
     (&&), (||), not, otherwise,
     -- Char
-    isSpace, isUpper, isLower, isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum, showLitChar, -- readLitChar, lexLitChar,
+    isSpace, isUpper, isLower, isAlpha, isDigit, isOctDigit, isHexDigit, isAlphaNum, showLitChar, readLitChar, lexLitChar,
     -- Ratio
     numerator, denominator,
     -- Maybe
@@ -72,8 +72,9 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     subtract, even, odd, gcd, lcm, (^), (^^),
     fromIntegral, realToFrac,
     boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
-    shows, showChar, showString,
-    --reads, read, lex, readParen, showParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+    shows, showChar, showString, showParen,
+    --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+    reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, {- readFloat, -} lexDigits, 
 
 --  standard functions
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
@@ -682,6 +683,7 @@ instance Ix Char where
     range (c,c')      = [c..c']
     unsafeIndex (c,_) i = fromEnum i - fromEnum c
     inRange (c,c') i  = c <= i && i <= c'
+-}
 
 instance Read Char where
     readsPrec p      = readParen False
@@ -692,7 +694,7 @@ instance Read Char where
                where readl ('"':s)      = [("",s)]
                      readl ('\\':'&':s) = readl s
                      readl s            = [(c:cs,u) | (c ,t) <- readLitChar s,
--}
+                                                      (cs,u) <- readl t ]
 
 instance Show Char where
     showsPrec p '\'' = showString "'\\''"
@@ -1028,11 +1030,9 @@ instance Enum Integer where
 
 foreign import ccall primShowInteger :: Integer -> String
 
-{-
 instance Read Integer where
     readsPrec p = readSigned readDec
 
--}
 instance Show Integer where
     show   = primShowInteger
 
@@ -1388,13 +1388,11 @@ instance Integral a => Enum (Ratio a) where
     enumFromThen   = numericEnumFromThen
     enumFromThenTo = numericEnumFromThenTo
 
-{-
 instance (Read a, Integral a) => Read (Ratio a) where
     readsPrec p = readParen (p > 7)
                             (\r -> [(x%y,u) | (x,s)   <- readsPrec 8 r,
                                               ("%",t) <- lex s,
                                               (y,u)   <- readsPrec 8 t ])
--}
 
 instance (Show a,Integral a) => Show (Ratio a) where
     showsPrec p (x:%y) = showParen (p > 7)
@@ -1653,19 +1651,17 @@ unzip3                    = foldr (\(a,b,c) ~(as,bs,cs) -> (a:as,b:bs,c:cs))
 -- PreludeText
 --------------------------------------------------------------
 
---reads        :: Read a => ReadS a
---reads         = readsPrec 0
+reads        :: Read a => ReadS a
+reads         = readsPrec 0
 
 shows        :: Show a => a -> ShowS
 shows         = showsPrec 0
 
-{-
 read         :: Read a => String -> a
 read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
                       [x] -> x
                       []  -> error "Prelude.read: no parse"
                       _   -> error "Prelude.read: ambiguous parse"
--}
 
 showChar     :: Char -> ShowS
 showChar      = (:)
@@ -1676,24 +1672,18 @@ showString    = (++)
 showParen    :: Bool -> ShowS -> ShowS
 showParen b p = if b then showChar '(' . p . showChar ')' else p
 
-{-
 showField    :: Show a => String -> a -> ShowS
 showField m@(c:_) v
   | isAlpha c || c == '_' = showString m . showString " = " . shows v
   | otherwise = showChar '(' . showString m . showString ") = " . shows v
--}
 
 readParen    :: Bool -> ReadS a -> ReadS a
-{-
 readParen b g = if b then mandatory else optional
                 where optional r  = g r ++ mandatory r
                       mandatory r = [(x,u) | ("(",s) <- lex r,
                                              (x,t)   <- optional s,
                                              (")",u) <- lex t    ]
--}
-readParen = undefined
 
-{-
 readField    :: Read a => String -> ReadS a
 readField m s0 = [ r | (t,  s1) <- readFieldName m s0,
                        ("=",s2) <- lex s1,
@@ -1705,10 +1695,8 @@ readFieldName m@(c:_) s0
   | otherwise = [ (f,s3) | ("(",s1) <- lex s0,
                            (f,s2)   <- lex s1, f == m,
                            (")",s3) <- lex s2 ]
--}
 
 lex                    :: ReadS String
-{-
 lex ""                  = [("","")]
 lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
 lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
@@ -1750,8 +1738,6 @@ lex (c:s) | isSym c     = [(c:sym,t)         | (sym,t) <- [span isSym s]]
                                                    (ds,u) <- lexDigits t] ++
                            [(e:ds,t)   | (ds,t) <- lexDigits s]
                 lexExp s = [("",s)]
--}
-lex = undefined
 
 lexDigits               :: ReadS String
 lexDigits               =  nonnull isDigit
@@ -1760,7 +1746,6 @@ nonnull                 :: (Char -> Bool) -> ReadS String
 nonnull p s             =  [(cs,t) | (cs@(_:_),t) <- [span p s]]
 
 lexLitChar          :: ReadS String
-{-
 lexLitChar ""       =  []
 lexLitChar (c:s)
  | c /= '\\'        =  [([c],s)]
@@ -1781,8 +1766,6 @@ lexLitChar (c:s)
 
    table = ('\DEL',"DEL") : asciiTab
    prefix c (t,s) = (c:t, s)
--}
-lexLitChar = undefined
 
 isOctDigit c  =  c >= '0' && c <= '7'
 isHexDigit c  =  isDigit c || c >= 'A' && c <= 'F'
@@ -1799,7 +1782,6 @@ asciiTab = zip ['\NUL'..' ']
             "CAN", "EM",  "SUB", "ESC", "FS",  "GS",  "RS",  "US",
             "SP"]
 
-{-
 readLitChar            :: ReadS Char
 readLitChar ('\\':s)    = readEsc s
  where
@@ -1827,7 +1809,6 @@ readLitChar ('\\':s)    = readEsc s
                                 []     -> []
        readEsc _        = []
 readLitChar (c:s)       = [(c,s)]
--}
 
 showLitChar               :: Char -> ShowS
 showLitChar c | c > '\DEL' = showChar '\\' .
@@ -1870,15 +1851,12 @@ readInt radix isDig digToInt s =
         | (ds,r) <- nonnull isDig s ]
 
 readSigned:: Real a => ReadS a -> ReadS a
-{-
 readSigned readPos = readParen False read'
                      where read' r  = read'' r ++
                                       [(-x,t) | ("-",s) <- lex r,
                                                 (x,t)   <- read'' s]
                            read'' r = [(n,s)  | (str,s) <- lex r,
                                                 (n,"")  <- readPos str]
--}
-readSigned readPos = undefined
 
 {-
 -- This floating point reader uses a less restrictive syntax for floating
@@ -2321,7 +2299,6 @@ hGetLine h = do { c <- hGetChar h
 #endif
 
 
-{-
 -- combinations with Read
 -- raises an exception instead of an error
 readIO          :: Read a => String -> IO a
@@ -2335,7 +2312,6 @@ readLn          :: Read a => IO a
 readLn           = do l <- getLine
                       r <- readIO l
                       return r
--}
 
 
 

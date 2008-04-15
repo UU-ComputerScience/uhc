@@ -511,21 +511,21 @@ SEM ContextItem
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-litNames :: Literal -> Int -> [HsName]
-litNames lit sign
+litNames :: Literal -> Bool -> Int -> ([HsName],IdAspect)
+litNames lit isPat sign
   = case lit of
 %%[[5
-      Literal_String r s   -> [hsnDataListAltCons,hsnDataListAltNil]
+      Literal_String r s   -> ([hsnDataListAltCons,hsnDataListAltNil],if isPat then IdAsp_Val_Con else IdAsp_Val_Var)
 %%]]
 %%[[97
       Literal_Int    _ _ _
-        | sign < 0         -> [hsnFromInteger,hsnNegate]
-        | otherwise        -> [hsnFromInteger]
+        | sign < 0         -> ([hsnFromInteger,hsnNegate],IdAsp_Val_Var)
+        | otherwise        -> ([hsnFromInteger],IdAsp_Val_Var)
       Literal_Float  _ _
-        | sign < 0         -> [hsnMkRatio,hsnFromRational,hsnNegate]
-        | otherwise        -> [hsnMkRatio,hsnFromRational]
+        | sign < 0         -> ([hsnMkRatio,hsnFromRational,hsnNegate],IdAsp_Val_Var)
+        | otherwise        -> ([hsnMkRatio,hsnFromRational],IdAsp_Val_Var)
 %%]]
-      _                    -> []
+      _                    -> ([],IdAsp_Val_Var)
 %%]
 
 %%[1.mkUseOccGam hs
@@ -580,9 +580,10 @@ ATTR AllNT [ | | idUseOccGam USE {`gamAddGam`} {emptyGam}: IdUseOccGam ]
 %%[1
 SEM Expression
     | Literal
-        loc             .   litnames    =   litNames @literal.eh 1
+        loc             .   (litnames,litAsp)
+                                        =   litNames @literal.eh False 1
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam @litnames IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam @litnames IdOcc_Val @litAsp @range
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam, @literal.idUseOccGam]
     | Variable
         loc             .   idAsp       =   IdAsp_Val_Var
@@ -644,9 +645,10 @@ SEM Pattern
     | Literal
         loc             .   (eqrefname,_,idUseOccGamEq,errIdUseEq)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnClassEqFldEq] IdOcc_Val IdAsp_Val_Var @range
-                        .   litnames    =   litNames @literal.eh @sign
+                        .   (litnames,litAsp)
+                                        =   litNames @literal.eh True @sign
                         .   (litrefname,litrefnames,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam @litnames IdOcc_Val IdAsp_Val_Var @range
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam @litnames IdOcc_Val @litAsp @range
 %%[[9
                         .   (eqclassrefname,_,idUseOccGamCls,errIdUseCls)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnClassEq] IdOcc_Class IdAsp_Class_Class @range
@@ -810,7 +812,7 @@ SEM Body
                                         =   mkUseOccGam @lhs.opts @idGam
                                               (  [hsnMain]
 %%[[98
-                                              ++ [hsnIO]					-- this is assumed to be 2nd
+                                              ++ [hsnIO]                    -- this is assumed to be 2nd
 %%]]
 %%[[99
                                               ++ [hsnEhcRunMain]
@@ -848,8 +850,8 @@ SEM Declaration
 ATTR AllDeclaration [ | | needsError USE {||} {False}: Bool ]
 
 SEM Declaration
-	| Data
-		lhs				.	needsError	=	@constructors.hasFlds
+    | Data
+        lhs             .   needsError  =   @constructors.hasFlds
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

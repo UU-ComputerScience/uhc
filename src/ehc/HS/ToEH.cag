@@ -919,17 +919,19 @@ ATTR Pattern [ | | eh: {EH.PatExpr} ]
 %%[1
 SEM Pattern
     | Literal
-        lhs         .   eh          =   let mkc r = rngLift r EH.PatExpr_CConst
-%%[[97
+        lhs         .   eh          =   let 
+%%[[1
+                                            mkc r = rngLift r EH.PatExpr_CConst
+%%][97
+                                            mkc r = mke r . rngLift r EH.Expr_CConst
                                             mke r = rngLift r EH.PatExpr_Expr
 %%]]
                                         in  case @literal.eh of
+                                              Literal_Char   r   s -> mkc r $ head s
 %%[[1
                                               Literal_Int    r   s -> rngLift r EH.PatExpr_IConst (@sign * read s)
-                                              Literal_Char   r   s -> mkc r $ head s
 %%][97
                                               Literal_Int    r b s -> mke r $ ehExpLitInt r b s @sign @litrefnames
-                                              Literal_Char   r   s -> mke r $ rngLift r EH.Expr_CConst $ head s
 %%]]
 %%[[5
                                               Literal_String r   s -> foldr (\c p -> ehPatConApp r (@litrefnames !! 0) [mkc r c,p]) (ehPatConApp r (@litrefnames !! 1) []) s
