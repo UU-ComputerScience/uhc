@@ -46,18 +46,14 @@ $(EXTLIBS_BGC_INS_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)
   cd $(BLDABS_EXTLIBS_BGC_PREFIX) && \
   tar xfz $(EXTLIBS_BGC_ARCHIVE) && \
   cd $(EXTLIBS_BGC_NAME) && \
-  ./configure --prefix=$(INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX) --disable-threads && \
-  make && \
-  make install && \
-  make clean && \
-  ./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) && \
+  ./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) --disable-threads && \
   make && \
   make install && \
   touch $@
 
-  Change the first ./configure call to the following:
+  Change the ./configure call to the following:
 
-  ./configure --prefix=$(INSABS_EXTLIBS_BGC_NONTHREAD_PREFIX) --disable-threads CFLAGS=-DUSE_MMAP && \
+  ./configure --prefix=$(INSABS_EXTLIBS_BGC_PREFIX) --disable-threads CFLAGS=-DUSE_MMAP && \
 
   This way you configure Boehm GC to use mmap() instead of sbrk()
 
