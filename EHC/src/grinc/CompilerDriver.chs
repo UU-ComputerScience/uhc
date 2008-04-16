@@ -332,9 +332,12 @@ caWriteLLVM  =
 
 caWriteGrin :: String -> CompileAction ()
 caWriteGrin extra
-  = do { (gets (ehcOptDumpGrinStages . gcsOpts) >>= guard)
-       ; grin <- gets gcsGrin
-       ; caWriteFile extra "grin" (const ppGrModule) grin
+  = do { opts <- gets gcsOpts
+       ; when (ehcOptDumpGrinStages opts)
+           (do { grin <- gets gcsGrin
+               ; caWriteFile extra "grin" (const ppGrModule) grin
+               }
+           )
        }
      
 caWriteSilly :: String -> String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
