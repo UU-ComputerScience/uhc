@@ -187,7 +187,7 @@ ATTR Jds [ | | ppL: {[PP_Doc]} ]
 SEM Jds
   | Nil             lhs     .   ppL         =   []
   | Cons            lhs     .   ppL         =   if @hd.isSmall && not (null @tl.ppL)
-                                                then (@hd.pp >#< "\\hspace{2ex}" >#< head @tl.ppL) : @tl.ppL
+                                                then (@hd.pp >#< "\\hspace{2ex}" >#< head @tl.ppL) : (tail @tl.ppL)
                                                 else @hd.pp : @tl.ppL
   
 ATTR Jd [ | | isSmall : Bool ]
