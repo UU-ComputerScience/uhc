@@ -43,7 +43,9 @@
 
 # 50: + GADT experiment
 # 4_2: + 2 pass type inference, quantifier propagation experiment
-
+# 8_2: + A bit prettier output for intermediate languages, in order to include
+#        in doc/llvm.pdf. This version is temporary until a framework to output
+#        shuffle post-processed intermediate output is available.
 ###########################################################################################
 # EHC variant partitioning into public/non-public (experimental, ...) + code/noncode variants
 ###########################################################################################
@@ -51,7 +53,6 @@
 EHC_PREL_VARIANT				:= 99
 EHC_UHC_VARIANT					:= 100
 EHC_UHC_INSTALL_VARIANT			:= 101
-EHC_OTHER_CODE_VARIANTS			:= 102 103
 EHC_PREL_VARIANTS				:= $(EHC_PREL_VARIANT) $(EHC_UHC_VARIANT) $(EHC_UHC_INSTALL_VARIANT)
 EHC_GMP_VARIANTS				:= $(EHC_PREL_VARIANTS) 97 98 $(EHC_OTHER_CODE_VARIANTS)
 EHC_PUB_NOCODE_VARIANTS			:= 1 2 3 4 5 6 7
@@ -59,6 +60,9 @@ EHC_PUB_NOPREL_VARIANTS			:= 8 9 10 11 12 13 14 15 17 20 94 95 96 97 98
 EHC_PUB_CODE_VARIANTS			:= $(EHC_PUB_NOPREL_VARIANTS) $(EHC_PREL_VARIANTS)
 EHC_PUB_VARIANTS				:= $(EHC_PUB_NOCODE_VARIANTS) $(EHC_PUB_CODE_VARIANTS)
 EHC_OTHER_NOCODE_VARIANTS		:= 4_2 6_4 7_2
+EHC_OTHER_NOPREL_VARIANTS		:= 8_2
+EHC_OTHER_PREL_VARIANTS			:= 102 103
+EHC_OTHER_CODE_VARIANTS			:= $(EHC_OTHER_NOPREL_VARIANTS) $(EHC_OTHER_PREL_VARIANTS) 
 EHC_OTHER_VARIANTS				:= $(EHC_OTHER_NOCODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
 EHC_CODE_VARIANTS				:= $(EHC_PUB_CODE_VARIANTS) $(EHC_OTHER_CODE_VARIANTS)
 EHC_VARIANTS					:= $(EHC_PUB_VARIANTS) $(EHC_OTHER_VARIANTS)
@@ -221,7 +225,8 @@ EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 1
 						6 < 6_4, \
 						7 < 7_2, \
 						10 < 50, \
-						15 < 16
+						15 < 16, \
+						8 < 8_2
 
 ###########################################################################################
 # Cabal

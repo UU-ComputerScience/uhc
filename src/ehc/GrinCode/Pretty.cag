@@ -111,6 +111,7 @@ ATTR GrAGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
   | Mod         lhs         .   pp          =   "module" >#< cfgppHsName CfgPP_Grin @moduleNm
+%%[[8
                                                 >-< ppCurlysSemisV @globalL.ppL
                                                 >-< ppCurlysSemisV @bindL.ppL
                                                 >-< "ctags"
@@ -124,6 +125,9 @@ SEM GrModule
                                                                         >-< ""    
                                                                )
                                                                @ctagsMp)
+%%][8_2
+                                                >-< ppCurlysSemisV @bindL.ppL
+%%]]
 
 SEM GrGlobal
   | Global      lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< "<-" >#< "store" >#< @val.pp

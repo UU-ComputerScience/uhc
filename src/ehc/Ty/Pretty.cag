@@ -422,9 +422,19 @@ SEM Ty
 
 %%[8
 SEM Ty
+%%[[8
   | Con             loc     .   pp      :=  cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
+%%][8_2
+  -- Pretty print constructors as just their name
+  | Con             loc     .   pp      :=  ppCon @nm
+%%]]
   | App             loc     .   ppDflt  :=  if cfgPPTyFollowAST @lhs.cfg then ppParens @func.pp >#< ppParens @arg.pp else @func.pp >#< @arg.pp
+%%[[8
                             .   ppAST   :=  hv ([ppParens @appFunPP] ++ map ((" " >|<) . ppParens) @appArgPPL)
+%%][8_2
+  -- Print applications readable (Int -> Int) in contrast to parsable ({->} {Int, Int}
+                            .   ppAST   :=  @ppNice
+%%]]
                             .   pp      :=  if @isSpineRoot
                                             then if cfgPPTyFollowAST @lhs.cfg
                                                  then @ppAST
