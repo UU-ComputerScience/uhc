@@ -26,6 +26,25 @@ static clock_t clockStart, clockStop ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Program arguments
+
+%%[99
+int rtsArgC ;
+char** rtsArgV ;
+%%]
+
+%%[99
+void globalsSetup(int argc, char** argv)
+{
+	rtsArgC = argc ;
+	rtsArgV = argv ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack, heap
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -130,6 +149,9 @@ extern int silly_main();
 int main_Sil_Init1(int argc, char** argv)
 {
 	memorySetup() ;
+%%[[99
+	globalsSetup( argc, argv ) ;
+%%]]
     return 0;
 }
 
@@ -186,6 +208,9 @@ static struct option gb_longopts2[] =
 int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 {
 	memorySetup() ;
+%%[[99
+	globalsSetup( argc, argv ) ;
+%%]]
 %%[[97
 #	if USE_GPM
 		mp_set_memory_functions( gb_Alloc_GMP, gb_ReAlloc_GMP, gb_Free_GMP ) ;
