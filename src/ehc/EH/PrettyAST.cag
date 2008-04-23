@@ -35,13 +35,14 @@ ppImpls2 c t = (pp $ c |=> t) >#< ppParens (pp t)
 ATTR AllNT AGItf [ | | ppAST USE {>-<} {empty} : PP_Doc ]
 
 SEM AGItf
-  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info_2 ++ @info_3 ++ @info_4_2 ++ @info_8 ++ @info_9)
+  | AGItf       lhs     .  ppAST    =   ppNestInfo @lhs.opts ["AGItf","AGItf"] [] [@expr.ppAST] (@info ++ @info_2 ++ @info_3 ++ @info_4_2 ++ @info_8 ++ @info_9 ++ @info_99)
                 loc     .  info     =   []
                         .  info_2   =   []
                         .  info_3   =   []
                         .  info_4_2 =   []
                         .  info_8   =   []
                         .  info_9   =   []
+                        .  info_99  =   []
 
 SEM Decl
   | Val         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Val"] [] [@patExpr.ppAST,@expr.ppAST] (@info_1 ++ @info_2 ++ @info_9)
@@ -180,15 +181,15 @@ SEM Expr
                 loc     .  info_2   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         ]
-  | Var         loc     .  info_2   :=  [ mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
-                                        , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
+  | Var         loc     .  info_2   :=  [ {- mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
+                                        , -} mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         ]
   | App         loc     .  info_2   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "func.ty" (ppTyS @func.tyVarMp @func.ty)
                                         , mkInfo1 "ty" (ppTyS @arg.tyVarMp @ty)
                                         ]
-  | AppTop      loc     .  info_2   :=  [ mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
-                                        , mkInfo1 "expr.tyVarMp" (ppVarMpV @expr.tyVarMp)
+  | AppTop      loc     .  info_2   :=  [ {- mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
+                                        , mkInfo1 "expr.tyVarMp" (ppVarMpV @expr.tyVarMp) -}
                                         ]
   | Lam         loc     .  info_2   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "foTy @fo_fitF_" (ppTy (foTy @fo_fitF_))
@@ -715,4 +716,8 @@ SEM Expr
   | IIConst     lhs     .  ppAST    =   ppNestInfo @lhs.opts ["Expr","IIConst"] [@pp] [] []
 %%]
 
-
+%%[99
+SEM AGItf
+  | AGItf       loc     .  info_99  :=  [ mkInfo1 "rangeMp" (ppAssocLV $ Map.toList @rangeMp)
+                                        ]
+%%]]

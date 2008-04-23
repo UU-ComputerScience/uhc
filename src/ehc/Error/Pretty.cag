@@ -297,7 +297,11 @@ SEM Err
                                                         @range
 %%]]
   | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
+%%[[9
                                                         (    "preds:" >#< vlist @preds
+%%][99
+                                                        (    "preds:" >#< (ppAssocLV $ assocLMapElt vlist @preds)
+%%]]
                                                         )
 %%[[99
                                                         @range

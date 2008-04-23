@@ -719,7 +719,21 @@ SEM Expr
   | Let         decls       .   gathTySigGam        =   emptyGam
 
 %%[1.tySigGam
-ATTR AllDecl [ tySigGam: ValGam | | ]
+ATTR AllDecl AllPatExpr [ tySigGam: ValGam | | ]
+%%]
+
+%%[1
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   tySigGam            =   emptyGam
+%%]
+
+%%[5
+SEM CaseAlt
+  | Pat         loc         .   tySigGam            =   emptyGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.TysigLet

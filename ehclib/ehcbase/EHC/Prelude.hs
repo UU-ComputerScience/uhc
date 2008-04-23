@@ -74,7 +74,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
     shows, showChar, showString, showParen,
     --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
-    reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, {- readFloat, -} lexDigits, 
+    reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
 
 --  standard functions
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
@@ -527,19 +527,20 @@ type ShowS   = String -> String
 class Read a where
     readsPrec :: Int -> ReadS a
     readList  :: ReadS [a]
-{-----------------------------
 
     -- Minimal complete definition: readsPrec
-    readList   = readParen False (\r -> [pr | ("[",s) <- lex r,
+    readList  :: ReadS [a]
+               = readParen False (\r -> [pr | ("[",s) <- lex r,
                                               pr      <- readl s ])
-                 where readl  s = [([],t)   | ("]",t) <- lex s] ++
+                 where readl :: ReadS [a]
+                       readl  s = [([],t)   | ("]",t) <- lex s] ++
                                   [(x:xs,u) | (x,t)   <- reads s,
                                               (xs,u)  <- readl' t]
+                       readl' :: ReadS [a]
                        readl' s = [([],t)   | ("]",t) <- lex s] ++
                                   [(x:xs,v) | (",",t) <- lex s,
                                               (x,u)   <- reads t,
                                               (xs,v)  <- readl' u]
------------------------------}
 
 class Show a where
     show      :: a -> String
@@ -1295,10 +1296,10 @@ instance Enum Double where
 foreign import ccall primShowFloat :: Float -> String
 -- TODO: replace this by a function Float -> PackedString
 
-{-----------------------------
 instance Read Float where
     readsPrec p = readSigned readFloat
 
+{-----------------------------
 -- Note that showFloat in Numeric isn't used here
 instance Show Float where
     showsPrec   = primShowsFloat
@@ -1308,10 +1309,10 @@ instance Show Float where
 
 foreign import ccall primShowDouble :: Double -> String
 
-{-----------------------------
 instance Read Double where
     readsPrec p = readSigned readFloat
 
+{-----------------------------
 -- Note that showFloat in Numeric isn't used here
 instance Show Double where
     showsPrec   = primShowsDouble
@@ -1858,7 +1859,6 @@ readSigned readPos = readParen False read'
                            read'' r = [(n,s)  | (str,s) <- lex r,
                                                 (n,"")  <- readPos str]
 
-{-
 -- This floating point reader uses a less restrictive syntax for floating
 -- point than the Haskell lexer.  The `.' is optional.
 readFloat     :: RealFrac a => ReadS a
@@ -1874,12 +1874,11 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
                        lexFrac s       = [("",s)]
 
                        readExp (e:s) | e `elem` "eE" = readExp' s
-                       readExp s                     = [(0,s)]
+                       readExp s                     = [(0::Int,s)]
 
                        readExp' ('-':s) = [(-k,t) | (k,t) <- readDec s]
                        readExp' ('+':s) = readDec s
                        readExp' s       = readDec s
--}
 
 
 

@@ -399,7 +399,7 @@ ATTR AllDataConstrEq [ | | prOccL USE {++} {[]} : {[PredOcc]} ]
 SEM DataConstrEq
   | Eq  loc.pr      = Pred_Eq @tyVar.ty @tyExpr.ty
         loc.prOccId = mkPrIdCHR @loc.lUniq3
-        loc.prOcc   = mkPredOcc @loc.pr @loc.prOccId @lhs.predScope
+        loc.prOcc   = rngLift @range mkPredOccRng @loc.pr @loc.prOccId @lhs.predScope
         lhs.prOccL  = [@loc.prOcc]
 %%]
 

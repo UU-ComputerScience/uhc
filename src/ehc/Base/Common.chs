@@ -112,16 +112,7 @@
 %%[9 export(ppListV,ppAssocLV)
 %%]
 
-%%[9 export(PredOccId(..),mkPrId,poiHNm)
-%%]
-
-%%[9 export(PrfCtxtId)
-%%]
-
 %%[9 export(snd3,thd)
-%%]
-
-%%[9 export(basePrfCtxtId)
 %%]
 
 %%[20 export(ppCurlysAssocL)
@@ -246,31 +237,20 @@ mkNewLevUIDL = mkNewUIDL' mkNewLevUID
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Proof context id
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9 hs
-type PrfCtxtId = UID
-%%]
-
-%%[9
-basePrfCtxtId :: PrfCtxtId
-basePrfCtxtId = uidStart
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred occurrence id
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
-data PredOccId
-  = PredOccId {poiCxId :: !PrfCtxtId, poiId :: !UID}
+%%[9 hs export(PredOccId(..))
+newtype PredOccId
+  = PredOccId
+      { poiId    	:: UID
+      }
   deriving (Show,Eq,Ord)
 %%]
 
-%%[9 hs
-mkPrId :: PrfCtxtId -> UID -> PredOccId
-mkPrId ci u = PredOccId ci u
+%%[9 hs export(mkPrId,poiHNm)
+mkPrId :: UID -> PredOccId
+mkPrId u = PredOccId u
 
 poiHNm :: PredOccId -> HsName
 poiHNm = uidHNm . poiId
@@ -278,12 +258,12 @@ poiHNm = uidHNm . poiId
 
 %%[9 export(mkPrIdCHR)
 mkPrIdCHR :: UID -> PredOccId
-mkPrIdCHR = mkPrId basePrfCtxtId
+mkPrIdCHR = mkPrId
 %%]
 
 %%[9 export(emptyPredOccId)
 emptyPredOccId :: PredOccId
-emptyPredOccId = mkPrId basePrfCtxtId uidStart
+emptyPredOccId = mkPrId uidStart
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -646,7 +626,7 @@ ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v
 
 %%[9.ppAssocL -1.ppAssocL
 ppAssocL' :: (PP k, PP v) => ([PP_Doc] -> PP_Doc) -> AssocL k v -> PP_Doc
-ppAssocL' ppL al = ppL (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
+ppAssocL' ppL al = ppL (map (\(k,v) -> pp k >|< ":" >#< pp v) al)
 
 ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocL = ppAssocL' (ppBlock "[" "]" ",")
@@ -866,6 +846,14 @@ instance Show Range where
 instance PP Range where
   pp (Range_Range p _) = pp p
   pp r                 = pp $ show r
+%%]
+
+%%[99
+instance Eq Range where
+  _ == _ = True				-- a Range is ballast, not a criterium to decide equality for
+
+instance Ord Range where
+  _ `compare` _ = EQ		-- a Range is ballast, not a criterium to decide equality for
 %%]
 
 %%[1

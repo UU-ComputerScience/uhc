@@ -39,6 +39,8 @@ SEM *
 		loc.cycTyKiVarMp_l 				: VarMp
 		loc.cycTyVarMp_g  				: VarMp
 		loc.cycTyVarMp_l  				: VarMp
+		loc.fixPrTyVarMp  				: VarMp
+		loc.unfixPrTyVarMp  			: VarMp
 		loc.cycVarMp  					: VarMp
 		loc.dataAltTy 					: Ty
 		loc.dataConTy1  				: Ty
@@ -115,6 +117,8 @@ SEM *
 		loc.lSubsTyKiGam 				: TyKiGam
 		loc.lSubsValGam_  				: ValGam
 		loc.lUniq 						: UID
+		loc.lUniq_4_fo 					: UID
+		loc.lUniq_9_prTyFix 			: UID
 		loc.lUniq_17_fitsIn_pol 		: UID
 		loc.lUniq_17_pol  				: UID
 		loc.lUniq_17_polArg 			: UID
@@ -178,6 +182,7 @@ SEM *
 		loc.ty 							: Ty
 		loc.ty_g_  						: Ty
 		loc.ty_q_  						: Ty
+		loc.ty_kn_  					: Ty
 		loc.ty_sig_ 					: Ty
 		loc.tyGam_l_  					: TyGam
 		loc.typeTgi  					: TyGamInfo
