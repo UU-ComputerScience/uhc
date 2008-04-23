@@ -61,7 +61,7 @@ instance Keyable CHRPredOcc where
 
 %%[9 hs
 instance Keyable PredOccId where
-  toKey (PredOccId   _ i) = [TK_One TKK_Normal  $ Key_UID i]
+  toKey (PredOccId     i) = [TK_One TKK_Normal  $ Key_UID i]
 %%]
   toKey (PredOccId_Var v) = [TK_One TKK_Partial $ Key_UID v]
 

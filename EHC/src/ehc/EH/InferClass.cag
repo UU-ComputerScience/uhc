@@ -98,10 +98,10 @@ SEM Decl
 %%[9
 SEM Decl
   | Instance InstanceIntro
-                loc             .   instId          =   mkPrId basePrfCtxtId @lUniq
+                loc             .   instId          =   mkPrIdCHR @lUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
-                loc             .   (prTyFix,unfixPrTyVarMp)
-                                                    =   tyFixTyVars $ tyQuantifyRank [2..] $ @tyPrExpr.ty
+                loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp)
+                                                    =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
@@ -148,12 +148,12 @@ SEM Decl
                                                         in   tyArrowArgs $ foVarMp fo |=> foTy fo
                                 .   supClsFldL      =   tyPrLToSupNmL @supPrTyL
                                 .   ctxtPrFixL      =   map tyPred @ctxtPrTyFixL
-                                .   recTy           =   fst $ tyFixTyVars $ tyQuantifyRank [2..] $ tyArrowRes $ @tyPrExpr.evTy
-                                .   recTyExts       =   snd $ tyRecExts $ @recTy
+                                .   recTy           =   (@fixPrTyVarMp |=>) $ tyQuantifyRank [2..] $ tyArrowRes @tyPrExpr.evTy
+                                .   recTyExts       =   snd $ tyRecExts @recTy
                                 .   dataDictNm      =   hsnClass2Dict @instClsNm -- only used when `not ehcCfgClassViaRec'
                                 .   dataDictTag     =   mkClassCTag @dataDictNm (length @recTyExts) -- only used when `not ehcCfgClassViaRec'
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
-                                .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo $ @recTyExts
+                                .   tySigGam        =   assocLToGam $ assocLMapElt ValGamInfo @recTyExts
                 decls           .   patValGam       =   gamPushNew @lhs.patValGam
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim

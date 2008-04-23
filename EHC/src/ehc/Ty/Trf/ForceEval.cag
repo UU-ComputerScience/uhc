@@ -58,15 +58,15 @@ instance ForceEval LabelOffset where
 %%]]
 
 instance ForceEval CHRPredOcc where
-  forceEval x@(CHRPredOcc y z) | forceEval y `seq` forceEval z `seq` True = x
+  forceEval x@(CHRPredOcc y z r) | forceEval y `seq` forceEval z `seq` forceEval r `seq` True = x
 %%[[102
-  fevCount (CHRPredOcc y z) = cm1 "CHRPredOcc" `cmUnion` fevCount y `cmUnion` fevCount z
+  fevCount (CHRPredOcc y z r) = cm1 "CHRPredOcc" `cmUnion` fevCount y `cmUnion` fevCount z `cmUnion` fevCount r
 %%]]
 
 instance ForceEval PredOccId where
-  forceEval x@(PredOccId i j) | forceEval i `seq` forceEval j `seq` True = x
+  forceEval x@(PredOccId i) | forceEval i `seq` True = x
 %%[[102
-  fevCount (PredOccId i j) = cm1 "PredOccId" `cmUnion` fevCount i `cmUnion` fevCount j
+  fevCount (PredOccId i) = cm1 "PredOccId" `cmUnion` fevCount i
 %%]]
 
 instance ForceEval ImplsProveOcc where

@@ -93,7 +93,7 @@ instance PP (Annotation a) where
 %%[9 hs export(ppPredOccId')
 ppPredOccId' :: CfgPP x => x -> PredOccId -> PP_Doc
 ppPredOccId' x poi
-  = ppCurlysCommas [ppi (poiCxId poi),ppi (poiId poi)]
+  = ppi (poiId poi)
   where ppi = cfgppUID x
 %%]
 
@@ -121,7 +121,12 @@ instance PP PredOcc where
   pp po = pp (poPr po) >|< "/" >|< pp (poPoi po) >|< "/" >|< pp (poScope po)
 
 instance PP CHRPredOcc where
-  pp po = ppParensCommas [pp (cpoPr po), pp (cpoScope po)]
+  pp po = ppParensCommas
+            [ pp (cpoPr po), pp (cpoScope po)
+%%[[99
+            , pp (cpoRange po)
+%%]]
+            ]
 
 instance PP PredScope where
   pp (PredScope_Lev l) = ppListSep "<" ">" "," $ rllToList l

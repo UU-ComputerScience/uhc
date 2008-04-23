@@ -130,7 +130,11 @@ DATA Err
 DATA Err
   | PrfCutOffReached    pred       : {PredOcc}
                         depth      : {Int}
+%%[[9
   | NotProvenPreds      preds      : {[Pred]}
+%%][99
+  | NotProvenPreds      preds      : {[(Pred,[Range])]}
+%%]]
   | AmbigPreds          preds      : {[Pred]}
   | OverlapPreds        overl      : {AssocL Pred [PP_Doc]}
   | TyHasFreeTVars      ty         : {Ty}

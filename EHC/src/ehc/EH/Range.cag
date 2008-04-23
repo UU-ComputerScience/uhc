@@ -4,7 +4,7 @@
 
 %%[1.range
 SEM AllNT
-  | *           loc         .   range          		=   emptyRange
+  | *           loc         .   range               =   emptyRange
 %%]
 
 %%[99 -1.range
@@ -13,7 +13,7 @@ ATTR AllNTList [ | | range USE {emptyRange} {`rangePlus`}: Range ]
 ATTR AllNTWithoutList [ | | range USE {emptyRange} {`rangePlus`} {@fldrange}: Range ]
 
 SEM AllNT
-  | *           loc         .   childRange     		=   @range `rangePlus` @children.childRange
+  | *           loc         .   childRange          =   @range `rangePlus` @children.childRange
 
 ATTR AllNTList [ | | range USELOC {@fldrange} {`rangePlus`}: Range ]
 ATTR AllNTList [ | | range USE VIALOC WITH {@fldrange} {emptyRange} {`rangePlus`}: Range ]
@@ -23,3 +23,38 @@ leaf    : lhs.r = emptyRange
 
 children: loc.r = c1.r + c2.r + @fld
 leaf    : loc.r = emptyRange  + @fld
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather + distribute ranges for predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Source file location cannot always be easily propagated,
+in particular through the predicate proving machinery.
+All predicate occurrences are uniquely labeled, so this can be used to provide a mapping
+to the source location where such a predicate did arise.
+
+%%[99 hs
+type RangeMp = Map.Map Pred [Range]
+
+cnstrMpToRangeMp :: CHRPredOccCnstrMp -> RangeMp
+cnstrMpToRangeMp m = Map.unionsWith (++) [ Map.singleton (cpoPr p) [cpoRange p] | (Prove p) <- Map.keys m ]
+%%]
+
+%%[99
+ATTR NTPrf [ | | gathRangeMp USE {`Map.union`} {Map.empty}: RangeMp ]
+ATTR NTPrf [ rangeMp: RangeMp | | ]
+
+SEM AGItf
+  | AGItf       loc         .   rangeMp             =   Map.unionsWith (++)
+                                                        $ map (\(c,r) -> Map.singleton (@expr.tyVarMp |=> c) r)
+                                                        $ Map.toList
+                                                        $ @expr.gathRangeMp
+                                                          `Map.union` cnstrMpToRangeMp @expr.gathCnstrMp
+
+SEM Expr
+  | Let         lhs         .   gathRangeMp         =   @decls.gathRangeMp
+                                                        `Map.union` cnstrMpToRangeMp @decls.gathCnstrMp
+                                                        `Map.union` @body.gathRangeMp
+%%]
+
+

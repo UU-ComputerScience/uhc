@@ -58,7 +58,7 @@ pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%[20 export(pPredOccId)
 pPredOccId :: P PredOccId
 pPredOccId
-  = PredOccId <$ pOCURLY <*> pUIDHI <* pCOMMA <*> pUIDHI <* pCCURLY
+  = mkPrId <$> pUIDHI
 %%]
 
 %%[20 export(pIdOcc)
