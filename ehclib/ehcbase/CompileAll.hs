@@ -2,4 +2,6 @@
 
 module CompileAll where
 
+import System
+
 main = putStrLn "dummy"

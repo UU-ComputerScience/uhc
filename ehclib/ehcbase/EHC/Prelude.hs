@@ -93,6 +93,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     putChar, putStr, putStrLn, print, hPrint, getChar, getLine, getContents, interact,
     readFile, writeFile, appendFile,
     stdin, stdout, stderr, openFile, hClose, hGetContents, hGetChar, hGetLine, hPutChar, hPutStr, hPutStrLn, hFlush,
+    ioFromPrim,
 
 -- Exception related
 #ifdef __FULL_PROGRAM_ANALYSIS__
@@ -102,6 +103,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 
 --  EHC specific functions
     ehcRunMain,
+    PackedString,
     packedStringToString, packedStringToInteger
     
 ) where
