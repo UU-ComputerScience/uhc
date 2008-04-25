@@ -215,6 +215,7 @@ SEM GrVar
   | KnownTag    lhs         .   pp          =   @tag.pp
 
 SEM GrTag
+%%[[8
   | Hole        lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "H" >|< "/" >|< "_"
   | Rec         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "R" >|< "/" >|< @lhs.ppGrNm (mkHNm "()")
   | App         lhs         .   pp          =   "#" >|< "0" >|< "/" >|< "A" >|< "/" >|< @lhs.ppGrNm @nm
@@ -222,6 +223,15 @@ SEM GrTag
   | PApp        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "P" >|< "/" >|< @needs >|< "/" >|< @lhs.ppGrNm @nm
   | Con         lhs         .   pp          =   "#" >|< @int >|< "/" >|< "C" >|< show @grtgAnn >|< "/" >|< @lhs.ppGrNm @nm
   | World       lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "W" >|< "/" >|< "_"
+%%][8_2
+  | Hole        lhs         .   pp          =   pp "Hole" 
+  | Rec         lhs         .   pp          =   "R" >|< @lhs.ppGrNm (mkHNm "()")
+  | App         lhs         .   pp          =   "A" >|< pp @nm
+  | Fun         lhs         .   pp          =   "F" >|< pp @nm
+  | PApp        lhs         .   pp          =   "P" >|< pp @nm >|< @needs
+  | Con         lhs         .   pp          =   "C" >|< pp @nm
+  | World       lhs         .   pp          =   pp "World"
+%%]]
   | Unboxed     lhs         .   pp          =   pp "#U"
   | Any         lhs         .   pp          =   pp "#*"
 %%]
