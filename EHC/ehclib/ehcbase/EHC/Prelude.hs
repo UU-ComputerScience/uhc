@@ -4,6 +4,8 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     Oracle, primInitOracle, primOracleEnter, primOracleLeave,    
     primOracleNewEntry, primWhatIsNextOracle, primDumpOracle,
     thunkIsEvaluated,
+    primRawShow,
+    rawShow, RawShow,
 -- Classes
     Eq         ((==), (/=)),
     Ord        (compare, (<), (<=), (>=), (>), max, min),
@@ -2434,3 +2436,14 @@ foreign import ccall primIsEvaluated     :: a -> Int -- 0: F-Closure, 1: WHNF cl
 
 thunkIsEvaluated :: a -> Int
 thunkIsEvaluated t = primIsEvaluated t
+
+foreign import ccall primRawShow :: a -> a
+
+class RawShow a where
+    rawShow :: a -> a
+
+instance RawShow (a -> b) where
+    rawShow x = primRawShow x
+
+instance RawShow Int where
+    rawShow x = primRawShow x

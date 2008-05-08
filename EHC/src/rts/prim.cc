@@ -480,7 +480,7 @@ PRIM GrWord gb_primOracleLeave(GrWord o, GrWord x)
    // Oracle -> a -> a
 PRIM GrWord gb_primOracleEnterandLeave(GrWord o, GrWord x)
 {
-  struct oracleEntry *oe = (struct OracleEntry *) o;
+  struct OracleEntry *oe = (struct OracleEntry *) o;
   oe->last->count += oe->count+1;
   oe->last->next = oe->next;
   oe->next->last = oe->last;
@@ -533,7 +533,6 @@ PRIM GrWord gb_primDumpOracle()
   return l;
 }
 
-
 PRIM GrWord gb_primIsEvaluated(GrWord x)
 {
   if ( GB_Word_IsPtr(x)) {
@@ -543,6 +542,35 @@ PRIM GrWord gb_primIsEvaluated(GrWord x)
       return 0;
   }
   return 1;
+}
+
+PRIM GrWord gb_primRawShow(GrWord x)
+{
+  if(GB_Word_IsInt(x)) {
+    // an Integer value
+    printf("#%d ", GB_GBInt2Int(x));
+    return x;
+  } 
+
+  if(! GB_Word_IsPtr(x)) {
+    // not a pointer and not an int: this should never happen
+    printf("<internal_error> ");
+    return x;
+  }
+
+  GB_NodePtr n = Cast(GB_NodePtr,x);
+  GB_NodeHeader h = n->header;
+
+  if(GB_NH_Fld_NdEv(h) ==  GB_NodeNdEv_Yes) {
+    // unevaluated thunk
+    printf("_ ");
+    return x;
+  }
+
+  printf("<other>");
+
+  
+  return x;
 }
 
 %%]
