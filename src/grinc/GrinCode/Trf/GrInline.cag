@@ -164,6 +164,7 @@ evalCode
     ( Int                                -- uniqueFinal
     , HptMap                             -- updated hptMap
     , GrExpr                             -- generated code
+    , Bool                               -- valid
     )
 
 evalCode unique arityMap hptMap locatVar
@@ -190,11 +191,13 @@ evalCode unique arityMap hptMap locatVar
                    = let (uniqNext, entrNext, _, altNext) = buildEvalAlt locatVar fetchVar tag av arityMap hptMap uniqPrev
                      in  (uniqNext, entrNext++entrPrev, altNext:altsPrev)
 
-       code        = GrExpr_Seq (GrExpr_FetchNode locatVar) fetchPat $
-                     GrExpr_Case fetchVal altsFinal
+       code        = ( GrExpr_Seq (GrExpr_FetchNode locatVar) fetchPat 
+                     $ GrExpr_Case fetchVal altsFinal
+                     )
    in ( uniqFinal
       , addEnvVars hptMap entrFinal
       , code
+      , not (null cases)
       )
 
 %%]
@@ -381,8 +384,15 @@ ATTR GrAGItf
 ATTR GrAGItf       [ | | grTrf: GrModule ]
 ATTR AllNT         [ | | grTrf: SELF ]
 
+ATTR GrExpr [ | | valid: {Bool} ]
+
 SEM GrExpr
-  | Eval  loc  .  (unique, hptMap, grTrf)  = evalCode   @lhs.unique @lhs.arityMap @lhs.hptMap @nm
-  | App   loc  .  (unique, hptMap, grTrf)  = applyCode  @lhs.unique @lhs.arityMap @lhs.hptMap @nm @argL.grTrf
+  | Eval  loc  .  (unique, hptMap, grTrf, valid)  = evalCode   @lhs.unique @lhs.arityMap @lhs.hptMap @nm
+  | App   loc  .  (unique, hptMap, grTrf       )  = applyCode  @lhs.unique @lhs.arityMap @lhs.hptMap @nm @argL.grTrf
+  | * - Eval    loc.valid = True
+  
+--  | Seq   lhs.grTrf  =  if not @expr.valid || not @body.valid
+--                        then GrExpr_Unit GrVal_Empty
+--                        else @loc.grTrf
 
 %%]

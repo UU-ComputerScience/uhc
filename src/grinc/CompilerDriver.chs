@@ -30,6 +30,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.MergeCase})
 %%]
+%%[8 import({%{GRIN}GrinCode.Trf.EvalStored})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
@@ -41,6 +43,8 @@
 %%[8 import({%{GRIN}GrinCode.Trf.SparseCase})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CaseElimination})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.EmptyAlts})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CleanupPass})
 %%]
@@ -151,6 +155,19 @@ caLoad doParse = task_ VerboseNormal                "Loading"
          ; code <- gets gcsGrin
          ; let mess = checkMode code
          ; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
+
+         ; options <- gets gcsOpts
+         ; when (ehcOptPriv options)
+                ( do { transformCode         evalStored         "EvalStored"
+                     ; caWriteGrin                              "-116-evalstored"
+                     --; transformCodeIterated dropUnusedExpr       "Remove unused expressions"
+                     ; caWriteGrin                              "-117-unusedExprRemoved"
+                     }
+                )
+
+
+
+
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
          ; caWriteGrin                              "-119-numbered"
          }
@@ -171,11 +188,13 @@ caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
     ( do { transformCodeUnqHpt   inlineEA           "Inlining Eval and Apply calls" 
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin                              "-131-evalinlined"
+         ; transformCode emptyAlts                  "removing functionbodies with empty alternatives"
+         ; caWriteGrin                              "-132-emptyAlts"
          ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
-         ; caWriteGrin                              "-132-undead"
+         ; caWriteGrin                              "-133-undead"
          ; transformCodeUnq      lateInline         "LateInline"
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-133-lateinlined"
+         ; caWriteGrin                              "-134-lateinlined"
          }
     )
 -- optimisations part I
@@ -184,17 +203,11 @@ caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
          ; caWriteGrin                              "-141-sparseCaseRemoved"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
          ; caWriteGrin                              "-143-evaluatedCaseRemoved"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; transformCodeIterated dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin                              "-144-unusedExprRemoved"
          
 		 ; transformCode         mergeCase          "Merging cases"
          ; caWriteGrin                              "-145-caseMerged"         
-         --; options <- gets gcsOpts
-         --; when (ehcOptPriv options)
-         --       ( do { transformCode         mergeCase          "Merging cases"
-         --            ; caWriteGrin                              "-145-caseMerged"
-         --           }
-         --       )
          }
     )
 -- simplification part II
@@ -208,7 +221,7 @@ caNormalize = task_ VerboseNormal                   "Normalizing"
 caOptimize = task_ VerboseNormal                    "Optimizing (full)"
     ( do { transformCodeIterated propagate          "Copy propagation"
          ; caWriteGrin                              "-161-after-cp"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; transformCodeIterated dropUnusedExpr     "Remove unused expressions"
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin                              "-169-optimized"
          }
@@ -219,8 +232,7 @@ caFinalize = task_ VerboseNormal                    "Finalizing"
     ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
          ; caWriteGrin                              "-171-fetchSplitted"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
+         ; transformCodeIterated dropUnusedExpr       "Remove unused expressions"
          ; caWriteGrin                              "-176-unusedExprRemoved"
          ; transformCodeIterated propagate          "Copy propagation"
 --       ; transformCodeUnqHpt   returnCatch        "Ensure code exists after catch statement"
@@ -469,6 +481,7 @@ transformCodeIterated process message
          putDebugMsg (if changed then "Changes" else "No change")
          modify (gcsUpdateGrin code)
          if changed then (caFixCount $ n+1) else return n
+
 
 transformSilly :: (EHCOpts->SilModule->SilModule) -> String -> CompileAction ()
 transformSilly process message 
