@@ -383,6 +383,8 @@ SEM GrExpr
           lhs  .  equations   =  case @lhs.targetInfo of
                                    InVar  tvar       -> [ IsEqual tvar (getNr @nm) ]
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
+                                   InEnum tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
+                                   _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
 %%]
 
 

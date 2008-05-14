@@ -1,0 +1,105 @@
+Replace
+   STORE (#F/f x y) ;\r ->
+   EVAL r
+by
+   STORE (#F/f x y) ;\r ->
+   CALL f x y
+The STORE expression is not removed, but will be by a subsequent DropUnusedExpr transformation
+if r is not used elsewhere
+Similar for #A.
+
+For other tags, e.g. #C, we have replace
+   STORE (#C/c x y) ;\r ->
+   EVAL r
+by
+   STORE (#C/c x y) ;\r ->
+   UNIT (#C/c x y)
+
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+%%[8 hs import (qualified Data.Map as Map)
+%%]
+%%[8 hs import ({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+%%[8
+WRAPPER GrAGItf
+%%]
+%%[8 hs module {%{GRIN}GrinCode.Trf.EvalStored} export(evalStored)
+
+evalStored :: GrModule -> GrModule
+evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                        (Inh_GrAGItf)
+                   in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+
+%%[8
+
+ATTR GrExpr [ | | mbIsStore : {Maybe GrExpr} 
+                  mbIsEval  : {Maybe GrExpr} 
+                  mbStartsWithEval : {Maybe (GrExpr,GrPatLam,GrExpr)} ]
+
+SEM GrExpr
+  | Eval       lhs.mbIsEval   =   Just @loc.grTrf
+  | * - Eval   lhs.mbIsEval   =   Nothing
+
+  | Store      lhs.mbIsStore  =   Just @loc.grTrf
+  | * - Store  lhs.mbIsStore  =   Nothing
+  
+  | Seq        lhs.mbStartsWithEval  =  maybe Nothing
+                                              (\e -> Just (e, @pat.grTrf, @body.grTrf))  
+                                              @expr.mbIsEval
+  | * - Seq    lhs.mbStartsWithEval  =  Nothing
+                                    
+
+SEM GrExpr
+  | Seq        lhs.grTrf   =  maybe @loc.grTrf
+                                    (\(GrExpr_Store val1)
+                                         -> maybe (maybe @loc.grTrf
+                                                         (\(GrExpr_Eval nm2)
+                                                              -> if   patIsName @pat.grTrf nm2
+                                                                 then GrExpr_Seq @expr.grTrf
+                                                                                 @pat.grTrf
+                                                                                 (evaluateNode val1)
+                                                                 else @loc.grTrf
+                                                         )
+                                                         @body.mbIsEval
+                                                  )
+                                                  (\(GrExpr_Eval nm2,pat2,rest2) 
+                                                       -> if   patIsName @pat.grTrf nm2
+                                                          then let newExpr = evaluateNode val1
+                                                               in  GrExpr_Seq @expr.grTrf
+                                                                              @pat.grTrf
+                                                                              (GrExpr_Seq newExpr pat2 rest2)
+                                                          else @loc.grTrf
+                                                  )
+                                                  @body.mbStartsWithEval
+                                    )
+                                    @expr.mbIsStore
+                      
+
+%%]
+
+%%[8 hs
+
+evaluateNode node@(GrVal_Node tag flds) 
+  =  case tag of
+       GrTag_Fun nm -> GrExpr_Call nm flds
+       GrTag_App nm -> GrExpr_Call nm flds    -- GrExpr_App  (val2name (head flds)) (tail flds)
+       _            -> GrExpr_Unit node
+
+patIsName :: GrPatLam -> HsName -> Bool
+patIsName (GrPatLam_Var nm1) nm2 = nm1==nm2
+patIsName _ _ = False
+
+val2name :: GrVal -> HsName
+val2name (GrVal_Var nm) = nm
+
+%%]
