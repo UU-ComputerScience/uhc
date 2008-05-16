@@ -1358,7 +1358,7 @@ cpTransformGrin modNm
                            ++  (if optimizing                then mk [nme]                   else [])
 
                    where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
-                         inl  = ( grInline                       , "inline"           )
+                         inl  = ( grInline True                  , "inline"           )
                          flt  = ( grFlattenSeq                   , "flatten"          )
                          ale  = ( grAliasElim                    , "alias elim"       )
                          nme  = ( grUnusedNameElim               , "unused name elim" )
@@ -1375,7 +1375,7 @@ cpTransformGrin modNm
                                          ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
                                                expNmOffMp     = crsiExpNmOffMp modNm crsi
                                                optim          = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
                                          ; cpMsgGrinTrf modNm "inline"
                                          ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
                                          }

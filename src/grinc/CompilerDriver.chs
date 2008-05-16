@@ -232,7 +232,7 @@ caFinalize = task_ VerboseNormal                    "Finalizing"
     ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
          ; caWriteGrin                              "-171-fetchSplitted"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
-         ; transformCodeIterated dropUnusedExpr       "Remove unused expressions"
+         ; transformCodeIterated dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin                              "-176-unusedExprRemoved"
          ; transformCodeIterated propagate          "Copy propagation"
 --       ; transformCodeUnqHpt   returnCatch        "Ensure code exists after catch statement"
@@ -443,9 +443,9 @@ transformCodeInline message
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
 %%[[8
-       ; let code = grInline grin
+       ; let code = grInline False grin
 %%][20
-       ; let (code,_) = grInline Set.empty Map.empty grin 
+       ; let (code,_) = grInline False Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)
        }
