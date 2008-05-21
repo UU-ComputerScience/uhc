@@ -4,6 +4,8 @@ Variable bindings that are never used are replaced by wildcards.
 Global variables and functions thar are never used are removed.
 Alternatives with tags that involve functions that do no longer exist are removed.
 
+Note: this transformation can not be used between buildAppBindings and numberIdents.
+
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
@@ -39,57 +41,85 @@ ATTR GrAGItf GrModule AllBind AllGlobal AllGrExpr [ | | changes USE {||} {False}
 
 %%[8
 
--- We have a bottom-up collection of variables that are "used".
--- Variables that are "defined" by patterns are subtracted, thus only free variables are collected.
--- At the module level this is bended downwards, such that all bindings in "getUsed" get the used variables.
--- Also, patterns in "getUsed" get the locally used variables.
-
+-- We collect bottom-up the free variables used in an Expression, Value, and Tag.
+-- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
+-- Also we collect the free variables in the body of each binding an global (this will be other function and global names).
 
 ATTR AllGrExpr
      AllGrVal
      AllGrTag
      AllBind
-     AllGlobal   [ | | used     USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+     AllGlobal   [ | | freeUsed USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 
-ATTR AllGrPat    [ getUsed : {Set.Set HsName} | | defined  USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]   
+
+-- In patterns we collect the variables that are bound.
+
+ATTR AllGrPat    [ | | defined  USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]   
+
+
+-- We distribute top-down:
+--  * the set of used variables downstream of a defining pattern 
+--      - to the defining pattern (so that they can be replaced by "_" if they are not used)
+--  * the set of used global variables and functionnames 
+--      - to the other global definitions and bindings (so that they can be deleted if they are not used)
+
+ATTR AllGrPat    [ downstreamUsed : {Set.Set HsName} | | ]   
 
 ATTR AllBind
-     AllGlobal   [ getUsed : {Set.Set HsName} | | ]
+     AllGlobal   [ globalUsed : {Set.Set HsName} | | ]
 
-SEM GrModule
-  |  Mod          loc.getUsed  =  @globalL.used  `Set.union` (Set.insert mainNr (Set.insert hsnMainFullProg @bindL.used))
 
-SEM GrBind
-  | Bind          lhs.used     =  foldr Set.delete @expr.used @argNmL
+-- At defining positions, we "bend down" the usage information
 
 SEM GrExpr
-  | Seq           lhs.used     =  @expr.used `Set.union`  Set.fold Set.delete @body.used @pat.defined
-                  pat.getUsed  =  @body.used
-  | UpdateUnit    lhs.used     =  Set.insert @nm @val.used
-  | FetchNode     lhs.used     =  Set.singleton @nm
-  | FetchUpdate   lhs.used     =  Set.singleton @src  `Set.union`  Set.singleton @dst
-  | FetchField    lhs.used     =  Set.singleton @nm
-  | Call          lhs.used     =  Set.insert @nm @argL.used
-  | Eval          lhs.used     =  Set.singleton @nm
-  | App           lhs.used     =  Set.insert @nm @argL.used
-  | Throw         lhs.used     =  Set.singleton @nm  
-  | Catch         lhs.used     =  @body.used `Set.union` Set.delete @arg @handler.used
+  | Seq           pat.downstreamUsed   =  @body.freeUsed
 
 SEM GrAlt
-  | Alt           lhs.used     =  Set.fold Set.delete @expr.used @pat.defined
-                  pat.getUsed  =  @expr.used
+  | Alt           pat.downstreamUsed   =  @expr.freeUsed
+
+SEM GrModule
+  |  Mod          loc.globalUsed  =  @globalL.freeUsed  `Set.union` (Set.insert mainNr (Set.insert hsnMainFullProg @bindL.freeUsed))
+
+
+-- At defining positions, the bound variables are removed from the freeFreq map:
+
+SEM GrBind
+  | Bind          lhs.freeUsed    =  foldr Set.delete @expr.freeUsed @argNmL
+
+SEM GrExpr
+  | Seq           lhs.freeUsed    =  @expr.freeUsed `Set.union`  Set.fold Set.delete @body.freeUsed @pat.defined
+  | Catch         lhs.freeUsed    =  @body.freeUsed `Set.union`  Set.delete @arg @handler.freeUsed
+
+SEM GrAlt
+  | Alt           lhs.freeUsed    =  Set.fold Set.delete @expr.freeUsed @pat.defined
+
+
+-- At using positions, the freeFreq map is initialized or updated
+
+SEM GrExpr
+  | UpdateUnit    lhs.freeUsed    =  Set.insert @nm @val.freeUsed         -- Note:  although  @nm is not a "use", we do regard it as such, so that we won't be updating an eliminated variable
+  | FetchNode     lhs.freeUsed    =  Set.singleton @nm
+  | FetchUpdate   lhs.freeUsed    =  Set.insert @src (Set.singleton @dst) -- Note:  although @dst is not a "use", we do regard it as such, so that we won't be updating an eliminated variable
+  | FetchField    lhs.freeUsed    =  Set.singleton @nm
+  | Call          lhs.freeUsed    =  Set.insert    @nm @argL.freeUsed
+  | Eval          lhs.freeUsed    =  Set.singleton @nm
+  | App           lhs.freeUsed    =  Set.insert    @nm @argL.freeUsed
+  | Throw         lhs.freeUsed    =  Set.singleton @nm  
 
 SEM GrVal
   | Var
     BasicNode
     EnumNode
     PtrNode
-    OpaqueNode    lhs.used     =  Set.singleton @nm
+    OpaqueNode    lhs.freeUsed    =  Set.singleton @nm
 
 SEM GrTag
   | Fun
     PApp
-    App           lhs.used     =  Set.singleton @nm
+    App           lhs.freeUsed    =  Set.singleton @nm
+
+
+-- In patterns we collect the variables that are bound
 
 SEM GrPatAlt
   | Node          lhs.defined  =  Set.fromList @fldL
@@ -118,6 +148,13 @@ SEM GrSplit
 
 %%[8
 
+
+
+%%]
+
+
+%%[8
+
 -- Determine which expressions have a side effect.
 -- This is certainly the case for FFI, Throw, and Update.
 -- Case and Seq expressions have side effects if their children have.
@@ -132,14 +169,18 @@ ATTR AllGrExpr [ | | sideEffectCoarse USE {||} {False} : Bool ]
 ATTR AllGrExpr [ | | sideEffectFine   USE {||} {False} : Bool ]
 
 SEM GrExpr 
-  | FFI 
+  | FFI
+    Eval
+    App
     Throw 
     FetchUpdate 
     UpdateUnit    lhs  .  sideEffectCoarse  =  True
   | Call          lhs  .  sideEffectCoarse  =  True
 
 SEM GrExpr 
-  | FFI 
+  | FFI
+    Eval
+    App
     Throw 
     FetchUpdate 
     UpdateUnit    lhs  .  sideEffectFine  =  True
@@ -155,7 +196,6 @@ ATTR AllGrExpr AllBind  [  allSideEffectMap : {Map.Map HsName Bool}  | | ]
 SEM GrModule
   | Mod   bindL.allSideEffectMap  =  @bindL.genSideEffectMap
 
-
 %%]
 
 
@@ -170,9 +210,9 @@ SEM GrModule
 SEM GrExpr
   | Seq  (lhs.grTrf
          ,lhs.changes)   =  -- if @expr.throws then @expr.grTrf else 
-                            if not @expr.sideEffectFine   &&  not (any (`Set.member` @body.used) (Set.toList @pat.defined)) 
-                            then (@body.grTrf, True)
-                            else (@loc.grTrf, @expr.changes || @body.changes)
+                            if @expr.sideEffectFine   || (any (`Set.member` @body.freeUsed) (Set.toList @pat.defined)) 
+                            then (@loc.grTrf,  @expr.changes || @body.changes)
+                            else (@body.grTrf, True)
 
 -- Bindings, Globals, and Alternatives that are not "life" are deleted.
 
@@ -191,14 +231,14 @@ ATTR GrBind GrGlobal GrAlt [ | | life : Bool ]
 
 -- Bindings and Gloabls are life if they are used
 SEM GrBind
-  | Bind   lhs . life  =  @nm `Set.member` @lhs.getUsed
+  | Bind   lhs . life  =  @nm `Set.member` @lhs.globalUsed
   | Rec    lhs . life  =  not (null @bindL.grTrf)
 
 SEM GrGlobal
-  | Global lhs . life  =  @nm `Set.member` @lhs.getUsed
+  | Global lhs . life  =  @nm `Set.member` @lhs.globalUsed
 
 -- The liveness of an alterntive depends on its tag.
--- For C and special tags the are always life.
+-- C and special tags are always life.
 -- An F, A or P tag is life if the corresponding function exists.
 
 SEM GrAlt
@@ -244,21 +284,21 @@ SEM GrModule
 -- (This is only important for the result of expressions that are kept because of their side effects)
 
 SEM GrPatLam
-  | Var         lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.getUsed  @nm)
-  | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode  @annot      (mkWildcard @lhs.getUsed  @nm)
-  | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode               (mkWildcard @lhs.getUsed  @nm)
-  | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode             (mkWildcard @lhs.getUsed  @nm)
-  | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode                (mkWildcard @lhs.getUsed  @nm)
-  | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot      (mkWildcard @lhs.getUsed  @nm)
-  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.getUsed  @nm)
-  | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot            (mkWildcard @lhs.getUsed  @nm)
-  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot   @tagL.grTrf (mkWildcard @lhs.getUsed  @nm)
+  | Var         lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.downstreamUsed  @nm)
+  | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode  @annot      (mkWildcard @lhs.downstreamUsed  @nm)
+  | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode               (mkWildcard @lhs.downstreamUsed  @nm)
+  | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode             (mkWildcard @lhs.downstreamUsed  @nm)
+  | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode                (mkWildcard @lhs.downstreamUsed  @nm)
+  | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot      (mkWildcard @lhs.downstreamUsed  @nm)
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.downstreamUsed  @nm)
+  | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot            (mkWildcard @lhs.downstreamUsed  @nm)
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot   @tagL.grTrf (mkWildcard @lhs.downstreamUsed  @nm)
 
 SEM GrPatAlt
-  | Node     lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf (map (mkWildcard @lhs.getUsed) @fldL)
+  | Node     lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf (map (mkWildcard @lhs.downstreamUsed) @fldL)
 
 SEM GrVar
-  | Var      lhs  .  grTrf  = if @nm `Set.member` @lhs.getUsed then GrVar_Var @nm else GrVar_Ignore
+  | Var      lhs  .  grTrf  = if @nm `Set.member` @lhs.downstreamUsed then GrVar_Var @nm else GrVar_Ignore
   
 {
 mkWildcard m x = if x `Set.member` m then x else wildcardNr
@@ -278,3 +318,18 @@ reportUnused :: Set.Set HsName -> HsName -> String
 reportUnused m x = if x `Set.member` m then "" else (" " ++ show x)
 
 
+
+-- Some obsolete code:
+-- Updates that are not necessary are removed
+-- but it appears to be too hard to determine whether an update is unnecessary
+
+SEM GrExpr
+  | UpdateUnit  (lhs.grTrf
+                ,lhs.changes)  =  if    @nm `Set.member` ???
+                                  then (@loc.grTrf             , False)
+                                  else (GrExpr_Unit @val.grTrf , True )
+                                  
+  | FetchUpdate (lhs.grTrf
+                ,lhs.changes)  =  if    @dst `Set.member` ???
+                                  then (@loc.grTrf            , False)
+                                  else (GrExpr_FetchNode @src , True )

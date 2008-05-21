@@ -155,21 +155,12 @@ caLoad doParse = task_ VerboseNormal                "Loading"
          ; code <- gets gcsGrin
          ; let mess = checkMode code
          ; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
-
-         ; options <- gets gcsOpts
-         ; when (ehcOptPriv options)
-                ( do { transformCode         evalStored         "EvalStored"
-                     ; caWriteGrin                              "-116-evalstored"
-                     --; transformCodeIterated dropUnusedExpr       "Remove unused expressions"
-                     ; caWriteGrin                              "-117-unusedExprRemoved"
-                     }
-                )
-
-
-
-
+         ; transformCode         evalStored         "EvalStored"
+         ; caWriteGrin                              "-116-evalstored"
          ; transformCodeUnq      numberIdents       "Numbering identifiers"
          ; caWriteGrin                              "-119-numbered"
+         ; transformCodeIterated dropUnusedExpr     "Remove unused expressions"
+         ; caWriteGrin                              "-120-unusedExprRemoved"
          }
     )
 
@@ -205,7 +196,6 @@ caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
          ; caWriteGrin                              "-143-evaluatedCaseRemoved"
          ; transformCodeIterated dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin                              "-144-unusedExprRemoved"
-         
 		 ; transformCode         mergeCase          "Merging cases"
          ; caWriteGrin                              "-145-caseMerged"         
          }
@@ -637,3 +627,17 @@ cpuUsageInfo = (\(a, b) -> (10^a, b)) closest
                 ]
 %%]
 
+
+
+
+
+
+
+-- Idiom for doing a transformation only when the --priv=1 option is in effect:
+
+         ; options <- gets gcsOpts
+         ; when (ehcOptPriv options)
+                ( do { transformCode         evalStored         "EvalStored"
+                     ; caWriteGrin                              "-116-evalstored"
+                     }
+                )
