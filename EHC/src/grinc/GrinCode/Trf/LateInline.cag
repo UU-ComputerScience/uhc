@@ -88,7 +88,7 @@ SEM GrBindL
                             else @hd.grTrf : @tl.grTrf
 -}
 
--- Do not completely drop the function, because its arity is still needed in LowerGrin
+-- Do not completely drop the function, because its arity is still needed in SplitFetch
 -- So, keep a binding with a trivial body
 
 SEM GrBind

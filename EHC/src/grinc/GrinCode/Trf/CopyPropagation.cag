@@ -126,7 +126,7 @@ testL pat val
                               GrVal_BasicNode t n -> Nothing -- error $ "CopyProp: left: node-pattern does not match BasicNode" ++ show n
                               GrVal_OpaqueNode  n -> Nothing -- error $ "CopyProp: left: node-pattern does not match OpaqueNode" ++ show n
                               GrVal_PtrNode     n -> Nothing -- error $ "CopyProp: left: node-pattern does not match PtrNode" ++ show n
-                              _                   -> error "CopyProp: left: node-pattern does not match"
+                              _                   -> error ("CopyProp: left: node-pattern does not match pat=" ++ show pat ++ " val=" ++ show val)
       _  -> Nothing
                               
 
