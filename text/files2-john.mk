@@ -1,7 +1,45 @@
-text-variant-llvm:
+LLVM_CODE_IMG_PREFIX       := $(TOP_PREFIX)text/llvm/img/
+LLVM_CODE_SRC_PREFIX       := $(TOP_PREFIX)text/llvm/code/
+
+LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
+                              $(TEXT_TMP_VARIANT_PREFIX)FibExe.core \
+                              $(TEXT_TMP_VARIANT_PREFIX)FibExe.grin \
+                              $(TEXT_TMP_VARIANT_PREFIX)FibExe-179-final.grin \
+                              $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex
+
+LLVM_GRIN_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.grin
+LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-013-renameuniform.grin \
+                              $(LLVM_CODE_SRC_PREFIX)Eval.grin
+
+LLVM_CODE_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.hs 
+LLVM_CODE_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)Fib.hs \
+                              $(LLVM_CODE_SRC_PREFIX)Prelude.hs
+
+text-variant-llvm: $(LLVM_THESIS_EXAMPLES)
 	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=inclTOC --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=35 \
 	  text-variant-dflt-bib
 
+$(TEXT_TMP_VARIANT_PREFIX)%.lhs: $(TEXT_TMP_VARIANT_PREFIX)%.hs  
+	echo '\\begin{code}' > $@
+	cat $< >> $@
+	echo '\end{code}' >> $@
 
+$(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_SRC_PREFIX)%
+	mkdir -p $(dir $@)
+	cp $< $@
+
+$(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_IMG_PREFIX)%
+	mkdir -p $(dir $@)
+	cp $< $@
+
+$(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-000-initial.grin: $(LLVM_CODE_FILES)
+	cd $(LLVM_CODE_SRC_PREFIX) ; \
+../../../bin/8_2/ehc -clexe --dump-grin-stages=1 --verbose=2 --optimise=1 --priv=0 -p- $<
+
+$(LLVM_GRIN_FILES): $(LLVM_GRIN_FILES_DEP)
+	cat $^ > $@
+
+$(LLVM_CODE_FILES): $(LLVM_CODE_FILES_DEP)
+	cat $^ > $@
