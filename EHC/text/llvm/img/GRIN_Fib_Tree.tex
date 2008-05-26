@@ -1,0 +1,50 @@
+\footnotesize
+\tikzstyle{pointer} = [draw, *-triangle 60]
+\tikzstyle{tag}     = [rectangle, draw, text width=6em
+                      , minimum height=2em, text centered
+                      , node distance=4em]
+\tikzstyle{payload} = [tag, right, xshift=-0.5pt, text width=3em]
+
+\begin{tikzpicture}[auto]
+
+%% FprimAddInt Node
+\node [tag]     (FprimAddInt-Tag) {FprimAddInt};
+\node [payload] (FprimAddInt-Load1) at (FprimAddInt-Tag.east) { };
+\node [payload] (FprimAddInt-Load2) at (FprimAddInt-Load1.east) { };
+ 
+%% FfibLeft Node
+\node [tag, below of=FprimAddInt-Tag]     (FfibLeft-Tag) {Ffib};
+\node [payload] (FfibLeft-Load1) at (FfibLeft-Tag.east) {};
+
+%% FprimSubIntLeft Node
+\node [tag, below of=FfibLeft-Tag] (FprimSubIntLeft-Tag) {FprimSubInt};
+\node [payload] (FprimSubIntLeft-Load1) at (FprimSubIntLeft-Tag.east) {$\$p15$};
+\node [payload] (FprimSubIntLeft-Load2) at (FprimSubIntLeft-Load1.east) {};
+
+%% CInt 1
+\node [tag, below of=FprimSubIntLeft-Tag] (CIntLeft-Tag) {CInt};
+\node [payload] (CIntLeft-Load1) at (CIntLeft-Tag.east) {1};
+
+\path[pointer] (FprimAddInt-Load1.center)     -- (FfibLeft-Tag);
+\path[pointer] (FfibLeft-Load1.center)        -- (FprimSubIntLeft-Tag);
+\path[pointer] (FprimSubIntLeft-Load2.center) -- (CIntLeft-Tag);
+
+%% Right subtree
+%% FibRight Node
+\node [tag, right of=FfibLeft-Load1, xshift=8em]     (FfibRight-Tag) {Ffib};
+\node [payload] (FfibRight-Load1) at (FfibRight-Tag.east) {};
+
+%% FprimSubIntLeft Node
+\node [tag, right of=FprimSubIntLeft-Load2, xshift=4.5em] (FprimSubIntRight-Tag) {FprimSubInt};
+\node [payload] (FprimSubIntRight-Load1) at (FprimSubIntRight-Tag.east) {$\$p15$};
+\node [payload] (FprimSubIntRight-Load2) at (FprimSubIntRight-Load1.east) {};
+
+%% CInt 2
+\node [tag, below of=FprimSubIntLeft-Load2, xshift=8.5em] (CIntRight-Tag) {CInt};
+\node [payload] (CIntRight-Load1) at (CIntRight-Tag.east) {2};
+
+\path[pointer] (FprimAddInt-Load2.center)      -- (FfibRight-Tag);
+\path[pointer] (FfibRight-Load1.center)        -- (FprimSubIntRight-Tag);
+\path[pointer] (FprimSubIntRight-Load2.center) -- (CIntRight-Tag);
+\end{tikzpicture}
+

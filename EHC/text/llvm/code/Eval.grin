@@ -1,0 +1,25 @@
+$eval $p30 =
+  fetch $p30; \$n31 ->
+  case $n31 of
+    (FprimSubInt $p32 $p33) ->
+      $primSubInt $p32 $v33; \$n34 ->
+      update $p30 $n34; \() ->
+      unit $n34
+    (FprimAddInt $p35 $p36) ->
+      $primAddInt $p35 $p36; \$n37 ->
+      update $p30 $n37; \() ->
+      unit $n37
+    (FprimEqInt $p38 $p39) ->
+      $primEqInt $p38 $p39; \$n40 ->
+      update $p30 $n40; \() ->
+      unit $n40
+    (Ffib $p41) ->
+      $fib $p41; \$n42 ->
+      update $p30 $n42; \() ->
+      unit $n42
+    (CInt _) ->
+      unit $n31
+    (CTrue) ->
+      unit $n31
+    (CFalse) ->
+      unit $n31
