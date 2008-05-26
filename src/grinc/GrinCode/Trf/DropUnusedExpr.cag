@@ -43,7 +43,7 @@ ATTR GrAGItf GrModule AllBind AllGlobal AllGrExpr [ | | changes USE {||} {False}
 
 -- We collect bottom-up the free variables used in an Expression, Value, and Tag.
 -- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
--- Also we collect the free variables in the body of each binding an global (this will be other function and global names).
+-- Also we collect the free variables in the body of each binding of an global (this will be other function and global names).
 
 ATTR AllGrExpr
      AllGrVal
@@ -62,11 +62,13 @@ ATTR AllGrPat    [ | | defined  USE {`Set.union`} {Set.empty}: {Set.Set HsName} 
 --      - to the defining pattern (so that they can be replaced by "_" if they are not used)
 --  * the set of used global variables and functionnames 
 --      - to the other global definitions and bindings (so that they can be deleted if they are not used)
+--      - to each Expr, so that the liveness of tags in alternatives can be checked
 
 ATTR AllGrPat    [ downstreamUsed : {Set.Set HsName} | | ]   
 
 ATTR AllBind
-     AllGlobal   [ globalUsed : {Set.Set HsName} | | ]
+     AllGlobal
+     AllGrExpr   [ globalUsed : {Set.Set HsName} | | ]
 
 
 -- At defining positions, we "bend down" the usage information
@@ -229,7 +231,7 @@ SEM GrBindL GrGlobalL GrAltL
 -- So, we need a "life" attribute that decides whether a Binding/Global/Alternative is deleted.
 ATTR GrBind GrGlobal GrAlt [ | | life : Bool ]
 
--- Bindings and Gloabls are life if they are used
+-- Bindings and Globals are life if they are used
 SEM GrBind
   | Bind   lhs . life  =  @nm `Set.member` @lhs.globalUsed
   | Rec    lhs . life  =  not (null @bindL.grTrf)
@@ -237,13 +239,13 @@ SEM GrBind
 SEM GrGlobal
   | Global lhs . life  =  @nm `Set.member` @lhs.globalUsed
 
--- The liveness of an alterntive depends on its tag.
+-- The liveness of an alternative depends on its tag.
 -- C and special tags are always life.
 -- An F, A or P tag is life if the corresponding function exists.
 
 SEM GrAlt
   | Alt    lhs . life  =  maybe True
-                                (\nm -> Set.member nm @lhs.allFunctionNames)
+                                (\nm -> Set.member nm @lhs.globalUsed)
                                 @pat.mbTagName
 
 -- This determines which tags to check:
@@ -264,17 +266,6 @@ SEM GrTag
     World
     Unboxed
     Any        lhs.mbTagName = Nothing
-
--- This collects and subsequently passes down all existing fucntions:
-
-ATTR AllBind           [ | | functionNames USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR AllBind AllGrExpr [  allFunctionNames : {Set.Set HsName} | | ]
-
-SEM GrBind
-  | Bind    lhs.functionNames  =  Set.singleton @nm
-
-SEM GrModule
-  |  Mod  bindL.allFunctionNames = @bindL.functionNames
 
 %%]
 

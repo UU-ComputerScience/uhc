@@ -59,7 +59,9 @@ ATTR GrPatAlt [ | | lamPat : GrPatLam ]
 
 SEM GrPatAlt
   | Node     lhs . lamPat    = GrPatLam_VarNode (GrVar_KnownTag @tag.grTrf : map GrVar_Var @fldL)
-  | * - Node lhs . lamPat    = error "CaseElimination: lamPat of non-Node"
+  | Tag      lhs . lamPat    = GrPatLam_VarNode (GrVar_Ignore : [] )
+  | * - Node
+        Tag  lhs . lamPat    = error "CaseElimination: lamPat of non-Node"
 
 SEM GrAltL
   | Cons  lhs  .  newBody  =  @hd.newBody

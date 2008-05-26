@@ -141,7 +141,7 @@ putErrs (CompileError e) = putStrLn e >> return ()
 caLoad doParse = task_ VerboseNormal                "Loading"
     ( do { when doParse caParseGrin
          ; caWriteGrin                              "-110-parsed"
-         ; transformCode         dropUnreachableBindings "Dropping unreachable bindings"
+         ; transformCode         (dropUnreachableBindings False) "Dropping unreachable bindings"
          ; caWriteGrin                              "-111-reachable"
          ; transformCode         cleanupPass        "Cleaning up"
          ; caWriteGrin                              "-112-cleaned"
@@ -179,13 +179,15 @@ caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
     ( do { transformCodeUnqHpt   inlineEA           "Inlining Eval and Apply calls" 
          ; transformCodeIterated rightSkew          "Unskewing"
          ; caWriteGrin                              "-131-evalinlined"
-         ; transformCode emptyAlts                  "removing functionbodies with empty alternatives"
-         ; caWriteGrin                              "-132-emptyAlts"
          ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
-         ; caWriteGrin                              "-133-undead"
+         ; caWriteGrin                              "-132-undead"
+         ; transformCode emptyAlts                  "removing functionbodies with empty alternatives"
+         ; caWriteGrin                              "-133-emptyAlts"
+         ; transformCode         (dropUnreachableBindings True) "Dropping unreachable bindings"
+         ; caWriteGrin                              "-134-reachable"
          ; transformCodeUnq      lateInline         "LateInline"
          ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-134-lateinlined"
+         ; caWriteGrin                              "-135-lateinlined"
          }
     )
 -- optimisations part I
@@ -222,6 +224,7 @@ caFinalize = task_ VerboseNormal                    "Finalizing"
     ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
          ; caWriteGrin                              "-171-fetchSplitted"
          ; transformCode         caseElimination    "Removing evaluated and trivial cases"
+         ; caWriteGrin                              "-172-evaluatedCaseRemoved"
          ; transformCodeIterated dropUnusedExpr     "Remove unused expressions"
          ; caWriteGrin                              "-176-unusedExprRemoved"
          ; transformCodeIterated propagate          "Copy propagation"
@@ -433,9 +436,9 @@ transformCodeInline message
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
 %%[[8
-       ; let code = grInline False grin
+       ; let code = grInline True grin
 %%][20
-       ; let (code,_) = grInline False Set.empty Map.empty grin 
+       ; let (code,_) = grInline True Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)
        }
