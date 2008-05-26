@@ -66,6 +66,8 @@
 %%]
 %%[8 hs import({%{GRIN}GrinCode.Trf.ConstPropagation}, {%{GRIN}GrinCode.Trf.FlattenSeq}, {%{GRIN}GrinCode.Trf.EvalElim}, {%{GRIN}GrinCode.Trf.Inline})
 %%]
+%%[8_2 hs import({%{GRIN}GrinCode.Trf.PrettyVarNames})
+%%]
 -- Bytecode output
 %%[8 import({%{GRIN}GrinByteCode.ToC})
 %%]
@@ -1367,7 +1369,14 @@ cpTransformGrin modNm
                          cpr  = ( grConstPropagation             , "const prop"       )
                          unb  = ( grMayLiveUnboxed 
                                    Bytecode.tagAllowsUnboxedLife , "unbox"            )
+%%[[8_2
+                         frm  = ( grPrettyNames                  , "rename uniform"   ) 
+%%]]
+%%[[8
                          evel = [ flt, ale, eve, ale ]
+%%][8_2
+                         evel = [ flt, ale, frm, eve, ale ]
+%%]]
 %%[[8                              
                          inline = mk [inl]
 %%][20                                
