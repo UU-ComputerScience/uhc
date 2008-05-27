@@ -100,15 +100,23 @@ GRIN is the first language of the EHC pipeline which makes the creation and orde
 The code generated for the three primitive functions illustrate how EHC interfaces with foreign functions. The arguments of the function are evaluated before the call and reduced to a native type. For example, the CInt nodes that are returned by the \$eval function are reduced to a bare machine register integer by selecting the integer field from the node. After each parameter is untagged, the foreign function is called. The return value of the foreign function is either a tag or an untagged value. Tag values can be returned as tag if the node has no payload, while unboxed values need to be wrapped before returned.     
 
 \subsubsection{GRIN optimizations}
-The code shown in \refF{fig:fib-grin} is very naive. Whole nodes are fetched if only the tag is needed, small functions are not inlined and some nodes are allocated and directly evaluated instead of an direct function call. This is a result of design choices in EHC, opting to generate naive code followed by applying simple optimizing transformations. This allowes for an relative isolated study of each optimization.
+The code shown in \refF{fig:fib-grin} is very naive. Whole nodes are fetched if only the tag is needed, small functions are not inlined and some nodes are allocated and directly evaluated instead of an direct function call. This is a design choice in GRIN, opting to generate naive code followed by applying small and simple optimizing transformations. The static single assignment form of the GRIN program make optimizing easier, as the program can be analyzed without worrying about alias problems.
 
-\todo{Strictness analysis, folding, unfolding}
+The effect of the optimization transformations is illustrated in \refF{fig:fib-grin-tree-opt}. The figure shows the code generated for the recursive branch of the \$fib function. The function \$primAddInt is inlined in this brach and give the opportunity to eliminate the allocation of the suspended function nodes FprimAddInt node and Ffib because they are evaluated later in this branch. \refF{fig:fib-grin-tree} shows the closures build by the optimized code. This reduces the memory allocation by fib with 41\%.
 
-\begin{figure}[p]
-  \lstinputlisting[style={figureLstFootnote}, language={grin}]{FibExe-179-final.grin}
+\begin{figure}[htbp]
+  \lstinputlisting[style={figureLstFootnote}, language={grin}]{FibExe-opt.grin}
   \caption{Optimized GRIN code for the Haskell program of \refF{fig:fib-hs}}
   \label{fig:fib-grin-opt}
 \end{figure}
 
-\todo{Format code nice, only a smart part, and illustrate optimizations with it.}
+\begin{figure}[tbhp]
+  \begin{centering}
+    \input{GRIN_Fib_Tree_Opt.tex}
+    \caption{Closures build by the optimized version of \$fib}
+    \label{fig:fib-grin-tree-opt}
+  \end{centering}
+\end{figure}
+
+\subsection{Silly}
 %%]

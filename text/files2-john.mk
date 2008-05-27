@@ -4,8 +4,9 @@ LLVM_CODE_SRC_PREFIX       := $(TOP_PREFIX)text/llvm/code/
 LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe.core \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe.grin \
-                              $(TEXT_TMP_VARIANT_PREFIX)FibExe-179-final.grin \
-                              $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex
+                              $(TEXT_TMP_VARIANT_PREFIX)FibExe-opt.grin \
+                              $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree_Opt.tex
 
 LLVM_GRIN_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.grin
 LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-013-renameuniform.grin \
@@ -36,7 +37,15 @@ $(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_IMG_PREFIX)%
 
 $(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-000-initial.grin: $(LLVM_CODE_FILES)
 	cd $(LLVM_CODE_SRC_PREFIX) ; \
-../../../bin/8_2/ehc -clexe --dump-grin-stages=1 --verbose=2 --optimise=1 --priv=0 -p- $<
+../../../bin/8_2/ehc +RTS -K16M -RTS -clexe --dump-grin-stages=1 --verbose=2 --optimise=1 --priv=0 -p- $<
+
+$(LLVM_CODE_SRC_PREFIX)FibExe-opt.grin: $(LLVM_CODE_SRC_PREFIX)FibExe-179-final.grin
+	sed -i 's/fun_x_[0-9]\+_//g' $<    ; \
+	sed -i 's/x_[0-9]\+_//g' $<        ; \
+	sed '18!d' $<                 > $@ ; \
+	echo "        ..."           >> $@ ; \
+	sed '54,62!d' $<             >> $@ ; \
+	echo "        ..."           >> $@
 
 $(LLVM_GRIN_FILES): $(LLVM_GRIN_FILES_DEP)
 	cat $^ > $@
