@@ -55,6 +55,8 @@
 %%]
 %%[8 import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
+%%[8_2 import({%{EH}Core.Trf.PrettyVarNames})
+%%]
 -- GRIN
 %%[8 import(qualified {%{GRIN}GRINCCommon} as GRINCCommon)
 %%]
@@ -1570,6 +1572,9 @@ cpCore1Trf modNm trfNm
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
+%%[[8_2
+                              "CPRNM"   -> cmodTrfPrettyNames
+%%]]
 %%[[102
                               "CS"      -> cmodTrfStrip
 %%]]
@@ -1642,7 +1647,12 @@ cpProcessCoreBasic modNm
 %%[[102
                   -- [ "CS" ] ++
 %%]]
-                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" ]
+                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                  , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" 
+%%[[8_2           
+                  , "CPRNM"
+%%]]
+                  ]
                 )
           , cpOutputCore "core" modNm
           ]

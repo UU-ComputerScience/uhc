@@ -45,5 +45,6 @@ Core/Trf/RenUniq.cag
 Core/Trf/ForceEval.cag
 Core/Trf/ElimTrivApp.cag
 Core/Trf/Strip.cag
+Core/Trf/PrettyVarNames.cag
 GrinCode/Pretty.cag
 GrinCode/Trf/ForceEval.cag
