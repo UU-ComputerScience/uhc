@@ -65,10 +65,6 @@ newNames hptMap uniq (HNmNr v _) = if v==0
 -- TODO: use arity information in the ctags map!
 maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
 
-
-isWildcard :: HsName -> Bool
-isWildcard (HNmNr nr _) = nr==0
-
 isSingleVar :: HptMap -> HsName -> Bool
 isSingleVar hptMap (HNmNr nr _) = case getEnvVar hptMap nr of
                                    AbsLocs _ _ -> True

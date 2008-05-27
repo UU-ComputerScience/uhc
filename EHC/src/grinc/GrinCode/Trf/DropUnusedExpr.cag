@@ -216,7 +216,7 @@ ATTR GrVarL   [ | | masks : {[Bool]} ]
 ATTR GrVar    [ | | mask  : {Bool}   ]
 
 SEM GrPatLam
-  | VarNode     lhs.mbMask = Just @fldL.masks
+  | VarNode     lhs.mbMask = Just (@fldL.masks ++ repeat False)
   | * - VarNode lhs.mbMask = Nothing
 
 SEM GrVarL
@@ -251,13 +251,25 @@ SEM GrExpr
                 val.mbBits  = @lhs.mbMask
 
 SEM GrValL
-  | Cons        hd.mbBit  = maybe Nothing (\xs->Just (if null xs then False else head xs)) @lhs.mbBits
+  | Cons        hd.mbBit  = maybe Nothing (Just . head) @lhs.mbBits
                 hd.mbBits = Nothing
-                tl.mbBit  = Nothing
-                tl.mbBits = maybe Nothing (\xs->Just (if null xs then [] else tail xs)) @lhs.mbBits
+                tl.mbBits = maybe Nothing (Just . tail) @lhs.mbBits
                 
 %%]
 
+%%[10
+SEM GrAdapt
+  | Upd Ins     off.mbBit  = Nothing
+                val.mbBit  = Nothing
+                off.mbBits = Nothing
+                val.mbBits = Nothing
+  | Del         off.mbBit  = Nothing
+                off.mbBits = Nothing
+
+SEM GrSplit
+  | Sel         off.mbBit  = Nothing
+                off.mbBits = Nothing
+%%]
 
 
 %%[8
@@ -281,7 +293,7 @@ SEM GrVal
                                  @lhs.mbBit
   | VarNode  fldL.mbBits = @lhs.mbBits
   | Node     fldL.mbBits = maybe Nothing
-                                 (\bs -> Just (if null bs then [] else tail bs))
+                                 (Just . tail)
                                  @lhs.mbBits
 
 
