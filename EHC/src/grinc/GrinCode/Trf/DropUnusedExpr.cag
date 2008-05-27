@@ -203,6 +203,65 @@ SEM GrModule
 
 %%[8
 
+ATTR AllGrExpr[ mbMask : {Maybe [Bool]} | | ]
+
+
+ATTR GrValL   [ mbBits : {Maybe [Bool]}  | | ]
+ATTR GrVal    [ mbBit  : {Maybe  Bool  } | | ]
+ATTR GrVal    [ mbBits : {Maybe [Bool] } | | ]
+
+
+ATTR GrPatLam [ | | mbMask : {Maybe [Bool]} ]
+ATTR GrVarL   [ | | masks : {[Bool]} ]
+ATTR GrVar    [ | | mask  : {Bool}   ]
+
+SEM GrPatLam
+  | VarNode     lhs.mbMask = Just @fldL.masks
+  | * - VarNode lhs.mbMask = Nothing
+
+SEM GrVarL
+  | Nil         lhs.masks = []
+  | Cons        lhs.masks = @hd.mask : @tl.masks
+  
+SEM GrVar
+  | Ignore      lhs.mask = False
+  | KnownTag    lhs.mask = False
+  | Var         lhs.mask = True
+
+SEM GrBind
+  | Bind        expr.mbMask = Nothing
+
+SEM GrExpr
+  | Seq         expr.mbMask = @pat.mbMask
+                body.mbMask = @lhs.mbMask
+
+SEM GrGlobal
+  | Global      val.mbBit  = Nothing
+                val.mbBits = Nothing
+
+SEM GrExpr
+  | UpdateUnit
+    Case
+    Store       val.mbBit = Nothing
+                val.mbBits = Nothing
+  | App
+    Call
+    FFI         argL.mbBits = Nothing
+  | Unit        val.mbBit   = Nothing
+                val.mbBits  = @lhs.mbMask
+
+SEM GrValL
+  | Cons        hd.mbBit  = maybe Nothing (\xs->Just (if null xs then False else head xs)) @lhs.mbBits
+                hd.mbBits = Nothing
+                tl.mbBit  = Nothing
+                tl.mbBits = maybe Nothing (\xs->Just (if null xs then [] else tail xs)) @lhs.mbBits
+                
+%%]
+
+
+
+%%[8
+
 -- The actual removals
 -- Expressions without side effects which are bound to variables that are never used are deleted.
 
@@ -215,6 +274,16 @@ SEM GrExpr
                             if @expr.sideEffectFine   || (any (`Set.member` @body.freeUsed) (Set.toList @pat.defined)) 
                             then (@loc.grTrf,  @expr.changes || @body.changes)
                             else (@body.grTrf, True)
+
+SEM GrVal
+  | Var      lhs.grTrf  =  maybe @loc.grTrf
+                                 (\b -> if b then GrVal_Var @nm else GrVal_Empty)
+                                 @lhs.mbBit
+  | VarNode  fldL.mbBits = @lhs.mbBits
+  | Node     fldL.mbBits = maybe Nothing
+                                 (\bs -> Just (if null bs then [] else tail bs))
+                                 @lhs.mbBits
+
 
 -- Bindings, Globals, and Alternatives that are not "life" are deleted.
 
