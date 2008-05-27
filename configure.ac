@@ -76,7 +76,15 @@ AC_SUBST(AR_CMD,$arCmd)
 AC_ARG_WITH(gcc-ehc-options,
 [AC_HELP_STRING([--with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>],
                 [Additional options to pass to GCC when compiling with EHC.])],
-[ gccEhcOptions="$withval" ],)
+[ gccEhcOptions="$withval" ],
+[
+  if test "$GCC_EHC_OPTIONS" = ""; then
+    gccEhcOptions="-O2" 
+  else
+    gccEhcOptions="$GCC_EHC_OPTIONS" 
+  fi
+]
+)
 AC_SUBST(GCC_EHC_OPTIONS, "$gccEhcOptions")
 
 ### 'with' option for ghc options
