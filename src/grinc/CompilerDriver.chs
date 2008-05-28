@@ -31,7 +31,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.ModeCheck})
+%%[8 import({%{GRIN}GrinCode.Trf.CheckGrinInvariant})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.EvalStored})
 %%]
@@ -53,7 +53,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.ImpossibleCase})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CaseElimination})
+%%[8 import({%{GRIN}GrinCode.Trf.SingleCase})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.MergeCase})
 %%]
@@ -107,7 +107,7 @@ doCompileGrin input opts
          ; transformCodeInline                      "Inline"
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-114-inlined"
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-115-invariant"
-         ; checkCode             checkMode          "CheckGrinInvariant"
+         ; checkCode             checkGrinInvariant "CheckGrinInvariant"
          ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-116-evalstored"
          ; transformCodeUnq      numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-120-unusedExprDropped"
@@ -123,16 +123,16 @@ doCompileGrin input opts
          ; transformCodeUnq      lateInline         "LateInline"
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
          ; transformCodeUsingHpt impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
-         ; transformCode         caseElimination    "CaseElimination"  ; caWriteGrin "-143-evaluatedCaseRemoved"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
          ; transformCodeUnqHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
-         ; transformCodeIterated propagate          "Propagate"        ; caWriteGrin "-161-after-cp"
+         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
          ; transformCodeUnqHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
-         ; transformCode         caseElimination    "CaseElimination"  ; caWriteGrin "-172-evaluatedCaseRemoved"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
-         ; transformCodeIterated propagate          "Propagate"        ; caWriteGrin "-179-final"
+         ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
          ; options <- gets gcsOpts
          ; when (ehcOptEmitLLVM options || ehcOptEmitC options)
@@ -162,7 +162,6 @@ initState opts
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
-                     , gcsMsgInfo    = initMsgInfo
                      }
 putErrs (CompileError e) = putStrLn e >> return ()
 %%]
@@ -296,7 +295,6 @@ data GRINCompileState = GRINCompileState
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
-    , gcsMsgInfo   :: (Int, Bool)
     }
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
@@ -345,22 +343,18 @@ traceHptMap
 
 transformCode :: (GrModule->GrModule) -> String -> CompileAction ()
 transformCode process message 
-  = do { putMsg VerboseALot message Nothing
-       ; grin <- gets gcsGrin
-       ; modify (gcsUpdateGrin (process grin))
-       }
+  = task VerboseALot message body (const Nothing)
+     where body = do { grin <- gets gcsGrin
+                    ; modify (gcsUpdateGrin (process grin))
+                    }
 
 checkCode :: (GrModule->[String]) -> String -> CompileAction ()
 checkCode process message
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
-       ; let errors = checkMode grin
+       ; let errors = process grin
        ; when (not (null errors)) (error (unlines errors))
        }
-
-
-
-
 
 transformCodeInline :: String -> CompileAction ()
 transformCodeInline message 
@@ -402,7 +396,6 @@ transformCodeIterated process message
      caFixCount n = do
          code <- gets gcsGrin
          (code, changed) <- return $ process code
-         putDebugMsg (if changed then "Changes" else "No change")
          modify (gcsUpdateGrin code)
          if changed then (caFixCount $ n+1) else return n
 
@@ -464,103 +457,45 @@ force = liftIO . evaluate
 %%]
 
 %%[8
-initMsgInfo :: (Int, Bool) -- indent, FirstMessageInLevel, CPUTime
-initMsgInfo = (0, False)
-
-putLn = putStrLn ""
-
-putDebugMsg :: String -> CompileAction ()
-putDebugMsg msg = harden_ $ do
-    { dumpStages <- gets (ehcOptDumpGrinStages . gcsOpts)
-    ; guard dumpStages
-    ; (indent, first) <- gets gcsMsgInfo
-    ; when first (liftIO putLn >> modify (\s -> s { gcsMsgInfo = (indent, False) }))
-    ; liftIO $ putStrLn ("[D] " ++ replicate (indent-4) ' ' ++ msg)
-    }
-
 putMsg :: Verbosity -> String -> (Maybe String) -> CompileAction ()
 putMsg minVerbosity msg mbMsg =  harden_ $ do
     currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
     guard (currentVerbosity >= minVerbosity)
-    (indent, first) <- gets gcsMsgInfo
-    when first (liftIO putLn)
     let msg2    = maybe "" (\m -> " (" ++ m ++ ")") mbMsg
-        message = replicate indent ' ' ++ strBlankPad 36 msg ++ msg2
+        message = strBlankPad 36 msg ++ msg2
     liftIO $ putStrLn message
-    when first (modify (\s -> s { gcsMsgInfo = (indent, False) }))
 
 
 task :: Verbosity -> String -> CompileAction a -> (a -> Maybe String) -> CompileAction ()
 task minVerbosity taskDesc ca f = do
     { startMsg minVerbosity taskDesc
-    ; (cpuTime, r) <- cpuUsage ca
-    ; finishMsg minVerbosity (f r) cpuTime
+    ; start   <- liftIO getCPUTime
+    ; result  <- ca
+    ; end     <- liftIO getCPUTime
+    ; finishMsg minVerbosity (f result) (end-start)
     }
     where
     startMsg :: Verbosity -> String -> CompileAction ()
     startMsg minVerbosity msg =  harden_ $ do
         currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         guard (currentVerbosity >= minVerbosity)
-        (indent, first) <- gets gcsMsgInfo
-        when first (liftIO putLn)
-        let message = replicate indent ' ' ++ strBlankPad 36 msg
-        liftIO $ putStr message
-        modify (\s -> s { gcsMsgInfo = (indent+4, True) })
+        liftIO $ putStr (strBlankPad 36 msg)
 
     finishMsg :: Verbosity -> Maybe String -> Integer -> CompileAction ()
-    finishMsg minVerbosity mbMsg cpuUsage =  harden_ $ do
+    finishMsg minVerbosity mbMsg cpuTime =  harden_ $ do
         { currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         ; guard (currentVerbosity >= minVerbosity)
-        ; (oldIndent, first) <- gets gcsMsgInfo
         ; doTiming <- gets (ehcOptTimeCompile . gcsOpts)
-        ; let indent       =  oldIndent - 4
-              timeMsgOld   =  show (cpuUsage `div` fst cpuUsageInfo) ++ " " ++ snd cpuUsageInfo
-              timeMsg      =  showFFloat (Just 2) (fromInteger cpuUsage / 1000000000000) " seconds"
-
-              formatMsg m  | doTiming   =  if first
-                                           then " (" ++ m ++ ", " ++ timeMsg ++ ")"
-                                           else replicate indent ' ' ++ m ++ " (" ++ timeMsg ++ ")"
-                           | otherwise  =  if first
-                                           then " (" ++ m ++ ")"
-                                           else replicate indent ' ' ++ m
-              defaultMsg   | doTiming   =  if first
-                                           then " (" ++ timeMsg ++ ")"
-                                           else replicate indent ' ' ++ timeMsg
+        ; let timeMsg      =  showFFloat (Just 5) (fromInteger cpuTime / 1000000000000) " seconds"
+              formatMsg m  | doTiming   =  " (" ++ m ++ ", " ++ timeMsg ++ ")"
+                           | otherwise  =  " (" ++ m ++ ")"
+              defaultMsg   | doTiming   =  " (" ++ timeMsg ++ ")"
                            | otherwise  =  ""
 
-        ; when (doTiming || first) $ liftIO (putStrLn $ maybe defaultMsg formatMsg mbMsg)
-        ; modify (\s -> s { gcsMsgInfo = (indent, False) })
+        ; liftIO (putStrLn $ maybe defaultMsg formatMsg mbMsg)
         }
 
-cpuUsage :: CompileAction a -> CompileAction (Integer, a)
-cpuUsage ca = do
-    { start   <- liftIO getCPUTime
-    ; result  <- ca
-    ; end     <- liftIO getCPUTime
-    ; return (end - start, result)
-    }
-
-
-{- returns - a value to remove all tailing zero's. Devide the CPU timing
-             to change the precision so that no decimal point is needed but
-             without needless zeros are included (folowing SI-prefixes)
-           - a string reprenstation of the precision of the resulting devision
--}
-cpuUsageInfo = (\(a, b) -> (10^a, b)) closest
-    where
-    closest  =  head $ dropWhile (\a -> fst a > prec) table
-    prec     =  floor (log (fromInteger cpuTimePrecision) / log 10)
-    table    =  [ (12, "seconds")
-                , (9, "milli seconds")
-                , (6, "micro seconds")
-                , (3, "nano seconds")
-                , (0, "pico seconds")
-                ]
 %%]
-
-
-
-
 
 
 
