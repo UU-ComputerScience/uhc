@@ -2101,15 +2101,6 @@ AR_CMD=$arCmd
 # Check whether --with-gcc-ehc-options was given.
 if test "${with_gcc_ehc_options+set}" = set; then
   withval=$with_gcc_ehc_options;  gccEhcOptions="$withval"
-else
-
-  if test "$GCC_EHC_OPTIONS" = ""; then
-    gccEhcOptions="-O2"
-  else
-    gccEhcOptions="$GCC_EHC_OPTIONS"
-  fi
-
-
 fi
 
 GCC_EHC_OPTIONS="$gccEhcOptions"
