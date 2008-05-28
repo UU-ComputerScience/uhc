@@ -27,7 +27,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.Inline})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.RightSkew})
+%%[8 import({%{GRIN}GrinCode.Trf.FlattenSeq})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant})
 %%]
@@ -105,23 +105,23 @@ doCompileGrin input opts
          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-112-cleaned"
          ; transformCodeUnq      buildAppBindings   "BuildAppBindings" ; caWriteGrin "-113-appsbound"
          ; transformCodeInline                      "Inline"
-         ; transformCodeIterated rightSkew          "Flatten"          ; caWriteGrin "-114-inlined"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-114-inlined"
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-115-invariant"
          ; checkCode             checkMode          "CheckGrinInvariant"
          ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-116-evalstored"
          ; transformCodeUnq      numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-120-unusedExprDropped"
          ; transformCodeUnq      normForHPT         "NormForHPT"
-         ; transformCodeIterated rightSkew          "Flatten"          ; caWriteGrin "-121-normalized"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-normalized"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeUnqHpt   inlineEA           "InlineEA" 
-         ; transformCodeIterated rightSkew          "Flatten"          ; caWriteGrin "-131-evalinlined"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
          ; transformCodeUsingHpt dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
          ; transformCodeUnq      lateInline         "LateInline"
-         ; transformCodeIterated rightSkew          "Flatten"          ; caWriteGrin "-135-lateinlined"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
          ; transformCodeUsingHpt impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         caseElimination    "CaseElimination"  ; caWriteGrin "-143-evaluatedCaseRemoved"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
