@@ -43,7 +43,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.PointsToAnalysis})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.GrInline})
+%%[8 import({%{GRIN}GrinCode.Trf.InlineEA})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings})
 %%]
@@ -51,7 +51,7 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.LateInline})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SparseCase})
+%%[8 import({%{GRIN}GrinCode.Trf.ImpossibleCase})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CaseElimination})
 %%]
@@ -122,7 +122,7 @@ doCompileGrin input opts
                                              "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
          ; transformCodeUnq      lateInline         "LateInline"
          ; transformCodeIterated rightSkew          "Flatten"          ; caWriteGrin "-135-lateinlined"
-         ; transformCodeUsingHpt sparseCase         "SparseCase"       ; caWriteGrin "-141-sparseCaseRemoved"
+         ; transformCodeUsingHpt impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         caseElimination    "CaseElimination"  ; caWriteGrin "-143-evaluatedCaseRemoved"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         

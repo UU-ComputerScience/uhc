@@ -1,20 +1,14 @@
 Eliminate Grin "Apply" and "Eval" expressions by inlining equivalent code, based on full-program HPT analysis
 
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
+%%[8 hs module {%{GRIN}GrinCode.Trf.InlineEA} export(inlineEA)
 %%]
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
 %%[8 import({GrinCode/Trf/CommonArity})
 %%]
-
 %%[8.wrapper
 WRAPPER GrAGItf
-%%]
-
-%%[8 hs module {%{GRIN}GrinCode.Trf.GrInline} export(inlineEA)
 %%]
 %%[8 hs import(Data.List, Data.Maybe, Data.Monoid(mconcat), qualified Data.Set as Set, qualified Data.Map as Map )
 %%]
