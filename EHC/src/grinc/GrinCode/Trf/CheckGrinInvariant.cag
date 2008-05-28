@@ -1,35 +1,30 @@
-Check how Grin variables are used: as a pointer, or as a node, and whether that is compatible with the way they are created
+Check how Grin variables are used: as a pointer, or as a node, 
+and whether that is compatible with the way they are created
 
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
+%%[8 hs module {%{GRIN}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
 %%]
-
 %%[8 import({GrinCode/AbsSyn})
 %%]
-
-%%[8.wrapper
+%%[8 hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%]
+%%[8
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.ModeCheck} import(qualified Data.Map as Map)
-%%]
+%%[8 hs
 
-%%[8 hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(checkMode)
-
-checkMode :: GrModule -> [String]
-checkMode code
+checkGrinInvariant :: GrModule -> [String]
+checkGrinInvariant code
   = let inh = Inh_GrAGItf
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
     in  messages_Syn_GrAGItf syn
 
 %%]
 
-%%[8
+%%[8 hs
 
-
-
-{
 data Mode = ModeWord
           | ModeNode
           | ModeEmpty
@@ -52,8 +47,10 @@ check env nm mode
 unifyModes :: String -> [Mode] -> (Mode, [String])
 unifyModes s [] = (ModeUnknown, [])
 unifyModes s (m:ms) = (m, concatMap (checkMd ("case alternatives have unbalanced modes " ++ s ++ show (m:ms)) m) ms)
-}
 
+%%]
+
+%%[8
 
 ATTR GrAGItf
      GrModule
@@ -268,6 +265,5 @@ SEM GrPatAlt
 %%[[10
   | NodeSplit   lhs.bindings    = zip (@nm : @fldL.vars) (repeat ModeWord)
 %%]]
-
 
 %%]
