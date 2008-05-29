@@ -9,6 +9,7 @@ Functional LLVM
 \part{Preliminaries}
 %%@LLVMChapterIntroduction.chapter
 %%@LLVMChapterEHCPipeline.chapter
+%%@LLVMChapterLLVM.chapter
 
 \part{Main part}
 %%@LLVMChapterNaive.chapter
