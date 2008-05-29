@@ -47,29 +47,48 @@ SEM SilModule
   | SilModule  lhs.pretty = @functions.pretty
   
   
+%%[[8
 SEM Function
   | Function   lhs.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
                             >-< "{"
                             >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
+%%][8_2
+SEM Function
+  | Function   lhs.pretty = "function" >#< (hsnShowAlphanumeric @name) >|< "(" >|< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >|< ")"
+                            >#< (if @tailJumps then text "{ TailJump }" else text "{ NoTailJump }")
+                            >-< "{"
+                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >|< ";")
+                            >-< indent 4 (@body.pretty)
+                            >-< "}"
+%%]]
 
 SEM Statement
-  | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
-  | Assignment2 lhs.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
+  | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >|< ";"
+  | Assignment2 lhs.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
-  | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
   | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
   | Smart       lhs.pretty = "SMART ("  >#< @vals.pretty >|< ");"
+%%[[8
+  | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Comment     lhs.pretty = comment @comment
-    
+%%][8_2
+  | Call        lhs.pretty = hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
+  | Comment     lhs.pretty = empty
+%%]]    
   
+%%[[8
 SEM Alternative
   | Alternative lhs.pretty = "WHEN" >#< @when.pretty >-< indent 4 (@body.pretty)
- 
+%%][8_2
+SEM Alternative
+  | Alternative lhs.pretty = "case" >#< @when.pretty >-< indent 4 (@body.pretty)
+%%]]
+
 SEM Constant
   | LiteralInt  lhs.pretty = text (show @value)
   | LiteralStr  lhs.pretty = text (show @value)
@@ -77,9 +96,15 @@ SEM Constant
 
 SEM Variable
   | Unembedded     lhs.pretty = text ("U" ++ hsnShowAlphanumeric @name)
+%%[[8
   | Local          lhs.pretty = text ("L" ++ hsnShowAlphanumeric @name)
   | Param          lhs.pretty = text ("P" ++ hsnShowAlphanumeric @name)
   | Global         lhs.pretty = text ("G" ++ hsnShowAlphanumeric @name)
+%%][8_2
+  | Local          lhs.pretty = text (hsnShowAlphanumeric @name)
+  | Param          lhs.pretty = text (hsnShowAlphanumeric @name)
+  | Global         lhs.pretty = text (hsnShowAlphanumeric @name)
+%%]]
   | SP             lhs.pretty = text "SP"  
   | BP             lhs.pretty = text "BP"  
   | RP             lhs.pretty = text "RP"  
@@ -89,10 +114,16 @@ SEM Variable
   | None           lhs.pretty = text "NONE"
 
 SEM Value
+%%[[8
   | Con            lhs.pretty = text "CON" >#< @con.pretty
-  | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
   | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
   | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
+%%][8_2
+  | Con            lhs.pretty = @con.pretty
+  | Alloc          lhs.pretty = text "allocate(" >|< show @size >|< ") {" >#< show @gcManaged >#< "}"
+  | Call           lhs.pretty = "foreign"   >#< @name >|< "(" >|< @args.pretty >|< ")"
+%%]]
+  | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
   | Label          lhs.pretty = text "LABEL" >#< show @name
   | CompareGT      lhs.pretty = @val.pretty >#< ">" >#< @con.pretty
 

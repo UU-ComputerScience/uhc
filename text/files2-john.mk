@@ -4,17 +4,21 @@ LLVM_CODE_SRC_PREFIX       := $(TOP_PREFIX)text/llvm/code/
 LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe.core \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe.grin \
+                              $(TEXT_TMP_VARIANT_PREFIX)FibExe.sil \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe-opt.grin \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree_Opt.tex
 
 LLVM_GRIN_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.grin
-LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-013-renameuniform.grin \
+LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-012-aliaselim.grin \
                               $(LLVM_CODE_SRC_PREFIX)Eval.grin
 
 LLVM_CODE_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.hs 
 LLVM_CODE_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)Fib.hs \
                               $(LLVM_CODE_SRC_PREFIX)Prelude.hs
+
+LLVM_SILLY_FILES           := $(LLVM_CODE_SRC_PREFIX)FibExe.sil 
+LLVM_SILLY_FILES_DEP       := $(LLVM_CODE_SRC_PREFIX)FibExe-204.sil
 
 text-variant-llvm: $(LLVM_THESIS_EXAMPLES)
 	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
@@ -35,9 +39,9 @@ $(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_IMG_PREFIX)%
 	mkdir -p $(dir $@)
 	cp $< $@
 
-$(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-000-initial.grin: $(LLVM_CODE_FILES)
+$(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-012-aliaselim.grin: $(LLVM_CODE_FILES)
 	cd $(LLVM_CODE_SRC_PREFIX) ; \
-../../../bin/8_2/ehc +RTS -K16M -RTS -clexe --dump-grin-stages=1 --verbose=2 --optimise=1 --priv=0 -p- $<
+../../../bin/8_2/ehc -clexe --gen-cmt=0 --dump-grin-stages=1 --verbose=2 --optimise=1 -p- $<
 
 $(LLVM_CODE_SRC_PREFIX)FibExe-opt.grin: $(LLVM_CODE_SRC_PREFIX)FibExe-179-final.grin
 	sed -i 's/fun_x_[0-9]\+_//g' $<    ; \
@@ -52,3 +56,15 @@ $(LLVM_GRIN_FILES): $(LLVM_GRIN_FILES_DEP)
 
 $(LLVM_CODE_FILES): $(LLVM_CODE_FILES_DEP)
 	cat $^ > $@
+
+$(LLVM_SILLY_FILES): $(LLVM_SILLY_FILES_DEP)
+	sed '24,26!d' $<        > $@ ; \
+	echo "        ..."     >> $@ ; \
+	sed '54,73!d' $<       >> $@ ; \
+	echo "        ..."     >> $@ ; \
+	echo "}"               >> $@ ; \
+	sed -i 's/fun_//' $@         ; \
+	sed -i 's/, )/)/' $@         ; \
+	sed -i 's/ )/)/' $@          ; \
+	sed -i 's/ ;/;/' $@          ; \
+
