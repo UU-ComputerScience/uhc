@@ -1,8 +1,3 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
-%%]
-
 %%[8 import({Silly/AbsSyn})
 %%]
 
@@ -98,7 +93,7 @@ SEM Statement
   | Assignment  (lhs.trf, lhs.env)  =  if @source.isntCall
                                           && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
                                                            (Map.lookup @dest.self @lhs.allUseMap)
-                                                           (isSimpleValue @source.trf)
+                                                           @source.trf
                                         then ( Statement_Comment [" (inlined)" ++ show @dest.self ++ " = " ++ show @source.trf ]
                                              , Map.insert @dest.self @source.trf @lhs.env 
                                              )
@@ -126,7 +121,11 @@ isSimpleValue (Value_Offset _ _)= False
 isSimpleValue (Value_Var v)     = isSimpleVariable v
 isSimpleValue _                 = True
 
-virtualizable (Just def) (Just use) simpleVal = def==1 && ( use==2 || simpleVal )
+isReturnValue :: Value -> Bool
+isReturnValue (Value_Offset Variable_RP _) = True
+isReturnValue _                            = False
+
+virtualizable (Just def) (Just use) src   =   def==1 && isReturnValue src && ( use==2 || isSimpleValue src )
 virtualizable _ _ _ = False
 
 %%]
