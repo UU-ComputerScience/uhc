@@ -52,13 +52,15 @@ type IdentOneToMany = (Int,  [Int])
 type RenameMap      = [(Int,  [Int])]
 
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], IdentOneToMany)
-newNames hptMap uniq (HNmNr v _) = case getEnvVar hptMap v of
-                                     AbsLocs _ _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
-                                     AbsNodes nl -> let count    = maxNodeSize nl
-                                                        newVars  = [uniq .. uniq + count - 1]
-                                                    in (uniq + count, map (\n->HNmNr n OrigNone) newVars, (v, newVars))
-                                     AbsBottom   -> (uniq+1, [HNmNr uniq OrigNone], (v,[uniq])) -- infinite leftrecursion is the user program can lead to this situation. We don't want to be this analysis to be the show-stopper then.
-                                     av          -> error ("LowerGrin: Newnames: abstract value " ++ show av ++ " for " ++ show v ++ " is not locations or nodes but " ++ show av)
+newNames hptMap uniq (HNmNr v _) = if v==0
+                                   then (uniq, [], (v,[]))
+                                   else case getEnvVar hptMap v of
+                                          AbsLocs _ _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
+                                          AbsNodes nl -> let count    = maxNodeSize nl
+                                                             newVars  = [uniq .. uniq + count - 1]
+                                                         in (uniq + count, map (\n->HNmNr n OrigNone) newVars, (v, newVars))
+                                          AbsBottom   -> (uniq+1, [HNmNr uniq OrigNone], (v,[uniq])) -- infinite leftrecursion is the user program can lead to this situation. We don't want to be this analysis to be the show-stopper then.
+                                          av          -> error ("LowerGrin: Newnames: abstract value " ++ show av ++ " for " ++ show v ++ " is not locations or nodes but " ++ show av)
 
 -- TODO: use arity information in the ctags map!
 maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl

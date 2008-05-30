@@ -678,6 +678,16 @@ Anonymity, blinding things
   , morekeywords=[2]{GrWord}
   , ndkeywordstyle={\itshape} 
   }
+\lstdefinelanguage[Core]{Haskell}[]{Haskell}
+  { morekeywords={foreign, ccall, safe, \!, rec}
+  , literate={->}{{$\rightarrow$}}1  {\\}{{$\lambda$}}1
+  }
+
+\lstdefinelanguage{grin}
+  { morekeywords={case, of, fetch, update, unit, store, apply}
+  , sensitive={true}
+  , literate={->}{{$\rightarrow$}}1  {\\}{{$\lambda$}}1
+  }
 
 \lstset{ defaultdialect={[EHC]C} }
 
@@ -699,4 +709,10 @@ Anonymity, blinding things
 % Style for a listing in a figure. Framed and numbered.
 \lstdefinestyle{figureLst}
     {tabsize={2}, frame={single}}
+
+\lstdefinestyle{figureLstSmall}
+    {tabsize={2}, frame={single}, basicstyle={\small}}
+
+\lstdefinestyle{figureLstFootnote}
+    {tabsize={2}, frame={single}, basicstyle={\footnotesize}}
 %%]

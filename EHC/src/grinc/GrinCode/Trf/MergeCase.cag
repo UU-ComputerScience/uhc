@@ -1,12 +1,9 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
-%%]
-
 %%[8 import({GrinCode/AbsSyn})
 %%]
 
 %%[8 hs import(qualified Data.Map as Map)
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 %%[8 hs import({%{GRIN}GrinCode.Trf.SubstExpr})
 %%]
@@ -15,7 +12,7 @@
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.MergeCase} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(mergeCase)
+%%[8 hs module {%{GRIN}GrinCode.Trf.MergeCase} export(mergeCase)
 
 mergeCase :: GrModule -> GrModule
 mergeCase grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -49,14 +46,14 @@ SEM GrExpr
                                     (\(GrExpr_Case val1 alts1)
                                          -> maybe (maybe @loc.grTrf
                                                          (\(GrExpr_Case val2 alts2)
-                                                              -> if   patIsVal @pat.grTrf val2
+                                                              -> if   patIsVal @pat.grTrf val2  &&  normalCasesAreNonfinal alts1
                                                                  then combineCase val1 val2 alts1 alts2
                                                                  else @loc.grTrf
                                                          )
                                                          @body.mbIsCase
                                                   )
                                                   (\(GrExpr_Case val2 alts2,pat2,rest2) 
-                                                       -> if   patIsVal @pat.grTrf val2
+                                                       -> if   patIsVal @pat.grTrf val2  &&  normalCasesAreNonfinal alts1
                                                           then let newcase = combineCase val1 val2 alts1 alts2
                                                                in  GrExpr_Seq newcase pat2 rest2
                                                           else @loc.grTrf
@@ -70,6 +67,12 @@ SEM GrExpr
 
 %%[8 hs
 
+normalCasesAreNonfinal :: [GrAlt] -> Bool
+normalCasesAreNonfinal alts
+  =  and [ not (isFinalTag tag)
+         | GrAlt_Alt GrAltAnnNormal  (GrPatAlt_Node tag _) _ <- alts
+         ]
+
 combineCase :: GrVal -> GrVal -> [GrAlt] -> [GrAlt] -> GrExpr
 combineCase scrut@(GrVal_Var nm1) (GrVal_Var nm2) alts1 alts2 
    = let -- remove Ident alternatives, and relabel Normal alternatives as Reenter
@@ -82,9 +85,5 @@ combineCase scrut@(GrVal_Var nm1) (GrVal_Var nm2) alts1 alts2
 patIsVal :: GrPatLam -> GrVal -> Bool
 patIsVal (GrPatLam_Var nm1) (GrVal_Var nm2) = nm1==nm2
 patIsVal _ _ = False
-
-
-
-
 
 %%]

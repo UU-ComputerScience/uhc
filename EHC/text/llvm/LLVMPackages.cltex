@@ -33,8 +33,6 @@
 %
 \usepackage{mathpazo}
 
-%\usepackage{tabularx}
-
 % For code highlighting
 %
 \usepackage{listings}
@@ -54,6 +52,10 @@
            ]{hyperref}
 
 \mathindent=\parindent
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,fit}
+\usetikzlibrary{decorations.pathmorphing}
 
 \usepackage{mainsty}
 %%]

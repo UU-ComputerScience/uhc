@@ -1,130 +1,86 @@
-cleanup EHC generated GRIN:
-- better F-tag than P0-tag (altough they are aliases)
-- primThrow and primCatch are not primitives, but ehc does not support the grin statements
+Clean up the Grin program:
+- instead of #P/0 tags, use #F tags
+- do not delay constructorfunctions: instead of #F, use #C
+- generate a global variable for each parameterless function
 
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} export(cleanupPass)
 %%]
-
+%%[8 hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) 
+%%]
 %%[8 import({GrinCode/AbsSyn})
 %%]
-
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
-%%]
-
-debug:
-%%[8 hs import(EH.Util.Utils)
-%%]
-
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(cleanupPass)
+%%[8 hs
 cleanupPass :: GrModule -> GrModule
-cleanupPass grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                         (Inh_GrAGItf)
-                    in grTrf_Syn_GrAGItf t
+cleanupPass grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in grTrf_Syn_GrAGItf t
 %%]
 
 %%[8
+-- synthesize a modified copy
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllNT [ | | grTrf: SELF ]
-
-SEM GrModule
-  | Mod  lhs  .  grTrf         =  GrModule_Mod @moduleNm @newGlobals @bindL.grTrf @ctagsMp
+ATTR AllNT   [ | | grTrf: SELF ]
 %%]
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% F-Tag  <== P0-Tag %%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% translate #P/0/f to #F/f
+%%%%% translate #F/c   to #C/c
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Ehc outputs P0-tags instead of F-Tags in some situations, we rewrite them to F-Tags
-Also, replace F-Tags for constructorfunctions by C-tags
-
-%%[8.P0tag_TO_Ftag
+%%[8
+-- Pass down the ctagMap to all GrTag positions, because it is needed when generating #C tags.
+-- The map is taken from the module header and slightly tweaked before passing down.
 
 ATTR AllDef AllExpr [ ctagMap : {Map.Map HsName CTag} | | ]
 
+SEM GrModule
+  | Mod  loc.ctagMap  =  Map.fromList [ x | (_,xs) <- @ctagsMp, x <- xs ]
+
+-- do the translations
 SEM GrTag
-  | Fun  lhs . grTrf = if   hsnIsConstructorName @nm
-                       then let  t = fromJust (Map.lookup @nm @lhs.ctagMap)
-                            in   GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) @nm
-                       else @loc.grTrf
+  | Fun  lhs . grTrf = dontDelayConstructors @lhs.ctagMap @nm
   | PApp lhs . grTrf = if   @needs==0 
-                       then (if   hsnIsConstructorName @nm
-                             then GrTag_Con emptyGrTagAnn 0 @nm  -- TODO: replace 0 by real tag number
-                             else GrTag_Fun @nm
-                            )
+                       then dontDelayConstructors @lhs.ctagMap @nm
                        else @loc.grTrf
+%%]
+
+%%[8 hs
+dontDelayConstructors :: Map.Map HsName CTag -> HsName -> GrTag
+dontDelayConstructors ctagMap nm
+  = maybe (GrTag_Fun nm)
+          (\t -> GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) nm)
+          (Map.lookup nm ctagMap)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% Add Global variables %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Introduce global variables: each binding without arguments must have a
-corresponding global variable. (CAF's)
-Filter out the constructor functions.
+Introduce global variables: each function without arguments (or Constant Applicative Form)
+must have a corresponding global variable.
+When the global variable is evaluated, the function is called,
+and the variable overwritten with the result, so that it needs never be called again.
 
-Note: EHC does not generate these yet
+%%[8
+ATTR AllBind   [ | | newGlobals USE {++} {[]}: GrGlobalL ]
 
-A CAF is a GRIN function which takes no parametes. every CAF has a variable
-named the same as GRIN function that maps to a FNode. Which, if evaluated,
-calls the corresponding GRIN function.
-
-%%[8.caf
-
-ATTR GrModule  [ | | cafNames              : {[HsName]}              ]
-ATTR AllBind   [ | | cafNamesF USE {.} {id}: {[HsName]->[HsName]}    ]
-
-SEM GrModule
-  | Mod         loc . cafNames   =  @bindL.cafNamesF []
+-- create a new global for each parameterless function
 SEM GrBind
-  | Bind        loc . cafNamesF  =  if null @argNmL then (@nm:) else id
+  | Bind lhs.newGlobals   =  if   null @argNmL 
+                             then [GrGlobal_Global @nm (GrVal_Node (dontDelayConstructors @lhs.ctagMap @nm) [])]
+                             else []
 
-
+-- insert the new global variables in the module
 SEM GrModule
-  | Mod  loc  .  newGlobals  =  let buildGlobalVar n  =  GrGlobal_Global n (GrVal_Node (tag n) [])
-                                    tag n             =  let  ts = filter (\x -> n==ctagNm x) @allCTags
-                                                         in   if null ts
-                                                              then GrTag_Fun n
-                                                              else let t = head ts
-                                                                   in  GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) n
-                                    globalL           =  map buildGlobalVar
-                                                             @cafNames
-                                in (if null @globalL.grTrf then globalL else @globalL.grTrf)
-              .   allCTags    =   [ ct | (_,xs) <- @ctagsMp, (_,ct) <- xs ]
-              .   ctagMap     =   Map.fromList [ x | (_,xs) <- @ctagsMp, x <- xs ]
+  | Mod  lhs.grTrf  =  GrModule_Mod @moduleNm @bindL.newGlobals @bindL.grTrf @ctagsMp
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Fix Primitives to Exception statements %%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8.hackPrimToExceptionStatments
-
--- we need an node which eval interprets as 'throw exception'
-
-SEM GrBind
-  | Bind  lhs  .  grTrf    =  GrBind_Bind @nm @argNmL @newExpr
-          loc  .  newExpr  =  if @nm == HNm "_catch" then buildCatchExpr @argNmL
-                              else if @nm == HNm "_throw" then buildThrowExpr @argNmL
-                              else @expr.grTrf
-%%]
-
-%%[8.hackPrimToExceptionStatments hs
-buildThrowExpr [exceptNm] = GrExpr_Throw exceptNm
-
-buildCatchExpr [tryNm, handlerNm] = let  exceptNm = hsnPrefix "except_ptr@" handlerNm
-                                         varNm    = hsnPrefix "except_node@" handlerNm
-                                    in GrExpr_Catch (GrExpr_Eval tryNm)
-                                                    exceptNm
-                                                    (GrExpr_Seq (GrExpr_Eval handlerNm)
-                                                                (GrPatLam_Var varNm)
-                                                                (GrExpr_App varNm [GrVal_Var exceptNm])
-                                                    )
 %%]

@@ -1,0 +1,681 @@
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{1mm}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\makeatother
+\EndFmtInput
+%
+%% configuration
+
+
+
+
+%% end of configuration
+
+%% CONFIG: Omitted material excluded
+
+
+
+
+% format * = "\times "
+% subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
+% subst varid a  	= a "{}\allowforspacecorrection "
+
+
+
+
+
+
+
+
+
+%% handling of `
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format CnstrVarpi	= Cnstr "^{" varpi "}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% format <=> 			= "\mathrel{\cong}"
+% format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
+% format +	 			= ","
+% format ++	 			= ","
+
+
+
+% format fiopt			= "{\xi}"
+
+
+
+
+
+% format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+
+
+
+
+% format ftv				= "\ftv "
+
+
+
+
+
+
+
+
+
+
+%% acronyms
+
+
+
+\chunkCmdDef{rulerDemoUtils.3.0}{%
+\label{rulerDemoUtils.3.0}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.0}%
+}
+\chunkCmdDef{rulerDemoUtils.3.1}{%
+\label{rulerDemoUtils.3.1}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{10}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mbox{\onelinecomment  Error}{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{mkErr}\mathbin{::}[\mskip1.5mu\allowforspacecorrection \Conid{PP\char95 Doc}\mskip1.5mu]\to \Conid{PP\char95 Doc}{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{mkErr}\;[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]\mathrel{=}\Varid{empty}{}}
+\\
+\fromto{B}{10}{{}\allowforspacecorrection \Varid{mkErr}\;\Varid{p}{}}
+\fromto{10}{E}{{}\allowforspacecorrection \mathrel{=}\text{\tt \char34 <ERR:\char34}> \hspace*{-4pt} \# \hspace*{-4pt}<\Varid{vlist}\;\Varid{p}> \hspace*{-4pt} \| \hspace*{-4pt}<\text{\tt \char34 >\char34}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.1}%
+}
+\chunkCmdDef{rulerDemoUtils.3.2}{%
+\label{rulerDemoUtils.3.2}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mbox{\onelinecomment  Unique identifier}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.2}%
+}
+\chunkCmdDef{rulerDemoUtils.3.3}{%
+\label{rulerDemoUtils.3.3}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{newtype}\;\Conid{UID}\mathrel{=}\Conid{UID}\;[\mskip1.5mu\allowforspacecorrection \Conid{Int}\mskip1.5mu]\;\mathbf{deriving}\;(\allowforspacecorrection \Conid{Eq},\Conid{Ord}){}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{uidStart}\mathrel{=}\Conid{UID}\;[\mskip1.5mu\allowforspacecorrection \mathrm{0}\mskip1.5mu]{}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{rulerMk1Uniq}\mathbin{::}\Conid{UID}\to (\allowforspacecorrection \Conid{UID},\Conid{UID}){}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{rulerMk1Uniq}\;\Varid{u}\spacecorrection @(\allowforspacecorrection \Conid{UID}\;\Varid{ls})\mathrel{=}(\allowforspacecorrection \Varid{uidNext}\;\Varid{u},\Conid{UID}\;(\allowforspacecorrection \mathrm{0}\mathbin{:}\Varid{ls})){}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{uidNext}\mathbin{::}\Conid{UID}\to \Conid{UID}{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{uidNext}\;(\allowforspacecorrection \Conid{UID}\;(\allowforspacecorrection \Varid{l}\mathbin{:}\Varid{ls}))\mathrel{=}\Conid{UID}\;(\allowforspacecorrection \Varid{l}\mathbin{+}\mathrm{1}\mathbin{:}\Varid{ls}){}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3.UID}{%
+\label{rulerDemoUtils.3.UID}%
+\chunkCmdUse{rulerDemoUtils.3.3}%
+}
+\chunkCmdDef{rulerDemoUtils.3.4}{%
+\label{rulerDemoUtils.3.4}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{3}{@{}l@{}}
+\column{5}{@{}l@{}}
+\column{17}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{mkUIDs}\mathbin{::}\Conid{UID}\to [\mskip1.5mu\allowforspacecorrection \Conid{UID}\mskip1.5mu]{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{mkUIDs}\mathrel{=}\Varid{iterate}\;\Varid{uidNext}{}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{instance}\;\Conid{Show}\;\Conid{UID}\;\mathbf{where}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \Varid{show}\;(\allowforspacecorrection \Conid{UID}\;\Varid{l}){}}
+\\
+\fromto{3}{5}{{}\allowforspacecorrection \hsindent{2}{}}
+\fromto{5}{17}{{}\allowforspacecorrection \mathrel{=}\Varid{concat}.{}}
+\fromto{17}{E}{{}\allowforspacecorrection \Varid{intersperse}\;\text{\tt \char34 \char95 \char34}.\Varid{map}\;\Varid{show}.\Varid{reverse}\mathbin{\$}\Varid{l}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.4}%
+}
+\chunkCmdDef{rulerDemoUtils.3.5}{%
+\label{rulerDemoUtils.3.5}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mbox{\onelinecomment  Type}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.5}%
+}
+\chunkCmdDef{rulerDemoUtils.3.6}{%
+\label{rulerDemoUtils.3.6}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{12}{@{}c@{}}
+\column{12E}{@{}l@{}}
+\column{15}{@{}l@{}}
+\column{23}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{12}{{}\allowforspacecorrection \mathbf{type}\;\Conid{TvId}{}}
+\fromto{12}{12E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{15}{E}{{}\allowforspacecorrection \Conid{UID}{}}
+\\
+\fromto{B}{12}{{}\allowforspacecorrection \mathbf{data}\;\Conid{Ty}{}}
+\fromto{12}{12E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{15}{E}{{}\allowforspacecorrection \Conid{Ty\char95 Any}\mid \Conid{Ty\char95 Int}\mid \Conid{Ty\char95 Var}\;\Conid{TvId}{}}
+\\
+\fromto{12}{12E}{{}\allowforspacecorrection \mid {}}
+\fromto{15}{23}{{}\allowforspacecorrection \Conid{Ty\char95 Arr}\;{}}
+\fromto{23}{E}{{}\allowforspacecorrection \Conid{Ty}\;\Conid{Ty}{}}
+\\
+\fromto{12}{12E}{{}\allowforspacecorrection \mid {}}
+\fromto{15}{23}{{}\allowforspacecorrection \Conid{Ty\char95 All}\;{}}
+\fromto{23}{E}{{}\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \Conid{TvId}\mskip1.5mu]\;\Conid{Ty}{}}
+\\
+\fromto{15}{E}{{}\allowforspacecorrection \mathbf{deriving}\;(\allowforspacecorrection \Conid{Eq},\Conid{Ord}){}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3.Ty}{%
+\label{rulerDemoUtils.3.Ty}%
+\chunkCmdUse{rulerDemoUtils.3.6}%
+}
+\chunkCmdDef{rulerDemoUtils.3.7}{%
+\label{rulerDemoUtils.3.7}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{3}{@{}l@{}}
+\column{23}{@{}l@{}}
+\column{26}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{mkTyAll}\;\Varid{tvs}\;\Varid{t}\mathrel{=}\mathbf{if}\;\Varid{null}\;\Varid{tvs}\;\mathbf{then}\;\Varid{t}\;\mathbf{else}\;\Conid{Ty\char95 All}\;\Varid{tvs}\;\Varid{t}{}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{instance}\;\Conid{Show}\;\Conid{Ty}\;\mathbf{where}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{23}{{}\allowforspacecorrection \Varid{show}\;\Conid{Ty\char95 Any}{}}
+\fromto{23}{E}{{}\allowforspacecorrection \mathrel{=}\text{\tt \char34 ?\char34}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{23}{{}\allowforspacecorrection \Varid{show}\;\Conid{Ty\char95 Int}{}}
+\fromto{23}{E}{{}\allowforspacecorrection \mathrel{=}\text{\tt \char34 Int\char34}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{23}{{}\allowforspacecorrection \Varid{show}\;(\allowforspacecorrection \Conid{Ty\char95 Var}\;\Varid{v}){}}
+\fromto{23}{E}{{}\allowforspacecorrection \mathrel{=}\text{\tt \char34 v\char34}\plus \Varid{show}\;\Varid{v}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{23}{{}\allowforspacecorrection \Varid{show}\;(\allowforspacecorrection \Conid{Ty\char95 All}\;\Varid{vs}\;\Varid{t}){}}
+\fromto{23}{E}{{}\allowforspacecorrection \mathrel{=}\text{\tt \char34 forall\char34}\plus \Varid{concat}\;(\allowforspacecorrection \Varid{map}\;(\allowforspacecorrection (\allowforspacecorrection \text{\tt '~'}\mathbin{:}).\Varid{show})\;\Varid{vs}){}}
+\\
+\fromto{23}{26}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{26}{E}{{}\allowforspacecorrection \plus \text{\tt \char34 ~.~\char34}\plus \Varid{show}\;\Varid{t}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \Varid{show}\;(\allowforspacecorrection \Conid{Ty\char95 Arr}\;\Varid{t1}\;\Varid{t2})\mathrel{=}\text{\tt \char34 (\char34}\plus \Varid{show}\;\Varid{t1}\plus \text{\tt \char34 )~->~\char34}\plus \Varid{show}\;\Varid{t2}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.7}%
+}
+\chunkCmdDef{rulerDemoUtils.3.8}{%
+\label{rulerDemoUtils.3.8}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{3}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mbox{\onelinecomment  Gam}{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{type}\;\Conid{Gam}\mathrel{=}[\mskip1.5mu\allowforspacecorrection (\allowforspacecorrection \Conid{String},\Conid{Ty})\mskip1.5mu]{}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{gamLookup}\mathbin{::}\Conid{String}\to \Conid{Gam}\to (\allowforspacecorrection \Conid{Ty},[\mskip1.5mu\allowforspacecorrection \Conid{PP\char95 Doc}\mskip1.5mu]){}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{gamLookup}\;\Varid{n}\;\Varid{g}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \mathrel{=}\Varid{maybe}\;(\allowforspacecorrection \Conid{Ty\char95 Any},[\mskip1.5mu\allowforspacecorrection \Varid{n}> \hspace*{-4pt} \# \hspace*{-4pt}<\text{\tt \char34 undefined\char34}\mskip1.5mu])\;(\allowforspacecorrection \lambda \Varid{t}\to (\allowforspacecorrection \Varid{t},[\mskip1.5mu\allowforspacecorrection \mskip1.5mu])){}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \mathbin{\$}\Varid{lookup}\;\Varid{n}\;\Varid{g}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.8}%
+}
+\chunkCmdDef{rulerDemoUtils.3.9}{%
+\label{rulerDemoUtils.3.9}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mbox{\onelinecomment  Constraints}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.9}%
+}
+\chunkCmdDef{rulerDemoUtils.3.10}{%
+\label{rulerDemoUtils.3.10}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{3}{@{}l@{}}
+\column{6}{@{}c@{}}
+\column{6E}{@{}l@{}}
+\column{8}{@{}l@{}}
+\column{10}{@{}c@{}}
+\column{10E}{@{}l@{}}
+\column{11}{@{}l@{}}
+\column{14}{@{}l@{}}
+\column{25}{@{}c@{}}
+\column{25E}{@{}l@{}}
+\column{28}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{type}\;\mathcal{C}\mathrel{=}[\mskip1.5mu\allowforspacecorrection (\allowforspacecorrection \Conid{TvId},\Conid{Ty})\mskip1.5mu]{}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{class}\;\Conid{Substitutable}\;\Varid{a}\;\mathbf{where}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{10}{{}\allowforspacecorrection (\allowforspacecorrection \oplus ){}}
+\fromto{10}{10E}{{}\allowforspacecorrection \mathbin{::}{}}
+\fromto{14}{E}{{}\allowforspacecorrection \mathcal{C}\to \Varid{a}\to \Varid{a}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{10}{{}\allowforspacecorrection \Varid{ftv}{}}
+\fromto{10}{10E}{{}\allowforspacecorrection \mathbin{::}{}}
+\fromto{14}{E}{{}\allowforspacecorrection \Varid{a}\to [\mskip1.5mu\allowforspacecorrection \Conid{TvId}\mskip1.5mu]{}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{instance}\;\Conid{Substitutable}\;\Conid{Ty}\;\mathbf{where}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{6}{{}\allowforspacecorrection \Varid{s}{}}
+\fromto{6}{6E}{{}\allowforspacecorrection \oplus {}}
+\fromto{11}{25}{{}\allowforspacecorrection \Varid{t}\spacecorrection @(\allowforspacecorrection \Conid{Ty\char95 Var}\;\Varid{v}){}}
+\fromto{25}{25E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{28}{E}{{}\allowforspacecorrection \Varid{maybe}\;\Varid{t}\;\Varid{id}\;(\allowforspacecorrection \Varid{lookup}\;\Varid{v}\;\Varid{s}){}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{6}{{}\allowforspacecorrection \Varid{s}{}}
+\fromto{6}{6E}{{}\allowforspacecorrection \oplus {}}
+\fromto{11}{25}{{}\allowforspacecorrection \Conid{Ty\char95 Arr}\;\Varid{t1}\;\Varid{t2}{}}
+\fromto{25}{25E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{28}{E}{{}\allowforspacecorrection \Conid{Ty\char95 Arr}\;(\allowforspacecorrection \Varid{s}\oplus \Varid{t1})\;(\allowforspacecorrection \Varid{s}\oplus \Varid{t2}){}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{6}{{}\allowforspacecorrection \anonymous {}}
+\fromto{6}{6E}{{}\allowforspacecorrection \oplus {}}
+\fromto{11}{25}{{}\allowforspacecorrection \Varid{t}{}}
+\fromto{25}{25E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{28}{E}{{}\allowforspacecorrection \Varid{t}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{8}{{}\allowforspacecorrection \Varid{ftv}\;{}}
+\fromto{8}{25}{{}\allowforspacecorrection (\allowforspacecorrection \Conid{Ty\char95 Var}\;\Varid{v}){}}
+\fromto{25}{25E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{28}{E}{{}\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \Varid{v}\mskip1.5mu]{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{8}{{}\allowforspacecorrection \Varid{ftv}\;{}}
+\fromto{8}{25}{{}\allowforspacecorrection (\allowforspacecorrection \Conid{Ty\char95 Arr}\;\Varid{t1}\;\Varid{t2}){}}
+\fromto{25}{25E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{28}{E}{{}\allowforspacecorrection \Varid{ftv}\;\Varid{t1}\cup \Varid{ftv}\;\Varid{t2}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{8}{{}\allowforspacecorrection \Varid{ftv}\;{}}
+\fromto{8}{25}{{}\allowforspacecorrection \anonymous {}}
+\fromto{25}{25E}{{}\allowforspacecorrection \mathrel{=}{}}
+\fromto{28}{E}{{}\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \mskip1.5mu]{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3.Cnstr}{%
+\label{rulerDemoUtils.3.Cnstr}%
+\chunkCmdUse{rulerDemoUtils.3.10}%
+}
+\chunkCmdDef{rulerDemoUtils.3.11}{%
+\label{rulerDemoUtils.3.11}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{3}{@{}l@{}}
+\column{12}{@{}l@{}}
+\column{13}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{instance}\;\Conid{Substitutable}\;\mathcal{C}\;\mathbf{where}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \Varid{s1}\oplus \Varid{s2}\mathrel{=}\Varid{s1}\plus \Varid{map}\;(\allowforspacecorrection \lambda (\allowforspacecorrection \Varid{v},\Varid{t})\to (\allowforspacecorrection \Varid{v},\Varid{s1}\oplus \Varid{t}))\;\Varid{s2}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{13}{{}\allowforspacecorrection \Varid{ftv}{}}
+\fromto{13}{E}{{}\allowforspacecorrection \mathrel{=}\Varid{foldr}\;\Varid{union}\;[\mskip1.5mu\allowforspacecorrection \mskip1.5mu].\Varid{map}\;(\allowforspacecorrection \Varid{ftv}.\Varid{snd}){}}
+\\[\blanklineskip]
+\fromto{B}{E}{{}\allowforspacecorrection \mathbf{instance}\;\Conid{Substitutable}\;\Conid{Gam}\;\mathbf{where}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{12}{{}\allowforspacecorrection \Varid{s}\oplus \Varid{g}{}}
+\fromto{12}{E}{{}\allowforspacecorrection \mathrel{=}\Varid{map}\;(\allowforspacecorrection \lambda (\allowforspacecorrection \Varid{i},\Varid{t})\to (\allowforspacecorrection \Varid{i},\Varid{s}\oplus \Varid{t}))\;\Varid{g}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{12}{{}\allowforspacecorrection \Varid{ftv}{}}
+\fromto{12}{E}{{}\allowforspacecorrection \mathrel{=}\Varid{foldr}\;\Varid{union}\;[\mskip1.5mu\allowforspacecorrection \mskip1.5mu].\Varid{map}\;(\allowforspacecorrection \Varid{ftv}.\Varid{snd}){}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.11}%
+}
+\chunkCmdDef{rulerDemoUtils.3.12}{%
+\label{rulerDemoUtils.3.12}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{5}{@{}l@{}}
+\column{17}{@{}l@{}}
+\column{33}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection (\allowforspacecorrection \cong )\mathbin{::}\Conid{Ty}\to \Conid{Ty}\to (\allowforspacecorrection \mathcal{C},[\mskip1.5mu\allowforspacecorrection \Conid{PP\char95 Doc}\mskip1.5mu]){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Conid{Ty\char95 Any}{}}
+\fromto{17}{33}{{}\allowforspacecorrection \cong \Varid{t2}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Varid{t1}{}}
+\fromto{17}{33}{{}\allowforspacecorrection \cong \Conid{Ty\char95 Any}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Conid{Ty\char95 Int}{}}
+\fromto{17}{33}{{}\allowforspacecorrection \cong \Conid{Ty\char95 Int}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Conid{Ty\char95 Var}\;\Varid{v1}{}}
+\fromto{17}{E}{{}\allowforspacecorrection \cong \Conid{Ty\char95 Var}\;\Varid{v2}{}}
+\\
+\fromto{B}{5}{{}\allowforspacecorrection \hsindent{5}{}}
+\fromto{5}{33}{{}\allowforspacecorrection \mid \Varid{v1}==\Varid{v2}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Conid{Ty\char95 Var}\;\Varid{v1}{}}
+\fromto{17}{E}{{}\allowforspacecorrection \cong \Varid{t2}{}}
+\\
+\fromto{B}{5}{{}\allowforspacecorrection \hsindent{5}{}}
+\fromto{5}{33}{{}\allowforspacecorrection \mid \Varid{v1}\notin \Varid{ftv}\;\Varid{t2}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection (\allowforspacecorrection \Varid{v1},\Varid{t2})\mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]){}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3.match.A}{%
+\label{rulerDemoUtils.3.match.A}%
+\chunkCmdUse{rulerDemoUtils.3.12}%
+}
+\chunkCmdDef{rulerDemoUtils.3.13}{%
+\label{rulerDemoUtils.3.13}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{3}{@{}l@{}}
+\column{5}{@{}l@{}}
+\column{9}{@{}l@{}}
+\column{17}{@{}l@{}}
+\column{33}{@{}l@{}}
+\column{35}{@{}c@{}}
+\column{35E}{@{}l@{}}
+\column{40}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{17}{{}\allowforspacecorrection \Varid{t1}{}}
+\fromto{17}{E}{{}\allowforspacecorrection \cong \Conid{Ty\char95 Var}\;\Varid{v2}{}}
+\\
+\fromto{B}{5}{{}\allowforspacecorrection \hsindent{5}{}}
+\fromto{5}{33}{{}\allowforspacecorrection \mid \Varid{v2}\notin \Varid{ftv}\;\Varid{t1}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection (\allowforspacecorrection \Varid{v2},\Varid{t1})\mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \mskip1.5mu]){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Conid{Ty\char95 Arr}\;\Varid{a1}\;\Varid{r1}{}}
+\fromto{17}{E}{{}\allowforspacecorrection \cong \Conid{Ty\char95 Arr}\;\Varid{a2}\;\Varid{r2}{}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection \Varid{sr}\oplus \Varid{sa},\Varid{ea}\plus \Varid{er}){}}
+\\
+\fromto{B}{3}{{}\allowforspacecorrection \hsindent{3}{}}
+\fromto{3}{E}{{}\allowforspacecorrection \mathbf{where}\;(\allowforspacecorrection \Varid{sa},\Varid{ea})\mathrel{=}\Varid{a1}\cong \Varid{a2}{}}
+\\
+\fromto{3}{9}{{}\allowforspacecorrection \hsindent{6}{}}
+\fromto{9}{E}{{}\allowforspacecorrection (\allowforspacecorrection \Varid{sr},\Varid{er})\mathrel{=}(\allowforspacecorrection \Varid{sa}\oplus \Varid{r1})\cong (\allowforspacecorrection \Varid{sa}\oplus \Varid{r2}){}}
+\\
+\fromto{B}{17}{{}\allowforspacecorrection \Varid{t1}{}}
+\fromto{17}{33}{{}\allowforspacecorrection \cong \Varid{t2}{}}
+\fromto{33}{E}{{}\allowforspacecorrection \mathrel{=}(\allowforspacecorrection [\mskip1.5mu\allowforspacecorrection \mskip1.5mu],[\mskip1.5mu\allowforspacecorrection \text{\tt \char34 could~not~match\char34}{}}
+\\
+\fromto{33}{40}{{}\allowforspacecorrection \hsindent{7}{}}
+\fromto{40}{E}{{}\allowforspacecorrection > \hspace*{-4pt} \# \hspace*{-4pt}<\Varid{show}\;\Varid{t1}> \hspace*{-4pt} \# \hspace*{-4pt}<\text{\tt \char34 with\char34}{}}
+\\
+\fromto{33}{40}{{}\allowforspacecorrection \hsindent{7}{}}
+\fromto{40}{E}{{}\allowforspacecorrection > \hspace*{-4pt} \# \hspace*{-4pt}<\Varid{show}\;\Varid{t2}\mskip1.5mu]{}}
+\\
+\fromto{33}{35}{{}\allowforspacecorrection \hsindent{2}{}}
+\fromto{35}{35E}{{}\allowforspacecorrection ){}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3.match.B}{%
+\label{rulerDemoUtils.3.match.B}%
+\chunkCmdUse{rulerDemoUtils.3.13}%
+}
+\chunkCmdDef{rulerDemoUtils.3.14}{%
+\label{rulerDemoUtils.3.14}%
+\begingroup\par\noindent\advance\leftskip\mathindent\(
+\begin{pboxed}\SaveRestoreHook
+\column{B}{@{}l@{}}
+\column{24}{@{}l@{}}
+\column{42}{@{}l@{}}
+\column{E}{@{}l@{}}
+\fromto{B}{E}{{}\allowforspacecorrection \mbox{\onelinecomment  Type instantiation}{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{tyInst}\mathbin{::}\Conid{UID}\to \Conid{Ty}\to \Conid{Ty}{}}
+\\
+\fromto{B}{E}{{}\allowforspacecorrection \Varid{tyInst}\;\Varid{u}\;(\allowforspacecorrection \Conid{Ty\char95 All}\;\Varid{vs}\;\Varid{t})\mathrel{=}\Varid{c}\oplus \Varid{t}{}}
+\\
+\fromto{B}{24}{{}\allowforspacecorrection \hsindent{24}{}}
+\fromto{24}{E}{{}\allowforspacecorrection \mathbf{where}\;\Varid{c}\mathrel{=}\Varid{zipWith}\;(\allowforspacecorrection \lambda \Varid{v}\;\Varid{u}\to (\allowforspacecorrection \Varid{v},\Conid{Ty\char95 Var}\;\Varid{u}))\;{}}
+\\
+\fromto{24}{42}{{}\allowforspacecorrection \hsindent{18}{}}
+\fromto{42}{E}{{}\allowforspacecorrection \Varid{vs}\;(\allowforspacecorrection \Varid{mkUIDs}\;\Varid{u}){}}
+\\
+\fromto{B}{24}{{}\allowforspacecorrection \Varid{tyInst}\;\anonymous \;\Varid{t}{}}
+\fromto{24}{E}{{}\allowforspacecorrection \mathrel{=}\Varid{t}{}}
+\ColumnHook
+\end{pboxed}
+\)\par\noindent\endgroup\resethooks
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.14}%
+}
+\chunkCmdDef{rulerDemoUtils.3}{%
+\label{rulerDemoUtils.3}%
+\chunkCmdUse{rulerDemoUtils.3.0}%
+\chunkCmdUse{rulerDemoUtils.3.1}%
+\chunkCmdUse{rulerDemoUtils.3.2}%
+\chunkCmdUse{rulerDemoUtils.3.3}%
+\chunkCmdUse{rulerDemoUtils.3.4}%
+\chunkCmdUse{rulerDemoUtils.3.5}%
+\chunkCmdUse{rulerDemoUtils.3.6}%
+\chunkCmdUse{rulerDemoUtils.3.7}%
+\chunkCmdUse{rulerDemoUtils.3.8}%
+\chunkCmdUse{rulerDemoUtils.3.9}%
+\chunkCmdUse{rulerDemoUtils.3.10}%
+\chunkCmdUse{rulerDemoUtils.3.11}%
+\chunkCmdUse{rulerDemoUtils.3.12}%
+\chunkCmdUse{rulerDemoUtils.3.13}%
+\chunkCmdUse{rulerDemoUtils.3.14}%
+}

@@ -1,34 +1,122 @@
 %%[chapter
 \chapter{EHC}
 \label{cha:ehc}
-A compiler consists of more than a code generator, such as a parser, type-checker, and optimizer. We choose the EHC~\cite{dijkstra:05} compiler project as the compiler in which we embed a LLVM code generator because it is designed to be extended (see \refS{sec:ehc-extending}). In the EHC compiler is the code generator placed at the tail of the compiler pipeline, generating code based on output of previous stages. The EHC frontend targets GRIN~\cite{boquist:99} instead of the well known STG~\cite{jones:92} model to avoid indirect jumps. This choice influences the generated code heavily. In this chapter, we discuss the EHC compiler pipeline stages, show the intermediate representations of stages, and the transformations performed by them.
+A compiler consists of more than a code generator, such as a parser, type-checker, and optimizer. We choose the EHC~\cite{dijkstra:05} compiler project as the compiler in which we embed a LLVM code generator, because it is designed to be extended (see \refS{sec:ehc-extending}). In the EHC compiler is the code generator placed at the tail of the compiler pipeline, generating code based on output of previous stages. The EHC frontend targets GRIN~\cite{boquist:99} instead of the well known STG~\cite{jones:92} model to avoid indirect jumps. This choice influences the generated code heavily. In this chapter, we discuss the EHC compiler pipeline stages (\refS{sec:ehc-pipeline}), show the intermediate representations of stages, and the transformations performed by them.
 
 \section{Extending EHC}
 \label{sec:ehc-extending}
+The EHC project constructs a sequence of compilers. The first compiler of the sequence, called version 1, only accepts an explicitly typed lambda calculus. Its successor extends version 1 by adding type inference. Each compiler extends its predecessor with a feature from the Haskell language and each one is buildable out of the repository. The sequence of compilers continious until all features of the Haskell language and some extentions are implemented. This design to control the complexity of the EHC compiler makes experimenting with non-standard features easier, as one can choose a subset of Haskell to work with.
+
+A compiler is generated from soucefiles which contain chunks. Each chunk is annotated with a version number, indicating from which version the chunk should be included in the compiler. Furthermore chunks can have names, allowing them to overwrite chunks of predecessors with the same name. All chunks for a version are extracted by the shuffle tool, generating a source file which is compiled by a regular compiler.
 
 \section{The EHC Pipeline}
+\label{sec:ehc-pipeline}
+A compilation process can be modeled as a pipeline. The start of the pipeline is the input of the source program and the final stage is the produced executable. In between the source program and the executable are the intermediate intermediate representations of the program. The EHC pipeline is shown in \refF{fig:ehc-pipeline} and has the following stages:
 
+\begin{figure}[tb]
+  \centering
+    \includegraphics[width=0.95\textwidth]{ehc-pipeline}
+  \caption{Dataflow in the EHC pipeline.}
+  \label{fig:ehc-pipeline}
+\end{figure}
+
+\begin{enumerate}
+  \item First the Haskell input parsed and desugared to \emph{Essential Haskell}. Essential Haskell was the original input language of EHC and is still accepted by the compiler as input language.
+  \item The Essential Haskell code is type infered and if found type correct, transformed to \emph{Core}. The Core language is a lambda calculus with some extensions, where expressions are lambda lifted and type classes are translated to dictionaries. In contrast to several other Haskell compilers' intermediate languages, such as GHC's Core~\cite{tolmach} and Henk~\cite{jones:97}, the Core language is not typed. This is due to practical reasons, as transformations on typed code imply transformations on types.
+  \item \emph{GRIN} is the first intermediate representation that is part of the EHC backend. The language is a untyped first order strict functional language that makes the sequential order of a Haskell program explicit. In contrast to the Spineless Tagless G-machine (STG)~\cite{jones:92}, GRIN uses the eval/apply model~\cite{marlow:04}. Together with tagging of closures, this reduces the amount of costly indirect jumps~\cite{fog:07}~\cite{marlow:07} in the generated code. EHC includes a GRIN interpreter to execute the program.
+  \item The Simple imperative language (\emph{Silly}) transforms the GRIN tree to a more imperative form with assignments, statements and expressions. The purpose of Silly is to act as a base for imperative languages. 
+  \item Silly constructs map directly on C and the Silly tree is pretty printed as a C program. This program is compiled with an external compiler and produces the native executable. 
+\end{enumerate}
+
+The LLVM Assembly language benefits from the preperations performed by Silly, thus we embed the LLVM code generator after Silly in the pipeline (\refF{fig:ehc-pipeline}). The external LLVM Assembly compiler than compiles the program to a native executable.
+
+In the following sections, we discuss the GRIN and Silly phases in more detail because they heavily influence the code generated by the LLVM code generator. Please note that we aim to give enough information of each language to understand the generated code and not try to describe each detail of the languages.  
+
+\subsection{Running Example}
+In this chapter, we illustrate the EHC pipeline by threading the program shown in \refF{fig:fib-hs} through the pipeline. The program computes the 33$^{th}$ Fibbonacci number (3,524,578) in an inefficient direct recursive translation. The example is small and uses only simple arithmetic on |Int| data types for the sake of simplicity. By refraining from the use of the |Float| datatype, typeclasses and the |IO| monad, the restricted EHC version 8 can be used.
+
+\begin{figure}[bt]
+	\hsbox{
+%include build/llvm/Fib.lhs
+    }
+	\caption{The Haskell source for computing a Fibbonnaci number.}
+	\label{fig:fib-hs}
+\end{figure}
+
+\subsection{The EHC Frontend: Essential Haskell and Core}
+\begin{figure}[p]
+  \lstinputlisting[style={figureLstFootnote}, language={[Core]Haskell}]{FibExe.core}
+  \caption{The Core code for the Haskell program of \refF{fig:fib-hs}}
+  \label{fig:fib-core}
+\end{figure}
+We group together the first two stages of the EHC pipeline, Essential Haskell and Core, in the EHC frontend. The frontend focusses on the features of the Haskell language in contrast to the backend, which focussess on generating code. Typical tasks of the frontend are parsing, desugaring, lambda lifting, and typechecking. 
+
+The frontend produces the Core code that is shown in \refF{fig:fib-core} for the Haskell input from \refF{fig:fib-hs}. The 5 lines of Haskell explode to 63 lines of Core code. The explosion is caused by the explicit inclusion of matimatical operators, the generation of constructor functions and the desugaring from guards to case statements. Although the code is quite verbose, it still resembles the Haskell input, but with some differences:
 
 \begin{itemize}
-  \item Why write this chapter. What is the purpose of it, what do I want to tell in this Chapter
-  \item EHC is a series of compilers (short paragraph)
-  \item The EHC Pipeline:
-        \begin{itemize}
-          \item A running example (fib)
-          \item Only run EHC 8 because otherwise it is littered with IO, dictionaries etc.
-          \item The frontend does the following
-                \begin{itemize}
-                  \item Parse
-                  \item Desugar
-                  \item Typecheck
-                \end{itemize}
-          \item GRIN
-                \begin{itemize}
-                  \item Fib in GRIN
-                  \item Syntax of GRIN
-                  \item Purpose of GRIN (indirect jumps, sequentialize the code)
-                \end{itemize}
-          \item Silly (See GRIN).
-        \end{itemize}
+  \item All top level functions are transformed to a nested let expression. This let expression evaluates to the value of the variable \inlCode{[Core]Haskell}{\$main} if the module is executable. Higher versions of EHC than the version we discuss here of EHC provide a module system and thus modules without a main function. The Core code for these non-executable modules is a nested let expression without a resulting value.
+  \item There are 4 types of bindings in a let expression. Lazy, non recursive bindings are unannotated, while the recursive variant adds the keyword rec. Bindings for foreign functions are annotated with the foreign keyword. This distinction of foreign functions needed later in the pipeline, as parameters to these functions are evaluated before passed to the function. Finally strict let bindings are annotated with '!'. The strictness annotation is currently only used for forcing the evaluation of the scrutinee in case expressions but it is a generally usable. For example a strictness analysis can use the annotation to force strict evaluation of some expressions.
+  \item Case expressions have a default case if a pattern match failure occurs. This default arm is defined with the value \inlCode{[Core]Haskell}{\$undefined}, but this is not equal to the Haskell prelude value of undefined. Instead, backends are free to implement this default case they way they see fit.
+  \item Data constructors are explictly bound to functions as is shown with the bindings to \inlCode{[Core]Haskell}{\$True} and \inlCode{[Core]Haskell}{\$False}. These functions are needed because in EHC data constructors cannot be parial applied. By encapsulating data constructing in functions, the regular currying mechanism is used to partial apply data constructors. In the fib example the bindings are not needed, as both constructors do not expect parameters. EHC relies on optimizers further in the pipeline to remove the unneeded functions.
+  \item Types are only available for data constructors and foreign functions. The pipeline stages that follow have to be untyped or re-type the program.
 \end{itemize}
+
+\subsection{GRIN}
+The GRIN language is the first intermediate langague of the EHC backend. Boquist~\cite{boquist:99} developed GRIN as alternative for the STG~\cite{jones:92} language as adopted by the Glasgow Haskell Compiler. The main difference between the two models is the strategy for evaluating closures. The STG language evaluates closures by jumping to the evaluation code in the info table of the closure. After a closure is evaluated, his evaluation code is overwritten with code that directly returns. This strategy is elegant, as suspended functions and evaluated values are treated equal. A disadvantage of the strategy is the resulting object code. The object code contains many branches to staticly unkown targets because the address of closures and thus their evaluation code is not known staticly. These so called indirect branches are very inefficient on modern superscalar processors as an indirect branch confuses the branch predictor.
+
+With GRIN Boquist eliminates the use of indirect branches in generated object code. In the eval/apply model, a huge case expression evaluates a closure by scrutizing the tag of the closure. The tag of the closure determines which evaluation code, if needed, is executed. By itself, this does not eliminate indirect branches, as big case expressions are often faster implement with a jumptable instead of a serie of conditional branches. But when combined with inlining of these case statements and elimination of impossible branches, the amount of branches are often reduced enough that an jumptable can be omitted.
+
+The GRIN language is a small language and only has a few expressions and one combinator. In contrast with the source language Haskell, GRIN is an impure functional language. Impure expressions are \inlCode{grin}{store}, \inlCode{grin}{fetch}, and \inlCode{grin}{update} expressions, which put and retreive nodes to and from the heap. The pure expressions in GRIN are function calls, case expressions and the unit expressions. Unit expressions can be seen as an monadic return, the value of the expression is the value of the parameter.
+
+\begin{figure}[p]
+  \lstinputlisting[style={figureLstFootnote}, language={grin}]{FibExe.grin}
+  \caption{The GRIN code for the Haskell program of \refF{fig:fib-hs}}
+  \label{fig:fib-grin}
+\end{figure}
+
+GRIN expressions are combined with the sequence combinator. The syntax of the sequence combinator shows resemblence with the monadic bind (|>>=|) in Haskell, but the semantics are more like an imperative assignment operator. A sequence is of the form \inlCode{grin}{\$expr1; \$pat1 -> \$expr2}. This results in the assignment of \inlCode{grin}{\$expr1} to \inlCode{grin}{\$pat1} in the same way a scrutinee of a haskell case expression is bound to a pattern. Variables in the pattern are bound to the value of the expression and concrete tags in the pattern are checked against the value of the expression. After the binding, the sequence combinator returns the value of \inlCode{grin}{\$expr2}, which can use the bindings defined in \inlCode{grin}{\$pat1}.
+
+\subsubsection{Generated GRIN code}
+\refF{fig:fib-grin} shows the GRIN code generated for the Haskell program fib (\refF{fig:fib-hs}) before any GRIN transformation is applied. This code is a straight forward translation from the Core code shown earlier (\refF{fig:fib-core}) and quite similar to it. There are several code conventions for the GRIN code:
+\begin{enumerate}
+  \item There are 3 type of nodes in GRIN; constructed values, suspended functions and partial applications. In this example, tags for constructed values are prefixed with an 'C', e.g. CInt, CTrue. The tag prefix for suspended functions is 'F', resulting in tags as Ffib and FprimSubInt. Finally there are the partial applied functions. Their tags are prefixed with an 'P', although those are not generated for the fib example.
+  \item There are different type of variables in GRIN; nodes, pointers, literals and tags. In the example, the variable name shows the type of the variable. Variables that contain nodes are prefixed with '\$n', pointers with '\$p', literal integers with '\$i' and tags with '\$t'.
+  \item When a pattern match defines bindings that are never used, the variable is replaced by an underscore.
+\end{enumerate}
+
+In the generated GRIN code one function is not a direct mapping from the Core code. The eval function is responsible for evaluating closures to weak-head normal form. The function consists of an big case expressions with an arm for each possible closure type. The arms for constructed values and partial applied functions just return the node passed to the eval function because they are already in weak-head normal form. More interesting is the code in the arms for suspended functions. The code evaluates the function via a function call and than update the node with the value returned from it.
+Although the eval function is shown in the code in \refF{fig:fib-grin}, in reality it is never generated in this form. Acutal generation of the full eval function is an waste of time, as the eval function is inlined at each occurrence. Still it is included in the example, for clarity.
+
+\begin{figure}[tbhp]
+  \begin{centering}
+    \input{GRIN_Fib_Tree.tex}
+    \caption{A tree of closures as build by the \$fib function of \refF{fig:fib-grin}}
+    \label{fig:fib-grin-tree}
+  \end{centering}
+\end{figure}
+
+GRIN is the first language of the EHC pipeline which makes the creation and order of evaluation of closures explicit. An good example of the generated evaluation order can be seen in the function \$fib. The two equality tests for the base cases are implemented by creating a suspended function call to \$primEqInt and directly evaluating it. If both tests return false, \$fib enters the recursive branch. This translates to GRIN code that creates an closure for each expression in the Haskell expression |fib(n-1) + fib(n-2)|,  resulting in the tree of closures illustrated in \refF{fig:fib-grin-tree}. Directly after creating the tree, it is evaluated with an call to \inlCode{grin}{\$eval}. Because the tree is not in weak-head normal for, there is a suspended function node at the root of the closure tree, the evaluation of the tree will result in a call to \$primAddInt. \$primAddInt is strict in both arguments. First the pointer pointing to the left sub-tree is evaluated, which is an pointer to an suspend \$fib function. This results in a tree equal to the top level evaluation of \$fib. The unfolding continious until the base case of \$fib is hit; than the fully unfolded sub-tree is folded again to an integer node. The right sub-tree is evaluated in the same way as the left sub-tree. When both sub-trees are evaluated and reduced to an integer node, the addition of both integers is performed and the program exits after printing the computed value.
+
+The code generated for the three primitive functions illustrate how EHC interfaces with foreign functions. The arguments of the function are evaluated before the call and reduced to a native type. For example, the CInt nodes that are returned by the \$eval function are reduced to a bare machine register integer by selecting the integer field from the node. After each parameter is untagged, the foreign function is called. The return value of the foreign function is either a tag or an untagged value. Tag values can be returned as tag if the node has no payload, while unboxed values need to be wrapped before returned.     
+
+\subsubsection{GRIN optimizations}
+The code shown in \refF{fig:fib-grin} is very naive. Whole nodes are fetched if only the tag is needed, small functions are not inlined and some nodes are allocated and directly evaluated instead of an direct function call. This is a design choice in GRIN, opting to generate naive code followed by applying small and simple optimizing transformations. The static single assignment form of the GRIN program make optimizing easier, as the program can be analyzed without worrying about alias problems.
+
+The effect of the optimization transformations is illustrated in \refF{fig:fib-grin-tree-opt}. The figure shows the code generated for the recursive branch of the \$fib function. The function \$primAddInt is inlined in this brach and give the opportunity to eliminate the allocation of the suspended function nodes FprimAddInt node and Ffib because they are evaluated later in this branch. \refF{fig:fib-grin-tree} shows the closures build by the optimized code. This reduces the memory allocation by fib with 41\%.
+
+\begin{figure}[htbp]
+  \lstinputlisting[style={figureLstFootnote}, language={grin}]{FibExe-opt.grin}
+  \caption{Optimized GRIN code for the Haskell program of \refF{fig:fib-hs}}
+  \label{fig:fib-grin-opt}
+\end{figure}
+
+\begin{figure}[tbhp]
+  \begin{centering}
+    \input{GRIN_Fib_Tree_Opt.tex}
+    \caption{Closures build by the optimized version of \$fib}
+    \label{fig:fib-grin-tree-opt}
+  \end{centering}
+\end{figure}
+
+\subsection{Silly}
 %%]

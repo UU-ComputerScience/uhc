@@ -1,29 +1,27 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
-%%]
-
-%%[8.wrapper
-WRAPPER GrAGItf
-%%]
-%%[8 import({GrinCode/AbsSyn})
-%%]
-%%[8 hs import(Debug.Trace)
-%%]
-
-%%[8 hs module {%{GRIN}GrinCode.Trf.CopyPropagation} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map) export(propagate)
-
-{-
  Try to shortcut two sorts of copying:
   "Left unit law":  Transform   unit v ; \p -> e   into   e [v/p]
   "Right unit law": Transform   e ; \p -> unit p   into   e
  Left transformation is not possible if v is a single variable and p is a node
--}
 
-propagate :: GrModule -> (GrModule, Bool)
-propagate grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                       (Inh_GrAGItf)
-                  in (grTrf_Syn_GrAGItf t, changed_Syn_GrAGItf t)
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.CopyPropagation} export(copyPropagation)
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
+%%]
+%%[8 hs import(Debug.Trace)
+%%]
+%%[8 import({GrinCode/AbsSyn})
+%%]
+%%[8.wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs
+copyPropagation :: GrModule -> (GrModule, Bool)
+copyPropagation grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in (grTrf_Syn_GrAGItf t, changed_Syn_GrAGItf t)
 %%]
 
 %%[8
@@ -126,7 +124,7 @@ testL pat val
                               GrVal_BasicNode t n -> Nothing -- error $ "CopyProp: left: node-pattern does not match BasicNode" ++ show n
                               GrVal_OpaqueNode  n -> Nothing -- error $ "CopyProp: left: node-pattern does not match OpaqueNode" ++ show n
                               GrVal_PtrNode     n -> Nothing -- error $ "CopyProp: left: node-pattern does not match PtrNode" ++ show n
-                              _                   -> error "CopyProp: left: node-pattern does not match"
+                              _                   -> error ("CopyProp: left: node-pattern does not match pat=" ++ show pat ++ " val=" ++ show val)
       _  -> Nothing
                               
 

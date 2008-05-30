@@ -107,7 +107,7 @@ tnUniqRepr
 %%% pp's which should not be here...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(ppCTag')
+%%[8.ppCTag export(ppCTag')
 -- intended for parsing
 ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
 ppCTag' x t
@@ -115,6 +115,22 @@ ppCTag' x t
       CTagRec                      -> ppCurly "Rec"
       CTag ty nm tag arity mxarity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity, pp mxarity]
   where ppNm n = cfgppHsName x n
+%%]
+
+%%[8_2 -8.ppCTag export(ppCTag', ppCTag'')
+
+ppCTag'' :: CfgPP x => x -> CTag -> PP_Doc
+ppCTag'' x t =
+  case t of
+    CTagRec         -> ppCurly "Rec"
+    CTag _ nm _ _ _ -> pp nm 
+
+-- intended for parsing
+ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
+ppCTag' x t =
+  case t of
+    CTagRec                      -> ppCurly "Rec"
+    CTag ty nm tag arity mxarity -> pp nm >#< "::" >#< pp ty
 %%]
 
 %%[8 export(ppCTagsMp)

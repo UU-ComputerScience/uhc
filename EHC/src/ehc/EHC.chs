@@ -55,6 +55,10 @@
 %%]
 %%[8 import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
+%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict})
+%%]
+%%[8_2 import({%{EH}Core.Trf.PrettyVarNames})
+%%]
 -- GRIN
 %%[8 import(qualified {%{GRIN}GRINCCommon} as GRINCCommon)
 %%]
@@ -65,6 +69,8 @@
 %%[8 import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim}, {%{GRIN}GrinCode.Trf.UnusedNameElim}, {%{GRIN}GrinCode.Trf.AliasElim}, {%{GRIN}GrinCode.Trf.MayLiveUnboxed})
 %%]
 %%[8 hs import({%{GRIN}GrinCode.Trf.ConstPropagation}, {%{GRIN}GrinCode.Trf.FlattenSeq}, {%{GRIN}GrinCode.Trf.EvalElim}, {%{GRIN}GrinCode.Trf.Inline})
+%%]
+%%[8_2 hs import({%{GRIN}GrinCode.Trf.PrettyVarNames})
 %%]
 -- Bytecode output
 %%[8 import({%{GRIN}GrinByteCode.ToC})
@@ -1358,7 +1364,7 @@ cpTransformGrin modNm
                            ++  (if optimizing                then mk [nme]                   else [])
 
                    where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
-                         inl  = ( grInline                       , "inline"           )
+                         inl  = ( grInline True                  , "inline"           )
                          flt  = ( grFlattenSeq                   , "flatten"          )
                          ale  = ( grAliasElim                    , "alias elim"       )
                          nme  = ( grUnusedNameElim               , "unused name elim" )
@@ -1367,7 +1373,14 @@ cpTransformGrin modNm
                          cpr  = ( grConstPropagation             , "const prop"       )
                          unb  = ( grMayLiveUnboxed 
                                    Bytecode.tagAllowsUnboxedLife , "unbox"            )
+%%[[8_2
+                         frm  = ( grPrettyNames                  , "rename uniform"   ) 
+%%]]
+%%[[8
                          evel = [ flt, ale, eve, ale ]
+%%][8_2
+                         evel = [ flt, ale, frm, eve, ale ]
+%%]]
 %%[[8                              
                          inline = mk [inl]
 %%][20                                
@@ -1375,7 +1388,7 @@ cpTransformGrin modNm
                                          ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
                                                expNmOffMp     = crsiExpNmOffMp modNm crsi
                                                optim          = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
                                          ; cpMsgGrinTrf modNm "inline"
                                          ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
                                          }
@@ -1561,8 +1574,15 @@ cpCore1Trf modNm trfNm
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
+%%[[8_2
+                              "CPRNM"   -> cmodTrfPrettyNames
+%%]]
 %%[[102
                               "CS"      -> cmodTrfStrip
+%%]]
+%%[[103
+                              "CLM"     -> cmodTrfLetUnMutual
+			      "DBGS"	-> cmodTrfDebugStrict
 %%]]
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id
@@ -1633,7 +1653,15 @@ cpProcessCoreBasic modNm
 %%[[102
                   -- [ "CS" ] ++
 %%]]
-                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA", "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" ]
+                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                  , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" 
+%%[[8_2           
+                  , "CPRNM"
+%%]]
+                  ]
+%%[[103
+                  ++ [ "CLM", "DBGS"]
+%%]]
                 )
           , cpOutputCore "core" modNm
           ]

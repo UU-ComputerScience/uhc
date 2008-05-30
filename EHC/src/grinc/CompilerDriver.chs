@@ -1,84 +1,87 @@
-%%[0
-%include lhs2TeX.fmt
-%include afp.fmt
+%%[1 module {%{GRIN}CompilerDriver} export(doCompileGrin)
 %%]
 
-%%[1 module {%{GRIN}CompilerDriver} export( doCompileGrin )
+%%[8 import(System.IO, System.CPUTime, Numeric)
 %%]
-
-%%[8 import( System.IO, System.CPUTime, Numeric)
+%%[8 import(Control.Monad.Error, Control.Monad.State, Control.Exception)
 %%]
-%%[8 import( Control.Monad.Error, Control.Monad.State, Control.Exception )
-%%]
-%%[8 import( Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set )
+%%[8 import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 %%[8 import(Debug.Trace)
 %%]
-%%[8 import( UU.Parsing, EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath )
+%%[8 import(UU.Parsing)
 %%]
-%%[8 import( {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)} )
+%%[8 import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
 %%]
-%%[8 import( {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
+%%[8 import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
-%%[8 import( {%{GRIN}GRINCCommon} )
+%%[8 import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.Inline})
+%%[8 import({%{GRIN}GRINCCommon})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.GrInline})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.LateInline})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.MergeCase})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
-%%]
---%%[8 import({%{GRIN}GrinCode.Trf.ReturningCatch})
---%%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.SparseCase})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.CaseElimination})
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CleanupPass})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.NumberIdents})
-%%]
 %%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.Inline})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.FlattenSeq})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.ModeCheck})
+%%[8 import({%{GRIN}GrinCode.Trf.CheckGrinInvariant})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.RightSkew})
+%%[8 import({%{GRIN}GrinCode.Trf.EvalStored})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation})
+%%[8 import({%{GRIN}GrinCode.Trf.NumberIdents})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings})
-%%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings})
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.NormForHPT})
 %%]
 %%[8 import({%{GRIN}GrinCode.PointsToAnalysis})
 %%]
-%%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)}, {%{GRIN}Silly(SilModule)})
+%%[8 import({%{GRIN}GrinCode.Trf.InlineEA})
 %%]
-%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)}, {%{GRIN}LLVM(LLVMModule)})
+%%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings})
 %%]
-%%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
+%%[8 import({%{GRIN}GrinCode.Trf.EmptyAlts})
 %%]
-%%[8 import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
+%%[8 import({%{GRIN}GrinCode.Trf.LateInline})
 %%]
-%%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
+%%[8 import({%{GRIN}GrinCode.Trf.ImpossibleCase})
 %%]
-%%[8 import({%{GRIN}Silly.Pretty(pretty)})
+%%[8 import({%{GRIN}GrinCode.Trf.SingleCase})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.MergeCase})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
+%%]
+%%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)})
+%%]
+%%[8 import({%{GRIN}Silly(SilModule)})
 %%]
 %%[8 import({%{GRIN}Silly.Shortcut(shortcut)})
 %%]
 %%[8 import({%{GRIN}Silly.EmbedVars(embedVars)})
+%%]
+%%[8 import({%{GRIN}Silly.Pretty(pretty)})
+%%]
+%%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
+%%]
+%%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
+%%]
+%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)})
+%%]
+%%[8 import({%{GRIN}LLVM(LLVMModule)})
+%%]
+%%[8 import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,23 +97,59 @@ doCompileGrin
 %%[8 -1.doCompileGrin
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
-  = drive (initialState opts input) putErrs
-      ( do { caLoad (isLeft input) -- from phd boquist (fig 4.1)
-           ; caAnalyse
-           ; options <- gets gcsOpts
-           ; when (ehcOptDumpGrinStages options) (caWriteHptMap "-130-hpt")
-           ; caKnownCalls       -- part I
-           ; caOptimizePartly   -- optimisations (small subset)
-           ; caNormalize        -- part II
-           ; caOptimize         -- optimisations
-           ; caFinalize         -- part III
-           ; when (ehcOptDumpGrinStages options) (caWriteHptMap "-180-hpt")
-           ; when (ehcOptEmitLLVM options || ehcOptEmitC options)
-             caOutput
-           }
-      )
-      
-isLeft = either (const True) (const False)
+  = drive (initialState opts input) putErrs $
+        do 
+         { when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
+         ; transformCode         (dropUnreachableBindings False) 
+                                             "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
+         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-112-cleaned"
+         ; transformCodeUnq      buildAppBindings   "BuildAppBindings" ; caWriteGrin "-113-appsbound"
+         ; transformCodeInline                      "Inline"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-114-inlined"
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-115-invariant"
+         ; checkCode             checkGrinInvariant "CheckGrinInvariant"
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-116-evalstored"
+         ; transformCodeUnq      numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-120-unusedExprDropped"
+         ; transformCodeUnq      normForHPT         "NormForHPT"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-normalized"
+         ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
+         ; transformCodeUnqHpt   inlineEA           "InlineEA" 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
+         ; transformCodeUsingHpt dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
+         ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
+         ; transformCode         (dropUnreachableBindings True) 
+                                             "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
+         ; transformCodeUnq      lateInline         "LateInline"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
+         ; transformCodeUsingHpt impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
+		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
+         ; transformCodeUnqHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
+         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
+         ; transformCodeUnqHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
+         ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
+                                                                       ; caWriteHptMap "-180-hpt"
+         ; options <- gets gcsOpts
+         ; when (ehcOptEmitLLVM options || ehcOptEmitC options)
+           ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
+                ; when (ehcOptEmitLLVM options) 
+                  (do { caSilly2LLVM
+                      ; caWriteLLVM
+                      }
+                   )
+                ; caWriteSilly "" "c" prettyC ehcOptEmitC
+--              ; caWriteSilly "" "s" prettyS ehcOptEmitC
+                }
+           )
+         }
       
 initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
 initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grmod}
@@ -123,134 +162,10 @@ initState opts
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
-                     , gcsMsgInfo    = initMsgInfo
                      }
 putErrs (CompileError e) = putStrLn e >> return ()
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% High level compiler actions
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
--- create initial GRIN
-caLoad doParse = task_ VerboseNormal                "Loading"
-    ( do { when doParse caParseGrin
-         ; caWriteGrin                              "-110-parsed"
-         ; transformCode         dropUnreachableBindings "Dropping unreachable bindings"
-         ; caWriteGrin                              "-111-reachable"
-         ; transformCode         cleanupPass        "Cleaning up"
-         ; caWriteGrin                              "-112-cleaned"
-         ; transformCodeUnq      buildAppBindings   "Building app bindings"
-         ; caWriteGrin                              "-113-appsbound"
-         ; transformCodeInline                      "Inline small functions"
-         ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-114-inlined"
-         ; transformCode         setGrinInvariant   "SetGrinInvariant"
-         ; caWriteGrin                              "-115-invariant"
-         ; code <- gets gcsGrin
-         ; let mess = checkMode code
-         ; when (not (null mess)) (error (unlines ("GRIN variable metatype invariant violated":mess)))
-         ; transformCodeUnq      numberIdents       "Numbering identifiers"
-         ; caWriteGrin                              "-119-numbered"
-         }
-    )
-
--- create HPT info
-caAnalyse = task_ VerboseNormal                     "Analyzing"
-    ( do { transformCodeUnq      normForHPT         "Normalizing"
-         ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-121-normalized"
-         ; caHeapPointsTo
-         ; caWriteGrin                              "-129-analyzed"
-         }
-    )
-
--- simplification part I
-caKnownCalls = task_ VerboseNormal                  "Removing unknown calls"
-    ( do { transformCodeUnqHpt   inlineEA           "Inlining Eval and Apply calls" 
-         ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-131-evalinlined"
-         ; transformCodeUsingHpt dropDeadBindings   "Remove dead bindings"
-         ; caWriteGrin                              "-132-undead"
-         ; transformCodeUnq      lateInline         "LateInline"
-         ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-133-lateinlined"
-         }
-    )
--- optimisations part I
-caOptimizePartly = task_ VerboseNormal              "Optimizing (partly)"
-    ( do { transformCodeUsingHpt sparseCase         "Removing impossible case alternatives"
-         ; caWriteGrin                              "-141-sparseCaseRemoved"
-         ; transformCode         caseElimination    "Removing evaluated and trivial cases"
-         ; caWriteGrin                              "-143-evaluatedCaseRemoved"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; caWriteGrin                              "-144-unusedExprRemoved"
-         
-		 ; transformCode         mergeCase          "Merging cases"
-         ; caWriteGrin                              "-145-caseMerged"         
-         --; options <- gets gcsOpts
-         --; when (ehcOptPriv options)
-         --       ( do { transformCode         mergeCase          "Merging cases"
-         --            ; caWriteGrin                              "-145-caseMerged"
-         --           }
-         --       )
-         }
-    )
--- simplification part II
-caNormalize = task_ VerboseNormal                   "Normalizing"
-    ( do { transformCodeUnqHpt   lowerGrin          "Lowering Grin"
-         ; caWriteGrin                              "-151-lowered"
-         }
-    )
-
--- optimisations part II
-caOptimize = task_ VerboseNormal                    "Optimizing (full)"
-    ( do { transformCodeIterated propagate          "Copy propagation"
-         ; caWriteGrin                              "-161-after-cp"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; transformCodeIterated rightSkew          "Unskewing"
-         ; caWriteGrin                              "-169-optimized"
-         }
-    )
-
--- simplification part III
-caFinalize = task_ VerboseNormal                    "Finalizing"
-    ( do { transformCodeUnqHpt   splitFetch         "Splitting and specializing fetch operations"
-         ; caWriteGrin                              "-171-fetchSplitted"
-         ; transformCode         caseElimination    "Removing evaluated and trivial cases"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; transformCodeUsingHpt dropUnusedExpr     "Remove unused expressions"
-         ; caWriteGrin                              "-176-unusedExprRemoved"
-         ; transformCodeIterated propagate          "Copy propagation"
---       ; transformCodeUnqHpt   returnCatch        "Ensure code exists after catch statement"
-         ; caWriteGrin                              "-179-final"
-         }
-    )
-
--- write final code
-caOutput = task_ VerboseNormal "Writing code"
-    ( do { options <- gets gcsOpts
-    
-         ; caGrin2Silly
-         ; when (ehcOptDumpGrinStages options) (caWriteSilly "-201" "sil" pretty)
-         ; transformSilly   shortcut      "Shortcut single-use variables"
-         ; when (ehcOptDumpGrinStages options) (caWriteSilly "-202" "sil" pretty)
-         ; transformSilly   embedVars     "Embed Variables"
-         ; when (ehcOptDumpGrinStages options) (caWriteSilly "-203" "sil" pretty)
-         ; transformSilly   shortcut      "Shortcut single-use variables"
-         ; when (ehcOptEmitLLVM options)
-            (do { caSilly2LLVM
-                ; caWriteLLVM
-                }
-            )
-         ; when (ehcOptEmitC options)
-           (caWriteSilly "" "c" prettyC)
-         --; when (ehcOptEmitC options)
-         --  (caWriteSilly "" "s" prettyS)
-         }
-    )
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Low level compiler actions: input
@@ -332,24 +247,35 @@ caWriteLLVM  =
 
 caWriteGrin :: String -> CompileAction ()
 caWriteGrin extra
-  = do { (gets (ehcOptDumpGrinStages . gcsOpts) >>= guard)
-       ; grin <- gets gcsGrin
-       ; caWriteFile extra "grin" (const ppGrModule) grin
+  = do { opts <- gets gcsOpts
+       ; when (ehcOptDumpGrinStages opts)
+           (do { grin <- gets gcsGrin
+               ; caWriteFile extra "grin" (const ppGrModule) grin
+               }
+           )
        }
      
-caWriteSilly :: String -> String -> (EHCOpts -> SilModule -> PP_Doc) -> CompileAction ()
-caWriteSilly extra suffix ppFun =
-  do { silly <- gets gcsSilly
-     ; caWriteFile extra suffix ppFun silly
+caWriteSilly :: String -> String -> (EHCOpts -> SilModule -> PP_Doc) -> (EHCOpts->Bool) -> CompileAction ()
+caWriteSilly extra suffix ppFun cond =
+  do { opts <- gets gcsOpts
+     ; when (cond opts)
+            ( do { silly <- gets gcsSilly
+                 ; caWriteFile extra suffix ppFun silly
+                }
+            )
      }
 
 caWriteHptMap :: String -> CompileAction ()
 caWriteHptMap fn
-  = do { hptMap <- gets gcsHptMap
-       ; input <- gets gcsPath
-       ; let fileName   = fpathBase input ++ fn
-             output = fpathSetSuff "txt" (fpathSetBase fileName input)
-       ; liftIO $ writeToFile (showHptMap hptMap) output
+  = do { opts <- gets gcsOpts
+       ; when (ehcOptDumpGrinStages opts)
+           ( do { hptMap <- gets gcsHptMap
+                ; input <- gets gcsPath
+                ; let fileName   = fpathBase input ++ fn
+                      output = fpathSetSuff "txt" (fpathSetBase fileName input)
+                ; liftIO $ writeToFile (showHptMap hptMap) output
+                }
+           )
        }
 %%]
 
@@ -369,7 +295,6 @@ data GRINCompileState = GRINCompileState
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
-    , gcsMsgInfo   :: (Int, Bool)
     }
 
 gcsUpdateGrin   x s = s { gcsGrin   = x }
@@ -418,9 +343,17 @@ traceHptMap
 
 transformCode :: (GrModule->GrModule) -> String -> CompileAction ()
 transformCode process message 
+  = task VerboseALot message body (const Nothing)
+     where body = do { grin <- gets gcsGrin
+                    ; modify (gcsUpdateGrin (process grin))
+                    }
+
+checkCode :: (GrModule->[String]) -> String -> CompileAction ()
+checkCode process message
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
-       ; modify (gcsUpdateGrin (process grin))
+       ; let errors = process grin
+       ; when (not (null errors)) (error (unlines errors))
        }
 
 transformCodeInline :: String -> CompileAction ()
@@ -428,9 +361,9 @@ transformCodeInline message
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
 %%[[8
-       ; let code = grInline grin
+       ; let code = grInline True grin
 %%][20
-       ; let (code,_) = grInline Set.empty Map.empty grin 
+       ; let (code,_) = grInline True Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)
        }
@@ -463,9 +396,9 @@ transformCodeIterated process message
      caFixCount n = do
          code <- gets gcsGrin
          (code, changed) <- return $ process code
-         putDebugMsg (if changed then "Changes" else "No change")
          modify (gcsUpdateGrin code)
          if changed then (caFixCount $ n+1) else return n
+
 
 transformSilly :: (EHCOpts->SilModule->SilModule) -> String -> CompileAction ()
 transformSilly process message 
@@ -524,100 +457,53 @@ force = liftIO . evaluate
 %%]
 
 %%[8
-initMsgInfo :: (Int, Bool) -- indent, FirstMessageInLevel, CPUTime
-initMsgInfo = (0, False)
-
-putLn = putStrLn ""
-
-putDebugMsg :: String -> CompileAction ()
-putDebugMsg msg = harden_ $ do
-    { dumpStages <- gets (ehcOptDumpGrinStages . gcsOpts)
-    ; guard dumpStages
-    ; (indent, first) <- gets gcsMsgInfo
-    ; when first (liftIO putLn >> modify (\s -> s { gcsMsgInfo = (indent, False) }))
-    ; liftIO $ putStrLn ("[D] " ++ replicate (indent-4) ' ' ++ msg)
-    }
-
 putMsg :: Verbosity -> String -> (Maybe String) -> CompileAction ()
 putMsg minVerbosity msg mbMsg =  harden_ $ do
     currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
     guard (currentVerbosity >= minVerbosity)
-    (indent, first) <- gets gcsMsgInfo
-    when first (liftIO putLn)
     let msg2    = maybe "" (\m -> " (" ++ m ++ ")") mbMsg
-        message = replicate indent ' ' ++ strBlankPad 36 msg ++ msg2
+        message = strBlankPad 36 msg ++ msg2
     liftIO $ putStrLn message
-    when first (modify (\s -> s { gcsMsgInfo = (indent, False) }))
 
-
-task_ :: Verbosity -> String -> CompileAction a -> CompileAction ()
-task_ minVerbosity td ca = task minVerbosity td ca (const Nothing)
 
 task :: Verbosity -> String -> CompileAction a -> (a -> Maybe String) -> CompileAction ()
 task minVerbosity taskDesc ca f = do
     { startMsg minVerbosity taskDesc
-    ; (cpuTime, r) <- cpuUsage ca
-    ; finishMsg minVerbosity (f r) cpuTime
+    ; start   <- liftIO getCPUTime
+    ; result  <- ca
+    ; end     <- liftIO getCPUTime
+    ; finishMsg minVerbosity (f result) (end-start)
     }
     where
     startMsg :: Verbosity -> String -> CompileAction ()
     startMsg minVerbosity msg =  harden_ $ do
         currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         guard (currentVerbosity >= minVerbosity)
-        (indent, first) <- gets gcsMsgInfo
-        when first (liftIO putLn)
-        let message = replicate indent ' ' ++ strBlankPad 36 msg
-        liftIO $ putStr message
-        modify (\s -> s { gcsMsgInfo = (indent+4, True) })
+        liftIO $ putStr (strBlankPad 36 msg)
 
     finishMsg :: Verbosity -> Maybe String -> Integer -> CompileAction ()
-    finishMsg minVerbosity mbMsg cpuUsage =  harden_ $ do
+    finishMsg minVerbosity mbMsg cpuTime =  harden_ $ do
         { currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)
         ; guard (currentVerbosity >= minVerbosity)
-        ; (oldIndent, first) <- gets gcsMsgInfo
         ; doTiming <- gets (ehcOptTimeCompile . gcsOpts)
-        ; let indent       =  oldIndent - 4
-              timeMsgOld   =  show (cpuUsage `div` fst cpuUsageInfo) ++ " " ++ snd cpuUsageInfo
-              timeMsg      =  showFFloat (Just 2) (fromInteger cpuUsage / 1000000000000) " seconds"
-
-              formatMsg m  | doTiming   =  if first
-                                           then " (" ++ m ++ ", " ++ timeMsg ++ ")"
-                                           else replicate indent ' ' ++ m ++ " (" ++ timeMsg ++ ")"
-                           | otherwise  =  if first
-                                           then " (" ++ m ++ ")"
-                                           else replicate indent ' ' ++ m
-              defaultMsg   | doTiming   =  if first
-                                           then " (" ++ timeMsg ++ ")"
-                                           else replicate indent ' ' ++ timeMsg
+        ; let timeMsg      =  showFFloat (Just 5) (fromInteger cpuTime / 1000000000000) " seconds"
+              formatMsg m  | doTiming   =  " (" ++ m ++ ", " ++ timeMsg ++ ")"
+                           | otherwise  =  " (" ++ m ++ ")"
+              defaultMsg   | doTiming   =  " (" ++ timeMsg ++ ")"
                            | otherwise  =  ""
 
-        ; when (doTiming || first) $ liftIO (putStrLn $ maybe defaultMsg formatMsg mbMsg)
-        ; modify (\s -> s { gcsMsgInfo = (indent, False) })
+        ; liftIO (putStrLn $ maybe defaultMsg formatMsg mbMsg)
         }
 
-cpuUsage :: CompileAction a -> CompileAction (Integer, a)
-cpuUsage ca = do
-    { start   <- liftIO getCPUTime
-    ; result  <- ca
-    ; end     <- liftIO getCPUTime
-    ; return (end - start, result)
-    }
-
-
-{- returns - a value to remove all tailing zero's. Devide the CPU timing
-             to change the precision so that no decimal point is needed but
-             without needless zeros are included (folowing SI-prefixes)
-           - a string reprenstation of the precision of the resulting devision
--}
-cpuUsageInfo = (\(a, b) -> (10^a, b)) closest
-    where
-    closest  =  head $ dropWhile (\a -> fst a > prec) table
-    prec     =  floor (log (fromInteger cpuTimePrecision) / log 10)
-    table    =  [ (12, "seconds")
-                , (9, "milli seconds")
-                , (6, "micro seconds")
-                , (3, "nano seconds")
-                , (0, "pico seconds")
-                ]
 %%]
 
+
+
+-- Idiom for doing a transformation only when the --priv=1 option is in effect:
+
+         ; options <- gets gcsOpts
+         ; when (ehcOptPriv options)
+                ( do { transformCode         evalStored         "EvalStored"
+                     ; caWriteGrin "-116-evalstored"
+                     }
+                )

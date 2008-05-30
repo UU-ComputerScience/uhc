@@ -171,7 +171,14 @@ SEM Ty
 prOccLImpls :: Maybe Impls -> [InsPrPrvOcc] -> AssocL ImplsVarId Impls
 prOccLImpls mbI prL
   = case mbI of
-      Just i -> [(implsTailVar i,foldr (\(p,_) im -> Impls_Cons (poId p) (poPr p) (poPoi p) [] im) Impls_Nil prL)]
+      Just i -> [( implsTailVar i
+                 , foldr (\(p,_) im
+                             -> Impls_Cons (poId p) (poPr p) (poPoi p)
+%%[[99
+                                           (poRange p)
+%%]]
+                                           [] im
+                         ) Impls_Nil prL)]
       _      -> []
 %%]
 

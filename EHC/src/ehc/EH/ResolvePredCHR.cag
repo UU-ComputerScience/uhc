@@ -63,8 +63,8 @@ SEM Decl
                                                             (usc,uss) = splitAt lc us
                                                             lc = length @ctxtPrFixL
                                                             ls = length @supPrTyL
-                                                            mka p u = mkAssumeConstraint p u @predScope
-                                                            mkp p u = mkProveConstraint  p u @predScope
+                                                            mka p u = rngLift @range mkAssumeConstraint p u @predScope
+                                                            mkp p u = rngLift @range mkProveConstraint  p u @predScope
                                                             (dNm,toAssume,toProve)
                                                                = case @instVariant of
                                                                    InstDefault -> ( @dictSelfNm
@@ -76,7 +76,7 @@ SEM Decl
                                                                                   , cnstrMpFromList $ zipWith mkp (map tyPred @supPrTyL) uss
                                                                                   )
                                                         in  ( toAssume, toProve
-                                                            , cnstrMpFromList [mkAssumeConstraint' (tyPred @hdPrTyFix) u dNm @predScope]
+                                                            , cnstrMpFromList [rngLift @range mkAssumeConstraint' (tyPred @hdPrTyFix) u dNm @predScope]
                                                             , usc, map mkHNm usc
                                                             , uss, map mkHNm uss
                                                             , u, dNm
@@ -95,13 +95,13 @@ SEM Decl
                                                             where ([dataTy],dataAltTy) = tyArrowArgsRes $ dgiDataTy @derivDataDGI
                                                                   alts = tyRecExts2 dataAltTy
                                                                   altsPrOcc
-                                                                       = [ [ mkPredOcc (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrId basePrfCtxtId u2) @predScope
+                                                                       = [ [ rngLift @range mkPredOccRng (Pred_Class (mkApp [@derivHdPrTyCon,t])) (mkPrIdCHR u2) @predScope
                                                                            | ((_,t),u2) <- zip a1 (mkNewUIDL (length a1) u1)
                                                                            ]
                                                                          | ((_,a1),u1) <- zip alts (mkNewLevUIDL (length alts) @lUniq_95_altsPrOcc)
                                                                          ]
                                                                   extraPrOcc
-                                                                       = [ mkPredOcc (Pred_Class (dccMkTy cx)) (mkPrId basePrfCtxtId u) @predScope
+                                                                       = [ rngLift @range mkPredOccRng (Pred_Class (dccMkTy cx)) (mkPrIdCHR u) @predScope
                                                                          | (cx,u) <- zip cxl (mkNewUIDL (length cxl) @lUniq_95_extraPrOcc)
                                                                          ]
                                                                        where cxl = dclExtraCtxt derivDCL
@@ -125,7 +125,8 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
     , chrSolveEvidCoreMp
     )
   where (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
-        toProveHereCnstrMpCanon = Map.mapKeys mk toProveHereCnstrMp
+        -- toProveHereCnstrMpCanon = Map.mapKeys mk toProveHereCnstrMp
+        toProveHereCnstrMpCanon = Map.foldWithKey (\p c m -> Map.insertWith (++) (mk p) c m) Map.empty toProveHereCnstrMp 
           where mk (Prove p) = Prove $ p {cpoPr = predCanonic env $ cpoPr p}
                 mk c         = c
         env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMpCanon}}
@@ -205,17 +206,19 @@ SEM Decl
                             .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace)
                                                     =   debugInfo @chrSuperSimplifyResult
 
+                            .   toAssumeNeverCnstrMp
+                                                    =   cnstrMpUnions [@chrSolveDeclsRemCnstrMp,@chrSolveSuperRemCnstrMp]
+                            .   cannotProveCnstrMp	=	cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotResDeclsCnstrMp,@cannotResSuperCnstrMp]
+%%]
                             .   (toAssumeNeverCnstrMp,_)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveFailure Set.empty $ cnstrPred k)
                                                         $ cnstrMpUnions [@chrSolveDeclsRemCnstrMp,@chrSolveSuperRemCnstrMp]
-                            .   cannotProveCnstrMp	=	cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotResDeclsCnstrMp,@cannotResSuperCnstrMp]
-%%]
 
 Interaction with existing impl:
 
 %%[9
 SEM Expr
-  | Let         loc         .   quantPrOccL         =   [ mkPredOcc (cpoPr o) (mkPrIdCHR $ vunmId i) sc
+  | Let         loc         .   quantPrOccL         =   [ rngLift @range mkPredOccRng (cpoPr o) (mkPrIdCHR $ vunmId i) sc
                                                         | (Assume o,[RedHow_Assumption i sc])
                                                             <- Map.toList $ @chrSolve1RemCnstrMp `Map.difference` @cannotProveCnstrMp
                                                         ]
@@ -232,8 +235,8 @@ SEM Expr
                                                               = (cnstrMpFromList ass `cnstrMpUnion` cnstrMpUnions (map cnstrMpFromList prvs), concat coeArgIds)
                                                               where assSc = maybe @predScope id $ gamLookup nm @decls.scopeGam
                                                                     (ass,prvs,coeArgIds)
-                                                                      = unzip3 [ ( mkAssumeConstraint (poPr po) (poId po) assSc
-                                                                                 , zipWith (\u i -> mkProveConstraint (poPr po) u (ipoScope i)) ups ipos
+                                                                      = unzip3 [ ( rngLift @range mkAssumeConstraint (poPr po) (poId po) assSc
+                                                                                 , zipWith (\u i -> rngLift @range mkProveConstraint (poPr po) u (ipoScope i)) ups ipos
                                                                                  , zipWith (\i u -> (ipoId i,u)) ipos ups
                                                                                  )
                                                                                | ((po,ipos),u') <- zip impls $ mkNewLevUIDL (length impls) u
@@ -258,7 +261,6 @@ ATTR NTPrf [ chrEvidBindMp: EvidKeyToCBindMap   chrScopeBindMp: PredScopeToCBind
 
 SEM AGItf
   | AGItf       loc         .   chrEvidBindMp       =   @chrSolveMainEvidBindMp
-                            .   chrScopeBindMp      =   @chrSolveMainScopeBindMp
 
 SEM Decl
   | Instance    loc         .   chrEvidBindMp       =   @chrSolveDeclsEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
@@ -268,41 +270,43 @@ SEM Expr
   | Let         loc         .   chrSolveEvidBindMp  =   @chrSolve2EvidBindMp
                             .   chrEvidBindMp       =   @chrSolveEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
                             .   chrSolveScopeBindMp =   @chrSolve2ScopeBindMp
-                            .   chrScopeBindMp      =   @chrSolveScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
+                            .   chrLetScopeBindMp   =   @chrSolveScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
 %%]
-  | Let         loc         .   chrSolveEvidBindMp  =   @chrSolve2EvidBindMp `evidKeyToCBindMapUnion` @chrSolve1EvidBindMp
-                            .   chrEvidBindMp       =   @chrSolveEvidBindMp `evidKeyToCBindMapUnion` @lhs.chrEvidBindMp
-                            .   chrSolveScopeBindMp =   @chrSolve2ScopeBindMp `predScopeToCBindMapUnion` @chrSolve1ScopeBindMp
-                            .   chrScopeBindMp      =   @chrSolveScopeBindMp `predScopeToCBindMapUnion` @lhs.chrScopeBindMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bindings depending on scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 hs
-mkScopeBindings :: Bool -> PredScope -> PredScopeToCBindMap -> [CBind]
+mkScopeBindings :: Bool -> PredScope -> PredScopeToCBindMap -> ([CBind],PredScopeToCBindMap)
 mkScopeBindings alsoOuter sc mp
-  = concatMap f scs
+  = (concatMap f scs,foldr Map.delete mp scs)
   where f sc = Map.findWithDefault [] sc mp
-        scs  = if alsoOuter then sc : pscpParents sc else [sc]
+        scs  = [sc] ++ (if alsoOuter then pscpParents sc else [])
 %%]
 
 %%[9
 SEM AGItf
-  | AGItf       loc         .   chrScopeMainBindL   =   mkScopeBindings True @predScope @chrScopeBindMp
+  | AGItf       loc         .   (chrScopeMainBindL,chrScopeBindMp)
+  													=   mkScopeBindings True @predScope @chrSolveMainScopeBindMp
 
 SEM Decl
-  | Instance    loc         .   chrScopeSuperBindL  =   mkScopeBindings True @predScope @chrSolveSuperScopeBindMp
-                            .   chrScopeDeclsBindL  =   mkScopeBindings True @predScope @chrSolveDeclsScopeBindMp
-  | Val         loc         .   chrScopeValBindL    =   mkScopeBindings False @predScope @lhs.chrScopeBindMp
+  | Instance    loc         .   (chrScopeSuperBindL,_)
+  													=   mkScopeBindings True @predScope @chrSolveSuperScopeBindMp
+                            .   (chrScopeDeclsBindL,_)
+  													=   mkScopeBindings True @predScope @chrSolveDeclsScopeBindMp
+  | Val         loc         .   (chrScopeValBindL,chrScopeBindMp)
+  													=   mkScopeBindings False @predScope @lhs.chrScopeBindMp
 
 SEM Expr
-  | Let         loc         .   chrScopeBindL       =   mkScopeBindings True @predScope @chrSolveScopeBindMp
+  | Let         loc         .   (chrScopeBindL,chrScopeBindMp)
+  													=   mkScopeBindings True @predScope @chrLetScopeBindMp
   | Lam AppTop
 %%[[12
     LamImpl
 %%]]
-                loc         .   chrScopeBindL       =   mkScopeBindings False @predScope @lhs.chrScopeBindMp
+                loc         .   (chrScopeBindL,chrScopeBindMp)
+  													=   mkScopeBindings False @predScope @lhs.chrScopeBindMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

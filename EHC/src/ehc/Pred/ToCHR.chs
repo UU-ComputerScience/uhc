@@ -346,7 +346,7 @@ patchUnresolvedWithAssumption env unresCnstrMp evidMp
                       where canRes (Prove p) _ = Map.null $ Map.filter tvCatIsFixed $ tyFtvMp $ predTy $ cpoPr p
                             canRes _         _ = True
         assumeCnstrs  = concat $ zipWith mk (shareUnresolvedAssumptionsByScope $ Map.keys unresCnstrMp') us
-                      where mk (Prove p,sc) u = [mkAssumeConstraint (cpoPr p) u sc]
+                      where mk (Prove p,sc) u = [rngLift emptyRange mkAssumeConstraint (cpoPr p) u sc]
                             mk _            _ = []
         assumeSubstMp = Map.fromList [ (p,Evid_Proof p info []) | (Assume p,info) <- assumeCnstrs ]
 %%]
@@ -390,18 +390,3 @@ chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
             $ addToRedGraphFromAssumes cnstrInfoMpAll
             $ simpresRedGraph prevRes
 %%]
-  = (mkEvidence heur cnstrInfoMpAll redGraph,SimplifyResult solveState redGraph)
-            $ addToRedGraphFromAssumes cnstrInfoMpAll
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
-  = (mkEvidence heur cnstrInfoMp $ trp "ZZ" (ppRedGraph redGraph) $ redGraph,solveState)
-
-
-chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
-  = (mkEvidence heur cnstrInfoMp redGraph,SimplifyResult solveState redGraph)
-  where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
-        solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp) (simpresSolveState prevRes)
-        -- cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
-        redGraph
-          = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
-            $ addToRedGraphFromAssumes cnstrInfoMp
-            $ simpresRedGraph prevRes

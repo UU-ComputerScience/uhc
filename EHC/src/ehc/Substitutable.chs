@@ -151,12 +151,22 @@ instance Substitutable PredScope TyVarId VarMp where
   ftv    _                    = []
 
 instance Substitutable PredOcc TyVarId VarMp where
+%%[[9
   s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) id (s |=> sc)
   ftv    (PredOcc pr id sc)  = unions [ftv pr,ftv sc]
+%%][99
+  s |=>  (PredOcc pr id sc r)  = PredOcc (s |=> pr) id (s |=> sc) r
+  ftv    (PredOcc pr id sc _)  = unions [ftv pr,ftv sc]
+%%]]
 
 instance Substitutable CHRPredOcc TyVarId VarMp where
+%%[[9
   s |=>  (CHRPredOcc pr sc)  = CHRPredOcc (s |=> pr) (s |=> sc)
   ftv    (CHRPredOcc pr sc)  = unions [ftv pr,ftv sc]
+%%][99
+  s |=>  (CHRPredOcc pr sc r)  = CHRPredOcc (s |=> pr) (s |=> sc) r
+  ftv    (CHRPredOcc pr sc _)  = unions [ftv pr,ftv sc]
+%%]]
 
 instance Substitutable Impls TyVarId VarMp where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
@@ -221,16 +231,17 @@ instance Substitutable PredSeq TyVarId VarMp where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9 export(tyFixTyVars)
-fixTyVarsVarMp :: Ty -> (VarMp,VarMp)
-fixTyVarsVarMp t
-  = (mk TyVarCateg_Fixed fv,mk TyVarCateg_Plain fv)
+fixTyVarsVarMp :: UID -> Ty -> (VarMp,VarMp)
+fixTyVarsVarMp uniq t
+  = (mk TyVarCateg_Fixed fv rv,mk TyVarCateg_Plain rv fv)
   where fv = ftv t
-        mk cat fv = VarMp $ Map.fromList $ map (\v -> (v,VMITy (Ty_Var v cat))) $ fv
+        rv = mkNewUIDL (length fv) uniq
+        mk cat fv rv = VarMp $ Map.fromList $ zipWith (\v r -> (v,VMITy (Ty_Var r cat))) fv rv
 
-tyFixTyVars :: Ty -> (Ty,VarMp)
-tyFixTyVars t
-  = (sTo |=> t, sFr)
-  where (sTo,sFr) = fixTyVarsVarMp t
+tyFixTyVars :: UID -> Ty -> (Ty,VarMp,VarMp)
+tyFixTyVars uniq t
+  = (sTo |=> t, sTo, sFr)
+  where (sTo,sFr) = fixTyVarsVarMp uniq t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

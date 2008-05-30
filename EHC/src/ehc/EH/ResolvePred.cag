@@ -9,30 +9,18 @@
 
 %%[10
 SEM Expr
-  | Sel         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq2
-                            .   prOccL              =   [mkPredOcc (Pred_Lacks @knRowTy (Label_Lab @lbl)) @prUid @lhs.predScope]
+  | Sel         loc         .   prUid               =   mkPrIdCHR @lUniq2
+                            .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @lbl)) @prUid @lhs.predScope]
 
 SEM RecExpr
-  | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
-  | Upd         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq4
-  | Ext Upd     loc         .   prOccL              =   [mkPredOcc (Pred_Lacks @knRowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+  | Ext         loc         .   prUid               =   mkPrIdCHR @lUniq3
+  | Upd         loc         .   prUid               =   mkPrIdCHR @lUniq4
+  | Ext Upd     loc         .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @nm)) @prUid @lhs.predScope]
 
 SEM RecPatExpr
-  | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
-                            .   prOccL              =   [mkPredOcc (Pred_Lacks @rowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+  | Ext         loc         .   prUid               =   mkPrIdCHR @lUniq3
+                            .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @rowTy (Label_Lab @nm)) @prUid @lhs.predScope]
 %%]
-SEM Expr
-  | Sel         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq2
-                            .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) (Label_Lab @lbl)) @prUid @lhs.predScope]
-
-SEM RecExpr
-  | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
-  | Upd         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq4
-  | Ext Upd     loc         .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @recTy) (Label_Lab @nm)) @prUid @lhs.predScope]
-
-SEM RecPatExpr
-  | Ext         loc         .   prUid               =   mkPrId basePrfCtxtId @lUniq3
-                            .   prOccL              =   [mkPredOcc (Pred_Lacks (tyRecRow @knRecTy) (Label_Lab @nm)) @prUid @lhs.predScope]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Impl prove occurrence
@@ -64,7 +52,7 @@ SEM Expr
 %%[12
 SEM Expr
   | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp |=>) $ @knArgImpl
-                            .   knPrUid             =   mkPrId basePrfCtxtId @lUniq
+                            .   knPrUid             =   mkPrIdCHR @lUniq
                             .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
 %%]
 

@@ -1,0 +1,88 @@
+Impossible case removal
+What: remove alternatives that, according to HPT, cannot happen.
+
+Why: the user program may distinguish more cases than necessary.
+Removal of impossible cases saves time distinguishing them.
+When only one alternative remains, a subsequent SingleCase transformation
+will remove the srutinization alltogether.
+This transformation is particularly effective after the LateInline transformation,
+as in a particular context more cases might be impossible.
+In that situation, also alternatives introduced by InlineEA might be
+removed in a particular context.
+
+When:
+must be done after HPT-Analysis
+most effective after LateInline
+most effective before SingleCase
+
+Assumptions:
+- HPT table is available
+- scrutinizer is a simple variable
+
+
+%%[8 hs module {%{GRIN}GrinCode.Trf.ImpossibleCase} export(impossibleCase)
+%%]
+
+
+%%[8 import({GrinCode/AbsSyn})
+%%]
+%%[8 hs import({%{EH}Base.Common(HsName, CTagsMp)})
+%%]
+%%[8 hs import({%{EH}GrinCode})
+%%]
+%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getTags, getNr, getEnvVar)})
+%%]
+%%[8
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs
+impossibleCase :: (GrModule,HptMap) -> GrModule
+impossibleCase (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  grTrf_Syn_GrAGItf syn
+%%]
+
+%%[8
+-- synthesize a modified copy
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+ATTR AllNT     [ | | grTrf: SELF     ]
+
+-- bring the HPT map down to the Expression level
+ATTR GrAGItf
+     GrModule
+     AllBind
+     AllGrExpr [ hptMap: HptMap | | ]
+
+-- decide which alternatives are possible
+ATTR GrAlt     [ | | isPossible: Bool        ]
+ATTR AllAlt    [ possibleTags: {[GrTag]} | | ]
+
+SEM GrAlt
+  | Alt      lhs.isPossible     =  @pat.tag `elem` @lhs.possibleTags
+
+SEM GrExpr
+  | Case     altL.possibleTags  =  getTags (getEnvVar @lhs.hptMap @val.varId)
+
+-- remove the impossible alternatives
+SEM GrAltL
+  | Cons     lhs.grTrf          =  if   @hd.isPossible 
+                                   then @hd.grTrf : @tl.grTrf 
+                                   else             @tl.grTrf
+%%]
+
+%%[8
+ATTR GrPatAlt [ | | tag: GrTag ]
+ATTR GrVal    [ | | varId: Int ]
+
+SEM GrPatAlt 
+  | Tag 
+    Node           lhs.tag  =  @tag.grTrf
+  | * - Node Tag   lhs.tag  =  error "ImpossibleCase: alternative without a tag"
+
+
+SEM GrVal
+  | Var            lhs.varId  =  getNr @nm
+  | * - Var        lhs.varId  =  error "ImpossibleCase: not a simple variable as scrutinizer"
+%%]

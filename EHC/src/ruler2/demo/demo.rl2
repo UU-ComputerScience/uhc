@@ -1,0 +1,175 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n"
+
+preamble ag "%%[0\n%include lhs2TeX.fmt\n%include afp.fmt\n%%]\n"
+
+external Ty_Int
+
+data Expr [expr]
+  view E
+    |  App  [e.app]  f    :: Expr
+                     a    :: Expr
+    |  Int  [e.int]  int  :: Int
+    |  Var  [e.var]  i    :: String
+    |  Lam  [e.lam]  i    :: String
+                     b    :: Expr
+    |  Let  [e.let]  i    :: String
+                     e    :: Expr
+                     b    :: Expr
+
+format tex Ty_Int = Int
+
+format tex Gam = Gamma
+format tex gam = Gamma
+
+format tex ty = tau
+format tex pty = sigma
+format tex mty = tau
+
+format tex tv = v
+
+format tex cnstr.inh = Cnstr..k
+format tex cnstr.syn = Cnstr
+format tex cnstr     = Cnstr
+
+format ag cnstr     = c
+format ag gam       = g
+
+rewrite ag def  (a | Ty) -> (r | Ty) = ((a) `Ty_Arr` (r) | Ty)
+
+rewrite ag def  (c1 | Cnstr) (c2 | Cnstr) (v | a)
+                  = (c1 |=> c2 |=> (v) | a)
+
+rewrite ag def  (c | Cnstr) (v | a) = (c |=> (v) | a)
+rewrite ag def  i :-> t = ([(i,t)] | Gam)
+rewrite ag def  (g1 | Gam), (g2 | Gam) = ((g1) ++ (g2) | Gam)
+
+viewhierarchy = E < A < AG < 3
+
+scheme expr "Expr" =
+  view E =
+    holes [ e: Expr, gam: Gam, ty: Ty ]
+    judgespec gam :- e : ty
+    judgeuse tex gam :-.."e" e : ty
+
+  view A =
+    holes  [ inh gam: Gam, thread cnstr: Cnstr, syn ty: Ty ]
+    judgespec cnstr.inh ; gam :- e : ty ~> cnstr.syn
+    judgeuse tex cnstr.inh ; gam :-.."e" e : ty ~> cnstr.syn
+
+  view AG =
+    holes [ node e: Expr | | ]
+
+ruleset expr.base scheme expr  "Expression type rules" =
+  rule e.int "Int" =
+    view E =                                   -- no premises
+      -
+      judge R : expr = gam :- int : Ty_Int
+    view A =
+      -
+      judge R : expr
+          | cnstr.syn  = cnstr..k
+          | cnstr.inh  = cnstr..k
+
+  rule e.var "Var" =
+    view E =
+      judge G : gamLookupIdTy = i :-> pty `elem` gam
+      judge I : tyInst = ty `=` inst(pty)
+      -
+      judge R : expr = gam :- i : ty
+    view A =
+      -
+      judge R : expr
+          | cnstr.syn = cnstr.inh
+
+  rule e.app "App" =
+    view E =
+      judge A : expr = gam :- a : ty.a
+      judge F : expr = gam :- f : (ty.a -> ty)
+      -
+      judge R : expr = gam :- (f a) : ty
+    view A =
+      judge V : tvFresh  =  tv
+      judge M : match    =  (ty.a -> tv) <=> (cnstr.a ty.f)
+                              ~> cnstr
+      judge F : expr
+          | ty         = ty.f
+          | cnstr.syn  = cnstr.f
+      judge A : expr
+          | cnstr.inh  = cnstr.f
+          | cnstr.syn  = cnstr.a
+      -
+      judge R : expr
+          | ty         = cnstr cnstr.a tv
+          | cnstr.syn  = cnstr cnstr.a
+  rule e.lam "Lam" =
+    view E =
+      judge B : expr = ((i :-> ty.i) , gam) :- b : ty.b
+      -
+      judge R : expr = gam :- (\i -> b) : (ty.i -> ty.b)
+    view A =
+      judge V : tvFresh = tv
+      judge B : expr
+          | cnstr.syn = cnstr.b
+          | gam = (i :-> tv) , gam
+      -
+      judge R : expr
+          | ty = cnstr.b tv -> ty.b
+          | cnstr.syn = cnstr.b
+  rule e.let "Let" =
+    view E =
+      judge D : expr = gam :- e : ty.e
+      judge B : expr = ((i :-> pty.e), gam) :- b : ty.b
+      judge G : tyGen = pty.e `=` ty.e \\ gam
+      -
+      judge R : expr = gam :- (let i `=` e in b) : ty.b
+    view A =
+      judge V : tvFresh = tv
+      judge D : expr
+          | cnstr.syn = cnstr.e
+          | gam = (i :-> tv) , gam
+      judge B : expr
+          | cnstr.inh = cnstr.e
+          | cnstr.syn = cnstr.b
+      judge G : tyGen
+          | gam = cnstr.e gam
+      -
+      judge R : expr
+          | cnstr.syn = cnstr.b
+relation match =
+  view A =
+    holes [ ty.l: Ty, ty.r: Ty | | cnstr: Cnstr ]
+    judgespec ty.l <=> ty.r ~> cnstr
+    judgeuse ag (cnstr,mtErrs) `=` (ty.l) <=> (ty.r)
+
+relation gamLookupIdTy =
+  view E =
+    holes [ nm: Nm, gam: Gam, ty: Ty ]
+    judgespec nm :-> ty `elem` gam
+  view AG =
+    holes [ nm: Nm, gam: Gam | | ty: Ty ]
+    judgeuse ag (ty,nmErrs) `=` gamLookup nm gam
+
+relation tvFresh =
+  view A =
+    holes [ | | tv: Ty ]
+    judgespec tv
+    judgeuse tex tv (text "fresh")
+    judgeuse ag tv `=` Ty_Var unique
+
+relation tyInst =
+  view E =
+    holes [ | ty: Ty, ty.i: Ty | ]
+    judgespec ty.i `=` inst(ty)
+  view AG =
+    holes [ ty: Ty | | ty.i: Ty ]
+    judgeuse ag ty.i `=` tyInst unique (ty)
+
+relation tyGen =
+  view E =
+    holes [ ty: Ty, gam: Gam | | pty: Ty ]
+    judgespec pty `=` ty \\ gam
+    judgeuse tex pty `=` forall v..._ `.` ty, ^^^ v..._ `notElem` ftv(gam)
+  view A =
+    judgeuse tex pty `=` forall (ftv(ty) \\ ftv(gam)) `.` ty
+  view AG =
+    judgeuse ag  (retain pty) `=` mkTyAll (ftv(ty) \\ ftv(gam)) (ty)

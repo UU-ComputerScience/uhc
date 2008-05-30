@@ -25,6 +25,13 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% System related primitives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Integer related primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -546,9 +553,11 @@ PRIM GrWord gb_primIsEvaluated(GrWord x)
 
 PRIM GrWord gb_primRawShow(GrWord x)
 {
+  //  printf("primRawShow %p\n", x);
+
   if(GB_Word_IsInt(x)) {
     // an Integer value
-    printf("#%d ", GB_GBInt2Int(x));
+    printf("%d ", GB_GBInt2Int(x));
     return x;
   } 
 
@@ -563,14 +572,48 @@ PRIM GrWord gb_primRawShow(GrWord x)
 
   if(GB_NH_Fld_NdEv(h) ==  GB_NodeNdEv_Yes) {
     // unevaluated thunk
-    printf("_ ");
+    printf("_");
     return x;
   }
 
-  printf("<other>");
+  if(GB_NH_Fld_NdEv(h) == GB_NodeNdEv_BlH) {
+    printf("<blackhole>");
+    return x;
+  }
+
+
+  int numfields = GB_NH_NrFlds(h);
+  printf("(#%d.%d ", GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h));
+  for(int i = 0;;printf(" ")) {
+    GrWord next = n->content.fields[i];
+    if(next)
+      gb_primRawShow(next);
+    else printf("<nil>");
+
+    if(++i >= numfields)
+      break;
+  }
+  printf(")");
 
   
   return x;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% System
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GrWord primGetArgC()
+{
+	return (GrWord) rtsArgC ;
+}
+
+PRIM GrWord primGetArgVAt( GrWord argc )
+{
+	return (GrWord) rtsArgV[ argc ] ;
 }
 
 %%]

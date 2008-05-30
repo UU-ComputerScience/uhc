@@ -42,7 +42,7 @@ For debug/trace:
 %%[4 export(FIEnv(..),emptyFE)
 %%]
 
-%%[4 import({%{EH}Base.Debug})
+%%[4 import({%{EH}Base.Debug} as Debug)
 %%]
 
 %%[4 import(qualified Data.Set as Set)
@@ -485,7 +485,7 @@ fitsInFI fi ty1 ty2
               = out { foGathCnstrMp = foGathCnstrMp out `Map.union` mp }
               where
                 mp    = cnstrMpFromList [cnstr]
-                cnstr = mkAssumeConstraint p lUniq scope
+                cnstr = rngLift range mkAssumeConstraint p lUniq scope
                 scope = fePredScope $ fiEnv fi
                 (gUniq,lUniq) = mkNewLevUID (fiUniq fi)
                 fi' = fi { fiUniq = gUniq }
@@ -497,7 +497,7 @@ fitsInFI fi ty1 ty2
                 = (res fi tRes) { foGathCnstrMp = mp }
                 where
                   mp    = cnstrMpFromList [cnstr]
-                  cnstr = mkProveConstraint (Pred_Eq tL tR) uid scope
+                  cnstr = rngLift range mkProveConstraint (Pred_Eq tL tR) uid scope
                   scope = fePredScope $ fiEnv fi
                   uid   = fiUniq fi
 %%]
@@ -566,7 +566,7 @@ fitsInFI fi ty1 ty2
                 =  let  e                   = fiEnv fi
                         (_,assumePredScope) = pscpEnter 0 $ fePredScope (fiEnv fi)
                         pr                  = tyPred prTy
-                   in   (fi { fiEnv = e {fePredScope = assumePredScope} },gathPredLToAssumeCnstrMp [mkPredOcc pr i assumePredScope])
+                   in   (fi { fiEnv = e {fePredScope = assumePredScope} },gathPredLToAssumeCnstrMp [rngLift range mkPredOccRng pr i assumePredScope])
             foUpdErrs e fo = fo {foErrL = e ++ foErrL fo}
             foUpdLRCoe lrcoe fo = fo {foLRCoe = lrcoe `lrcoeUnion` foLRCoe fo}
             foUpdCnstrMp m fo = fo {foGathCnstrMp = m `cnstrMpUnion` foGathCnstrMp fo}
@@ -703,7 +703,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnSuffix rn "!") r CTagRec n n (mkCExprHole globOpts u) Nothing
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst $ tyRowExtr l r
-                                      in   (mkPredOcc (Pred_Lacks r' (Label_Lab l)) (mkPrId basePrfCtxtId u) predScope,r')
+                                      in   (rngLift range mkPredOccRng (Pred_Lacks r' (Label_Lab l)) (mkPrIdCHR u) predScope,r')
                                  mkLPred r l u = fst (mkLPred' r l u)
                                  rowCoeL = [ rc | rc@(_,c) <- sortByOn rowLabCmp fst (foRowCoeL fo) {-, not (coeIsId c) -} ]
                                  (fuUpdL,prUpdL,tr1s',_)
@@ -787,14 +787,15 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
               = case filter (not . foHasErrs) tries of
                   (fo:_) -> fo
                   _      -> case (drop limit rt1, drop limit rt2) of
-                              (((t,tr):_),_) -> err (trfiAdd tr fi) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi t1) (fiAppVarMp fi t) limit]
-                              (_,((t,tr):_)) -> err (trfiAdd tr fi) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi t2) (fiAppVarMp fi t) limit]
+                              (((t,tr):_),_) -> err (trfiAdd tr fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t1) (fiAppVarMp fi2 t) limit]
+                              (_,((t,tr):_)) -> err (trfiAdd tr fi2) [rngLift range Err_TyBetaRedLimit (fiAppVarMp fi2 t2) (fiAppVarMp fi2 t) limit]
                               _              -> last tries
-              where limit = ehcOptTyBetaRedCutOffAt globOpts
-                    reduc = tyBetaRed fi
+              where fi2   = trfi "ff" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+                    limit = ehcOptTyBetaRedCutOffAt globOpts
+                    reduc = tyBetaRed fi2
                     rt1   = reduc t1
                     rt2   = reduc t2
-                    tries = take (limit+1) $ try fi ((t1,[]) : rt1) ((t2,[]) : rt2)
+                    tries = take (limit+1) $ try fi2 ((t1,[]) : rt1) ((t2,[]) : rt2)
                           where try fi ((t1,tr1):ts1@(_:_)) ((t2,tr2):ts2@(_:_)) = f fi' t1 t2 : try fi' ts1 ts2
                                                                                  where fi' = trfiAdd tr1 $ trfiAdd tr2 fi
                                 try fi ts1@[(t1,tr1)]       ((t2,tr2):ts2@(_:_)) = f fi' t1 t2 : try fi' ts1 ts2
@@ -919,7 +920,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
                                                     = back2 (fVar ff fi2 t1 uqt2)
-                where (fi2,uqt2,back2) = unquant fi t2 True instContra
+                where (fi2,uqt2,back2) = unquant fi t2 False instContra
 %%]
 
 %%[4.fitsIn.QL
@@ -947,26 +948,38 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                    n     = uidHNm u2
                                    fo    = fVar ff (fofi pfo fi) tr1 tr2
                        fP fi tpr1@(Ty_Pred pr1)            (Ty_Impls (Impls_Tail iv2 ipo2))
-                            =  Just (foUpdImplExplCoe iv2 (Impls_Cons iv2 pr1 (mkPrId basePrfCtxtId u2) ipo2 im2) tpr1 (mkIdLRCoeWith n CMeta_Dict) fo)
+                            =  Just (foUpdImplExplCoe iv2
+%%[[9
+                                                      (Impls_Cons iv2 pr1 (mkPrIdCHR u2) ipo2 im2)
+%%][99
+                                                      (Impls_Cons iv2 pr1 (mkPrIdCHR u2) range ipo2 im2)
+%%]]
+                                                      tpr1 (mkIdLRCoeWith n CMeta_Dict) fo)
                             where  im2   = Impls_Tail u1 ipo2
                                    n     = uidHNm u2
-                                   fo    = fVar f fi tr1 ([Ty_Impls im2] `mkArrow` tr2)
+                                   fo    = fVar ff fi tr1 ([Ty_Impls im2] `mkArrow` tr2)
                        fP fi (Ty_Impls (Impls_Tail iv1 ipo1)) tpr2@(Ty_Pred pr2)
-                            =  Just (foUpdImplExplCoe iv1 (Impls_Cons iv1 pr2 (mkPrId basePrfCtxtId u2) ipo1 im1) tpr2 (mkIdLRCoeWith n CMeta_Dict) fo)
+                            =  Just (foUpdImplExplCoe iv1
+%%[[9
+                                                      (Impls_Cons iv1 pr2 (mkPrIdCHR u2) ipo1 im1)
+%%][99
+                                                      (Impls_Cons iv1 pr2 (mkPrIdCHR u2) range ipo1 im1)
+%%]]
+                                                      tpr2 (mkIdLRCoeWith n CMeta_Dict) fo)
                             where  im1   = Impls_Tail u1 ipo1
                                    n     = uidHNm u2
-                                   fo    = fVar f fi ([Ty_Impls im1] `mkArrow` tr1) tr2
+                                   fo    = fVar ff fi ([Ty_Impls im1] `mkArrow` tr1) tr2
                        fP fi (Ty_Impls (Impls_Tail iv1 _)) tpr2@(Ty_Impls im2@(Impls_Nil))
-                            =  Just (foUpdImplExpl iv1 im2 tpr2 (fVar f fi tr1 tr2))
+                            =  Just (foUpdImplExpl iv1 im2 tpr2 (fVar ff fi tr1 tr2))
                        fP fi (Ty_Impls (Impls_Nil))   tpr2@(Ty_Impls im2@(Impls_Tail iv2 _))
-                            =  Just (foUpdImplExpl iv2 Impls_Nil (Ty_Impls Impls_Nil) (fVar f fi tr1 tr2))
+                            =  Just (foUpdImplExpl iv2 Impls_Nil (Ty_Impls Impls_Nil) (fVar ff fi tr1 tr2))
                        fP fi tpr1@(Ty_Impls (Impls_Tail iv1 _)) (Ty_Impls im2@(Impls_Tail iv2 _)) | iv1 == iv2
                             =  Just (res fi tpr1)
                        fP fi (Ty_Impls (Impls_Tail iv1 ipo1)) (Ty_Impls im2@(Impls_Tail iv2 ipo2))
-                            =  Just (foUpdImplExplCoe iv1 im2' (Ty_Impls im2') (mkLRCoe (CoeImplApp iv2) (CoeImplLam iv2)) (fVar f fi tr1 tr2))
+                            =  Just (foUpdImplExplCoe iv1 im2' (Ty_Impls im2') (mkLRCoe (CoeImplApp iv2) (CoeImplLam iv2)) (fVar ff fi tr1 tr2))
                             where im2' = Impls_Tail iv2 (ipo1 ++ ipo2)
                        fP fi (Ty_Impls Impls_Nil)          (Ty_Impls Impls_Nil)
-                            =  Just (fVar f fi tr1 tr2)
+                            =  Just (fVar ff fi tr1 tr2)
                        fP fi (Ty_Impls Impls_Nil)          (Ty_Impls _)
                             =  mberr
                        fP fi (Ty_Impls Impls_Nil)          (Ty_Pred _)
@@ -991,21 +1004,25 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  let  pr2n  = poiHNm pr2v
                                     (fi3,cnstrMp)
                                           = fiAddPr pr2n pr2v tpr2 fi
-                                    fo    = fVar f fi3 t1 tr2
+                                    fo    = fVar ff fi3 t1 tr2
                                     rCoe  = mkLamLetCoe pr2n (poiId pr2v)
                                in   (foUpdCnstrMp cnstrMp fo,rCoe)
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just fo
-                            where fo = fVar f fi t1 tr2
+                            where fo = fVar ff fi t1 tr2
                        fP fi (Ty_Impls (Impls_Tail iv2 _))
                             =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) fo)
-                            where fo = fVar f fi t1 tr2
+                            where fo = fVar ff fi t1 tr2
+%%[[9
                        fP fi (Ty_Impls (Impls_Cons _ pr2 pv2 _ im2))
+%%][99
+                       fP fi (Ty_Impls (Impls_Cons _ pr2 pv2 _ _ im2))
+%%]]
                             =  Just (foUpdLRCoe (lrcoeRSingleton rCoe) $ foUpdTy (mkPrTy pr2 fo) $ fo)
                             where (fo,rCoe) = fSub fi pv2 pr2 ([Ty_Impls im2] `mkArrow` tr2)
                        fP fi (Ty_Pred pr2)  | fioAllowRPredElim (fiFIOpts fi)
                             =  Just (foUpdLRCoe (lrcoeRSingleton rCoe) $ foUpdTy (mkPrTy pr2 fo) $ fo)
-                            where (fo,rCoe) = fSub fi (mkPrId basePrfCtxtId u1) pr2 tr2
+                            where (fo,rCoe) = fSub fi (mkPrIdCHR u1) pr2 tr2
                        fP fi _ =  Nothing
 %%]
 
@@ -1018,30 +1035,34 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        prfPredScope     = fePredScope (fiEnv fi)
                        mbfp             = fVarPred1 fP (fi {fiUniq = u'}) tpr1
                        fSub fi pv1 psc1 pr1 tr1
-                            =  let  fo    = fVar f fi tr1 t2
+                            =  let  fo    = fVar ff fi tr1 t2
                                     fs    = foVarMp fo
-                                    prfPrL= [mkPredOcc ({- fs |=> -} pr1) pv1 psc1]
+                                    prfPrL= [rngLift range mkPredOccRng pr1 pv1 psc1]
                                     coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) CMeta_Dict
                                in   (fo,coe,gathPredLToProveCnstrMp prfPrL)
                        fP fi (Ty_Impls (Impls_Nil))
-                            =  Just (fVar f fi tr1 t2)
+                            =  Just (fVar ff fi tr1 t2)
                        fP fi (Ty_Impls (Impls_Tail iv1 _))
-                            =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar f fi tr1 t2))
+                            =  Just (foUpdVarMp (iv1 `varmpImplsUnit` Impls_Nil) (fVar ff fi tr1 t2))
+%%[[9
                        fP fi (Ty_Impls (Impls_Cons _ pr1 pv1 _ im1))
+%%][99
+                       fP fi (Ty_Impls (Impls_Cons _ pr1 pv1 _ _ im1))
+%%]]
                             =  Just (foUpdPrL [] cnstrMp $ foUpdLRCoe (lrcoeLSingleton lCoe) $ fo)
                             where (fo,lCoe,cnstrMp) = fSub fi pv1 prfPredScope pr1 ([Ty_Impls im1] `mkArrow` tr1)
                        fP fi (Ty_Pred pr1)
                             =  Just (foUpdPrL [] cnstrMp $ foUpdLRCoe (lrcoeLSingleton lCoe) $ fo)
-                            where (fo,lCoe,cnstrMp) = fSub fi (mkPrId basePrfCtxtId u1) prfPredScope pr1 tr1
+                            where (fo,lCoe,cnstrMp) = fSub fi (mkPrIdCHR u1) prfPredScope pr1 tr1
                        fP fi _ =  Nothing
 %%]
 
                        fP fi im2@(Ty_Impls (Impls_Nil))
                             =  Just (foUpdTy ([im2] `mkArrow` foTy fo) $ fo)
-                            where fo = fVar f fi t1 tr2
+                            where fo = fVar ff fi t1 tr2
                        fP fi (Ty_Impls (Impls_Tail iv2 _))
                             =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
-                            where fo = fVar f fi t1 tr2
+                            where fo = fVar ff fi t1 tr2
 
 %%[7
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
@@ -1363,8 +1384,16 @@ tyBetaRedFull fi ty
 
 %%[9 hs export(tyCanonic,predCanonic)
 tyCanonic :: FIIn -> Ty -> Ty
-tyCanonic fi = tyCanonic' (emptyTyCanonicOpts {tcoTyBetaRedFull = tyBetaRedFull fi})
+tyCanonic fi = tyCanonic' (emptyTyCanonicOpts
+%%[[11
+                             {tcoTyBetaRedFull = tyBetaRedFull fi}
+%%]]
+                          )
 
 predCanonic :: FIIn -> Pred -> Pred
-predCanonic fi = predCanonic' (emptyTyCanonicOpts {tcoTyBetaRedFull = tyBetaRedFull fi})
+predCanonic fi = predCanonic' (emptyTyCanonicOpts
+%%[[11
+                                 {tcoTyBetaRedFull = tyBetaRedFull fi}
+%%]]
+                              )
 %%]

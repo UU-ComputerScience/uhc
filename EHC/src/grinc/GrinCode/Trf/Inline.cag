@@ -58,21 +58,25 @@ to a loop.
 %%]
 
 %%[8.grInline hs export(grInline)
-grInline :: GrModule -> GrModule
-grInline grmod
+grInline :: Bool -> GrModule -> GrModule
+grInline allow grmod
   = trf_Syn_GrAGItf t
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
+                { allowOmitBind_Inh_GrAGItf = allow
+                }
+            
 %%]
 
 %%[20 -8.grInline hs export(grInline)
-grInline :: HsNameS -> GrInlMp -> GrModule -> (GrModule,GrInlMp)
-grInline expNmS inlMp grmod
+grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> (GrModule,GrInlMp)
+grInline allow expNmS inlMp grmod
   = (trf_Syn_GrAGItf t,gathInlMp_Syn_GrAGItf t)
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
                 { expNmS_Inh_GrAGItf = expNmS
                 , inlMp_Inh_GrAGItf = inlMp
+                , allowOmitBind_Inh_GrAGItf = allow
                 }
 %%]
 
@@ -147,6 +151,15 @@ SEM GrModule
 SEM GrBind
   | Bind        expr        .   willEval        =   False
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Control whether omitting of bindings is allowed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR GrAGItf GrModule AllBind [ allowOmitBind : {Bool} | | ]
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inlineable functions
@@ -340,7 +353,10 @@ SEM GrModule
 
 SEM GrBind
   | Bind        lhs         .   trfSq           =   if @omitBind && @nm `Set.member` @lhs.inlNmS
-                                                    then Seq.empty
+                                                    then (if @lhs.allowOmitBind
+                                                          then Seq.empty
+                                                          else Seq.singleton (GrBind_Bind @nm @argNmL (GrExpr_Unit (GrVal_Node GrTag_Hole [])))
+                                                         )
                                                     else Seq.singleton @trf
   | Rec         lhs         .   trfSq           =   Seq.singleton $ GrBind_Rec $ Seq.toList @bindL.trfSq
 %%]

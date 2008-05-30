@@ -171,6 +171,9 @@ DATA Impls
   | Cons        iv              : {ImplsVarId}
                 pr              : Pred
                 pv              : {PredOccId}
+%%[[99
+                prange          : {Range}
+%%]]
                 proveOccs		: {[ImplsProveOcc]}
                 tl              : Impls
   | Nil

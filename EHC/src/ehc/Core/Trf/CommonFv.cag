@@ -17,7 +17,10 @@ ATTR AllBind [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
 
 SEM CExpr
   | Lam         loc         .   fvS         =   @arg `Set.delete` @body.fvS
-  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `Set.difference` Set.fromList @binds.nmL
+  | Let         loc         .   fvS         =   if @categ == CBindRec then
+                                                    (@body.fvS `Set.union` @binds.fvS) `Set.difference` Set.fromList @binds.nmL
+                                                else
+                                                    @binds.fvS `Set.union` (@body.fvS `Set.difference` Set.fromList @binds.nmL)
   | Var         lhs         .   fvS         =   Set.singleton @nm
   | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
 

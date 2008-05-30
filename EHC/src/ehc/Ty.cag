@@ -318,6 +318,9 @@ data PredOcc
        { poPr               :: !Pred
        , poPoi              :: !PredOccId
        , poScope			:: !PredScope
+%%[[99
+       , poRange			:: !Range
+%%]]
        }
   deriving (Show,Eq,Ord)
 
@@ -325,17 +328,22 @@ poId :: PredOcc -> UID
 poId = poiId . poPoi
 
 mkPredOcc :: Pred -> PredOccId -> PredScope -> PredOcc
-mkPredOcc p i sc = PredOcc p i sc
+mkPredOcc p i sc = rngLift emptyRange mkPredOccRng p i sc
 %%]
 
-%%[9 hs export(mkPredOccCHR)
-mkPredOccCHR :: UID -> Pred -> PredScope -> PredOcc
-mkPredOccCHR u p sc = PredOcc p (emptyPredOccId {poiId = u}) sc
+%%[9.poRange hs export(poRange)
+poRange :: PredOcc -> Range
+poRange = const emptyRange
 %%]
 
-%%[9 hs export(poUpdPoiSc)
-poUpdPoiSc :: PredOccId -> PredScope -> PredOcc -> PredOcc
-poUpdPoiSc poi sc po = po {poPoi = poi, poScope = sc}
+%%[9.mkPredOccRng hs export(mkPredOccRng)
+mkPredOccRng :: Pred -> PredOccId -> PredScope -> PredOcc
+mkPredOccRng p i sc = PredOcc p i sc
+%%]
+
+%%[99 -(9.mkPredOccRng 9.poRange) hs export(mkPredOccRng)
+mkPredOccRng :: Range -> Pred -> PredOccId -> PredScope -> PredOcc
+mkPredOccRng r p i sc = PredOcc p i sc r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -347,11 +355,23 @@ data CHRPredOcc
   =  CHRPredOcc
        { cpoPr               :: !Pred
        , cpoScope			 :: !PredScope
+%%[[99
+       , cpoRange 			 :: !Range
+%%]]
        }
   deriving (Show,Eq,Ord)
 
 mkCHRPredOcc :: Pred -> PredScope -> CHRPredOcc
+%%[[9
 mkCHRPredOcc p sc = CHRPredOcc p sc
+%%][99
+mkCHRPredOcc p sc = mkCHRPredOccRng emptyRange p sc
+%%]]
+%%]
+
+%%[99 hs export(mkCHRPredOccRng)
+mkCHRPredOccRng :: Range -> Pred -> PredScope -> CHRPredOcc
+mkCHRPredOccRng r p sc = CHRPredOcc p sc r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1024,8 +1044,13 @@ implsPredsTailWithLkup' lookup sc i
   = extr Set.empty i
   where extr vsVisited i
           = case i of
+%%[[9
               Impls_Cons _ p pv ipos t
                 -> ((mkPredOcc p pv sc,ipos) : p',mi)
+%%][99
+              Impls_Cons _ p pv prange ipos t
+                -> ((mkPredOccRng prange p pv sc,ipos) : p',mi)
+%%]]
                 where (p',mi) = extr vsVisited t
               _ -> implsTailVarLiftCyc lookup extr ((,) []) vsVisited i
 
@@ -1069,10 +1094,6 @@ tyIsImplsTail = implsIsTail . tyImpls
 implsPrIds :: Impls -> [PredOccId]
 implsPrIds = map poPoi . fst . implsPredsTail initPredScope
 %%]
-implsPredsTail' :: PredScope -> Impls -> ([(PredOcc,[ImplsProveOcc])],Impls)
-implsPredsTail' sc (Impls_Cons _ p pv ipos t)  = ((mkPredOcc p pv sc,ipos) : p',mi)
-                                               where (p',mi) = implsPredsTail' sc t
-implsPredsTail' _  t                           = ([],t)
 
 %%[9 hs export(implsMbVar,implsTailVar)
 implsMbVar :: Impls -> Maybe TyVarId
@@ -1085,8 +1106,12 @@ implsTailVar = panicJust "implsTailVar" . implsMbVar
 
 %%[9 hs export(implsIsEmpty)
 implsIsEmpty :: Impls -> Bool
-implsIsEmpty (Impls_Cons _ _ _ _ _) = False
-implsIsEmpty _                      = True
+%%[[9
+implsIsEmpty (Impls_Cons _ _ _   _ _) = False
+%%][99
+implsIsEmpty (Impls_Cons _ _ _ _ _ _) = False
+%%]]
+implsIsEmpty _                        = True
 %%]
 
 %%[9 hs export(tyIsPredicated,tyIsPredicatedWithLkup)

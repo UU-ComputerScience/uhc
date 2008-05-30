@@ -1,8 +1,3 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% This is just a copy of LetUnrec.cag -- to be changed
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -12,13 +7,13 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.LetUnMutual} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnMutual)
+%%[8 hs module {%{EH}Core.Trf.LetUnMutual} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}, Data.Function(on), Data.List,{%{EH}Core.Utils}) export(cmodTrfLetUnMutual)
 %%]
 
-%%[8 hs import({%{EH}Base.Debug},UU.DData.Scc)
+%%[8 hs import({%{EH}Base.Debug},UU.DData.Scc,{%{EH}Core},qualified Data.Set as Set,Debug.Trace)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn})
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 
@@ -50,27 +45,6 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%% Usage (assumption: unique names)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-type UseMp = Map.Map HsName [HsName]
-
-useMpComb :: UseMp -> UseMp -> UseMp
-useMpComb = Map.unionWith (++)
-%%]
-
-%%[8
-ATTR AllCodeNT [ inNmL: {[HsName]} | | useMp USE {`useMpComb`} {Map.empty}: UseMp ]
-
-SEM CodeAGItf
-  | AGItf       module      .   inNmL       =   []
-
-SEM CExpr
-  | Var         lhs         .   useMp       =   Map.fromList (zip @lhs.inNmL (repeat [@nm]))
-  | Let         lhs         .   useMp       =   @remUseMp `useMpComb` @body.useMp
-
-SEM CBind
-  | Bind        expr        .   inNmL       =   @nm : @lhs.inNmL
-                lhs         .   useMp       =   (@nm `Map.singleton` []) `useMpComb` @expr.useMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bound id's
@@ -81,7 +55,14 @@ type BindMp = Map.Map HsName (CExpr,CMeta)
 %%]
 
 %%[8
+ATTR AllExpr [ moduleNm : {HsName} | | ]
+
+SEM CModule    
+    | Mod expr . moduleNm = @moduleNm
+
+
 ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
+
 
 SEM CBind
   | Bind        lhs         .   bindMp      =   @nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
@@ -93,20 +74,210 @@ SEM CBind
 
 %%[8
 SEM CExpr
-  | Let         loc         .   (remUseMp,cTrf)
-                                            =   if @categ == CBindRec
-                                                then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
-                                                           o = scc . Map.toList $ h
-                                                           mk c ns b = mkCExprLet c [ mkCBind1Meta n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
-                                                           t = foldr (\bs b
-                                                                         -> case bs of
-                                                                               [n] | n `elem` Map.findWithDefault [] n h
-                                                                                                -> mk CBindRec bs b
-                                                                                   | otherwise  -> mk CBindPlain bs b
-                                                                               _                -> mk CBindRec bs b
-                                                                     )
-                                                                     @body.cTrf o
-                                                      in   (@binds.useMp `Map.difference` h,t)
-                                                else  (@binds.useMp,CExpr_Let @categ @binds.cTrf @body.cTrf)
+    | Let  loc  .  cTrf
+               =   if @categ == CBindRec
+                   then  let  mk c n b = case Map.lookup n @binds.bindMp of
+                                           Nothing -> b
+                                           Just (e,m) -> mkCExprLet c [ mkCBind1Meta n m e] b
+                              (bs, rs, fbs) 
+                                  = feedbackSet @body.fvS @binds.fvSMp
+                              feedbacks :: CExpr
+                              feedbacks = fbTuple rhs fbs
+                              rhs x = let err= error "internal error"
+                                      in  fst $ Map.findWithDefault err x @binds.bindMp
+                              recs = mkLets feedbacks rs
+                              recname = qualify @lhs.moduleNm "r"
+                              recs' = mkFbSelectors recname fbs recs
+                              body = mkLets @body.cTrf  bs
+                              body' = mkFbSelectors recname fbs body
+                              mkLets = foldr (\v r -> mk CBindPlain v r)
+                         in mkCExprLet CBindRec [mkCBind1Meta recname CMeta_Val recs'] body'
+                   else  CExpr_Let @categ @binds.cTrf @body.cTrf
 %%]
 
+
+%%[8 hs
+
+
+{-
+  from a list of feedback vars and a function that retrieves their
+  right hand sides, create an expression that builds a tuple
+
+  (...(Tup (rhs f1) (rhs f2)) ... (rhs fn))
+-}
+fbTuple :: (a-> CExpr) -> [a] -> CExpr
+fbTuple rhs = foldr (\f t -> CExpr_App t (rhs f) CMeta_Val) (CExpr_Tup CTagRec)
+
+
+{-
+  from a list of feedback vars, create a pattern
+  that matches a tuple
+
+  (Tup f1 f2 ... fn)
+-}
+fbPat :: [HsName] -> CPat
+fbPat fbs = mkCPatCon (CTagRec) (length fbs) (Just fbs)
+
+
+{-
+  from a variable name and a feedback set, create an expression that
+  retrieves this value from the fbTuple:
+
+  case rec of (Tup f1 f2 .. fn) -> v
+-}
+mkFeedbackRhs :: HsName -> HsName -> [HsName] -> CExpr
+mkFeedbackRhs r v fvs = CExpr_Case (CExpr_Var r) [alt] (prelvar "undefined")
+    where alt :: CAlt
+          alt = CAlt_Alt (fbPat fvs) (CExpr_Var v)
+
+
+{-
+  surrounds the body with defintions for the
+  feebback vars
+
+  let f1 = case r of (Tup f1 ..) -> f1
+  in let f2 = case r of (Tup f1 f2 ..) -> f2
+     in body
+-}
+mkFbSelectors :: HsName -> [HsName] -> CExpr -> CExpr
+mkFbSelectors rec fbs body = foldr foo body fbs
+    where foo f b = let e = mkFeedbackRhs rec f fbs
+                        m = CMeta_Val
+                    in mkCExprLet CBindPlain [ mkCBind1Meta f m e] b
+
+
+{-
+  compute where the variables will be defined
+-}
+feedbackSet :: FvS -> FvSMp -> ([HsName], [HsName], [HsName]) -- (body, recs, fbs)
+feedbackSet pulling deps = let sccs      = sccFromMap deps (Map.keys deps)
+                               (sr, nsr) =  foldr singlerecs ([],[]) sccs
+                               (b,r,f)    = fbSet pulling nsr
+                           in (b, r, sr ++ f)
+    where singlerecs (Left ns) (sr, nsr) = let (a,b) = partition (\n->n `Set.member` refs n) ns
+                                           in  (a ++ sr, sccFromMap deps b ++ nsr)
+          singlerecs (Right n) (sr, nsr) = (sr, Right n : nsr) 
+
+          refs n = Map.findWithDefault Set.empty n deps
+          fbSet :: FvS -> SCC -> ([HsName], [HsName], [HsName])
+          fbSet pull []      = ([], [], [])
+          fbSet pull (Left []:ds)
+              = fbSet pull ds
+          fbSet pull (Right n:ds) 
+              | n `Set.member` pull      -- needed in body and in recs
+              = let pull' = refs n `Set.union` pull
+                    (body, recs, fbs) = fbSet pull' ds
+                in (n:body, n:recs, fbs)
+              | otherwise          -- needed only in recs
+              = let  
+                     (body, recs, fbs) = fbSet pull ds
+                in (body, n:recs, fbs)
+          fbSet pull (Left d:ds)
+              = let n         = maximumBy (compare `on` weight) d
+                    d'        = filter (/= n) d
+                    weight x  = let xs = refs x
+                                in (x `Set.member` pull, Set.size $ Set.filter (`elem` d) xs)
+                    sccs      = sccFromMap deps d'
+                    (body, recs, fbs) = fbSet pull (sccs ++ ds)
+                in (body, recs, n:fbs)
+
+
+
+qualify :: HsName -> String -> HsName
+qualify q n = hsnSetQual q $ hsnFromString n
+
+qualvar :: HsName -> String -> CExpr
+qualvar q n
+    = CExpr_Var $ qualify q n
+
+prelvar :: String -> CExpr
+prelvar n = CExpr_Var $ mkHNm [ehcname, prelname, hsnFromString n]
+    where  ehcname = hsnFromString "EHC"
+           prelname = hsnFromString "Prelude"
+
+
+
+{-
+  interface to scc,
+  (scc differs from the functions in Data.Graph: every node that
+  another node points to will be contained in the SCC list.
+  This is not what we want here.)
+ -}
+type SCC = [Either [HsName] HsName]
+
+sccFromMap :: FvSMp -> [HsName] -> SCC
+sccFromMap m n = let m' = filter (\(x,_)->x `elem` n) $ Map.toList m
+                     m'' = map (\(x,ys) -> (x, filter (`elem` n) $ Set.toList ys)) m'
+                     f [x] | x  `Set.member` Map.findWithDefault Set.empty x m
+                               = Left [x]
+                           | otherwise
+                               = Right x
+                     f xs = Left xs
+                 in map f (scc m'')
+
+
+trc t x= trace (t ++ ": " ++ show x) x 
+
+%%]
+
+
+
+
+%%[8 hs import(EH.Util.Utils)
+%%]
+
+%%[8 
+{
+-- Scratch:
+
+mkCExprStrictSatCase     :: RCEEnv -> CExpr -> CAlt -> CExpr
+mkCExprStrictSatCase env n alt
+    = (CExpr_Case n (caltLSaturate env alt') (rceCaseCont env))
+    where (alt',altOffBL) = caltOffsetL alt
+
+caltLSaturate :: RCEEnv -> CAlt -> CAltL
+caltLSaturate env alt
+  = list_SaturateWith caltIntTag allAlts alt
+    where t = caltConTag alt
+          allAlts  = mkA (ctagArity t)
+          mkA a = CAlt_Alt (mkCPatCon t a Nothing) (rceCaseCont env)
+
+-- saturate a list with values from assoc list
+list_SaturateWith ::  (x -> Int) -> x -> x -> [x]
+list_SaturateWith get missing l
+  = list_Saturate get missing l
+
+-- saturate a list
+list_Saturate :: (x -> Int) -> x -> x -> [x]
+list_Saturate get mk l
+  = [ Map.findWithDefault mk 0 mp ]
+  where mp = Map.fromList [ (get l,l)]
+
+
+caltOffsetL :: CAlt -> (CAlt,CBindL)
+caltOffsetL alt
+  =  case alt of
+       CAlt_Alt (CPat_Con n t r b) e
+         ->  (CAlt_Alt (CPat_Con n t r b') e,offBL)
+             where (b',offBL) = cpatBindOffsetL b
+       _ ->  (alt,[])
+
+
+cpatBindOffsetL :: [CPatBind] -> ([CPatBind],CBindL)
+cpatBindOffsetL pbL
+  =  let  (pbL',obL)
+            =  unzip
+               .  map
+                    (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
+                        ->  let  offNm = hsnPrefix "off_" pn
+                            in   case o of
+                                   CExpr_Int _  -> (b,[])
+                                   _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
+                    )
+               $  pbL
+     in   (pbL',concat obL)
+
+
+
+}
+%%]

@@ -12,7 +12,6 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status slides-ehcstruct \
 								gbm \
 								uniqueness slides-uniqueness \
-								llvm \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
 								icfp08-subst \
@@ -32,8 +31,6 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicSubst \
 								AppxNotation FrontMatter OldText \
 								Poster PosterLDL PosterTrOrPr \
-								llvm/LLVM llvm/LLVMPackages llvm/LLVMCoverPage llvm/LLVMFormat \
-								llvm/LLVMChapterAbstract llvm/LLVMChapterIntroduction llvm/LLVMChapterEHCPipeline llvm/LLVMChapterNaive \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \

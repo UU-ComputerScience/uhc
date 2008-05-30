@@ -1,0 +1,85 @@
+{
+module Main
+where
+import IO
+import Data.List
+import UU.Pretty
+import UU.Parsing
+import UU.Scanner
+import UU.Scanner.Position (initPos,Pos)
+import RulerDemoUtils
+
+}
+{- LINE 11 "Main.cag" -}
+{
+}
+INCLUDE "demo.ag"
+{- LINE 18 "Main.cag" -}
+WRAPPER AGItf
+
+{- LINE 26 "Main.cag" -}
+{
+-- main
+main :: IO ()
+main
+  = do { txt <- hGetContents stdin
+       ; let tokens = scan ["let", "in"] ["->", "=", "\\"]
+                           "()" "\\->=" (initPos "") txt
+       ; pres <- parseIOMessage show pAGItf tokens
+       ; let res = wrap_AGItf pres Inh_AGItf
+       ; putStrLn (disp (pp_Syn_AGItf res) 200 "")
+       }
+
+-- Parser
+pAGItf :: (IsParser p Token) => p T_AGItf
+pAGItf
+  = pAGItf
+  where pAGItf    =   sem_AGItf_AGItf <$> pExpr
+        pExprBase =   pParens pExpr
+                  <|> sem_Expr_Var          <$> pVarid
+                  <|> (sem_Expr_Int . read) <$> pInteger
+        pExprApp  =   foldl1 sem_Expr_App   <$> pList1 pExprBase
+        pExprPre  =   sem_Expr_Let
+                      <$ pKey "let" <*> pVarid
+                      <* pKey "="   <*> pExpr <* pKey "in"
+                  <|> sem_Expr_Lam
+                      <$ pKey "\\"  <*> pVarid
+                      <* pKey "->"
+        pExpr     =   pExprPre <*> pExpr
+                  <|> pExprApp
+
+}
+{- LINE 61 "Main.cag" -}
+-- AST
+DATA AGItf
+  | AGItf  e  : Expr
+
+{- LINE 88 "Main.cag" -}
+-- Initialisation
+SEM AGItf
+  | AGItf  e  .   g  =   []
+              .   c  =   []
+
+{- LINE 99 "Main.cag" -}
+-- Pretty printing
+ATTR AGItf Expr [ | | pp: PP_Doc ]
+
+SEM Expr
+  | App  lhs  .   pp   =   @f.pp >#< pp_parens @a.pp
+                           >-< mkErr @mtErrs
+  | Int  lhs  .   pp   =   pp @int
+  | Var  lhs  .   pp   =   pp @i >-< mkErr @nmErrs
+  | Lam  lhs  .   pp   =   "\\" >|< pp @i >#< "->" >#< @b.pp
+  | Let  lhs  .   pp   =   "let"     >#< pp @i
+                           >#< "::"  >#< show @pty_e_
+                           >#< "="   >#< @e.pp
+                           >-< "in " >#< @b.pp
+
+{- LINE 119 "Main.cag" -}
+-- Uniq
+
+{- LINE 123 "Main.cag" -}
+ATTR Expr [ | uniq: UID | ]
+
+SEM AGItf
+  | AGItf  e  .   uniq  =   uidStart

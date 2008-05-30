@@ -1,0 +1,79 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%[3.expr.DATA
+DATA Expr
+  | App  f    : Expr
+         a    : Expr
+  | Int  int  : {Int}
+  | Lam  i    : {String}
+         b    : Expr
+  | Let  i    : {String}
+         e    : Expr
+         b    : Expr
+  | Var  i    : {String}
+%%]
+
+%%[3.expr.ATTR
+ATTR Expr [g: Gam | c: Cnstr | ty: Ty]
+%%]
+
+%%[3.expr.e.int
+SEM Expr
+  | Int  lhs  .  ty  =  Ty_Int
+              .  c   =  @lhs.c
+%%]
+
+%%[3.expr.e.var
+SEM Expr
+  | Var  (lhs.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         (loc.pty_,loc.nmErrs)
+                         =  gamLookup @i @lhs.g
+         lhs  .  ty      =  tyInst @uniq1 @pty_
+              .  c       =  @lhs.c
+%%]
+
+%%[3.expr.e.app
+SEM Expr
+  | App  (f.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         f    .  g       =  @lhs.g
+              .  c       =  @lhs.c
+         a    .  g       =  @lhs.g
+              .  c       =  @f.c
+         loc  .  tv_     =  Ty_Var @uniq1
+         (loc.c_,loc.mtErrs)
+                         =  (@a.ty `Ty_Arr` @tv_) <=> (@a.c |=> @f.ty)
+         lhs  .  ty      =  @c_ |=> @a.c |=> @tv_
+              .  c       =  @c_ |=> @a.c
+%%]
+
+%%[3.expr.e.lam
+SEM Expr
+  | Lam  (b.uniq,loc.uniq1)
+                        =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_    =  Ty_Var @uniq1
+         b    .  g      =  ([ (@i , @tv_) ]) ++ @lhs.g
+              .  c      =  @lhs.c
+         lhs  .  ty     =  (@b.c |=> @tv_) `Ty_Arr` @b.ty
+              .  c      =  @b.c
+%%]
+
+%%[3.expr.e.let
+SEM Expr
+  | Let  (e.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         e    .  g       =  ([ (@i , Ty_Var @uniq1) ]) ++ @lhs.g
+              .  c       =  @lhs.c
+         loc  .  pty_e_  =  mkTyAll (ftv @e.ty \\ ftv (@e.c |=> @lhs.g)) @e.ty
+         b    .  g       =  ([ (@i , @pty_e_) ]) ++ @lhs.g
+              .  c       =  @e.c
+         lhs  .  ty      =  @b.ty
+              .  c       =  @b.c
+%%]
+
+

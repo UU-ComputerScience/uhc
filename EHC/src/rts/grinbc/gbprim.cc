@@ -1375,3 +1375,37 @@ PRIM GB_NodePtr gb_primHPutByteArray( GB_NodePtr chan, GB_NodePtr a )
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% System
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GB_NodePtr gb_primGetProgArgv( )
+{
+	GB_NodePtr res ;
+	GB_MkListNil( res ) ;
+	
+	int i ;
+	for ( i = rtsArgC - 1 ; i >= 0 ; i-- ) {
+		GB_NodePtr n1, n2 ;
+		n2 = gb_primCStringToString( rtsArgV[i] ) ;
+		GB_MkListCons(n1,n2,res) ;
+		res = n1 ;
+	}
+	
+	return res ;
+}
+%%]
+
+%%[99
+PRIM GB_Word gb_primGetArgC()
+{
+	return Cast(GB_Word,primGetArgC()) ;
+}
+
+PRIM GB_Word gb_primGetArgVAt( GB_Word argc )
+{
+	return Cast(GB_Word,primGetArgVAt(argc)) ;
+}
+
+%%]

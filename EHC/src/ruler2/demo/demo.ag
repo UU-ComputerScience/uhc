@@ -1,0 +1,45 @@
+DATA Expr
+  | App  f    : Expr
+         a    : Expr
+  | Int  int  : {Int}
+  | Lam  i    : {String}
+         b    : Expr
+  | Let  i    : {String}
+         e    : Expr
+         b    : Expr
+  | Var  i    : {String}
+
+ATTR Expr [g: Gam | c: Cnstr | ty: Ty]
+
+SEM Expr
+  | Int  lhs  .  ty  =  Ty_Int
+
+SEM Expr
+  | Var  (lhs.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         (loc.pty_,loc.nmErrs)
+                         =  gamLookup @i @lhs.g
+         lhs  .  ty      =  tyInst @uniq1 @pty_
+
+SEM Expr
+  | App  (f.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_     =  Ty_Var @uniq1
+         (loc.c_,loc.mtErrs)
+                         =  (@a.ty `Ty_Arr` @tv_) <=> (@a.c |=> @f.ty)
+         lhs  .  ty      =  @c_ |=> @a.c |=> @tv_
+              .  c       =  @c_ |=> @a.c
+
+SEM Expr
+  | Lam  (b.uniq,loc.uniq1)
+                        =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_    =  Ty_Var @uniq1
+         b    .  g      =  ([ (@i , @tv_) ]) ++ @lhs.g
+         lhs  .  ty     =  (@b.c |=> @tv_) `Ty_Arr` @b.ty
+
+SEM Expr
+  | Let  (e.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         e    .  g       =  ([ (@i , Ty_Var @uniq1) ]) ++ @lhs.g
+         loc  .  pty_e_  =  mkTyAll (ftv @e.ty \\ ftv (@e.c |=> @lhs.g)) @e.ty
+         b    .  g       =  ([ (@i , @pty_e_) ]) ++ @lhs.g
