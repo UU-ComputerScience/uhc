@@ -134,7 +134,7 @@ The translation of GRIN to Silly again removes abstractions and concretsizes the
 
 \begin{figure}[hbtp]
   \lstinputlisting[style={figureLstFootnote}, language={C}]{FibExe.sil}
-  \caption{\todo{BUG IN CODE:}Silly code for the recursive branch of \refF{fig:fib-hs}.}
+  \caption{Silly code for the recursive branch of \refF{fig:fib-hs}.}
   \label{fig:fib-silly}
 \end{figure}
 
