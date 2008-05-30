@@ -15,7 +15,7 @@ LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-012-aliaselim.grin \
 
 LLVM_CODE_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.hs 
 LLVM_CODE_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)Fib.hs \
-                              $(LLVM_CODE_SRC_PREFIX)Prelude.hs
+                              $(LLVM_CODE_SRC_PREFIX)PreludeEHC8.hs
 
 LLVM_SILLY_FILES           := $(LLVM_CODE_SRC_PREFIX)FibExe.sil 
 LLVM_SILLY_FILES_DEP       := $(LLVM_CODE_SRC_PREFIX)FibExe-204.sil

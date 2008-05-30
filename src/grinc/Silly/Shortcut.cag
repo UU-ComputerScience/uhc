@@ -137,10 +137,14 @@ SEM Statement
 SEM Variable
   -- If the Variable is part of the set @lhs.invalRPs, then we find a
   -- invalid use of the variable here.
-  | Unembedded   lhs.invalUse   = let self = Variable_Unembedded @name
-                                   in if Set.member self @lhs.invalRPs
-                                      then Set.singleton self
+  | Unembedded   lhs.invalUse   = let copy = @loc.self 
+                                   in if Set.member copy @lhs.invalRPs
+                                      then Set.singleton copy 
                                       else Set.empty
+
+-- Fix to resolve the AG scheduling error between useMap and invalRP
+SEM Alternatives
+  | Cons         lhs.useMap < lhs.invalRPs
 
 SEM Function
   | Function  body.useMap    =  @loc.startMap
@@ -173,7 +177,7 @@ SEM Statement
   | Assignment2 lhs.defMap  =  Map.adjust (+1) @dest1.self (Map.adjust (+1) @dest2.self @lhs.defMap)
 
 SEM Variable
-  | Unembedded  lhs.useMap  =  Map.adjust (+ @lhs.multi) @loc.trf @lhs.useMap
+  | Unembedded  lhs.useMap  =  Map.adjust (+ @lhs.multi) (@loc.self) @lhs.useMap
 
 SEM Statement
   | Assignment  (lhs.trf, lhs.env)  =  if @source.isntCall
@@ -190,7 +194,7 @@ SEM Statement
 
                                              
 SEM Value
-  | Var          lhs.trf  =  Map.findWithDefault (Value_Var @var.self) @var.self @lhs.env
+  | Var          lhs.trf  =  Map.findWithDefault (@loc.self) @var.self @lhs.env
   | Call         lhs.isntCall  =  False
   | * - Call     lhs.isntCall  =  True
 
