@@ -69,6 +69,8 @@
 %%]
 %%[8 import({%{GRIN}Silly.Shortcut(shortcut)})
 %%]
+%%[8 import({%{GRIN}Silly.GroupAllocs(groupAllocations)})
+%%]
 %%[8 import({%{GRIN}Silly.EmbedVars(embedVars)})
 %%]
 %%[8 import({%{GRIN}Silly.Pretty(pretty)})
@@ -140,6 +142,10 @@ doCompileGrin input opts
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
+                ; when (ehcOptPriv options)
+                  ( do { transformSilly groupAllocations "GroupAllocs" ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
+                       }
+                  )                
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM
