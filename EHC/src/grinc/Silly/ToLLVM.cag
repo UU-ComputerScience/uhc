@@ -417,9 +417,20 @@ SEM Value
                 loc.(uniqNr2, cmpRes, cmpCode) =
                               assign2var @loc.uniqNr1 ( LLVMExpression_Compare CMPSGT @loc.lhsIntVar @con.llvmVar, i1)
                                                             
-  | * - Alloc Call Con Var CompareGT
-                lhs.llvmVar  = error $ "No Label, Cast or Offset Value expected"
-                lhs.llvmCode = error $ "No Label, Cast or Offset Value expected"       
+  | Offset      lhs.llvmVar  = @loc.offsetVar
+                lhs.llvmCode = @var.llvmCode ++ @loc.loadCode ++
+                               @loc.castCode ++ @loc.offsetCode
+
+                loc.(uniqNr1,loadVar,loadCode) =
+                              load @lhs.gUniq @var.llvmVar
+                loc.(uniqNr2,castVar,castCode) =
+                              cast2ptr @loc.uniqNr1 @loc.loadVar @lhs.pointerType
+                loc.(uniqNr3,offsetVar,offsetCode) =
+                              assign2var @loc.uniqNr2 ( LLVMExpression_GetElemPtr @loc.castVar [@off], getType @loc.castVar )
+
+  | * - Alloc Call Con Var CompareGT Offset
+                lhs.llvmVar  = error $ "No Label or Cast Value expected"
+                lhs.llvmCode = error $ "No Label or Cast Value expected"       
  
 SEM Variable
   | Global      lhs.llvmVar  = GlobalVar (hs2str @name) @lhs.globalType
