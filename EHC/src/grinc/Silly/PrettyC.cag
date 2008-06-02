@@ -162,7 +162,7 @@ SEM Values
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | Var         lhs.prettyC   = @var.prettyC
-  | Offset      lhs.prettyC   = @var.prettyC >|< "+" ++ show @off
+  | Offset      lhs.prettyC   = @var.prettyPtr >|< "+" ++ show @off
   | Cast        lhs.prettyC   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyC >|< "))"
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
