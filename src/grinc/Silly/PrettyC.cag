@@ -60,11 +60,19 @@ optTraceAssign = False
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
          [ | | prettyC USE {>-<} {empty} : PP_Doc ]
 
+ATTR Value Constant [ | | prettyTXT USE {>-<} {empty} : PP_Doc ]
+
+
 ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
 
 ATTR Values [ | | prettyCs : {[PP_Doc]} ]
+ATTR Values [ | | prettyTXTs : {[PP_Doc]} ]
 
-ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
+ATTR Variable
+     Value  [ | | prettyPtr : {PP_Doc}  ]
+
+ATTR Variable [ | | isSP : {Bool} ]
+  
 
 ATTR Statements Statement Alternatives Alternative
          [ functionname : String | | ]
@@ -133,8 +141,8 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment  @dest.prettyC  @source.prettyC
-  | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC
+  | Assignment  lhs.prettyC   = assignment  @dest.prettyC  (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
@@ -159,22 +167,52 @@ SEM Values
   | Nil         lhs.prettyCs  = []
   | Cons        lhs.prettyCs  = @hd.prettyC : @tl.prettyCs
 
+SEM Values
+  | Nil         lhs.prettyTXTs  = []
+  | Cons        lhs.prettyTXTs  = @hd.prettyTXT : @tl.prettyTXTs
+
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | Var         lhs.prettyC   = @var.prettyC
-  | Offset      lhs.prettyC   = @var.prettyPtr >|< "+" ++ show @off
+  | Offset      lhs.prettyC   = "(GrWord)(" >|< @var.prettyPtr >|< "+" ++ show @off ++ ")"
   | Cast        lhs.prettyC   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyC >|< "))"
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
-  | Alloc       lhs.prettyC   = "heapalloc(" >|< show @size >|< ")"
+  | Alloc       lhs.prettyC   =  case @gcManaged of
+                                   NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
+                                   GCManaged  -> "heapalloc("               >|< show @size >|< ")"
   | Label       lhs.prettyC   = "((GrWord)(&&" >|< @name >|< "))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
+
+  | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
+  | *-Offset    lhs.prettyPtr = error "prettyC: called prettyPtr from non-Offset Value"
+
+
+SEM Value
+  | Con         lhs.prettyTXT = @con.prettyTXT
+  | Var         lhs.prettyTXT = @var.prettyC
+  | Offset      lhs.prettyTXT = @var.prettyPtr >|< "+" ++ show @off
+  | Cast        lhs.prettyTXT = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyTXT >|< "))"
+  | Call        lhs.prettyTXT = ( maybe (callCfunction @name)
+                                        fromSillyPrim
+                                        (lookupPrim BackendSilly @name)  ) @args.prettyTXTs
+  | Alloc       lhs.prettyTXT =  case @gcManaged of
+                                   NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
+                                   GCManaged  -> "heapalloc("               >|< show @size >|< ")"
+  | Label       lhs.prettyTXT = "((GrWord)(&&" >|< @name >|< "))"
+  | CompareGT   lhs.prettyTXT = @val.prettyC >#< ">" >#< @con.prettyC
+
 
 SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
   | LiteralStr  lhs.prettyC   = "((GrWord)" >|< text (show @value) >|< ")"
   | Alias       lhs.prettyC   = text @name
+
+SEM Constant
+  | LiteralInt  lhs.prettyTXT = text (show @value)
+  | LiteralStr  lhs.prettyTXT = "((GrWord)" >|< text @value >|< ")"
+  | Alias       lhs.prettyTXT = text @name
 
 SEM Variable
   | Global
@@ -198,6 +236,9 @@ SEM Variable
   | Unembedded  lhs.prettyC   = text ("UNEMB " ++ hsnShowAlphanumeric @name)  -- error "attempt to use Variable_Unembedded as value"
                 lhs.prettyPtr = error "attempt to use Variable_Unembedded as pointer"
 
+SEM Variable
+  | SP          lhs.isSP = True
+  | *-SP        lhs.isSP = False
 
 %%]
 
@@ -353,8 +394,8 @@ jumpSillyFunctionFromSilly optOwn nm optTraceCall functionname
  	           >-< "goto" >#< nm >|< ";"
 
 
-assignment2 :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-assignment2 v1 v2 e
+assignment2 :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+assignment2 v1 v2 e et
  = v1
    >#< "="
    >#< v2
@@ -362,17 +403,17 @@ assignment2 v1 v2 e
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< et >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
               --(" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
 
-assignment :: PP_Doc -> PP_Doc -> PP_Doc
-assignment v e
+assignment :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+assignment v e et
  = v
    >#< "="
    >#< e
    >|< ";"
    >|< ppWhen optTraceAssign
-              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              (" printf(\"assignment" >#< show v >#< "=" >#< et >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
               --(" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
 
 

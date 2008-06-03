@@ -95,9 +95,11 @@ extern Pointer HeapAreaHigh;
 
 %%[8
 #if USE_BOEHM_GC
-#define heapalloc(sz)	Cast(GrWord,GC_MALLOC(sz*sizeof(GrWord)))
+#define heapalloc(sz)                Cast(GrWord,GC_MALLOC(sz*sizeof(GrWord)))
+#define heapalloc_uncollectable(sz)  Cast(GrWord,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(GrWord)))
 #else
 GrWord heapalloc(int);
+#define heapalloc_uncollectable(sz)  heapalloc(sz)
 #endif
 %%]
 

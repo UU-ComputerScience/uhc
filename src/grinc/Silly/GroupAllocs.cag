@@ -33,7 +33,7 @@
 WRAPPER SilModule
 %%]
 
-%%[8 hs module {%{GRIN}Silly.GroupAllocs} export(groupAllocations)
+%%[8 hs module {%{GRIN}Silly.GroupAllocs} export(groupAllocs)
 %%]
 %%[8 hs import({%{GRIN}Silly})
 %%]
@@ -45,8 +45,8 @@ WRAPPER SilModule
 %%]
 
 %%[8 hs
-groupAllocations :: EHCOpts -> SilModule -> SilModule
-groupAllocations options input   
+groupAllocs :: EHCOpts -> SilModule -> SilModule
+groupAllocs options input   
   = let t = wrap_SilModule (sem_SilModule input)
                            (Inh_SilModule {}) 
     in trf_Syn_SilModule t
