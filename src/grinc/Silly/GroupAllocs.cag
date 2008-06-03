@@ -25,6 +25,14 @@
 %%
 %% we only call the expensive heapalloc once.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ASSUMPTION:
+%% The implementation groups all allocations of a block of statements
+%% in one allocation. This also means that all the garbage collection an-
+%% notations are grouped together.
+%% The implementation ignores the different GC annotations and retains the
+%% annotation of the first found allocations. This assumes that all allocations
+%% in one block are of the same GC-type, and currently this is the case.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 import({Silly/AbsSyn})
 %%]
