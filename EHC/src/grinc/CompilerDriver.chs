@@ -19,49 +19,51 @@
 %%]
 %%[8 import({%{GRIN}GRINCCommon})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings})
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CleanupPass})
+%%[8 import({%{GRIN}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings})
+%%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.Inline})
+%%[8 import({%{GRIN}GrinCode.Trf.GlobalConstants(globalConstants)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.FlattenSeq})
+%%[8 import({%{GRIN}GrinCode.Trf.Inline(grInline)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant})
+%%[8 import({%{GRIN}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CheckGrinInvariant})
+%%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.EvalStored})
+%%[8 import({%{GRIN}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.NumberIdents})
+%%[8 import({%{GRIN}GrinCode.Trf.EvalStored(evalStored)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr})
+%%[8 import({%{GRIN}GrinCode.Trf.NumberIdents(numberIdents)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.NormForHPT})
+%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[8 import({%{GRIN}GrinCode.PointsToAnalysis})
+%%[8 import({%{GRIN}GrinCode.Trf.NormForHPT(normForHPT)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.InlineEA})
+%%[8 import({%{GRIN}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings})
+%%[8 import({%{GRIN}GrinCode.Trf.InlineEA(inlineEA)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.EmptyAlts})
+%%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings(dropDeadBindings)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.LateInline})
+%%[8 import({%{GRIN}GrinCode.Trf.EmptyAlts(emptyAlts)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.ImpossibleCase})
+%%[8 import({%{GRIN}GrinCode.Trf.LateInline(lateInline)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SingleCase})
+%%[8 import({%{GRIN}GrinCode.Trf.ImpossibleCase(impossibleCase)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.MergeCase})
+%%[8 import({%{GRIN}GrinCode.Trf.SingleCase(singleCase)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.LowerGrin})
+%%[8 import({%{GRIN}GrinCode.Trf.MergeCase(mergeCase)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation})
+%%[8 import({%{GRIN}GrinCode.Trf.LowerGrin(lowerGrin)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SplitFetch})
+%%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation(copyPropagation)})
+%%]
+%%[8 import({%{GRIN}GrinCode.Trf.SplitFetch(splitFetch)})
 %%]
 %%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)})
 %%]
@@ -69,7 +71,7 @@
 %%]
 %%[8 import({%{GRIN}Silly.Shortcut(shortcut)})
 %%]
-%%[8 import({%{GRIN}Silly.GroupAllocs(groupAllocations)})
+%%[8 import({%{GRIN}Silly.GroupAllocs(groupAllocs)})
 %%]
 %%[8 import({%{GRIN}Silly.EmbedVars(embedVars)})
 %%]
@@ -106,11 +108,12 @@ doCompileGrin input opts
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-112-cleaned"
          ; transformCodeUnq      buildAppBindings   "BuildAppBindings" ; caWriteGrin "-113-appsbound"
+         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-114-globconst"
          ; transformCodeInline                      "Inline"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-114-inlined"
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-115-invariant"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-115-inlined"
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-116-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-116-evalstored"
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-117-evalstored"
          ; transformCodeUnq      numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-120-unusedExprDropped"
          ; transformCodeUnq      normForHPT         "NormForHPT"
@@ -142,10 +145,7 @@ doCompileGrin input opts
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
-                ; when (ehcOptPriv options)
-                  ( do { transformSilly groupAllocations "GroupAllocs" ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
-                       }
-                  )                
+                ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM
@@ -367,9 +367,9 @@ transformCodeInline message
   = do { putMsg VerboseALot message Nothing
        ; grin <- gets gcsGrin
 %%[[8
-       ; let code = grInline True grin
+       ; let code = grInline False grin
 %%][20
-       ; let (code,_) = grInline True Set.empty Map.empty grin 
+       ; let (code,_) = grInline False Set.empty Map.empty grin 
 %%]]
        ; modify (gcsUpdateGrin code)
        }

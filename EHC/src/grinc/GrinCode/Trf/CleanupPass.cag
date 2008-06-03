@@ -81,6 +81,9 @@ SEM GrBind
 
 -- insert the new global variables in the module
 SEM GrModule
-  | Mod  lhs.grTrf  =  GrModule_Mod @moduleNm @bindL.newGlobals @bindL.grTrf @ctagsMp
+  | Mod  lhs.grTrf  =  GrModule_Mod @moduleNm 
+                                    (@globalL.grTrf ++ @bindL.newGlobals)
+                                    @bindL.grTrf 
+                                    @ctagsMp
 
 %%]

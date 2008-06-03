@@ -352,11 +352,8 @@ SEM GrModule
   | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @ctagsMp
 
 SEM GrBind
-  | Bind        lhs         .   trfSq           =   if @omitBind && @nm `Set.member` @lhs.inlNmS
-                                                    then (if @lhs.allowOmitBind
-                                                          then Seq.empty
-                                                          else Seq.singleton (GrBind_Bind @nm @argNmL (GrExpr_Unit (GrVal_Node GrTag_Hole [])))
-                                                         )
+  | Bind        lhs         .   trfSq           =   if @lhs.allowOmitBind && @loc.omitBind && @nm `Set.member` @lhs.inlNmS
+                                                    then Seq.empty
                                                     else Seq.singleton @trf
   | Rec         lhs         .   trfSq           =   Seq.singleton $ GrBind_Rec $ Seq.toList @bindL.trfSq
 %%]
