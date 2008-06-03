@@ -70,6 +70,7 @@ SEM LLVMFunctions
   
 SEM LLVMFunction
   | Func        lhs.pretty = "define" >#< show @linkage >#< @funcDecl.prettySig
+                             >#< "nounwind"
                              >-< "{"
                              >-< indent 4 @body.pretty
                              >-< "}"

@@ -10,25 +10,14 @@
 %% FprimSubIntLeft Node
 \node [tag] (FprimSubIntLeft-Tag) {FprimSubInt};
 \node [payload] (FprimSubIntLeft-Load1) at (FprimSubIntLeft-Tag.east) {$\$p15$};
-\node [payload] (FprimSubIntLeft-Load2) at (FprimSubIntLeft-Load1.east) {};
-
-%% CInt 1
-\node [tag, below of=FprimSubIntLeft-Tag] (CIntLeft-Tag) {CInt};
-\node [payload] (CIntLeft-Load1) at (CIntLeft-Tag.east) {1};
-
-\path[pointer] (FprimSubIntLeft-Load2.center) -- (CIntLeft-Tag);
+\node [payload, text width=5em] (FprimSubIntLeft-Load2) at (FprimSubIntLeft-Load1.east) {$\$global\_p22$};
 
 %% Right subtree
 
 %% FprimSubIntRight Node
 \node [tag, right of=FprimSubIntLeft-Load2, xshift=4.5em] (FprimSubIntRight-Tag) {FprimSubInt};
 \node [payload] (FprimSubIntRight-Load1) at (FprimSubIntRight-Tag.east) {$\$p15$};
-\node [payload] (FprimSubIntRight-Load2) at (FprimSubIntRight-Load1.east) {};
+\node [payload, text width=5em] (FprimSubIntRight-Load2) at (FprimSubIntRight-Load1.east) {$\$global\_p25$};
 
-%% CInt 2
-\node [tag, below of=FprimSubIntLeft-Load2, xshift=8.5em] (CIntRight-Tag) {CInt};
-\node [payload] (CIntRight-Load1) at (CIntRight-Tag.east) {2};
-
-\path[pointer] (FprimSubIntRight-Load2.center) -- (CIntRight-Tag);
 \end{tikzpicture}
 
