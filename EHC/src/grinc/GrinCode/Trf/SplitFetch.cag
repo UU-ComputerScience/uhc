@@ -289,9 +289,6 @@ type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 type RenMap = Map.Map Int HsName
 type RenList = [(Int,HsName)]
 
-fromJust' s Nothing = error $ "fromJust':" ++ s
-fromJust' _ (Just v) = v
-
 getTagName (GrVal_Var v) =  v
 getTagName v             = error $ "getName: value not a variable: '" ++ show v ++ "'"
 

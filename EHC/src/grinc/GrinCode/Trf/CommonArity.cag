@@ -1,7 +1,10 @@
-Used in GrInline.cag and SplitFetch.cag
+Used in SplitFetch.cag
 
 
 %%[8 hs
+
+fromJust' s Nothing = error $ "fromJust':" ++ s
+fromJust' _ (Just v) = v
 
 tagArity :: GrTag -> Map.Map Int Int -> Int
 tagArity (GrTag_Fun       nm) arityMap = fromJust' ("Fun " ++ show nm ++ "niet in aritymap " ++ show arityMap)(Map.lookup (getNr nm) arityMap)
