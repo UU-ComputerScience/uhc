@@ -27,10 +27,12 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+
+-- TODO: wrap in initOracle, dumpOracle
 cmodTrfDebugStrict :: CModule -> CModule
 cmodTrfDebugStrict cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
-     in   trace (show cmod) $ cTrf_Syn_CodeAGItf t
+     in   cTrf_Syn_CodeAGItf t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,18 +67,20 @@ SEM CModule
     | Mod expr . moduleNm = @moduleNm
 
 SEM CExpr
+    | App         loc         .   cTrf = strictifyApp @func.cTrf @arg.cTrf @argMeta.cTrf
     | Let         loc         .   cTrf = let tr = trace (show $ CExpr_Let @categ @binds.cTrf @body.cTrf)
                                          in case @categ of
-                                              CBindRec  |False 
-                                                        -> error "recursive bind in DBGS stage"
+                                              CBindRec   
+                                                        -> trace ("recursive bind in DBGS stage")
+                                                           $ CExpr_Let @categ @binds.cTrf @body.cTrf
                                               CBindPlain ->
                                                   case @binds.cTrf of
-                                                    []            -> @body.cTrf
+                                                    []  -> @body.cTrf
                                                     [CBind_Bind v m e]
-                                                                   | not @binds.whnf && False
-                                                                   -> strictifyLet @lhs.moduleNm v m e @body.cTrf
-                                                    [_] -> trace "*"$CExpr_Let @categ @binds.cTrf @body.cTrf
-                                                    _             -> error "Core.Trf.DBGS: more than one bind in plain let"
+                                                        | not @binds.whnf && False
+                                                        -> strictifyLet v m e @body.cTrf
+                                                    [_] -> CExpr_Let @categ @binds.cTrf @body.cTrf
+                                                    _   -> error "Core.Trf.DBGS: more than one bind in plain let"
                                               _           ->
                                                   CExpr_Let @categ @binds.cTrf @body.cTrf
                                                            
@@ -87,36 +91,77 @@ SEM CExpr
 %%]
 %%[8
 {
-strictifyLet :: HsName -> HsName -> CMeta -> CExpr -> CExpr -> CExpr
-strictifyLet modNm v m e1 e2 
-    = let  inner = letS (qualify modNm "o'" ) enterOrc inner'
-           inner' = letS (qualify modNm "r") e1 leave
-           leave = CExpr_App (CExpr_App leaveOrc (qualvar modNm "o'") CMeta_Val) (qualvar modNm "r") CMeta_Val
-      in letS (qualify modNm "o") newEntry (trace ("letL v:" ++ show v) $ letL v inner e2)
 
-qualify :: HsName -> String -> HsName
-qualify q n = hsnSetQual q $ hsnFromString n
+{-
+  turns an application
 
-qualvar :: HsName -> String -> CExpr
-qualvar q n
-  = CExpr_Var $ qualify q n
+  f x
+
+  into
+
+  letstrict o = primOracleNewEntry
+  in  f (letstrict o2 = primOracleEnter o
+         in letstrict r = x
+            in primOracleLeave o2 r)
+
+-}
+strictifyApp :: CExpr -> CExpr -> CMeta -> CExpr
+strictifyApp f x m
+    = letS "o" newEntry 
+      (CExpr_App f 
+       (letS "o2" (enterOrc "o")
+        (letS "r" x
+         (leaveOrc "o2" "r")))
+       m)
 
 
-letS, letL :: HsName -> CExpr -> CExpr -> CExpr
-letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind v CMeta_Val e1] e2
+{-
+  turns a declaration
+
+  let v = e1 in e2
+
+  into
+
+  letstrict o = primOracleNewEntry
+  in  let v = letstrict o2 = primOracleEnter o
+              in letstrict r = e1
+                 in primOracleLeave o2 r
+      in e2
+-}
+strictifyLet :: HsName -> CMeta -> CExpr -> CExpr -> CExpr
+strictifyLet v m e1 e2 
+    = let inner = letS "o2" (enterOrc "o")
+                  (letS "r" e1
+                   (leaveOrc "o2" "r"))
+      in letS "o" newEntry
+             (letL v inner
+                   e2)
+
+qualify :: String -> HsName
+qualify n = hsnFromString n
+
+
+letS :: String -> CExpr -> CExpr -> CExpr
+letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind (qualify v) CMeta_Val e1] e2
+
+letL :: HsName -> CExpr -> CExpr -> CExpr
 letL v e1 e2 = CExpr_Let CBindPlain [CBind_Bind v CMeta_Val e1] e2
 
-dumpOrc, enterOrc, leaveOrc, newEntry :: CExpr
-dumpOrc   = prelvar "primDumpOracle"
-newEntry  = prelvar "primOracleNewEntry"
-enterOrc  = prelvar "primOracleEnter"
-leaveOrc  = prelvar "primOracleLeave"
+dumpOrc, newEntry :: CExpr
+dumpOrc   = libcall "primDumpOracle" []
+newEntry  = libcall "primOracleNewEntry" []
 
-prelvar :: String -> CExpr
-prelvar n = CExpr_Var $ mkHNm [ehcname, prelname, hsnFromString n]
-    where  ehcname = hsnFromString "EHC"
-           prelname = hsnFromString "Prelude"
+enterOrc :: String -> CExpr
+enterOrc x = libcall "primOracleEnter" [x]
 
+leaveOrc :: String -> String -> CExpr
+leaveOrc x y = libcall "primOracleLeave" [x, y]
 
+libcall :: String -> [String] -> CExpr
+libcall f xs = foldr appV prelfun xs
+    where
+      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
+      appV :: String -> CExpr -> CExpr
+      appV v f = CExpr_App f (CExpr_Var $ qualify v) CMeta_Val
 }
 %%]

@@ -55,7 +55,7 @@
 %%]
 %%[8 import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
-%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict})
+%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict}, {%{EH}Core.Trf.LetFixrec})
 %%]
 %%[8_2 import({%{EH}Core.Trf.PrettyVarNames})
 %%]
@@ -1582,6 +1582,7 @@ cpCore1Trf modNm trfNm
 %%]]
 %%[[103
                               "CLM"     -> cmodTrfLetUnMutual
+			      "CLFR"	-> cmodTrfLetFixrec
 			      "DBGS"	-> cmodTrfDebugStrict
 %%]]
                               -- "CLL"     -> cmodTrfLamLift
@@ -1653,15 +1654,17 @@ cpProcessCoreBasic modNm
 %%[[102
                   -- [ "CS" ] ++
 %%]]
-                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                  [ "CER"]
+%%[[103
+                  ++ [ "CRU", "CLU", "CLM", "CLFR", "DBGS"]
+%%]]
+                  ++ ["CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
                   , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" 
 %%[[8_2           
                   , "CPRNM"
 %%]]
                   ]
-%%[[103
-                  ++ [ "CLM", "DBGS"]
-%%]]
+
                 )
           , cpOutputCore "core" modNm
           ]

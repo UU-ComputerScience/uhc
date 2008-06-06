@@ -42,7 +42,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Usage (assumption: unique names)
+%%% Usage 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -76,22 +76,17 @@ SEM CBind
 SEM CExpr
     | Let  loc  .  cTrf
                =   if @categ == CBindRec
-                   then  let  mk c n b = case Map.lookup n @binds.bindMp of
-                                           Nothing -> b
-                                           Just (e,m) -> mkCExprLet c [ mkCBind1Meta n m e] b
+                   then  let  mk n b = let (e,m) = rhs n
+                                         in mkCExprLet CBindPlain [ mkCBind1Meta n m e] b
+                              mkLets = foldr mk
                               (bs, rs, fbs) 
                                   = feedbackSet @body.fvS @binds.fvSMp
-                              feedbacks :: CExpr
-                              feedbacks = fbTuple rhs fbs
                               rhs x = let err= error "internal error"
-                                      in  fst $ Map.findWithDefault err x @binds.bindMp
-                              recs = mkLets feedbacks rs
+                                      in  Map.findWithDefault err x @binds.bindMp
                               recname = qualify @lhs.moduleNm "r"
-                              recs' = mkFbSelectors recname fbs recs
-                              body = mkLets @body.cTrf  bs
-                              body' = mkFbSelectors recname fbs body
-                              mkLets = foldr (\v r -> mk CBindPlain v r)
-                         in mkCExprLet CBindRec [mkCBind1Meta recname CMeta_Val recs'] body'
+                              recs  = mkFbSelectors recname fbs $ mkLets (feedbackTuple rhs fbs) rs
+                              body  = mkFbSelectors recname fbs $ mkLets @body.cTrf  bs
+                         in mkCExprLet CBindRec [mkCBind1Meta recname CMeta_Val recs] body
                    else  CExpr_Let @categ @binds.cTrf @body.cTrf
 %%]
 
@@ -101,17 +96,18 @@ SEM CExpr
 
 {-
   from a list of feedback vars and a function that retrieves their
-  right hand sides, create an expression that builds a tuple
+  right hand sides, create an expression that builds a tuple:
 
   (...(Tup (rhs f1) (rhs f2)) ... (rhs fn))
 -}
-fbTuple :: (a-> CExpr) -> [a] -> CExpr
-fbTuple rhs = foldr (\f t -> CExpr_App t (rhs f) CMeta_Val) (CExpr_Tup CTagRec)
+feedbackTuple :: (a-> (CExpr, CMeta)) -> [a] -> CExpr
+feedbackTuple rhs = foldr (\f t -> let (e,m) = rhs f 
+                             in CExpr_App t e m) (CExpr_Tup CTagRec)
 
 
 {-
   from a list of feedback vars, create a pattern
-  that matches a tuple
+  that matches a tuple:
 
   (Tup f1 f2 ... fn)
 -}
@@ -121,29 +117,29 @@ fbPat fbs = mkCPatCon (CTagRec) (length fbs) (Just fbs)
 
 {-
   from a variable name and a feedback set, create an expression that
-  retrieves this value from the fbTuple:
+  retrieves this value from the feedbackTuple:
 
   case rec of (Tup f1 f2 .. fn) -> v
 -}
 mkFeedbackRhs :: HsName -> HsName -> [HsName] -> CExpr
-mkFeedbackRhs r v fvs = CExpr_Case (CExpr_Var r) [alt] (prelvar "undefined")
+mkFeedbackRhs r v fvs = CExpr_Case (CExpr_Var r) [alt] (preludeVar "undefined")
     where alt :: CAlt
           alt = CAlt_Alt (fbPat fvs) (CExpr_Var v)
 
 
 {-
   surrounds the body with defintions for the
-  feebback vars
+  feebback vars:
 
   let f1 = case r of (Tup f1 ..) -> f1
   in let f2 = case r of (Tup f1 f2 ..) -> f2
      in body
 -}
 mkFbSelectors :: HsName -> [HsName] -> CExpr -> CExpr
-mkFbSelectors rec fbs body = foldr foo body fbs
-    where foo f b = let e = mkFeedbackRhs rec f fbs
-                        m = CMeta_Val
-                    in mkCExprLet CBindPlain [ mkCBind1Meta f m e] b
+mkFbSelectors v fbs body = foldr mkFbLet body fbs
+    where mkFbLet f b = let e = mkFeedbackRhs v f fbs
+                            m = CMeta_Val
+                        in mkCExprLet CBindPlain [ mkCBind1Meta f m e] b
 
 
 {-
@@ -186,12 +182,13 @@ feedbackSet pulling deps = let sccs      = sccFromMap deps (Map.keys deps)
 qualify :: HsName -> String -> HsName
 qualify q n = hsnSetQual q $ hsnFromString n
 
+
 qualvar :: HsName -> String -> CExpr
 qualvar q n
     = CExpr_Var $ qualify q n
 
-prelvar :: String -> CExpr
-prelvar n = CExpr_Var $ mkHNm [ehcname, prelname, hsnFromString n]
+preludeVar :: String -> CExpr
+preludeVar n = CExpr_Var $ mkHNm [ehcname, prelname, hsnFromString n]
     where  ehcname = hsnFromString "EHC"
            prelname = hsnFromString "Prelude"
 
@@ -216,68 +213,11 @@ sccFromMap m n = let m' = filter (\(x,_)->x `elem` n) $ Map.toList m
                  in map f (scc m'')
 
 
-trc t x= trace (t ++ ": " ++ show x) x 
+-- trc t x= trace (t ++ ": " ++ show x) x 
 
 %%]
-
 
 
 
 %%[8 hs import(EH.Util.Utils)
-%%]
-
-%%[8 
-{
--- Scratch:
-
-mkCExprStrictSatCase     :: RCEEnv -> CExpr -> CAlt -> CExpr
-mkCExprStrictSatCase env n alt
-    = (CExpr_Case n (caltLSaturate env alt') (rceCaseCont env))
-    where (alt',altOffBL) = caltOffsetL alt
-
-caltLSaturate :: RCEEnv -> CAlt -> CAltL
-caltLSaturate env alt
-  = list_SaturateWith caltIntTag allAlts alt
-    where t = caltConTag alt
-          allAlts  = mkA (ctagArity t)
-          mkA a = CAlt_Alt (mkCPatCon t a Nothing) (rceCaseCont env)
-
--- saturate a list with values from assoc list
-list_SaturateWith ::  (x -> Int) -> x -> x -> [x]
-list_SaturateWith get missing l
-  = list_Saturate get missing l
-
--- saturate a list
-list_Saturate :: (x -> Int) -> x -> x -> [x]
-list_Saturate get mk l
-  = [ Map.findWithDefault mk 0 mp ]
-  where mp = Map.fromList [ (get l,l)]
-
-
-caltOffsetL :: CAlt -> (CAlt,CBindL)
-caltOffsetL alt
-  =  case alt of
-       CAlt_Alt (CPat_Con n t r b) e
-         ->  (CAlt_Alt (CPat_Con n t r b') e,offBL)
-             where (b',offBL) = cpatBindOffsetL b
-       _ ->  (alt,[])
-
-
-cpatBindOffsetL :: [CPatBind] -> ([CPatBind],CBindL)
-cpatBindOffsetL pbL
-  =  let  (pbL',obL)
-            =  unzip
-               .  map
-                    (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
-                        ->  let  offNm = hsnPrefix "off_" pn
-                            in   case o of
-                                   CExpr_Int _  -> (b,[])
-                                   _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
-                    )
-               $  pbL
-     in   (pbL',concat obL)
-
-
-
-}
 %%]

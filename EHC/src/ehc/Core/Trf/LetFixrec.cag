@@ -1,0 +1,104 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs module {%{EH}Core.Trf.LetFixrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}, Data.Function(on), Data.List,{%{EH}Core.Utils}) export(cmodTrfLetFixrec)
+%%]
+
+%%[8 hs import({%{EH}Base.Debug},UU.DData.Scc,{%{EH}Core},qualified Data.Set as Set,Debug.Trace)
+%%]
+
+%%[8.WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv})
+WRAPPER CodeAGItf
+%%]
+
+%%[99
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+cmodTrfLetFixrec :: CModule -> CModule
+cmodTrfLetFixrec cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Usage (assumption: unique names)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllExpr [ moduleNm : {HsName} | | ]
+
+SEM CModule    
+    | Mod expr . moduleNm = @moduleNm
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finding SCC's, constructing transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+SEM CExpr
+    | Let  loc . cTrf = if @categ == CBindRec
+                        then case @binds.cTrf of
+                               [] -> @body.cTrf
+                               -- _:_:_ -> error "mutual recursion in Core.Trf.LetFixrec"
+                               [CBind_Bind nm bindMeta expr]
+                                   {- let fix = \nm -> nm (fix nm) in fix (\nm -> expr) -}
+                                   -> let  fixbody = lambda nm (app (CExpr_Var nm) (app fixvar $ CExpr_Var nm))
+                                           fixapp  = app fixvar (lambda nm expr)
+                                           fixname = qualify "fix"
+                                           fixvar  = qualvar "fix"
+                                           lambda v e = CExpr_Lam v bindMeta e
+                                           app f x = CExpr_App f x bindMeta
+                                      in  mkCExprLet CBindRec [mkCBind1Meta fixname CMeta_Val fixbody] fixapp
+                               _ -> CExpr_Let @categ @binds.cTrf @body.cTrf
+                        else  CExpr_Let @categ @binds.cTrf @body.cTrf
+%%]
+
+
+%%[8 hs
+
+-- XXX is it really necessary to qualify local names? NO
+qualify :: String -> HsName
+qualify n = hsnFromString n
+-- qualify q n = hsnSetQual q $ hsnFromString n
+
+
+qualvar :: String -> CExpr
+qualvar n
+    = CExpr_Var $ qualify n
+
+
+trc t x= trace (t ++ ": " ++ show x) x 
+
+%%]
+
+
+%%[8 hs import(EH.Util.Utils)
+%%]

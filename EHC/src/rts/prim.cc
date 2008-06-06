@@ -553,6 +553,7 @@ PRIM GrWord gb_primIsEvaluated(GrWord x)
 
 PRIM GrWord gb_primRawShow(GrWord x)
 {
+  int i;
   //  printf("primRawShow %p\n", x);
 
   if(GB_Word_IsInt(x)) {
@@ -584,7 +585,7 @@ PRIM GrWord gb_primRawShow(GrWord x)
 
   int numfields = GB_NH_NrFlds(h);
   printf("(#%d.%d ", GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h));
-  for(int i = 0;;printf(" ")) {
+  for(i = 0;;printf(" ")) {
     GrWord next = n->content.fields[i];
     if(next)
       gb_primRawShow(next);

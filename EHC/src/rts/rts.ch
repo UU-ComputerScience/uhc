@@ -24,6 +24,9 @@
 #ifndef FP_ZERO
 #warning FP_ZERO not defined (assuming value 2). Using floating point numbers may give problems.
 #define FP_ZERO 2
+// my compiler wants this: (hs)
+#define fpclassify(x) 0
+#define isnormal(x)   0
 #endif
 %%]
 
