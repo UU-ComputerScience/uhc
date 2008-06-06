@@ -478,7 +478,11 @@ A counterpart type to enforce deep quantifier instantiation.
 %%[4
             deepInstMatchTy fi t
               = case t of
-                  _ | not (null as || tyConNm f == hsnPolNegation)
+                  _ | not (null as
+%%[[17
+                          || tyConNm f == hsnPolNegation
+%%]]
+                          )
                                   -> Just (mkApp $ mkNewTyVarL (length as + 1) u1, fi')
                     | otherwise   -> Nothing
                     where (f,as) = tyAppFunArgs t
