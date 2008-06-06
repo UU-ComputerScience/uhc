@@ -4,7 +4,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Subsumption (fitting in) for types
+%%% Shared structures for fitsIn and related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 module {%{EH}Ty.FitsInCommon} import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Error}) export (FIOut(..), emptyFO, foHasErrs)
@@ -22,10 +22,6 @@
 %%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
-For debug/trace:
-%%[4 import(EH.Util.Pretty)
-%%]
-
 %%[9 import({%{EH}Core.Coercion})
 %%]
 
@@ -35,6 +31,21 @@ For debug/trace:
 %%[9 import({%{EH}Core},{%{EH}Core.Subst},{%{EH}Pred.CommonCHR})
 %%]
 
+For debug/trace:
+%%[4 import(EH.Util.Pretty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing info, specialized  for fitsIn and related functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 export(trfit,trfitIn,trfitOu)
+trfit :: String -> String -> PP_Doc -> PP_Doc
+trfit dir msg rest =  dir >|< "." >|< msg >|< ":" >#< rest
+
+trfitIn = trfit ">"
+trfitOu = trfit "<"
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface to result/output
@@ -107,6 +118,21 @@ foHasErrs = not . null . foErrL
 %%[4 export(foAppSpineInfo)
 foAppSpineInfo :: FIOut -> AppSpineInfo
 foAppSpineInfo fo = maybe emptyAppSpineInfo id $ foMbAppSpineInfo fo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bind type var
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4 export(foPlusVarMp,foSetVarMp,foBindTyVar)
+foPlusVarMp :: VarMp -> FIOut -> FIOut
+foPlusVarMp c fo = fo {foVarMp = c |+> foVarMp fo}
+
+foSetVarMp :: VarMp -> FIOut -> FIOut
+foSetVarMp  c fo = fo {foVarMp = c}
+
+foBindTyVar :: TyVarId -> Ty -> FIOut -> FIOut
+foBindTyVar v t = foPlusVarMp (v `varmpTyUnit` t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

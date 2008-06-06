@@ -173,7 +173,7 @@ SEM Decl
 
 %%[95
 SEM Decl
-  | Instance    loc             .   derivMp         =   mkDerivClsMp @lhs.opts @lhs.valGam @lhs.dataGam
+  | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

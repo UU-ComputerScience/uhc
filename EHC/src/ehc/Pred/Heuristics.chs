@@ -4,7 +4,7 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsIn},{%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
+%%[9 module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, {%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
 %%[9 import(Data.List(nub, maximumBy, partition),Data.Maybe)

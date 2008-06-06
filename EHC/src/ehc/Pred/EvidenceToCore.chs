@@ -11,7 +11,7 @@
 %%[9 import({%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[9 import({%{EH}Ty.FitsIn}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Subst})
+%%[9 import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
 %%[9 import(EH.Util.Pretty)

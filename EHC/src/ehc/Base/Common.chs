@@ -796,6 +796,11 @@ fixityMaxPrio :: Int
 fixityMaxPrio = 9
 %%]
 
+%%[95 export(fixityAppPrio)
+fixityAppPrio :: Int
+fixityAppPrio = fixityMaxPrio + 1
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Eq,Ord for Pos
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

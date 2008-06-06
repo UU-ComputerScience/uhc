@@ -18,7 +18,7 @@ Conversion from Pred to CHR.
 %%[9 import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
 %%]
 
-%%[9 import({%{EH}Ty.FitsIn})
+%%[9 import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
 %%]
 
 -- debug
@@ -61,7 +61,7 @@ type CHRPredOccEvidMp = InfoToEvidenceMap CHRPredOcc RedHowAnnotation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[9
-type MkRes1 =  (ScopedPredStore,([CHRPredOcc],CHRPredOcc))
+type MkRes1 = (ScopedPredStore, ([CHRPredOcc],CHRPredOcc) )
 type MkResN = (ScopedPredStore,[([CHRPredOcc],CHRPredOcc)])
 %%]
 

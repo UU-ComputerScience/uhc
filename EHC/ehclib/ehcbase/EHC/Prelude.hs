@@ -104,7 +104,8 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 --  EHC specific functions
     ehcRunMain,
     PackedString,
-    packedStringToString, packedStringToInteger
+    packedStringToString, packedStringToInteger,
+    primGtInt, primEqChar
     
 ) where
 
