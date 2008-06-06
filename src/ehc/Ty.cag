@@ -1435,7 +1435,6 @@ fimOpp m
 fimSwapPol :: Polarity -> FIMode -> FIMode
 fimSwapPol pol m = if polIsContravariant pol then fimOpp m else m
 %%]
-fimSwapPol coco m = case coco of {ContraVariant -> fimOpp m; _ -> m}
 
 %%[4 hs
 instance Show FIMode where

@@ -680,7 +680,7 @@ SEM Decl
                                                                                    [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
                                                                                    nrOfAlts (CExpr_Var @dictBuildNm) extraCxL (dcfInitialArgL dcf)
                                                                           else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
-                                                                                 (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1
+                                                                                 (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1 (dcfInitialArgL dcf)
                                                                                   $ mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") n1v
                                                                                     [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
                                                                                                (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)

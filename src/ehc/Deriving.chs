@@ -8,6 +8,9 @@
 %%[95 import(qualified Data.Map as Map,Data.List,EH.Util.Utils)
 %%]
 
+%%[95 import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Table for each derivable field of each derivable class: type as well as codegen info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,8 +31,8 @@ data DerivCls
 
 data DerivClsFld
   = DerivClsFld
-      { dcfNm                       :: !HsName                                  -- name of field
-      , dcfTy                       :: !Ty                                      -- type of field
+      { dcfNm                       :: !HsName                                  -- name of class field
+      , dcfTy                       :: !Ty                                      -- type of class field, expanded w.r.t. type synonyms
       , dcfMkCPat                   ::                                          -- make the pattern for each alternative
                                        Int                                      -- index of alternative (the actual Enum ordering)
                                        -> CTag                                  -- tag
@@ -46,7 +49,7 @@ data DerivClsFld
                                        -> [HsName]                              -- names of initial args (usually same as dcfInitialArgL)
                                        -> [CExpr]                               -- constituents
                                        -> CExpr
-      , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]                  -- all tag info + subs
+      , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]                  -- all tag info + sub instances
                                        -> Int                                   -- nr of alts
                                        -> CExpr                                 -- instance under construction
                                        -> [CExpr]                               -- instances corresponding to dclExtraCtxt
@@ -59,6 +62,7 @@ data DerivClsFld
                                        -> DataGamInfo                           -- info of data ty
                                        -> Int                                   -- nr of alts
                                        -> HsName                                -- name of expr inspected by case expr
+                                       -> [HsName]                              -- names of initial args (usually same as dcfInitialArgL)
                                        -> CExpr                                 -- case expr
                                        -> CExpr
       }
@@ -76,11 +80,11 @@ dccMkTy :: DerivClsExtraCtxt -> Ty
 dccMkTy (DerivClsExtraCtxt_Fixed clNm tyNm) = mkConApp clNm [semCon tyNm]
 %%]
 
-The table is dependent on builtin names, stored in EHCOpts.
+The table is dependent on builtin names, stored in EHCOpts in FIEnv.
 
 %%[95 export(mkDerivClsMp)
-mkDerivClsMp :: EHCOpts -> ValGam -> DataGam -> DerivClsMp
-mkDerivClsMp opts valGam dataGam
+mkDerivClsMp :: FIEnv -> ValGam -> DataGam -> DerivClsMp
+mkDerivClsMp fe valGam dataGam
   = Map.unions
     $ map (uncurry Map.singleton)
     $ [
@@ -173,8 +177,8 @@ mkDerivClsMp opts valGam dataGam
                 )
                 undef undef
                 nowrap
-           -- Enum(enumFromTo)
 {-
+           -- Enum(enumFromTo)
            , mkf ehbnClassEnumFldEnumFromTo
                 Nothing -- only data constructor patterns
                 (take 2 hsnLclSupply)
@@ -195,8 +199,8 @@ mkDerivClsMp opts valGam dataGam
                 undef undef
                 nowrap
 -}
-           -- Enum(enumFromThenTo)
 {-
+           -- Enum(enumFromThenTo)
            , mkf ehbnClassEnumFldEnumFromThenTo
                 Nothing -- only data constructor patterns
                 (take 3 hsnLclSupply)
@@ -241,7 +245,7 @@ mkDerivClsMp opts valGam dataGam
                 )
                 Nothing -- no zero arg
                 undef undef
-                (\opts dgi nrOfAlts cNm body
+                (\opts dgi nrOfAlts cNm _ body
                   -> let cNmv = CExpr_Var cNm
                          cNm1 = hsnSuffix cNm "!boundCheck"
                      in  mkCIf opts (Just cNm1)
@@ -323,8 +327,8 @@ mkDerivClsMp opts valGam dataGam
              mkf ehbnClassShowFldShowsPrec
                 Nothing -- only data constructor patterns
                 [precDepthNm]
-                (Just $ \dti -> [CExpr_Int $ maybe (fixityMaxPrio + 1) (+1) $ dtiMbFixityPrio $ dti])
-                0
+                (Just $ \dti -> [CExpr_Int $ maybe (fixityAppPrio + 1) (+1) $ dtiMbFixityPrio $ dti])
+                1
                 (\_ _ dti _ [dNm] vs
                      -> let mk needParen v = mkCExprApp (CExpr_Var $ fn ehbnPrelShowParen) [needParen,v]
                         in  case (vs,dtiMbFixityPrio dti) of
@@ -333,19 +337,63 @@ mkDerivClsMp opts valGam dataGam
                               ([v1,v2],Just p)
                                 -> mk (cgtint opts (CExpr_Var dNm) p)
                                    $ foldr1 compose ([v1] ++ [ showString $ " " ++ tag2str (dtiCTag dti) ++ " " ] ++ [v2])
-                              _ -> mk (cgtint opts (CExpr_Var dNm) fixityMaxPrio)
+                              _ -> mk (cgtint opts (CExpr_Var dNm) fixityAppPrio)
                                    $ foldr1 compose ([showString $ tag2str (dtiCTag dti) ++ " "] ++ intersperse (showString " ") vs)
                 )
                 Nothing -- no zero arg
                 undef undef
                 nowrap
            ]
+           
+%%[[99
+      -- Read
+      ,  mkc ehbnClassRead []
+           [
+           -- Read(readsPrec)
+             mkf ehbnClassReadFldReadsPrec
+                Nothing -- only data constructor patterns
+                [precDepthNm,remInputNm]
+                Nothing -- no extra args for recursion on constituents
+                0
+                nononzeroargs
+                (Just $
+                  \dtiSubs _ _ _ [dNm,rNm]
+                     -> let mkSub (dti,subInsts)
+                              = mkCExprApp (CExpr_Var $ fn ehbnPrelReadParen) [needParen,v,CExpr_Var rNm]
+                              where nSub = length subInsts
+                                    nms seed = take (nSub+1) $ hsnLclSupplyWith $ mkHNmHidden seed
+                                    resNmL = nms "u"
+                                    remNmL = nms "v"
+                                    nmL = zip3 (rNm:remNmL) resNmL remNmL
+                                    (needParen,v)
+                                      = case (subInsts,dtiMbFixityPrio dti) of
+                                          ([inst1,inst2],Just p)
+                                            -> ( cgtint opts (CExpr_Var dNm) p
+                                               , mkCExprLam1 rNm
+                                                   (CExpr_Var rNm
+                                                   )
+                                               )
+                                          (insts,_)
+                                            -> ( cgtint opts (CExpr_Var dNm) fixityAppPrio
+                                               , mkCExprLam1 rNm
+                                                   (CExpr_Var rNm
+                                                   )
+                                                   -- [ | (remPrev,res,rem) <- nmL ]
+                                               )
+                                          
+                        in  foldr1 (\ds e -> mkCExprApp (CExpr_Var $ fn ehbnPrelConcat2) [ds,e])
+                            $ map mkSub dtiSubs
+                )
+                undef undef
+                nowrap
+           ]
+%%]]
       ]
   where mkc c extraCtxt flds
           = (c', DerivCls c' flds extraCtxt)
           where c' = fn c
         mkf f mbMkPat as mbAsSubs omTl cAllMatch mbCNoArg cLT cGT wrap
-          = DerivClsFld f' t mkPat as asSubs omTl cAllMatch cNoArg cLT cGT wrap
+          = DerivClsFld f' (tyCanonic (emptyFI {fiEnv = fe}) t) mkPat as asSubs omTl cAllMatch cNoArg cLT cGT wrap
           where f' = fn f
                 (t,_) = valGamLookupTy f' valGam
                 mkPat = maybe (const mkCPatCon) id mbMkPat
@@ -357,13 +405,9 @@ mkDerivClsMp opts valGam dataGam
         and l r = (CExpr_Var $ fn ehbnBoolAnd) `mkCExprApp` [l,r]
         compose l r = (CExpr_Var $ fn ehbnPrelCompose) `mkCExprApp` [l,r]
         showString s = (CExpr_Var $ fn ehbnPrelShowString) `mkCExprApp` [cstring opts s]
-        eqNm = fn ehbnDataOrderingAltEQ
-        ltNm = fn ehbnDataOrderingAltLT
-        gtNm = fn ehbnDataOrderingAltGT
         eq = CExpr_Var eqNm
         lt = CExpr_Var ltNm
         gt = CExpr_Var gtNm
-        precDepthNm = mkHNm "d"
         undef = cundefined opts
         tag2str = show . hsnQualified . ctagNm
         orderingTag conNm
@@ -371,7 +415,15 @@ mkDerivClsMp opts valGam dataGam
             $ dgiDtiOfCon conNm
             $ panicJust "mkDerivClsMp.dataGamLookup"
             $ dataGamLookup (fn ehbnDataOrdering) dataGam
-        nowrap _ _ _ _ x = x
+        nowrap _ _ _ _ _ x = x
         nononzeroargs _ _ _ _ _ _ = undef
+        opts = feEHCOpts fe
+        eqNm = fn ehbnDataOrderingAltEQ
+        ltNm = fn ehbnDataOrderingAltLT
+        gtNm = fn ehbnDataOrderingAltGT
+        precDepthNm = mkHNm "d"
+%%[[99
+        remInputNm = mkHNm "r"
+%%]]
 %%]
 

@@ -209,6 +209,49 @@ mkCExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List comprehension utilities for deriving, see also HS/ToEH
+%%% These functions redo on the Core level the desugaring done in ToEH. Regretfully so ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs export(mkCListComprehenseGenerator)
+mkCListComprehenseGenerator :: RCEEnv -> CPat -> (CExpr -> CExpr) -> CExpr -> CExpr -> CExpr
+mkCListComprehenseGenerator env patOk mkOk fail e
+  = mkCExprLam1 x
+      (mkCExprStrictSatCase (env {rceCaseCont = fail}) (Just xStrict) (CExpr_Var x)
+        [CAlt_Alt patOk (mkOk e)]
+      )
+  where x = mkHNmHidden "x"
+        xStrict = hsnSuffix x "!"
+%%]
+
+%%[99 hs export(mkCListComprehenseTrue)
+mkCListComprehenseTrue :: RCEEnv -> CExpr -> CExpr
+mkCListComprehenseTrue env e = mkCListSingleton (rceEHCOpts env) e
+%%]
+
+%%[99 hs export(mkCMatchString)
+mkCMatchString :: RCEEnv -> String -> CExpr -> CExpr -> CExpr -> CExpr
+mkCMatchString env str ok fail e
+  = mkCExprLetPlain x e
+    $ foldr (\(c,ns@(_,xh,_)) ok
+               -> matchCons ns
+                  $ mkCMatchChar opts (Just $ hsnSuffix xh "!")  c (CExpr_Var xh) ok fail
+            )
+            (matchNil xt ok)
+    $ zip str nms
+  where env' = env {rceCaseCont = fail}
+        matchCons (x,xh,xt) e = mkCExprSatSelsCase env' (Just $ hsnSuffix x "!") (CExpr_Var x) constag [(xh,xh,0),(xt,xt,1)] Nothing e
+        matchNil   x        e = mkCExprSatSelsCase env' (Just $ hsnSuffix x "!") (CExpr_Var x) niltag  [] Nothing e
+        constag = ctagCons opts
+        niltag  = ctagNil  opts
+        opts = rceEHCOpts env
+        (nms@((x,_,_):_),(xt,_,_))
+          = fromJust $ initlast $ snd
+            $ foldr (\n (nt,l) -> (n,(n,hsnSuffix n "h",nt):l)) (hsnUnknown,[])
+            $ take (length str + 1) $ hsnLclSupplyWith (mkHNmHidden "l")
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

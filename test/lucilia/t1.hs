@@ -9,6 +9,7 @@ v3      =   (choose :: (forall a . a -> a) -> (forall b . b -> b) -> (forall c .
 
 v4      ::  (forall a . a -> a) -> (forall b . b -> b)
 v4      =   choose id
+v5      =   choose ~id
 
 f :: (forall a . a->a) -> (Int,Char)
 f i = (i (5::Int), i 'x')

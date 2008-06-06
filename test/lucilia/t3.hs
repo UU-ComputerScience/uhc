@@ -10,4 +10,7 @@ h2  = (head ids :: forall a . a -> a) : ids
 h4 = tail ids
 h5 = id   ids
 
+h6 = tail ~ids
+h7 = id   ~ids
+
 main = return ()

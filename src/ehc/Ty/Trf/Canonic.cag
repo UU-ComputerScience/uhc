@@ -14,13 +14,13 @@ This matters at:
 This matters for:
 - comparing types, in particular within predicates during proving
 
-%%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty})
+%%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsInCommon2})
 %%]
 
 %%[9 hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
-%%[11 hs import({%{EH}Base.Opts})
+%%[11 hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})
 %%]
 
 %%[16 hs import({%{EH}Ty.Trf.MergePreds})
@@ -81,6 +81,22 @@ predCanonic' opts (Pred_Eq t1 t2)
 predCanonic' opts pr
   = case tyCanonic' opts $ Ty_Pred pr of
       Ty_Pred pr' -> pr'
+%%]
+
+%%[9 hs export(tyCanonic,predCanonic)
+tyCanonic :: FIIn -> Ty -> Ty
+tyCanonic fi = tyCanonic' (emptyTyCanonicOpts
+%%[[11
+                             {tcoTyBetaRedFull = tyBetaRedFull fi}
+%%]]
+                          )
+
+predCanonic :: FIIn -> Pred -> Pred
+predCanonic fi = predCanonic' (emptyTyCanonicOpts
+%%[[11
+                                 {tcoTyBetaRedFull = tyBetaRedFull fi}
+%%]]
+                              )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

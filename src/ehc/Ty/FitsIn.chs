@@ -32,17 +32,7 @@
 %%[2 import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[4 import({%{EH}Ty.Trf.Instantiate}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
-%%]
-
-For debug/trace:
-%%[4 import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils})
-%%]
-
-%%[4 export(FIEnv(..),emptyFE)
-%%]
-
-%%[4 import({%{EH}Base.Debug} as Debug)
+%%[4 import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
 %%]
 
 %%[4 import(qualified Data.Set as Set)
@@ -69,6 +59,16 @@ For debug/trace:
 %%[10 import({%{EH}Core.Utils})
 %%]
 
+%%[11 import({%{EH}Ty.Trf.BetaReduce})
+%%]
+
+For debug/trace:
+%%[4 import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils})
+%%]
+
+%%[4 import({%{EH}Base.Debug} as Debug)
+%%]
+
 %%[16 import(Debug.Trace)
 %%]
 
@@ -93,34 +93,6 @@ foAppLRCoe' opts (fCS,fLRCoe) c cs ce
 %%% FitsIn Input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FIIn export(FIIn(..))
-data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts
-                        ,  fiUniq            ::  !UID
-                        ,  fiVarMp           ::  !VarMp
-                        ,  fiVarMpLoc        ::  !VarMp
-                        ,  fiExpLTvS         ::  !(Set.Set TyVarId)
-                        ,  fiExpRTvS         ::  !(Set.Set TyVarId)
-                        ,  fiTrace           ::  [PP_Doc]       -- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
-%%[[9
-                        ,  fiEnv             ::  !FIEnv
-%%]]
-                        }
-%%]
-
-%%[4.FIn.emptyFI export(emptyFI)
-emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
-                        ,  fiUniq            =   uidStart
-                        ,  fiVarMp           =   emptyVarMp
-                        ,  fiVarMpLoc        =   emptyVarMp
-                        ,  fiExpLTvS         =   Set.empty
-                        ,  fiExpRTvS         =   Set.empty
-                        ,  fiTrace           =   []
-%%[[9
-                        ,  fiEnv             =   emptyFE
-%%]]
-                        }
-%%]
-
 %%[4
 fiAppVarMp :: FIIn -> Ty -> Ty
 fiAppVarMp fi x = fiVarMpLoc fi |=> fiVarMp fi |=> x
@@ -140,20 +112,6 @@ fiUpdOpts upd fi = fi {fiFIOpts = upd (fiFIOpts fi)}
 %%]
 
 %%[4
-fiLookupVar' :: (v -> VarMp -> Maybe x) -> v -> VarMp -> VarMp -> Maybe x
-fiLookupVar' lkup v m1 m2
-  = case lkup v m1 of
-      Nothing -> lkup v m2
-      j       -> j
-
-fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
-fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
-%%]
-fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
-fiLookupTyVarCyc  fi v | fiVarIsExpanded v fi =  Nothing
-                       | otherwise            =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
-
-%%[4
 fiInhibitVarExpandL :: TyVarId -> FIIn -> FIIn
 fiInhibitVarExpandL v fi = fi {fiExpLTvS = v `Set.insert` fiExpLTvS fi}
 
@@ -170,73 +128,6 @@ fiVarIsExpandedR v fi = v `Set.member` fiExpRTvS fi
 %%[4
 fiSwapCoCo :: FIIn -> FIIn
 fiSwapCoCo fi = fi {fiExpLTvS = fiExpRTvS fi, fiExpRTvS = fiExpLTvS fi}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Trace/debug PP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4
-ppTyWithFI :: FIIn -> Ty -> PP_Doc
-ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |=> fiVarMp fi) t
-
-ppTyWithFIFO :: FIIn -> FIOut -> Ty -> PP_Doc
-ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |=> fiVarMp fi) t
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FitsIn Environment
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4.FIEnv
-data FIEnv
-  =   FIEnv
-%%[[9
-        {   feEHCOpts       :: !EHCOpts
-        ,   feDontBind      :: !TyVarIdS
-        ,   fePredScope     :: !PredScope
-%%[[11
-        ,   feTyGam         :: !TyGam
-%%]]
-%%[[17
-        ,   fePolGam        :: !PolGam
-%%]]
-%%[[99
-        ,   feRange         :: !Range
-%%]]
-        }
-%%]]
-
-emptyFE
-  =   FIEnv
-%%[[9
-        {   feEHCOpts       =   defaultEHCOpts
-        ,   feDontBind      =   Set.empty
-        ,   fePredScope     =   initPredScope
-%%[[11
-        ,   feTyGam         =   emptyGam
-%%]]
-%%[[17
-        ,   fePolGam        =   emptyGam
-%%]]
-%%[[99
-        ,   feRange         =   emptyRange
-%%]]
-        }
-%%]]
-
-instance Show FIEnv where
-  show _ = "FIEnv"
-%%]
-
-%%[9
-instance PP FIEnv where
-  pp e = "FIEnv"
-         >#< (empty
-%%[[11
-             >-< pp (feTyGam e)
-%%]]
-             )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -416,10 +307,17 @@ fitsInFI fi ty1 ty2
 %%]]
 
             -- tracing
+%%[[4
             trfiAdd  tr   fi        =  fi {fiTrace = tr ++ fiTrace fi}
             trfi msg rest fi        =  trfiAdd [trfitIn msg rest] fi
             trfoAdd  tr   fo        =  fo {foTrace = tr ++ foTrace fo}
             trfo msg rest fo        =  trfoAdd [trfitOu msg rest] fo
+%%][100
+            trfiAdd  tr   fi        =  fi
+            trfi msg rest fi        =  fi
+            trfoAdd  tr   fo        =  fo
+            trfo msg rest fo        =  fo
+%%]]
 
             -- results
             res' fi tv t            =  trfo "res" (ppTyWithFI fi tv)
@@ -453,7 +351,7 @@ fitsInFI fi ty1 ty2
 
 %%[4.fitsIn.bind
             bind fi tv t            =  trfo "bind" ("tv:" >#< tv >-< "ty:" >#< t)
-                                       $ (res' (fiPlusVarMp (tv `varmpTyUnit` t) fi) (mkTyVar tv) t)
+                                       $ (res' (fiBindTyVar tv t fi) (mkTyVar tv) t)
 %%]
 
 %%[4.fitsIn.allowBind
@@ -512,15 +410,10 @@ fitsInFI fi ty1 ty2
 
 %%[4.fitsIn.FOUtils
             foUpdVarMp  c fo = fo {foVarMp = c |=> foVarMp fo}
-            foSetVarMp  c fo = fo {foVarMp = c}
-            foPlusVarMp c fo = fo {foVarMp = c |+> foVarMp fo}
-            fiSetVarMp  c fi = fi {fiVarMpLoc = c}
-            fiPlusVarMp c fi = fi {fiVarMpLoc = c |+> fiVarMpLoc fi}
             fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi, foTrace = fiTrace fi -- ++ foTrace fo
                                   }
             fofi       fo fi = fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo, fiTrace = foTrace fo -- ++ fiTrace fi
                                   }
-            fiBind    v t fi = fiPlusVarMp (v `varmpTyUnit` t) fi
 %%]
 %%[9
             fiInhibitBind v fi = fi {fiFIOpts = o {fioDontBind = v `Set.insert` fioDontBind o}}
@@ -578,6 +471,19 @@ fitsInFI fi ty1 ty2
                             $ fo
             foUpdImplExplCoe iv im tpr lrcoe fo
                             = foUpdImplExpl iv im tpr $ foUpdLRCoe lrcoe fo
+%%]
+
+A counterpart type to enforce deep quantifier instantiation.
+20080606, AD: Omitting the check on hsnPolNegation breaks polarity matching; this has to be sorted out.
+%%[4
+            deepInstMatchTy fi t
+              = case t of
+                  _ | not (null as || tyConNm f == hsnPolNegation)
+                                  -> Just (mkApp $ mkNewTyVarL (length as + 1) u1, fi')
+                    | otherwise   -> Nothing
+                    where (f,as) = tyAppFunArgs t
+              where (u,u1) = mkNewLevUID (fiUniq fi)
+                    fi' = fi {fiUniq = u}
 %%]
 
 %%[7
@@ -1076,10 +982,21 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[4.fitsIn.Var2
             f fi t1@(Ty_Var v1 _)       t2
+                | allowBind fi t1                   = case deepInstMatchTy fi t2 of
+                                                        Just (t1',fi') | fiRankEqInstRank fi
+                                                          -> fVar f (fiInitInstRank $ fiBindTyVar v1 t1' fi') t1 t2
+                                                        _ -> occurBind fi v1 t2
+            f fi t1                     t2@(Ty_Var v2 _)
+                | allowBind fi t2                   = case deepInstMatchTy fi t1 of
+                                                        Just (t2',fi') | fiRankEqInstRank fi
+                                                          -> fVar f (fiInitInstRank $ fiBindTyVar v2 t2' fi') t1 t2
+                                                        _ -> occurBind fi v2 t1
+%%]
+                                                          -> f (fiInitInstRank $ fiBindTyVar v1 t1' fi') (Debug.tr "X1" (t1' >#< t2) t1') (Debug.tr "X2" (t1' >#< t2) t2)
+            f fi t1@(Ty_Var v1 _)       t2
                 | allowBind fi t1                   = occurBind fi v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
                 | allowBind fi t2                   = occurBind fi v2 t1
-%%]
 
 %%[4.fitsIn.App
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
@@ -1087,7 +1004,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where  fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo    = fVar f fi2 tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo
-                       fi3    = (fofi ffo $ fiSwapCoCo fi2) {fiFIOpts = asFIO as $ fioSwapPolarity (asPolarity as) $ fiFIOpts fi}
+                       pol    = asPolarity as
+                       fi3    = (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi2) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
                        afo    = fVar ff fi3 ta1 ta2
 %%[[4
                        rfo    = foCmbApp ffo afo
@@ -1149,18 +1067,6 @@ GADT: type clash between fixed type variable and some other type results in a eq
 fitsIn' :: String -> FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
 fitsIn' msg opts env uniq varmp ty1 ty2
   =  fitsIn opts (trPP (msg ++ "-env") env) (trPP (msg ++ "-uniq") uniq) varmp (trPP (msg ++ "-ty1") ty1) (trPP (msg ++ "-ty2") ty2)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tracing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[4
-trfit :: String -> String -> PP_Doc -> PP_Doc
-trfit dir msg rest =  dir >|< "." >|< msg >|< ":" >#< rest
-
-trfitIn = trfit ">"
-trfitOu = trfit "<"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1318,82 +1224,10 @@ mkFitsInWrap env
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Beta reduction for type, only saturated applications are expanded
+%%% Deep type instantiation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
-tyBetaRed1 :: FIIn -> Ty -> Maybe (Ty,[PP_Doc])
-tyBetaRed1 fi tp
-  = eval fun args
-  where (fun,args) = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) tp
-        eval lam@(Ty_Lam fa b) args
-          | lamLen <= argLen
-              = mkres (mkApp (subst |=> lamBody : drop lamLen args))
-          | otherwise
-              = Nothing
-          where (lamArgs,lamBody) = tyLamArgsRes lam
-                lamLen = length lamArgs
-                argLen = length args
-                subst  = assocLToVarMp (zip lamArgs args)
-%%[[17
-        -- normalization for polarity types
-        -- * removes double negations
-        -- * removes negation on 'basic' polarities
-        eval (Ty_Con nm) [arg]
-          | nm == hsnPolNegation
-              = case fun' of
-                  Ty_Con nm
-                    | nm == hsnPolNegation   -> mkres (head args')
-                    | otherwise              -> mkres (polOpp arg)
-                  _ -> Nothing
-              where
-                (fun',args') = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) arg
-%%]]
-        eval (Ty_Con nm) aa
-              = case tyGamLookup nm tyGam of
-                  Just tgi -> case tgiTy tgi of
-                                Ty_Con nm' | nm == nm' -> Nothing
-                                f                      -> mkres (mkApp (f:aa))
-                  Nothing  -> Nothing
-        eval _ _ = Nothing
-        mkres t  = Just (t,[trfitIn "tylam" ("from:" >#< ppTyWithFI fi tp >-< "to  :" >#< ppTyWithFI fi t)])
-        tyGam    = feTyGam $ fiEnv fi
+Preferably done
+  - in Ty.Trf.Instantiate, but leads to module cycle
+  - or directly as part of fitsIn, but is difficult to fit in pairwise type matching structure
 
-tyBetaRed :: FIIn -> Ty -> [(Ty,[PP_Doc])]
-tyBetaRed fi ty
-  = case tyBetaRed1 fi ty of
-      Just tf@(ty,_) -> tf : tyBetaRed fi ty
-      _              -> []
-%%]
-
-%%[11 export(tyBetaRedFull)
-tyBetaRedFull :: FIIn -> Ty -> Ty
-tyBetaRedFull fi ty
-  = red ty
-  where env = fiEnv fi
-        lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
-        redl ty = take lim $ map fst $ tyBetaRed fi ty
-        red  ty = choose ty $ redl ty
-        reda ty
-            = if all null as' then ty else mk f (zipWith choose as as')
-            where (f,as,mk) = tyAppFunArgsMk ty
-                  as' = map redl as
-        choose a [] = a
-        choose a as = last as
-%%]
-
-%%[9 hs export(tyCanonic,predCanonic)
-tyCanonic :: FIIn -> Ty -> Ty
-tyCanonic fi = tyCanonic' (emptyTyCanonicOpts
-%%[[11
-                             {tcoTyBetaRedFull = tyBetaRedFull fi}
-%%]]
-                          )
-
-predCanonic :: FIIn -> Pred -> Pred
-predCanonic fi = predCanonic' (emptyTyCanonicOpts
-%%[[11
-                                 {tcoTyBetaRedFull = tyBetaRedFull fi}
-%%]]
-                              )
-%%]

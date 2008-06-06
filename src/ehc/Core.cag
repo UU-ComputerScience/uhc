@@ -305,7 +305,7 @@ mkCExprStrictInMeta :: HsName -> CMeta -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprStrictInMeta nm m e mkC = CExpr_Let CBindStrict [mkCBind1Meta nm m e] (mkC (CExpr_Var nm))
 %%]
 
-%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprStrictIn,mkCExprMbStrictIn)
+%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLetPlain,mkCExprStrictIn,mkCExprMbStrictIn)
 mkCExprLet' :: Bool -> CBindCateg -> CBindL -> CExpr -> CExpr
 mkCExprLet' merge c bs e
   = if null bs
@@ -320,6 +320,9 @@ mkCExprLet c bs e = mkCExprLet' False c bs e
 
 mkCExprLetRec :: CBindL -> CExpr -> CExpr
 mkCExprLetRec = mkCExprLet CBindRec
+
+mkCExprLetPlain ::  HsName -> CExpr -> CExpr -> CExpr
+mkCExprLetPlain nm e = mkCExprLet CBindPlain [mkCBind1 nm e]
 
 mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprStrictIn nm e mkC = mkCExprStrictInMeta nm CMeta_Val e mkC
@@ -344,6 +347,12 @@ mkCIf opts cn c t f
                ]
                (cundefined opts)
       )
+%%]
+
+%%[99 hs export(mkCMatchChar)
+mkCMatchChar :: EHCOpts -> Maybe HsName -> Char -> CExpr -> CExpr -> CExpr -> CExpr
+mkCMatchChar opts cn cchar cexpr t f
+  = mkCIf opts cn (ceqchar opts cchar cexpr) t f
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -396,6 +405,11 @@ cgtint :: EHCOpts -> CExpr -> Int -> CExpr
 cgtint opts e i = cbuiltinApp opts ehbnPrimGtInt [e,CExpr_Int i]
 %%]
 
+%%[99 hs
+ceqchar :: EHCOpts -> Char -> CExpr -> CExpr
+ceqchar opts c e = cbuiltinApp opts ehbnPrimEqChar [e,CExpr_Int (ord c)]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% String construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -427,7 +441,7 @@ cundefined opts = cbuiltinApp opts ehbnUndefined []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc
+%%% Tags, in general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs export(caltConTag,caltIntTag) 
@@ -448,12 +462,34 @@ caltIntTag :: CAlt -> Int
 caltIntTag (CAlt_Alt p _) = cpatIntTag p
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bool
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 In the following, note the hardcodedness!!!!!
 
 %%[95 hs export(ctagTrue, ctagFalse)
 ctagTrue, ctagFalse :: EHCOpts -> CTag
 ctagTrue  opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolTrue  $ ehcOptBuiltinNames opts) 1 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ ehcOptBuiltinNames opts) 0 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In the following, note the hardcodedness!!!!!
+
+%%[99 hs export(ctagCons,ctagNil)
+ctagCons, ctagNil :: EHCOpts -> CTag
+ctagCons opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltCons $ ehcOptBuiltinNames opts) 0 2 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+ctagNil  opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltNil  $ ehcOptBuiltinNames opts) 1 0 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
+%%]
+
+%%[99 hs export(mkCListSingleton)
+mkCListSingleton :: EHCOpts -> CExpr -> CExpr
+mkCListSingleton opts e
+  = mkCExprApp (CExpr_Tup $ ctagCons opts) [e,CExpr_Tup $ ctagNil opts]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

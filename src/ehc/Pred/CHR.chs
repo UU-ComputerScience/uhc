@@ -19,7 +19,7 @@ Derived from work by Gerrit vd Geest.
 %%[9 import({%{EH}Base.Common})
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
+%%[9 import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
 %%]
 
 %%[10 import({%{EH}Base.Builtin})
