@@ -5,7 +5,6 @@ Code generation is only one task that a compiler must perform. Other tasks are p
 
 \section{Extending EHC}
 \label{sec:ehc-extending}
-\todo{Check this, and refer to paper of Jeroen.}
 The EHC project constructs a sequence of compilers. The first compiler of the sequence, called version 1, is a compiler for the explictly typed lambda calculus. The successor of version 1, surprisingly called version 2, extends the compiler by adding type inference. Version 3 extends version 2 by adding polymorphism. The sequence of compilers continuous until all features of the Haskell language and some extentsions are implemented in version 100. This design allows us to experiment in a experimental environment, by choosing a compiler which supports a subset of Haskell. More information about the design and implementation of the EHC is available in \cite{fokker:07}.
 
 For this thesis, 2 versions are important:
