@@ -55,7 +55,7 @@
 %%]
 %%[8 import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
-%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict}, {%{EH}Core.Trf.LetFixrec})
+%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict}, {%{EH}Core.Trf.OracleCreation}, {%{EH}Core.Trf.LetFixrec})
 %%]
 %%[8_2 import({%{EH}Core.Trf.PrettyVarNames})
 %%]
@@ -1584,6 +1584,7 @@ cpCore1Trf modNm trfNm
                               "CLM"     -> cmodTrfLetUnMutual
 			      "CLFR"	-> cmodTrfLetFixrec
 			      "DBGS"	-> cmodTrfDebugStrict
+			      "ORC"	-> cmodTrfOracleCreation
 %%]]
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id

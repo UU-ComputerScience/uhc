@@ -28,7 +28,6 @@ PRAGMA strictcase
 
 %%[8 hs
 
--- TODO: wrap in initOracle, dumpOracle
 cmodTrfDebugStrict :: CModule -> CModule
 cmodTrfDebugStrict cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
@@ -99,20 +98,18 @@ SEM CExpr
 
   into
 
-  letstrict o = primOracleNewEntry
-  in  f (letstrict o2 = primOracleEnter o
-         in letstrict r = x
-            in primOracleLeave o2 r)
+  case primNextOracle of
+        False -> e1 (error "oracle")
+        True -> letstrict h = e2
+                in e1 h
 
 -}
 strictifyApp :: CExpr -> CExpr -> CMeta -> CExpr
 strictifyApp f x m
-    = letS "o" newEntry 
-      (CExpr_App f 
-       (letS "o2" (enterOrc "o")
-        (letS "r" x
-         (leaveOrc "o2" "r")))
-       m)
+    = ifThenElse (libcall "primNextOracle" [])
+      (letS (qualify "h") x (appV "h" f))
+      (letS (qualify "h") (libcall "underscore" []) (appV "h" f))
+      
 
 
 {-
@@ -122,27 +119,36 @@ strictifyApp f x m
 
   into
 
-  letstrict o = primOracleNewEntry
-  in  let v = letstrict o2 = primOracleEnter o
-              in letstrict r = e1
-                 in primOracleLeave o2 r
-      in e2
+  case primNextOracle of
+    False -> let x = error "oracle!"
+             in e2
+    True -> letstrict x = e1
+            in e2
 -}
+
+
 strictifyLet :: HsName -> CMeta -> CExpr -> CExpr -> CExpr
 strictifyLet v m e1 e2 
-    = let inner = letS "o2" (enterOrc "o")
-                  (letS "r" e1
-                   (leaveOrc "o2" "r"))
-      in letS "o" newEntry
-             (letL v inner
-                   e2)
+    = ifThenElse (libcall "primNextOracle" [])
+      (letS v e1 e2)
+      (letL v (libcall "underscore" []) e2)
+
+
+ifThenElse :: CExpr -> CExpr -> CExpr -> CExpr
+ifThenElse c a b = CExpr_Case c [alt] b
+    where alt = CAlt_Alt truePat a
+          truePat = undefined -- XXX how is the pattern for "True" encoded?
+
+
 
 qualify :: String -> HsName
 qualify n = hsnFromString n
 
+localVar :: String -> CExpr
+localVar s = CExpr_Var $ qualify s
 
-letS :: String -> CExpr -> CExpr -> CExpr
-letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind (qualify v) CMeta_Val e1] e2
+letS :: HsName -> CExpr -> CExpr -> CExpr
+letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind v CMeta_Val e1] e2
 
 letL :: HsName -> CExpr -> CExpr -> CExpr
 letL v e1 e2 = CExpr_Let CBindPlain [CBind_Bind v CMeta_Val e1] e2
@@ -161,7 +167,8 @@ libcall :: String -> [String] -> CExpr
 libcall f xs = foldr appV prelfun xs
     where
       prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
-      appV :: String -> CExpr -> CExpr
-      appV v f = CExpr_App f (CExpr_Var $ qualify v) CMeta_Val
+
+appV :: String -> CExpr -> CExpr
+appV v f = CExpr_App f (localVar v) CMeta_Val
 }
 %%]

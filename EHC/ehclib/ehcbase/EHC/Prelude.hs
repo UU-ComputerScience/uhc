@@ -3,6 +3,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 -- Debugging primitives
     Oracle, primInitOracle, primOracleEnter, primOracleLeave,    
     primOracleNewEntry, primWhatIsNextOracle, primDumpOracle,
+    underscore,
     thunkIsEvaluated,
     primRawShow,
     rawShow, RawShow, primRawShow,
@@ -2424,3 +2425,6 @@ instance RawShow (a -> b) where
 
 instance RawShow Int where
     rawShow x = primRawShow x
+
+underscore :: a
+underscore = error "underscore"

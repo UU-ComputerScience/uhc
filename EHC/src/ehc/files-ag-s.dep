@@ -47,6 +47,7 @@ Core/Trf/ElimTrivApp.cag
 Core/Trf/Strip.cag
 Core/Trf/LetUnMutual.cag
 Core/Trf/LetFixrec.cag
+Core/Trf/OracleCreation.cag
 Core/Trf/DebugStrict.cag
 Core/Trf/PrettyVarNames.cag
 GrinCode/Pretty.cag
