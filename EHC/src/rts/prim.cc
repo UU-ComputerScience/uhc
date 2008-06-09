@@ -513,7 +513,9 @@ PRIM GrWord gb_primOracleNewEntry()
 PRIM GrWord gb_primWhatIsNextOracle()
 {
   struct OracleEntry * n = oracleCurrent->next;
-  if(n->count) {
+  if(n==oracleStartnode) // ready
+    return -1;
+  else if(n->count) {
     n->count--;
    printf("current is True(1)");
     return 1;

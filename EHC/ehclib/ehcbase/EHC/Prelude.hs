@@ -3,10 +3,10 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 -- Debugging primitives
     Oracle, primInitOracle, primOracleEnter, primOracleLeave,    
     primOracleNewEntry, primWhatIsNextOracle, primDumpOracle,
-    underscore,
+    underscore, runOracleProgram, bindOracleStrict, returnOracleStrict,
     thunkIsEvaluated,
     primRawShow,
-    rawShow, RawShow, primRawShow,
+--    rawShow, RawShow, primRawShow,
 -- Classes
     Eq         ((==), (/=)),
     Ord        (compare, (<), (<=), (>=), (>), max, min),
@@ -2417,14 +2417,36 @@ thunkIsEvaluated t = primIsEvaluated t
 
 foreign import ccall primRawShow :: a -> a
 
-class RawShow a where
-    rawShow :: a -> a
-
-instance RawShow (a -> b) where
-    rawShow x = primRawShow x
-
-instance RawShow Int where
-    rawShow x = primRawShow x
-
 underscore :: a
 underscore = error "underscore"
+
+oracleToList :: () -> [Int]
+oracleToList _ = reverse (go [])
+    where 
+      go :: [Int] -> [Int]
+      go o = letstrict entry = primWhatIsNextOracle
+             in if entry== -1 then o else go (entry : o)
+
+
+
+type OrcM a = [Int] -> ([Int], a )
+
+runOracleProgram :: a -> OrcM a -> a
+runOracleProgram a b = letstrict h = primInitOracle
+                       in letstrict lazyResult = a
+                          in letstrict oracle = oracleToList ()
+                             in letstrict r2 = b oracle
+                                in case r2 of (_, strictResult) -> strictResult
+
+
+
+bindOracleStrict :: OrcM a -> (a -> OrcM b) -> OrcM b
+bindOracleStrict x f [] = error "end of oracle"
+bindOracleStrict x f (o:os) = if o>0 then
+                                  case x (o-1:os) of (o',x') -> f x' o'
+                              else
+                                  f underscore os
+
+
+returnOracleStrict :: a -> OrcM a
+returnOracleStrict x o = (o,x)

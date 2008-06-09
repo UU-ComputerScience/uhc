@@ -66,7 +66,8 @@ SEM CModule
     | Mod expr . moduleNm = @moduleNm
 
 SEM CExpr
-    | App         loc         .   cTrf = strictifyApp @func.cTrf @arg.cTrf @argMeta.cTrf
+    | App         loc         .   cTrf = -- XXX only for non-hnf, non-DICT arguments
+                                           libcallE "bindOracleStrict" [@arg.cTrf, @func.cTrf]
     | Let         loc         .   cTrf = let tr = trace (show $ CExpr_Let @categ @binds.cTrf @body.cTrf)
                                          in case @categ of
                                               CBindRec   
@@ -76,8 +77,10 @@ SEM CExpr
                                                   case @binds.cTrf of
                                                     []  -> @body.cTrf
                                                     [CBind_Bind v m e]
-                                                        | not @binds.whnf && False
-                                                        -> strictifyLet v m e @body.cTrf
+                                                        | not @binds.whnf && False 
+                                                          -- XXX only non-DICT
+                                                        -> let lambody = CExpr_Lam v m @body.cTrf
+                                                           in libcallE "bindOracleStrict" [e, lambody]
                                                     [_] -> CExpr_Let @categ @binds.cTrf @body.cTrf
                                                     _   -> error "Core.Trf.DBGS: more than one bind in plain let"
                                               _           ->
@@ -91,84 +94,31 @@ SEM CExpr
 %%[8
 {
 
-{-
-  turns an application
 
-  f x
-
-  into
-
-  case primNextOracle of
-        False -> e1 (error "oracle")
-        True -> letstrict h = e2
-                in e1 h
-
--}
-strictifyApp :: CExpr -> CExpr -> CMeta -> CExpr
-strictifyApp f x m
-    = ifThenElse (libcall "primNextOracle" [])
-      (letS (qualify "h") x (appV "h" f))
-      (letS (qualify "h") (libcall "underscore" []) (appV "h" f))
-      
+libcallV :: String -> [String] -> CExpr
+libcallV f xs = foldr appV prelfun xs
+    where
+      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
 
 
-{-
-  turns a declaration
-
-  let v = e1 in e2
-
-  into
-
-  case primNextOracle of
-    False -> let x = error "oracle!"
-             in e2
-    True -> letstrict x = e1
-            in e2
--}
+libcallE :: String -> [CExpr] -> CExpr
+libcallE f xs = foldr appE prelfun xs
+    where
+      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
 
 
-strictifyLet :: HsName -> CMeta -> CExpr -> CExpr -> CExpr
-strictifyLet v m e1 e2 
-    = ifThenElse (libcall "primNextOracle" [])
-      (letS v e1 e2)
-      (letL v (libcall "underscore" []) e2)
+appE :: CExpr -> CExpr -> CExpr
+appE x f = CExpr_App f x CMeta_Val
 
 
-ifThenElse :: CExpr -> CExpr -> CExpr -> CExpr
-ifThenElse c a b = CExpr_Case c [alt] b
-    where alt = CAlt_Alt truePat a
-          truePat = undefined -- XXX how is the pattern for "True" encoded?
-
-
-
-qualify :: String -> HsName
-qualify n = hsnFromString n
+appV :: String -> CExpr -> CExpr
+appV v f = appE (localVar v) f
 
 localVar :: String -> CExpr
 localVar s = CExpr_Var $ qualify s
 
-letS :: HsName -> CExpr -> CExpr -> CExpr
-letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind v CMeta_Val e1] e2
+qualify :: String -> HsName
+qualify n = hsnFromString n
 
-letL :: HsName -> CExpr -> CExpr -> CExpr
-letL v e1 e2 = CExpr_Let CBindPlain [CBind_Bind v CMeta_Val e1] e2
-
-dumpOrc, newEntry :: CExpr
-dumpOrc   = libcall "primDumpOracle" []
-newEntry  = libcall "primOracleNewEntry" []
-
-enterOrc :: String -> CExpr
-enterOrc x = libcall "primOracleEnter" [x]
-
-leaveOrc :: String -> String -> CExpr
-leaveOrc x y = libcall "primOracleLeave" [x, y]
-
-libcall :: String -> [String] -> CExpr
-libcall f xs = foldr appV prelfun xs
-    where
-      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
-
-appV :: String -> CExpr -> CExpr
-appV v f = CExpr_App f (localVar v) CMeta_Val
 }
 %%]
