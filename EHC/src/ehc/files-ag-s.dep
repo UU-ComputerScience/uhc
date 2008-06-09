@@ -45,6 +45,7 @@ Core/Trf/RenUniq.cag
 Core/Trf/ForceEval.cag
 Core/Trf/ElimTrivApp.cag
 Core/Trf/Strip.cag
+Core/Trf/RenAddSuffix.cag
 Core/Trf/LetUnMutual.cag
 Core/Trf/LetFixrec.cag
 Core/Trf/OracleCreation.cag
