@@ -1,0 +1,90 @@
+% Deduktionsb"aume
+
+% 20080610, AD, inferred behavior (which may be wrong)
+%  param x to ovr[x]
+%   x == n : full width, conclusion has width greater than all premises
+%        r : right hanging, even overlapping, left width as with n
+%        l : reverse of r
+%        b : l+r
+
+%\def\ovrnopreamble{\enskip(} 
+%\def\ovrnopostamble{)}
+\def\ovrnopreamble{\enskip} % RH: changed
+\def\ovrnopostamble{}
+
+\newbox\@@boxa \newbox\@@boxb \newbox\@@boxc
+\newdimen\@@a \newdimen\@@b \newdimen\@@c
+\newdimen\@@m \newdimen\@@l \newdimen\@@r
+\newdimen\@@x \newdimen\@@y
+\newdimen\@@lold \newdimen\@@rold
+
+\def\Ovr{%		% oberste Regelanwendung
+\global\@@l=0pt \global\@@r=0pt%
+\ovr}
+
+\def\ovr{\@ifnextchar [{\@ovr}{\@ovr[n]}}	% weitere Regelanwendungen
+\def\@ovr[#1]#2{\@ifnextchar [{\@ovrwithno[#1]{#2}}{\@ovrno[#1]{#2}[\relax]}}
+\def\@ovrwithno[#1]#2[#3]{\@ovrno[#1]{#2}[\ovrnopreamble#3\ovrnopostamble]}
+
+\def\@ovrno[#1]#2[#3]#4{%
+\if #1n%
+\@@lold=\@@l \@@rold=\@@r%
+\global\@@l=0pt \global\@@r=0pt%
+\else\if #1l%
+\@@rold=\@@r%
+\global\@@r=0pt%
+\else\if #1r%
+\@@lold=\@@l%
+\global\@@l=0pt%
+\fi\fi\fi%
+%
+\setbox\@@boxa=\hbox{$\displaystyle#2$}%
+\setbox\@@boxb=\hbox{$\displaystyle#4$}%
+\setbox\@@boxc=\hbox{#3}%
+\@@a=0.5\wd\@@boxa%
+\@@b=0.5\wd\@@boxb%
+\@@c=\wd\@@boxc%
+\@@m=\@@a%
+\ifdim\@@b>\@@m \@@m=\@@b\fi%
+\@@y=\@@m%
+\advance\@@y by\@@c%
+\@@x=\@@a%
+\advance\@@x by \@@r%
+\ifdim\@@x>\@@y \@@y=\@@x\fi%
+\@@x=\@@a%
+\advance\@@x by \@@l%
+\ifdim\@@b>\@@x \@@x=\@@b\fi%
+\@@l=\@@x%
+\advance\@@l by-\@@m%
+\@@r=\@@y%
+\advance\@@r by-\@@m%
+\advance\@@r by-\@@c%
+%
+\if #1n%
+\advance\@@x by\@@y%
+\hbox to \@@x{\hss\hskip\@@l$\displaystyle{{\box\@@boxa\over\box\@@boxb}\box\@@boxc}$\hskip\@@r\hss}%
+\global\@@l=\@@lold%
+\global\@@r=\@@rold%
+\else\if #1l%
+\advance\@@y by\@@b%
+\hbox to \@@y{\hss$\displaystyle{{\box\@@boxa\over\box\@@boxb}\box\@@boxc}$\hskip\@@r}%
+\global\@@l=\@@x%
+\global\advance\@@l by-\@@b%
+\ifdim\@@l<0pt \global\@@l=0pt\fi
+\global\@@r=\@@rold%
+\else\if #1r%
+\advance\@@x by\@@b%
+\hbox to \@@x{\hskip\@@l$\displaystyle{{\box\@@boxa\over\box\@@boxb}\box\@@boxc}$\hss}%
+\global\@@r=\@@y%
+\global\advance\@@r by-\@@b%
+\ifdim\@@r<0pt \global\@@r=0pt\fi
+\global\@@l=\@@lold%
+\else\if #1b%
+\hbox to \wd\@@boxb{\hss$\displaystyle{{\box\@@boxa\over\box\@@boxb}\rlap{\box\@@boxc}}$\hss}%
+\global\@@l=\@@x%
+\global\advance\@@l by-\@@b%
+\ifdim\@@l<0pt \global\@@l=0pt\fi
+\global\@@r=\@@y%
+\global\advance\@@r by-\@@b%
+\ifdim\@@r<0pt \global\@@r=0pt\fi%
+\fi\fi\fi\fi}

@@ -140,7 +140,7 @@ ATTR AllTy [ | | gathFxTvM USE {`Map.union`} {Map.empty}: TvCatMp ]
 ATTR AllTy [ fxTvM: TvCatMp | | ]
 
 SEM Ty
-  | Var         lhs         .   gathFxTvM   =   @tv `Map.singleton` @categ.self
+  | Var         lhs         .   gathFxTvM   =   @tv `Map.singleton` mkTvInfoTy @categ.self
 
 SEM TyAGItf
   | AGItf       loc         .   fxTvM       =   @ty.gathFxTvM

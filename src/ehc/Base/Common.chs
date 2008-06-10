@@ -16,7 +16,7 @@
 %%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
 %%]
 
-%%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppAppTop, ppCon, ppCmt)
+%%[1 import(EH.Util.Pretty, Data.List) export(ppListSepFill, ppSpaced, ppCon, ppCmt)
 %%]
 
 %%[1 export(assocLElts,assocLKeys)
@@ -68,9 +68,6 @@
 %%]
 
 %%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
-%%]
-
-%%[7 export(ppFld,mkExtAppPP,mkPPAppFun)
 %%]
 
 %%[7 export(uidHNm)
@@ -179,9 +176,14 @@ mkNewLevUID :: UID -> (UID,UID)
 mkNewLevUID u = (uidNext u, uidChild u)
 %%]
 
+%%[1 export(uidFromInt)
+uidFromInt :: Int -> UID
+uidFromInt i = UID [i]
+%%]
+
 %%[1
 uidStart :: UID
-uidStart = UID [0]
+uidStart = uidFromInt 0
 %%]
 
 %%[1.UID.Utils
@@ -376,26 +378,30 @@ mkRngParApp r as  = semRngParens r (mkRngApp r as)
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.PP.ppAppTop
+%%[1.PP.ppAppTop export(ppAppTop)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
-ppAppTop (conNm,con) args dflt
+ppAppTop (conNm,con) argL dflt
   =  if       hsnIsArrow conNm
 %%[[9
               || hsnIsPrArrow conNm
 %%]]
-                                then  ppListSep "" "" (" " >|< con >|< " ") args
-     else if  hsnIsProd  conNm  then  ppParensCommas args
-%%]
-%%[5
-     else if  hsnIsList  conNm  then  ppBracketsCommas args
-%%]
-%%[7
-     else if  hsnIsRec   conNm  then  ppListSep (hsnORec >|< con) hsnCRec "," args
-     else if  hsnIsSum   conNm  then  ppListSep (hsnOSum >|< con) hsnCSum "," args
-     else if  hsnIsRow   conNm  then  ppListSep (hsnORow >|< con) hsnCRow "," args
-%%]
-%%[1
+                                then  ppListSep "" "" (" " >|< con >|< " ") argL
+     else if  hsnIsProd  conNm  then  ppParensCommas argL
+%%[[5
+     else if  hsnIsList  conNm  then  ppBracketsCommas argL
+%%]]
+%%[[7
+     else if  hsnIsRec   conNm  then  ppListSep (hsnORec >|< con) hsnCRec "," argL
+     else if  hsnIsSum   conNm  then  ppListSep (hsnOSum >|< con) hsnCSum "," argL
+     else if  hsnIsRow   conNm  then  ppListSep (hsnORow >|< con) hsnCRow "," argL
+%%]]
                                 else  dflt
+%%]
+
+%%[99 export(ppAppTop')
+ppAppTop' :: PP arg => (HsName,arg) -> [arg] -> [Bool] -> PP_Doc -> PP_Doc
+ppAppTop' cc@(conNm,_) [_,a] [True,_] _ | hsnIsArrow conNm || hsnIsPrArrow conNm    = pp a
+ppAppTop' cc argL _ dflt                                                            = ppAppTop cc argL dflt
 %%]
 
 %%[1.PP.NeededByExpr
@@ -408,9 +414,6 @@ ppCmt :: PP_Doc -> PP_Doc
 ppCmt p = "{-" >#< p >#< "-}"
 %%]
 
--- ppCommaList now in EH.Util lib
-ppCommaList :: PP a => [a] -> PP_Doc
-ppCommaList = ppListSep "[" "]" ","
 %%[1.PP.Rest
 
 ppSpaced :: PP a => [a] -> PP_Doc
@@ -424,7 +427,7 @@ ppListSepFill o c s pps
         l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
-%%[7
+%%[7 export(ppFld,mkPPAppFun)
 ppFld :: String -> Maybe HsName -> HsName -> PP_Doc -> PP_Doc -> PP_Doc
 ppFld sep positionalNm nm nmPP f
   = case positionalNm of
@@ -433,7 +436,9 @@ ppFld sep positionalNm nm nmPP f
 
 mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
 mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
+%%]
 
+%%[7 export(mkExtAppPP)
 mkExtAppPP :: (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP_Doc,[PP_Doc])
 mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
   =  if hsnIsRec funNm || hsnIsSum funNm
@@ -1288,6 +1293,18 @@ rllHeadTail (RLList ((x,c):t)) = Just (x,RLList ((x,c-1):t))
 %%[9
 instance Show a => Show (RLList a) where
   show = show . rllToList
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derivation tree ways of printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(DerivTreeWay(..))
+data DerivTreeWay
+  = DerivTreeWay_Infer		-- follow order of inference when printing type variables
+  | DerivTreeWay_Final		-- use final mapping of type variables instead
+  | DerivTreeWay_None		-- no printing
+  deriving Eq
 %%]
 
 

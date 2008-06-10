@@ -1244,6 +1244,8 @@ cpTranslateEH2Core modNm
 %%][99
                      ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
                             (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+                     ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
+                            (lift $ putPPFile (fpathToStr (fpathSetSuff "lhs" fp)) (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]
                      }

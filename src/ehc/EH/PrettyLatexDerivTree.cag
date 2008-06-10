@@ -1,0 +1,166 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing a derivation tree
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs
+jdg :: String -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jdg nm ctx e concl = l2tText (ctx >#< ":-" >#< e >#< ":" >#< concl)
+
+jdgExpr :: EHCOpts -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jdgExpr opts gam knTy e ty
+  = jdg "e" (ppSemis' ctxt) e ty
+  where ctxt = [gam] ++ (if ehcOptEmitDerivTree opts == DerivTreeWay_Infer then [knTy] else [])
+
+jdgDecl :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jdgDecl gam e ty = jdg "d" gam e ty
+
+jdgGam :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jdgGam gam nm ty = l2tText (ppParens (nm >#< ":->" >#< ty) >#< "`elem`" >#< gam)
+%%]
+
+%%[99 hs
+gamN :: String -> PP_Doc
+gamN "" = pp "Gamma"
+gamN n  = "Gamma_" >|< n
+%%]
+
+%%[99 hs
+rule :: String -> String -> [PP_Doc] -> PP_Doc -> PP_Doc
+rule fmt nm pre post = ltxDtOver fmt pre nm post
+%%]
+
+%%[99 hs
+eltTy :: VarMp -> Ty -> PP_Doc
+eltTy m t = ppTyDt (m |=> t)
+
+eltTy' :: VarMp -> VarMp -> Ty -> (PP_Doc,VarMp)
+eltTy' m dm t
+  = (ppTyDt (dm' |=> t'), dm')
+  where t'  = m |=> t
+        fv  = tyFtvMp t' `Map.difference` varmpToMap dm
+        sz  = varmpSize dm
+        dmn = varmpUnions
+              $ zipWith (\(v,i) inx
+                           -> let nm i inx = mkHNm $ show i ++ show inx
+                              in  case tvinfoPurpose i of
+                                    TvPurpose_Ty    -> varmpTyUnit    v (semCon $ nm i inx)
+                                    TvPurpose_Impls -> varmpImplsUnit v (Impls_Tail (uidFromInt inx) [])
+                                    _               -> emptyVarMp
+                        )
+                        (Map.toList fv) [sz ..]
+        dm' = dmn |=> dm
+%%]
+
+%%[99 hs
+dtChooseVM :: EHCOpts -> VarMp -> VarMp -> VarMp
+dtChooseVM opts finalVM inferVM = if ehcOptEmitDerivTree opts == DerivTreeWay_Final then finalVM else inferVM
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Formatting context for 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR AllNT [ dtFmt: String | | ]
+
+SEM AGItf
+  | AGItf       loc     .   dtFmt       =   "b"
+
+SEM Expr
+  | App         func    .   dtFmt       =   "n"
+                arg     .   dtFmt       =   "r"
+  | Lam         arg     .   dtFmt       =   "n"
+                body    .   dtFmt       =   "b"
+
+SEM Decl
+  | Val         expr    .   dtFmt       =   "b"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing for derivation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR AllNT [ | | dtPP USE {>#<} {empty} : PP_Doc ]
+
+SEM Expr
+  | IConst CConst
+                loc     .   dtPP        =   @pp
+  | Var Con     loc     .   dtPP        =   pp $ hsnQualified @nm
+  | App         loc     .   dtPP        =   @func.dtPP >#< "^^" >#< @arg.dtPP
+  | AppTop      loc     .   dtPP        =   @expr.dtPP
+  | Lam         loc     .   dtPP        =   @arg.dtPP >#< "->" >#< @body.dtPP
+  | Parens      loc     .   dtPP        =   ppParens @expr.dtPP
+  | TypeAs      loc     .   dtPP        =   ppParens @expr.dtPP >#< "::" >#< @tyExpr.pp
+
+SEM PatExpr
+  | Var Con     loc     .   dtPP        =   pp $ hsnQualified @nm
+
+SEM Decl
+  | Val         loc     .   dtPP        =   @patExpr.dtPP >#< "=" >#< @expr.dtPP
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derivation tree
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR AllNT AGItf [ | | dt USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT [ | dtVarMp: VarMp |  ]
+
+SEM Expr
+  | IConst      loc     .   rlNm        =   "e.int"
+  | CConst      loc     .   rlNm        =   "e.char"
+  | Var         loc     .   rlNm        =   "e.var"
+  | Con         loc     .   rlNm        =   "e.con"
+
+SEM Expr
+  | IConst CConst
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @tyVarMp) m1 @ty
+                                            in  (rule @lhs.dtFmt @rlNm [] (jdgExpr @lhs.opts (gamN "") t1 @dtPP t2), m2)
+  | Var Con     (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @ty_g_
+                                                (t3,m3) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @tyVarMp) m2 @ty
+                                            in  (rule @lhs.dtFmt @rlNm [jdgGam (gamN "") @dtPP t2] (jdgExpr @lhs.opts (gamN "") t1 @dtPP t3), m3)
+  | App         (loc.dtKnTy,func.dtVarMp)
+                                        =   eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @tyVarMpApp) @arg.dtVarMp @ty
+                                            in  (rule @lhs.dtFmt "e.app" [@func.dt,@arg.dt] (jdgExpr @lhs.opts (gamN "") @dtKnTy @dtPP t2), m2)
+  | AppTop      (loc.dtKnTy,expr.dtVarMp)
+                                        =   eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
+                                            in  (rule @lhs.dtFmt "e.apptop" [@expr.dt] (jdgExpr @lhs.opts (gamN "") @dtKnTy @dtPP t2), m2)
+  | Lam         (loc.dtKnTy,arg.dtVarMp)
+                                        =   eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @ty
+                                            in  (rule @lhs.dtFmt "e.lam" [@arg.dt,@body.dt] (jdgExpr @lhs.opts (gamN "") @dtKnTy @dtPP t2), m2)
+%%]
+
+%%[99
+ATTR AllDecl AllExpr [ | | dtL USE {++} {[]}: {[PP_Doc]} ]
+
+SEM Decl
+  | Val         (lhs.dtL,lhs.dtVarMp)   =   let (t2,m2) = eltTy' (dtChooseVM @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @expr.ty
+                                            in  ([rule @lhs.dtFmt "d.val" [@patExpr.dt,@expr.dt] (jdgDecl (gamN "") @dtPP t2)], m2)
+%%]
+
+%%[99
+SEM AGItf
+  | AGItf       lhs     .   dt          =   l2tDtHeader ["lhs2TeX","afp"] ["deduction","lscape"]
+                                            >-< ltxDocument
+                                                (   ltxCallList "pagestyle" [pp "empty"]
+                                                >-< (vlist $ map (ltxLandscape . ltxMathmode) @expr.dtL)
+                                                )
+                expr    .   dtVarMp     =   emptyVarMp
+%%]
+

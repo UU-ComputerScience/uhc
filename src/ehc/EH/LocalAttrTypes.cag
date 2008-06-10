@@ -190,6 +190,7 @@ SEM *
 		loc.tySigGam  					: ValGam
 		loc.tyVarId		  				: UID
 		loc.tyVarMp  					: VarMp
+		loc.tyVarMpApp					: VarMp
 		loc.tyVarMp_p_  				: VarMp
 		loc.uniq1  						: UID
 		loc.uniq2  						: UID

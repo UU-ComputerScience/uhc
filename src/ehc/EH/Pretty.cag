@@ -84,7 +84,7 @@ SEM Expr
 
 %%[1.Base.Rest
 SEM Decl
-  | Val         lhs     .   pp      =   @patExpr.pp >###< "=" >#< @expr.pp
+  | Val         loc     .   pp      =   @patExpr.pp >###< "=" >#< @expr.pp
   | TySig       loc     .   tyPP    =   @tyExpr.pp
                         .   pp      =   @nm >#< "::" >#< @tyPP
 

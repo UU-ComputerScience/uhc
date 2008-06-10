@@ -162,6 +162,10 @@ data EHCOpts
       ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
                               ::  Bool
 %%]]
+%%[[99
+      ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
+%%][100
+%%]]
       }
 %%]
 
@@ -248,6 +252,10 @@ defaultEHCOpts
       ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
+%%]]
+%%[[99
+      ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
+%%][100
 %%]]
       }
 %%]
@@ -361,6 +369,11 @@ ehcCmdLineOpts
                                 Just "core"  -> o { ehcOptEmitCore         = True   }
                                 Just "java"  -> o { ehcOptEmitJava         = True   }
                                 Just "grin"  -> o { ehcOptEmitGrin         = True   }
+
+%%[[99
+                                Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
+%%][100
+%%]]
 
                                 Just "bc"    -> o { ehcOptEmitBytecode     = True 
                                                   , ehcOptFullProgAnalysis = False

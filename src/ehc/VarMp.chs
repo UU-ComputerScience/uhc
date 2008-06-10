@@ -67,6 +67,11 @@ newtype VarMp' k v = VarMp (AssocL k v) deriving Show
 newtype VarMp' k v = VarMp (Map.Map k v)
 %%]
 
+%%[99 export(varmpToMap)
+varmpToMap :: VarMp' k v -> Map.Map k v
+varmpToMap (VarMp m) = m
+%%]
+
 %%[2.VarMp.emptyVarMp
 emptyVarMp :: VarMp' k v
 emptyVarMp = VarMp []
@@ -156,7 +161,7 @@ varmpToAssocTyL :: VarMp' k (VarMpInfo v) -> AssocL k v
 varmpToAssocTyL c = [ (v,t) | (v,VMITy t) <- varmpToAssocL c ]
 %%]
 
-%%[9
+%%[9 export(varmpSize)
 varmpSize :: VarMp' k v -> Int
 varmpSize (VarMp m) = Map.size m
 %%]
@@ -184,6 +189,8 @@ varmpKeysSet (VarMp fm) = Map.keysSet fm
 %%[2.VarMp.Base
 type VarMp  = VarMp' TyVarId Ty
 %%]
+
+20080610, AD, todo: use TvPurpose
 
 %%[9
 data VarMpInfo v

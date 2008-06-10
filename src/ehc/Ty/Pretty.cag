@@ -61,6 +61,14 @@ ppTy :: Ty -> PP_Doc
 ppTy = ppTyWithCfg cfgPPTyDflt
 %%]
 
+%%[99.ppTyDt hs export(ppTyDt)
+ppTyDt :: Ty -> PP_Doc
+ppTyDt = ppTyWithCfg cfgPPTyDT
+%%]
+
+%%[100 -99.ppTyDt
+%%]
+
 %%[8 hs
 instance PP Ty where
   pp t = ppTy t
@@ -202,14 +210,18 @@ instance PP Label where
 %%[8 hs
 data CfgPPTy
   = CfgPPTy
-      { cfgPPTyPPHsn        :: HsName -> PP_Doc
-      , cfgPPTyPPCon        :: CfgPPTy -> HsName -> PP_Doc
-      , cfgPPTyPPVar        :: CfgPPTy -> UID -> Int -> PP_Doc
-      , cfgPPTyPPVarDflt    :: CfgPPTy -> String -> UID -> PP_Doc
+      { cfgPPTyPPHsn                :: HsName -> PP_Doc
+      , cfgPPTyPPCon                :: CfgPPTy -> HsName -> PP_Doc
+      , cfgPPTyPPVar                :: CfgPPTy -> UID -> Int -> PP_Doc
+      , cfgPPTyPPVarDflt            :: CfgPPTy -> String -> UID -> PP_Doc
 %%[[9
-      , cfgPPTyCtxt         :: TyCtxt
+      , cfgPPTyPPImplsPred          :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+      , cfgPPTyCtxt                 :: TyCtxt
 %%]]
-      , cfgPPTyFollowAST    :: Bool
+      , cfgPPTyFollowAST            :: Bool
+%%[[99
+      , cfgPPTyElimEmptyImpls       :: Bool
+%%]]
       }
 %%]
 
@@ -230,18 +242,38 @@ cfgPPTy x = cfgPPTy' x cfgPPTyDflt
 cfgPPTyDflt :: CfgPPTy
 cfgPPTyDflt
   = CfgPPTy
-      { cfgPPTyPPHsn        = pp
-      , cfgPPTyPPCon        = \_ -> ppCon
-      , cfgPPTyPPVar        = \c _ i -> ppTnUniq c i
-      , cfgPPTyPPVarDflt    = \cfg pre tv -> cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
+      { cfgPPTyPPHsn                = pp
+      , cfgPPTyPPCon                = \_ -> ppCon
+      , cfgPPTyPPVar                = \c _ i -> ppTnUniq c i
+      , cfgPPTyPPVarDflt            = \cfg pre tv -> cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 %%[[9
-      , cfgPPTyCtxt         = TyCtxt_Ty
+      , cfgPPTyPPImplsPred          = \iv pr pv -> iv >|< "=" >|< pr >|< "/" >|< pv
+      , cfgPPTyCtxt                 = TyCtxt_Ty
 %%]]
-      , cfgPPTyFollowAST    = False
+      , cfgPPTyFollowAST            = False
+%%[[99
+      , cfgPPTyElimEmptyImpls       = False
+%%]]
       }
 
 %%]
 
+For derivation trees
+%%[99.cfgPPTyDT hs
+cfgPPTyDT :: CfgPPTy
+cfgPPTyDT
+  = cfgPPTyDflt
+      { cfgPPTyPPHsn                = pp . hsnQualified
+      , cfgPPTyPPCon                = \_ -> ppCon . hsnQualified
+      , cfgPPTyPPImplsPred          = \_ pr _ -> pr
+      , cfgPPTyElimEmptyImpls       = True
+      }
+%%]
+
+%%[100 -99.cfgPPTyDT
+%%]
+
+For predicates
 %%[9 hs
 cfgPPTyPred :: CfgPPTy
 cfgPPTyPred
@@ -250,6 +282,7 @@ cfgPPTyPred
       }
 %%]
 
+For HI (Haskell Interface) files
 %%[20 hs
 cfgPPTyExtraForHI :: CfgPPTy -> CfgPPTy
 cfgPPTyExtraForHI c
@@ -419,8 +452,8 @@ ATTR
 SEM Ty
   | Con             loc     .   pp      =   ppCon @nm
   | App             loc     .   ppDflt  =   @func.pp >#< @arg.pp
-                            .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed
-                                                       (ppAppTop (@appFunNm,@appFunPP) @appArgPPL @ppDflt)
+                            .   ppAppTop=   ppAppTop (@appFunNm,@appFunPP) @appArgPPL @ppDflt
+                            .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed @ppAppTop
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
 %%]
@@ -437,7 +470,7 @@ SEM Ty
 %%[[8
                             .   ppAST   :=  hv ([ppParens @appFunPP] ++ map ((" " >|<) . ppParens) @appArgPPL)
 %%][8_2
-  -- Print applications readable (Int -> Int) in contrast to parsable ({->} {Int, Int}
+  -- Print applications readable (Int -> Int) in contrast to parsable ({ -> } {Int, Int}
                             .   ppAST   :=  @ppNice
 %%]]
                             .   pp      :=  if @isSpineRoot
@@ -446,7 +479,11 @@ SEM Ty
                                                  else @ppNice
                                             else @ppDflt
 %%]
-                            .   ppAST   :=  ppParens @appFunPP >#< (vlist $ map ppParens $ @appArgPPL)
+
+%%[99
+SEM Ty
+  | App             loc     .   ppAppTop:=  ppAppTop' (@appFunNm,@appFunPP) @appArgPPL @appArgIsEmptyImplsL @ppDflt
+%%]
 
 %%[2.Var
 SEM Ty
@@ -560,7 +597,7 @@ SEM Impls
   | Tail Cons       loc     .   ppIv    =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "i" @iv) id (tnLookupPP @iv @lhs.tnMap) >|< ppBracketsCommas @proveOccs
   | Tail            lhs     .   pp      =   @ppIv
   | Cons            loc     .   ppPv    =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "p" (poiId @pv)) id (tnLookupPP @iv @lhs.tnMap)
-                    lhs     .   pp      =   @ppIv >|< "=" >|< @pr.pp >|< "/" >|< @ppPv >|< "," >|< @tl.pp
+                    lhs     .   pp      =   cfgPPTyPPImplsPred @lhs.cfg @ppIv @pr.pp @ppPv >|< "," >|< @tl.pp
   | Nil             lhs     .   pp      =   pp "_"
 
 SEM Pred
@@ -755,5 +792,31 @@ SEM Ty
 %%[50
 SEM Ty
   | Equal       loc     .   parNeed             =   ParNotNeeded
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is Ty an empty Impls, so it does not really need to be printed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Gather parallel to appArgPPL whether it represents an empty sequence of Impls.
+In that case printing it can be avoided (if so desired, determined by configuration).
+
+%%[99
+ATTR Ty Impls [ | | isEmptyImpls: Bool ]
+
+SEM Impls
+  | Nil             lhs     .   isEmptyImpls            =   cfgPPTyElimEmptyImpls @lhs.cfg
+  | * - Nil         lhs     .   isEmptyImpls            =   False
+
+SEM Ty
+  | * - Impls       lhs     .   isEmptyImpls            =   False
+%%]
+
+%%[99
+ATTR Ty [ | | appArgIsEmptyImplsL: {[Bool]} ]
+
+SEM Ty
+  | App             loc     .   appArgIsEmptyImplsL     =   @func.appArgIsEmptyImplsL ++ [@arg.isEmptyImpls]
+  | * - App         lhs     .   appArgIsEmptyImplsL     =   []
 %%]
 

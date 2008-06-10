@@ -16,6 +16,12 @@
 %%[2 hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils})
 %%]
 
+%%[99.LaTeX hs import({%{EH}Base.LaTeX})
+%%]
+
+%%[100 -99.LaTeX
+%%]
+
 %%[3 hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
 %%]
 
@@ -78,7 +84,10 @@ WRAPPER AGItf
 %%[1.PrettyAST ag import({EH/PrettyAST})
 %%]
 
-%%[100 -1.PrettyAST
+%%[99.PrettyLaTeX ag import({EH/PrettyLatexDerivTree})
+%%]
+
+%%[100 -(1.PrettyAST 99.PrettyLaTeX)
 %%]
 
 %%[1.GatherError ag import({EH/GatherError},{EH/ExtraChecks})

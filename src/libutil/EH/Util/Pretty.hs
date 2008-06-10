@@ -12,6 +12,7 @@ module EH.Util.Pretty
   , ppListSep, ppListSepV, ppListSepVV
   , ppBlock, ppBlock'
   , ppCommas, ppCommas'
+  , ppSemis, ppSemis'
   , ppSpaces
   , ppCurlys
   , ppCurlysBlock
@@ -71,6 +72,12 @@ ppCommas = ppListSep "" "" ","
 
 ppCommas' :: PP a => [a] -> PP_Doc
 ppCommas' = ppListSep "" "" ", "
+
+ppSemis :: PP a => [a] -> PP_Doc
+ppSemis = ppListSep "" "" ";"
+
+ppSemis' :: PP a => [a] -> PP_Doc
+ppSemis' = ppListSep "" "" "; "
 
 ppSpaces :: PP a => [a] -> PP_Doc
 ppSpaces = ppListSep "" "" " "

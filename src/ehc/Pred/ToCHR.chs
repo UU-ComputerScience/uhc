@@ -343,7 +343,7 @@ patchUnresolvedWithAssumption env unresCnstrMp evidMp
   where us = mkNewLevUIDL (Map.size unresCnstrMp) $ fiUniq env
         (unresCnstrMp',cannotResCnstrMp)
                       = Map.partitionWithKey canRes unresCnstrMp
-                      where canRes (Prove p) _ = Map.null $ Map.filter tvCatIsFixed $ tyFtvMp $ predTy $ cpoPr p
+                      where canRes (Prove p) _ = Map.null $ Map.filter (tvCatIsFixed . tvinfoCateg) $ tyFtvMp $ predTy $ cpoPr p
                             canRes _         _ = True
         assumeCnstrs  = concat $ zipWith mk (shareUnresolvedAssumptionsByScope $ Map.keys unresCnstrMp') us
                       where mk (Prove p,sc) u = [rngLift emptyRange mkAssumeConstraint (cpoPr p) u sc]
