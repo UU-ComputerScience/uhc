@@ -350,7 +350,7 @@ scheme expr "Expr" =
     explain knTy = ("Expected/known" type of expression)
     explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
   view C =
-    holes [ | thread tyVarMp: VarMp | ]
+    holes [ | thread retain tyVarMp: VarMp | ]
     judgespec kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
     judgeuse tex valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
     explain (Within environment |valGam| , expecting the type of expression |e| to be |tyVarMp.inh knTy| , |e| has type |ty| , under constraints |tyVarMp.syn| .)

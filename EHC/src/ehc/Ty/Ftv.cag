@@ -35,7 +35,11 @@ tyFtvMp ty
      in   tvMp_Syn_TyAGItf t
 
 tyFtv :: Ty -> TyVarIdL
+%%[[4
 tyFtv = Map.keys . tyFtvMp
+%%][9
+tyFtv = Map.keys . Map.filter (\i -> TvPurpose_Ty == (tvinfoPurpose i)) . tyFtvMp
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,12 +63,20 @@ ATTR TyAGItf AllTy  [ | | tvMp USE {`Map.union`} {Map.empty}: TvCatMp ]
 ATTR TyVarCateg [ | | self: SELF ]
 
 SEM Ty
-  | Var             lhs     .   tvMp        =   @tv `Map.singleton` @categ.self
+  | Var             lhs     .   tvMp        =   @tv `Map.singleton` mkTvInfoTy @categ.self
   | Quant
 %%[[11
     Lam
 %%]]
                     lhs     .   tvMp        =   @tv `Map.delete` @ty.tvMp 
+%%]
+
+%%[9
+SEM Pred
+  | Var				lhs		.	tvMp		=	@pv `Map.singleton` mkTvInfoPlain TvPurpose_Pred
+
+SEM Impls
+  | Tail			lhs		.	tvMp		=	@iv `Map.singleton` mkTvInfoPlain TvPurpose_Impls
 %%]
 
 %%[10
@@ -77,12 +89,12 @@ SEM RowExts
 
 %%[13
 SEM PredSeq
-  | Var  			lhs		.	tvMp		=	@av `Map.singleton` TyVarCateg_Plain
+  | Var  			lhs		.	tvMp		=	@av `Map.singleton` mkTvInfoTy TyVarCateg_Plain
 %%]
 
 %%[16
 SEM Pred
-  | Eq              lhs     .  tvMp         =   @tyL.tvMp `Map.union` @tyR.tvMp
+  | Eq              lhs     .   tvMp        =   @tyL.tvMp `Map.union` @tyR.tvMp
 %%]
 
 %%[50

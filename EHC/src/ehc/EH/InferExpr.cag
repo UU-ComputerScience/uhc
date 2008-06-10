@@ -176,7 +176,8 @@ SEM Expr
                                                         in   ([im,at] `mkArrow` @lhs.knTy,im,at)
                 loc         .   ty_                 :=  @lhs.knTy
                 loc         .   (prOccL,implsTl)    =   implsPredsTailWithLkup (varmpImplsLookupCyc2 @arg.tyVarMp) @lhs.predScope $ tyImplsWithLkup (varmpTyLookupCyc2 @arg.tyVarMp) @imTy
-                lhs			.	tyVarMp				=	@prvOccTlVarMp |=> @arg.tyVarMp
+                  			.	tyVarMpApp			=	@prvOccTlVarMp |=> @arg.tyVarMp
+                lhs			.	tyVarMp				=	@tyVarMpApp
 %%]
 
 %%[12.AppImpl
