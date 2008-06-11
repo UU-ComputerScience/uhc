@@ -76,10 +76,12 @@ SEM CExpr
                                            fixvar  = qualvar "fix"
                                            lambda v e = CExpr_Lam v bindMeta e
                                            app f x = CExpr_App f x bindMeta
-                                      in  mkCExprLet CBindRec [mkCBind1Meta fixname CMeta_Val fixbody] fixapp
+                                           nonrecBind = mkCExprLet CBindRec [mkCBind1Meta fixname CMeta_Val fixbody] fixapp
+                                      in mkCExprLet CBindPlain [mkCBind1Meta nm CMeta_Val nonrecBind] @body.cTrf
                                _ -> CExpr_Let @categ @binds.cTrf @body.cTrf
                         else  CExpr_Let @categ @binds.cTrf @body.cTrf
 %%]
+
 
 
 %%[8 hs

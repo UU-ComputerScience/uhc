@@ -7,7 +7,7 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.RenAddSuffix} import(Data.Maybe,Data.Char,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenAddSuffix)
+%%[8 hs module {%{EH}Core.Trf.RenAddSuffix} import(Data.Maybe,Data.Char,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenAddSuffix, CModule(..))
 %%]
 
 %%[8.WRAPPER ag import({Core/AbsSyn})
@@ -108,4 +108,5 @@ addSuffix h _ = h
 
 }
 %%]
+
 

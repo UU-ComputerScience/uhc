@@ -55,7 +55,7 @@
 %%]
 %%[8 import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
-%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict}, {%{EH}Core.Trf.OracleCreation}, {%{EH}Core.Trf.LetFixrec})
+%%[103 import({%{EH}Core.Trf.LetUnMutual}, {%{EH}Core.Trf.DebugStrict}, {%{EH}Core.Trf.OracleCreation}, {%{EH}Core.Trf.LetFixrec}, {%{EH}Core.Trf.RenAddSuffix})
 %%]
 %%[8_2 import({%{EH}Core.Trf.PrettyVarNames})
 %%]
@@ -2405,3 +2405,28 @@ doCompileRun fn opts
 
 %%]
 
+
+%%[[103
+
+forkOracleCreationAndConsumption :: CModule -> CModule
+forkOracleCreationAndConsumption cmodule
+    = let renLazy    = cmodTrfRenAddSuffix "_olazy" cmodule
+          renStrict  = cmodTrfRenAddSuffix "_ostrict" cmodule
+          trfLazy    = cmodTrfOracleCreation renLazy
+          trfStrict  = cmodTrfDebugStrict renStrict
+      -- extract defs
+          -- extract bodies
+          -- combine defs
+          -- call bodies with Prelude.debug_main
+      in undefined
+
+
+
+-- DBGS und ORC zusammenfassen
+{-
+  1. 2x renamen
+  2. beide Transformierte erzeugen
+  3. main durch gemeinsamen Aufruf ersetzen
+
+-}
+%%]]

@@ -96,15 +96,14 @@ SEM CExpr
 
 
 libcallV :: String -> [String] -> CExpr
-libcallV f xs = foldr appV prelfun xs
-    where
-      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
+libcallV f xs = foldr appV (prelfun f) xs
 
 
 libcallE :: String -> [CExpr] -> CExpr
-libcallE f xs = foldr appE prelfun xs
-    where
-      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
+libcallE f xs = foldr appE (prelfun f) xs
+
+prelfun :: String -> CExpr
+prelfun f = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
 
 
 appE :: CExpr -> CExpr -> CExpr
