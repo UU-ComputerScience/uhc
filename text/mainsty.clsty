@@ -689,6 +689,11 @@ Anonymity, blinding things
   , literate={->}{{$\rightarrow$}}1  {\\}{{$\lambda$}}1
   }
 
+\lstdefinelanguage{LLVM}
+  { morekeywords={define,declare,fastcc,add,sub,call,i32,switch,label,ret,nounwind,i8,internal,constant,getelementptr,i1,load}
+  , sensitive={true}
+  }
+
 \lstset{ defaultdialect={[EHC]C} }
 
 \newcommand{\inlCode}[2]{

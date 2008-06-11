@@ -7,7 +7,10 @@ LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe.sil \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe-opt.grin \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex \
-                              $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree_Opt.tex
+                              $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree_Opt.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.c \
+                              $(TEXT_TMP_VARIANT_PREFIX)GetElementPtrExample.ll \
+                              $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.ll  
 
 LLVM_GRIN_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.grin
 LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-013-renameuniform.grin \

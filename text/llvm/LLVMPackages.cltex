@@ -57,5 +57,7 @@
 \usetikzlibrary{shapes,arrows,fit}
 \usetikzlibrary{decorations.pathmorphing}
 
+\usepackage{subfigure}
+
 \usepackage{mainsty}
 %%]
