@@ -34,11 +34,11 @@ For EHC, we generate static executables offline, thus we optimize during compile
 \subsection{Comparing LLVM assembly to native assembly}
 Typed assembly languages abstract over machine properties to provide a machine neutral assembly language. This reflects in the LLVM assembly language, as it looks much like an typical assembly language enriched with some high level features. There are five notable difference between LLVM assembly and native assembly languages: the RISC format, unlimited virtual registers, no stack management, typed values, overloaded operations, and static single assignment form. 
 \begin{itemize}
-  \item The LLVM assembly language is in the Reduced Instruction Set Computer (RISC) format. All parameters of operations are values in registers and the operations do not perform memory access. The seperation of memory access and computations allows for easy generation of code for both RISC and Complex Instruction Set Computer (CISC) based architectures. An added advantage of a RISC representation is that operations have simpler semantics, and thus the analysis and optimizations are simpler.
+  \item The LLVM assembly language is in the Reduced Instruction Set Computer (RISC) format. All parameters of operations are values in registers and the operations do not perform memory access. The separation of memory access and computations allows for easy generation of code for both RISC and Complex Instruction Set Computer (CISC) based architectures. An added advantage of a RISC representation is that operations have simpler semantics, and thus the analysis and optimizations are simpler.
   \item Registers in LLVM are virtual, infinite in amount and size. These virtual registers are mapped to one or more physical machine registers or memory when executable code is generated.
-  \item Stack management issues as function parameter passing, automatic variables and alignment are abstracted over by the language. Calling functions in LLVM assembly is similar as function calling in C. With attributes one can control the calling convention and linkage properties of function calls. Tail calls are performed, if the programmer annotates the call with the keyword 'tail' and the LLVM assembler proves that the call is tail call eligable.
+  \item Stack management issues as function parameter passing, automatic variables and alignment are abstracted over by the language. Calling functions in LLVM assembly is similar as function calling in C. With attributes one can control the calling convention and linkage properties of function calls. Tail calls are performed, if the programmer annotates the call with the keyword 'tail' and the LLVM assembler proves that the call is tail call eligible.
 Stack allocation of automatic variables is done via a LLVM instruction that has the form of C's \texttt{malloc()}. This and other LLVM assembly language instructions are discussed in \refS{sec:llvm-as-lang-instructions}.
-  \item All values and operations in the LLVM assembly language are typed in contrast to values in native assembly. The type system of LLVM assembly consists of integers, floats, pointers, arrays, vectors and structs and the special void type. The integer and float types are parameterized with their size in bits but this can be an arbitrairy positive number. Types in LLVM are not very sophisticated and low level, but are able to represent types of high level languages. Except adding type safety to the LLVM language, the type system is important for the optimizing nature of the project. By typing the program, the optimizations have high level information about the data and are able to perform more aggressive optimizations.
+  \item All values and operations in the LLVM assembly language are typed in contrast to values in native assembly. The type system of LLVM assembly consists of integers, floats, pointers, arrays, vectors and structures and the special void type. The integer and float types are parameterized with their size in bits but this can be an arbitrary positive number. Types in LLVM are not very sophisticated and low level, but are able to represent types of high level languages. Except adding type safety to the LLVM language, the type system is important for the optimizing nature of the project. By typing the program, the optimizations have high level information about the data and are able to perform more aggressive optimizations.
   \item There is a relative small number of operations in the language because most operations are overloaded. In native assembly language, the programmer has to select a different operation for integer addition than for floating point addition. The LLVM assembly compiler is able to infer the correct semantics for the instruction because all parameters of the operations are typed and there are no type coercions in LLVM.
   \item A LLVM assembly program must be in static single assignment (SSA) form. Assignments to a virtual register are allowed exactly at once in the program. The purpose of this requirement is to ease optimizations by not allowing aliases. Often compilers transform their intermediate representation to SSA form before the optimization process, perform the optimizations, and transform back to the intermediate representation. Because LLVM code is optimized during the life time of the program, the LLVM assembly language is in SSA form to avoid transforming back and forth to SSA form constantly.
 \end{itemize}
@@ -58,7 +58,7 @@ Although the LLVM assembly language has high level features compared to native a
 A LLVM module can be divided in 4 parts: meta information, global variables, external function declarations and function definitions.
 Meta information, if needed, is declared at the top of the module. Information stored in the meta declarations define the endiannes of the module and mappings between LLVM types and the physical machine registers. Such a mapping specifies the physical register size and prefered alignment of a LLVM type. These mappings are needed for code generation, but are not known until install time. This explains why the example in \refF{fig:fib-ll} has no meta information attached to it. 
 
-The definitions of the global variables follow the meta information. A global variable is a reference to memory which is allocated staticly. Global variables may be flagged 'constant', making the data stored at the memory immutable and forcing initialization at the same moment as the declaration. In order to destinguish global variables from virtual registers are global variables prefixed with a '@@' symbol. A typical example of a global constant is the variable @@str.res in the example module. This variable stores the first argument to \texttt{printf()} as a global constant. Because @@str.res refers to a memory location, it's type is a pointer to an array of 4 bytes, it must be loaded before it is used, just as data that is allocated dynamicly. The added keyword 'internal' is a linkage modifier, which instructs the linker to use the variable only in the module itself.
+The definitions of the global variables follow the meta information. A global variable is a reference to memory which is allocated staticly. Global variables may be flagged 'constant', making the data stored at the memory immutable and forcing initialization at the same moment as the declaration. In order to distinguish global variables from virtual registers are global variables prefixed with a '@@' symbol. A typical example of a global constant is the variable @@str.res in the example module. This variable stores the first argument to \texttt{printf()} as a global constant. Because @@str.res refers to a memory location, it's type is a pointer to an array of 4 bytes, it must be loaded before it is used, just as data that is allocated dynamicly. The added keyword 'internal' is a linkage modifier, which instructs the linker to use the variable only in the module itself.
 
 The third section of a LLVM module is the declaration of external functions. All functions that are called in the module and that are not defined by the module itself, must be declared. A declaration begins with the keyword 'declare' followed by the type signature of the external function. The example module shows the declaration of the standard C function \texttt{printf()}. The function expects a pointer to a C null terminated string as first parameter plus a variable amount of additional arguments and it returns a integer with the amount of characters printed. LLVM function declarations are comparable to C functions which are declared 'extern'. The actual resolving of the functions declarations to their implementations is performed by the linker.
 
@@ -66,7 +66,7 @@ The section with function definitions is the actual body of the module. A functi
 
 The example module defines 2 functions, @@fib and @@main. The @@fib function receives a 32 bit integer as parameter and returns a integer of the same width. The fast calling convention (fastcc) is specified as the calling convention for the function, making sure that the parameter \%n is passed in a register. Finally the 'nounwind' annotation is added to the signature informing the code generator that no exceptions are thrown. 
 
-The body of @@fib consists of 4 basic blocks, one anonymous block, nEq0, nEq1 and default. The anonymous block is only one instruction, the switch instruction, which transfers control to block nEq0 is \%n equals 0, to nEq1 if \%n equals 1 and to block default for any other value of \%n. Both nEq0 and nEq1 directly return the 32 bit integer 0 and 1 respectivly. More interesting is the block default. One line of C explodes to 6 instructions in the example. Each sub-expression is stored in a virtual register and the computed value of both @@fib calls is stored in virtual register \%tmp5, which is returned at the end of the block.
+The body of @@fib consists of 4 basic blocks, one anonymous block, nEq0, nEq1 and default. The anonymous block is only one instruction, the switch instruction, which transfers control to block nEq0 is \%n equals 0, to nEq1 if \%n equals 1 and to block default for any other value of \%n. Both nEq0 and nEq1 directly return the 32 bit integer 0 and 1 respectively. More interesting is the block default. One line of C explodes to 6 instructions in the example. Each sub-expression is stored in a virtual register and the computed value of both @@fib calls is stored in virtual register \%tmp5, which is returned at the end of the block.
 
 The body of the function @@main starts with a call to @@fib, followed by a indirect cast of the global string @@str.res. As stated before, the type of @@str.res is pointer to an array of 4 bytes. The instruction getelementptr is used to navigate into arrays and structures by indexing. By selecting the $0^{th}$ index twice, we obtain a pointer to the first element of the string. This pointer and the result of the call to @@fib are passed as parameters to \texttt{printf()}. The call performed is annotated as a tail call, there is no need to keep the stack frame of the @@main function.
 
@@ -78,14 +78,14 @@ In this section, we give an overview of a selection of LLVM assembly instruction
 \label{sec:llvm-as-instr-term}
 Terminator instructions transfer control flow from the end of a basic block to another.
 \begin{itemize}
-  \item \texttt{br}: peform a unconditional or conditional jump. 
+  \item \texttt{br}: perform a unconditional or conditional jump. 
   \item \texttt{ret}: return a value from a function.
   \item \texttt{switch}: branch to a label is the value scrutinee is equal to the constant given to that label.
   \item \texttt{unreachable}: no semantics, informs the optimizer that the code is unreachable.
 \end{itemize}
  
 \subsubsection{Binary instructions}
-Binary operators compute a value from two other values. Both argument must have the same type and the type of the result value is equal to the argument type. The binary operators defined in LLVM are all mathimatical operations; addition, substraction, multiplication, quotient (signed and unsigned version) and remainder (signed and unsigned version).
+Binary operators compute a value from two other values. Both argument must have the same type and the type of the result value is equal to the argument type. The binary operators defined in LLVM are all mathematical operations; addition, substraction, multiplication, quotient (signed and unsigned version) and remainder (signed and unsigned version).
 
 \subsubsection{Bitwise binary instructions}
 Bit manipulation is performed by the bitwise binary instructions. Just as binary instructions, the binary bitwise instructions expect 2 arguments with equal types. The produced result is from the same type. The available instructions are bitshifts to the left or the right and bitwise logical operators and, or and xor.
@@ -99,7 +99,7 @@ Bit manipulation is performed by the bitwise binary instructions. Just as binary
 \subsubsection{Memory related instructions}
 The operations in this section allocate, free, read and write values from memory.
 \begin{itemize}
-  \item \texttt{alloca}: allocate memory in the stack frame of the current exectuing function. The memory is automatically released when the stack frame is disposed.
+  \item \texttt{alloca}: allocate memory in the stack frame of the current executing function. The memory is automatically released when the stack frame is disposed.
   \item \texttt{free}: free memory allocated from the heap.
   \item \texttt{getelementptr}: navigate through a memory by using a index in order to obtain the address of a sub-element. 
 
@@ -112,17 +112,26 @@ The operation getelementptr performs only address computation and does not read 
 \end{itemize}
 
 \subsubsection{Conversion instructions}
-The conversion instructions cast a value of one type to a given type. There are 
+The conversion instructions cast a value of one type to a given type. There are two flavours in conversions: conversions that change the bits of the value, and conversions that leave the bits untouched. The bit changing conversions include actions as truncation and extending types. The bit neutral conversions are discussed below.
 \begin{itemize}
-  \item \texttt{bitcast}:
-  \item \texttt{intotptr}:
-  \item \texttt{ptrtoint}:
+  \item \texttt{bitcast}: converts a value to a value of a different type leaving the bits of the value untouched. Bit casts are the only way to escape the LLVM type system and perform type unsafe operations.
+  \item \texttt{intotptr}: converts a integer to a pointer value. If the bit size of the integer and the pointer are not equal, the value is either truncated or zero extended.
+  \item \texttt{ptrtoint}: converts a pointer to a integer value. This operation is the exact opposite of inttoptr.
 \end{itemize}
 
+Often, inttoptr and ptrtoint operations are used with integers and pointers of equal bit size. This allows for interchangeable storage of pointers in memory reserved for integers and vice versa.
+
+\begin{figure}[htbp]
+  \lstinputlisting[style={figureLstFootnote}, language={LLVM}]{PhiExample.ll}
+  \caption{Example of the phi instruction, computing an absolute value}
+ \label{fig:llvm-phi}
+\end{figure}
+
 \subsubsection{Miscellaneous instructions}
+Operations that do not fit in other classifications are grouped under miscellaneous instructions.
 \begin{itemize}
-  \item \texttt{call}:
-  \item \texttt{icmp}:
-  \item\texttt{phi}:
+  \item \texttt{call}: calls a function with the given parameters.
+  \item \texttt{icmp}: compare two integer values and return a boolean, a 1 bit integer, indicating the result. The instruction is able to compare the arguments on equality, inequality, greater then and less then (both signed and unsigned comparison). Often the result to the comparison is used as argument for a conditional branch. 
+  \item\texttt{phi}: implements the $\phi$ node of the SSA graph notation. The result of phi depends on the predecessor of the current basic block. An example is shown in \refF{fig:llvm-phi}, in an implementation of a function that returns an absolute value. First the parameter of the function is compared to zero. If the value is less than zero, the control flow transfers to the basic block labeled true. In this block, the parameter is multiplied by -1, making it a positive value. If the parameter was equal or greater than 0, the branch is taken to the block labeled false. Both basic blocks branch unconditionally to the label return. The return value of the phi instruction depends on the previous basic block. If the previous basic block was the true block, than phi would return the multiplied value. Otherwise if the previous basic block was the false block, the phi instruction returns the original parameter.
 \end{itemize}
 %%]
