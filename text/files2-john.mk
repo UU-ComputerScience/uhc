@@ -25,7 +25,7 @@ LLVM_SILLY_FILES           := $(LLVM_CODE_SRC_PREFIX)FibExe.sil
 LLVM_SILLY_FILES_DEP       := $(LLVM_CODE_SRC_PREFIX)FibExe-205.sil
 
 text-variant-llvm: $(LLVM_THESIS_EXAMPLES)
-	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
+#	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=inclTOC --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=35 \
 	  text-variant-dflt-bib
@@ -46,7 +46,7 @@ $(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_IMG_PREFIX)%
 $(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-012-aliaselim.grin: $(LLVM_CODE_FILES)
 	cd $(LLVM_CODE_SRC_PREFIX) ; \
 	../../../bin/8_2/ehc -clexe --gen-cmt=0 --dump-grin-stages=1 --optimise=1 --priv=1 -p- $< && \
-	sed -i 's/e10/undefined/g' FibExe.core
+	sed -i '56,59d' FibExe.core
 
 $(LLVM_CODE_SRC_PREFIX)FibExe-opt.grin: $(LLVM_CODE_SRC_PREFIX)FibExe-179-final.grin
 	sed -i 's/fun_x_[0-9]\+_//g' $<    ; \

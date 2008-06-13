@@ -38,12 +38,12 @@
   \end{tabular}
 & 
   \begin{tabular}[t]{r}
-  \large \textit{Daily supervisor:} \normalsize \\
-  \svdoaitse \\
-  ~\\
-  \large \textit{Second supervisors:} \normalsize \\
+  \large \textit{Daily supervisors:} \normalsize \\
   \svatze \\
   \svjeroen
+  ~\\
+  \large \textit{Second supervisor:} \normalsize \\
+  \svdoaitse \\
   \end{tabular}
 \end{tabular}
 
