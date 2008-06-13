@@ -57,9 +57,9 @@ SEM LLVMModule
                                        ppAssignment dst ("internal constant" >#< show src)
                                      ) @constants
                                  )
-                             >-< ppPrependList "declare" @fwdDecls.prettySigs
-                             >-< ""
                              >-< ppGlobalList @globals
+                             >-< ""
+                             >-< ppPrependList "declare" @fwdDecls.prettySigs
                              >-< ""
                              >-< vlist @funcs.pretty
  

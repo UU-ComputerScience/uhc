@@ -56,16 +56,12 @@ silly2llvm opts silmod =
                                         , pointerType_Inh_SilModule = ptrType
                                         , globalType_Inh_SilModule = gblType
                                         , gUniq_Inh_SilModule = uidStart
-                                        , opts_Inh_SilModule = opts
                                         } 
                          )
    in llvmCode_Syn_SilModule t
 %%]
 
 %%[8
-ATTR AllNT
-    [ opts : {EHCOpts} | | ]
-
 ATTR SilModule
      [ | | llvmCode : {LLVMModule} ]
 
@@ -94,9 +90,6 @@ ATTR Alternatives
 ATTR Alternative
      [ | | jumpTarget : {(LLVMVar,LLVMVar)} ]  
      
-ATTR AllNT
-     [ gUniq: UID | | ]      
-           
 SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
                                                      ( (@loc.globalResStr,@loc.resConst) : @functions.constants ) 
@@ -138,38 +131,18 @@ SEM SilModule
                                  , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
                                  , LLVMStatement_Return (Constant 0 i32)  
                                  ]                    
-                               
+                                 
 SEM Functions
   | Cons        lhs.llvmCode = @hd.llvmCode : @tl.llvmCode
- 
-                (tl.gUniq, hd.gUniq) = 
-                               mkNewLevUID @lhs.gUniq
   | Nil         lhs.llvmCode = []
-
+  
 SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
                                                          (LLVMExpression_Alloca @lhs.intType 1) ) @locals
-                                   enter  = [ LLVMStatement_Assignment (LocalVar "enter.str" (pLift i8))
-                                                                       (LLVMExpression_GetElemPtr @loc.globalVarEnter [0,0])
-                                            , LLVMStatement_Call stdlibPrintfFuncDecl StdCall 
-                                                                 [ (LocalVar "enter.str" (pLift i8)) ]
-                                            ]
-                                   exit   = [ LLVMStatement_Assignment (LocalVar "exit.str" (pLift i8))
-                                                                       (LLVMExpression_GetElemPtr @loc.globalVarExit [0,0])
-                                            , LLVMStatement_Call stdlibPrintfFuncDecl StdCall 
-                                                                 [ (LocalVar "exit.str" (pLift i8)) ]
-                                            ]
-                                in if ehcOptGenTrace @lhs.opts
-                                   then LLVMFunction_Func @loc.fnDecl Internal $ enter ++ locals ++ (init @body.llvmCode)
-                                                                                 ++ exit ++ [(last @body.llvmCode)]
-                                   else LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
+                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
-                
-                (tl.gUniq, hd.gUniq) = 
-                               mkNewLevUID @lhs.gUniq
-                
   | Nil         lhs.llvmCode = []
   
 SEM Statement
@@ -182,15 +155,9 @@ SEM Statement
   --   * Store
   | Assignment  lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.lhsptrCode ++ @loc.fitsCode ++
                                [LLVMStatement_Store @loc.fitsVar @loc.lhsptrVar] 
-                
-                loc.uniqSeed  : {UID}
-                loc.uniqNr1   : {UID}
-                loc.uniqNr2   : {UID}
-                (loc.uniqSeed, dest.gUniq, source.gUniq) =
-                               mkNewLevUID2 @lhs.gUniq 
-                
+ 
                 loc.(uniqNr1,lhsptrVar,lhsptrCode) =
-                               cast2ptr @loc.uniqSeed @dest.llvmVar @lhs.pointerType
+                               cast2ptr @dest.gUniq @dest.llvmVar @lhs.pointerType
                 loc.(uniqNr2,fitsVar,fitsCode) =
                                makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar                                         
 
@@ -199,16 +166,8 @@ SEM Statement
                                @dest2.llvmCode ++ @loc.dest2ptrCode ++ @loc.fits2Code ++
                                [ LLVMStatement_Store @loc.fits2Var @loc.dest2ptrVar] 
                 
-                loc.uniqSeed  : {UID}
-                loc.uniqNr1   : {UID}
-                loc.uniqNr2   : {UID}
-                loc.uniqNr3   : {UID}
-                loc.uniqNr4   : {UID}
-                (loc.uniqSeed, dest1.gUniq, dest2.gUniq, source.gUniq) =
-                               mkNewLevUID3 @lhs.gUniq 
-                               
                 loc.(uniqNr1,dest1ptrVar,dest1ptrCode) =
-                               cast2ptr @loc.uniqSeed @dest1.llvmVar @lhs.pointerType
+                               cast2ptr @dest2.gUniq @dest1.llvmVar @lhs.pointerType
                 loc.(uniqNr2,dest2ptrVar,dest2ptrCode) =
                                cast2ptr @loc.uniqNr1 @dest2.llvmVar @lhs.pointerType                                        
                 loc.(uniqNr3,fits1Var,fits1Code) =
@@ -221,35 +180,17 @@ SEM Statement
                                              (hs2str @name) @lhs.fnAvailDecls
                                 in @args.llvmCode ++
                                    @loc.castCode ++
-                                   ( if ehcOptGenTrace @lhs.opts
-                                     then ([ LLVMStatement_Assignment @loc.fresh (LLVMExpression_GetElemPtr @loc.global [0,0])
-                                           , LLVMStatement_Call stdlibPrintfFuncDecl StdCall (@loc.fresh : @loc.castVars) ] ++)
-                                     else ([] ++)
-                                   )
                                    [ LLVMStatement_Call fDecl (bool2calltype @tailJumps) @loc.castVars ]
  
-                loc.uniqSeed  : {UID}
-                loc.gUniq     : {UID}
-                (loc.uniqSeed, args.gUniq) =
-                               mkNewLevUID @lhs.gUniq 
-                           
                 -- Some arguments can be pointers and need to be casted
                 -- to inttypes 
                 loc.(uniqNr1,castVars,castCode) =  
                                foldr (\x xs -> let (nr,val,stmt) = cast2int (getUID xs) x @lhs.intType
                                                 in ( nr, val : getVars xs, stmt ++ (getCode xs) ) ) 
-                                     (@loc.uniqSeed,[],[]) @args.llvmVar
+                                     (@args.gUniq,[],[]) @args.llvmVar
 
                 loc.(uniqNr2,fresh) = newFresh @loc.uniqNr1 (pLift i8)
                
-                lhs.constants = if ehcOptGenTrace @lhs.opts
-                                then (@loc.global, @loc.strConst) : @args.constants
-                                else @args.constants
-                loc.(global,strConst) =
-                                string2LLVMString @loc.uniqNr2 $ 
-                                  "Call " ++ hs2str @name ++ "( " ++ 
-                                  concat (Data.List.intersperse ", " (replicate (length @loc.castVars) "%d")) ++ " )\n"    
-                               
   | Comment     lhs.llvmCode = [LLVMStatement_Comment @comment]
 
   | IfThenElse  lhs.llvmCode = @condition.llvmCode ++
@@ -262,42 +203,26 @@ SEM Statement
                                [ LLVMStatement_Branch @loc.resumeLabel
                                , LLVMStatement_Label @loc.resumeLabel]                        
                                                                     
-                loc.uniqSeed  : {UID}
-                loc.uniqNr1   : {UID}
-                loc.uniqNr2   : {UID}
-                loc.uniqNr3   : {UID}
-                (loc.uniqSeed, condition.gUniq, thenpart.gUniq, elsepart.gUniq) =
-                               mkNewLevUID3 @lhs.gUniq 
-                               
                 loc.(uniqNr1, thenLabel) =
-                               newFresh @loc.uniqSeed Label             
+                               newFresh @condition.gUniq Label
                 loc.(uniqNr2, elseLabel) =
-                               newFresh @loc.uniqNr1 Label
+                               newFresh @thenpart.gUniq Label
                 loc.(uniqNr3, resumeLabel) =
-                               newFresh @loc.uniqNr2 Label              
+                               newFresh @elsepart.gUniq Label              
 
   | Switch      lhs.llvmCode = @scrutinee.llvmCode ++
-                               [ LLVMStatement_Switch @scrutinee.llvmVar @loc.defaultLabel @loc.targets ] ++ 
+                               [ LLVMStatement_Switch @scrutinee.llvmVar @loc.defaultLabel @body.jumpTargets ] ++ 
                                @loc.altLLVMStatements ++ @loc.defaultBody ++ 
                                [ LLVMStatement_Branch @loc.resumeLabel] ++
                                [ LLVMStatement_Label  @loc.resumeLabel ]
                     
                 loc.altLLVMStatements = concatMap ( ++ [LLVMStatement_Branch @loc.resumeLabel] ) @body.llvmCode  
                 
-                loc.targets = @body.jumpTargets
-                                                                            
-                loc.uniqSeed  : {UID}
-                loc.uniqNr1   : {UID}
-                loc.uniqNr2   : {UID}
-                (loc.uniqSeed, scrutinee.gUniq, body.gUniq) =
-                               mkNewLevUID2 @lhs.gUniq 
-                               
-                loc.(uniqNr1, resumeLabel) =
-                               newFresh @loc.uniqSeed Label
-                               
-                loc.(uniqNr2, defaultLabel, defaultBody) =
-                               defaultCase @loc.uniqNr1   
-                               
+                loc.(uniqNr1, defaultLabel, defaultBody) =
+                               defaultCase @body.gUniq   
+                loc.(uniqNr2, resumeLabel) =
+                               newFresh @loc.uniqNr1 Label
+
   | Jump        lhs.llvmCode = error $ "Generated jump instructions not allowed"
                                      ++ " in LLVM. Is -g set to 0?"
   
@@ -312,33 +237,21 @@ SEM Statement
                 lhs.llvmCode = error "Unimplemented Statement"
 
 SEM Alternatives
-  | Cons        lhs.llvmCode = @hd.llvmCode : @tl.llvmCode
-                lhs.jumpTargets = 
-                               @hd.jumpTarget : @tl.jumpTargets              
-                (tl.gUniq, hd.gUniq) = 
-                               mkNewLevUID @lhs.gUniq
-                               
-  | Nil         lhs.llvmCode = []
-                lhs.jumpTargets = 
-                               []
+  | Cons        lhs.llvmCode    = @hd.llvmCode : @tl.llvmCode
+                lhs.jumpTargets = @hd.jumpTarget : @tl.jumpTargets              
+  | Nil         lhs.llvmCode    = []
+                lhs.jumpTargets = []
                 
 SEM Alternative
   | Alternative lhs.llvmCode = LLVMStatement_Label @loc.label : @body.llvmCode
                 lhs.jumpTarget = (@when.llvmVar, @loc.label)
                                         
-                loc.uniqSeed  : {UID}
-                loc.gUniq     : {UID}
-                (loc.uniqSeed, body.gUniq) =
-                               mkNewLevUID @lhs.gUniq                     
                 (loc.uniqNr1, loc.label) = 
-                               newFresh @loc.uniqSeed Label              
- 
+                               newFresh @lhs.gUniq Label
+
 SEM Values
   | Cons        lhs.llvmVar  = @hd.llvmVar : @tl.llvmVar
                 lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
-                (tl.gUniq, hd.gUniq) = 
-                               mkNewLevUID @lhs.gUniq
-                               
   | Nil         lhs.llvmVar  = [] 
                 lhs.llvmCode = []       
        
@@ -348,8 +261,7 @@ SEM Value
   -}
   | Alloc       lhs.llvmVar  = @loc.llvmVar
                 lhs.llvmCode = @loc.llvmCode
-                
-                loc.(uniqNr1,llvmVar,llvmCode) =
+                loc.(gUniq,llvmVar,llvmCode) =
                                assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
 
   {-|
@@ -361,18 +273,14 @@ SEM Value
                 lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ @loc.llvmCode
  
                 loc.fnDecl  = LLVMFunctionDecl_LLVMFunctionDecl @name @lhs.intType FixedArgs @loc.formalParams
- 
-                loc.uniqSeed  : {UID}
-                (loc.uniqSeed, args.gUniq) =
-                               mkNewLevUID @lhs.gUniq 
-                           
+                
                 -- Some arguments can be pointers and need to be casted
                 -- to inttypes 
                 loc.(uniqNr1,castVars,castCode) =  
                                foldr (\x xs -> let (nr,val,stmt) = cast2int (getUID xs) x @lhs.intType
                                                 in (nr, val : getVars xs, stmt ++ (getCode xs)) ) 
-                                     (@loc.uniqSeed,[],[]) @args.llvmVar 
-                      
+                                     (@args.gUniq,[],[]) @args.llvmVar 
+
                 -- Assign the call expression to a fresh variable
                 --                     
                 loc.(uniqNr2,llvmVar,llvmCode) =
@@ -396,24 +304,20 @@ SEM Value
   -}                                                                               
   | Var         lhs.llvmVar  = @loc.llvmVar
                 lhs.llvmCode = @var.llvmCode ++ @loc.llvmCode                
-
-                (loc.uniqSeed, var.gUniq) =
-                               mkNewLevUID @lhs.gUniq
-               
+                
                 loc.(uniqNr1,llvmVar,llvmCode) =                
                                if getType @var.llvmVar /= @lhs.intType
-                               then load @loc.uniqSeed @var.llvmVar
-                               else (@loc.uniqSeed,@var.llvmVar,[])                              
+                               then load @var.gUniq @var.llvmVar
+                               else (@var.gUniq,@var.llvmVar,[])                              
 
+  {-|
+    Compare a value to a constant. The value is cast to an integer
+  -}
   | CompareGT   lhs.llvmVar  = @loc.cmpRes
                 lhs.llvmCode = @val.llvmCode ++ @loc.lhsToIntCode ++ @loc.cmpCode
                 
-                (loc.uniqSeed, val.gUniq) =
-                               mkNewLevUID @lhs.gUniq
-                               
                 loc.(uniqNr1, lhsIntVar, lhsToIntCode) =
-                              cast2int @loc.uniqSeed @val.llvmVar @lhs.intType
-                               
+                              cast2int @val.gUniq @val.llvmVar @lhs.intType
                 loc.(uniqNr2, cmpRes, cmpCode) =
                               assign2var @loc.uniqNr1 ( LLVMExpression_Compare CMPSGT @loc.lhsIntVar @con.llvmVar, i1)
                                                             
@@ -447,15 +351,14 @@ SEM Variable
                 
   | Subs        lhs.llvmVar  = @loc.offsetVar
                 lhs.llvmCode = @array.llvmCode ++ @loc.loadCode ++ @loc.ptrCode ++ @loc.offsetCode 
-
-                (loc.uniqSeed, array.gUniq) =
-                               mkNewLevUID @lhs.gUniq
-                         
-                -- Tricky!                      
+                
+                -- Tricky: The variable could be a global indirection or a indirection
+                -- resulting from an alloca. If that is the case, then we need to
+                -- resolve this redirection by loading.
                 loc.(uniqNr1,loadVar,loadCode) =
                                if isGlobal @array.llvmVar || @array.isLocal
-                               then load @loc.uniqSeed @array.llvmVar
-                               else (@loc.uniqSeed, @array.llvmVar, []) 
+                               then load @array.gUniq @array.llvmVar
+                               else (@array.gUniq, @array.llvmVar, []) 
                 loc.(uniqNr2,ptrVar,ptrCode) =
                                cast2ptr @loc.uniqNr1 @loc.loadVar @lhs.pointerType  
                 loc.(uniqNr3,offsetVar,offsetCode) =
@@ -472,6 +375,65 @@ SEM Constant
                                              (error "Alias not in constantmap")
                                              @name @lhs.constantMap 
                                 in Constant value @lhs.intType                                                                 
+%%]
+
+%%[8
+--------------------------------------------------------------------------------
+-- Thread a UID through the program in a way that the numbering follow
+-- the flow of the code.
+--------------------------------------------------------------------------------
+ATTR AllNT     [ | gUniq: UID | ]      
+ 
+SEM SilModule
+  -- The first UID is used by the string constant for the integer result
+  -- (variant 8).
+  | SilModule   functions.gUniq = uidNext @lhs.gUniq 
+
+SEM Statement
+  -- Set the order source -> dest -> local explicit, because this order is
+  -- different from the data type definition.
+  | Assignment  source.gUniq = @lhs.gUniq
+                dest  .gUniq = @source.gUniq
+                lhs   .gUniq = @loc.uniqNr2
+
+  -- Set the order source -> dest1 -> dest2 explicit, because it is differs
+  -- from the data type definition.
+  | Assignment2 source.gUniq = @lhs.gUniq
+                dest1 .gUniq = @source.gUniq
+                dest2 .gUniq = @dest1.gUniq
+                lhs   .gUniq = @loc.uniqNr4
+
+  -- The passing down to the args is performed by the copy rules.
+  | Call        lhs .gUniq   = @loc.uniqNr2
+
+  -- Although the order condition -> thenpart -> elsepart is equal to the order
+  -- set by the datatype, we have to intersperse the code with labels.
+  | IfThenElse  condition.gUniq = @lhs.gUniq
+                thenpart .gUniq = @loc.uniqNr1
+                elsepart .gUniq = @loc.uniqNr2
+                lhs      .gUniq = @loc.uniqNr3
+                       
+  -- The passing from scrutinee to the body is handled by the data type order.
+  | Switch      lhs.      gUniq = @loc.uniqNr2
+
+SEM Alternative
+  -- The order is local (for the label) -> body
+  | Alternative body.gUniq   = @loc.uniqNr1
+
+SEM Value
+  -- Passing to args via copy rule
+  | Call        lhs .gUniq   = @loc.uniqNr3
+  -- Passing to var via copy rule                         
+  | Var         lhs.gUniq    = @loc.uniqNr1
+  -- Passing to val via copy rule.
+  | CompareGT   lhs.gUniq    = @loc.uniqNr2
+  | Offset      lhs.gUniq    = @loc.uniqNr3
+              
+SEM Variable
+  -- Passing to array via copy rule
+  | Subs        lhs  .gUniq  = @loc.uniqNr3
+
+                 
 %%]
 
 %%[8
@@ -524,17 +486,6 @@ ATTR Functions Function
      Constant
      [ | | constants USE {++} {[]}: {[(LLVMVar,LLVMVar)]} ]
 
-SEM Function
-  | Function    lhs.constants      = if ehcOptGenTrace @lhs.opts
-                                     then ( @loc.globalVarEnter, @loc.cStringEnter ) : 
-                                          ( @loc.globalVarExit,  @loc.cStringExit  ) : @body.constants
-                                     else @body.constants
-                loc.(globalVarEnter,cStringEnter) = 
-                                     string2LLVMString @lhs.gUniq $ "[ENTER]" ++ hs2str @name ++ "\n" 
-                
-                loc.(globalVarExit,cStringExit) =
-                                     string2LLVMString (uidNext @lhs.gUniq) $ "[EXIT]" ++ hs2str @name ++ "\n"
-
 SEM Constant
   | LiteralStr  lhs.constants = [ ( @loc.globStrVar , @loc.strConst) ]
                 loc.(globStrVar,strConst) =
@@ -571,7 +522,8 @@ SEM SilModule
 
 %%[8
 --------------------------------------------------------------------------------
--- TODO: Update comment
+-- TODO: Bubble up if a variable is a Local variable. This is needed, because
+-- those are implemented with an address on the stack.
 --------------------------------------------------------------------------------
 ATTR Variable
      [ | | isLocal : {Bool} ]
