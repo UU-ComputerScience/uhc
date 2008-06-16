@@ -31,6 +31,9 @@ ATTR AllExpr   [ env : Env | | grTrf: SELF ]
 
 findNewVar fm e             = Map.findWithDefault e e fm
 
+findNewAltAnn fm (GrAltAnnCalling a nm) = GrAltAnnCalling a (findNewVar fm nm)
+findNewAltAnn fm ann                    = ann
+
 %%]
 
 
@@ -56,6 +59,9 @@ SEM GrExpr
   | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.env @src) (findNewVar @lhs.env @dst)
   | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
+
+SEM GrAlt
+  | Alt         lhs  .  grTrf    =  GrAlt_Alt (findNewAltAnn @lhs.env @ann) @pat.grTrf @expr.grTrf
 
 
 %%]

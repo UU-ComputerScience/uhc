@@ -40,9 +40,6 @@
 %%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[8 hs export(EvApTagElt(..))
-%%]
-
 %%[8 ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag    : Show, Eq
 DERIVING GrTag        : Show
@@ -110,25 +107,16 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 -- Annotation for Grin Alternatives
 --   Normal:  this alternative has classic semantics
 --   Ident:   this alternative just returns the scrutinee, but has classic semantics
+--   Calling: the alternative calls a function
 --   Reenter: this alternative returns a value which has to be scrutinized again against the other alternatives
 
 data GrAltAnn
   = GrAltAnnNormal
   | GrAltAnnIdent
+  | GrAltAnnCalling Int HsName
   | GrAltAnnReenter
   deriving (Eq,Ord,Show)
 
-%%]
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc info passed to backend
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8 hs
-data EvApTagElt   = EvApTagTag GrTag | EvApTagVar HsName | EvApTagUnit | EvApTagThrow deriving (Eq,Show)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

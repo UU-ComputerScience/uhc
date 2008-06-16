@@ -100,6 +100,7 @@ pAlt            =    GrAlt_Alt <$> pAltAnn <*> pPatAlt <* pKey "->" <*> pCurly p
 pAltAnn         ::   GRIParser GrAltAnn
 pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
                      <|>  GrAltAnnIdent   <$ pKey "ident"
+                     <|>  GrAltAnnCalling <$ pKey "calling" <*> pInt <*> pGrNm
                      <|>  GrAltAnnReenter <$ pKey "reenter"
                      <|>  pSucceed GrAltAnnNormal
                      )

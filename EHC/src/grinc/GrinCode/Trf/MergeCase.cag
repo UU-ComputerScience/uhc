@@ -46,14 +46,14 @@ SEM GrExpr
                                     (\(GrExpr_Case val1 alts1)
                                          -> maybe (maybe @loc.grTrf
                                                          (\(GrExpr_Case val2 alts2)
-                                                              -> if   patIsVal @pat.grTrf val2  &&  normalCasesAreNonfinal alts1
+                                                              -> if   patIsVal @pat.grTrf val2  &&  noNormalCases alts1
                                                                  then combineCase val1 val2 alts1 alts2
                                                                  else @loc.grTrf
                                                          )
                                                          @body.mbIsCase
                                                   )
                                                   (\(GrExpr_Case val2 alts2,pat2,rest2) 
-                                                       -> if   patIsVal @pat.grTrf val2  &&  normalCasesAreNonfinal alts1
+                                                       -> if   patIsVal @pat.grTrf val2  &&  noNormalCases alts1
                                                           then let newcase = combineCase val1 val2 alts1 alts2
                                                                in  GrExpr_Seq newcase pat2 rest2
                                                           else @loc.grTrf
@@ -67,6 +67,13 @@ SEM GrExpr
 
 %%[8 hs
 
+
+noNormalCases  :: [GrAlt] -> Bool
+noNormalCases alts
+ = null [ ()
+        | GrAlt_Alt GrAltAnnNormal  (GrPatAlt_Node tag _) _ <- alts
+        ]
+
 normalCasesAreNonfinal :: [GrAlt] -> Bool
 normalCasesAreNonfinal alts
   =  and [ not (isFinalTag tag)
@@ -76,8 +83,8 @@ normalCasesAreNonfinal alts
 combineCase :: GrVal -> GrVal -> [GrAlt] -> [GrAlt] -> GrExpr
 combineCase scrut@(GrVal_Var nm1) (GrVal_Var nm2) alts1 alts2 
    = let -- remove Ident alternatives, and relabel Normal alternatives as Reenter
-         newalts1 = [ GrAlt_Alt GrAltAnnReenter pat expr 
-                    | GrAlt_Alt GrAltAnnNormal  pat expr <- alts1 
+         newalts1 = [ GrAlt_Alt (GrAltAnnReenter     ) pat (if a>0 then (unitUpdate expr nm) else expr)
+                    | GrAlt_Alt (GrAltAnnCalling a nm) pat expr <- alts1 
                     ]
          env = Map.singleton nm2 nm1
      in  substExpr env (GrExpr_Case scrut (newalts1++alts2))
@@ -85,5 +92,11 @@ combineCase scrut@(GrVal_Var nm1) (GrVal_Var nm2) alts1 alts2
 patIsVal :: GrPatLam -> GrVal -> Bool
 patIsVal (GrPatLam_Var nm1) (GrVal_Var nm2) = nm1==nm2
 patIsVal _ _ = False
+
+unitUpdate :: GrExpr -> HsName -> GrExpr
+unitUpdate (GrExpr_Seq e p b) nm = GrExpr_Seq e p (unitUpdate b nm)
+unitUpdate (GrExpr_Unit v)    nm = GrExpr_UpdateUnit nm v
+unitUpdate e                  nm = e
+
 
 %%]
