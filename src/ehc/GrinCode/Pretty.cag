@@ -103,9 +103,10 @@ ppCurlysSemisV pL = vlist pL
 %%]]
 
 ppGrAltAnn :: GrAltAnn -> PP_Doc
-ppGrAltAnn GrAltAnnNormal  = pp ""
-ppGrAltAnn GrAltAnnIdent   = pp "ident "
-ppGrAltAnn GrAltAnnReenter = pp "reenter "
+ppGrAltAnn GrAltAnnNormal         = pp ""
+ppGrAltAnn GrAltAnnIdent          = pp "ident "
+ppGrAltAnn (GrAltAnnCalling a nm) = pp "calling" >#< show a >#< pp nm >#< ""
+ppGrAltAnn GrAltAnnReenter        = pp "reenter "
 
 %%]
 ppGrNm :: PPGrNm
