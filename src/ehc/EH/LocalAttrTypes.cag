@@ -109,6 +109,7 @@ SEM *
 		loc.knRecHasLab  				: Bool
 		loc.knRecTy  					: Ty
 		loc.knTy 						: Ty
+		loc.knTyDown 					: Ty
 		loc.knTyL  						: TyL
 		loc.lClGam  					: ClGam
 		loc.lQuTyGam  					: TyGam
@@ -192,6 +193,7 @@ SEM *
 		loc.tyVarMp  					: VarMp
 		loc.tyVarMpApp					: VarMp
 		loc.tyVarMp_p_  				: VarMp
+		loc.ty_q_2_VarMp  				: VarMp
 		loc.uniq1  						: UID
 		loc.uniq2  						: UID
 		loc.uniq3  						: UID
@@ -201,4 +203,5 @@ SEM *
 		loc.uniq7  						: UID
 		loc.uniq8  						: UID
 		loc.uniq9  						: UID
+		loc.valGam_l_  					: ValGam
 %%]

@@ -329,53 +329,11 @@ SET AllTyAndFlds
 %%]]
 %%]
 
-Less concise version:
-
-%%[1.AllTy
+%%[1
+SET AllTyAGItf
+  = TyAGItf AllButTyAGItf
+%%[[10
+    LabelAGItf
+%%]]
 %%]
-SET AllTyTy         = Ty
-SET AllTy           = AllTyTy
-SET AllTyAndFlds    = AllTy
-
-%%[3.AllTy -1.AllTy
-%%]
-SET AllTyTy         = Ty
-SET AllTy           = AllTyTy
-SET AllTyAndFlds    = AllTy TyVarCateg
-
-%%[4.AllTy -3.AllTy
-%%]
-SET AllTyTy         = Ty
-SET AllTy           = AllTyTy
-SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-
-%%[4_2.AllTy -4.AllTy
-%%]
-SET AllTyTy         = Ty TyL TyPlus TyPlusL
-SET AllTy           = AllTyTy
-SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-
-%%[7_2.AllTy -4.AllTy
-%%]
-SET AllTyTy         = Ty TyExpConstrs TyExpConstr TyExpFields TyExpField
-SET AllTy           = AllTyTy
-SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-
-%%[9.AllTy -4.AllTy
-%%]
-SET AllTyTy         = Ty
-SET AllTy           = AllTyTy Pred Impls
-SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-
-%%[9_1.AllTy -4_2.AllTy
-%%]
-SET AllTyTy         = Ty TyL TyPlus TyPlusL
-SET AllTy           = AllTyTy Pred Impls
-SET AllTyAndFlds    = AllTy TyVarCateg TyQu
-
-%%[10.AllTy -9.AllTy
-%%]
-SET AllTyTy         = Ty
-SET AllTy           = AllTyTy Pred Impls Label
-SET AllTyAndFlds    = AllTy TyVarCateg TyQu
 

@@ -32,7 +32,7 @@
 %%[4 import({%{EH}Error})
 %%]
 
-%%[4_2 import(Maybe) export(varmpMapThrTy,varmpMapTy,varmpDelAlphaRename,varmpFilterAlphaRename,varmpFilterTyAltsMappedBy)
+%%[4_2 import(Maybe) export(varmpDelAlphaRename,varmpFilterAlphaRename,varmpFilterTyAltsMappedBy)
 %%]
 
 %%[4_2 export(tyAsVarMp,varmpTyRevUnit)
@@ -227,7 +227,7 @@ varmpFilterTy :: Ord k => (k -> v -> Bool) -> VarMp' k (VarMpInfo v) -> VarMp' k
 varmpFilterTy f = varmpFilter (\v i -> case i of {VMITy t -> f v t ; _ -> True})
 %%]
 
-%%[4_2.varmpMapThr
+%%[4_2.varmpMapThr export(varmpMapThrTy)
 varmpMapThrTy :: (TyVarId -> Ty -> thr -> (Ty,thr)) -> thr -> VarMp -> (VarMp,thr)
 varmpMapThrTy f thr (VarMp l)
   =  let (l',thr')
@@ -242,7 +242,7 @@ varmpMapTy :: (TyVarId -> Ty -> Ty) -> VarMp -> VarMp
 varmpMapTy f = fst . varmpMapThrTy (\v t _ -> (f v t,())) ()
 %%]
 
-%%[9 -4_2.varmpMapThr
+%%[9 -4_2.varmpMapThr export(varmpMapThr,varmpMapThrTy)
 varmpMapThr :: (TyVarId -> VarMpInfo Ty -> thr -> (VarMpInfo Ty,thr)) -> thr -> VarMp -> (VarMp,thr)
 varmpMapThr f thr (VarMp fm)
   =  let (fm',thr')
@@ -263,6 +263,22 @@ varmpTailAddOcc :: ImplsProveOcc -> Impls -> (Impls,VarMp)
 varmpTailAddOcc o (Impls_Tail i os) = (t, varmpImplsUnit i t)
                                     where t = Impls_Tail i (o:os)
 varmpTailAddOcc _ x                 = (x,emptyVarMp)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Make var counterpart of VarMpInfo, for derivation tree pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99.varmpinfoMkVar export(varmpinfoMkVar)
+varmpinfoMkVar :: TyVarId -> VarMpInfo Ty -> Ty
+varmpinfoMkVar v i
+  = case i of
+      VMITy       t -> mkTyVar v
+      VMIImpls    i -> mkImplsVar v
+      _             -> mkTyVar v					-- rest incomplete
+%%]
+
+%%[100 -99.varmpinfoMkVar
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -523,7 +539,7 @@ ppVarMpV :: VarMp -> PP_Doc
 ppVarMpV = ppVarMp vlist
 %%]
 
-%%[9.ppVarMp -2.ppVarMp
+%%[9.ppVarMp -2.ppVarMp export(ppVarMp)
 ppVarMp :: ([PP_Doc] -> PP_Doc) -> VarMp -> PP_Doc
 ppVarMp ppL (VarMp l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) . Map.toList $ l
 %%]
@@ -531,6 +547,25 @@ ppVarMp ppL (VarMp l) = ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) . Map.toLi
 %%[2.PP
 instance PP VarMp where
   pp = ppVarMp (ppListSepFill "" "" ", ")
+%%]
+
+%%[99.ppVarMpInfoCfgTy export(ppVarMpInfoCfgTy,ppVarMpInfoDt)
+ppVarMpInfoCfgTy :: CfgPPTy -> VarMpInfo Ty -> PP_Doc
+ppVarMpInfoCfgTy c i
+  = case i of
+      VMITy       t -> ppTyWithCfg    c t
+      VMIImpls    i -> ppImplsWithCfg c i
+      VMIScope    s -> pp s						-- rest incomplete
+      VMIPred     p -> pp p
+      VMILabel    x -> pp x
+      VMIOffset   x -> pp x
+      VMIPredSeq  x -> pp "predseq" -- pp x
+
+ppVarMpInfoDt :: VarMpInfo Ty -> PP_Doc
+ppVarMpInfoDt = ppVarMpInfoCfgTy cfgPPTyDT
+%%]
+
+%%[100 -99.ppVarMpInfoCfgTy
 %%]
 
 %%[9

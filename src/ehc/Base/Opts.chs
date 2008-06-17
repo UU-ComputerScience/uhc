@@ -317,7 +317,11 @@ ehcCmdLineOpts
      -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
      -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
      
-     , Option ""    ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
+     ,  Option ""   ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
+%%]]
+%%[[99
+     ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree "f|i")            "emit derivation tree on .lhs file, f=final, i=infer, default=f"
+%%][100
 %%]]
      ]
 %%]
@@ -464,6 +468,14 @@ ehcCmdLineOpts
          oLimitTyBetaRed o l = o { ehcOptTyBetaRedCutOffAt = l }
          oLimitCtxtRed   o l = o { ehcOptPrfCutOffAt       = l }
          oUseInplace     o b = o { ehcOptUseInplace = b }
+%%]]
+%%[[99
+         oDerivTree  ms  o =  case ms of
+                                Just "f"     -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
+                                Just "i"     -> o { ehcOptEmitDerivTree    = DerivTreeWay_Infer  }
+                                Nothing      -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
+                                _            -> o
+%%][100
 %%]]
 %%]
 

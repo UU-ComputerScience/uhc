@@ -61,6 +61,11 @@ ppTy :: Ty -> PP_Doc
 ppTy = ppTyWithCfg cfgPPTyDflt
 %%]
 
+%%[9 hs export(ppImplsWithCfg)
+ppImplsWithCfg :: CfgPPTy -> Impls -> PP_Doc
+ppImplsWithCfg c i = ppTyWithCfg c (Ty_Impls i)
+%%]
+
 %%[99.ppTyDt hs export(ppTyDt)
 ppTyDt :: Ty -> PP_Doc
 ppTyDt = ppTyWithCfg cfgPPTyDT
@@ -207,7 +212,7 @@ instance PP Label where
 %%% Configuration of PP of Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(CfgPPTy)
 data CfgPPTy
   = CfgPPTy
       { cfgPPTyPPHsn                :: HsName -> PP_Doc
@@ -216,6 +221,8 @@ data CfgPPTy
       , cfgPPTyPPVarDflt            :: CfgPPTy -> String -> UID -> PP_Doc
 %%[[9
       , cfgPPTyPPImplsPred          :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+      , cfgPPTyPPImplsTailCons      :: PP_Doc -> PP_Doc -> PP_Doc
+      , cfgPPTyPPImplsAppWrap       :: (PP_Doc -> PP_Doc) -> PP_Doc -> PP_Doc
       , cfgPPTyCtxt                 :: TyCtxt
 %%]]
       , cfgPPTyFollowAST            :: Bool
@@ -248,6 +255,8 @@ cfgPPTyDflt
       , cfgPPTyPPVarDflt            = \cfg pre tv -> cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 %%[[9
       , cfgPPTyPPImplsPred          = \iv pr pv -> iv >|< "=" >|< pr >|< "/" >|< pv
+      , cfgPPTyPPImplsTailCons      = \pr occs -> pr >|< occs
+      , cfgPPTyPPImplsAppWrap       = ($)
       , cfgPPTyCtxt                 = TyCtxt_Ty
 %%]]
       , cfgPPTyFollowAST            = False
@@ -259,13 +268,15 @@ cfgPPTyDflt
 %%]
 
 For derivation trees
-%%[99.cfgPPTyDT hs
+%%[99.cfgPPTyDT hs export(cfgPPTyDT)
 cfgPPTyDT :: CfgPPTy
 cfgPPTyDT
   = cfgPPTyDflt
       { cfgPPTyPPHsn                = pp . hsnQualified
       , cfgPPTyPPCon                = \_ -> ppCon . hsnQualified
       , cfgPPTyPPImplsPred          = \_ pr _ -> pr
+      , cfgPPTyPPImplsTailCons      = \pr _ -> pr
+      , cfgPPTyPPImplsAppWrap       = \_ pr -> pr
       , cfgPPTyElimEmptyImpls       = True
       }
 %%]
@@ -587,14 +598,16 @@ SEM Ty
 %%[9
 SEM Ty
   | Pred Impls      loc     .   wrapPP  =   if cfgPPTyCtxt @lhs.cfg == TyCtxt_Pred then id else (\pp -> hsnOImpl >#< pp >#< hsnCImpl)
-  | Pred            loc     .   pp      =   @wrapPP @pr.pp
-  | Impls           loc     .   pp      =   @wrapPP @impls.pp
+  | Pred            loc     .   pp      =   cfgPPTyPPImplsAppWrap @lhs.cfg @wrapPP @pr.pp
+  | Impls           loc     .   pp      =   cfgPPTyPPImplsAppWrap @lhs.cfg @wrapPP @impls.pp
   | Con             loc     .   pp      :=  if cfgPPTyCtxt @lhs.cfg == TyCtxt_Pred && hsnIsArrow @nm
                                             then cfgPPTyPPCon @lhs.cfg @lhs.cfg hsnPrArrow
                                             else cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
 
 SEM Impls
-  | Tail Cons       loc     .   ppIv    =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "i" @iv) id (tnLookupPP @iv @lhs.tnMap) >|< ppBracketsCommas @proveOccs
+  | Tail Cons       loc     .   ppIv    =   cfgPPTyPPImplsTailCons @lhs.cfg
+                                              (maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "i" @iv) id (tnLookupPP @iv @lhs.tnMap))
+                                              (ppBracketsCommas @proveOccs)
   | Tail            lhs     .   pp      =   @ppIv
   | Cons            loc     .   ppPv    =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "p" (poiId @pv)) id (tnLookupPP @iv @lhs.tnMap)
                     lhs     .   pp      =   cfgPPTyPPImplsPred @lhs.cfg @ppIv @pr.pp @ppPv >|< "," >|< @tl.pp

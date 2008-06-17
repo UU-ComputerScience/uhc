@@ -168,35 +168,41 @@ Variables in types are used for different purposes
 
 %%[9 hs export(TvPurpose(..))
 data TvPurpose
-  = TvPurpose_Ty			-- stands for unknown type, the known humble type variable
-  | TvPurpose_Impls			-- possibly empty sequence of implicit parameters
-  | TvPurpose_Scope			-- predicate scope
-  | TvPurpose_Pred			-- predicate
-  | TvPurpose_AssNm			-- assumed name, in CHR
+  = TvPurpose_Ty TyVarCateg     -- stands for unknown type, the known humble type variable
+  | TvPurpose_Impls             -- possibly empty sequence of implicit parameters
+  | TvPurpose_Scope             -- predicate scope
+  | TvPurpose_Pred              -- predicate
+  | TvPurpose_AssNm             -- assumed name, in CHR
 %%[[10
-  | TvPurpose_Label			-- label, in CHR, for ext records
-  | TvPurpose_Offset		-- offset, in CHR, for ext records
+  | TvPurpose_Label             -- label, in CHR, for ext records
+  | TvPurpose_Offset            -- offset, in CHR, for ext records
 %%]]
 %%[[13
-  | TvPurpose_PredSeq		-- experimental still
+  | TvPurpose_PredSeq           -- experimental still
 %%]]
   deriving (Eq,Ord)
 %%]
 
 %%[9 hs
 instance Show TvPurpose where
-  show TvPurpose_Ty         = "v"
-  show TvPurpose_Impls      = "i"
-  show TvPurpose_Scope      = "s"
-  show TvPurpose_Pred       = "p"
-  show TvPurpose_AssNm      = "a"
+  show (TvPurpose_Ty TyVarCateg_Fixed)  = "c"
+  show (TvPurpose_Ty _               )  = "v"
+  show TvPurpose_Impls                  = "i"
+  show TvPurpose_Scope                  = "s"
+  show TvPurpose_Pred                   = "p"
+  show TvPurpose_AssNm                  = "a"
 %%[[10
-  show TvPurpose_Label      = "l"
-  show TvPurpose_Offset     = "o"
+  show TvPurpose_Label                  = "l"
+  show TvPurpose_Offset                 = "o"
 %%]]
 %%[[13
-  show TvPurpose_PredSeq    = "s"
+  show TvPurpose_PredSeq                = "s"
 %%]]
+%%]
+
+%%[9 hs export(tvpurposeIsTy)
+tvpurposeIsTy (TvPurpose_Ty _) = True
+tvpurposeIsTy _                = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -206,9 +212,9 @@ instance Show TvPurpose where
 %%[4 hs export(TvInfo(..)) 
 data TvInfo
   = TvInfo
-      { tvinfoCateg 	:: !TyVarCateg
+      { tvinfoCateg     :: !TyVarCateg
 %%[[9
-      , tvinfoPurpose	:: !TvPurpose
+      , tvinfoPurpose   :: !TvPurpose
 %%]]
       }
 %%]
@@ -217,7 +223,7 @@ data TvInfo
 emptyTvInfo
   = TvInfo TyVarCateg_Plain
 %%[[9
-           TvPurpose_Ty
+           (TvPurpose_Ty TyVarCateg_Plain)
 %%]]
 %%]
 
@@ -228,7 +234,7 @@ mkTvInfoTy :: TyVarCateg -> TvInfo
 %%[[4
 mkTvInfoTy c = mkTvInfo c
 %%][9
-mkTvInfoTy c = mkTvInfo c TvPurpose_Ty
+mkTvInfoTy c = mkTvInfo c (TvPurpose_Ty c)
 %%]]
 %%]
 
@@ -239,7 +245,7 @@ instance Show TvInfo where
          | otherwise               = "v"
     where cat = tvinfoCateg i
 %%][9
-  show i | pur == TvPurpose_Ty && cat == TyVarCateg_Fixed = "c"
+  show i | pur == TvPurpose_Ty TyVarCateg_Fixed && cat == TyVarCateg_Fixed = "c"
          | otherwise                                      = show pur
     where cat = tvinfoCateg i
           pur = tvinfoPurpose i
@@ -251,8 +257,9 @@ mkTvInfoPlain :: TvPurpose -> TvInfo
 mkTvInfoPlain p = mkTvInfo TyVarCateg_Plain p
 %%]
 
-%%[4 hs export(TvCatMp) 
+%%[4 hs export(TvCatMp,emptyTvCatMp) 
 type TvCatMp = Map.Map TyVarId TvInfo
+emptyTvCatMp = Map.empty
 %%]
 
 %%[4 hs export(tvIsPlain)
@@ -391,8 +398,8 @@ Hence we need to remember all required info except the yet unknown predicate.
 %%[9 hs export(ImplsProveOcc(..),mkImplsProveOcc)
 data ImplsProveOcc
   = ImplsProveOcc
-      { ipoId		:: !UID
-      , ipoScope	:: !PredScope
+      { ipoId       :: !UID
+      , ipoScope    :: !PredScope
       }
   deriving (Eq,Show,Ord)
 
@@ -409,9 +416,9 @@ data PredOcc
   =  PredOcc
        { poPr               :: !Pred
        , poPoi              :: !PredOccId
-       , poScope			:: !PredScope
+       , poScope            :: !PredScope
 %%[[99
-       , poRange			:: !Range
+       , poRange            :: !Range
 %%]]
        }
   deriving (Show,Eq,Ord)
@@ -446,9 +453,9 @@ mkPredOccRng r p i sc = PredOcc p i sc r
 data CHRPredOcc
   =  CHRPredOcc
        { cpoPr               :: !Pred
-       , cpoScope			 :: !PredScope
+       , cpoScope            :: !PredScope
 %%[[99
-       , cpoRange 			 :: !Range
+       , cpoRange            :: !Range
 %%]]
        }
   deriving (Show,Eq,Ord)
@@ -1095,7 +1102,7 @@ predMatchNm p
 %%]
 %%[10 hs
        Pred_Lacks _ (Label_Lab l)  -> hsnPrefix "_Lab_" l
-       Pred_Lacks _ _              -> mkHNm "_LabVar_"		-- necessary? only used by CHR's
+       Pred_Lacks _ _              -> mkHNm "_LabVar_"      -- necessary? only used by CHR's
 %%]
 
 %%[9 hs
@@ -1230,8 +1237,8 @@ labelMbVar _              = Nothing
 
 %%[6 hs export(TyKiKey(..))
 data TyKiKey
-  = TyKiKey_Name 	!HsName
-  | TyKiKey_TyVar	!TyVarId
+  = TyKiKey_Name    !HsName
+  | TyKiKey_TyVar   !TyVarId
   deriving (Eq,Ord)
 
 instance Show TyKiKey where
