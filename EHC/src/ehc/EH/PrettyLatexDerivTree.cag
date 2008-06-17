@@ -33,7 +33,10 @@ jdgMatch opts howmatch opt t1 t2 t res
     else jdg howmatch opt (t1 >#< howmatch >#< t2) empty
 
 jdgStack :: [PP_Doc] -> PP_Doc
-jdgStack l = ltxEnvironmentArgs "array" [pp "c"] (ppListSep "" "" ltxNl l)
+jdgStack l
+  = ltxEnvironmentArgs "array" [pp "c"] $ ppListSep "" "" ltxNl $ hack l
+  where hack [e] = [pp " ",e]
+        hack l   = l
 %%]
 
 %%[99 hs
@@ -149,7 +152,7 @@ SEM Expr
   | App AppImpred
                 func    .   dtFmt       =   "l"
                 arg     .   dtFmt       =   "r"
-  | AppTop      expr    .   dtFmt       =   "b"
+  | AppTop      expr    .   dtFmt       =   "r"
   | Lam         arg     .   dtFmt       =   "n"
                 body    .   dtFmt       =   "b"
 
@@ -189,13 +192,17 @@ SEM AGItf
 SEM Expr
   | Let         (decls.dtNmNr, loc.dtGamNm)
                                         =   dtGamNmNext @lhs.dtNmNr
-  | Lam         (arg.dtNmNr, loc.dtGamNm)
-                                        =   dtGamNmNext @lhs.dtNmNr
+  | Lam         (arg.dtNmNr, loc.dtGamNm, loc.dtVmNmFun)
+                                        =   let (nr1,nm1) = dtGamNmNext @lhs.dtNmNr
+                                                (nr2,nm2) = dtVmNmNext nr1
+                                            in  (nr2,nm1,nm2)
   | TypeAs      (tyExpr.dtNmNr, loc.dtVmNmKnTy, loc.dtVmNmDown)
                                         =   let (nr1,nm1) = dtVmNmNext @lhs.dtNmNr
                                                 (nr2,nm2) = dtVmNmNext nr1
                                             in  (nr2,nm1,nm2)
   | Var Con     (lhs.dtNmNr, loc.dtVmNm)
+                                        =   dtVmNmNext @lhs.dtNmNr
+  | AppTop      (expr.dtNmNr, loc.dtVmNmRes)
                                         =   dtVmNmNext @lhs.dtNmNr
 %%]
 
@@ -215,11 +222,13 @@ dtVmNmNext = dtNmNext dtMkVmNm
 %%]
 
 %%[99
-ATTR AllExpr [ | | dtVarMpL USE {++} {[]} : DtVarMpL ]
+ATTR AllExpr AllPatExpr [ | | dtVarMpL USE {++} {[]} : DtVarMpL ]
 
 SEM Expr
   | Var Con     lhs     .   dtVarMpL    =   [( @dtVmNm, @dtVm )]
   | TypeAs      lhs     .   dtVarMpL    =   [( @dtVmNmKnTy, @dtVmKnTy ), ( @dtVmNmDown, @dtVmDown )] ++ @expr.dtVarMpL
+  | Lam         lhs     .   dtVarMpL    =   [( @dtVmNmFun, @dtVmFun )] ++ @arg.dtVarMpL ++ @body.dtVarMpL
+  | AppTop      lhs     .   dtVarMpL    =   [( @dtVmNmRes, @dtVmRes )] ++ @expr.dtVarMpL
   | Let         lhs     .   dtVarMpL    =   []
 %%]
 
@@ -326,19 +335,34 @@ SEM Expr
                                         =   eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
                 (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMpApp) @arg.dtVarMp @ty
                                             in  (rule @lhs.isTopOfDt @lhs.dtFmt @rlNm [@func.dt,@arg.dt] (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
-  | AppTop      (loc.dtKnTy,expr.dtVarMp)
-                                        =   eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+  | AppTop      (loc.dtKnTy,loc.dtResTy,loc.dtVmRes,expr.dtVarMp)
+                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @resTy
+                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @foKnRes)
+                                            in  (t1,t2,vm3,m3)
                 (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.apptop" [@expr.dt] (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
-  | Lam         (loc.dtKnTy,arg.dtVarMp)
-                                        =   eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.apptop"
+                                                      [ jdgStack [jdgMatch @lhs.opts "<=" empty @dtResTy @dtKnTy empty (pp @dtVmNmRes)]
+                                                      , @expr.dt
+                                                      ]
+                                                      (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
+  | Lam         (loc.dtKnTy,loc.dtFunTy,loc.dtVmFun,arg.dtVarMp)
+                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @funTy
+                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @fo_fitF_)
+                                            in  (t1,t2,vm3,m3)
                 (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.lam" [@arg.dt,@body.dt] (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
+                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.lam"
+                                                      [ jdgStack [jdgMatch @lhs.opts "<=" empty @dtFunTy @dtKnTy empty (pp @dtVmNmFun)]
+                                                      , @arg.dt
+                                                      , @body.dt
+                                                      ]
+                                                      (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
 %%]
 
 %%[99
 SEM AGItf
-  | AGItf       lhs     .   dt          =   l2tDtHeader ["lhs2TeX","afp"] [("deduction",[]),("geometry",[pp "a3paper", pp "landscape"])]
+  | AGItf       lhs     .   dt          =   l2tDtHeader ["lhs2TeX","afp"] [("deduction",[]),("geometry",[pp "a2paper", pp "landscape"])]
                                             >-< vlist [ l2tFormat (ppVarMpInfoDt v) Nothing | (_,v) <- varmpToAssocL @expr.dtVarMp ]
                                             >-< (vlist $ concat [ map (\mk -> l2tFormat (mk v) Nothing) [dtMkGamNm,dtMkVmNm] | v <- [@dtNmNr .. @expr.dtNmNr] ])
                                             >-< ltxDocument
