@@ -10,7 +10,7 @@
 %%[1 module {%{EH}Base.Common} import(UU.Scanner.Position,EH.Util.Utils,{%{EH}Base.HsName},{%{EH}Base.Builtin}) export(module {%{EH}Base.HsName})
 %%]
 
-%%[1 export(Assoc,AssocL, ppAssocL)
+%%[1 export(Assoc,AssocL)
 %%]
 
 %%[1111.exp.hdAndTl export(hdAndTl, hdAndTl')
@@ -106,7 +106,7 @@
 %%[90 export(groupSortByOn)
 %%]
 
-%%[9 export(ppListV,ppAssocLV)
+%%[9 export(ppListV)
 %%]
 
 %%[9 export(snd3,thd)
@@ -624,20 +624,20 @@ type Assoc k v = (k,v)
 type AssocL k v = [Assoc k v]
 %%]
 
-%%[1.ppAssocL
+%%[1.ppAssocL export(ppAssocL)
 ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
 %%]
 
-%%[9.ppAssocL -1.ppAssocL
-ppAssocL' :: (PP k, PP v) => ([PP_Doc] -> PP_Doc) -> AssocL k v -> PP_Doc
-ppAssocL' ppL al = ppL (map (\(k,v) -> pp k >|< ":" >#< pp v) al)
+%%[9.ppAssocL -1.ppAssocL export(ppAssocL,ppAssocL',ppAssocLV)
+ppAssocL' :: (PP k, PP v, PP s) => ([PP_Doc] -> PP_Doc) -> s -> AssocL k v -> PP_Doc
+ppAssocL' ppL sep al = ppL (map (\(k,v) -> pp k >|< sep >#< pp v) al)
 
 ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocL = ppAssocL' (ppBlock "[" "]" ",")
+ppAssocL = ppAssocL' (ppBlock "[" "]" ",") ":"
 
 ppAssocLV :: (PP k, PP v) => AssocL k v -> PP_Doc
-ppAssocLV = ppAssocL' vlist
+ppAssocLV = ppAssocL' vlist ":"
 %%]
 
 %%[20

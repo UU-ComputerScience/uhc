@@ -14,32 +14,37 @@
 %%]
 
 %%[2.WRAPPER ag import({Ty/AbsSyn})
-WRAPPER TyAGItf
+WRAPPER
+  TyAGItf
 %%]
 
 %%[2.tyFtv hs export(tyFtv)
 tyFtv :: Ty -> TyVarIdL
+%%[[2
 tyFtv ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf)
      in   tvs_Syn_TyAGItf t
+%%][4
+tyFtv = Map.keys . tyFtvMp
+%%][9
+tyFtv = Map.keys . Map.filter (\i -> tvpurposeIsTy (tvinfoPurpose i)) . tyFtvMp
+%%]]
 %%]
 
-%%[4.tyFtv -2.tyFtv hs export(tyFtvMp,tyFtv)
+%%[4 hs export(tyFtvMp)
 tyFtvMp :: Ty -> TvCatMp
 tyFtvMp ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf)
      in   tvMp_Syn_TyAGItf t
+%%]
 
-tyFtv :: Ty -> TyVarIdL
-%%[[4
-tyFtv = Map.keys . tyFtvMp
-%%][9
-tyFtv = Map.keys . Map.filter (\i -> TvPurpose_Ty == (tvinfoPurpose i)) . tyFtvMp
-%%]]
+%%[99 hs export(implsFtvMp)
+implsFtvMp :: Impls -> TvCatMp
+implsFtvMp i = tyFtvMp (Ty_Impls i)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +64,9 @@ SEM Ty
 %%]
 
 %%[4 -(2.TyFtv 3.TyFtv)
-ATTR TyAGItf AllTy  [ | | tvMp USE {`Map.union`} {Map.empty}: TvCatMp ]
+ATTR
+  TyAGItf AllTy
+    [ | | tvMp USE {`Map.union`} {Map.empty}: TvCatMp ]
 ATTR TyVarCateg [ | | self: SELF ]
 
 SEM Ty

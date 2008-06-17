@@ -72,6 +72,19 @@ ftvClosureSet varmp x
         (fvs,_,mcyc) = varmpClosure (`Set.member` fv) ftvSet varmp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substitutable like computations, partially implemented
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(varmpinfoFtvMp)
+varmpinfoFtvMp :: VarMpInfo Ty -> TvCatMp
+varmpinfoFtvMp i
+  = case i of
+      VMITy       t  -> tyFtvMp    t
+      VMIImpls    i  -> implsFtvMp i
+      _              -> emptyTvCatMp		-- incomplete
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
