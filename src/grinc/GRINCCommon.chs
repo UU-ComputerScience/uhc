@@ -180,7 +180,7 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(HptMap, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[8 export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap        = (Array Int AbstractValue, Array Int AbstractValue, Map.Map Int AbstractValue)
 
@@ -200,6 +200,9 @@ showHptMap (ae, ah, aex)
                 )
              )
      
+
+getBaseEnvList :: HptMap -> [(Int,AbstractValue)]
+getBaseEnvList (ae,_,_) = assocs ae
      
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar (ea,_,m) i  | snd (bounds ea) >= i = (ea ! i)

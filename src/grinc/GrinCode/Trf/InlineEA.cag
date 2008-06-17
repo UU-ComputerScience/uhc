@@ -33,7 +33,7 @@ WRAPPER GrAGItf
 %%]
 %%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getNr, absFetch, getEnvVar, getNodes, addEnvVar, addEnvVars, throwTag, AbstractValue(..))})
+%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvVar, addEnvVars, throwTag, AbstractValue(..))})
 %%]
 %%[8 hs import(Debug.Trace)
 %%]
@@ -55,6 +55,10 @@ inlineEA doUsageAnalysis (code,unique,hptMap)
 
 
 %%[8 hs
+
+getLocs :: AbstractValue -> [Int]
+getLocs AbsBottom = []
+getLocs (AbsLocs xs _) = Set.toList xs
 
 maximum0 [] = 0
 maximum0 xs = maximum xs
@@ -296,7 +300,10 @@ SEM GrModule
   | Mod   bindL.origHptMap = @lhs.hptMap
 
 ATTR AllBind
-     AllGrExpr     [ needsUpdate : {Map.Map Int Bool} | | ]
+     AllGrExpr     [ needsUpdate : {Map.Map Int Bool} 
+                   | 
+                   | 
+                   ]
 
 
 ATTR AllBind
@@ -305,9 +312,7 @@ ATTR AllBind
                          possibleArguments USE {`mapUnionWithCat` } {Map.empty} :  {Map.Map Int [Int]} 
                    ]
 
---ATTR GrAGItf
---     GrModule      [ | | updateNeeded                : {Map.Map Int Bool} ]     
-ATTR AllGlobal     [ | | updateNeeded  USE {++} {[]} : {[(Int,Bool)]}     ]     
+ATTR AllGlobal     [ | | updateNeededList  USE {++} {[]} : {[(Int,Bool)]}     ]     
 ATTR GrTag
      GrVal         [ | | updateNeeded : {Bool} ]
      
@@ -329,38 +334,31 @@ SEM GrVal
 
 
 {
-
-
-pipo hptMap nm vl = 
+possibleArgumentsOfApplication hptMap nm vl = 
     let nodeAbsVal = getEnvVar hptMap (getNr nm)
         nodes = filter isPartialApplication (getNodes nodeAbsVal)
         ms = [  (let  nvl = length vl
                       vl1 = take needs vl
                       vl2 = drop needs vl
-                      eerste = Map.fromList (zip [getNr name+2+length args..] vl1)
+                      first = Map.fromList (zip [getNr name+2+length args..] vl1)
                  in   (if   nvl<=needs
-                       then eerste
-                       else Map.unionWith (++) eerste (pipo hptMap name vl2)
+                       then first
+                       else Map.unionWith (++) first (possibleArgumentsOfApplication hptMap name vl2)
                       )
                 )
              | (GrTag_PApp needs name, args) <- nodes 
              ]
     in  Map.unionsWith (++) ms
-
 }
 
 
 SEM GrExpr
   | Call         lhs.possibleArguments = let n = getNr @nm
                                          in  Map.fromList (zip [n+2..] @argL.varLists)
-  | App          lhs.possibleArguments = pipo @lhs.origHptMap @nm @argL.varLists
-                                         --let nodeAbsVal = getEnvVar @lhs.origHptMap (getNr @nm)
-                                         --    nodes = filter isPartialApplication (getNodes nodeAbsVal)
-                                         --    ms = [ Map.fromList (zip [getNr name+2+length args..] @argL.varLists)  | (GrTag_PApp _ name, args) <- nodes ]
-                                         --in  Map.unionsWith (++) ms
+  | App          lhs.possibleArguments = possibleArgumentsOfApplication @lhs.origHptMap @nm @argL.varLists
 
 SEM GrGlobal
-  | Global       lhs.updateNeeded  =  [(getNr @nm, @val.updateNeeded)]
+  | Global       lhs.updateNeededList  =  [(getNr @nm, @val.updateNeeded)]
 
 
 
@@ -398,10 +396,20 @@ SEM GrVal
   | *-Var   lhs.varList  = []
 
 
-
 SEM GrModule
-  | Mod     bindL.needsUpdate  =  let un1 = Map.union (Map.fromList @globalL.updateNeeded)  
-                                                      (Map.map (>1) @bindL.textualUses)  -- exploits left-biased union: for globals, the numer of uses is not important, only whether they are bound to an F/A-tag or not.
+  | Mod     bindL.needsUpdate  =  let updatableLocationsSet = Set.fromList [ head (getLocs (getEnvVar @lhs.hptMap x))
+                                                                           | (x,True) <- @globalL.updateNeededList
+                                                                           ]
+            
+                                      globalUpdateNeededMap =  Map.fromList @globalL.updateNeededList
+                                      multipleUsageMap      =  Map.map (>1) @bindL.textualUses
+                                      holdsUpdatableLocMap  =  Map.fromList [ (x,True)
+                                                                            | (x, AbsLocs ls _) <- getBaseEnvList @lhs.hptMap
+                                                                            , not (Set.null (Set.intersection ls updatableLocationsSet))
+                                                                            ]
+            
+                                      un1 = Map.union globalUpdateNeededMap (Map.union holdsUpdatableLocMap multipleUsageMap)
+                                                      -- exploits left-biased union: for globals, the numer of uses is not important, only whether they are bound to an F/A-tag or not.
 
                                       pa = @bindL.possibleArguments
                                       step un = let f n b = maybe b
