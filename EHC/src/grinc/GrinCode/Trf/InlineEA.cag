@@ -39,9 +39,12 @@ WRAPPER GrAGItf
 %%]
 
 %%[8 hs
-inlineEA :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-inlineEA (code,unique,hptMap)
-  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, unique_Inh_GrAGItf=unique}
+inlineEA :: Bool -> (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
+inlineEA doUsageAnalysis (code,unique,hptMap)
+  = let inh = Inh_GrAGItf { hptMap_Inh_GrAGItf=hptMap
+                          , unique_Inh_GrAGItf=unique
+                          , doUsageAnalysis_Inh_GrAGItf=doUsageAnalysis
+                          }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
         grTrf  = grTrf_Syn_GrAGItf syn
         unique2 = unique_Syn_GrAGItf syn
@@ -266,12 +269,12 @@ applyCode unique hptMap nodeName appArgs
 ATTR GrAGItf
      GrModule
      AllBind
-     AllGrExpr     [ | unique: Int  hptMap: HptMap | ]
+     AllGrExpr     [ doUsageAnalysis : Bool | unique: Int  hptMap: HptMap | ]
 ATTR GrAGItf       [ | | grTrf: GrModule ]
 ATTR AllNT         [ | | grTrf: SELF ]
 
 SEM GrExpr
-  | Eval  loc.(unique, hptMap, grTrf)  =  evalCode  @lhs.unique @lhs.hptMap @nm (Map.findWithDefault True (getNr @nm) @lhs.needsUpdate)
+  | Eval  loc.(unique, hptMap, grTrf)  =  evalCode  @lhs.unique @lhs.hptMap @nm (if @lhs.doUsageAnalysis then (Map.findWithDefault True (getNr @nm) @lhs.needsUpdate) else True)
   | App   loc.(unique, hptMap, grTrf)  =  applyCode @lhs.unique @lhs.hptMap @nm @argL.grTrf
 
 %%]

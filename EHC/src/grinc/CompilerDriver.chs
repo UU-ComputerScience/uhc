@@ -103,7 +103,9 @@ doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
   = drive (initialState opts input) putErrs $
         do 
-         { when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
+         { options <- gets gcsOpts
+
+         ; when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-112-cleaned"
@@ -119,7 +121,8 @@ doCompileGrin input opts
          ; transformCodeUnq      normForHPT         "NormForHPT"
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-normalized"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
-         ; transformCodeUnqHpt   inlineEA           "InlineEA" 
+         ; transformCodeUnqHpt   (inlineEA (ehcOptPriv options))
+                                                    "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
          ; transformCodeUsingHpt dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
@@ -139,7 +142,6 @@ doCompileGrin input opts
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
-         ; options <- gets gcsOpts
          ; when (ehcOptEmitLLVM options || ehcOptEmitC options)
            ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
