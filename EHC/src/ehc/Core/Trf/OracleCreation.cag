@@ -36,6 +36,10 @@ cmodTrfOracleCreation cmod
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
+%%%
+%%% We have to move all FFI declarations to the outermost level, because otherwise
+%%% invalid GRIN code will be generated.
+%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -43,6 +47,23 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 ATTR AllExpr [ moduleNm : {HsName} | | ]
+
+ATTR AllExpr [ isHead : {Bool} | | ]
+
+
+
+SEM CModule
+    | Mod expr . isHead   = True
+
+SEM CExpr
+    | Let binds.isHead  = False
+
+
+
+ATTR AllExpr [ | | ffiDecls USE {++} {[]}: CBindL ]
+
+SEM CBind
+    | FFI  lhs . ffiDecls = [CBind_FFI @callconv @safety @impEnt @nm @ty]
 
 %%]
 
@@ -54,7 +75,7 @@ ATTR AllExpr [ moduleNm : {HsName} | | ]
 
 %%[8
 
-ATTR CExpr AllBind [  | | whnf USE {&&} {False}: {Bool} ]
+ATTR CExpr AllBind [  | | whnf USE {&&} {True}: {Bool} ]
 
 SEM CExpr
     | Lam      lhs. whnf = True
@@ -64,33 +85,38 @@ SEM CExpr
 
 SEM CModule
     | Mod expr . moduleNm = @moduleNm
-    | Mod loc  . cTrf     =  let expr' = letS "o" (libcall "primInitOracle" [])
-                                         (letS "r" @expr.cTrf
-                                          (letS "l" (libcall "primDumpOrace" [])
-                                           (libcall "print" ["l"])
+    | Mod loc  . cTrf     =  let expr' = CExpr_Let CBindPlain @expr.ffiDecls
+                                         (letS "x_o" (libcall @moduleNm "primInitOracle" [])
+                                         (letS "x_r" @expr.cTrf
+                                          (letS "x_l" (libcall @moduleNm "primDumpOracle" [])
+                                           (libcall @moduleNm "print" ["x_l"])
                                           )
-                                         )
-                             in CModule_Mod @moduleNm  @expr.cTrf @ctagsMp
+                                         ))
+                             in CModule_Mod @moduleNm  expr' @ctagsMp
                              
 
 SEM CExpr
-    | App         loc         .   cTrf = strictifyApp @func.cTrf @arg.cTrf @argMeta.cTrf
-    | Let         loc         .   cTrf = let tr = trace (show $ CExpr_Let @categ @binds.cTrf @body.cTrf)
-                                         in case @categ of
-                                              CBindRec   
-                                                        -> trace ("recursive bind in DBGS stage")
-                                                           $ CExpr_Let @categ @binds.cTrf @body.cTrf
-                                              CBindPlain ->
-                                                  case @binds.cTrf of
-                                                    []  -> @body.cTrf
-                                                    [CBind_Bind v m e]
-                                                        | not @binds.whnf && False
-                                                        -> strictifyLet v m e @body.cTrf
-                                                    [_] -> CExpr_Let @categ @binds.cTrf @body.cTrf
-                                                    _   -> error "Core.Trf.DBGS: more than one bind in plain let"
-                                              _           ->
-                                                  CExpr_Let @categ @binds.cTrf @body.cTrf
-                                                           
+    | App    loc   .   cTrf = strictifyApp @lhs.moduleNm @func.cTrf @arg.cTrf @argMeta.cTrf
+    | Let    loc   .   cTrf = let tr = trace (show $ CExpr_Let @categ @binds.cTrf @body.cTrf)
+                                  binds = filter noFFI @binds.cTrf
+                                  noFFI (CBind_FFI _ _ _ _ _) = False
+                                  noFFI _               = True
+                              in if null binds then
+                                     @body.cTrf
+                                 else case @categ of
+                                        CBindPlain ->
+                                            case binds of
+                                              []  -> @body.cTrf
+                                              [CBind_Bind v m e]
+                                                | not @binds.whnf -- && False
+                                                    -> strictifyLet @lhs.moduleNm v m e @body.cTrf
+                                              [_] -> CExpr_Let @categ binds @body.cTrf
+                                              _   -> error $ "Core.Trf.ORC: more than one bind in plain let"
+                                                     ++ show binds
+                                        _  ->  -- if the bound expr is in whnf, then it may be recursive
+                                             CExpr_Let @categ binds @body.cTrf
+
+
 %%]
 
 
@@ -112,14 +138,14 @@ SEM CExpr
             in primOracleLeave o2 r)
 
 -}
-strictifyApp :: CExpr -> CExpr -> CMeta -> CExpr
-strictifyApp f x m
-    = letS "o" newEntry 
+strictifyApp :: HsName -> CExpr -> CExpr -> CMeta -> CExpr
+strictifyApp m f x meta
+    = letS "o" (newEntry m)
       (CExpr_App f 
-       (letS "o2" (enterOrc "o")
+       (letS "o2" (enterOrc m "o")
         (letS "r" x
-         (leaveOrc "o2" "r")))
-       m)
+         (leaveOrc m "o2" "r")))
+       meta)
 
 
 {-
@@ -135,42 +161,42 @@ strictifyApp f x m
                  in primOracleLeave o2 r
       in e2
 -}
-strictifyLet :: HsName -> CMeta -> CExpr -> CExpr -> CExpr
-strictifyLet v m e1 e2 
-    = let inner = letS "o2" (enterOrc "o")
+strictifyLet :: HsName -> HsName -> CMeta -> CExpr -> CExpr -> CExpr
+strictifyLet m v meta e1 e2 
+    = let inner = letS "o2" (enterOrc m "o")
                   (letS "r" e1
-                   (leaveOrc "o2" "r"))
-      in letS "o" newEntry
+                   (leaveOrc m "o2" "r"))
+      in letS "o" (newEntry m)
              (letL v inner
                    e2)
 
+-- qualify q n = hsnSetQual q $ hsnFromString n
 
-qualify :: String -> HsName
-qualify n = hsnFromString n
 
 localVar :: String -> CExpr
-localVar s = CExpr_Var $ qualify s
+localVar s = CExpr_Var $ hsnFromString s
 
 letS :: String -> CExpr -> CExpr -> CExpr
-letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind (qualify v) CMeta_Val e1] e2
+letS v e1 e2 = CExpr_Let CBindStrict [CBind_Bind (hsnFromString v) CMeta_Val e1] e2
 
 letL :: HsName -> CExpr -> CExpr -> CExpr
 letL v e1 e2 = CExpr_Let CBindPlain [CBind_Bind v CMeta_Val e1] e2
 
-dumpOrc, newEntry :: CExpr
-dumpOrc   = libcall "primDumpOracle" []
-newEntry  = libcall "primOracleNewEntry" []
+dumpOrc, newEntry :: HsName -> CExpr
+dumpOrc  m = libcall m "primDumpOracle" []
+newEntry m = libcall m "primOracleNewEntry" []
 
-enterOrc :: String -> CExpr
-enterOrc x = libcall "primOracleEnter" [x]
+enterOrc :: HsName -> String -> CExpr
+enterOrc m x = libcall m "primOracleEnter" [x]
 
-leaveOrc :: String -> String -> CExpr
-leaveOrc x y = libcall "primOracleLeave" [x, y]
+leaveOrc :: HsName -> String -> String -> CExpr
+leaveOrc m x y = libcall m "primOracleLeave" [x, y]
 
-libcall :: String -> [String] -> CExpr
-libcall f xs = foldr appV prelfun xs
+libcall :: HsName -> String -> [String] -> CExpr
+libcall modname f xs = foldr appV prelfun xs
     where
-      prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
+      -- prelfun = CExpr_Var $ mkHNm $ map hsnFromString ["EHC", "Prelude", f]
+      prelfun = CExpr_Var $ hsnSetQual modname $ hsnFromString f
       appV :: String -> CExpr -> CExpr
       appV v f = CExpr_App f (localVar v) CMeta_Val
 }

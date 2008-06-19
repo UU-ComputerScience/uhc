@@ -63,40 +63,48 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%% alpha renaming so all identifiers are unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
-type ARenMp = Map.Map HsName HsName
-%%]
-
-
 %%[8
 
 SEM CPat
-  | Var Con     loc         .   nm          =   @pnm
-                loc         .   nm          :   {HsName}
+  | *           loc  .  nm     =   @pnm
+                loc  .  nm     :   {HsName}
 
-%%]
 
-%%[8
 SEM CExpr
-  | Var         lhs         .   cTrf        =   CExpr_Var (addSuffix @nm @lhs.suffix)
-  | Lam         lhs         .   cTrf        =   CExpr_Lam (addSuffix @arg @lhs.suffix) @argMeta.cTrf @body.cTrf
+  | Var         lhs  .  cTrf   =   CExpr_Var (addSuffix @nm @lhs.suffix)
+  | Lam         lhs  .  cTrf   =   CExpr_Lam (addSuffix @arg @lhs.suffix) @argMeta.cTrf @body.cTrf
+  | TupDel      lhs  .  cTrf   =   let nm' = addSuffix @nm @lhs.suffix
+                                   in CExpr_TupDel @expr.cTrf @tag nm' @offset.cTrf
+  | TupIns      lhs  .  cTrf   =   let nm' = addSuffix @nm @lhs.suffix
+                                   in CExpr_TupIns @expr.cTrf @tag nm' @offset.cTrf @fldExpr.cTrf
+  | TupUpd      lhs  .  cTrf   =   let nm' = addSuffix @nm @lhs.suffix
+                                   in CExpr_TupUpd @expr.cTrf @tag nm' @offset.cTrf @fldExpr.cTrf
 
 SEM CBind
-  | Bind        lhs         .   cTrf        =   CBind_Bind (addSuffix @nm @lhs.suffix) @bindMeta.cTrf @expr.cTrf
+  | Bind        lhs  .  cTrf   =   let nm' = addSuffix @nm @lhs.suffix
+                                   in CBind_Bind nm' @bindMeta.cTrf @expr.cTrf
+  | FFI         lhs  .  cTrf   =   let nm' = addSuffix @nm @lhs.suffix
+                                   in CBind_FFI  @callconv @safety @impEnt nm' @ty
+  | FFE         lhs  .  cTrf   =   let nm' = addSuffix @nm @lhs.suffix
+                                   in CBind_FFE nm' @callconv @expEnt @expNm @ty
 
 SEM CPatBind
-  | Bind        lhs         .   cTrf        =   CPatBind_Bind @lbl @offset.cTrf (addSuffix @nm @lhs.suffix) @pat.cTrf
+  | Bind        lhs  .  cTrf   =   CPatBind_Bind @lbl @offset.cTrf (addSuffix @nm @lhs.suffix) @pat.cTrf
 
 SEM CPat
-  | Var         lhs         .   cTrf        =   CPat_Var (addSuffix @nm @lhs.suffix)
-  | Con         lhs         .   cTrf        =   CPat_Con (addSuffix @nm @lhs.suffix) @tag @rest.cTrf @binds.cTrf
+  | Var         lhs  .  cTrf   =   CPat_Var (addSuffix @nm @lhs.suffix)
+  | Con         lhs  .  cTrf   =   CPat_Con (addSuffix @nm @lhs.suffix) @tag @rest.cTrf @binds.cTrf
+  | Int         lhs  .  cTrf   =   CPat_Int (addSuffix @nm @lhs.suffix) @int
+  | Char        lhs  .  cTrf   =   CPat_Char (addSuffix @nm @lhs.suffix) @char
 
 SEM CPatRest
-  | Var         lhs         .   cTrf        =   CPatRest_Var (addSuffix @nm @lhs.suffix)
+  | Var         lhs  .  cTrf   =   CPatRest_Var (addSuffix @nm @lhs.suffix)
 
 {
 
--- XXX is this right?
+addSuffix = hsnSuffix
+
+{-
 addSuffix :: HsName -> String -> HsName
 addSuffix (HNm s) suf = HNm $ s ++ suf 
 addSuffix (HNmQ ns@(_:_)) suf
@@ -104,7 +112,7 @@ addSuffix (HNmQ ns@(_:_)) suf
       where repLast [s]    = [addSuffix s suf]
             repLast (s:ss) = s : repLast ss
 addSuffix h _ = h
-
+-}
 
 }
 %%]

@@ -77,7 +77,9 @@ SEM CExpr
                                                   case @binds.cTrf of
                                                     []  -> @body.cTrf
                                                     [CBind_Bind v m e]
-                                                        | not @binds.whnf && False 
+                                                        | not @binds.whnf &&
+                                                          not (isProtected v) &&
+                                                              m ==CMeta_Val
                                                           -- XXX only non-DICT
                                                         -> let lambody = CExpr_Lam v m @body.cTrf
                                                            in libcallE "bindOracleStrict" [e, lambody]
@@ -119,5 +121,13 @@ localVar s = CExpr_Var $ qualify s
 qualify :: String -> HsName
 qualify n = hsnFromString n
 
+
+{-
+  returns True if the argument is a Prelude function that may not
+  be transformed to a strict version (because the transformed version
+  uses it internally)
+-}
+isProtected :: HsName -> Bool
+isProtected _ = False
 }
 %%]

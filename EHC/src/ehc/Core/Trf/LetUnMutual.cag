@@ -66,6 +66,18 @@ ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
 
 SEM CBind
   | Bind        lhs         .   bindMp      =   @nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
+
+
+
+ATTR CExpr AllBind [  | | whnf USE {&&} {False}: {Bool} ]
+
+SET WHNF = Lam Tup Int Char String
+
+SEM CExpr
+    | Lam Tup Int Char String      lhs. whnf = True
+    | * - Lam Tup Int Char String  lhs. whnf = False
+
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,15 +87,15 @@ SEM CBind
 %%[8
 SEM CExpr
     | Let  loc  .  cTrf
-               =   if @categ == CBindRec
+               =   if @categ == CBindRec && not @binds.whnf
                    then  let  mk n b = let (e,m) = rhs n
                                          in mkCExprLet CBindPlain [ mkCBind1Meta n m e] b
                               mkLets = foldr mk
                               (bs, rs, fbs) 
-                                  = feedbackSet @body.fvS @binds.fvSMp
+                                  = trc "fbs" $ feedbackSet @body.fvS @binds.fvSMp
                               rhs x = let err= error "internal error"
                                       in  Map.findWithDefault err x @binds.bindMp
-                              recname = qualify @lhs.moduleNm "r"
+                              recname = hsnFromString "_letunmutual_r"
                               recs  = mkFbSelectors recname fbs $ mkLets (feedbackTuple rhs fbs) rs
                               body  = mkFbSelectors recname fbs $ mkLets @body.cTrf  bs
                          in mkCExprLet CBindRec [mkCBind1Meta recname CMeta_Val recs] body
@@ -123,16 +135,16 @@ fbPat fbs = mkCPatCon (CTagRec) (length fbs) (Just fbs)
 
   case rec of (Tup f1 f2 .. fn) -> v
 -}
-mkFeedbackRhs :: HsName -> HsName -> [HsName] -> CExpr
-mkFeedbackRhs r v [fv] = CExpr_Var r
-mkFeedbackRhs r v fvs = CExpr_Case (CExpr_Var r) [alt] (preludeVar "undefined")
+mkFeedbackSelector :: HsName -> HsName -> [HsName] -> CExpr
+mkFeedbackSelector r v [fv] = CExpr_Var r
+mkFeedbackSelector r v fvs = CExpr_Case (CExpr_Var r) [alt] (preludeVar "undefined")
     where alt :: CAlt
           alt = CAlt_Alt (fbPat fvs) (CExpr_Var v)
 
 
 {-
   surrounds the body with defintions for the
-  feebback vars:
+  feedback vars:
 
   let f1 = case r of (Tup f1 ..) -> f1
   in let f2 = case r of (Tup f1 f2 ..) -> f2
@@ -140,7 +152,7 @@ mkFeedbackRhs r v fvs = CExpr_Case (CExpr_Var r) [alt] (preludeVar "undefined")
 -}
 mkFbSelectors :: HsName -> [HsName] -> CExpr -> CExpr
 mkFbSelectors v fbs body = foldr mkFbLet body fbs
-    where mkFbLet f b = let e = mkFeedbackRhs v f fbs
+    where mkFbLet f b = let e = mkFeedbackSelector v f fbs
                             m = CMeta_Val
                         in mkCExprLet CBindPlain [ mkCBind1Meta f m e] b
 
@@ -182,14 +194,6 @@ feedbackSet pulling deps = let sccs      = sccFromMap deps (Map.keys deps)
 
 
 
-qualify :: HsName -> String -> HsName
-qualify q n = hsnSetQual q $ hsnFromString n
-
-
-qualvar :: HsName -> String -> CExpr
-qualvar q n
-    = CExpr_Var $ qualify q n
-
 preludeVar :: String -> CExpr
 preludeVar n = CExpr_Var $ mkHNm [ehcname, prelname, hsnFromString n]
     where  ehcname = hsnFromString "EHC"
@@ -216,7 +220,7 @@ sccFromMap m n = let m' = filter (\(x,_)->x `elem` n) $ Map.toList m
                  in map f (scc m'')
 
 
--- trc t x= trace (t ++ ": " ++ show x) x 
+trc t x= trace (t ++ ": " ++ show x) x 
 
 %%]
 

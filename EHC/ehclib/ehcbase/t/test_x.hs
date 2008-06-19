@@ -1,2 +1,2 @@
-main = let x= True
-       in return()
+main = case primRawShow (True, False) of
+	a@(True, x) -> print x

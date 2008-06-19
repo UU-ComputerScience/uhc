@@ -1,1 +1,1 @@
-./ehc --dump-core-stages=1  $@
+./ehc --no-prelude --dump-core-stages=1  $@

@@ -1585,6 +1585,7 @@ cpCore1Trf modNm trfNm
 			      "CLFR"	-> cmodTrfLetFixrec
 			      "DBGS"	-> cmodTrfDebugStrict
 			      "ORC"	-> cmodTrfOracleCreation
+			      "SUFS"	-> cmodTrfRenAddSuffix "_strict"
 %%]]
                               -- "CLL"     -> cmodTrfLamLift
                               _         -> id
@@ -1648,18 +1649,18 @@ cpProcessEH modNm
           ]
 
 cpProcessCoreBasic :: HsName -> EHCompilePhase ()
-cpProcessCoreBasic modNm 
+cpProcessCoreBasic modNm
   = cpSeq [ cpTransformCore
               modNm
                 (
 %%[[102
                   -- [ "CS" ] ++
 %%]]
-                  [ "CER"]
+                  [ "CER", "CRU", "CLU"]
 %%[[103
-                  ++ [ "CRU", "CLU", "CLM", "CLFR", "DBGS"]
+                  ++ [ "CLM", "CLFR", "ORC", "CRU", "CLU"]
 %%]]
-                  ++ ["CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                  ++ [ "CILA", "CETA", "CCP", "CILA", "CETA"
                   , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" 
 %%[[8_2           
                   , "CPRNM"

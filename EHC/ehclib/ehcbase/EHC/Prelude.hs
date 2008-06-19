@@ -3,7 +3,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 -- Debugging primitives
     Oracle, primInitOracle, primOracleEnter, primOracleLeave,    
     primOracleNewEntry, primWhatIsNextOracle, primDumpOracle,
-    underscore, runOracleProgram, bindOracleStrict, returnOracleStrict,
+    underscore, runProgramStrict, bindOracleStrict, returnOracleStrict,
     thunkIsEvaluated,
     primRawShow,
 --    rawShow, RawShow, primRawShow,
@@ -2420,8 +2420,8 @@ foreign import ccall primRawShow :: a -> a
 underscore :: a
 underscore = error "underscore"
 
-oracleToList :: () -> [Int]
-oracleToList _ = reverse (go [])
+oracleToListStrict :: () -> [Int]
+oracleToListStrict _ = reverse (go [])
     where 
       go :: [Int] -> [Int]
       go o = letstrict entry = primWhatIsNextOracle
@@ -2431,10 +2431,10 @@ oracleToList _ = reverse (go [])
 
 type OrcM a = [Int] -> ([Int], a )
 
-runOracleProgram :: a -> OrcM a -> a
-runOracleProgram a b = letstrict h = primInitOracle
+runProgramStrict :: a -> OrcM a -> a
+runProgramStrict a b = letstrict h = primInitOracle
                        in letstrict lazyResult = a
-                          in letstrict oracle = oracleToList ()
+                          in letstrict oracle = oracleToListStrict ()
                              in letstrict r2 = b oracle
                                 in case r2 of (_, strictResult) -> strictResult
 
