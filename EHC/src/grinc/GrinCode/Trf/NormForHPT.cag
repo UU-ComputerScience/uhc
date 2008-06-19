@@ -1,3 +1,14 @@
+NormForHPT
+This transformation is obolete.
+
+It was once used to bring the program in a form acceptable to HPT analysis.
+This is not necessary any more, since
+ - HPT analysis covers more cases than earlier
+ - Some of the offending code is not generated anymore by Core2Grin
+ - Some of the transformations are related to try/catch, which is currently not used anyway
+
+----------------------------------------------------------------------------------------
+
 Normalisation for the Heap-points-to analysis
 
 - A case alternative or the last statment of a catch block (body or handler) must end with a simple unit (e.g. "unit var")
@@ -32,8 +43,8 @@ normForHPT (grmod,unique) = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grm
 newVar :: Int -> (HsName, Int)
 newVar u = (HNmNr u OrigNone, u+1)
 
-newVar' :: Bool -> Int -> (HsName, Int)
-newVar' b u = if b then newVar u else (undefined, u)
+newVarIf :: Bool -> Int -> (HsName, Int)
+newVarIf b u = if b then newVar u else (undefined, u)
 
 newGrIdent :: HsName -> (GrVal, GrPatLam)
 newGrIdent n = (GrVal_Var n, GrPatLam_Var n)
@@ -100,7 +111,7 @@ Transform the last statement of an alternative which is no simple unit
 %%[8.lastUnit
 SEM GrExpr
   | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && not @lhs.hasNext && not @simpleUnit
-                             .  (var, unique)  = newVar' @doUnitTrans @lhs.unique
+                             .  (var, unique)  = newVarIf @doUnitTrans @lhs.unique
                              .  (val2, pat2)   = newGrIdent @var
                         lhs  .  grTrf          = if @doUnitTrans 
                                                  then GrExpr_Seq @grTrf @pat2 (GrExpr_Unit @val2)
@@ -115,7 +126,7 @@ SEM GrExpr
   | Case  loc  .  doCaseTrans       = case @val.grTrf of
                                           GrVal_Var _ -> False
                                           otherwise   -> True
-          loc  .  (var, newUnique)  = newVar' @doCaseTrans @lhs.unique
+          loc  .  (var, newUnique)  = newVarIf @doCaseTrans @lhs.unique
                .  (val', pat')      = newGrIdent @var
           lhs  .  grTrf             = if @doCaseTrans
                                       then GrExpr_Seq (GrExpr_Unit @val.grTrf) @pat'
@@ -144,7 +155,7 @@ are rewritten into a copy
 %%[8.simplePattern
 SEM GrExpr
   | Seq  loc  .  doPatternTrans    = @expr.needsSimplePattern && not @pat.isSimplePattern
-              .  (var, newUnique)  = newVar' @doPatternTrans @expr.unique
+              .  (var, newUnique)  = newVarIf @doPatternTrans @expr.unique
               .  (val2, pat2)      = newGrIdent @var
          lhs  .  grTrf             = if @doPatternTrans
                                      then GrExpr_Seq @expr.grTrf @pat2

@@ -44,8 +44,6 @@ numberIdents (code,unique)
 %%[8.lookup hs
 type LookupList = Map.Map HsName HsName
 
-findNewVar _  e@(HNmNr _ _) = e
---findNewVar fm e             = Map.findWithDefault (error $ "undeclared variable " ++ show e ++ " in " ++ show fm) e fm
 findNewVar fm e             = Map.findWithDefault e e fm
 
 
@@ -53,7 +51,8 @@ addList :: Int -> LookupList -> [HsName] -> (LookupList, [HsName], Int)
 addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
     where
     onFst f (a, b, c)                       = (f a          , b             , c  )
-    addName e (l, l2, u) | e == wildcardNm  = (l            , wildcardNr:l2 , u  )
+    addName e (l, l2, u) | e == wildcardNm 
+                           || e==wildcardNr = (l            , wildcardNr:l2 , u  )
                          | otherwise        = let newname = HNmNr u (OrigLocal e)
                                               in ((e,newname):l, (newname:l2), u+1)
                                               
@@ -106,23 +105,10 @@ SEM GrBind
                                    , @lhs.unique
                                    , @lhs.bind2idFrag
                                    )
-                              else case @nm of
-                                    HNmNr nr (OrigFunc orig)  -> ( @nm
-                                                                 , @lhs.unique
-                                                                 , Map.insert orig @nm @lhs.bind2idFrag
-                                                                 )
-                                    HNmNr nr (OrigLocal orig) -> ( @nm
-                                                                 , @lhs.unique
-                                                                 , Map.insert orig @nm @lhs.bind2idFrag
-                                                                 )
-                                    HNmNr nr (OrigGlobal orig)-> ( @nm
-                                                                 , @lhs.unique
-                                                                 , Map.insert orig @nm @lhs.bind2idFrag
-                                                                 )
-                                    _                         -> ( HNmNr @lhs.unique (OrigFunc (protectPrimitive @nm))
-                                                                 , @lhs.unique + 2
-                                                                 , Map.insert @nm @loc.bindName @lhs.bind2idFrag
-                                                                 )
+                              else ( HNmNr @lhs.unique (OrigFunc @nm)
+                                   , @lhs.unique + 2
+                                   , Map.insert @nm @loc.bindName @lhs.bind2idFrag
+                                   )
 
 %%]
 
@@ -164,7 +150,7 @@ SEM GrVar
 
 SEM GrGlobal
   | Global    loc   .  newName  : HsName
-              loc   .  newName  = HNmNr @lhs.unique (OrigGlobal (protectPrimitive @nm))
+              loc   .  newName  = HNmNr @lhs.unique (OrigGlobal @nm)
               lhs   .  var2id   = Map.insert @nm @newName @lhs.var2id
                     .  unique   = @lhs.unique + 1
 
@@ -267,12 +253,7 @@ SEM GrPatLam
                                     else GrPatLam_PtrAnnot @tagL.grTrf @newName
 
 SEM GrBind
-  | Bind  lhs  .  grTrf    = if @loc.skip
-                              then @loc.copy
-                                   -- do not rename bindings that already have a numbered name
-                                   -- i.e. the appN bindings that were introduced in BuiuldAppBindings  			        
-                              else GrBind_Bind @bindName @newNames @newExpr
-          loc  .  newExpr  = @expr.grTrf
+  | Bind  lhs  .  grTrf    = GrBind_Bind @bindName @newNames @expr.grTrf
 
 SEM GrVal
   | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.var2id @nm)
@@ -300,12 +281,10 @@ SEM GrExpr
   | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm @argL.grTrf
 
 SEM GrTag
-  | Con Fun PApp App
-                loc  .  newName  =  findNewVar @lhs.bind2id @nm
-  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @loc.newName           
-  | Fun         lhs  .  grTrf    =  GrTag_Fun @loc.newName           
-  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs @loc.newName           
-  | App         lhs  .  grTrf    =  GrTag_App @loc.newName           
+  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int (protectPrimitive @nm)
+  | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bind2id @nm)
+  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bind2id @nm)
+  | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bind2id @nm)
 
 
 

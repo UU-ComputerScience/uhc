@@ -31,19 +31,17 @@ WRAPPER GrAGItf
 
 %%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
 
-buildAppBindings :: (GrModule,Int) -> (GrModule,Int)
-buildAppBindings (code,unique)
-  = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
+buildAppBindings :: GrModule -> GrModule
+buildAppBindings code
+  = let inh = Inh_GrAGItf
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn)
+    in  grTrf_Syn_GrAGItf syn
 
 %%]
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllNT [ | | grTrf: SELF ]
-
-ATTR GrAGItf GrModule [ | unique: Int | ]
+ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 %%[8
@@ -114,7 +112,6 @@ SEM GrSplit
 
 %%[8.buildAppBinding hs
 
-
 applyFunctionName size specnr
   =  HNm $ "app" ++ show size ++ "_" ++ show specnr
   
@@ -122,37 +119,22 @@ applyFunctionTag size specnr
   =  GrTag_App (applyFunctionName size specnr)
 
 
-buildAppBinding unique size specnr
-  = let funcNr  = unique
-        minArg  = funcNr + 2
-        maxArg  = minArg + size - 1
-        unique2 = maxArg + 2
-        funcName                  = HNmNr funcNr (OrigLocal origFuncName)    -- not OrigFunc, so app functions get a separate namespace
-        origFuncName              = applyFunctionName size specnr
-        args@(partialApp:appArgs) = map (\n->HNmNr n OrigNone) [minArg .. maxArg]
-        evalPartialApp            = HNmNr (maxArg + 1) OrigNone
-        code = GrBind_Bind funcName args body
+buildAppBinding (size,specnr)
+  = let funcName    = applyFunctionName size specnr
+        args@(partialApp:appArgs) = map (\n -> hsnSuffix funcName ("x"++show n)) [0..size-1]
+        evalPartialApp            =            hsnSuffix funcName "f"
         body = GrExpr_Seq (GrExpr_Eval partialApp)
                           (GrPatLam_Var evalPartialApp)
                           (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
-    in (unique2, origFuncName, funcName, code)
+    in GrBind_Bind funcName args body
 
-node2app (size,specnr) (unique, origNamesMap, bindings) =
-    let key = (applyFunctionTag size specnr, size)
-        (unique2, origFuncName, funcName, code) = buildAppBinding unique size specnr
-        origNameMap = (funcName, origFuncName)
-    in (unique2, origNameMap:origNamesMap, code:bindings)
 %%]
 
 %%[8.addAppBindings
 SEM GrModule
-  | Mod  loc  . (unique2, origNamesMap, binds)  = foldr node2app
-                                                        (@lhs.unique, [], @bindL.grTrf)
-                                                        @bindL.applyNodeSizes
-         lhs  . unique = @unique2
-         lhs  . grTrf  = GrModule_Mod @moduleNm 
+  | Mod  lhs  . grTrf  = GrModule_Mod @moduleNm 
                                       @globalL.grTrf 
-                                      (@loc.mainFullProg ++ @binds)
+                                      (@loc.mainFullProg ++ map buildAppBinding @bindL.applyNodeSizes ++ @bindL.grTrf)
                                       @ctagsMp 
                                       
 %%[[8
@@ -172,4 +154,3 @@ SEM GrModule
 %%]]
                                       
 %%]
-
