@@ -98,7 +98,7 @@ GRINC_AGGRINCODE_FREEVARS_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCo
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_FREEVARS_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_FREEVARS_DPDS_SRC_CAG))
 
-GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/Trf/%.cag,DropUnusedExpr ImpossibleCase NormForHPT NumberIdents SingleCase EmptyAlts SplitFetch DropDeadBindings DropUnreachableBindings InlineEA LateInline MergeCase EvalStored SubstExpr LowerGrin CopyPropagation BuildAppBindings GlobalConstants CheckGrinInvariant SetGrinInvariant CleanupPass PrettyVarNames)
+GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/Trf/%.cag,DropUnusedExpr ImpossibleCase NumberIdents SingleCase EmptyAlts SplitFetch DropDeadBindings DropUnreachableBindings InlineEA LateInline MergeCase EvalStored SubstExpr LowerGrin CopyPropagation BuildAppBindings GlobalConstants CheckGrinInvariant SetGrinInvariant CleanupPass PrettyVarNames)
 GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG	:= $(patsubst %,$(SRC_GRINC_PREFIX)GrinCode/%.cag, Trf/CommonArity)
 $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(GRINC_AGGRINCODE_ALLTRF_MAIN_SRC_CAG)) \
 										: $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AGGRINCODE_ALLTRF_DPDS_SRC_CAG))

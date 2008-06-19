@@ -41,8 +41,6 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.NormForHPT(normForHPT)})
-%%]
 %%[8 import({%{GRIN}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.InlineEA(inlineEA)})
@@ -109,17 +107,15 @@ doCompileGrin input opts
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-112-cleaned"
-         ; transformCodeUnq      buildAppBindings   "BuildAppBindings" ; caWriteGrin "-113-appsbound"
+         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-113-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-114-globconst"
          ; transformCodeInline                      "Inline"
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-115-inlined"
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-116-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
          ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-117-evalstored"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-118-unusedExprDropped"
          ; transformCodeUnq      numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-120-unusedExprDropped"
-         ; transformCodeUnq      normForHPT         "NormForHPT"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-normalized"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeUnqHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 

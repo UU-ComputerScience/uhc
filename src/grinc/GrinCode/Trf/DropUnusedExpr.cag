@@ -4,8 +4,6 @@ Variable bindings that are never used are replaced by wildcards.
 Global variables and functions thar are never used are removed.
 Alternatives with tags that involve functions that do no longer exist are removed.
 
-Note: this transformation can not be used between buildAppBindings and numberIdents.
-
 
 %%[8 import({GrinCode/AbsSyn})
 %%]
@@ -145,13 +143,6 @@ SEM GrVar
 %%[10
 SEM GrSplit
   | Sel           lhs.defined  =  Set.singleton @nm
-%%]
-
-
-%%[8
-
-
-
 %%]
 
 
@@ -388,20 +379,3 @@ SEM GrBind
 
 reportUnused :: Set.Set HsName -> HsName -> String
 reportUnused m x = if x `Set.member` m then "" else (" " ++ show x)
-
-
-
--- Some obsolete code:
--- Updates that are not necessary are removed
--- but it appears to be too hard to determine whether an update is unnecessary
-
-SEM GrExpr
-  | UpdateUnit  (lhs.grTrf
-                ,lhs.changes)  =  if    @nm `Set.member` ???
-                                  then (@loc.grTrf             , False)
-                                  else (GrExpr_Unit @val.grTrf , True )
-                                  
-  | FetchUpdate (lhs.grTrf
-                ,lhs.changes)  =  if    @dst `Set.member` ???
-                                  then (@loc.grTrf            , False)
-                                  else (GrExpr_FetchNode @src , True )

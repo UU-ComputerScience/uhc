@@ -220,15 +220,14 @@ ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
 %%%%%%%%%%
 %%[8.unit
 {-
-There are five cases, depending on the structure of target and source
-If there is no target, no equations are necessary
-(this is the case for the unit at the end of an Case- or Catch-alternative).
+There are seven cases, depending on the structure of target and source
 If the target is a variable, we generate a single equation for it
  - if the source is a variable as well, the equation states that they should be the same
  - if the source is a node, the equation states that the variable refers to the node
 If the target is a node, we generate a list of equations: one for each variable in the target
  - if the source is a variable, selections are created
  - if the source is a node, corresponding elements are equated
+Plus some special cases for InEnum and InBasic. Todo: InOpq
 -}
 
 SEM GrExpr
@@ -342,7 +341,6 @@ SEM GrAlt
 {-
 In every alternative,
 a select-equation is generated for each variable in the pattern: the values are selected from the scrutinee
-The scrutinee is always a variable because of earlier normalisation.
 -}
 SEM GrAlt
   | Alt  lhs . equations  =  case (@pat.patInfo, @lhs.valInfo) of
@@ -412,7 +410,6 @@ SEM GrExpr
 %%[8.eval
 {-
 A single equation is generated, associating the targetvariable with the evaluation result of the function
-The target cannot be a node; these have been simplified earlier by the NormForHPT transformation
 -}
 SEM GrExpr
   | Eval  lhs . equations = case @lhs.targetInfo of
@@ -420,7 +417,7 @@ SEM GrExpr
                               InBasic tvar       -> [ IsKnown tvar AbsBasic ]
                               InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
                               --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any [])) ]
-                              _                  -> error "HPT: Eval target must be variable (NormForHPT should have made it so)"
+                              _                  -> error "HPT: Eval target should be a variable or Basic/Enum display"
 %%]
 
 
