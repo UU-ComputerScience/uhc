@@ -13,8 +13,11 @@ Functional LLVM
 
 \part{Main part}
 %%@LLVMChapterNaive.chapter
+%%@LLVMChapterResults.chapter
+%%@LLVMChapterFutureWork.chapter
 
 \part{Conclusion}
+%%@LLVMChapterConclusion.chapter
 
 \bibliography{main}
 \bibliographystyle{plain}

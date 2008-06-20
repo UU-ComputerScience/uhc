@@ -153,7 +153,7 @@ getType (StrConstant _ y)  = y
 -}
 data LLVMType
   -- | An integer with a given width in bits.
-  = LLInt Int
+  = LLVMInt Int
   -- | A pointer to a 'LLVMType'
   | Pointer LLVMType
   -- | An array of 'LLVMType'
@@ -166,22 +166,22 @@ data LLVMType
  
 -- | Shortcut for 64 bit integer 
 i64 :: LLVMType
-i64 = LLInt 64
+i64 = LLVMInt 64
 
 -- | Shortcut for 32 bit integer
 i32 :: LLVMType
-i32 = LLInt 32
+i32 = LLVMInt 32
 
 -- | Shortcut for 8 bit integer (byte)
 i8 :: LLVMType
-i8  = LLInt 8
+i8  = LLVMInt 8
 
 -- | Shortcut for 1 bit integer (boolean)
 i1 :: LLVMType
-i1  = LLInt 1
+i1  = LLVMInt 1
    
 instance Show LLVMType where
-  show (LLInt size)       = "i" ++ show size
+  show (LLVMInt size)       = "i" ++ show size
   show (Pointer x)        = show x ++ "*"
   show (Array nr tp)      = "[ " ++ show nr ++ " x " ++ show tp ++ "]"       
   show Label              = "label"
@@ -208,7 +208,7 @@ pLower x           = error $ show x ++ " is a unlowerable type, need a pointer"
   Test if the given 'LLVMType' is an integer
 -}
 isInt :: LLVMType -> Bool
-isInt (LLInt _) = True
+isInt (LLVMInt _) = True
 isInt _         = False
 
 {-|

@@ -1,97 +1,93 @@
 %%[chapter
-\chapter{The Naive Translation}
-\label{cha:naive}
-The naive LLVM backend allows the EHC pipe line to generate binaries using the LLVM compiler framework. To get the backend in place quickly, we deliberately chose ease of implementation over efficiency. We treat optimization of the backend as a separate part later in the process. In this chapter we discuss the decisions made in the implementation of the LLVM assembly generator (\refS{sec:naive-assembly-generator}) and the run-time system (\refS{sec:naive-run-time-system}). 
+\chapter{Implementation}
+\label{cha:implementation}
+In the previous chapters we discussed the generation of Silly (\refS{sec:ehc-silly}). In order to generate executables from Silly code, a backend that outputs Low Level Virtual Machine (LLVM) assembly is added to EHC. In this chapter, we discuss how we generate LLVM from Silly and how it fits into EHC. In particular, we look at the representation of closures in the generated code (\refS{sec:impl-memory-representation}), the transformation from Silly to LLVM assembly (\refS{sec:impl-silly2llvm}), and the runtime system used (\refS{sec:impl-rts}).  
 
-\section{The LLVM assembly generator}
-\label{sec:naive-assembly-generator}
-The predecessor of LLVM, Silly, is an abstract language. It abstracts over different cases which need to be made explicit in order to execute the code. In this section we discuss the Silly to LLVM assembly transformation. Furthermore we show that it is fairly straightforward to generate LLVM assembly code from a Silly AST while leaving many options for optimization open.
+\section{Representation of closures}
+\label{sec:impl-memory-representation}
+The representation of closures influences typing and generation of LLVM assembly code. The GRIN language uses nodes to represent closures. A node consists of a set of fields, whereas the first field always is a tag and the rest are payload fields. For EHC variant 8, the variant used for the examples through this thesis, possible values of the payload fields are literal integers or pointers to other nodes. Fields may also contain characters, pointers to C strings and floating point values, but this is only the case for other variants than EHC variant 8 used as the starting point for LLVM incorporation.
 
-\subsection{Typing the LLVM assembly language}
-The predecessors of the generated LLVM code, Silly and GRIN, are implicit typed languages. Some of the language constructs are implicitly typed, such as integer constants, but most constructs are untyped. Because the LLVM assembly language is strongly typed, we need to infer and correct the types from a Silly program when compiling it. The data type to express LLVM types is shown in \refF{fig:data-llvm-types}. The first three constructors describe types of values, the |Label| type is used for variables that denote addresses to branch to, while |Void| is used when a function returns \inlCode{C}{void}. 
+We represent nodes in memory in a uniform way, no matter which type of values are stored in the payload: a node consists of one or more GrWords. A GrWord is an integer with exactly the same bitsize as a pointer on a architecture and is comparable to the C99 type \texttt{intptr\_t}. This allows us to store any possible tag or payload value in one GrWord. For example, on a 64 bit platform, a GrWord is a 64 bit integer. On this platform, a cons node consisting of a tag, an integer and a pointer to the next list node, is 3 GrWords (or 24 bytes) in size. On a 32 bit platform, where a GrWord is 32 bits in size, the same Cons node would take up 12 bytes.
 
-The |LLVMType| data type is not very rich, without constructors for floating point values, characters or structures. In Silly everything is build up from one or more values of the so called \inlCode{C}{GrWord} type. A \inlCode{C}{GrWord} is defined as a signed integer large enough to hold a pointer, allowing storage of both pointers and integers in a \inlCode{C}{GrWord} value. For example a Cons node from a list of integers consists of 3 consecutive \inlCode{C}{GrWord} cells, one for the \inlCode{C}{CCons} tag, one for the integer value of the node, and finally a pointer to the tail of the list. In the generated LLVM assembly code and the rest of this thesis, we define a \inlCode{C}{GrWord} as a singed integer with a bit size equal to a native pointer.
+The uniform representation wastes memory when storing a value which fits in less memory, but allows easy typing of the Silly program (see \refS{sec:impl-typing}) and makes overwriting a closure with its evaluation result type correct.
 
-\begin{table}[h]
-	\begin{center}
-		\begin{tabular}{l||l}
-		Case               & Type\\
-		\hline\hline
-		Integer Constant   & |GrWord|\\
-		Parameter Variable & |GrWord|\\
-		Local Variable     & |Pointer GrWord|\\
-		Global Variable    & |Pointer (Pointer GrWord)|\\
-	    Heap Allocations   & |Pointer GrWord|
-		\end{tabular}
-	\end{center}
-	\caption{LLVM typing base cases.}
-	\label{tbl:llvm-type-base}
-\end{table}
+\section{Transforming Silly to LLVM assembly}
+\label{sec:impl-silly2llvm}
+The generation of LLVM assembly is divided in two separate tasks: 1) inferring types for Silly variables, values, and constants and 2) tranforming a Silly program to a LLVM program by selecting the correct LLVM instructions. Both tasks are performed simultaneously during transformation from Silly to LLVM.
 
-The Silly AST can be typed bottom-up with a single attribute. Each Silly Variable, Value, and Constant synthesize their type (encapsulated in a |Var|, see \refF{fig:to-llvm-attributes}). If the node in the Silly AST is base case (\refT{tbl:llvm-type-base}), we type it right away. When not typing a base case, we need the types of the children to compute the type of the node. For example an indexing operation on a local variable. Indexing is not a base case, so we need the type of the children, in this case a base case with a |Pointer GrWord| type. Because indexing is no type changing operation, the synthesized type is a |Pointer GrWord|.  
+\subsection{Typing Silly}
+\label{sec:impl-typing}
+Early in the EHC pipeline, types occuring in a program are erased and subsequent intermediate representations are implicitly typed. LLVM assembly is a strongly typed language, therefore, we need to infer LLVM types from the Silly program.
 
-\begin{figure}[tb]
+\begin{figure}[htbp]
 	\hsbox{
 		\begin{code}
 			data LLVMType
-			  =  LLInt Int
+			  =  LLVMInt Int
 			  |  Pointer LLVMType
 			  |  Array Int LLVMType
 			  |  Label
 			  |  Void
 		\end{code}
 	}
-	\caption{Data type for LLVM types.}
+	\caption{Data type for LLVM assembly types.}
 	\label{fig:data-llvm-types}  
 \end{figure}
 
-\subsection{Generating LLVM assembly code}
-The structure of the LLVM assembly language and Silly is fairly similar, making it an option to write a pretty printer for the transformation. Although this is a simple approach, it also limits us to the textual representation of LLVM assembly. For this reason, we transform the Silly AST to a LLVM AST and pretty print the latter one.
+We encode LLVM types by a Haskell data type, shown in \refF{fig:data-llvm-types}. LLVMTypes are a subset of LLVM assembly types because not all LLVM types are needed. Thus we type Silly constructs with LLVM types. The |LLVMInt| constructor corresponds to an integer value of some bit size. The |Pointer| constructor represents a pointer to another |LLVMType|, allowing any level of indirection, although currently a maximum of two levels is used in the generated code. We use C syntax for pointers (postfix \texttt{*}) to abbreviate the |Pointer| construct. The |Array| constructor corresponds to an array of the size of the first parameter. Array types are only used to type C strings. |Label| refers to a branch target and |Void| encodes the absence of a type.
 
-The Silly to LLVM transformation consists of two steps. First the Silly constructs are translated to an equivalent sequence of LLVM constructs. This translation is straightforward as most have a direct counterpart. The second step adds glue code to combine the generated LLVM code with the synthesized LLVM code from the children nodes. This glue code is needed because some conversions are implicit in Silly. For example, assigning a variable to another variable. The variable at the left hand side is interpreted as a location, while the variable at the right hand side is a value. Still, the abstract syntax for a variable is equal at both sides of the equal sign. These conversions must be explicit in LLVM code and thus a cast is added in the generated code if the variable at the left hand side is not a pointer.
+The |LLVMInt| constructor is platform dependent, differing in bit size for architectures with different pointer sizes. To describe the type inference of Silly in a platform neutral way, we use |GrWord| as an alias for a |LLVMInt| constructor where the parameter is the bit size of a native pointer on the architecture.
 
-\begin{figure}[tb]
-	\hsbox{
-		\begin{code}
-		ATTR  SilModule                              [ ^^ | ^^ |  llvmCode  :  LLVMModule      ]
-		ATTR  Function                               [ ^^ | ^^ |  llvmCode  :  LLVMFunction    ]
-		ATTR  Statement Alternative Value Variable   [ ^^ | ^^ |  llvmCode  :  LLVMStatements  ]
-		ATTR  Value Variable Constant                [ ^^ | ^^ |  llvmVar   :  LLVMVar         ]
-		\end{code}
-    }
-    \caption{Attributes for LLVM Assembly generation.}
-	\label{fig:to-llvm-attributes}  
+Each Silly statement can be typed without contextual information like a typing environment. This is possible due to the following assumptions made in Silly:
+\begin{itemize}
+  \item Global variables are of the type |GrWord**|. Staticly, a block of memory of the size of a native pointer is allocated. In this block, a pointer to a dynamically allocated global closure is stored. This scheme is inefficient, as the global closure could be allocated statically because the size and content are known at compile time. Still the performance loss is small, as the total allocation for global variables is very small compared to the allocations for function local closures.
+  \item Local variables are of the type |GrWord*|. A local variable is implemented as a |GrWord| of memory allocated on the stack. Local variables are used for storage of tags, integers, and pointers to closures. If a pointer is stored in a local variable, it needs to be cast to a integer first, without loss of precision. When a pointer is read from the local variable, it needs to be cast back to a pointer.
+  \item Function arguments are of the type |GrWord| and the function is responsible for casting a parameter to a |GrWord*| if needed. For functions generated by the compiler, each parameter is always a pointer to a closure (|GrWord*|), whereas parameters of foreign functions often require unboxed values. 
+
+The choice to pass all parameters as |GrWord| types is because of an option in  Silly to manage its own call stack (note: this option is disabled when generating LLVM code). The Silly call stack is defined in the runtime system as an array of |GrWord| elements. Function parameters have the |GrWord| type to avoid casts when pushing function arguments on the stack.  
+
+  \item Function calls can be either a statement or a value. The statement function call is used for calling other Silly functions. These functions have the return type |Void|, as they return values in the global RP array (\refS{sec:ehc-silly}.
+
+Value function calls are calls to foreign functions. These functions do use the C calling convention and return a non-void value. The type of the return value is always a |GrWord|.
+  \item Allocations are handled as a foreign function and return a pointer to the allocated memory cast to the |GrWord| type.
+  \item Constant integers and tags are of the type |GrWord|.
+\end{itemize}
+
+For any semanticly correct abstract syntax tree of a Silly statement, each leaf of the tree matches with one of the above cases. Each other element in the tree is typable with the types of its children and knowledge about the construct itself. An example of this process is shown in \refF{fig:silly-type-example} where we type the  values, variables and constants of the statement \inlCode{C}{i4 := foreign call primSubInt(x78, p1[1]);}. This statement assigns the return value of the primSubInt call to the local variable $i4$. The first parameter of the foreign function call is the local variable $x78$, whereas the second parameter is the first (zero indexed) field of parameter $p1$ .In \refF{fig:silly-type-example} we show the abstract syntax tree of the statement in black boxes and the synthesized type attribute $\tau$ in blue circles.
+
+\begin{figure}[tbhp]
+  \begin{centering}
+    \input{Silly_type_example.tex}
+    \caption{Bottom-up typing of \inlCode{C}{i4 := foreign call primSubInt( x78, p1[1] );} }
+    \label{fig:silly-type-example}
+  \end{centering}
 \end{figure}
 
-Because the Silly to LLVM transformation is a bottom-up tree traversal, it is convenient for an attribute grammar implementation. We implemented the transformation using the Utrecht University Attribute Grammar~\cite{baars:04}, a preprocessor for Haskell. The two main attributes are shown in \refF{fig:to-llvm-attributes}. The synthesized attribute |llvmCode| assembles the bottom-up generated |LLVMModule|. Different levels of the Silly AST generate their LLVM counterparts. Values and variables are an exception to this rule as they synthesize LLVM statements. This is  related to the second attribute, |llvmVar|, which is only defined on values, variables and constants. The attribute |llvmVar| is defined as the variable which holds the result of the synthesized |llvmCode|. Generation of the attributes of a Silly node with one or more expressions as children is performed as follows:
-\begin{enumerate}
-	\item Inspect the synthesized |llvmVar| attributes of the children and check if they are correctly typed. If not, generate a statement in which the synthesized |llvmVar| is cast to the correct type and assign this to a fresh local variable of the correct type.
-	\item Construct a chain of one or more expressions that performs the required actions on the results of the previous step. These expressions are assigned to fresh variables.
-    \item The |llvmVar| synthesized by this node is the final fresh variable generated in step 2. The new |llvmCode| is the concatenation of the |llvmCode| attributes from the children and the statements generated by step 1 and 2.
-\end{enumerate}
+We start the typing traversal in the left most leaf of the abstract syntax tree, the local variable $i4$. Each possible leaf value is a base case, thus we are able to deduce the type of the local variable from the known assumptions. Indeed, it´s type is listed as |GrWord*|. 
 
-\subsection{Multiple return values}
-Return values in Silly are often closures consisting of multiple \inlCode{C}{GrWord} cells. Unfortunately most calling conventions reserve a single register location for a return value of a function. This makes sense for a C like language which supports only one return value, reserving more registers for parameters or as scratch. 
+The second leaf of the abstract syntax tree is the local variable $x78$. Again, local variables always have the type |GrWord*| and thus this value is given to the synthesized attribute $\tau$ of this node. The parent of the leaf is a 'Variable Value' node, which has the semantics of fetching the value where a pointer points to. It infers its type by removing a pointer indirection of the type of its child. This results in a |GrWord| value.
 
-To support multiple return values in LLVM we have the following options:
-\begin{enumerate}
-  \item During the initialization of the program, allocate an global array. Functions write the \inlCode{C}{GrWord} cells they return in this array and do not use the return register as assigned by the calling convention.
-  \item Add an extra reference parameters for each function that may return multiple \inlCode{C}{GrWord} cells. The function stores the values that it returns in the extra parameters. Optimizations for this scheme are passing a pointer to an array as an extra argument instead of separate parameters for the elements or storing one value in the register as supplied by the calling convention and the other in extra reference parameters.
-  \item Create a new calling convention with built in support for multiple return values in registers.
-\end{enumerate}
+The last leaf of the tree is the parameter variable $p1$. Parameters to functions are passed as a |GrWord|, making this the type of the leaf node. The parent of the leaf node is an array indexing operator, selecting the first field of its child node. For the first time, a type mismatch occurs. The indexing operator expects a pointer type as type of the child, while the child is of the type |GrWord|. The generated code for the indexing operator coerces the type of the child by interpreting the value of the child as an pointer. On this coerced argument indexing is performed and a pointer to the first field is returned, resulting in a value of the |GrWord*| type. When traversing up from the array index node, we encounter a 'Variable Value' node, which de-references the pointer and therefore the type |GrWord| is assigned to $\tau$. 
 
-All approaches have their separate advantages and disadvantages.
+Finally, the call node is easily typed, as foreign function calls always return a value of the |GrWord| type. This concludes the typing of all values, variables and constructors of this example statement. 
 
-The global array approach adds memory access to all functions. Memory access is expensive when compared to register access and thus should be used sparingly in functions. Although each function accesses the array, allocation is done at the initialization of the program and not in each function, reducing the cost of function calls. This is also a disadvantage. Many functions share the array and thus many different values are stored in it. This renders analysis over the array useless.
+The bottom-up type inferring algorithm is very suitable for an attribute grammar implementation and we implemented it using the Utrecht University Attribute Grammar compiler~\cite{baars:04}, a preprocessor for Haskell.
 
-Reference parameters are like the global array approach, but the array is not shared between function calls. This adds an extra allocation if the return value does not fit in one register, but the LLVM compiler can analyze this array much better possibly promote to register values. 
+\subsection{Generation of LLVM}
+\label{sec:impl-gen-llvm}
 
-The third option is a new calling convention that returns multiple return values in registers. This is the most efficient option but also the most complex one. The calling convention must work efficiently on multiple platforms and interface with other calling conventions. This requires knowledge of different platforms to work well.
-
-For the naive backend, we chose the global array approach. We expect the cost of allocations to exceed the gain of possible LLVM analysis. This due to the large amount of function calls in most functional programs.
+\todo{
+\begin{itemize}
+  \item LLVM Assembly generation
+        \begin{itemize}
+          \item Translating Silly to LLVM, example
+          \item Expanding to multiple lines of LLVM, LLVMVar attribute, LLVMCode attribute.
+        \end{itemize}
+\end{itemize}
+}
 
 \section{The Run-time System}
-\label{sec:naive-run-time-system}
+\label{sec:impl-rts}
 Run-time systems offer services for the running Haskell program. Examples of such services are garbage collection, primitive functions, dynamic loading and dynamic compilation API's. The run-time system of the naive backend offers just enough service to successful run a Haskell program: primitive functions and garbage collection. In this section we describe the design and implementation of the system and elaborate on the choices made.
   
 \subsection{Implementation}
@@ -137,7 +133,7 @@ GrWord primGtInt(GrWord x, GrWord y)
 
 Run-time functions that accept or return tag values are a special case of the functions that accept or return basic values. It is obvious that both the run-time system and the compiled Haskell program must share the same mapping between constructors and their tag values. The current implementation of this mapping can be seen in \refF{lst:primGtInt}. The unsigned integer values of the tags |CFalse| and |CTrue| are hard-coded in the run-time system (line 1 and 2) and the same is done in the compiler for these tags. The mappings of these tags are synchronized by hand and are subject of possible synchronisation errors in the future.
 
-The final class of run-time functions, functions that receive nodes as parameter or return nodes, are more problematic than the above cases. When a function has a node as parameter, it may be evaluated or unevaluated. A run-time function could inspect the tag of the node to determine if the node is in weak head normal form. If it is unevaluated, evaluating it with an non inlined |eval| function is an option, but makes the function impure, breaking the heaps-points-to analysis. Evaluating the arguments of run time functions in advance solves this problem, but makes the functions more strict than they need to be. Creating a node in the run-time system and returning it to the Haskell world is problematic. The heaps-points-to analysis is unaware of this closure and this can result in missing arms in generated |eval| and |apply| functions. Currently we avoid creating closures in the run-time system, but it is desirable for later versions.
+The final class of run-time functions, functions that receive nodes as parameter or return nodes, are more problematic than the above cases. When a function has a node as parameter, it may be evaluated or unevaluated. A run-time function could inspect the tag of the node to determine if the node is in weak head normal form. If it is unevaluated, evaluating it with an non inlined |eval| function is an option, but makes the function impure, breaking the heaps-points-to analysis. Evaluating the arguments of runtime functions in advance solves this problem, but makes the functions more strict than they need to be. Creating a node in the run-time system and returning it to the Haskell world is problematic. The heaps-points-to analysis is unaware of this closure and this can result in missing arms in generated |eval| and |apply| functions. Currently we avoid creating closures in the run-time system, but it is desirable for later versions.
 
 \subsubsection{Synopsis}
 The current implementation of the run-time system is small, reasonable efficient, and able to support the execution of Haskell programs. Future versions need to focus on efficiency and the interaction between the run-time system and the program.    
@@ -176,4 +172,35 @@ The generality of conservative garbage collection is also a disadvantage. Conser
 Another inefficiency of conservative garbage collection rises because the implementation does not abstracts over memory, instead it only abstracts over memory management. A great amount of closures on the heap have a short life-time. When the collector frees the memory used by a closure that became unreachable, it leaves the memory fragmented. When this happens often, we use more chunks of memory than needed because of the fragmentation. This problem is often solved by copying collectors, which compact the heap by copying the live memory to a shadow heap. Copying changes addresses of objects, requiring an update of references to objects that were copied. This excludes conservative collectors, because wrong guesses are no longer safe when the value is updated with a pointer value.
 
 We conclude that the current conservative garbage collection is not the most efficient one, but is very easy to integrate. The garbage collector is a likely target for replacement in the future, but for the naive backend it is sufficient.
+
+\comment{
+
+\subsection{Generating LLVM assembly code}
+The structure of the LLVM assembly language and Silly is fairly similar, making it an option to write a pretty printer for the transformation. Although this is a simple approach, it also limits us to the textual representation of LLVM assembly. For this reason, we transform the Silly AST to a LLVM AST and pretty print the latter one.
+
+The Silly to LLVM transformation consists of two steps. First the Silly constructs are translated to an equivalent sequence of LLVM constructs. This translation is straightforward as most have a direct counterpart. The second step adds glue code to combine the generated LLVM code with the synthesized LLVM code from the children nodes. This glue code is needed because some conversions are implicit in Silly. For example, assigning a variable to another variable. The variable at the left hand side is interpreted as a location, while the variable at the right hand side is a value. Still, the abstract syntax for a variable is equal at both sides of the equal sign. These conversions must be explicit in LLVM code and thus a cast is added in the generated code if the variable at the left hand side is not a pointer.
+
+\begin{figure}[tb]
+	\hsbox{
+		\begin{code}
+		ATTR  SilModule                              [ ^^ | ^^ |  llvmCode  :  LLVMModule      ]
+		ATTR  Function                               [ ^^ | ^^ |  llvmCode  :  LLVMFunction    ]
+		ATTR  Statement Alternative Value Variable   [ ^^ | ^^ |  llvmCode  :  LLVMStatements  ]
+		ATTR  Value Variable Constant                [ ^^ | ^^ |  llvmVar   :  LLVMVar         ]
+		\end{code}
+    }
+    \caption{Attributes for LLVM Assembly generation.}
+	\label{fig:to-llvm-attributes}  
+\end{figure}
+
+Because the Silly to LLVM transformation is a bottom-up tree traversal, it is convenient for an attribute grammar implementation. We implemented the transformation using the Utrecht University Attribute Grammar~\cite{baars:04}, a preprocessor for Haskell. The two main attributes are shown in \refF{fig:to-llvm-attributes}. The synthesized attribute |llvmCode| assembles the bottom-up generated |LLVMModule|. Different levels of the Silly AST generate their LLVM counterparts. Values and variables are an exception to this rule as they synthesize LLVM statements. This is  related to the second attribute, |llvmVar|, which is only defined on values, variables and constants. The attribute |llvmVar| is defined as the variable which holds the result of the synthesized |llvmCode|. Generation of the attributes of a Silly node with one or more expressions as children is performed as follows:
+\begin{enumerate}
+	\item Inspect the synthesized |llvmVar| attributes of the children and check if they are correctly typed. If not, generate a statement in which the synthesized |llvmVar| is cast to the correct type and assign this to a fresh local variable of the correct type.
+	\item Construct a chain of one or more expressions that performs the required actions on the results of the previous step. These expressions are assigned to fresh variables.
+    \item The |llvmVar| synthesized by this node is the final fresh variable generated in step 2. The new |llvmCode| is the concatenation of the |llvmCode| attributes from the children and the statements generated by step 1 and 2.
+\end{enumerate}
+
+
+
+}
 %%]
