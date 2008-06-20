@@ -8,6 +8,7 @@ LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe-opt.grin \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree_Opt.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)Silly_type_example.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.c \
                               $(TEXT_TMP_VARIANT_PREFIX)GetElementPtrExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)PhiExample.ll \
@@ -25,7 +26,7 @@ LLVM_SILLY_FILES           := $(LLVM_CODE_SRC_PREFIX)FibExe.sil
 LLVM_SILLY_FILES_DEP       := $(LLVM_CODE_SRC_PREFIX)FibExe-205.sil
 
 text-variant-llvm: $(LLVM_THESIS_EXAMPLES)
-#	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
+	$(MAKE) TEXT_CFG_FIGS_INCLUDES_DOT_SRC=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=inclTOC --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=35 \
 	  text-variant-dflt-bib
