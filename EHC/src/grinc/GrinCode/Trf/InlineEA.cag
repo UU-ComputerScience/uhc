@@ -33,28 +33,29 @@ WRAPPER GrAGItf
 %%]
 %%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvVar, addEnvVars, throwTag, AbstractValue(..))})
+%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..))})
 %%]
 %%[8 hs import(Debug.Trace)
 %%]
 
 %%[8 hs
-inlineEA :: Bool -> (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-inlineEA doUsageAnalysis (code,unique,hptMap)
+inlineEA :: Bool -> (GrModule,HptMap) -> (GrModule,HptMap)
+inlineEA doUsageAnalysis (code,hptMap)
   = let inh = Inh_GrAGItf { hptMap_Inh_GrAGItf=hptMap
-                          , unique_Inh_GrAGItf=unique
                           , doUsageAnalysis_Inh_GrAGItf=doUsageAnalysis
                           }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
         grTrf  = grTrf_Syn_GrAGItf syn
-        unique2 = unique_Syn_GrAGItf syn
         hptMap2 = hptMap_Syn_GrAGItf syn
-    in  ( grTrf, unique2, hptMap2)
+    in  ( grTrf, hptMap2)
 
 %%]
 
 
 %%[8 hs
+
+type HptItems       = [ (Int,AbstractValue) ]
+
 
 getLocs :: AbstractValue -> [Int]
 getLocs AbsBottom = []
@@ -77,34 +78,66 @@ isEmptyAbsVal v              = error $ "wrong content of exception variable of b
 
 
 makeCaseExpression
-  :: ([GrAlt] -> GrExpr)                                                  ->   -- given a function to build an Expr from a [Alt]
-     (Int -> HptMap ->  (GrTag,[AbstractValue])  -> (Int,HptMap, GrAlt )) ->   -- and   a function to build an Alt from a Node (updating the unique and HptMap)
-      Int -> HptMap -> [(GrTag,[AbstractValue])] -> (Int,HptMap, GrExpr)       -- we can construct a function to build a (Case-)Expr from a [Node] (updating the unique and HptMap)
+  :: ([GrAlt] -> GrExpr)                                                    ->   -- given a function to build an Expr from a [Alt]
+     (Int -> HptMap ->  (GrTag,[AbstractValue])  -> (Int,HptItems, GrAlt )) ->   -- and   a function to build an Alt from a Node (updating the unique and generating new HptItems)
+      Int -> HptMap -> [(GrTag,[AbstractValue])] -> (Int,HptItems, GrExpr)       -- we can construct a function to build a (Case-)Expr from a [Node] (updating the unique and generating new HptItems)
 
 makeCaseExpression buildCase buildAlt unique hptMap nodes
-  =  let makeAlt node (uniqPrev, hptPrev,         altsPrev) 
-                = let (uniqNext, hptNext, altNext         ) = buildAlt uniqPrev hptPrev node
-                  in  (uniqNext, hptNext, altNext:altsPrev)
+  =  let makeAlt node (uniqPrev,             itemsPrev,        altsPrev) 
+                = let (uniqNext, itemsNext,            altNext         ) = buildAlt uniqPrev hptMap node
+                  in  (uniqNext, itemsNext++itemsPrev, altNext:altsPrev)
 
-         (unique2, hptMap2, alts) = foldr makeAlt (unique,hptMap,[]) nodes
-     in  (unique2, hptMap2, buildCase alts)
+         (unique2, items, alts) = foldr makeAlt (unique,[],[]) nodes
+     in  (unique2, items, buildCase alts)
 
-newName :: Int -> HptMap -> AbstractValue -> (Int,HptMap,HsName)
+newName :: Int -> HptMap -> AbstractValue -> (Int,HptItems,HsName)
 newName unique hptMap av
   =  let name = HNmNr unique OrigNone
          unique2 = unique+1
-         hptMap2 = addEnvVar hptMap unique av
-     in (unique2, hptMap2, name)
+         entries = [(unique,av)]
+     in (unique2, entries, name)
 
-newNames :: Int -> HptMap -> [AbstractValue] -> (Int,HptMap,[HsName])
+newNames :: Int -> HptMap -> [AbstractValue] -> (Int,HptItems,[HsName])
 newNames unique hptMap avs
   =  let entries = zip [unique..] avs
          names   = map (\e -> HNmNr (fst e) OrigNone) entries
          unique2 = unique + length avs
-         hptMap2 = addEnvVars hptMap entries
-     in (unique2, hptMap2, names)
+     in (unique2, entries, names)
 
 %%]
+
+%%[8
+
+ATTR AllNT     [ | | grTrf: SELF     ]
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+
+ATTR AllGrExpr
+     AllBind
+     GrModule  [ | | newItems USE {++} {[]} : HptItems ]
+ATTR GrAGItf   [ | | hptMap: HptMap ]
+
+ATTR GrAGItf 
+     GrModule
+     AllBind
+     AllGrExpr [ hptMap: HptMap doUsageAnalysis : Bool |  | ]
+
+ATTR GrModule
+     AllBind
+     AllGrExpr [ | unique : Int | ]
+
+SEM GrAGItf
+  | AGItf      module . unique  =  getEnvSize @lhs.hptMap
+               lhs    . hptMap  =  addEnvElems @lhs.hptMap (map snd (sort @module.newItems))
+
+
+SEM GrExpr
+  | Eval  loc.(unique, newItems, grTrf)  =  evalCode  @lhs.unique @lhs.hptMap @nm (if @lhs.doUsageAnalysis then (Map.findWithDefault True (getNr @nm) @lhs.needsUpdate) else True)
+  | App   loc.(unique, newItems, grTrf)  =  applyCode @lhs.unique @lhs.hptMap @nm (getEnvVar @lhs.hptMap (getNr @nm)) @argL.grTrf
+
+%%]
+
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,6 +145,7 @@ newNames unique hptMap avs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
+
 
 buildEvalAlt
  :: HsName                       ->      -- locatName
@@ -123,21 +157,21 @@ buildEvalAlt
     , [AbstractValue]                    -- args
     )                            ->
     ( Int                                -- updated unique
-    , HptMap                             -- updated hptMap
+    , HptItems                           -- newItems
     , GrAlt                              -- generated code
     )
 
 buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
- =  let (unique2, hptMap2, patNames) = newNames unique hptMap args
+ =  let (unique2, newItems2, patNames) = newNames unique hptMap args
         codeHead annot = GrAlt_Alt annot (GrPatAlt_Node tag patNames)
     in  case unevaluatedName tag of
-          Nothing -> (unique2, hptMap2, codeHead GrAltAnnIdent (GrExpr_Unit (GrVal_Var nodeName)))
+          Nothing -> (unique2, newItems2, codeHead GrAltAnnIdent (GrExpr_Unit (GrVal_Var nodeName)))
           Just functName  ->
                    let -- get the abstract value for the function-result and exception-result of the called function
                        resultAbsVal= getEnvVar hptMap (getNr functName)
                        exceptAbsVal= getEnvVar hptMap (getNr functName + 1)
                        -- create new name for the call result
-                       (unique3, hptMap3, resultName) = newName unique2 hptMap2 resultAbsVal
+                       (unique3, newItems3, resultName) = newName unique2 hptMap resultAbsVal
                        resultMaxArity = maximum0 (map (length . snd) (getNodes resultAbsVal))
                        -- wrap the newly created names for use in Grin-values and -patterns
                        resultVal  = GrVal_Var resultName
@@ -153,10 +187,10 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                                      then callExpr2
                                      else callExpr1
                    in  if  isEmptyAbsVal exceptAbsVal
-                        then (unique3, hptMap3, codeHead (GrAltAnnCalling resultMaxArity locatName) callExpr )
+                        then (unique3, newItems2++newItems3, codeHead (GrAltAnnCalling resultMaxArity locatName) callExpr )
                         else -- handling exceptions below (currently not used)
                              let -- create some more new names
-                                 (unique4, hptMap4, [throwVar,catchVar]) = newNames unique3 hptMap3 [exceptAbsVal, resultAbsVal]
+                                 (unique4, newItems4, [throwVar,catchVar]) = newNames unique3 hptMap [exceptAbsVal, resultAbsVal]
                                  noVar      = HNmNr 0 OrigNone
                                  noPat      = GrPatLam_Var noVar
                                  -- and wrap them for use in Grin
@@ -171,7 +205,7 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                                               GrExpr_Throw throwVar
                                  handleExpr = GrExpr_Seq eCode catchPat $
                                               GrExpr_Unit catchVal
-                             in  (unique4, hptMap4, codeHead (GrAltAnnCalling resultMaxArity locatName) handleExpr )
+                             in  (unique4, newItems2++newItems3++newItems4, codeHead (GrAltAnnCalling resultMaxArity locatName) handleExpr )
 
 
 
@@ -181,7 +215,7 @@ evalCode
     HsName                       ->      -- locatName
     Bool                         ->      -- locatNeedsUpdate
     ( Int                                -- updated unique
-    , HptMap                             -- updated hptMap
+    , HptItems                           -- newItems
     , GrExpr                             -- generated code
     )
 
@@ -189,7 +223,7 @@ evalCode unique hptMap locatName locatNeedsUpdate
  = let -- get the abstract value for the original location
        nodeAbsVal    = absFetch hptMap locatName
        -- create new name for the fetched node
-       (unique2, hptMap2, nodeName) = newName unique hptMap nodeAbsVal
+       (unique2, newItems2, nodeName) = newName unique hptMap nodeAbsVal
        -- wrap the newly created name for use in Grin-patterns and -values
        nodePat       = GrPatLam_Var nodeName
        nodeVal       = GrVal_Var    nodeName
@@ -197,7 +231,8 @@ evalCode unique hptMap locatName locatNeedsUpdate
        nodes         = getNodes nodeAbsVal
        codeHead      = GrExpr_Seq (GrExpr_FetchNode locatName) nodePat . GrExpr_Case nodeVal
        
-   in  makeCaseExpression codeHead (buildEvalAlt locatName locatNeedsUpdate nodeName) unique2 hptMap2 nodes
+       (unique3, newItems3, expr) = makeCaseExpression codeHead (buildEvalAlt locatName locatNeedsUpdate nodeName) unique2 hptMap nodes
+   in  (unique3, newItems2++newItems3, expr)
 
 %%]
 
@@ -217,7 +252,7 @@ buildApplyAlt
     , [AbstractValue]                    -- args
     )                            ->
     ( Int                                -- updated unique
-    , HptMap                             -- updated hptMap
+    , HptItems                           -- newItems
     , GrAlt                              -- generated code
     )
 
@@ -225,27 +260,27 @@ buildApplyAlt appArgs unique hptMap (tag@(GrTag_PApp needsParams functName), arg
  = 
     let hasParams    = length args
         getsParams   = length appArgs
-        (unique2, hptMap2, patNames) = newNames unique hptMap args
+        (unique2, newItems2, patNames) = newNames unique hptMap args
         patVars      = map GrVal_Var patNames
         codeHead     = GrAlt_Alt GrAltAnnNormal (GrPatAlt_Node tag patNames)
     in  case compare getsParams needsParams of
           LT -> -- undersaturated
                 let newtag = GrTag_PApp (needsParams-getsParams) functName 
-                in  (unique2, hptMap2, codeHead $ GrExpr_Unit (GrVal_Node newtag (patVars ++ appArgs)))
+                in  (unique2, newItems2, codeHead $ GrExpr_Unit (GrVal_Node newtag (patVars ++ appArgs)))
           EQ -> -- exactly saturated
-                    (unique2, hptMap2, codeHead $ GrExpr_Call functName          (patVars ++ appArgs))
+                    (unique2, newItems2, codeHead $ GrExpr_Call functName          (patVars ++ appArgs))
           GT -> -- oversaturated
                 let -- get the abstract value for the function-result of the called function
                     resultAbsVal= getEnvVar hptMap (getNr functName)
                     -- create a new variable to accept the result of the function call
-                    (unique3, hptMap3, resultName) = newName unique2 hptMap2 resultAbsVal
+                    (unique3, newItems3, resultName) = newName unique2 hptMap resultAbsVal
                     resultPat  = GrPatLam_Var resultName
                     -- generate code for the function call
                     code1 = GrExpr_Call functName (patVars ++ take needsParams appArgs)
                     -- generate code for recursing on the remaining arguments
-                    (unique4, hptMap4, code2)  = applyCode unique3 hptMap3 resultName (drop needsParams appArgs)
+                    (unique4, newItems4, code2)  = applyCode unique3 hptMap resultName resultAbsVal (drop needsParams appArgs)
                 in  -- sequence the function call and the processing of remaining arguments
-                    (unique4, hptMap4, codeHead $ GrExpr_Seq code1 resultPat code2 )
+                    (unique4, newItems2++newItems3++newItems4, codeHead $ GrExpr_Seq code1 resultPat code2 )
 
 
 
@@ -253,15 +288,16 @@ applyCode
  :: Int                          ->      -- unique
     HptMap                       ->      -- hptMap
     HsName                       ->      -- nodeName
+    AbstractValue                ->      -- nodeAbsVal
     [GrVal]                      ->      -- appArgs
     ( Int                                -- updated unique
-    , HptMap                             -- updated hptMap
+    , HptItems                           -- newItems
     , GrExpr                             -- generated code
     )
 
-applyCode unique hptMap nodeName appArgs
+applyCode unique hptMap nodeName nodeAbsVal appArgs
  = let -- get the abstract value for the function to be applied
-       nodeAbsVal = getEnvVar hptMap (getNr nodeName)
+       -- nodeAbsVal = getEnvVar hptMap (getNr nodeName)
        nodeVal    = GrVal_Var nodeName
        -- we must generate code for all possible nodes, as found in the abstract value
        nodes = filter isPartialApplication (getNodes nodeAbsVal)
@@ -269,19 +305,6 @@ applyCode unique hptMap nodeName appArgs
 
 %%]
 
-%%[8
-ATTR GrAGItf
-     GrModule
-     AllBind
-     AllGrExpr     [ doUsageAnalysis : Bool | unique: Int  hptMap: HptMap | ]
-ATTR GrAGItf       [ | | grTrf: GrModule ]
-ATTR AllNT         [ | | grTrf: SELF ]
-
-SEM GrExpr
-  | Eval  loc.(unique, hptMap, grTrf)  =  evalCode  @lhs.unique @lhs.hptMap @nm (if @lhs.doUsageAnalysis then (Map.findWithDefault True (getNr @nm) @lhs.needsUpdate) else True)
-  | App   loc.(unique, hptMap, grTrf)  =  applyCode @lhs.unique @lhs.hptMap @nm @argL.grTrf
-
-%%]
 
 %%[8 hs
 mapUnionWithPlus = Map.unionWith (+)
@@ -291,13 +314,6 @@ mapUnionWithCat  = Map.unionWith (++)
 
 
 %%[8
-
-
-ATTR AllBind
-     AllGrExpr     [ origHptMap : HptMap | | ]
-     
-SEM GrModule
-  | Mod   bindL.origHptMap = @lhs.hptMap
 
 ATTR AllBind
      AllGrExpr     [ needsUpdate : {Map.Map Int Bool} 
@@ -355,7 +371,7 @@ possibleArgumentsOfApplication hptMap nm vl =
 SEM GrExpr
   | Call         lhs.possibleArguments = let n = getNr @nm
                                          in  Map.fromList (zip [n+2..] @argL.varLists)
-  | App          lhs.possibleArguments = possibleArgumentsOfApplication @lhs.origHptMap @nm @argL.varLists
+  | App          lhs.possibleArguments = possibleArgumentsOfApplication @lhs.hptMap @nm @argL.varLists
 
 SEM GrGlobal
   | Global       lhs.updateNeededList  =  [(getNr @nm, @val.updateNeeded)]

@@ -115,26 +115,26 @@ doCompileGrin input opts
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
          ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-117-evalstored"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-118-unusedExprDropped"
-         ; transformCodeUnq      numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
+         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
-         ; transformCodeUnqHpt   (inlineEA (ehcOptPriv options))
+         ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
-         ; transformCodeUsingHpt dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
+         ; transformCodeUseHpt   dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
-         ; transformCodeUnq      lateInline         "LateInline"
+         ; transformCodeChgHpt   lateInline         "LateInline"
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
-         ; transformCodeUsingHpt impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
+         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         singleCase         "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
-         ; transformCodeUnqHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
+         ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
-         ; transformCodeUnqHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
+         ; transformCodeChgHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
@@ -159,8 +159,7 @@ initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath
 initialState opts (Right (fp,grmod)) = (initState opts) {gcsPath=fp, gcsGrin=grmod}
 
 initState opts
-  = GRINCompileState { gcsUnique     = 3          -- 0,1,2 are reserved for wildcard, main, mainexcept
-                     , gcsGrin       = undefined
+  = GRINCompileState { gcsGrin       = undefined
                      , gcsSilly      = undefined
                      , gcsLLVM       = undefined
                      , gcsHptMap     = undefined
@@ -202,8 +201,7 @@ caParseGrin
 caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrin
-         ; unique  <- gets gcsUnique
-         ; let (iterCount,hptMap) = heapPointsToAnalysis code unique
+         ; let (iterCount,hptMap) = heapPointsToAnalysis code
          ; modify (gcsUpdateHptMap hptMap)
          ; return iterCount
          }
@@ -292,8 +290,7 @@ caWriteHptMap fn
 
 %%[8.State
 data GRINCompileState = GRINCompileState
-    { gcsUnique    :: Int
-    , gcsGrin      :: GrModule
+    { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
     , gcsLLVM      :: LLVMModule
     , gcsHptMap    :: HptMap
@@ -304,14 +301,7 @@ data GRINCompileState = GRINCompileState
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
-gcsUpdateUnique x s = s { gcsUnique = x }
 gcsUpdateHptMap x s = s { gcsHptMap = x }
-
-gcsGetCodeUnq
-  = do{ code   <- gets gcsGrin
-      ; unique <- gets gcsUnique
-      ; return (code,unique)
-      }
 
 gcsGetCodeHpt
   = do{ code   <- gets gcsGrin
@@ -319,22 +309,8 @@ gcsGetCodeHpt
       ; return (code,hpt)
       }
 
-gcsGetCodeUnqHpt
-  = do{ code   <- gets gcsGrin
-      ; unique <- gets gcsUnique
-      ; hptMap <- gets gcsHptMap
-      ; return (code,unique,hptMap)
-      }
-
-gcsPutCodeUnq (code,unique)
+gcsPutCodeHpt (code,hptMap)
   = modify (\s -> s { gcsGrin   = code
-                    , gcsUnique = unique
-                    }
-           )
-
-gcsPutCodeUnqHpt (code,unique,hptMap)
-  = modify (\s -> s { gcsGrin   = code
-                    , gcsUnique = unique
                     , gcsHptMap = hptMap
                     }
            )
@@ -372,25 +348,18 @@ transformCodeInline message
        ; modify (gcsUpdateGrin code)
        }
 
-transformCodeUsingHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()
-transformCodeUsingHpt process message 
+transformCodeUseHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()
+transformCodeUseHpt process message 
   = do { putMsg VerboseALot message Nothing
        ; ch <- gcsGetCodeHpt
        ; modify (gcsUpdateGrin (process ch))
        }
 
-transformCodeUnq :: ((GrModule,Int) -> (GrModule,Int)) -> String -> CompileAction ()
-transformCodeUnq process message 
+transformCodeChgHpt :: ((GrModule,HptMap) -> (GrModule,HptMap)) -> String -> CompileAction ()
+transformCodeChgHpt process message 
   = do { putMsg VerboseALot message Nothing
-       ; cu <- gcsGetCodeUnq
-       ; gcsPutCodeUnq (process cu)
-       }
-
-transformCodeUnqHpt :: ((GrModule,Int,HptMap) -> (GrModule,Int,HptMap)) -> String -> CompileAction ()
-transformCodeUnqHpt process message 
-  = do { putMsg VerboseALot message Nothing
-       ; trip <- gcsGetCodeUnqHpt
-       ; gcsPutCodeUnqHpt (process trip)
+       ; tup <- gcsGetCodeHpt
+       ; gcsPutCodeHpt (process tup)
        }
 
 transformCodeIterated :: (GrModule->(GrModule,Bool)) -> String -> CompileAction ()

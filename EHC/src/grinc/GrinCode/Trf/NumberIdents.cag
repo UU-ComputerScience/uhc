@@ -32,11 +32,11 @@ PRAGMA nocycle
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
 
-numberIdents :: (GrModule,Int) -> (GrModule,Int)
-numberIdents (code,unique)
-  = let inh = Inh_GrAGItf {unique_Inh_GrAGItf=unique}
+numberIdents :: GrModule -> GrModule
+numberIdents code
+  = let inh = Inh_GrAGItf {}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  (grTrf_Syn_GrAGItf syn, unique_Syn_GrAGItf syn)
+    in  grTrf_Syn_GrAGItf syn
 
 
 %%]
@@ -59,18 +59,14 @@ addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
 listInsert l fm = foldl (flip $ uncurry Map.insert) fm l                                              
 %%]
 
-%%[8.grTrf
-ATTR GrAGItf [ | | grTrf: GrModule ]
-ATTR AllNT [ | | grTrf: SELF  copy: SELF     ]
-%%]
-
-%%[8.unique
-ATTR GrAGItf          [ | unique: Int | ]
-ATTR AllNT          [ | unique: Int | ]
+%%[8
+ATTR GrAGItf [ | | grTrf: GrModule  ]
+ATTR AllNT   [ | | grTrf: SELF  copy: SELF     ]
+ATTR AllNT   [ | unique: Int | ]
 
 SEM GrAGItf
-  | AGItf  loc     .  low         = @lhs.unique
-                   .  high        = @module.unique
+  | AGItf  module  . unique       =  3   -- 0,1,2 are reserved for wildcard, main, mainexcept        
+                   
 %%]
 
 

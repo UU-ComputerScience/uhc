@@ -253,7 +253,7 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
        ; absHeap <- unsafeFreeze heap
        ; absEnv  <- unsafeFreeze env
        
-       ; return (count, (absEnv, absHeap, Map.empty))
+       ; return (count, (absEnv, absHeap))
        }
        )
 

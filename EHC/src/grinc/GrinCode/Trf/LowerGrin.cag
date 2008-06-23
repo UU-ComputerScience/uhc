@@ -10,36 +10,42 @@
 WRAPPER GrAGItf
 %%]
 
-Should be checked later:
-
-%%[8
-PRAGMA nocycle
-%%]
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
-lowerGrin :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-lowerGrin (input,unique,hptMap)
-  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, uniq_Inh_GrAGItf=unique}
+lowerGrin :: (GrModule,HptMap) -> (GrModule,HptMap)
+lowerGrin (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+    in  (grTrf_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
 
-
-addHptInfo hptMap (orig, newNames) = let (tags,fields) = unzip . getNodes $ getEnvVar hptMap orig
-                                         padding = AbsBottom
-                                         av_vars = map mconcat (transpose $ map (++ repeat padding) fields)
-                                         avs     = AbsTags (Set.fromAscList tags) : av_vars
-                                     in addEnvVars hptMap (zip newNames avs)
 %%]
 
 %%[8
-ATTR GrAGItf [ | | grTrf: GrModule  hptMap: HptMap ]
-ATTR AllNT [ | nameMapping: RenameMap | grTrf: SELF ]
-ATTR GrAGItf AllNT [ hptMap: HptMap | uniq: Int  | ]
+
+ATTR AllNT     [ | | grTrf: SELF     ]
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+
+ATTR GrPatLam 
+     AllGrExpr
+     AllBind
+     GrModule  [ | | newItems USE {++} {[]} : HptItems ]
+ATTR GrAGItf   [ | | hptMap: HptMap ]
+
+ATTR GrAGItf 
+     GrModule
+     AllBind
+     AllGrExpr
+     GrPatLam  [ hptMap: HptMap | | ]
+
+ATTR GrModule
+     AllBind
+     AllGrExpr
+     GrPatLam  [ | uniq : Int | ]
 
 SEM GrAGItf
-  | AGItf module . nameMapping = []
-          lhs    . hptMap      = foldl addHptInfo @lhs.hptMap @module.nameMapping
+  | AGItf     module . uniq    =  getEnvSize @lhs.hptMap
+              lhs    . hptMap  =  addEnvElems @lhs.hptMap (map snd (sort @module.newItems))
 
 %%]
 
@@ -48,30 +54,33 @@ SEM GrAGItf
 %%%%%%%%%%%%%%%%%%%
 
 %%[8 hs
-type IdentOneToMany = (Int,  [Int])
-type RenameMap      = [(Int,  [Int])]
+type HptItems       = [ (Int,AbstractValue) ]
 
-newNames :: HptMap -> Int -> HsName -> (Int, [HsName], IdentOneToMany)
-newNames hptMap uniq (HNmNr v _) = if v==0
-                                   then (uniq, [], (v,[]))
-                                   else case getEnvVar hptMap v of
-                                          AbsLocs _ _ -> (uniq, repeat $ error "no new names for locations", error "no new mapping for locations")
-                                          AbsNodes nl -> let count    = maxNodeSize nl
-                                                             newVars  = [uniq .. uniq + count - 1]
-                                                         in (uniq + count, map (\n->HNmNr n OrigNone) newVars, (v, newVars))
-                                          AbsBottom   -> (uniq+1, [HNmNr uniq OrigNone], (v,[uniq])) -- infinite leftrecursion is the user program can lead to this situation. We don't want to be this analysis to be the show-stopper then.
-                                          av          -> error ("LowerGrin: Newnames: abstract value " ++ show av ++ " for " ++ show v ++ " is not locations or nodes but " ++ show av)
+maximum0 [] = 0
+maximum0 xs = maximum xs
 
--- TODO: use arity information in the ctags map!
-maxNodeSize nl = 1 + Map.fold (\args maxSize -> max (length args) maxSize) 0 nl
+newNames :: HptMap -> Int -> HsName -> (Int, [HsName], HptItems)
+newNames hptMap uniq (HNmNr v _) 
+  = if v==0
+    then (uniq, [], [])
+    else let (tags,fields) = unzip . getNodes $ getEnvVar hptMap v
+             avArgs  = map mconcat (transpose $ map (++ repeat AbsBottom) fields)
+             avTag   = AbsTags (Set.fromAscList tags)
+             avs     = avTag : avArgs
+             count   = 1 + maximum0 (map length fields) -- TODO: use arity information in the ctags map!
+             uniq2   = uniq+count
+             newNrs = [uniq .. uniq2-1]                                     
+         in  (uniq2, map (\n->HNmNr n OrigNone) newNrs, zip newNrs avs)    
+    
 
 isSingleVar :: HptMap -> HsName -> Bool
-isSingleVar hptMap (HNmNr nr _) = case getEnvVar hptMap nr of
-                                   AbsLocs _ _ -> True
-                                   AbsNodes  _ -> False
-                                   a           -> if nr==0
-                                                  then True
-                                                  else False -- error $ "LowerGrin: variable " ++ show nr ++ " is " ++ show a
+isSingleVar hptMap (HNmNr nr _) 
+  = case getEnvVar hptMap nr of
+      AbsLocs _ _ -> True
+      AbsNodes  _ -> False
+      a           -> if nr==0
+                     then True
+                     else False -- error $ "LowerGrin: variable " ++ show nr ++ " is " ++ show a
 %%]
 
 
@@ -87,17 +96,17 @@ SEM GrAGItf
 -- In a lambda pattern  \n  , if HPT says that n refers to a node, replace it by  (\t x y) 
 -- and add   n -> (\t x y)  to subst
 SEM GrPatLam
-  | Var       lhs . (uniq, nameMapping, grTrf, subst) = if isSingleVar @lhs.hptMap @nm
+  | Var       lhs . (uniq, newItems, grTrf, subst)    = if isSingleVar @lhs.hptMap @nm
                                                         then ( @lhs.uniq
-                                                             , @lhs.nameMapping
+                                                             , []
                                                              , @loc.grTrf
                                                              , @lhs.subst 
                                                              )
-                                                        else let  (uniq2, names, newMap) = newNames @lhs.hptMap @lhs.uniq @nm
+                                                        else let  (uniq2, names, newItems) = newNames @lhs.hptMap @lhs.uniq @nm
                                                                   newPat  =  GrPatLam_VarNode (map GrVar_Var names)
                                                                   newNode =  GrVal_VarNode    (map GrVal_Var names)
                                                              in ( uniq2
-                                                                , newMap : @lhs.nameMapping
+                                                                , newItems
                                                                 , newPat
                                                                 , Map.insert @nm newNode @lhs.subst
                                                                 )
