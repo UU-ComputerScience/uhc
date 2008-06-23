@@ -30,20 +30,21 @@ Also return it, possibly modified.
 As an additional Int result, return the number of iterations that it took to solve the equations.
 -}
 
-heapPointsToAnalysis :: GrModule -> Int -> (Int,HptMap)
-heapPointsToAnalysis grmod unique
+heapPointsToAnalysis :: GrModule -> (Int,HptMap)
+heapPointsToAnalysis grmod
   = let -- traverse the tree
-        inh = Inh_GrAGItf { location_Inh_GrAGItf = 0, unique_Inh_GrAGItf = unique  }
+        inh = Inh_GrAGItf {  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
 
         -- get four synthesized attributes
         equations   = equations_Syn_GrAGItf syn
         heapEqs     = heapEqs_Syn_GrAGItf syn
         limitations = limitations_Syn_GrAGItf syn
-        lenHeap   = location_Syn_GrAGItf syn
+        lenHeap     = location_Syn_GrAGItf syn
+        lenEnv      = maxVar_Syn_GrAGItf syn + 1
         
         -- now solve the equations
-    in  solveEquations unique lenHeap equations heapEqs limitations
+    in  solveEquations (trace ("lenenv: " ++ show lenEnv) lenEnv) lenHeap equations heapEqs limitations
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -65,11 +66,29 @@ A unique integer "location" is threaded through all expressions to number all St
 The value "unique", the first unused variable number, is made available to the root
 -}
 
-ATTR GrAGItf GrModule AllDef AllGrExpr [                    | location: Int |    ]
-ATTR GrAGItf GrModule                  [ unique: {Int}      |               |    ]
+ATTR GrModule 
+     AllDef 
+     AllGrExpr [ | location: Int |  ]
+ATTR GrAGItf   [ | | location : Int ]
+
+ATTR AllGrPat
+     AllGrExpr
+     AllBind
+     GrModule
+     GrAGItf   [ | | maxVar USE {`max`} {0} : Int ]
 
 SEM GrAGItf
   | AGItf  module . location = 0
+
+SEM GrVar
+  | Var    lhs . maxVar  =  getNr @nm
+  
+SEM GrBind
+  | Bind   lhs . maxVar  =  maximum (@expr.maxVar : (getNr @nm + 1) : map getNr @argNmL)
+
+SEM GrPatLam
+  | Var    lhs . maxVar  =  getNr @nm
+
 
 SEM GrAGItf
   | AGItf  lhs.equations = [ IsEqual x y

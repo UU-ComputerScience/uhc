@@ -17,17 +17,18 @@ WRAPPER GrAGItf
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.LateInline} import(qualified Data.Map as Map, {%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(lateInline)
 
-lateInline :: (GrModule,Int) -> (GrModule,Int)
-lateInline (grmod,unique) = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
-                                                 (Inh_GrAGItf { unique_Inh_GrAGItf = unique })
-                            in -- trace ("adjustcount: " ++ show (finalCount_Syn_GrAGItf t)) $
-                               (grTrf_Syn_GrAGItf t, unique_Syn_GrAGItf t)
+lateInline :: (GrModule,HptMap) -> (GrModule,HptMap)
+lateInline (grmod,hptMap) 
+  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
+            (Inh_GrAGItf { })
+    in -- trace ("adjustcount: " ++ show (finalCount_Syn_GrAGItf t)) $
+       (grTrf_Syn_GrAGItf t, hptMap)
 
 %%]
 
 %%[8
-ATTR GrAGItf [ | unique: Int | grTrf: GrModule ]
-ATTR AllNT   [ | unique: Int | grTrf: SELF     ]
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 

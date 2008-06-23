@@ -10,6 +10,8 @@
 %%]
 %%[8 import( {%{EH}GrinCode} )
 %%]
+%%[8 hs import(Debug.Trace)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Special names                  %%
@@ -180,36 +182,35 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvVar, addEnvVars, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[8 export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
-type HptMap        = (Array Int AbstractValue, Array Int AbstractValue, Map.Map Int AbstractValue)
+type HptMap  = ( Array Int AbstractValue   -- env
+               , Array Int AbstractValue   -- heap
+               )
 
 showHptElem :: (Int,AbstractValue) -> String
 showHptElem (n,v) = show n ++ ": " ++ show v
 
 showHptMap :: HptMap -> String
-showHptMap (ae, ah, aex)
+showHptMap (ae, ah)
   =  unlines (  ( "HEAP"
                 : map showHptElem (assocs ah)
                 )
              ++ ( "BASE ENVIRONMENT"
                 : map showHptElem (assocs ae)
                 )
-             ++ ( "EXTENDED ENVIRONMENT"
-                : map showHptElem (Map.toAscList aex)
-                )
              )
      
 
 getBaseEnvList :: HptMap -> [(Int,AbstractValue)]
-getBaseEnvList (ae,_,_) = assocs ae
+getBaseEnvList (ae,_) = assocs ae
      
 getEnvVar :: HptMap -> Int -> AbstractValue
-getEnvVar (ea,_,m) i  | snd (bounds ea) >= i = (ea ! i)
-                      | otherwise            = Map.findWithDefault (AbsError $ "variable "++ show i ++ " not found") i m
+getEnvVar (ae,_) i  | snd (bounds ae) >= i = (ae ! i)
+                    | otherwise            = trace ("variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
                          
 getHeapLoc :: HptMap -> Int -> AbstractValue
-getHeapLoc (_,ha,_) i = ha ! i  -- ahBaseSet (ha ! i)
+getHeapLoc (_,ah) i = ah ! i
 
 
 limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
@@ -247,12 +248,16 @@ isBottom av = case av of
                   AbsError s  ->  error $ "analysis error isBottom: " ++ s
                   otherwise   ->  False
 
-addEnvVar :: HptMap -> Int -> AbstractValue -> HptMap
-addEnvVar (e,h,fm) i v = (e,h, Map.insert i v fm)
+addEnvElems :: HptMap -> [AbstractValue] -> HptMap
+addEnvElems (e,h) vs
+  =  let (low, high) = bounds e
+         extra = length vs 
+         e2 = listArray (low, high+extra) (elems e ++ vs)
+     in (e2,h)
 
-addEnvVars :: HptMap -> [(Int, AbstractValue)] -> HptMap
-addEnvVars (e,h,fm) l = (e,h, foldl (flip $ uncurry Map.insert) fm l)
-
+getEnvSize :: HptMap -> Int
+getEnvSize (e,h) = let (low,high) = bounds e
+                   in  high-low+1
 
 isPAppTag :: GrTag -> Bool
 isPAppTag (GrTag_PApp _ _) = True

@@ -51,28 +51,50 @@ WRAPPER GrAGItf
 
 %%[8 hs module {%{GRIN}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(splitFetch)
 
-splitFetch :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
-splitFetch (input,unique,hptMap)
-  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap, uniq_Inh_GrAGItf=unique}
+splitFetch :: (GrModule,HptMap) -> (GrModule,HptMap)
+splitFetch (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, uniq_Syn_GrAGItf syn, addHptItems (newVars_Syn_GrAGItf syn) hptMap)
+    in  (grTrf_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
 
-
-addHptItems :: RenList -> HptMap -> HptMap
-addHptItems renList hptMap
- = addEnvVars hptMap [ (getNr newvar, getEnvVar hptMap oldnr) | (oldnr,newvar) <- renList ]
+type HptItems       = [ (Int,AbstractValue) ]
 
 %%]
 
 %%[8
-ATTR GrAGItf [  hptMap: HptMap | uniq: Int | grTrf: GrModule ]
-ATTR AllNT [  hptMap: HptMap | uniq: Int | grTrf: SELF ]
 
-ATTR AllExpr [ renameMap: RenMap  | | ]
-ATTR AllGrExpr AllBind GrModule GrAGItf [ | | newVars USE {++} {[]} : {RenList}  ]
+ATTR AllNT     [ | | grTrf: SELF     ]
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+
+ATTR GrAGItf
+     GrModule
+     AllBind
+     AllGrExpr [  hptMap: HptMap | |  ]
+
+ATTR AllGrExpr
+     AllBind
+     GrModule  [  | | newItems USE {++} {[]} : HptItems ]
+ATTR GrAGItf   [  | | hptMap: HptMap ]
+
+
+ATTR GrModule
+     AllBind
+     AllGrExpr
+     AllGrVal 
+     AllGrPat  [  | uniq : Int |  ]
+-- strange: uniq is not really needed in AllGrVal and AllGrPat, but if they are omitted we get a induced mutal dependency problem with renameMap
+
+ATTR AllGrExpr
+     AllGrVal
+     AllGrPat  [ renameMap: RenMap  | | ]
+
+SEM GrAGItf
+  | AGItf     module . uniq    =  getEnvSize @lhs.hptMap
+              lhs    . hptMap  =  addEnvElems @lhs.hptMap (map snd (sort @module.newItems))
 
 SEM GrGlobal
   | Global  val  . renameMap = Map.empty
+            val  . uniq      = 0
 
 SEM GrBind  
   | Bind    expr . renameMap = Map.empty  
@@ -115,7 +137,7 @@ SEM GrVar
 ATTR AllGrTag GrVarL GrVar [ | | self:SELF ]
 
 SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
-  | FetchNode     lhs  .  fetchPointer  =  Just (Map.findWithDefault @nm (getNr @nm) @lhs.renameMap)
+  | FetchNode     lhs  .  fetchPointer  =  Just @nm  -- Just (Map.findWithDefault @nm (getNr @nm) @lhs.renameMap)
   | * - FetchNode lhs  .  fetchPointer  =  Nothing
 
 
@@ -188,12 +210,12 @@ SEM GrBind
   | Bind  expr  .  floatingFetches = Map.empty
 
 SEM GrExpr
-  | Seq  loc  .  fetchesInfo   = do { p <- @expr.fetchPointer
+  | Seq  loc  .  fetchesInfo   = do { oldName <- @expr.fetchPointer
                                     ; let buildFetchInfo (GrVar_Var v) r n  =  (v, n) : r (n+1)
                                           buildFetchInfo _             r n  =           r (n+1)
                                           fetches@(fetch0:fetch1n) = foldr buildFetchInfo (const []) @pat.names 0
-                                          newName   = Map.findWithDefault p (getNr p) @lhs.renameMap
-                                    ; let mbTag     = checkSingleTag @lhs.hptMap p
+                                          newName   = Map.findWithDefault oldName (getNr oldName) @lhs.renameMap
+                                    ; let mbTag     = checkSingleTag @lhs.hptMap oldName
                                           f (v,o)   = (v, GrExpr_FetchField newName o @pat.mbTag)
                                           g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)))
                                           g (v,o)   = (v, GrExpr_FetchField newName o mbTag)
@@ -201,7 +223,7 @@ SEM GrExpr
                                                 else if isJust mbTag      then (map g fetches, Nothing                          )
                                                 else if maybe True (/=fst fetch0) @body.hasCase then (map f fetches, Nothing    )
                                                 else                           ([f fetch0]   , Just (fst fetch0, map f fetch1n) )
-                                    ; return $ -- trace ("fetch " ++ show p ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) 
+                                    ; return $ -- trace ("fetch " ++ show oldName ++ " / " ++ show newName ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) 
                                                res
                                     }
          lhs   .  grTrf             = maybe @grTrf 
@@ -229,7 +251,11 @@ SEM GrAlt
                                    }
          (expr.uniq, loc.renameList, loc.newExprInfo) = maybe (@lhs.uniq, [], []) id @mbExprInfo
          expr  .  renameMap  =  Map.union (Map.fromList @loc.renameList) @lhs.renameMap
-         lhs   .  newVars    =  @loc.renameList
+         lhs   .  newItems   =  [ (getNr newvar, getEnvVar @lhs.hptMap oldnr) 
+                                | (oldnr,newvar) <- @loc.renameList
+                                ]
+                                ++ @expr.newItems
+         
          lhs   .  grTrf      =  GrAlt_Alt @ann @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
 %%]
 
@@ -252,21 +278,23 @@ SEM GrExpr
   | Catch  loc  . hasNext      =  False
   | FetchNode FetchField
            (loc.uniq
+           ,lhs.newItems
            ,lhs.grTrf)         =  if not @lhs.hasNext
-                                  then let newname     =  Map.findWithDefault @nm (getNr @nm) @lhs.renameMap
-                                           mbKnownTag  =  checkSingleTag @lhs.hptMap newname
-                                           size        =  maybe @lhs.targetArity
-                                                                (\t -> tagArity t @lhs.arityMap)
-                                                                mbKnownTag
-                                           fetches     =  let buildFetchInfo o  =  Just (GrExpr_FetchField newname o mbKnownTag, o+1)
-                                                          in take size $ unfoldr buildFetchInfo (maybe 0 (const 1) mbKnownTag)
+                                  then let number      =  getNr @nm
+                                           newname     =  Map.findWithDefault @nm number @lhs.renameMap
+                                           mbKnownTag  =  checkSingleTag @lhs.hptMap @nm
+                                           ( start, size, node)  =  maybe (0, @lhs.targetArity        , GrVal_VarNode (map GrVal_Var names))
+                                                                          (\t -> (1, tagArity t @lhs.arityMap, GrVal_Node t  (map GrVal_Var names)) )
+                                                                          mbKnownTag
+                                           fetches     =  take size $ map (\i -> GrExpr_FetchField newname i mbKnownTag) [start..]
                                            newuniq     =  @lhs.uniq + size
-                                           names       =  map (\n->HNmNr n OrigNone) [@lhs.uniq .. newuniq  - 1]
-                                           node        =  maybe (GrVal_VarNode (map GrVal_Var names))
-                                                                (\t -> GrVal_Node t (map GrVal_Var names))
-                                                                mbKnownTag
-                                       in  (newuniq, buildSeqs (GrExpr_Unit node) (zip names fetches) )
-                                  else (@lhs.uniq, @loc.grTrf)
+                                           numbers     =  [@lhs.uniq .. newuniq  - 1]
+                                           names       =  map (\n->HNmNr n OrigNone) numbers
+                                       in  ( newuniq
+                                           , zip numbers (map (\i -> AbsError ("SplitFetch should project field " ++ show i ++ " from " ++ show @nm)) [start..])     -- TODO: instead of AbsBottom, change this to project the right AbsVal
+                                           , buildSeqs (GrExpr_Unit node) (zip names fetches) 
+                                           )
+                                  else (@lhs.uniq, [], @loc.grTrf)
 %%]
 
 %%[8.applySubst
