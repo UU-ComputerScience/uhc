@@ -122,7 +122,7 @@ ppCurlysSemis :: PP a => [a] -> PP_Doc
 ppCurlysSemis = ppListSep "{" "}" ";"
 
 ppCurlysSemis' :: PP a => [a] -> PP_Doc
-ppCurlysSemis' = ppListSep "{" "}" ", "
+ppCurlysSemis' = ppListSep "{" "}" "; "
 
 {-
 ppCommaListV :: PP a => [a] -> PP_Doc

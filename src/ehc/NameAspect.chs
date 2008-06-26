@@ -18,6 +18,34 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EH for an id
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Not used
+
+%%[1 hs export(IdEH(..))
+data IdEH
+  = IdEH_Val_Pat       	{iehDecl   ::  EH.Decl                         }
+  | IdEH_Val_Fun       	{iehPatL   :: [EH.PatExpr], iehBody :: EH.Expr, iehUniq :: !UID}
+  | IdEH_Val_Sig       	{iehDecl   ::  EH.Decl                         }
+%%[[5
+  | IdEH_Type_Def      	{iehDecl   :: !EH.Decl                         }
+%%]]
+%%[[6
+  | IdEH_Type_Sig      	{iehDecl   :: !EH.Decl                         }
+%%]]
+%%[[8
+  | IdEH_Val_Foreign   	{iehDecl   :: !EH.Decl                         }
+%%]]
+%%[[9
+  | IdEH_Class_Class
+  | IdEH_Class_Def     	{iehDecl   :: !EH.Decl, iehDeclInst :: !EH.Decl}
+  | IdEH_Inst_Def      	{iehDecl   ::  EH.Decl, iehClassNm  :: !HsName}
+  | IdEH_Dflt_Def      	{iehDecl   :: !EH.Decl                         }
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -37,7 +65,7 @@ data IdAspect
   | IdAsp_Type_Var
 %%]]
 %%[[5
-  | IdAsp_Type_Def      {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Type_Def      {iaspDecl   ::  EH.Decl                         }
 %%]]
 %%[[6
   | IdAsp_Type_Sig      {iaspDecl   :: !EH.Decl                         }
@@ -171,7 +199,7 @@ data IdDefOcc
       , doccRange   :: !Range
 %%[[20
       , doccNmAlts  :: !(Maybe [HsName])
-%%]
+%%]]
       }
   deriving (Show)
 
@@ -198,6 +226,25 @@ instance PP IdDefOcc where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defining occurrence additional aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+not used
+
+%%[1 hs export(IdDefAsp(..))
+data IdDefAsp
+  = IdDefAsp
+      { daspOcc     :: !IdOcc
+      , daspEH      :: !IdEH
+      }
+%%]
+
+%%[1 hs export(mkIdDefAsp)
+mkIdDefAsp :: IdOcc -> IdEH -> IdDefAsp
+mkIdDefAsp o a = IdDefAsp o a
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -216,6 +263,12 @@ instance ForceEval IdDefOcc where
   forceEval x@(IdDefOcc o a l r as) | forceEval a `seq` forceEval as `seq` forceEval r `seq` True = x
 %%[[102
   fevCount (IdDefOcc o a l r as) = cmUnions [cm1 "IdDefOcc",fevCount o,fevCount a,fevCount as,fevCount r,fevCount l]
+%%]]
+
+instance ForceEval IdDefAsp where
+  forceEval x@(IdDefAsp o a) = x
+%%[[102
+  fevCount (IdDefAsp o a) = cmUnions [cm1 "IdDefAsp",fevCount o {-,fevCount a -}]
 %%]]
 %%]
 

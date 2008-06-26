@@ -726,7 +726,7 @@ SEM AGItf
 SEM Body
     | Body
         loc         .   ppExtra     :=  ppCmt
-        								  (   "declarations.idOccDefGam:" >#< ppGamDup @declarations.idOccDefGam
+        								  (   "declarations.idDefOccGam:" >#< ppGamDup @declarations.idDefOccGam
         								  -- >-< "loc.idGam:" >#< ppGam @idGam
         								  >-< "declarations.idUseOccGam:" >#< ppGamDup @declarations.idUseOccGam
         								  >-< "declarations.idDpdMp:" >#< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
@@ -738,5 +738,5 @@ SEM Body
 %%]
 SEM Expression
     | Let
-        loc         .   ppExtra     :=  ppCmt (ppGamDup @declarations.idOccDefGam >-< ppGamDup @declarations.idUseOccGam)
+        loc         .   ppExtra     :=  ppCmt (ppGamDup @declarations.idDefOccGam >-< ppGamDup @declarations.idUseOccGam)
 

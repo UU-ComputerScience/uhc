@@ -9,7 +9,7 @@
 %%% Basic combinators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(ltxNl,ltxCall0,ltxCall,ltxCallArgs,ltxCallOptsArgs,ltxKeyword,ltxPackage,ltxEnvironment,ltxEnvironmentArgs,ltxDocument,ltxLandscape,ltxMath,ltxDisplayMath,"(>##<)")
+%%[99 export(ltxNl,ltxCall0,ltxCall,ltxCallArgs,ltxCallOptsArgs,ltxKeyword,ltxPackage,ltxEnvironment,ltxEnvironmentArgs,ltxDocument,ltxLandscape,ltxMath,ltxDisplayMath,"(>##<)")
 ltxCallOptsArgs :: PP x => String -> [x] -> [x] -> PP_Doc
 ltxCallOptsArgs str opts args
   = c >|< o opts >|< a
@@ -60,7 +60,7 @@ a >##< b = a >|< pp "~" >|< b
 
 %%]
 
-%%[1 export(l2tFormat,l2tText,l2tPackage)
+%%[99 export(l2tFormat,l2tText,l2tPackage)
 l2tFormat :: PP x => x -> Maybe x -> PP_Doc
 l2tFormat i mv = "%format" >#< i >#< maybe empty (\v -> "=" >#< v) mv
 
@@ -75,7 +75,7 @@ l2tPackage pkg        = "%include" >#< pkg >|< ".fmt"
 %%% Document for derivation tree
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(l2tDtHeader)
+%%[99 export(l2tDtHeader)
 l2tDtHeader  :: [String] -> [(String,[PP_Doc])] -> PP_Doc
 l2tDtHeader l2tPkgs ltxPkgs
   =   ltxCall "documentclass" (pp "article")
@@ -87,7 +87,7 @@ l2tDtHeader l2tPkgs ltxPkgs
 %%% Derivation tree
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 export(ltxDtOver)
+%%[99 export(ltxDtOver)
 ltxDtOver :: String -> Bool -> [PP_Doc] -> String -> PP_Doc -> PP_Doc
 ltxDtOver format isTop premises name conclusion
   = pp ("\\" ++ ovr ++ "[" ++ format ++ "]") 

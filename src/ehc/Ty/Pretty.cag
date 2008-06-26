@@ -227,6 +227,7 @@ data CfgPPTy
 %%]]
       , cfgPPTyFollowAST            :: Bool
 %%[[99
+      , cfgPPTyLhsSafe              :: String -> String
       , cfgPPTyElimEmptyImpls       :: Bool
 %%]]
       }
@@ -261,6 +262,7 @@ cfgPPTyDflt
 %%]]
       , cfgPPTyFollowAST            = False
 %%[[99
+      , cfgPPTyLhsSafe              = id
       , cfgPPTyElimEmptyImpls       = False
 %%]]
       }
@@ -278,6 +280,10 @@ cfgPPTyDT
       , cfgPPTyPPImplsTailCons      = \pr _ -> pr
       , cfgPPTyPPImplsAppWrap       = \_ pr -> pr
       , cfgPPTyElimEmptyImpls       = True
+      , cfgPPTyLhsSafe              = let safe '|' = "||"
+                                          safe '@' = "@@"
+                                          safe x   = [x]
+                                      in  concatMap safe
       }
 %%]
 
@@ -322,12 +328,17 @@ ppExts appFunNm appFunPP appArgPPL
 ppExts :: CfgPPTy -> HsName -> PP_Doc -> [PP_Doc] -> (PP_Doc,PP_Doc)
 ppExts cfg appFunNm appFunPP appArgPPL
   = (ppNice,ppCfg)
-  where ppNice = ppAppTop (hsnRow,mkPPAppFun appFunNm appFunPP)
+  where ppNice = ppAppTop (hsnRow,mkPPAppFun' sep appFunNm appFunPP)
                           appArgPPL empty
         ppCfg  = if cfgPPTyFollowAST cfg
-                 then let (e:es) = appArgPPL 
-                      in  hv ([hsnORow >#< appFunPP,"|" >#< e] ++ map ("," >#<) es ++ [pp hsnCRow])
+                 then let (e:es) = appArgPPL
+                      in  hv ([hsnORow >#< appFunPP,sep >#< e] ++ map ("," >#<) es ++ [pp hsnCRow])
                  else ppNice
+%%[[8
+        sep = "|"
+%%][99
+        sep = cfgPPTyLhsSafe cfg "|"
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -589,8 +600,7 @@ SEM TyExpFields
 
 %%[8
 SEM Ty
-  | Ext             loc     .   ppDflt  =   hsnORow >#< @ty.pp >#< "|" >#< @fldPP >#< hsnCRow
-                            .   (ppNice,ppCfg)
+  | Ext             loc     .   (ppNice,ppCfg)
                                         :=  ppExts @lhs.cfg @appFunNm @appFunPP @appArgPPL
                             .   pp      :=  if @isSpineRoot then @ppCfg else @ppNice
 %%]
@@ -692,6 +702,19 @@ SEM Pred
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Record ext/upd separator
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+SEM Ty
+%%[[7
+  | App             loc     .  recSep       =   "|"
+%%][99
+  | App             loc     .  recSep       =   cfgPPTyLhsSafe @lhs.cfg "|"
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ty constr name of app + args, see also EHPretty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -718,7 +741,8 @@ SEM Ty
 %%[7 -1.appFunPP.Ty
 SEM Ty
   | App             loc     .  (appFunPP,appArgPPL)
-                                            :=  mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
+                                            :=  mkExtAppPP' @recSep
+                                                            (@appFunNm,@func.appFunPP,@func.appArgPPL)
                                                             (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
   | Ext             loc     .  fldPP        =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @extTy.pp
                             .  appArgPPL    :=  @ty.appArgPPL ++ [@fldPP]
@@ -732,7 +756,8 @@ SEM Ty
   | App             loc     .  (appFunPP,appArgPPL)
                                             :=  if cfgPPTyFollowAST @lhs.cfg
                                                 then (@func.appFunPP,@func.appArgPPL ++ [@arg.pp])
-                                                else mkExtAppPP  (@appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                else mkExtAppPP' @recSep
+                                                                 (@appFunNm,@func.appFunPP,@func.appArgPPL)
                                                                  (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
   | Ext             loc     .  fldPP        :=  let pn = if cfgPPTyFollowAST @lhs.cfg then Nothing else Just @positionalNm
                                                 in  ppFld "::" pn @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp

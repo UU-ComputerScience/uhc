@@ -1,8 +1,13 @@
 {- ----------------------------------------------------------------------------------------
-   what    : minimal working program
-   expected: all ok
+   what    : type synonym
+   expected: error about limit of tysyn expansion
 ---------------------------------------------------------------------------------------- -}
 
 module Main where
 
-main = putStrLn "Hello World!"
+type X a = X a
+
+x :: X Int
+x = 3::Int
+
+main = return ()

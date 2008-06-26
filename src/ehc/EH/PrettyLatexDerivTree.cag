@@ -15,10 +15,14 @@
 jdg :: String -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
 jdg nm ctx e concl = l2tText (ctx >#< "^^ Sub(:-)(" >|< nm >|< ") ^^" >#< e >#< ":" >#< concl)
 
-jdgExpr :: EHCOpts -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdgExpr opts gam knTy e ty
-  = jdg "e" (ppSemis' ctxt) e ty
+jdgExpr' :: String -> EHCOpts -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jdgExpr' kind opts gam knTy e ty
+  = jdg kind (ppSemis' ctxt) e ty
   where ctxt = [gam] ++ (if ehcOptEmitDerivTree opts == DerivTreeWay_Infer then [knTy] else [])
+
+jdgExpr, jdgRecExpr :: EHCOpts -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jdgExpr    = jdgExpr' "e"
+jdgRecExpr = jdgExpr' "re"
 
 jdgDecl :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
 jdgDecl gam e ty = jdg "d" gam e ty
@@ -52,6 +56,7 @@ type DtGamL
            )
 
 gaml :: DtGamL -> PP_Doc
+gaml [] = empty
 gaml g
   = {- ltxEnvironment "flushleft"
     $ -}
@@ -67,6 +72,7 @@ type DtVarMpL
            PP_Doc       -- the varmp
 
 varmpl :: DtVarMpL -> PP_Doc
+varmpl [] = empty
 varmpl vm
   = {- ltxEnvironment "flushleft"
     $ -}
@@ -155,6 +161,11 @@ SEM Expr
   | AppTop      expr    .   dtFmt       =   "r"
   | Lam         arg     .   dtFmt       =   "n"
                 body    .   dtFmt       =   "b"
+  | Let         body    .   dtFmt       =   "b"
+  | Rec         recExpr .   dtFmt       =   "l"
+
+SEM RecExpr
+  | Ext Upd     expr    .   dtFmt       =   "r"
 
 SEM Decl
   | Val         expr    .   dtFmt       =   "b"
@@ -204,6 +215,10 @@ SEM Expr
                                         =   dtVmNmNext @lhs.dtNmNr
   | AppTop      (expr.dtNmNr, loc.dtVmNmRes)
                                         =   dtVmNmNext @lhs.dtNmNr
+
+SEM RecExpr
+  | Ext Upd     (recExpr.dtNmNr, loc.dtVmNmKnTy)
+                                        =   dtVmNmNext @lhs.dtNmNr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -230,6 +245,9 @@ SEM Expr
   | Lam         lhs     .   dtVarMpL    =   [( @dtVmNmFun, @dtVmFun )] ++ @arg.dtVarMpL ++ @body.dtVarMpL
   | AppTop      lhs     .   dtVarMpL    =   [( @dtVmNmRes, @dtVmRes )] ++ @expr.dtVarMpL
   | Let         lhs     .   dtVarMpL    =   []
+
+SEM RecExpr
+  | Ext Upd     lhs     .   dtVarMpL    =   [( @dtVmNmKnTy, @dtVmKnTy )] ++ @recExpr.dtVarMpL ++ @expr.dtVarMpL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -254,11 +272,19 @@ SEM Expr
   | Lam         (loc.dtGamLam,body.dtVarMp)
                                         =   eltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @arg.tyVarMp) @arg.dtVarMp (gamTop @arg.valGam)
                 lhs     .   dtGamL      =   [( @dtGamNm, (@dtGamLam,@lhs.dtGamNm) )] ++ @body.dtGamL
+  | Let         lhs     .   dtGamL      =   [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )] ++ @body.dtGamL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing for derivation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+ATTR RecExpr [ dtPPWrap: {PP_Doc -> PP_Doc} | | ]
+
+SEM Expr
+  | Rec         loc     .   dtPPWrap    =   ppParens
+%%]
 
 %%[99
 ATTR AllNT [ | | dtPP USE {>#<} {empty} : PP_Doc ]
@@ -273,12 +299,26 @@ SEM Expr
   | Lam         loc     .   dtPP        =   @arg.dtPP >#< "->" >#< @body.dtPP
   | Parens      loc     .   dtPP        =   ppParens @expr.dtPP
   | TypeAs      loc     .   dtPP        =   ppParens @expr.dtPP >#< "::" >#< @tyExpr.pp
+  | Let         loc     .   dtPP        =   "let" >#< ppCurlysSemis' @decls.dtPPL >#< "in" >#< @body.dtPP
+  | Rec         loc     .   dtPP        =   @dtPPWrap @recExpr.dtPP
 
 SEM PatExpr
   | Var Con     loc     .   dtPP        =   pp $ hsnQualified @nm
 
 SEM Decl
   | Val         loc     .   dtPP        =   @patExpr.dtPP >#< "=" >#< @expr.dtPP
+
+SEM RecExpr
+  | Ext         loc     .   dtPP        =   @recExpr.dtPP >#< "||" >#< @nm >#< "=" >#< @expr.dtPP
+  | Upd         loc     .   dtPP        =   @recExpr.dtPP >#< "||" >#< @nm >#< ":=" >#< @expr.dtPP
+  | Empty       loc     .   dtPP        =   @lhs.dtPPWrap empty
+%%]
+
+%%[99
+ATTR AllDecl [ | | dtPPL USE {++} {[]} : {[PP_Doc]} ]
+
+SEM Decl
+  | Val         loc     .   dtPPL       =   [@dtPP]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -358,11 +398,41 @@ SEM Expr
                                                       , @body.dt
                                                       ]
                                                       (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
+  | Let         (loc.dtKnTy,loc.dtVmKnTy)
+                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                            in  (t1,m1)
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @body.ty
+                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.let"
+                                                      [ @body.dt
+                                                      ]
+                                                      (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1), m1)
+%%]
+
+%%[99
+SEM RecExpr
+  | Ext         loc     .   rlNm        =   "re.ext"
+  | Upd         loc     .   rlNm        =   "re.upd"
+
+SEM RecExpr
+  | Ext Upd     (loc.dtKnTy,loc.dtKnRecTy,loc.dtVmKnTy,recExpr.dtVarMp)
+                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @knRecTy
+                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @foKnRec)
+                                            in  (t1,t2,vm3,m2)
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
+                                            in  ( rule @lhs.isTopOfDt @lhs.dtFmt @rlNm
+                                                       [ jdgStack [jdgMatch @lhs.opts "<=" empty @dtKnRecTy @dtKnTy empty (pp @dtVmNmKnTy)]
+                                                       , @recExpr.dt
+                                                       , @expr.dt
+                                                       ]
+                                                       (jdgRecExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy (@lhs.dtPPWrap @dtPP) t1)
+                                                , m1
+                                                )
 %%]
 
 %%[99
 SEM AGItf
-  | AGItf       lhs     .   dt          =   l2tDtHeader ["lhs2TeX","afp"] [("deduction",[]),("geometry",[pp "a2paper", pp "landscape"])]
+  | AGItf       lhs     .   dt          =   l2tDtHeader ["lhs2TeX","afp"] [("deduction",[]),("geometry",[pp ("a" ++ ehcOptEmitDerivTreePaperSize @lhs.opts ++ "paper"), pp "landscape"])]
                                             >-< vlist [ l2tFormat (ppVarMpInfoDt v) Nothing | (_,v) <- varmpToAssocL @expr.dtVarMp ]
                                             >-< (vlist $ concat [ map (\mk -> l2tFormat (mk v) Nothing) [dtMkGamNm,dtMkVmNm] | v <- [@dtNmNr .. @expr.dtNmNr] ])
                                             >-< ltxDocument
@@ -370,11 +440,10 @@ SEM AGItf
                                                 >-< (vlist 
                                                      $ concat
                                                      $ intersperse [ltxCall0 "newpage"]
-                                                         [ [ -- ltxLandscape
-                                                               (   ltxDisplayMath dt
-                                                               >-< gaml gdt
-                                                               >-< (if ehcOptEmitDerivTree @lhs.opts == DerivTreeWay_Infer then varmpl vmdt else empty)
-                                                               )
+                                                         [ [ (   ltxDisplayMath dt
+                                                             >-< gaml gdt
+                                                             >-< (if ehcOptEmitDerivTree @lhs.opts == DerivTreeWay_Infer then varmpl vmdt else empty)
+                                                             )
                                                            | (dt,gdt,vmdt) <- ((dt1,glet++gdt1,dtvm1) : dts)
                                                            ]
                                                          | (glet,(dt1,gdt1,dtvm1):dts) <- @expr.dtGrpL
@@ -414,12 +483,12 @@ SEM Decl
 %%]
 
 %%[99
-ATTR AllExpr [ | | dtGrpL USE {++} {[]}: {[DtGrp]} ]
+ATTR AllExpr AllDecl [ | | dtGrpL USE {++} {[]}: {[DtGrp]} ]
 
 SEM Expr
   | Let         (loc.dtGamLet,decls.dtVarMp)
-                                        =   eltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @decls.patTyVarMp) @lhs.dtVarMp
+                                        =   eltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @decls.patTyVarMp) @dtVmKnTy
                                                    (dtChooseDT @lhs.opts @quValGam_ex_ @valGam_l_)
-                lhs     .   dtGrpL      =   [( [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )], @decls.dtL )] ++ @body.dtGrpL
+                lhs     .   dtGrpL      =   [( [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )], @decls.dtL )] ++ @decls.dtGrpL ++ @body.dtGrpL
 %%]
 
