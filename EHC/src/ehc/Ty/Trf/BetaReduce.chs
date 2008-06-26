@@ -8,6 +8,8 @@
 For debug/trace:
 %%[11 import(EH.Util.Pretty)
 %%]
+%%[11 import({%{EH}Base.Debug})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beta reduction for type, only saturated applications are expanded

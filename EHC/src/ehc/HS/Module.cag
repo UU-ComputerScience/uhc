@@ -192,7 +192,7 @@ SEM Body
     | Body
         lhs             .   modDefsRel  =   @declarations.modDefsRel
                                             `Rel.union` 
-                                            (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idOccDefGam ])
+                                            (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idDefOccGam ])
 
 %%[95
 SEM Deriving

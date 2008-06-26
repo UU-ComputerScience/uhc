@@ -164,6 +164,8 @@ data EHCOpts
 %%]]
 %%[[99
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
+      ,  ehcOptEmitDerivTreePaperSize
+      						  ::  String            -- the paper size to be used
 %%][100
 %%]]
       }
@@ -255,6 +257,8 @@ defaultEHCOpts
 %%]]
 %%[[99
       ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
+      ,  ehcOptEmitDerivTreePaperSize
+      						    =   "2"
 %%][100
 %%]]
       }
@@ -320,7 +324,7 @@ ehcCmdLineOpts
      ,  Option ""   ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
 %%]]
 %%[[99
-     ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree "f|i")            "emit derivation tree on .lhs file, f=final, i=infer, default=f"
+     ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree "f|i[,p={0,1,2,3,4,5}]")            "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...), dflt=2"
 %%][100
 %%]]
      ]
@@ -471,10 +475,12 @@ ehcCmdLineOpts
 %%]]
 %%[[99
          oDerivTree  ms  o =  case ms of
-                                Just "f"     -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
-                                Just "i"     -> o { ehcOptEmitDerivTree    = DerivTreeWay_Infer  }
-                                Nothing      -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
-                                _            -> o
+                                Just ('f':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
+                                Just ('i':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Infer  }
+                                Nothing      ->          o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
+                                _            ->          o
+                           where opts (',':'p':'=':sz:_) o = o { ehcOptEmitDerivTreePaperSize = [sz] }
+                                 opts _                  o = o
 %%][100
 %%]]
 %%]

@@ -113,7 +113,7 @@ ppCTag' :: CfgPP x => x -> CTag -> PP_Doc
 ppCTag' x t
   = case t of
       CTagRec                      -> ppCurly "Rec"
-      CTag ty nm tag arity mxarity -> ppCurlysSemis' [ppNm ty,ppNm nm,pp tag, pp arity, pp mxarity]
+      CTag ty nm tag arity mxarity -> ppCurlysCommas' [ppNm ty,ppNm nm,pp tag, pp arity, pp mxarity]
   where ppNm n = cfgppHsName x n
 %%]
 

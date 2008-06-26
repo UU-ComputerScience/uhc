@@ -427,23 +427,29 @@ ppListSepFill o c s pps
         l (p:ps)  = fill ((o >|< pp p) : map (s >|<) ps) >|< c
 %%]
 
-%%[7 export(ppFld,mkPPAppFun)
+%%[7 export(ppFld,mkPPAppFun,mkPPAppFun')
 ppFld :: String -> Maybe HsName -> HsName -> PP_Doc -> PP_Doc -> PP_Doc
 ppFld sep positionalNm nm nmPP f
   = case positionalNm of
       Just pn | pn == nm -> f
       _                  -> nmPP >#< sep >#< f
 
+mkPPAppFun' :: String -> HsName -> PP_Doc -> PP_Doc
+mkPPAppFun' sep c p = if c == hsnRowEmpty then empty else p >|< sep
+
 mkPPAppFun :: HsName -> PP_Doc -> PP_Doc
-mkPPAppFun c p = if c == hsnRowEmpty then empty else p >|< "|"
+mkPPAppFun = mkPPAppFun' "|"
 %%]
 
-%%[7 export(mkExtAppPP)
-mkExtAppPP :: (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP_Doc,[PP_Doc])
-mkExtAppPP (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
+%%[7 export(mkExtAppPP,mkExtAppPP')
+mkExtAppPP' :: String -> (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP_Doc,[PP_Doc])
+mkExtAppPP' sep (funNm,funNmPP,funPPL) (argNm,argNmPP,argPPL,argPP)
   =  if hsnIsRec funNm || hsnIsSum funNm
-     then (mkPPAppFun argNm argNmPP,argPPL)
+     then (mkPPAppFun' sep argNm argNmPP,argPPL)
      else (funNmPP,funPPL ++ [argPP])
+
+mkExtAppPP :: (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP_Doc,[PP_Doc])
+mkExtAppPP = mkExtAppPP' "|"
 %%]
 
 %%[9
