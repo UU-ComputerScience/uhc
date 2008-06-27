@@ -39,6 +39,7 @@ SEM Declaration
         loc             .   nmLev       =   @lhs.nmLev -- + 1
     | Instance
         loc             .   nmLev       =   @lhs.nmLev -- + 1
+        -- where           .   nmLev       =   @lhs.nmLev + 1
 %%]]
 %%[[11
     | Type

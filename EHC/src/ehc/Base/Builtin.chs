@@ -389,7 +389,7 @@ mkRV m = hsnSetQual m . hsnFromString
       , "&&"
       , "||"
       , "Ord", "compare"
-      , "concat", "++"
+      , "++", "concat"
       , "."
 %%]]
       ]
@@ -585,6 +585,7 @@ data EHBuiltinNames
       , ehbnPrelShowParen               :: HsName
       , ehbnPrelConcat                  :: HsName
       , ehbnPrelConcat2                 :: HsName
+      , ehbnPrelConcatMap               :: HsName
       , ehbnPrelCompose                 :: HsName
       , ehbnClassEnum                   :: HsName
       , ehbnClassEnumFldFromEnum        :: HsName
@@ -657,6 +658,7 @@ mkEHBuiltinNames f
       , ehbnPrelShowParen               = f IdOcc_Val       hsnPrelShowParen
       , ehbnPrelConcat                  = f IdOcc_Val       hsnPrelConcat
       , ehbnPrelConcat2                 = f IdOcc_Val       hsnPrelConcat2
+      , ehbnPrelConcatMap               = f IdOcc_Val       hsnPrelConcatMap
       , ehbnPrelCompose                 = f IdOcc_Val       hsnPrelCompose
       , ehbnClassEnum                   = f IdOcc_Class     hsnClassEnum
       , ehbnClassEnumFldFromEnum        = f IdOcc_Val       hsnClassEnumFldFromEnum

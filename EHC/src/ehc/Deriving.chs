@@ -49,7 +49,8 @@ data DerivClsFld
                                        -> [HsName]                              -- names of initial args (usually same as dcfInitialArgL)
                                        -> [CExpr]                               -- constituents
                                        -> CExpr
-      , dcfNoArgSubsCExpr           :: [(DataTagInfo,[CExpr])]                  -- all tag info + sub instances
+      , dcfNoArgSubsCExpr           :: RCEEnv
+                                       -> [(DataTagInfo,[CExpr])]               -- all tag info + sub calls parameterized with appropriate instance
                                        -> Int                                   -- nr of alts
                                        -> CExpr                                 -- instance under construction
                                        -> [CExpr]                               -- instances corresponding to dclExtraCtxt
@@ -144,7 +145,7 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs nrOfAlts self _ [argFrom]
+                  \_ dtiSubs nrOfAlts self _ [argFrom]
                      -> let (dti,_) = last dtiSubs
                         in  cbuiltinApp opts ehbnClassEnumFldEnumFromTo [self,CExpr_Var argFrom,CExpr_Tup (dtiCTag dti)]
                 )
@@ -158,7 +159,7 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs nrOfAlts self _ [argFrom,argThen]
+                  \_ dtiSubs nrOfAlts self _ [argFrom,argThen]
                      -> let (dti1,_) = head dtiSubs
                             (dti2,_) = last dtiSubs
                         in  cbuiltinApp opts ehbnClassEnumFldEnumFromThenTo
@@ -186,7 +187,7 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs nrOfAlts self [dictEnumInt] [argFrom,argTo]
+                  \_ dtiSubs nrOfAlts self [dictEnumInt] [argFrom,argTo]
                      -> cbuiltinApp opts ehbnMap
                           [ cbuiltinApp opts ehbnClassEnumFldToEnum [self]
                           , cbuiltinApp opts ehbnClassEnumFldEnumFromTo
@@ -208,7 +209,7 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs nrOfAlts self [dictEnumInt] [argFrom,argThen,argTo]
+                  \_ dtiSubs nrOfAlts self [dictEnumInt] [argFrom,argThen,argTo]
                      -> cbuiltinApp opts ehbnMap
                           [ cbuiltinApp opts ehbnClassEnumFldToEnum [self]
                           , cbuiltinApp opts ehbnClassEnumFldEnumFromThenTo
@@ -298,9 +299,9 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs _ _ _ _
+                  \_ dtiSubs _ _ _ _
                      -> let (dti,subs) = last dtiSubs
-                        in  CExpr_Tup (dtiCTag dti) `mkCExprApp` subs
+                        in  mkCExprTuple' (dtiCTag dti) subs
                 )
                 undef undef
                 nowrap
@@ -312,9 +313,9 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs _ _ _ _
+                  \_ dtiSubs _ _ _ _
                      -> let (dti,subs) = head dtiSubs
-                        in  CExpr_Tup (dtiCTag dti) `mkCExprApp` subs
+                        in  mkCExprTuple' (dtiCTag dti) subs
                 )
                 undef undef
                 nowrap
@@ -357,29 +358,34 @@ mkDerivClsMp fe valGam dataGam
                 0
                 nononzeroargs
                 (Just $
-                  \dtiSubs _ _ _ [dNm,rNm]
-                     -> let mkSub (dti,subInsts)
+                  \env dtiSubs _ _ _ [dNm,rNm]
+                     -> let mkSub (dti,subCalls)
                               = mkCExprApp (CExpr_Var $ fn ehbnPrelReadParen) [needParen,v,CExpr_Var rNm]
-                              where nSub = length subInsts
+                              where nSub = length subCalls
                                     nms seed = take (nSub+1) $ hsnLclSupplyWith $ mkHNmHidden seed
-                                    resNmL = nms "u"
-                                    remNmL = nms "v"
-                                    nmL = zip3 (rNm:remNmL) resNmL remNmL
+                                    remNmL  = nms "v"
+                                    nmL = zip4 (nms "uv") (rNm:remNmL) (nms "u") remNmL
+                                    nmLRemFinal = last remNmL
+                                    mkLamTup     x res rem cont = mkCExprLam1 x $ mkCMatchTuple env [res,rem] cont (CExpr_Var x)
+                                    mkLamStr str x res rem cont = mkLamTup x res rem $ mkCMatchString env str cont nil (CExpr_Var res)
+                                    mkConcatMapTup lam prio rem subCall = mkCExprApp (CExpr_Var $ fn ehbnPrelConcatMap) [lam,mkCExprApp subCall [prio,CExpr_Var rem]]
+                                    mkConcatMapStr lam      rem         = mkCExprApp (CExpr_Var $ fn ehbnPrelConcatMap) [lam,mkCExprApp (CExpr_Var $ fn ehbnPrelLex) [CExpr_Var rem]]
+                                    mkPrio prio = CExpr_Int (prio + 1)
+                                    mkRes  resL rem = mkCListSingleton opts $ mkCExprTuple [mkCExprTuple' (dtiCTag dti) $ map CExpr_Var resL,CExpr_Var rem]
+                                    mkConRead (resrem,remprev,res,rem) = \cont -> mkConcatMapStr (mkLamStr (tag2str (dtiCTag dti)) resrem res rem cont) remprev
+                                    mkSubReads tlNmL subCalls = [ (\cont -> mkConcatMapTup (mkLamTup resrem res rem cont) (mkPrio fixityAppPrio) remPrev subCall, res) | ((resrem,remPrev,res,rem),subCall) <- zip tlNmL subCalls ]
                                     (needParen,v)
-                                      = case (subInsts,dtiMbFixityPrio dti) of
-                                          ([inst1,inst2],Just p)
+                                      = case (subCalls,dtiMbFixityPrio dti,nmL) of
+                                          ([subCall1,subCall2],Just p,(subNms1:conNms:subNms2:_))
                                             -> ( cgtint opts (CExpr_Var dNm) p
-                                               , mkCExprLam1 rNm
-                                                   (CExpr_Var rNm
-                                                   )
+                                               , mkCExprLam1 rNm $ sub1 $ mkConRead conNms $ sub2 $ mkRes subResNmL nmLRemFinal
                                                )
-                                          (insts,_)
+                                            where ([sub1,sub2],subResNmL) = unzip $ mkSubReads [subNms1,subNms2] subCalls
+                                          (_,_,(conNms:subNmsL))
                                             -> ( cgtint opts (CExpr_Var dNm) fixityAppPrio
-                                               , mkCExprLam1 rNm
-                                                   (CExpr_Var rNm
-                                                   )
-                                                   -- [ | (remPrev,res,rem) <- nmL ]
+                                               , mkCExprLam1 rNm $ foldr ($) (mkRes subResNmL nmLRemFinal) (mkConRead conNms : subs)
                                                )
+                                            where (subs,subResNmL) = unzip $ mkSubReads subNmsL subCalls
                                           
                         in  foldr1 (\ds e -> mkCExprApp (CExpr_Var $ fn ehbnPrelConcat2) [ds,e])
                             $ map mkSub dtiSubs
@@ -398,10 +404,11 @@ mkDerivClsMp fe valGam dataGam
                 (t,_) = valGamLookupTy f' valGam
                 mkPat = maybe (const mkCPatCon) id mbMkPat
                 asSubs = maybe (const []) id mbAsSubs
-                cNoArg = maybe (\_ _ _ _ _ -> undef) id mbCNoArg
+                cNoArg = maybe (\_ _ _ _ _ _ -> undef) id mbCNoArg
         fn f  = f $ ehcOptBuiltinNames opts
         false = CExpr_Var $ fn ehbnBoolFalse
         true  = CExpr_Var $ fn ehbnBoolTrue
+        nil = CExpr_Tup $ ctagNil opts
         and l r = (CExpr_Var $ fn ehbnBoolAnd) `mkCExprApp` [l,r]
         compose l r = (CExpr_Var $ fn ehbnPrelCompose) `mkCExprApp` [l,r]
         showString s = (CExpr_Var $ fn ehbnPrelShowString) `mkCExprApp` [cstring opts s]

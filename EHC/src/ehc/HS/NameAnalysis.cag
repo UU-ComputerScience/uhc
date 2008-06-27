@@ -1166,8 +1166,25 @@ SEM Statement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs
-mkIdDefEH :: IdDefOcc -> [EH.Decl]
-mkIdDefEH def
+data MkIdDefEHOpts
+  = MkIdDefEHOpts {
+%%[[20
+        mkidoptsUpdateNm	:: UpdateEHNm
+%%]]
+      }
+%%]
+
+%%[1 hs
+emptyMkIdDefEHOpts
+  = MkIdDefEHOpts
+%%[[20
+        id
+%%]]
+%%]
+
+%%[1 hs
+mkIdDefEH :: MkIdDefEHOpts -> IdDefOcc -> [EH.Decl]
+mkIdDefEH opts def
   = case doccAsp def of
       IdAsp_Val_Pat decl
         -> [decl]
@@ -1253,41 +1270,41 @@ splitOff
 idOcc2Defs :: IdDefOccGam -> IdOcc -> [IdDefOcc]
 idOcc2Defs idDefOccGam occ = maybe [] id $ gamLookupDup occ idDefOccGam
 
-mkIdOccEH :: [IdDefOcc] -> ([EH.Decl],[Err])
-mkIdOccEH defs
+mkIdOccEH :: MkIdDefEHOpts -> [IdDefOcc] -> ([EH.Decl],[Err])
+mkIdOccEH opts defs
   = case defs of
       (_:_)
-        -> (concatMap mkIdDefEH (otherDefs ++ funDef),errL)
+        -> (concatMap (mkIdDefEH opts) (otherDefs ++ funDef),errL)
         where (funDefs,otherDefs) = partition (iaspIsFun . doccAsp) defs
               (funDef,errL) = mergeFunDefL funDefs
       _ -> ([],[])
 %%]
 
 %%[1.idDefOccs2Decls hs
-idDefOccs2Decls :: [[IdDefOcc]] -> ([[EH.Decl]],[Err])
-idDefOccs2Decls docss
+idDefOccs2Decls :: MkIdDefEHOpts -> [[IdDefOcc]] -> ([[EH.Decl]],[Err])
+idDefOccs2Decls opts docss
   = ([concat ds], concat es)
-  where (ds,es) = unzip $ map mkIdOccEH $ docss
+  where (ds,es) = unzip $ map (mkIdOccEH opts) $ docss
 %%]
 
 %%[1.mkIdOccSccEH hs
-mkIdOccSccEH :: Range -> Bool -> IdDefOccGam -> Maybe [[IdOcc]] -> (EH.Expr -> EH.Expr,[[EH.Decl]],[Err])
+mkIdOccSccEH :: Range -> MkIdDefEHOpts -> Bool -> IdDefOccGam -> Maybe [[IdOcc]] -> (EH.Expr -> EH.Expr,[[EH.Decl]],[Err])
 %%[[1
-mkIdOccSccEH r _ g moss
+mkIdOccSccEH r opts _ g moss
 %%][8
-mkIdOccSccEH r isStrict g moss
+mkIdOccSccEH r opts isStrict g moss
 %%]
   = (m . mkLet (concat sds), d ++ sds, e ++ ses)
   where (m,d,e) = foldr mkl (id,[],[]) doss
         mkl dos (mke,d,e)
           = ((\e -> foldr mkLet e dss) . mke,dss ++ d, es ++ e)
-          where (dss,es) = idDefOccs2Decls dos
+          where (dss,es) = idDefOccs2Decls opts dos
 %%[[1
         mkLet ds = EH.mkLet r (Just ds)
 %%][8
         mkLet ds = EH.mkLet' isStrict r (Just ds)
 %%]]
-        (sds,ses) = idDefOccs2Decls $ concat $ spls
+        (sds,ses) = idDefOccs2Decls opts $ concat $ spls
         (doss:spls:_)
           = collapse
               [ collapse [ splitOff $ idOcc2Defs g $ l | l <- ll ]
@@ -1300,7 +1317,7 @@ mkIdOccSccEH r isStrict g moss
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
-                                        =   mkIdOccSccEH @range False @declarations.idDefOccGam (Just @sccOrder)
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts False @declarations.idDefOccGam (Just @sccOrder)
 %%]
 
 %%[8.Body.mkSccLet -1.Body.mkSccLet
@@ -1308,7 +1325,7 @@ SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
                                         =   let g = if not @mainValExists then @idDefOccGamMain else emptyGam
-                                            in  mkIdOccSccEH @range False (g `gamUnion` @declarations.idDefOccGam) (Just @sccOrder)
+                                            in  mkIdOccSccEH @range emptyMkIdDefEHOpts False (g `gamUnion` @declarations.idDefOccGam) (Just @sccOrder)
 %%]
 
 %%[20 -8.Body.mkSccLet
@@ -1316,21 +1333,21 @@ SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
                                         =   let g = if @lhs.isTopMod then @idDefOccGamMain else emptyGam
-                                            in  mkIdOccSccEH @range False (g `gamUnion` @declarations.idDefOccGam) (Just @sccOrder)
+                                            in  mkIdOccSccEH @range emptyMkIdDefEHOpts False (g `gamUnion` @declarations.idDefOccGam) (Just @sccOrder)
 %%]
 
 %%[1.Expr.Let.mkSccLet
 SEM Expression
     | Let
         loc             .   (mkSccLet,_,errReorder)
-                                        =   mkIdOccSccEH @range False @declarations.idDefOccGam (Just @sccOrder)
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts False @declarations.idDefOccGam (Just @sccOrder)
 %%]
 
 %%[8 -1.Expr.Let.mkSccLet
 SEM Expression
     | Let
         loc             .   (mkSccLet,_,errReorder)
-                                        =   mkIdOccSccEH @range @isStrict @declarations.idDefOccGam (Just @sccOrder)
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts @isStrict @declarations.idDefOccGam (Just @sccOrder)
 %%]
 
 %%[1
@@ -1340,31 +1357,37 @@ SEM RightHandSide
       Guarded
 %%]
         loc             .   (mkSccLet,_,errReorder)
-                                        =   mkIdOccSccEH @range False @where.idDefOccGam (Just @sccOrder)
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts False @where.idDefOccGam (Just @sccOrder)
 %%]
 
 %%[5
 SEM Qualifier
     | Let
         loc             .   (mkSccLet,_,errReorder)
-                                        =   mkIdOccSccEH @range False @declarations.idDefOccGam (Just @sccOrder)
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts False @declarations.idDefOccGam (Just @sccOrder)
 %%]
 
 %%[9
 SEM Declaration
     | Instance
         loc             .   (_,ehReorderedDecls,errReorder)
-                                        =   mkIdOccSccEH @range False @where.idDefOccGam Nothing
+                                        =   mkIdOccSccEH @range
+%%[[9
+                                                         emptyMkIdDefEHOpts
+%%][20
+                                                         (emptyMkIdDefEHOpts {mkidoptsUpdateNm = @lhs.updateEHNm})
+%%]]
+                                                         False @where.idDefOccGam Nothing
     | Class
         loc             .   (_,ehReorderedDecls,errReorder)
-                                        =   mkIdOccSccEH @range False @where.idDefOccGam Nothing
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts False @where.idDefOccGam Nothing
 %%]
 
 %%[9
 SEM Statement
     | Let
         loc             .   (mkSccLet,_,errReorder)
-                                        =   mkIdOccSccEH @range False @declarations.idDefOccGam (Just @sccOrder)
+                                        =   mkIdOccSccEH @range emptyMkIdDefEHOpts False @declarations.idDefOccGam (Just @sccOrder)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1381,4 +1404,46 @@ SEM ImportDeclaration
         lhs             .   modAsMp     =   Map.empty
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Declaration context: in instance or not, determined by equality of updateEHNm and actual lev
+%%% influencing whether a defined name has to be defined before (as part of class)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 hs
+type UpdateEHNm = HsName -> HsName
+%%]
+
+%%[20
+ATTR AllNT [ updateEHNm: UpdateEHNm | | ]
+
+SEM AGItf
+    | AGItf
+        loc             .   updateEHNm
+                                        =   id
+
+SEM Declaration
+    | Instance
+        where           .   updateEHNm
+                                        =   hsnSetQual (panicJust "Declaration.Instance.updateEHNm" $ hsnQualifier @classrefname)
+    | PatternBinding
+        righthandside   .   updateEHNm
+                                        =   id
+    | * - Instance FunctionBindings PatternBinding
+        loc             .   updateEHNm
+                                        =   id
+
+SEM FunctionBinding
+    | FunctionBinding
+    	righthandside	.	updateEHNm
+                                        =   id
+
+SEM LeftHandSide
+    | Function
+    	patterns		.	updateEHNm
+                                        =   id
+    | Infix
+    	loc				.	updateEHNm
+                                        =   id
+%%]
 
