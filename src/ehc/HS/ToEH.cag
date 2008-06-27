@@ -855,9 +855,23 @@ ATTR LeftHandSide [ | | eh: {[EH.PatExpr]} ]
 
 SEM LeftHandSide
     | Function
-        lhs         .   eh          =   rngLift @range EH.PatExpr_Var @refname : @patterns.eh
+        lhs         .   eh          =   rngLift @range EH.PatExpr_Var
+%%[[1
+                                                @refname
+%%][20
+                                                (@lhs.updateEHNm @refname)
+%%]]
+                                          : @patterns.eh
     | Infix
-        lhs         .   eh          =   [rngLift @range EH.PatExpr_Var @refname,@leftPattern.eh,@rightPattern.eh]
+        lhs         .   eh          =   [ rngLift @range EH.PatExpr_Var
+%%[[1
+                                                  @refname
+%%][20
+                                                  (@lhs.updateEHNm @refname)
+%%]]
+                                        , @leftPattern.eh
+                                        , @rightPattern.eh
+                                        ]
     | Parenthesized
         lhs         .   eh          =   @lefthandside.eh ++ @patterns.eh
 %%]
@@ -940,7 +954,12 @@ SEM Pattern
                                               Literal_Float  r   s -> mke r $ ehExpLitFloat r s @sign @litrefnames
 %%]]
     | Variable
-        lhs         .   eh          =   rngLift @range EH.PatExpr_Var @refname       
+        lhs         .   eh          =   rngLift @range EH.PatExpr_Var
+%%[[1
+                                                @refname
+%%][20
+                                                (@lhs.updateEHNm @refname)
+%%]]
     | Constructor
         lhs         .   eh          =   ehPatConApp @range @refname @patterns.eh
     | Parenthesized
@@ -948,7 +967,13 @@ SEM Pattern
     | Tuple
         lhs         .   eh          =   ehPatConApp @range (hsnProd (length @patterns.eh)) @patterns.eh
     | As
-        lhs         .   eh          =   rngLift @range EH.PatExpr_VarAs @refname @pattern.eh
+        lhs         .   eh          =   rngLift @range EH.PatExpr_VarAs
+%%[[1
+                                                @refname
+%%][20
+                                                (@lhs.updateEHNm @refname)
+%%]]
+                                                @pattern.eh
     | Wildcard
         lhs         .   eh          =   rngLift @range EH.PatExpr_Var hsnWild
 %%]

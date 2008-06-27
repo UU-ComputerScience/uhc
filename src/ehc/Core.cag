@@ -300,6 +300,14 @@ mkCBind1 :: HsName -> CExpr -> CBind
 mkCBind1 n e = mkCBind1Meta n CMeta_Val e
 %%]
 
+%%[8 hs export(mkCExprTuple,mkCExprTuple')
+mkCExprTuple' :: CTag -> [CExpr] -> CExpr
+mkCExprTuple' t = mkCExprApp (CExpr_Tup t)
+
+mkCExprTuple :: [CExpr] -> CExpr
+mkCExprTuple = mkCExprTuple' CTagRec
+%%]
+
 %%[8 hs export(mkCExprStrictInMeta)
 mkCExprStrictInMeta :: HsName -> CMeta -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprStrictInMeta nm m e mkC = CExpr_Let CBindStrict [mkCBind1Meta nm m e] (mkC (CExpr_Var nm))
@@ -407,7 +415,7 @@ cgtint opts e i = cbuiltinApp opts ehbnPrimGtInt [e,CExpr_Int i]
 
 %%[99 hs
 ceqchar :: EHCOpts -> Char -> CExpr -> CExpr
-ceqchar opts c e = cbuiltinApp opts ehbnPrimEqChar [e,CExpr_Int (ord c)]
+ceqchar opts c e = cbuiltinApp opts ehbnPrimEqChar [e,CExpr_Char c]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -676,7 +676,7 @@ SEM Decl
                                                                      = mkCBind1 (dcfNm dcf)
                                                                          (if fArity == 0
                                                                           then mkCExprLam (dcfInitialArgL dcf)
-                                                                               $ dcfNoArgSubsCExpr dcf 
+                                                                               $ dcfNoArgSubsCExpr dcf @rceEnv
                                                                                    [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
                                                                                    nrOfAlts (CExpr_Var @dictBuildNm) extraCxL (dcfInitialArgL dcf)
                                                                           else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
