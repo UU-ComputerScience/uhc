@@ -1016,6 +1016,8 @@ SEM Expr
 %%[[16
                                                           {fioFitVarFailureToProveObl = True }
 %%]]
+  | TypeAs      loc         .   knTyFIOpts          =   strongFIOpts
+                            .   downFIOpts          =   strongFIOpts {fioBindLFirst = False}
 %%]
 
 -- 20070205 - AD, should be generated from ruler rules, but not yet is

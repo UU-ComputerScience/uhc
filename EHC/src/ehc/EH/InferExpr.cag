@@ -326,10 +326,10 @@ SEM Expr
                                                         in   (Set.toList $ ftvSet vg `Set.union` ftvSet tg, cycVarMp1 |+> cycVarMp2)
                             .   tyTy                :=  @lhs.tyVarMp |=> @tyExpr.ty
                             .   ty_q_               :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
-                            .   fo_                 :=  fitsIn strongFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
+                            .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ |=> @lhs.tyVarMp
                             .   knTyDown            =   mkTyVar @lUniq3
-                            .   fo_fitDown          =   fitsIn (strongFIOpts {fioBindLFirst = False}) @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
+                            .   fo_fitDown          =   fitsIn @downFIOpts @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
                 expr        .   knTy                :=  @knTyDown
                             .   tyVarMp             :=  foVarMp @fo_fitDown |=> @ty_q_2_VarMp
 %%]

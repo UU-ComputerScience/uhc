@@ -1,21 +1,24 @@
 {- ----------------------------------------------------------------------------------------
    what    : (im)predicativity
-   expected: types of h1 & h3 the same, h2 & h4 too
-   but     : h2 & h4 are not the same, h2 should have h4's type.
+   expected: types of cons1 & cons3 the same, cons2 & cons4 too
+   but     : cons2 & cons4 are not the same, cons2 should have cons4's type.
              This is an instance of the inference order problem
 ---------------------------------------------------------------------------------------- -}
 
 module Main where
 
-f1 :: forall a . a -> [a] -> [a]
-f2 :: forall a . [a] -> a -> [a]
+cons :: forall a . a -> [a] -> [a]
+cons h t = h : t
+revcons :: forall a . [a] -> a -> [a]
+revcons t h = h : t
 ids :: [forall a. a->a]
+ids = []
 
-h1  = f1 (\x->x)  ids
-h2  = f1 (\x->x) ~ids						-- should be: [forall a. a->a], but is forall a.[a->a]
-h2' = f1 (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes this
+cons1  = cons (\x->x)  ids
+cons2  = cons (\x->x) ~ids						-- should be: [forall a. a->a], but is forall a.[a->a]
+cons2' = cons (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes this
 
-h3  = f2  ids (\x->x)
-h4  = f2 ~ids (\x->x)
+cons3  = revcons  ids (\x->x)
+cons4  = revcons ~ids (\x->x)
 
 main = return ()

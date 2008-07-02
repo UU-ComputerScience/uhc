@@ -818,7 +818,7 @@ fixityAppPrio = fixityMaxPrio + 1
 
 %%[1
 instance Eq Pos where
-  p1 == p2 = line p1 == line p2 && column p2 == column p2
+  p1 == p2 = line p1 == line p2 && column p1 == column p2
 
 instance Ord Pos where
   compare p1 p2

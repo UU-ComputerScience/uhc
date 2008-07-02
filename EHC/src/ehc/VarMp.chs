@@ -278,9 +278,6 @@ varmpinfoMkVar v i
       _             -> mkTyVar v					-- rest incomplete
 %%]
 
-%%[100 -99.varmpinfoMkVar
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% VarMp singleton
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -563,9 +560,6 @@ ppVarMpInfoCfgTy c i
 
 ppVarMpInfoDt :: VarMpInfo Ty -> PP_Doc
 ppVarMpInfoDt = ppVarMpInfoCfgTy cfgPPTyDT
-%%]
-
-%%[100 -99.ppVarMpInfoCfgTy
 %%]
 
 %%[9

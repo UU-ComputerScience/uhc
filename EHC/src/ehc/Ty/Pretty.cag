@@ -71,9 +71,6 @@ ppTyDt :: Ty -> PP_Doc
 ppTyDt = ppTyWithCfg cfgPPTyDT
 %%]
 
-%%[100 -99.ppTyDt
-%%]
-
 %%[8 hs
 instance PP Ty where
   pp t = ppTy t
@@ -285,9 +282,6 @@ cfgPPTyDT
                                           safe x   = [x]
                                       in  concatMap safe
       }
-%%]
-
-%%[100 -99.cfgPPTyDT
 %%]
 
 For predicates

@@ -859,7 +859,7 @@ SEM LeftHandSide
 %%[[1
                                                 @refname
 %%][20
-                                                (@lhs.updateEHNm @refname)
+                                                (@lhs.patchEhNmInInstance @refname)
 %%]]
                                           : @patterns.eh
     | Infix
@@ -867,7 +867,7 @@ SEM LeftHandSide
 %%[[1
                                                   @refname
 %%][20
-                                                  (@lhs.updateEHNm @refname)
+                                                  (@lhs.patchEhNmInInstance @refname)
 %%]]
                                         , @leftPattern.eh
                                         , @rightPattern.eh
@@ -958,7 +958,7 @@ SEM Pattern
 %%[[1
                                                 @refname
 %%][20
-                                                (@lhs.updateEHNm @refname)
+                                                (@lhs.patchEhNmInInstance @refname)
 %%]]
     | Constructor
         lhs         .   eh          =   ehPatConApp @range @refname @patterns.eh
@@ -971,7 +971,7 @@ SEM Pattern
 %%[[1
                                                 @refname
 %%][20
-                                                (@lhs.updateEHNm @refname)
+                                                (@lhs.patchEhNmInInstance @refname)
 %%]]
                                                 @pattern.eh
     | Wildcard

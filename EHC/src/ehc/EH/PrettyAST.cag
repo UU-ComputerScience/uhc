@@ -249,6 +249,7 @@ SEM Expr
   | Let         loc     .  info_4   :=  [ mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
                                         ]
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
+                                        -- , mkInfo1 "foTrace fo" (vlist $ foTrace @foKnRes)
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "foVarMp" (pp (foVarMp @fo_))
                                         ]

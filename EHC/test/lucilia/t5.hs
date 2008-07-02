@@ -17,11 +17,11 @@ f2 g = let v1 = g pf 3
 v1 = (f1 (choose id),f2 (choose id))
 ch :: forall a . (a -> a) -> a -> a
 ch = choose id
+chid1 :: forall a . (a -> a) -> forall b . b -> b
+chid1 = choose id
+chid2 :: (forall a . a -> a) -> forall b . b -> b
+chid2 = choose id
 {-
-ch2 :: forall a . (a -> a) -> forall b . b -> b
-ch2 = choose id
-ch3 :: (forall a . a -> a) -> forall b . b -> b
-ch3 = choose id
 -}
 v2 = (f1 ch,f2 ch)
 v3 = (f1 id,f2 id)

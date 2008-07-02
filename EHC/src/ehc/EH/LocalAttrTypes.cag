@@ -61,6 +61,7 @@ SEM *
 		loc.eqTy  			 			: Ty
 		loc.fe  						: FIEnv
 		loc.finGathPolGam  				: PolGam
+		loc.downFIOpts 					: FIOpts
 		loc.fiOpts 						: FIOpts
 		loc.fldL  						: {[HsName]}
 		loc.fldS  						: {Set.Set HsName}
@@ -99,6 +100,8 @@ SEM *
 		loc.knDataTy 					: Ty
 		loc.knExprTy 					: Ty
 		loc.knFIOpts  					: FIOpts
+		loc.knFunFIOpts					: FIOpts
+		loc.knTyFIOpts					: FIOpts
 		loc.knFunKi 					: Ty
 		loc.knImpls  					: TyL
 		loc.knImplsTl  					: Impls
