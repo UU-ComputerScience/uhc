@@ -161,12 +161,11 @@ data EHCOpts
       ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
                               ::  Bool
-%%]]
-%%[[99
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
       ,  ehcOptEmitDerivTreePaperSize
       						  ::  String            -- the paper size to be used
-%%][100
+      ,  ehcOptEmitDerivFitsIn
+      						  ::  Bool              -- show fitsIn derivation tree as well
 %%]]
       }
 %%]
@@ -254,12 +253,10 @@ defaultEHCOpts
       ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
-%%]]
-%%[[99
       ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
       ,  ehcOptEmitDerivTreePaperSize
       						    =   "2"
-%%][100
+      ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
       }
 %%]
@@ -324,7 +321,8 @@ ehcCmdLineOpts
      ,  Option ""   ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
 %%]]
 %%[[99
-     ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree "f|i[,p={0,1,2,3,4,5}]")            "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...), dflt=2"
+     ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree ("f|i[,p=[{0,1,2,3,4,5}|<n>m]][,f=" ++ boolArgStr ++ "]"))
+                                                                              "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...; <n>m=2^<n> meter), dflt=2; f=show subsumption"
 %%][100
 %%]]
      ]
@@ -380,7 +378,6 @@ ehcCmdLineOpts
 
 %%[[99
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
-%%][100
 %%]]
 
                                 Just "bc"    -> o { ehcOptEmitBytecode     = True 
@@ -479,8 +476,10 @@ ehcCmdLineOpts
                                 Just ('i':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Infer  }
                                 Nothing      ->          o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
                                 _            ->          o
-                           where opts (',':'p':'=':sz:_) o = o { ehcOptEmitDerivTreePaperSize = [sz] }
-                                 opts _                  o = o
+                           where opts (',':'p':'=':sz:'m':r) o = opts r $ o { ehcOptEmitDerivTreePaperSize = ['m',sz] }
+                                 opts (',':'p':'=':sz    :r) o = opts r $ o { ehcOptEmitDerivTreePaperSize = [sz] }
+                                 opts (',':'f':'='       :r) o = maybe o (\(b,r) -> opts r $ o {ehcOptEmitDerivFitsIn = b}) (optBooleanTake r)
+                                 opts _                      o = o
 %%][100
 %%]]
 %%]
@@ -494,20 +493,27 @@ optInt tr s o
 %%]
 
 %%[1
+optBooleanTake :: String -> Maybe (Bool,String)
+optBooleanTake s
+  = case s of
+      ('-':r)           -> Just (False,r)
+      ('n':'o':r)       -> Just (False,r)
+      ('o':'f':'f':r)   -> Just (False,r)
+      ('0':r)           -> Just (False,r)
+      ('+':r)           -> Just (True ,r)
+      ('y':'e':'s':r)   -> Just (True ,r)
+      ('o':'n':r)       -> Just (True ,r)
+      ('1':r)           -> Just (True ,r)
+      _                 -> Nothing
+
 optBoolean :: (EHCOpts -> Bool -> EHCOpts) -> Maybe String -> EHCOpts -> EHCOpts
 optBoolean tr ms o
  = case ms of
-     Just "-"     -> tr o False
-     Just "no"    -> tr o False
-     Just "off"   -> tr o False
-     Just "0"     -> tr o False
-     Just "+"     -> tr o True
-     Just "yes"   -> tr o True
-     Just "on"    -> tr o True
-     Just "1"     -> tr o True
-     _            -> o
+     Just s -> maybe o (tr o . fst) (optBooleanTake s)
+     _      -> o
 
-boolArg tr = OptArg (optBoolean tr) "0|1|no|yes|-|+"
+boolArgStr = "0|1|no|yes|off|on|-|+"
+boolArg tr = OptArg (optBoolean tr) boolArgStr
 %%]
 
 %%[1

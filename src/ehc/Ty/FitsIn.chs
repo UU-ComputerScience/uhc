@@ -62,6 +62,12 @@
 %%[11 import({%{EH}Ty.Trf.BetaReduce})
 %%]
 
+%%[99.DerivationTree import({%{EH}DerivationTree})
+%%]
+
+%%[100 -99.DerivationTree
+%%]
+
 For debug/trace:
 %%[4 import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils})
 %%]
@@ -319,6 +325,26 @@ fitsInFI fi ty1 ty2
             trfo msg rest fo        =  fo
 %%]]
 
+            -- derivation tree
+%%[[4
+            dtfo _ _ _ _ _ _ fo     =  fo
+%%][99
+            dtfo rlNm fi t1 t2 subfos mbind fo
+                                    =  fo {foMkDT = mk}
+                                    where mk mbTop fmt m dm1 = ( dtRule False fmt ("m." ++ rlNm) (reverse subs) (dtJdgMatch opts fiopts t1' t2' t3 mbnd), dm5 )
+                                            where (t1' ,dm2) = dtEltTy (dtChooseDT opts m mfi) dm1 t1
+                                                  (t2' ,dm3) = dtEltTy (dtChooseDT opts m mfi) dm2 t2
+                                                  (subs,dm4) = foldl (\(subs,dm) (fo,fmt) -> let (sub,dm') = foMkDT fo Nothing fmt m dm in (sub:subs,dm')) ([],dm3) subfos
+                                                  (t3  ,dm5) = dtEltTy (dtChooseDT opts m mfo) dm4 (foTy fo)
+                                                  (mbnd,dm6) = maybe (dtEltVarMp (dtChooseDT opts m mfo) dm5 mbind) (\x -> (x,emptyVarMp)) mbTop
+                                                  mfi        = fiVarMpLoc fi |=> fiVarMp fi
+                                                  mfo        = foVarMp fo |=> fiVarMp fi
+                                                  opts       = feEHCOpts $ fiEnv fi
+                                                  fiopts     = fiFIOpts fi
+%%][100
+            dtfo _ _ _ _ _ _ fo     =  fo
+%%]]
+
             -- results
             res' fi tv t            =  trfo "res" (ppTyWithFI fi tv)
                                        $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
@@ -350,8 +376,10 @@ fitsInFI fi ty1 ty2
             tyVarIsBound tv fi      =  isJust $ lookupTyVar fi tv
 
 %%[4.fitsIn.bind
-            bind fi tv t            =  trfo "bind" ("tv:" >#< tv >-< "ty:" >#< t)
-                                       $ (res' (fiBindTyVar tv t fi) (mkTyVar tv) t)
+            bind fi tv t            =  dtfo "bind" fi tv' t [] (tv `varmpTyUnit` t)
+                                       $ trfo "bind" ("tv:" >#< tv >-< "ty:" >#< t)
+                                       $ (res' (fiBindTyVar tv t fi) tv' t)
+                                    where tv' = mkTyVar tv
 %%]
 
 %%[4.fitsIn.allowBind
@@ -773,7 +801,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             f fi Ty_Any                 t2          = res fi t2
             f fi t1                     Ty_Any      = res fi t1
             f fi t1@(Ty_Con s1)         t2@(Ty_Con s2)
-                | s1 == s2                          = res fi t2
+                | s1 == s2                          = dtfo "con" fi t1 t2 [] emptyVarMp
+                                                      $ res fi t2
             f fi t1@(Ty_Var v1 f1)      t2@(Ty_Var v2 f2)
                 | v1 == v2 && f1 == f2              = res fi t1
                 | lBefR && allowBind fi t1          = bind fi v1 t2
@@ -1003,7 +1032,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[4.fitsIn.App
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
-                = manyFO [ffo,afo,trfo "comp" ("ty:" >#< ppTyWithFIFO fi rfo (foTy rfo)) rfo]
+                = manyFO [ ffo, afo
+                         , dtfo "app" fi t1 t2 [(ffo,"l"),(afo,"r")] emptyVarMp
+                           $ trfo "comp" ("ty:" >#< ppTyWithFIFO fi rfo (foTy rfo)) rfo
+                         ]
                 where  fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo    = fVar f fi2 tf1 tf2
                        (as:_) = asgiSpine $ foAppSpineInfo ffo

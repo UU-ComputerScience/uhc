@@ -8,141 +8,6 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utilities
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99 hs
-jdg :: String -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdg nm ctx e concl = l2tText (ctx >#< "^^ Sub(:-)(" >|< nm >|< ") ^^" >#< e >#< ":" >#< concl)
-
-jdgExpr' :: String -> EHCOpts -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdgExpr' kind opts gam knTy e ty
-  = jdg kind (ppSemis' ctxt) e ty
-  where ctxt = [gam] ++ (if ehcOptEmitDerivTree opts == DerivTreeWay_Infer then [knTy] else [])
-
-jdgExpr, jdgRecExpr :: EHCOpts -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdgExpr    = jdgExpr' "e"
-jdgRecExpr = jdgExpr' "re"
-
-jdgDecl :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdgDecl gam e ty = jdg "d" gam e ty
-
-jdgGam :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdgGam gam nm ty = l2tText (ppParens (nm >#< ":->" >#< ty) >#< "`elem`" >#< gam)
-
-jdgMatch :: EHCOpts -> String -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
-jdgMatch opts howmatch opt t1 t2 t res
-  = if ehcOptEmitDerivTree opts == DerivTreeWay_Infer
-    then jdg howmatch opt (t1 >#< howmatch >#< t2) (t >#< "~>" >#< res)
-    else jdg howmatch opt (t1 >#< howmatch >#< t2) empty
-
-jdgStack :: [PP_Doc] -> PP_Doc
-jdgStack l
-  = ltxEnvironmentArgs "array" [pp "c"] $ ppListSep "" "" ltxNl $ hack l
-  where hack [e] = [pp " ",e]
-        hack l   = l
-%%]
-
-%%[99 hs
-rule :: Bool -> String -> String -> [PP_Doc] -> PP_Doc -> PP_Doc
-rule isTop fmt nm pre post = ltxDtOver fmt isTop pre nm post
-%%]
-
-%%[99 hs
-type DtGamL
-  = AssocL DtNm
-           (PP_Doc      -- the gam increment
-           ,DtNm        -- on top of which it extends
-           )
-
-gaml :: DtGamL -> PP_Doc
-gaml [] = empty
-gaml g
-  = {- ltxEnvironment "flushleft"
-    $ -}
-      ltxEnvironment "eqnarray*"
-        (ppListSep "" "" ltxNl
-           [ ppListSep "" "" " & " [l2tText (n >#< "=" >#< n'), l2tText "++", l2tText g] | (n,(g,n')) <- g ]
-        )
-%%]
-
-%%[99 hs
-type DtVarMpL
-  = AssocL DtNm
-           PP_Doc       -- the varmp
-
-varmpl :: DtVarMpL -> PP_Doc
-varmpl [] = empty
-varmpl vm
-  = {- ltxEnvironment "flushleft"
-    $ -}
-      ltxEnvironment "eqnarray*"
-        (ppListSep "" "" ltxNl
-           [ ppListSep "" "" " & " [l2tText n, l2tText "=", l2tText m] | (n,m) <- vm ]
-        )
-%%]
-
-%%[99 hs
-eltTy' :: (Substitutable x TyVarId VarMp) => (x -> TvCatMp) -> (x -> res) -> VarMp -> VarMp -> x -> (res,VarMp)
-eltTy' ftvmp mkres m dm t
-  = (mkres (dm' |=> t'), dm')
-  where t'  = m |=> t
-        dm' = dtVmExtend (ftvmp t') dm
-
-eltTy :: VarMp -> VarMp -> Ty -> (PP_Doc,VarMp)
-eltTy = eltTy' tyFtvMp ppTyDt
-
-eltGam :: VarMp -> VarMp -> ValGam -> (PP_Doc,VarMp)
-eltGam m dm g
-  = (ppAssocL' ppBracketsCommas' ":->" $ gamToAssocL g',dm')
-  where (g',dm') = gamMapThr (\(k,i) dm -> let (ppty,dm') = eltTy m dm (vgiTy i) in ((hsnQualified k,ppty),dm')) dm g
-
-eltFoVarMp :: VarMp -> FIOut -> PP_Doc
-eltFoVarMp dm fo = ppVarMp ppCurlysCommas' (foVarMp fo)
-
-eltVarMp :: VarMp -> VarMp -> VarMp -> (PP_Doc,VarMp)
-eltVarMp m dm vm
-  = (ppAssocL' ppBracketsCommas' ":->" [ (ppTyDt $ dm' |=> varmpinfoMkVar tv i,ppVarMpInfoDt i) | (tv,i) <- varmpToAssocL vm'], dm')
-  where (vm',dm')
-           = varmpMapThr (\tv i dm -> let (i',dm2) = eltTy' varmpinfoFtvMp id m dm i
-                                          (_ ,dm3) = eltTy m dm (varmpinfoMkVar tv i)
-                                      in  (i',dm3)
-                         ) dm vm
-%%]
-
-%%[99 hs
-dtChooseDT :: EHCOpts -> x -> x -> x
-dtChooseDT opts finalVM inferVM = if ehcOptEmitDerivTree opts == DerivTreeWay_Final then finalVM else inferVM
-
-dtVmExtend :: TvCatMp -> VarMp -> VarMp
-dtVmExtend fvm dm
-  = dmn |=> dm
-  where sz  = varmpSize dm
-        dmn = varmpUnions
-              $ zipWith (\(v,i) inx
-                           -> let nm i inx = mkHNm $ show i ++ "_" ++ show inx
-                              in  case tvinfoPurpose i of
-                                    TvPurpose_Ty _  -> varmpTyUnit    v (semCon $ nm i inx)
-                                    TvPurpose_Impls -> varmpImplsUnit v (mkImplsTail $ uidFromInt inx)
-                                    _               -> emptyVarMp                                           -- incomplete
-                        )
-                        (Map.toList $ fvm `Map.difference` varmpToMap dm) [sz ..]
-%%]
-
-%%[99 hs
-type DtNm = String
-
-dtNmNext :: (Int -> DtNm) -> Int -> (Int,DtNm)
-dtNmNext mk i
-  = (i', mk i')
-  where i' = i+1
-
-dtMkNm :: DtNm -> Int -> DtNm
-dtMkNm n i = n ++ "_" ++ show i
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Formatting context for 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -159,8 +24,8 @@ SEM Expr
                 func    .   dtFmt       =   "l"
                 arg     .   dtFmt       =   "r"
   | AppTop      expr    .   dtFmt       =   "r"
-  | Lam         arg     .   dtFmt       =   "n"
-                body    .   dtFmt       =   "b"
+  | Lam         arg     .   dtFmt       =   "l"
+                body    .   dtFmt       =   "r"
   | Let         body    .   dtFmt       =   "b"
   | Rec         recExpr .   dtFmt       =   "l"
 
@@ -225,17 +90,6 @@ SEM RecExpr
 %%% VarMp gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs
-dtVmNmBase :: DtNm
-dtVmNmBase = "VarMp"
-
-dtMkVmNm :: Int -> DtNm
-dtMkVmNm = dtMkNm dtVmNmBase
-
-dtVmNmNext :: Int -> (Int,DtNm)
-dtVmNmNext = dtNmNext dtMkVmNm
-%%]
-
 %%[99
 ATTR AllExpr AllPatExpr [ | | dtVarMpL USE {++} {[]} : DtVarMpL ]
 
@@ -254,23 +108,12 @@ SEM RecExpr
 %%% Gamma gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs
-dtGamNmBase :: DtNm
-dtGamNmBase = "Gamma"
-
-dtMkGamNm :: Int -> DtNm
-dtMkGamNm = dtMkNm dtGamNmBase
-
-dtGamNmNext :: Int -> (Int,DtNm)
-dtGamNmNext = dtNmNext dtMkGamNm
-%%]
-
 %%[99
 ATTR AllExpr [ | | dtGamL USE {++} {[]} : DtGamL ]
 
 SEM Expr
   | Lam         (loc.dtGamLam,body.dtVarMp)
-                                        =   eltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @arg.tyVarMp) @arg.dtVarMp (gamTop @arg.valGam)
+                                        =   dtEltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @arg.tyVarMp) @arg.dtVarMp (gamTop @arg.valGam)
                 lhs     .   dtGamL      =   [( @dtGamNm, (@dtGamLam,@lhs.dtGamNm) )] ++ @body.dtGamL
   | Let         lhs     .   dtGamL      =   [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )] ++ @body.dtGamL
 %%]
@@ -339,73 +182,93 @@ SEM Expr
 
 SEM Expr
   | IConst CConst
-                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMp) m1 @ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt @rlNm [] (jdgExpr @lhs.opts (pp @lhs.dtGamNm) t1 @dtPP t2), m2)
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMp) m1 @ty
+                                            in  (dtRule @lhs.isTopOfDt @lhs.dtFmt @rlNm [] (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) t1 @dtPP t2), m2)
   | Var Con     (loc.dt,loc.dtVm,lhs.dtVarMp)
-                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @ty_g_
-                                                (t3,m3) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMp) m2 @ty
-                                                (vm4,m4) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m3 (foVarMp @fo_)
-                                            in  ( rule @lhs.isTopOfDt @lhs.dtFmt @rlNm
-                                                       [jdgStack [jdgGam (pp @lhs.dtGamNm) @dtPP t2,jdgMatch @lhs.opts "<=" empty t2 t1 t3 (pp @dtVmNm)]]
-                                                       (jdgExpr @lhs.opts (pp @lhs.dtGamNm) t1 @dtPP t3)
-                                                , vm4, m4
+                                        =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @ty_g_
+                                                (t3,m3) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMp) m2 @ty
+                                                (vm4,m4) = dtEltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m3 (foVarMp @fo_)
+                                                (match5,m5) = foMkDT @fo_ (Just $ pp @dtVmNm) "r" @lhs.finTyVarMp m4
+                                            in  ( dtRule @lhs.isTopOfDt @lhs.dtFmt @rlNm
+                                                         [ dtJdgStack [dtJdgGam (pp @lhs.dtGamNm) @dtPP t2]
+                                                         , if ehcOptEmitDerivFitsIn @lhs.opts
+                                                           then match5
+                                                           else dtJdgStack [dtJdgMatch @lhs.opts @lhs.fiOpts t2 t1 t3 (pp @dtVmNm)]
+                                                         ]
+                                                         (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) t1 @dtPP t3)
+                                                , vm4, m5
                                                 )
   | TypeAs      (loc.dtKnTy,loc.dtExprKnTy,loc.dtVmKnTy,loc.dtVmDown,expr.dtVarMp)
-                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @ty_q_2_VarMp) m1 @knTyDown
-                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @fo_)
-                                                (vm4,m4) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @ty_q_2_VarMp) m3 (foVarMp @fo_fitDown)
+                                        =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @ty_q_2_VarMp) m1 @knTyDown
+                                                (vm3,m3) = dtEltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @fo_)
+                                                (vm4,m4) = dtEltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @ty_q_2_VarMp) m3 (foVarMp @fo_fitDown)
                                             in  (t1,t2,vm3,vm4,m4)
-                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @expr.ty
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @ty_q_
-                                            in  ( rule @lhs.isTopOfDt @lhs.dtFmt "e.ann"
-                                                       [ @tyExpr.dt
-                                                       , jdgStack [jdgMatch @lhs.opts "<=" empty t2 @dtKnTy empty (pp @dtVmNmKnTy)
-                                                                  ,jdgMatch @lhs.opts "<=" empty @dtExprKnTy t2 empty (pp @dtVmNmDown)
-                                                                  ]
-                                                       , @expr.dt
-                                                       ]
-                                                       (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1)
-                                                , m2
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @expr.ty
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @ty_q_
+                                                (match3,m3) = foMkDT @fo_ (Just $ pp @dtVmNmKnTy) "l" @lhs.finTyVarMp m2
+                                                (match4,m4) = foMkDT @fo_fitDown (Just $ pp @dtVmNmDown) "n" @lhs.finTyVarMp m3
+                                            in  ( dtRule @lhs.isTopOfDt @lhs.dtFmt "e.ann"
+                                                         (  [ @tyExpr.dt ]
+                                                         ++ (if ehcOptEmitDerivFitsIn @lhs.opts
+                                                             then [ match3, match4 ]
+                                                             else [ dtJdgStack [dtJdgMatch @lhs.opts @knTyFIOpts t2 @dtKnTy empty (pp @dtVmNmKnTy)
+                                                                               ,dtJdgMatch @lhs.opts @downFIOpts @dtExprKnTy t2 empty (pp @dtVmNmDown)
+                                                                  ]            ]
+                                                            )
+                                                         ++ [ @expr.dt ]
+                                                         )
+                                                         (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1)
+                                                , m4
                                                 )
   | App AppImpred
                 (loc.dtKnTy,func.dtVarMp)
-                                        =   eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMpApp) @arg.dtVarMp @ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt @rlNm [@func.dt,@arg.dt] (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
+                                        =   dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @tyVarMpApp) @arg.dtVarMp @ty
+                                            in  (dtRule @lhs.isTopOfDt @lhs.dtFmt @rlNm [@func.dt,@arg.dt] (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
   | AppTop      (loc.dtKnTy,loc.dtResTy,loc.dtVmRes,expr.dtVarMp)
-                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @resTy
-                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @foKnRes)
+                                        =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @resTy
+                                                (vm3,m3) = dtEltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @foKnRes)
                                             in  (t1,t2,vm3,m3)
-                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.apptop"
-                                                      [ jdgStack [jdgMatch @lhs.opts "<=" empty @dtResTy @dtKnTy empty (pp @dtVmNmRes)]
-                                                      , @expr.dt
-                                                      ]
-                                                      (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
+                                                (match2,m2) = foMkDT @foKnRes (Just $ pp @dtVmNmRes) "l" @lhs.finTyVarMp m1
+                                            in  ( dtRule @lhs.isTopOfDt @lhs.dtFmt "e.apptop"
+                                                         [ if ehcOptEmitDerivFitsIn @lhs.opts
+                                                           then match2
+                                                           else dtJdgStack [dtJdgMatch @lhs.opts @lhs.fiOpts @dtResTy @dtKnTy empty (pp @dtVmNmRes)]
+                                                         , @expr.dt
+                                                         ]
+                                                         (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1)
+                                                , m2
+                                                )
   | Lam         (loc.dtKnTy,loc.dtFunTy,loc.dtVmFun,arg.dtVarMp)
-                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @funTy
-                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @fo_fitF_)
+                                        =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @funTy
+                                                (vm3,m3) = dtEltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @fo_fitF_)
                                             in  (t1,t2,vm3,m3)
-                (loc.dt,lhs.dtVarMp)    =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.lam"
-                                                      [ jdgStack [jdgMatch @lhs.opts "<=" empty @dtFunTy @dtKnTy empty (pp @dtVmNmFun)]
-                                                      , @arg.dt
-                                                      , @body.dt
-                                                      ]
-                                                      (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t2), m2)
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @ty
+                                                (match2,m2) = foMkDT @fo_fitF_ (Just $ pp @dtVmNmFun) "l" @lhs.finTyVarMp m1
+                                            in  ( dtRule @lhs.isTopOfDt @lhs.dtFmt "e.lam"
+                                                         [ if ehcOptEmitDerivFitsIn @lhs.opts
+                                                           then match2
+                                                           else dtJdgStack [dtJdgMatch @lhs.opts @knFunFIOpts @dtFunTy @dtKnTy empty (pp @dtVmNmFun)]
+                                                         , @arg.dt
+                                                         , @body.dt
+                                                         ]
+                                                         (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1)
+                                                , m2
+                                                )
   | Let         (loc.dtKnTy,loc.dtVmKnTy)
-                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                        =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
                                             in  (t1,m1)
-                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @body.ty
-                                            in  (rule @lhs.isTopOfDt @lhs.dtFmt "e.let"
-                                                      [ @body.dt
-                                                      ]
-                                                      (jdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1), m1)
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @body.tyVarMp) @body.dtVarMp @body.ty
+                                            in  (dtRule @lhs.isTopOfDt @lhs.dtFmt "e.let"
+                                                        [ @body.dt
+                                                        ]
+                                                        (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1), m1)
 %%]
 
 %%[99
@@ -415,41 +278,49 @@ SEM RecExpr
 
 SEM RecExpr
   | Ext Upd     (loc.dtKnTy,loc.dtKnRecTy,loc.dtVmKnTy,recExpr.dtVarMp)
-                                        =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
-                                                (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @knRecTy
-                                                (vm3,m3) = eltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @foKnRec)
+                                        =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) @lhs.dtVarMp @lhs.knTy
+                                                (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m1 @knRecTy
+                                                (vm3,m3) = dtEltVarMp (dtChooseDT @lhs.opts @lhs.finTyVarMp @lhs.tyVarMp) m2 (foVarMp @foKnRec)
                                             in  (t1,t2,vm3,m2)
-                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
-                                            in  ( rule @lhs.isTopOfDt @lhs.dtFmt @rlNm
-                                                       [ jdgStack [jdgMatch @lhs.opts "<=" empty @dtKnRecTy @dtKnTy empty (pp @dtVmNmKnTy)]
-                                                       , @recExpr.dt
-                                                       , @expr.dt
-                                                       ]
-                                                       (jdgRecExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy (@lhs.dtPPWrap @dtPP) t1)
-                                                , m1
+                (loc.dt,lhs.dtVarMp)    =   let (t1,m1) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @ty
+                                                (match2,m2) = foMkDT @foKnRec (Just $ pp @dtVmNmKnTy) "n" @lhs.finTyVarMp m1
+                                            in  ( dtRule @lhs.isTopOfDt @lhs.dtFmt @rlNm
+                                                         [ @recExpr.dt
+                                                         , if ehcOptEmitDerivFitsIn @lhs.opts
+                                                           then match2
+                                                           else dtJdgStack [dtJdgMatch @lhs.opts @knFIOpts @dtKnRecTy @dtKnTy empty (pp @dtVmNmKnTy)]
+                                                         , @expr.dt
+                                                         ]
+                                                         (dtJdgRecExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy (@lhs.dtPPWrap @dtPP) t1)
+                                                , m2
                                                 )
 %%]
 
 %%[99
 SEM AGItf
-  | AGItf       lhs     .   dt          =   l2tDtHeader ["lhs2TeX","afp"] [("deduction",[]),("geometry",[pp ("a" ++ ehcOptEmitDerivTreePaperSize @lhs.opts ++ "paper"), pp "landscape"])]
-                                            >-< vlist [ l2tFormat (ppVarMpInfoDt v) Nothing | (_,v) <- varmpToAssocL @expr.dtVarMp ]
-                                            >-< (vlist $ concat [ map (\mk -> l2tFormat (mk v) Nothing) [dtMkGamNm,dtMkVmNm] | v <- [@dtNmNr .. @expr.dtNmNr] ])
-                                            >-< ltxDocument
-                                                (   ltxCallArgs "pagestyle" [pp "empty"]
-                                                >-< (vlist 
-                                                     $ concat
-                                                     $ intersperse [ltxCall0 "newpage"]
-                                                         [ [ (   ltxDisplayMath dt
-                                                             >-< gaml gdt
-                                                             >-< (if ehcOptEmitDerivTree @lhs.opts == DerivTreeWay_Infer then varmpl vmdt else empty)
-                                                             )
-                                                           | (dt,gdt,vmdt) <- ((dt1,glet++gdt1,dtvm1) : dts)
-                                                           ]
-                                                         | (glet,(dt1,gdt1,dtvm1):dts) <- @expr.dtGrpL
-                                                         ]
+  | AGItf       lhs     .   dt          =   let papersize = case ehcOptEmitDerivTreePaperSize @lhs.opts of
+                                                              ('m':s) -> ["paperwidth=" ++ show sz ++ "cm","paperheight=" ++ show (sz `div` 5) ++ "cm"]
+                                                                      where sz :: Int
+                                                                            sz = 100 * (2 ^ (read s :: Int))
+                                                              s       -> ["a" ++ s ++ "paper","landscape"]
+                                            in  l2tDtHeader ["lhs2TeX","afp"] [("deduction",[]),("geometry",map pp papersize)]
+                                                >-< vlist [ l2tFormat (ppVarMpInfoDt v) Nothing | (_,v) <- varmpToAssocL @expr.dtVarMp ]
+                                                >-< (vlist $ concat [ map (\mk -> l2tFormat (mk v) Nothing) [dtMkGamNm,dtMkVmNm] | v <- [@dtNmNr .. @expr.dtNmNr] ])
+                                                >-< ltxDocument
+                                                    (   ltxCallArgs "pagestyle" [pp "empty"]
+                                                    >-< (vlist 
+                                                         $ concat
+                                                         $ intersperse [ltxCall0 "newpage"]
+                                                             [ [ (   ltxDisplayMath dt
+                                                                 >-< dtGamL gdt
+                                                                 >-< (if ehcOptEmitDerivTree @lhs.opts == DerivTreeWay_Infer then dtVarMpL vmdt else empty)
+                                                                 )
+                                                               | (dt,gdt,vmdt) <- ((dt1,glet++gdt1,dtvm1) : dts)
+                                                               ]
+                                                             | (glet,(dt1,gdt1,dtvm1):dts) <- @expr.dtGrpL
+                                                             ]
+                                                        )
                                                     )
-                                                )
                 expr    .   dtVarMp     =   emptyVarMp
 %%]
 
@@ -473,8 +344,8 @@ type DtGrp
 ATTR AllDecl [ | | dtL USE {++} {[]}: {[DtGrpElt]} ]
 
 SEM Decl
-  | Val         (lhs.dtL,lhs.dtVarMp)   =   let (t2,m2) = eltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @expr.ty
-                                            in  ( [( rule @lhs.isTopOfDt @lhs.dtFmt "d.val" [@patExpr.dt,@expr.dt] (jdgDecl (pp @lhs.dtGamNm) @dtPP t2)
+  | Val         (lhs.dtL,lhs.dtVarMp)   =   let (t2,m2) = dtEltTy (dtChooseDT @lhs.opts @lhs.finTyVarMp @expr.tyVarMp) @expr.dtVarMp @expr.ty
+                                            in  ( [( dtRule @lhs.isTopOfDt @lhs.dtFmt "d.val" [@patExpr.dt,@expr.dt] (dtJdgDecl (pp @lhs.dtGamNm) @dtPP t2)
                                                    , @expr.dtGamL
                                                    , @expr.dtVarMpL
                                                    )]
@@ -487,7 +358,7 @@ ATTR AllExpr AllDecl [ | | dtGrpL USE {++} {[]}: {[DtGrp]} ]
 
 SEM Expr
   | Let         (loc.dtGamLet,decls.dtVarMp)
-                                        =   eltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @decls.patTyVarMp) @dtVmKnTy
+                                        =   dtEltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @decls.patTyVarMp) @dtVmKnTy
                                                    (dtChooseDT @lhs.opts @quValGam_ex_ @valGam_l_)
                 lhs     .   dtGrpL      =   [( [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )], @decls.dtL )] ++ @decls.dtGrpL ++ @body.dtGrpL
 %%]

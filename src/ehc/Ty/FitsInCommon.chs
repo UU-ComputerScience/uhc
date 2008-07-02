@@ -74,19 +74,23 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
                         ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
-%%]
-%%[9
+%%[[9
                         ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
                         ,  foLRCoe           :: !LRCoe
                         ,  foGathCnstrMp     :: !CHRPredOccCnstrMp
-%%]
-%%[10
+%%]]
+%%[[10
                         ,  foRowCoeL         :: !(AssocL HsName Coe)
-%%]
-%%[50
+%%]]
+%%[[50
                         ,  foEqVarMp         :: !VarMp
-%%]
-%%[4.FIOut.tl
+%%]]
+%%[[99
+                            -- top binding -> format (for DT) -> final inference VarMp -> threaded pretty print tyvar VarMp
+                            --   -> (rule, threaded ...)
+                        ,  foMkDT            :: Maybe PP_Doc -> String -> VarMp -> VarMp -> (PP_Doc,VarMp)
+%%][100
+%%]]
                         }
 %%]
 
@@ -94,19 +98,21 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
 emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []                  ,  foTrace           =   []
-%%]
-%%[9
+%%[[9
                         ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
                         ,  foLRCoe           =   emptyLRCoe
                         ,  foGathCnstrMp     =   emptyCnstrMp
-%%]
-%%[10
+%%]]
+%%[[10
                         ,  foRowCoeL         =   []
-%%]
-%%[50
+%%]]
+%%[[50
                         ,  foEqVarMp         =   emptyVarMp
-%%]
-%%[4.emptyFO.tl
+%%]]
+%%[[99
+                        ,  foMkDT            =   \_ _ m dm -> (empty,dm)
+%%][100
+%%]]
                         }
 %%]
 
