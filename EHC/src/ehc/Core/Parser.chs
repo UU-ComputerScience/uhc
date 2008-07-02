@@ -77,10 +77,19 @@ pCExpr
 %%]]
           <|> CBindStrict <$ pBANG
 
+
+pMbDollNm :: CParser (Maybe HsName)
+pMbDollNm
+  =  f <$> pDollNm
+    where f (HNm "_") = Nothing
+          f x         = Just x
+
 pCMeta :: CParser CMeta
 pCMeta
-  =   CMeta_Val  <$ pKeyTk "VAL"
-  <|> CMeta_Dict <$ pKeyTk "DICT"
+  =   CMeta_Val          <$ pKeyTk "VAL"
+  <|> CMeta_Dict         <$ pKeyTk "DICT"
+  <|> CMeta_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
+  <|> CMeta_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
 
 pCMetaOpt :: CParser CMeta
 pCMetaOpt

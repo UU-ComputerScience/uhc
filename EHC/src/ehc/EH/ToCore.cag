@@ -630,118 +630,294 @@ SEM Decl
                                                         ]
 %%]
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Three Haskell-constructs give rise to an instance-declaration in EH.
+In EH, they can be dicerned by inspecting @instVariant:
+* InstNormal:   a normal HS instance-declaration
+* InstDefault:  the default definitions of a HS class-declaration
+* InstDeriving: a deriving-annotation in a data-declaration
+The attribute below generates Core code for these.
+
+As an example we show the processing of a simplified form of a HS class "Eq" 
+and "Boolean" as an instance of it:
+
+  class Eq a where
+    eq :: a -> a -> Bool
+    ne :: a -> a -> Bool
+    ne x y = not (eq x y)   -- a default definition
+                            -- To show how missing definitions are treated, we do not give a default definition for eq here, as in the Prelude
+  instance Eq Boolean where
+    eq x y = cond x y (not y)  -- the implementation of equality on booleans
+                               -- For the "ne" function, it falls back on the default implementation
+
+In the transformation below, before the actual Core code is generated, we have two auxiliary functions:
+  * mkNormalD:  generates the dictionary for an instance definition (either from code supplied by the HS programmer, or generated because of "deriving")
+  * mkDefaultD: generates the dictionary for a default definition
+Also there are some local values:
+  * some fresh variable names to be used in the Core code
+  * some auxiliary lists, which hold transformations of the original member definitions
+Some of these local values are local to mkNormalD or mkDefaultD, others can be definied generically for both.
+
+The elements of the lists correspond to class members. The correspondence can be encode in two ways:
+  * as an association list (either 2-tuples, or CBinds)
+  * positional: a fixed number of elements in a fixed order
+We explain their meaning by showing example values during processing of the Eq code mentioned above.
+Part of the processing is generating fresh names for members.
+In the example, "03" is a prefix specific for the default definitions of class Eq, and "05" for the instance definition Eq Boolean.
+
+We use a few notational conventions in the example:
+ * what is shown as a string is really an HsName, thus "eq" really is HNm "eq"
+ * we use => to denote a CBind, thus  a=>b  means  CBind a m b 
+ * we omit the meta-annotation m in CBinds.
+
+ 
+memberNames          =  [       "eq",       "ne" ]  positional
+memberNewNames       =  [     "03eq",     "03ne" ]  positional
+      or, respectively, [     "05eq",     "05ne" ]  positional
+memberNewVars        =  [ Var "03eq", Var "03ne" ]  positional
+      or, respectively, [ Var "05eq", Var "05ne" ]  positional
+
+defaultBindings      =  [                                               "ne"   => \xy.not(eq x y) ]  association
+defaultBindingPairs  =  [                                              ("ne"   ,  \xy.not(eq x y))]  association
+defaultMbBodies      =  [ Nothing                                , Just           \xy.not(eq x y) ]  positional
+defaultMbNewNames    =  [ Nothing                                , Just "03ne"                    ]  positional
+defaultBodies        =  [                   cundef               ,                \xy.not(eq x y) ]  positional
+defaultNewBindings   =  [         "03eq" => cundef               ,      "03ne" => \xy.not(eq x y) ]  association, and also positional
+
+instanceBindings     =  [         "eq" =>   \xy.cond x y (not y)                                  ]  association
+instanceBindingPairs =  [        ("eq" ,    \xy.cond x y (not y))                                 ]  association
+instanceMbBodies     =  [ Just              \xy.cond x y (not y) , Nothing                        ]  positional
+instanceMbNewNames   =  [ Just    "05eq"                         , Nothing                        ]  positional
+instanceMbNames      =  [ Just    "eq"                           , Nothing                        ]  positional
+instanceNameMapping  =  [        ("eq"  ,   Var "05eq")                                           ]  association
+instanceNewBindings  =  [         "05eq" => \xy.cond x y (not y)                                  ]  association
+
+
+The primary use of these lists is generating the ...NewBindings.
+But for the meta-annotation, also the ...MbNewNames lists are needed.
+The other lists are auxiliary.
+
+
 %%[9
+
+
 SEM Decl
-  | Instance    lhs         .   cbindL      =   let  off n = cdictOffset n @recTy
-                                                     mkSetFldsRec d bs
-                                                       = foldl (\d (CBind_Bind n _ v) -> mkSet d n v) d bs
-                                                       where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
-                                                     mkSetFldsData d bs
-                                                       = mkCExprSatSelsCaseUpdMeta env Nothing CMeta_Dict d @dictTag (length @recTyExts) offValL Nothing
-                                                       where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
-                                                             offValL = [ (off n,(v,m)) | (CBind_Bind n m v) <- bs ]
-                                                     mkSetFlds = if ehcCfgClassViaRec @lhs.opts then mkSetFldsRec else mkSetFldsData
-                                                     (d,cmeta)
+  | Instance    lhs         .   cbindL      =   let  (generatedDictionary, generatedMeta)
                                                        = case @instVariant of
-                                                           InstNormal
-                                                             -> (mkNormalD @decls.cbindL,CMeta_Dict)
-                                                           InstDefault
-                                                             -> (dD,CMeta_Val)
-                                                             where nD = @dictSelfNm
-                                                                   nR = @dictBuildNm
-                                                                   dD = mkCExprLam1Meta nD CMeta_Dict
-                                                                          (mkCExprLetRec
-                                                                              ([mkCBind1Meta nR CMeta_Dict
-                                                                                  (mkCExprAppMeta (CExpr_Tup @dictTag)
-                                                                                      (map (\(n,_) -> (maybe (cundefined @lhs.opts) id (lookupBnd n),lookupMeta n)) $ tyRowCanonOrder $ @recTyExts))]
-                                                                               ++ (cSubstOptApp @lhs.opts @cSubst
-                                                                                    (@chrScopeDeclsBindL ++ @chrAssumeDeclsInstBindL)))
-                                                                              (CExpr_Var nR))
-                                                                   lookupBnd
-                                                                     = \n -> lookup n b
-                                                                     where b = map (\(CBind_Bind n _ v) -> (n,v)) @decls.cbindL
-                                                                   lookupMeta
-                                                                     = \n -> if n `elem` @supClsFldL then CMeta_Dict else CMeta_Val
-%%[[95
-                                                           InstDeriving
-                                                             -> (mkNormalD bindL,CMeta_Dict)
-                                                             where nsA@(n1:n1s) = hsnLclSupplyWith (mkHNm "x")
-                                                                   n1v = CExpr_Var n1
-                                                                   mkf :: DerivClsFld -> CBind
-                                                                   mkf dcf
-                                                                     = mkCBind1 (dcfNm dcf)
-                                                                         (if fArity == 0
-                                                                          then mkCExprLam (dcfInitialArgL dcf)
-                                                                               $ dcfNoArgSubsCExpr dcf @rceEnv
-                                                                                   [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
-                                                                                   nrOfAlts (CExpr_Var @dictBuildNm) extraCxL (dcfInitialArgL dcf)
-                                                                          else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
-                                                                                 (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1 (dcfInitialArgL dcf)
-                                                                                  $ mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") n1v
-                                                                                    [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
-                                                                                               (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)
-                                                                                    | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
-                                                                                    , let splDTI@(dtisLT,_,_) = splitDTIs ctag dtis
-                                                                                          altInx = length dtisLT
-                                                                                    ]
-                                                                         )       )
-                                                                     where dtis  = panicJust "Decl.Instance.Deriving.dataGamDTIsOfTy" $ dataGamDTIsOfTy @derivHdDataTy @lhs.dataGam
-                                                                           nrOfAlts = length dtis
-                                                                           splitDTIs t ts -- in (lt,eq,gt), according to list ordering
-                                                                             = (l,e,g)
-                                                                             where (l,(e:g)) = span ((/= t) . dtiCTag) ts
-                                                                           fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf - length (dcfInitialArgL dcf) - 1 {- dictionary -}
-                                                                           n1subs t = nsubs t n1
-                                                                           nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
-                                                                           extraCxL = [ mkCExprPrHole @lhs.opts (poPoi prOcc) | prOcc <- @derivExtraPrOcc ]
-                                                                           mkcSubs dti nmFldLL altPrOccL
-                                                                             = [ mkCExprAppMeta
-                                                                                   (CExpr_Var (dcfNm dcf))
-                                                                                   (cmetaLiftDict [mkCExprPrHole @lhs.opts (poPoi prOcc)]
-                                                                                     ++ cmetaLift (dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL))
-                                                                               | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
-                                                                               ]
-                                                                           mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL
-                                                                             = case nms of
-                                                                                 (n:ns) | arity > 0
-                                                                                   -> mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n "!") (CExpr_Var n)
-                                                                                        (   [ mka (dtiCTag dti) tsubs (mkc tg altInx (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
-                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- map dtiCTag dtisLT ]
-                                                                                         ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- map dtiCTag dtisGT ]
-                                                                                        )
-                                                                                   where tsubs = nsubs (dtiCTag dti) n
-                                                                                         mka ctag nsubs e = CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just nsubs)) e
-                                                                                 _ -> dcfFoldSubsCExpr dcf @lUniq @rceEnv dti (altInx, nrOfAlts) (dcfInitialArgL dcf)
-                                                                                      $ mkcSubs dti (transpose nmFldLL) altPrOccL
-                                                                   bindL
-                                                                     = [ mkf dcf | dcf <- dclFldL @derivDCL ]
-                                                                           
+                                                            InstNormal   -> mkNormalD  @decls.cbindL
+                                                            InstDefault  -> mkDefaultD @decls.cbindL
+%%[[95                                                            
+                                                            InstDeriving -> mkNormalD  [ @loc.mkf dcf | dcf <- dclFldL @derivDCL ]
 %%]]
-                                                     mkNormalD bindL
-                                                       = dD
-                                                       where nDflt = clgiDfltDictNm @clgi
-                                                             nStrictDflt = hsnSuffix nDflt "!"
-                                                             nR = @dictBuildNm
-                                                             nStrictR = hsnSuffix nR "!"
-                                                             dDflt = mkCExprStrictInMeta nStrictDflt CMeta_Dict (mkCExprApp1Meta (CExpr_Var nDflt) (CExpr_Var nR) CMeta_Dict)
-                                                                       (\d -> mkSetFlds d (zipWith (\n e -> mkCBind1Meta n CMeta_Dict e) @supClsFldL
-                                                                                                   (map CExpr_Var @chrSuperProveNmL)))
-                                                             dD = mkCExprLamMeta (cmetaLiftDict @chrCtxtArgNmL)
-                                                                    (mkCExprLetRec
-                                                                        ([mkCBind1Meta nR CMeta_Dict
-                                                                            (mkCExprStrictInMeta nStrictR CMeta_Dict dDflt (\d -> mkSetFlds d bindL))]
-                                                                         ++ (cSubstOptApp @lhs.opts @cSubst
-                                                                               $ (@chrAssumeSuperBindL ++ @chrAssumeDeclsInstBindL ++ @chrAssumeDeclsCtxtBindL ++ @chrScopeSuperBindL ++ @chrScopeDeclsBindL)))
-                                                                        (CExpr_Var nR)
-                                                                    )
-                                                in   [mkCBind1Meta @dictNm cmeta (cSubstOptApp @lhs.opts @cSubst d)]
+
+
+                                                     memberNames     = [ n 
+                                                                       | (n,_) <- tyRowCanonOrder @recTyExts 
+                                                                       ]
+                                                     memberNewNames  = [ hsnSuffix @dictNm ('~':show n)
+                                                                       | n <- memberNames
+                                                                       ]
+                                                     memberNewVars   = map CExpr_Var memberNewNames
+
+                                                     rsltNm   = @dictBuildNm
+                                                     rsltVar  = CExpr_Var rsltNm
+                                                                                                                                                                                       
+                                                     mkNormalD instanceBindings
+                                                       = let dfltNm       = clgiDfltDictNm @clgi
+                                                             rsltNmStrict = hsnSuffix rsltNm "!"
+                                                             dfltNmStrict = hsnSuffix dfltNm "!"
+                                                             dfltVar      = CExpr_Var dfltNm
+                                                             rsltVarStrict= CExpr_Var rsltNmStrict
+                                                             dfltVarStrict= CExpr_Var dfltNmStrict
+
+                                                             instanceBindingPairs= [ (nm,v)
+                                                                                   |  CBind_Bind nm _ v <- instanceBindings
+                                                                                   ]
+                                                             instanceMbBodies    = map (flip lookup instanceBindingPairs) memberNames
+                                                             instanceMbNewNames  = let f _ Nothing  = Nothing
+                                                                                       f n (Just e) = case e of
+                                                                                                        CExpr_Var v -> Just v   -- This anticipates on the shortcutting that will be done by the CILA transformation. It is hard to do the substitution in the meta-annotation there, so we do it here.
+                                                                                                        _           -> Just n
+                                                                                   in zipWith f memberNewNames instanceMbBodies
+                                                             instanceMbNames     = let f _ Nothing  = Nothing
+                                                                                       f n (Just _) = Just n
+                                                                                   in zipWith f memberNames instanceMbNewNames
+                                                             instanceNameMapping = [ (nm, CMeta_Val, v)
+                                                                                   | (Just nm,v) <- zip instanceMbNames memberNewVars
+                                                                                   ]
+                                                             instanceNewBindings = [ CBind_Bind nm CMeta_Val v
+                                                                                   | (nm,Just v) <- zip memberNewNames instanceMbBodies
+                                                                                   ]
+                                                                                   
+                                                             superNewVars        = map CExpr_Var @chrSuperProveNmL
+                                                             superNameMapping    = zip3 @supClsFldL
+                                                                                        (repeat CMeta_Dict)
+                                                                                        superNewVars
+
+                                                             instanceCHRBindings = cSubstOptApp @lhs.opts @cSubst
+                                                                                                (  @chrAssumeSuperBindL 
+                                                                                                ++ @chrAssumeDeclsInstBindL 
+                                                                                                ++ @chrAssumeDeclsCtxtBindL 
+                                                                                                ++ @chrScopeSuperBindL 
+                                                                                                ++ @chrScopeDeclsBindL
+                                                                                                )
+
+                                                             dict1     = mkCExprApp1Meta dfltVar rsltVar CMeta_Dict
+                                                             dict2     = CExpr_Let CBindStrict [bind1] (@loc.mkSetFlds superNameMapping    dfltVarStrict)
+                                                             dict3     = CExpr_Let CBindStrict [bind2] (@loc.mkSetFlds instanceNameMapping rsltVarStrict)
+                                                             dict4     = mkCExprLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
+                                                             
+                                                             bind1     = mkCBind1Meta dfltNmStrict CMeta_Dict dict1
+                                                             bind2     = mkCBind1Meta rsltNmStrict CMeta_Dict dict2
+                                                             bind3     = mkCBind1Meta rsltNm       CMeta_Dict dict3
+                                                             contextArguments = cmetaLiftDict @chrCtxtArgNmL
+                                                         in  ( mkCExprLamMeta contextArguments dict4   
+                                                             , CMeta_DictInstance (Just dfltNm:instanceMbNewNames) 
+                                                             )
+
+                                                     mkDefaultD defaultBindings
+                                                       = let selfNm    = @dictSelfNm
+                                                       
+                                                             lookupMeta n = if n `elem` @supClsFldL then CMeta_Dict else CMeta_Val
+                                                       
+                                                             defaultBindingPairs = [ (nm,v)
+                                                                                   |  CBind_Bind nm _ v <- defaultBindings
+                                                                                   ]
+                                                             defaultMbBodies     = map (flip lookup defaultBindingPairs) memberNames
+                                                             defaultMetas        = map lookupMeta                        memberNames
+                                                             defaultBodies       = map (maybe (cundefined @lhs.opts) id) defaultMbBodies
+                                                             defaultMbNewNames   = let f _ Nothing  = Nothing
+                                                                                       f n (Just _) = Just n
+                                                                                   in zipWith f memberNewNames defaultMbBodies
+                                                             
+                                                             defaultNewBindings  = zipWith3 mkCBind1Meta memberNewNames 
+                                                                                                         defaultMetas
+                                                                                                         defaultBodies
+                                                             defaultCHRBindings  = cSubstOptApp @lhs.opts @cSubst
+                                                                                                (  @chrScopeDeclsBindL 
+                                                                                                ++ @chrAssumeDeclsInstBindL
+                                                                                                )
+                                                             dict5     = mkCExprAppMeta (CExpr_Tup @dictTag)
+                                                                                        (zip memberNewVars defaultMetas)
+                                                             dict6     = mkCExprLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
+                                                             
+                                                             bind5     = mkCBind1Meta rsltNm CMeta_Dict dict5
+                                                             
+                                                         in  ( mkCExprLam1Meta selfNm CMeta_Dict dict6
+                                                             , CMeta_DictClass defaultMbNewNames
+                                                             )
+
+                                                in   [mkCBind1Meta @dictNm generatedMeta (cSubstOptApp @lhs.opts @cSubst generatedDictionary)]
   | InstanceIntro
                 lhs         .   cbindL      =   [mkCBind1Meta @dictNm CMeta_Dict @expr.cexpr]
 %%]
+
+
+
+
+
+An auxiliary local attribute that decides (based on an option) how
+to set fields in a dictionary:
+- by updates of a record
+- by matching and rebuilding a datatype 
+
+%%[9
+SEM Decl
+  | Instance    loc         .   mkSetFlds   =   let  off n = cdictOffset n @recTy
+                                                     mkSetFldsRec ts d0
+                                                       = foldl (\d (n,_,v) -> mkSet d n v) d0 ts
+                                                       where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
+
+                                                     mkSetFldsData ts d0
+                                                       = mkCExprSatSelsCaseMeta env Nothing CMeta_Dict d0 @dictTag nmLblOffL Nothing sel
+                                                       where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
+                                                             fullListWithTrivialValues = [ (o, (o, (CExpr_Var n,CMeta_Val) ) ) 
+                                                                                         | (n,_,o) <- nmLblOffL 
+                                                                                         ]
+                                                             sparseListWithInterestingValues = [ (off n, (v,m) ) 
+                                                                                               | (n,m,v) <- ts
+                                                                                               ]
+                                                             arity = length @recTyExts
+                                                             ns = take arity hsnLclSupply
+                                                             nmLblOffL = zip3 ns ns [0..]
+                                                             sel = mkCExprAppMeta (CExpr_Tup @dictTag) 
+                                                                                  (map snd $ listSaturateWith 0 
+                                                                                                              (arity-1) 
+                                                                                                              fst 
+                                                                                                              fullListWithTrivialValues
+                                                                                                              sparseListWithInterestingValues
+                                                                                  )
+                                                   in  if   ehcCfgClassViaRec @lhs.opts  
+                                                       then mkSetFldsRec  
+                                                       else mkSetFldsData
+
+%%]
+
+
+An auxiliary local attribute that generates thee bindings for a DERIVED instance
+
+%%[95
+SEM Decl
+  | Instance    loc         .   mkf         =   let   rsltNm   = @dictBuildNm
+                                                      rsltVar  = CExpr_Var rsltNm
+                                                      
+                                                      mkf :: DerivClsFld -> CBind
+                                                      mkf dcf
+                                                       = mkCBind1 (dcfNm dcf)
+                                                           (if fArity == 0
+                                                            then mkCExprLam (dcfInitialArgL dcf)
+                                                                 $ dcfNoArgSubsCExpr dcf @rceEnv
+                                                                     [ (dti,mkcSubs dti (repeat []) altPrOccL) | (dti,altPrOccL) <- zip dtis @derivAltsPrOcc ]
+                                                                     nrOfAlts rsltVar extraCxL (dcfInitialArgL dcf)
+                                                            else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
+                                                                   (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1 (dcfInitialArgL dcf)
+                                                                    $ mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") n1v
+                                                                      [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
+                                                                                 (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)
+                                                                      | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
+                                                                      , let splDTI@(dtisLT,_,_) = splitDTIs ctag dtis
+                                                                            altInx = length dtisLT
+                                                                      ]
+                                                           )       )
+                                                       where n1v = CExpr_Var n1
+                                                             nsA@(n1:n1s) = hsnLclSupplyWith (mkHNm "x")
+                                                             dtis  = panicJust "Decl.Instance.Deriving.dataGamDTIsOfTy" $ dataGamDTIsOfTy @derivHdDataTy @lhs.dataGam
+                                                             nrOfAlts = length dtis
+                                                             splitDTIs t ts -- in (lt,eq,gt), according to list ordering
+                                                               = (l,e,g)
+                                                               where (l,(e:g)) = span ((/= t) . dtiCTag) ts
+                                                             fArity = (length $ tyArrowArgs $ dcfTy dcf) - dcfNrOmitTailArg dcf - length (dcfInitialArgL dcf) - 1 {- dictionary -}
+                                                             n1subs t = nsubs t n1
+                                                             nsubs t n = take (ctagArity t) $ hsnLclSupplyWith n
+                                                             extraCxL = [ mkCExprPrHole @lhs.opts (poPoi prOcc) | prOcc <- @derivExtraPrOcc ]
+                                                             mkcSubs dti nmFldLL altPrOccL
+                                                               = [ mkCExprAppMeta
+                                                                     (CExpr_Var (dcfNm dcf))
+                                                                     (cmetaLiftDict [mkCExprPrHole @lhs.opts (poPoi prOcc)]
+                                                                       ++ cmetaLift (dcfInitialSubArgL dcf dti ++ map CExpr_Var nmFldL))
+                                                                 | (nmFldL,prOcc) <- zip nmFldLL altPrOccL
+                                                                 ]
+                                                             mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL
+                                                               = case nms of
+                                                                   (n:ns) | arity > 0
+                                                                     -> mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n "!") (CExpr_Var n)
+                                                                          (   [ mka (dtiCTag dti) tsubs (mkc tg altInx (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
+                                                                           ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- map dtiCTag dtisLT ]
+                                                                           ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- map dtiCTag dtisGT ]
+                                                                          )
+                                                                     where tsubs = nsubs (dtiCTag dti) n
+                                                                           mka ctag nsubs e = CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just nsubs)) e
+                                                                   _ -> dcfFoldSubsCExpr dcf @lUniq @rceEnv dti (altInx, nrOfAlts) (dcfInitialArgL dcf)
+                                                                        $ mkcSubs dti (transpose nmFldLL) altPrOccL
+                                                in  mkf
+%%]
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Case
