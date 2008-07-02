@@ -90,6 +90,8 @@ DATA CMeta
   | Val
 %%[[9
   | Dict
+  | DictClass     names:  {[Maybe HsName]}
+  | DictInstance  names:  {[Maybe HsName]}
 %%]]
 %%]
 

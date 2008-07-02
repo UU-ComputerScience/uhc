@@ -18,7 +18,7 @@ module EH.Util.Pretty
   , ppCurlysBlock
   , ppCurlysSemisBlock
   , ppCurlysCommasBlock
-  , ppCurlysCommas, ppCurlysCommas'
+  , ppCurlysCommas, ppCurlysCommas', ppCurlysCommasWith
   , ppCurlysSemis, ppCurlysSemis'
   , ppParensCommas, ppParensCommas'
   , ppParensSemisBlock
@@ -58,6 +58,9 @@ ppListSep o c s pps
         l [p]     = pp p
         l (p:ps)  = pp p >|< map (s >|<) ps
 -}
+
+ppListSepWith :: (PP s, PP c, PP o) => o -> c -> s -> (a->PP_Doc) -> [a] -> PP_Doc
+ppListSepWith o c s ppa pps = o >|< hlist (intersperse (pp s) (map ppa pps)) >|< c
 
 ppBlock' :: PP a => String -> String -> String -> [a] -> [PP_Doc]
 ppBlock' o c s []     = [o >|< c]
@@ -114,6 +117,9 @@ ppParensCommas' = ppListSep "(" ")" ", "
 
 ppCurlysCommas :: PP a => [a] -> PP_Doc
 ppCurlysCommas = ppListSep "{" "}" ","
+
+ppCurlysCommasWith :: PP a => (a->PP_Doc) -> [a] -> PP_Doc
+ppCurlysCommasWith = ppListSepWith "{" "}" ","
 
 ppCurlysCommas' :: PP a => [a] -> PP_Doc
 ppCurlysCommas' = ppListSep "{" "}" ", "

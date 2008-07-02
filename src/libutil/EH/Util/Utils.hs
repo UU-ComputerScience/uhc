@@ -67,13 +67,21 @@ initlast2 as
 firstNotEmpty :: [[x]] -> [x]
 firstNotEmpty = maybeHd [] id . filter (not . null)
 
--- saturate a list
-listSaturate :: (Enum a,Ord a) => a -> a -> (x -> a) -> (a -> x) -> [x] -> [x]
-listSaturate min max get mk l
-  = [ Map.findWithDefault (mk i) i mp | i <- [min..max] ]
-  where mp = Map.fromList [ (get x,x) | x <- l ]
+-- saturate a list, that is:
+-- for all indices i between min and max,
+-- if there is no listelement x for which  get x  returns i,
+-- add an element  mk i  to the list
 
--- saturate a list with values from assoc list
+listSaturate :: (Enum a,Ord a) => a -> a -> (x -> a) -> (a -> x) -> [x] -> [x]
+listSaturate min max get mk xs
+  = [ Map.findWithDefault (mk i) i mp | i <- [min..max] ]
+  where mp = Map.fromList [ (get x,x) | x <- xs ]
+
+-- saturate a list with values from assoc list, that is:
+-- for all indices i between min and max,
+-- if there is no listelement x for which  get x  returns i,
+-- add a candidate from the associationlist (which must be present) to the list
+
 listSaturateWith :: (Enum a,Ord a) => a -> a -> (x -> a) -> [(a,x)] -> [x] -> [x]
 listSaturateWith min max get missing l
   = listSaturate min max get mk l
