@@ -90,7 +90,7 @@ scan opts pos input
      = let (s,p',rest) = scanString (advc 1 p) ss
        in if null rest || head rest /= '"'
              then errToken "Unterminated string literal" p : doScan p' rest
-             else valueToken TkString s p : doScan (advc 2 p') (tail rest)
+             else valueToken TkString s p : doScan (advc 1 p') (tail rest)
 %%]
 
 %%[8
@@ -222,10 +222,9 @@ lexNest cont pos inp = lexNest' cont pos inp
 
 scanString :: Pos -> String -> (String,Pos,String)
 scanString p []            = ("",p,[])
-scanString p ('\\':'&':xs) = let (str,p',r) = scanString (advc 2 p) xs
-                             in  (str,advc 2 p',r)
+scanString p ('\\':'&':xs) = scanString (advc 2 p) xs
 scanString p ('\'':xs)     = let (str,p',r) = scanString (advc 1 p) xs
-                             in  ('\'': str,advc 1 p',r)
+                             in  ('\'': str,p',r)
 scanString p ('\\':x:xs) | isSpace x
                            = let (white,rest) = span isSpace xs
                              in  case rest of
