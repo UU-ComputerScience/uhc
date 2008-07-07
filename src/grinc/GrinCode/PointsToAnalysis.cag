@@ -74,6 +74,7 @@ ATTR GrAGItf   [ | | location : Int ]
 ATTR AllGrPat
      AllGrExpr
      AllBind
+     AllGlobal
      GrModule
      GrAGItf   [ | | maxVar USE {`max`} {0} : Int ]
 
@@ -82,12 +83,23 @@ SEM GrAGItf
 
 SEM GrVar
   | Var    lhs . maxVar  =  getNr @nm
-  
+
+SEM GrGlobal
+  | Global  lhs . maxVar  =  getNr @nm
+
 SEM GrBind
   | Bind   lhs . maxVar  =  maximum (@expr.maxVar : (getNr @nm + 1) : map getNr @argNmL)
 
 SEM GrPatLam
-  | Var    lhs . maxVar  =  getNr @nm
+  | Var
+    BasicNode
+    EnumNode
+    OpaqueNode
+    PtrNode  
+    BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot     lhs . maxVar  =  getNr @nm
 
 
 SEM GrAGItf
@@ -402,7 +414,7 @@ SEM GrExpr
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
                                    InEnum tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
                                    InBasic tvar      -> [ IsKnown tvar AbsBasic ]
-                                   _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
+                                   -- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
 %%]
 
 
