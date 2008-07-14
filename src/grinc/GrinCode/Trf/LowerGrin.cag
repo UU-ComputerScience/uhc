@@ -66,8 +66,8 @@ newNames hptMap uniq (HNmNr v _)
     else let (tags,fields) = unzip . getNodes $ getEnvVar hptMap v
              avArgs  = map mconcat (transpose $ map (++ repeat AbsBottom) fields)
              avTag   = AbsTags (Set.fromAscList tags)
-             avs     = avTag : avArgs
-             count   = 1 + maximum0 (map length fields) -- TODO: use arity information in the ctags map!
+             avs     = avTag : takeWhile (/=AbsBottom) avArgs
+             count   = length avs   -- 1 + maximum0 (map length fields) -- TODO: use arity information in the ctags map!
              uniq2   = uniq+count
              newNrs = [uniq .. uniq2-1]                                     
          in  (uniq2, map (\n->HNmNr n OrigNone) newNrs, zip newNrs avs)    
