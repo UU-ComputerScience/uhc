@@ -690,7 +690,7 @@ Anonymity, blinding things
   }
 
 \lstdefinelanguage{LLVM}
-  { morekeywords={define,declare,fastcc,add,sub,call,i32,switch,label,ret,nounwind,i8,internal,constant,getelementptr,i1,load,br,phi,icmp,mul,slt}
+  { morekeywords={define,declare,fastcc,add,sub,call,i32,i64,i1,store,inttoptr,ptrtoint,switch,label,ret,nounwind,i8,internal,constant,getelementptr,i1,load,br,phi,icmp,mul,slt}
   , sensitive={true}
   }
 

@@ -14,12 +14,12 @@ define fastcc i32 @fib( i32 %n ) nounwind
     ret i32 1
 
   default:
-    %tmp1 = sub i32 %n, 1
-    %tmp2 = call fastcc i32 @fib( i32 %tmp1 ) 
-    %tmp3 = sub i32 %n, 2
-    %tmp4 = call fastcc i32 @fib( i32 %tmp3 )
-    %tmp5 = add i32 %tmp2, %tmp4
-    ret i32 %tmp5
+    %vr1 = sub i32 %n, 1
+    %vr2 = call fastcc i32 @fib( i32 %vr1 ) 
+    %vr3 = sub i32 %n, 2
+    %vr4 = call fastcc i32 @fib( i32 %vr3 )
+    %vr5 = add i32 %vr2, %vr4
+    ret i32 %vr5
 }
 
 define i32 @main( ) nounwind
