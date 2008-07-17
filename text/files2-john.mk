@@ -12,6 +12,7 @@ LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.c \
                               $(TEXT_TMP_VARIANT_PREFIX)GetElementPtrExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)PhiExample.ll \
+                              $(TEXT_TMP_VARIANT_PREFIX)running-example.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.ll  
 
 LLVM_GRIN_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.grin
@@ -52,9 +53,9 @@ $(LLVM_CODE_SRC_PREFIX)FibExe.core $(LLVM_CODE_SRC_PREFIX)FibExe-012-aliaselim.g
 $(LLVM_CODE_SRC_PREFIX)FibExe-opt.grin: $(LLVM_CODE_SRC_PREFIX)FibExe-179-final.grin
 	sed -i 's/fun_x_[0-9]\+_//g' $<    ; \
 	sed -i 's/x_[0-9]\+_//g' $<        ; \
-	sed '18!d' $<                 > $@ ; \
+	sed '17!d' $<                 > $@ ; \
 	echo "        ..."           >> $@ ; \
-	sed '54,60!d' $<             >> $@ ; \
+	sed '51,57!d' $<             >> $@ ; \
 	echo "..."           >> $@
 
 $(LLVM_GRIN_FILES): $(LLVM_GRIN_FILES_DEP)
@@ -64,9 +65,9 @@ $(LLVM_CODE_FILES): $(LLVM_CODE_FILES_DEP)
 	cat $^ > $@
 
 $(LLVM_SILLY_FILES): $(LLVM_SILLY_FILES_DEP)
-	sed '33,35!d' $<        > $@ ; \
+	sed '32,34!d' $<        > $@ ; \
 	echo "        ..."     >> $@ ; \
-	sed '63,77!d' $<       >> $@ ; \
+	sed '60,74!d' $<       >> $@ ; \
 	echo "        ..."     >> $@ ; \
 	echo "}"               >> $@ ; \
 	sed -i 's/fun_//' $@         ; \

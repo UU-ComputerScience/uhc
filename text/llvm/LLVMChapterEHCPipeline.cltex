@@ -1,5 +1,6 @@
 %%[chapter
 \chapter{EHC}
+\todo{Silly code check}
 \label{cha:ehc}
 Code generation is only one task that a compiler must perform. Other tasks are parsing, type-checking, and implementing a full fledged compiler is out of scope of the project. We choose the Essential Haskell Compiler (EHC) project as the compiler in which we embed a Low Level Virtual Machine(LLVM) assembly code generator, because EHC is designed to be extended (see \refS{sec:ehc-extending}). The code generator is placed at the tail end of the compiler pipeline, generating code based on output of previous stages. The EHC frontend targets the Graph Reduction Intermediate Notation~\cite{boquist:99} (GRIN) instead of the well known Spineless Tagless G-machine~\cite{jones:92} (STG) model to avoid indirect jumps in the generated code and the overhead introduced by laziness. This choice influences the generated code heavily. In this chapter, we discuss the EHC compiler pipeline stages (\refS{sec:ehc-pipeline}) by showing the intermediate representations from the pipeline stages, and the transformations performed by them.
 
