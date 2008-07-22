@@ -740,9 +740,6 @@ SEM Decl
                                                              instanceMbBodies    = map (flip lookup instanceBindingPairs) memberNames
                                                              instanceMbNewNames  = let f _ Nothing  = Nothing
                                                                                        f n (Just e) = Just n
-                                                                                                      --case e of
-                                                                                                      --  CExpr_Var v -> Just v   -- This anticipates on the shortcutting that will be done by the CILA transformation. It is hard to do the substitution in the meta-annotation there, so we do it here.
-                                                                                                      --  _           -> Just n
                                                                                    in zipWith f memberNewNames instanceMbBodies
                                                              instanceMbNames     = let f _ Nothing  = Nothing
                                                                                        f n (Just _) = Just n

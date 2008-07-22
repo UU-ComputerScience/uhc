@@ -8,13 +8,12 @@
 %%% Lift fields of a dictionaries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs module {%{EH}Core.Trf.LiftDictFields} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLiftDictFields)
+%%[9 hs module {%{EH}Core.Trf.LiftDictFields} export(cmodTrfLiftDictFields)
 %%]
-
-
 %%[9 hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-
+%%[9 hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
 -- for debug
 %%[9 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -75,7 +74,7 @@ SEM CExpr
                                              )
 
 
--- note which bindings are needed
+-- find out which bindings are needed
 
 ATTR CMeta [  | | lifteeSet : {Set.Set HsName} ]
 ATTR CMeta [  | | isDict : {Bool}
@@ -120,11 +119,10 @@ SEM CBind
   
 SEM CExpr
   | Lam    body.lifteeSet     =  @lhs.lifteeSet  -- this rule is necessary, because the copyrule would copy argMeta.lifteeSet insteadof lhs.lifteeSet
-  | Let    loc.lifteeSetPlus  =  let names = @binds.directBoundNameSet
+  | Let    binds.lifteeSet    =  let names = @binds.directBoundNameSet
                                  in  if @categ==CBindRec  &&  not (null (Set.toList (names `Set.intersection` @lhs.lifteeSet)))
                                      then @lhs.lifteeSet `Set.union` names   -- if one of the names in a LetRec group is in lifteeSet, put all of them in it
                                      else @lhs.lifteeSet
-           binds.lifteeSet    =  @loc.lifteeSetPlus
            body.lifteeSet     =  @lhs.lifteeSet
 
 SEM CModule
@@ -163,24 +161,13 @@ ATTR CExpr [ olderBrothers  : {[CBind]}
 ATTR CExpr
      AllBind [ selfDictNm : {Maybe HsName} | | ]
 
-
-ATTR AllBind [ | | fvSMp2 USE {`Map.union`} {Map.empty} : {FvSMp} ]
-
-
-
-SEM CBind
-  | Bind  lhs.fvSMp2  = if   @bindMeta.isDict  && False  -- TEST!!!!!
-                        then Map.empty
-                        else Map.singleton @nm @expr.fvS
-
-
 SEM CExpr
   | Let    (body.olderBrothers
            ,body.olderFvMp
            )                   =  if @lhs.lev == cLevModule
                                   then ([], Map.empty)
                                   else ( @lhs.olderBrothers ++ @binds.cTrf
-                                       , @lhs.olderFvMp  `Map.union` @binds.fvSMp2
+                                       , @lhs.olderFvMp  `Map.union` @binds.fvSMp
                                        )
                   
 SEM CExpr
@@ -211,22 +198,13 @@ SEM CAlt
 ATTR AllBind [ findDependencies : {FvS -> [CBind]} | | ]
 
 SEM CExpr
-  | Let    ( loc.candidates
-           , loc.freeMap
-           )                       =  if @categ==CBindRec  && False
-                                      then ( @binds.cTrf ++ @lhs.olderBrothers
-                                           , @lhs.olderFvMp `Map.union` @binds.fvSMp2
-                                           )
-                                      else ( @lhs.olderBrothers
-                                           , @lhs.olderFvMp
-                                           )
-           binds.findDependencies  =  \needed -> let extend xS = Set.unions (xS : [ Map.findWithDefault Set.empty x @loc.freeMap
+  | Let    binds.findDependencies  =  \needed -> let extend xS = Set.unions (xS : [ Map.findWithDefault Set.empty x @lhs.olderFvMp
                                                                                   | x <- Set.toList xS
                                                                                   ]
                                                                             )
                                                      allNeeded = fix extend needed
                                                  in  [ CBind_Bind nm bm e
-                                                     | (CBind_Bind nm bm e) <- @loc.candidates
+                                                     | (CBind_Bind nm bm e) <- @lhs.olderBrothers
                                                      , nm `Set.member` allNeeded
                                                      ]
                                                  
@@ -242,12 +220,8 @@ fix f x = let y = f x
 
 
 isValBind :: CBind -> Bool
-isValBind (CBind_Bind _ m _) = isValMeta m
-
-isValMeta :: CMeta -> Bool
-isValMeta CMeta_Val            = True
-isValMeta (CMeta_Dict Nothing) = True     -- is this still necessary?
-isValMeta _                    = False
+isValBind (CBind_Bind _ CMeta_Val _) = True
+isValBind _                          = False
 
 mbMetaPos :: CMeta -> Maybe Int
 mbMetaPos (CMeta_Dict mbp) = mbp
