@@ -187,7 +187,7 @@ SEM GrExpr
  | Unit    lhs.stats  = if not @lhs.hasNext
                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
                          else maybe  (assignments "Unit" [] (map mkVar @lhs.targets) @val.values)
-                                     (\t -> Statement_Comment ["Unit to PtrNode"] : storeManaged (mkVar t) (length @val.values) (length @val.values) @val.values)
+                                     (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
                                      @lhs.mbPtrTarget
            lhs.localsSet = Set.fromList @lhs.targets
 
@@ -208,7 +208,7 @@ SEM GrExpr
                             -- n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))  -- wrong, because H-tags can be overwritten with non-final tags
                             n2 = 1+ maximum0 (map (length . snd) (getNodes (absFetch @lhs.hptMap ph)))
                         in Statement_Comment ["Store"]
-                           : storeManaged (mkVar ph) n n2 vs
+                           : store (mkVar ph) n n2 vs
 
            lhs.localsSet = Set.fromList @lhs.targets
 
@@ -309,11 +309,11 @@ SEM GrGlobal
            lhs.initStats1  = let vs = @val.values
                                  n  = length vs
                                  n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
-                             in  storeUnmanaged1 (Variable_Global @globNm) n n2 vs
+                             in  [ storeAlloc NotManaged (Variable_Global @globNm) n n2 vs ]
            lhs.initStats2  = let vs = @val.values
                                  n  = length vs
                                  n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
-                             in  storeUnmanaged2 (Variable_Global @globNm) n n2 vs
+                             in  storePopulate (Variable_Global @globNm) vs
 
 
 
@@ -561,55 +561,33 @@ maximum0 xs = maximum xs
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
 allocate :: Char -> SillyAllocManageType -> Int -> Int -> Value
-allocate 'C' tp n1 _  = Value_Alloc (n1) tp
-allocate _   tp n1 n2 = Value_Alloc ((max n1 n2)) tp
+allocate 'C' tp n1 _  = Value_Alloc      n1     tp
+allocate _   tp n1 n2 = Value_Alloc (max n1 n2) tp
        
 -- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char
 tagcat (Value_Con (Constant_Alias (c:_)):_) = c
 tagcat _ = ' '
 
+storeAlloc :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statement
+storeAlloc tp v n1 n2 vs
+       =  Statement_Assignment v (allocate (tagcat vs) tp n1 n2)
+
+storePopulate :: Variable -> [Value] -> Statements
+storePopulate v vs
+       =  zipWith Statement_Assignment
+                  (map (arrayVariab v) [0..])
+                  vs
+
+store :: Variable -> Int -> Int -> [Value] -> Statements
+store v n1 n2 vs
+       =  storeAlloc GCManaged v n1 n2 vs : storePopulate v vs
+
+
 
 mkVar :: HsName -> Variable
 mkVar = Variable_Unembedded
 
-storeUnmanaged :: Variable -> Int -> Int -> [Value] -> Statements
-storeUnmanaged =
-  store NotManaged
-
-storeUnmanaged1 :: Variable -> Int -> Int -> [Value] -> Statements
-storeUnmanaged1 =
-  store1 NotManaged
-
-storeUnmanaged2 :: Variable -> Int -> Int -> [Value] -> Statements
-storeUnmanaged2 =
-  store2 NotManaged
-
-
-storeManaged :: Variable -> Int -> Int -> [Value] -> Statements
-storeManaged =
-  store GCManaged
-  
-
-store :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
-store tp v n1 n2 vs
-       =  let cat = tagcat vs
-          in  Statement_Assignment v (allocate cat tp n1 n2)
-              : zipWith Statement_Assignment
-                        (map (arrayVariab v) [0..])
-                        vs
-store1 :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
-store1 tp v n1 n2 vs
-       =  let cat = tagcat vs
-          in  Statement_Assignment v (allocate cat tp n1 n2)
-              : []
-              
-store2 :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
-store2 tp v n1 n2 vs
-       =  let cat = tagcat vs
-          in  zipWith Statement_Assignment
-                      (map (arrayVariab v) [0..])
-                      vs
 
 arrayValue :: Variable -> Int -> Value
 arrayValue a i = Value_Var (Variable_Subs a i)

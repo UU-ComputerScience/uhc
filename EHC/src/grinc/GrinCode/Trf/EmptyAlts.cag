@@ -41,7 +41,7 @@ SEM GrAltL
   
 
 SEM GrExpr
-  | Case          lhs.valid  =  @altL.someValid    -- TODO: should we also check that some/all alternatives are valid?
+  | Case          lhs.valid  =  @altL.someValid
   | Seq           lhs.valid  =  @expr.valid && @body.valid
   | * - Case Seq  lhs.valid  =  True
 

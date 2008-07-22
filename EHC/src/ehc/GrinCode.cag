@@ -106,8 +106,19 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 -- Annotation for Grin Bindings
 --   Normal:  normal binding
 --   Class:    binds a dictionary with default definitions for al class
+--      The list entries correspond 1-to-1 with the class members
+--      They contain "Just" the name of the default implementation, or "Nothing" if there is none.
+--      Note that the dictionary may also contain superclass pointers, but they are not recorded in the annotation.
 --   Instance: binds a dictionary with definitions form an instance declaration
+--      The first element of the list is Just the name of the dictionary constructor.
+--      The second element of the list is Just the name of the dictionary containing the default definitions.
+--      The remaining list entries correspond 1-to-1 with the class members
+--      They contain "Just" the name of the instance implementation, or "Nothing" if it relies on the default implementation.
 --   Overloaded: binds a function with dictionary parameters
+--      The numbers specify which dictionaries are needed:
+--            -1 if the dictionary of which the function is a member is needed
+--            0  if the first superclass is needed (for example, the Eq dictionary for a member of Ord)
+--            1  if the second superclass is needed, etc.
 
 data GrBindAnn
   = GrBindAnnNormal
