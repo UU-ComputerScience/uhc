@@ -84,6 +84,9 @@ SEM GrAGItf
 SEM GrVar
   | Var    lhs . maxVar  =  getNr @nm
 
+SEM GrPatAlt
+  | Node   lhs . maxVar  =  maximum (0 : map getNr @fldL)
+  
 SEM GrGlobal
   | Global  lhs . maxVar  =  getNr @nm
 

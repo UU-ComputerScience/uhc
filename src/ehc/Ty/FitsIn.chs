@@ -880,7 +880,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  if foHasErrs pfo
                                then Nothing
                                else Just  ( foUpdTy ([foTy pfo] `mkArrow` foTy fo)
-                                          $ foUpdLRCoe (mkIdLRCoeWith n CMeta_Dict)
+                                          $ foUpdLRCoe (mkIdLRCoeWith n (CMeta_Dict Nothing))
                                           $ fo)
                             where  pfo   = fVar f (fi {fiFIOpts = predFIOpts}) tpr2 tpr1
                                    n     = uidHNm u2
@@ -892,7 +892,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%][99
                                                       (Impls_Cons iv2 pr1 (mkPrIdCHR u2) range ipo2 im2)
 %%]]
-                                                      tpr1 (mkIdLRCoeWith n CMeta_Dict) fo)
+                                                      tpr1 (mkIdLRCoeWith n (CMeta_Dict Nothing)) fo)
                             where  im2   = Impls_Tail u1 ipo2
                                    n     = uidHNm u2
                                    fo    = fVar ff fi tr1 ([Ty_Impls im2] `mkArrow` tr2)
@@ -903,7 +903,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%][99
                                                       (Impls_Cons iv1 pr2 (mkPrIdCHR u2) range ipo1 im1)
 %%]]
-                                                      tpr2 (mkIdLRCoeWith n CMeta_Dict) fo)
+                                                      tpr2 (mkIdLRCoeWith n (CMeta_Dict Nothing)) fo)
                             where  im1   = Impls_Tail u1 ipo1
                                    n     = uidHNm u2
                                    fo    = fVar ff fi ([Ty_Impls im1] `mkArrow` tr1) tr2
@@ -976,7 +976,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  let  fo    = fVar ff fi tr1 t2
                                     fs    = foVarMp fo
                                     prfPrL= [rngLift range mkPredOccRng pr1 pv1 psc1]
-                                    coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) CMeta_Dict
+                                    coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) (CMeta_Dict Nothing)
                                in   (fo,coe,gathPredLToProveCnstrMp prfPrL)
                        fP fi (Ty_Impls (Impls_Nil))
                             =  Just (fVar ff fi tr1 t2)

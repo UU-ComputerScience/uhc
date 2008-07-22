@@ -231,7 +231,7 @@ coeWipe cs l r
      in   (reverse l',reverse r')
 
 mkPoisAppCoe :: EHCOpts -> [PredOccId] -> [Coe]
-mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) CMeta_Dict)
+mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) (CMeta_Dict Nothing))
 
 mkImplsAppCoe :: EHCOpts -> Impls -> [Coe]
 mkImplsAppCoe opts = mkPoisAppCoe opts . implsPrIds
@@ -245,7 +245,7 @@ mkPoiLLamCoe onLast poiL
                 ->  []
          | otherwise
                 ->  [onLast]
-  where mk poi = mkLamCoe1With (poiHNm poi) CMeta_Dict
+  where mk poi = mkLamCoe1With (poiHNm poi) (CMeta_Dict Nothing)
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)

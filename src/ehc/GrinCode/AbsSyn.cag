@@ -29,6 +29,7 @@ TYPE GrGlobalL    =   [GrGlobal]
 
 DATA GrBind
   | Bind        nm              : {HsName}
+                annot           : GrBindAnn
                 argNmL          : {[HsName]}
                 expr            : GrExpr
   | Rec         bindL           : GrBindL

@@ -231,7 +231,7 @@ ATTR CMeta [ | | optPP : PP_Doc ]
 SEM CMeta
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
-  | Dict        loc         .   pp          =   pp "DICT"
+  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe "" (\n->"{"++show n++"}") @mbPos
   | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
   | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppMbCNm @names
 %%]]

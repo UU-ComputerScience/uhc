@@ -56,7 +56,7 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR AllCodeNT [ | gUniq: UID | ]
+ATTR AllCodeNT - CMeta [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
@@ -299,6 +299,32 @@ unboxArgL uniq tyNm vL
 %%]
 
 
+%%[8 hs
+
+mkHole    (GrBind_Bind nm _ _ _)    rest  = let nm1 = nm   -- = hsnPrefix "_" nm     -- namechange is needed because nm is also used in extraBindings
+                                            in  GrExpr_Seq (GrExpr_Store (GrVal_Node GrTag_Hole [])) 
+                                                           (GrPatLam_Var nm1) 
+                                                           rest
+
+mkVarBind (GrBind_Bind nm _ _ body) rest  = GrExpr_Seq body (GrPatLam_Var nm) rest
+
+mkVarBindWithUpdate
+          (GrBind_Bind nm _ _ body) rest  = let nm1 = nm -- hsnPrefix "_" nm
+                                                nm2 = hsnPrefix "_" nm
+                                            in  GrExpr_Seq body 
+                                                           (GrPatLam_Var nm2)
+                                                           (GrExpr_Seq (GrExpr_FetchUpdate nm2 nm1)
+                                                                       GrPatLam_Empty 
+                                                                       rest
+                                                           )
+
+mkHoles               bindL rest  = foldr mkHole              rest bindL
+mkVarBindWithUpdates  bindL rest  = foldr mkVarBindWithUpdate rest bindL
+mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
+
+%%]
+
+
 %%[8
 ATTR CExpr   [ | | grExpr: GrExpr ]
 ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
@@ -306,23 +332,15 @@ ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
 SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @lhs.lev == cLevModule
                                                 then  (emptyGrExpr
-                                                      ,let
-                                                       in   case @categ of
-                                                              CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
-                                                              _            ->  @binds.grBindL ++ @body.grBindL
+                                                      ,case @categ of
+                                                         CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
+                                                         _            ->              @binds.grBindL  ++ @body.grBindL
                                                       )
                                                 else  (case @categ of
-                                                          CBindRec     ->  mkSt (map (\(GrBind_Bind n _ _) -> n) @binds.grBindL)
-                                                                           $ mkVs @binds.grBindL
-                                                                           $ @body.grExpr
-                                                                           where  h             = GrVal_Node GrTag_Hole []
-                                                                                  mkSt nmL e    = foldr (\n e -> GrExpr_Seq (GrExpr_Store h) (GrPatLam_Var n) e) e nmL
-                                                                                  mkV b n n' e
-                                                                                                = GrExpr_Seq b (GrPatLam_Var n')
-                                                                                                    (GrExpr_Seq (GrExpr_FetchUpdate n' n) GrPatLam_Empty e)
-                                                                                  mkVs bs e     = foldr (\(GrBind_Bind n _ v) e -> mkV v n (hsnPrefix "_" n) e) e bs
-                                                          _            ->  foldr  (\(GrBind_Bind n _ v) e -> GrExpr_Seq v (GrPatLam_Var n) e)
-                                                                                  @body.grExpr @binds.grBindL
+                                                         CBindRec     ->  mkHoles @binds.grBindL
+                                                                          $ mkVarBindWithUpdates @binds.grBindL
+                                                                          $ @body.grExpr
+                                                         _            ->  mkVarBinds @binds.grBindL @body.grExpr 
                                                       ,[]
                                                       )
   | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase
@@ -448,8 +466,65 @@ SEM CAlt
 ATTR CBind CBindL  [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CBind
-  | Bind        lhs         .   grBindL     =   [GrBind_Bind @nm @expr.grLamArgL @expr.grLamBody]
+  | Bind        lhs         .   grBindL     =   [GrBind_Bind @nm 
+                                                             @bindMeta.grBindAnn 
+                                                             @expr.grLamArgL 
+                                                             @expr.grLamBody
+                                                ]
+                                                ++ (case @bindMeta.grBindAnn of
+                                                       GrBindAnnInstance _  -> [] -- trace "extra inst " @expr.extraBindings
+                                                       GrBindAnnClass    _  -> [] -- trace "extra class" @expr.extraBindings
+                                                       _                    -> []
+                                                   )
+                bindMeta    .   lamArgDicts =   @expr.lamArgDicts
+
 %%]
+
+%%[8
+
+ATTR AllBind [ | | dictAnnotMp USE {`Map.union`} {Map.empty} : {Map.Map HsName Int} ]
+
+SEM CBind
+  | Bind    lhs.dictAnnotMp =  case @bindMeta.argDicts of
+                                 []    -> Map.singleton @nm (-1)
+                                 (n:_) -> Map.singleton @nm n
+
+
+ATTR CExpr [ | | extraBindings: GrBindL    extraBindingsDeep: GrBindL ]
+
+
+
+SEM CExpr
+  | Let       lhs.extraBindings  =  trace ("extra for: " ++ show @binds.grBindL) [ b | Just b <- map (makeExtraBind @binds.dictAnnotMp) @binds.grBindL ]
+  | Lam       lhs.extraBindings  =  @body.extraBindingsDeep
+  | * - Let
+        Lam   lhs.extraBindings  =  trace ("body is not a Let or Lam") []
+
+
+SEM CExpr
+  | Let       lhs.extraBindingsDeep  =  trace ("extra deep: " ++ show @binds.grBindL) ( [ b | Just b <- map (makeExtraBind @binds.dictAnnotMp) @binds.grBindL ] ++ @body.extraBindingsDeep )
+  | * - Let   lhs.extraBindingsDeep  =  trace ("body is not a Let") []
+
+%%]
+
+%%[8 hs
+
+makeExtraBind :: Map.Map HsName Int -> GrBind -> Maybe GrBind
+makeExtraBind annotMp (GrBind_Bind bindNm _ _ body@(GrExpr_Store val@(GrVal_Node tag args)))
+  = case tag of
+      GrTag_PApp needs tagNm ->   let n = length args + needs
+                                      sats  = [ hsnSuffix bindNm ('~':show k) | k <- [1..n] ]
+                                      call  = GrExpr_Call tagNm (map GrVal_Var sats)
+                                      annot = GrBindAnnOverloaded [ n | Just n <- map (flip Map.lookup annotMp) [nm | GrVal_Var nm <- args ] ]
+                                      bind  = GrBind_Bind bindNm annot sats call
+                                  in  Just bind
+      _ -> Nothing
+  
+makeExtraBind _ b
+  = Nothing  -- error ("ToGrin: makeExtraBind on unexpected binding form " ++ show b)
+
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FFI binding
@@ -529,7 +604,7 @@ SEM CBind
                                                      mkEval (n,needEval,p)
                                                        = GrExpr_Seq (if needEval then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n)) p
 %%]]
-                                                in   [GrBind_Bind @nm @nmArgL
+                                                in   [GrBind_Bind @nm GrBindAnnNormal @nmArgL
                                                         (foldr mkEval (mkRes @resTy @nmRes (GrExpr_FFI @impEnt (map GrVal_Var @nmArgPatL)))
 %%[[8
                                                         $ zip @nmArgL
@@ -686,12 +761,16 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr ]
+ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
+ATTR CExpr [ | | lamArgDicts: {[Int]} ]
 
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
+                lhs         .   lamArgDicts =   @argMeta.argDicts ++ @body.lamArgDicts
   | * - Lam     lhs         .   grLamArgL   =   []
-                            .   grLamBody   =   @grExpr
+                lhs         .   grLamBody   =   @grExpr
+                lhs         .   lamArgDicts =   []
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -707,4 +786,31 @@ SEM CExpr
   | * - App     lhs         .   grAppFun    =   maybe hsnUnknown id . grV2HNm $ @grVal
                             .   grAppArgL   =   []
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bind meta
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+%%[8
+ATTR CMeta [ lamArgDicts: {[Int]} | | ]
+ATTR CMeta [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
+
+SEM CMeta
+  | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts
+                                                 then GrBindAnnNormal
+                                                 else GrBindAnnOverloaded @lhs.lamArgDicts
+                 lhs          .   argDicts    =  []
+%%[[9
+  | Dict         lhs          .   grBindAnn   =  GrBindAnnNormal
+                 lhs          .   argDicts    =  maybe [] (:[]) @mbPos
+  | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @names
+                 lhs          .   argDicts    =  []
+  | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @names
+                 lhs          .   argDicts    =  []
+%%]]
+%%]
+
 

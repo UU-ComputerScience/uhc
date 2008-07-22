@@ -40,6 +40,7 @@ Core/Trf/InlineLetAlias.cag
 Core/Trf/LamGlobalAsArg.cag
 Core/Trf/CAFGlobalAsArg.cag
 Core/Trf/FloatToGlobal.cag
+Core/Trf/LiftDictFields.cag
 Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 Core/Trf/ForceEval.cag

@@ -36,7 +36,7 @@ pBindL          ::   GRIParser GrBindL
 pBindL          =    pCurly_pSemics pBind
 
 pBind           ::   GRIParser GrBind
-pBind           =    GrBind_Bind <$> pGrNm <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
+pBind           =    GrBind_Bind <$> pGrNm <*> pGrBindAnn <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
                 <|>  GrBind_Rec <$ pKey "rec" <*> pBindL
 
 pCTags          ::   GRIParser CTagsMp
@@ -104,6 +104,9 @@ pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
                      <|>  GrAltAnnReenter <$ pKey "reenter"
                      <|>  pSucceed GrAltAnnNormal
                      )
+
+pGrBindAnn      ::  GRIParser GrBindAnn
+pGrBindAnn      =    pSucceed GrBindAnnNormal    -- TODO: GrBindAnnClass/Instance
                      
 
 pPatLam         ::   GRIParser GrPatLam
