@@ -251,7 +251,7 @@ cmetaLift = cmetaLift' CMeta_Val
 
 %%[9 hs export(cmetaLiftDict)
 cmetaLiftDict :: Functor f => f x -> f (x,CMeta)
-cmetaLiftDict = cmetaLift' CMeta_Dict
+cmetaLiftDict = cmetaLift' (CMeta_Dict Nothing)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

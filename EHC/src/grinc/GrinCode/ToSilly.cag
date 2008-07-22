@@ -56,7 +56,8 @@ ATTR GrVal
      GrTag              [ | | value                      : {Value}        ]
 ATTR GrPatAlt GrTag     [ | | constant                   : {Constant}     ]
 ATTR GrValL GrVal       [ | | values                     : {Values}       ]
-ATTR GrGlobal GrGlobalL [ | | initStats    USE {++} {[]} : {Statements}
+ATTR GrGlobal GrGlobalL [ | | initStats1   USE {++} {[]} : {Statements}
+                              initStats2   USE {++} {[]} : {Statements}
                               names        USE {++} {[]} : {[HsName]}     ]
 
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
@@ -129,7 +130,8 @@ SEM GrModule
                                 (tagConstants (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names              -- variables
                                 ( Function_Function (HNm "initialize") False [] []
-                                                    ( @globalL.initStats
+                                                    (  @globalL.initStats1
+                                                    ++ @globalL.initStats2
                                                     ++ (if @lhs.optOwn>=1
                                                          then [ Statement_Assignment Variable_SP (Value_Offset Variable_BP (0+2)) ]
                                                          else []
@@ -145,9 +147,9 @@ SEM GrModule
 
 
 SEM GrBind
-  | Bind   lhs.functions =  if @expr.hasEmptyBody
+  | Bind   lhs.functions =  if False && @expr.hasEmptyBody
                             then []
-                            else [ Function_Function
+                            else   [ Function_Function
                                    -- name
                                    @nm
                                    @expr.tailJumps
@@ -202,8 +204,9 @@ SEM GrExpr
                                    (x:_) -> x
                             vs = @val.values
                             n  = length vs
-                            --n2 = @lhs.maxConstrParameters
-                            n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))
+                            -- n2 = @lhs.maxConstrParameters   -- always a safe approximation
+                            -- n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))  -- wrong, because H-tags can be overwritten with non-final tags
+                            n2 = 1+ maximum0 (map (length . snd) (getNodes (absFetch @lhs.hptMap ph)))
                         in Statement_Comment ["Store"]
                            : storeManaged (mkVar ph) n n2 vs
 
@@ -214,8 +217,8 @@ SEM GrExpr
                             n = 1+ maximum0 (map (length . snd) (getNodes (absFetch @lhs.hptMap @src)))
                          in Statement_Comment ["FetchUpdate"]
                             : zipWith Statement_Assignment
-                                     (map (arrayVariab (mkVar @dst)) [0..n])
-                                     (map (arrayValue  (mkVar @src)) [0..n])
+                                     (map (arrayVariab (mkVar @dst)) [0..n-1])
+                                     (map (arrayValue  (mkVar @src)) [0..n-1])
 
  | FetchNode
            lhs.stats  = error "FetchNode found while generating Silly"
@@ -303,10 +306,14 @@ SEM GrAlt
 SEM GrGlobal
  | Global  loc.globNm      = @nm
  		   lhs.names       = [@globNm]
-           lhs.initStats   = let vs = @val.values
+           lhs.initStats1  = let vs = @val.values
                                  n  = length vs
                                  n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
-                             in  storeUnmanaged (Variable_Global @globNm) n n2 vs
+                             in  storeUnmanaged1 (Variable_Global @globNm) n n2 vs
+           lhs.initStats2  = let vs = @val.values
+                                 n  = length vs
+                                 n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
+                             in  storeUnmanaged2 (Variable_Global @globNm) n n2 vs
 
 
 
@@ -334,7 +341,7 @@ SEM GrVal
 
  | PtrNode    lhs.values = [Value_Var (mkVar @nm)]    -- TODO: this treats a ptr as an enum, which is not right
  -- | PtrNode    lhs.values = error "ToSilly: PtrNode values"
- | Empty      lhs.values = error "ToSilly: Empty values"
+ | Empty      lhs.values = take 10 (repeat (Value_Con (Constant_LiteralInt 0))) -- error "ToSilly: Empty values"
  | LitInt     lhs.values = error ("ToSilly: LitInt values" ++ show @int)
  | LitStr     lhs.values = error ("ToSilly: LitStr values" ++ show @str)
  -- | Tag        lhs.values = error ("ToSilly: Tag values" ++ show @tag.value)
@@ -570,6 +577,15 @@ storeUnmanaged :: Variable -> Int -> Int -> [Value] -> Statements
 storeUnmanaged =
   store NotManaged
 
+storeUnmanaged1 :: Variable -> Int -> Int -> [Value] -> Statements
+storeUnmanaged1 =
+  store1 NotManaged
+
+storeUnmanaged2 :: Variable -> Int -> Int -> [Value] -> Statements
+storeUnmanaged2 =
+  store2 NotManaged
+
+
 storeManaged :: Variable -> Int -> Int -> [Value] -> Statements
 storeManaged =
   store GCManaged
@@ -582,6 +598,18 @@ store tp v n1 n2 vs
               : zipWith Statement_Assignment
                         (map (arrayVariab v) [0..])
                         vs
+store1 :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
+store1 tp v n1 n2 vs
+       =  let cat = tagcat vs
+          in  Statement_Assignment v (allocate cat tp n1 n2)
+              : []
+              
+store2 :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statements
+store2 tp v n1 n2 vs
+       =  let cat = tagcat vs
+          in  zipWith Statement_Assignment
+                      (map (arrayVariab v) [0..])
+                      vs
 
 arrayValue :: Variable -> Int -> Value
 arrayValue a i = Value_Var (Variable_Subs a i)

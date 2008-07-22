@@ -35,6 +35,8 @@
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
 %%]
+%%[9 import({%{GRIN}GrinCode.Trf.MergeInstance(mergeInstance)})
+%%]
 %%[8 import({%{GRIN}GrinCode.Trf.EvalStored(evalStored)})
 %%]
 %%[8 import({%{GRIN}GrinCode.Trf.NumberIdents(numberIdents)})
@@ -96,6 +98,7 @@ doCompileGrin
   =  putStrLn "grinc: not available for this version (of ehc). Code generation is added in version 8."
 %%]
 
+
 %%[8 -1.doCompileGrin
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
@@ -106,26 +109,30 @@ doCompileGrin input opts
          ; when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
-         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-112-cleaned"
-         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-113-appsbound"
-         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-114-globconst"
+%%[[9                                             
+		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
+%%]]
+         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-113-cleaned"
+         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-114-appsbound"
+         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-115-globconst"
          ; transformCodeInline                      "Inline"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-115-inlined"
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-116-invariant"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-116-inlined"
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-117-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-117-evalstored"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-118-unusedExprDropped"
-         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-119-numbered"
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-118-evalstored"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-119-unusedExprDropped"
+         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-120-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
-         ; transformCodeUseHpt   dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
+         --; transformCodeUseHpt   dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
          ; transformCodeChgHpt   lateInline         "LateInline"
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
+         ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-136-emptyAlts"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         singleCase         "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"

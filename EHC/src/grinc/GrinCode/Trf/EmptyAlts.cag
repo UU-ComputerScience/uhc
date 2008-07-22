@@ -25,24 +25,40 @@ ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
 %%[8
--- An expression is valid if it doesn't contain Case expressions with empty list of alternatives
+-- An expression is valid if it doesn't contain Case expressions with empty or all-invalid list of alternatives
 
-ATTR GrExpr [ | | valid : {Bool} ]
-ATTR GrAltL [ | | isNull : {Bool} ]
+ATTR GrExpr
+     GrAlt  [ | | valid : {Bool} ]
+ATTR GrAltL [ | | isNull : {Bool}  someValid: {Bool}  ]
 
 SEM GrAltL
   | Nil   lhs.isNull = True
   | Cons  lhs.isNull = False
+  
+SEM GrAltL
+  | Nil   lhs.someValid = False
+  | Cons  lhs.someValid = @hd.valid || @tl.someValid  
+  
 
 SEM GrExpr
-  | Case          lhs.valid  =  not @altL.isNull    -- TODO: should we also check that some/all alternatives are valid?
+  | Case          lhs.valid  =  @altL.someValid    -- TODO: should we also check that some/all alternatives are valid?
   | Seq           lhs.valid  =  @expr.valid && @body.valid
   | * - Case Seq  lhs.valid  =  True
 
--- Expressions that are not valid are replaced by "UNIT Empty"
+-- Binding bodies that are not valid are replaced by "UNIT Empty"
 
 SEM GrBind
   | Bind          lhs.grTrf  =  if @expr.valid
                                 then @loc.grTrf
-                                else GrBind_Bind @nm @argNmL (GrExpr_Unit GrVal_Empty)
+                                else GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty)
+                                
+-- Invalid alternatives are removed from the list
+
+SEM GrAltL
+  | Nil           lhs.grTrf = []
+  | Cons          lhs.grTrf = if @hd.valid                                
+                              then @hd.grTrf : @tl.grTrf
+                              else             @tl.grTrf
+                                
+                                
 %%]

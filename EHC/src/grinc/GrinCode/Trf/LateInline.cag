@@ -95,7 +95,7 @@ SEM GrBindL
 SEM GrBind
   | Bind   loc . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
            lhs . grTrf  =  if   @loc.drop
-                           then GrBind_Bind @nm @argNmL (GrExpr_Unit GrVal_Empty)
+                           then GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty)
                            else @loc.grTrf
 
 %%]

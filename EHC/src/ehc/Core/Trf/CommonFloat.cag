@@ -1,0 +1,88 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core transformations having to do with Floatation: FloatToGlobal, CAFGlobalAsArg
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr (other than a Lam) a candidate for making a closure out of it?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[9999 hs
+
+fix :: Eq a => (a->a) -> a -> a
+fix f x = let y = f x
+          in  if y==x 
+              then x
+              else fix f y
+
+%%]
+
+
+%%[9999
+
+-- fvSMp is defined in CommonFv for AllBind, but we need it also for CExpr here
+ATTR CExpr [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
+
+
+ATTR CExpr AllBind [ mustBeClosurizedSet : {Set.Set HsName} | | ]
+
+ATTR CMeta [  | | insertInClosurizeeSet : {Set.Set HsName} ]
+
+SEM CModule
+  | Mod    expr.mustBeClosurizedSet = Set.empty
+SEM CAlt
+  | Alt    expr.mustBeClosurizedSet = Set.empty
+SEM CPatBind
+  | Bind   offset.mustBeClosurizedSet = Set.empty
+
+SEM CMeta
+  | Val      lhs.insertInClosurizeeSet = Set.empty
+%%[[9999
+  | Dict          lhs.insertInClosurizeeSet = Set.empty
+  | DictClass     lhs.insertInClosurizeeSet = trace ("class " ++ show @names) $  Set.fromList [ nm | Just nm <- @names ]
+  | DictInstance  lhs.insertInClosurizeeSet = trace ("inst  " ++ show @names) $  Set.fromList [ nm | Just nm <- @names ]
+%%]]
+
+
+SEM CBind
+  | Bind   loc .mustBeClosurizedSet  =  trace ("at " ++ show @nm ++ " insert " ++ show @bindMeta.insertInClosurizeeSet) $ 
+                                        @bindMeta.insertInClosurizeeSet `Set.union` @lhs.mustBeClosurizedSet -- `Set.union` @expr.closurizeeDependents
+           expr.mustBeClosurizedSet  =  trace ("trans=" ++ show @loc.trans) @loc.trans -- @loc.mustBeClosurizedSet
+           loc.trans   =  let extend xS = Set.unions (xS : [ Map.findWithDefault Set.empty x @expr.fvSMp
+                                                           | x <- Set.toList xS
+                                                           ]
+                                                     )
+                          in  fix extend @bindMeta.insertInClosurizeeSet
+%%]
+
+%%[8
+
+ATTR CExpr [ | | isClosurableExpr: Bool ]
+
+SEM CExpr
+  | Case TupDel TupIns TupUpd Let
+                lhs         .   isClosurableExpr    =   True
+  | * - Case TupDel TupIns TupUpd Let
+                lhs         .   isClosurableExpr    =   False
+%%]
+
+%%[8
+SEM CBind
+  | Bind        loc         .  isClosurableBind =   --trace ("isCl " ++ show @nm) $ 
+                                                    ( (  @lhs.letBindCateg /= CBindStrict
+                                                      && @expr.isClosurableExpr
+                                                      && isNothing @expr.mbTupApp   -- superfluous test at the moment, because mbTupApp is only Just for Tup and App, which are not Closurable anyway
+                                                      )
+                                                    -- || (  @nm `Set.member` @lhs.mustBeClosurizedSet
+                                                    --   && not @expr.isLam
+                                                    --   )
+                                                    )
+                                                    
+%%]
+

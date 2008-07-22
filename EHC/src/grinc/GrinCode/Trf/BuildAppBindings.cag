@@ -126,7 +126,7 @@ buildAppBinding (size,specnr)
         body = GrExpr_Seq (GrExpr_Eval partialApp)
                           (GrPatLam_Var evalPartialApp)
                           (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
-    in GrBind_Bind funcName args body
+    in GrBind_Bind funcName GrBindAnnNormal args body
 
 %%]
 
@@ -143,7 +143,8 @@ SEM GrModule
          loc . mainFullProg = let worldNode = GrVal_Node GrTag_Hole []   
                                   worldName = HNm "world"
                                   ioName    = HNm "theio"
-                              in  [ GrBind_Bind hsnMainFullProg [] (GrExpr_Seq  (GrExpr_Store worldNode)
+                              in  [ GrBind_Bind hsnMainFullProg 
+                                                GrBindAnnNormal [] (GrExpr_Seq  (GrExpr_Store worldNode)
                                                                                 (GrPatLam_Var worldName)
                                                                                 (GrExpr_Seq (GrExpr_Eval hsnMain)
                                                                                             (GrPatLam_Var ioName)

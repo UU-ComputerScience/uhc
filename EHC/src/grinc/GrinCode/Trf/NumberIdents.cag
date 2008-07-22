@@ -12,56 +12,58 @@ which may be thrown by the function.
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents}  export(numberIdents)
 %%]
 
-%%[8 hs import({%{GRIN}Config})
+%%[8 hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
+%%]
+%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%]
+%%[8 hs import({%{GRIN}GRINCCommon}, {%{GRIN}Config})
 %%]
 %%[8 hs import(Debug.Trace)
 %%]
-%%[20 hs import({%{EH}Base.Builtin},{%{GRIN}Config})
+
+%%[8 import({GrinCode/AbsSyn})
 %%]
+
 
 %%[8.wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8
-PRAGMA nocycle
-%%]
-
-%%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode}, Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe) export(numberIdents)
-
+%%[8 hs
 numberIdents :: GrModule -> GrModule
 numberIdents code
   = let inh = Inh_GrAGItf {}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
     in  grTrf_Syn_GrAGItf syn
-
-
 %%]
 
-%%[8.lookup hs
-type LookupList = Map.Map HsName HsName
-
-findNewVar fm e             = Map.findWithDefault e e fm
 
 
-addList :: Int -> LookupList -> [HsName] -> (LookupList, [HsName], Int)
-addList u fm = onFst (flip listInsert fm) . foldr addName ([], [], u)
+Haskell datatype NameMapping and utility functions for it
+
+%%[8 hs
+type NameMapping = Map.Map HsName HsName
+
+findNewVar fm e  = Map.findWithDefault (trace (show e ++ " not found in " ++ show fm) e) e fm
+
+
+-- numbers the non-wildcard variables in xs, counting from left-to-right (because that is needed when numbering argument lists)
+
+addList :: Int -> [HsName] -> (NameMapping, [HsName], Int)
+addList u xs = foldl addName (Map.empty, [], u) xs
     where
-    onFst f (a, b, c)                       = (f a          , b             , c  )
-    addName e (l, l2, u) | e == wildcardNm 
-                           || e==wildcardNr = (l            , wildcardNr:l2 , u  )
-                         | otherwise        = let newname = HNmNr u (OrigLocal e)
-                                              in ((e,newname):l, (newname:l2), u+1)
+    addName (mapping, names, u) e | e == wildcardNm  = (mapping, names++[wildcardNr] , u  )
+                                  | otherwise        = let newname = HNmNr u (OrigLocal e)
+                                                       in (Map.insert e newname mapping, names++[newname], u+1)
                                               
-listInsert l fm = foldl (flip $ uncurry Map.insert) fm l                                              
 %%]
 
 %%[8
 ATTR GrAGItf [ | | grTrf: GrModule  ]
-ATTR AllNT   [ | | grTrf: SELF  copy: SELF     ]
+ATTR AllNT   [ | | grTrf: SELF      ]
 ATTR AllNT   [ | unique: Int | ]
 
 SEM GrAGItf
@@ -70,43 +72,36 @@ SEM GrAGItf
 %%]
 
 
-%%[8.maps
-ATTR AllNT          [ bind2id: LookupList  | var2id: LookupList | ]
-ATTR GrModule AllBind [ | bind2idFrag: LookupList | ]
 
-SEM GrAGItf
-  | AGItf  module  .  bind2idFrag  = Map.empty
-                   .  var2id       = Map.empty
-           loc     .  bind2id      = Map.insert hsnMainFullProg mainNr @module.bind2idFrag
+%%[8
 
-%%]
+ATTR AllBind  [ 
+              | 
+              | genBindMap USE {`Map.union`} {Map.empty} : NameMapping
+              ]
 
-retrieving names and their mapping
+ATTR AllGlobal
+     GrPatAlt
+     GrPatLam [ 
+              |
+              | genVarMap  USE {`Map.union`} {Map.empty} : NameMapping
+              ]
 
-%%[8.addMbFM hs
-addMbToMap fm mbk mbv = maybe fm id mbMap
-    where
-    mbMap = do
-        k <- mbk
-        v <- mbv
-        return $ Map.insert k v fm
-%%]
+ATTR AllGlobal
+     AllBind
+     AllExpr  [ varMap : NameMapping
+                bindMap: NameMapping  | | ]
 
-%%[8.bindings
-SEM GrBind
-  | Bind  loc.(bindName
-              ,unique2
-              ,bind2idFrag) = if @nm == hsnMainFullProg
-                              then ( mainNr
-                                   , @lhs.unique
-                                   , @lhs.bind2idFrag
-                                   )
-                              else ( HNmNr @lhs.unique (OrigFunc @nm)
-                                   , @lhs.unique + 2
-                                   , Map.insert @nm @loc.bindName @lhs.bind2idFrag
-                                   )
+
+SEM GrModule
+  | Mod       loc     . bindMap  =  Map.insert hsnMainFullProg mainNr @bindL.genBindMap
+              globalL . bindMap  =  @loc.bindMap
+              bindL   . bindMap  =  @loc.bindMap
+              globalL . varMap   =  @globalL.genVarMap
+              bindL   . varMap   =  @globalL.genVarMap
 
 %%]
+
 
 %%[8 hs
 
@@ -137,7 +132,9 @@ builtinGlobalNamesUnqualifiedSet = Set.fromList builtinGlobalNamesUnqualifiedLis
 %%]
 
 
-%%[8.GetDefinedNames
+
+
+%%[8
 
 ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
 SEM GrVar
@@ -145,22 +142,19 @@ SEM GrVar
 
 
 SEM GrGlobal
-  | Global    loc   .  newName  : HsName
-              loc   .  newName  = HNmNr @lhs.unique (OrigGlobal @nm)
-              lhs   .  var2id   = Map.insert @nm @newName @lhs.var2id
-                    .  unique   = @lhs.unique + 1
+  | Global     loc   .  newName  : HsName
+               loc   .  newName  = HNmNr @lhs.unique (OrigGlobal @nm)
+               lhs   .  genVarMap  = Map.singleton @nm @newName
+               lhs   .  unique   = @lhs.unique + 1
 
 SEM GrPatAlt
-  | Node       loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL
-  			   loc  .  var2id                     :  LookupList
-  			        .  newNames                   :  {[HsName]}
-  			        .  unique                     :  Int
+  | Node       (lhs.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL
+  			   loc  .  newNames                   :  {[HsName]}
 
 SEM GrPatLam
-  | VarNode    loc  .  (var2id, newNames, unique) = addList @lhs.unique @lhs.var2id @fldL.names
-  			   loc  .  var2id                     :  LookupList
-  			        .  newNames                   :  {[HsName]}
-  			        .  unique                     :  Int
+  | VarNode    (lhs.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL.names
+  			   loc  .  newNames                   :  {[HsName]}
+
   | Var
     BasicNode
     EnumNode
@@ -169,121 +163,103 @@ SEM GrPatLam
     BasicAnnot
     EnumAnnot
     OpaqueAnnot
-    PtrAnnot   (lhs.var2id, lhs.unique)  = if @loc.skip
-                                           then (                        @lhs.var2id, @lhs.unique    )
-                                           else (Map.insert @nm @newName @lhs.var2id, @lhs.unique + 1)
+    PtrAnnot   lhs.genVarMap    = Map.singleton @nm @newName
+               lhs.unique       = @lhs.unique + 1
                loc  .  newName  : HsName
                loc  .  newName  = HNmNr @lhs.unique (OrigLocal @nm)
-  			   loc  .  skip     : Bool
-  			   loc  .  skip     = case @nm of
-  			                        HNmNr _ _ -> True
-  			                        _         -> False
                
 
 SEM GrExpr
-  | Catch      handler  .  var2id   = Map.insert @arg @newName @body.var2id
-                        .  unique   = @body.unique + 1
+  | Catch      handler  .  varMap   = Map.insert @arg @newName @lhs.varMap
+               handler  .  unique   = @body.unique + 1
                loc      .  newName  : HsName
                loc      .  newName  = HNmNr @body.unique (OrigLocal @arg)
 
+  | Seq        body     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
 
--- addList processes arguments back-to-front.
--- because we need arguments to be numbered in increasing order, we first reverse them,
--- and then reverse the resulting newNames back to the original order
+SEM GrAlt
+  | Alt        expr     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
+  
+
+
 
 SEM GrBind
-  | Bind      loc   .  (var2id2, nn, unique3)   =  if @loc.skip
-                                                    then (@lhs.var2id, [], @lhs.unique)
-                                                    else addList @loc.unique2 @lhs.var2id (reverse @argNmL)
-                    .  newNames                 =  reverse @nn
-  			  loc   .  var2id2                  :  LookupList
-  			        .  nn                       :  {[HsName]}
-  			        .  unique3                  :  Int
-  			        .  skip                     :  Bool
-  			        
-  			  loc   .  skip                     =  case @nm of
-  			                                         HNmNr _ _ -> True
-  			                                         _         -> False
-              expr  .  var2id                   =  @loc.var2id2
-                    .  unique                   =  @loc.unique3
-              lhs   .  unique                   =  @expr.unique
-                    .  var2id                   =  @expr.var2id
+  | Bind      
+
+  | Bind  lhs.genBindMap =  Map.singleton @nm (HNmNr @lhs.unique (OrigFunc @nm))
+                              
+          ( loc.parameterMap
+          , loc.newNames
+          , expr.unique
+          )                         =  addList (@lhs.unique + 2) @argNmL    -- arguments must be numbered left-to-right (addList indeed does so)
+          
+          expr  .  varMap           =  @lhs.varMap `Map.union` @loc.parameterMap
+          
+          loc   .  parameterMap     :  {NameMapping}
+          loc   .  newNames         :  {[HsName]}
+          lhs   .  unique           =  @expr.unique
+
 %%]
+
+
+
 
 replacing every identifier with a number
 
-%%[8.ReplaceIdents
+%%[8
 SEM GrGlobal
-  | Global  lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
+  | Global      lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
 
 SEM GrPatAlt
-  | Node  lhs  .  grTrf  = GrPatAlt_Node @tag.grTrf @newNames
+  | Node        lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf @newNames
   
 SEM GrPatLam
-  | Var           lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_Var  @newName
-  | BasicNode     lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_BasicNode @annot @newName
-  | EnumNode      lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_EnumNode @newName
-  | OpaqueNode    lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_OpaqueNode @newName
-  | PtrNode       lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_PtrNode @newName
-  | BasicAnnot    lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_BasicAnnot @annot @newName
-  | EnumAnnot     lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_EnumAnnot @tagL.grTrf @newName
-  | OpaqueAnnot   lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_OpaqueAnnot @newName
-  | PtrAnnot      lhs  .  grTrf  = if @loc.skip
-                                    then @loc.copy
-                                    else GrPatLam_PtrAnnot @tagL.grTrf @newName
+  | Var         lhs  .  grTrf  =  GrPatLam_Var  @newName
+  | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode @annot @newName
+  | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode @newName
+  | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode @newName
+  | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode @newName
+  | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot @newName
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot @tagL.grTrf @newName
+  | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot @newName
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot @tagL.grTrf @newName
 
 SEM GrBind
-  | Bind  lhs  .  grTrf    = GrBind_Bind @bindName @newNames @expr.grTrf
+  | Bind        lhs  .  grTrf  =  GrBind_Bind (findNewVar @lhs.bindMap @nm) @annot @newNames @expr.grTrf
 
 SEM GrVal
-  | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.var2id @nm)
-  | BasicNode   lhs  .  grTrf  = GrVal_BasicNode @tag.grTrf (findNewVar @lhs.var2id @nm)
-  | EnumNode    lhs  .  grTrf  = GrVal_EnumNode             (findNewVar @lhs.var2id @nm)
-  | OpaqueNode  lhs  .  grTrf  = GrVal_OpaqueNode           (findNewVar @lhs.var2id @nm)
-  | PtrNode     lhs  .  grTrf  = GrVal_PtrNode              (findNewVar @lhs.var2id @nm)
+  | Var         lhs  .  grTrf  =  GrVal_Var                  (findNewVar @lhs.varMap @nm)
+  | BasicNode   lhs  .  grTrf  =  GrVal_BasicNode @tag.grTrf (findNewVar @lhs.varMap @nm)
+  | EnumNode    lhs  .  grTrf  =  GrVal_EnumNode             (findNewVar @lhs.varMap @nm)
+  | OpaqueNode  lhs  .  grTrf  =  GrVal_OpaqueNode           (findNewVar @lhs.varMap @nm)
+  | PtrNode     lhs  .  grTrf  =  GrVal_PtrNode              (findNewVar @lhs.varMap @nm)
 
 SEM GrVar
-  | Var         lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.var2id @nm)
+  | Var         lhs  .  grTrf  =  GrVar_Var (findNewVar @lhs.varMap @nm)
 
 SEM GrExpr
-  | App Eval FetchNode FetchField Throw UpdateUnit
-                loc  .  newName  =  findNewVar @lhs.var2id @nm
-  | App         lhs  .  grTrf    =  GrExpr_App     @newName @argL.grTrf
-  | Eval        lhs  .  grTrf    =  GrExpr_Eval    @newName
-  | Call        loc  .  newName  =  findNewVar     @lhs.bind2id @nm
-                lhs  .  grTrf    =  GrExpr_Call    @newName @argL.grTrf
+  | App
+    Eval
+    FetchNode
+    FetchField
+    Throw
+    UpdateUnit  loc  .  newName  =  findNewVar  @lhs.varMap  @nm
+  | Call        loc  .  newName  =  findNewVar  @lhs.bindMap @nm
+  | App         lhs  .  grTrf    =  GrExpr_App        @newName @argL.grTrf
+  | Eval        lhs  .  grTrf    =  GrExpr_Eval       @newName
+  | Call        lhs  .  grTrf    =  GrExpr_Call       @newName @argL.grTrf
   | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
   | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
   | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
-  | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.var2id @src) (findNewVar @lhs.var2id @dst)
-  | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
-  | Catch       lhs  .  grTrf    =  GrExpr_Catch   @body.grTrf @newName @handler.grTrf
-  | FFI         lhs  .  grTrf    =  GrExpr_FFI @nm @argL.grTrf
+  | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.varMap @src) (findNewVar @lhs.varMap @dst)
+  | Throw       lhs  .  grTrf    =  GrExpr_Throw      @newName
+  | Catch       lhs  .  grTrf    =  GrExpr_Catch      @body.grTrf @newName @handler.grTrf
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @nm @argL.grTrf
 
 SEM GrTag
   | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int (protectPrimitive @nm)
-  | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bind2id @nm)
-  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bind2id @nm)
-  | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bind2id @nm)
+  | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bindMap @nm)
+  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bindMap @nm)
+  | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bindMap @nm)
 
-
-
-SEM GrModule
-  | Mod  lhs  . grTrf         = GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp
 %%]

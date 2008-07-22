@@ -89,7 +89,7 @@ DATA CExpr
 DATA CMeta
   | Val
 %%[[9
-  | Dict
+  | Dict          mbPos:  {Maybe Int}
   | DictClass     names:  {[Maybe HsName]}
   | DictInstance  names:  {[Maybe HsName]}
 %%]]

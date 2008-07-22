@@ -87,7 +87,9 @@ pMbDollNm
 pCMeta :: CParser CMeta
 pCMeta
   =   CMeta_Val          <$ pKeyTk "VAL"
-  <|> CMeta_Dict         <$ pKeyTk "DICT"
+  <|> CMeta_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> pInt <* pCCURLY
+                                               <|> pSucceed Nothing
+                                               )
   <|> CMeta_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
   <|> CMeta_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
 

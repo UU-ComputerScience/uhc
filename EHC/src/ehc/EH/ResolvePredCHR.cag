@@ -248,7 +248,7 @@ SEM Expr
                                                         in  ( cnstrMpUnions quantCnstrMps
                                                             , foldr (\(occ,arg) m -> Map.insertWith (++) occ [arg] m) Map.empty $ concat coeArgIds
                                                             )
-                            .   prvArgCSubst        =   let mk a = (mkCExprHole @lhs.opts a,CMeta_Dict)
+                            .   prvArgCSubst        =   let mk a = (mkCExprHole @lhs.opts a,(CMeta_Dict Nothing))
                                                         in  uidImplsLToCSubst [ (occ, ([mkAppCoeWith $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
 %%]
 

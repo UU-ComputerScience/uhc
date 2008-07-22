@@ -55,6 +55,8 @@
 %%]
 %%[8 import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
 %%]
+%%[9 import({%{EH}Core.Trf.LiftDictFields})
+%%]
 %%[8_2 import({%{EH}Core.Trf.PrettyVarNames})
 %%]
 -- GRIN
@@ -1574,6 +1576,11 @@ cpCore1Trf modNm trfNm
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
+%%[[9
+                              "CLDF"    -> if   ehcOptFullProgAnalysis opts
+                                           then cmodTrfLiftDictFields
+                                           else id
+%%]]
 %%[[8_2
                               "CPRNM"   -> cmodTrfPrettyNames
 %%]]
@@ -1650,7 +1657,10 @@ cpProcessCoreBasic modNm
                   -- [ "CS" ] ++
 %%]]
                   [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
-                  , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG" 
+                  , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
+%%[[9                  
+                  ,  "CLDF"
+%%]
 %%[[8_2           
                   , "CPRNM"
 %%]]

@@ -126,10 +126,10 @@ evidMpToCore env evidMp
                                         CExpr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _ sc) ctxt  = ( mkCExprAppMeta (mknm n) (map (\c -> (tcrCExpr c,CMeta_Dict)) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _ sc) ctxt  = ( mkCExprAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMeta_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = ( mkCExprSatSelsCaseMeta
                                                      (emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                     (Just $ hsnSuffix n "!") CMeta_Dict (tcrCExpr sub) t
+                                                     (Just $ hsnSuffix n "!") (CMeta_Dict (Just o)) (tcrCExpr sub) t
                                                      [(n,n,o)] Nothing (CExpr_Var n)
                                                  , tcrScope sub
                                                  )
@@ -162,6 +162,13 @@ evidMpToCore env evidMp
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
 %%[9 export(evidKeyCoreMpToBinds)
+
+
+getMetaDictMbPos :: CExpr -> Maybe Int
+getMetaDictMbPos (CExpr_Let _ (CBind_Bind _ (CMeta_Dict m) _ : _) _) = m
+getMetaDictMbPos _ = Nothing
+
+
 evidKeyCoreMpToBinds :: EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds m
   = dbg "evidKeyCoreMpToBinds.res"
@@ -172,10 +179,14 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = fst . maximumBy (\(_,sc1) (_,sc2) -> sc1 `pscpCmpByLen` sc2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (mkCBind1Meta (mkHNm i) CMeta_Dict e,u)    | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   ]
+      $ [ (mkCBind1Meta (mkHNm i) (CMeta_Dict (getMetaDictMbPos e)) e,u)    
+        | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
+        ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (sc,[mkCBind1Meta (mkHNm i) CMeta_Dict e]) | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes ]
+      $ [ (sc,[mkCBind1Meta (mkHNm i) (CMeta_Dict Nothing) e]) 
+        | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
+        ]
     )
   where (independentOfAssumes, dependentOnAssumes)
           = dbg "evidKeyCoreMpToBinds.partition"

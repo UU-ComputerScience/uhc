@@ -614,18 +614,18 @@ SEM Decl
                                                      xStrict = hsnSuffix x "!"
                                                      vxStrict = CExpr_Var xStrict
                                                      mkSel n = mkCExprSatSelsCaseMeta
-                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) CMeta_Dict vx @dictTag
+                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) (CMeta_Dict Nothing) vx @dictTag
                                                                  [(n,n,cdictOffset n @clsTyRec)] Nothing (CExpr_Var n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (\f -> mkCExprApp1Meta f vx CMeta_Dict)
+                                                             then (\f -> mkCExprApp1Meta f vx (CMeta_Dict Nothing))
                                                              else id
                                                      dDflt
-                                                       = [mkCBind1 nDflt (mkCExprLam1Meta nD CMeta_Dict d)] 
+                                                       = [mkCBind1 nDflt (mkCExprLam1Meta nD (CMeta_Dict Nothing) d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
                                                              nD = hsnPrefix "_self_" nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ mkCBind1 n $ mkCExprLam1Meta x CMeta_Dict $ mkApp $ mkSel n
+                                                     ++ [ mkCBind1 n $ mkCExprLam1Meta x (CMeta_Dict Nothing) $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -739,9 +739,10 @@ SEM Decl
                                                                                    ]
                                                              instanceMbBodies    = map (flip lookup instanceBindingPairs) memberNames
                                                              instanceMbNewNames  = let f _ Nothing  = Nothing
-                                                                                       f n (Just e) = case e of
-                                                                                                        CExpr_Var v -> Just v   -- This anticipates on the shortcutting that will be done by the CILA transformation. It is hard to do the substitution in the meta-annotation there, so we do it here.
-                                                                                                        _           -> Just n
+                                                                                       f n (Just e) = Just n
+                                                                                                      --case e of
+                                                                                                      --  CExpr_Var v -> Just v   -- This anticipates on the shortcutting that will be done by the CILA transformation. It is hard to do the substitution in the meta-annotation there, so we do it here.
+                                                                                                      --  _           -> Just n
                                                                                    in zipWith f memberNewNames instanceMbBodies
                                                              instanceMbNames     = let f _ Nothing  = Nothing
                                                                                        f n (Just _) = Just n
@@ -755,8 +756,13 @@ SEM Decl
                                                                                    
                                                              superNewVars        = map CExpr_Var @chrSuperProveNmL
                                                              superNameMapping    = zip3 @supClsFldL
-                                                                                        (repeat CMeta_Dict)
+                                                                                        (repeat (CMeta_Dict Nothing))
                                                                                         superNewVars
+
+                                                             instanceAndSuperMbNewNames = let f (Just x) _ = Just x
+                                                                                              f _ (Just y) = Just y
+                                                                                              f _ _        = Nothing
+                                                                                          in zipWith f instanceMbNewNames (map getBindRightVar @chrScopeSuperBindL ++ repeat Nothing)
 
                                                              instanceCHRBindings = cSubstOptApp @lhs.opts @cSubst
                                                                                                 (  @chrAssumeSuperBindL 
@@ -766,23 +772,23 @@ SEM Decl
                                                                                                 ++ @chrScopeDeclsBindL
                                                                                                 )
 
-                                                             dict1     = mkCExprApp1Meta dfltVar rsltVar CMeta_Dict
+                                                             dict1     = mkCExprApp1Meta dfltVar rsltVar (CMeta_Dict Nothing)
                                                              dict2     = CExpr_Let CBindStrict [bind1] (@loc.mkSetFlds superNameMapping    dfltVarStrict)
                                                              dict3     = CExpr_Let CBindStrict [bind2] (@loc.mkSetFlds instanceNameMapping rsltVarStrict)
                                                              dict4     = mkCExprLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
                                                              
-                                                             bind1     = mkCBind1Meta dfltNmStrict CMeta_Dict dict1
-                                                             bind2     = mkCBind1Meta rsltNmStrict CMeta_Dict dict2
-                                                             bind3     = mkCBind1Meta rsltNm       CMeta_Dict dict3
+                                                             bind1     = mkCBind1Meta dfltNmStrict (CMeta_Dict Nothing) dict1
+                                                             bind2     = mkCBind1Meta rsltNmStrict (CMeta_Dict Nothing) dict2
+                                                             bind3     = mkCBind1Meta rsltNm       (CMeta_Dict Nothing) dict3
                                                              contextArguments = cmetaLiftDict @chrCtxtArgNmL
                                                          in  ( mkCExprLamMeta contextArguments dict4   
-                                                             , CMeta_DictInstance (Just dfltNm:instanceMbNewNames) 
+                                                             , CMeta_DictInstance (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames) 
                                                              )
 
                                                      mkDefaultD defaultBindings
                                                        = let selfNm    = @dictSelfNm
                                                        
-                                                             lookupMeta n = if n `elem` @supClsFldL then CMeta_Dict else CMeta_Val
+                                                             lookupMeta n = if n `elem` @supClsFldL then (CMeta_Dict Nothing) else CMeta_Val
                                                        
                                                              defaultBindingPairs = [ (nm,v)
                                                                                    |  CBind_Bind nm _ v <- defaultBindings
@@ -805,18 +811,25 @@ SEM Decl
                                                                                         (zip memberNewVars defaultMetas)
                                                              dict6     = mkCExprLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
                                                              
-                                                             bind5     = mkCBind1Meta rsltNm CMeta_Dict dict5
+                                                             bind5     = mkCBind1Meta rsltNm (CMeta_Dict Nothing) dict5
                                                              
-                                                         in  ( mkCExprLam1Meta selfNm CMeta_Dict dict6
+                                                         in  ( mkCExprLam1Meta selfNm (CMeta_Dict (Just (-1))) dict6
                                                              , CMeta_DictClass defaultMbNewNames
                                                              )
 
                                                 in   [mkCBind1Meta @dictNm generatedMeta (cSubstOptApp @lhs.opts @cSubst generatedDictionary)]
   | InstanceIntro
-                lhs         .   cbindL      =   [mkCBind1Meta @dictNm CMeta_Dict @expr.cexpr]
+                lhs         .   cbindL      =   [mkCBind1Meta @dictNm (CMeta_Dict Nothing) @expr.cexpr]
 %%]
 
+%%[9 hs
 
+getBindRightVar :: CBind -> Maybe HsName
+
+getBindRightVar (CBind_Bind _ _ (CExpr_Var nm)) = Just nm
+getBindRightVar _ = Nothing
+
+%%]
 
 
 
@@ -833,7 +846,7 @@ SEM Decl
                                                        where mkSet d n v = CExpr_TupUpd d @dictTag n (CExpr_Int $ off n) v
 
                                                      mkSetFldsData ts d0
-                                                       = mkCExprSatSelsCaseMeta env Nothing CMeta_Dict d0 @dictTag nmLblOffL Nothing sel
+                                                       = mkCExprSatSelsCaseMeta env Nothing (CMeta_Dict Nothing) d0 @dictTag nmLblOffL Nothing sel
                                                        where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
                                                              fullListWithTrivialValues = [ (o, (o, (CExpr_Var n,CMeta_Val) ) ) 
                                                                                          | (n,_,o) <- nmLblOffL 

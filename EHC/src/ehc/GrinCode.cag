@@ -96,6 +96,27 @@ mkGrTagAnn = GrTagAnn
 emptyGrTagAnn = mkGrTagAnn 0 0
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[8 hs export(GrBindAnn(..))
+
+-- Annotation for Grin Bindings
+--   Normal:  normal binding
+--   Class:    binds a dictionary with default definitions for al class
+--   Instance: binds a dictionary with definitions form an instance declaration
+--   Overloaded: binds a function with dictionary parameters
+
+data GrBindAnn
+  = GrBindAnnNormal
+  | GrBindAnnClass    [Maybe HsName]
+  | GrBindAnnInstance [Maybe HsName]
+  | GrBindAnnOverloaded [Int]
+  deriving (Eq,Ord,Show)
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alternative categories

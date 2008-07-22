@@ -63,6 +63,9 @@ cmdLineTrfs
     , ("CLGA"   , "Core Lambda Global as Arg")
     , ("CCGA"   , "Core CAF Global as Arg")
     , ("CLFG"   , "Core Lambda Float to Global")
+%%[[9
+    , ("CLDF"   , "Core Lift Dictionary Fields")
+%%]]
 %%[[102
     , ("CS"     , "Core Strip (debug)")
 %%]]
@@ -391,23 +394,33 @@ ehcCmdLineOpts
 
                                 Just "c"     -> o { ehcOptEmitC            = True
                                                   , ehcOptFullProgAnalysis = True
+                                                  , ehcOptEmitExecBytecode = False
+                                                  , ehcOptEmitBytecode     = False
+                                                  , ehcOptErrAboutBytecode = False
                                                   }
+
                                 Just m | m `elem` ["exe","exec"]
                                              -> o { ehcOptEmitC            = True
                                                   , ehcOptEmitExecC        = True
                                                   , ehcOptFullProgAnalysis = True
+                                                  , ehcOptEmitExecBytecode = False
+                                                  , ehcOptEmitBytecode     = False
+                                                  , ehcOptErrAboutBytecode = False
                                                   }
 
                                 Just "llvm"  -> o { ehcOptEmitLLVM         = True
                                                   , ehcOptFullProgAnalysis = True
+                                                  , ehcOptEmitExecBytecode = False
+                                                  , ehcOptEmitBytecode     = False
+                                                  , ehcOptErrAboutBytecode = False
                                                   }
                                 Just m | m `elem` ["lexe", "lexec"]
                                              -> o { ehcOptEmitLLVM         = True
                                                   , ehcOptEmitExecLLVM     = True
                                                   , ehcOptFullProgAnalysis = True
-                                                  -- disable next options, otherwise
-                                                  -- gcc will be invoked
-                                                  , ehcOptEmitExecBytecode = False 
+                                                  , ehcOptEmitExecBytecode = False
+                                                  , ehcOptEmitBytecode     = False
+                                                  , ehcOptErrAboutBytecode = False
                                                   }                   
 
                                 _            -> o

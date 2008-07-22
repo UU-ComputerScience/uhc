@@ -108,6 +108,18 @@ ppGrAltAnn GrAltAnnIdent          = pp "ident "
 ppGrAltAnn (GrAltAnnCalling a nm) = pp "calling" >#< show a >#< pp nm >#< ""
 ppGrAltAnn GrAltAnnReenter        = pp "reenter "
 
+ppGrBindAnn :: PPGrNm -> GrBindAnn -> PP_Doc
+ppGrBindAnn _      GrBindAnnNormal            = pp ""
+ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
+ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
+ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlysCommasWith ppInt xs
+
+ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
+ppMbGrNm ppGrNm = maybe (ppGrNm (HNm "_")) ppGrNm
+
+ppInt :: Int -> PP_Doc
+ppInt n = pp (show n)
+
 %%]
 ppGrNm :: PPGrNm
 ppGrNm = cfgppHsName CfgPP_Grin
@@ -140,8 +152,10 @@ SEM GrGlobal
 
 SEM GrBind
 %%[[8
-  | Bind        lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) >-<
-                                                    indent 2 ("=" >#< ppCurlysSemisV [@expr.pp])
+  | Bind        lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm 
+                                                  >#< ppGrBindAnn @loc.ppGrNm @annot
+                                                  >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) 
+                                                  >-< indent 2 ("=" >#< ppCurlysSemisV [@expr.pp])
   | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlysSemisV @bindL.ppL)
 %%][8_2
   | Bind        lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) >#< "="
