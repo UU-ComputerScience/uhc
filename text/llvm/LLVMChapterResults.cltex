@@ -1,4 +1,80 @@
 %%[chapter
 \chapter{Results}
 \label{cha:results}
+\todo{refs}In this section we investigate the efficiency of the LLVM backend. We compare the generated executables and the executables generated with the C backend by compilation time (\refS{sec:results-compilation-time}), file size (\refS{sec:results-file-size}), execution time, and runtime memory consumption.
+
+\section{The measuring environment}
+The source of the collected data are 8 simple Haskell programs. The programs used are selected from the nofib~\cite{partain:93} benchmark suite because they are compatible, after minor adjustments, with the limitations of EHC variant 8.
+
+Each program of the selection is compiled and executed. The size properties, file size and runtime memory consumption, are measuredf once as they are unchanged each compilation and execution cycle. The time properties, compilation time and execution time, are more dynamic and thus the average 'real time' of 50 compilation and execution cycles is measured. 
+
+We suspect that the conservative garbage collector (\ref{sec:conservative-gc}) is responsible for a large part of the execution time. To verify this claim, we repeat the measurements with executables that exclude the garbage collector library. This does not measure the performance that the end user will experience, but it measures the effect LLVM has on the generated code. Furthermore, it gives insight in the performance gain possible if the conservative collector is replaced by an efficient accurate collector. For the implementation, all calls to the garbage collection allocation functions are replaced by C library \texttt{malloc()} calls and memory is not deallocated during execution. We avoid swapping memory pages by executing the programs on a machine with enough physical memory to hold the memory allocated by the programs.
+
+The benchmarks are performed on a machine with an Intel Core2 processor and 3.2 gigabytes of memory, running GNU/Linux with an 2.6.24 kernel. The LLVM files are compiled by LLVM 2.3 with all standard optimizations enabled. The C files are processed by GCC 4.2.3 with optimization option -O2. 
+
+\section{Compile time properties}
+We measure two properties which are available before execution of the binaries: compilation time and file size. The compilation needs to be fast in order to compile large projects in acceptable time. The file size of the produced excutables should preferably be small for efficient distribution, although the current fast internet connections and cheap hard disk space reduce the imporance of this property. We measure the efficiency of the two properties by comparing to the results of the C backend. We believe that the LLVM backend is efficient with respect to a certain property, if the results are better than the C backend.
+
+\begin{table}[htbp]
+  \begin{center}
+  \begin{tabular}{l||rrr||rrr||}
+    \input{compiletime.gc}
+  \end{tabular}
+  \end{center}
+  \label{tab:compiletime-gc-data}
+  \caption{Compilation time and file size with garbage collection enabled}
+\end{table}
+
+\refT{tab:compiletime-gc-data} presents the results of the comparison between the C and LLVM backend for compilation times and file sizes of the produced executables. The tables is divided in two parts, one for each property. Each part is further divided in 3 sub parts: the result for the C backend, the result for the LLVM backend and finally a column labeled `factor`. It is the difference factor between LLVM and the C backend. If the factor is greater or equal then 1, LLVM is more efficient than the C backend.
+
+\subsection{Compilation time}
+\label{sec:results-compilation-time}
+For all 8 example programs is the compilation time with the LLVM backend is less then the C backend. The factor varies from 1.22 (wheel-sieve2) to 1.03 (tak). Overal, compiling Haskell programs with EHC using LLVM is 1.11 times faster than using C. 
+The performance gain is explained by the low level of the LLVM assembly language. Parsing and analyzing the assembly language is simpler than C. For example, creating the control flow graph of the program is trivial for LLVM, while this is not the case for the C compiler. The explaination is confirmed when the example programs are analyzed. The relative small programs (tak, exp3\_8) result in a small gain, while the less compact programs (wheel-sieve1, wheel-sieve2) show a higher performance gain.
+
+\subsection{File size}
+\label{sec:results-file-size}
+The file sizes of the 8 exutables produced via LLVM are smaller than when produced via C. On average, the LLVM executables are a factor 1.35 smaller than their C counterparts, which is a significant improvement.
+
+The size reduction is not due to the absence of debug information generation by LLVM. Both the C and LLVM binaries lack debug information and their symbol table is stripped. Instead the gain is obtained by the generation of more compact code and less static data. 
+
+\subsection{Effect of the garbage collector}
+The garbage collector is suspected of being responsible for large parts of the execution time, but the library also contains large quanties of code. The library is also a likely source of compilation time consumption and the executables file size.
+
+\begin{table}[htbp]
+  \begin{center}
+  \begin{tabular}{l||rrr||rrr||}
+    \input{compiletime.nogc}
+  \end{tabular}
+  \end{center}
+  \label{tab:compiletime-nogc-data}
+  \caption{Compilation time and file size with garbage collection disabled}
+\end{table}
+
+\refT{tab:compiletime-nogc-data} shows the compilation times and file sizes when the garbage collection is excluded from the executables. 
+
+The compilation times with garbage collection disabled are virtually unchanged. We conclude that linking the garbage collection library in the executable cost a negligible amount of time, compared to the other operations performed.
+
+In contrast with the compilation time, the file size is influenced bye the exclusion of the garbage collector. When the garbage collector is disabled, its code is not passed to the linker and excluded from the executable. This results in a file size reduction of approximately 65 kilobytes. For the simple test programs with a limited file size, 65 kilobytes is a big reduction in file size. With elaborate examples, which result in executables of several megabytes, 65 kilobytes reduction is fairly small gain.
+
+\section{Runtime properties}
+\begin{table}[htbp]
+  \begin{center}
+  \begin{tabular}{l||rrr||rrr||}
+    \input{runtime.gc}
+  \end{tabular}
+  \end{center}
+  \label{tab:runtime-gc-data}
+  \caption{Execution time and runtime memory usage with garbage collection enabled}
+\end{table}
+
+\begin{table}[htbp]
+  \begin{center}
+  \begin{tabular}{l||rrr||rrr||}
+    \input{runtime.nogc}
+  \end{tabular}
+  \end{center}
+  \label{tab:runtime-nogc-data}
+  \caption{Execution time and runtime memory usage with garbage collection disabled}
+\end{table}
 %%]

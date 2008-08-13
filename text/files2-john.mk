@@ -1,5 +1,6 @@
 LLVM_CODE_IMG_PREFIX       := $(TOP_PREFIX)text/llvm/img/
 LLVM_CODE_SRC_PREFIX       := $(TOP_PREFIX)text/llvm/code/
+LLVM_CODE_DATA_PREFIX      := $(TOP_PREFIX)text/llvm/data/
 
 LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe.core \
@@ -13,7 +14,11 @@ LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)GetElementPtrExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)PhiExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)running-example.ll \
-                              $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.ll  
+                              $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.ll \
+                              $(TEXT_TMP_VARIANT_PREFIX)compiletime.gc.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)compiletime.nogc.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)runtime.gc.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)runtime.nogc.tex
 
 LLVM_GRIN_FILES            := $(LLVM_CODE_SRC_PREFIX)FibExe.grin
 LLVM_GRIN_FILES_DEP        := $(LLVM_CODE_SRC_PREFIX)FibExe-013-renameuniform.grin \
@@ -42,6 +47,10 @@ $(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_SRC_PREFIX)%
 	cp $< $@
 
 $(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_IMG_PREFIX)%
+	mkdir -p $(dir $@)
+	cp $< $@
+
+$(TEXT_TMP_VARIANT_PREFIX)%: $(LLVM_CODE_DATA_PREFIX)%
 	mkdir -p $(dir $@)
 	cp $< $@
 
