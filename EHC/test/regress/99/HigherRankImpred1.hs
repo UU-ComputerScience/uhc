@@ -33,6 +33,8 @@ a2 = apply ~poly
 ids1 = single  id
 ids2 = single ~id
 ids3 = single  id :: [forall a . a->a]
+ids4 = single (id :: forall a . a->a)
+ids5 = (single :: (forall a. a-> a) -> [forall a. a->a]) id
 
 idss1a = single  ids1
 idss1b = single ~ids1

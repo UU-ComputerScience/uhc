@@ -88,7 +88,7 @@ void memorySetup()
     StackAreaLow = Stack;
     StackAreaHigh = Stack + STACKSIZE;
     
-    
+    mm_init() ;
 }
 %%]
 
@@ -300,6 +300,10 @@ int main_GB_Exit(int argc, char** argv)
 		speed = gb_StepCounter / clockDiff ;
 #	endif
 	IF_INFO_EXITSTATE_ON(printf("Time %.3f secs, instr/sec %.0f\n", clockDiff, speed ) ;) ;
+#endif
+#ifdef TRACE
+	// absolutely the wrong place to do this, but for now, for quick testing
+	// mm_buddyPages_Test() ;
 #endif
 	return 0 ;
 }

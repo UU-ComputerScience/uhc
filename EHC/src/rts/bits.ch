@@ -29,6 +29,11 @@
 %%]
 
 %%[8
+#define EntierLogUpShrBy(x,m)				((((x)-1)>>(m))+1)
+#define EntierLogUpBy(x,m)				(EntierLogUpShrBy(x,m)<<(m))
+#define EntierLogDownShrBy(x,m)			((x)>>(m))
+#define EntierLogDownBy(x,m)				(EntierLogDownShrBy(x,m)<<(m))
+
 #define EntierUpDivBy(x,m)				(((x)-1)/(m)+1)
 #define EntierUpBy(x,m)					(EntierUpDivBy(x,m)*(m))
 %%]
