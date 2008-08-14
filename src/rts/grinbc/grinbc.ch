@@ -85,20 +85,10 @@
 Requirement: sizeof(GB_Ptr) == sizeof(GB_Word)
 
 %%[8
-#if USE_64_BITS
-typedef uint64_t GB_Word ;
-typedef  int64_t GB_SWord ;
+typedef Word  GB_Word ;
+typedef SWord GB_SWord ;
 
-#define GB_Word_SizeInBits		64
-
-#else
-
-typedef uint32_t GB_Word ;
-typedef  int32_t GB_SWord ;
-
-#define GB_Word_SizeInBits		32
-
-#endif
+#define GB_Word_SizeInBits		Word_SizeInBits
 
 typedef GB_Word* 	GB_WordPtr ;
 typedef GB_WordPtr 	GB_Ptr ;
