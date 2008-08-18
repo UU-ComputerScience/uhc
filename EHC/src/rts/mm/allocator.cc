@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management
+%%% Memory management: allocator
 %%% see associated .ch file for more info.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -12,11 +12,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_init() {
-	mm_pages.init( &mm_pages ) ;
-	mm_init_allocator() ;
+void mm_init_allocator() {
+	mm_allocator_LOF.init( &mm_allocator_LOF ) ;
 	
 	// sanity checks for basic assumptions
-	
 }
 %%]

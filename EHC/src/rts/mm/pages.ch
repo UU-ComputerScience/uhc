@@ -20,6 +20,8 @@ Currently there is 1 implementation of page management, using the buddy system.
 It is incorporated here.
 Other implementations are allowed because of the provided pages abstraction (MM_Pages).
 
+For more (global) info see mm.h
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pages interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,13 +30,21 @@ Other implementations are allowed because of the provided pages abstraction (MM_
 typedef Ptr  MM_Pages_Data ;
 typedef BPtr MM_Page ;
 
-typedef uint16_t MM_BuddyPages_FreePages_Inx ;
+typedef uint16_t MM_Pages_Buddy_FreePages_Inx ;
 
 typedef struct MM_Pages {
+	// private data
   	MM_Pages_Data 	data ;
-  	MM_Pages_Data 	(*new)() ;
-  	MM_Page 		(*allocPage)( struct MM_Pages*, MM_BuddyPages_FreePages_Inx szPagesLog ) ;		// size in log(nr of pages)
+  	
+  	// setup
+  	void		 	(*init)( struct MM_Pages* ) ;
+  	
+  	// (de)allocation
+  	MM_Page 		(*allocPage)( struct MM_Pages*, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;		// size in log(nr of pages)
   	void 			(*freePage)( struct MM_Pages*, MM_Page pg ) ;
+  	
+  	// user data
+  	Word*			(*getUserData)( struct MM_Pages*, MM_Page pg ) ;
 } MM_Pages ;
 %%]
 
@@ -48,7 +58,7 @@ extern MM_Pages mm_pages ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Buddy page management
+%%% Buddy page management defs & types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Each page has external data, maintained in a separate array (hence external),
@@ -59,8 +69,10 @@ Pages are grouped into Buddy groups. Each group corresponds to a single malloc.
 This design allows incremental growth of the use of mallocable memory, and therefore only depends on malloc.
 
 %%[8
-#define MM_BuddyPages_OtherHalfOfPage(this,thisSzLog) \
+#define MM_Pages_Buddy_OtherHalfOfPage(this,thisSzLog) \
 			( (Word)(this) ^ Bits_Pow2( Word, (thisSzLog) + MM_Pages_MinSize_Log ) )
+#define MM_Pages_Buddy_LastPageOfPage(this,thisSzLog) \
+			( (Word)(this) + (((1 << thisSzLog) - 1) << MM_Pages_MinSize_Log) )
 
 %%]
 
@@ -72,18 +84,22 @@ This design allows incremental growth of the use of mallocable memory, and there
 
 typedef uint16_t MM_BuddyPage_GroupId ;
 
-// additional metadata for each page, to be kept when allocated
-typedef union MM_BuddyPage_ExtlData {
-	struct {
-		uint8_t							tag ;
-		uint8_t							sizeLog ;	// relative to MM_Pages_MinSize_Log
-		MM_BuddyPage_GroupId			groupId ;	// id of group of buddies
-	} 			data ;
-	Word	word ;
+// additional metadata for each page, to be kept when allocated.
+// It consists of system + user data, in total 2 words.
+typedef struct MM_BuddyPage_ExtlData {
+	union {
+		struct {
+			uint8_t							tag ;
+			uint8_t							sizeLog ;	// relative to MM_Pages_MinSize_Log
+			MM_BuddyPage_GroupId			groupId ;	// id of group of buddies
+		} 		data ;
+		Word	word ;
+	} 		system ;
+	Word	user ;
 } __attribute__ ((__packed__)) MM_BuddyPage_ExtlData ;
 
-#define MM_BuddyPage_ExtlDataSize_Log	Word_SizeInBytes_Log
-#define MM_BuddyPage_ExtlDataSize		Word_SizeInBytes
+#define MM_BuddyPage_ExtlDataSize_Log	(Word_SizeInBytes_Log + 1)
+#define MM_BuddyPage_ExtlDataSize		(1 << MM_BuddyPage_ExtlDataSize_Log)
 %%]
 
 %%[8
@@ -98,23 +114,23 @@ typedef struct MM_BuddyGroup {
 %%]
 
 %%[8
-#define MM_BuddyPages_FreePages_Size		(MM_Pages_MaxSize_Log - MM_Pages_MinSize_Log + 1)
+#define MM_Pages_Buddy_FreePages_Size		(MM_Pages_MaxSize_Log - MM_Pages_MinSize_Log + 1)
 
-typedef struct MM_BuddyPages_FreePage {
-	MM_DLL		dllPages ;				// this must be the first because of casting between ML_DLL and MM_BuddyPages_FreePage
-} MM_BuddyPages_FreePage ;
+typedef struct MM_Pages_Buddy_FreePage {
+	MM_DLL		dllPages ;				// this must be the first because of casting between ML_DLL and MM_Pages_Buddy_FreePage
+} MM_Pages_Buddy_FreePage ;
 
 // is empty free pages entry
-static inline Bool mm_buddyPages_FreePage_IsEmpty( MM_BuddyPages_FreePage* fpg ) {
+static inline Bool mm_pages_Buddy_FreePage_IsEmpty( MM_Pages_Buddy_FreePage* fpg ) {
 	return mm_dll_IsEmpty( &(fpg->dllPages) ) ;
 }
 %%]
 
 %%[8
-#define MM_BuddyPages_InitialGroupSize				(10 * 1024 * 4) // (1024 * 1024 * 4)
+#define MM_Pages_Buddy_InitialGroupSize				(1024 * 1024 * 4)	// (10 * 1024 * 4) // 
 
 // the administration
-typedef struct MM_BuddyPages_Data {
+typedef struct MM_Pages_Buddy_Data {
 	// Word						extlAndPagesDiff ;	// (cached) difference between extlData - firstPage
 	MM_FlexArray				freePages ;			// array of ptr's to free pages, indexed by log(pagesize) - MM_Pages_MinSize_Log
 	MM_FlexArray				buddyGroups ;		// array of ptr's to buddy groups
@@ -124,30 +140,30 @@ typedef struct MM_BuddyPages_Data {
 	Word						afterLastPage ; 	// ptr to after last page
 	Word						nextGroupNrPages ;	// minimal size of next buddy group
 	Word						nrPages ;			// (cached) nr of pages
-} MM_BuddyPages_Data ;
+} MM_Pages_Buddy_Data ;
 
 // index, with cast
-static inline MM_BuddyPages_FreePage* mm_buddyPages_FreePage_At( MM_FlexArray* a, MM_BuddyPages_FreePages_Inx i ) {
-	return (MM_BuddyPages_FreePage*)mm_flexArray_At( a, i ) ;
+static inline MM_Pages_Buddy_FreePage* mm_pages_Buddy_FreePage_At( MM_FlexArray* a, MM_Pages_Buddy_FreePages_Inx i ) {
+	return (MM_Pages_Buddy_FreePage*)mm_flexArray_At( a, i ) ;
 }
 
 // first free page
 // pre: dll not empty
-static inline MM_BuddyPages_FreePage* mm_buddyPage_FreePage_FirstFree( MM_BuddyPages_FreePage* fpg ) {
-	return (MM_BuddyPages_FreePage*)(fpg->dllPages.next) ;
+static inline MM_Pages_Buddy_FreePage* mm_buddyPage_FreePage_FirstFree( MM_Pages_Buddy_FreePage* fpg ) {
+	return (MM_Pages_Buddy_FreePage*)(fpg->dllPages.next) ;
 }
 
 // additional external data for page
-#define MM_BuddyPages_PagesExtlLogDiff  	(MM_Pages_MinSize_Log - MM_BuddyPage_ExtlDataSize_Log)
-#define MM_BuddyPages_ExtlDataOfPage(pgs,pg) \
-			(MM_BuddyPage_ExtlData*) \
-				( (((Word)(pg) - pgs->firstPage) >> MM_BuddyPages_PagesExtlLogDiff) \
+#define MM_Pages_Buddy_PagesExtlLogDiff  	(MM_Pages_MinSize_Log - MM_BuddyPage_ExtlDataSize_Log)
+#define MM_Pages_Buddy_ExtlDataOfPage(pgs,pg) \
+			((MM_BuddyPage_ExtlData*) \
+				( ((((Word)(pg) - (pgs)->firstPage) >> MM_Pages_Buddy_PagesExtlLogDiff) & Bits_Size2HiMask(Word,MM_BuddyPage_ExtlDataSize_Log)) \
 				+ (Word)((pgs)->extlData) \
-				)
+				))
 %%]
-#define MM_BuddyPages_ExtlDataOfPage(pgs,pg) \
+#define MM_Pages_Buddy_ExtlDataOfPage(pgs,pg) \
 			(MM_BuddyPage_ExtlData*) \
-				( ((Word)(pg) >> MM_BuddyPages_PagesExtlLogDiff) \
+				( ((Word)(pg) >> MM_Pages_Buddy_PagesExtlLogDiff) \
 				+ (pgs)->extlAndPagesDiff \
 				)
 
@@ -156,9 +172,16 @@ static inline MM_BuddyPages_FreePage* mm_buddyPage_FreePage_FirstFree( MM_BuddyP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern MM_Pages_Data mm_buddyPages_New(  ) ;
-extern MM_Page mm_buddyPages_AllocPage( MM_Pages* buddyPages, MM_BuddyPages_FreePages_Inx szPagesLog ) ;
-extern void mm_buddyPages_FreePage( MM_Pages* buddyPages, MM_Page pg ) ;
+extern MM_Pages_Data mm_pages_Buddy_New(  ) ;
+extern MM_Page mm_pages_Buddy_AllocPage( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;
+extern void mm_pages_Buddy_FreePage( MM_Pages* buddyPages, MM_Page pg ) ;
+%%]
+
+%%[8
+static inline Word* mm_pages_Buddy_GetUserData( MM_Pages* buddyPages, MM_Page pg ) {
+	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
+	return &(MM_Pages_Buddy_ExtlDataOfPage( pgs, pg )->user) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +190,7 @@ extern void mm_buddyPages_FreePage( MM_Pages* buddyPages, MM_Page pg ) ;
 
 %%[8
 #ifdef TRACE
-extern void mm_buddyPages_Test() ;
+extern void mm_pages_Buddy_Test() ;
 #endif
 %%]
 
