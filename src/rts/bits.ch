@@ -12,7 +12,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define Bits_Pow2(ty,s)					((Cast(ty,1)) << (s))
+#define Bits_Pow2(ty,s)					(((ty)1) << (s))
 #define Bits_Size2LoMask(ty,s)			(Bits_Pow2(ty,s) - 1)
 #define Bits_Size2HiMask(ty,s)			(~ Bits_Size2LoMask(ty,s))
 
@@ -29,10 +29,10 @@
 %%]
 
 %%[8
-#define EntierLogUpShrBy(x,m)				((((x)-1)>>(m))+1)
+#define EntierLogUpShrBy(x,m)			((((x)-1)>>(m))+1)
 #define EntierLogUpBy(x,m)				(EntierLogUpShrBy(x,m)<<(m))
 #define EntierLogDownShrBy(x,m)			((x)>>(m))
-#define EntierLogDownBy(x,m)				(EntierLogDownShrBy(x,m)<<(m))
+#define EntierLogDownBy(x,m)			(EntierLogDownShrBy(x,m)<<(m))
 
 #define EntierUpDivBy(x,m)				(((x)-1)/(m)+1)
 #define EntierUpBy(x,m)					(EntierUpDivBy(x,m)*(m))

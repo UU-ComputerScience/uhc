@@ -303,7 +303,8 @@ int main_GB_Exit(int argc, char** argv)
 #endif
 #ifdef TRACE
 	// absolutely the wrong place to do this, but for now, for quick testing
-	// mm_buddyPages_Test() ;
+	// mm_pages_Buddy_Test() ;
+	// mm_allocator_LOF_Test() ;
 #endif
 	return 0 ;
 }
