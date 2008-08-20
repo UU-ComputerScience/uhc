@@ -322,6 +322,17 @@ void mm_pages_Buddy_FreePage( MM_Pages* buddyPages, MM_Page pg ) {
 }
 %%]
 
+%%[8
+void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, MM_Pages_Buddy_FreePages_Inx szPagesLog, Word info ) {
+	int i ;
+	for ( i = 0 ; i < (1<<szPagesLog) ; i += (1<<MM_Pages_MinSize_Log) ) {
+		Word* userInfo = mm_pages_Buddy_GetUserData( &mm_pages, (MM_Page)((Word)pg + i) ) ;
+		*userInfo = info ;
+	}
+}
+			
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pages default interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,6 +345,7 @@ MM_Pages mm_pages =
 	, &mm_pages_Buddy_AllocPage
 	, &mm_pages_Buddy_FreePage
 	, &mm_pages_Buddy_GetUserData
+	, &mm_pages_Buddy_SetUserData
 	} ;
 #endif
 

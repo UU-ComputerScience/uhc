@@ -26,7 +26,7 @@ Layer (2) is further subdivided into sublayers, each with a particular responsib
 (2.b) Space, a set of Fragments, offering flexibility in size, granularity.
       Each Space is treated as a unit for the GC wrt tracing & collection
 (2.c) Increment, a set of ordered Spaces, each following the same GC policy.
-      The ordering provides generations, but withing the one policy.
+      The ordering provides generations, within the one policy.
 (2.d) Belt, a set of ordered Increments, each with a (possibly) different GC policy.
       This is the toplevel.
 
@@ -43,10 +43,10 @@ but globally one combination must be configured.
 
 Current implementations
 -----------------------
-as of 20080817.
+as of 20080819.
 
 Pages:
-- Buddy pages
+- Buddy pages, on top of system malloc/free
 
 Fragment:
 
@@ -55,6 +55,13 @@ Space:
 Increment:
 
 Belt:
+
+Other Allocators:
+- List of Free (LOF), on top of Pages
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Imports
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #include "config.h"

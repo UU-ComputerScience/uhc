@@ -75,11 +75,21 @@ static inline Word minWord( Word x, Word y ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% First non-zero bit
+%%% First non-zero bit, higher power of 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 // from lsb.
-// all zero when equal to Word_SizeInBits
+// return Word_SizeInBits when all bits are zero, otherwise the corresponding position counted from the lsb
 extern int firstNonZeroBit( Word w ) ;
+
+// from msb.
+// return -1 when all bits are zero, otherwise the corresponding position counted from the lsb
+extern int firstNonZeroMsBit( Word w, int startAt ) ;
+
+// first power of 2 higher or equal
+// return its log2
+extern int firstHigherPower2( Word w ) ;
 %%]
+
+
