@@ -45,6 +45,7 @@ typedef struct MM_Pages {
   	
   	// user data
   	Word*			(*getUserData)( struct MM_Pages*, MM_Page pg ) ;
+  	void 			(*setUserData)( struct MM_Pages*, MM_Page pg, MM_Pages_Buddy_FreePages_Inx szPagesLog, Word info ) ;
 } MM_Pages ;
 %%]
 
@@ -175,12 +176,18 @@ static inline MM_Pages_Buddy_FreePage* mm_buddyPage_FreePage_FirstFree( MM_Pages
 extern MM_Pages_Data mm_pages_Buddy_New(  ) ;
 extern MM_Page mm_pages_Buddy_AllocPage( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;
 extern void mm_pages_Buddy_FreePage( MM_Pages* buddyPages, MM_Page pg ) ;
+extern void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, MM_Pages_Buddy_FreePages_Inx szPagesLog, Word info ) ;
 %%]
 
 %%[8
 static inline Word* mm_pages_Buddy_GetUserData( MM_Pages* buddyPages, MM_Page pg ) {
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
 	return &(MM_Pages_Buddy_ExtlDataOfPage( pgs, pg )->user) ;
+}
+
+static inline Word mm_pages_Buddy_GetSizeLog( MM_Pages* buddyPages, MM_Page pg ) {
+	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
+	return MM_Pages_Buddy_ExtlDataOfPage( pgs, pg )->system.data.sizeLog + MM_Pages_MinSize_Log ;
 }
 %%]
 

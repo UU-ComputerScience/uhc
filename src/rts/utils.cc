@@ -69,7 +69,7 @@ void gb_panic2_2( char* msg1, char* msg2, int i1, int i2 )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% First non-zero bit
+%%% First non-zero bit, higher power of 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -79,3 +79,20 @@ int firstNonZeroBit( Word w ) {
 	return i ;
 }
 %%]
+
+%%[8
+int firstNonZeroMsBit( Word w, int startAt ) {
+	int i ;
+	for ( i = startAt ; i >= 0 && (! (w & (1<<i))) ; i-- ) ;
+	return i ;
+}
+%%]
+
+%%[8
+int firstHigherPower2( Word w ) {
+	int i ;
+	i = firstNonZeroMsBit( w, Word_SizeInBits-1 ) ;
+	return ( w ^ (1<<i) ? i+1 : i ) ;
+}
+%%]
+
