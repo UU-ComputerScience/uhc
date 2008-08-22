@@ -19,7 +19,7 @@ MM_Pages_Buddy_FreePages_Inx mm_pages_Buddy_FindNonEmptyFreePages( MM_Pages_Budd
 	
 	for	( pgInx0 = szPagesLog0
 		; pgInx0 < MM_Pages_Buddy_FreePages_Size - 1
-		  && mm_pages_Buddy_FreePage_IsEmpty( mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) )
+		  && mm_pages_Buddy_Dealloc_IsEmpty( mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) )
 		; pgInx0++
 		) ;
 	
@@ -47,15 +47,16 @@ void mm_pages_Buddy_Recombine( MM_Pages_Buddy_Data* pgs ) {
 			// get the buddy page
 			MM_Pages_Buddy_FreePage* pgOtherHalf ;
 			pgOtherHalf = (MM_Pages_Buddy_FreePage*)MM_Pages_Buddy_OtherHalfOfPage( pg, pgInx0 ) ;
-			// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Recombine pgInx0=%x pg=%x pg'=%x\n", pgInx0, pg, pgOtherHalf);}) ;
+			// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Recombine &fpg->dllPages=%x pgInx0=%x pg=%x pgOtherHalf=%x\n", &fpg->dllPages, pgInx0, pg, pgOtherHalf);}) ;
 			// check whether other half is indeed managed, i.e. in range
 			if ( (Word)pgOtherHalf >= pgs->firstPage && (Word)pgOtherHalf < pgs->afterLastPage ) {
 				MM_BuddyPage_ExtlData* pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
 				MM_BuddyPage_ExtlData* pgdOtherHalf = MM_Pages_Buddy_ExtlDataOfPage( pgs, pgOtherHalf ) ;
+				// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Recombine pgd=%x pgdOtherHalf=%x pgd->system.data.tag=%x pgdOtherHalf->system.data.tag=%x\n", pgd, pgdOtherHalf, pgd->system.data.tag, pgdOtherHalf->system.data.tag);}) ;
 				// check whether size match && of same malloc'ed group && other half indeed free (this half by def must be free)
-				if 	( 	pgd->system.data.sizeLog == pgdOtherHalf->system.data.sizeLog
+				if 	( 	pgdOtherHalf->system.data.tag == MM_BuddyPage_ExtlDataTag_Free
+					&&	pgd->system.data.sizeLog == pgdOtherHalf->system.data.sizeLog
 					&& 	pgd->system.data.groupId == pgdOtherHalf->system.data.groupId
-					&& 	pgdOtherHalf->system.data.tag == MM_BuddyPage_ExtlDataTag_Free
 					)
 				{
 					// ensure to skip pOtherHalf (a bit hacky solution....)
@@ -66,10 +67,10 @@ void mm_pages_Buddy_Recombine( MM_Pages_Buddy_Data* pgs ) {
 					// make sure pg is the lower one
 					if ( pg > pgOtherHalf ) {
 						SwapPtr( MM_Pages_Buddy_FreePage*, pg , pgOtherHalf  ) ;
-						SwapPtr( MM_BuddyPage_ExtlData* , pgd, pgdOtherHalf ) ;
+						SwapPtr( MM_BuddyPage_ExtlData*  , pgd, pgdOtherHalf ) ;
 					}
 					// update external info
-					pgd->system.data.sizeLog++ ;
+					pgd->system.data.sizeLog = pgInx0 + 1 ;
 					pgdOtherHalf->system.data.tag = MM_BuddyPage_ExtlDataTag_PartOf ;
 					// insert in free list, one size higher
 					MM_Pages_Buddy_FreePage* fpgDouble = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgd->system.data.sizeLog ) ;
@@ -95,41 +96,47 @@ void mm_pages_Buddy_FillGroupWithMem( MM_BuddyGroup* buddyGrp, Ptr mem, Word mem
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_FillGroupWithMem mem=%x memSz=%x firstPage=%x afterLastPage=%x nrPages=%x\n", mem, memSz, firstPage, afterLastPage, buddyGrp->nrPages);}) ;
 }
 
-// init a MM_BuddyGroup so all pages and extl data are set up to their initial value
-void mm_pages_Buddy_InitGroup( MM_Pages_Buddy_Data* pgs, MM_BuddyPage_GroupId grpId, MM_BuddyGroup* buddyGrp ) {
+// init a set of contiguous pages and extl data are set up to their initial value
+void mm_pages_Buddy_InitPages( MM_Pages_Buddy_Data* pgs, MM_BuddyPage_GroupId grpId, Word firstPage, Word afterLastPage, Word tagFirst, Word tagRest ) {
 	Word pg ;
-	for ( pg = buddyGrp->firstPage ; pg < buddyGrp->afterLastPage ; ) {
+	for ( pg = firstPage ; pg < afterLastPage ; ) {
+		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_InitPages pg=%x firstPage=%x afterLastPage=%x tagFirst=%x tagRest=%x\n", pg, firstPage, afterLastPage, tagFirst, tagRest);}) ;
 		// find the largest size possible at this address
 		MM_Pages_Buddy_FreePages_Inx pgInx0 ;
 		Word pgLast ;
 		for ( pgInx0 = firstNonZeroBit( pg >> MM_Pages_MinSize_Log ), pgLast = MM_Pages_Buddy_LastPageOfPage( pg, pgInx0 )
-			; pgLast >= buddyGrp->afterLastPage
+			; pgLast >= afterLastPage
 			; pgInx0--, pgLast = MM_Pages_Buddy_LastPageOfPage( pg, pgInx0 )
-			)
-		{
-		}
+			) ;
+		if ( pgInx0 >= MM_Pages_Buddy_FreePages_Size ) { rts_panic1_1( "(internal) buddy size too large", pgInx0 ) ; }
 		
 		// init the extlData
 		MM_BuddyPage_ExtlData* pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
-		pgd->system.data.tag 		= MM_BuddyPage_ExtlDataTag_Free ;
+		pgd->system.data.tag 		= tagFirst ;
 		pgd->system.data.sizeLog 	= pgInx0 ;
 		pgd->system.data.groupId 	= grpId ;
-		pgd->user				 	= (Word)pg ;
 		
-		// insert in the free list
-		MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) ;
-		mm_dll_InsertRight( &((MM_Pages_Buddy_FreePage*)pg)->dllPages, &fpg->dllPages ) ;
+		if ( tagFirst == MM_BuddyPage_ExtlDataTag_Free ) {
+			// insert in the free list
+			// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_InitPages insert pg=%x pgInx0=%x\n", pg, pgInx0);}) ;
+			MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) ;
+			mm_dll_InsertRight( &((MM_Pages_Buddy_FreePage*)pg)->dllPages, &fpg->dllPages ) ;
+		}
 		
 		// init the other extlData entries of this page
-		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_InitGroup pg=%x pgLast=%x pgd=%x pgInx0=%x\n", pg, pgLast, pgd, pgInx0);}) ;
+		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_InitPages pg=%x pgLast=%x pgd=%x pgInx0=%x\n", pg, pgLast, pgd, pgInx0);}) ;
 		for ( pg += MM_Pages_MinSize ; pg <= pgLast ; pg += MM_Pages_MinSize ) {
-			// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_InitGroup loop pg=%x pgLast=%x pgd=%x pgInx0=%x\n", pg, pgLast, pgd, pgInx0);}) ;
+			// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_InitPages loop pg=%x pgLast=%x pgd=%x pgInx0=%x\n", pg, pgLast, pgd, pgInx0);}) ;
 			pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
-			pgd->system.data.tag 		= MM_BuddyPage_ExtlDataTag_PartOf ;
+			pgd->system.data.tag 		= tagRest ;
 			pgd->system.data.groupId 	= grpId ;
-			pgd->user				 	= (Word)pg ;
 		}
 	}
+}
+
+// init a MM_BuddyGroup so all pages and extl data are set up to their initial value
+void mm_pages_Buddy_InitGroup( MM_Pages_Buddy_Data* pgs, MM_BuddyPage_GroupId grpId, MM_BuddyGroup* buddyGrp ) {
+	mm_pages_Buddy_InitPages( pgs, grpId, buddyGrp->firstPage, buddyGrp->afterLastPage, MM_BuddyPage_ExtlDataTag_Free, MM_BuddyPage_ExtlDataTag_PartOf ) ;
 }
 %%]
 
@@ -208,6 +215,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_Buddy_Free
 			newExtlData[i].system.data.tag = MM_BuddyPage_ExtlDataTag_Unusable ;
 		}
 	}
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup A\n");}) ;
 	
 	// if old extl not reused, free it
 	if ( ! isFirstAlloc && ! doReuseExtl ) {
@@ -215,6 +223,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_Buddy_Free
 		mm_free( pgs->extlData ) ;
 	}
 	
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup B\n");}) ;
 	// switch to the new data
 	pgs->firstPage 			= extlFirstPage ;
 	pgs->afterLastPage 		= extlAfterLastPage ;
@@ -223,6 +232,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_Buddy_Free
 	// pgs->extlAndPagesDiff	= newExtlData - extlFirstPage ;
 	pgs->nrPages			= (extlAfterLastPage - extlFirstPage) >> MM_Pages_MinSize_Log ;
 	
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup C\n");}) ;
 	// init the groups
 	mm_pages_Buddy_InitGroup( pgs, grpNew, buddyGrpNew ) ;
 	if ( ! isFirstAlloc && doReuseExtl ) {
@@ -264,34 +274,45 @@ void mm_pages_Buddy_Init( MM_Pages* buddyPages ) {
 	buddyPages->data = (MM_Pages_Data*)pgs ;
 }
 
-MM_Page mm_pages_Buddy_AllocPage( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages_Inx szPagesLog ) {
-	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
+MM_Page mm_pages_Buddy_AllocLog2( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages_Inx szPagesLog ) {
 	MM_Pages_Buddy_FreePages_Inx szPagesLog0 = szPagesLog - MM_Pages_MinSize_Log ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 szPagesLog0=%x\n", szPagesLog0);}) ;
+	if ( szPagesLog0 >= MM_Pages_Buddy_FreePages_Size ) { rts_panic1_1( "buddy alloc size request too large", szPagesLog ) ; }
+	
+	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
 	
 	MM_Pages_Buddy_FreePages_Inx pgInx0 = mm_pages_Buddy_FindNonEmptyFreePages( pgs, szPagesLog0 ) ;
 	MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) ;
 	
-	if ( mm_pages_Buddy_FreePage_IsEmpty( fpg ) ) {
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 A szPagesLog0=%x\n", szPagesLog0);}) ;
+	if ( mm_pages_Buddy_Dealloc_IsEmpty( fpg ) ) {
 		// recombine, then re-attempt allocation,
 		mm_pages_Buddy_Recombine( pgs ) ;
+		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 A A szPagesLog0=%x\n", szPagesLog0);}) ;
 		pgInx0 = mm_pages_Buddy_FindNonEmptyFreePages( pgs, szPagesLog0 ) ;
 		fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) ;
-		if ( mm_pages_Buddy_FreePage_IsEmpty( fpg ) ) {
+		if ( mm_pages_Buddy_Dealloc_IsEmpty( fpg ) ) {
 			// ask for memory, then re-re-attempt,
 			mm_pages_Buddy_NewBuddyGroup( pgs, szPagesLog ) ;
+			// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 A B szPagesLog0=%x\n", szPagesLog0);}) ;
 			// IF_GB_TR_ON(3,{mm_pages_Buddy_Dump( buddyPages ) ;}) ;
 			pgInx0 = mm_pages_Buddy_FindNonEmptyFreePages( pgs, szPagesLog0 ) ;
 			fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgInx0 ) ;
 			// otherwise fail
-			if ( mm_pages_Buddy_FreePage_IsEmpty( fpg ) ) {
+			if ( mm_pages_Buddy_Dealloc_IsEmpty( fpg ) ) {
 				rts_panic1_1( "buddy page alloc failed", szPagesLog ) ;
 			}
 		}
 	}
 
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 B A szPagesLog0=%x pgInx0=%x fpg=%x\n", szPagesLog0, pgInx0, fpg);}) ;
 	MM_Pages_Buddy_FreePage* pg = mm_buddyPage_FreePage_FirstFree(fpg) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 B B szPagesLog0=%x pgInx0=%x pg=%x\n", szPagesLog0, pgInx0, pg);}) ;
 	MM_BuddyPage_ExtlData* pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 B C szPagesLog0=%x pgInx0=%x pgd=%x pgd->system.data.sizePages=%x pgd->system.data.sizeLog=%x\n", szPagesLog0, pgInx0, pgd, pgd->system.data.sizePages, pgd->system.data.sizeLog);}) ;
+	// if ( pgInx0 != pgd->system.data.sizeLog ) { rts_panic1_1( "mm_pages_Buddy_AllocLog2 pgInx0 != pgd->system.data.sizeLog", pgInx0 ); }
 	mm_dll_Delete( &pg->dllPages ) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 B D szPagesLog0=%x pgInx0=%x pg=%x pgd=%x\n", szPagesLog0, pgInx0, pg, pgd);}) ;
 	
 	for ( ; pgInx0 > szPagesLog0 ; pgInx0-- ) {
 		// split into halves, put other half in appropriate free dll, continue with half sized pg
@@ -306,26 +327,73 @@ MM_Page mm_pages_Buddy_AllocPage( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages
 		pgdOtherHalf->system.data.groupId = pgd->system.data.groupId ;
 	}
 
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 C szPagesLog0=%x\n", szPagesLog0);}) ;
 	pgd->system.data.tag = MM_BuddyPage_ExtlDataTag_Alloced ;
 	pgd->system.data.sizeLog = szPagesLog0 ;
 	
-	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPage pg=%x\n", pg);}) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocLog2 pg=%x\n", pg);}) ;
 	return (MM_Page)pg ;
 }
 
-void mm_pages_Buddy_FreePage( MM_Pages* buddyPages, MM_Page pg ) {
+// unfinished
+MM_Page mm_pages_Buddy_Alloc( MM_Pages* buddyPages, Word sz ) {
+	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
+	Word szPagesPgs = EntierLogUpShrBy(sz,MM_Pages_MinSize_Log) ;
+	Word szPages = szPagesPgs << MM_Pages_MinSize_Log ;
+	MM_Pages_Buddy_FreePages_Inx szPagesLog = firstHigherPower2( szPages ) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Alloc sz=%x szPagesPgs=%x szPages=%x szPagesLog=%x\n", sz, szPagesPgs, szPages, szPagesLog);}) ;
+	
+	// allocate 2^szPagesLog, enough to hold the requested size
+	Word pg = (Word)mm_pages_Buddy_AllocLog2( buddyPages, szPagesLog ) ;
+	MM_BuddyPage_ExtlData* pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
+	pgd->system.data.sizePages = szPagesPgs ;
+	
+	// tag the 2nd half of the allocated pages, by initializing the allocated part and free part of this 2nd part as such
+	if ( szPages < (1 << szPagesLog) ) {
+		// but this only must be done when the size of the 2nd part is not a power of 2
+		MM_Pages_Buddy_FreePages_Inx szHalfPagesLog = szPagesLog - 1 ;
+		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Alloc szHalfPagesLog=%x szPagesLog=%x\n", szHalfPagesLog, szPagesLog);}) ;
+		mm_pages_Buddy_InitPages( pgs, pgd->system.data.groupId, pg+(1<<szHalfPagesLog), pg+szPages        , MM_BuddyPage_ExtlDataTag_PartOfAlloced, MM_BuddyPage_ExtlDataTag_PartOfAlloced ) ;
+		mm_pages_Buddy_InitPages( pgs, pgd->system.data.groupId, pg+szPages            , pg+(1<<szPagesLog), MM_BuddyPage_ExtlDataTag_Free         , MM_BuddyPage_ExtlDataTag_PartOf ) ;
+	}
+	
+	return (MM_Page)pg ;
+}
+
+void mm_pages_Buddy_Dealloc( MM_Pages* buddyPages, MM_Page pg ) {
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Dealloc pg=%x\n", pg);}) ;
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
 	MM_BuddyPage_ExtlData* pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
-	MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, pgd->system.data.sizeLog ) ;
+	MM_Pages_Buddy_FreePages_Inx szPagesLog0     = pgd->system.data.sizeLog ;
+	MM_Pages_Buddy_FreePages_Inx szHalfPagesLog0 = ( szPagesLog0 == 0 ? szPagesLog0 : szPagesLog0 - 1 ) ;
+	MM_BuddyPage_ExtlData* pgdHalf = MM_Pages_Buddy_ExtlDataOfPage( pgs, (Word)pg+(MM_Pages_MinSize<<szHalfPagesLog0) ) ;
+	MM_BuddyGroup* buddyGrp = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, pgd->system.data.groupId ) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Dealloc pgd=%x pgdHalf=%x pgd->system.data.sizeLog=%x pgd->system.data.sizePages=%x pgd->system.data.tag=%x pgdHalf->system.data.tag=%x\n", pgd, pgdHalf, pgd->system.data.sizeLog, pgd->system.data.sizePages, pgd->system.data.tag, pgdHalf->system.data.tag);}) ;
+	
+	MM_Pages_Buddy_FreePages_Inx szDeallocDirectPagesLog0 ;
+	if ( pgdHalf->system.data.tag == MM_BuddyPage_ExtlDataTag_PartOfAlloced ) {
+		// plain dealloc of pages with size < power of 2
+		// if ( pgd->system.data.sizePages<<MM_Pages_MinSize_Log < MM_Pages_MinSize<<szHalfPagesLog0 || pgd->system.data.sizePages<<MM_Pages_MinSize_Log >= MM_Pages_MinSize<<szPagesLog0 ) { rts_panic1_1( "mm_pages_Buddy_Dealloc assertion", pgd->system.data.sizePages ); }
+		pgd->system.data.sizeLog = szDeallocDirectPagesLog0 = szHalfPagesLog0 ;
+		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Dealloc init pg=%x pg half=%x pg end=%x\n", pg, (Word)pg+(MM_Pages_MinSize<<szHalfPagesLog0), (Word)pg+(pgd->system.data.sizePages<<MM_Pages_MinSize_Log));}) ;
+		mm_pages_Buddy_InitPages( pgs, pgd->system.data.groupId, (Word)pg+(MM_Pages_MinSize<<szHalfPagesLog0), (Word)pg+(pgd->system.data.sizePages<<MM_Pages_MinSize_Log), MM_BuddyPage_ExtlDataTag_Free, MM_BuddyPage_ExtlDataTag_PartOf ) ;
+	} else {
+		// plain dealloc of pages with size == power of 2
+		szDeallocDirectPagesLog0 = szPagesLog0 ;
+	}
+	
+	// dealloc the 1st half (which may be all instead of half)
+	MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, szDeallocDirectPagesLog0 ) ;
 	pgd->system.data.tag = MM_BuddyPage_ExtlDataTag_Free ;
 	mm_dll_InsertRight( &(((MM_Pages_Buddy_FreePage*)pg)->dllPages), &fpg->dllPages ) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_Dealloc szPagesLog0=%x szDeallocDirectPagesLog0=%x\n", szPagesLog0, szDeallocDirectPagesLog0);}) ;
 }
 %%]
 
 %%[8
-void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, MM_Pages_Buddy_FreePages_Inx szPagesLog, Word info ) {
+void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, Word sz, Word info ) {
 	int i ;
-	for ( i = 0 ; i < (1<<szPagesLog) ; i += (1<<MM_Pages_MinSize_Log) ) {
+	for ( i = 0 ; i < sz ; i += (1<<MM_Pages_MinSize_Log) ) {
 		Word* userInfo = mm_pages_Buddy_GetUserData( &mm_pages, (MM_Page)((Word)pg + i) ) ;
 		*userInfo = info ;
 	}
@@ -342,8 +410,9 @@ MM_Pages mm_pages =
 #if ( MM_Cfg_Pages == MM_Cfg_Pages_Buddy )
 	{ NULL
 	, &mm_pages_Buddy_Init
-	, &mm_pages_Buddy_AllocPage
-	, &mm_pages_Buddy_FreePage
+	, &mm_pages_Buddy_AllocLog2
+	, &mm_pages_Buddy_Alloc
+	, &mm_pages_Buddy_Dealloc
 	, &mm_pages_Buddy_GetUserData
 	, &mm_pages_Buddy_SetUserData
 	} ;
@@ -377,7 +446,7 @@ mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 
 	for ( i = 0 ; i < pgs->freePages.free ; i++ ) {
 		MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, i ) ;
-		if ( ! mm_pages_Buddy_FreePage_IsEmpty( fpg ) ) {
+		if ( ! mm_pages_Buddy_Dealloc_IsEmpty( fpg ) ) {
 			MM_DLL* dll = fpg->dllPages.next ;
 			printf
 				( "  Free: %d: dll=%x\n"
@@ -413,49 +482,51 @@ mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 void mm_pages_Buddy_Test() {
 	int i ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg1 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log ) ;
-	MM_Page pg2 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log ) ;
-	MM_Page pg3 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log ) ;
+	MM_Page pg1 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log ) ;
+	MM_Page pg2 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log ) ;
+	MM_Page pg3 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg3 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg1 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg2 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg3 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg1 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg2 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg4 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
+	MM_Page pg4 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg5 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
+	MM_Page pg5 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg6 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 1 ) ;
+	MM_Page pg6 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 1 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg7 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
+	MM_Page pg7 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg8 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 5 ) ;
+	MM_Page pg8 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 5 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg9 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
+	MM_Page pg9 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 2 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg10 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 12 ) ;
+	MM_Page pg10 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 12 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	MM_Page pg11 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 13 ) ;
+	MM_Page pg11 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 13 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg4 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg5 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg6 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg7 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg8 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg9 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg10 ) ;
-	mm_pages_Buddy_FreePage( &mm_pages, pg11) ;
-	MM_Page pg12 = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + 15 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg4 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg5 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg6 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg7 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg8 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg9 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg10 ) ;
+	mm_pages_Buddy_Dealloc( &mm_pages, pg11) ;
+	MM_Page pg12 = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + 14 ) ;
 	mm_pages_Buddy_Dump( &mm_pages ) ;
 
 	srandom(1) ;
 	MM_Page pgs[II] ;
 	for ( i = 0 ; i < II ; i++ ) { pgs[i] = NULL ; }
-	for ( i = 0 ; i < 100000000 ; i++ ) {
+	for ( i = 0 ; i < 1000000/*00*/ ; i++ ) {
 		int ii = i % II ;
-		Word sz = random() % 11 ;
-		if ( pgs[ii] ) { mm_pages_Buddy_FreePage( &mm_pages, pgs[ii] ) ; }
-		pgs[ii] = mm_pages_Buddy_AllocPage( &mm_pages, MM_Pages_MinSize_Log + sz ) ;
+		// Word sz = random() % 11 ;
+		Word sz = random() % 100000 + 1 ;
+		if ( pgs[ii] ) { mm_pages_Buddy_Dealloc( &mm_pages, pgs[ii] ) ; }
+		// pgs[ii] = mm_pages_Buddy_AllocLog2( &mm_pages, MM_Pages_MinSize_Log + sz ) ;
+		pgs[ii] = mm_pages_Buddy_Alloc( &mm_pages, sz ) ;
 	}
 	mm_pages_Buddy_Dump( &mm_pages ) ;
 }

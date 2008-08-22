@@ -5,14 +5,22 @@
 Page management provides the 1st abstraction on top of malloc.
 
 A page
-- has size == 2^n * 2^k, n >= 0, k determining the smallest size
+- has size
+  - 2^n * 2^k, n >= 0, k determining the smallest size, allocated with allocLog2
+  - multiple of 2^k, k determining the smallest size, allocated with alloc.
+    its size lies in between 2^(n-1) * 2^k .. 2^n * 2^k, with start aligned on 2^n * 2^k
 - has its start address aligned on a 2^k boundary
 
 %%[8
 #define MM_Pages_MinSize_Log	(10 + Word_SizeInBytes_Log)		// k, from above, depends on word size (?good thing or not?)
 #define MM_Pages_MinSize		(1 << MM_Pages_MinSize_Log)
 
-#define MM_Pages_MaxSize_Log	30								// maximum allocatable size, currently 1GB
+// maximum allocatable size
+#if USE_64_BITS
+#define MM_Pages_MaxSize_Log	32								// 4GB
+#else
+#define MM_Pages_MaxSize_Log	28								// 128MB
+#endif
 #define MM_Pages_MaxSize		(1 << MM_Pages_MaxSize_Log)
 %%]
 
@@ -40,12 +48,13 @@ typedef struct MM_Pages {
   	void		 	(*init)( struct MM_Pages* ) ;
   	
   	// (de)allocation
-  	MM_Page 		(*allocPage)( struct MM_Pages*, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;		// size in log(nr of pages)
-  	void 			(*freePage)( struct MM_Pages*, MM_Page pg ) ;
+  	MM_Page 		(*allocLog2)( struct MM_Pages*, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;		// size in log(nr of pages)
+  	MM_Page 		(*alloc)( struct MM_Pages*, Word sz ) ;
+  	void 			(*dealloc)( struct MM_Pages*, MM_Page pg ) ;
   	
   	// user data
   	Word*			(*getUserData)( struct MM_Pages*, MM_Page pg ) ;
-  	void 			(*setUserData)( struct MM_Pages*, MM_Page pg, MM_Pages_Buddy_FreePages_Inx szPagesLog, Word info ) ;
+  	void 			(*setUserData)( struct MM_Pages*, MM_Page pg, Word sz, Word info ) ;
 } MM_Pages ;
 %%]
 
@@ -78,10 +87,11 @@ This design allows incremental growth of the use of mallocable memory, and there
 %%]
 
 %%[8
-#define MM_BuddyPage_ExtlDataTag_Free		0		// free
-#define MM_BuddyPage_ExtlDataTag_Alloced	1		// allocated
-#define MM_BuddyPage_ExtlDataTag_Unusable	2		// cannot be used, because in between groups
-#define MM_BuddyPage_ExtlDataTag_PartOf		3		// part of larger buddy
+#define MM_BuddyPage_ExtlDataTag_Free				0		// free
+#define MM_BuddyPage_ExtlDataTag_Alloced			1		// allocated
+#define MM_BuddyPage_ExtlDataTag_Unusable			2		// cannot be used, because in between groups
+#define MM_BuddyPage_ExtlDataTag_PartOf				3		// part of larger buddy, free or alloced
+#define MM_BuddyPage_ExtlDataTag_PartOfAlloced		4		// part of larger allocated buddy
 
 typedef uint16_t MM_BuddyPage_GroupId ;
 
@@ -90,9 +100,20 @@ typedef uint16_t MM_BuddyPage_GroupId ;
 typedef struct MM_BuddyPage_ExtlData {
 	union {
 		struct {
-			uint8_t							tag ;
-			uint8_t							sizeLog ;	// relative to MM_Pages_MinSize_Log
-			MM_BuddyPage_GroupId			groupId ;	// id of group of buddies
+			// sizeLog: relative to MM_Pages_MinSize_Log
+			// groupId: id of group of buddies
+			// sizePages: size in pages <= 1<<sizeLog, equal for power of 2 pages
+#			if USE_64_BITS
+				uint8_t						tag 		: 8	;
+				uint8_t						sizeLog 	: 8 ;	
+				MM_BuddyPage_GroupId		groupId 	: 16 ;	
+				uint32_t					sizePages 	: 32 ;	
+#			else
+				uint8_t						tag 		: 3	;
+				uint8_t						sizeLog 	: 5 ;	
+				MM_BuddyPage_GroupId		groupId 	: 8 ;	
+				uint16_t					sizePages 	: 16 ;	
+#			endif
 		} 		data ;
 		Word	word ;
 	} 		system ;
@@ -122,7 +143,7 @@ typedef struct MM_Pages_Buddy_FreePage {
 } MM_Pages_Buddy_FreePage ;
 
 // is empty free pages entry
-static inline Bool mm_pages_Buddy_FreePage_IsEmpty( MM_Pages_Buddy_FreePage* fpg ) {
+static inline Bool mm_pages_Buddy_Dealloc_IsEmpty( MM_Pages_Buddy_FreePage* fpg ) {
 	return mm_dll_IsEmpty( &(fpg->dllPages) ) ;
 }
 %%]
@@ -174,9 +195,9 @@ static inline MM_Pages_Buddy_FreePage* mm_buddyPage_FreePage_FirstFree( MM_Pages
 
 %%[8
 extern MM_Pages_Data mm_pages_Buddy_New(  ) ;
-extern MM_Page mm_pages_Buddy_AllocPage( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;
-extern void mm_pages_Buddy_FreePage( MM_Pages* buddyPages, MM_Page pg ) ;
-extern void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, MM_Pages_Buddy_FreePages_Inx szPagesLog, Word info ) ;
+extern MM_Page mm_pages_Buddy_AllocLog2( MM_Pages* buddyPages, MM_Pages_Buddy_FreePages_Inx szPagesLog ) ;
+extern void mm_pages_Buddy_Dealloc( MM_Pages* buddyPages, MM_Page pg ) ;
+extern void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, Word sz, Word info ) ;
 %%]
 
 %%[8

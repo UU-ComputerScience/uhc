@@ -86,14 +86,6 @@ typedef struct MM_Allocator_LOF_FreeRounded {
 	struct MM_Allocator_LOF_FreeRounded*	next ;		// list of free chunks
 } __attribute__ ((__packed__)) MM_Allocator_LOF_FreeRounded ;
 
-// admin for first fit size, both for free and allocated chunks
-// a bit uneconomical w.r.t. size, but amortizes because of relative large size of allocated chunks
-typedef struct MM_Allocator_LOF_AllocOther {
-	MM_DLL								dll ;		// dl list of free chunks
-	Word								size ;		// size of this free chunk, excluding this admin
-	Word								tag ;		// state info
-} __attribute__ ((__packed__)) MM_Allocator_LOF_AllocOther ;
-
 // per size admin, the size is implicit by its position in MM_Allocator_LOF_Data.perSizeRounded
 typedef struct MM_Allocator_LOF_PerSize {
 	MM_Allocator_LOF_FreeRounded*			free ;		// free chunks
@@ -104,7 +96,6 @@ typedef struct MM_Allocator_LOF_PerSize {
 %%[8
 // the administration
 typedef struct MM_Allocator_LOF_Data {
-	MM_Allocator_LOF_AllocOther*		freeOther ;												// free list of other sizes
 	MM_Allocator_LOF_PerSize			perSizeRounded[MM_Allocator_LOF_NrRoundedFit] ;			// rounded fit
 } __attribute__ ((__packed__)) MM_Allocator_LOF_Data ;
 %%]

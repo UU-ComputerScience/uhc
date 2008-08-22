@@ -17,6 +17,7 @@ void mm_init() {
 	mm_init_allocator() ;
 	
 	// sanity checks for basic assumptions
+	IF_GB_TR_ON(3,{printf("mm_init sizeof(MM_BuddyPage_ExtlData)=%x\n", sizeof(MM_BuddyPage_ExtlData));}) ;
 	
 }
 %%]
