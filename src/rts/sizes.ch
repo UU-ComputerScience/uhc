@@ -33,6 +33,11 @@ typedef  int32_t SWord ;
 #endif
 %%]
 
+%%[8
+#define Byte_SizeInBits			8
+#define Byte_SizeInBits_Log		3
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pointer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,4 +45,5 @@ typedef  int32_t SWord ;
 %%[8
 typedef	void*		Ptr  ;
 typedef	uint8_t*	BPtr ;
+typedef	Word*		WPtr ;
 %%]
