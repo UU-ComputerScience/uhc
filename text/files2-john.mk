@@ -9,6 +9,7 @@ LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)FibExe-opt.grin \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)GRIN_Fib_Tree_Opt.tex \
+                              $(TEXT_TMP_VARIANT_PREFIX)EHC_Variants.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)Silly_type_example.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.c \
                               $(TEXT_TMP_VARIANT_PREFIX)GetElementPtrExample.ll \

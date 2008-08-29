@@ -2,7 +2,7 @@ digraph EHC_pipeline
 {
   rankdir="LR";
   
-  node [shape="box" style="filled" color="darkolivegreen3" height="0.7"]
+  node [shape="box" style="solid" height="0.7"]
   edge [fontsize="12.0"] 
   // Node declarations
   //
@@ -14,9 +14,9 @@ digraph EHC_pipeline
     Core;
     GRIN;
     Silly;
-    LLVM [label="LLVM\nAssembly" fillcolor="darkolivegreen3" color="black" style="filled, dashed"];
+    LLVM [label="LLVM\nAssembly" color="black" style="dashed"];
     C;
-    style="dotted"
+    style="dashed"
     color="#000000"
     label="EHC Pipeline"
   }
