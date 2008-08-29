@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: allocator
+%%% Memory management: plan
 %%% see associated .ch file for more info.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -8,13 +8,11 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Default allocators
+%%% Default plan
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-MM_Allocator mm_allocator_Fixed ;
-
-MM_Allocator mm_allocator_GC_1 ;
+MM_Plan mm_plan ;
 
 %%]
 
@@ -23,11 +21,9 @@ MM_Allocator mm_allocator_GC_1 ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_init_allocator() {
-	mm_allocator_LOF.init( &mm_allocator_LOF, &mm_malloc_Sys, &mm_space_Plain ) ;
-	mm_allocator_Bump.init( &mm_allocator_Bump, &mm_malloc_LOF, &mm_space_Plain ) ;
-	
-	mm_allocator_Fixed = mm_allocator_LOF ;
-	mm_allocator_GC_1 = mm_allocator_Bump ;
+void mm_init_plan() {
+	mm_plan_SS.init( &mm_plan_SS ) ;
+
+	mm_plan = mm_plan_SS ;
 }
 %%]

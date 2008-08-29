@@ -1,52 +1,38 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: allocator
+%%% Memory management: Collector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Responsibilities of an allocator:
-- allocation
-- de-allocation
-- tracing of live pointers
-- collection
-
-Allocation is mandatory, the rest is optional, depending on policy.
-
-For more (global) info see mm.h
+A Collector implements a collection algorithm.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Allocator interface
+%%% Collector interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef Ptr  MM_Allocator_Data_Priv ;
+typedef Ptr  MM_Collector_Data_Priv ;
 
-typedef struct MM_Allocator {
-	// private data of Allocator
-  	MM_Allocator_Data_Priv 		data ;
+typedef struct MM_Collector {
+	// private data of Collector
+  	MM_Collector_Data_Priv 		data ;
   	
   	// setup with a particular MM_Pages
-  	void			 			(*init)( struct MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
+  	void			 			(*init)( struct MM_Collector* ) ;
   	
-  	// allocation
-  	Ptr 						(*alloc)( struct MM_Allocator*, Word sz ) ;
-  	void 						(*dealloc)( struct MM_Allocator*, Ptr ptr ) ;
+  	// collect into new allocator
+  	void						(*collect)( struct MM_Collector*, MM_Allocator* alcr ) ;
   	
   	// tracing live pointers
   	
   	// collection
-} MM_Allocator ;
+} MM_Collector ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Default allocators
+%%% Default Collector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-// allocator for non-gc managed mem
-extern MM_Allocator mm_allocator_Fixed ;
-
-// allocator for first phase gc managed mem, used by the mutator directly
-extern MM_Allocator mm_allocator_GC_1 ;
-
+extern MM_Collector mm_collector ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,5 +40,5 @@ extern MM_Allocator mm_allocator_GC_1 ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void mm_init_allocator() ;
+extern void mm_init_collector() ;
 %%]

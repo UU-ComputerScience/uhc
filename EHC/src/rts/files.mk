@@ -23,15 +23,27 @@ INSABS_LIB_RTS				:= $(INSABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
 RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
 									rts prim utils llvm-gc timing \
 									grinbc/grinbc \
-									mm/mm mm/common mm/pages mm/allocator \
-									mm/allocator/listoffree \
+									mm/mm mm/common \
+									mm/basic/dll mm/basic/deque \
+									mm/pages mm/allocator mm/trace mm/collector mm/space mm/mutator mm/plan \
+									mm/pages/buddy \
+									mm/trace/group mm/trace/buffer \
+									mm/space/plain \
+									mm/semispace/ss \
+									mm/allocator/listoffree mm/allocator/bump \
 								)
 RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim)
 RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									rts config sizes bits utils timing \
 									grinbc/grinbc \
-									mm/mm mm/config mm/common mm/pages mm/allocator \
-									mm/allocator/listoffree \
+									mm/mm mm/config mm/common \
+									mm/basic/dll mm/basic/deque \
+									mm/pages mm/allocator mm/trace mm/collector mm/space mm/mutator mm/plan \
+									mm/pages/buddy \
+									mm/trace/group mm/trace/buffer \
+									mm/space/plain \
+									mm/semispace/ss mm/semispace/sscollector \
+									mm/allocator/listoffree mm/allocator/bump \
 								)
 MAIN_C_MAIN_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,mainSil)
 

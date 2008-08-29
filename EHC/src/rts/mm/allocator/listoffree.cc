@@ -8,6 +8,14 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LOF internal defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define MM_Allocator_LOF_DirectAlloc_Mask		(1 << (sizeof(int) << Byte_SizeInBits_Log) - 1)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% LOF internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -16,9 +24,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_allocator_LOF_Init( MM_Allocator* alcr ) {
+void mm_allocator_LOF_Init( MM_Allocator* alcr, MM_Malloc* memmgt, MM_Space* space ) {
 	Word alcSizeLog = maxWord( MM_Pages_MinSize_Log, firstHigherPower2( sizeof(MM_Allocator_LOF_Data) ) ) ;
-	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)mm_pages.allocLog2( &mm_pages, alcSizeLog ) ;
+	Word alcInx = space->growSpaceLog2( space, alcSizeLog ) ;
+	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)(space->getFragment( space, alcInx )->frag) ;
+	
+	alc->space = space ;
 	
 	Word i ;
 	for ( i = 0 ; i < MM_Allocator_LOF_NrRoundedFit ; i++ ) {
@@ -28,11 +39,12 @@ void mm_allocator_LOF_Init( MM_Allocator* alcr ) {
 	}
 	
 	// further setup is done at the first allocation request
-	alcr->data = (MM_Allocator_Data*)alc ;
+	alcr->data = (MM_Allocator_Data_Priv*)alc ;
 }
 
 Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
+	MM_Pages* pages = alc->space->getPages(alc->space) ;
 	Ptr res = NULL ;
 	Word i ;
 	
@@ -51,17 +63,21 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 		if ( perSize->free == NULL ) {
 			// nr of new free elements - 1, allow for some wasted space at the end + admin space
 			Word szRounded = EntierLogUpBy( sz, szLog + Word_SizeInBytes_Log ) ;
-			MM_Pages_Buddy_FreePages_Inx szPagesLog = MM_Pages_MinSize_Log + szLog ;
+			MM_Pages_LogSize szPagesLog = MM_Pages_MinSize_Log + szLog ;
 			Word max = ((1 << szPagesLog) - sizeof(MM_Allocator_LOF_PageRounded)) / szRounded - 1 ;
 			
 			// get 1<<szLog pages
-			MM_Allocator_LOF_PageRounded* page = (MM_Allocator_LOF_PageRounded*)mm_pages.allocLog2( &mm_pages, szPagesLog ) ;
+			MM_Space_FragmentInx frgInx = alc->space->growSpaceLog2( alc->space, szPagesLog ) ;
+			MM_Space_Fragment* frg = alc->space->getFragment( alc->space, frgInx ) ;
+			MM_Allocator_LOF_PageRounded* page = (MM_Allocator_LOF_PageRounded*)frg->frag ;
+			
+			// link into perSize table
 			page->next = perSize->pages ;
 			perSize->pages = page ;
 			// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc szRounded=%x szPagesLog=%x max=%x page=%x\n", szRounded, szPagesLog, max, page );}) ;
 			
 			// make user page info point to the perSize info, so we can later deallocate by inserting in the correct list
-			mm_pages.setUserData( &mm_pages, (MM_Page)page, 1<<szPagesLog, (Word)perSize ) ;
+			pages->setUserData( pages, (MM_Page)page, 1<<szPagesLog, szInx ) ;
 			
 			// free space starts after initial admin
 			MM_Allocator_LOF_FreeRounded* free = (MM_Allocator_LOF_FreeRounded*)(&page[1]) ;
@@ -79,8 +95,10 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 		res = perSize->free ;
 		perSize->free = perSize->free->next ;
 	} else {
-		MM_Page page = mm_pages.alloc( &mm_pages, sz ) ;
-		mm_pages.setUserData( &mm_pages, (MM_Page)page, sz, (Word)page ) ;
+		MM_Space_FragmentInx frgInx = alc->space->growSpace( alc->space, sz ) ;
+		MM_Space_Fragment* frg = alc->space->getFragment( alc->space, frgInx ) ;
+		MM_Page page = frg->frag ;
+		pages->setUserData( pages, (MM_Page)page, sz, frgInx | MM_Allocator_LOF_DirectAlloc_Mask ) ;
 		res = page ;
 	}
 	
@@ -90,20 +108,23 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 
 void mm_allocator_LOF_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
+	MM_Pages* pages = alc->space->getPages(alc->space) ;
 	
 	// get user info, this points to the proper list to insert into
-	Word* userInfo = mm_pages_Buddy_GetUserData( &mm_pages, (MM_Page)ptr ) ;
-	MM_Allocator_LOF_PerSize* perSize = (MM_Allocator_LOF_PerSize*)(*userInfo) ;
-	Word perSizeInx = (Word)( perSize - &(alc->perSizeRounded[0]) ) ;
-	// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Dealloc ptr=%x userInfo=%x perSize=%x perSizeInx=%x\n", ptr, userInfo, perSize, perSizeInx);}) ;
+	Word* userInfo = mm_pages_Buddy_GetUserData( pages, (MM_Page)ptr ) ;
+	int inx = *userInfo ;
+	// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Dealloc ptr=%x userInfo=%x perSize=%x inx=%x\n", ptr, userInfo, perSize, inx);}) ;
 	
-	if ( perSizeInx < MM_Allocator_LOF_NrRoundedFit ) {
+	if ( inx & MM_Allocator_LOF_DirectAlloc_Mask ) {
+		// is directly allocated, so deallocate directly via space as well
+		alc->space->deallocFragment( alc->space, inx & (~MM_Allocator_LOF_DirectAlloc_Mask) ) ;
+	} else {
 		// exact fit
+		MM_Allocator_LOF_PerSize* perSize = &(alc->perSizeRounded[ inx ]) ;
 		MM_Allocator_LOF_FreeRounded* free = (MM_Allocator_LOF_FreeRounded*)ptr ;
+		// put back into free list
 		free->next = perSize->free ;
 		perSize->free = free ;
-	} else {
-		mm_pages.dealloc( &mm_pages, ptr ) ;
 	}
 }
 %%]
@@ -119,7 +140,41 @@ MM_Allocator mm_allocator_LOF =
 	, &mm_allocator_LOF_Alloc
 	, &mm_allocator_LOF_Dealloc
 	} ;
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Malloc alike interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+Ptr mm_allocator_LOF_Malloc( size_t size ) {
+	void* p = mm_allocator_LOF_Alloc( &mm_allocator_LOF, size ) ;
+	return (Ptr)p ;
+}
+
+void mm_allocator_LOF_Free( Ptr ptr ) {
+	mm_allocator_LOF_Dealloc( &mm_allocator_LOF, ptr ) ;
+}
+
+Ptr mm_allocator_LOF_Realloc( Ptr ptr, size_t size ) {
+	void* p = mm_allocator_LOF_Malloc( size ) ;
+	// warning: a copy from non allocated mem is done when enlarging!! Should be put into LOF impl so size can be taken into account
+	memcpy( p, ptr, size ) ;
+	mm_allocator_LOF_Free( ptr ) ;
+	return (Ptr)p ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstraction interface around allocation: LOF provided malloc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+MM_Malloc mm_malloc_LOF =
+	{ mm_allocator_LOF_Malloc
+	, mm_allocator_LOF_Realloc
+	, mm_allocator_LOF_Free
+	} ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

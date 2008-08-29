@@ -13,11 +13,21 @@
 
 %%[8
 void mm_init() {
-	mm_pages.init( &mm_pages ) ;
-	mm_init_allocator() ;
-	
 	// sanity checks for basic assumptions
-	IF_GB_TR_ON(3,{printf("mm_init sizeof(MM_BuddyPage_ExtlData)=%x\n", sizeof(MM_BuddyPage_ExtlData));}) ;
+	char* m = "memory manager sanity check" ;
+		
+	if ( sizeof(MM_BuddyPage_ExtlData) != 2 * sizeof( Word ) ) {
+		rts_panic2_1( m, "size of MM_BuddyPage_ExtlData must be 2 words", sizeof(MM_BuddyPage_ExtlData) ) ;
+	}
+	
+	mm_init_pages() ;
+	mm_init_space() ;
+	mm_init_allocator() ;
+	mm_init_trace() ;
+	mm_init_collector() ;
+	mm_init_mutator() ;
+	mm_init_plan() ;
+	
 	
 }
 %%]

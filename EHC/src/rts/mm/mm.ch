@@ -10,6 +10,7 @@ The design is inspired by:
 
 However, it deviates sufficiently to warrant a sketch of the overall design:
 
+
 Layering
 --------
 from bottom to top layer:
@@ -30,6 +31,7 @@ Layer (2) is further subdivided into sublayers, each with a particular responsib
 (2.d) Belt, a set of ordered Increments, each with a (possibly) different GC policy.
       This is the toplevel.
 
+
 Efficiency
 ----------
 Fragment, Space, Increment and Belt offer the same interface
@@ -41,6 +43,7 @@ consequence is that for the system as a whole only one combination of
 policies etc is configured. Non inlined access always remains possible,
 but globally one combination must be configured.
 
+
 Current implementations
 -----------------------
 as of 20080819.
@@ -51,6 +54,7 @@ Pages:
 Fragment:
 
 Space:
+- A plain implementation, offering growing+shrinking only
 
 Increment:
 
@@ -59,6 +63,15 @@ Belt:
 Other Allocators:
 - List of Free (LOF), on top of Pages
 
+
+Flexibility
+-----------
+The design allows for a fair degree of flexibility. All building blocks
+are accessible by means of structures, in almost OO alike style.
+Replacement with different implementations (for a given interface) is
+therefore easy.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Imports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,9 +79,23 @@ Other Allocators:
 %%[8
 #include "config.h"
 #include "common.h"
+#include "basic/dll.h"
+#include "basic/deque.h"
 #include "pages.h"
+#include "space.h"
+#include "trace.h"
 #include "allocator.h"
+#include "collector.h"
+#include "mutator.h"
+#include "plan.h"
+#include "pages/buddy.h"
+#include "space/plain.h"
 #include "allocator/listoffree.h"
+#include "allocator/bump.h"
+#include "trace/buffer.h"
+#include "trace/group.h"
+#include "semispace/sscollector.h"
+#include "semispace/ss.h"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

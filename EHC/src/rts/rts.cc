@@ -305,6 +305,7 @@ int main_GB_Exit(int argc, char** argv)
 	// absolutely the wrong place to do this, but for now, for quick testing
 	// mm_pages_Buddy_Test() ;
 	// mm_allocator_LOF_Test() ;
+	// mm_deque_Test() ;
 #endif
 	return 0 ;
 }

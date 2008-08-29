@@ -96,6 +96,7 @@ typedef struct MM_Allocator_LOF_PerSize {
 %%[8
 // the administration
 typedef struct MM_Allocator_LOF_Data {
+	MM_Space* 							space ; 												// the space allocator to use
 	MM_Allocator_LOF_PerSize			perSizeRounded[MM_Allocator_LOF_NrRoundedFit] ;			// rounded fit
 } __attribute__ ((__packed__)) MM_Allocator_LOF_Data ;
 %%]
@@ -105,7 +106,7 @@ typedef struct MM_Allocator_LOF_Data {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void mm_allocator_LOF_Init( MM_Allocator* ) ;
+extern void mm_allocator_LOF_Init( MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
 extern Ptr mm_allocator_LOF_Alloc( MM_Allocator*, Word sz ) ;
 extern void mm_allocator_LOF_Dealloc( MM_Allocator*, Ptr ptr ) ;
 %%]
@@ -116,6 +117,14 @@ extern void mm_allocator_LOF_Dealloc( MM_Allocator*, Ptr ptr ) ;
 
 %%[8
 extern MM_Allocator mm_allocator_LOF ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstraction interface around allocation: LOF provided malloc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+extern MM_Malloc mm_malloc_LOF ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
