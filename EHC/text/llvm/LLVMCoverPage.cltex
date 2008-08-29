@@ -6,9 +6,9 @@
                     \large Utrecht, The Netherlands \normalsize}
 
 \newcommand{\thesisdegree}[0]{\Large Thesis for the degree of Master of Science \normalsize}
-\newcommand{\thesistitle}[0]{\Huge Functional LLVM \normalsize}
+\newcommand{\thesistitle}[0]{\Huge Compiling Haskell To LLVM \normalsize}
 \newcommand{\thesisauthor}[0]{\huge John van Schie \normalsize}
-\newcommand{\thesisdate}[0]{\Large May, 2008 \normalsize}
+\newcommand{\thesisdate}[0]{\Large September, 2008 \normalsize}
 \newcommand{\thesisnumber}[0]{\Large INF/SCR-07-36 \normalsize}
 
 \newcommand{\svdoaitse}[0]{\large prof. dr. S.D. Swierstra \normalsize}
@@ -28,7 +28,7 @@
 
 \thesisdate \\[0.5cm]
 
-\thesisnumber \\[11.1cm]
+\thesisnumber \\[10.1cm]
 
 \uu \\[1cm]
 

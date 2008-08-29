@@ -5,20 +5,13 @@ Functional LLVM
 %%[main
 %%@LLVMChapterAbstract.chapter
 \tableofcontents
-
-\part{Preliminaries}
 %%@LLVMChapterIntroduction.chapter
 %%@LLVMChapterEHCPipeline.chapter
 %%@LLVMChapterLLVM.chapter
-
-\part{Main part}
 %%@LLVMChapterNaive.chapter
 %%@LLVMChapterResults.chapter
 %%@LLVMChapterFutureWork.chapter
-
-\part{Conclusion}
 %%@LLVMChapterConclusion.chapter
-
 \bibliography{main}
 \bibliographystyle{plain}
 \addcontentsline{toc}{chapter}{Bibliography}
