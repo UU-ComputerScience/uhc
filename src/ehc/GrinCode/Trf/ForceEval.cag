@@ -31,12 +31,12 @@ instance ForceEval GrModule where
                         $ Inh_GrModule
 
 instance ForceEval GrExpr where
-  forceEval x | trf_Syn_GrExpr `seq` True = x
+  forceEval x | trf_Syn_GrExpr t `seq` True = x
               where t = wrap_GrExpr (sem_GrExpr x)
                         $ Inh_GrExpr
 
 instance ForceEval GrTag where
-  forceEval x | trf_Syn_GrTag `seq` True = x
+  forceEval x | trf_Syn_GrTag t `seq` True = x
               where t = wrap_GrTag (sem_GrTag x)
                         $ Inh_GrTag
 %%]
