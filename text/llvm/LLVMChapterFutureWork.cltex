@@ -1,4 +1,59 @@
 %%[chapter
 \chapter{Future Work}
 \label{cha:future-work}
+\todo{getresult}
+\section{Introduction}
+\begin{itemize}
+  \item We investigate further improvements on design and efficiency
+  \item the rationale behind it, the expected complexity
+  \item Lack the implementation
+\end{itemize}
+
+\section{Design}
+
+\section{Efficiency}
+
+\subsection{Returning nodes}
+\subsubsection{Current situation}
+In Silly, a function has parameters of the pointer type and returns a node. A node is implemented as a |GrWord| sequence, so this requires the function call abstractions of the target language to support multiple return values. Many popular target languages, for example C, have no support for multiple return values and require indirection via a pointer if multiple values need to be returned. To lift this restriction, Silly avoids returning values via regular function calling abstractions. Instead, when a node is returned, it is written to the global \texttt{RP} node. 
+
+\begin{figure}[htbp]
+  \lstinputlisting[style={figureLstFootnote}, language={LLVM}]{MultipleReturnValuesRP.ll}
+  \caption{LLVM code generated for the Haskell program |main = 42| (simplified)}
+ \label{fig:llvm-multiple-return-values-RP}
+\end{figure}
+
+The LLVM backend implements multiple return values via the \texttt{RP} node. The generated code is illustrated by \refF{fig:llvm-multiple-return-values-RP}, which shows the simplified code for the Haskell program |main = 42|. The example shows two LLVM functions: \texttt{main} and \texttt{fun\_main}. The \texttt{RP} node is initialized in the \texttt{main} function, as this funtion is the entry point of the executable. A block of memory which is large enough to contain every node that is returned in the program, is dynamically allocated and assigned to the global \texttt{RP} variable. 
+
+The code generated for returning a node via the \texttt{RP} node is shown in \texttt{fun\_main}. This function performs only one task: storing the node \texttt{CInt 42} in the \texttt{RP} node. For each cell of the node, the address stored in the global variable \texttt{RP} is fetched, the correct offset of this address is computed and the required value is stored in the computed address. Retrieving a returned node requires a similar sequence but with the store instruction replaced by a load instruction. 
+
+\subsubsection{Inefficient returns}
+The return strategy of Silly allows languages without support for multiple return values to return nodes, but makes returning nodes inefficient for languages that do support them. There are two problems introduced by this strategy: 1) The target language's compiler is not aware of the relation between the \texttt{RP} node and the return value and 2) The return node is transferred via memory and never via registers.
+
+The target language's compiler is unable to relate the \texttt{RP} node with the return value of a function. The assignment of values to the global \texttt{RP} node is regarded as a regular assignment to a global variable. Often compilers do not trace the values that possibly reside at a memory location, but do trace possible return values of a function. This information gives the compiler the opportunity to generated more efficient code for the call location. We reduce the optimization opportunities by using returning nodes via the global \texttt{RP} node.
+
+As a second consequence of the return stategy, nodes are always returned via memory and never via registers. Access to memory is expensive compared to register access. For this reason, efficient calling conventions pass parameters and return values in registers. For example, the x86\_64 application binary interface~\cite{amd64:07} reserves two registers for returning integer values. These registers offer enough space to return a 2 |GrWord| node. Returning nodes via memory makes function calls more expensive than needed.
+
+\subsubsection{Alternative strategy}
+
+\begin{figure}[htbp]
+  \lstinputlisting[style={figureLstFootnote}, language={LLVM}]{MultipleReturnValuesMRV.ll}
+  \caption{LLVM code for the Haskell program |main = 42| using multiple return values}
+ \label{fig:llvm-multiple-return-values-MRV}
+\end{figure}
+
+\refF{fig:llvm-multiple-return-values-MRV} illustrates a way to eliminate the global \texttt{RP} node from the generated LLVM code by using multiple return values. Every function that returns a node, changes from returning \texttt{void} to returning a structure that is large enough to contain the largest possible return node. Furthermore, the body of the function is wrapped by an entry and an exit code block. The entry block allocates the return structure (\texttt{\%RP}) locally and defines a shortcut for each element of the structure (\verb!%RP.0! and \verb!%RP.1!). Later optimizations of the LLVM compiler promote the stack allocation to virtual registers to avoid memory access. The exit block loads the elements of the structure into virtual registers and returns the values with a \texttt{ret} instruction. The actual writing of the values to the structure is performed in the body of the function, by the \texttt{store} instructions. Obtaining values from returned structures, not shown in the example, is possible with the \texttt{getresult} instruction. With this return stategy, the return node is recognized as return value from a function and memory access is eliminated in favor of register access.
+
+\subsubsection{Expected impact}
+The alternative node return strategy impacts the EHC compiler in the following aspects:
+\begin{itemize}
+  \item The LLVM type inference needs adjustments to allow the multiple return stategy. As the Silly functions are changed to return values, the typing of functions changes. Furthermore, virtual registers are generated for binding a function's return value, and these registers need typing. Function types are easy computable from the body of the function and the existing function signatures abstract syntax nodes allready have a return type attribute. To support the alternative return strategy, only minor adjustments are needed for the type inference. 
+  \item Changes to the instruction selection algorithm are required to output the correct instructions. As the changes are only needed for reading or writing to the \texttt{RP} node, only minor changes are required.  
+\end{itemize}
+
+
+\subsection{Eliminating store/reads}
+\begin{itemize}
+  \item Eliminating store/reads.
+\end{itemize}
 %%]
