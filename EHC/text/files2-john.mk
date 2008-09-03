@@ -15,6 +15,8 @@ LLVM_THESIS_EXAMPLES       := $(TEXT_TMP_VARIANT_PREFIX)Fib.lhs \
                               $(TEXT_TMP_VARIANT_PREFIX)GetElementPtrExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)PhiExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)running-example.ll \
+                              $(TEXT_TMP_VARIANT_PREFIX)MultipleReturnValuesMRV.ll \
+                              $(TEXT_TMP_VARIANT_PREFIX)MultipleReturnValuesRP.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)LLVMExample.ll \
                               $(TEXT_TMP_VARIANT_PREFIX)compiletime.gc.tex \
                               $(TEXT_TMP_VARIANT_PREFIX)compiletime.nogc.tex \
