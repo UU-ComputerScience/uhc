@@ -2,7 +2,9 @@
 %%% Memory management: Collector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-A Collector implements a collection algorithm.
+A Collector is a 'friend' of a Plan, implementing a collection
+algorithm. It knows which plan is used, it is only used within the
+context of that plan, of which it will use internally available info.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Collector interface
@@ -15,11 +17,15 @@ typedef struct MM_Collector {
 	// private data of Collector
   	MM_Collector_Data_Priv 		data ;
   	
-  	// setup with a particular MM_Pages
-  	void			 			(*init)( struct MM_Collector* ) ;
+  	// private data still, but available for fast access ;
+  	// the current collected space
+  	MM_Space*					collectedSpace ;
   	
-  	// collect into new allocator
-  	void						(*collect)( struct MM_Collector*, MM_Allocator* alcr ) ;
+  	// setup with a particular MM_Pages
+  	void			 			(*init)( struct MM_Collector*, MM_Malloc* memmgt ) ;
+  	
+  	// collect
+  	void						(*collect)( struct MM_Collector* ) ;
   	
   	// tracing live pointers
   	

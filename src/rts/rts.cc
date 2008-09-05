@@ -88,7 +88,7 @@ void memorySetup()
     StackAreaLow = Stack;
     StackAreaHigh = Stack + STACKSIZE;
     
-    mm_init() ;
+    // mm_init() ;
 }
 %%]
 

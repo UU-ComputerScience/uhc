@@ -28,6 +28,16 @@ void mm_deque_Init( MM_DEQue* deque, MM_Malloc* memmgt ) {
 	deque->memMgt = memmgt ;
 }
 
+void mm_deque_Reset( MM_DEQue* deque ) {
+	MM_DLL* dll = deque->dll.next ;
+	for ( ; dll != &deque->dll ; ) {
+		MM_DLL* next = dll->next ;
+		deque->memMgt->free( dll ) ;
+		dll = next ;
+	}
+	mm_deque_Init( deque, deque->memMgt ) ;
+}
+
 void mm_deque_HeadExtend( MM_DEQue* deque ) {
 	MM_DEQue_PageHeader* buf = deque->memMgt->malloc( MM_DEQue_BufSize ) ;
 	mm_dll_InsertNext( &buf->dll, &deque->dll ) ;

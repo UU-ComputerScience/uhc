@@ -23,6 +23,8 @@ void mm_init() {
 	mm_init_pages() ;
 	mm_init_space() ;
 	mm_init_allocator() ;
+	mm_init_roots() ;
+	mm_init_traceSupply() ;
 	mm_init_trace() ;
 	mm_init_collector() ;
 	mm_init_mutator() ;

@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Trace: Group
+%%% Memory management: TraceSupply: Group
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Composite of Traces. Popping from the first onwards, pushing to the last.
+Composite of TraceSupplies. Popping from the first onwards, pushing to the last.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  defs & types
@@ -10,10 +10,9 @@ Composite of Traces. Popping from the first onwards, pushing to the last.
 
 %%[8
 // the administration
-typedef struct MM_Trace_Group_Data {
-	MM_FlexArray_Inx	popTraceInx ;
-	MM_FlexArray		subTraces ;
-} MM_Trace_Group_Data ;
+typedef struct MM_TraceSupply_Group_Data {
+	MM_FlexArray		subTraceSupplies ;
+} MM_TraceSupply_Group_Data ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,19 +25,20 @@ typedef struct MM_Trace_Group_Data {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void mm_trace_Group_Init( MM_Trace* ) ;
-extern void mm_trace_Group_InitWithSub( MM_Trace*, MM_FlexArray* subTraces ) ;
-extern Word mm_trace_Group_PopWork( MM_Trace*, Word* work, Word nrWorkWords ) ;
-extern void mm_trace_Group_PushWork( MM_Trace*, Word* work, Word nrWorkWords ) ;
-
 %%]
+extern void mm_traceSupply_Group_Init( MM_TraceSupply*, MM_Trace* ) ;
+extern void mm_traceSupply_Group_InitWithSub( MM_TraceSupply*, MM_Trace*, MM_FlexArray* subTraceSupplies ) ;
+extern void mm_traceSupply_Group_Reset( MM_TraceSupply* ) ;
+extern void mm_traceSupply_Group_Run( MM_TraceSupply* ) ;
+extern void mm_traceSupply_Group_PushWork( MM_TraceSupply*, Word* work, Word nrWorkWords ) ;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern MM_Trace mm_trace_Group ;
+extern MM_TraceSupply mm_traceSupply_Group ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,7 +47,7 @@ extern MM_Trace mm_trace_Group ;
 
 %%[8
 #ifdef TRACE
-extern void mm_trace_Group_Test() ;
+extern void mm_traceSupply_Group_Test() ;
 #endif
 %%]
 

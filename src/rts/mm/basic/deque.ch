@@ -125,6 +125,9 @@ extern Bool mm_deque_IsEmpty( MM_DEQue* deque ) ;
 // init with one buffer, prepared for writing at the tail end
 extern void mm_deque_Init( MM_DEQue* deque, MM_Malloc* memmgt ) ;
 
+// reset to initial state, deallocating buffers
+extern void mm_deque_Reset( MM_DEQue* deque ) ;
+
 // extend with 1 buffer at the head
 // assume: no write headroom left
 extern void mm_deque_HeadExtend( MM_DEQue* deque ) ;

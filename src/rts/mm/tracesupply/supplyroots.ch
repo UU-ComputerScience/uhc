@@ -1,10 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Trace: Buffer
+%%% Memory management: TraceSupply: Roots
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Trace which holds values in a buffer (DEQue). This is the main structure
-used to traverse the object graph and remember which objects yet have to
-be inspected.
+TraceSupply which runs over the values in mm_Roots
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  defs & types
@@ -12,9 +10,9 @@ be inspected.
 
 %%[8
 // the administration
-typedef struct MM_Trace_Buffer_Data {
-	MM_DEQue			deque ;
-} MM_Trace_Buffer_Data ;
+typedef struct MM_TraceSupply_Roots_Data {
+	MM_Trace*			trace ;
+} MM_TraceSupply_Roots_Data ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,11 +25,6 @@ typedef struct MM_Trace_Buffer_Data {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void mm_trace_Buffer_Init( MM_Trace* ) ;
-extern void mm_trace_Buffer_InitWithSub( MM_Trace*, MM_FlexArray* subTraces ) ;
-extern Word mm_trace_Buffer_PopWork( MM_Trace*, Word* work, Word nrWorkWords ) ;
-extern void mm_trace_Buffer_PushWork( MM_Trace*, Word* work, Word nrWorkWords ) ;
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +32,7 @@ extern void mm_trace_Buffer_PushWork( MM_Trace*, Word* work, Word nrWorkWords ) 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern MM_Trace mm_trace_Buffer ;
+extern MM_TraceSupply mm_traceSupply_Roots ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +41,7 @@ extern MM_Trace mm_trace_Buffer ;
 
 %%[8
 #ifdef TRACE
-extern void mm_trace_Buffer_Test() ;
+extern void mm_traceSupply_Roots_Test() ;
 #endif
 %%]
 

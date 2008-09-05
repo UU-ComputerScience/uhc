@@ -13,6 +13,20 @@ See XXX.
 %%[8
 // the administration
 typedef struct MM_Plan_SS_Data {
+	MM_Space			fragSpace0 ; 		// the 2 lower level spaces
+	MM_Space			fragSpace1 ;
+	MM_Space			space0 ; 			// the 2 semi spaces
+	MM_Space			space1 ;
+	MM_Space*			toSpace ;			// the active allocation space
+	MM_Space*			fromSpace ;			// the collected space
+	MM_Allocator		ssAllocator ;		// and its allocator
+	MM_Allocator		residentAllocator ;	// for allocations remaining resident/nonrelocated
+	MM_Mutator			mutator ;
+	MM_Collector		collector ;
+	MM_Malloc			memMgt ;
+	MM_TraceSupply*		queTraceSupply ;	// trace request queue
+	MM_TraceSupply		allTraceSupply ;	// all trace supplies grouped together
+	MM_Trace			gbmTrace ;			// GBM specific
 } MM_Plan_SS_Data ;
 %%]
 

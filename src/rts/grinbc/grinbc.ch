@@ -254,7 +254,8 @@ Node header layout
 Evaluation need: Yes, No, or blackhole (no evaluation, but when requested indicates a loop)
 
 %%[8
-#define GB_NodeNdEv_BlH					2			/* black hole */
+#define GB_NodeNdEv_Fwd					3			/* forwarding, only used during GC								*/
+#define GB_NodeNdEv_BlH					2			/* black hole													*/
 #define GB_NodeNdEv_Yes					1
 #define GB_NodeNdEv_No					0
 %%]

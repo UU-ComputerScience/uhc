@@ -254,7 +254,7 @@ void mm_pages_Buddy_Init( MM_Pages* buddyPages, MM_Malloc* memmgt ) {
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)memmgt->malloc( sizeof(MM_Pages_Buddy_Data) ) ;
 
 	// setup the free page lists to be empty
-	mm_flexArray_New( memmgt, &pgs->freePages, sizeof(MM_Pages_Buddy_FreePage), MM_Pages_Buddy_FreePages_Size ) ;
+	mm_flexArray_New( memmgt, &pgs->freePages, sizeof(MM_Pages_Buddy_FreePage), MM_Pages_Buddy_FreePages_Size, MM_Pages_Buddy_FreePages_Size ) ;
 	int i ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&pgs->freePages) ; i++ ) {
 		MM_Pages_Buddy_FreePage* fpg = mm_pages_Buddy_FreePage_At( &pgs->freePages, i ) ;
@@ -262,7 +262,7 @@ void mm_pages_Buddy_Init( MM_Pages* buddyPages, MM_Malloc* memmgt ) {
 	}
 
 	// setup 0 buddy groups
-	mm_flexArray_New( memmgt, &pgs->buddyGroups, sizeof(MM_BuddyGroup), 0 ) ;
+	mm_flexArray_New( memmgt, &pgs->buddyGroups, sizeof(MM_BuddyGroup), 0, 0 ) ;
 	
 	// set the initial group size
 	pgs->nextGroupNrPages = MM_Pages_Buddy_InitialGroupSize >> MM_Pages_MinSize_Log ;

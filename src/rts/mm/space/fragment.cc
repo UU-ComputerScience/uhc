@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Space: Plain
+%%% Memory management: Space: Fragment
 %%% see associated .ch file for more info.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -8,29 +8,30 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Plain internal functions
+%%% Fragment internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Plain page management interface
+%%% Fragment page management interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_space_Plain_Init( MM_Space* plainSpace, MM_Malloc* memmgt, MM_Pages* pages ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)memmgt->malloc( sizeof( MM_Space_Plain_Data ) ) ;
+void mm_space_Fragment_Init( MM_Space* fragmentSpace, MM_Malloc* memmgt, MM_Pages* pages ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)memmgt->malloc( sizeof( MM_Space_Fragment_Data ) ) ;
 	
-	mm_flexArray_New( memmgt, &spc->fragments, sizeof(MM_Space_Fragment), 5 ) ;
+	mm_flexArray_New( memmgt, &spc->fragments, sizeof(MM_Space_Fragment), 5, 0 ) ;
 	spc->pages = pages ;
 	spc->memMgt = memmgt ;
 	
-	plainSpace->data = (MM_Space_Data_Priv*)spc ;
+	fragmentSpace->data = (MM_Space_Data_Priv*)spc ;
+	// mm_Spaces_RegisterSpace( fragmentSpace ) ;
 }
 
-MM_Space_FragmentInx mm_space_Plain_GrowSpaceLog2( MM_Space* plainSpace, MM_Pages_LogSize szFragLog ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+MM_Space_FragmentInx mm_space_Fragment_GrowSpaceLog2( MM_Space* fragmentSpace, MM_Pages_LogSize szFragLog ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
 	MM_Space_FragmentInx frgInx = mm_flexArray_NewSlot( &spc->fragments ) ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
@@ -38,11 +39,12 @@ MM_Space_FragmentInx mm_space_Plain_GrowSpaceLog2( MM_Space* plainSpace, MM_Page
 	frg->sizeLog = szFragLog ;
 	frg->size = 1 << szFragLog ;
 
+	// mm_Spaces_RegisterSpaceFrame( fragmentSpace, frg ) ;
 	return frgInx ;
 }
 
-MM_Space_FragmentInx mm_space_Plain_GrowSpace( MM_Space* plainSpace, Word szFrag ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+MM_Space_FragmentInx mm_space_Fragment_GrowSpace( MM_Space* fragmentSpace, Word szFrag ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
 	MM_Space_FragmentInx frgInx = mm_flexArray_NewSlot( &spc->fragments ) ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
@@ -53,8 +55,8 @@ MM_Space_FragmentInx mm_space_Plain_GrowSpace( MM_Space* plainSpace, Word szFrag
 	return frgInx ;
 }
 
-void mm_space_Plain_DeallocFragment( MM_Space* plainSpace, MM_Space_FragmentInx fragmentInx ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+void mm_space_Fragment_DeallocFragment( MM_Space* fragmentSpace, MM_Space_FragmentInx fragmentInx ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, fragmentInx ) ;
 	
 	if ( frg->size > 0 ) {
@@ -64,73 +66,75 @@ void mm_space_Plain_DeallocFragment( MM_Space* plainSpace, MM_Space_FragmentInx 
 	}
 }
 
-void mm_space_Plain_DeallocSpace( MM_Space* plainSpace ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+void mm_space_Fragment_DeallocSpace( MM_Space* fragmentSpace ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	int i ;
 	
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&spc->fragments) ; i++ ) {
-		mm_space_Plain_DeallocFragment( plainSpace, i ) ;
+		mm_space_Fragment_DeallocFragment( fragmentSpace, i ) ;
 	}
 	mm_flexArray_Free( &spc->fragments ) ;
 	spc->memMgt->free( spc ) ;
 }
 
-MM_Space_FragmentInx mm_space_Plain_GetNrFragments( MM_Space* plainSpace ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+MM_Space_FragmentInx mm_space_Fragment_GetNrFragments( MM_Space* fragmentSpace ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	return mm_flexArray_SizeUsed(&spc->fragments) ;
 }
 
-MM_Space_Fragment* mm_space_Plain_GetFragment( MM_Space* plainSpace, MM_Space_FragmentInx fragmentInx ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+MM_Space_Fragment* mm_space_Fragment_GetFragment( MM_Space* fragmentSpace, MM_Space_FragmentInx fragmentInx ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, fragmentInx ) ;
 	return frg ;
 }
 
-MM_Pages* mm_space_Plain_GetPages( MM_Space* plainSpace ) {
-	MM_Space_Plain_Data* spc = (MM_Space_Plain_Data*)plainSpace->data ;
+MM_Pages* mm_space_Fragment_GetPages( MM_Space* fragmentSpace ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	return spc->pages ;
 }
 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Space Plain interface object
+%%% Space Fragment interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-MM_Space mm_space_Plain =
+MM_Space mm_space_Fragment =
 	{ NULL
-	, &mm_space_Plain_Init
-	, &mm_space_Plain_GrowSpaceLog2
-	, &mm_space_Plain_GrowSpace
-	, &mm_space_Plain_DeallocFragment
-	, &mm_space_Plain_DeallocSpace
-	, &mm_space_Plain_GetNrFragments
-	, &mm_space_Plain_GetFragment
-	, &mm_space_Plain_GetPages
+	, &mm_space_Fragment_Init
+	, MM_Undefined
+	, &mm_space_Fragment_GrowSpaceLog2
+	, &mm_space_Fragment_GrowSpace
+	, MM_Undefined
+	, &mm_space_Fragment_DeallocFragment
+	, &mm_space_Fragment_DeallocSpace
+	, &mm_space_Fragment_GetNrFragments
+	, &mm_space_Fragment_GetFragment
+	, &mm_space_Fragment_GetPages
 	} ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Plain Space dump
+%%% Fragment Space dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #ifdef TRACE
-mm_space_Plain_Dump( MM_Space* plainSpace ) {
+mm_space_Fragment_Dump( MM_Space* fragmentSpace ) {
 }
 #endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Plain Space test
+%%% Fragment Space test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #ifdef TRACE
 #define II 1000
 
-void mm_space_Plain_Test() {
+void mm_space_Fragment_Test() {
 }
 #endif
 %%]

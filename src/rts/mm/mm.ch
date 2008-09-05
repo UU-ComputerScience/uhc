@@ -52,9 +52,11 @@ Pages:
 - Buddy pages, on top of system malloc/free
 
 Fragment:
+- Implicitly as Pages part of a Space
 
 Space:
-- A plain implementation, offering growing+shrinking only
+- A multiple Fragment (discontiguous Pages) implementation, offering growing+shrinking only
+- CopySpace
 
 Increment:
 
@@ -76,24 +78,36 @@ therefore easy.
 %%% Imports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Order of imports is important because of usage dependencies between types.
+
 %%[8
 #include "config.h"
 #include "common.h"
+#include "basic/flexarray.h"
 #include "basic/dll.h"
 #include "basic/deque.h"
+#include "basic/rangemap.h"
 #include "pages.h"
 #include "space.h"
-#include "trace.h"
 #include "allocator.h"
+#include "roots.h"
 #include "collector.h"
+#include "trace.h"
+#include "tracesupply.h"
 #include "mutator.h"
 #include "plan.h"
 #include "pages/buddy.h"
-#include "space/plain.h"
+#include "space/fragment.h"
+#include "space/copyspace.h"
 #include "allocator/listoffree.h"
 #include "allocator/bump.h"
-#include "trace/buffer.h"
-#include "trace/group.h"
+#include "tracesupply/buffer.h"
+#include "tracesupply/group.h"
+#include "tracesupply/supplyroots.h"
+#include "gbm/gbmutator.h"
+#include "gbm/gbtrace.h"
+#include "gbm/gbtracesupregs.h"
+#include "gbm/gbtracesupstack.h"
 #include "semispace/sscollector.h"
 #include "semispace/ss.h"
 %%]

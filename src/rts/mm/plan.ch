@@ -16,6 +16,9 @@ typedef struct MM_Plan {
 	// private data of Plan
   	MM_Plan_Data_Priv 			data ;
   	
+	// private data of Plan, but included here for fast access
+  	// MM_Collector*	 			collector ;
+  	
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Plan* ) ;
   	

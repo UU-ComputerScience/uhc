@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Trace: Buffer
+%%% Memory management: TraceSupply: Buffer
 %%% see associated .ch file for more info.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -28,27 +28,42 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_trace_Buffer_Init( MM_Trace* trace ) {
-	MM_Trace_Buffer_Data* trgr = mm_malloc_LOF.malloc( sizeof(MM_Trace_Buffer_Data) ) ;
+void mm_traceSupply_Buffer_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) {
+	MM_TraceSupply_Buffer_Data* trgr = mm_malloc_LOF.malloc( sizeof(MM_TraceSupply_Buffer_Data) ) ;
+	trgr->trace = trace ;
 	mm_deque_Init( &trgr->deque, &mm_malloc_LOF ) ;
-	trace->data = (MM_Trace_Data_Priv*)trgr ;
+	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
 
-// unused
-void mm_trace_Buffer_InitWithSub( MM_Trace* trace, MM_FlexArray* subTraces ) {
-	mm_trace_Buffer_Init( trace ) ;
+void mm_traceSupply_Buffer_Reset( MM_TraceSupply* traceSupply ) {
+	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
+	mm_deque_Reset( &trgr->deque ) ;
 }
 
-Word mm_trace_Buffer_PopWork( MM_Trace* trace, Word* work, Word nrWorkWords ) {
-	MM_Trace_Buffer_Data* trgr = (MM_Trace_Buffer_Data*)trace->data ;
-	return mm_deque_HeadPop( &trgr->deque, work, nrWorkWords ) ;
+void mm_traceSupply_Buffer_Run( MM_TraceSupply* traceSupply ) {
+	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
+	MM_DEQue* q = &trgr->deque ;
+	
+	while ( ! mm_deque_IsEmpty( q ) ) {
+		Word avail ;
+		// get availability after each iteration step because new entries may have been added
+		for ( avail = mm_deque_HeadAvailRead( q ) ; avail > 0 ; avail = mm_deque_HeadAvailRead( q ) ) {
+			Word** objs ;
+			Word i ;
+			for ( i = 0, objs = (Word**)mm_deque_Head( q ) ; i < avail ; i++, objs++ ) {
+				// replace each entry pointed to by *objs
+				**objs = mm_Trace_TraceObject( trgr->trace, **objs ) ;
+			}
+			mm_deque_IncHeadOff( q, avail ) ;
+		}
+		mm_deque_HeadShrink( q ) ;
+	}
 }
 
-void mm_trace_Buffer_PushWork( MM_Trace* trace, Word* work, Word nrWorkWords ) {
-	MM_Trace_Buffer_Data* trgr = (MM_Trace_Buffer_Data*)trace->data ;
+void mm_traceSupply_Buffer_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords ) {
+	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
 	mm_deque_TailPush( &trgr->deque, work, nrWorkWords ) ;
 }
-
 
 %%]
 
@@ -57,12 +72,13 @@ void mm_trace_Buffer_PushWork( MM_Trace* trace, Word* work, Word nrWorkWords ) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-MM_Trace mm_trace_Buffer =
+MM_TraceSupply mm_traceSupply_Buffer =
 	{ NULL
-	, &mm_trace_Buffer_Init
-	, &mm_trace_Buffer_InitWithSub
-	, &mm_trace_Buffer_PopWork
-	, &mm_trace_Buffer_PushWork
+	, &mm_traceSupply_Buffer_Init
+	, MM_Undefined
+	, &mm_traceSupply_Buffer_Reset
+	, &mm_traceSupply_Buffer_Run
+	, &mm_traceSupply_Buffer_PushWork
 	} ;
 %%]
 
@@ -72,7 +88,7 @@ MM_Trace mm_trace_Buffer =
 
 %%[8
 #ifdef TRACE
-mm_trace_Buffer_Dump( MM_Trace* trace ) {
+mm_traceSupply_Buffer_Dump( MM_TraceSupply* traceSupply ) {
 }
 #endif
 %%]
@@ -83,7 +99,7 @@ mm_trace_Buffer_Dump( MM_Trace* trace ) {
 
 %%[8
 #ifdef TRACE
-void mm_trace_Buffer_Test() {
+void mm_traceSupply_Buffer_Test() {
 }
 #endif
 %%]

@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Collector: SS
+%%% Memory management: Trace: GBM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The companion to the SS Plan.
+Doc
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  defs & types
@@ -10,8 +10,10 @@ The companion to the SS Plan.
 
 %%[8
 // the administration
-typedef struct MM_Collector_SS_Data {
-} MM_Collector_SS_Data ;
+typedef struct MM_Trace_GBM_Data {
+	MM_TraceSupply*		traceSupply ;
+	MM_Allocator*		copyAllocator ;
+} MM_Trace_GBM_Data ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,13 +27,15 @@ typedef struct MM_Collector_SS_Data {
 
 %%[8
 %%]
+extern void mm_trace_GBM_Init( MM_Trace* trace, void* traceSupply, MM_Allocator* allocator, MM_Collector* collector ) ;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern MM_Collector mm_collector_SS ;
+extern MM_Trace mm_trace_GBM ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +44,7 @@ extern MM_Collector mm_collector_SS ;
 
 %%[8
 #ifdef TRACE
-extern void mm_collector_SS_Test() ;
+extern void mm_trace_GBM_Test() ;
 #endif
 %%]
 

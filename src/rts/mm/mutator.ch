@@ -19,7 +19,7 @@ typedef struct MM_Mutator {
   	void			 			(*init)( struct MM_Mutator* ) ;
   	
   	// scan runtime object, add new objects to be traced to trace
-  	void						(*scanObject)( struct MM_Mutator*, MM_Trace* trace ) ;
+  	void						(*scanObject)( struct MM_Mutator*, MM_TraceSupply* trace ) ;
 } MM_Mutator ;
 %%]
 
