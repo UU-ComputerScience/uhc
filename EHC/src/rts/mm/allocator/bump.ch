@@ -16,10 +16,10 @@ Bumping goes from high to low addresses, so as to avoid holding a result in some
 // the administration
 typedef struct MM_Allocator_Bump_Data {
 	MM_Space*				space ;
-	MM_Space_FragmentInx	fragmentAfterFree ;	// after last free fragment
 	Word					addrCursorFree ;	// cursor free location
 	Word					addrFirstFree ;		// first free location
-	Word					maxFragments ;		// max fragments allocated before GC is triggered
+	MM_Space_FragmentInx	curFragmentInx ;	// current fragment used for alloc
+	MM_Space_FragmentInx	maxFragments ;		// max fragments allocated before GC is triggered
 } MM_Allocator_Bump_Data ;
 %%]
 
@@ -28,6 +28,7 @@ typedef struct MM_Allocator_Bump_Data {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+// this may trigger GC
 extern Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz ) ;
 %%]
 
@@ -59,15 +60,10 @@ static inline Ptr mm_allocator_Bump_Alloc_FromCursor( MM_Allocator_Bump_Data* al
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern void mm_allocator_Bump_Init( MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
-
-// assumptions:
-// (1) sz <= MM_Pages_MinSize, i.e. we do not need to cater for large objects
-// (2) sz % Word_SizeInBytes == 0, i.e. we do not need to align the size
-extern Ptr mm_allocator_Bump_Alloc( MM_Allocator*, Word sz ) ;
-
-extern void mm_allocator_Bump_Dealloc( MM_Allocator*, Ptr ptr ) ;
 %%]
+extern void mm_allocator_Bump_Init( MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
+extern Ptr mm_allocator_Bump_Alloc( MM_Allocator*, Word sz ) ;
+extern void mm_allocator_Bump_Dealloc( MM_Allocator*, Ptr ptr ) ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object

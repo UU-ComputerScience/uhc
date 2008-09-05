@@ -23,8 +23,9 @@ typedef struct MM_Allocator {
 	// private data of Allocator
   	MM_Allocator_Data_Priv 		data ;
   	
-  	// setup with a particular MM_Pages
+  	// setup with a particular MM_Space
   	void			 			(*init)( struct MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
+  	void			 			(*resetWithSpace)( struct MM_Allocator*, MM_Space* space ) ;
   	
   	// allocation
   	Ptr 						(*alloc)( struct MM_Allocator*, Word sz ) ;

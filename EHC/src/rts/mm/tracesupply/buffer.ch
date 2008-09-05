@@ -1,8 +1,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Collector: SS
+%%% Memory management: TraceSupply: Buffer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-The companion to the SS Plan.
+TraceSupply which holds values in a buffer (DEQue). This is the main structure
+used to traverse the object graph and remember which objects yet have to
+be inspected.
+
+The buffer holds the locations of traceable objects, that is, not the objects themselves.
+This is to be able to modify these locations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  defs & types
@@ -10,8 +15,10 @@ The companion to the SS Plan.
 
 %%[8
 // the administration
-typedef struct MM_Collector_SS_Data {
-} MM_Collector_SS_Data ;
+typedef struct MM_TraceSupply_Buffer_Data {
+	MM_DEQue			deque ;
+	MM_Trace*			trace ;
+} MM_TraceSupply_Buffer_Data ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,13 +32,19 @@ typedef struct MM_Collector_SS_Data {
 
 %%[8
 %%]
+extern void mm_traceSupply_Buffer_Init( MM_TraceSupply*, MM_Trace* ) ;
+extern void mm_traceSupply_Buffer_InitWithSub( MM_TraceSupply*, MM_Trace*, MM_FlexArray* subTraceSupplies ) ;
+extern void mm_traceSupply_Buffer_Reset( MM_TraceSupply* ) ;
+extern void mm_traceSupply_Buffer_Run( MM_TraceSupply* ) ;
+extern void mm_traceSupply_Buffer_PushWork( MM_TraceSupply*, Word* work, Word nrWorkWords ) ;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern MM_Collector mm_collector_SS ;
+extern MM_TraceSupply mm_traceSupply_Buffer ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +53,7 @@ extern MM_Collector mm_collector_SS ;
 
 %%[8
 #ifdef TRACE
-extern void mm_collector_SS_Test() ;
+extern void mm_traceSupply_Buffer_Test() ;
 #endif
 %%]
 

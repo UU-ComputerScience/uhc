@@ -137,6 +137,7 @@ void mm_allocator_LOF_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 MM_Allocator mm_allocator_LOF =
 	{ NULL
 	, &mm_allocator_LOF_Init
+	, MM_Undefined
 	, &mm_allocator_LOF_Alloc
 	, &mm_allocator_LOF_Dealloc
 	} ;

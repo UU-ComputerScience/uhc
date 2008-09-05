@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Collector: SS
+%%% Memory management: TraceSupply: GBStack
 %%% see associated .ch file for more info.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -8,81 +8,79 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS internal defs
+%%% GBStack internal defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS internal functions
+%%% GBStack internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS internal functions, but still externally visible (because of inlining)
+%%% GBStack internal functions, but still externally visible (because of inlining)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS interface
+%%% GBStack interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_collector_SS_Init( MM_Collector* collector, MM_Malloc* memmgt ) {
-	// MM_Collector_SS_Data* colss = memmgt->malloc( sizeof(MM_Collector_SS_Data) ) ;
-		
-	// collector->data = (MM_Collector_Data_Priv*)colss ;
+void mm_traceSupply_GBStack_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) {
+	MM_TraceSupply_GBStack_Data* trgr = mm_malloc_LOF.malloc( sizeof(MM_TraceSupply_GBStack_Data) ) ;
+	trgr->trace = trace ;
+	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
 
-void mm_collector_SS_collect( MM_Collector* collector ) {
-	// MM_Collector_SS_Data* colss = (MM_Collector_SS_Data*)collector->data ;
+void mm_traceSupply_GBStack_Reset( MM_TraceSupply* traceSupply ) {
+	// nothing to be done
+}
+
+void mm_traceSupply_GBStack_Run( MM_TraceSupply* traceSupply ) {
+	MM_TraceSupply_GBStack_Data* trgr = (MM_TraceSupply_GBStack_Data*)traceSupply->data ;
 	
-	// we know we are part of an ss plan
-	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(mm_plan.data) ;
-	// swap spaces
-	SwapPtr( MM_Space*, plss->toSpace, plss->fromSpace ) ;
-	// tell this to the allocator
-	plss->ssAllocator.resetWithSpace( &plss->ssAllocator, plss->toSpace ) ;
-	// the old one is to be collected
-	collector->collectedSpace = plss->fromSpace ;
-	// run the tracing of objects
-	plss->allTraceSupply.run( &plss->allTraceSupply ) ;
-
-		
+	WPtr s ;
+	for ( s = sp ; s < (WPtr)StackAreaHigh ; s++ ) {
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
+	}
 }
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS interface object
+%%% GBStack interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-MM_Collector mm_collector_SS =
+MM_TraceSupply mm_traceSupply_GBStack =
 	{ NULL
-	, NULL
-	, &mm_collector_SS_Init
-	, &mm_collector_SS_collect
+	, &mm_traceSupply_GBStack_Init
+	, MM_Undefined
+	, &mm_traceSupply_GBStack_Reset
+	, &mm_traceSupply_GBStack_Run
+	, MM_Undefined
 	} ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS dump
+%%% GBStack dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #ifdef TRACE
-mm_collector_SS_Dump( MM_Collector* collector ) {
+mm_traceSupply_GBStack_Dump( MM_TraceSupply* traceSupply ) {
 }
 #endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% SS test
+%%% GBStack test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #ifdef TRACE
-void mm_collector_SS_Test() {
+void mm_traceSupply_GBStack_Test() {
 }
 #endif
 %%]
