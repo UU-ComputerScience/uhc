@@ -1,17 +1,30 @@
 %%[chapter
 \chapter{Future Work}
 \label{cha:future-work}
-\todo{getresult}
-\section{Introduction}
-\begin{itemize}
-  \item We investigate further improvements on design and efficiency
-  \item the rationale behind it, the expected complexity
-  \item Lack the implementation
-\end{itemize}
+The contributions of this thesis introduce several opportunities for further research. The implementation of the LLVM backend is naive regarding some aspects and it allows for serveral improvements. In this chapter, we discuss three types of opportunities: design improvements (\refS{sec:future-work-design}), efficiency improvements (\refS{sec:future-work-efficiency}), and new features (\refS{sec:future-work-new}). For each opportunity, we explore the current situation, identify the problem, discuss an alternative, and estimate the impact on the compiler.
 
 \section{Design}
+\label{sec:future-work-design}
+The implementation of the LLVM backend (\refC{cha:implementation}) gives us insight in the implementation requirements for a EHC code generator. In this section, we discuss a design change to EHC that simplifies the implementation of a new EHC code generator. 
+
+\subsection{Promote type inference to the Silly stage}
+\subsubsection{Current situation}
+As types are earased early in the EHC pipeline, all languages of the backend are untyped. This requires us to inference types in the backend when we generate strongly typed code. Currently, the type inferencing is performed by the code generator, so the C and LLVM code generator both have a seperate type inferencer embedded in the code generation.
+
+\subsubsection{Code reuse}
+As mentioned in \refS{sec:imple-diff-c-and-llvm}, the C and LLVM type inferencing are similar, but share no code. This means we have two code bases for similar algorithms, having two possible bug sources. If we add another code generator to EHC, again we have to implement a type inferencer and again introduce a possible source of bugs. Furthermore, if we are interested in the soundness of the type system, we have to prove it for all code generators. The multiple Silly type inference code bases make it hard to reason about it and extend the compiler with a code generator.
+
+\subsubsection{General Silly type inferencing}
+An elegant solution for the multiple Silly type inferencers is lifting the process from the code generation to the Silly phase. This requires changes to make the process more general, in contrast to the current language specific inferencing. The LLVM implementation is a good starting point, but a general Silly type inferencer requires investigation on the following additional subjects:
+\begin{itemize}
+  \item The typing must be language neutral. The types inferred must be applicable to a large amount of possible target languages.
+  \item Types are usable for catching errors in Silly to Silly transformations. This requires us to transform Silly types when the transformation requires it, but could be very worthwhile. 
+  \item There is very little know about the Silly type system. With a general Silly type system in place, we are able to prove properties about it.  
+\end{itemize}
 
 \section{Efficiency}
+\label{sec:future-work-efficiency}
+In this section, we list the opportunities for generating more efficient LLVM code. The performance gain of the optimizations is unkown to us (see \refS{sec:tracing-and-debugging}) and we cursious to see if more gain can be obtained from the LLVM code.
 
 \subsection{Returning nodes}
 \subsubsection{Current situation}
@@ -32,7 +45,7 @@ The return strategy of Silly allows languages without support for multiple retur
 
 The target language's compiler is unable to relate the \texttt{RP} node with the return value of a function. The assignment of values to the global \texttt{RP} node is regarded as a regular assignment to a global variable. Often compilers do not trace the values that possibly reside at a memory location, but do trace possible return values of a function. This information gives the compiler the opportunity to generated more efficient code for the call location. We reduce the optimization opportunities by using returning nodes via the global \texttt{RP} node.
 
-As a second consequence of the return stategy, nodes are always returned via memory and never via registers. Access to memory is expensive compared to register access. For this reason, efficient calling conventions pass parameters and return values in registers. For example, the x86\_64 application binary interface~\cite{amd64:07} reserves two registers for returning integer values. These registers offer enough space to return a 2 |GrWord| node. Returning nodes via memory makes function calls more expensive than needed.
+As a second consequence of the return stategy, nodes are always returned via memory and never via registers. Access to memory is expensive compared to register access. For this reason, efficient calling conventions pass parameters and return values in registers. For example, the x86-64 application binary interface~\cite{amd64:07} reserves two registers for returning integer values. These registers offer enough space to return a 2 |GrWord| node. Returning nodes via memory makes function calls more expensive than needed.
 
 \subsubsection{Alternative strategy}
 
@@ -45,15 +58,40 @@ As a second consequence of the return stategy, nodes are always returned via mem
 \refF{fig:llvm-multiple-return-values-MRV} illustrates a way to eliminate the global \texttt{RP} node from the generated LLVM code by using multiple return values. Every function that returns a node, changes from returning \texttt{void} to returning a structure that is large enough to contain the largest possible return node. Furthermore, the body of the function is wrapped by an entry and an exit code block. The entry block allocates the return structure (\texttt{\%RP}) locally and defines a shortcut for each element of the structure (\verb!%RP.0! and \verb!%RP.1!). Later optimizations of the LLVM compiler promote the stack allocation to virtual registers to avoid memory access. The exit block loads the elements of the structure into virtual registers and returns the values with a \texttt{ret} instruction. The actual writing of the values to the structure is performed in the body of the function, by the \texttt{store} instructions. Obtaining values from returned structures, not shown in the example, is possible with the \texttt{getresult} instruction. With this return stategy, the return node is recognized as return value from a function and memory access is eliminated in favor of register access.
 
 \subsubsection{Expected impact}
-The alternative node return strategy impacts the EHC compiler in the following aspects:
+We expect the alternative node return strategy to impact the EHC compiler in the following aspects:
 \begin{itemize}
   \item The LLVM type inference needs adjustments to allow the multiple return stategy. As the Silly functions are changed to return values, the typing of functions changes. Furthermore, virtual registers are generated for binding a function's return value, and these registers need typing. Function types are easy computable from the body of the function and the existing function signatures abstract syntax nodes allready have a return type attribute. To support the alternative return strategy, only minor adjustments are needed for the type inference. 
   \item Changes to the instruction selection algorithm are required to output the correct instructions. As the changes are only needed for reading or writing to the \texttt{RP} node, only minor changes are required.  
 \end{itemize}
 
+\subsection{LLVM assembly variant of the runtime system}
+\subsubsection{Current situation}
+In \refS{sec:impl-rts}, we discussed the services provided by the runtime system and its architecture. The architecture allows us to write parts of the runtime system in the programming language that is most suitable for the service if it is able to interface with C. Currently all modules of the runtime system are directly implemented in C. The runtime system is compilated separately from the Haskell programs and the system linker combines the two object files in one executable.
 
-\subsection{Eliminating store/reads}
-\begin{itemize}
-  \item Eliminating store/reads.
-\end{itemize}
+\subsubsection{Inefficiency}
+The most important part of the runtime system are the primitive functions. These small functions are critical for the Haskell programs, as they contain functions to perform comparisons and arithmetic. Haskell programs call these functions often, for example the Fibonnaci running example used through this thesis calls the primitive functions \texttt{primAddInt}, \texttt{primSubInt}, and \texttt{primEqInt}. As these functions are called often, their efficiency is very important.
+
+\begin{figure}[htbp]
+  \lstinputlisting[style={figureLstFootnote}, language={LLVM}]{PrimitiveInline-No.ll}
+  \caption{LLVM code generated for the Haskell program |main = 6 * 9| (simplified)}
+  \label{fig:llvm-primitiveinline-no}
+\end{figure}
+
+The primitive functions are more effective if they are visible for the LLVM compiler. Currently the LLVM compiler treats calls to primitive functions as black boxes, having no information about the semantics of the function and the possible values it returns. The effect of this lack of information is illustrated by \refF{fig:llvm-primitiveinline-no}. The \texttt{primMulInt} function multiplies two integers. If the content of this primitive function was known to the LLVM compiler, then the example would eliminate the constant multiplication and directly store 54 in \texttt{RP[0]}. Primitive functions transparant for the LLVM compiler eliminates function calls and give extra opportunity for optimization.
+
+\subsubsection{Alternative strategy and expected impact}
+A possible alternative is generating LLVM assembly code for the runtime code. Having 2 seperate code bases for the runtime system is undesired, but generation of different variants of a common representation solves the problem. The LLVM compiler infrastructure includes a GCC drop-in replacement tool\todo{ref to llvm-gcc}, which generates LLVM assembly from C source files. With this tool, a LLVM assembly variant of the current runtime can be generated and used by the LLVM compiler to further optimize the executables. Still, this tool is not enough when the runtime is extended with non-C code.
+
+For the GCC drop-in replacement tool alternative, the expected inpact is minor, as the biggest change is required in the make\todo{ref make} files of the EHC project. Converting non-C code to LLVM is much more work, but is no major impact on the compiler itself.
+
+\section{New features}
+\label{sec:future-work-new}
+
+\subsection{Profiling and debugging}
+\label{sec:tracing-and-debugging}
+After the initial implementation of the LLVM backend, we used some Haskell test programs to validate the generated code. When executed, the compiled test programs would often segfault or be terribly slow and thus we had to debug the code generation. Debugging the generated code is a difficult process, as only a few lines of Haskell explode to more than hunderd lines of generated code. In this section, we discuss features that, if added to EHC, makes the debugging and profiling process of generated code easier.
+
+Debugging generated code is hard. When the generated code contains a compile time error, the error message is given in terms of the generated code and not in terms of Silly, or an other language used in the EHC compiler. Then the developer has to trace back the error message to the Silly language and try to discover where the bug is located. Runtime errors are even more difficult, as the program at best segfaults. Often the location where the prgram crashes is not the cause of the error and a long debugging session on assembly code is required to trace the problem. This problem would be reduced if proper debugging support is available in EHC. Some work is performed to make stepping through code possible (\todo{ref Holger}), but other desired functions would be heap snapshots and mappings from generated code to intermediate code.  
+
+There are executables that are semantically correct but use more execution time than expected. Currently, it is hard to determine which part of the executable is responsible for the long execution time. When in need of profiling information, one can use callgrind, a tool based on the valgrind(\todo{ref valgrind}) framework. This tool measures the time spend in each function, but is only available on linux and thus not useful when more information than time is required or profiling is needed for the other supported platforms. A good example of the imporance of profiling information was given in \refS{sec:results-execution-time}, as we were unable to explain why the execution time needed by the garbage collector is not equal for the C and LLVM backend . An EHC profiling framework, for example comparable to GHC's profiling framework, is an alternative that can help to explain this garbage collection behaviour. 
 %%]
