@@ -210,8 +210,8 @@
 }
 
 @Article{monteiro:05,
-  author =       "M. Monteiro and M. Ara\'ujo and R. Borges and A.
-                 Santos",
+  author =      {M. Monteiro and M. Ara\'ujo and R. Borges and A.
+                 Santos},
   title =        "Compiling Non­strict Functional Languages for the
                  .{NET} Platform",
   abstract =     "In this work, we propose a compilation strategy for
@@ -247,10 +247,11 @@
 }
 
 @techreport{amd64:07,
-  title = {{System V Application Binary Interface -- AMD64 Architecture Processor Supplement}},
-  month = "December",
-  year = "2007",
-  note = "Available at: \url{http://www.x86-64.org/documentation.html}",
+  title  = {{System V Application Binary Interface -- AMD64 Architecture Processor Supplement}},
+  month  = "December",
+  year   = "2007",
+  note   = "Available at: \url{http://www.x86-64.org/documentation.html}",
+  author = {M. Matz and J. Hubi\v{c}ka and A. Jaeger and M. Mitchell}, 
 }
 
 @misc{dotgnu:07,
@@ -353,6 +354,15 @@
   number = 	 {UCAM-CL-TR-606}
 }
 
+@inproceedings{nethercote:07,
+  author    = {N. Nethercote and J. Seward}, 
+  title     = {Valgrind: A Framework for Heavyweight Dynamic Binary Instrumentation},
+  booktitle = {PLDI '07: Proceedings of the 2007 ACM SIGPLAN Conference on Programming Language Design and Implementation}, 
+  year      = {2007},
+  month     = {June},
+  address   = {San Diego, California, USA},
+}
+
 @inproceedings{cheadle:00,
  author = {A. M. Cheadle and A. J. Field and S. Marlow and S. Peyton Jones and R. L. While},
  title = {Non-stop Haskell},
@@ -411,9 +421,37 @@
 }
 
 @inproceedings{fokker:07,
-	author = {Atze Dijkstra and Jeroen Fokker and S. Doaitse Swierstra},
+	author = {A. Dijkstra and J Fokker and S. Doaitse Swierstra},
 	title = {The Structure of the Essential Haskell Compiler, or Coping with Compiler Complexity},
     booktitle = {IFL '07: Proceedings of the 19th International Symposium on Implementation and Application of Functional Languages},
     year = {2007},
     pages = {107--122},
+}
+
+@InProceedings{latadv:03,
+    Author    = {C. Lattner and V. Adve},
+    Title     = "{Architecture for a Next-Generation GCC}",
+    Booktitle = "{Proc. First Annual GCC Developers' Summit}",
+    Address   = {Ottawa, Canada},
+    Month     = {May},
+    Year      = {2003},
+    URL       = {http://llvm.cs.uiuc.edu/pubs/2003-05-01-GCCSummit2003.html}
+  }
+
+@manual{make:06,
+  title        = "{GNU Make Manual}",
+  organization = {Free Software Foundation}, 
+  edition      = {0.70}, 
+  month        = {April}, 
+  year         = {2006},
+  note         = {Available at: \url{http://www.gnu.org/software/make/}}
+}
+
+@manual{gcc:08,
+  title        = "{GNU GCC Manual}",
+  organization = {Free Software Foundation}, 
+  edition      = {4.3.2}, 
+  month        = {August}, 
+  year         = {2008},
+  note         = {Available at: \url{http://gcc.gnu.org/}}
 }
