@@ -1,7 +1,7 @@
 %%[chapter
 \chapter{Implementation}
 \label{cha:implementation}
-In the previous chapters we discussed the generation of Silly (\refS{sec:ehc-silly}) from Haskell source. In order to generate executables from Silly code, we add a backend that outputs Low Level Virtual Machine (LLVM) assembly to EHC. In this chapter, we discuss the generation of LLVM code from a Silly abstract syntax tree (AST). In particular, we look at the representation of closures in the generated code (\refS{sec:impl-memory-representation}), the transformation from Silly to LLVM assembly (\refS{sec:impl-silly2llvm}), and the runtime system used (\refS{sec:impl-rts}).  
+In the previous chapters we discussed the generation of Silly (\refS{sec:ehc-silly}) from Haskell source. In order to generate executables from Silly code, we add a backend that outputs Low Level Virtual Machine (LLVM) assembly to EHC. In this chapter, we discuss the generation of LLVM code from a Silly abstract syntax tree (AST). In particular, we look at the representation of closures in the generated code (\refS{sec:impl-memory-representation}), the transformation from Silly to LLVM assembly (\refS{sec:impl-silly2llvm}), and the runtime system used (\refS{sec:impl-rts}).
 
 \section{Implementation of GRIN nodes}
 \label{sec:impl-memory-representation}
@@ -45,7 +45,7 @@ Each Silly statement can be typed without contextual information like a typing e
 
   \item Function arguments are of the type |GrWord| and the function is responsible for casting a parameter to a |GrWord*| if needed. 
 
-The choice to pass all parameters as |GrWord| types is because of an option in  Silly to manage its own call stack (note: this option is disabled when generating LLVM code). The Silly call stack is defined in the runtime system as an array of |GrWord| elements. Function parameters have the |GrWord| type to avoid casts when pushing function arguments on the stack.  
+The choice to pass all parameters as |GrWord| types is because of an option in Silly to manage its own call stack (note: this option is disabled when generating LLVM code). The Silly call stack is defined in the runtime system as an array of |GrWord| elements. Function parameters have the |GrWord| type to avoid casts when pushing function arguments on the stack.  
 
   \item Function calls can be either a statement or a value. The statement function call is used for calling other Silly functions. These functions always have the return type |Void|, as they return values in the global RP array (\refS{sec:ehc-silly}).
 
@@ -54,7 +54,7 @@ Value function calls are calls to foreign functions. These functions use the pla
   \item Constant integers and tags are of the type |GrWord|.
 \end{itemize}
 
-For a semantically correct abstract syntax tree of a Silly statement, each leaf of the tree matches with one of the above cases. Each other element in the tree is typeable with the types of its children and knowledge about the node itself. An example of this process is shown in \refF{fig:silly-type-example} where we type the  values, variables, and constants of the Silly statement \texttt{i4 := foreign call primSubInt(x78, p1[1]);}. This statement assigns the return value of the primSubInt call to the local variable \texttt{i4}. The first parameter of the foreign function call is the local variable \texttt{x78}, whereas the second parameter is the first payload field of parameter \texttt{p1} .In \refF{fig:silly-type-example} we show the abstract syntax tree of the statement in boxes and the synthesized type attribute $\tau$ in circles.
+For a semantically correct abstract syntax tree of a Silly statement, each leaf of the tree matches with one of the above cases. Each other element in the tree is typeable with the types of its children and knowledge about the node itself. An example of this process is shown in \refF{fig:silly-type-example} where we type the values, variables, and constants of the Silly statement \texttt{i4 := foreign call primSubInt(x78, p1[1]);}. This statement assigns the return value of the primSubInt call to the local variable \texttt{i4}. The first parameter of the foreign function call is the local variable \texttt{x78}, whereas the second parameter is the first payload field of parameter \texttt{p1}. In \refF{fig:silly-type-example} we show the abstract syntax tree of the statement in boxes and the synthesized type attribute $\tau$ in circles.
 
 \begin{figure}[tbhp]
   \begin{centering}

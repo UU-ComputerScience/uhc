@@ -41,7 +41,7 @@
 
 \usepackage[pdftex,a4paper,colorlinks,
             pdfauthor={John van Schie},
-            pdftitle={Functional LLVM},
+            pdftitle={Compiling Haskell To LLVM},
             pdfborder={0 0 0},
             citecolor=black,
             filecolor=black,
