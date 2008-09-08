@@ -36,7 +36,7 @@ A compilation process can be modeled as a pipeline. The start of the pipeline is
 
 The LLVM Assembly language benefits from the preparations performed by Silly, so we embed the LLVM code generator after Silly in the pipeline. The external LLVM Assembly compiler performs the compilation of the program to a native executable.
 
-In the following sections, we discuss the Essential Haskell, Core~(\refS{sec:ehc-core}), GRIN~(\refS{sec:ehc-grin}), and Silly~(\refS{sec:ehc-silly}) phases in more detail because they influence the LLVM code generator. Please note that we aim to give enough information of each language to understand the generated code and not describe the languages in detail.  
+In the following sections, we discuss Essential Haskell, Core~(\refS{sec:ehc-core}), GRIN~(\refS{sec:ehc-grin}), and Silly~(\refS{sec:ehc-silly}) phases in more detail because they influence the LLVM code generator. Please note that we aim to give enough information of each language to understand the generated code and not describe the languages in detail.  
 
 \subsection{Running example}
 In this thesis, we illustrate the EHC pipeline by threading the program shown in \refF{fig:fib-hs} through the pipeline. The program computes the 33$^{th}$ Fibonacci number (3,524,578) with an inefficient direct non tail recursive function. The example is small and uses only simple arithmetic on the |Int| data type and thus is compatible with the EHC version 8 compiler. This keeps the generated code free of complicated code introduced by advanced features from higher variants.
