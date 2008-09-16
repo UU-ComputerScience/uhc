@@ -96,6 +96,29 @@ MM_Pages* mm_space_Fragment_GetPages( MM_Space* fragmentSpace ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fragment Space dump
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_space_Fragment_Dump( MM_Space* fragmentSpace ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
+
+	printf( ">------------------------> MM_Space: Fragment: space=%x spc=%x\n", fragmentSpace, spc ) ;
+
+	int i ;
+	for ( i = 0 ; i < mm_flexArray_SizeUsed(&spc->fragments) ; i++ ) {
+		MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, i ) ;
+		printf( "  Frg %x: frag=%x size=%x\n", i, frg->frag, frg->size ) ;
+	}
+
+	printf( "<------------------------< MM_Space: Fragment\n" ) ;
+
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Space Fragment interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -112,18 +135,10 @@ MM_Space mm_space_Fragment =
 	, &mm_space_Fragment_GetNrFragments
 	, &mm_space_Fragment_GetFragment
 	, &mm_space_Fragment_GetPages
-	} ;
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fragment Space dump
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
 #ifdef TRACE
-mm_space_Fragment_Dump( MM_Space* fragmentSpace ) {
-}
+	, &mm_space_Fragment_Dump
 #endif
+	} ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

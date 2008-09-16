@@ -27,9 +27,9 @@ RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan \
 									mm/pages/buddy \
-									mm/tracesupply/group mm/tracesupply/buffer mm/tracesupply/supplyroots \
+									mm/tracesupply/group mm/tracesupply/buffer mm/tracesupply/bumpsupply mm/tracesupply/supplyroots \
 									mm/space/fragment mm/space/copyspace \
-									mm/semispace/ss mm/semispace/sscollector \
+									mm/semispace/ss mm/semispace/sscollector mm/semispace/gbssmutator \
 									mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack \
 									mm/allocator/listoffree mm/allocator/bump \
 								)
@@ -41,10 +41,10 @@ RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan \
 									mm/pages/buddy \
-									mm/tracesupply/group mm/tracesupply/buffer mm/tracesupply/supplyroots \
+									mm/tracesupply/group mm/tracesupply/buffer mm/tracesupply/bumpsupply mm/tracesupply/supplyroots \
 									mm/space/fragment mm/space/copyspace \
-									mm/semispace/ss mm/semispace/sscollector \
-									mm/gbm/gbmutator mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack \
+									mm/semispace/ss mm/semispace/sscollector mm/semispace/gbssmutator \
+									mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack \
 									mm/allocator/listoffree mm/allocator/bump \
 								)
 MAIN_C_MAIN_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,mainSil)

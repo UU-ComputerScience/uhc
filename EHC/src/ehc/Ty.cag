@@ -1016,8 +1016,30 @@ tyRecExts2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% General purpose decomposition + reconstruction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11 hs export(tyDecomposeMk)
+tyDecomposeMk    :: Ty -> (Ty, TyL, Ty -> TyL -> Ty)
+tyDecomposeMk t
+  = case t of
+      Ty_Quant q v t' -> (f,as,\f' as' -> Ty_Quant q v $ mk f' as')
+                      where (f,as,mk) = tyDecomposeMk t'
+      Ty_App _ _      -> (f,as,\f' as' -> mkApp (f':as'))
+                      where (f,as) = tyAppFunArgs t
+      Ty_Ext _ _ _    -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
+                      where (r,e) = tyRowExts t
+      _               -> (t,[],const)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Canonical ordering of fields of record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11 hs export(tyRowIsCanonOrdered)
+tyRowIsCanonOrdered :: AssocL HsName a -> Bool
+tyRowIsCanonOrdered = isSortedByOn rowLabCmp fst
+%%]
 
 %%[7 hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn,tyRowCanonLblOrder)
 rowLabCmp :: HsName -> HsName -> Ordering

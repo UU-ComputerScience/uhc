@@ -31,9 +31,17 @@ typedef struct MM_Allocator {
   	Ptr 						(*alloc)( struct MM_Allocator*, Word sz ) ;
   	void 						(*dealloc)( struct MM_Allocator*, Ptr ptr ) ;
   	
+  	// info
+  	Ptr 						(*lastAllocLocation)( struct MM_Allocator* ) ;
+
   	// tracing live pointers
   	
   	// collection
+  	
+#ifdef TRACE
+  	// dumping info
+  	void 						(*dump)( struct MM_Allocator* ) ;
+#endif
 } MM_Allocator ;
 %%]
 

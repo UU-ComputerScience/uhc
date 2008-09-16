@@ -54,7 +54,7 @@ Pointer Stack, ReturnArea ;
 
 Pointer StackAreaHigh, StackAreaLow ;
 
-#if ! USE_BOEHM_GC
+#if ! ( USE_BOEHM_GC || USE_EHC_MM )
 Pointer HP;
 Pointer HeapAreaLow;
 Pointer HeapAreaHigh;
@@ -69,6 +69,7 @@ void memorySetup()
 
     Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*STACKSIZE);
     ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
+#elif USE_EHC_MM
 #else
     HeapAreaLow = (Pointer)malloc(sizeof(GrWord)*HEAPSIZE);
     HeapAreaHigh = HeapAreaLow + HEAPSIZE;
@@ -302,10 +303,11 @@ int main_GB_Exit(int argc, char** argv)
 	IF_INFO_EXITSTATE_ON(printf("Time %.3f secs, instr/sec %.0f\n", clockDiff, speed ) ;) ;
 #endif
 #ifdef TRACE
-	// absolutely the wrong place to do this, but for now, for quick testing
+	// absolutely most definitely the wrong place to do this, but for now, for quick testing
 	// mm_pages_Buddy_Test() ;
 	// mm_allocator_LOF_Test() ;
 	// mm_deque_Test() ;
+	// mm_plan_Test() ;
 #endif
 	return 0 ;
 }

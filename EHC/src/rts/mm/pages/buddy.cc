@@ -422,11 +422,11 @@ MM_Pages mm_pages_Buddy =
 
 %%[8
 #ifdef TRACE
-mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
+void mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
 	int i ;
 	
-	printf( "--------------------------\n" ) ;
+	printf( ">------------------------>\n" ) ;
 	printf
 		( "Pgs: nrPages=%x firstPage=%x aftPage=%x extl=%x extlSz=%x\n"
 		, pgs->nrPages, pgs->firstPage, pgs->afterLastPage, pgs->extlData, pgs->extlDataSize
@@ -458,7 +458,7 @@ mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 			}
 		}
 	}
-	printf( "--------------------------\n" ) ;
+	printf( "<------------------------<\n" ) ;
 }
 #endif
 %%]

@@ -53,18 +53,23 @@ void mm_traceSupply_Group_Reset( MM_TraceSupply* traceSupply ) {
 void mm_traceSupply_Group_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_Group_Data* trgr = (MM_TraceSupply_Group_Data*)traceSupply->data ;
 
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_Run\n");}) ;
 	MM_FlexArray_Inx i ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed( &trgr->subTraceSupplies ) ; i++ ) {
+		IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_Run i=%x\n",i);}) ;
 		MM_TraceSupply* subTraceSupply = (MM_TraceSupply*)mm_flexArray_At( &trgr->subTraceSupplies, i ) ;
 		subTraceSupply->run( subTraceSupply ) ;
 	}
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_Run B\n");}) ;
 }
 
 void mm_traceSupply_Group_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords ) {
 	MM_TraceSupply_Group_Data* trgr = (MM_TraceSupply_Group_Data*)traceSupply->data ;
 		
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork\n");}) ;
 	MM_TraceSupply* subTraceSupply = (MM_TraceSupply*)mm_flexArray_At( &trgr->subTraceSupplies, mm_flexArray_SizeUsed( &trgr->subTraceSupplies ) - 1 ) ;
 	subTraceSupply->pushWork( subTraceSupply, work, nrWorkWords ) ;
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork B\n");}) ;
 }
 
 %%]
@@ -90,7 +95,7 @@ MM_TraceSupply mm_traceSupply_Group =
 
 %%[8
 #ifdef TRACE
-mm_traceSupply_Group_Dump( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Group_Dump( MM_TraceSupply* traceSupply ) {
 }
 #endif
 %%]

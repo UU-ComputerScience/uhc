@@ -41,11 +41,14 @@ void mm_traceSupply_Roots_Reset( MM_TraceSupply* traceSupply ) {
 void mm_traceSupply_Roots_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_Roots_Data* trgr = (MM_TraceSupply_Roots_Data*)traceSupply->data ;
 	
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run\n");}) ;
 	MM_FlexArray_Inx i ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed( &mm_Roots ) ; i++ ) {
 		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
+		IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run i=%x obj=%x\n",i,*(r->ptrToObj));}) ;
 		*(r->ptrToObj) = mm_Trace_TraceObject( trgr->trace, *(r->ptrToObj) ) ;
 	}
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run B\n");}) ;
 }
 %%]
 
@@ -70,7 +73,7 @@ MM_TraceSupply mm_traceSupply_Roots =
 
 %%[8
 #ifdef TRACE
-mm_traceSupply_Roots_Dump( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Roots_Dump( MM_TraceSupply* traceSupply ) {
 }
 #endif
 %%]

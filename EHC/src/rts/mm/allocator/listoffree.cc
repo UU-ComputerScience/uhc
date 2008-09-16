@@ -130,6 +130,51 @@ void mm_allocator_LOF_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LOF dump
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_allocator_LOF_Dump( MM_Allocator* alcr ) {
+	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
+	int i ;
+	
+	printf( ">------------------------> MM_Allocator: LOF\n" ) ;
+	printf
+		( "LOF: MM_Allocator_LOF_NrRoundedFit=%x perSizeRounded=%x\n"
+		, MM_Allocator_LOF_NrRoundedFit, alc->perSizeRounded
+		) ;
+
+	for ( i = 0 ; i < MM_Allocator_LOF_NrRoundedFit ; i++ ) {
+		MM_Allocator_LOF_PerSize* perSize = &alc->perSizeRounded[i] ;
+		if ( perSize->free != NULL || perSize->pages != NULL ) {
+			printf
+				( "  Sz: %d: perSize=%x\n"
+				, i, perSize
+				) ;
+			
+			MM_Allocator_LOF_PageRounded* pages = perSize->pages ;
+			printf( "    Pgs :" ) ;
+			for ( ; pages != NULL ; pages = pages->next ) {
+				printf( " %x(%x)", pages, mm_pages_Buddy_GetSizeLog(&mm_pages,(MM_Page)pages) ) ;
+			}
+			printf( "\n" ) ;
+			
+			MM_Allocator_LOF_FreeRounded* free = perSize->free ;
+			printf( "    Free:" ) ;
+			for ( ; free != NULL ; free = free->next ) {
+				printf( " %x", free ) ;
+			}
+			printf( "\n" ) ;
+		}
+	}
+	
+	printf( "<------------------------< MM_Allocator: LOF\n" ) ;
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% LOF interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -140,6 +185,10 @@ MM_Allocator mm_allocator_LOF =
 	, MM_Undefined
 	, &mm_allocator_LOF_Alloc
 	, &mm_allocator_LOF_Dealloc
+	, MM_Undefined
+#ifdef TRACE
+	, &mm_allocator_LOF_Dump
+#endif
 	} ;
 %%]
 
@@ -176,51 +225,6 @@ MM_Malloc mm_malloc_LOF =
 	, mm_allocator_LOF_Realloc
 	, mm_allocator_LOF_Free
 	} ;
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% LOF dump
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#ifdef TRACE
-mm_allocator_LOF_Dump( MM_Allocator* alcr ) {
-	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
-	int i ;
-	
-	printf( "--------------------------\n" ) ;
-	printf
-		( "LOF: MM_Allocator_LOF_NrRoundedFit=%x perSizeRounded=%x\n"
-		, MM_Allocator_LOF_NrRoundedFit, alc->perSizeRounded
-		) ;
-
-	for ( i = 0 ; i < MM_Allocator_LOF_NrRoundedFit ; i++ ) {
-		MM_Allocator_LOF_PerSize* perSize = &alc->perSizeRounded[i] ;
-		if ( perSize->free != NULL || perSize->pages != NULL ) {
-			printf
-				( "  Sz: %d: perSize=%x\n"
-				, i, perSize
-				) ;
-			
-			MM_Allocator_LOF_PageRounded* pages = perSize->pages ;
-			printf( "    Pgs :" ) ;
-			for ( ; pages != NULL ; pages = pages->next ) {
-				printf( " %x(%x)", pages, mm_pages_Buddy_GetSizeLog(&mm_pages,(MM_Page)pages) ) ;
-			}
-			printf( "\n" ) ;
-			
-			MM_Allocator_LOF_FreeRounded* free = perSize->free ;
-			printf( "    Free:" ) ;
-			for ( ; free != NULL ; free = free->next ) {
-				printf( " %x", free ) ;
-			}
-			printf( "\n" ) ;
-		}
-	}
-	
-	printf( "--------------------------\n" ) ;
-}
-#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

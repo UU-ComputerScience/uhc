@@ -6,7 +6,7 @@ TraceSupply which holds values in a buffer (DEQue). This is the main structure
 used to traverse the object graph and remember which objects yet have to
 be inspected.
 
-The buffer holds the locations of traceable objects, that is, not the objects themselves.
+The buffer holds 2 words: the start address of traceable objects + the nr of them.
 This is to be able to modify these locations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,12 +32,6 @@ typedef struct MM_TraceSupply_Buffer_Data {
 
 %%[8
 %%]
-extern void mm_traceSupply_Buffer_Init( MM_TraceSupply*, MM_Trace* ) ;
-extern void mm_traceSupply_Buffer_InitWithSub( MM_TraceSupply*, MM_Trace*, MM_FlexArray* subTraceSupplies ) ;
-extern void mm_traceSupply_Buffer_Reset( MM_TraceSupply* ) ;
-extern void mm_traceSupply_Buffer_Run( MM_TraceSupply* ) ;
-extern void mm_traceSupply_Buffer_PushWork( MM_TraceSupply*, Word* work, Word nrWorkWords ) ;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object

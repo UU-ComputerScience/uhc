@@ -69,7 +69,7 @@ MM_TraceSupply mm_traceSupply_GBStack =
 
 %%[8
 #ifdef TRACE
-mm_traceSupply_GBStack_Dump( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_GBStack_Dump( MM_TraceSupply* traceSupply ) {
 }
 #endif
 %%]

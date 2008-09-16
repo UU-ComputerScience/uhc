@@ -35,11 +35,12 @@ extern Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, 
 %%[8
 // check cursor for sufficient space + bump/alloc
 static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data* alc, Word sz ) {
-	Word res = alc->addrCursorFree - sz ;
-	if ( res < alc->addrFirstFree ) {
+	alc->addrCursorFree -= sz ;
+	if ( alc->addrCursorFree < alc->addrFirstFree ) {
 		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
 	}
-	return (Ptr)res ;
+	printf("mm_allocator_Bump_Alloc_AndCheckCursor sz=%x p=%x space=%x\n", sz, alc->addrCursorFree, alc->space);
+	return (Ptr)alc->addrCursorFree ;
 }
 
 // check cursor for sufficient space

@@ -36,6 +36,7 @@ void mm_collector_SS_Init( MM_Collector* collector, MM_Malloc* memmgt ) {
 void mm_collector_SS_collect( MM_Collector* collector ) {
 	// MM_Collector_SS_Data* colss = (MM_Collector_SS_Data*)collector->data ;
 	
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect\n");}) ;
 	// we know we are part of an ss plan
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(mm_plan.data) ;
 	// swap spaces
@@ -45,7 +46,9 @@ void mm_collector_SS_collect( MM_Collector* collector ) {
 	// the old one is to be collected
 	collector->collectedSpace = plss->fromSpace ;
 	// run the tracing of objects
+	plss->allTraceSupply.reset( &plss->allTraceSupply ) ;
 	plss->allTraceSupply.run( &plss->allTraceSupply ) ;
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect B\n");}) ;
 
 		
 }
@@ -71,7 +74,7 @@ MM_Collector mm_collector_SS =
 
 %%[8
 #ifdef TRACE
-mm_collector_SS_Dump( MM_Collector* collector ) {
+void mm_collector_SS_Dump( MM_Collector* collector ) {
 }
 #endif
 %%]

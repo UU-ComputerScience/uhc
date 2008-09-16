@@ -74,6 +74,25 @@ MM_Pages* mm_space_CopySpace_GetPages( MM_Space* copySpace ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CopySpace Space dump
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_space_CopySpace_Dump( MM_Space* copySpace ) {
+	MM_Space_CopySpace_Data* spc = (MM_Space_CopySpace_Data*)copySpace->data ;
+
+	printf( ">------------------------> MM_Space: CopySpace: space=%x spc=%x\n", copySpace, spc ) ;
+
+	spc->onTopOfSpace->dump( spc->onTopOfSpace ) ;
+	printf( "  Copy nrfrag=%x\n", copySpace->getNrFragments(copySpace) ) ;
+
+	printf( "<------------------------< MM_Space: CopySpace\n" ) ;
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Space CopySpace interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -90,18 +109,10 @@ MM_Space mm_space_CopySpace =
 	, &mm_space_CopySpace_GetNrFragments
 	, &mm_space_CopySpace_GetFragment
 	, &mm_space_CopySpace_GetPages
-	} ;
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CopySpace Space dump
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
 #ifdef TRACE
-mm_space_CopySpace_Dump( MM_Space* copySpace ) {
-}
+	, &mm_space_CopySpace_Dump
 #endif
+	} ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

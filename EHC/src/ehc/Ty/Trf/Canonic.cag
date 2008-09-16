@@ -7,12 +7,18 @@
 %%% Haskell importable interface to making canonical type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Compute canonic form of type w.r.t. Eq and Ord.
+Compute canonic form of type so syntactic equality can be used, i.e. Eq and Ord instances can be used on Ty to compare.
 This matters at:
 - rows, where fields may be in arbitrary order
+- places where type synonym expansion may occur, because 2 comparands may be differently partially expanded
 
 This matters for:
 - comparing types, in particular within predicates during proving
+
+
+Tricky point:
+After type synonym expansion, the replacement probably is structurally different and must be canonicalized as well!
+Hence the Maybe return signalling a replacement requiring recursive canonicalization of inner components.
 
 %%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsInCommon2})
 %%]
@@ -42,7 +48,7 @@ PRAGMA strictcase
 data TyCanonicOpts
   = TyCanonicOpts
 %%[[11
-      { tcoTyBetaRedFull 	:: Ty -> Ty
+      { tcoTyBetaRedFullMb  :: Ty -> Maybe Ty
       }
 %%]]
 
@@ -50,26 +56,46 @@ emptyTyCanonicOpts :: TyCanonicOpts
 emptyTyCanonicOpts
   = TyCanonicOpts
 %%[[11
-      {	tcoTyBetaRedFull 	= \t -> t
+      { tcoTyBetaRedFullMb  = \t -> Nothing
       }
 %%]]
 %%]
 
-%%[9 hs export(tyCanonic')
+%%[11 hs
+tcoTyBetaRedFull :: TyCanonicOpts -> Ty -> Ty
+tcoTyBetaRedFull tco ty = maybe ty id $ tcoTyBetaRedFullMb tco ty
+%%]
+
+%%[9.tyCanonicPrime hs export(tyCanonic')
 tyCanonic' :: TyCanonicOpts -> Ty -> Ty
 tyCanonic' opts ty
-  =  let  t =  wrap_TyAGItf
-                 (sem_TyAGItf (TyAGItf_AGItf ty))
-                 (Inh_TyAGItf
-%%[[11
-                   { opts_Inh_TyAGItf = opts
-                   }
-%%]]
-                 )
+  =  let  t =  wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) Inh_TyAGItf
      in   repl_Syn_TyAGItf t
 %%]
 
-%%[9 hs export(predCanonic')
+%%[11 -9.tyCanonicPrime hs export(tyCanonic')
+tyCanonicMb' :: TyCanonicOpts -> Ty -> Maybe Ty
+tyCanonicMb' opts ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf
+                   { opts_Inh_TyAGItf = opts
+                   }
+                 )
+     in   if isReplaced_Syn_TyAGItf t then Just (repl_Syn_TyAGItf t) else Nothing
+
+tyCanonic' :: TyCanonicOpts -> Ty -> Ty
+tyCanonic' opts ty = maybe ty id $ tyCanonicMb' opts ty
+%%]
+
+%%[9.predCanonicPrime hs export(predCanonic')
+predCanonic' :: TyCanonicOpts -> Pred -> Pred
+predCanonic' opts pr
+  = case tyCanonic' opts $ Ty_Pred pr of
+      Ty_Pred pr' -> pr'
+%%]
+
+%%[11 -9.predCanonicPrime hs export(predCanonic')
 predCanonic' :: TyCanonicOpts -> Pred -> Pred
 %%[[16
 predCanonic' opts (Pred_Eq t1 t2)
@@ -79,24 +105,29 @@ predCanonic' opts (Pred_Eq t1 t2)
       t2' = tyCanonic' opts t2
 %%]]
 predCanonic' opts pr
-  = case tyCanonic' opts $ Ty_Pred pr of
-      Ty_Pred pr' -> pr'
+  = case tyCanonicMb' opts $ Ty_Pred pr of
+      Just (Ty_Pred pr') -> pr'
+      _                  -> pr
 %%]
 
-%%[9 hs export(tyCanonic,predCanonic)
+%%[9 hs export(tyCanonic)
 tyCanonic :: FIIn -> Ty -> Ty
-tyCanonic fi = tyCanonic' (emptyTyCanonicOpts
+tyCanonic fi
+  = tyCanonic' opts
+  where opts = emptyTyCanonicOpts
 %%[[11
-                             {tcoTyBetaRedFull = tyBetaRedFull fi}
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi (tyCanonicMb' opts)}
 %%]]
-                          )
+%%]
 
+%%[9 hs export(predCanonic)
 predCanonic :: FIIn -> Pred -> Pred
-predCanonic fi = predCanonic' (emptyTyCanonicOpts
+predCanonic fi
+  = predCanonic' opts
+  where opts = emptyTyCanonicOpts
 %%[[11
-                                 {tcoTyBetaRedFull = tyBetaRedFull fi}
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi (tyCanonicMb' opts)}
 %%]]
-                              )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,6 +161,60 @@ SEM Pred
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has replaced
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11
+ATTR TyAGItf AllTyAndFlds [ | | isReplaced USE {||} {False}: Bool ]
+
+SEM Ty
+  | App             loc     .   isReplaced      =   isJust @mbReplNoImplNil || isJust @mbRepl
+  | Con Ext         loc     .   isReplaced      =   isJust @mbRepl
+
+SEM Ty
+  | App             lhs     .   isReplaced      =   @isReplaced || @func.isReplaced || @arg.isReplaced
+  | Ext             lhs     .   isReplaced      =   @isReplaced || @ty.isReplaced || @extTy.isReplaced
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicate removal replacement, preds are not supposed to be in the type. Has to be looked into later!!!!!!!!!!!!!!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+SEM Ty
+  | App             loc     .   mbReplNoImplNil =   case @func.mbPredL of
+                                                      Nothing | @func.isPred
+                                                        -> Just @arg.repl
+                                                      _ -> Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Labeled extension fields reordering replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[10
+SEM Ty
+  | Ext             loc     .   mbRepl          =   if @isSpineRoot
+                                                    then let (row,exts) = tyRowExts @repl
+                                                         in  if tyRowIsCanonOrdered exts
+                                                             then Nothing
+                                                             else Just $ mkTyRow row $ tyRowCanonOrder exts
+                                                    else Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type synonym replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[11
+SEM Ty
+  | App             loc     .   mbRepl          =   if @isSpineRoot
+                                                    then tcoTyBetaRedFullMb @lhs.opts @replNoImplNil
+                                                    else Nothing
+  | Con             loc     .   mbRepl          =   tcoTyBetaRedFullMb @lhs.opts @repl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -140,28 +225,19 @@ ATTR TyAGItf  [ | | repl: Ty ]
 
 %%[9
 SEM Ty
-  | App             loc     .   replNoImplNil   =   case @func.mbPredL of
-                                                      Nothing | @func.isPred
-                                                        -> @arg.repl
-                                                      _ -> @repl
+  | App             loc     .   replNoImplNil   =   maybe @repl id @mbReplNoImplNil
                     lhs     .   repl            =   @replNoImplNil
 %%]
 
 %%[10
 SEM Ty
-  | Ext             lhs     .   repl            =   if @isSpineRoot
-                                                    then let (row,exts) = tyRowExts @repl
-                                                             exts' = tyRowCanonOrder exts
-                                                         in  mkTyRow row exts'
-                                                    else @repl
+  | Ext             lhs     .   repl            =   maybe @repl id @mbRepl
 %%]
 
 %%[11
 SEM Ty
-  | App             lhs     .   repl            :=  if @isSpineRoot
-                                                    then tcoTyBetaRedFull @lhs.opts @replNoImplNil
-                                                    else @replNoImplNil
-  | Con             lhs     .   repl            =   tcoTyBetaRedFull @lhs.opts @repl
+  | App             lhs     .   repl            :=  maybe @replNoImplNil id @mbRepl
+  | Con             lhs     .   repl            =   maybe @repl id @mbRepl
 %%]
 
 

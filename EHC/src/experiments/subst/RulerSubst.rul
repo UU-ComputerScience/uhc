@@ -11,15 +11,15 @@ external c
 
 data Tree [tree]
   view D =
-      Constant [t.constant]
-    | Tuple    [t.tuple]       x  :: Tree
+      Constant [t.con]
+    | Tuple    [t.tup]         x  :: Tree
                                y  :: Tree
-    | First    [t.first]       x  :: Tree
-    | Second   [t.second]      x  :: Tree
-    | DefBind  [t.defbind]     n  :: String
+    | First    [t.fst]         x  :: Tree
+    | Second   [t.snd]         x  :: Tree
+    | DefBind  [t.defb]        n  :: String
                                x  :: Tree
                                y  :: Tree
-    | UseBind  [t.usebind]     n  :: String
+    | UseBind  [t.useb]        n  :: String
 
 scheme tree =
   view D  =
@@ -30,7 +30,7 @@ scheme tree =
     judgespec Subst.inh ; Env :- Tree : Val ~> Subst.syn
 
 ruleset tree.basic scheme tree "Rules for Val of Tree" =
-  rule t.constant =
+  rule t.con =
     view D =
       ---
       judge R : tree = env :- C : c
@@ -40,7 +40,7 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.syn = Subst
         | Subst.inh = Subst
 
-  rule t.usebind =
+  rule t.useb =
     view D =
       judge V : isInEnv = env :- n : v
       ---
@@ -52,7 +52,7 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.inh = Subst
         | Val = Subst v
 
-  rule t.defbind =
+  rule t.defb =
     view D =
       judge B : tree = env :- x : v
       judge V : tree = (n :-> v, env) :- y : w
@@ -70,7 +70,7 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.syn = Subst.y
         | Subst.inh = Subst
 
-  rule t.tuple =
+  rule t.tup =
     view D =
       judge F : tree = env :- x : v
       judge S : tree = env :- y : w
@@ -89,7 +89,7 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.inh = Subst
         | Val = (Subst.y v,w)
 
-  rule t.first =
+  rule t.fst =
     view D =
       judge P : tree = env :- x : ((v,w))
       ---
@@ -107,7 +107,7 @@ ruleset tree.basic scheme tree "Rules for Val of Tree" =
         | Subst.syn = Subst.m Subst.x
         | Subst.inh = Subst
 
-  rule t.second : t.first =
+  rule t.snd : t.fst =
     view D =
       ---
       judge R : tree

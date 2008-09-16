@@ -44,27 +44,22 @@ void mm_traceSupply_Buffer_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
 	MM_DEQue* q = &trgr->deque ;
 	
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_Run\n");}) ;
 	while ( ! mm_deque_IsEmpty( q ) ) {
-		Word avail ;
-		// get availability after each iteration step because new entries may have been added
-		for ( avail = mm_deque_HeadAvailRead( q ) ; avail > 0 ; avail = mm_deque_HeadAvailRead( q ) ) {
-			Word** objs ;
-			Word i ;
-			for ( i = 0, objs = (Word**)mm_deque_Head( q ) ; i < avail ; i++, objs++ ) {
-				// replace each entry pointed to by *objs
-				**objs = mm_Trace_TraceObject( trgr->trace, **objs ) ;
-			}
-			mm_deque_IncHeadOff( q, avail ) ;
-		}
-		mm_deque_HeadShrink( q ) ;
+		Word workBuffer[2] ;
+		// assume always the correct nr of words are pushed as work
+		mm_deque_HeadPop( q, workBuffer, 2 ) ;
+		Word hdrSz = trgr->trace->objectHeaderNrWords ;
+		trgr->trace->traceObjects( trgr->trace, (Word*)(workBuffer[0]) + hdrSz, workBuffer[1] - hdrSz ) ;
 	}
 }
 
+// push ptr + size
 void mm_traceSupply_Buffer_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords ) {
 	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
-	mm_deque_TailPush( &trgr->deque, work, nrWorkWords ) ;
+	Word workBuffer[2] = {(Word)work, nrWorkWords} ;
+	mm_deque_TailPush( &trgr->deque, workBuffer, 2 ) ;
 }
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +83,7 @@ MM_TraceSupply mm_traceSupply_Buffer =
 
 %%[8
 #ifdef TRACE
-mm_traceSupply_Buffer_Dump( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Buffer_Dump( MM_TraceSupply* traceSupply ) {
 }
 #endif
 %%]
