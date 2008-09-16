@@ -11,10 +11,19 @@
 %%% Duplicate value identifier introductions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+This check has been turned off, because it generates error messages for combinations like these:
+
+_ltImin :: Int
+( _ltImax,_ltImin,_ltItree) =
+  (3,4,5 )
+
+The check in the HS pass is correct, here it would check EH input, which currently is not used much.
+The problem lies in that @decls.patValGam also contains the type signature, and a type for the value in the pattern is added without checking if it already is present.
+
 %%[1.dupErrs
 SEM Expr
   | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
-                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
+                                                        in   [] -- if null nms then [] else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

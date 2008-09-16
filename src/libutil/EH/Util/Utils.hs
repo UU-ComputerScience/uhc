@@ -114,6 +114,12 @@ panic m = error ("panic: " ++ m)
 -- group/sort combi's
 -------------------------------------------------------------------------
 
+isSortedByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> Bool
+isSortedByOn cmp sel l
+  = isSrt l
+  where isSrt (x1:tl@(x2:_)) = cmp (sel x1) (sel x2) /= GT && isSrt tl
+        isSrt _              = True
+
 sortOn :: Ord b => (a -> b) -> [a] -> [a]
 sortOn = sortByOn compare
 

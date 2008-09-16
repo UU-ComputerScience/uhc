@@ -38,11 +38,11 @@ Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz
 		alc->curFragmentInx++ ;
 		mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
 	} else if ( nrFrags >= alc->maxFragments ) {
-		// max nr of fragments consumed, trigger GC, this will (amongs other things) reset this allocator
+		// max nr of fragments consumed, trigger GC, this will (amongst other things) reset this allocator
 		mm_plan.pollForGC( &mm_plan, True, alc->space ) ;
 	} else {
 		// get a new fragment
-		alc->curFragmentInx = alc->space->growSpaceLog2( alc->space, MM_GC_CopySpace_FragmentSize_Log ) ;
+		alc->curFragmentInx = alc->space->growSpaceByDefault( alc->space ) ;
 		mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
 	}
 	// retry allocation again, should (cannot) not fail!!!
@@ -94,6 +94,31 @@ void mm_allocator_Bump_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 	// no effect
 }
 
+Ptr mm_allocator_Bump_LastAllocLocation( MM_Allocator* alcr ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	return (Ptr)alc->addrCursorFree ;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bump dump
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_allocator_Bump_Dump( MM_Allocator* alcr ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;
+
+	printf( ">------------------------> MM_Allocator: Bump\n" ) ;
+	printf
+		( "Bump: addrCursorFree=%x addrFirstFree=%x curFragmentInx=%x maxFragments=%x\n"
+		, alc->addrCursorFree, alc->addrFirstFree, alc->curFragmentInx, alc->maxFragments
+		) ;
+	
+	printf( "<------------------------< MM_Allocator: Bump\n" ) ;
+}
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,18 +132,11 @@ MM_Allocator mm_allocator_Bump =
 	, &mm_allocator_Bump_ResetWithSpace
 	, &mm_allocator_Bump_Alloc
 	, &mm_allocator_Bump_Dealloc
-	} ;
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bump dump
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
+	, &mm_allocator_Bump_LastAllocLocation
 #ifdef TRACE
-mm_allocator_Bump_Dump( MM_Allocator* alcr ) {
-}
+	, &mm_allocator_Bump_Dump
 #endif
+	} ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

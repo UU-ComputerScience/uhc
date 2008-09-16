@@ -39,15 +39,24 @@ extern void mm_rangeMap_Realloc( MM_RangeMap* a, WPtr ptr, MM_RangeMap_Inx first
 %%]
 
 %%[8
+// range
+static inline Bool mm_rangeMap_FirstInx( MM_RangeMap* a ) {
+	return a->firstInx ;
+}
+
+static inline Bool mm_rangeMap_AfterLastInx( MM_RangeMap* a ) {
+	return a->firstInx + a->size ;
+}
+
 // range check
 static inline Bool mm_rangeMap_InRange( MM_RangeMap* a, MM_RangeMap_Inx i ) {
-	i -= a->firstInx ;
+	i -= mm_rangeMap_FirstInx(a) ;
 	return i >= 0 && i < a->size ;
 }
 
 // indexing
 static inline WPtr mm_rangeMap_At( MM_RangeMap* a, MM_RangeMap_Inx i ) {
-	return &(a->ptr[ i - a->firstInx ]) ;
+	return &(a->ptr[ i - mm_rangeMap_FirstInx(a) ]) ;
 }
 %%]
 

@@ -23,6 +23,9 @@ void mm_init() {
 	mm_init_pages() ;
 	mm_init_space() ;
 	mm_init_allocator() ;
+#	if USE_EHC_MM
+		mm_malloc_EHC = &mm_malloc_LOF ;
+#	endif
 	mm_init_roots() ;
 	mm_init_traceSupply() ;
 	mm_init_trace() ;

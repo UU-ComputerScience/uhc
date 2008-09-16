@@ -16,7 +16,10 @@ Trace a GBM object, knowing its structure etc.
 %%[8
 // is managed by GC
 static inline Bool mm_trace_GBM_CanTrace( Word obj, MM_Collector* collector ) {
-	return GB_Word_IsPtr( obj ) && mm_Spaces_AddressIsGCManagedBySpace( obj, collector->collectedSpace ) ;
+	IF_GB_TR_ON(3,{printf("mm_trace_GBM_CanTrace obj=%x\n",obj);}) ;
+	Bool res = GB_Word_IsPtr( obj ) && mm_Spaces_AddressIsGCManagedBySpace( obj, collector->collectedSpace ) ;
+	IF_GB_TR_ON(3,{printf("mm_trace_GBM_CanTrace B\n");}) ;
+	return res ;
 }
 
 // is traceable, but later
@@ -47,8 +50,8 @@ void mm_trace_GBM_Init( MM_Trace* trace, void* traceSupply, MM_Allocator* alloca
 	MM_Trace_GBM_Data* tr = mm_malloc_LOF.malloc( sizeof(MM_Trace_GBM_Data) ) ;
 	
 	tr->traceSupply = (MM_TraceSupply*)traceSupply ;
-	tr->copyAllocator = allocator ;
 	trace->collector = collector ;
+	trace->allocator = allocator ;
 		
 	trace->data = (MM_Trace_Data_Priv*)tr ;
 }
@@ -60,12 +63,14 @@ Bool mm_trace_GBM_CanTraceObject( MM_Trace* trace, Word obj ) {
 Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj ) {
 	GB_NodePtr objRepl = (GB_NodePtr)obj ;
 	
+	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject obj=%x\n",obj);}) ;
 	GB_NodePtr n = (GB_NodePtr)obj ;
 	Word h = n->header ;
 	switch ( GB_NH_Fld_NdEv(h) ) {
 		// is already forwarded, so return the forwarding
 		case GB_NodeNdEv_Fwd :
 			objRepl = (GB_NodePtr)( n->content.fields[0] ) ;
+			IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject fwd objRepl=%x\n",objRepl);}) ;
 			break ;
 
 		// otherwise copy and schedule new objects for tracing
@@ -74,17 +79,43 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj ) {
 				Word szWords = GB_NH_Fld_Size(h) ;
 				MM_Trace_GBM_Data* tr = (MM_Trace_GBM_Data*)trace->data ;
 				
-				// new obj, copy old into new
-				objRepl = (GB_NodePtr)( tr->copyAllocator->alloc( tr->copyAllocator, szWords << Word_SizeInBytes_Log ) ) ;
+				// new obj, copy old into new, allocate
+				// IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject copy\n");}) ;
+				objRepl = (GB_NodePtr)( trace->allocator->alloc( trace->allocator, szWords << Word_SizeInBytes_Log ) ) ;
+				// copy header
 				objRepl->header = h ;
 				
-				// each field must be traced as well, combine with copy
+				// schedule for tracing, depending on type of node
+				if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl ) {
+					switch( GB_NH_Fld_Tag(h) ) {
+%%[[95
+						case GB_NodeTag_Intl_Malloc :
+						case GB_NodeTag_Intl_Malloc2 :
+%%]]
+%%[[97
+#						if USE_GMP
+							case GB_NodeTag_Intl_GMP_intl :
+							case GB_NodeTag_Intl_GMP_mpz :
+#						endif
+%%]]
+%%[[98
+						case GB_NodeTag_Intl_Chan :
+%%]]
+							// no tracing
+							break ;
+						default :
+							tr->traceSupply->pushWork( tr->traceSupply, (Word*)n, szWords ) ;
+							break ;
+					}
+				} else {
+					tr->traceSupply->pushWork( tr->traceSupply, (Word*)n, szWords ) ;
+				}
+
+				// copy fields
 				Word* fieldTo = objRepl->content.fields ;
 				Word* fieldFr = n->content.fields ;
-				for ( szWords-- ; szWords > 0 ; szWords--, fieldTo++, fieldFr++ ) {
-					if ( mm_trace_GBM_CanTrace( *fieldTo = *fieldFr, trace->collector ) /* && mm_trace_GBM_CanScheduleForTrace( *fieldTo ) */ ) {
-						tr->traceSupply->pushWork( tr->traceSupply, fieldTo, 1 ) ;
-					}
+				for ( szWords-- ; szWords > 0 ; szWords-- ) {
+					*(fieldTo++) = *(fieldFr++) ;
 				}
 
 				// forward old obj to new
@@ -93,19 +124,21 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj ) {
 			}
 			break ;
 	}
+	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject B\n");}) ;
 		
 	return (Word)objRepl ;
 }
 
-Word mm_trace_GBM_TraceObject( MM_Trace* trace, Word obj ) {
-	if ( mm_trace_GBM_CanTrace( obj, trace->collector ) ) {
-		return mm_trace_GBM_TraceKnownToBeObject( trace, obj ) ;
-	} else {
-		return obj ;
-	}
-		
-}
+%%]
 
+%%[8
+void mm_trace_GBM_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) {
+	for ( ; nrObjs > 0 ; nrObjs--, objs++ ) {
+		if ( mm_trace_GBM_CanTrace( *objs, trace->collector ) ) {
+			*objs = mm_trace_GBM_TraceKnownToBeObject( trace, *objs ) ;
+		}
+	}
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -116,9 +149,13 @@ Word mm_trace_GBM_TraceObject( MM_Trace* trace, Word obj ) {
 MM_Trace mm_trace_GBM =
 	{ NULL
 	, NULL
+	, NULL
+	, sizeof(GB_NodeHeader) >> Word_SizeInBytes_Log
 	, &mm_trace_GBM_Init
 	, &mm_trace_GBM_CanTraceObject
 	, &mm_trace_GBM_TraceKnownToBeObject
+	, &mm_trace_GBM_TraceObjects
+	, &mm_trace_GBM_ObjectSize
 	} ;
 %%]
 
@@ -128,7 +165,7 @@ MM_Trace mm_trace_GBM =
 
 %%[8
 #ifdef TRACE
-mm_trace_GBM_Dump( MM_Trace* trace ) {
+void mm_trace_GBM_Dump( MM_Trace* trace ) {
 }
 #endif
 %%]

@@ -131,6 +131,7 @@ type VarId = Int
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Val
+%%[[Val.base
 data Val                        -- concrete syntax:
   =  Pair   !Val    !Val        -- (v,w)
   |  Const                      -- c
@@ -140,11 +141,9 @@ data Val                        -- concrete syntax:
   |  Var    !VarId  !Ref
 %%]]
   |  Err    !String
+%%]]
   deriving Show
 %%]
-valIsErr :: Val -> Bool
-valIsErr (Err _) = True
-valIsErr _       = False
 
 %%[3.Ref
 type     RefContent  = Maybe Val
@@ -336,6 +335,7 @@ envUnion (Env x) (Env y) = Env (x `Map.union` y)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Tree
+%%[[Tree.base
 data Tree                                -- concrete syntax:
   =  Constant                            -- C
   |  UseBind     !String                 -- n
@@ -345,6 +345,7 @@ data Tree                                -- concrete syntax:
   |  Second      !Tree                   -- snd x
 %%[[4
   |  Apply       !Tree    !Tree          -- @@ x y
+%%]]
 %%]]
   deriving Show
 %%]
@@ -568,7 +569,9 @@ treeCompute t =
 %%]
 
 %%[1.newVar
+%%[[newVar.sig
 newVar      ::  Compute Val
+%%]]
 newVar  =   do  st  <- get
                 let fresh = stUniq st
                 put (st {stUniq = fresh + 1})
@@ -581,7 +584,9 @@ newVar  =   do  st  <- get
 %%]
 
 %%[1.newVars
+%%[[newVars.sig
 newVars     ::  Int -> Compute [Val]
+%%]]
 newVars  n  =   sequence [newVar | _ <- [1..n] ]
 %%]
 newVars  0  =   return []
@@ -612,7 +617,7 @@ refRead   (Ref r)    =   unsafePerformIO $ readIORef r
 %%]
 
 %%[32.refRead
-refRead' :: Ref -> RefContent
+refRead' :: Ref -> IO RefContent
 refRead' (Ref r) = readIORef r
 %%]
 
@@ -632,62 +637,62 @@ valUnify :: Val -> Val -> Compute Val
 %%][222
 valUnify :: Val -> Val -> Compute Bool
 %%]]
-valUnify v1 v2
+valUnify v w
 %%[[1
-  = uni v1 v2  where
+  = uni v w  where
 %%][2
-  = do { st <- get ; uni st v1 v2 } where
+  = do { st <- get ; uni st v w } where
 %%][3
-  = uni v1 v2  where
+  = uni v w  where
 %%]]
 %%[[1
-  uni      x@(Const)    (Const)                     =  return x
+  uni      v@(Const)    (Const)                     =  return v
 %%][2
-  uni  st  x@(Const)    (Const)                     =  return x
+  uni  st  v@(Const)    (Const)                     =  return v
 %%][222
-  uni  st  x@(Const)    (Const)                     =  return True
+  uni  st  v@(Const)    (Const)                     =  return True
 %%][3
-  uni      x@(Const)    (Const)                     =  return x
+  uni      v@(Const)    (Const)                     =  return v
 %%]]
 %%[[1
-  uni      x@(Var i)    (Var j)    |  i == j        =  return x
+  uni      v@(Var i)    (Var j)    |  i == j        =  return v
 %%][2
-  uni  st  x@(Var i)    (Var j)    |  i == j        =  return x
+  uni  st  v@(Var i)    (Var j)    |  i == j        =  return v
 %%][222
-  uni  st  x@(Var i)    (Var j)    |  i == j        =  return True
+  uni  st  v@(Var i)    (Var j)    |  i == j        =  return True
 %%][3
-  uni      x@(Var i _)  (Var j _)  |  i == j        =  return x
+  uni      v@(Var i _)  (Var j _)  |  i == j        =  return v
 %%]]
 %%[[2
-  uni  st  (Var i)      y          |  isJust mbv    =  uni st v y
+  uni  st  (Var i)      w          |  isJust mbv    =  uni st v' w
        where  mbv  = i |? stVMp st
-              v    = fromJust mbv
+              v'   = fromJust mbv
 %%][3
-  uni      (Var _ r)    y          |  isJust mbv    =  uni v y
+  uni      (Var _ r)    w          |  isJust mbv    =  uni v' w
        where  mbv  = refRead r
-              v    = fromJust mbv
+              v'   = fromJust mbv
 %%][32
 %%[[valUnify.uni.Var
-  uni      (Var _ r)    y
+  uni      (Var _ r)    w
       do  mbv <- refRead' r
           case mbv of
-            Just v  ->  uni v y  ^^
-            _       ->  ??          ^^ wrong branch after all
+            Just v'  ->  uni v' w  ^^
+            _        ->  ??          ^^ wrong branch after all
 %%]]
 %%]]
 %%[[1
-  uni      (Var i)      y                           =  bindv i y
+  uni      (Var i)      w                           =  bindv i w
 %%][2
-  uni  st  (Var i)      y                           =  bindv st i y
+  uni  st  (Var i)      w                           =  bindv st i w
 %%][3
-  uni      x@(Var _ _)  y                           =  bindv x y
+  uni      v@(Var _ _)  w                           =  bindv v w
 %%]]
 %%[[1
-  uni      x            y@(Var _)                   =  uni y x
+  uni      v            w@(Var _)                   =  uni w v
 %%][2
-  uni  st  x            y@(Var _)                   =  uni st y x
+  uni  st  v            w@(Var _)                   =  uni st w v
 %%][3
-  uni      x            y@(Var _ _)                 =  uni y x
+  uni      v            w@(Var _ _)                 =  uni w v
 %%]]
 %%[[1
   uni      (Pair p q)   (Pair r s)                  =

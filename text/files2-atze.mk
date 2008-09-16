@@ -251,4 +251,16 @@ text-variant-icfp08-subst:
 	  TEXT_SHUFFLE_VARIANT=36 \
 	  text-variant-dflt-bib
 
+text-variant-padl09-subst:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC_EXPERIMENTS_SUBST=yes TEXT_CFG_TEXT_INCLUDES_EXPERIMENTS_SUBST_TEX=yes TEXT_SHUFFLE_ORDER="1 < 2 < 3, 3 < 32, 2 < 21, 1 < 26 < 36" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=padl09 --set=kscode --set=natbib --set=storyUnificSubst --set=llncs --unset=blockstyle --set=asArticle --set=omitlag2TeX --set=shortStory" \
+	  TEXT_SHUFFLE_VARIANT=36 \
+	  text-variant-dflt-bib
+
+text-variant-padl09-subst-tr:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC_EXPERIMENTS_SUBST=yes TEXT_CFG_TEXT_INCLUDES_EXPERIMENTS_SUBST_TEX=yes TEXT_SHUFFLE_ORDER="1 < 2 < 3, 3 < 32, 2 < 21, 1 < 26 < 36" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=kscode --set=natbib --set=storyUnificSubst --set=blockstyle --set=asArticle --set=omitlag2TeX --unset=hasAppendix" \
+	  TEXT_SHUFFLE_VARIANT=36 \
+	  text-variant-dflt-bib
+
 

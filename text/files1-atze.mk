@@ -14,7 +14,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
-								icfp08-subst \
+								icfp08-subst padl09-subst padl09-subst-tr \
 								tr-abstrint ldta08-abstrint
 
 # subtext

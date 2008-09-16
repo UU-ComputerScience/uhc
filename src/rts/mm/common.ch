@@ -16,7 +16,7 @@ The size of a page, basic unit of contiguous mem allocation.
 For Fragments as used by GC allocators
 
 %%[8
-#define MM_GC_CopySpace_FragmentSize_Log		(4 + MM_Pages_MinSize_Log)
+#define MM_GC_CopySpace_FragmentSize_Log		(4 + MM_Page_Size_Log)
 #define MM_GC_CopySpace_FragmentSize_HiMask		Bits_Size2HiMask(Word,MM_GC_CopySpace_FragmentSize_Log)
 #define MM_GC_CopySpace_FragmentSize_LoMask		Bits_Size2LoMask(Word,MM_GC_CopySpace_FragmentSize_Log)
 #define MM_GC_CopySpace_FragmentSize			(1 << MM_GC_CopySpace_FragmentSize_Log)
@@ -49,6 +49,10 @@ typedef struct MM_Malloc {
 
 %%[8
 extern MM_Malloc 	mm_malloc_Sys ;
+%%]
+
+%%[8
+extern MM_Malloc* 	mm_malloc_EHC ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,8 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: Trace: GBM
+%%% Memory management: TraceSupply: Bump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Doc
+TraceSupply which holds values by pointing to the begin and end of work
+yet to be done. This supply is to be used with a bump allocator, as it
+assumes the same direction of growth: high to low mem addresses.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  defs & types
@@ -10,20 +12,17 @@ Doc
 
 %%[8
 // the administration
-typedef struct MM_Trace_GBM_Data {
-	MM_TraceSupply*		traceSupply ;
-} MM_Trace_GBM_Data ;
+typedef struct MM_TraceSupply_Bump_Data {
+	MM_Trace*			trace ;
+	Word*				lastTraced ;	// the high address, last traced location
+	Word*				lastPushed ;	// the low address, last pushed location
+} MM_TraceSupply_Bump_Data ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% interface: (inlineable) ingredients
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-static inline Word mm_trace_GBM_ObjectSize( MM_Trace* trace, Word obj ) {
-	return GB_NH_Fld_Size(((GB_NodePtr)obj)->header) ;
-}
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface
@@ -37,7 +36,7 @@ static inline Word mm_trace_GBM_ObjectSize( MM_Trace* trace, Word obj ) {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-extern MM_Trace mm_trace_GBM ;
+extern MM_TraceSupply mm_traceSupply_Bump ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,7 +45,7 @@ extern MM_Trace mm_trace_GBM ;
 
 %%[8
 #ifdef TRACE
-extern void mm_trace_GBM_Test() ;
+extern void mm_traceSupply_Bump_Test() ;
 #endif
 %%]
 

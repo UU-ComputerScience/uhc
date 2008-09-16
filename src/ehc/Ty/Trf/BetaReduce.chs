@@ -5,6 +5,9 @@
 %%[11 module {%{EH}Ty.Trf.BetaReduce} import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty.FitsInCommon2}, {%{EH}Ty}, {%{EH}Gam}, {%{EH}Substitutable}, {%{EH}VarMp})
 %%]
 
+%%[11 import(Data.Maybe)
+%%]
+
 For debug/trace:
 %%[11 import(EH.Util.Pretty)
 %%]
@@ -62,19 +65,22 @@ tyBetaRed fi ty
       _              -> []
 %%]
 
-%%[11 export(tyBetaRedFull)
-tyBetaRedFull :: FIIn -> Ty -> Ty
-tyBetaRedFull fi ty
-  = red ty
+Reduce fully (upto expansion limit) an outer layer of type synonyms,
+expanding the inner layer with redSub, only if the outer layer has been
+replaced.
+
+%%[11 export(tyBetaRedFullMb)
+tyBetaRedFullMb :: FIIn -> (Ty -> Maybe Ty) -> Ty -> Maybe Ty
+tyBetaRedFullMb fi redSub ty
+  = fmap reda $ choose ty $ redl ty
   where env = fiEnv fi
         lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
         redl ty = take lim $ map fst $ tyBetaRed fi ty
-        red  ty = choose ty $ redl ty
-        reda ty
-            = if all null as' then ty else mk f (zipWith choose as as')
-            where (f,as,mk) = tyAppFunArgsMk ty
-                  as' = map redl as
-        choose a [] = a
-        choose a as = last as
+        reda ty = if null (catMaybes as') then ty else mk f (zipWith (\t mt -> maybe t id mt) as as')
+                where (f,as,mk) = tyDecomposeMk ty
+                      as' = map redSub as
+        choose a [] = Nothing
+        choose a as = Just (last as)
+
 %%]
 

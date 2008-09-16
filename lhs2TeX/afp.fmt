@@ -148,7 +148,7 @@
 %format isigma      = "\mathbb{\bbsigma}"
 %format isigmaf     = isigma "_{f}"
 
-%format bsigma      = sigma "_{" /=/ "}"
+%format bsigma      = sigma "_{" w/ "}"
 
 %format Cnstr       = "\mathcal{C}"
 %format Cnstre		= Cnstr "_{e}"
@@ -244,6 +244,7 @@
 
 %format \\ 	    		= "{\backslash}"
 %format // 	    		= "/"
+%format /= 				= "\not= "
 %format /^/ 	    	= "/"
 %format /=/ 	    	= "{\eqcirc}"
 %format |=>     		= "\oplus "

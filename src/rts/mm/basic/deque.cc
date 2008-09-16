@@ -125,10 +125,10 @@ Word mm_deque_HeadPop( MM_DEQue* deque, Word* words, Word nrWords ) {
 
 %%[8
 #ifdef TRACE
-mm_deque_Dump( MM_DEQue* deque ) {
+void mm_deque_Dump( MM_DEQue* deque ) {
 	Word i ;
 	
-	printf( "--------------------------\n" ) ;
+	printf( ">------------------------>\n" ) ;
 	printf
 		( "DEQue: headOff=%x tailOff=%x dll.next=%x dll.prev=%x\n"
 		, deque->headOff, deque->tailOff, deque->dll.next, deque->dll.prev
@@ -142,7 +142,7 @@ mm_deque_Dump( MM_DEQue* deque ) {
 			) ;
 	}
 	
-	printf( "--------------------------\n" ) ;
+	printf( "<------------------------<\n" ) ;
 }
 #endif
 %%]

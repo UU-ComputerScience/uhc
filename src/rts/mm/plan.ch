@@ -18,6 +18,7 @@ typedef struct MM_Plan {
   	
 	// private data of Plan, but included here for fast access
   	// MM_Collector*	 			collector ;
+  	MM_Mutator*	 				mutator ;
   	
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Plan* ) ;
@@ -26,6 +27,9 @@ typedef struct MM_Plan {
   	// isSpaceFull indicates space from which is polled is full
   	// return True if collection is/was required/done
   	Bool 						(*pollForGC)( struct MM_Plan*, Bool isSpaceFull, MM_Space* space ) ;
+
+  	// dumping info
+  	void 						(*dump)( struct MM_Plan* ) ;
 } MM_Plan ;
 %%]
 

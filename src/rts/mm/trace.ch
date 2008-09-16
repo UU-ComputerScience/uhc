@@ -16,8 +16,10 @@ typedef struct MM_Trace {
 	// private data of Trace
   	MM_Trace_Data_Priv 			data ;
   	
-	// private data, but included here for fast access
+	// private data, but included here for fast access, or always required to be present
+  	MM_Allocator*	 			allocator ;			// for copying
   	MM_Collector*	 			collector ;
+  	Word						objectHeaderNrWords ;
 
   	// setup with
   	// - supply to put new traceable objects init
@@ -33,11 +35,19 @@ typedef struct MM_Trace {
   	// assumption: canTraceObject( , obj ) == True
   	Word			 			(*traceObject)( struct MM_Trace*, Word obj ) ;
   	
+  	// trace multiple objects, replace by new objects
+  	// check on traceability is done by function
+  	void			 			(*traceObjects)( struct MM_Trace*, Word* objs, Word nrObjs ) ;
+  	
+  	// size of an object in words
+  	Word			 			(*objectNrWords)( struct MM_Trace*, Word obj ) ;
+  	
 } MM_Trace ;
 %%]
 
 %%[8
 static inline Word mm_Trace_TraceObject( MM_Trace* trace, Word obj ) {
+	printf("mm_Trace_TraceObject obj=%x space(obj)=%x space=%x\n",obj,mm_Spaces_GetSpaceForAddress(obj),trace->collector->collectedSpace);
 	if ( trace->canTraceObject( trace, obj ) ) {
 		return trace->traceObject( trace, obj ) ;
 	} else {

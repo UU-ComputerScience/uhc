@@ -837,12 +837,12 @@ This breaks when compiled without bgc.
 
 %%[95
 #define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
-											  (n)->content.ptr = malloc(nBytes) ; \
+											  (n)->content.ptr = mm_malloc_EHC->malloc(nBytes) ; \
 											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
 											}
 #define GB_NodeAlloc_Malloc2_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize2,GB_MkMallocHeader2,n) ; \
 											  (n)->content.bytearray.size = nBytes ; \
-											  (n)->content.bytearray.ptr = malloc(nBytes) ; \
+											  (n)->content.bytearray.ptr = mm_malloc_EHC->malloc(nBytes) ; \
 											  GB_Register_Finalizer(n,&((n)->content.bytearray.ptr)) ; \
 											}
 %%]

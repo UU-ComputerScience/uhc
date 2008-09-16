@@ -531,7 +531,7 @@
 %endif
 %if storyEHIntro
 \def\paragraph{\prevSubsection}
-%elif useSigplanconfSty
+% useSigplanconfSty
 \let\prevParagraph=\paragraph
 \def\paragraph#1{\prevParagraph{#1.}}
 %endif
@@ -956,28 +956,6 @@ WWW home page:
 
 %%]
 
-%%[36
-\title{Efficient Functional Unification and Substitution}
-%if acm && useSigplanconfSty
-\authorinfo{Atze Dijkstra \and Arie Middelkoop \and S.~Doaitse Swierstra}
-  {Department of Information and Computing Sciences \\
-   Universiteit Utrecht \\
-   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
-  }
-  {\{atze,ariem,doaitse\}@@cs.uu.nl}
-%else
-\author{Atze Dijkstra and Arie Middelkoop and S.~Doaitse Swierstra}
-\institute{Department of Information and Computing Sciences,\\
-Universiteit Utrecht,\\
-P.O.Box 80.089, \\
-Padualaan 14, Utrecht, Netherlands,\\
-\email{@{atze,ariem,doaitse}@@cs.uu.nl@},\\
-WWW home page:
-\texttt{http://www.cs.uu.nl}
-}
-%endif
-%%]
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1116,7 +1094,7 @@ WWW home page:
 {Atze Dijkstra \\ S. Doaitse Swierstra}
 {UU-CS-2005-033}
 %endif
-\maketitle
+\
 %%]
 
 %%[4
@@ -1156,10 +1134,6 @@ WWW home page:
 \maketitle
 %%]
 
-%%[26
-\maketitle
-%%]
-
 %%[30
 \maketitle
 %%]
@@ -1185,6 +1159,37 @@ and
 
 %%[35
 %%@LLVMCoverPage.coverpage
+%%]
+
+%%[36
+\title{Efficient Functional Unification and Substitution}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and Arie Middelkoop \and S.~Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Universiteit Utrecht \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,ariem,doaitse\}@@cs.uu.nl}
+%elif truu
+\TRtitlepage%
+{Efficient Functional Unification and Substitution}
+{Atze Dijkstra \\[2ex] Arie Middelkoop \\[2ex] S.~Doaitse Swierstra}
+{UU-CS-2008-027}
+%else
+\author{Atze Dijkstra and Arie Middelkoop and S.~Doaitse Swierstra}
+\institute{Department of Information and Computing Sciences,\\
+Universiteit Utrecht,\\
+P.O.Box 80.089, \\
+Padualaan 14, Utrecht, Netherlands,\\
+\email{@{atze,ariem,doaitse}@@cs.uu.nl@},\\
+WWW home page:
+\texttt{http://www.cs.uu.nl}
+}
+%endif
+%%]
+
+%%[26
+\maketitle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2012,10 +2017,13 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 %%@TopicSubst.performanceResults
 
+%if shortStory
+%else
 \section{Discussion}
 \label{sec-expsubst-discussion}
 
 %%@TopicSubst.discussion
+%endif
 
 \section{Conclusion}
 \label{sec-expsubst-conclusion}
@@ -2799,7 +2807,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %if refToPDF
 %\bibliographystyle{uhcbook}
 \bibliographystyle{plain}
-%elif natbib
+% natbib
 \bibliographystyle{plainnat}
 %elif acm
 \bibliographystyle{abbrv}
@@ -3471,6 +3479,15 @@ and the included documentation only describes |Shuffle|'s basic features.
 
 %%[19
 \appendix
+%%]
+
+%%[36
+%if shortStory && hasAppendix
+\appendix
+\section{Appendices}
+\subsection{Computation of |Val| over |Tree| in the \rulerCmdUse{exp-subst-variant1} solution}
+%%@TopicSubst.shortStoryAppendixFigureExpSubstTreecompute
+%endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,3 +1,8 @@
+###
+### Run experiment with:
+###  make experiment-subst-run DO_TIMING=yes
+###
+
 # location of substitution experiment src
 SRC_EXPERIMENTS_SUBST_PREFIX				:= $(SRC_EXPERIMENTS_PREFIX)subst/
 
@@ -16,7 +21,7 @@ RUN_EXPERIMENTS_SUBST_PREFIX				:= $(BLD_EXPERIMENTS_SUBST_PREFIX)runs/
 DO_TIMING									:= no
 
 # tex run output
-RUN_EXPERIMENTS_SUBST_TEX					:= $(RUN_EXPERIMENTS_SUBST_PREFIX)/timings.tex
+RUN_EXPERIMENTS_SUBST_TEX					:= $(RUN_EXPERIMENTS_SUBST_PREFIX)timings.tex
 
 # runs
 RUN_EXPERIMENTS_SUBST_RUNS					:= a/500 a/1100 a/1600 b/20 b/25 b/28 
