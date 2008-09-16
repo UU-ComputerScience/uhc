@@ -1,13 +1,13 @@
 %%[chapter
 \chapter{Implementation}
 \label{cha:implementation}
-In the previous chapters we discussed the generation of Silly (\refS{sec:ehc-silly}) from Haskell source. In order to generate executables from Silly code, we add a backend that outputs Low Level Virtual Machine (LLVM) assembly to EHC. In this chapter, we discuss the generation of LLVM code from a Silly abstract syntax tree (AST). In particular, we look at the representation of closures in the generated code (\refS{sec:impl-memory-representation}), the transformation from Silly to LLVM assembly (\refS{sec:impl-silly2llvm}), and the runtime system used (\refS{sec:impl-rts}).
+In the previous chapters we discussed the generation of Silly (\refS{sec:ehc-silly}) from Haskell source. In order to generate executables from Silly code, we add a backend to EHC that outputs Low Level Virtual Machine (LLVM) assembly. In this chapter, we discuss the generation of LLVM code from a Silly abstract syntax tree (AST). In particular, we look at the representation of closures in the generated code (\refS{sec:impl-memory-representation}), the transformation from Silly to LLVM assembly (\refS{sec:impl-silly2llvm}), and the used runtime system (\refS{sec:impl-rts}).
 
 \section{Implementation of GRIN nodes}
 \label{sec:impl-memory-representation}
-Silly inherits nodes from GRIN. A node consists of a set of fields, whereas the first field always is a tag and the rest are payload fields. Silly implements nodes with an array. For EHC variant~8, the starting point for LLVM incorporation, possible payload values are literal integers or pointers to other nodes.
+Silly inherits nodes from GRIN. A node consists of a set of fields, whereas the first field always is a tag and the remaining fields are payload fields. Silly implements nodes with an array. For EHC variant~8, the starting point for LLVM incorporation, possible payload values are literal integers or pointers to other nodes.
 
-Nodes are represented in memory with an uniform type. No matter which type of values are stored in the payload field, each node is represented as a |GrWord| sequence. A |GrWord| is defined as a signed integer with exactly the same bit size as a native pointer of the target architecture and is comparable to the C99 type \texttt{intptr\_t}. This allows us to store any possible tag or payload value in a |GrWord|. For example, Haskells list cons operator (@:@) is represented as a node sequence of 3 |GrWord| values, whereas the first value is the tag, the second a pointer to the content of the list cell and finally a value that points to the tail of the list. On a 64 bit platform, a GrWord is a 64 bit signed integer and is this node 24 bytes in size. On a 32 bit platform, where a |GrWord| is 32 bits in size, the same node would take up 12 bytes of memory.
+Nodes are represented in memory with an universal type. No matter which type of values are stored in the payload field, each node is represented as a |GrWord| sequence. A |GrWord| is defined as a signed integer with exactly the same bit size as a native pointer of the target architecture and is the same as the C99~\cite{standard1999} type \texttt{intptr\_t}. This allows us to store any possible tag or payload value in a |GrWord|. For example, Haskells list cons operator (@:@) is represented as a node sequence of 3 |GrWord| values, whereas the first value is the tag, the second a pointer to the content of the list cell and finally a value that points to the tail of the list. On a 64 bit platform, a GrWord is a 64 bit signed integer and is this node 24 bytes in size. On a 32 bit platform, where a |GrWord| is 32 bits in size, the same node would take up 12 bytes of memory.
 
 The uniform representation wastes memory when storing a value which fits in less memory, but allows easy typing of the Silly program (see \refS{sec:impl-typing}) and makes overwriting a closure with its evaluation result type correct.
 
@@ -34,20 +34,20 @@ Early in the EHC pipeline, types occurring in a program are erased and subsequen
 	\label{fig:data-llvm-types}  
 \end{figure}
 
-Types are encoded by a Haskell data type, which is shown in \refF{fig:data-llvm-types}. The types that can be encoded with the data type are a subset of possible LLVM assembly types because not all are needed. The |LLVMInt| constructor corresponds to an integer value of some bit size. The |Pointer| constructor represents a pointer to another |LLVMType|, allowing any level of indirection, although currently a maximum of 2 levels is used in the generated code. We use C syntax for pointers (postfix \texttt{*}) to abbreviate the |Pointer| construct in the examples of this thesis. The |Array| constructor corresponds to an array of the size defined by the first parameter. Array types are only used to type C strings in the generated code. A |Label| refers to a branch target and |Void| encodes the absence of a type.
+Types are encoded by a Haskell data type, shown in \refF{fig:data-llvm-types}. The types that can be encoded with the data type are a subset of possible LLVM assembly types because not all are needed. The |LLVMInt| constructor corresponds to an integer value of some bit size. The |Pointer| constructor represents a pointer to another |LLVMType|, allowing any level of indirection, although currently a maximum of 2 levels is used in the generated code. We use C syntax for pointers (postfix \texttt{*}) to abbreviate the |Pointer| construct in the examples of this thesis. The |Array| constructor corresponds to an array of the size defined by the first parameter. Array types are only used to type C strings in the generated code. A |Label| refers to a branch target and |Void| encodes the absence of a type.
 
 The instances of the |LLVMInt| constructor are dependent on the bit size of a pointer on the platform. To describe the type inference of Silly in a platform neutral way, we use |GrWord| as an alias for a |LLVMInt| constructor where the parameter is the bit size of a native pointer on the architecture.
 
 Each Silly statement can be typed without contextual information like a typing environment. This is possible due to the following assumptions made in Silly:
 \begin{itemize}
-  \item Global variables are of the type |GrWord**|. Statically, a memory block of the size of a native pointer is allocated. In this block, a pointer to a dynamically allocated global closure is stored. This scheme is inefficient, as the global closure could be allocated statically because the size and content are known at compile time. Still the performance loss is small, as the heap allocation for global variables is very small compared to the heap allocation for local closures.
-  \item Local variables are of the type |GrWord*|. A local variable is implemented as a |GrWord| of memory allocated on the stack. Local variables are used for storage of tags, integers, and pointers to closures. If a pointer is stored in a local variable, it needs to be cast to an integer first, without loss of precision. When a pointer is read from the local variable, it needs to be cast back to a pointer before it is used.
+  \item Global variables are of type |GrWord**|. Statically, a memory block of the size of a native pointer is allocated. In this block, a pointer to a dynamically allocated global closure is stored. This scheme is inefficient, as the global closure could be allocated statically because the size and content are known at compile time. Still the performance loss is small, as the heap allocation for global variables is very small compared to the heap allocation for local closures.
+  \item Local variables are of type |GrWord*|. A local variable is implemented as a |GrWord| allocated on the stack. Local variables are used for storage of tags, integers, and pointers to closures. If a pointer is stored in a local variable, it needs to be cast to an integer first, without loss of precision. When a pointer is read from the local variable, it needs to be cast back to a pointer before it is used.
 
-  \item Function arguments are of the type |GrWord| and the function is responsible for casting a parameter to a |GrWord*| if needed. 
+  \item Function arguments are of type |GrWord| and the function is responsible for casting a parameter to a |GrWord*| if needed. 
 
-The choice to pass all parameters as |GrWord| types is because of an option in Silly to manage its own call stack (note: this option is disabled when generating LLVM code). The Silly call stack is defined in the runtime system as an array of |GrWord| elements. Function parameters have the |GrWord| type to avoid casts when pushing function arguments on the stack.  
+The choice to pass all parameters as |GrWord| types is enforced because of the optional Silly capability to manage its own call stack (note: this option is disabled when generating LLVM code). The Silly call stack is defined by the runtime system as an array of |GrWord| elements. Function parameters have the |GrWord| type to avoid casts when pushing function arguments on the stack.  
 
-  \item Function calls can be either a statement or a value. The statement function call is used for calling other Silly functions. These functions always have the return type |Void|, as they return values in the global RP array (\refS{sec:ehc-silly}).
+  \item Function calls can be either a LLVM statement or a LLVM value. The statement function call is used for calling other Silly functions. These functions always have the return type |Void|, as they return values in the global RP array (\refS{sec:ehc-silly}).
 
 Value function calls are calls to foreign functions. These functions use the platforms standard calling convention standard and return a non-void value. The type of the return value is always a |GrWord|.
   \item Allocations are handled as a foreign function and return a pointer to the allocated memory cast to the |GrWord| type.
@@ -64,7 +64,7 @@ For a semantically correct abstract syntax tree of a Silly statement, each leaf 
   \end{centering}
 \end{figure}
 
-We start the typing traversal in the left most leaf of the abstract syntax tree, the local variable \texttt{i4}. Each possible leaf value is a base case, so we are able to deduce the type of the local variable from the known assumptions. Indeed, the assumption state that local variables are of the |GrWord*| type. 
+We start the typing traversal in the leftmost leaf of the abstract syntax tree, the local variable \texttt{i4}. Each possible leaf value is a base case, so we are able to deduce the type of the local variable from the known assumptions. Indeed, the assumption state that local variables are of the |GrWord*| type. 
 
 The second leaf of the abstract syntax tree is the local variable \texttt{x78}. Again, local variables always have the type |GrWord*| and thus this value is assigned to the synthesized attribute $\tau$ of this node. The parent of the leaf is a 'Variable Value' node, which has the semantics of loading a value from a pointer. It infers its type by removing a pointer indirection of the type of its child. This results in a |GrWord| value.
 
@@ -76,21 +76,21 @@ The bottom-up type inferring algorithm is very suitable for an attribute grammar
 
 \subsection{Generation of LLVM}
 \label{sec:impl-gen-llvm}
-The structure of Silly and LLVM is comparable up to the statement level. Silly modules and functions are converted in their LLVM counterpart and the generation of these is trivial. Statements, values, and variables of Silly are more complicated to translate to their LLVM equivalent as they all translate to a list of LLVM statements. We discuss the bottom-up generation of code for Silly statements, values, and variables in this section.
+The structure of Silly and LLVM is comparable up to the statement level. Silly modules and functions are converted to their LLVM counterparts and the generation of these is trivial. Statements, values, and variables of Silly are more complicated to translate to their LLVM equivalent as they all require translation to a list of LLVM statements. We discuss the bottom-up generation of code for Silly statements, values, and variables in this section.
 
 The LLVM code generation algorithm is divided in 3 tasks, which are executed for each Silly statement, value or variable node in the syntax tree.
 \begin{enumerate}
   \item Acquire the continuation variables from the children of the node.
-  \item Generate conversion code for the continuation variables, if their type does not match the expected type.
+  \item Generate coercion code for the continuation variables, if their type does not match the expected type.
   \item Generate LLVM code that executes the operation expressed by the node and append the code to the code generated by the children nodes. This task is trivial, as each Silly operation has a corresponding LLVM operation.
 \end{enumerate}
 
 \subsubsection{Continuation variables}
-Each Silly statement transforms to a sequence of LLVM statements, forming a chain of operations semantically equal to the Silly code. Each variable and value of the Silly abstract syntax tree synthesizes an attribute containing the variable which holds the result value of the node. These variables are either global variables, virtual registers, or constants.
+Each variable and value of the Silly abstract syntax tree synthesizes an attribute containing the variable which holds the result value of the node. These variables are either global variables, virtual registers, or constants.
 
 The leafs of the Silly abstract syntax tree form the base cases for the continuation variable attribute:
 \begin{itemize}
-  \item A global variable node in the syntax tree results in a LLVM global variable with the same identifier as continuation variable. This also holds for the global variable 'RP' used for the return register.
+  \item A global variable node in the syntax tree results in a LLVM global variable with the same identifier as the continuation variable. This also holds for the global variable 'RP' used for the return register.
   \item The continuation variable of a local variable is a LLVM virtual register with the same identifier.
   \item Parameters result in a LLVM virtual register continuation variable which has the same identifier as the parameter node.
   \item The allocation value synthesizes a LLVM virtual register with a fresh unique identifier.
@@ -98,8 +98,8 @@ The leafs of the Silly abstract syntax tree form the base cases for the continua
 
 All non-leaf nodes of the Silly AST synthesize a LLVM virtual register with a fresh unique identifier as continuation variable, which contains the result of the operation encoded by the node.
 
-\subsubsection{Conversion code}
-Often types inferred for continuation variables conflict with the types expected by a Silly node. We resolve this conflict by generating LLVM code that coerces the continuation variables in the required type. We assume these conversions are safe, as the Silly code is generated from type correct Haskell code.
+\subsubsection{Coercion code}
+Types inferred for continuation variables sometimes conflict with the types expected by a Silly node. We resolve this conflict by generating LLVM code that coerces the continuation variables in the required type. We assume these conversions are safe, as the Silly code is generated from type correct Haskell code.
 
 Conflicts between the inferred and the expected types only occur when a value is loaded from memory, stored to memory, or a parameter variable is used. Memory cells are allocated as |GrWord| type, thus pointers need to be coerced to integers before they can be stored. Likewise, pointer values loaded from memory are loaded as integers and need to be coerced to a pointer value before they can be used. The same coercions need to be performed when passing a pointer value as parameter of a function, as function parameters are passed as |GrWord| types in Silly.
 
@@ -112,7 +112,7 @@ Conflicts between the inferred and the expected types only occur when a value is
  \label{fig:llvm-running-example}
 \end{figure}
 
-We start the traversal in the bottom-right parameter node. Parameters do not generate code, but a LLVM virtual register named \texttt{p1} is synthesized as continuation variable. The parent of the parameter node is an array indexing node, expecting a continuation variable which has a pointer type. This expectation does not match the inferred type of the actual continuation variable it receives, thus coercion code is generated. The \texttt{inttoptr} operation is applied on the \texttt{p1} register and the result is stored in virtual register \texttt{vr0}. This register is used in the semantic code generated by this node, as the pointer arithmetic is performed on \texttt{vr0} with the \texttt{getelementptr} operation and the result is stored in virtual register \texttt{vr1}. The parent of the array indexing node is a 'Variable Value' node, which loads the value of a variable. The result of this \texttt{load} is stored in virtual register \texttt{vr2}.
+We start the traversal in the bottom-right parameter node. Parameters do not generate code, but a LLVM virtual register named \texttt{p1} is synthesized as the continuation variable. The parent of the parameter node is an array indexing node, expecting a continuation variable which has a pointer type. This expectation does not match the inferred type of the actual continuation variable it receives, thus coercion code is generated. The \texttt{inttoptr} operation is applied on the \texttt{p1} register and the result is stored in virtual register \texttt{vr0}. This register is used in the code generated by this node, as the pointer arithmetic is performed on \texttt{vr0} with the \texttt{getelementptr} operation and the result is stored in virtual register \texttt{vr1}. The parent of the array indexing node is a 'Variable Value' node, which loads the value of a variable. The result of this \texttt{load} is stored in virtual register \texttt{vr2}.
 
 We continue the traversal in the sub-tree that corresponds to the first argument of the function call, which is a local variable node. This node synthesizes a virtual register called \texttt{x78} with a pointer type, as continuation variable. The 'Variable Value' node expects a continuation variable with a pointer type, which matches the inferred type of the actual continuation variable. No conversion code is generated and the address that \texttt{x78} points to is loaded in the virtual register \texttt{vr3}.
 
@@ -142,7 +142,7 @@ The services of the runtime system are available for the generated code because 
   \item Closures
 \end{enumerate}
 
-Pure functions that accept unboxed integers as parameters and return one (for example a function that multiplies 2 integers) are fully supported. Most of the runtime system consists of such functions. The types of these functions are declared in the Haskell code, so the heap points to analysis uses this information for analyzing values returned by these functions. Because the heap points to analysis is directed only by the type of runtime functions, impure functions can break the analysis and break the generated code.
+Pure functions that accept unboxed integers as parameters and return one (for example a function that multiplies 2 integers) are fully supported. Most of the primitives in the runtime system are like that. The types of these functions are declared in the Haskell code, so the heap points to analysis uses this information for analyzing values returned by these functions. Because the heap points to analysis is directed only by the type of runtime functions, functions which do not comply to their specified interface can fool the analysis and cause the generated code to crash when executed.
 
 \begin{figure}[tb]
   \begin{lstlisting}[style={figureLst}, language={C}]
@@ -162,7 +162,7 @@ GrWord primGtInt(GrWord x, GrWord y)
   \label{lst:primGtInt}  
 \end{figure}
 
-Runtime functions that accept or return tag values as parameter, are a special case of the functions that accept or return unboxed integers. Both the runtime system and the compiled Haskell program must share the same mapping between constructors and their tag values. The current implementation of this mapping can be seen in \refF{lst:primGtInt}. The integer values of the tags \texttt{CFalse}, \texttt{CTrue}, and some several other tags, are hard-coded in the runtime system (line 1 and 2) and in the compiler. The mapping of these tags is is synchronized by hand and are subject to possible synchronisation errors in the future.
+Runtime functions that accept or return tag values as parameter, are a special case of the functions that accept or return unboxed integers. Both the runtime system and the compiled Haskell program must share the same mapping between constructors and their tag values. The current implementation of this mapping can be seen in \refF{lst:primGtInt}. The integer values of the tags \texttt{CFalse}, \texttt{CTrue}, and some several other tags, are hard-coded in the runtime system (line 1 and 2) and in the compiler. This is a temporary solution at best, because it is a source of inconsistencies.
 
 The final class of runtime functions, functions that receive nodes as parameter or return nodes, are more problematic than the above cases. When a function has a node as parameter, it may be evaluated or unevaluated. A runtime function could inspect the tag of the node to determine if the node is in weak head normal form. If it is unevaluated, evaluating it with a non inlined \texttt{eval} function is an option, but makes the function impure, breaking the heaps points to analysis. Evaluating the arguments of runtime functions in advance solves this problem, but makes the functions more strict than they need to be. Creating a node in the runtime system and returning it to the Haskell world is also not possible yet. The heaps points to analysis is unaware of this closure and this can result in missing arms in generated \texttt{eval} and \texttt{apply} functions. Currently we avoid creating closures in the runtime system, but it is desirable for later versions.
 
@@ -170,7 +170,7 @@ The final class of runtime functions, functions that receive nodes as parameter 
 \label{sec:conservative-gc}
 It is an option to allocate heap memory for closures, but ignore deallocation of this memory. This scheme works for the small examples, but fills the memory quickly with garbage closures for a more elaborate example. Real Haskell programs depend on a garbage collector to deallocate obsolete closures that fill the heap.
 
-The backend utilizes the Boehm-Demers-Weiser garbage collector~\cite{boehm88gc-c}, a conservative collector designed to work in an uncooperative environment. Conservative collectors do not need support from the language to perform their job. These collectors traverse the stack and interpret each value as a pointer. The values that these pointers point to, are recursively inspected for pointers. Each value that can be reached this way from the stack is considered live and thus not garbage. This makes garbage collection very easy to integrate in our backend. \refF{lst:llvm-gc-file} contains all code needed to plug in the garbage collection in the backend. It defines 3 wrapper functions that wrap C macro functions, as there is no way to call a C macro function in LLVM as they are replaced by their definition at link-time. By replacing the calls from \texttt{malloc} to \texttt{llvmgc\_malloc} and linking in the garbage collection library, we add the collector to the backend.
+The backend utilizes the Boehm-Demers-Weiser garbage collector~\cite{boehm88gc-c}, a conservative collector designed to work in an uncooperative environment. Conservative collectors do not need support from the language to perform their job. Such collectors traverse the stack and data segments, interpreting each value as a possible pointer. The values that these pointers point to, are recursively inspected for pointers. Each value that can be reached this way from the stack is considered live and thus not garbage. This makes garbage collection very easy to integrate in our backend. \refF{lst:llvm-gc-file} contains all code needed to plug in the garbage collection in the backend. It defines 3 wrapper functions that wrap C macro functions, as there is no way to call a C macro function in LLVM as they are replaced by their definition at link-time. By replacing the calls from \texttt{malloc} to \texttt{llvmgc\_malloc} and linking in the garbage collection library, we add the collector to the backend.
 
 \begin{figure}[tb]
   \begin{lstlisting}[style={figureLst}, language={C}]
@@ -196,7 +196,7 @@ void* llvmgc_malloc_uncollectable( size_t nBytes )
   \label{lst:llvm-gc-file}  
 \end{figure}
 
-The generality of conservative garbage collection is also a disadvantage. Conservative collectors lack the information if a value is a pointer and perform only an educated guess. Although this is safe, it can result in memory leaks, leaving garbage uncollected. Accurate garbage collectors, collectors that rely on pointer identification information provided by the compiler, do not have this drawback. 
+The generality of conservative garbage collection is also a disadvantage. Conservative collectors lack the information if a value is a pointer and can only make an educated guess. Although this is safe, it can result in memory leaks, leaving garbage uncollected. Accurate garbage collectors, collectors that rely on pointer identification information provided by the compiler, do not have this drawback. 
 
 Another inefficiency of conservative garbage collection rises because the implementation does not abstracts over memory, instead it only abstracts over memory management. A great amount of closures on the heap have a short life-time. When the collector frees the memory used by a closure that became unreachable, it leaves the memory fragmented. When this happens often, we use more pages of memory than needed because of fragmentation. This problem is solved by copying collectors, which compact the heap by copying the live memory to a shadow heap. Copying changes addresses of values, requiring an update of references to values that were copied. This excludes conservative collectors, because wrong guesses are no longer safe when a value is updated with a new pointer value.
 
@@ -204,7 +204,7 @@ We conclude that the current conservative garbage collection is not the most eff
 
 \section{Differences with the C backend}
 \label{sec:imple-diff-c-and-llvm}
-When comparing the LLVM backend described in this chapter and the current C backend, we have only one noticeable difference: type inference.
+When comparing the LLVM backend described in this chapter and the current C backend, we observe one noticeable difference: type inference.
 
 As the C language is strongly typed, the C backend is required to add type information. But the inference that it does, is specialized for C and more ad hoc than the LLVM version. For the C backend, there is no difference between a value at the left hand side and a right hand side of an assignment as the C compiler handles the dereferencing if needed. Furthermore, casts are only added by special cases in the control flow. For example, the C generation for an assignment statement checks if the assignment destination is the stack pointer and if so, the source must be cast to a pointer value. Types are not generally checked, only in some exceptional cases.
 
