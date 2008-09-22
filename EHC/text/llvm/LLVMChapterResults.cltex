@@ -12,8 +12,10 @@ Our hypothesis is that the conservative garbage collector (\refS{sec:conservativ
 
 The benchmarks are performed on a machine with an Intel Core2 processor and 3.2 gigabytes of memory, running 64 bit GNU/Linux with a 2.6.24 kernel. The LLVM files are compiled by LLVM 2.3 with all standard optimizations enabled. The C files are processed by GCC 4.2.3~\cite{gcc:08} with optimization level 2. The produced executables are then stripped, thereby removing the extra bytes of the symbol table.
 
+The implementation and performance of the \texttt{malloc} function differs per platform. In our benchmark environment, we use the \texttt{malloc} implementation supplied by glibc 2.7~\cite{glibc:07}. This implementation, called ptmalloc2~\cite{gloger}, is based on Doug Lea's malloc library~\cite{lea:96}. Although the library is reasonably portable, its performance may vary on different platforms with different configurations. As a result, the numbers used in comparisons between \texttt{malloc} and the garbage collector library can differ for other platforms.
+
 \section{Compile time properties}
-We measure two static program properties: compilation time and file size. We require reasonable compilation times, so that large projects are compiled in acceptable time.We prefer executables with smaller file sizes for efficient distribution, although the current high speed Internet connections and cheap hard disk space reduce the importance of this property. We measure the efficiency of the two properties by comparing to the results of the C backend. We consider the LLVM backend to be efficient with respect to a certain property, if the performance is equal with or better than the C backend.
+We measure two static program properties: compilation time and file size. Compilation time is defined as the time between the invocation of EHC and its successful termination after producing an executable. File size is the size of the executable on disk, including all libraries and prelude functions. The efficiency of the two properties are measured by comparing to the results of the C backend. We consider the LLVM backend to be efficient with respect to a certain property, if the performance is equal with or better than the C backend.
 
 \begin{table}[htbp]
   \begin{center}
@@ -25,7 +27,7 @@ We measure two static program properties: compilation time and file size. We req
   \label{tab:compiletime-gc-data}
 \end{table}
 
-\refT{tab:compiletime-gc-data} presents the results of the comparison between the C and LLVM backend for compilation times and file sizes of the produced executables. Each part of the table is divided in another 3 parts: the result for the C backend, the result for the LLVM backend and finally a column labeled 'ratio', the difference ratio between LLVM and the C backend. If the ratio is greater than or equal to 1, LLVM is more efficient than the C backend.
+\refT{tab:compiletime-gc-data} presents the results of the comparison between the C and LLVM backend for compilation times and file sizes of the produced executables. Each part of the table is divided in another 3 parts: the result for the C backend, the result for the LLVM backend and finally a column labeled 'ratio', the difference ratio between LLVM and the C backend. If the ratio is greater than or equal to 1, LLVM is at least as efficient than the C backend.
 
 \subsection{Compilation time}
 \label{sec:results-compilation-time}
@@ -84,15 +86,15 @@ In contrast to the other measured properties, the execution time for LLVM execut
 \end{enumerate}
 
 \subsubsection{LLVM: faster on average}
-On average, compilation via LLVM results in faster executables than when the executables are produced via C. The structure of the C program to support tail calls is an important factor for this difference.
+On average, compilation via LLVM results in faster executables than when the executables are produced via C. We believe that the structure of the C program to support tail calls is a possible cause for this difference.
 
 The C programming language has no native support for tail calls. In order to map tail calls to C, the regular function call and return paradigm must be abandoned and handled explicitly. A Silly function call is translated to a sequence of C statements that store the arguments in a global array and a \texttt{goto} to the address of the function. Returns are implemented by a read of the return address from the global array and a \texttt{goto} to it. The caller is responsible for cleaning up the stack.
 
-The function call implementation is in principle equal to a standard C function call, but there are calling conventions which are much more efficient. Many calling conventions pass a number of arguments via registers. This reduces the amount of memory reads and writes, which are expensive compared to register reads and writes. For large amounts of function calls, such as often performed in Haskell executables, this results in a significant reduction of the execution time.
+The function call mechanism requires two changes to the structure of the C program that, we believe, are an important factor in the performance difference between C and LLVM. The changes are the passing of function parameters via memory and using \texttt{goto} and labels for control flow. 
 
-Additional drawbacks of the function call implementation are the reduced optimization opportunities. By using \texttt{goto} statements with non-constant labels for returns, it is impossible for the compiler to construct a control flow graph of the program. A control flow graph is essential for optimizations as common sub expression elimination and constant propagation.
+The function call mechanism transfers all data on the stack, which is located in memory. Many calling conventions pass a number of arguments via registers. This reduces the amount of memory reads and writes, which are expensive compared to register reads and writes. LLVM applies efficient calling conventions which use registers for function parameter transfer. For large amounts of function calls, such as often performed in Haskell executables, this results in a significant reduction of the execution time. 
 
-The LLVM function call abstractions support tail calls natively with efficient calling conventions, so no custom function call implementation is required.
+Additional drawbacks of the function call implementation are the reduced optimization opportunities. By using \texttt{goto} statements with non-constant labels for returns, it is impossible for the compiler to construct a control flow graph of the program. This in contrast to the LLVM program, where the compiler knows the possible return locations. A control flow graph is essential for optimizations as common sub expression elimination and constant propagation.
 
 \subsubsection{LLVM: slower}
 \refT{tab:runtime-gc-data} shows 2 test programs which execute faster when compiled via C than via LLVM. For both programs there is a different reason for the degraded performance of the LLVM variant.
@@ -122,11 +124,11 @@ The measured data presented in \refT{tab:runtime-gc-data} invalidates the above 
   \label{tab:runtime-nogc-data}
 \end{table}
 
-In order to validate the hypothesis that the garbage collection is responsible for a large part of the execution time, we repeat the measurements with garbage collection disabled. The results of this measurements are shown in \refT{tab:runtime-nogc-data}. In the table, the execution times are suffixed with the percentage of the execution time with garbage collection enabled. 
+In order to validate the hypothesis that the garbage collection is responsible for a large part of the execution time, we repeat the measurements with garbage collection disabled. The results of this measurements are shown in \refT{tab:runtime-nogc-data}. In the table, the execution times are suffixed with their ratio to the execution times with garbage collection enabled. A ratio greater than or equal to 1 means that execution without garbage collection is at least as efficient as execution with garbage collection.
 
 This benchmark results shows the influence of the garbage collection library, and shows a clearer comparison between the executables generated via C and LLVM. In this benchmark, the ratio increases from 1.10 to 1.17. A 17\% performance increase by compiling via LLVM instead of via C is a significant increase, even for a raw compiler as EHC. Furthermore the numbers verify the hypothesis about an inefficient garbage collector. On average, without garbage collection is the execution time 67\% (C) and 66\% (LLVM) of the execution time with garbage collection enabled. We believe that with an efficient accurate garbage collector, we can approach the 1.17 ratio with garbage collection enabled.
 
-On average, the elimination of garbage collection speeds up the program, but 2 test programs show a performance decrease; \texttt{exp3\_8} and \texttt{tak} need more time for execution when garbage collection is disabled than when it is enabled. This seems strange because without garbage collection, the program just allocates and performs no deallocations. No fragmentation is possible and no time is spend resizing the heap and deallocating structures, so the cause of the slowdown must be in the allocation routines. Indeed, the 2 programs only allocate small structures and the allocation routine of the garbage collector handles this faster than the C library \texttt{malloc()} routine.
+On average, the elimination of garbage collection speeds up the program, but 2 test programs show a performance decrease; \texttt{exp3\_8} and \texttt{tak} need more time for execution when garbage collection is disabled than when it is enabled. This seems strange because without garbage collection, the program just allocates and performs no deallocations. No fragmentation is possible and no time is spend resizing the heap and deallocating structures, so the cause of the slowdown must be in the allocation routines. After investigation, we found that the 2 programs only allocate small structures and the allocation routine of the garbage collector handles this faster than the C library \texttt{malloc()} routine.
 
 Finally, we emphasize the 1.08 ratio of the test program \texttt{digits-of-e2}. With garbage collection enabled, this ratio drops to 0.81. So with garbage collection enabled the C executable is faster, but the LLVM executable is faster when it is disabled. The execution time needed for garbage collection is not always higher for LLVM. The test program \texttt{digits-of-e1} shows that for the LLVM executable the garbage collection takes less time than for the C executable. The other test cases show a nearly equal time for both backends with respect to garbage collection. We have no explanation for this behaviour and suggest further investigation.
 
