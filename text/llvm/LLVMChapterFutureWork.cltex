@@ -17,9 +17,8 @@ As mentioned in \refS{sec:imple-diff-c-and-llvm}, the C and LLVM type inferencer
 \subsubsection{General Silly type inferencing}
 An elegant solution for the multiple Silly type inferencers is lifting the process from the code generation to the Silly phase. This requires changes to make the process more general, in contrast to the current language specific inferencing. The LLVM implementation is a good starting point, but a general Silly type inferencer requires investigation on the following additional subjects:
 \begin{itemize}
-  \item The typing must be language neutral. The types inferred must be applicable to a large amount of possible target languages.
-  \item Types are usable for catching errors in Silly to Silly transformations. This requires us to transform Silly types when the transformation requires it, but could be very worthwhile finding obscure bugs.
-  \item There is very little know about the Silly type system. With a general Silly type system in place, we are able to prove its soundness.  
+  \item The typing must be language neutral, and thus any assumptions on the implementation language must be removed or documented. 
+  \item Types are usable for catching errors in Silly to Silly transformations. This requires us to transform Silly types when the transformation requires it, but could be very worthwhile finding obscure bugs. 
 \end{itemize}
 
 \section{Efficiency}
@@ -43,7 +42,7 @@ The code generated for returning a node via the \texttt{RP} node is shown in \te
 \subsubsection{Inefficient returns}
 The return strategy of Silly allows languages without support for multiple return values to return nodes, but makes returning nodes inefficient for languages that do support them. There are two problems introduced by this strategy: 1) The target language's compiler is not aware of the relation between the \texttt{RP} node and the return value and 2) The return node is transferred in memory and never in registers.
 
-The target language's compiler is unable to relate the \texttt{RP} node with the return value of a function. The assignment of values to the global \texttt{RP} node is regarded as a regular assignment to a global variable. Often compilers do not trace the values that possibly reside at a memory location, but do trace possible return values of a function. This information gives the compiler the opportunity to generated more efficient code for the call location. We reduce the optimization opportunities by using returning nodes via the global \texttt{RP} node.
+The first problem is that the target language's compiler is unable to relate the \texttt{RP} node with the return value of a function. The assignment of values to the global \texttt{RP} node is regarded as a regular assignment to a global variable. Often compilers do not trace the values that possibly reside at a memory location, but do trace possible return values of a function. This information gives the compiler the opportunity to generated more efficient code for the call location. We reduce the optimization opportunities by using returning nodes via the global \texttt{RP} node.
 
 As a second consequence of the return strategy, nodes are always returned in memory and never in registers. Access to memory is expensive compared to register access. For this reason, efficient calling conventions pass parameters and return values in registers. For example, the x86-64 application binary interface~\cite{amd64:07} reserves two registers for returning integer values. These registers offer enough space to return a 2 |GrWord| node. Returning nodes in memory makes function calls more expensive than needed.
 
@@ -77,7 +76,7 @@ The most important part of the runtime system are the primitive functions. These
   \label{fig:llvm-primitiveinline-no}
 \end{figure}
 
-The primitive functions are more effective if they are visible to the LLVM compiler. Currently the LLVM compiler treats calls to primitive functions as black boxes, having no information about the semantics of the function and the possible values it returns. The effect of this lack of information is illustrated by \refF{fig:llvm-primitiveinline-no}. The \texttt{primMulInt} function multiplies two integers. If the content of this primitive function was known to the LLVM compiler, then the example would eliminate the constant multiplication and directly store 54 in \texttt{RP[1]}. Primitive functions that are transparent for the LLVM compiler allow elimination of function calls and give extra opportunity for optimization.
+Currently the LLVM compiler treats calls to primitive functions as black boxes, having no information about the semantics of the function and the possible values it returns. The effect of this lack of information is illustrated by \refF{fig:llvm-primitiveinline-no}. The \texttt{primMulInt} function multiplies two integers. If the content of this primitive function was known to the LLVM compiler and inlined, then the example would eliminate the constant multiplication and directly store 54 in \texttt{RP[1]}. Primitive functions that are transparent for the LLVM compiler allow elimination of function calls and give extra opportunity for optimization.
 
 \subsubsection{Alternative strategy and expected impact}
 A obvious alternative is producing LLVM assembly code for the runtime code. Having 2 separate code bases for the runtime system is undesired, but generation of different variants of a common representation solves the problem. The LLVM compiler infrastructure includes the tool \texttt{llvm-gcc}~\cite{latadv:03}, a GCC drop-in replacement tool, which generates LLVM assembly from C source files. With this tool, a LLVM assembly variant of the current runtime can be generated and used by the LLVM compiler to further optimize the executables. Still, \texttt{llvm-gcc} is not enough when the runtime is extended with non-C code.
