@@ -18,7 +18,7 @@ typedef struct MM_Plan {
   	
 	// private data of Plan, but included here for fast access
   	// MM_Collector*	 			collector ;
-  	MM_Mutator*	 				mutator ;
+  	MM_Mutator*	 				mutator ;	// must == &mm_mutator
   	
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Plan* ) ;

@@ -49,10 +49,10 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->collector = mm_collector_SS ;
 	plss->collector.init( &plss->collector, &plss->memMgt ) ;
 	// plan->collector = &plss->collector ;
-		
-	plss->mutator = mm_mutator_GBSS ;
-	plss->mutator.init( &plss->mutator, &plss->memMgt, &plss->ssAllocator ) ;
-	plan->mutator = &plss->mutator ;
+	
+	mm_mutator = mm_mutator_GBSS ;
+	mm_mutator.init( &mm_mutator, &plss->memMgt, &plss->ssAllocator, &plss->residentAllocator, &plss->gbmTrace ) ;
+	plan->mutator = &mm_mutator ;
 		
 	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 4, 4 ) ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
@@ -63,23 +63,25 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	MM_TraceSupply* queTraceSupply   = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 3 ) ;
 	
 	*regsTraceSupply = mm_traceSupply_GBRegs ;
-	regsTraceSupply->init( regsTraceSupply, &plss->gbmTrace ) ;
+	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	
 	*rootsTraceSupply = mm_traceSupply_Roots ;
-	rootsTraceSupply->init( rootsTraceSupply, &plss->gbmTrace ) ;
+	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	
 	*stackTraceSupply = mm_traceSupply_GBStack ;
-	stackTraceSupply->init( stackTraceSupply, &plss->gbmTrace ) ;
+	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	
 	*queTraceSupply = mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
-	queTraceSupply->init( queTraceSupply, &plss->gbmTrace ) ;
+	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	plss->queTraceSupply = queTraceSupply ;
 	
 	plss->allTraceSupply = mm_traceSupply_Group ;
-	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->gbmTrace, traceSupplies ) ;
+	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->memMgt, &plss->gbmTrace, traceSupplies ) ;
 	
 	plss->gbmTrace = mm_trace_GBM ;
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
+	
+	plss->gcInProgress = False ;
 	
 	plan->data = (MM_Plan_Data_Priv*)plss ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init C plan=%x plss=%x\n",plan,plss);}) ;
@@ -89,17 +91,41 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 %%[8
 Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	Bool res ;
+
+	if ( plss->gcInProgress ) {
+		rts_panic1_1( "mm_plan_SS_PollForGC already in progress", 0 ) ;
+	}
+	plss->gcInProgress = True ;
 
 	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC plan=%x plss=%x\n",plan,plss);}) ;
 	if ( isSpaceFull ) {
+		// total as used previously
+		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
+		// collect, which also switches spaces
 		plss->collector.collect( &plss->collector ) ;
-		// rts_panic1_1( "mm_plan_SS_PollForGC", 0 ) ;
-		return True ;
+		// total as used previously
+		Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
+		Word onePercentSz = prevTotalSz / 100 ;
+		Word percentageFree = (prevTotalSz - curUsedSz) / onePercentSz ;
+		// adapt max size of space, based on current occupancy rate, this is currently a poor estimate
+		IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC prevTotalSz=%x curUsedSz=%x percentageFree=%d newTotalSz=%x\n",prevTotalSz,curUsedSz,percentageFree,prevTotalSz + (60 - percentageFree) * onePercentSz);}) ;
+		if ( percentageFree < 40 ) {
+			// less then some percentage of free space left, so beef it up
+			Word newTotalSz = prevTotalSz + (60 - percentageFree) * onePercentSz ;
+			plss->ssAllocator.setTotalSize( &plss->ssAllocator, newTotalSz ) ;
+		}
+		res = True ;
+	} else {
+		res = False ;
 	}
-	return False ;
+
+	plss->gcInProgress = False ;
+	return res ;
 }
 
 %%]
+		// rts_panic1_1( "mm_plan_SS_PollForGC", 0 ) ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% SS dump

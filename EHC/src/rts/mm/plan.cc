@@ -46,13 +46,15 @@ void mm_plan_Test() {
 		GB_NodePtr p1 = (GB_NodePtr)mm_plan.mutator->allocator->alloc( mm_plan.mutator->allocator, 12 ) ;
 		IF_GB_TR_ON(3,{printf("mm_plan_Test alloc p1=%x\n",p1);}) ;
 		GB_FillConNode2(p1,2,p1,p1)
-		mm_Roots_Register( (Ptr)&p1 ) ;
+		mm_Roots_Register1( (Ptr)&p1 ) ;
 		
 		int i1 ;
 		for ( i1 = 0 ; i1 < 500 ; i1++ ) {
 			int i2 ;
 			for ( i2 = 0 ; i2 < 100 ; i2++ ) {
-				Ptr p = mm_plan.mutator->allocator->alloc( mm_plan.mutator->allocator, 24 ) ;
+				GB_NodePtr p = (GB_NodePtr)mm_plan.mutator->allocator->alloc( mm_plan.mutator->allocator, 24 ) ;
+				GB_FillConNode5(p,2,p1,p1,p1,p1,p1) ;
+				p1 = p ;
 				IF_GB_TR_ON(3,{printf("mm_plan_Test %d %d alloc p=%x\n",i1,i2,p);}) ;
 			}
 			mm_plan.dump( &mm_plan ) ;

@@ -90,9 +90,9 @@ Order of imports is important because of usage dependencies between types.
 #include "pages.h"
 #include "space.h"
 #include "allocator.h"
-#include "roots.h"
 #include "collector.h"
 #include "trace.h"
+#include "roots.h"
 #include "tracesupply.h"
 #include "mutator.h"
 #include "plan.h"
@@ -111,6 +111,22 @@ Order of imports is important because of usage dependencies between types.
 #include "semispace/gbssmutator.h"
 #include "semispace/sscollector.h"
 #include "semispace/ss.h"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface to outside of MM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+static inline Ptr mm_itf_alloc( size_t sz ) {
+	// printf( "mm_itf_alloc\n" ) ;
+	return mm_mutator.allocator->alloc( mm_mutator.allocator, sz ) ;
+}
+
+static inline Ptr mm_itf_allocResident( size_t sz ) {
+	// printf( "mm_itf_allocResident\n" ) ;
+	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz ) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

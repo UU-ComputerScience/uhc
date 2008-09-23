@@ -355,19 +355,22 @@ SEM Module
                                                     linkL   = Seq.toList @instrs.links
                                                     links   = ppTbl' "GB_LinkEntry" @ppNmLinkEntriesTbl
                                                                 (map (\(l,c)
-                                                                       -> let (kind,val,loc) = kv l c
+                                                                       -> let (kind,loc,val) = kv l c
                                                                           in  ppCurlysCommasBlock [ pp $ fromEnum $ kind, ppCast "GB_Ptr" loc, ppCast "GB_Word" val ]
                                                                      )
                                                                  $ linkL
                                                                 )
                                                             where constTblSz = length @constL
                                                                   kv l c = case linkTbl l of
-                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmConstTbl       $ linkVal l             , ppAddrArrAt @ppNmByteCodeTbl c)
-                                                                             LinkTbl_ConstPtr  -> (LinkTbl_PatchCode_Deref2, ppAddrArrAt @ppNmConstTbl       $ linkVal l             , ppAddrArrAt @ppNmByteCodeTbl c)
-                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l             , ppAddrArrAt @ppNmByteCodeTbl c)
-                                                                             LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz, ppAddrArrAt @ppNmByteCodeTbl c)
-                                                                             k                 -> (k, pp $ linkVal l,ppAddrArrAt @ppNmByteCodeTbl c)
+                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l             )
+                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l             )
+                                                                             LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz)
+                                                                             k                 -> (k,ppAddrArrAt @ppNmByteCodeTbl c, pp $ linkVal l)
                                                     glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
+                                                    cafEntries= ppTbl' "GB_NodePtr" @ppNmCafEntriesTbl [ mk e | e <- @cafEntryL ]
+                                                             where mk e = ppCast "GB_NodePtr" $ ppAddrArrAt @ppNmByteCodeTbl $ panicJust "GrinByteCode.ToC.cafs" $ Map.lookup e glEntryMp
+                                                    -- cafMp   = Map.fromList [ (i,ppArrAt @ppNmCafEntriesTbl n) | (i,n) <- zip [(0::Int)..] @cafEntryL ]
+                                                    cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
                                                     glEntries= ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ e i c | (i,c) <- Map.assocs glEntryMp ]
                                                              where e i c = case Map.lookup i cafMp of
                                                                              Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n
@@ -383,7 +386,6 @@ SEM Module
                                                                                            ]
                                                                        )           )
                                                                        (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
-                                                    cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
                                                     cafs    = [ "static GB_Node" >#< n >#< "=" >#< c | (_,n,c) <- cafL ]
                                                     initf   = ppLine $ ppCmtC @lhs.opts "Initialization"
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
@@ -394,9 +396,10 @@ SEM Module
 %%]]
                                                                                  )
                                                                                  ("gb_InitTables" >|< ppParensCommasBlock args >#< ";")
-                                                            where args = [ pp @instrs.cLoc, @ppNmByteCodeTbl
-                                                                         , pp (length linkL), @ppNmLinkEntriesTbl
-                                                                         , @ppNmGlobEntriesTbl
+                                                            where args = [ @ppNmByteCodeTbl, pp @instrs.cLoc
+                                                                         , @ppNmLinkEntriesTbl, pp (length linkL)
+                                                                         , @ppNmCafEntriesTbl, pp (length @cafEntryL)
+                                                                         , @ppNmGlobEntriesTbl, pp (Map.size glEntryMp)
                                                                          , @ppNmConstTbl
 %%[[20
                                                                          -- , ppAddrOf @ppNmImpNode
@@ -422,7 +425,7 @@ SEM Module
                                                                                   ++ [ @ppNmInitF >|< "()" >#< ";" ]
                                                                                   ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp (1::Int)] >#< ";" ]
 %%][20
-                                                                                  ++ [ "GB_MkFixConNodeN(" >#< mkPre m >|< @strNmExpNode >|< "," >#< mkPre m >|< @strNmExpNodeSz >|<  ", 0 ) ;"
+                                                                                  ++ [ "GB_MkConNodeN_Fixed2_Rooted(" >#< mkPre m >|< @strNmExpNode >|< ", GB_GC_MinAlloc_Words(" >|< mkPre m >|< @strNmExpNodeSz >|< "), 0 ) ;"
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
                                                                                   ++ [ mkPre m >|< @strNmInitF >|< ppParens @ppNmModEntriesTbl >#< ";"
@@ -470,6 +473,7 @@ SEM Module
                                                       ++ callinfos
                                                       ++ consts
                                                       ++ cafs
+                                                      ++ cafEntries
                                                       ++ glEntries
 %%[[20
                                                       ++ [ expnd ]
@@ -496,6 +500,42 @@ SEM Module
 %%]]
                                                     )
 %%]
+
+                                                    links   = ppTbl' "GB_LinkEntry" @ppNmLinkEntriesTbl
+                                                                (map (\(l,c)
+                                                                       -> let (kind,loc,val) = kv l c
+                                                                          in  ppCurlysCommasBlock [ pp $ fromEnum $ kind, ppCast "GB_Ptr" loc, ppCast "GB_Word" val ]
+                                                                     )
+                                                                 $ linkL
+                                                                )
+                                                            where constTblSz = length @constL
+                                                                  kv l c = case linkTbl l of
+                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l             )
+                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, addr                            $ linkVal l             )
+                                                                                               where addr e = maybe (ppAddrArrAt @ppNmGlobEntriesTbl e) ppAddrOf $ Map.lookup e cafMp
+                                                                             LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz)
+                                                                             k                 -> (k,ppAddrArrAt @ppNmByteCodeTbl c, pp $ linkVal l)
+                                                    glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
+                                                    cafEntries= ppTbl' "GB_NodePtr" @ppNmCafEntriesTbl [ mk e | e <- @cafEntryL ]
+                                                             where mk e = ppCast "GB_NodePtr" $ ppAddrArrAt @ppNmByteCodeTbl $ panicJust "GrinByteCode.ToC.cafs" $ Map.lookup e glEntryMp
+                                                    cafMp   = Map.fromList [ (i,ppArrAt @ppNmCafEntriesTbl n) | (i,n) <- zip [(0::Int)..] @cafEntryL ]
+                                                    -- cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
+                                                    glEntries= ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ e i c | (i,c) <- Map.assocs glEntryMp ]
+                                                             where e i c = case Map.lookup i cafMp of
+                                                                             Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n
+                                                                             Nothing -> ppAddrArrAt @ppNmByteCodeTbl c
+                                                    cafL    = zipWith3 (\b nr i -> ( i
+                                                                                   , b >|< nr
+                                                                                   , ppArr [ pp "GB_MkCAFHeader"
+                                                                                           , pp
+                                                                                             $ ppCast "GB_Word"
+                                                                                             $ ppAddrArrAt @ppNmByteCodeTbl
+                                                                                             $ panicJust "GrinByteCode.ToC.cafs"
+                                                                                             $ Map.lookup i glEntryMp
+                                                                                           ]
+                                                                       )           )
+                                                                       (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
+
 
 %%[8 hs
 ppStringAsHex :: String -> PP_Doc

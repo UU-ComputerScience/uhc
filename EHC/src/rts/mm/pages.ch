@@ -38,7 +38,7 @@ For more (global) info see mm.h
 typedef Ptr  MM_Pages_Data_Priv ;
 typedef BPtr MM_Page ;
 
-typedef uint16_t MM_Pages_LogSize ;
+typedef HalfWord MM_Pages_LogSize ;
 
 typedef struct MM_Pages {
 	// private data

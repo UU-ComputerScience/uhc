@@ -13,6 +13,12 @@ Requirement: pointers should fit into a Word
 typedef uint64_t Word  ;
 typedef  int64_t SWord ;
 
+typedef uint32_t HalfWord  ;
+typedef  int32_t SHalfWord ;
+
+typedef uint16_t QuartWord  ;
+typedef  int16_t SQuartWord ;
+
 #define Word_SizeInBits			64
 #define Word_SizeInBits_Log		6
 
@@ -23,6 +29,12 @@ typedef  int64_t SWord ;
 
 typedef uint32_t Word  ;
 typedef  int32_t SWord ;
+
+typedef uint16_t HalfWord  ;
+typedef  int16_t SHalfWord ;
+
+typedef uint8_t QuartWord  ;
+typedef  int8_t SQuartWord ;
 
 #define Word_SizeInBits			32
 #define Word_SizeInBits_Log		5

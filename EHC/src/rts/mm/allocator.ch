@@ -31,8 +31,19 @@ typedef struct MM_Allocator {
   	Ptr 						(*alloc)( struct MM_Allocator*, Word sz ) ;
   	void 						(*dealloc)( struct MM_Allocator*, Ptr ptr ) ;
   	
-  	// info
-  	Ptr 						(*lastAllocLocation)( struct MM_Allocator* ) ;
+  	// last allocated location, or NULL if cannot determine
+  	Ptr 						(*lastAllocAddress)( struct MM_Allocator* ) ;
+  	// last in use fragment, or -1 if cannot determine
+  	MM_Space_FragmentInx		(*lastAllocFragment)( struct MM_Allocator* ) ;
+
+  	// size of total area until runs full, or maxint when runs until system limit
+  	Word 						(*getTotalSize)( struct MM_Allocator* ) ;
+  	void 						(*setTotalSize)( struct MM_Allocator*, Word sz ) ;
+  	// size of used area
+  	Word 						(*getUsedSize)( struct MM_Allocator* ) ;
+
+  	// the space used
+  	MM_Space* 					(*getSpace)( struct MM_Allocator* ) ;
 
   	// tracing live pointers
   	

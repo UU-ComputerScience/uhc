@@ -17,8 +17,8 @@ typedef struct MM_TraceSupply {
   	MM_TraceSupply_Data_Priv 	data ;
   	
   	// setup, alternatively with sub traceSupplies depending on traceSupply
-  	void			 			(*init)( struct MM_TraceSupply*, struct MM_Trace* ) ;
-  	void			 			(*initWithSub)( struct MM_TraceSupply*, struct MM_Trace*, MM_FlexArray* subTraceSupplies ) ;
+  	void			 			(*init)( struct MM_TraceSupply*, MM_Malloc* memmgt, struct MM_Trace* ) ;
+  	void			 			(*initWithSub)( struct MM_TraceSupply*, MM_Malloc* memmgt, struct MM_Trace*, MM_FlexArray* subTraceSupplies ) ;
   	
   	// reset to initial state for tracing another time
   	void			 			(*reset)( struct MM_TraceSupply* ) ;
@@ -27,7 +27,8 @@ typedef struct MM_TraceSupply {
   	void			 			(*run)( struct MM_TraceSupply* ) ;
   	
   	// adding work
-  	void						(*pushWork)( struct MM_TraceSupply*, Word* work, Word nrWorkWords ) ;
+  	// the use&meaning of 'extra' is determined by a particular combination of trace pushing work and its tracesupply
+  	void						(*pushWork)( struct MM_TraceSupply*, Word* work, Word nrWorkWords, Word extra ) ;
   	
   	// tracing live pointers
   	

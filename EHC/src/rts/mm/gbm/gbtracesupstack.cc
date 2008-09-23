@@ -28,8 +28,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_traceSupply_GBStack_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) {
-	MM_TraceSupply_GBStack_Data* trgr = mm_malloc_LOF.malloc( sizeof(MM_TraceSupply_GBStack_Data) ) ;
+void mm_traceSupply_GBStack_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace ) {
+	MM_TraceSupply_GBStack_Data* trgr = memmgt->malloc( sizeof(MM_TraceSupply_GBStack_Data) ) ;
 	trgr->trace = trace ;
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
@@ -41,10 +41,13 @@ void mm_traceSupply_GBStack_Reset( MM_TraceSupply* traceSupply ) {
 void mm_traceSupply_GBStack_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBStack_Data* trgr = (MM_TraceSupply_GBStack_Data*)traceSupply->data ;
 	
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run A\n");}) ;
 	WPtr s ;
 	for ( s = sp ; s < (WPtr)StackAreaHigh ; s++ ) {
-		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
+		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%x\n",s);}) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
 	}
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run C\n");}) ;
 }
 %%]
 

@@ -70,6 +70,10 @@ void memorySetup()
     Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*STACKSIZE);
     ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
 #elif USE_EHC_MM
+    mm_init() ;
+
+    Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*STACKSIZE);
+    ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
 #else
     HeapAreaLow = (Pointer)malloc(sizeof(GrWord)*HEAPSIZE);
     HeapAreaHigh = HeapAreaLow + HEAPSIZE;
@@ -89,12 +93,11 @@ void memorySetup()
     StackAreaLow = Stack;
     StackAreaHigh = Stack + STACKSIZE;
     
-    // mm_init() ;
 }
 %%]
 
 %%[8
-#if USE_BOEHM_GC
+#if USE_BOEHM_GC || USE_EHC_MM
 #else
 GrWord heapalloc(int n)
 {
@@ -269,6 +272,7 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 	initCAF = Cast(GB_Word,initCAFApp) ;
 %%]]
 	gb_push( initCAF ) ;
+	// printf( "main_GB_Run\n" ) ;
 #	if TIMING
 		clockStart = clock() ;
 #	endif

@@ -32,6 +32,18 @@
 %%% Internal config
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+For now, switch off Boehm GC, turn on own GC
+
+%%[8
+%%]
+#undef USE_BOEHM_GC
+#define USE_EHC_MM				1
+
+%%[8
+%%]
+// not used
+#define GB_IND_IN_HDR			1
+
 %%[8.TRACE
 #define TRACE 					1
 
@@ -77,7 +89,7 @@ typedef int Bool ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef intptr_t GrWord;
+typedef SWord GrWord;
 typedef GrWord* Pointer;
 %%]
 
@@ -101,6 +113,7 @@ typedef GrWord* Pointer;
 %%[8
 #if USE_BOEHM_GC
 #include "gc.h"
+#elif USE_EHC_MM
 #else
 
 #define HEAPSIZE 1000000
@@ -114,11 +127,14 @@ extern Pointer HeapAreaHigh;
 
 %%[8
 #if USE_BOEHM_GC
-#define heapalloc(sz)                Cast(GrWord,GC_MALLOC(sz*sizeof(GrWord)))
-#define heapalloc_uncollectable(sz)  Cast(GrWord,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(GrWord)))
+#	define heapalloc(sz)                Cast(GrWord,GC_MALLOC(sz*sizeof(GrWord)))
+#	define heapalloc_uncollectable(sz)  Cast(GrWord,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(GrWord)))
+#elif USE_EHC_MM
+#	define heapalloc(sz)                Cast(GrWord,mm_itf_alloc(sz*sizeof(GrWord)))
+#	define heapalloc_uncollectable(sz)  Cast(GrWord,mm_itf_allocResident(sz*sizeof(GrWord)))
 #else
-GrWord heapalloc(int);
-#define heapalloc_uncollectable(sz)  heapalloc(sz)
+	GrWord heapalloc(int);
+#	define heapalloc_uncollectable(sz)  heapalloc(sz)
 #endif
 %%]
 

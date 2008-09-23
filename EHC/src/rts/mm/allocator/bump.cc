@@ -24,6 +24,11 @@ void mm_allocator_Bump_Alloc_InitFromFragment( MM_Allocator_Bump_Data* alc, MM_S
 	alc->addrFirstFree  = (Word)frg->frag ;
 	alc->addrCursorFree = (Word)frg->frag + MM_GC_CopySpace_FragmentSize ;
 }
+
+void mm_allocator_Bump_Alloc_NewFragment( MM_Allocator_Bump_Data* alc ) {
+	alc->curFragmentInx = alc->space->growSpaceByDefault( alc->space ) ;
+	mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,8 +47,7 @@ Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz
 		mm_plan.pollForGC( &mm_plan, True, alc->space ) ;
 	} else {
 		// get a new fragment
-		alc->curFragmentInx = alc->space->growSpaceByDefault( alc->space ) ;
-		mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
+		mm_allocator_Bump_Alloc_NewFragment( alc ) ;
 	}
 	// retry allocation again, should (cannot) not fail!!!
 	return mm_allocator_Bump_Alloc_AndCheckCursor( alc, sz ) ;
@@ -66,9 +70,12 @@ void mm_allocator_Bump_ResetWithSpace( MM_Allocator* alcr, MM_Space* space ) {
 		mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
 	} else {
 		// first request will trigger allocation
-		alc->addrCursorFree = alc->addrFirstFree = -1 ;
-		alc->curFragmentInx = -1 ;
+		// alc->addrCursorFree = alc->addrFirstFree = -1 ;
+		// alc->curFragmentInx = -1 ;
+		mm_allocator_Bump_Alloc_NewFragment( alc ) ;
 	}
+	// trigger 1st allocation
+	// mm_allocator_Bump_Alloc_AndEnsureSpace( alc, 0 ) ;
 }
 
 void mm_allocator_Bump_Init( MM_Allocator* alcr, MM_Malloc* memmgt, MM_Space* space ) {
@@ -94,9 +101,38 @@ void mm_allocator_Bump_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 	// no effect
 }
 
-Ptr mm_allocator_Bump_LastAllocLocation( MM_Allocator* alcr ) {
+Ptr mm_allocator_Bump_LastAllocAddress( MM_Allocator* alcr ) {
 	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
 	return (Ptr)alc->addrCursorFree ;
+}
+
+MM_Space_FragmentInx mm_allocator_Bump_LastAllocFragment( MM_Allocator* alcr ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	return alc->curFragmentInx ;
+}
+
+Word mm_allocator_Bump_GetTotalSize( MM_Allocator* alcr ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	return alc->maxFragments << alc->space->getGrowDefaultLog(alc->space) ;
+}
+
+void mm_allocator_Bump_SetTotalSize( MM_Allocator* alcr, Word sz ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	alc->maxFragments = EntierLogUpShrBy( sz, alc->space->getGrowDefaultLog(alc->space) ) ;
+	IF_GB_TR_ON(3,{printf("mm_allocator_Bump_SetTotalSize sz=%x alc->maxFragments=%x\n",sz,alc->maxFragments);}) ;
+}
+
+Word mm_allocator_Bump_GetUsedSize( MM_Allocator* alcr ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	return
+		  ((alc->curFragmentInx + 1) << alc->space->getGrowDefaultLog(alc->space))
+		- (alc->addrCursorFree - alc->addrFirstFree)
+		;
+}
+
+MM_Space* mm_allocator_Bump_GetSpace( MM_Allocator* alcr ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	return alc->space ;
 }
 
 %%]
@@ -132,7 +168,12 @@ MM_Allocator mm_allocator_Bump =
 	, &mm_allocator_Bump_ResetWithSpace
 	, &mm_allocator_Bump_Alloc
 	, &mm_allocator_Bump_Dealloc
-	, &mm_allocator_Bump_LastAllocLocation
+	, &mm_allocator_Bump_LastAllocAddress
+	, &mm_allocator_Bump_LastAllocFragment
+	, &mm_allocator_Bump_GetTotalSize
+	, &mm_allocator_Bump_SetTotalSize
+	, &mm_allocator_Bump_GetUsedSize
+	, &mm_allocator_Bump_GetSpace
 #ifdef TRACE
 	, &mm_allocator_Bump_Dump
 #endif

@@ -82,9 +82,8 @@ Link items, to be resolved at runtime initialization.
 %%[8 hs export(Link(..),LinkTbl(..))
 data LinkTbl
   = LinkTbl_Const
-  | LinkTbl_ConstPtr
   | LinkTbl_CodeEntry
-  | LinkTbl_PatchCode				-- patch with linkVal
+  | LinkTbl_PatchCode_Deref0		-- patch with linkVal
   | LinkTbl_PatchCode_Deref1		-- patch with *linkVal
   | LinkTbl_PatchCode_Deref2		-- patch with **linkVal
   | LinkTbl_PatchOffsets			-- patch offsets to absolute address
@@ -102,12 +101,9 @@ data Link
   deriving Show
 %%]
 
-%%[8 hs export(linkCode,linkConst,linkConstPtr,linkOffsets)
+%%[8 hs export(linkCode,linkConst,linkOffsets)
 linkConst :: Int -> Link
 linkConst x = Link LinkTbl_Const x
-
-linkConstPtr :: Int -> Link
-linkConstPtr x = Link LinkTbl_ConstPtr x
 
 linkCode :: Int -> Link
 linkCode x = Link LinkTbl_CodeEntry x
@@ -850,14 +846,16 @@ metaprop = metaprop' AnnComment
 Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
 
 %%[8 hs
-[tgShSize,tgShNdEv,tgShCateg,tagShGC]
-  = if Cfg.use32Bits then [16,14,12,10::Int] else [32,30,28,26]
+[tgShSize,tgShCateg,tagShGC,tagShTag,tgShNdEv]
+  = if Cfg.use32Bits then [16,14,12,2,0::Int] else [32,30,28,2,0]
 
 tgNeedEval_No, tgNeedEval_Yes, tgNeedEval_BlH :: Integer
 tgNeedEval_No  = 0
 tgNeedEval_Yes = 1
 tgNeedEval_BlH = 2
 %%]
+[tgShSize,tgShNdEv,tgShCateg,tagShGC,tagShTag]
+  = if Cfg.use32Bits then [16,14,12,10,0::Int] else [32,30,28,26,0]
 
 load tag, yield stack increment and additional size to alloc
 
@@ -879,7 +877,7 @@ tag env modNmConstInx stkDepth gt sz
                                          where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
                     GrTag_PApp m   nm    -> (tgNeedEval_No ,1,m ,ins            ,inc,0)
                                          where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
-              tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg'
+              tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg' `shiftL` tagShTag
               isEvaluated = needEval == tgNeedEval_No
 %%]
 

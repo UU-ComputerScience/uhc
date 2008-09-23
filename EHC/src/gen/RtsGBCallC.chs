@@ -76,7 +76,7 @@ mkC maxCCallArgs
                         resty = basicTyGBTy res
                     in  [ assign (r' res) cl
 %%[[96
-                        , stat (call "GB_PassExcWith" [empty,op ">" "gb_ThrownException_NrOfEvalWrappers" "0",pp "return"])
+                        , stat (call "GB_PassExcWith" [empty,empty,op ">" "gb_ThrownException_NrOfEvalWrappers" "0",pp "return"])
 %%]]
                         , stat "GB_BP_UnlinkSP"
                         , stat (call "GB_PopCastIn" ["GB_BytePtr",pc])

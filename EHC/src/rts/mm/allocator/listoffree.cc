@@ -127,6 +127,22 @@ void mm_allocator_LOF_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 		perSize->free = free ;
 	}
 }
+
+Ptr mm_allocator_LOF_LastAllocAddress( MM_Allocator* alcr ) {
+	// not supported (could be done, but until now unnecessary)
+	return NULL ;
+}
+
+MM_Space_FragmentInx mm_allocator_LOF_LastAllocFragment( MM_Allocator* alcr ) {
+	// not supported (could be done, but until now unnecessary)
+	return -1 ;
+}
+
+MM_Space* mm_allocator_LOF_GetSpace( MM_Allocator* alcr ) {
+	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
+	return alc->space ;
+}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,7 +201,12 @@ MM_Allocator mm_allocator_LOF =
 	, MM_Undefined
 	, &mm_allocator_LOF_Alloc
 	, &mm_allocator_LOF_Dealloc
+	, &mm_allocator_LOF_LastAllocAddress
+	, &mm_allocator_LOF_LastAllocFragment
 	, MM_Undefined
+	, MM_Undefined
+	, MM_Undefined
+	, &mm_allocator_LOF_GetSpace
 #ifdef TRACE
 	, &mm_allocator_LOF_Dump
 #endif
