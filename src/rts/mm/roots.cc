@@ -7,7 +7,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Roots
+%%% Interface for global roots
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -15,11 +15,24 @@ MM_FlexArray mm_Roots ;
 %%]
 
 %%[8
-void mm_Roots_Register( WPtr toObj ) {
-	MM_FlexArray_Inx i = mm_flexArray_NewSlot( &mm_Roots ) ;
-	((MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ))->ptrToObj = toObj ;
+void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr, MM_Trace_Flg flg ) {
+	if ( nr > 0 ) {
+		MM_FlexArray_Inx i = mm_flexArray_NewSlot( &mm_Roots ) ;
+		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
+		r->ptrToObj = toObj ;
+		r->nrObjs = nr ;
+		r->flags = flg ;
+	}
 }
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface for local roots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+MM_LclRoot_Grp*		mm_LclRoots = NULL ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

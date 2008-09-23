@@ -36,7 +36,7 @@ This design allows incremental growth of the use of mallocable memory, and there
 #define MM_BuddyPage_ExtlDataTag_PartOf				3		// part of larger buddy, free or alloced
 #define MM_BuddyPage_ExtlDataTag_PartOfAlloced		4		// part of larger allocated buddy
 
-typedef uint16_t MM_BuddyPage_GroupId ;
+typedef HalfWord MM_BuddyPage_GroupId ;
 
 // additional metadata for each page, to be kept when allocated.
 // It consists of system + user data, in total 2 words.
@@ -50,12 +50,12 @@ typedef struct MM_BuddyPage_ExtlData {
 				uint8_t						tag 		: 8	;
 				uint8_t						sizeLog 	: 8 ;	
 				MM_BuddyPage_GroupId		groupId 	: 16 ;	
-				uint32_t					sizePages 	: 32 ;	
+				HalfWord					sizePages 	: 32 ;	
 #			else
 				uint8_t						tag 		: 3	;
 				uint8_t						sizeLog 	: 5 ;	
 				MM_BuddyPage_GroupId		groupId 	: 8 ;	
-				uint16_t					sizePages 	: 16 ;	
+				HalfWord					sizePages 	: 16 ;	
 #			endif
 		} 		data ;
 		Word	word ;

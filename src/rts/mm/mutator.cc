@@ -21,6 +21,7 @@ MM_Mutator mm_mutator ;
 
 %%[8
 void mm_init_mutator() {
+	// init is done as part of plan init
 	// mm_mutator.init( &mm_mutator ) ;
 }
 %%]

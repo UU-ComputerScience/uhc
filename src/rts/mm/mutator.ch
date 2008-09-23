@@ -20,10 +20,15 @@ typedef struct MM_Mutator {
   	
 	// private, but inlined for efficiency
   	MM_Allocator* 				allocator ;
+  	MM_Allocator* 				residentAllocator ;
+  	MM_Trace* 					trace ;
   	
   	// setup with a particular MM_Pages
-  	void			 			(*init)( struct MM_Mutator*, MM_Malloc* memmgt, MM_Allocator* allocator ) ;
+  	void			 			(*init)( struct MM_Mutator*, MM_Malloc* memmgt, MM_Allocator* allocator, MM_Allocator* resAllocator, MM_Trace* trace ) ;
   	
+  	// is maintained by GC?
+  	Bool						(*isMaintainedByGC)( struct MM_Mutator*, Word obj ) ;
+
   	// scan runtime object, add new objects to be traced to trace
   	//void						(*scanObject)( struct MM_Mutator*, MM_TraceSupply* trace ) ;
   	

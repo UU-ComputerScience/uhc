@@ -10,6 +10,18 @@ It requires a MM_TraceSupply for possibly queueing new work, and an allocator to
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+typedef QuartWord 				MM_Trace_Flg ;
+
+#define	MM_Trace_Flg_Copy		(1<<0)			// copy inspected object
+#define	MM_Trace_Flg_Trace		(1<<1)			// trace content of object 1 level
+#define	MM_Trace_Flg_Trace2		(1<<2)			// and also the 2nd level (only if not copying, otherwise ignored)
+
+#define	MM_Trace_Flg_All		(MM_Trace_Flg_Copy | MM_Trace_Flg_Trace)
+#define	MM_Trace_Flg_All2		(MM_Trace_Flg_All | MM_Trace_Flg_Trace2)
+
+%%]
+
+%%[8
 typedef Ptr  MM_Trace_Data_Priv ;
 
 typedef struct MM_Trace {
@@ -33,11 +45,11 @@ typedef struct MM_Trace {
   	
   	// trace a single object, return new object
   	// assumption: canTraceObject( , obj ) == True
-  	Word			 			(*traceObject)( struct MM_Trace*, Word obj ) ;
+  	Word			 			(*traceObject)( struct MM_Trace*, Word obj, MM_Trace_Flg flg ) ;
   	
   	// trace multiple objects, replace by new objects
   	// check on traceability is done by function
-  	void			 			(*traceObjects)( struct MM_Trace*, Word* objs, Word nrObjs ) ;
+  	void			 			(*traceObjects)( struct MM_Trace*, Word* objs, Word nrObjs, MM_Trace_Flg flg ) ;
   	
   	// size of an object in words
   	Word			 			(*objectNrWords)( struct MM_Trace*, Word obj ) ;
@@ -46,10 +58,10 @@ typedef struct MM_Trace {
 %%]
 
 %%[8
-static inline Word mm_Trace_TraceObject( MM_Trace* trace, Word obj ) {
-	printf("mm_Trace_TraceObject obj=%x space(obj)=%x space=%x\n",obj,mm_Spaces_GetSpaceForAddress(obj),trace->collector->collectedSpace);
+static inline Word mm_Trace_TraceObject( MM_Trace* trace, Word obj, MM_Trace_Flg flg ) {
+	// printf("mm_Trace_TraceObject obj=%x space(obj)=%x space=%x\n",obj,mm_Spaces_GetSpaceForAddress(obj),trace->collector->collectedSpace);
 	if ( trace->canTraceObject( trace, obj ) ) {
-		return trace->traceObject( trace, obj ) ;
+		return trace->traceObject( trace, obj, flg ) ;
 	} else {
 		return obj ;
 	}

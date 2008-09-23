@@ -93,6 +93,10 @@ MM_Pages* mm_space_Fragment_GetPages( MM_Space* fragmentSpace ) {
 	return spc->pages ;
 }
 
+Word mm_space_Fragment_GetGrowDefaultLog( MM_Space* fragmentSpace ) {
+	return MM_GC_CopySpace_FragmentSize_Log ;
+}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,6 +139,7 @@ MM_Space mm_space_Fragment =
 	, &mm_space_Fragment_GetNrFragments
 	, &mm_space_Fragment_GetFragment
 	, &mm_space_Fragment_GetPages
+	, &mm_space_Fragment_GetGrowDefaultLog
 #ifdef TRACE
 	, &mm_space_Fragment_Dump
 #endif

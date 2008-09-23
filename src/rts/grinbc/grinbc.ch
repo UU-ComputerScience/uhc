@@ -95,8 +95,8 @@ typedef GB_WordPtr 	GB_Ptr ;
 typedef GB_Ptr*  	GB_PtrPtr ;
 typedef uint8_t* 	GB_BytePtr ;
 typedef GB_SWord 	GB_Int ;
-typedef uint16_t 	GB_NodeTag ;
-typedef uint16_t 	GB_NodeSize ;
+typedef HalfWord 	GB_NodeTag ;
+typedef HalfWord 	GB_NodeSize ;
 typedef uint8_t  	GB_Byte ;
 %%]
 
@@ -238,16 +238,16 @@ Node header layout
 %%[8
 #if USE_64_BITS
 #define GB_NodeHeader_Size_BitSz		32
-#define GB_NodeHeader_NdEv_BitSz		2
 #define GB_NodeHeader_TagCat_BitSz		2
 #define GB_NodeHeader_GC_BitSz			2
 #define GB_NodeHeader_Tag_BitSz			26
+#define GB_NodeHeader_NdEv_BitSz		2
 #else
 #define GB_NodeHeader_Size_BitSz		16
-#define GB_NodeHeader_NdEv_BitSz		2
 #define GB_NodeHeader_TagCat_BitSz		2
 #define GB_NodeHeader_GC_BitSz			2
 #define GB_NodeHeader_Tag_BitSz			10
+#define GB_NodeHeader_NdEv_BitSz		2
 #endif
 %%]
 
@@ -281,27 +281,37 @@ Node header.
 #if NODEHEADER_VIA_STRUCT
 typedef struct GB_NodeHeader {
   unsigned 	size 		: GB_NodeHeader_Size_BitSz 		;			/* size, incl header, in words 					*/
-  unsigned 	needsEval 	: GB_NodeHeader_NdEv_BitSz 		;			/* possibly needs eval? 						*/
   unsigned 	tagCateg 	: GB_NodeHeader_TagCat_BitSz 	;			/* kind of tag, dpd on needsEval 				*/
   unsigned 	gc 			: GB_NodeHeader_GC_BitSz		;			/* garbage collection info (unused currently)	*/
   unsigned 	tag 		: GB_NodeHeader_Tag_BitSz 		;			/* tag, or additional size dpd on tagCateg 		*/
+  unsigned 	needsEval 	: GB_NodeHeader_NdEv_BitSz 		;			/* possibly needs eval? 						*/
 } GB_NodeHeader ;
 
 #define GB_NH_Fld_Size(x)				((x)->size)
-#define GB_NH_Fld_NdEv(x)				((x)->needsEval)
 #define GB_NH_Fld_TagCat(x)				((x)->tagCateg)
 #define GB_NH_Fld_GC(x)					((x)->gc)
 #define GB_NH_Fld_Tag(x)				((x)->tag)
+#define GB_NH_Fld_NdEv(x)				((x)->needsEval)
 
 #else
 
 typedef GB_Word GB_NodeHeader ;
 
+/*
 #define GB_NH_Tag_Shift					0			
 #define GB_NH_GC_Shift					(GB_NH_Tag_Shift + GB_NodeHeader_Tag_BitSz)
 #define GB_NH_TagCat_Shift				(GB_NH_GC_Shift + GB_NodeHeader_GC_BitSz)
 #define GB_NH_NdEv_Shift				(GB_NH_TagCat_Shift + GB_NodeHeader_TagCat_BitSz)
 #define GB_NH_Size_Shift				(GB_NH_NdEv_Shift + GB_NodeHeader_NdEv_BitSz)
+#define GB_NH_Full_Shift				(GB_NH_Size_Shift + GB_NodeHeader_Size_BitSz)
+*/
+
+// NdEv must be in the 2 least significant bits, as the rest will be interpreted as a 4 byte aligned forwarding pointer during GC (when USE_EHC_MM is defined)
+#define GB_NH_NdEv_Shift				0
+#define GB_NH_Tag_Shift					(GB_NH_NdEv_Shift + GB_NodeHeader_NdEv_BitSz)		
+#define GB_NH_GC_Shift					(GB_NH_Tag_Shift + GB_NodeHeader_Tag_BitSz)
+#define GB_NH_TagCat_Shift				(GB_NH_GC_Shift + GB_NodeHeader_GC_BitSz)
+#define GB_NH_Size_Shift				(GB_NH_TagCat_Shift + GB_NodeHeader_TagCat_BitSz)
 #define GB_NH_Full_Shift				(GB_NH_Size_Shift + GB_NodeHeader_Size_BitSz)
 
 #define GB_NH_MkFld_Size(x)				(Cast(GB_Word,x)<<GB_NH_Size_Shift)
@@ -315,11 +325,19 @@ typedef GB_Word GB_NodeHeader ;
 #define GB_NH_FldMask(f,t)				Bits_MaskFromTo(GB_Word,f,t)
 #define GB_NH_FldMaskFr(f)				Bits_MaskFrom(GB_Word,f)
 
+/*
 #define GB_NH_Mask_Size					GB_NH_FldMaskFr(GB_NH_Size_Shift)
 #define GB_NH_Mask_NdEv					GB_NH_FldMask(GB_NH_NdEv_Shift,GB_NH_Size_Shift-1)
 #define GB_NH_Mask_TagCat				GB_NH_FldMask(GB_NH_TagCat_Shift,GB_NH_NdEv_Shift-1)
 #define GB_NH_Mask_GC					GB_NH_FldMask(GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
 #define GB_NH_Mask_Tag					GB_NH_FldMask(GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
+*/
+
+#define GB_NH_Mask_Size					GB_NH_FldMaskFr(GB_NH_Size_Shift)
+#define GB_NH_Mask_TagCat				GB_NH_FldMask(GB_NH_TagCat_Shift,GB_NH_Size_Shift-1)
+#define GB_NH_Mask_GC					GB_NH_FldMask(GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
+#define GB_NH_Mask_Tag					GB_NH_FldMask(GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
+#define GB_NH_Mask_NdEv					GB_NH_FldMask(GB_NH_NdEv_Shift,GB_NH_Tag_Shift-1)
 
 #define GB_NH_SetFld(h,m,x)				(((h) & (~ (m))) | (x))
 #define GB_NH_SetFld_Size(h,x)			GB_NH_SetFld(h,GB_NH_Mask_Size,GB_NH_MkFld_Size(x))
@@ -328,11 +346,19 @@ typedef GB_Word GB_NodeHeader ;
 #define GB_NH_SetFld_GC(h,x)			GB_NH_SetFld(h,GB_NH_Mask_GC,GB_NH_MkFld_GC(x))
 #define GB_NH_SetFld_Tag(h,x)			GB_NH_SetFld(h,GB_NH_Mask_Tag,GB_NH_MkFld_Tag(x))
 
+/*
 #define GB_NH_Fld_Size(x)				GB_NH_FldBitsFr(x,GB_NH_Size_Shift)
 #define GB_NH_Fld_NdEv(x)				GB_NH_FldBits(x,GB_NH_NdEv_Shift,GB_NH_Size_Shift-1)
 #define GB_NH_Fld_TagCat(x)				GB_NH_FldBits(x,GB_NH_TagCat_Shift,GB_NH_NdEv_Shift-1)
 #define GB_NH_Fld_GC(x)					GB_NH_FldBits(x,GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
 #define GB_NH_Fld_Tag(x)				GB_NH_FldBits(x,GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
+*/
+
+#define GB_NH_Fld_Size(x)				GB_NH_FldBitsFr(x,GB_NH_Size_Shift)
+#define GB_NH_Fld_TagCat(x)				GB_NH_FldBits(x,GB_NH_TagCat_Shift,GB_NH_Size_Shift-1)
+#define GB_NH_Fld_GC(x)					GB_NH_FldBits(x,GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
+#define GB_NH_Fld_Tag(x)				GB_NH_FldBits(x,GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
+#define GB_NH_Fld_NdEv(x)				GB_NH_FldBits(x,GB_NH_NdEv_Shift,GB_NH_Tag_Shift-1)
 
 #endif
 
@@ -424,14 +450,17 @@ typedef struct GB_Node {
 #define GB_FillConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeHeader _h = GB_MkConHeader(4,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds4(n,x1,x2,x3,x4);}
 #define GB_FillConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeHeader _h = GB_MkConHeader(5,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds5(n,x1,x2,x3,x4,x5);}
 
-#define GB_MkConNodeN(n,sz,tg)				{GB_NodeAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
-#define GB_MkFixConNodeN(n,sz,tg)			{GB_NodeFixAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
-#define GB_MkConNode0(n,tg)					{GB_NodeAlloc_In(1,n); GB_FillConNode0(n,tg); }
-#define GB_MkConNode1(n,tg,x1)				{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
-#define GB_MkConNode2(n,tg,x1,x2)			{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
-#define GB_MkConNode3(n,tg,x1,x2,x3)		{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
-#define GB_MkConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeAlloc_In(5,n); GB_FillConNode4(n,tg,x1,x2,x3,x4); }
-#define GB_MkConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeAlloc_In(6,n); GB_FillConNode5(n,tg,x1,x2,x3,x4,x5); }
+#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNodeN_Rooted(n,sz,tg)			{GB_MkConNodeN(n,sz,tg) ; GB_GC_RegisterRoot(n); }
+#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_In_Fixed(1+sz,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNodeN_Fixed_Rooted(n,sz,tg)		{GB_MkConNodeN_Fixed(n,sz,tg); GB_GC_RegisterRoot_Fixed(n); }
+#define GB_MkConNodeN_Fixed2_Rooted(n,sz,tg)	{GB_MkConNodeN_Fixed(n,sz,tg); GB_GC_RegisterRoot_Fixed2(n); }
+#define GB_MkConNode0(n,tg)						{GB_NodeAlloc_In(1,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNode1(n,tg,x1)					{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
+#define GB_MkConNode2(n,tg,x1,x2)				{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
+#define GB_MkConNode3(n,tg,x1,x2,x3)			{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
+#define GB_MkConNode4(n,tg,x1,x2,x3,x4)			{GB_NodeAlloc_In(5,n); GB_FillConNode4(n,tg,x1,x2,x3,x4); }
+#define GB_MkConNode5(n,tg,x1,x2,x3,x4,x5)		{GB_NodeAlloc_In(6,n); GB_FillConNode5(n,tg,x1,x2,x3,x4,x5); }
 
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
 
@@ -443,12 +472,19 @@ typedef struct GB_Node {
 #define GB_MkCFunNode1In(n,f,x1)			{GB_NodeAlloc_In(3,n); GB_FillCFunNode1(n,f,x1); }
 #define GB_MkCFunNode2In(n,f,x1,x2)			{GB_NodeAlloc_In(4,n); GB_FillCFunNode2(n,f,x1,x2); }
 
+#define GB_FillCafNode(n,f)					{GB_NodeHeader _h = GB_MkCAFHeader; GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
+#if USE_BOEHM_GC
+#	define GB_MkCafNodeIn(n,f)				{GB_NodeAlloc_In_Fixed(2,n); GB_FillCafNode(n,f); }
+#else
+#	define GB_MkCafNodeIn(n,f)				{GB_NodeAlloc_In(2,n); GB_FillCafNode(n,f); }
+#endif
+
 #define GB_FillAppNode1(n,f,x1)				{GB_NodeHeader _h = GB_MkAppHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
 
 #define GB_MkAppNode1In(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillAppNode1(n,f,x1); }
 
-extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%]
+extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 
 %%[95
 #define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
@@ -477,6 +513,10 @@ extern GB_Node* gb_MkCAF( GB_BytePtr pc ) ;
 %%[98
 #define GB_NodeChanSize						(EntierUpDivBy(sizeof(GB_Chan),sizeof(GB_Word)) + 1)
 #define GB_MkChanHeader						GB_MkHeader(GB_NodeChanSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Chan)
+%%]
+
+%%[8
+#define GB_Node_ZeroFields(n)				{ memset( ((GB_NodePtr)n)->content.fields, 0, (GB_NH_Fld_Size(((GB_NodePtr)n)->header) << Word_SizeInBytes_Log) - sizeof(GB_NodeHeader) ) ; }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -553,19 +593,23 @@ extern GB_NodePtr gb_copyCStringFromEvalString( char* cString, GB_NodePtr hsStri
 extern GB_NodePtr gb_ThrownException ;
 extern int gb_ThrownException_NrOfEvalWrappers ;
 
-#define GB_PassExcWith(action,extratest,whenexc) \
+#define GB_PassExcWith(action,gcsafe,extratest,whenexc) \
 											{ \
 												action	; \
 												if ( gb_ThrownException != NULL && extratest ) {\
 													IF_GB_TR_ON(3,{printf("GB_PassExcWith exc=%x\n",gb_ThrownException) ;}) ; \
+													gcsafe ; \
 													whenexc ; \
 												} \
 											}
 
-#define GB_PassExc(action)					GB_PassExcWith(action,True,return gb_ThrownException)
-#define GB_PassExcDflt(df,action)			GB_PassExcWith(action,True,return df)
-#define GB_PassExcCast(tp,action)			GB_PassExcWith(action,True,return Cast(tp,gb_ThrownException))
-#define GB_PassExcAsWord(action)			GB_PassExcCast(GB_Word,action)
+#define GB_PassExc(action)					GB_PassExcWith(action,,True,return gb_ThrownException)
+#define GB_PassExc_GCSafe(action)			GB_PassExcWith(action,GB_GC_SafeLeave,True,return gb_ThrownException)
+#define GB_PassExc_Dflt(df,action)			GB_PassExcWith(action,,True,return df)
+#define GB_PassExc_Dflt_GCSafe(df,action)	GB_PassExcWith(action,GB_GC_SafeLeave,True,return df)
+#define GB_PassExc_Cast(tp,action)			GB_PassExcWith(action,,True,return Cast(tp,gb_ThrownException))
+#define GB_PassExc_Cast_GCSafe(tp,action)	GB_PassExcWith(action,GB_GC_SafeLeave,True,return Cast(tp,gb_ThrownException))
+#define GB_PassExc_CastAsWord(action)		GB_PassExc_Cast(GB_Word,action)
 
 %%]
 
@@ -669,15 +713,14 @@ extern void gb_prByteCodeModule( GB_ByteCodeModule* e ) ;
 
 %%[8
 #define GB_LinkTbl_EntryKind_Const					0			/* obsolete (now via PatchCode_Deref1): constant */
-#define GB_LinkTbl_EntryKind_ConstPtr				1			/* obsolete (now via PatchCode_Deref2): ptr to constant */
-#define GB_LinkTbl_EntryKind_CodeEntry				2			/* code entry */
-#define GB_LinkTbl_EntryKind_PatchCode				3			/* patch code with value */
-#define GB_LinkTbl_EntryKind_PatchCode_Deref1		4			/* patch code with *value */
-#define GB_LinkTbl_EntryKind_PatchCode_Deref2		5			/* patch code with **value */
-#define GB_LinkTbl_EntryKind_PatchOffsets			6			/* patch code containing offsets with abolute address */
-#define GB_LinkTbl_EntryKind_CallInfo  				7			/* obsolete, same as Const, used internally */
+#define GB_LinkTbl_EntryKind_CodeEntry				1			/* obsolete (now via Patch...): code entry */
+#define GB_LinkTbl_EntryKind_PatchCode_Deref0		2			/* patch code with value */
+#define GB_LinkTbl_EntryKind_PatchCode_Deref1		3			/* patch code with *value */
+#define GB_LinkTbl_EntryKind_PatchCode_Deref2		4			/* patch code with **value */
+#define GB_LinkTbl_EntryKind_PatchOffsets			5			/* patch code containing offsets with abolute address */
+#define GB_LinkTbl_EntryKind_CallInfo  				6			/* obsolete, same as Const, used internally */
 %%[[20
-#define GB_LinkTbl_EntryKind_ImpEntry				8			/* import entry */
+#define GB_LinkTbl_EntryKind_ImpEntry				7			/* import entry */
 %%]]
 %%]
 
@@ -685,7 +728,7 @@ Link commands for global references
 
 %%[8
 typedef struct GB_LinkEntry {
-  uint16_t		tblKind ;
+  HalfWord		tblKind ;
   GB_Ptr		linkLoc ;
   GB_Word		linkVal ;
 } GB_LinkEntry ;
@@ -793,37 +836,122 @@ Assume that sizeof(GrWord) == sizeof(GB_Word).
 This should be ok and merged later on, but a check in it is currently part of the sanity check.
 Size must be minimal 2 words to ensure enough space for an indirection pointer (plus the usual header in front).
 
-The 'Fix' variants allocate non-collectable.
+The 'Fixed' variants allocate non-collectable.
 
 %%[8
 #if USE_BOEHM_GC
-#if TRACE || DUMP_INTERNALS
-extern GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes ) ;
-#define GB_HeapAlloc_Bytes(nBytes)		gb_HeapAlloc_Bytes_Traced(nBytes)
+
+#	if TRACE || DUMP_INTERNALS
+	extern GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes ) ;
+#		define GB_HeapAlloc_Bytes(nBytes)				gb_HeapAlloc_Bytes_Traced(nBytes)
+#	else
+#		define GB_HeapAlloc_Bytes(nBytes)				Cast(GB_Ptr,GC_MALLOC(nBytes))
+#	endif
+
+#	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) * sizeof(GB_Word))
+#	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
+#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) * sizeof(GB_Word))
+
+#	if TRACE
+#		define GB_GC_Maintained(x)						( Cast(GB_Ptr,x) >= gb_allocated_lowest_ptr && Cast(GB_Ptr,x) <= gb_allocated_highest_ptr )
+#	else
+#		define GB_GC_Maintained(x)						False
+#	endif
+
+#	define GB_GC_MinAlloc_Words(szw)					(szw)
+
+#	define GB_GC_RegisterRoot(n)						// not necessary
+#	define GB_GC_RegisterRoot_Fixed_Flg(n,flg)			// not necessary
+#	define GB_GC_RegisterRoot_Fixed(n)					// not necessary
+#	define GB_GC_RegisterRoot_Fixed2(n)					// not necessary
+
+#	define GB_GC_SafeEnter								// not necessary
+#	define GB_GC_SafeLeave								// not necessary
+#	define GB_GC_Safe1(nm1)								// not necessary
+#	define GB_GC_Safe2(nm1,nm2)							// not necessary
+#	define GB_GC_Safe3(nm1,nm2,nm3)						// not necessary
+#	define GB_GC_Safe4(nm1,nm2,nm3,nm4)					// not necessary
+#	define GB_GC_Safe1_Zeroed(nm1)						// not necessary
+#	define GB_GC_Safe2_Zeroed(nm1,nm2)					// not necessary
+#	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				// not necessary
+#	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
+
+	extern void gb_Node_Finalize( void* p, void* cd ) ;
+	extern void* gb_Dummy_Finalization_Proc ;
+	extern void* gb_Dummy_Finalization_cd ;
+
+#elif USE_EHC_MM
+
+#	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes))
+#	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) * sizeof(GB_Word))
+#	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,mm_itf_allocResident(nBytes))
+#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) * sizeof(GB_Word))
+
+#	define GC_MALLOC(nBytes)							GB_HeapAlloc_Bytes(nBytes)
+#	define GC_MALLOC_UNCOLLECTABLE(nBytes)				GB_HeapAlloc_Bytes_Fixed(nBytes)
+
+#	if TRACE
+#		define GB_GC_Maintained(x)						mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, x )
+#	else
+#		define GB_GC_Maintained(x)						False
+#	endif
+
+#	define GB_GC_MinAlloc_Words(szw)					(maxWord(szw,1))			// at least 1 field payload to allow for indirection/forwarding
+
+#	define GB_GC_RegisterRoot(n)						{ GB_Node_ZeroFields(n) ; mm_Roots_Register1( (WPtr)(&n) ) ; }
+#	define GB_GC_RegisterRoot_Fixed_Flg(n,flg)			{ GB_Node_ZeroFields(n) ; mm_Roots_RegisterNWithFlag( (WPtr)(&n), 1, flg ) ; }
+#	define GB_GC_RegisterRoot_Fixed(n)					GB_GC_RegisterRoot_Fixed_Flg(n,MM_Trace_Flg_All)
+#	define GB_GC_RegisterRoot_Fixed2(n)					GB_GC_RegisterRoot_Fixed_Flg(n,MM_Trace_Flg_All2)
+
+#	define GB_GC_SafeEnter								MM_LclRoot_EnterGrp
+#	define GB_GC_SafeLeave								MM_LclRoot_LeaveGrp
+#	define GB_GC_Safe1(nm1)								MM_LclRoot_EnterOne1(nm1)
+#	define GB_GC_Safe2(nm1,nm2)							MM_LclRoot_EnterOne2(nm1,nm2)	
+#	define GB_GC_Safe3(nm1,nm2,nm3)						MM_LclRoot_EnterOne3(nm1,nm2,nm3)
+#	define GB_GC_Safe4(nm1,nm2,nm3,nm4)					MM_LclRoot_EnterOne4(nm1,nm2,nm3,nm4)
+#	define GB_GC_Safe1_Zeroed(nm1)						MM_LclRoot_EnterOne1_Zeroed(nm1)
+#	define GB_GC_Safe2_Zeroed(nm1,nm2)					MM_LclRoot_EnterOne2_Zeroed(nm1,nm2)	
+#	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				MM_LclRoot_EnterOne3_Zeroed(nm1,nm2,nm3)
+#	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			MM_LclRoot_EnterOne4_Zeroed(nm1,nm2,nm3,nm4)
+
 #else
-#define GB_HeapAlloc_Bytes(nBytes)		Cast(GB_Ptr,GC_MALLOC(nBytes))
+
+#	define GB_HeapAlloc_Words(nWords)					Cast(GB_Ptr,heapalloc(nWords))
+#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Words(nWords)
+#	define GB_HeapAlloc_Bytes(nBytes)					GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
+#	define GB_HeapAlloc_Bytes_Fixed(nBytes)				GB_HeapAlloc_Bytes(nBytes)	
+
+#	if TRACE
+#		define GB_GC_Maintained(x)						False
+#	else
+#		define GB_GC_Maintained(x)						False
+#	endif
+
+#	define GB_GC_MinAlloc_Words(szw)					(szw)
+
+#	define GB_GC_RegisterRoot(n)						// not necessary
+#	define GB_GC_RegisterRoot_Fixed_Flg(n,flg)			// not necessary
+#	define GB_GC_RegisterRoot_Fixed(n)					// not necessary
+#	define GB_GC_RegisterRoot_Fixed2(n)					// not necessary
+
+#	define GB_GC_SafeEnter								// not necessary
+#	define GB_GC_SafeLeave								// not necessary
+#	define GB_GC_Safe1(nm1)								// not necessary
+#	define GB_GC_Safe2(nm1,nm2)							// not necessary
+#	define GB_GC_Safe3(nm1,nm2,nm3)						// not necessary
+#	define GB_GC_Safe4(nm1,nm2,nm3,nm4)					// not necessary
+#	define GB_GC_Safe1_Zeroed(nm1)						// not necessary
+#	define GB_GC_Safe2_Zeroed(nm1,nm2)					// not necessary
+#	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				// not necessary
+#	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
+
 #endif
 
-#define GB_HeapAlloc_Words(nWords)		GB_HeapAlloc_Bytes(nWords * sizeof(GB_Word))
-#define GB_HeapFixAlloc_Words(nWords)	GB_HeapFixAlloc_Bytes(nWords * sizeof(GB_Word))
-#define GB_HeapFixAlloc_Bytes(nBytes)	Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
 
-extern void gb_Node_Finalize( void* p, void* cd ) ;
-extern void* gb_Dummy_Finalization_Proc ;
-extern void* gb_Dummy_Finalization_cd ;
-
-#else
-
-#define GB_HeapAlloc_Words(nWords)		Cast(GB_Ptr,heapalloc(nWords))
-#define GB_HeapFixAlloc_Words(nWords)	GB_HeapAlloc_Words(nWords)
-#define GB_HeapAlloc_Bytes(nBytes)		GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
-#define GB_HeapFixAlloc_Bytes(nBytes)	GB_HeapAlloc_Bytes(nBytes)	
-#endif
-
-#define GB_NodeAlloc_In(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
-#define GB_NodeFixAlloc_In(nWords,n)		{ (n) = Cast(GB_NodePtr,GB_HeapFixAlloc_Words(nWords)) ; }
-#define GB_NodeAlloc_Hdr_In(nWords,h,n)		{ GB_NodeAlloc_In(nWords,n) ; (n)->header = (h) ; }
-#define GB_NodeFixAlloc_Hdr_In(nWords,h,n)	{ GB_NodeFixAlloc_In(nWords,n) ; (n)->header = (h) ; }
+#define GB_NodeAlloc_In(nWords,n)				{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
+#define GB_NodeAlloc_In_Fixed(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words_Fixed(nWords)) ; }
+#define GB_NodeAlloc_Hdr_In(nWords,h,n)			{ GB_NodeAlloc_In(nWords,n) ; (n)->header = (h) ; }
+#define GB_NodeAlloc_Hdr_In_Fixed(nWords,h,n)	{ GB_NodeAlloc_In_Fixed(nWords,n) ; (n)->header = (h) ; }
 %%]
 
 For finalizers boehm's gc is assumed!!!!
@@ -832,6 +960,8 @@ This breaks when compiled without bgc.
 %%[95
 #if USE_BOEHM_GC
 #define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
+#elif USE_EHC_MM
+#define GB_Register_Finalizer(n,cd)			
 #endif
 %%]
 
@@ -870,7 +1000,7 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 
 
 %%[98
-#define GB_NodeFixAlloc_Chan_In(n)			{ GB_NodeFixAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; }
+#define GB_NodeAlloc_Chan_In_Fixed(n)		{ GB_NodeAlloc_Hdr_In_Fixed(GB_NodeChanSize, GB_MkChanHeader, n) ; }
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
@@ -1158,17 +1288,15 @@ extern void gb_chan_initstd() ;
 extern void gb_Initialize() ;
 
 extern void gb_InitTables
-	( int byteCodesSz
-	, GB_BytePtr byteCodes
-	, int linkEntriesSz
-	, GB_LinkEntry* linkEntries
-	, GB_BytePtr* globalEntries
+	( GB_BytePtr byteCodes, int byteCodesSz
+	, GB_LinkEntry* linkEntries, int linkEntriesSz
+	, GB_NodePtr* cafEntries, int cafEntriesSz
+	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 %%[[20
 	// , GB_NodePtr *impNode
 	// , int impNodeSz, char** impNodeNms
-	, GB_NodePtr expNode
-	, int expNodeSz, int* expNodeOffs
+	, GB_NodePtr expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
 	) ;

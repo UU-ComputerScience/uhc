@@ -32,8 +32,8 @@ void mm_traceSupply_GBRegs_Reset( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBRegs_Data* trsup = (MM_TraceSupply_GBRegs_Data*)traceSupply->data ;
 }
 
-void mm_traceSupply_GBRegs_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) {
-	MM_TraceSupply_GBRegs_Data* trsup = mm_malloc_LOF.malloc( sizeof(MM_TraceSupply_GBRegs_Data) ) ;
+void mm_traceSupply_GBRegs_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace ) {
+	MM_TraceSupply_GBRegs_Data* trsup = memmgt->malloc( sizeof(MM_TraceSupply_GBRegs_Data) ) ;
 	trsup->trace = trace ;
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trsup ;
 	mm_traceSupply_GBRegs_Reset( traceSupply ) ;
@@ -42,7 +42,7 @@ void mm_traceSupply_GBRegs_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) 
 void mm_traceSupply_GBRegs_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBRegs_Data* trsup = (MM_TraceSupply_GBRegs_Data*)traceSupply->data ;
 	
-	rr = mm_Trace_TraceObject( trsup->trace, rr ) ;
+	rr = mm_Trace_TraceObject( trsup->trace, rr, MM_Trace_Flg_All ) ;
 }
 
 

@@ -35,11 +35,12 @@ extern Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, 
 %%[8
 // check cursor for sufficient space + bump/alloc
 static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data* alc, Word sz ) {
+	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 1 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
 	alc->addrCursorFree -= sz ;
 	if ( alc->addrCursorFree < alc->addrFirstFree ) {
 		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
 	}
-	printf("mm_allocator_Bump_Alloc_AndCheckCursor sz=%x p=%x space=%x\n", sz, alc->addrCursorFree, alc->space);
+	printf("mm_allocator_Bump_Alloc_AndCheckCursor 2 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
 	return (Ptr)alc->addrCursorFree ;
 }
 
@@ -55,6 +56,18 @@ static inline Ptr mm_allocator_Bump_Alloc_FromCursor( MM_Allocator_Bump_Data* al
 	return (Ptr)(alc->addrCursorFree -= sz) ;
 }
 %%]
+
+static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data* alc, Word sz ) {
+	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 1 sz=%x p=%x space=%x\n", sz, alc->addrCursorFree, alc->space);
+	Word newCursor = alc->addrCursorFree - sz ;
+	if ( newCursor < alc->addrFirstFree ) {
+		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
+	}
+	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 2 sz=%x p=%x space=%x\n", sz, newCursor, alc->space);
+	alc->addrCursorFree = newCursor ;
+	return (Ptr)newCursor ;
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface

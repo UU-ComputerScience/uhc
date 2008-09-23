@@ -61,6 +61,9 @@ typedef struct MM_Space {
   	MM_Space_Fragment*		(*getFragment)( struct MM_Space*, MM_Space_FragmentInx fragmentInx ) ;	// fragment for inx
   	MM_Pages*				(*getPages)( struct MM_Space* ) ;	// underlying Pages implementation
 
+	// info: log of default growth size, or 0 if no such default
+  	Word					(*getGrowDefaultLog)( struct MM_Space* ) ;
+
 #ifdef TRACE
   	// dumping info
   	void 					(*dump)( struct MM_Space* ) ;
@@ -94,7 +97,7 @@ extern void mm_Spaces_UnregisterSpaceFrame( MM_Space* space, MM_Space_Fragment* 
 // get the GC managing space for an address, NULL if not managed by a space
 static inline MM_Space* mm_Spaces_GetSpaceForAddress( Word a ) {
 	MM_RangeMap_Inx fragInx = a >> MM_GC_CopySpace_FragmentSize_Log ;
-	printf( "mm_Spaces_GetSpaceForAddress a=%x frag=%x space=%x\n", a, fragInx, *(mm_rangeMap_At( &mm_Spaces_FrameToSpace, fragInx )) ) ;
+	// printf( "mm_Spaces_GetSpaceForAddress a=%x frag=%x space=%x\n", a, fragInx, *(mm_rangeMap_At( &mm_Spaces_FrameToSpace, fragInx )) ) ;
 	if ( mm_rangeMap_InRange( &mm_Spaces_FrameToSpace, fragInx ) )
 		return (MM_Space*)( *(mm_rangeMap_At( &mm_Spaces_FrameToSpace, fragInx )) ) ;
 	else

@@ -148,7 +148,12 @@ GB_Ptr gb_allocated_lowest_ptr = NULL-1 , gb_allocated_highest_ptr = NULL ;
 
 GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes )
 {
-	GB_Ptr p = Cast(GB_Ptr,GC_MALLOC(nBytes)) ;
+	GB_Ptr p =
+#		if USE_BOEHM_GC
+			Cast(GB_Ptr,GC_MALLOC(nBytes)) ;
+#		elif USE_EHC_MM
+			Cast(GB_Ptr,mm_itf_alloc(nBytes)) ;
+#		endif
 	if ( p < gb_allocated_lowest_ptr )
 		gb_allocated_lowest_ptr = p ;
 	if ( p > gb_allocated_highest_ptr )
@@ -390,15 +395,15 @@ void* gb_Dummy_Finalization_cd ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-GB_Node* gb_MkCAF( GB_BytePtr pc )
+%%]
+GB_NodePtr gb_MkCAF( GB_BytePtr pc )
 {
   GB_NodeHeader h = GB_MkCAFHeader ;
-  GB_Node* n = Cast(GB_Node*,GB_HeapAlloc_Words(2)) ;
+  GB_NodePtr n = Cast(GB_NodePtr,GB_HeapAlloc_Words(2)) ;
   n->header = h ;
   n->content.fields[0] = Cast(GB_Word,pc) ;
   return n ;
 }
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Node, List specific interpretation
@@ -430,13 +435,15 @@ On return:
 %%[8
 GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
 {
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(*pn) ;
 	int sz = 0 ;
 	while ( (sz < *psz || *psz == 0) )
 	{
 %%[[8
 		*pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ;
 %%][96
-		GB_PassExc( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) ;
+		GB_PassExc_GCSafe( *pn = Cast(GB_NodePtr,gb_eval( Cast(GB_Word,*pn) )) ) ;
 %%]]
 		if ( GB_List_IsNull( *pn ) )
 			break ;
@@ -448,6 +455,7 @@ GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
   		sz++ ;
 	}
 	*psz = sz ;
+	GB_GC_SafeLeave ;
 	return *pn ;
 }
 %%]
@@ -461,9 +469,12 @@ GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
 
 GB_NodePtr gb_copyCStringFromEvalString( char* cString, GB_NodePtr hsString, int sz )
 {
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(hsString) ;
 	int bufInx = 0 ;
 	GB_Word xx ;
-	GB_List_Iterate(hsString,sz,{GB_PassExc(xx = gb_eval(GB_List_Head(hsString))); cString[bufInx++] = GB_GBInt2Int(xx);}) ;
+	GB_List_Iterate(hsString,sz,{GB_PassExc_GCSafe(xx = gb_eval(GB_List_Head(hsString))); cString[bufInx++] = GB_GBInt2Int(xx);}) ;
+	GB_GC_SafeLeave ;
 }
 %%]
 
@@ -482,13 +493,13 @@ GB_NodePtr gb_chan_stderr ;
 
 void gb_chan_initstd()
 {
-	GB_NodeFixAlloc_Chan_In(gb_chan_stdin) ;
-	gb_chan_stdin->content.chan.file = stdin ;
+	GB_NodeAlloc_Chan_In_Rooted(gb_chan_stdin) ;
+	gb_chan_stdin->content.chan.file  = stdin ;
 
-	GB_NodeFixAlloc_Chan_In(gb_chan_stdout) ;
+	GB_NodeAlloc_Chan_In_Rooted(gb_chan_stdout) ;
 	gb_chan_stdout->content.chan.file = stdout ;
 
-	GB_NodeFixAlloc_Chan_In(gb_chan_stderr) ;
+	GB_NodeAlloc_Chan_In_Rooted(gb_chan_stderr) ;
 	gb_chan_stderr->content.chan.file = stderr ;
 }
 
@@ -519,6 +530,7 @@ GB_Word gb_eval( GB_Word x )
 %%][96
 	GB_PassExcWith \
 		( {gb_ThrownException_NrOfEvalWrappers = 0 ; gb_interpretLoopWith( gb_code_Eval );} \
+		, \
 		, True \
 		, {gb_ThrownException_NrOfEvalWrappers-- ; return Cast(GB_Word,gb_ThrownException);} \
 		) ;
@@ -711,17 +723,15 @@ void gb_prWord( GB_Word x )
 		printf( "Wd 0x%0.8x: "
 #	endif
 	      , x ) ;
-	if ( Cast(GB_Ptr,x) < gb_allocated_lowest_ptr || Cast(GB_Ptr,x) > gb_allocated_highest_ptr
-	)
-	{
+	if ( GB_GC_Maintained( x ) ) {
+		gb_prWordAsNode( Cast(GB_NodePtr,x) ) ;
+	} else {
 #		if USE_64_BITS
 			printf( "gb int %ld"
 #		else
 			printf( "gb int %d"
 #		endif
 				  , GB_GBInt2Int(x) ) ;
-	} else {
-		gb_prWordAsNode( Cast(GB_NodePtr,x) ) ;
 	}
 	/* printf( "\n" ) ; */
 }
@@ -854,6 +864,7 @@ The code is split up in preamble + call + postamble, where call is only necessar
 						break ;																																									\
 				} \
 				IF_GB_TR_ON(3,printf("GB_CallC_Code2 f %x res %x\n", f, res ););
+
 #define GB_CallC_CodeWithType(f,nargs,args,res,argTyStr) \
 				IF_GB_TR_ON(3,printf("GB_CallC_CodeWithType1 f=%x nargs=%d ty=%s\n", f, nargs, tyStr );); \
 				switch ( nargs ) {																																								\
@@ -875,10 +886,12 @@ The code is split up in preamble + call + postamble, where call is only necessar
 						break ;																																									\
 				} \
 				IF_GB_TR_ON(3,printf("GB_CallC_CodeWithType12 res=%x\n", res ););
+
 #define GB_CallC_Code_Preamble(nargs) \
 				GB_SetTOS(nargs) ;											/* push nr of args			 						*/		\
 				GB_Push(pc) ;												/* setup call admin to look the same as normal 		*/		\
 				GB_BP_Link ;
+
 #define GB_CallC_Code_Postamble(nargs,res) \
 				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););														\
 				GB_BP_UnlinkSP ;																										\
@@ -906,6 +919,7 @@ The code is split up in preamble + call + postamble, where call is only necessar
 					nOld->content.fields[0] = xNew ;								/* assumption !!: memory is available !! 	*/	\
 					setRes ;																								\
 				}
+
 #define GB_UpdWithIndirection_Code(nOld,xNew)					 																	\
 				{ GB_Ptr tmpp1,tmpp2,tmpp3 ;																						\
 				  GB_NodePtr nNew ;																									\
@@ -967,15 +981,18 @@ void gb_interpretLoopWith( GB_BytePtr initPC )
 void gb_interpretLoop()
 {
 	/* scratch registers */
-  	register GB_Word x, x2, x3 ;
+  	register GB_Word x, x3 ;
   	register GB_Ptr  p, p2, p3, spSave ;
-  	register GB_NodePtr n ;
   	register GB_NodeHeader h ;
 
 	/* scratch */
-  	GB_Word x4, x5, x6, retSave, bpSave ;
+  	GB_NodePtr n = NULL ;
+  	GB_Word x2 = 0, x4, x5, x6, retSave, bpSave ;
   	GB_Ptr  p4, p5, p6 ;
   	GB_BytePtr  dst ;
+  	
+  	GB_GC_SafeEnter ;
+  	GB_GC_Safe2( x2, n ) ;
 
 	while( 1 )
 	{
@@ -1137,12 +1154,14 @@ void gb_interpretLoop()
 			/* ldgt */
 			case GB_Ins_Ldg(GB_InsOp_LocB_TOS) :
 				GB_PCImmIn(GB_Word,x) ;
+				// GB_Push( *Cast(GB_Word*,x) ) ; /* linked in value */
 				GB_Push( x ) ; /* linked in value */
 				break ;
 			
 			/* ldgr */
 			case GB_Ins_Ldg(GB_InsOp_LocB_Reg) :
 				GB_PCImmIn(GB_Word,rr) ;
+				// rr = *Cast(GB_Word*,rr) ;
 				break ;
 			
 			/* calling, returning, case */
@@ -1239,10 +1258,11 @@ gb_interpreter_InsCallEntry:
 				// x = GB_TOS ;												/* function											*/
 				// GB_CallC_Code_Preamble(x2) ;
 				// GB_CallC_Code(x,x2,p,x) ;
+				// GC sensitive:
 				gb_callc( x2, callenc ) ;
 %%[[96
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
-				GB_PassExcWith(,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
+				GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 %%]]
 				// GB_CallC_Code_Postamble(x2,x) ;
 				break ;
@@ -1306,7 +1326,7 @@ gb_interpreter_InsEvalEntry:
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 %%][96
 									IF_GB_TR_ON(3,{printf("GB_Ins_Eval.GB_NodeTagCat_CFun: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
-									GB_PassExcWith(,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
+									GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 									if ( gb_ThrownException ) {
 										// postamble only because we now know we end up in a handler, which uses the default convention
 										GB_CallC_Code_Postamble(x2,x) ;
@@ -1403,7 +1423,10 @@ gb_interpreter_InsApplyEntry:
 							p2 = n->content.fields ;									/* copy old fields prep										*/
 							p3 = Cast(GB_Ptr,&((n)->content.fields[GB_NH_NrFlds(h)])) ;
 							h = GB_MkHeader(GB_NH_Fld_Size(h)+x,GB_NH_Fld_NdEv(h),GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h)-x) ;
+							// IF_GB_TR_ON(3,printf("gb_interpreterLoop.GB_Ins_Apply alloc A sz=%x\n",GB_NH_Fld_Size(h));) ;
+							// GC sensitive:
 							p = GB_HeapAlloc_Words( GB_NH_Fld_Size(h) ) ;				/* fresh node												*/
+							// IF_GB_TR_ON(3,printf("gb_interpreterLoop.GB_Ins_Apply alloc B sz=%x p=%x\n",GB_NH_Fld_Size(h),p);) ;
 							x2 = Cast(GB_Word,p) ;										/* remember, to push later on								*/
 							Cast(GB_NodePtr,p)->header = h ;							/* set header												*/
 							p++ ;
@@ -1427,6 +1450,7 @@ gb_interpreter_InsApplyEntry:
 			/* allocstoret */
 			case GB_Ins_AllocStore(GB_InsOp_LocB_TOS) :
 				GB_PopIn(x) ;
+				// GC sensitive:
 				p = GB_HeapAlloc_Bytes(x) ;
 				p2 = p ;
 				p3 = GB_SPByteRel(GB_Word,x) ;
@@ -1551,12 +1575,13 @@ gb_interpreter_InsApplyEntry:
 		}
 		
 #		if GB_COUNT_STEPS
-		gb_StepCounter++ ;
+			gb_StepCounter++ ;
 #		endif
 
 	}
 	
 	interpretIsDone: ;
+  	GB_GC_SafeLeave ;
 
 }
 %%]			
@@ -1589,8 +1614,11 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 {
 	GB_Ptr p ;
 	GB_CallInfo* ci ;
-	GB_NodePtr n = NULL ;
+	GB_NodePtr n ;
 	GB_NodePtr reifiedBackTrace ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(exc) ;
+	GB_GC_Safe2_Zeroed(n,reifiedBackTrace) ;
 	
 	gb_ThrownException_NrOfEvalWrappers = 0 ;
 	
@@ -1619,10 +1647,13 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 		}
 		if ( gb_prCallInfoIsVisible(ci) && ci->name ) {
 			GB_NodePtr n1, n2, n3 ;
+			GB_GC_SafeEnter ;
+			GB_GC_Safe3_Zeroed(n1, n2, n3) ;
 			GB_MkCFunNode1In(n1,gb_primCStringToString,ci->name) ;
 			GB_MkTupNode2_In(n2,GB_Int2GBInt(ci->kind),n1) ;
 			n3 = reifiedBackTrace ;
 			GB_MkListCons(reifiedBackTrace,n2,n3) ;
+			GB_GC_SafeLeave ;
 		}
 	}
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo3: ") ; gb_prCallInfo( ci ); printf("\n");}) ;
@@ -1636,6 +1667,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:4: sp=%x bp=%x\n", sp, bp) ;}) ;
 	
 	GB_MkTupNode2_In(n,reifiedBackTrace,exc) ;																// tuple with backtrace
+	GB_GC_SafeLeave ;
 	return (gb_ThrownException = n) ;
 }
 
@@ -1650,12 +1682,16 @@ GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_
 	GB_NodePtr ioe_description ;
 	GB_NodePtr ioe ;
 	GB_NodePtr exc ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe3(ioe_handle,ioe_type,ioe_filename) ;
+	GB_GC_Safe4_Zeroed(ioe_location,ioe_description,ioe,exc) ;
 
 	GB_MkListNil( ioe_location ) ;
 	ioe_description = gb_primCStringToString( strErr ) ;
 	GB_MkIOExceptionIOError( ioe, ioe_handle, GB_Int2GBInt(ioe_type), ioe_location, ioe_description, ioe_filename ) ;
 	GB_MkExceptionIOException( exc, ioe ) ;
 	
+	GB_GC_SafeLeave ;
 	return gb_intl_throwExceptionFromPrim( exc ) ;
 }
 
@@ -1709,7 +1745,7 @@ void gb_Initialize()
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;
 	
-	GB_MkConNodeN(gb_Unit,0,0) ;
+	GB_MkConNodeN_Fixed_Rooted(gb_Unit,GB_GC_MinAlloc_Words(0),0) ;
 }
 
 %%]
@@ -1724,17 +1760,15 @@ void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz )
 
 %%[8
 void gb_InitTables
-	( int byteCodesSz
-	, GB_BytePtr byteCodes
-	, int linkEntriesSz
-	, GB_LinkEntry* linkEntries
-	, GB_BytePtr* globalEntries
+	( GB_BytePtr byteCodes, int byteCodesSz
+	, GB_LinkEntry* linkEntries, int linkEntriesSz
+	, GB_NodePtr* cafEntries, int cafEntriesSz
+	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 %%[[20
 	// , GB_NodePtr *impNode
 	// , int impNodeSz, char** impNodeNms
-	, GB_NodePtr expNode
-	, int expNodeSz, int* expNodeOffs
+	, GB_NodePtr expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
 	)
@@ -1743,11 +1777,12 @@ void gb_InitTables
 	GB_Ptr p ;
 
 /*
-	for ( i = 0 ; i < cafEntriesSz ; i++ )
-	{
-		*(cafEntries[i]) = Cast(GB_BytePtr,gb_MkCAF( *(cafEntries[i]) )) ;
-	}
 */
+	for ( i = 0 ; i < cafEntriesSz ; i++ ) {
+		GB_NodePtr n ;
+		GB_MkCafNodeIn(n,cafEntries[i]) ;
+		cafEntries[i] = n ;
+	}
 
 %%[[20
 /*
@@ -1760,6 +1795,10 @@ void gb_InitTables
 */
 %%]]
 
+#	if USE_EHC_MM
+		mm_Roots_RegisterNWithFlag( (WPtr)globalEntries, globalEntriesSz, MM_Trace_Flg_Trace ) ;
+#	endif
+
 	for ( i = 0 ; i < linkEntriesSz ; i++ )
 	{
 		p = Cast(GB_Ptr,linkEntries[i].linkLoc) ;
@@ -1770,9 +1809,9 @@ void gb_InitTables
 				IF_GB_TR_ON(3,{printf("link CodeEntry p %x v %x", p, globalEntries[ linkEntries[i].linkVal ]) ; printf("\n");}) ;
 				break ;
 
-			case GB_LinkTbl_EntryKind_PatchCode :
+			case GB_LinkTbl_EntryKind_PatchCode_Deref0 :
 				*p = linkEntries[i].linkVal ;
-				IF_GB_TR_ON(3,{printf("link PatchCode p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref0 p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref1 :
@@ -1796,6 +1835,7 @@ void gb_InitTables
 %%[[20
 			case GB_LinkTbl_EntryKind_ImpEntry :
 				// *p = (*impNode)->content.fields[ linkEntries[i].linkVal ] ;
+				// *p = Cast(GB_Word,(modTbl[ linkEntries[i].linkVal ].expNode)) ;
 				*p = Cast(GB_Word,*(modTbl[ linkEntries[i].linkVal ].expNode)) ;
 				IF_GB_TR_ON(3,{printf("link ImpEntry p %x v %x", p, *(modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
 				break ;
@@ -1826,6 +1866,7 @@ void gb_checkInterpreterAssumptions()
 	GB_Ptr p ;
 	GB_Word x1, x2 ;
 	GB_Node n ;
+	GB_NodePtr np ;
 	
 	// printf( "size node=%d\n", sizeof(n)) ;
 	
@@ -1841,7 +1882,9 @@ void gb_checkInterpreterAssumptions()
 		gb_panic2_1( m, "size of word and pointer must be 32 or 64", 0 ) ;
 	}
 	
-	x1 = Cast(GB_Word,GB_HeapAlloc_Words( 2 )) ;
+	GB_MkConNodeN(np,1,0) ;
+	// x1 = Cast(GB_Word,GB_HeapAlloc_Words( 2 )) ;
+	x1 = Cast(GB_Word,np) ;
 	if ( ! x1 ) {
 		gb_panic2_1( m, "heap allocation yields zero pointer", x1 ) ;
 	}

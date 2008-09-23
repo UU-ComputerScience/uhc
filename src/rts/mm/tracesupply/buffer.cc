@@ -28,8 +28,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_traceSupply_Buffer_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) {
-	MM_TraceSupply_Buffer_Data* trgr = mm_malloc_LOF.malloc( sizeof(MM_TraceSupply_Buffer_Data) ) ;
+void mm_traceSupply_Buffer_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace ) {
+	MM_TraceSupply_Buffer_Data* trgr = memmgt->malloc( sizeof(MM_TraceSupply_Buffer_Data) ) ;
 	trgr->trace = trace ;
 	mm_deque_Init( &trgr->deque, &mm_malloc_LOF ) ;
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
@@ -50,12 +50,12 @@ void mm_traceSupply_Buffer_Run( MM_TraceSupply* traceSupply ) {
 		// assume always the correct nr of words are pushed as work
 		mm_deque_HeadPop( q, workBuffer, 2 ) ;
 		Word hdrSz = trgr->trace->objectHeaderNrWords ;
-		trgr->trace->traceObjects( trgr->trace, (Word*)(workBuffer[0]) + hdrSz, workBuffer[1] - hdrSz ) ;
+		trgr->trace->traceObjects( trgr->trace, (Word*)(workBuffer[0]) + hdrSz, workBuffer[1] - hdrSz, MM_Trace_Flg_All ) ;
 	}
 }
 
 // push ptr + size
-void mm_traceSupply_Buffer_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords ) {
+void mm_traceSupply_Buffer_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords, Word extra ) {
 	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
 	Word workBuffer[2] = {(Word)work, nrWorkWords} ;
 	mm_deque_TailPush( &trgr->deque, workBuffer, 2 ) ;

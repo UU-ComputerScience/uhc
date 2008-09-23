@@ -21,12 +21,12 @@ typedef struct MM_Plan_SS_Data {
 	MM_Space*			fromSpace ;			// the collected space
 	MM_Allocator		ssAllocator ;		// and its allocator
 	MM_Allocator		residentAllocator ;	// for allocations remaining resident/nonrelocated
-	MM_Mutator			mutator ;
 	MM_Collector		collector ;
 	MM_Malloc			memMgt ;
 	MM_TraceSupply*		queTraceSupply ;	// trace request queue
 	MM_TraceSupply		allTraceSupply ;	// all trace supplies grouped together
 	MM_Trace			gbmTrace ;			// GBM specific
+	Bool				gcInProgress ;
 } MM_Plan_SS_Data ;
 %%]
 

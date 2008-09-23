@@ -141,10 +141,14 @@ PRIM GB_Float gb_primRationalToFloat( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
-	GB_PassExcCast( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExcCast( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(nr) ;
+	GB_GC_Safe2_Zeroed(numerator, divisor) ;
+	GB_PassExc_Cast_GCSafe( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExc_Cast_GCSafe( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	GB_Float res ;
 	res = Cast( GB_Float, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
+	GB_GC_SafeLeave ;
 	return res ;
 }
 
@@ -152,11 +156,15 @@ PRIM GB_Double gb_primRationalToDouble( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
-	GB_PassExcDflt( 0.0, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExcDflt( 0.0, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(nr) ;
+	GB_GC_Safe2_Zeroed(numerator, divisor) ;
+	GB_PassExc_Dflt_GCSafe( 0.0, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExc_Dflt_GCSafe( 0.0, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	// GB_NodeAlloc_Double_In(nf) ;
 	// nf->content.dbl = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
 	// return nf ;
+	GB_GC_SafeLeave ;
 	return Cast( GB_Double, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
 }
 
@@ -409,8 +417,11 @@ PRIM GB_Word gb_primRadixDoubleFloat( )
 		exp -= mantdig ;																	\
 	}																						\
 	GB_NodePtr n, ni ;																		\
+	GB_GC_SafeEnter ;																		\
+	GB_GC_Safe2_Zeroed(n,ni) ;																		\
 	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, mantdig ) ) ;								\
 	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;												\
+	GB_GC_SafeLeave ;																		\
 	return n ;																				\
 }
 
@@ -648,6 +659,9 @@ PRIM GB_Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
 %%% Integer, via GMP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!!!!! Todo: adapt allocation for GMP, GC works improperly here because can create race conditions.
+
 %%[97
 #if USE_GMP
 PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
@@ -719,16 +733,24 @@ PRIM GB_NodePtr gb_primRemInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr gb_primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe2(x,y) ;
+	GB_GC_Safe3_Zeroed(n,n1,n2) ;
 	GB_Integer_QuotRem_In(n1,n2,x,y) ;
 	GB_MkTupNode2_In(n,n1,n2) ;
+	GB_GC_SafeLeave ;
 	return n ;
 }
 
 PRIM GB_NodePtr gb_primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe2(x,y) ;
+	GB_GC_Safe3_Zeroed(n,n1,n2) ;
 	GB_Integer_DivMod_In(n1,n2,x,y) ;
 	GB_MkTupNode2_In(n,n1,n2) ;
+	GB_GC_SafeLeave ;
 	return n ;
 }
 #endif
@@ -823,6 +845,8 @@ GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
   	GB_NodePtr n, n2 ;
+	GB_GC_SafeEnter ;
+  	GB_GC_Safe2_Zeroed(n,n2) ;
   	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
 		GB_MkCFunNode2In(n2,&gb_primCStringToString1Char,s,GB_Int_Add(goff,GB_Int1)) ;
@@ -831,6 +855,7 @@ GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
   		GB_MkListNil(n) ;
 	}
   	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char2 n %x\n", n ););
+  	GB_GC_SafeLeave ;
   	return n ;
 }
 
@@ -865,17 +890,20 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 	char buf[100] ;
 	int bufInx = 0 ;
 	int sz = 99 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(n) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
 %%[[8
 	gb_listForceEval( &n, &sz ) ;
 %%][96
-	GB_PassExc( gb_listForceEval( &n, &sz ) ) ;
+	GB_PassExc_GCSafe( gb_listForceEval( &n, &sz ) ) ;
 %%]]
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
 	buf[bufInx] = 0 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 `%s'\n", buf ););
+	GB_GC_SafeLeave ;
 	gb_error( buf ) ;
 	return n ;
 }
@@ -919,6 +947,9 @@ GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 	int   igoff = GB_GBInt2Int(goff) ;
 	char  c = s[ igoff ] ;
   	GB_NodePtr n, n2 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(mn) ;
+	GB_GC_Safe2_Zeroed(n,n2) ;
   	IF_GB_TR_ON(3,printf("gb_primByteArrayToString1Char %x:'%s'[%d]\n", s, s, igoff ););
 	if ( igoff < mn->content.bytearray.size && c ) {
 		GB_MkCFunNode2In(n2,&gb_primByteArrayToString1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
@@ -927,6 +958,7 @@ GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
   		GB_MkListNil(n) ;
 	}
   	IF_GB_TR_ON(3,printf("gb_primByteArrayToString1Char n %x\n", n ););
+	GB_GC_SafeLeave ;
   	return n ;
 }
 
@@ -947,7 +979,7 @@ PRIM GB_Word gb_primByteArrayLength( GB_Word a )
 %%[[95
 	n = Cast( GB_NodePtr, gb_eval( a ) ) ;
 %%][96
-	GB_PassExcAsWord( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
+	GB_PassExc_CastAsWord( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
 %%]]
   	// return GB_Int2GBInt(n->content.bytearray.size) ;
   	return (n->content.bytearray.size) ;
@@ -962,11 +994,14 @@ PRIM GB_Word gb_primByteArrayLength( GB_Word a )
 PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 {
 	GB_NodePtr n2 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(n) ;
+	GB_GC_Safe1_Zeroed(n2) ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray1 sz=%d n=%x\n", sz, n ););
 %%[[95
 	gb_listForceEval( &n, (int*) &sz ) ;
 %%][96
-	GB_PassExc( gb_listForceEval( &n, (int*) &sz ) ) ;
+	GB_PassExc_GCSafe( gb_listForceEval( &n, (int*) &sz ) ) ;
 %%]]
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%x\n", sz, n ););
 	GB_NodeAlloc_Malloc2_In( sz, n2 ) ;
@@ -975,12 +1010,13 @@ PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 %%[[95
 	GB_List_Iterate(n,sz,{GB_Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 %%][96
-	GB_List_Iterate(n,sz,{GB_Word xx ; GB_PassExc(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
+	GB_List_Iterate(n,sz,{GB_Word xx ; GB_PassExc_GCSafe(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 %%]]
 	// does not work: GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray4 bufInx=%d, n=%x buf=", bufInx, n ););
   	IF_GB_TR_ON(3,{int i ; for (i = 0 ; i < bufInx ; i++) {printf(" %d",s[i]);};});
   	IF_GB_TR_ON(3,printf("\n"););
+	GB_GC_SafeLeave ;
 	return n2 ;
 }
 %%]
@@ -1053,11 +1089,11 @@ PRIM GB_NodePtr gb_primShowDouble( GB_Double w )
 #if USE_GMP
 PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 {
+	GB_NodePtr n ;
 	int sz = mpz_sizeinbase( integerNd->content.mpz, 10 ) + 2 ;
 	char* buf = alloca( sz ) ;
 
 	mpz_get_str( buf, 10, integerNd->content.mpz ) ;
-	GB_NodePtr n ;
 	sz = strlen(buf) ;
 	GB_NodeAlloc_Malloc2_In( sz, n ) ;
 	memcpy( n->content.bytearray.ptr, buf, sz ) ;
@@ -1094,11 +1130,15 @@ PRIM GB_NodePtr gb_primThrowException( GB_Word exc )
 GB_NodePtr gb_throwChanInteractionException( GB_NodePtr chan, char* strErr )
 {
 	GB_NodePtr ioe_handle ;
-	GB_Word    ioe_type ;
 	GB_NodePtr ioe_filename ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(chan) ;
+	GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
 	
 	GB_MkMaybeJust( ioe_filename, chan->content.chan.name ) ;
 	GB_MkMaybeJust( ioe_handle, chan ) ;
+
+	GB_GC_SafeLeave ;
 	return gb_intl_throwIOExceptionFromPrim( ioe_handle, gb_EOF, ioe_filename, strErr ) ;
 }
 
@@ -1128,15 +1168,17 @@ GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, in
 {
 	FILE *f = chan->content.chan.file ;
 	int c ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(chan) ;
 	
 	// printf( "%d ", feof( f ) ) ;
-	GB_PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
+	GB_PassExc_GCSafe( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
 	if ( *isEof ) {
 		c == EOF ;
 	} else {
 		c = getc( f ) ;
 		if ( c == EOF ) {
-			GB_PassExc( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
+			GB_PassExc_GCSafe( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
 		} else if ( c == '\r' && chan->content.chan.isText ) {
 			int c2 = getc( f ) ;
 			if ( c2 != '\n' && c2 != EOF ) {
@@ -1147,6 +1189,7 @@ GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, in
 	}
 	// printf( "%d %d %d\n", feof( f ), *isEof, c ) ;
 	*pc = c ;
+	GB_GC_SafeLeave ;
 	return NULL ;
 }
 
@@ -1156,6 +1199,9 @@ GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
 	GB_NodePtr ioe_handle ;
 	GB_Word    ioe_type ;
 	GB_NodePtr ioe_filename ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(chan) ;
+	GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
 
 	GB_MkMaybeJust( ioe_handle, chan ) ;
 	GB_MkMaybeJust( ioe_filename, chan->content.chan.name ) ;
@@ -1174,6 +1220,7 @@ GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
 			break ;
 	}
 	
+	GB_GC_SafeLeave ;
 	return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
 }
 %%]
@@ -1213,17 +1260,19 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 {
     /* mbHandleNr to be used only for std{in,out,err}, ignoring the opening mode. */
 	int nmSz = 0 ;
-	GB_PassExc( gb_listForceEval( &nmNd, &nmSz ) ) ;
+	GB_Word mbHandleNrFromJust = 0 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe4(mbHandleNrFromJust,nmNd,modeEnum,mbHandleNr) ;
+	GB_PassExc_GCSafe( gb_listForceEval( &nmNd, &nmSz ) ) ;
 	char* nm = alloca( nmSz + 1 ) ;
-	GB_PassExc( gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ) ;	
+	GB_PassExc_GCSafe( gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ) ;	
 	nm[ nmSz ] = 0 ;
 
-	GB_PassExc( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(GB_Word,mbHandleNr) ) ) ) ;
+	GB_PassExc_GCSafe( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(GB_Word,mbHandleNr) ) ) ) ;
 	Bool mbHandleNrIsJust = False ;
-	GB_Word mbHandleNrFromJust ;
 	if ( GB_NH_Fld_Tag(mbHandleNr->header) == GB_Tag_Maybe_Just ) {
 		mbHandleNrIsJust = True ;
-		GB_PassExc( mbHandleNrFromJust = gb_eval( mbHandleNr->content.fields[0] ) ) ;
+		GB_PassExc_GCSafe( mbHandleNrFromJust = gb_eval( mbHandleNr->content.fields[0] ) ) ;
 	}
 	
 	char *mode ;
@@ -1265,6 +1314,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		GB_NodePtr ioe_handle ;
 		GB_Word    ioe_type ;
 		GB_NodePtr ioe_filename ;
+		GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
 
 		GB_MkMaybeNothing( ioe_handle ) ;
 		GB_MkMaybeJust( ioe_filename, nmNd ) ;
@@ -1288,6 +1338,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 				break ;
 		}
 
+		GB_GC_SafeLeave ;
 		return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
 	}
 	
@@ -1297,6 +1348,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	chan->content.chan.name = nmNd ;
 	chan->content.chan.isText = isText ;
 	
+	GB_GC_SafeLeave ;
 	return chan ;
 }
 
@@ -1316,7 +1368,7 @@ PRIM GB_Word gb_primHGetChar( GB_NodePtr chan )
 {
 	Bool isEof ;
 	int c ;
-	GB_PassExc( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
+	GB_PassExc_CastAsWord( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
 	// return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
 	return Cast(GB_Word,c) ;
 }
@@ -1344,20 +1396,24 @@ PRIM GB_NodePtr gb_primHPutChar( GB_NodePtr chan, GB_Word c )
 PRIM GB_NodePtr gb_primHGetContents( GB_NodePtr chan )
 {
 	Bool isEof ;
-	GB_NodePtr res ;
+	GB_NodePtr res, n ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(chan) ;
+	GB_GC_Safe2_Zeroed(n,res) ;
 
 	int c ;
-	GB_PassExc( gb_ChanGetChar( chan, False, &isEof, &c ) ) ;
+	GB_PassExc_GCSafe( gb_ChanGetChar( chan, False, &isEof, &c ) ) ;
 	if ( isEof ) {
 		GB_MkListNil( res ) ;
 	} else if ( c == EOF ) {
+		GB_GC_SafeLeave ;
 		return gb_throwChanInteractionException( chan, strerror( errno ) ) ;
 	} else {
-		GB_NodePtr n ;
 		GB_MkCFunNode1In(n,&gb_primHGetContents,chan) ;
 		GB_MkListCons(res,GB_Int2GBInt(c),n) ;
 	}
 	
+	GB_GC_SafeLeave ;
 	return res ;
 }
 
@@ -1383,6 +1439,8 @@ PRIM GB_NodePtr gb_primHPutByteArray( GB_NodePtr chan, GB_NodePtr a )
 PRIM GB_NodePtr gb_primGetProgArgv( )
 {
 	GB_NodePtr res ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1(res) ;
 	GB_MkListNil( res ) ;
 	
 	int i ;
@@ -1393,6 +1451,7 @@ PRIM GB_NodePtr gb_primGetProgArgv( )
 		res = n1 ;
 	}
 	
+	GB_GC_SafeLeave ;
 	return res ;
 }
 %%]

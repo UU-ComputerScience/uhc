@@ -28,14 +28,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_traceSupply_Group_Init( MM_TraceSupply* traceSupply, MM_Trace* trace ) {
-	MM_TraceSupply_Group_Data* trgr = mm_malloc_LOF.malloc( sizeof(MM_TraceSupply_Group_Data) ) ;
+void mm_traceSupply_Group_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace ) {
+	MM_TraceSupply_Group_Data* trgr = memmgt->malloc( sizeof(MM_TraceSupply_Group_Data) ) ;
 		
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
 
-void mm_traceSupply_Group_InitWithSub( MM_TraceSupply* traceSupply, MM_Trace* trace, MM_FlexArray* subTraceSupplies ) {
-	mm_traceSupply_Group_Init( traceSupply, trace ) ;
+void mm_traceSupply_Group_InitWithSub( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace, MM_FlexArray* subTraceSupplies ) {
+	mm_traceSupply_Group_Init( traceSupply, memmgt, trace ) ;
 	MM_TraceSupply_Group_Data* trgr = (MM_TraceSupply_Group_Data*)traceSupply->data ;
 	trgr->subTraceSupplies = *subTraceSupplies ;
 }
@@ -63,12 +63,12 @@ void mm_traceSupply_Group_Run( MM_TraceSupply* traceSupply ) {
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_Run B\n");}) ;
 }
 
-void mm_traceSupply_Group_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords ) {
+void mm_traceSupply_Group_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords, Word extra ) {
 	MM_TraceSupply_Group_Data* trgr = (MM_TraceSupply_Group_Data*)traceSupply->data ;
 		
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork\n");}) ;
 	MM_TraceSupply* subTraceSupply = (MM_TraceSupply*)mm_flexArray_At( &trgr->subTraceSupplies, mm_flexArray_SizeUsed( &trgr->subTraceSupplies ) - 1 ) ;
-	subTraceSupply->pushWork( subTraceSupply, work, nrWorkWords ) ;
+	subTraceSupply->pushWork( subTraceSupply, work, nrWorkWords, extra ) ;
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork B\n");}) ;
 }
 
