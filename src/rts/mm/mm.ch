@@ -94,6 +94,7 @@ Order of imports is important because of usage dependencies between types.
 #include "trace.h"
 #include "roots.h"
 #include "tracesupply.h"
+#include "module.h"
 #include "mutator.h"
 #include "plan.h"
 #include "pages/buddy.h"
@@ -108,7 +109,9 @@ Order of imports is important because of usage dependencies between types.
 #include "gbm/gbtrace.h"
 #include "gbm/gbtracesupregs.h"
 #include "gbm/gbtracesupstack.h"
+#include "gbm/gbtracesupmodule.h"
 #include "semispace/gbssmutator.h"
+#include "semispace/gbssmodule.h"
 #include "semispace/sscollector.h"
 #include "semispace/ss.h"
 %%]
@@ -126,6 +129,12 @@ static inline Ptr mm_itf_alloc( size_t sz ) {
 static inline Ptr mm_itf_allocResident( size_t sz ) {
 	// printf( "mm_itf_allocResident\n" ) ;
 	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz ) ;
+}
+%%]
+
+%%[8
+static inline int mm_itf_registerModule( Ptr m ) {
+	return mm_mutator.module->registerModule( mm_mutator.module, m ) ;
 }
 %%]
 

@@ -266,12 +266,12 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 %%[8
 int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 {
+	gb_push( initCAF ) ;
 %%[[99
 	GB_NodePtr initCAFApp ;
-	GB_MkAppNode1In( initCAFApp, initCAF, gb_Unit ) ;
-	initCAF = Cast(GB_Word,initCAFApp) ;
+	GB_MkAppNode1In( initCAFApp, GB_TOS, gb_Unit ) ;
+	GB_SetTOS(initCAFApp) ;
 %%]]
-	gb_push( initCAF ) ;
 	// printf( "main_GB_Run\n" ) ;
 #	if TIMING
 		clockStart = clock() ;

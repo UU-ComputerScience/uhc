@@ -22,9 +22,10 @@ typedef struct MM_Mutator {
   	MM_Allocator* 				allocator ;
   	MM_Allocator* 				residentAllocator ;
   	MM_Trace* 					trace ;
+  	MM_Module* 					module ;
   	
   	// setup with a particular MM_Pages
-  	void			 			(*init)( struct MM_Mutator*, MM_Malloc* memmgt, MM_Allocator* allocator, MM_Allocator* resAllocator, MM_Trace* trace ) ;
+  	void			 			(*init)( struct MM_Mutator*, MM_Malloc* memmgt, MM_Allocator* allocator, MM_Allocator* resAllocator, MM_Trace* trace, MM_Module* module ) ;
   	
   	// is maintained by GC?
   	Bool						(*isMaintainedByGC)( struct MM_Mutator*, Word obj ) ;

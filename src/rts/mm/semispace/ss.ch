@@ -26,6 +26,7 @@ typedef struct MM_Plan_SS_Data {
 	MM_TraceSupply*		queTraceSupply ;	// trace request queue
 	MM_TraceSupply		allTraceSupply ;	// all trace supplies grouped together
 	MM_Trace			gbmTrace ;			// GBM specific
+	MM_Module			gbmModule ;			// GBM specific module info
 	Bool				gcInProgress ;
 } MM_Plan_SS_Data ;
 %%]

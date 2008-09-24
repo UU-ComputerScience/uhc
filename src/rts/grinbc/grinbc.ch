@@ -443,6 +443,7 @@ typedef struct GB_Node {
 #define GB_FillNodeFlds5(n,x1,x2,x3,x4,x5)	{GB_FillNodeFlds4(n,x1,x2,x3,x4);(n)->content.fields[4] = Cast(GB_Word,x5);}
 
 #define GB_FillNodeHdr(h,n)						{(n)->header = h;}
+#define GB_FillConNodeN(n,sz,tg)				{GB_NodeHeader _h = GB_MkConHeader(sz,tg); GB_FillNodeHdr(_h,n);}
 #define GB_FillConNode0(n,tg)					{GB_NodeHeader _h = GB_MkConHeader(0,tg); GB_FillNodeHdr(_h,n);}
 #define GB_FillConNode1(n,tg,x1)				{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds1(n,x1);}
 #define GB_FillConNode2(n,tg,x1,x2)				{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds2(n,x1,x2);}
@@ -450,9 +451,9 @@ typedef struct GB_Node {
 #define GB_FillConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeHeader _h = GB_MkConHeader(4,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds4(n,x1,x2,x3,x4);}
 #define GB_FillConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeHeader _h = GB_MkConHeader(5,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds5(n,x1,x2,x3,x4,x5);}
 
-#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_In(1+sz,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_In(1+(sz),n); GB_FillConNodeN(n,sz,tg); }
 #define GB_MkConNodeN_Rooted(n,sz,tg)			{GB_MkConNodeN(n,sz,tg) ; GB_GC_RegisterRoot(n); }
-#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_In_Fixed(1+sz,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_In_Fixed(1+(sz),n); GB_FillConNodeN(n,sz,tg); }
 #define GB_MkConNodeN_Fixed_Rooted(n,sz,tg)		{GB_MkConNodeN_Fixed(n,sz,tg); GB_GC_RegisterRoot_Fixed(n); }
 #define GB_MkConNodeN_Fixed2_Rooted(n,sz,tg)	{GB_MkConNodeN_Fixed(n,sz,tg); GB_GC_RegisterRoot_Fixed2(n); }
 #define GB_MkConNode0(n,tg)						{GB_NodeAlloc_In(1,n); GB_FillConNode0(n,tg); }
@@ -482,6 +483,14 @@ typedef struct GB_Node {
 #define GB_FillAppNode1(n,f,x1)				{GB_NodeHeader _h = GB_MkAppHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
 
 #define GB_MkAppNode1In(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillAppNode1(n,f,x1); }
+
+#if USE_BOEHM_GC
+#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN_Fixed( n, GB_GC_MinAlloc_Words(sz), 0 ) ;
+#elif USE_EHC_MM
+#	define GB_MkExpNodeIn(n,sz)				{ GB_MkConNodeN( n, GB_GC_MinAlloc_Words(sz), 0 ); GB_GC_RegisterRoot(n); }
+#else
+#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN( n, GB_GC_MinAlloc_Words(sz), 0 )
+#endif
 
 %%]
 extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
@@ -734,6 +743,14 @@ typedef struct GB_LinkEntry {
 } GB_LinkEntry ;
 %%]
 
+%%[8
+typedef struct GB_LinkEntry_Off {
+  QuartWord		tblKind ;
+  HalfWord		off2Prev ;
+  GB_Word		linkVal ;
+} __attribute__ ((__packed__)) GB_LinkEntry_Off ;
+%%]
+
 Module info
 
 %%[8
@@ -761,6 +778,21 @@ extern int gb_lookupInfoForPC
 #if TRACE || DUMP_INTERNALS
 extern void gb_prModEntries( GB_ModEntry* modTbl ) ;
 #endif
+%%]
+
+Per module info for GC.
+Currently only used when USE_EHC_MM
+
+%%[8
+typedef struct GB_GC_Module {
+	GB_BytePtr*		globalEntries ;				// global entry points into code
+	Word			nrGlobalEntries ;			// (and the number of them)
+	HalfWord*		cafGlobalEntryIndices ;		// which global entry points are cafs
+	Word			nrCafGlobalEntryIndices ;
+%%[[20
+	GB_NodePtr*		expNode	;					// node holding the export table (all globals actually exported via export list of module)
+%%]]
+} GB_GC_Module ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -876,6 +908,8 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				// not necessary
 #	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
 
+#	define GB_GC_RegisterModule(m)						// not necessary
+
 	extern void gb_Node_Finalize( void* p, void* cd ) ;
 	extern void* gb_Dummy_Finalization_Proc ;
 	extern void* gb_Dummy_Finalization_cd ;
@@ -914,6 +948,8 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				MM_LclRoot_EnterOne3_Zeroed(nm1,nm2,nm3)
 #	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			MM_LclRoot_EnterOne4_Zeroed(nm1,nm2,nm3,nm4)
 
+#	define GB_GC_RegisterModule(m)						mm_itf_registerModule(m)
+
 #else
 
 #	define GB_HeapAlloc_Words(nWords)					Cast(GB_Ptr,heapalloc(nWords))
@@ -944,6 +980,8 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_GC_Safe2_Zeroed(nm1,nm2)					// not necessary
 #	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				// not necessary
 #	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
+
+#	define GB_GC_RegisterModule(m)						// not necessary
 
 #endif
 
@@ -1290,13 +1328,13 @@ extern void gb_Initialize() ;
 extern void gb_InitTables
 	( GB_BytePtr byteCodes, int byteCodesSz
 	, GB_LinkEntry* linkEntries, int linkEntriesSz
-	, GB_NodePtr* cafEntries, int cafEntriesSz
+	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 %%[[20
 	// , GB_NodePtr *impNode
 	// , int impNodeSz, char** impNodeNms
-	, GB_NodePtr expNode, int expNodeSz, int* expNodeOffs
+	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
 	) ;

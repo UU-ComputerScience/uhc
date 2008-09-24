@@ -170,6 +170,8 @@ SEM Instr
 %%% Link entries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+These must be in sorted order w.r.t. the @linkCLoc location
+
 %%[8
 ATTR AllInstr [ | | links USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (Link,Int)} ]
 
@@ -292,6 +294,7 @@ SEM Module
                             .   ppNmLinkEntriesTbl      =   @ppNm "linkEntries"
                             .   ppNmGlobEntriesTbl      =   @ppNm "globalEntries"
                             .   ppNmCafEntriesTbl       =   @ppNm "cafEntries"
+                            .   ppNmCafGlEntryIndicesTbl=   @ppNm "cafGlEntryIndices"
                             .   ppNmCafTbl              =   @ppNm "cafs"
                             .   strNmInitF              =   "initModule"
                             .   ppNmInitF               =   @ppNm @strNmInitF
@@ -362,31 +365,14 @@ SEM Module
                                                                 )
                                                             where constTblSz = length @constL
                                                                   kv l c = case linkTbl l of
-                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l             )
-                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l             )
+                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l             )
+                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l             )
                                                                              LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz)
                                                                              k                 -> (k,ppAddrArrAt @ppNmByteCodeTbl c, pp $ linkVal l)
                                                     glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
-                                                    cafEntries= ppTbl' "GB_NodePtr" @ppNmCafEntriesTbl [ mk e | e <- @cafEntryL ]
-                                                             where mk e = ppCast "GB_NodePtr" $ ppAddrArrAt @ppNmByteCodeTbl $ panicJust "GrinByteCode.ToC.cafs" $ Map.lookup e glEntryMp
-                                                    -- cafMp   = Map.fromList [ (i,ppArrAt @ppNmCafEntriesTbl n) | (i,n) <- zip [(0::Int)..] @cafEntryL ]
-                                                    cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
-                                                    glEntries= ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ e i c | (i,c) <- Map.assocs glEntryMp ]
-                                                             where e i c = case Map.lookup i cafMp of
-                                                                             Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n
-                                                                             Nothing -> ppAddrArrAt @ppNmByteCodeTbl c
-                                                    cafL    = zipWith3 (\b nr i -> ( i
-                                                                                   , b >|< nr
-                                                                                   , ppArr [ pp "GB_MkCAFHeader"
-                                                                                           , pp
-                                                                                             $ ppCast "GB_Word"
-                                                                                             $ ppAddrArrAt @ppNmByteCodeTbl
-                                                                                             $ panicJust "GrinByteCode.ToC.cafs"
-                                                                                             $ Map.lookup i glEntryMp
-                                                                                           ]
-                                                                       )           )
-                                                                       (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
-                                                    cafs    = [ "static GB_Node" >#< n >#< "=" >#< c | (_,n,c) <- cafL ]
+                                                    cafGlEntryIndices = ppTbl' "HalfWord" @ppNmCafGlEntryIndicesTbl [ pp i | i <- @cafEntryL ]
+                                                    nrCafs = length @cafEntryL
+                                                    glEntries = ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ ppAddrArrAt @ppNmByteCodeTbl c | c <- Map.elems glEntryMp ]
                                                     initf   = ppLine $ ppCmtC @lhs.opts "Initialization"
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
 %%[[8
@@ -398,13 +384,13 @@ SEM Module
                                                                                  ("gb_InitTables" >|< ppParensCommasBlock args >#< ";")
                                                             where args = [ @ppNmByteCodeTbl, pp @instrs.cLoc
                                                                          , @ppNmLinkEntriesTbl, pp (length linkL)
-                                                                         , @ppNmCafEntriesTbl, pp (length @cafEntryL)
+                                                                         , @ppNmCafGlEntryIndicesTbl, pp nrCafs
                                                                          , @ppNmGlobEntriesTbl, pp (Map.size glEntryMp)
                                                                          , @ppNmConstTbl
 %%[[20
                                                                          -- , ppAddrOf @ppNmImpNode
                                                                          -- , pp (length @impModNmL), @ppNmImpNodeNms
-                                                                         , @ppNmExpNode
+                                                                         , ppAddrOf @ppNmExpNode
                                                                          , @ppNmExpNodeSz, @ppNmExpNodeOffs
                                                                          , pp "modTbl"
 %%]]
@@ -425,7 +411,7 @@ SEM Module
                                                                                   ++ [ @ppNmInitF >|< "()" >#< ";" ]
                                                                                   ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp (1::Int)] >#< ";" ]
 %%][20
-                                                                                  ++ [ "GB_MkConNodeN_Fixed2_Rooted(" >#< mkPre m >|< @strNmExpNode >|< ", GB_GC_MinAlloc_Words(" >|< mkPre m >|< @strNmExpNodeSz >|< "), 0 ) ;"
+                                                                                  ++ [ "GB_MkExpNodeIn(" >#< mkPre m >|< @strNmExpNode >|< ", " >|< mkPre m >|< @strNmExpNodeSz >|< " ) ;"
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
                                                                                   ++ [ mkPre m >|< @strNmInitF >|< ppParens @ppNmModEntriesTbl >#< ";"
@@ -472,8 +458,7 @@ SEM Module
                                                       ++ [bcodemodtrace]
                                                       ++ callinfos
                                                       ++ consts
-                                                      ++ cafs
-                                                      ++ cafEntries
+                                                      ++ cafGlEntryIndices
                                                       ++ glEntries
 %%[[20
                                                       ++ [ expnd ]
