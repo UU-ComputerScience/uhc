@@ -1017,6 +1017,30 @@ v &
 
 |v| is a word sized value, patched by linking during initialisation.
 
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |ldgt p : gcode|
+ }{%
+  |gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |*p : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
 \subsubsection{Load node tag}
 
 \begin{GrinEncoding}{|ilnt|}

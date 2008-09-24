@@ -40,7 +40,7 @@ static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data
 	if ( alc->addrCursorFree < alc->addrFirstFree ) {
 		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
 	}
-	printf("mm_allocator_Bump_Alloc_AndCheckCursor 2 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
+	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 2 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
 	return (Ptr)alc->addrCursorFree ;
 }
 

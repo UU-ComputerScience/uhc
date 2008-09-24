@@ -51,16 +51,17 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	// plan->collector = &plss->collector ;
 	
 	mm_mutator = mm_mutator_GBSS ;
-	mm_mutator.init( &mm_mutator, &plss->memMgt, &plss->ssAllocator, &plss->residentAllocator, &plss->gbmTrace ) ;
+	mm_mutator.init( &mm_mutator, &plss->memMgt, &plss->ssAllocator, &plss->residentAllocator, &plss->gbmTrace, &plss->gbmModule ) ;
 	plan->mutator = &mm_mutator ;
 		
-	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 4, 4 ) ;
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 5, 5 ) ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
-	// the order of these supplies matters, because they are run in this order
-	MM_TraceSupply* regsTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
-	MM_TraceSupply* rootsTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
-	MM_TraceSupply* stackTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
-	MM_TraceSupply* queTraceSupply   = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 3 ) ;
+	// the order of these supplies matters, because they are run in this order, the last must be the one queueing
+	MM_TraceSupply* regsTraceSupply   = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
+	MM_TraceSupply* rootsTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+	MM_TraceSupply* stackTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
+	MM_TraceSupply* moduleTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 3 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 4 ) ;
 	
 	*regsTraceSupply = mm_traceSupply_GBRegs ;
 	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
@@ -71,6 +72,9 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	*stackTraceSupply = mm_traceSupply_GBStack ;
 	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	
+	*moduleTraceSupply = mm_traceSupply_GBModule ;
+	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	
 	*queTraceSupply = mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
 	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	plss->queTraceSupply = queTraceSupply ;
@@ -80,6 +84,9 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	
 	plss->gbmTrace = mm_trace_GBM ;
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
+	
+	plss->gbmModule = mm_module_GBSS ;
+	plss->gbmModule.init( &plss->gbmModule, &plss->memMgt ) ;
 	
 	plss->gcInProgress = False ;
 	

@@ -1154,14 +1154,14 @@ void gb_interpretLoop()
 			/* ldgt */
 			case GB_Ins_Ldg(GB_InsOp_LocB_TOS) :
 				GB_PCImmIn(GB_Word,x) ;
-				// GB_Push( *Cast(GB_Word*,x) ) ; /* linked in value */
+				x = *Cast(GB_Word*,x) ;
 				GB_Push( x ) ; /* linked in value */
 				break ;
 			
 			/* ldgr */
 			case GB_Ins_Ldg(GB_InsOp_LocB_Reg) :
 				GB_PCImmIn(GB_Word,rr) ;
-				// rr = *Cast(GB_Word*,rr) ;
+				rr = *Cast(GB_Word*,rr) ;
 				break ;
 			
 			/* calling, returning, case */
@@ -1744,8 +1744,12 @@ void gb_Initialize()
 %%]]
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;
-	
-	GB_MkConNodeN_Fixed_Rooted(gb_Unit,GB_GC_MinAlloc_Words(0),0) ;
+
+#	if USE_BOEHM_GC
+		GB_MkConNodeN_Fixed(gb_Unit,GB_GC_MinAlloc_Words(0),0) ;
+#	else
+		GB_MkConNodeN_Rooted(gb_Unit,GB_GC_MinAlloc_Words(0),0) ;
+#	endif
 }
 
 %%]
@@ -1762,13 +1766,11 @@ void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz )
 void gb_InitTables
 	( GB_BytePtr byteCodes, int byteCodesSz
 	, GB_LinkEntry* linkEntries, int linkEntriesSz
-	, GB_NodePtr* cafEntries, int cafEntriesSz
+	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 %%[[20
-	// , GB_NodePtr *impNode
-	// , int impNodeSz, char** impNodeNms
-	, GB_NodePtr expNode, int expNodeSz, int* expNodeOffs
+	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
 	)
@@ -1776,28 +1778,22 @@ void gb_InitTables
 	int i, j ;
 	GB_Ptr p ;
 
-/*
-*/
-	for ( i = 0 ; i < cafEntriesSz ; i++ ) {
-		GB_NodePtr n ;
-		GB_MkCafNodeIn(n,cafEntries[i]) ;
-		cafEntries[i] = n ;
-	}
-
-%%[[20
-/*
-	GB_MkConNodeN(*impNode,impNodeSz,0) ;
-	for ( i = 0 ; i < impNodeSz ; i++ )
-	{
-		GB_ModEntry* mod = gb_lookupModEntry( impNodeNms[i], modTbl ) ;
-		(*impNode)->content.fields[i] = Cast(GB_Word,*(mod->expNode)) ;
-	}
-*/
-%%]]
-
 #	if USE_EHC_MM
-		mm_Roots_RegisterNWithFlag( (WPtr)globalEntries, globalEntriesSz, MM_Trace_Flg_Trace ) ;
+		GB_GC_Module gbMod
+			= { globalEntries, globalEntriesSz, cafGlEntryIndices, cafGlEntryIndicesSz
+%%[[20
+			  , expNode
+%%]]
+			  } ;
+		GB_GC_RegisterModule( &gbMod ) ;
 #	endif
+
+	for ( i = 0 ; i < cafGlEntryIndicesSz ; i++ ) {
+		GB_BytePtr* e = &globalEntries[ cafGlEntryIndices[i] ] ;
+		GB_NodePtr n ;
+		GB_MkCafNodeIn(n,*e) ;
+		*e = Cast(GB_BytePtr,n) ;
+	}
 
 	for ( i = 0 ; i < linkEntriesSz ; i++ )
 	{
@@ -1834,10 +1830,8 @@ void gb_InitTables
 
 %%[[20
 			case GB_LinkTbl_EntryKind_ImpEntry :
-				// *p = (*impNode)->content.fields[ linkEntries[i].linkVal ] ;
-				// *p = Cast(GB_Word,(modTbl[ linkEntries[i].linkVal ].expNode)) ;
-				*p = Cast(GB_Word,*(modTbl[ linkEntries[i].linkVal ].expNode)) ;
-				IF_GB_TR_ON(3,{printf("link ImpEntry p %x v %x", p, *(modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
+				*p = Cast(GB_Word,(modTbl[ linkEntries[i].linkVal ].expNode)) ;
+				IF_GB_TR_ON(3,{printf("link ImpEntry p=%x v=%x *v=%x", p, (modTbl[ linkEntries[i].linkVal ].expNode), *(modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
 				break ;
 %%]]
 
@@ -1847,8 +1841,8 @@ void gb_InitTables
 %%[[20
 	for ( i = 0 ; i < expNodeSz ; i++ )
 	{
-		expNode->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
-		IF_GB_TR_ON(3,{printf("link nd=%x flds=%x exp i=%d/%x off=%x p=%x glob[off]=%x", expNode, expNode->content.fields, i, i, expNodeOffs[i], &expNode->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
+		(*expNode)->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
+		IF_GB_TR_ON(3,{printf("link nd=%x flds=%x exp i=%d/%x off=%x p=%x glob[off]=%x", (*expNode), (*expNode)->content.fields, i, i, expNodeOffs[i], &(*expNode)->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
 	}
 %%]]
 	
