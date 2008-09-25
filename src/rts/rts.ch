@@ -35,9 +35,9 @@
 For now, switch off Boehm GC, turn on own GC
 
 %%[8
-%%]
 #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
+%%]
 
 %%[8
 %%]
@@ -139,7 +139,7 @@ extern Pointer HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 200000
+#define STACKSIZE 800000
 #define RETURNSIZE 100
 
 extern Pointer SP, RP;

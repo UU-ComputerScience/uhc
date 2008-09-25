@@ -121,16 +121,38 @@ Order of imports is important because of usage dependencies between types.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+// Allocate sz bytes, to be managed by GC
+// Pre: sz >= size required to admin forwarding pointers. This depends on the node encoding. For GBM: sz >= sizeof(header) + sizeof(word)
 static inline Ptr mm_itf_alloc( size_t sz ) {
-	// printf( "mm_itf_alloc\n" ) ;
 	return mm_mutator.allocator->alloc( mm_mutator.allocator, sz ) ;
 }
 
 static inline Ptr mm_itf_allocResident( size_t sz ) {
-	// printf( "mm_itf_allocResident\n" ) ;
 	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz ) ;
 }
 %%]
+
+%%[8
+// malloc equivalent interface to lower level MM routines
+static inline Ptr mm_itf_malloc( size_t sz ) {
+	return mm_mutator.malloc->malloc( sz ) ;
+}
+
+static inline void mm_itf_free( Ptr p ) {
+	mm_mutator.malloc->free( p ) ;
+}
+%%]
+
+%%[8
+// registration of location of GC root
+static inline void mm_itf_registerGCRoot( WPtr p ) {
+	mm_Roots_Register1( p ) ;
+}
+
+%%]
+static inline void mm_itf_registerGCRoots( WPtr p, Word n ) {
+	mm_Roots_Register1( (WPtr)(&n) ) ;
+}
 
 %%[8
 static inline int mm_itf_registerModule( Ptr m ) {
