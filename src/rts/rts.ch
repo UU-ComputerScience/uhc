@@ -78,6 +78,7 @@ typedef int Bool ;
 
 %%[8
 #include "bits.h"
+#include "mm/mmitf.h"
 #include "grinbc/grinbc.h"
 #include "mm/mm.h"
 #include "utils.h"
