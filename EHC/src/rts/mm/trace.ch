@@ -14,10 +14,8 @@ typedef QuartWord 				MM_Trace_Flg ;
 
 #define	MM_Trace_Flg_Copy		(1<<0)			// copy inspected object
 #define	MM_Trace_Flg_Trace		(1<<1)			// trace content of object 1 level
-#define	MM_Trace_Flg_Trace2		(1<<2)			// and also the 2nd level (only if not copying, otherwise ignored)
 
 #define	MM_Trace_Flg_All		(MM_Trace_Flg_Copy | MM_Trace_Flg_Trace)
-#define	MM_Trace_Flg_All2		(MM_Trace_Flg_All | MM_Trace_Flg_Trace2)
 
 %%]
 

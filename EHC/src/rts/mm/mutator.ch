@@ -23,6 +23,7 @@ typedef struct MM_Mutator {
   	MM_Allocator* 				residentAllocator ;
   	MM_Trace* 					trace ;
   	MM_Module* 					module ;
+  	MM_Malloc*					malloc ;
   	
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Mutator*, MM_Malloc* memmgt, MM_Allocator* allocator, MM_Allocator* resAllocator, MM_Trace* trace, MM_Module* module ) ;

@@ -54,8 +54,10 @@ void mm_traceSupply_GBModule_Run( MM_TraceSupply* traceSupply ) {
 			*e = mm_Trace_TraceObject( trgr->trace, *e, MM_Trace_Flg_All ) ;
 			IF_GB_TR_ON(3,{printf("mm_traceSupply_GBModule_Run C2 i=%x j=%x e=%x *e=%x \n",i,j,e,*e);}) ;
 		}
+%%[[20
 		WPtr e = (WPtr)(gbMod->expNode) ;
 		*e = mm_Trace_TraceObject( trgr->trace, *e, MM_Trace_Flg_All ) ;
+%%]]
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBModule_Run D\n");}) ;
 }

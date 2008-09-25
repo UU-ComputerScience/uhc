@@ -35,6 +35,7 @@ void mm_mutator_GBSS_Init( MM_Mutator* mutator, MM_Malloc* memmgt, MM_Allocator*
 	mutator->residentAllocator = resAllocator ;
 	mutator->trace = trace ;
 	mutator->module = module ;
+	mutator->malloc = memmgt ;
 	
 	// mutator->data = (MM_Mutator_Data_Priv*)mutatoryyy ;
 }
@@ -58,6 +59,7 @@ void mm_mutator_GBSS_zzz( MM_Mutator* mutator, ... ) {
 %%[8
 MM_Mutator mm_mutator_GBSS =
 	{ NULL
+	, NULL
 	, NULL
 	, NULL
 	, NULL

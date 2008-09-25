@@ -141,7 +141,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 						if ( doCopy ) {
 							tr->traceSupply->pushWork( tr->traceSupply, (Word*)objRepl, szWords, alc->lastAllocFragment(alc) ) ;
 						} else {
-							mm_trace_GBM_TraceObjects( trace, objRepl->content.fields, szWords, ( flg & MM_Trace_Flg_Trace2 ? MM_Trace_Flg_Trace : MM_Trace_Flg_All ) ) ;
+							mm_trace_GBM_TraceObjects( trace, objRepl->content.fields, szWords, MM_Trace_Flg_All ) ;
 						}
 					}
 				}

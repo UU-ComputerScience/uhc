@@ -371,10 +371,10 @@ void gb_Node_Finalize( void* p, void* cd )
 		switch( GB_NH_Fld_Tag(h) )
 		{
 			case GB_NodeTag_Intl_Malloc :
-				mm_malloc_EHC->free( n->content.ptr ) ;
+				mm_itf_free( n->content.ptr ) ;
 				break ;
 			case GB_NodeTag_Intl_Malloc2 :
-				mm_malloc_EHC->free( n->content.bytearray.ptr ) ;
+				mm_itf_free( n->content.bytearray.ptr ) ;
 				break ;
 %%[[98
 			case GB_NodeTag_Intl_Chan :
@@ -1420,8 +1420,7 @@ gb_interpreter_InsApplyEntry:
 							GB_Push(x) ;
 							goto gb_interpreter_InsCallEntry ;
 						} else { /* ( nLeftOver < 0 ) */
-							p2 = n->content.fields ;									/* copy old fields prep										*/
-							p3 = Cast(GB_Ptr,&((n)->content.fields[GB_NH_NrFlds(h)])) ;
+							GB_NodeHeader hOld = h ;
 							h = GB_MkHeader(GB_NH_Fld_Size(h)+x,GB_NH_Fld_NdEv(h),GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h)-x) ;
 							// IF_GB_TR_ON(3,printf("gb_interpreterLoop.GB_Ins_Apply alloc A sz=%x\n",GB_NH_Fld_Size(h));) ;
 							// GC sensitive:
@@ -1430,6 +1429,8 @@ gb_interpreter_InsApplyEntry:
 							x2 = Cast(GB_Word,p) ;										/* remember, to push later on								*/
 							Cast(GB_NodePtr,p)->header = h ;							/* set header												*/
 							p++ ;
+							p2 = n->content.fields ;									/* copy old fields prep										*/
+							p3 = Cast(GB_Ptr,&(p2[GB_NH_NrFlds(hOld)])) ;
 							MemCopyForward(p2,p3,p) ;									/* copy old fields								*/
 							GB_Popn(2) ;
 							p3 = GB_SPRel(x) ;											/* copy new args								*/
@@ -1746,9 +1747,9 @@ void gb_Initialize()
 	bp = Cast(GB_Ptr,0) ;
 
 #	if USE_BOEHM_GC
-		GB_MkConNodeN_Fixed(gb_Unit,GB_GC_MinAlloc_Words(0),0) ;
+		GB_MkConNodeN_Fixed(gb_Unit,GB_GC_MinAlloc_Fields(0),0) ;
 #	else
-		GB_MkConNodeN_Rooted(gb_Unit,GB_GC_MinAlloc_Words(0),0) ;
+		GB_MkConNodeN_Rooted(gb_Unit,GB_GC_MinAlloc_Fields(0),0) ;
 #	endif
 }
 
