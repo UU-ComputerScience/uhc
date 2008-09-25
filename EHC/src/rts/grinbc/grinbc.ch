@@ -948,7 +948,7 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_GC_RegisterModule(m)						mm_itf_registerModule(m)
 
 	static inline Ptr gb_malloc( size_t sz ) { return mm_itf_malloc( sz ) ; }
-	static inline void gb_free( Ptr p ) { return mm_itf_free( p ) ; }
+	static inline void gb_free( Ptr p ) { mm_itf_free( p ) ; }
 
 #else
 

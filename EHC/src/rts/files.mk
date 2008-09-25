@@ -37,7 +37,7 @@ RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim)
 RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									rts config sizes bits utils timing \
 									grinbc/grinbc \
-									mm/mm mm/config mm/common \
+									mm/mmitf mm/mm mm/config mm/common \
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan mm/module \
 									mm/pages/buddy \
