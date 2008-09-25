@@ -35,9 +35,9 @@
 For now, switch off Boehm GC, turn on own GC
 
 %%[8
-%%]
 #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
+%%]
 
 %%[8
 %%]
