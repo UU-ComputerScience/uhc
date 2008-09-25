@@ -910,6 +910,9 @@ The 'Fixed' variants allocate non-collectable.
 	extern void* gb_Dummy_Finalization_Proc ;
 	extern void* gb_Dummy_Finalization_cd ;
 
+	static inline Ptr gb_malloc( size_t sz ) { return malloc( sz ) ; }
+	static inline void gb_free( Ptr p ) { return free( p ) ; }
+
 #elif USE_EHC_MM
 
 #	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes))
@@ -944,6 +947,9 @@ The 'Fixed' variants allocate non-collectable.
 
 #	define GB_GC_RegisterModule(m)						mm_itf_registerModule(m)
 
+	static inline Ptr gb_malloc( size_t sz ) { return mm_itf_malloc( sz ) ; }
+	static inline void gb_free( Ptr p ) { return mm_itf_free( p ) ; }
+
 #else
 
 #	define GB_HeapAlloc_Words(nWords)					Cast(GB_Ptr,heapalloc(nWords))
@@ -975,6 +981,9 @@ The 'Fixed' variants allocate non-collectable.
 
 #	define GB_GC_RegisterModule(m)						// not necessary
 
+	static inline Ptr gb_malloc( size_t sz ) { return malloc( sz ) ; }
+	static inline void gb_free( Ptr p ) { return free( p ) ; }
+
 #endif
 
 
@@ -997,12 +1006,12 @@ This breaks when compiled without bgc.
 
 %%[95
 #define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
-											  (n)->content.ptr = mm_itf_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
+											  (n)->content.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
 											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
 											}
 #define GB_NodeAlloc_Malloc2_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize2,GB_MkMallocHeader2,n) ; \
 											  (n)->content.bytearray.size = nBytes ; \
-											  (n)->content.bytearray.ptr = mm_itf_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
+											  (n)->content.bytearray.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
 											  GB_Register_Finalizer(n,&((n)->content.bytearray.ptr)) ; \
 											}
 %%]

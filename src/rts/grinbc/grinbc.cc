@@ -371,10 +371,10 @@ void gb_Node_Finalize( void* p, void* cd )
 		switch( GB_NH_Fld_Tag(h) )
 		{
 			case GB_NodeTag_Intl_Malloc :
-				mm_itf_free( n->content.ptr ) ;
+				gb_free( n->content.ptr ) ;
 				break ;
 			case GB_NodeTag_Intl_Malloc2 :
-				mm_itf_free( n->content.bytearray.ptr ) ;
+				gb_free( n->content.bytearray.ptr ) ;
 				break ;
 %%[[98
 			case GB_NodeTag_Intl_Chan :
