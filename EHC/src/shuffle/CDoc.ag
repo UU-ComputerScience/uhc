@@ -59,18 +59,20 @@ cdPut' h = mapM_ (hPutStrLn h) . cdLines
 
 cdPut :: Handle -> CDoc -> IO ()
 cdPut h d
-  = case d of
-      CDoc_Emp              -> return ()
-      CDoc_Str s            -> hPutStr h s
-      CDoc_Ref r s d        -> hPutStr h (showUndef r)
-      CDoc_Hor d1 d2        -> do cdPut h d1
-                                  cdPut h d2
-      CDoc_Ver CDoc_Emp d2  -> cdPut h d2
-      CDoc_Ver d1 CDoc_Emp  -> cdPut h d1
-      CDoc_Ver d1 d2        -> do cdPut h d1
-                                  hPutStrLn h ""
-                                  cdPut h d2
-      CDoc_Pos _ d          -> cdPut h d
+  = do p d
+       hPutStrLn h ""
+  where p d = case d of
+          CDoc_Emp              -> return ()
+          CDoc_Str s            -> hPutStr h s
+          CDoc_Ref r s d        -> hPutStr h (showUndef r)
+          CDoc_Hor d1 d2        -> do p d1
+                                      p d2
+          CDoc_Ver CDoc_Emp d2  -> p d2
+          CDoc_Ver d1 CDoc_Emp  -> p d1
+          CDoc_Ver d1 d2        -> do p d1
+                                      hPutStrLn h ""
+                                      p d2
+          CDoc_Pos _ d          -> p d
 
 class CD a where
   cd :: a -> CDoc

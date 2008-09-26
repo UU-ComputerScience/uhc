@@ -39,7 +39,7 @@ SEM Expr
 %%[[1
   | Let         loc     .   pp      =   
 %%][100
-  | Let         loc     .   pp      =   if ehcOptShowEH @lhs.opts
+  | Let         loc     .   pp      =   if ehcOptShowEH @lhs.opts || ehcOptEmitEH @lhs.opts
                                         then
 %%]]
                                              "let"
