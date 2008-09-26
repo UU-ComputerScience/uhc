@@ -1200,10 +1200,15 @@ pPatternApp
 pPatternOp :: HSParser Pattern
 pPatternOp
   =   pChainr_ng
+%%[[1
         ((\o l r -> mkRngNm Pattern_Constructor o [l,r]) <$> qconop)
+%%][5
+        ((\o l r -> Pattern_InfixConstructor (mkRange1 o) l (tokMkQName o) r) <$> qconop)
+%%]]
         pPatternApp
   <?> "pPatternOp"
 %%]
+
 
 %%[1.pPattern
 pPattern :: HSParser Pattern
