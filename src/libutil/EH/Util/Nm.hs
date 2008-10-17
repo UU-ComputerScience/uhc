@@ -81,6 +81,10 @@ nmApd n1 n2
   where l1 = nmToMbL n1
         l2 = nmToMbL n2
 
+nmApdL :: [Nm' s] -> Nm' s
+nmApdL
+  = nmFromMbL . concat . map nmToMbL
+
 nmStrApd :: Nm -> Nm -> Nm
 nmStrApd n1 n2
   = Nm (s1 ++ s2)

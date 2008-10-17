@@ -7,13 +7,13 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.FullLazy} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFullLazy)
+%%[(8 codegen) hs module {%{EH}Core.Trf.FullLazy} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFullLazy)
 %%]
 
-%%[8 hs import({%{EH}Base.Debug})
+%%[(8 codegen) hs import({%{EH}Base.Debug})
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
@@ -49,7 +49,7 @@ help     : The following attributes formed the cycle:
            CExpr.Let, synthesized attribute binds.levOfMp
            CExpr.Let, inherited attribute binds.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 9, column 35))
 
-%%[8
+%%[(8 codegen)
 PRAGMA nocycle
 %%]
 
@@ -57,7 +57,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfFullLazy :: UID -> CModule -> CModule
 cmodTrfFullLazy uniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -69,7 +69,7 @@ cmodTrfFullLazy uniq cmod
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
@@ -86,7 +86,7 @@ SEM CExpr
 %%% CMeta context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr AllAlt [ cmeta: CMeta | | ]
 
 SEM CExpr
@@ -107,7 +107,7 @@ SEM CPatBind
 %%% Gathering let's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type LevBindSq = Seq.FastSeq (Int,(CBindCateg,CBindL))
 
 levBindSplit :: Int -> LevBindSq -> (LevBindSq,LevBindSq)
@@ -116,7 +116,7 @@ levBindSplit lev b
      in  (Seq.fromList b1,Seq.fromList b2)
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | levBindSq USE {:++:} {Seq.empty}: LevBindSq ]
 ATTR AllBind [ | | bindL USE {++} {[]}: {AssocL Int CBind} ]
 
@@ -158,12 +158,12 @@ SEM CAlt
 %%% Allow trf?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 data AppTop = AppYesLet | AppNoLet deriving (Eq,Ord)
 data LamTop = LamYesLet | LamNoLet deriving (Eq,Ord)
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ appTrfIsOk: AppTop | | ]
 
 SEM CModule
@@ -188,7 +188,7 @@ SEM CAlt
   | Alt         expr        .   appTrfIsOk  =   AppYesLet
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ lamTrfIsOk: LamTop | | ]
 
 SEM CModule
@@ -211,7 +211,7 @@ SEM CAlt
   | Alt         expr        .   lamTrfIsOk  =   LamYesLet
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ letTrfIsOk: Bool | | ]
 
 SEM CModule
@@ -238,7 +238,7 @@ SEM CAlt
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 mkTrf :: Bool -> Int -> Int -> HsName -> CMeta -> CExpr -> (CExpr,LevBindSq)
 mkTrf cond outerLev hereLev n m e
   =  if cond
@@ -246,7 +246,7 @@ mkTrf cond outerLev hereLev n m e
      else (e,Seq.empty)
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 mkLetTrf' :: LevBindSq -> CExpr -> (Bool,CExpr)
 mkLetTrf' bs ce
   =  let  l = Seq.toList bs
@@ -256,7 +256,7 @@ mkLetTrf :: LevBindSq -> CExpr -> CExpr
 mkLetTrf bs ce = snd (mkLetTrf' bs ce)
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
@@ -276,7 +276,7 @@ SEM CExpr
   | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | TupIns TupUpd TupDel
                 (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf

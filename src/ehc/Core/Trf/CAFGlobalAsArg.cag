@@ -12,27 +12,27 @@ Similar to Trf/LamGlobalAsArg, but for CAFs.
 Assumes:
 - lambdas are already treated by Trf/LamGlobalAsArg, so no free vars of lambdas need to be taken care of.
 
-%%[8 hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
+%%[(8 codegen) hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
 %%]
 
-%%[8 hs import({%{EH}Core.Utils})
+%%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
 
-%%[8 hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
 -- for debug
-%%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg},{Core/Trf/CommonFloat})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg},{Core/Trf/CommonFloat})
 WRAPPER CodeAGItf
 %%]
 
-%%[9
+%%[(9 codegen)
 PRAGMA nocycle
 %%]
 
@@ -40,7 +40,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfCAFGlobalAsArg :: CModule -> CModule
 cmodTrfCAFGlobalAsArg cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -48,7 +48,7 @@ cmodTrfCAFGlobalAsArg cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
@@ -57,7 +57,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | gUniq: Int | ]
 
 SEM CodeAGItf
@@ -74,7 +74,7 @@ SEM CBind
 %%% Free var of CAF's for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ fvSCafMp: FvSMp | | ]
 
 SEM CodeAGItf
@@ -95,7 +95,7 @@ SEM CExpr
 %%% Mapping of argument names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 
 SEM CodeAGItf
@@ -109,7 +109,7 @@ SEM CBind
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM CBind
   | Bind        loc         .   (argOldL,argNewL,argMpNew)
                                             =   if @loc.isClosurableBind
@@ -120,7 +120,7 @@ SEM CBind
                                                 else  ([], [], Map.empty)
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
                      lamBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
                ]

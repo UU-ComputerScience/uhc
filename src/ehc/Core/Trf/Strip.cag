@@ -10,20 +10,20 @@
 Strip, meant for debugging only, replaces references to retained values
 (from previous passes) with dummy values
 
-%%[102 hs module {%{EH}Core.Trf.Strip} 
+%%[(102 codegen) hs module {%{EH}Core.Trf.Strip} 
 %%]
 
-%%[102 hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfStrip)
+%%[(102 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfStrip)
 %%]
 
-%%[102 hs import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Core.Trf.ForceEval})
+%%[(102 codegen) hs import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Core.Trf.ForceEval})
 %%]
 
-%%[102.WRAPPER ag import({Core/AbsSyn})
+%%[(102 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
-%%[102
+%%[(102 codegen)
 PRAGMA strictcase
 %%]
 
@@ -31,7 +31,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[102 hs
+%%[(102 codegen) hs
 cmodTrfStrip :: CModule -> CModule
 cmodTrfStrip cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
@@ -42,7 +42,7 @@ cmodTrfStrip cmod
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[102
+%%[(102 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 

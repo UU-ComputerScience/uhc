@@ -9,7 +9,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								scratch scratch2 \
 								poster posterLDL posterTrOrPr \
 								slides-ruler slides-ruler-long \
-								slides-explimpl slides-explimpl-fpnl slides-overview slides-status slides-ehcstruct \
+								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
+								slides-ehcstruct slides-ehcstruct-ufmg \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \

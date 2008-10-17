@@ -11,17 +11,17 @@ Eliminate function applications for which the semantics is fixed.
 This is done for Prelude functions:
   - id
 
-%%[8 hs module {%{EH}Core.Trf.ElimTrivApp} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(8 codegen) hs module {%{EH}Core.Trf.ElimTrivApp} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfElimTrivApp)
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfElimTrivApp)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 
-%%[99
+%%[(99 codegen)
 PRAGMA strictcase
 %%]
 
@@ -29,7 +29,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfElimTrivApp :: EHCOpts -> CModule -> CModule
 cmodTrfElimTrivApp opts cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) (Inh_CodeAGItf {opts_Inh_CodeAGItf = opts})
@@ -40,7 +40,7 @@ cmodTrfElimTrivApp opts cmod
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -48,7 +48,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%% Maybe an app
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | mbFunVar: {Maybe HsName} ]
 
 SEM CExpr
@@ -57,7 +57,7 @@ SEM CExpr
   | * - Var App lhs         .   mbFunVar    =   Nothing
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | argL: {[CExpr]} ]
 
 SEM CExpr
@@ -69,7 +69,7 @@ SEM CExpr
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 

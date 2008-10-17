@@ -4,24 +4,24 @@
 
 -- Outside itf
 DATA AGItf
-  | AGItf               dumLines    : Lines
-                        chunks      : Chunks
+  | AGItf               dumLines    	: Lines
+                        chunks      	: Chunks
 
 -- Chunk
 DATA Chunk
-  | Ver                 version     : {Version}
-                        subNm       : {Nm}
-                        minusL      : {[ChunkId]}
-                        chOptions	: ChunkOptions
-                        compRestrict : {CompilerRestriction}
-                        mbModNm     : MbStrExpr -- {Maybe String}
-                        imports     : StrExprs
-                        exports     : StrExprs
-                        lines       : Lines
-                        dumLines    : Lines
-  | Named               cref        : {CRef}
-                        lines       : Lines
-                        dumLines    : Lines
+  | Ver                 variantOffer	: {VariantOffer}
+                        subNm       	: {Nm}
+                        minusL      	: {[ChunkRef]}
+                        chOptions		: ChunkOptions
+                        compRestrict 	: {CompilerRestriction}
+                        mbModNm     	: MbStrExpr -- {Maybe String}
+                        imports     	: StrExprs
+                        exports     	: StrExprs
+                        lines       	: Lines
+                        dumLines    	: Lines
+  | Named               cref        	: {CRef}
+                        lines       	: Lines
+                        dumLines    	: Lines
 
 TYPE Chunks     = [Chunk]
 
@@ -55,11 +55,11 @@ SET AllChunkOption		= ChunkOption ChunkOptions
 
 -- Single line
 DATA Line
-  | AsIs                words       : Words
-  | Named               cref        : {CRef}
-                        mbSelect    : {Maybe Select}
-  | Groups              extraLine   : Int
-                        groups      : Groups
+  | AsIs                words       	: Words
+  | Named               cref        	: {CRef}
+                        mbVariantReqm   : {Maybe VariantReqm}
+  | Groups              extraLine   	: Int
+                        groups      	: Groups
 
 TYPE Lines      = [Line]
 
@@ -67,10 +67,10 @@ SET AllLine     = Line Lines
 
 -- Single group of lines
 DATA Group
-  | Group               version     : {Version}
-                        chOptions	: ChunkOptions
-                        userRef     : {Maybe (Nm,Maybe String)}
-                        lines       : Lines
+  | Group               variantOffer    : {VariantOffer}
+                        chOptions		: ChunkOptions
+                        userRef     	: {Maybe (Nm,Maybe String)}
+                        lines       	: Lines
 
 TYPE Groups     = [Group]
 

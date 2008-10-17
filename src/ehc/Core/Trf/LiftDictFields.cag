@@ -8,23 +8,23 @@
 %%% Lift fields of a dictionaries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs module {%{EH}Core.Trf.LiftDictFields} export(cmodTrfLiftDictFields)
+%%[(9 codegen) hs module {%{EH}Core.Trf.LiftDictFields} export(cmodTrfLiftDictFields)
 %%]
-%%[9 hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(9 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[9 hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%[(9 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
 -- for debug
-%%[9 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(9 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
-%%[9 hs import(Debug.Trace)
+%%[(9 codegen) hs import(Debug.Trace)
 %%]
 
-%%[9.WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev})
+%%[(9 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
-%%[99
+%%[(99 codegen)
 PRAGMA strictcase
 %%]
 
@@ -32,7 +32,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 codegen) hs
 cmodTrfLiftDictFields :: CModule -> CModule
 cmodTrfLiftDictFields cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -40,7 +40,7 @@ cmodTrfLiftDictFields cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[9
+%%[(9 codegen)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%]
@@ -50,12 +50,12 @@ ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 codegen)
 SEM CExpr
   | Let         binds . lev  =  @lhs.lev + 1
 %%]
 
-%%[9
+%%[(9 codegen)
 
 ATTR AllBind CExpr AllAlt [ | | liftedBinds USE {++} {[]} : {[CBind]} ]
 
@@ -210,7 +210,7 @@ SEM CExpr
                                                  
 %%]
 
-%%[9 hs
+%%[(9 codegen) hs
 
 fix :: Eq a => (a->a) -> a -> a
 fix f x = let y = f x

@@ -12,6 +12,9 @@ EHC_BIN_VARIANT_PREFIX					:= $(EHC_BIN_PREFIX)$(EHC_VARIANT_PREFIX)
 EHC_LIB_VARIANT_PREFIX					:= $(EHC_LIB_PREFIX)$(EHC_VARIANT_PREFIX)
 EHC_VARIANT_RULER_SEL					:= ().().()
 
+# aspects, EHC_ASPECTS to be configured at top level, for now here
+EHC_ASPECTS								:= base hmty codegen
+
 # lib/cabal/module config
 LIB_EHC_BASE							:= EH
 LIB_EHC_QUAL							:= $(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))

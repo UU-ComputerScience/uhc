@@ -21,24 +21,24 @@ The meaning of a "closurable" CAF binding is defined in CommonFloat.
 %%% Float lambda's to global level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFloatToGlobal)
+%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFloatToGlobal)
 %%]
 
 
-%%[8 hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
 -- for debug
-%%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen) hs import(Debug.Trace)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat})
 WRAPPER CodeAGItf
 %%]
 
-%%[99
+%%[(99 codegen)
 PRAGMA strictcase
 %%]
 
@@ -46,7 +46,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfFloatToGlobal :: CModule -> CModule
 cmodTrfFloatToGlobal cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -54,7 +54,7 @@ cmodTrfFloatToGlobal cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%]
@@ -64,7 +64,7 @@ ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | Let         binds . lev  =  @lhs.lev + 1
 %%]
@@ -88,7 +88,7 @@ What is passed upwards, and what is consumed, depends on the situation:
 * in other Let bindings:    the lambda bindings and the closurable CAF bindings    the "others"             
 
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind   [ | | cLamBinds, 
                      cCAFBinds, 
                      cOtherBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]

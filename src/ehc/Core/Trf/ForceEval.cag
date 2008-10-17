@@ -7,16 +7,16 @@
 %%% Haskell importable interface to forceEval on Core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs module {%{EH}Core.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Ty},{%{EH}Core})
+%%[(99 codegen) hs module {%{EH}Core.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Ty},{%{EH}Core})
 %%]
 
-%%[99.WRAPPER ag import({Core/AbsSyn})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CModule CExpr
 
 %%]
 PRAGMA strictcase
 
-%%[99 hs
+%%[(99 codegen) hs
 instance ForceEval CModule where
   forceEval x | trf_Syn_CModule t `seq` True = x
     where t = wrap_CModule (sem_CModule x) Inh_CModule
@@ -42,7 +42,7 @@ instance ForceEval CBindCateg
 
 This prevents empty export list, exporting all sem_ functions, causing name clashes
 
-%%[99 hs export(dummy)
+%%[(99 codegen) hs export(dummy)
 dummy = "dummy"
 %%]
 
@@ -50,7 +50,7 @@ dummy = "dummy"
 %%% ForceEval over structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 codegen)
 ATTR AllCodeNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM CModule
@@ -95,7 +95,7 @@ SEM CPatBind
 
 %%]
 
-%%[102
+%%[(102 codegen)
 ATTR AllCodeNT [ | | cm USE {`cmUnion`} {emptyCM}: {CountMp} ]
 
 SEM CModule

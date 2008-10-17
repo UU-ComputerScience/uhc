@@ -7,20 +7,20 @@
 %%% Substituting holes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}VarMp},{%{EH}Core.Pretty},{%{EH}Core.FvS})
+%%[(9 codegen) hs module {%{EH}Core.Subst} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map,EH.Util.Pretty,EH.Util.Utils,{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}VarMp},{%{EH}Core.Pretty},{%{EH}Core.FvS})
 %%]
 
-%%[9 hs export(coeWipeWeave,coeEvalOn,mkPoisAppCoe,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
+%%[(9 codegen) hs export(coeWipeWeave,coeEvalOn,mkPoisAppCoe,mkImplsAppCoe, mkImplsLamCoe,mkLamBodyCoe,mkPoiLLamCoe)
 %%]
 
-%%[9 hs import({%{EH}Core.Coercion})
+%%[(9 codegen) hs import({%{EH}Core.Coercion})
 %%]
 
-%%[9.WRAPPER ag import({Core/AbsSyn})
+%%[(9 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CExpr
 %%]
 
-%%[9
+%%[(9 codegen)
 PRAGMA novisit
 %%]
 
@@ -28,7 +28,7 @@ PRAGMA novisit
 %%% Code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(CSubst,emptyCSubst)
+%%[(9 codegen) hs export(CSubst,emptyCSubst)
 data CSubstInfo
 	=  CSIExpr      {csiRepl    :: !CExpr                                           }
     |  CSIImpls     {csiAppCoeL :: ![Coe]       , csiLamCoeL    :: ![Coe]           }
@@ -41,7 +41,7 @@ emptyCSubst :: CSubst
 emptyCSubst = Map.empty
 %%]
 
-%%[9 hs export(uidImplsLToCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst,cAppCoeArg)
+%%[(9 codegen) hs export(uidImplsLToCSubst,uidCBindLLToCSubst,uidCExprLToCSubst,poiCExprLToCSubst,cnstrImplsToCSubst,cAppCoeArg)
 cAppCoeArg :: CExpr -> CExpr -> CExpr
 cAppCoeArg ce coeArg
   =  let  t = wrap_CExpr (sem_CExpr ce) (Inh_CExpr {cSubst_Inh_CExpr = emptyCSubst, coeArg_Inh_CExpr = coeArg})
@@ -67,7 +67,7 @@ cnstrImplsToCSubst opts c
         ]
 %%]
 
-%%[9 hs
+%%[(9 codegen) hs
 instance PP CSubstInfo where
   pp (CSIExpr       ce   )  = pp ce
   pp (CSIImpls      l r  )  = pp (coeWeaveOn emptyCSubst l r CExpr_CoeArg)
@@ -78,7 +78,7 @@ instance PP CSubstInfo where
 %%% Code substitution as class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(CSubstitutable(..))
+%%[(9 codegen) hs export(CSubstitutable(..))
 infixr `cSubstApp`
 
 class CSubstitutable a where
@@ -112,7 +112,7 @@ instance CSubstitutable CSubst where
 Optionally apply a CSubst.
 Temporary, as the CHR solution does not require CSubst.
 
-%%[9 hs export(cSubstOptApp)
+%%[(9 codegen) hs export(cSubstOptApp)
 cSubstOptApp :: CSubstitutable a => EHCOpts -> CSubst -> a -> a
 cSubstOptApp opts = cSubstApp
 %%]
@@ -121,7 +121,7 @@ cSubstOptApp opts = cSubstApp
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 codegen)
 ATTR AllCodeNT CodeAGItf [ cSubst: CSubst  coeArg: CExpr | | ]
 
 SEM CExpr
@@ -154,7 +154,7 @@ SEM CExpr
 
 %%]
 
-%%[9
+%%[(9 codegen)
 ATTR AllCodeNT CodeAGItf [ | | cRepl: SELF ]
 
 SEM CExpr
@@ -166,7 +166,7 @@ SEM CExpr
 %%% Coercion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 codegen) hs
 coeImplsAppLVarMp :: EHCOpts -> VarMp -> Coe -> [Coe]
 coeImplsAppLVarMp opts c coe
   =  case coe of
@@ -268,7 +268,7 @@ instance PP Coe where
 %%% LRCoe coercion for lamda
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(lrcoeWipeWeave,lrcoeForLamTyApp)
+%%[(9 codegen) hs export(lrcoeWipeWeave,lrcoeForLamTyApp)
 lrcoeWipeWeave :: EHCOpts -> VarMp -> CSubst -> LRCoe -> Coe
 lrcoeWipeWeave opts cnstr csubst (LRCoe LRCoeId _ _) = coeId
 lrcoeWipeWeave opts cnstr csubst lrcoe               = coeWipeWeave opts cnstr csubst (lrcoeLeftL lrcoe) (lrcoeRightL lrcoe)

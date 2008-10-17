@@ -181,7 +181,13 @@ text-variant-slides-status:
 
 text-variant-slides-ehcstruct:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStatus --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=shortStory" \
+	  TEXT_SHUFFLE_VARIANT=28 \
+	  text-variant-dflt-once
+
+text-variant-slides-ehcstruct-ufmg:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=dateUFMG" \
 	  TEXT_SHUFFLE_VARIANT=28 \
 	  text-variant-dflt-once
 

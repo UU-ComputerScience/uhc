@@ -7,37 +7,37 @@
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[8 hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty)
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty)
 %%]
 
-%%[8 hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CMeta(..), CBindL, CBindCateg(..), CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
+%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CMeta(..), CBindL, CBindCateg(..), CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[8 hs export(RPatNm(..))
+%%[(8 codegen) hs export(RPatNm(..))
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp)
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp)
 %%]
 
-%%[8 hs export(mkCMod)
+%%[(8 codegen) hs export(mkCMod)
 %%]
 
-%%[8 hs export(CaseFailSubst)
+%%[(8 codegen) hs export(CaseFailSubst)
 %%]
 
-%%[9 hs export(cbindLNub)
+%%[(9 codegen) hs export(cbindLNub)
 %%]
 
-%%[20 hs export(cModMerge)
+%%[(20 codegen) hs export(cModMerge)
 %%]
 
-%%[94 hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%[(94 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
 
-%%[8 ag import({Core/AbsSyn})
+%%[(8 codegen) ag import({Core/AbsSyn})
 DERIVING *     : Show, Eq
 %%]
 
@@ -45,7 +45,7 @@ DERIVING *     : Show, Eq
 %%% Abstract syntax for encoding case+pattern rewrite info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
+%%[(8 codegen) hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
 data RAlt
   = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !CExpr, raaFailS :: UIDS }
 
@@ -67,7 +67,7 @@ data RPatBind
   = RPatBind_Bind		{ rpbLbl :: !HsName, rpbOffset :: !CExpr, rpbNm :: !HsName, rpbPat :: !RPat }
 %%]
 
-%%[8 hs export(rcaPat,raltLPatNms)
+%%[(8 codegen) hs export(rcaPat,raltLPatNms)
 rcaPat :: RAlt -> RPat
 rcaPat = head . rcaPats
 
@@ -75,7 +75,7 @@ raltLPatNms :: [RAlt] -> [RPatNm]
 raltLPatNms = nub . sort . map (rcpPNm . rcaPat)
 %%]
 
-%%[8 hs export(rcaTag)
+%%[(8 codegen) hs export(rcaTag)
 rpatConTag :: RPat -> CTag
 rpatConTag (RPat_Int  _ _   )  = ctagInt
 rpatConTag (RPat_Char _ _   )  = ctagChar
@@ -85,7 +85,7 @@ rcaTag :: RAlt -> CTag
 rcaTag = rpatConTag . head . rcaPats
 %%]
 
-%%[8 hs export(raltIsVar,raltIsConst)
+%%[(8 codegen) hs export(raltIsVar,raltIsConst)
 raltIsVar :: RAlt -> Bool
 raltIsVar (RAlt_Alt (RPat_Var _ : _) _ _)  = True
 raltIsVar _                                = False
@@ -98,25 +98,25 @@ raltIsConst (RAlt_Alt (p : _) _ _)
         c _                = False
 %%]
 
-%%[8 hs export(raltIsConMany)
+%%[(8 codegen) hs export(raltIsConMany)
 raltIsConMany :: RAlt -> Bool
 raltIsConMany (RAlt_Alt (RPat_Con _ _ (RPatConBind_Many _) : _) _ _) = True
 raltIsConMany _                                                      = False
 %%]
 
-%%[8 hs export(raltIsIrrefutable)
+%%[(8 codegen) hs export(raltIsIrrefutable)
 raltIsIrrefutable :: RAlt -> Bool
 raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _ _) = True
 raltIsIrrefutable _                                         = False
 %%]
 
-%%[97 hs export(raltIsBoolExpr)
+%%[(97 codegen) hs export(raltIsBoolExpr)
 raltIsBoolExpr :: RAlt -> Bool
 raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _ _)  = True
 raltIsBoolExpr _                                       = False
 %%]
 
-%%[8 hs export(rpatConBindUnFlatten)
+%%[(8 codegen) hs export(rpatConBindUnFlatten)
 rpatConBindUnFlatten :: [RPatConBind] -> RPatConBind
 rpatConBindUnFlatten [b] = b
 rpatConBindUnFlatten bs  = RPatConBind_Many bs
@@ -126,7 +126,7 @@ rpatConBindUnFlatten bs  = RPatConBind_Many bs
 %%% Conversion from Rxxx -> Cxxx
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(rpat2CPat)
+%%[(8 codegen) hs export(rpat2CPat)
 rpat2CPat :: RPat -> CPat
 rpat2CPat p
   = case p of
@@ -140,7 +140,7 @@ rpat2CPat p
 %%]]
 %%]
 
-%%[8 hs export(rpatConBind2CPatConBind,rpatBind2CPatBind)
+%%[(8 codegen) hs export(rpatConBind2CPatConBind,rpatBind2CPatBind)
 rpatConBind2CPatConBind :: RPatConBind -> (CPatRest,[CPatBind])
 rpatConBind2CPatConBind b
   = case b of
@@ -155,7 +155,7 @@ rpatBind2CPatBind (RPatBind_Bind l o n p) = CPatBind_Bind l o n (rpat2CPat p)
 %%% Tuple operator info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[10 hs export(cTupLbl)
+%%[(10 codegen) hs export(cTupLbl)
 cTupLbl :: CExpr -> HsName
 cTupLbl e
   =  case e of
@@ -164,7 +164,7 @@ cTupLbl e
          CExpr_TupDel _ _ l _   -> l
 %%]
 
-%%[10 hs export(cTupTag)
+%%[(10 codegen) hs export(cTupTag)
 cTupTag :: CExpr -> CTag
 cTupTag e
   =  case e of
@@ -173,7 +173,7 @@ cTupTag e
          CExpr_TupDel _ t _ _   -> t
 %%]
 
-%%[10 hs export(cTupOff)
+%%[(10 codegen) hs export(cTupOff)
 cTupOff :: CExpr -> CExpr
 cTupOff e
   =  case e of
@@ -186,7 +186,7 @@ cTupOff e
 %%% Binding category
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 data CBindCateg
   = CBindRec
   | CBindStrict
@@ -202,13 +202,13 @@ data CBindCateg
 %%% Properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cexprIsLam)
+%%[(8 codegen) hs export(cexprIsLam)
 cexprIsLam :: CExpr -> Bool
 cexprIsLam (CExpr_Lam _ _ _) = True
 cexprIsLam _                 = False
 %%]
 
-%%[8 hs export(cbindNm)
+%%[(8 codegen) hs export(cbindNm)
 cbindNm :: CBind -> HsName
 cbindNm (CBind_Bind      n _ _) = n
 cbindNm (CBind_FFI _ _ _ n _  ) = n
@@ -218,7 +218,7 @@ cbindNm (CBind_FFI _ _ _ n _  ) = n
 %%% Remove duplicate bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 codegen) hs
 cbindLNub :: CBindL -> CBindL
 cbindLNub = nubBy (\b1 b2 -> cbindNm b1 == cbindNm b2)
 %%]
@@ -227,7 +227,7 @@ cbindLNub = nubBy (\b1 b2 -> cbindNm b1 == cbindNm b2)
 %%% Name of a pattern var/con
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 data RPatNm
   = RPatNmOrig {rpatNmNm :: !HsName}
   | RPatNmUniq {rpatNmNm :: !HsName}
@@ -241,7 +241,7 @@ instance Show RPatNm where
 %%% Lifting to CMeta tupled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cmetaLift)
+%%[(8 codegen) hs export(cmetaLift)
 cmetaLift' :: Functor f => CMeta -> f x -> f (x,CMeta)
 cmetaLift' m = fmap (\x -> (x,m))
 
@@ -249,7 +249,7 @@ cmetaLift :: Functor f => f x -> f (x,CMeta)
 cmetaLift = cmetaLift' CMeta_Val
 %%]
 
-%%[9 hs export(cmetaLiftDict)
+%%[(9 codegen) hs export(cmetaLiftDict)
 cmetaLiftDict :: Functor f => f x -> f (x,CMeta)
 cmetaLiftDict = cmetaLift' (CMeta_Dict Nothing)
 %%]
@@ -258,7 +258,7 @@ cmetaLiftDict = cmetaLift' (CMeta_Dict Nothing)
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(mkCExprAppMeta,mkCExprApp1Meta)
+%%[(8 codegen) hs export(mkCExprAppMeta,mkCExprApp1Meta)
 mkCExprApp1Meta :: CExpr -> CExpr -> CMeta -> CExpr
 mkCExprApp1Meta f a m = CExpr_App f a m
 
@@ -266,7 +266,7 @@ mkCExprAppMeta :: CExpr -> [(CExpr,CMeta)] -> CExpr
 mkCExprAppMeta f as = foldl (\f (a,m) -> mkCExprApp1Meta f a m) f as
 %%]
 
-%%[8 hs export(mkCExprApp,mkCExprApp1)
+%%[(8 codegen) hs export(mkCExprApp,mkCExprApp1)
 mkCExprApp1 :: CExpr -> CExpr -> CExpr
 mkCExprApp1 f a = mkCExprApp1Meta f a CMeta_Val
 
@@ -274,7 +274,7 @@ mkCExprApp :: CExpr -> [CExpr] -> CExpr
 mkCExprApp f as = mkCExprAppMeta f (cmetaLift as)
 %%]
 
-%%[8 hs export(mkCExprLamMeta,mkCExprLam1Meta)
+%%[(8 codegen) hs export(mkCExprLamMeta,mkCExprLam1Meta)
 mkCExprLam1Meta :: HsName -> CMeta -> CExpr -> CExpr
 mkCExprLam1Meta a m e = CExpr_Lam a m e
 
@@ -282,7 +282,7 @@ mkCExprLamMeta :: [(HsName,CMeta)] -> CExpr -> CExpr
 mkCExprLamMeta as e = foldr (\(n,m) e -> mkCExprLam1Meta n m e) e as
 %%]
 
-%%[8 hs export(mkCExprLam,mkCExprLam1)
+%%[(8 codegen) hs export(mkCExprLam,mkCExprLam1)
 mkCExprLam1 :: HsName -> CExpr -> CExpr
 mkCExprLam1 a e = mkCExprLam1Meta a CMeta_Val e
 
@@ -290,17 +290,17 @@ mkCExprLam :: [HsName] -> CExpr -> CExpr
 mkCExprLam as e = mkCExprLamMeta (cmetaLift as) e
 %%]
 
-%%[8 hs export(mkCBind1Meta)
+%%[(8 codegen) hs export(mkCBind1Meta)
 mkCBind1Meta :: HsName -> CMeta -> CExpr -> CBind
 mkCBind1Meta n m e = CBind_Bind n m e
 %%]
 
-%%[8 hs export(mkCBind1)
+%%[(8 codegen) hs export(mkCBind1)
 mkCBind1 :: HsName -> CExpr -> CBind
 mkCBind1 n e = mkCBind1Meta n CMeta_Val e
 %%]
 
-%%[8 hs export(mkCExprTuple,mkCExprTuple')
+%%[(8 codegen) hs export(mkCExprTuple,mkCExprTuple')
 mkCExprTuple' :: CTag -> [CExpr] -> CExpr
 mkCExprTuple' t = mkCExprApp (CExpr_Tup t)
 
@@ -308,12 +308,12 @@ mkCExprTuple :: [CExpr] -> CExpr
 mkCExprTuple = mkCExprTuple' CTagRec
 %%]
 
-%%[8 hs export(mkCExprStrictInMeta)
+%%[(8 codegen) hs export(mkCExprStrictInMeta)
 mkCExprStrictInMeta :: HsName -> CMeta -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprStrictInMeta nm m e mkC = CExpr_Let CBindStrict [mkCBind1Meta nm m e] (mkC (CExpr_Var nm))
 %%]
 
-%%[8 hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLetPlain,mkCExprStrictIn,mkCExprMbStrictIn)
+%%[(8 codegen) hs export(mkCExprLet,mkCExprLet',mkCExprLetRec,mkCExprLetPlain,mkCExprStrictIn,mkCExprMbStrictIn)
 mkCExprLet' :: Bool -> CBindCateg -> CBindL -> CExpr -> CExpr
 mkCExprLet' merge c bs e
   = if null bs
@@ -340,12 +340,12 @@ mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindStrict [mkCBind1 nm e] (mkC (
 mkCExprMbStrictIn _         e mkC =                                        mkC e
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 mkCMod :: CExpr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
 %%]
 
-%%[95 hs export(mkCIf)
+%%[(95 codegen) hs export(mkCIf)
 mkCIf :: EHCOpts -> Maybe HsName -> CExpr -> CExpr -> CExpr -> CExpr
 mkCIf opts cn c t f
   = mkCExprMbStrictIn cn c
@@ -357,7 +357,7 @@ mkCIf opts cn c t f
       )
 %%]
 
-%%[99 hs export(mkCMatchChar)
+%%[(99 codegen) hs export(mkCMatchChar)
 mkCMatchChar :: EHCOpts -> Maybe HsName -> Char -> CExpr -> CExpr -> CExpr -> CExpr
 mkCMatchChar opts cn cchar cexpr t f
   = mkCIf opts cn (ceqchar opts cchar cexpr) t f
@@ -367,7 +367,7 @@ mkCMatchChar opts cn cchar cexpr t f
 %%% Inspection/deconstruction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cexprMbVar,cexprVar)
+%%[(8 codegen) hs export(cexprMbVar,cexprVar)
 cexprMbVar :: CExpr -> Maybe HsName
 cexprMbVar (CExpr_Var n) = Just n
 cexprMbVar _             = Nothing
@@ -376,13 +376,13 @@ cexprVar :: CExpr -> HsName
 cexprVar = maybe hsnUnknown id . cexprMbVar
 %%]
 
-%%[8 hs export(cexprTupFld)
+%%[(8 codegen) hs export(cexprTupFld)
 cexprTupFld :: CExpr -> CExpr
 cexprTupFld (CExpr_TupIns _ _ _ _ e) = e
 cexprTupFld _                        = CExpr_Var hsnUnknown
 %%]
 
-%%[8 hs export(cexprIsEvaluated)
+%%[(8 codegen) hs export(cexprIsEvaluated)
 cexprIsEvaluated :: CExpr -> Bool
 cexprIsEvaluated (CExpr_Int  _) = True
 cexprIsEvaluated (CExpr_Char _) = True
@@ -393,12 +393,12 @@ cexprIsEvaluated _              = False
 %%% Operator construction, expressed in terms of primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cbuiltinApp)
+%%[(8 codegen) hs export(cbuiltinApp)
 cbuiltinApp :: EHCOpts -> (EHBuiltinNames -> HsName) -> [CExpr] -> CExpr
 cbuiltinApp opts bnmOf args = CExpr_Var (bnmOf $ ehcOptBuiltinNames opts) `mkCExprApp` args
 %%]
 
-%%[8 hs export(caddint)
+%%[(8 codegen) hs export(caddint)
 caddint :: EHCOpts -> CExpr -> Int -> CExpr
 caddint opts e i
   = if i == 0
@@ -408,12 +408,12 @@ caddint opts e i
            _            -> cbuiltinApp opts ehbnPrimAddInt [e,CExpr_Int i]
 %%]
 
-%%[8 hs export(cgtint)
+%%[(8 codegen) hs export(cgtint)
 cgtint :: EHCOpts -> CExpr -> Int -> CExpr
 cgtint opts e i = cbuiltinApp opts ehbnPrimGtInt [e,CExpr_Int i]
 %%]
 
-%%[99 hs
+%%[(99 codegen) hs
 ceqchar :: EHCOpts -> Char -> CExpr -> CExpr
 ceqchar opts c e = cbuiltinApp opts ehbnPrimEqChar [e,CExpr_Char c]
 %%]
@@ -422,7 +422,7 @@ ceqchar opts c e = cbuiltinApp opts ehbnPrimEqChar [e,CExpr_Char c]
 %%% String construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cstring)
+%%[(8 codegen) hs export(cstring)
 cstring :: EHCOpts -> String -> CExpr
 cstring opts m = cbuiltinApp opts ehbnPackedStringToString [CExpr_String m]
 %%]
@@ -431,7 +431,7 @@ cstring opts m = cbuiltinApp opts ehbnPackedStringToString [CExpr_String m]
 %%% Integer construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[97 hs export(cinteger)
+%%[(97 codegen) hs export(cinteger)
 cinteger :: EHCOpts -> Integer -> CExpr
 cinteger opts i = cbuiltinApp opts ehbnPackedStringToInteger [CExpr_String $ show $ i]
 %%]
@@ -440,7 +440,7 @@ cinteger opts i = cbuiltinApp opts ehbnPackedStringToInteger [CExpr_String $ sho
 %%% Error
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(cerror,cundefined)
+%%[(8 codegen) hs export(cerror,cundefined)
 cerror :: EHCOpts -> String -> CExpr
 cerror opts m = cbuiltinApp opts ehbnError [cstring opts m]
 
@@ -452,7 +452,7 @@ cundefined opts = cbuiltinApp opts ehbnUndefined []
 %%% Tags, in general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(caltConTag,caltIntTag) 
+%%[(8 codegen) hs export(caltConTag,caltIntTag) 
 cpatConTag :: CPat -> CTag
 cpatConTag (CPat_Con  _ t _ _)  = t
 cpatConTag (CPat_Int  _ _    )  = ctagInt
@@ -476,7 +476,7 @@ caltIntTag (CAlt_Alt p _) = cpatIntTag p
 
 In the following, note the hardcodedness!!!!!
 
-%%[95 hs export(ctagTrue, ctagFalse)
+%%[(95 codegen) hs export(ctagTrue, ctagFalse)
 ctagTrue, ctagFalse :: EHCOpts -> CTag
 ctagTrue  opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolTrue  $ ehcOptBuiltinNames opts) 1 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ ehcOptBuiltinNames opts) 0 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
@@ -488,13 +488,13 @@ ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ 
 
 In the following, note the hardcodedness!!!!!
 
-%%[99 hs export(ctagCons,ctagNil)
+%%[(99 codegen) hs export(ctagCons,ctagNil)
 ctagCons, ctagNil :: EHCOpts -> CTag
 ctagCons opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltCons $ ehcOptBuiltinNames opts) 0 2 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 ctagNil  opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltNil  $ ehcOptBuiltinNames opts) 1 0 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
-%%[99 hs export(mkCListSingleton)
+%%[(99 codegen) hs export(mkCListSingleton)
 mkCListSingleton :: EHCOpts -> CExpr -> CExpr
 mkCListSingleton opts e
   = mkCExprApp (CExpr_Tup $ ctagCons opts) [e,CExpr_Tup $ ctagNil opts]
@@ -504,7 +504,7 @@ mkCListSingleton opts e
 %%% Var introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CVarIntro(..),emptyCVarIntro)
+%%[(8 codegen) hs export(CVarIntro(..),emptyCVarIntro)
 data CVarIntro
   = CVarIntro
       { cviLev		:: Int		-- lexical level
@@ -516,7 +516,7 @@ emptyCVarIntro
   = CVarIntro cLevExtern CMeta_Val
 %%]
 
-%%[8 hs export(CVarIntroMp,CVarIntroL,cviLookup)
+%%[(8 codegen) hs export(CVarIntroMp,CVarIntroL,cviLookup)
 type CVarIntroMp = Map.Map HsName CVarIntro
 type CVarIntroL  = AssocL  HsName CVarIntro
 
@@ -524,13 +524,13 @@ cviLookup :: HsName -> CVarIntroMp -> CVarIntro
 cviLookup n m = Map.findWithDefault emptyCVarIntro n m
 %%]
 
-%%[8 hs export(cLevModule,cLevExtern)
+%%[(8 codegen) hs export(cLevModule,cLevExtern)
 cLevModule, cLevExtern :: Int
 cLevModule = 0
 cLevExtern = 0
 %%]
 
-%%[20 hs export(cLevIntern)
+%%[(20 codegen) hs export(cLevIntern)
 cLevIntern :: Int
 cLevIntern = 1
 %%]
@@ -539,7 +539,7 @@ cLevIntern = 1
 %%% Replacement in general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CVarRepl(..))
+%%[(8 codegen) hs export(CVarRepl(..))
 data CVarRepl r
   = CVarRepl
       { cvrRepl		:: r		-- replacement
@@ -547,7 +547,7 @@ data CVarRepl r
       }
 %%]
 
-%%[8 hs export(CVarReplMp)
+%%[(8 codegen) hs export(CVarReplMp)
 type CVarReplMp  r = Map.Map HsName (CVarRepl r)
 type CVarReplAsc r = AssocL  HsName (CVarRepl r)
 %%]
@@ -556,19 +556,19 @@ type CVarReplAsc r = AssocL  HsName (CVarRepl r)
 %%% Replacement with HsName
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CVarReplNm,emptyCVarReplNm)
+%%[(8 codegen) hs export(CVarReplNm,emptyCVarReplNm)
 type CVarReplNm = CVarRepl HsName
 
 emptyCVarReplNm :: CVarReplNm
 emptyCVarReplNm = CVarRepl hsnUnknown CMeta_Val
 %%]
 
-%%[8 hs export(CVarReplNmMp,CVarReplNmL)
+%%[(8 codegen) hs export(CVarReplNmMp,CVarReplNmL)
 type CVarReplNmMp = CVarReplMp  HsName
 type CVarReplNmL  = CVarReplAsc HsName
 %%]
 
-%%[8 hs export(cvrFromCvi)
+%%[(8 codegen) hs export(cvrFromCvi)
 cvrFromCvi :: CVarIntro -> CVarReplNm
 cvrFromCvi i
   = emptyCVarReplNm
@@ -580,12 +580,12 @@ cvrFromCvi i
 %%% Support for transformations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type FvS = HsNameS
 type FvSMp = Map.Map HsName FvS
 %%]
 
-%%[8 hs export(fvLev,fvsLev)
+%%[(8 codegen) hs export(fvLev,fvsLev)
 fvLev :: HsName -> CVarIntroMp -> Int
 fvLev n m = cviLev $ cviLookup n m
 
@@ -597,11 +597,11 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 %%% Known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CArityMp)
+%%[(8 codegen) hs export(CArityMp)
 type CArityMp = Map.Map HsName Int
 %%]
 
-%%[8 hs export(arityMpLookupLam,arityMpLookupCaf)
+%%[(8 codegen) hs export(arityMpLookupLam,arityMpLookupCaf)
 arityMpLookupLam :: HsName -> CArityMp -> Maybe Int
 arityMpLookupLam n m
   = case Map.lookup n m of
@@ -615,7 +615,7 @@ arityMpLookupCaf n m
       _                   -> Nothing
 %%]
 
-%%[8 hs export(arityMpFilterLam,arityMpFilterCaf)
+%%[(8 codegen) hs export(arityMpFilterLam,arityMpFilterCaf)
 arityMpFilterLam :: CArityMp -> CArityMp
 arityMpFilterLam = Map.filter (>0)
 
@@ -627,12 +627,12 @@ arityMpFilterCaf = Map.filter (==0)
 %%% Name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs export(HsName2OffsetMp,HsName2OffsetMpMp)
+%%[(20 codegen) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
 type HsName2OffsetMp = Map.Map HsName Int
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
-%%[20 hs export(offMpMpKeysSet)
+%%[(20 codegen) hs export(offMpMpKeysSet)
 offMpMpKeysSet :: HsName2OffsetMpMp -> Set.Set HsName
 offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]
@@ -641,7 +641,7 @@ offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%% Hole construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(mkCExprPrHole,mkCExprHole,mkCExprLetHole)
+%%[(9 codegen) hs export(mkCExprPrHole,mkCExprHole,mkCExprLetHole)
 mkCExprHole :: EHCOpts -> UID -> CExpr
 mkCExprHole opts = CExpr_Var . mkHNm
 
@@ -656,7 +656,7 @@ mkCExprLetHole i b = i `CExpr_HoleLet` b
 %%% Module merge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs
+%%[(20 codegen) hs
 cModMerge :: [CModule] -> CModule
 cModMerge mL
   = foldr1 cmb mL
@@ -670,7 +670,7 @@ cModMerge mL
 %%% Subst to replace CaseAltFail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type CaseFailSubst = Map.Map UID CExpr
 %%]
 

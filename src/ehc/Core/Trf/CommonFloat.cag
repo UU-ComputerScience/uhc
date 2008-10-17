@@ -14,7 +14,7 @@ Defines  CBind | Bind loc.isClosurableBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[8
+%%[(8 codegen)
 
 ATTR CExpr [ | | isClosurableExpr: Bool ]
 
@@ -25,7 +25,7 @@ SEM CExpr
                 lhs         .   isClosurableExpr    =   False
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM CBind
   | Bind        loc         .  isClosurableBind =   (  @lhs.letBindCateg /= CBindStrict
                                                     && @expr.isClosurableExpr

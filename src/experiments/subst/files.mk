@@ -78,7 +78,7 @@ EXPERIMENTS_SUBST_DIST_FILES				:= $(EXPERIMENTS_SUBST_ALL_SRC)
 # rules for src to build
 $(EXPERIMENTS_SUBST_HS_MAIN_DRV_HS): $(BLD_EXPERIMENTS_SUBST_VARIANT_PREFIX)%.hs: $(SRC_EXPERIMENTS_SUBST_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(EXPERIMENTS_SUBST_SHUFFLE_DEFS) --gen=$(EXPERIMENTS_VARIANT) --base=Main --order="$(EXPERIMENTS_SUBST_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS) $(EXPERIMENTS_SUBST_SHUFFLE_DEFS) --gen-reqm=$(EXPERIMENTS_VARIANT) --base=Main --variant-order="$(EXPERIMENTS_SUBST_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 # rules for executables, dispatching on variant

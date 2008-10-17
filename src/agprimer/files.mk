@@ -52,10 +52,10 @@ $(AGPRIMER_AG_EXPR_DRV_HS) $(AGPRIMER_AG_REPM_DRV_HS) : %.hs : %.ag
 	$(AGC) -csdfr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_AGPRIMER_PREFIX) $<
 
 $(AGPRIMER_HS_REPM_DRV_HS): %.hs : %.chs $(SHUFFLE)
-	$(SHUFFLE_HS) --gen=1 --base=Main --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) --gen-reqm=1 --base=Main --variant-order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
 
 $(AGPRIMER_AG_REPM_DRV_AG) $(AGPRIMER_AG_EXPR_DRV_AG): %.ag: %.cag $(SHUFFLE)
-	$(SHUFFLE_AG) --gen=1 --base=Main --order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_AG) --gen-reqm=1 --base=Main --variant-order="$(AGPRIMER_SHUFFLE_ORDER)" $< > $@
 
 
 

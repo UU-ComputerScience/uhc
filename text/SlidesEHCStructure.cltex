@@ -9,6 +9,62 @@
 
 \raggedbottom
 
+%if shortStory
+%else
+\begin{frame}
+\frametitle{The context of the Essential Haskell Compiler\dots}
+
+{\large We are writing a Haskell compiler}
+
+{\large but not just that}
+
+\vspace*{2mm}
+
+\visible<2->{%
+{\large Embedded in Software Technology group}\\
+\uncover<3->{{\large \color{uured} Better software by better languages}}
+
+\begin{itemize}
+\item {\large functional programming \& language design}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}combinator libraries (e.g. parsing)}}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}applications (e.g. Webserver)}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}generic programming}}
+
+\item {\large compilers for functional programming languages}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}EHC: extendibility + experiments}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}Helium: good error reporting, used in classroom}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}Generic Haskell: type indexed programming}}
+
+\end{itemize}
+}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{The context of the Essential Haskell Compiler\dots}
+
+{\large but also }
+
+\begin{itemize}
+\item {\large tools for compiler construction}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Attribute Grammar system: tree oriented computation}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Ruler: programming type rules}}
+
+\item {\large systems programming \& applications}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Proxima: generic presentation-oriented structure aware editor}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}WebFunctions: web applications}}
+
+\item {\large program analysis}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}TOP: library for aiding analyses}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Analyses: strictness, uniqueness, ...}}
+
+\end{itemize}
+
+\end{frame}
+%endif
+
+
 \begin{frame}
 \frametitle{The structure of the Essential Haskell Compiler\dots}
 
@@ -83,6 +139,171 @@ Many intermediate languages\uncover<1->{, {\em 7 transformations}}
 \end{frame}
 
 
+%if shortStory
+%else
+\begin{frame}
+\frametitle{\emph{Implementation} Complexity: example stages}
+
+\definecolor{uuyellowlight}{rgb}{0.93,0.87,0}
+
+\begin{tikzpicture}
+
+%\draw[step=1cm,blue,very thin] (0,0) grid (8,8);
+
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+{\small
+%%[[wrap=safecode
+module Main where
+
+len :: [a] -> Int
+len [] = 0
+len (x:xs) = 1 + len xs
+
+main = putStr (show (len (replicate 4 'x')))
+%%]]
+}
+};
+
+\uncover<2->{
+\draw (3.5,7.2) node[fill=uuyellow!20,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{8cm}{
+{\small
+%%[[wrap=code
+blueOn -- EH
+redOn^ let blackOn  vb1.len :: [a] -> Int
+                    vb1.len
+                      =  redOn ^ \x1 ->  redOn ^case x1 of blackOn
+                             EHC.Prelude.[]
+                               -> EHC.Prelude.redOn ^fromInteger blackOn 0
+                             (EHC.Prelude.redOn^ : x xs blackOn)
+                               -> ...
+redOn ^ in blackOn
+let  vb1.main = redOn EHC.Prelude.blackOn ^putStr ...
+ in
+let  redOn ^ main :: blackOn EHC.Prelude.redOn ^IO ... blackOn
+     main = EHC.Prelude.redOn ^ehcRunMain blackOn vb1.main
+ in
+main
+%%]]
+}
+}
+};
+}
+
+\uncover<3->{
+\draw (1,8.0) node[fill=uuyellow!40,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{10cm}{
+{\tiny
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%%[[wrap=code
+blueOn -- Core
+module ^^ doll ^ vb1 =
+let redOn^ rec blackOn
+  { ^ doll ^ vb1 ^ doll ^ .len =
+      \ ^ doll ^ vb1 ^ doll ^ .x1 ^ under ^ under ^ 1 ->
+        redOn ^ let ^ redOn excl ^  blackOn
+          { ^ doll ^ vb1 ^ doll ^ .4 ^ under ^ 42 ^ under ^ 0 ^ doll ^  ^ excl ^  ^ under ^ under ^ 3 ^ under ^ 0 =
+              ^ doll ^ vb1 ^ doll ^ .x1 ^ under ^ under ^ 1} in
+        case ^^ doll ^ vb1 ^ doll ^ .4 ^ under ^ 42 ^ under ^ 0 ^ doll ^  ^ excl ^  ^ under ^ under ^ 3 ^ under ^ 0 of
+         {  { redOn 0, 2, 2 blackOn} { ..., ... } ->
+             ...
+         ;  { redOn 1, 0, 2 blackOn} {  } ->
+             let
+               { ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14 =
+                   redOn ( ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .packedStringToInteger) blackOn
+                     redOn (#String"0")} blackOn in
+             let
+               { ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 =
+                   ( ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .fromInteger)
+                     (redOn ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .3 ^ under ^ 237 ^ under ^ 0 ^ under ^ instance ^ under ^ Num : DICT blackOn)
+                     ( ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14)} in
+             ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12
+         }
+in ...
+%%]]
+%}
+}
+}
+};
+}
+
+
+\uncover<4->{
+\draw (0.2,6.8) node[fill=uuyellow!60,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{11cm}{
+{\tiny
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%format slash = "/"
+%%[[wrap=code
+blueOn -- GRIN
+module ^^ doll ^ vb1
+{ rec
+    { doll ^ vb1.len ^^ doll ^ vb1.x1 ^ under ^ under ^ 1
+        = {  redOn ^ eval ^^ doll ^ vb1.x1 ^ under ^ under ^ 1 ; \ ^ doll ^ vb1.4 ^ under ^ 42 ^ under ^ 0 ^ excl ^ under ^ under ^ 3 ^ under ^ 0 -> ^ blackOn
+				case ^^ doll ^ vb1.4 ^ under ^ 42 ^ under ^ 0 ^ excl ^ under ^ under ^ 3 ^ under ^ 0 of
+                  { (#0 ^ slash ^ C{2,2} )
+                      -> {  ... } 
+                  ; (#1 ^ slash ^ C{0,2} )
+                      -> {  redOn ^ store ^ blackOn (#0 ^ slash ^ redOn ^ C{1,1} ^ blackOn ^ slash ^ doll ^ EHC.Prelude.PackedString "0") ; \ ^ doll ^ 19 ^ under ^ 31 ^ under ^ 0 ->
+                            store (#0 ^ slash ^ redOn ^ F ^ blackOn ^ slash ^ doll ^ EHC.Prelude.packedStringToInteger ^^ doll ^ 19 ^ under ^ 31 ^ under ^ 0) ; \ ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14 ->
+                            store (#0 ^ slash ^ redOn ^ P ^ slash ^ 0 ^ blackOn ^ slash ^ doll ^ EHC.Prelude.fromInteger ^ doll ^^ EHC.Prelude.3 ^ under ^ 237 ^ under ^ 0 ^ under ^ under ^ Num) ; \ ^ doll ^ 19 ^ under ^ 33 ^ under ^ 0 ->
+                            store (#0 ^ slash ^ redOn ^ A ^ blackOn ^ slash ^ doll ^ under ^^ doll ^ 19 ^ under ^ 33 ^ under ^ 0 ^^ doll ^ 13 ^ under ^ 0 ^ under ^ 14) ; \ ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 ->
+                            redOn ^ eval ^^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 blackOn}
+                  } } } 
+%%]]
+%}
+}
+}
+};
+}
+
+
+\uncover<5->{
+\draw (0.5,5.5) node[fill=uuyellow!80,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{11cm}{
+{\tiny
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%format slash = "/"
+%%[[wrap=code
+blueOn -- bytecode
+static GB_Byte vb1_bytecode[] =
+{ /* 0: redOn ^ l1ts08 0^x08 ^blackOn */                      /* lbldef [ .cod 0 ] */
+                                                              /* funstart [ vb1.len ] */
+                                                              /* iduse [ vb1.x1__1 4 word LoadSrc_TOS_Rel {ldsrcOff = 2, ldsrcNrWords = 1} ] */
+                                                              /*  [ LoadSrc_TOS_Rel {ldsrcOff = 2, ldsrcNrWords = 1} ] */
+     redOn ^ 0^x20,0^x08 ^blackOn
+, /* 2: evalt */                                        
+     0^xe0,0^x00,0^x00,0^x00,0^x00
+, /* 7: l1ts08 0^x00 */                                       /* stackoff [ 1 ] */
+                                                              /* iduse [ vb1.4_42_0!__3_0 annotdflt LoadSrc_TOS ] */
+     0^x20,0^x00
+, /* 9: lnt */                                        
+     0^xfc
+, /* 10: casecall */                                        
+     0^xf6
+%%]]
+%}
+}
+}
+};
+}
+
+
+\end{tikzpicture}
+
+\end{frame}
+%endif
+
+
 \begin{frame}
 \frametitle{Coping with \emph{Description} Complexity}
 
@@ -140,6 +361,52 @@ Many intermediate languages\uncover<1->{, {\em 7 transformations}}
 \end{enumerate}
 
 \end{frame}
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{Growing stepwise}
+
+\begin{center}
+{\Large\bf Example: increasingly powerful typing}
+\end{center}
+
+\begin{itemize}
+\item variant {\color{uured}1}: simply typed |lambda|-calculus
+
+%%[[wrap=safecode
+i  ::  Int
+i  =   5
+%%]]
+
+\item<2-> variant {\color{uured}3}: polymorphic type inference
+\visible<2->{
+
+%%[[wrap=safecode
+id x  =   x
+%%]]
+
+infers |id :: forall ^ a . a -> a|
+}
+
+\item<3-> variant {\color{uured}4}: higher ranked types
+\visible<3->{
+
+%%[[wrap=safecode
+f :: (forall ^ a . a -> a) -> (Char,Int)
+f i = (i 'x', i 5)
+
+v = f id
+%%]]
+
+allows polymorphic use of argument |i| inside |f|
+}
+
+
+\end{itemize}
+
+\end{frame}
+%endif
 
 \begin{frame}
 \frametitle{Coping with \emph{Maintenance} Complexity}
@@ -239,6 +506,74 @@ why does nobody do it when processing parse trees?}
 
 \newcommand{\Node}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
 
+%if shortStory
+%else
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+\begin{center}
+{\Large\bf Example: sum}
+\end{center}
+
+%%[[wrap=safecode
+DATA List
+  | Cons    hd  : Int
+            tl  : List
+  | Nil
+
+ATTR List [ | | sum: Int ]
+
+SEM List
+  | Cons    lhs  . sum  =  @hd + @tl.sum
+  | Nil     lhs  . sum  =  0
+%%]]
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+\begin{center}
+{\Large\bf Example: product}
+\end{center}
+
+%%[[wrap=safecode
+ATTR List [ | | prod: Int ]
+
+SEM List
+  | Cons    lhs     .   prod    =   @hd * @tl.prod
+  | Nil     lhs     .   prod    =   1
+%%]]
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+\begin{center}
+{\Large\bf Example: generated Haskell for sum and product}
+\end{center}
+
+%%[[wrap=safecode
+data List  =  List_Cons  Int List
+           |  List_Nil 
+
+sem_List :: List -> (Int,Int) 
+sem_List (List_Cons _hd _tl  )  = (sem_List_Cons _hd (sem_List _tl ) )
+sem_List (List_Nil           )  = (sem_List_Nil )
+
+sem_List_Cons :: Int -> (Int,Int) -> (Int,Int) 
+sem_List_Cons hd_ tl_  = ( hd_ * _tlIprod,hd_ + _tlIsum)
+    where  ( _tlIprod,_tlIsum) = tl_ 
+
+sem_List_Nil :: (Int,Int) 
+sem_List_Nil  = ( 1,0)
+%%]]
+
+\end{frame}
+%endif
 
 %%]
 
@@ -328,6 +663,36 @@ SEM Expr
 
 \end{frame}
 
+
+
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{{\em Tools:} Ruler}
+{\Large {\bf Example: specification of \ruleRef{e.app}}}
+\vspace*{2mm}
+
+%{
+%include ruler.fmt
+
+%%[[wrap=safecode
+scheme expr "Expr" =
+  view K =
+    holes [ node e: Expr, valGam: ValGam, knTy: Ty | | ty: Ty ]
+    judgespec valGam; knTy :- e : ty
+    judgeuse tex valGam; knTy :-.."e" e : ty
+
+rule e.app "App" =
+  view K =
+    judge F : expr = valGam ; (ANY -> knTy) :- e1 : (ty.a -> ty)
+    judge A : expr = valGam ; ty.a :- e2 : _
+    rulerPrePostSep
+    judge R : expr = valGam ; knTy :- (e1 ^^ e2) : ty
+%%]]
+%}
+\end{frame}
+%endif
 
 
 
@@ -455,6 +820,37 @@ to extract the input for the compiler and text formatter
 \end{itemize}
 
 \end{frame}
+
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{{\em Tools:} Shuffle}
+
+{\large {\bf Example: subsequent variants}}
+
+\begin{itemize}
+\item Variants
+\begin{itemize}
+\item variant {\color{uured}2} (Haskell code for construction of type variable):
+%%@EHTy.2.mkTyVar wrap=safecode
+\item variant {\color{uured}3}:
+%%@EHTy.3.mkTyVar wrap=safecode
+\end{itemize}
+\item<2-> Shuffle input: {\color{uured}two variants, in file @EHTy.chs@}
+%%[[wrap=verbatimsmall
+%%%[2.mkTyVar
+%%@EHTy.2.mkTyVar
+%%%]
+
+%%%[3.mkTyVar -2.mkTyVar
+%%@EHTy.3.mkTyVar
+%%%]
+%%]]
+\end{itemize}
+
+\end{frame}
+%endif
 
 
 %%]

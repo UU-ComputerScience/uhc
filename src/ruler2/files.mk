@@ -79,7 +79,7 @@ $(RULER2_BLD_EXEC): $(RULER2_AG_ALL_MAIN_DRV_HS) $(RULER2_HS_ALL_DRV_HS) $(RULER
 
 $(RULER2_BLD_PREFIX)%.ag: $(SRC_RULER2_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D); \
-	$(SHUFFLE) --gen=1 --base=$(*F) --ag --preamble=no --lhs2tex=no --order="1" $< > $@
+	$(SHUFFLE) --gen-reqm=1 --base=$(*F) --ag --preamble=no --lhs2tex=no --variant-order="1" $< > $@
 
 $(RULER2_AG_D_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_BLD_PREFIX)%.ag
 	mkdir -p $(@D) ; \
@@ -95,11 +95,11 @@ $(RULER2_AG_DS_MAIN_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(RULER2_BLD_PREFIX)%.ag
 
 $(RULER2_HS_ALL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.chs
 	mkdir -p $(@D) ; \
-	$(SHUFFLE) --gen=1 --base=$(*F) --hs --preamble=no --lhs2tex=no --order="1" $< > $@
+	$(SHUFFLE) --gen-reqm=1 --base=$(*F) --hs --preamble=no --lhs2tex=no --variant-order="1" $< > $@
 
 $(RULER2_CHS_UTIL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D) ; \
-	$(SHUFFLE) --gen=1 --base=$(*F) --hs --preamble=no --lhs2tex=no --order="1" $< > $@
+	$(SHUFFLE) --gen-reqm=1 --base=$(*F) --hs --preamble=no --lhs2tex=no --variant-order="1" $< > $@
 
 
 ### demo stuff
@@ -152,13 +152,13 @@ RULER2_DIST_FILES			:= $(RULER2_ALL_SRC) $(RULER2_DEMO_ALL_SRC) \
 
 # make rules
 $(RULER2_DEMO_DRV_LCTEX): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
-	$(SHUFFLE) --gen=all --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_RUL_BASE) --lhs2tex=yes $< > $@
+	$(SHUFFLE) --gen-reqm=all --latex --variant-order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_RUL_BASE) --lhs2tex=yes $< > $@
 
 $(RULER2_DEMO_DRV_CTEX): $(RULER2_DEMO_DRV_LCTEX)
 	$(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_RL2): $(RULER2_DEMO_SRC_CRL) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --plain --variant-order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_LRTEX): $(RULER2_DEMO_DRV_RL2) $(RULER2)
 	$(RULER2) $(RULER2_OPTS) --lhs2tex --selrule="(E - *).(*).(*)" $(RULER2_DEMO_MARK_CHANGES_CFG) --base=rulerDemo $< > $@
@@ -173,25 +173,25 @@ $(RULER2_DEMO_DRV_WCOPY_CAG): $(RULER2_DEMO_DRV_RL2) $(RULER2)
 	$(RULER2) $(RULER2_OPTS) --ag --ATTR --DATA --selrule="(3).(*).(*)" --wrapshuffle --copyelim=no --base=$(RULER2_DEMO_AGWCOPY_BASE) $< > $@
 
 $(RULER2_DEMO_DRV_AG): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --plain --order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --plain --variant-order="$(RULER2_DEMO_RULER2_ORDER)"  --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_LATEX): $(RULER2_DEMO_DRV_CAG) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_AG_BASE) --lhs2tex=yes $< > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --latex --variant-order="$(RULER2_DEMO_RULER2_ORDER)" --base=$(RULER2_DEMO_AG_BASE) --lhs2tex=yes $< > $@
 
 $(RULER2_DEMO_DRV_ATEX): $(RULER2_DEMO_DRV_LATEX)
 	$(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(RULER2_DEMO_DRV_HS_UTILS): $(RULER2_DEMO_SRC_CHS_UTILS) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --hs --order="$(RULER2_DEMO_RULER2_ORDER)" --preamble=no --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --hs --variant-order="$(RULER2_DEMO_RULER2_ORDER)" --preamble=no --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_HS_UTILS_TEX): $(RULER2_DEMO_SRC_CHS_UTILS) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=rulerDemoUtils --lhs2tex=yes $< | $(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --latex --variant-order="$(RULER2_DEMO_RULER2_ORDER)" --base=rulerDemoUtils --lhs2tex=yes $< | $(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) > $@
 
 $(RULER2_DEMO_DRV_AG_MAIN): $(RULER2_DEMO_SRC_CAG_MAIN) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --ag --order="$(RULER2_DEMO_RULER2_ORDER)" --base=Main --preamble=no --lhs2tex=no $< > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --ag --variant-order="$(RULER2_DEMO_RULER2_ORDER)" --base=Main --preamble=no --lhs2tex=no $< > $@
 
 $(RULER2_DEMO_DRV_AG_MAIN_TEX): $(RULER2_DEMO_SRC_CAG_MAIN) $(SHUFFLE)
-	$(SHUFFLE) --gen=$(RULER2_DEMO_RULER2_FINAL) --latex --order="$(RULER2_DEMO_RULER2_ORDER)" --base=rulerDemoMain --lhs2tex=yes $< | $(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) > $@
+	$(SHUFFLE) --gen-reqm=$(RULER2_DEMO_RULER2_FINAL) --latex --variant-order="$(RULER2_DEMO_RULER2_ORDER)" --base=rulerDemoMain --lhs2tex=yes $< | $(LHS2TEX_CMD) $(LHS2TEX_OPTS_POLY) > $@
 
 $(RULER2_DEMO_DRV_HS_MAIN): $(RULER2_DEMO_DRV_AG_MAIN) $(RULER2_DEMO_DRV_AG)
 	$(AGC) -csdfr $(UUAGC_OPTS_WHEN_EHC) -P$(RULER2_DEMO_PREFIX) $<

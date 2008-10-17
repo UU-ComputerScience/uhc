@@ -7,19 +7,19 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) 
+%%[(8 codegen) module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam}) 
 %%]
 
-%%[8 import({%{EH}Core.SubstCaseAltFail})
+%%[(8 codegen) import({%{EH}Core.SubstCaseAltFail})
 %%]
-%%[8 import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%[(8 codegen) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Env to support Reordering of Case Expression (RCE)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(RCEEnv(..),emptyRCEEnv)
+%%[(8 codegen) export(RCEEnv(..),emptyRCEEnv)
 data RCEEnv
   = RCEEnv
       { rceValGam           :: !ValGam
@@ -34,7 +34,7 @@ emptyRCEEnv :: EHCOpts -> RCEEnv
 emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (cundefined opts) opts
 %%]
 
-%%[8
+%%[(8 codegen)
 rceEnvDataAlts :: RCEEnv -> CTag -> Maybe [CTag]
 rceEnvDataAlts env t
   = case t of
@@ -50,7 +50,7 @@ rceEnvDataAlts env t
 %%% Make pat from tag and arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mkCPatCon)
+%%[(8 codegen) export(mkCPatCon)
 mkCPatCon :: CTag -> Int -> Maybe [HsName] -> CPat
 mkCPatCon ctag arity mbNmL
   = CPat_Con hsnWild ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
@@ -62,7 +62,7 @@ mkCPatCon ctag arity mbNmL
 %%% Saturate alt's of case w.r.t. all possible tags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 caltLSaturate :: RCEEnv -> CAltL -> CAltL
 caltLSaturate env alts
   = case alts of
@@ -79,7 +79,7 @@ caltLSaturate env alts
 %%% Extract offsets from pat bindings as separate binding to new/fresh names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 cpatBindOffsetL :: [CPatBind] -> ([CPatBind],CBindL)
 cpatBindOffsetL pbL
   =  let  (pbL',obL)
@@ -107,11 +107,11 @@ caltOffsetL alt
 %%% Construct case with: strict in expr, offsets strict
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(MbCPatRest)
+%%[(8 codegen) export(MbCPatRest)
 type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 %%]
 
-%%[8 export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
+%%[(8 codegen) export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
 mkCExprStrictSatCaseMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
   | dgiIsNewtype dgi
@@ -131,7 +131,7 @@ mkCExprStrictSatCase :: RCEEnv -> Maybe HsName -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCase env eNm e alts = mkCExprStrictSatCaseMeta env eNm CMeta_Val e alts
 %%]
 
-%%[8
+%%[(8 codegen)
 mkCExprSelsCasesMeta' :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest,CExpr)] -> CExpr
 mkCExprSelsCasesMeta' env mbNm meta e tgSels
   = mkCExprStrictSatCaseMeta env mbNm meta e alts
@@ -152,7 +152,7 @@ mkCExprSelsCases' :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,C
 mkCExprSelsCases' env ne e tgSels = mkCExprSelsCasesMeta' env ne CMeta_Val e tgSels
 %%]
 
-%%[8
+%%[(8 codegen)
 mkCExprSelsCaseMeta' :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CTag -> [(HsName,HsName,CExpr)] -> MbCPatRest -> CExpr -> CExpr
 mkCExprSelsCaseMeta' env ne meta e ct nmLblOffL mbRest sel = mkCExprSelsCasesMeta' env ne meta e [(ct,nmLblOffL,mbRest,sel)]
 
@@ -160,13 +160,13 @@ mkCExprSelsCase' :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName,C
 mkCExprSelsCase' env ne e ct nmLblOffL mbRest sel = mkCExprSelsCaseMeta' env ne CMeta_Val e ct nmLblOffL mbRest sel
 %%]
 
-%%[8 export(mkCExprSelCase)
+%%[(8 codegen) export(mkCExprSelCase)
 mkCExprSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> CExpr -> MbCPatRest -> CExpr
 mkCExprSelCase env ne e ct n lbl off mbRest
   = mkCExprSelsCase' env ne e ct [(n,lbl,off)] mbRest (CExpr_Var n)
 %%]
 
-%%[8 export(mkCExprSatSelsCases)
+%%[(8 codegen) export(mkCExprSatSelsCases)
 mkCExprSatSelsCasesMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
 mkCExprSatSelsCasesMeta env ne meta e tgSels
   =  mkCExprSelsCasesMeta' env ne meta e alts
@@ -183,7 +183,7 @@ mkCExprSatSelsCases :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName
 mkCExprSatSelsCases env ne e tgSels = mkCExprSatSelsCasesMeta env ne CMeta_Val e tgSels
 %%]
 
-%%[8 export(mkCExprSatSelsCaseMeta,mkCExprSatSelsCase)
+%%[(8 codegen) export(mkCExprSatSelsCaseMeta,mkCExprSatSelsCase)
 mkCExprSatSelsCaseMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CTag -> [(HsName,HsName,Int)] -> MbCPatRest -> CExpr -> CExpr
 mkCExprSatSelsCaseMeta env ne meta e ct nmLblOffL mbRest sel = mkCExprSatSelsCasesMeta env ne meta e [(ct,nmLblOffL,mbRest,sel)]
 
@@ -191,13 +191,13 @@ mkCExprSatSelsCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> [(HsName,HsName
 mkCExprSatSelsCase env ne e ct nmLblOffL mbRest sel = mkCExprSatSelsCaseMeta env ne CMeta_Val e ct nmLblOffL mbRest sel
 %%]
 
-%%[8 hs export(mkCExprSatSelCase)
+%%[(8 codegen) hs export(mkCExprSatSelCase)
 mkCExprSatSelCase :: RCEEnv -> Maybe HsName -> CExpr -> CTag -> HsName -> HsName -> Int -> MbCPatRest -> CExpr
 mkCExprSatSelCase env ne e ct n lbl off mbRest
   = mkCExprSatSelsCase env ne e ct [(n,lbl,off)] mbRest (CExpr_Var n)
 %%]
 
-%%[8 export(mkCExprSatSelsCaseUpdMeta)
+%%[(8 codegen) export(mkCExprSatSelsCaseUpdMeta)
 mkCExprSatSelsCaseUpdMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CTag -> Int -> [(Int,(CExpr,CMeta))] -> MbCPatRest -> CExpr
 mkCExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
   = mkCExprSatSelsCaseMeta env mbNm meta e ct nmLblOffL mbRest sel
@@ -213,7 +213,7 @@ mkCExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
 %%% These functions redo on the Core level the desugaring done in ToEH. Regretfully so ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(mkCListComprehenseGenerator)
+%%[(99 codegen) hs export(mkCListComprehenseGenerator)
 mkCListComprehenseGenerator :: RCEEnv -> CPat -> (CExpr -> CExpr) -> CExpr -> CExpr -> CExpr
 mkCListComprehenseGenerator env patOk mkOk fail e
   = mkCExprLam1 x
@@ -224,12 +224,12 @@ mkCListComprehenseGenerator env patOk mkOk fail e
         xStrict = hsnSuffix x "!"
 %%]
 
-%%[99 hs export(mkCListComprehenseTrue)
+%%[(99 codegen) hs export(mkCListComprehenseTrue)
 mkCListComprehenseTrue :: RCEEnv -> CExpr -> CExpr
 mkCListComprehenseTrue env e = mkCListSingleton (rceEHCOpts env) e
 %%]
 
-%%[99 hs export(mkCMatchString)
+%%[(99 codegen) hs export(mkCMatchString)
 mkCMatchString :: RCEEnv -> String -> CExpr -> CExpr -> CExpr -> CExpr
 mkCMatchString env str ok fail e
   = mkCExprLetPlain x e
@@ -251,7 +251,7 @@ mkCMatchString env str ok fail e
             $ take (length str + 1) $ hsnLclSupplyWith (mkHNmHidden "l")
 %%]
 
-%%[99 hs export(mkCMatchTuple)
+%%[(99 codegen) hs export(mkCMatchTuple)
 mkCMatchTuple :: RCEEnv -> [HsName] -> CExpr -> CExpr -> CExpr
 mkCMatchTuple env fldNmL ok e
   = mkCExprLetPlain x e
@@ -263,7 +263,7 @@ mkCMatchTuple env fldNmL ok e
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(FieldUpdateL,fuL2ExprL,fuMap)
+%%[(8 codegen) export(FieldUpdateL,fuL2ExprL,fuMap)
 type FieldUpdateL e = AssocL HsName (e,Maybe Int)
 
 fuMap :: (HsName -> e -> (e',Int)) -> FieldUpdateL e -> FieldUpdateL e'
@@ -297,7 +297,7 @@ fuReorder opts nL fuL
      in   (offL, sortBy cmpFU fuL')
 %%]
 
-%%[10 export(fuMkCExpr)
+%%[(10 codegen) export(fuMkCExpr)
 fuMkCExpr :: EHCOpts -> UID -> FieldUpdateL CExpr -> CExpr -> CExpr
 fuMkCExpr opts u fuL r
   =  let  (n:nL) = map (uidHNm . uidChild) . mkNewUIDL (length fuL + 1) $ u
@@ -310,7 +310,7 @@ fuMkCExpr opts u fuL r
 %%% Free var closure, and other utils used by Trf/...GlobalAsArg transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(fvsClosure,fvsTransClosure)
+%%[(8 codegen) export(fvsClosure,fvsTransClosure)
 fvsClosure :: FvS -> FvS -> FvS -> FvSMp -> FvSMp -> (FvSMp,FvSMp)
 fvsClosure newS lamOuterS varOuterS fvmOuter fvmNew
   =  let  fvmNew2  =  Map.filterWithKey (\n _ -> n `Set.member` newS) fvmNew
@@ -336,7 +336,7 @@ fvsTransClosure frLamMp frVarMp
           else frVarMp
 %%]
 
-%%[8 export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
+%%[(8 codegen) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
 fvLAsArg :: CVarIntroMp -> FvS -> CVarIntroL
 fvLAsArg cvarIntroMp fvS
   =  sortOn (cviLev . snd)
@@ -363,7 +363,7 @@ fvVarRepl nMp n = maybe (CExpr_Var n) (CExpr_Var . cvrRepl) $ Map.lookup n nMp
 %%% Reorder record Field pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(FldOffset(..),foffMkOff,foffLabel)
+%%[(8 codegen) export(FldOffset(..),foffMkOff,foffLabel)
 data FldOffset
   = FldKnownOffset      { foffLabel'     :: !HsName, foffOffset   :: !Int      }
   | FldComputeOffset    { foffLabel'     :: !HsName, foffCExpr    :: !CExpr    }
@@ -387,7 +387,7 @@ foffLabel FldImplicitOffset = hsnUnknown
 foffLabel foff				= foffLabel' foff
 %%]
 
-%%[8 export(FieldSplitL,fsL2PatL)
+%%[(8 codegen) export(FieldSplitL,fsL2PatL)
 type FieldSplitL = AssocL FldOffset RPat
 
 fsL2PatL :: FieldSplitL -> [RPat]
@@ -400,7 +400,7 @@ fsL2PatL = concat . assocLElts
 
 -- Reordering compensates for the offset shift caused by predicate computation, which is predicate by predicate
 -- whereas these sets of patterns are dealt with in one go.
-%%[8 export(fsLReorder)
+%%[(8 codegen) export(fsLReorder)
 fsLReorder :: EHCOpts -> FieldSplitL -> FieldSplitL
 fsLReorder opts fsL
   =  let  (fsL',_)
@@ -416,7 +416,7 @@ fsLReorder opts fsL
      in   tyRowCanonOrderBy compare fsL'
 %%]
 
-%%[8 export(rpbReorder,patBindLOffset)
+%%[(8 codegen) export(rpbReorder,patBindLOffset)
 rpbReorder :: EHCOpts -> [RPatBind] -> [RPatBind]
 rpbReorder opts pbL
   =  let  (pbL',_)
@@ -448,11 +448,11 @@ patBindLOffset
 %%% Reordering of Case Expression (RCE)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type RCEAltL = [RAlt]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 data RCESplitCateg
   = RCESplitVar UIDS | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
 %%[[97
@@ -466,7 +466,7 @@ rceSplitMustBeOnItsOwn RCESplitIrrefutable = True
 rceSplitMustBeOnItsOwn _                   = False
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 rceSplit :: (RAlt -> RCESplitCateg) -> RCEAltL -> [RCEAltL]
 rceSplit f []   = []
 rceSplit f [x]  = [[x]]
@@ -480,12 +480,12 @@ rceSplit f (x:xs@(x':_))
   where xcateg = f x
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 rceRebinds :: HsName -> RCEAltL -> CBindL
 rceRebinds nm alts = [ mkCBind1 n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatNms alts, n /= nm ]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
   = mkCExprLet CBindPlain (rceRebinds arg alts) remMatch
@@ -538,7 +538,7 @@ rceMatchConst env (arg:args) alts
         alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e _) <- alts ]
 %%]
 
-%%[97 hs
+%%[(97 codegen) hs
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchBoolExpr env (arg:args) alts
   = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) m
@@ -550,7 +550,7 @@ rceMatchBoolExpr env (arg:args) alts
             ]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchSplits env args alts@(alt:_)
   |  raltIsVar          alt  = rceMatchVar          env args alts
@@ -564,7 +564,7 @@ rceMatchSplits env args alts@(alt:_)
 
 %%]
 
-%%[8 hs export(rceMatch)
+%%[(8 codegen) hs export(rceMatch)
 rceMatch :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatch env [] []    =  rceCaseCont env
 rceMatch env [] alts  
@@ -593,7 +593,7 @@ rceMatch env args alts
                  ) alts)
 %%]
 
-%%[8 hs export(rceUpdEnv)
+%%[(8 codegen) hs export(rceUpdEnv)
 rceUpdEnv :: CExpr -> RCEEnv -> RCEEnv
 rceUpdEnv e env
   = env { rceCaseFailSubst = Map.union (Map.fromList [ (i,e) | i <- Set.toList (rceCaseIds env) ])

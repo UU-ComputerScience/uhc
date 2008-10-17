@@ -11,7 +11,7 @@
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ lev: Int | | ]
 
 SEM CodeAGItf
@@ -28,7 +28,7 @@ SEM CAlt
 %%% Is CExpr the creation of a tuple?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | mbTupApp: {Maybe CTag} ]
 
 SEM CExpr
@@ -42,7 +42,7 @@ SEM CExpr
 %%% Is expr a lam?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | isLam: Bool ]
 
 SEM CExpr
@@ -55,7 +55,7 @@ SEM CExpr
 %%% Is expr a var?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | mbVar: {Maybe HsName} ]
 
 SEM CExpr
@@ -67,7 +67,7 @@ SEM CExpr
 %%% Let context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind [ letBindCateg: CBindCateg | | ]
 
 SEM CExpr
@@ -78,7 +78,7 @@ SEM CExpr
 %%% Is top App? Is top Tup adapt?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ isTopApp: Bool  isTopTup: Bool | | ]
 
 SEM CExpr

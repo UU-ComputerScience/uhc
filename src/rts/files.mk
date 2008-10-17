@@ -87,17 +87,17 @@ $(RTS_H_RTS_GBCCALL_DRV_H): $(GEN_RTSGBCCALL_BLD_EXEC) $(RTS_MKF)
 
 $(RTS_H_RTS_DRV_H): $(RTS_BLD_RTS_PREFIX)%.h: $(SRC_RTS_PREFIX)%.ch
 	mkdir -p $(@D)
-	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(MAIN_C_MAIN_DRV_C): $(RTS_BLD_RTS_PREFIX)%.c: $(SRC_RTS_PREFIX)%.cc
 	mkdir -p $(@D)
-	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(RTS_C_RTS_DRV_C) $(RTS_C_RTS_DRV_C_OPTIM_O2): $(RTS_BLD_RTS_PREFIX)%.c: $(SRC_RTS_PREFIX)%.cc
 	mkdir -p $(@D)
-	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OTHER): $(RTS_BLD_RTS_PREFIX)%.o: $(RTS_BLD_RTS_PREFIX)%.c $(RTS_H_RTS_ALL_DRV_H)

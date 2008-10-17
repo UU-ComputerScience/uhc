@@ -7,14 +7,14 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
+%%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
-%%[9 hs import(qualified Data.Set as Set)
+%%[(9 codegen) hs import(qualified Data.Set as Set)
 %%]
 
 We have cycles, but they are there by design:
@@ -77,7 +77,7 @@ help     : The following attributes formed the cycle:
            CExpr.Let, local attribute nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 56, column 33))
            CExpr.Let, inherited attribute binds.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
 
-%%[8
+%%[(8 codegen)
 PRAGMA nocycle
 %%]
 
@@ -85,14 +85,14 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.cmodTrfInlineLetAlias hs
+%%[(8 codegen).cmodTrfInlineLetAlias hs
 cmodTrfInlineLetAlias :: CModule -> CModule
 cmodTrfInlineLetAlias cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[20 -8.cmodTrfInlineLetAlias hs
+%%[(20 codegen) -8.cmodTrfInlineLetAlias hs
 cmodTrfInlineLetAlias :: HsNameS -> CModule -> CModule
 cmodTrfInlineLetAlias globNmS cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -104,7 +104,7 @@ cmodTrfInlineLetAlias globNmS cmod
 %%% Globally used vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 codegen)
 ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
 
 SEM CAlt
@@ -118,11 +118,11 @@ SEM CPatBind
 %%% Let bindings for just names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type NmMp = Map.Map HsName CExpr
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ nmMp: NmMp | | ]
 
 SEM CodeAGItf
@@ -163,7 +163,7 @@ SEM CExpr
 %%% Is expr a substitutable value?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 
 ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
 
@@ -182,7 +182,7 @@ SEM CExpr
 %%% Gather additional names for which the def may not be eliminated: FFE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[(94 codegen)
 ATTR AllBind [ | | bindsNoTrfNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 %%]
 
@@ -190,7 +190,7 @@ ATTR AllBind [ | | bindsNoTrfNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 %%% Bound id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
 ATTR AllBind [ | | bindL USE {++} {[]}: {[(HsName,CBind)]} ]
 
@@ -206,7 +206,7 @@ SEM CBind
                                                   _ -> (Map.empty,[(@nm,@cTrf)])
 %%]
 
-%%[8
+%%[(8 codegen)
 
 ATTR CExpr AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
 
@@ -218,7 +218,7 @@ SEM CPatBind
 
 %%]
 
-%%[9
+%%[(9 codegen)
   
 ATTR CExpr AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
 
@@ -239,12 +239,12 @@ SEM CBind
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | Let         lhs         .   cTrf        =   if Map.null @nmMpNew
                                                 then @cTrf
@@ -258,7 +258,7 @@ SEM CExpr
   | Var         lhs         .   cTrf        =   maybe @cTrf id $ Map.lookup @nm $ @lhs.nmMp
 %%]
 
-%%[94
+%%[(94 codegen)
 SEM CBind
   | FFE         loc         .   (replNm,bindsNoTrfNmS)
                                             =   case Map.lookup @expNm @lhs.nmMp of
@@ -271,7 +271,7 @@ SEM CBind
 %%]
 
 
-%%[9
+%%[(9 codegen)
 
 ATTR CExpr   [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
 ATTR CMeta   [ bindNmMp: NmMp | | nameS: HsNameS ]

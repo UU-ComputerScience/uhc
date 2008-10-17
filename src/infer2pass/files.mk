@@ -151,17 +151,17 @@ $(INF2PS_AG_DS_MAIN_DRV_HS): $(INF2PS_BLD_VARIANT_PREFIX)%.hs: $(INF2PS_BLD_VARI
 
 $(INF2PS_HS_MAIN_DRV_HS): $(INF2PS_BLD_VARIANT_PREFIX)%.hs: $(SRC_INF2PS_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) --gen=$(INF2PS_VARIANT) --base=Main --order="$(INF2PS_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) --gen-reqm=$(INF2PS_VARIANT) --base=Main --variant-order="$(INF2PS_SHUFFLE_ORDER)" $< > $@
 
 $(INF2PS_HS_DPDS_DRV_HS): $(INF2PS_BLD_VARIANT_PREFIX)%.hs: $(SRC_INF2PS_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) --gen=$(INF2PS_VARIANT) --base=$(*F) --order="$(INF2PS_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_HS) --gen-reqm=$(INF2PS_VARIANT) --base=$(*F) --variant-order="$(INF2PS_SHUFFLE_ORDER)" $< > $@
 
 $(INF2PS_AG_ALL_MAIN_DRV_AG) $(INF2PS_AG_ALL_DPDS_DRV_AG): $(INF2PS_BLD_VARIANT_PREFIX)%.ag: $(SRC_INF2PS_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_AG) --gen=$(INF2PS_VARIANT) --base=$(*F) --order="$(INF2PS_SHUFFLE_ORDER)" $< > $@
+	$(SHUFFLE_AG) --gen-reqm=$(INF2PS_VARIANT) --base=$(*F) --variant-order="$(INF2PS_SHUFFLE_ORDER)" $< > $@
 
 $(INF2PS_RL_RULES_DRV_RUL): $(INF2PS_BLD_VARIANT_PREFIX)%.rul: $(SRC_INF2PS_PREFIX)%.crul $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=1 --base=$(*F) --plain --preamble=no --lhs2tex=no --order="1" $< > $@
+	$(SHUFFLE) --gen-reqm=1 --base=$(*F) --plain --preamble=no --lhs2tex=no --variant-order="1" $< > $@
 
