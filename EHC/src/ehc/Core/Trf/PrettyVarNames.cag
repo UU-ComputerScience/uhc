@@ -9,21 +9,21 @@
 %include afp.fmt
 %%]
 
-%%[8_2 hs module {%{EH}Core.Trf.PrettyVarNames}
+%%[(8_2 codegen) hs module {%{EH}Core.Trf.PrettyVarNames}
 %%]
 
-%%[8_2 hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
+%%[(8_2 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
-%%[8_2 hs import(qualified Data.Maybe as Maybe)
+%%[(8_2 codegen) hs import(qualified Data.Maybe as Maybe)
 %%]
-%%[8_2 hs import(qualified Data.Map as Map)
+%%[(8_2 codegen) hs import(qualified Data.Map as Map)
 %%]
 
-%%[8_2.WRAPPER ag import({Core/AbsSyn})
+%%[(8_2 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
-%%[8_2 hs export(cmodTrfPrettyNames)
+%%[(8_2 codegen) hs export(cmodTrfPrettyNames)
 cmodTrfPrettyNames :: CModule -> CModule
 cmodTrfPrettyNames cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
@@ -31,7 +31,7 @@ cmodTrfPrettyNames cmod
      in   cTrf_Syn_CodeAGItf t
 %%]
 
-%%[8_2
+%%[(8_2 codegen)
 ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF ]
 
@@ -62,7 +62,7 @@ SEM CBind
 %% Attribute for CBind non terminals to know if they are a top level binding
 %% or not.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen)
 ATTR CExpr     [  isTopLvl : {Bool} | | ]
 ATTR CBind     
      CBindL    [  isTopLvl : {Bool} | | ]
@@ -90,7 +90,7 @@ SEM CPatBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Variable name re-mapping 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen)
 ATTR AllCodeNT [ | mapping : {Map.Map HsName HsName} | ]
 
 SEM CodeAGItf
@@ -101,14 +101,14 @@ SEM CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Unique Number for unique names 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen)
 ATTR AllCodeNT [ | uniqNr : {Int} | ]
 
 SEM CodeAGItf
   | AGItf       module      .uniqNr    = 0
 %%]
 
-%%[8_2
+%%[(8_2 codegen)
 {
 getPrettyName :: Map.Map HsName HsName -> HsName -> Int -> (HsName, Map.Map HsName HsName, Int)
 getPrettyName mapping origName uniqNr =

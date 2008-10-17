@@ -32,7 +32,7 @@ type ScanOptsMp = Map.Map ScState ScanOpts
 
 chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("haddock",ChHaddock) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
-chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) ]
+chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) , ("verbatim",ChWrapVerbatim), ("verbatimsmall",ChWrapVerbatimSmall) ]
 
 kwTxtAsVarTooA
   = [ "module", "import", "export", "wrap", "ghc" ]
@@ -288,14 +288,31 @@ mkNmForP h t = nmFromL . concat . map (wordsBy (=='.')) $ (h : t)
 pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (pFoldr (sem_Lines_Cons,sem_Lines_Nil) (sem_Line_AsIs sem_Words_Nil <$ pNl)) <*> pChunks
 
-pVersion            ::  ShPr Version
-pVersion            =   mkVerFromIntL <$> pList1Sep (pKey "_") pInt'
+pVariantRef         ::  ShPr VariantRef
+pVariantRef         =   VarRef <$> pList1Sep (pKey "_") pInt'
 
-pOptVersion         ::  ShPr Version
-pOptVersion         =   pMaybe VAll id pVersion
+pVariantOfferRef    ::  ShPr VariantOffer
+pVariantOfferRef    =   variantOfferFromRef <$> pVariantRef
 
-pVerOrder           ::  ShPr VersionOrder
-pVerOrder           =   pListSep (pKey ",") (pList1Sep (pKey "<") pVersion)
+pVariantOffer       ::  ShPr VariantOffer
+pVariantOffer       =   pVariantOfferRef
+                    <|> pParens (VOfferRef <$> pVariantRef <*> pAspectRefs)
+
+pVariantReqmRef     ::  ShPr VariantReqm
+pVariantReqmRef     =   variantReqmFromRef <$> pVariantRef
+
+pAspectRefs         ::  ShPr AspectRefs
+pAspectRefs         =   pMaybe AspectAll (AspectRefs . Set.fromList) (pList1 pVar)
+
+pVariantReqm        ::  ShPr VariantReqm
+pVariantReqm        =   pVariantReqmRef
+                    <|> pParens (VReqmRef <$> pVariantRef <*> pAspectRefs)
+
+pOptVariantOffer    ::  ShPr VariantOffer
+pOptVariantOffer    =   pMaybe VOfferAll id pVariantOffer
+
+pVariantRefOrder    ::  ShPr VariantRefOrder
+pVariantRefOrder    =   pListSep (pKey ",") (pList1Sep (pKey "<") pVariantRef)
 
 pNm2                ::  ShPr Nm
 pNm2                =   mkNmForP <$> p <*> pList (pKey "." *> (p <|> pInt))
@@ -329,8 +346,8 @@ pStrExprSeq pS      =   pStrExprPar
                     where pStrExprWhite = foldr1 sem_StrExpr_White <$> pList1 (pStrExpr pS (sem_StrExpr_Seq <$> pStrExprPar))
                           pStrExprPar   = pFoldrSep (sem_StrExprs_Cons,sem_StrExprs_Nil) (pKey ",") pStrExprWhite
 
-pChunkId            ::  ShPr ChunkId
-pChunkId            =   pVersion <+> (pKey "." *> pNm)
+pChunkRef           ::  ShPr ChunkRef
+pChunkRef           =   ChunkRef <$> pVariantRef <* pKey "." <*> pNm
 
 pStrPacked          ::  (IsParser p Tok) => String -> String -> p a -> p a
 pStrPacked o c p    =   pKey o *> p <* pKey c
@@ -347,9 +364,9 @@ pChunks             =   pFoldr (sem_Chunks_Cons,sem_Chunks_Nil) pChunk
 pChunk              ::  ShPr T_Chunk 
 pChunk              =   pBegChunk
                          *> ((   sem_Chunk_Ver
-                                 <$> pVersion
+                                 <$> pVariantOffer
                                  <*> pMaybe NmEmp id (pKey "." *> pNm)
-                                 <*> (pKey "-" *> ((:[]) <$> pChunkId <|> pParens (pList1 pChunkId)) <|> pSucceed [])
+                                 <*> (pKey "-" *> ((:[]) <$> pChunkRef <|> pParens (pList1 pChunkRef)) <|> pSucceed [])
                                  <*> pChunkOptions
                                  <*> pCompilerRestrictions
                                  <*> pMod
@@ -413,18 +430,16 @@ pLines              =   pFoldr (sem_Lines_Cons,sem_Lines_Nil) pLine
 pLine               ::  ShPr T_Line
 pLine               =   sem_Line_AsIs  <$> pLineChars  <*  pNl
                     <|> (\n iv (o,r)
-                          -> sem_Line_Groups 0 (sem_Groups_Cons (sem_Group_Group VAll o r (sem_Lines_Cons (sem_Line_Named n iv) sem_Lines_Nil)) sem_Groups_Nil))
-                             <$  pBegNameRef <*> pN <*> pIntlVersion <*> pD <* pNl
+                          -> sem_Line_Groups 0 (sem_Groups_Cons (sem_Group_Group VOfferAll o r (sem_Lines_Cons (sem_Line_Named n iv) sem_Lines_Nil)) sem_Groups_Nil))
+                             <$  pBegNameRef <*> pN <*> pMb (pKey "@" *> pVariantReqm) <*> pD <* pNl
                     <|> sem_Line_Groups 1
                              <$  pBegGroup   <*> pFoldr1Sep (sem_Groups_Cons,sem_Groups_Nil) pElseGroup pG <* pEndChunk <* pNl
                     <?> "a line"
                     where pN =   pNm
-                             <|> (\v n -> mkNm v `nmApd` n) <$> pVersion <*> pMaybe NmEmp id (pKey "." *> pNm)
-                          pIntlVersion
-                             =   pMb (pKey "@" *> pVersion)
+                             <|> (\v n -> mkNm v `nmApd` n) <$> pVariantRef <*> pMaybe NmEmp id (pKey "." *> pNm)
                           pD =   pChunkOptions
                              <+> pMaybe Nothing Just ((pNm2 <|> mkNm <$> pStr) <+> pMaybe Nothing Just (pKey "=" *> pMaybe "" id pStr))
-                          pG =   (\v (o,r) ls -> sem_Group_Group v o r ls) <$> pOptVersion <*> pD <* pNl <*> pLines
+                          pG =   (\v (o,r) ls -> sem_Group_Group v o r ls) <$> pOptVariantOffer <*> pD <* pNl <*> pLines
 
 pLineChars          ::  ShPr T_Words
 pLineChars          =   (foldr sem_Words_Cons sem_Words_Nil . concat)

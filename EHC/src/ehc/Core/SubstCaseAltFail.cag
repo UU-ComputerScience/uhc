@@ -7,13 +7,13 @@
 %%% Substituting fail place holder for case expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Core}) export(cSubstCaseAltFail)
+%%[(8 codegen) hs module {%{EH}Core.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Core}) export(cSubstCaseAltFail)
 %%]
 
-%%[8 hs import(qualified Data.Map as Map)
+%%[(8 codegen) hs import(qualified Data.Map as Map)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CExpr
 %%]
 
@@ -21,7 +21,7 @@ WRAPPER CExpr
 %%% Code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 -- Substitute failRepl for CaseAltFail in ce
 cSubstCaseAltFail :: EHCOpts -> CaseFailSubst -> CExpr -> CExpr
 cSubstCaseAltFail opts caseFailSubst ce
@@ -37,7 +37,7 @@ cSubstCaseAltFail opts caseFailSubst ce
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -45,7 +45,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%% Generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT CodeAGItf [ caseFailSubst: CaseFailSubst | | cRepl: SELF ]
 
 SEM CExpr

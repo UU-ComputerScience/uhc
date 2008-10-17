@@ -10,14 +10,23 @@ module Common
   , module EH.Util.Pretty
   , Err(..), ErrM, ppErr, showUndef
   , openURI
-  , Opts(..), defaultOpts, optsHasNoVerOrder
+  , Opts(..), defaultOpts, optsHasNoVariantRefOrder
   , URef
   , CRef, CPos(..)
   , ChKind(..), ChDest(..), ChWrap(..)
-  , Version(..), VersionOrder
-  , Select
-  , verMember
-  , VOMp, sortOnVOMp, sortOnVOMp'
+  , VariantRef(..)
+  , AspectRefs(..)
+  , variantReqmRef, mbVariantReqmRef
+  , variantRefFromTop
+  , VariantOffer(..), VariantReqm(..)
+  , variantOfferFromRef, variantReqmFromRef
+  , variantOfferFromTop
+  , variantOfferRef, variantOfferRefTop
+  , VariantRefOrder
+  , ChunkRef(..)
+  , chunkRefFromOfferNm
+  , variantOfferIsOffered, variantReqmMatchOffer
+  , VariantRefOrderMp, sortOnVariantRefOrderMp, sortOnVariantRefOrderMp'
   , KVMap
   , CompilerRestriction(..)
   )
@@ -98,70 +107,70 @@ type KVMap = Map.Map String String
 
 data Opts 
   = Opts
-      { optAG           :: Bool
-      , optHS           :: Bool
-      , optPlain        :: Bool
-      , optLaTeX        :: Bool
-      , optPreamble     :: Bool
-      , optLinePragmas  :: Bool
-      , optIndex        :: Bool
-      , optCompiler     :: [Int]
-      , optHelp         :: Bool
-      , optGenDeps      :: Bool
-      , optChDest       :: (ChDest,String)
-      , optGenVersion   :: Version
-      , optBaseName     :: Maybe String
-      , optBaseFPath    :: FPath
-      , optWrapLhs2tex  :: ChWrap
-      , optMbXRefExcept :: Maybe String
-      , optVerOrder     :: VersionOrder
-      , optDefs         :: KVMap
-      , optDepNamePrefix :: String
-      , optDepSrcVar     :: String
-      , optDepDstVar     :: String
-      , optDepMainVar    :: String
-      , optDepDpdsVar    :: String
-      , optDepOrigDpdsVar :: String
-      , optDepBaseDir     :: String
-      , optDepTerm        :: Map String [String]
-      , optDepIgn         :: Set String
-      , optAGModHeader    :: Bool
+      { optAG           		:: Bool
+      , optHS           		:: Bool
+      , optPlain        		:: Bool
+      , optLaTeX        		:: Bool
+      , optPreamble     		:: Bool
+      , optLinePragmas  		:: Bool
+      , optIndex        		:: Bool
+      , optCompiler     		:: [Int]
+      , optHelp         		:: Bool
+      , optGenDeps      		:: Bool
+      , optChDest       		:: (ChDest,String)
+      , optGenReqm   			:: VariantReqm
+      , optBaseName     		:: Maybe String
+      , optBaseFPath    		:: FPath
+      , optWrapLhs2tex  		:: ChWrap
+      , optMbXRefExcept 		:: Maybe String
+      , optVariantRefOrder		:: VariantRefOrder
+      , optDefs         		:: KVMap
+      , optDepNamePrefix 		:: String
+      , optDepSrcVar     		:: String
+      , optDepDstVar     		:: String
+      , optDepMainVar    		:: String
+      , optDepDpdsVar    		:: String
+      , optDepOrigDpdsVar 		:: String
+      , optDepBaseDir     		:: String
+      , optDepTerm        		:: Map String [String]
+      , optDepIgn         		:: Set String
+      , optAGModHeader    		:: Bool
       } deriving (Show)
 
 defaultOpts
   = Opts
-      { optAG           =  False
-      , optHS           =  False
-      , optLaTeX        =  False
-      , optPreamble     =  True
-      , optLinePragmas  =  False
-      , optPlain        =  False
-      , optIndex        =  False
-      , optCompiler     = []
-      , optHelp         =  False
-      , optGenDeps      =  False
-      , optChDest       =  (ChHere,"")
-      , optGenVersion   =  VNone
-      , optBaseName     =  Nothing
-      , optBaseFPath    =  emptyFPath
-      , optWrapLhs2tex  =  ChWrapCode
-      , optMbXRefExcept =  Nothing
-      , optVerOrder     =  [[]]
-      , optDefs			=  Map.empty
-      , optDepNamePrefix = error "optDepNamePrefix not set"
-      , optDepSrcVar     = error "optDepSrcVar not set"
-      , optDepDstVar     = error "optDepDstVar not set"
-      , optDepMainVar    = error "optDepMainVar not set"
-      , optDepDpdsVar    = error "optDepDpdsVar not set"
-      , optDepOrigDpdsVar = error "optDepOrigDpdsVar not set"
-      , optDepBaseDir     = error "optDepBaseDir not set"
-      , optDepTerm        = Map.empty
-      , optDepIgn         = Set.empty
-      , optAGModHeader    = False
+      { optAG           		=  False
+      , optHS           		=  False
+      , optLaTeX        		=  False
+      , optPreamble     		=  True
+      , optLinePragmas  		=  False
+      , optPlain        		=  False
+      , optIndex        		=  False
+      , optCompiler     		=  []
+      , optHelp         		=  False
+      , optGenDeps      		=  False
+      , optChDest       		=  (ChHere,"")
+      , optGenReqm   			=  VReqmNone
+      , optBaseName     		=  Nothing
+      , optBaseFPath    		=  emptyFPath
+      , optWrapLhs2tex  		=  ChWrapCode
+      , optMbXRefExcept 		=  Nothing
+      , optVariantRefOrder	 	=  [[]]
+      , optDefs					=  Map.empty
+      , optDepNamePrefix 		=  error "optDepNamePrefix not set"
+      , optDepSrcVar     		=  error "optDepSrcVar not set"
+      , optDepDstVar     		=  error "optDepDstVar not set"
+      , optDepMainVar    		=  error "optDepMainVar not set"
+      , optDepDpdsVar    		=  error "optDepDpdsVar not set"
+      , optDepOrigDpdsVar 		=  error "optDepOrigDpdsVar not set"
+      , optDepBaseDir     		=  error "optDepBaseDir not set"
+      , optDepTerm        		=  Map.empty
+      , optDepIgn         		=  Set.empty
+      , optAGModHeader    		=  False
       }
 
-optsHasNoVerOrder :: Opts -> Bool
-optsHasNoVerOrder = null . head . optVerOrder
+optsHasNoVariantRefOrder :: Opts -> Bool
+optsHasNoVariantRefOrder = null . head . optVariantRefOrder
 
 -------------------------------------------------------------------------
 -- URI ref
@@ -198,41 +207,128 @@ data ChWrap
   | ChWrapBeamerBlockCode 	String
   | ChWrapTT
   | ChWrapTTtiny
+  | ChWrapVerbatim
+  | ChWrapVerbatimSmall
   | ChWrapPlain
   deriving (Show,Eq,Ord)
 
 -------------------------------------------------------------------------
--- Version
+-- Variant reference
 -------------------------------------------------------------------------
 
-data Version    = VAll
-                | VPre
-                | VNone
-                | VRef {verRef :: Int}
-                | VNest {verNest :: Version, verRef :: Int}
-                deriving (Show,Eq,Ord)
+data VariantRef
+  = VarRef 	{vrefRefs :: ![Int]}
+  deriving (Show,Eq,Ord)
 
-type VersionOrder = [[Version]]
-type VOMp = Map.Map Version Int
+instance NM VariantRef where
+  mkNm (VarRef l)     = nmApdL $ map mkNm l
 
-verMember :: Version -> VOMp -> Bool
-verMember VAll _ = True
-verMember v    s = Map.member v s
-
-
-sortOnVOMp' :: VOMp -> [(Version,x)] -> [((Version,Bool),x)]
--- sortOnVOMp' m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,(v,x)))
-sortOnVOMp' m l = map snd $ sortOn fst $ [ (maybe 0 id o,((v,isJust o || v == VAll),x)) | (v,x) <- l, let o = Map.lookup v m ]
-
-sortOnVOMp :: VOMp -> [(Version,x)] -> [x]
-sortOnVOMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 v m,x))
--- sortOnVOMp m l = map snd $ sortOn fst $ [ (o,x) | (v,x) <- l, let mbO = Map.lookup v m ]
+variantRefFromTop :: Int -> VariantRef
+variantRefFromTop i = VarRef [i]
 
 -------------------------------------------------------------------------
--- Version selection
+-- Aspect reference
 -------------------------------------------------------------------------
 
-type Select = Version
+type AspectRef  = String
+data AspectRefs
+  = AspectRefs !(Set.Set AspectRef)
+  | AspectAll
+  deriving (Show,Eq,Ord)
+
+aspectRefsMatch :: AspectRefs -> AspectRefs -> Bool
+aspectRefsMatch AspectAll       _               = True
+aspectRefsMatch _               AspectAll       = True
+aspectRefsMatch (AspectRefs r1) (AspectRefs r2) = not (Set.null (Set.intersection r1 r2))
+
+-------------------------------------------------------------------------
+-- Variant offering, available version
+-------------------------------------------------------------------------
+
+data VariantOffer
+  = VOfferAll
+  | VOfferPre
+  | VOfferRef 	!VariantRef !AspectRefs
+  deriving (Show,Eq,Ord)
+
+type VariantRefOrder   = [[VariantRef]]
+type VariantRefOrderMp = Map.Map VariantRef Int
+
+variantOfferFromRef :: VariantRef -> VariantOffer
+variantOfferFromRef   (VarRef (0:_ )) = VOfferPre
+variantOfferFromRef r@(VarRef (i:is)) = VOfferRef r AspectAll
+
+variantOfferFromTop :: Int -> VariantOffer
+variantOfferFromTop i = variantOfferFromRef (variantRefFromTop i)
+
+variantOfferRef :: VariantOffer -> VariantRef
+variantOfferRef  VOfferPre      = VarRef [0]
+variantOfferRef (VOfferRef r _) = r
+
+variantOfferRefTop :: VariantOffer -> Int
+variantOfferRefTop (VOfferRef (VarRef (i:_)) _) = i
+
+variantOfferIsOffered :: VariantOffer -> VariantRefOrderMp -> Bool
+variantOfferIsOffered VOfferAll _ = True
+variantOfferIsOffered v         s = Map.member (variantOfferRef v) s
+
+sortOnVariantRefOrderMp' :: VariantRefOrderMp -> [(VariantOffer,x)] -> [((VariantOffer,Bool),x)]
+sortOnVariantRefOrderMp' m l = map snd $ sortOn fst $ [ (maybe 0 id o,((v,isJust o || v == VOfferAll),x)) | (v,x) <- l, let o = Map.lookup (variantOfferRef v) m ]
+
+sortOnVariantRefOrderMp :: VariantRefOrderMp -> [(VariantOffer,x)] -> [x]
+sortOnVariantRefOrderMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 (variantOfferRef v) m,x))
+
+instance NM VariantOffer where
+  mkNm VOfferPre         = mkNm "pre"
+  mkNm VOfferAll         = mkNm "*"
+  mkNm (VOfferRef r _)   = mkNm r
+
+-------------------------------------------------------------------------
+-- Variant selection, required version
+-------------------------------------------------------------------------
+
+data VariantReqm
+  = VReqmAll
+  | VReqmNone
+  | VReqmRef 	{ vreqmVariant :: !VariantRef, vreqmAspects :: !AspectRefs }
+  deriving (Show,Eq,Ord)
+
+-- type VariantReqm = VariantOffer
+
+variantReqmFromRef :: VariantRef -> VariantReqm
+variantReqmFromRef r = VReqmRef r AspectAll
+
+mbVariantReqmRef :: VariantReqm -> Maybe VariantRef
+mbVariantReqmRef (VReqmRef r _) = Just r
+mbVariantReqmRef _              = Nothing
+
+variantReqmRef :: VariantReqm -> VariantRef
+variantReqmRef = maybe (error "variantReqmRef") id . mbVariantReqmRef
+
+variantReqmMatchOffer :: VariantRefOrderMp -> VariantReqm -> VariantOffer -> Bool
+variantReqmMatchOffer _ VReqmAll         _                 = True
+variantReqmMatchOffer _ VReqmNone        _                 = False
+variantReqmMatchOffer _ _                VOfferAll         = True
+variantReqmMatchOffer m (VReqmRef rr ra) (VOfferRef or oa) = rr == or && aspectRefsMatch ra oa
+
+instance NM VariantReqm where
+  mkNm VReqmAll          = mkNm "*"
+  mkNm VReqmNone         = mkNm "-"
+  mkNm (VReqmRef r _)    = mkNm r
+
+-------------------------------------------------------------------------
+-- Chunk reference
+-------------------------------------------------------------------------
+
+data ChunkRef
+  = ChunkRef {chunkRefVar :: !VariantRef, chunkRefNm :: !Nm}
+  deriving (Show,Eq,Ord)
+
+chunkRefFromOfferNm :: VariantOffer -> Nm -> ChunkRef
+chunkRefFromOfferNm o n = ChunkRef (variantOfferRef o) n
+
+instance NM ChunkRef where
+  mkNm (ChunkRef v n)     = mkNm v `nmApd` n
 
 -------------------------------------------------------------------------
 -- Compiler restrictions

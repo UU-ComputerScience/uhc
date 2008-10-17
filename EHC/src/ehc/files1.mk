@@ -304,11 +304,11 @@ $(INSABS_EHC_LIB_ALL_AG): $(INSABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT
 # rules for ehc library sources+derived
 $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen=$(EHC_VARIANT) --base=$(*F)  --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%.cag $(SHUFFLE)
-	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen=$(EHC_VARIANT) --base=$(*F)  --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(EHC_AG_D_MAIN_DRV_HS) $(LIB_EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
@@ -328,17 +328,17 @@ $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 
 $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 $(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(EHC_HS_UTIL_DRV_C): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.c: $(SRC_EHC_PREFIX)%.cc $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
+	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
@@ -347,6 +347,6 @@ $(EHC_RULES_3_DRV_CAG): $(EHC_RULES_3_SRC_RL2) $(RULER2) $(EHC_MKF)
 
 $(EHC_HS_UTILCPP_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS_PRE) $(LIB_EHC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS_PRE) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 

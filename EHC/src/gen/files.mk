@@ -31,7 +31,7 @@ GEN_ALL_SRC								:= $(GEN_ALL_CHUNK_SRC) $(GEN_MKF)
 # rules for library sources+derived
 $(GEN_RTSGBCCALL_HS_MAIN_DRV_HS): $(EHC_BLD_GEN_VARIANT_PREFIX)%.hs: $(SRC_GEN_RTSGBCCALL_PREFIX)%.chs $(SHUFFLE) $(GEN_MKF) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GEN_RTSGBCCALL_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GEN_RTSGBCCALL_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 ### Build rules for endproducts ####

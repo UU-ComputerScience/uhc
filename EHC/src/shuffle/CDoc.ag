@@ -8,9 +8,6 @@ import Common
 import IO
 }
 
---   , mkTexCmd1, mkTexCmd2, mkTexCmd3, mkTexCmdDef, mkTexCmdUse, mkTexCmdUse'
-
-
 INCLUDE "CDocAbsSyn.ag"
 
 -------------------------------------------------------------------------
@@ -18,8 +15,8 @@ INCLUDE "CDocAbsSyn.ag"
 -------------------------------------------------------------------------
 
 {
-type FromSel a   = Select -> a
-type MkCDoc      = FromSel (Maybe CDoc)
+type FromVariantReqm a   	= VariantReqm -> a
+type MkCDoc      			= FromVariantReqm (Maybe CDoc)
 
 instance Show MkCDoc where
   show _ = "MkCDoc"
@@ -142,14 +139,15 @@ cdDots = cdListSep "" "" "."
 chWrap :: ChWrap -> CDoc -> CDoc
 chWrap w d
   = case w of
-      ChWrapCode  		-> "\\begin{code}" .-. d .-. "\\end{code}"
-      ChWrapBoxCode mw
-      					-> "\\parbox{" .|. maybe "" id mw .|. "\\linewidth}{%" .-. chWrap ChWrapCode d .-. "}"
+      ChWrapCode  			-> "\\begin{code}" .-. d .-. "\\end{code}"
+      ChWrapBoxCode mw		-> "\\parbox{" .|. maybe "" id mw .|. "\\linewidth}{%" .-. chWrap ChWrapCode d .-. "}"
       ChWrapBeamerBlockCode title
-                        -> "\\begin{block}{%" .-. title .-. "}" .-. chWrap (ChWrapBoxCode Nothing) d .-. "\\end{block}"
-      ChWrapTT    		-> "\\begin{TT}" .-. d .-. "\\end{TT}"
-      ChWrapTTtiny  	-> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
-      _           		-> d
+                        	-> "\\begin{block}{%" .-. title .-. "}" .-. chWrap (ChWrapBoxCode Nothing) d .-. "\\end{block}"
+      ChWrapVerbatim    	-> "\\begin{verbatim}" .-. d .-. "\\end{verbatim}"
+      ChWrapVerbatimSmall	-> "{\\small\n\\begin{verbatim}" .-. d .-. "\\end{verbatim}\n}"
+      ChWrapTT    			-> "\\begin{TT}" .-. d .-. "\\end{TT}"
+      ChWrapTTtiny  		-> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
+      _           			-> d
 
 }
 

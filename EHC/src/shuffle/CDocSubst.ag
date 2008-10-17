@@ -49,7 +49,7 @@ SEM CDoc
   | Ref         lhs         .   (sbRepl,sbCRefS,sbErrM)
                                             =   case Map.lookup (@cref) @lhs.nmChMp of
                                                   Just i
-                                                    -> case maybe (nciMbCDoc i) (nciMkCDoc i) @mbSelect of
+                                                    -> case maybe (nciMbCDoc i) (nciMkCDoc i) @mbVariantReqm of
                                                          Just d -> (r,Set.insert @cref s,e)
                                                                 where (r,s,e) = cdocSubst (Map.delete @cref @lhs.nmChMp) d
                                                          _      -> (CDoc_Emp,Set.empty,Map.empty)

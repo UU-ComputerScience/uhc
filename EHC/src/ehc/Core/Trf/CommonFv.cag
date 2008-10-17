@@ -11,7 +11,7 @@
 %%% Free vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | fvS USE {`Set.union`} {Set.empty}: FvS ]
 ATTR AllBind [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
 
@@ -32,7 +32,7 @@ SEM CAlt
 %%% Binding to id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 
 SEM CBind

@@ -13,17 +13,17 @@ Later, these expressions (lambda or CAF) can then be lifted globally.
 %%% Globals as args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.LamGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamGlobalAsArg)
+%%[(8 codegen) hs module {%{EH}Core.Trf.LamGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamGlobalAsArg)
 %%]
 
-%%[8 hs import({%{EH}Core.Utils})
+%%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
 -- for debug
-%%[8 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
 WRAPPER CodeAGItf
 %%]
 
@@ -71,7 +71,7 @@ help     : The following attributes formed the cycle:
            CExpr.Let, synthesized attribute binds.levOfMp
            CExpr.Let, inherited attribute binds.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 9, column 35))
 
-%%[9
+%%[(9 codegen)
 PRAGMA nocycle
 %%]
 
@@ -79,7 +79,7 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfLamGlobalAsArg :: CModule -> CModule
 cmodTrfLamGlobalAsArg cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -91,7 +91,7 @@ cmodTrfLamGlobalAsArg cmod
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | gUniq: Int | ]
 
 SEM CodeAGItf
@@ -106,7 +106,7 @@ SEM CBind
 %%% Free var of lam's for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
 
 SEM CodeAGItf
@@ -127,7 +127,7 @@ SEM CExpr
 %%% Mapping of argument names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
 
 SEM CodeAGItf
@@ -141,11 +141,11 @@ SEM CBind
 %%% Adding parameters to lam call sites
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type LamArgMp = Map.Map HsName CVarIntroL
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
 ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
 
@@ -160,7 +160,7 @@ SEM CExpr
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
@@ -173,7 +173,7 @@ SEM CBind
                                                 else  ([],Map.empty, Map.empty)
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM CBind
 %%[[8
   | Bind        lhs			.	cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf

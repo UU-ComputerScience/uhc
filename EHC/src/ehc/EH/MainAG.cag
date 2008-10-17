@@ -123,7 +123,7 @@ WRAPPER AGItf
 %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
 %%]
 
-%%[8.ToCore ag import({EH/ToCore})
+%%[(8 codegen).ToCore ag import({EH/ToCore})
 %%]
 
 %%[9 ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})

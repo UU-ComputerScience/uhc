@@ -7,14 +7,14 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenUniq)
+%%[(8 codegen) hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenUniq)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
-%%[99
+%%[(99 codegen)
 PRAGMA strictcase
 %%]
 
@@ -22,7 +22,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfRenUniq :: CModule -> CModule
 cmodTrfRenUniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -34,7 +34,7 @@ cmodTrfRenUniq cmod
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
@@ -50,7 +50,7 @@ SEM CAlt
 %%% Module name used to uniqify globally over all modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 codegen)
 ATTR AllExpr [ moduleNm: HsName | | ]
 
 SEM CModule
@@ -61,7 +61,7 @@ SEM CModule
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
@@ -70,11 +70,11 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%% alpha renaming so all identifiers are unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type ARenMp = Map.Map HsName HsName
 %%]
 
-%%[20 hs
+%%[(20 codegen) hs
 -- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
 mkUniq :: HsName -> HsName -> UID -> HsName
 mkUniq q n u
@@ -84,7 +84,7 @@ mkUniq q n u
     ) $ hsnSuffix n ("__" ++ show u)
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 %%[[8
 aRenAdd :: Bool -> [HsName] -> UID -> ARenMp -> ARenMp
 aRenAdd isGlob nL u m
@@ -102,26 +102,26 @@ aRenAdd isGlob q nL u m
 %%]]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 aRenRepl :: ARenMp -> HsName -> HsName
 aRenRepl m n = maybe n id . Map.lookup n $ m
 %%]
 
 
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ aRenMp: ARenMp  lev: Int | | ]
 ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 %%]
 
-%%[9
+%%[(9 codegen)
 ATTR CExpr 
      AllAlt 
      AllBind   [ protectedBindingNames : {[HsName]} | | ]
 ATTR CMeta     [ | | protectableBindingNames : {[HsName]} ]
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM CodeAGItf
   | AGItf       module      .   aRenMp      =   Map.empty
                             .   lev         =   cLevModule
@@ -157,7 +157,7 @@ SEM CAlt
                 expr        .   lev         =   @lhs.lev + 1
 %%]
 
-%%[20
+%%[(20 codegen)
 SEM CExpr
   | Let         loc         .   aRenMp      :=  aRenAdd (@lhs.lev == cLevModule) @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
   | Lam         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
@@ -166,7 +166,7 @@ SEM CAlt
   | Alt         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm @pat.nmL @lUniq @lhs.aRenMp
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | isLamBody: Bool ]
 
 SEM CExpr
@@ -174,7 +174,7 @@ SEM CExpr
   | * - Lam     lhs         .   isLamBody   =   True
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | Var         lhs         .   cTrf        =   CExpr_Var (aRenRepl @lhs.aRenMp @nm)
   | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @argMeta.cTrf @body.cTrf
@@ -195,7 +195,7 @@ SEM CPatRest
 %%]
 
 
-%%[9
+%%[(9 codegen)
 SEM CBind
   | Bind        expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
 

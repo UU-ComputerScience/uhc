@@ -7,17 +7,17 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
+%%[(8 codegen) hs module {%{EH}Core.Trf.LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
 %%]
 
-%%[8 hs import({%{EH}Base.Debug},UU.DData.Scc)
+%%[(8 codegen) hs import({%{EH}Base.Debug},UU.DData.Scc)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
-%%[99
+%%[(99 codegen)
 PRAGMA strictcase
 %%]
 
@@ -25,7 +25,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfLetUnrec :: CModule -> CModule
 cmodTrfLetUnrec cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
@@ -36,7 +36,7 @@ cmodTrfLetUnrec cmod
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 %%]
@@ -45,14 +45,14 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 %%% Usage (assumption: unique names)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type UseMp = Map.Map HsName [HsName]
 
 useMpComb :: UseMp -> UseMp -> UseMp
 useMpComb = Map.unionWith (++)
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ inNmL: {[HsName]} | | useMp USE {`useMpComb`} {Map.empty}: UseMp ]
 
 SEM CodeAGItf
@@ -71,11 +71,11 @@ SEM CBind
 %%% Bound id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 type BindMp = Map.Map HsName (CExpr,CMeta)
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
 
 SEM CBind
@@ -86,7 +86,7 @@ SEM CBind
 %%% Finding SCC's, constructing transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | Let         loc         .   (remUseMp,cTrf)
                                             =   if @categ == CBindRec

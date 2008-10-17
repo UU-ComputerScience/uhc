@@ -7,17 +7,17 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
+%%[(8 codegen) hs module {%{EH}Core.Trf.ConstProp} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfConstProp)
 %%]
 
-%%[8 hs import(Data.Maybe)
+%%[(8 codegen) hs import(Data.Maybe)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
-%%[99
+%%[(99 codegen)
 PRAGMA strictcase
 %%]
 
@@ -25,7 +25,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cmodTrfConstProp :: EHCOpts -> CModule -> CModule
 cmodTrfConstProp opts cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -39,7 +39,7 @@ cmodTrfConstProp opts cmod
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -47,7 +47,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%% Lam + args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CExpr [ | | appLam: CExpr  appArgL: {[CExpr]} ]
 
 SEM CExpr
@@ -61,7 +61,7 @@ SEM CExpr
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 

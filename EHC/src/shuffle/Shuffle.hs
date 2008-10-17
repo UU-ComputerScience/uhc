@@ -243,14 +243,18 @@ cmdLineOpts
           "generate plain code, default=no"
      ,  Option ""   ["index"]           (NoArg oIndex)
           "combined with latex, generate index entries, default=no"
-     ,  Option "g"  ["gen"]             (ReqArg oGen "all|<nr>")
+     ,  Option ""   ["gen"]             (ReqArg oGenReqm "all|<nr>|(<nr> <aspect>*) (to be obsolete, renamed to --gen-reqm)")
+          "generate for version, default=none"
+     ,  Option "g"  ["gen-reqm"]        (ReqArg oGenReqm "all|<nr>|(<nr> <aspect>*)")
           "generate for version, default=none"
      ,  Option ""   ["compiler"]  (ReqArg oCompiler "<compiler version>")
           "Version of the GHC compiler, i.e. 6.6"
      ,  Option ""   ["hidedest"]        (ReqArg oHideDest "here|appx=<file>")
           "destination of text marked as 'hide', default=here"
-     ,  Option ""   ["order"]           (ReqArg oVerOrder "<order-spec>")
-          "version order"
+     ,  Option ""   ["order"]           (ReqArg oVariantOrder "<order-spec> (to be obsolete, renamed to --variant-order)")
+          "variant order"
+     ,  Option ""   ["variant-order"]   (ReqArg oVariantOrder "<order-spec>")
+          "variant order"
      ,  Option "b"  ["base"]            (ReqArg oBase "<name>")
           "base name, default=derived from filename"
      ,  Option ""   ["xref-except"]     (ReqArg oXRefExcept "<filename>")
@@ -294,12 +298,13 @@ cmdLineOpts
          oCompiler    s  o =  o {optCompiler = map read (words (map (\c -> if c == '.' then ' ' else c) s))}
          oLhs2tex    ms  o =  yesno' ChWrapCode ChWrapPlain (\f o -> o {optWrapLhs2tex = f}) ms o
          oBase        s  o =  o {optBaseName = Just s}
-         oVerOrder    s  o =  o {optVerOrder = parseAndGetRes pVerOrder s}
+         oVariantOrder    s  o =  o {optVariantRefOrder = parseAndGetRes pVariantRefOrder s}
          oXRefExcept  s  o =  o {optMbXRefExcept = Just s}
-         oGen         s  o =  case s of
-                                "all"               -> o {optGenVersion = VAll}
-                                (c:_) | isDigit c   -> o {optGenVersion = parseAndGetRes pVersion s}
-                                _                   -> o {optGenVersion = VAll}
+         oGenReqm            s  o =  case dropWhile isSpace s of
+                                "all"               -> o {optGenReqm = VReqmAll}
+                                (c:_) | isDigit c   -> o {optGenReqm = parseAndGetRes pVariantReqmRef s}
+                                      | c == '('    -> o {optGenReqm = parseAndGetRes pVariantReqm s}
+                                _                   -> o {optGenReqm = VReqmAll}
          oHideDest    s  o =  case s of
                                 "here"                  -> o
                                 ('a':'p':'p':'x':'=':f) -> o {optChDest = (ChHide,f)}

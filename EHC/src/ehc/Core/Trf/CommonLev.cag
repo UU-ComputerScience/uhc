@@ -11,7 +11,7 @@
 %%% Copy/Self
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllMeta [ | | self: SELF ]
 %%]
 
@@ -19,7 +19,7 @@ ATTR AllMeta [ | | self: SELF ]
 %%% CVarIntro's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | Lam         loc         .   cvi                 =   CVarIntro
                                                           { cviLev  = @lev
@@ -38,7 +38,7 @@ SEM CAlt
 %%% Level of id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ cvarIntroMp: CVarIntroMp | | ]
 
 SEM CodeAGItf
@@ -65,7 +65,7 @@ SEM CAlt
 %%% Intro level of id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ introCVarIntroMp: CVarIntroMp | | ]
 
 SEM CodeAGItf
@@ -79,7 +79,7 @@ SEM CAlt
   | Alt         expr        .   introCVarIntroMp    =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.introCVarIntroMp
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind [ | | bindsIntroCVarIntroMp USE {`Map.union`} {Map.empty}: CVarIntroMp ]
 
 SEM CBind
@@ -91,7 +91,7 @@ SEM CBind
 %%% Level of expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ | | levOf USE {`max`} {cLevModule}: Int ]
 
 SEM CExpr

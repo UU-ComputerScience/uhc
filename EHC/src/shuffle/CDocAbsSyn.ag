@@ -4,20 +4,20 @@
 
 -- Outside itf
 DATA AGCDocItf
-  | AGItf               cdoc        : CDoc
+  | AGItf               cdoc            : CDoc
 
 DATA CDoc
   | Emp
-  | Inl                 uref        : {URef}
-  | Ref                 cref        : {CRef}
-                        mbSelect    : {Maybe Select}
-                        chDest      : {ChDest}
-  | Str                 str         : {String}
-  | Hor                 ldoc        : CDoc
-                        rdoc        : CDoc
-  | Ver                 ldoc        : CDoc
-                        rdoc        : CDoc
-  | Pos                 cpos        : CPos
-                        cdoc        : CDoc
+  | Inl                 uref            : {URef}
+  | Ref                 cref            : {CRef}
+                        mbVariantReqm   : {Maybe VariantReqm}
+                        chDest          : {ChDest}
+  | Str                 str             : {String}
+  | Hor                 ldoc            : CDoc
+                        rdoc            : CDoc
+  | Ver                 ldoc            : CDoc
+                        rdoc            : CDoc
+  | Pos                 cpos            : CPos
+                        cdoc            : CDoc
 
 DERIVING * : Show

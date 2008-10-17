@@ -6,7 +6,7 @@
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM CExpr
   | Let         binds       .   lev         =   @lhs.lev + 1
 %%]
@@ -15,7 +15,7 @@ SEM CExpr
 %%% Which id's are functions resp values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AllBind [ | | bindVarS, bindLamS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CBind
@@ -26,7 +26,7 @@ SEM CBind
   | FFI         lhs         .   bindVarS    =   Set.singleton @nm
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllCodeNT [ varS, lamS: FvS | | ]
 
 SEM CodeAGItf

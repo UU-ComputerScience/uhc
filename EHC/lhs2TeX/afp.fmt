@@ -224,6 +224,7 @@
 %format rvar        = "{\varrho}"
 
 %format rulerUndefinedExtern	= "{\cdot}"
+%format rulerPrePostSep	= "\mbox{---}"
 
 %format inst		= "inst"
 %format instv		= inst "_{" tvar  "}"
@@ -237,6 +238,7 @@
 %format lbl1
 
 %format red				= "\color{red}"
+%format black			= "\color{black}"
 %format rcOMark			= "\color{blue}"
 %format rcCMark			= "\color{black}"
 %format rsOMark			= "\color{lightgray}"
@@ -426,6 +428,7 @@
 %format AGFeature		= "\mathcal{AG}"
 
 %format redOn			= "\color{red}"
+%format blueOn			= "\color{blue}"
 %format blackOn			= "\color{black}"
 %format red(x)			= "{\color{red}" x "}"
 

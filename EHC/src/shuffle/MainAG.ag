@@ -57,7 +57,6 @@ cdocSubstInline m d
 }
 
 INCLUDE "ChunkAbsSyn.ag"
--- INCLUDE "CDocAbsSyn.ag"
 
 -------------------------------------------------------------------------
 -- Global info
@@ -66,79 +65,35 @@ INCLUDE "ChunkAbsSyn.ag"
 ATTR AGItf AllChunk AllLine AllWord AllGroup AllStrExpr [ opts: Opts | | ]
 
 -------------------------------------------------------------------------
--- Common. Version
+-- Common. Variant
 -------------------------------------------------------------------------
 
 {
-mkVerFromInt :: Int -> Version
-mkVerFromInt r = if r == 0 then VPre else VRef r
-
-mkVerFromIntL :: [Int] -> Version
-mkVerFromIntL (0:_)  = mkVerFromInt 0
-mkVerFromIntL (i:is) = foldl VNest (VRef i) is
-
-instance NM Version where
-  mkNm VPre           = mkNm "pre"
-  mkNm VAll           = mkNm "*"
-  mkNm VNone          = mkNm "-"
-  mkNm (VRef r)       = mkNm r
-  mkNm (VNest n r)    = mkNm n `nmApd` mkNm r
-
-instance CD Version where
+instance CD VariantOffer where
   cd = cd . mkNm
 
-verMatch :: Version -> Version -> Bool
-verMatch VAll           _               = True
-verMatch _              VAll            = True
-verMatch (VRef r1)      (VRef r2)       = r1 == r2
-verMatch (VNest n1 r1)  (VNest n2 r2)   = r1 == r2 && n1 == n2
-verMatch VPre           VPre            = True
-verMatch _              _               = False
-
-cmpByVersionOrder :: VersionOrder -> Version -> Version -> Ordering
-cmpByVersionOrder vo v1 v2
-  = maybe EQ id . listToMaybe . catMaybes . map c $ vo
+cmpByVariantRefOrder :: VariantRefOrder -> VariantRef -> VariantRef -> Ordering
+cmpByVariantRefOrder vo v1 v2
+  = maybe EQ id $ listToMaybe $ catMaybes $ map c vo
   where  c o = do { i1 <- elemIndex v1 o
                   ; i2 <- elemIndex v2 o
                   ; return (compare i1 i2)
                   }
 
-voAllLE :: VersionOrder -> Version -> [Version]
-voAllLE vo v
-  = sortBy (cmpByVersionOrder vo)
-  . nub . sort . concat
-  . (case v of
-      VAll -> id
-      _    -> map (\o -> maybe [] (\i -> take (i+1) o) (elemIndex v o))
-    )
-  $ vo
-
-voAllLE_2 :: VersionOrder -> Version -> [Version]
-voAllLE_2 vo v
-  = let voPrefixes
-          = map (\p@((v,_):_) -> (v,map snd p))
-          . groupBy (\(v1,_) (v2,_) -> v1 == v2)
-          . sortBy (\(v1,_) (v2,_) -> compare v1 v2)
-          . concat . map (\o -> zip o (inits o))
-          $ vo
-        all
-          = case v of
-              VAll -> concat vo
-              _    -> maybe [] concat (lookup v voPrefixes)
-     in sortBy (cmpByVersionOrder vo) . nub . sort $ all
-
-voAllLE_3 :: VersionOrder -> Version -> [Version]
-voAllLE_3 vo v
-  = let allN = nub . sort . concat $ vo
+variantOfferAllLE_3 :: VariantRefOrder -> VariantReqm -> [VariantRef]
+variantOfferAllLE_3 vo v
+  = let allN = nub $ sort $ concat vo
         nrN = length allN
-        nsN = [(0::Int)..nrN-1]
+        nsN = [(0::Int) .. nrN-1]
         ixOf' v = elemIndex v allN
+        ixOfV v = maybe Nothing ixOf' (mbVariantReqmRef v)
         ixOf v = maybe 0 id (ixOf' v)
         voPrefixes
-          = map (\p@((v,_):_) -> (ixOf v,map ixOf . nub . sort . (v:) . concat . map snd $ p))
-          . groupBy (\(v1,_) (v2,_) -> v1 == v2)
-          . sortBy (\(v1,_) (v2,_) -> compare v1 v2)
-          . concat . map (\o -> zip o (inits o))
+          = map (\p@((v,_):_) -> (ixOf v,map ixOf $ nub $ sort $ (v:) $ concat $ map snd p))
+          $ groupBy (\(v1,_) (v2,_) -> v1 == v2)
+          $ sortBy (\(v1,_) (v2,_) -> compare v1 v2)
+          $ concat
+          $ map (\o -> zip o (inits o))
           $ vo
         m1 = map
                 (\(n,ns)
@@ -153,24 +108,24 @@ voAllLE_3 vo v
                         m nsN
                 )
                 m2 nsN
-        nsV = maybe [] (\i -> assocs (m3 ! i)) (ixOf' v)
+        nsV = maybe [] (\i -> assocs (m3 ! i)) (ixOfV v)
         allN' = case v of
-                  VAll -> allN
-                  _    -> [ allN !! i | (i,b) <- nsV, b ]
-     in sortBy (cmpByVersionOrder vo) . nub . sort $ allN'
+                  VReqmAll -> allN
+                  _        -> [ allN !! i | (i,b) <- nsV, b ]
+     in sortBy (cmpByVariantRefOrder vo) $ nub $ sort allN'
 
-voAllLE_4 :: Opts -> VOMp
-voAllLE_4 opts
+variantOfferAllLE_4 :: Opts -> VariantRefOrderMp
+variantOfferAllLE_4 opts
   = vm
-  where vo = if optsHasNoVerOrder opts then voDefault else optVerOrder opts
-        vs = voAllLE_3 vo (optGenVersion opts)
-        vm = Map.fromList $ zip (sortBy (cmpByVersionOrder vo) vs) [1..]
+  where vo = if optsHasNoVariantRefOrder opts then variantRefOrderDefault else optVariantRefOrder opts
+        vs = variantOfferAllLE_3 vo (optGenReqm opts)
+        vm = Map.fromList $ zip (sortBy (cmpByVariantRefOrder vo) vs) [1..]
 
-voDefault :: VersionOrder
-voDefault = [take 1000 (map VRef [1..])]
+variantRefOrderDefault :: VariantRefOrder
+variantRefOrderDefault = [take 1000 (map variantRefFromTop [1..])]
 
-isAllowedCompilerVersion :: CompilerRestriction -> [Int] -> Bool
-isAllowedCompilerVersion (Restricted mLower mUpper) v
+isAllowedCompilerVariant :: CompilerRestriction -> [Int] -> Bool
+isAllowedCompilerVariant (Restricted mLower mUpper) v
   = mLower `leq` (Just v) && (Just v) `leq` mUpper
   where
     leq Nothing _ = True
@@ -182,21 +137,13 @@ isAllowedCompilerVersion (Restricted mLower mUpper) v
 -- Allowed versions
 -------------------------------------------------------------------------
 
-ATTR AllChunk AllLine AllGroup [ allowedVersions: VOMp | | ]
+ATTR AllChunk AllLine AllGroup [ allowedVariants: VariantRefOrderMp | | ]
 
 SEM AGItf
-  | AGItf       loc         .   allowedVersions
-                                            =   voAllLE_4 @lhs.opts
-                            .   allowedLaTeXVersions
-                                            =   voAllLE_4 (@lhs.opts {optGenVersion=VAll})
-
--------------------------------------------------------------------------
--- Chunk id
--------------------------------------------------------------------------
-
-{
-type ChunkId = (Version,Nm)
-}
+  | AGItf       loc         .   allowedVariants
+                                            =   variantOfferAllLE_4 @lhs.opts
+                            .   allowedLaTeXVariants
+                                            =   variantOfferAllLE_4 (@lhs.opts {optGenReqm=VReqmAll})
 
 -------------------------------------------------------------------------
 -- Sequence nr (for ordering when printing)
@@ -414,17 +361,17 @@ mbCDocCmb c1 c2 = maybe c1 (Just . (maybe CDoc_Emp id c1 `CDoc_Ver`)) c2
 }
 
 ATTR AllLine AllGroup [ | | mbCDoc USE {`mbCDocCmb`} {Nothing}: {Maybe CDoc} ]
-ATTR AllGroup [ | | mbCDocL USE {++} {[]}: {[(Version,Maybe CDoc)]} ]
+ATTR AllGroup [ | | mbCDocL USE {++} {[]}: {[(VariantOffer,Maybe CDoc)]} ]
 
 SEM Line
   | AsIs        loc         .   cdoc        =   if cdIsEmpty @words.cdoc then CDoc_Str "" else @words.cdoc
-  | Named       loc         .   cdoc        =   CDoc_Ref @cref @mbSelect ChHere
+  | Named       loc         .   cdoc        =   CDoc_Ref @cref @mbVariantReqm ChHere
   | AsIs Named  loc         .   mbCDoc      =   Just (CDoc_Pos (CPos (optBaseFPath @lhs.opts) @lhs.lineNr) @cdoc)
-  | Groups      lhs         .   mbCDoc      =   maybe Nothing snd $ initlast $ sortOnVOMp @lhs.allowedVersions @groups.mbCDocL
+  | Groups      lhs         .   mbCDoc      =   maybe Nothing snd $ initlast $ sortOnVariantRefOrderMp @lhs.allowedVariants @groups.mbCDocL
 
 SEM Group
   | Group       loc         .   mbCDocbase  =   fmap (chWrap @chOptions.chWrap) @lines.mbCDoc
-                            .   isAllowed   =   verMember @version @lhs.allowedVersions
+                            .   isAllowed   =   variantOfferIsOffered @variantOffer @lhs.allowedVariants
                 (loc.mbCDoc,loc.gathHideMp) =   case @chOptions.chDest of
                                                   _ | not @isAllowed
                                                          -> (Nothing,Map.empty)
@@ -434,7 +381,7 @@ SEM Group
                                                                          Just (r,Just i ) -> (r,cd i)
                                                                          Just (r,Nothing) -> (r,cd r)
                                                                          _                -> (mkNm (show h) `nmApd` mkNm @lhs.seqNr,CDoc_Emp)
-                lhs         .   mbCDocL     =   if @isAllowed then [(@version,@mbCDoc)] else []
+                lhs         .   mbCDocL     =   if @isAllowed then [(@variantOffer,@mbCDoc)] else []
 
 ATTR AllWord [ | | cdoc USE {.|.} {CDoc_Emp} : CDoc ]
 
@@ -458,21 +405,19 @@ mkCDocEmpty = const Nothing
 }
 
 ATTR AllLine AllGroup [ | | mkCDoc USE {`mkCDocCmb`} {mkCDocEmpty}: {MkCDoc} ]
-ATTR AllGroup [ | | mkCDocL USE {++} {[]}: {[(Version,MkCDoc)]} ]
+ATTR AllGroup [ | | mkCDocL USE {++} {[]}: {[(VariantOffer,MkCDoc)]} ]
 
 SEM Line
   | AsIs Named  lhs         .   mkCDoc      =   const @mbCDoc
-  | Groups      lhs         .   mkCDoc      =   \sel -> let mkCDocSortL = sortOnVOMp' (voAllLE_4 (@lhs.opts {optGenVersion=sel})) @groups.mkCDocL
+  | Groups      lhs         .   mkCDoc      =   \sel -> let mkCDocSortL = sortOnVariantRefOrderMp' (variantOfferAllLE_4 (@lhs.opts {optGenReqm=sel})) @groups.mkCDocL
                                                         in  maybe Nothing (\(_,((_,valid),mk)) -> if valid then mk sel else Nothing)
-                                                            $ initlast
-                                                            -- $ (\v -> trp "ZZ" (show sel >|< ":" >#< ppCommas [ (show vers >#< valid) | ((vers,valid),_) <- v ]) v)
-                                                            $ mkCDocSortL 
+                                                            $ initlast mkCDocSortL 
 
 SEM Group
   | Group       loc         .   mkCDoc      =   \sel -> case @chOptions.chDest of
                                                           ChHere -> fmap (chWrap @chOptions.chWrap) (@lines.mkCDoc sel)
                                                           _      -> Nothing
-                lhs         .   mkCDocL     =   [(@version,@mkCDoc)]
+                lhs         .   mkCDocL     =   [(@variantOffer,@mkCDoc)]
 
 -------------------------------------------------------------------------
 -- Gathering of hidden text
@@ -488,90 +433,97 @@ SEM Group
 -------------------------------------------------------------------------
 
 {
-data VerChunkInfo
-  = VerChunkInfo
-      { vciLineNr   :: Int
-      , vciSeqNr    :: Int
-      , vciVer      :: Version
-      , vciSubNm    :: Nm
-      , vciMinusL   :: [ChunkId]
-      , vciChKind   :: ChKind
-      , vciChDest   :: ChDest
-      , vciMbModNm  :: Maybe String
-      , vciImps     :: [String]
-      , vciExps     :: [String]
-      , vciMbCD     :: Maybe CDoc
-      , vciMkCD     :: MkCDoc
-      , vciXRefL    :: [XRef]
+data VariantChunkInfo
+  = VariantChunkInfo
+      { vciLineNr   		:: Int
+      , vciSeqNr    		:: Int
+      , vciVariantOffer     :: VariantOffer
+      , vciChunkRef         :: ChunkRef
+      , vciMinusL   		:: [ChunkRef]
+      , vciChKind   		:: ChKind
+      , vciChDest   		:: ChDest
+      , vciMbModNm  		:: Maybe String
+      , vciImps     		:: [String]
+      , vciExps     		:: [String]
+      , vciMbCD     		:: Maybe CDoc
+      , vciMkCD     		:: MkCDoc
+      , vciXRefL    		:: [XRef]
       } deriving Show
-type VerChunkInfoM = [(Version,[VerChunkInfo])]
 
-vciMToL :: VerChunkInfoM -> [VerChunkInfo]
+type VariantChunkInfoM = [(VariantOffer,[VariantChunkInfo])]
+
+vciMToL :: VariantChunkInfoM -> [VariantChunkInfo]
 vciMToL = concat . map snd
 
-vciFullNm :: VerChunkInfo -> Nm
-vciFullNm i = mkNm (vciVer i) `nmApd` vciSubNm i
+vciFullNm :: VariantChunkInfo -> Nm
+vciFullNm i = mkNm (vciChunkRef i)
 
-instance Eq VerChunkInfo where
-  i1 == i2 = vciVer i1 == vciVer i2
+instance Eq VariantChunkInfo where
+  i1 == i2 = vciVariantOffer i1 == vciVariantOffer i2
 
-instance Ord VerChunkInfo where
-  compare i1 i2 = vciVer i1 `compare` vciVer i2
+instance Ord VariantChunkInfo where
+  compare i1 i2 = vciVariantOffer i1 `compare` vciVariantOffer i2
 
-vciSortBySeqNr :: [VerChunkInfo] -> [VerChunkInfo]
+vciSortBySeqNr :: [VariantChunkInfo] -> [VariantChunkInfo]
 vciSortBySeqNr = sortBy (\v1 v2 -> vciSeqNr v1 `compare` vciSeqNr v2)
 
-vciVerFilter :: (Version -> Bool) -> [VerChunkInfo] -> [VerChunkInfo]
-vciVerFilter f = filter (f . vciVer)
+vciVariantOfferFilter :: (VariantOffer -> Bool) -> [VariantChunkInfo] -> [VariantChunkInfo]
+vciVariantOfferFilter f = filter (f . vciVariantOffer)
 
-vciVerGroup :: [VerChunkInfo] -> [[VerChunkInfo]]
-vciVerGroup = groupBy (\i1 i2 -> vciVer i1 == vciVer i2)
+vciVariantOfferGroup :: [VariantChunkInfo] -> [[VariantChunkInfo]]
+vciVariantOfferGroup = groupBy (\i1 i2 -> vciVariantOffer i1 == vciVariantOffer i2)
 
-vciHasImpExp :: VerChunkInfo -> Bool
+vciHasImpExp :: VariantChunkInfo -> Bool
 vciHasImpExp i = not (null (vciImps i) && null (vciExps i))
 
-vciIsPre :: VerChunkInfo -> Bool
-vciIsPre = (==VPre) . vciVer
+vciIsPre :: VariantChunkInfo -> Bool
+vciIsPre = (==VOfferPre) . vciVariantOffer
 
-vciIsHS :: VerChunkInfo -> Bool
+vciIsHS :: VariantChunkInfo -> Bool
 vciIsHS = (==ChHS) . vciChKind
 
-vciCD :: VerChunkInfo -> CDoc
+vciCD :: VariantChunkInfo -> CDoc
 vciCD = maybe CDoc_Emp id . vciMbCD
 
-vciHasCD :: VerChunkInfo -> Bool
+vciHasCD :: VariantChunkInfo -> Bool
 vciHasCD = isJust . vciMbCD
 
-vciSplitPre :: [VerChunkInfo] -> ([VerChunkInfo],[VerChunkInfo])
+vciSplitPre :: [VariantChunkInfo] -> ([VariantChunkInfo],[VariantChunkInfo])
 vciSplitPre = partition vciIsPre
 
-vciTakePre :: VerChunkInfoM -> ([VerChunkInfo],VerChunkInfoM)
+vciTakePre :: VariantChunkInfoM -> ([VariantChunkInfo],VariantChunkInfoM)
 vciTakePre is
   = case is of
-        ((VPre,p):r) -> (p,r)
+        ((VOfferPre,p):r) -> (p,r)
         _            -> ([],is)
 
-selectChunks :: Bool -> VOMp -> [VerChunkInfo] -> [(Version,[VerChunkInfo])]
-selectChunks appMinus allowedVersions agl
+selectChunks :: Bool -> VariantReqm -> VariantRefOrderMp -> [VariantChunkInfo] -> [(VariantOffer,[VariantChunkInfo])]
+selectChunks appMinus variantReqm allowedVariants agl
   = let (pre,nonPre)    = vciSplitPre agl
-        availVersions   = nub . sort . map vciVer $ nonPre
-        vAndVciL        = map (\v -> (v,vciSortBySeqNr . vciVerFilter (==v) $ nonPre)) (Map.keys allowedVersions)
+        vAndVciL        = map (\v -> let vreqm = variantReqm {vreqmVariant = variantOfferRef v}
+                                     in  ( v
+                                         , vciSortBySeqNr
+                                           $ vciVariantOfferFilter
+                                               (\offer -> variantReqmMatchOffer allowedVariants vreqm offer)
+                                               nonPre
+                              )          )
+                              [variantOfferFromRef r | r <- Map.keys allowedVariants]
         isNotMinused
           = let minuses = if appMinus then [ m | (_,vciL) <- vAndVciL, ml <- map vciMinusL vciL, m <- ml ] else []
-             in \i -> (vciVer i,vciSubNm i) `notElem` minuses
+             in \i -> vciChunkRef i `notElem` minuses
      in filter
           ( not.null.snd )
-          ( (VPre,pre)
+          ( (VOfferPre,pre)
           : map (\(v,vciL) -> (v,filter isNotMinused vciL)) vAndVciL
           )
 
 data Build
   = Build
-      { bldBase     :: String
-      , bldVer      :: Version
-      , bldCD       :: CDoc
-      , bldHideCD   :: [(Nm,CDoc)]
-      , bldNmChMp   :: NmChMp
+      { bldBase     		:: String
+      , bldVariantReqm      :: VariantReqm
+      , bldCD       		:: CDoc
+      , bldHideCD   		:: [(Nm,CDoc)]
+      , bldNmChMp   		:: NmChMp
       }
 }
 
@@ -611,17 +563,17 @@ SEM Chunk
 -- Gathering chunk info
 -------------------------------------------------------------------------
 
-ATTR AllChunk [ | | verChInfoL USE {++} {[]} : {[VerChunkInfo]} ]
+ATTR AllChunk [ | | verChInfoL USE {++} {[]} : {[VariantChunkInfo]} ]
 
 SEM Chunk
-  | Ver         loc         .   chInfo      =   VerChunkInfo
+  | Ver         loc         .   chInfo      =   VariantChunkInfo
                                                     @chunkLineNr @lhs.seqNr
-                                                    @version @subNm @minusL
+                                                    @variantOffer (chunkRefFromOfferNm @variantOffer @subNm) @minusL
                                                     @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
                                                     (fmap @addBlankLine @lines.mbCDoc)
                                                     @lines.mkCDoc
                                                     (Seq.toList @lines.xrefL)
-                loc         .   isAllowed   =   isAllowedCompilerVersion @compRestrict (optCompiler @lhs.opts)
+                loc         .   isAllowed   =   isAllowedCompilerVariant @compRestrict (optCompiler @lhs.opts)
                 lhs         .   verChInfoL  =   if @isAllowed then [@chInfo] else []
 
 -------------------------------------------------------------------------
@@ -649,18 +601,18 @@ SEM AGItf
   | AGItf       loc         .   chFullNm    =   NmEmp
 
 -------------------------------------------------------------------------
--- Selecting and building
+-- Selecting from VariantReqm and building
 -------------------------------------------------------------------------
 
 SEM AGItf
-  | AGItf       loc         . selChunks = selectChunks True @allowedVersions @chunks.verChInfoL
+  | AGItf       loc         . selChunks = selectChunks True (optGenReqm @lhs.opts) @allowedVariants @chunks.verChInfoL
                             . selLaTeXChunks
-                                        = selectChunks False @allowedLaTeXVersions @chunks.verChInfoL
+                                        = selectChunks False VReqmAll @allowedLaTeXVariants @chunks.verChInfoL
                             . wrapLhs2tex
                                         = \doWr -> if doWr then chWrap (optWrapLhs2tex @lhs.opts) else id
                             . build     = \bld chunks
                                                -> let fileBase = fromJust (optBaseName @lhs.opts)
-                                                      v = optGenVersion @lhs.opts
+                                                      v = optGenReqm @lhs.opts
                                                       d = bld @lhs.opts @wrapLhs2tex fileBase chunks
                                                       m = Map.fromList [ (vciFullNm i,NmChInfo (vciFullNm i) (vciChDest i) (vciMbCD i) (vciMkCD i)) | (_,l) <- chunks, i <- l ]
                                                       h = [ (hiChFullNm h,mkHideNmDef (cd n) (hiDescr h) (cd (hiMbCD h)))
@@ -684,10 +636,10 @@ haddockize d
 -------------------------------------------------------------------------
 
 {
-buildAGImps :: VerChunkInfo -> CDoc
+buildAGImps :: VariantChunkInfo -> CDoc
 buildAGImps = cdVer . map (\imp -> "INCLUDE \"" .|. imp .|. ".ag\"") . vciImps
 
-buildAG :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
+buildAG :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
 buildAG opts wrap fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
@@ -713,10 +665,10 @@ buildAG opts wrap fileBase is
             .-. (cdVer cds)
      in d
 
-buildAGHSModImpExp :: String -> [VerChunkInfo] -> CDoc
+buildAGHSModImpExp :: String -> [VariantChunkInfo] -> CDoc
 buildAGHSModImpExp fileBase is = buildAGHSModuleHead fileBase is .-. "{" .-. buildHSImps is .-. "}"
 
-buildAGHSModuleHead :: String -> [VerChunkInfo] -> CDoc
+buildAGHSModuleHead :: String -> [VariantChunkInfo] -> CDoc
 buildAGHSModuleHead fileBase is
   = let ismie = [ i | i <- is   , isJust (vciMbModNm i) || not (null (vciExps i) && null (vciImps i)) ]
         isie  = [ i | i <- ismie, not (null (vciExps i) && null (vciImps i)) ]
@@ -758,11 +710,11 @@ mkLabel = mkTexCmdUse' "label"
 mkMetaInfo :: CDoc -> String -> CDoc
 mkMetaInfo lab fileBase = mkLabel lab -- .-. mkTexCmdDef "chunkMetaDef" lab (cd fileBase)
 
-buildLaTeX :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
+buildLaTeX :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
 buildLaTeX opts wrap fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
-        versions = nub . map (verRef.vciVer) $ noPre'
+        versions = nub $ map (variantOfferRefTop.vciVariantOffer) $ noPre'
         missing = if null versions then []
                                    else [minimum versions .. maximum versions] \\ versions
         mkInx
@@ -776,7 +728,7 @@ buildLaTeX opts wrap fileBase is
                         then \i -> cdVer (map mkInx (vciXRefL i)) .-. mk i
                         else mk
         ppNoPreL
-          =   map (\is -> let vnm = mkNm (vciVer (head is))
+          =   map (\is -> let vnm = mkNm (vciVariantOffer (head is))
                               nm = mkNm fileBase `nmApd` vnm
                               cnm = cd nm
                               (nms,pps)
@@ -785,7 +737,7 @@ buildLaTeX opts wrap fileBase is
                                                           content = mkContent i
                                                        in ( cn
                                                           , mkCmdNmDef cn (mkMetaInfo cn fileBase .-. content)
-                                                            .-. (let cna = cd (nm `nmApd` vciSubNm i)
+                                                            .-. (let cna = cd (nm `nmApd` chunkRefNm (vciChunkRef i))
                                                                  in  mkCmdNmDef cna (mkMetaInfo cna fileBase .-. mkCmdNmUse cn)
                                                                 )
                                                           )
@@ -795,7 +747,7 @@ buildLaTeX opts wrap fileBase is
                               content = cdVer pps .-. mkCmdNmDef cnm (mkMetaInfo cnm fileBase .-. cdVer (map mkCmdNmUse nms))
                            in (content)
                   )
-            . vciVerGroup
+            . vciVariantOfferGroup
             $ noPre'
         d = (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
             .-. cdVer ppNoPreL
@@ -816,10 +768,10 @@ SEM AGItf
 mkModNm :: [CDoc] -> CDoc
 mkModNm = cdHor
 
-buildHSImps :: [VerChunkInfo] -> CDoc
+buildHSImps :: [VariantChunkInfo] -> CDoc
 buildHSImps = cdVer . map (cdVer . map ("import" .#.) . vciImps)
 
-buildHSModuleHead :: String -> [VerChunkInfo] -> CDoc
+buildHSModuleHead :: String -> [VariantChunkInfo] -> CDoc
 buildHSModuleHead fileBase is
   = let ismie = [ i | i <- is   , isJust (vciMbModNm i) || not (null (vciExps i) && null (vciImps i)) ]
         isie  = [ i | i <- ismie, not (null (vciExps i) && null (vciImps i)) ]
@@ -831,10 +783,10 @@ buildHSModuleHead fileBase is
         modNm = if null m then fileBase else head m
      in "module" .#. modNm .-. {- indent 2 -} (exps .-. "where")
 
-buildHSModImpExp :: String -> [VerChunkInfo] -> CDoc
+buildHSModImpExp :: String -> [VariantChunkInfo] -> CDoc
 buildHSModImpExp fileBase is = buildHSModuleHead fileBase is .-. buildHSImps is
 
-buildHS1 :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
+buildHS1 :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
 buildHS1 opts wrap fileBase is
   = let mk i = case vciChKind i of
                  ChHaddock -> haddockize (vciCD i)
@@ -852,7 +804,7 @@ buildHS1 opts wrap fileBase is
                                    $ is
                             in (cdVer pbs)
                     )
-            . vciVerGroup . vciSortBySeqNr
+            . vciVariantOfferGroup . vciSortBySeqNr
             $ noPre'
         isEmpty = all (isNothing.vciMbCD) noPre'
         ppNoPre = cdVer ppNoPreL
@@ -875,14 +827,14 @@ agLinePragma opts filename n c
   = CDoc_Ver (CDoc_Str ("{- LINE "++show (n+1)++" \"" ++ filename ++ "\" -}")) c
 
 
-buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VerChunkInfoM -> CDoc
+buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
 buildHS opts wrap fileBase is
   = let (pre,noPre) = vciTakePre is
         noPre' = vciMToL noPre
         ppMod = buildHSModImpExp fileBase (vciMToL is)
         ppNoPreL
           =   map (cdVer . (map (\i -> linePragma opts (fileBase++".chs") (vciLineNr i) (wrap (vciHasCD i) (vciCD i)))))
-            . vciVerGroup . vciSortBySeqNr
+            . vciVariantOfferGroup . vciSortBySeqNr
             $ noPre'
         isEmpty = all (isNothing.vciMbCD) noPre'
         ppNoPre = cdVer ppNoPreL

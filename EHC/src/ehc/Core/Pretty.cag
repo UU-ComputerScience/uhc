@@ -7,16 +7,16 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
+%%[(8 codegen) hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
 %%]
 
-%%[9 hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
+%%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
-%%[94 hs import({%{EH}Foreign.Pretty})
+%%[(94 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER
   CodeAGItf CExpr
 %%[[9
@@ -24,7 +24,7 @@ WRAPPER
 %%]]
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 ppCModule :: EHCOpts -> CModule -> PP_Doc
 ppCModule opts cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
@@ -39,7 +39,7 @@ instance PP CExpr where
   pp ce = ppCExpr ce
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 ppCNm :: HsName -> PP_Doc
 ppCNm = cfgppHsName CfgPP_Core
 
@@ -47,12 +47,12 @@ ppMbCNm :: Maybe HsName -> PP_Doc
 ppMbCNm = maybe (ppCNm (HNm "_")) ppCNm
 %%]
 
-%%[9 hs
+%%[(9 codegen) hs
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]
 
-%%[9 hs
+%%[(9 codegen) hs
 ppOptCMeta :: CMeta -> PP_Doc
 ppOptCMeta x
   =  let  t = wrap_CMeta (sem_CMeta x) Inh_CMeta
@@ -63,7 +63,7 @@ ppOptCMeta x
 %%% Debugging only
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(ppCBindL)
+%%[(9 codegen) hs export(ppCBindL)
 ppCBindL :: CBindL -> PP_Doc
 ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMeta m))
 %%]
@@ -72,7 +72,7 @@ ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMeta m))
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 ppDef :: (PP a, PP b) => a -> b -> PP_Doc
 ppDef n v   = n >-< indent 2 v
 
@@ -99,7 +99,7 @@ ppTag t = ppCTag' CfgPP_Core t
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
 ATTR CPatBindL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
@@ -225,7 +225,7 @@ SEM CPatBindL
   | TupSplit    lhs         .   pp          =   (cpatNmEither ((>|< "@") . pp) (const empty) @pnm)
                                                 >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
-%%[8
+%%[(8 codegen)
 ATTR CMeta [ | | optPP : PP_Doc ]
 
 SEM CMeta
@@ -242,7 +242,7 @@ SEM CMeta
 
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid
   | HoleLet     loc         .   pp          =   "let --" >#< ppHole @bindsUid >-< ppDef "in" @body.pp

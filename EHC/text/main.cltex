@@ -464,9 +464,6 @@
 
 %%[1
 
-%if not asSlides
-% 
-%endif
 %if not (storyRuler || storyRulerDoc) || asSlides
 \usepackage[bbgreekl]{mathbbol}
 %endif
@@ -888,7 +885,11 @@ WWW home page:
 %%[28
 \title[The Essential Haskell Compiler]{The Structure of the Essential Haskell Compiler\\Coping with Compiler Complexity}
 \author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra\\~~Utrecht University~~}
+%if dateUFMG
+\date[UFMG, Outubro 10, 2008]{UFMG, Outubro 10, 2008}
+%else
 \date[IFL, September 27--29, 2007]{IFL, September 27--29, 2007}
+%endif
 % \pagenrtrue
 %%]
 

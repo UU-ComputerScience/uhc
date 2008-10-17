@@ -53,4 +53,6 @@ foo1 = let foo x y = single y in foo ids2 id
 ch4 = choose (id :: forall a . a -> a) (id :: Int -> Int)
 ch5 = choose (id) (id :: Int -> Int)
 
+mlf1 = (map poly ids, single inc ++ ids)
+
 main = return ()

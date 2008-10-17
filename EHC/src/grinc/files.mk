@@ -239,12 +239,12 @@ $(INS_GRINC_LIB_ALL_AG): $(INS_GRINC_LIB_AG_PREFIX)%: $(GRINC_BLD_LIB_HS_VARIANT
 # rules for ehc library sources+derived
 $(GRINC_AG_ALL_MAIN_DRV_AG) $(GRINC_AG_ALL_DPDS_DRV_AG): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 $(GRINC_AG_ALL_MAIN_DRV_AG_PRE): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_GRINC_PREFIX)%.cag $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_AG_PRE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_AG_PRE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 $(GRINC_AG_D_MAIN_DRV_HS) $(GRINC_AG_D_MAIN_DRV_HS_PRE): %.hs: %.ag
@@ -255,17 +255,17 @@ $(GRINC_AG_S_MAIN_DRV_HS) $(GRINC_AG_S_MAIN_DRV_HS_PRE): %.hs: %.ag
 
 $(GRINC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE) $(GRINC_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=Main --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 $(GRINC_HS_UTIL_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 $(GRINC_HS_UTILCPP_DRV_HS): $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_GRINC_PREFIX)%.chs $(SHUFFLE)
 	mkdir -p $(@D)
-	$(SHUFFLE_HS_PRE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen=$(EHC_VARIANT) --base=$(*F) --order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
+	$(SHUFFLE_HS_PRE) $(LIB_EHC_SHUFFLE_DEFS) $(LIB_GRINC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
 ### END of library

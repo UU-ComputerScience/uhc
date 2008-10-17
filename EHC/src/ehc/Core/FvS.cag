@@ -7,13 +7,13 @@
 %%% Free variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}Core.FvS} import(qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(8 codegen) hs module {%{EH}Core.FvS} import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cexprFvS)
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cexprFvS)
 %%]
 
-%%[8.WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv})
 WRAPPER CodeAGItf
 %%]
 
@@ -21,7 +21,7 @@ WRAPPER CodeAGItf
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 cexprFvS :: CExpr -> FvS
 cexprFvS e
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf (mkCMod e))) Inh_CodeAGItf
@@ -32,7 +32,7 @@ cexprFvS e
 %%% FvS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR CodeAGItf [ | | fvS: FvS ]
 %%]
 

@@ -2,7 +2,7 @@
 %%% Is main body 'main'?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.mainUseExists
+%%[(8 codegen).mainUseExists
 SEM AGItf
   | AGItf       loc         .   mainUseExists
                                             =   case @expr.letCBody of
@@ -12,7 +12,7 @@ SEM AGItf
                                             =   not @mainUseExists
 %%]
 
-%%[20
+%%[(20 codegen)
 SEM AGItf
   | AGItf       loc         .   insertMainUse
                                             :=  not @mainUseExists && @lhs.isTopMod
@@ -22,7 +22,7 @@ SEM AGItf
 %%% Does a binding for main exist?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.mainDefExists
+%%[(8 codegen).mainDefExists
 SEM AGItf
   | AGItf       loc         .   mainDefExists
                                             =   let ds = [ b | (_,g) <- @expr.letCBindL, b <- g, cbindNm b == hsnMain ]
@@ -31,7 +31,7 @@ SEM AGItf
                                             =   not @mainDefExists
 %%]
 
-%%[20
+%%[(20 codegen)
 SEM AGItf
   | AGItf       loc         .   insertMainDef
                                             :=  not @mainDefExists && @lhs.isTopMod
@@ -41,7 +41,7 @@ SEM AGItf
 %%% Generation of core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR AGItf [ | | cmodule: CModule ]
 
 SEM AGItf
@@ -60,7 +60,7 @@ SEM AGItf
                 loc         .   extraCBindL =   []
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM AGItf
   | AGItf       loc         .   extraCBindL :=  [(CBindRec,@chrScopeMainBindL)]
 %%]
@@ -74,7 +74,7 @@ SEM AGItf
   | CConst      loc         .   cexpr       =   CExpr_Char @char
   | Var         loc         .   cexpr       =   CExpr_Var  @nm
   | Con         loc         .   cexpr       =   CExpr_Var  @nm
-%%[8
+%%[(8 codegen)
 ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
@@ -114,7 +114,7 @@ SEM Expr
                 loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
   | Con         loc         .   cexprBase   :=  CExpr_Var @nm
                             .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
-%%[9
+%%[(9 codegen)
 SEM Expr
   | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
   | App AppImpred
@@ -134,12 +134,12 @@ SEM Expr
   | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyVarMp @lhs.cSubst $ @expr.cexpr
 %%]
 
-%%[10
+%%[(10 codegen)
 SEM Expr
   | DynVar      loc         .   cexpr       =   cundefined @lhs.opts
 %%]
 
-%%[97
+%%[(97 codegen)
 SEM PatExpr
   | Expr        loc         .   cexprBaseEq =   CExpr_Var @eqFldNm
                             .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBaseEq)
@@ -150,7 +150,7 @@ SEM PatExpr
 %%% Row based records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM Expr
   | Rec         loc         .   rcexpr          =   
 %%[[10  
@@ -163,7 +163,7 @@ SEM Expr
                             .   cexpr           =   @rcexpr
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR RecExpr [ | | recCExpr: CExpr ]
 ATTR RecExpr Expr [ | | fuCExprL: {FieldUpdateL CExpr} ]
 
@@ -182,7 +182,7 @@ SEM Expr
   | * - Rec     lhs         .   fuCExprL        =   []
 %%]
 
-%%[88
+%%[(88 codegen)
 ATTR RecExpr [ | | cexpr: CExpr ]
 
 SEM RecExpr
@@ -192,7 +192,7 @@ SEM RecExpr
   | Ext Upd     lhs         .   cexpr           =   if @knRecHasLab then @cexpr else @recExpr.cexpr
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR RecExpr [ | | isExtFromEmpty: Bool ]
 
 SEM RecExpr
@@ -202,12 +202,12 @@ SEM RecExpr
   | Ext         lhs         .   isExtFromEmpty  =   @recExpr.isExtFromEmpty
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM RecExpr
   | Ext Upd     loc         .   offset          =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recExpr.ty)
 %%]
 
-%%[10
+%%[(10 codegen)
 SEM RecExpr
   | Ext Upd     loc         .   offset          :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
@@ -216,7 +216,7 @@ SEM RecExpr
 %%% Data based records, construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM Expr
   | DataFields  loc         .   dfexpr      =   let mkTup dti mkDflt con
                                                       = foldl mkCExprApp1 con
@@ -247,7 +247,7 @@ SEM Expr
                             .   cexpr       =   @dfexpr
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR
   DataFieldExpr
     [ | | dfeCExpr: CExpr
@@ -273,7 +273,7 @@ SEM DataFieldExpr
 %%% Row based records, dissection
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM Expr
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
                             .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
@@ -281,7 +281,7 @@ SEM Expr
 %%]
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyVarMp |=> @expr.ty))
 
-%%[10
+%%[(10 codegen)
 SEM Expr
   | Sel         loc         .   offset          :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
@@ -290,7 +290,7 @@ SEM Expr
 %%% Data constr wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM DataConstr
   | Constr      lhs         .   cbindL      =   let len = length @fields.fldTyL
                                                     nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
@@ -307,7 +307,7 @@ SEM DataConstr
 %%% Data field selector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM Decl
   | Data        loc         .   fldSelCBindL=   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,f,o)],Nothing,CExpr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
@@ -329,7 +329,7 @@ SEM Decl
 %%% Data: all bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 SEM Decl
   | Data        lhs         .   cbindL      =   concat @fldSelCBindL ++ @constrs.cbindL
 %%]
@@ -338,7 +338,7 @@ SEM Decl
 %%% Pat for use in case alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR PatExpr [ | | cpNm: RPatNm ]
 
 SEM PatExpr
@@ -350,7 +350,7 @@ SEM PatExpr
   | App         loc         .   cpNm        =   @arg.cpNm
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM PatExpr
   | AppTop Con  loc         .   tag         =   let  (c,_)  = tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
                                                      dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show (tyConNm c))
@@ -365,12 +365,12 @@ SEM PatExpr
                             .   rest        =   @dataFieldPatExpr.patCRest
 %%]
 
-%%[8 hs
+%%[(8 codegen) hs
 fsL2PatOffsetL :: FieldSplitL -> AssocL RPatBind (Maybe Int)
 fsL2PatOffsetL l = [ (RPatBind_Bind n oe n p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM PatExpr
   | AppTop      loc         .   rpatBinds   =   fsL2PatOffsetL $ reverse                   $ @fsRPatL
   | Rec         loc         .   rpatBinds   =   fsL2PatOffsetL $ tyRowCanonOrderBy compare $ @fsRPatL
@@ -385,7 +385,7 @@ SEM PatExpr
                                                     )
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR PatExpr [ | | rpat: RPat ]
 
 SEM PatExpr
@@ -406,12 +406,12 @@ SEM PatExpr
   | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @patExpr.cbindL
 %%]
 
-%%[97
+%%[(97 codegen)
 SEM PatExpr
   | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm @cexpr
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllPatExpr [ | | patCRest: CPatRest ]
 
 SEM RecPatExpr
@@ -427,7 +427,7 @@ SEM PatExpr
   | * - Var     lhs         .   patCRest    =   CPatRest_Empty
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllPatExpr [ | | fsRPatL: FieldSplitL ]
 
 SEM DataFieldPatExpr
@@ -448,7 +448,7 @@ SEM PatExpr
                 lhs         .   fsRPatL     =   []
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM DataFieldPatExpr
   | Ext         loc         .   ioffset     =   dfiOffset $ panicJust "DataFieldPatExpr.Ext.ioffset" $ Map.lookup @nm $ dtiFldMp @dataFieldPatExpr.dti
                             .   offset      =   CExpr_Int @ioffset
@@ -458,7 +458,7 @@ SEM RecPatExpr
 %%]
   | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
 
-%%[10
+%%[(10 codegen)
 SEM RecPatExpr
   | Ext         loc         .   offset      :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
@@ -467,20 +467,20 @@ SEM RecPatExpr
 %%% Coercions resulting from pred usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 codegen)
 SEM Expr
   | App AppImpred
                 loc         .   appImplsCoeL        =   (mkPoisAppCoe @lhs.opts $ map poPoi @prOccL) ++ [CoeImplApp $ ipoId @imPrvOcc]
                             .   appImplsLRCoe       =   lrcoeLFromList @appImplsCoeL
 %%]
 
-%%[12
+%%[(12 codegen)
 SEM Expr
   | AppImpl     loc         .   appImplsCoeL        =   []
                             .   appImplsLRCoe       =   lrcoeLFromList @appImplsCoeL
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM Expr
   | Lam
 %%[[12
@@ -491,13 +491,13 @@ SEM Expr
                                                             @body.appArgCoeL
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM Expr
   | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe1 @arg.topNm]
   | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
 %%]
 
-%%[12
+%%[(12 codegen)
 SEM Expr
   | LamImpl     loc         .   lamArgCoeL          =   [mkLamCoe1 @arg.topNm `coeCompose` mkLetRecCoe @poiBindL]
 %%]
@@ -506,7 +506,7 @@ SEM Expr
 %%% Gathering coercions/cexpr for app args for optimization by weaving above apptop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 codegen)
 ATTR Expr [ | | appArgCoeL: {[Coe]}  appFunCExpr: CExpr ]
 
 SEM Expr
@@ -534,7 +534,7 @@ SEM Expr
 %%% Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR
   Decls Decl AllDataConstr
     [ | | cbindL
@@ -546,19 +546,19 @@ ATTR
     ]
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM Decl
   | Val         lhs         .   cbindL          =   [mkCBind1 @patExpr.topNm @expr.cexpr] ++ @patExpr.cbindL
   | TySig       lhs         .   cbindL          =   []
   | FFI         lhs         .   ffiCBindL       =   [CBind_FFI @callconv @safety @impEnt @nm @ty_sig_expanded]
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM Decl
   | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindRec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL
 %%]
 
-%%[94
+%%[(94 codegen)
   | FFE         loc         .   nmCoerced       =   mkHNmPrefix "coerced_" @nm
                 lhs         .   cbindL          =   [mkCBind1 @nmCoerced @expr.cexpr]
                             .   ffeCBindL       =   [CBind_FFE @nm @callconv @expEnt @nmCoerced @ty_sig_expanded]
@@ -571,7 +571,7 @@ SEM Decl
 Front/back bindings are inserted before/after the other bindings, though only on top level.
 Meant for global defs like FFI/FFE
 
-%%[8
+%%[(8 codegen)
 ATTR
   Expr
     [ | | letCBindL
@@ -602,12 +602,12 @@ SEM Expr
 %%% Class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 codegen) hs
 cdictOffset :: HsName -> Ty -> Int
 cdictOffset n r = tyRecOffset n $ r
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM Decl
   | Class       lhs         .   cbindL      =   let  x = mkHNm "x"
                                                      vx = CExpr_Var x
@@ -702,7 +702,7 @@ But for the meta-annotation, also the ...MbNewNames lists are needed.
 The other lists are auxiliary.
 
 
-%%[9
+%%[(9 codegen)
 
 
 SEM Decl
@@ -819,7 +819,7 @@ SEM Decl
                 lhs         .   cbindL      =   [mkCBind1Meta @dictNm (CMeta_Dict Nothing) @expr.cexpr]
 %%]
 
-%%[9 hs
+%%[(9 codegen) hs
 
 getBindRightVar :: CBind -> Maybe HsName
 
@@ -835,7 +835,7 @@ to set fields in a dictionary:
 - by updates of a record
 - by matching and rebuilding a datatype 
 
-%%[9
+%%[(9 codegen)
 SEM Decl
   | Instance    loc         .   mkSetFlds   =   let  off n = cdictOffset n @recTy
                                                      mkSetFldsRec ts d0
@@ -870,7 +870,7 @@ SEM Decl
 
 An auxiliary local attribute that generates thee bindings for a DERIVED instance
 
-%%[95
+%%[(95 codegen)
 SEM Decl
   | Instance    loc         .   mkf         =   let   rsltNm   = @dictBuildNm
                                                       rsltVar  = CExpr_Var rsltNm
@@ -933,7 +933,7 @@ SEM Decl
 %%% Case
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 %%]
 ATTR AllCase [ | | mkAlts: MkAlts ]
 
@@ -944,7 +944,7 @@ SEM CaseAlts
   | Nil         lhs         .   mkAlts      =   \n -> []
   | Cons        lhs         .   mkAlts      =   \n -> @hd.mkAlts n ++ @tl.mkAlts n
 
-%%[8
+%%[(8 codegen)
 ATTR CaseAlt [ | | ralt: RAlt  ralt': RAlt ]
 ATTR CaseAlts [ | | raltL: {[RAlt]}  raltL': {[RAlt]} ]
 
@@ -963,7 +963,7 @@ SEM CaseAlts
 %%% Pat for use in (recursive) let bindings (lazy unpacking)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen) hs
 rpatBindL2CBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbCPatRest -> AssocL RPatBind (Maybe Int) -> [CBind]
 rpatBindL2CBindL env hasSub parNm ct rest pbL 
   = concat
@@ -981,7 +981,7 @@ rpatBindL2CBindL env hasSub parNm ct rest pbL
     $  pbL
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllPatExpr [ | | cbindL USE {++} {[]}: CBindL ]
 
 SEM PatExpr
@@ -991,14 +991,14 @@ SEM PatExpr
                 lhs         .   cbindL      =   @cbindL ++ @cbindLSub
 %%]
 
-%%[8
+%%[(8 codegen)
 SEM PatExpr
   | AppTop      loc         .   cbindLSub   =   @patExpr.cbindL
   | Rec         loc         .   cbindLSub   =   @recPatExpr.cbindL
   | DataFields  loc         .   cbindLSub   =   @dataFieldPatExpr.cbindL
 %%]
 
-%%[8
+%%[(8 codegen)
 ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
@@ -1017,7 +1017,7 @@ SEM Expr
   | Lam         arg         .   ceParentNm  =   @arg.topNm
 %%]
 
-%%[12
+%%[(12 codegen)
 SEM Expr
   | LamImpl     arg         .   ceParentNm  =   @arg.topNm
 %%]
@@ -1026,7 +1026,7 @@ SEM Expr
 %%% Can a CExpr fail, that is, has a guard which can fail? Indicated by non-emptyness of caseId's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 ATTR Expr [ | | caseFailS USE {`Set.union`} {Set.empty}: UIDS ]
 
 SEM Expr
