@@ -135,6 +135,19 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Temporary (20081021), reintroduction of previously ruler generated AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(10 noHmTyRuler)
+SEM PatExpr
+  | SConst      loc         .	fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @lhs.knTy (Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))
+                lhs         .  	patFunTy            =   Ty_Any
+                loc         .  	ty                  =   (Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))
+                lhs         .  	tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

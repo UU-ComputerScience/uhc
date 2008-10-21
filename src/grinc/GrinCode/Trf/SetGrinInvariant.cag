@@ -9,19 +9,19 @@ Establish the "Grin Invariant":
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.SetGrinInvariant} import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.SetGrinInvariant} import(qualified Data.Map as Map)
 %%]
 
-%%[8 hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(setGrinInvariant)
+%%[(8 codegen grin) hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(setGrinInvariant)
 
 setGrinInvariant :: GrModule -> GrModule
 setGrinInvariant code
@@ -31,7 +31,7 @@ setGrinInvariant code
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 {
 type Env = Map.Map HsName HsName

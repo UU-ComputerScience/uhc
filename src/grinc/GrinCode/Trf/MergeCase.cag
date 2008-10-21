@@ -1,18 +1,18 @@
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GrinCode.Trf.SubstExpr})
+%%[(8 codegen grin) hs import({%{GRIN}GrinCode.Trf.SubstExpr})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.MergeCase} export(mergeCase)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.MergeCase} export(mergeCase)
 
 mergeCase :: GrModule -> GrModule
 mergeCase grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -21,13 +21,13 @@ mergeCase grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrExpr [ | | mbIsCase : {Maybe GrExpr} mbStartsWithCase : {Maybe (GrExpr,GrPatLam,GrExpr)} ]
 
@@ -65,7 +65,7 @@ SEM GrExpr
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 
 noNormalCases  :: [GrAlt] -> Bool

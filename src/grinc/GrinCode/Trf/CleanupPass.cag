@@ -4,19 +4,19 @@ Clean up the Grin program:
 - generate a global variable for each parameterless function
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CleanupPass} export(cleanupPass)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.CleanupPass} export(cleanupPass)
 %%]
-%%[8 hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
+%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) 
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) 
 %%]
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 cleanupPass :: GrModule -> GrModule
 cleanupPass grmod 
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -24,7 +24,7 @@ cleanupPass grmod
      in grTrf_Syn_GrAGItf t
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- synthesize a modified copy
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]
@@ -36,7 +36,7 @@ ATTR AllNT   [ | | grTrf: SELF ]
 %%%%% translate #F/c   to #C/c
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 -- Pass down the ctagMap to all GrTag positions, because it is needed when generating #C tags.
 -- The map is taken from the module header and slightly tweaked before passing down.
 
@@ -53,7 +53,7 @@ SEM GrTag
                        else @loc.grTrf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 dontDelayConstructors :: Map.Map HsName CTag -> HsName -> GrTag
 dontDelayConstructors ctagMap nm
   = maybe (GrTag_Fun nm)
@@ -70,7 +70,7 @@ must have a corresponding global variable.
 When the global variable is evaluated, the function is called,
 and the variable overwritten with the result, so that it needs never be called again.
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllBind   [ | | newGlobals USE {++} {[]}: GrGlobalL ]
 
 -- create a new global for each parameterless function

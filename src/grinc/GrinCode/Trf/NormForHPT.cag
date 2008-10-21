@@ -27,14 +27,14 @@ Normalisation for the Heap-points-to analysis
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.NormForHPT} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.NormForHPT} import({%{GRIN}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
 normForHPT :: (GrModule,Int) -> (GrModule,Int)
 normForHPT (grmod,unique) = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
                                                  (Inh_GrAGItf { unique_Inh_GrAGItf = unique })
@@ -50,14 +50,14 @@ newGrIdent :: HsName -> (GrVal, GrPatLam)
 newGrIdent n = (GrVal_Var n, GrPatLam_Var n)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | unique: Int | grTrf: GrModule ]
 ATTR AllNT [ | unique: Int | grTrf: SELF ]
 %%]
 
 Change last expression of binding to last of alternative (or of catch body or handler)
 
-%%[8.lastOfAlt
+%%[(8 codegen grin).lastOfAlt
 
 ATTR AllGrExpr [ hasNext: {Bool} | | ]
 
@@ -74,7 +74,7 @@ SEM GrExpr
 
 Keep track if we are inside an alternative
 
-%%[8.inAlt
+%%[(8 codegen grin).inAlt
 ATTR AllGrExpr [ isInAlt: Bool | | ]
 
 SEM GrBind
@@ -86,7 +86,7 @@ SEM GrExpr
 
 keep track if we are inside an catch
 
-%%[8.inAlt
+%%[(8 codegen grin).inAlt
 ATTR AllGrExpr [ isInCatch: Bool | | ]
 
 SEM GrBind
@@ -98,7 +98,7 @@ SEM GrExpr
 
 Is the statement a simple unit
 
-%%[8.simpleUnit
+%%[(8 codegen grin).simpleUnit
 SEM GrExpr
   | Unit      loc  .  simpleUnit  =  case @val.grTrf of
                                         GrVal_Var _ -> True
@@ -108,7 +108,7 @@ SEM GrExpr
 
 Transform the last statement of an alternative which is no simple unit
 
-%%[8.lastUnit
+%%[(8 codegen grin).lastUnit
 SEM GrExpr
   | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && not @lhs.hasNext && not @simpleUnit
                              .  (var, unique)  = newVarIf @doUnitTrans @lhs.unique
@@ -121,7 +121,7 @@ SEM GrExpr
 
 The scrutinizer must be a variable
 
-%%[8.scrutinizer
+%%[(8 codegen grin).scrutinizer
 SEM GrExpr
   | Case  loc  .  doCaseTrans       = case @val.grTrf of
                                           GrVal_Var _ -> False
@@ -137,13 +137,13 @@ SEM GrExpr
 
 Which expressions need a simple pattern after the statement
 
-%%[8.needSimplePattern
+%%[(8 codegen grin).needSimplePattern
 SEM GrExpr [ | |  needsSimplePattern : Bool ]
   | Case Eval App Catch      lhs  .  needsSimplePattern  =  True
   | * - Case Eval App Catch  lhs  .  needsSimplePattern  =  False
 %%]
 
-%%[8.isSimplePattern
+%%[(8 codegen grin).isSimplePattern
 SEM GrPatLam [ | | isSimplePattern: Bool ]
   | Var      loc . isSimplePattern  =  True
   | * - Var  loc . isSimplePattern  =  False
@@ -152,7 +152,7 @@ SEM GrPatLam [ | | isSimplePattern: Bool ]
 All patterns which do not contain a simple pattern after these expressions
 are rewritten into a copy
 
-%%[8.simplePattern
+%%[(8 codegen grin).simplePattern
 SEM GrExpr
   | Seq  loc  .  doPatternTrans    = @expr.needsSimplePattern && not @pat.isSimplePattern
               .  (var, newUnique)  = newVarIf @doPatternTrans @expr.unique
@@ -168,7 +168,7 @@ SEM GrExpr
 A catch statement should not occur at the return spine...
 This is actually something for the code generator, but it is easier to prepare this early
 
-%%[8.catch
+%%[(8 codegen grin).catch
 SEM GrExpr
   | Catch   loc  .  var         =  HNmNr @handler.unique OrigNone
                  .  appendUnit  =  GrExpr_Seq @grTrf (GrPatLam_Var @var) (GrExpr_Unit (GrVal_Var @var))

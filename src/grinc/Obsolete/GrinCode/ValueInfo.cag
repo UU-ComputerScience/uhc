@@ -10,7 +10,7 @@
 A tag can be known, unknown or non existent (unboxed) All this information is
 gathered in attributes for C-- code generation.
 
-%%[8.TagName
+%%[(8 codegen grin).TagName
 ATTR GrTag [ | | tagName: {Maybe CmmName} ]
 SEM GrTag
   | Lit      loc . tagName = Just $ '@' : showGrTagCategLetter @categ ++ cmmName' @nm
@@ -46,7 +46,7 @@ allowed forms of a GrVal and their mappings
 Note that we silent ignore the fact that a value with a single integer also
 succeed, as well as a node within a node. These structures should not occur.
 
-%%[8.GrValReference
+%%[(8 codegen grin).GrValReference
 ATTR GrVal GrValL [ | | cmmReturnArgs USE {++} {[]}: {CmmActuals} cmmExpressions USE {++} {[]}: {CmmExpressions} ]
 SEM GrVal
   | Node       loc . cmmReturnArgs  = addTagArg @tag.isPtr @tag.cmmExpr @fldL.cmmReturnArgs
@@ -65,7 +65,7 @@ SEM GrVal
                    . cmmExpressions = [ @cmmExpr ]
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 addTagArg :: Bool -> Maybe CmmExpression -> CmmActuals -> CmmActuals
 addTagArg isPtr me as = maybe as addActual me
 	where

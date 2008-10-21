@@ -7,17 +7,17 @@
 %%% Haskell importable interface to forceEval on GrinByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs module {%{GRIN}GrinByteCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{GRIN}GrinByteCode})
+%%[(99 codegen grin) hs module {%{GRIN}GrinByteCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{GRIN}GrinByteCode})
 %%]
 
-%%[99 hs import(EH.Util.Pretty)
+%%[(99 codegen grin) hs import(EH.Util.Pretty)
 %%]
 
-%%[99.WRAPPER ag import({GrinByteCode/AbsSyn})
+%%[(99 codegen grin).WRAPPER ag import({GrinByteCode/AbsSyn})
 WRAPPER Module
 %%]
 
-%%[99 hs
+%%[(99 codegen grin) hs
 grmodForceEval :: Module -> Module
 grmodForceEval grmod | trf_Syn_Module t `seq` True
   = grmod
@@ -26,7 +26,7 @@ grmodForceEval grmod | trf_Syn_Module t `seq` True
 
 %%]
 
-%%[99 hs
+%%[(99 codegen grin) hs
 instance ForceEval Module where
   forceEval x | trf_Syn_Module t `seq` True
               = x
@@ -34,14 +34,14 @@ instance ForceEval Module where
                         $ Inh_Module
 %%]
 
-%%[99 hs
+%%[(99 codegen grin) hs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% ForceEval over structore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 codegen grin)
 ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM Module

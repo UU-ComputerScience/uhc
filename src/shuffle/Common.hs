@@ -25,7 +25,7 @@ module Common
   , VariantRefOrder
   , ChunkRef(..)
   , chunkRefFromOfferNm
-  , variantOfferIsOffered, variantReqmMatchOffer
+  , variantReqmMatchOffer
   , VariantRefOrderMp, sortOnVariantRefOrderMp, sortOnVariantRefOrderMp'
   , KVMap
   , CompilerRestriction(..)
@@ -232,14 +232,22 @@ variantRefFromTop i = VarRef [i]
 
 type AspectRef  = String
 data AspectRefs
-  = AspectRefs !(Set.Set AspectRef)
-  | AspectAll
+  = AspectAll
+  | AspectRefs !(Set.Set AspectRef)
   deriving (Show,Eq,Ord)
 
 aspectRefsMatch :: AspectRefs -> AspectRefs -> Bool
 aspectRefsMatch AspectAll       _               = True
 aspectRefsMatch _               AspectAll       = True
-aspectRefsMatch (AspectRefs r1) (AspectRefs r2) = not (Set.null (Set.intersection r1 r2))
+aspectRefsMatch (AspectRefs r1) (AspectRefs r2) = Set.isSubsetOf r1 r2 -- not (Set.null (Set.intersection r1 r2))
+
+-------------------------------------------------------------------------
+-- Variant offering, ordering
+-------------------------------------------------------------------------
+
+data VariantOfferForCompare
+  = VariantOfferForCompare !Int !AspectRefs
+  deriving (Eq,Ord)
 
 -------------------------------------------------------------------------
 -- Variant offering, available version
@@ -248,8 +256,22 @@ aspectRefsMatch (AspectRefs r1) (AspectRefs r2) = not (Set.null (Set.intersectio
 data VariantOffer
   = VOfferAll
   | VOfferPre
-  | VOfferRef 	!VariantRef !AspectRefs
+  | VOfferRef 	{vofferVariant :: !VariantRef, vofferAspect :: !AspectRefs}
   deriving (Show,Eq,Ord)
+
+{-
+instance Ord VariantOffer where
+  VOfferAll         `compare` VOfferAll          = EQ
+  VOfferAll         `compare` _                  = LT
+  VOfferPre         `compare` VOfferPre          = EQ
+  VOfferPre         `compare` _                  = LT
+  _                 `compare` VOfferAll          = GT
+  _                 `compare` VOfferPre          = GT
+  (VOfferRef r1 a1) `compare` (VOfferRef r2 a2)  = case r1 `compare` r2 of
+                    								 EQ -> case (a1,a2) of
+                    								         (AspectAll,AspectAll) -> EQ
+                    								         (_        ,AspectAll) ->
+-}
 
 type VariantRefOrder   = [[VariantRef]]
 type VariantRefOrderMp = Map.Map VariantRef Int
@@ -265,18 +287,39 @@ variantOfferRef :: VariantOffer -> VariantRef
 variantOfferRef  VOfferPre      = VarRef [0]
 variantOfferRef (VOfferRef r _) = r
 
+variantOfferAsp :: VariantOffer -> AspectRefs
+variantOfferAsp  VOfferPre      = AspectAll
+variantOfferAsp (VOfferRef _ a) = a
+
 variantOfferRefTop :: VariantOffer -> Int
 variantOfferRefTop (VOfferRef (VarRef (i:_)) _) = i
 
+{-
 variantOfferIsOffered :: VariantOffer -> VariantRefOrderMp -> Bool
 variantOfferIsOffered VOfferAll _ = True
 variantOfferIsOffered v         s = Map.member (variantOfferRef v) s
+-}
 
 sortOnVariantRefOrderMp' :: VariantRefOrderMp -> [(VariantOffer,x)] -> [((VariantOffer,Bool),x)]
-sortOnVariantRefOrderMp' m l = map snd $ sortOn fst $ [ (maybe 0 id o,((v,isJust o || v == VOfferAll),x)) | (v,x) <- l, let o = Map.lookup (variantOfferRef v) m ]
+sortOnVariantRefOrderMp' m l
+  = map snd
+  $ sortOn fst
+  $ [ ( VariantOfferForCompare (maybe 0 id o) (variantOfferAsp v)
+      , ((v,isJust o || v == VOfferAll),x)
+      )
+    | (v,x) <- l, let o = Map.lookup (variantOfferRef v) m
+    ]
 
 sortOnVariantRefOrderMp :: VariantRefOrderMp -> [(VariantOffer,x)] -> [x]
-sortOnVariantRefOrderMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 (variantOfferRef v) m,x))
+-- sortOnVariantRefOrderMp m = map snd . sortOn fst . map (\(v,x) -> (Map.findWithDefault 0 (variantOfferRef v) m,x))
+sortOnVariantRefOrderMp m vo
+  = map snd
+  $ sortOn fst
+  $ [ ( VariantOfferForCompare o (variantOfferAsp v)
+      , x
+      )
+    | (v,x) <- vo, let o = Map.findWithDefault 0 (variantOfferRef v) m
+    ]
 
 instance NM VariantOffer where
   mkNm VOfferPre         = mkNm "pre"
@@ -305,11 +348,12 @@ mbVariantReqmRef _              = Nothing
 variantReqmRef :: VariantReqm -> VariantRef
 variantReqmRef = maybe (error "variantReqmRef") id . mbVariantReqmRef
 
-variantReqmMatchOffer :: VariantRefOrderMp -> VariantReqm -> VariantOffer -> Bool
-variantReqmMatchOffer _ VReqmAll         _                 = True
-variantReqmMatchOffer _ VReqmNone        _                 = False
-variantReqmMatchOffer _ _                VOfferAll         = True
-variantReqmMatchOffer m (VReqmRef rr ra) (VOfferRef or oa) = rr == or && aspectRefsMatch ra oa
+variantReqmMatchOffer :: Maybe VariantRefOrderMp -> VariantReqm -> VariantOffer -> Bool
+variantReqmMatchOffer _        VReqmAll         _                 = True
+variantReqmMatchOffer _        VReqmNone        _                 = False
+variantReqmMatchOffer _        _                VOfferAll         = True
+variantReqmMatchOffer Nothing  (VReqmRef rr ra) (VOfferRef or oa) = rr == or && aspectRefsMatch oa ra
+variantReqmMatchOffer (Just m) (VReqmRef rr ra) (VOfferRef or oa) = Map.member or m && aspectRefsMatch oa ra
 
 instance NM VariantReqm where
   mkNm VReqmAll          = mkNm "*"

@@ -4,22 +4,22 @@
 
 Free variables + plus additional info.
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.FreeVars}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.FreeVars}
 %%]
 
-%%[8 hs import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/Trf/CommonIntroName}, {GrinCode/Trf/CommonFreeVar})
+%%[(8 codegen grin) import({GrinCode/Trf/CommonIntroName}, {GrinCode/Trf/CommonFreeVar})
 %%]
 
-%%[8 hs export(grFreeVars)
+%%[(8 codegen grin) hs export(grFreeVars)
 grFreeVars :: GrExpr -> FvInfoMp
 grFreeVars e
   = gathFviMp_Syn_GrExpr t
@@ -31,7 +31,7 @@ grFreeVars e
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrExpr
 %%]
 
@@ -39,6 +39,6 @@ WRAPPER GrExpr
 %%% Transformation required for CommonFreeVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrTag [ | | trf: SELF ]
 %%]

@@ -340,6 +340,22 @@ SEM Decl
                                                                     =   mkNewLevUID5    @lhs.gUniq
                     (ctxtPrExprs.gUniq,loc.lUniq6,loc.lUniq7)
                                                                     =   mkNewLevUID2    @gUniq2
+
+-- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(10 noHmTyRuler)
+SEM Expr
+  | IConst CConst SConst
+%%[[97
+    IIConst
+%%]]
+                	(lhs.gUniq,loc.uniq1)               			=   mkNewLevUID 	@lhs.gUniq
+%%]
+
+%%[(10 noHmTyRuler)
+SEM PatExpr
+  | SConst          (lhs.gUniq,loc.uniq1)                           =   mkNewLevUID     @lhs.gUniq
+%%]
+
 %%[10
 SEM Expr
   | Sel             (expr.gUniq,loc.lUniq,loc.lUniq2)               :=  mkNewLevUID2    @lhs.gUniq

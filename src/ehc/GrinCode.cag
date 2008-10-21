@@ -7,40 +7,40 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty)
+%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty)
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
 %%]
 
-%%[8 hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
+%%[(8 codegen grin) hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
 %%]
 
-%%[8 hs export(GrAGItf(..), GrModule(..))
+%%[(8 codegen grin) hs export(GrAGItf(..), GrModule(..))
 %%]
 
-%%[8 hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
+%%[(8 codegen grin) hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
 %%]
 
-%%[10 hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
+%%[(10 codegen grin) hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
 %%]
 
-%%[10 hs export(GrNodeAdapt(..), grRecTag)
+%%[(10 codegen grin) hs export(GrNodeAdapt(..), grRecTag)
 %%]
 
-%%[8 hs export(mkGrBox,mkGrRecNode,mkGrConNode)
+%%[(8 codegen grin) hs export(mkGrBox,mkGrRecNode,mkGrConNode)
 %%]
 
-%%[8 hs export(mkGrPatRecNode,mkGrPatConNode,mkGrUnbox,mkGrUnboxFFI)
+%%[(8 codegen grin) hs export(mkGrPatRecNode,mkGrPatConNode,mkGrUnbox,mkGrUnboxFFI)
 %%]
 
-%%[10 hs export(mkGrPatRecSplit,mkGrPatConSplit)
+%%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
-%%[8 ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag    : Show, Eq
 DERIVING GrTag        : Show
 %%]
@@ -49,7 +49,7 @@ DERIVING GrTag        : Show
 %%% Special names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(grBuiltinTyNmL)
+%%[(8 codegen grin) hs export(grBuiltinTyNmL)
 grBuiltinTyNmL :: EHCOpts -> [HsName]
 grBuiltinTyNmL opts = builtinKnownBoxedTyNmL opts ++ builtinKnownRecTyNmL
 %%]
@@ -60,7 +60,7 @@ grBuiltinTyNmL opts = builtinKnownBoxedTyNmL opts ++ builtinKnownRecTyNmL
 
 Tag annotation
 
-%%[8 hs export(GrTagAnn(..),mkGrTagAnn,emptyGrTagAnn)
+%%[(8 codegen grin) hs export(GrTagAnn(..),mkGrTagAnn,emptyGrTagAnn)
 data GrTagAnn
   = GrTagAnn
       { gtannArity 		:: !Int
@@ -101,7 +101,7 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[8 hs export(GrBindAnn(..))
+%%[(8 codegen grin) hs export(GrBindAnn(..))
 
 -- Annotation for Grin Bindings
 --   Normal:  normal binding
@@ -134,7 +134,7 @@ data GrBindAnn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[8 hs export(GrAltAnn(..))
+%%[(8 codegen grin) hs export(GrAltAnn(..))
 
 -- Annotation for Grin Alternatives
 --   Normal:  this alternative has classic semantics
@@ -155,7 +155,7 @@ data GrAltAnn
 %%% Free var info used for (e.g.) inlining for GrinByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(FvInfo(..),FvUse(..),FvInfoMp)
+%%[(8 codegen grin) hs export(FvInfo(..),FvUse(..),FvInfoMp)
 data FvUse
   = FvUse_Call | FvUse_Val | FvUse_Other
   deriving (Eq,Ord,Show)
@@ -170,7 +170,7 @@ data FvInfo
 type FvInfoMp = Map.Map HsName FvInfo
 %%]
 
-%%[8 hs export(fviMpUnion,fviMpSingleton,fviMpSingleton',fviMpUnions,fviMpFromList,fviMpFromList',fviMpDifference)
+%%[(8 codegen grin) hs export(fviMpUnion,fviMpSingleton,fviMpSingleton',fviMpUnions,fviMpFromList,fviMpFromList',fviMpDifference)
 fviMpDifference :: FvInfoMp -> FvInfoMp -> FvInfoMp
 fviMpDifference = Map.difference
 
@@ -197,7 +197,7 @@ fviMpFromList = fviMpFromList' FvUse_Other
 %%% Name alias info used for alias removal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
+%%[(8 codegen grin) hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
 data NmAlias
  = NmAlias_Nm       !HsName                                                 -- name to name
  | NmAlias_Eval     !HsName                                                 -- name to evaluated name
@@ -215,7 +215,7 @@ mkNmAliasMp = Map.fromList . assocLMapElt NmAlias_Nm
 
 Assume only mappings to NmAlias_Nm, others are not replaced.
 
-%%[8 hs export(nmAliasRepl,nmAliasRepl')
+%%[(8 codegen grin) hs export(nmAliasRepl,nmAliasRepl')
 nmAliasRepl' :: NmAliasMp -> HsName -> NmAlias
 nmAliasRepl' m n
   = case Map.lookup n m of
@@ -235,7 +235,7 @@ nmAliasRepl m n
 %%% Inline optimisation map
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(GrInl(..),GrInlMp)
+%%[(8 codegen grin) hs export(GrInl(..),GrInlMp)
 data GrInl
   = GrInl_Call
       { inlArgNmL   :: ![HsName]
@@ -252,7 +252,7 @@ type GrInlMp = Map.Map HsName GrInl
 %%% Row/record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[10 hs
+%%[(10 codegen grin) hs
 data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
 
 grRecTag :: GrTag
@@ -263,7 +263,7 @@ grRecTag = GrTag_Rec
 %%% Node construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 -- partial parametrizations of the GrVal_Node etc.
 
 mkGrConNode :: GrTagAnn -> Int -> HsName -> GrValL -> GrVal
@@ -295,7 +295,7 @@ mkGrUnboxFFI   n = let tag = GrTag_Unboxed
 
 %%]
 
-%%[10 hs
+%%[(10 codegen grin) hs
 mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPatAlt
 mkGrPatConSplit ann i nm = GrPatAlt_NodeSplit (GrTag_Con ann i nm)
 

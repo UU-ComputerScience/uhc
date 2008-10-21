@@ -2,7 +2,7 @@
 %%% Free var map
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllNTNoMod [ | | gathFviMp USE {`fviMpUnion`} {Map.empty}: FvInfoMp ]
 
 SEM GrTag

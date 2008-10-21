@@ -6,7 +6,7 @@
 %%% Is name evaluated later on? Then (e.g.) building of closures can be avoided.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrExpr [ | | willEvalNmS: {Set.Set HsName} ]
 
 SEM GrExpr
@@ -20,7 +20,7 @@ SEM GrExpr
                 lhs         .   willEvalNmS     =   Set.empty
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrExpr GrVal [ willEval: Bool | | ]
 
 SEM GrAlt
@@ -36,7 +36,7 @@ SEM GrBind
   | Bind        expr        .   willEval        =   False
 
 
-%%[10
+%%[(10 codegen grin)
 SEM GrAdapt
   | *           loc         .   willEval        =   False
 

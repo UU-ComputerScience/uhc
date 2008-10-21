@@ -54,10 +54,6 @@ SEM Binding
         lhs         .   ppSq        =   hiNV "export" hsnUnknown [pp (show @visible),ppForHI @exports]
     | Ids
         lhs         .   ppSq        =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppForHI o,ppForHI d]) @idOccs)
-    | Arities
-        lhs         .   ppSq        =   hiNV "arity" hsnUnknown (map (\(n,a) -> ppCurlysSemisBlock [ppForHI n,pp a]) @idArities)
-    | GrInlines
-        lhs         .   ppSq        =   hiNV "grInline" hsnUnknown (map (\(n,(a,g)) -> ppCurlysSemisBlock [ppForHI n,ppCurlysSemisBlock $ map (ppForHI) a,ppCurly (ppForHI g)]) @inlMp)
     | Val
         lhs         .   ppSq        =   hiNV "value" @nm [ppForHI @ty]
     | DataCon
@@ -80,6 +76,14 @@ SEM Binding
         lhs         .   ppSq        =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ruleTy,ppForHI @nmEvid]
     | CHRStore
         lhs         .   ppSq        =   hiNV' "chrstore" hsnUnknown $ ppCurlysSemisBlock $ map ppForHI @chrs
+%%[[(20 codegen)
+    | Arities
+        lhs         .   ppSq        =   hiNV "arity" hsnUnknown (map (\(n,a) -> ppCurlysSemisBlock [ppForHI n,pp a]) @idArities)
+%%]]
+%%[[(20 codegen grin)
+    | GrInlines
+        lhs         .   ppSq        =   hiNV "grInline" hsnUnknown (map (\(n,(a,g)) -> ppCurlysSemisBlock [ppForHI n,ppCurlysSemisBlock $ map (ppForHI) a,ppCurly (ppForHI g)]) @inlMp)
+%%]]
 %%]
     | Instance
         lhs         .   ppSq        =   hiNV "instance" @nm @rules.ppL

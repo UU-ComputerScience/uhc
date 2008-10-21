@@ -7,16 +7,16 @@
 %%% Haskell importable interface to forceEval on GrinCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs module {%{EH}GrinCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}GrinCode})
+%%[(99 codegen grin) hs module {%{EH}GrinCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}GrinCode})
 %%]
 
-%%[99.WRAPPER ag import({GrinCode/AbsSyn})
+%%[(99 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrModule GrExpr GrTag
 
 PRAGMA strictcase
 %%]
 
-%%[99 hs
+%%[(99 codegen grin) hs
 grmodForceEval :: GrModule -> GrModule
 grmodForceEval grmod | trf_Syn_GrModule t `seq` True = grmod
   where t = wrap_GrModule (sem_GrModule grmod)
@@ -24,7 +24,7 @@ grmodForceEval grmod | trf_Syn_GrModule t `seq` True = grmod
 
 %%]
 
-%%[99 hs
+%%[(99 codegen grin) hs
 instance ForceEval GrModule where
   forceEval x | trf_Syn_GrModule t `seq` True = x
               where t = wrap_GrModule (sem_GrModule x)
@@ -41,7 +41,7 @@ instance ForceEval GrTag where
                         $ Inh_GrTag
 %%]
 
-%%[99 hs
+%%[(99 codegen grin) hs
 instance ForceEval GrInl where
   forceEval i@(GrInl_Call a e) | forceEval a `seq` forceEval e `seq` True = i
   forceEval i@(GrInl_CAF    e) | forceEval e `seq` True = i
@@ -52,7 +52,7 @@ instance ForceEval GrInl where
 %%% ForceEval over structore
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 codegen grin)
 ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM GrModule

@@ -21,7 +21,8 @@
 %%[1
 data Version
   = Version
-      { verSvn              :: !String
+      { verSvnRevision      :: !String
+      , verSvn              :: !String
       , verMajor            :: !String
       , verMinor            :: !String
       , verMinorMinor       :: !String
@@ -38,7 +39,8 @@ data Version
 version :: Version
 version
   = Version
-      { verSvn              = "$Id$"
+      { verSvnRevision      = "$Revision$"
+      , verSvn              = "$Id: Config.chs.in 1059 2008-03-31 14:29:49Z Jeroen_Fokker $"
       , verMajor            = "@EH_VERSION_MAJOR@"
       , verMinor            = "@EH_VERSION_MINOR@"
       , verMinorMinor       = "@EH_VERSION_MINORMINOR@"
@@ -59,7 +61,7 @@ verDist :: Version -> String
 verDist v = verNumeric v ++ verQuality v
 
 verInfo :: Version -> String
-verInfo v = verProg v ++ verDist v ++ ", " ++ verSvn v
+verInfo v = verProg v ++ verDist v ++ ", " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

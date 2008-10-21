@@ -7,21 +7,21 @@
 %%% Haskell importable interface to Code's GRIN gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
+%%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
 WRAPPER CodeAGItf
 %%]
-%%[(8 codegen) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen) hs import(EH.Util.Utils, EH.Util.Pretty)
+%%[(8 codegen grin) hs import(EH.Util.Utils, EH.Util.Pretty)
 %%]
-%%[(8 codegen) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam}, {%{EH}GrinCode}, qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam}, {%{EH}GrinCode}, qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
-%%[(8 codegen) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(96 codegen) hs import({%{EH}BuiltinPrims})
+%%[(96 codegen grin) hs import({%{EH}BuiltinPrims})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,7 +34,7 @@ none, directly exports wrap_CodeAGItf,sem_CodeAGItf
 %%% Global info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
@@ -42,7 +42,7 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%% DataGam required for FFI possible tags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%]
 
@@ -50,7 +50,7 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllCodeNT - CMeta [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
@@ -74,7 +74,7 @@ SEM CPat
 %%% Level, Let's also one level higher
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 SEM CExpr
   | Let         binds       .   lev         =   @lhs.lev + 1
 %%]
@@ -83,7 +83,7 @@ SEM CExpr
 %%% Context: strict yes/no, rhs of lam yes/no
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
 
 SEM CModule
@@ -105,7 +105,7 @@ SEM CExpr
 %%% Known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR
   CModule CExpr
 %%[[20
@@ -118,7 +118,7 @@ SEM CExpr
   | * - Let     lhs         .   gathArityMp =   Map.empty
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR
   AllCodeNT
 %%[[20
@@ -127,12 +127,12 @@ ATTR
     [ arityMp: CArityMp | | ]
 %%]
 
-%%[(8 codegen).CodeAGItf.arityMp
+%%[(8 codegen grin).CodeAGItf.arityMp
 SEM CodeAGItf
   | AGItf       module      .   arityMp     =   @module.gathArityMp
 %%]
 
-%%[(20 codegen) -8.CodeAGItf.arityMp
+%%[(20 codegen grin) -8.CodeAGItf.arityMp
 SEM CodeAGItf
   | AGItf       module      .   arityMp     =   @module.gathArityMp `Map.union` @lhs.arityMp
 %%]
@@ -141,7 +141,7 @@ SEM CodeAGItf
 %%% Known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CBind
@@ -159,7 +159,7 @@ SEM CBind
 %%% Variables which are passed as parameter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CExpr
@@ -183,7 +183,7 @@ SEM CExpr
 %%% Grin code, top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
@@ -214,7 +214,7 @@ SEM CModule
 %%% Grin code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 grE2V :: GrExpr -> Maybe GrVal
 grE2V e = case e of {GrExpr_Unit v -> Just v; _ -> Nothing}
 
@@ -236,7 +236,7 @@ retStrict :: Bool -> GrVal -> GrExpr
 retStrict isStrict = if isStrict then (\v->GrExpr_Unit v) else GrExpr_Store
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 mkNdPApp :: HsName -> Int -> GrValL -> GrVal
 mkNdPApp f nMiss argL = GrVal_Node (GrTag_PApp nMiss f) argL
 
@@ -247,7 +247,7 @@ mkSq :: GrExpr -> HsName -> GrExpr -> GrExpr
 mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 simplArgL :: UID -> CArityMp -> GrValL -> (GrValL,GrExpr->GrExpr)
 simplArgL uniq arityMp vL
   =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
@@ -273,7 +273,7 @@ saturateAltL uniq dflt altL
        _   -> altL
 %%]
 
-%%[(10 codegen) hs
+%%[(10 codegen grin) hs
 unboxArg :: UID -> HsName -> GrVal -> (GrVal,GrExpr->GrExpr)
 unboxArg uniq tyNm v
   =  case v of
@@ -294,7 +294,7 @@ unboxArgL uniq tyNm vL
 %%]
 
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 
 mkHole    (GrBind_Bind nm _ _ _)    rest  = GrExpr_Seq (GrExpr_Store (GrVal_Node GrTag_Hole [])) 
                                                        (GrPatLam_Var nm)
@@ -318,7 +318,7 @@ mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
 %%]
 
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr   [ | | grExpr: GrExpr ]
 ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
 
@@ -392,7 +392,7 @@ SEM CExpr
                 loc         .   grExpr      =   GrExpr_Unit @grVal
 %%]
 
-%%[(10 codegen) hs
+%%[(10 codegen grin) hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
 mkGrAdapt :: UID -> CArityMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
@@ -406,7 +406,7 @@ mkGrAdapt u arityMp isStrict tupFldL tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr   [ | | grVal: GrVal ]
 
 SEM CExpr
@@ -419,7 +419,7 @@ SEM CExpr
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
-%%[(97 codegen)
+%%[(97 codegen grin)
 SEM CExpr
   | Integer     loc         .   grVal       :=  (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt $ fromInteger $ @integer)
 %%]
@@ -428,7 +428,7 @@ SEM CExpr
 %%% Do boxing?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr [ doBox: Bool | | ]
 
 SEM CExpr
@@ -455,7 +455,7 @@ SEM CAlt
 %%% Normal bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CBind CBindL  [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CBind
@@ -473,7 +473,7 @@ SEM CBind
 %%% FFI binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Maybe BasicAnnot
 tyNmIsUnboxedForFFIRes opts
   = \n -> Map.lookup n m
@@ -485,7 +485,7 @@ tyNmMayLiveAsTaggedPtr opts n
   where ns = builtinMayLiveUnboxedTyNmL
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 SEM CBind
   | FFI         loc         .   mbAnnot     =   tyNmIsUnboxedForFFIRes @lhs.opts
                             .   isEnumable  =   \n -> case dataGamLookup n @lhs.dataGam of
@@ -560,7 +560,7 @@ SEM CBind
                                                      ]
 %%]
 
-%%[(94 codegen)
+%%[(94 codegen grin)
 SEM CBind
   | FFE         lhs         .   grBindL     = 	[]	-- not implemented yet
 %%]
@@ -569,12 +569,12 @@ SEM CBind
 %%% Case, pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 idGrWrapCaseSel :: GrVal -> (GrVal,GrExpr->GrExpr)
 idGrWrapCaseSel s = (s,id)
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CAlt    [ | | grAlt: GrAlt ]
 ATTR CAltL   [ | | grAltL: GrAltL ]
 
@@ -586,7 +586,7 @@ SEM CAltL
   | Nil         lhs         .   grAltL      =   []
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CPat    [ | | patNm: HsName ]
 
 SEM CPat
@@ -598,7 +598,7 @@ SEM CPat
 %%]
   | Undef       loc         .   patNm       =   hsnUnknown
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CPat    [ | | grPat: GrPatAlt ]
 -- ATTR CPatL   [ | | grPatL: GrPatL ]    -- obsolete? (JF)
 
@@ -619,27 +619,27 @@ SEM CPat
 
 %%]
 
-%%[(97 codegen)
+%%[(97 codegen grin)
 SEM CPat
   | BoolExpr    lhs         .   grPat       =   GrPatAlt_Otherwise -- transformed into explicit if-then-else
                                                                    -- TODO: this is unfinished work, matching on literals does not work yet
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllPatBind [ | | patNmL USE {++} {[]}: {[HsName]} ]
 
 SEM CPatBind
   | Bind        lhs         .   patNmL      =   [@pat.patNm]
 %%]
 
-%%[(10 codegen)
+%%[(10 codegen grin)
 ATTR AllPatBind [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
 
 SEM CPatBind
   | Bind        lhs         .   grTupFldL   =   [(@offset.grVal,\o -> GrSplit_Sel @pat.patNm o)]
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR AllPat AllAlt [ | | grWrapCase USE {`const`} {id}: {GrExpr -> GrExpr} ]
 ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -> (GrVal,GrExpr->GrExpr)} ]
 
@@ -649,7 +649,7 @@ SEM CPat
                                                 in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox hsnInt n))
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CPatRest [ | | self: SELF ]
 %%]
 
@@ -657,10 +657,10 @@ ATTR CPatRest [ | | self: SELF ]
 %%% Record fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen grin) hs
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr [ | | grTupRec: GrVal]
 
 %%[[10
@@ -687,7 +687,7 @@ SEM CExpr
 %%% Let body
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr [ | | grLetBody: GrExpr ]
 
 SEM CExpr
@@ -699,7 +699,7 @@ SEM CExpr
 %%% Lam arg/body info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
 ATTR CExpr [ | | lamArgDicts: {[Int]} ]
 
@@ -716,7 +716,7 @@ SEM CExpr
 %%% App func/args info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CExpr [ | | grAppFun: HsName  grAppArgL: GrValL ]
 
 SEM CExpr
@@ -733,7 +733,7 @@ SEM CExpr
 
 
 
-%%[(8 codegen)
+%%[(8 codegen grin)
 ATTR CMeta [ lamArgDicts: {[Int]} | | ]
 ATTR CMeta [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
 

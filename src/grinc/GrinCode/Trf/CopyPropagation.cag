@@ -4,19 +4,19 @@
  Left transformation is not possible if v is a single variable and p is a node
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CopyPropagation} export(copyPropagation)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.CopyPropagation} export(copyPropagation)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 copyPropagation :: GrModule -> (GrModule, Bool)
 copyPropagation grmod 
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -24,7 +24,7 @@ copyPropagation grmod
      in (grTrf_Syn_GrAGItf t, changed_Syn_GrAGItf t)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 ATTR GrPatLam
@@ -63,7 +63,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Right Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%%
-%%[8.rightUnit hs
+%%[(8 codegen grin).rightUnit hs
 
 testRight :: GrPatLam -> Maybe GrVal -> Bool
 testRight pat mbVal
@@ -102,7 +102,7 @@ equalVars _                   _              =  False
 %%% Left Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%
 
-%%[8.leftUnit hs
+%%[(8 codegen grin).leftUnit hs
 testLeft :: GrPatLam -> Maybe GrVal -> Maybe SubstTrafoPair
 testLeft pat mbVal
   =  do { val <- mbVal
@@ -149,7 +149,7 @@ unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, 
 %%% Value Information %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.valueInfo
+%%[(8 codegen grin).valueInfo
 ATTR GrExpr [ | | mbUnitValue : {Maybe GrVal} ]
 
 SEM GrExpr
@@ -160,7 +160,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Apply substitutions
 %%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8 hs
+%%[(8 codegen grin) hs
 type Substitution = Map.Map HsName GrVal
 type SubstTrafo = Substitution -> Substitution
 type SubstTrafoPair = (SubstTrafo, SubstTrafo)
@@ -180,7 +180,7 @@ mbSubstTag nm subst
                       _           -> Nothing
 
 %%]
-%%[8.applySubstitutions
+%%[(8 codegen grin).applySubstitutions
 
 ATTR AllExpr [ subst: Substitution | | ]
 ATTR GrExpr  [ | | patsubst : Substitution ]

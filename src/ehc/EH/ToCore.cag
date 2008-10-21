@@ -114,6 +114,28 @@ SEM Expr
                 loc         .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
   | Con         loc         .   cexprBase   :=  CExpr_Var @nm
                             .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+
+-- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(10 codegen noHmTyRuler)
+SEM Expr
+  | IConst      loc         .   cexprBase   =   CExpr_Int @int
+  | CConst      loc         .   cexprBase   =   CExpr_Char @char
+  | SConst      loc         .   cexprBase   =   cstring @lhs.opts @str
+%%[[97
+  | IIConst     loc         .   cexprBase   =   cinteger @lhs.opts @integer
+%%]]
+  | Var Con     loc         .   cexprBase   =   CExpr_Var @nm
+%%]
+
+%%[(10 codegen noHmTyRuler)
+SEM Expr
+  | IConst CConst SConst Var Con
+%%[[97
+    IIConst
+%%]]
+            	loc  		.  	cexpr    	=  	foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+%%]
+
 %%[(9 codegen)
 SEM Expr
   | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]

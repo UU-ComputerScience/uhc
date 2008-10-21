@@ -6,14 +6,14 @@ return spine.
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.ReturningCatch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(returnCatch)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.ReturningCatch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(returnCatch)
 
 returnCatch :: (GrModule,Int,HptMap) -> (GrModule,Int,HptMap)
 returnCatch (input,unique,hptMap)
@@ -23,12 +23,12 @@ returnCatch (input,unique,hptMap)
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ hptMap: HptMap | uniq: Int | grTrf: GrModule ]
 ATTR AllNT [ hptMap: HptMap | uniq: Int | grTrf: SELF ]
 %%]
 
-%%[8.catch import({GrinCode/LastExpr})
+%%[(8 codegen grin).catch import({GrinCode/LastExpr})
 
 ATTR AllGrExpr [ size: {Int} | | ]
 SEM GrBind

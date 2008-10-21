@@ -13,7 +13,13 @@
 %%[20 import(qualified {%{EH}Pred} as Pr, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty}, {%{EH}HI})
 %%]
 
-%%[20 import({%{EH}HS.Parser}(pFixity),{%{EH}Core.Parser}(pCExpr),{%{EH}GrinCode.Parser}(pExprSeq),{%{EH}Ty.Parser})
+%%[20 import({%{EH}HS.Parser}(pFixity),{%{EH}Ty.Parser})
+%%]
+
+%%[(20 codegen) import({%{EH}Core.Parser}(pCExpr))
+%%]
+
+%%[(20 codegen grin) import({%{EH}GrinCode.Parser}(pExprSeq))
 %%]
 
 %%[20 import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.CommonCHR})
@@ -122,8 +128,6 @@ pBinding
                                              <* pOCURLY
                                              <*> pListSep pSEMI ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pTy <* pCCURLY)
                                              <* pCCURLY
-  <|> Binding_Arities   <$  pNmIs "arity"    <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
-  <|> Binding_GrInlines <$  pNmIs "grInline" <*> pCurlySemiBlock ((\n a g -> (n,(a,g))) <$ pOCURLY <*> pDollNm <* pSEMI <*> pCurlySemiBlock pDollNm <* pSEMI <*> pCurlys pExprSeq <* pCCURLY)
   <|> Binding_Val       <$> pNmIs "value"    <* pOCURLY <*> pTy <* pCCURLY
   <|> Binding_Stamp     <$  pNmIs "stamp"    <* pOCURLY <*> pString <* pSEMI <*> pString
                                              <* pSEMI   <*> pString <* pSEMI <*> pString
@@ -153,5 +157,11 @@ pBinding
                                                            <* pSEMI   <*> pCurlySemiBlock pConstraint
                                                            <* pCCURLY
                                                       )
+%%[[(20 codegen)
+  <|> Binding_Arities   <$  pNmIs "arity"    <*> pCurlySemiBlock ((,) <$ pOCURLY <*> pDollNm <* pSEMI <*> pInt <* pCCURLY)
+%%]]
+%%[[(20 codegen grin)
+  <|> Binding_GrInlines <$  pNmIs "grInline" <*> pCurlySemiBlock ((\n a g -> (n,(a,g))) <$ pOCURLY <*> pDollNm <* pSEMI <*> pCurlySemiBlock pDollNm <* pSEMI <*> pCurlys pExprSeq <* pCCURLY)
+%%]]
 %%]
 

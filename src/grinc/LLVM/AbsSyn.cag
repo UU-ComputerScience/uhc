@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[8.LLVMModule
+%%[(8 codegen grin).LLVMModule
 {- 
   Modules consist of 
     * comments:  Just plain comments added to the LLVM IR.
@@ -23,7 +23,7 @@ DATA LLVMModule
 
 %%]
 
-%%[8.LLVMFunc
+%%[(8 codegen grin).LLVMFunc
 {- 
   Functions have
     * funcDecl: The signature of this declared function.
@@ -38,7 +38,7 @@ DATA LLVMFunction
 TYPE LLVMFunctions  = [LLVMFunction]
 %%]
 
-%%[8.LLVMFuncDecl
+%%[(8 codegen grin).LLVMFuncDecl
 {-
   A function declaration has the following elements
     * name:       Unique identifier for the function.
@@ -55,7 +55,7 @@ DATA LLVMFunctionDecl
 TYPE LLVMFunctionDecls = [LLVMFunctionDecl]
 %%]
 
-%%[8.LLVMStmt
+%%[(8 codegen grin).LLVMStmt
 DATA LLVMStatement
   {-
     Assignment
@@ -145,7 +145,7 @@ DATA LLVMStatement
 TYPE LLVMStatements = [LLVMStatement]
 %%]
 
-%%[8.LLVMExpression
+%%[(8 codegen grin).LLVMExpression
 DATA LLVMExpression
   {- 
     Alloca

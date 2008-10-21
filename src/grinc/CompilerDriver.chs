@@ -1,105 +1,105 @@
-%%[1 module {%{GRIN}CompilerDriver} export(doCompileGrin)
+%%[(1 codegen grin) module {%{GRIN}CompilerDriver} export(doCompileGrin)
 %%]
 
-%%[8 import(System.IO, System.CPUTime, Numeric)
+%%[(8 codegen grin) import(System.IO, System.CPUTime, Numeric)
 %%]
-%%[8 import(Control.Monad.Error, Control.Monad.State, Control.Exception)
+%%[(8 codegen grin) import(Control.Monad.Error, Control.Monad.State, Control.Exception)
 %%]
-%%[8 import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen grin) import(Data.Maybe, Data.Array.IArray, qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[8 import(Debug.Trace)
+%%[(8 codegen grin) import(Debug.Trace)
 %%]
-%%[8 import(UU.Parsing)
+%%[(8 codegen grin) import(UU.Parsing)
 %%]
-%%[8 import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
+%%[(8 codegen grin) import(EH.Util.Pretty, EH.Util.CompileRun, EH.Util.FPath)
 %%]
-%%[8 import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
+%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Scanner.Scanner}, {%{EH}Scanner.Common(grinScanOpts)})
 %%]
-%%[8 import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
+%%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
-%%[8 import({%{GRIN}GRINCCommon})
+%%[(8 codegen grin) import({%{GRIN}GRINCCommon})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CleanupPass(cleanupPass)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.GlobalConstants(globalConstants)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.GlobalConstants(globalConstants)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.Inline(grInline)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.Inline(grInline)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
 %%]
-%%[9 import({%{GRIN}GrinCode.Trf.MergeInstance(mergeInstance)})
+%%[(9 codegen grin) import({%{GRIN}GrinCode.Trf.MergeInstance(mergeInstance)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.EvalStored(evalStored)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.EvalStored(evalStored)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.NumberIdents(numberIdents)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.NumberIdents(numberIdents)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[8 import({%{GRIN}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.InlineEA(inlineEA)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.InlineEA(inlineEA)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.DropDeadBindings(dropDeadBindings)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.DropDeadBindings(dropDeadBindings)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.EmptyAlts(emptyAlts)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.EmptyAlts(emptyAlts)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.LateInline(lateInline)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.LateInline(lateInline)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.ImpossibleCase(impossibleCase)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.ImpossibleCase(impossibleCase)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SingleCase(singleCase)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.SingleCase(singleCase)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.MergeCase(mergeCase)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.MergeCase(mergeCase)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.LowerGrin(lowerGrin)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.LowerGrin(lowerGrin)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.CopyPropagation(copyPropagation)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.CopyPropagation(copyPropagation)})
 %%]
-%%[8 import({%{GRIN}GrinCode.Trf.SplitFetch(splitFetch)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.SplitFetch(splitFetch)})
 %%]
-%%[8 import({%{GRIN}GrinCode.ToSilly(grin2silly)})
+%%[(8 codegen grin) import({%{GRIN}GrinCode.ToSilly(grin2silly)})
 %%]
-%%[8 import({%{GRIN}Silly(SilModule)})
+%%[(8 codegen grin) import({%{GRIN}Silly(SilModule)})
 %%]
-%%[8 import({%{GRIN}Silly.Shortcut(shortcut)})
+%%[(8 codegen grin) import({%{GRIN}Silly.Shortcut(shortcut)})
 %%]
-%%[8 import({%{GRIN}Silly.GroupAllocs(groupAllocs)})
+%%[(8 codegen grin) import({%{GRIN}Silly.GroupAllocs(groupAllocs)})
 %%]
-%%[8 import({%{GRIN}Silly.EmbedVars(embedVars)})
+%%[(8 codegen grin) import({%{GRIN}Silly.EmbedVars(embedVars)})
 %%]
-%%[8 import({%{GRIN}Silly.Pretty(pretty)})
+%%[(8 codegen grin) import({%{GRIN}Silly.Pretty(pretty)})
 %%]
-%%[8 import({%{GRIN}Silly.PrettyC(prettyC)})
+%%[(8 codegen grin) import({%{GRIN}Silly.PrettyC(prettyC)})
 %%]
-%%[8 import({%{GRIN}Silly.PrettyS(prettyS)})
+%%[(8 codegen grin) import({%{GRIN}Silly.PrettyS(prettyS)})
 %%]
-%%[8 import({%{GRIN}Silly.ToLLVM(silly2llvm)})
+%%[(8 codegen grin) import({%{GRIN}Silly.ToLLVM(silly2llvm)})
 %%]
-%%[8 import({%{GRIN}LLVM(LLVMModule)})
+%%[(8 codegen grin) import({%{GRIN}LLVM(LLVMModule)})
 %%]
-%%[8 import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
+%%[(8 codegen grin) import({%{GRIN}LLVM.Pretty(prettyLLVMModule)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver entry point
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.doCompileGrin
+%%[(1 codegen grin).doCompileGrin
 doCompileGrin :: IO ()
 doCompileGrin
   =  putStrLn "grinc: not available for this version (of ehc). Code generation is added in version 8."
 %%]
 
 
-%%[8 -1.doCompileGrin
+%%[(8 codegen grin) -1.doCompileGrin
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
   = drive (initialState opts input) putErrs $
@@ -181,7 +181,7 @@ putErrs (CompileError e) = putStrLn e >> return ()
 %%% Low level compiler actions: input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 parseGrin :: FPath -> IO GrModule
 parseGrin path
   = do{ (fn,fh) <- openFPath path ReadMode
@@ -203,7 +203,7 @@ caParseGrin
 %%% Low level compiler actions: processing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 
 caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
@@ -236,7 +236,7 @@ caSilly2LLVM = do
 %%% Low level compiler actions: output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 caWriteFile :: String -> String -> (EHCOpts -> a -> PP_Doc) -> a -> CompileAction()
 caWriteFile extra suffix ppFun struct =
   do { input <- gets gcsPath
@@ -295,7 +295,7 @@ caWriteHptMap fn
 %%% Compilerdriver utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.State
+%%[(8 codegen grin).State
 data GRINCompileState = GRINCompileState
     { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
@@ -391,7 +391,7 @@ transformSilly process message
 %%]
 
 
-%%[8.Errors
+%%[(8 codegen grin).Errors
 newtype CompileError = CompileError String
     deriving (Show)
 
@@ -404,7 +404,7 @@ instance Error CompileError where
 %%% Compilerdriver abstractions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.CompilerDriver
+%%[(8 codegen grin).CompilerDriver
 type CompileAction a = ErrorT CompileError (StateT GRINCompileState IO) a
 
 drive :: GRINCompileState -> (CompileError -> IO a) -> CompileAction a -> IO a
@@ -418,7 +418,7 @@ drive initState errorHandler action = do
 
 %%]
 
-%%[8.errorHandling
+%%[(8 codegen grin).errorHandling
 ignoreErrors :: (Monad m) => a -> b -> m a
 -- ignoreErrors = const . return -- does not typecheck in HM (but does in ML-F)
 ignoreErrors v e = return v
@@ -436,7 +436,7 @@ force :: a -> CompileAction a
 force = liftIO . evaluate
 %%]
 
-%%[8
+%%[(8 codegen grin)
 putMsg :: Verbosity -> String -> (Maybe String) -> CompileAction ()
 putMsg minVerbosity msg mbMsg =  harden_ $ do
     currentVerbosity <- gets (ehcOptVerbosity . gcsOpts)

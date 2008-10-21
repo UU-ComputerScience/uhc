@@ -2,16 +2,16 @@
 %%% Unbox Int and Char
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
 %%]
-%%[8 hs module {%{GRIN}GrinCode.Trf.Unbox2}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.Unbox2}
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 hs export(unbox2)
+%%[(8 codegen grin) hs export(unbox2)
 unbox2 :: (GrModule,HptMap) -> GrModule
 unbox2 (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
@@ -24,7 +24,7 @@ unbox2 (input,hptMap)
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
@@ -32,7 +32,7 @@ WRAPPER GrAGItf
 %%% Transformation: replace #C/Int and #C/Char by #U
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT [ | | trf: SELF ]
 
@@ -40,7 +40,7 @@ ATTR GrAGItf AllNT [ hptMap: {HptMap} | | ]
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 
 typeCanbeUnboxed :: HsName -> Bool
@@ -70,7 +70,7 @@ valCanbeUnboxed hptMap val           = error ("Unbox2: valCanbeUnboxed unexpecte
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 
 SEM GrVarL [ | | headCanbeUnboxed : {Bool} ]
   | Nil lhs. headCanbeUnboxed = False

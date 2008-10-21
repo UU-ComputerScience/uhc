@@ -3,14 +3,14 @@
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 import({GrinCode/LastExpr})
+%%[(8 codegen grin) import({GrinCode/LastExpr})
 %%]
 
 
-%%[8 hs module {%{GRIN}GrinCode.GenLlc} import(EH.Util.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config}) export(grin2llc)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.GenLlc} import(EH.Util.Pretty, {%{GRIN}GRINCCommon}, Data.List(nub), Data.Maybe, {%{EH}GrinCode}, {%{GRIN}Primitives}, {%{GRIN}Config}) export(grin2llc)
 
 grin2llc :: HsName -> GrModule -> Bool -> PP_Doc
 grin2llc e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
@@ -21,26 +21,26 @@ grin2llc e gr emitTraceInfo = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf g
                               in llcDoc_Syn_GrAGItf t
 %%]
 
-%%[8 hs import({%{EH}Base.Common} hiding "((<+>))") 
+%%[(8 codegen grin) hs import({%{EH}Base.Common} hiding "((<+>))") 
 %%]
-%%[8 hs import(qualified Data.Map as Map, Data.Bits)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Bits)
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 
+%%[(8 codegen grin) 
 {- import({GrinCode/LastExpr},{GrinCode/TagInfo},{GrinCode/ValueInfo},{GrinCode/ReturnSize}) -}
 %%]
 
-%%[8 
+%%[(8 codegen grin) 
 {- import({GrinCode/Primitives},{GrinCode/ImportExport},{GrinCode/Globals})  -}
 %%]
 
-%%[8 
+%%[(8 codegen grin) 
 {- import({GrinCode/ExceptionHandlers},{GrinCode/TraceInfo}) -}
 %%]
 
-%%[8 import({GrinCode/ToLlc}) 
+%%[(8 codegen grin) import({GrinCode/ToLlc}) 
 %%]

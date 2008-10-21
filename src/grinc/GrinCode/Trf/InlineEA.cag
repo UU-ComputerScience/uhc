@@ -21,24 +21,24 @@ Eliminate Grin "App" and "Eval" expressions by inlining equivalent code, based o
      }
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.InlineEA} export(inlineEA)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.InlineEA} export(inlineEA)
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
-%%[8 hs import(Data.List, Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map )
+%%[(8 codegen grin) hs import(Data.List, Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map )
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..))})
+%%[(8 codegen grin) hs import({%{GRIN}GRINCCommon(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..))})
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 inlineEA :: Bool -> (GrModule,HptMap) -> (GrModule,HptMap)
 inlineEA doUsageAnalysis (code,hptMap)
   = let inh = Inh_GrAGItf { hptMap_Inh_GrAGItf=hptMap
@@ -52,7 +52,7 @@ inlineEA doUsageAnalysis (code,hptMap)
 %%]
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 type HptItems       = [ (Int,AbstractValue) ]
 
@@ -106,7 +106,7 @@ newNames unique hptMap avs
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllNT     [ | | grTrf: SELF     ]
 ATTR GrAGItf   [ | | grTrf: GrModule ]
@@ -144,7 +144,7 @@ SEM GrExpr
 %%% Eval code generation %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 
 buildEvalAlt
@@ -241,7 +241,7 @@ evalCode unique hptMap locatName locatNeedsUpdate
 %%% Apply code generation %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 buildApplyAlt
  :: 
@@ -306,14 +306,14 @@ applyCode unique hptMap nodeName nodeAbsVal appArgs
 %%]
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 mapUnionWithPlus = Map.unionWith (+)
 mapUnionWithCat  = Map.unionWith (++)
 %%]
 
 
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllBind
      AllGrExpr     [ needsUpdate : {Map.Map Int Bool} 

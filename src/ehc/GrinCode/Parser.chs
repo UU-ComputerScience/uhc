@@ -7,17 +7,17 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
+%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
 %%]
 
-%%[8 export(pModule,pExprSeq)
+%%[(8 codegen grin) export(pModule,pExprSeq)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 type GRIParser       gp     =    PlainParser Token gp
 
 pModule         ::   GRIParser GrModule
@@ -189,7 +189,7 @@ pInt            =    (negate <$ pKey "-" `opt` id) <*> (read <$> pInteger)
 %%]
 
 
-%%[10
+%%[(10 codegen grin)
 pSplit          ::   GRIParser GrSplit
 pSplit          =    GrSplit_Sel <$> pGrNm <* pKey "=" <*> pVal
 

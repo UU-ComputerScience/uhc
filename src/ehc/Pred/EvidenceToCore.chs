@@ -2,28 +2,28 @@
 %%% Translation of Evidence (of Pred) to Core fragments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}Pred.EvidenceToCore} import({%{EH}Pred.Evidence},{%{EH}Pred.CommonCHR})
+%%[(9 codegen) module {%{EH}Pred.EvidenceToCore} import({%{EH}Pred.Evidence},{%{EH}Pred.CommonCHR})
 %%]
 
-%%[9 import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
+%%[(9 codegen) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[9 import({%{EH}Base.Common},{%{EH}Ty})
+%%[(9 codegen) import({%{EH}Base.Common},{%{EH}Ty})
 %%]
 
-%%[9 import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Subst})
+%%[(9 codegen) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
-%%[9 import(EH.Util.Pretty)
+%%[(9 codegen) import(EH.Util.Pretty)
 %%]
 
-%%[9 import(EH.Util.Utils)
+%%[(9 codegen) import(EH.Util.Utils)
 %%]
 
-%%[9 import(Control.Monad.State)
+%%[(9 codegen) import(Control.Monad.State)
 %%]
 
-%%[9 import({%{EH}Base.Debug} as Debug)
+%%[(9 codegen) import({%{EH}Base.Debug} as Debug)
 %%]
 
 
@@ -38,7 +38,7 @@ The translation to core yields:
   Each binding uses the assumed predicate (and the others in scope), and can safely be introduced when all assumed predicates are in scope.
 - a set of bindings which do not depend on assumptions.
 
-%%[9 export(EvidKeyToCBindMap,PredScopeToCBindMap)
+%%[(9 codegen) export(EvidKeyToCBindMap,PredScopeToCBindMap)
 type EvidKeyToCExprMap = Map.Map UID (CExpr,Set.Set (UID,PredScope),PredScope)
 type EvidKeyToCBindMap = Map.Map UID [CBind]
 type PredScopeToCBindMap = Map.Map PredScope [CBind]
@@ -58,7 +58,7 @@ data ToCoreRes
       }
 %%]
 
-%%[9
+%%[(9 codegen)
 instance Show ToCoreRes where
   show _ = "ToCoreRes"
 
@@ -66,7 +66,7 @@ instance PP ToCoreRes where
   pp r = "TCR" >#< tcrCExpr r
 %%]
 
-%%[9 export(AmbigEvid(..))
+%%[(9 codegen) export(AmbigEvid(..))
 data AmbigEvid
   = AmbigEvid
       { ambigevidPredOcc 	:: !CHRPredOcc
@@ -74,7 +74,7 @@ data AmbigEvid
       }
 %%]
 
-%%[9 export(evidKeyToCBindMapUnion,predScopeToCBindMapUnion)
+%%[(9 codegen) export(evidKeyToCBindMapUnion,predScopeToCBindMapUnion)
 evidKeyToCBindMapUnion :: EvidKeyToCBindMap -> EvidKeyToCBindMap -> EvidKeyToCBindMap
 evidKeyToCBindMapUnion = Map.unionWith (++)
 
@@ -82,7 +82,7 @@ predScopeToCBindMapUnion :: PredScopeToCBindMap -> PredScopeToCBindMap -> PredSc
 predScopeToCBindMapUnion = Map.unionWith (++)
 %%]
 
-%%[9 export(evidMpToCore,EvidKeyToCExprMap)
+%%[(9 codegen) export(evidMpToCore,EvidKeyToCExprMap)
 evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToCExprMap,[AmbigEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrCExpr r,tcrUsed r,tcrScope r)) $ tcsMp
@@ -161,7 +161,7 @@ evidMpToCore env evidMp
                           Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrCExpr r >#< tcrCExpr (vr r)) $ (        mkk r                  st,vr r)
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
-%%[9 export(evidKeyCoreMpToBinds)
+%%[(9 codegen) export(evidKeyCoreMpToBinds)
 
 
 getMetaDictMbPos :: CExpr -> Maybe Int
@@ -196,7 +196,7 @@ evidKeyCoreMpToBinds m
         dbg m = id -- Debug.tr m (pp m)
 %%]
 
-%%[9 export(evidKeyBindMpToCSubst)
+%%[(9 codegen) export(evidKeyBindMpToCSubst)
 evidKeyBindMpToCSubst :: EvidKeyToCBindMap -> CSubst
 evidKeyBindMpToCSubst
   = uidCBindLLToCSubst . Map.toList

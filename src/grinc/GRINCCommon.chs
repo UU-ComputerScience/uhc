@@ -2,22 +2,22 @@
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
-%%[8 module {%{GRIN}GRINCCommon}
+%%[(8 codegen grin) module {%{GRIN}GRINCCommon}
 %%]
-%%[8 import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
+%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
 %%]
-%%[8 import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
+%%[(8 codegen grin) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
 %%]
-%%[8 import( {%{EH}GrinCode} )
+%%[(8 codegen grin) import( {%{EH}GrinCode} )
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg)
+%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
@@ -46,10 +46,10 @@ mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Location, Variable, AbstractValue(..), AbstractCall, AbstractCallList)
+%%[(8 codegen grin) export(Location, Variable, AbstractValue(..), AbstractCall, AbstractCallList)
 %%]
 
-%%[8.AbstractValue
+%%[(8 codegen grin).AbstractValue
 
 type Location = Int
 type Variable = Int
@@ -152,7 +152,7 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation, Limitations, limitIntersect)
+%%[(8 codegen grin) export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation, Limitations, limitIntersect)
 
 data Equation
   = IsKnown               Variable  AbstractValue
@@ -182,7 +182,7 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap  = ( Array Int AbstractValue   -- env
                , Array Int AbstractValue   -- heap

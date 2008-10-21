@@ -11,7 +11,7 @@
 %%% GRIN structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 DATA GrAGItf
   | AGItf       module          : GrModule
 
@@ -149,7 +149,7 @@ DATA GrTag
 TYPE GrTagL     =   [GrTag]
 %%]
 
-%%[10
+%%[(10 codegen grin)
 DATA GrSplit
   | Sel         nm              : {HsName}
                 off             : GrVal
@@ -166,7 +166,7 @@ TYPE GrAdaptL   =   [GrAdapt]
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SET AllGlobal   =   GrGlobal GrGlobalL
 SET AllBind     =   GrBind GrBindL
 SET AllDef      =   AllGlobal AllBind

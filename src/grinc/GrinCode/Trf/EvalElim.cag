@@ -6,31 +6,31 @@
 %%% Eliminate unnecessary evaluations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.EvalElim}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.EvalElim}
 %%]
 
-%%[8 hs import(qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
 -- for debugging:
-%%[8 hs import(EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
-%%[8 hs import(Debug.Trace)
-%%]
-
-%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonFreeVar},{GrinCode/Trf/CommonWillEval})
+%%[(8 codegen grin) hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
-%%[8 hs export(grEvalElim)
+%%[(8 codegen grin) import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonFreeVar},{GrinCode/Trf/CommonWillEval})
+%%]
+
+%%[(8 codegen grin) hs export(grEvalElim)
 grEvalElim :: GrModule -> GrModule
 grEvalElim grmod
   = trf_Syn_GrAGItf t
@@ -42,7 +42,7 @@ grEvalElim grmod
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
@@ -50,7 +50,7 @@ WRAPPER GrAGItf
 %%% Is name evaluated already evaluated? Then eval can be avoided.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 data IsEval
   = IsEval_EvalToNode
   | IsEval_EvalToPointer
@@ -67,7 +67,7 @@ type IsEvalMp = Map.Map HsName IsEval
 %%]
 
 For debugging
-%%[8 hs
+%%[(8 codegen grin) hs
 instance Show IsEval where
   show IsEval_EvalToNode = "IsEval_EvalToNode"
   show IsEval_EvalToPointer = "IsEval_EvalToPointer"
@@ -75,7 +75,7 @@ instance Show IsEval where
   show (IsEval_Apply f _) = "IsEval_Apply " ++ show f
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllExpr [ isEvalMp: IsEvalMp | | ]
 
 SEM GrExpr
@@ -95,7 +95,7 @@ SEM GrAlt
   | Alt         expr        .   isEvalMp        =   @lhs.isEvalMp `Map.difference` Map.fromList (zip @pat.introNmL @pat.introNmL)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrExpr GrVal [ | | isEval: IsEval ]
 
 SEM GrExpr
@@ -120,7 +120,7 @@ SEM GrVal
 %%% Free vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrExpr [ fviMp: FvInfoMp | | ]
 
 SEM GrExpr
@@ -137,7 +137,7 @@ SEM GrBind
 %%% Will eval redefinition to introduce fake dependency 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 SEM GrBind
   | Bind        expr        .   willEval        =   False
                 expr        .   gathFviMp       <   expr.willEval
@@ -147,12 +147,12 @@ SEM GrBind
 %%% Transformation: 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT [ | | trf: SELF ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrVal [ | | mbGrExpr: {Maybe GrExpr} ]
 
 SEM GrVal
@@ -176,7 +176,7 @@ SEM GrVal
   | * - Node    lhs         .   mbGrExpr        =   Nothing
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM GrExpr
   | Store Unit  lhs         .   trf             =   maybe @trf id @val.mbGrExpr
   | Eval        lhs         .   trf             =   let a = Map.lookup @nm @lhs.isEvalMp

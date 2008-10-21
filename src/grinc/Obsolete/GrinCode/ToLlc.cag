@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 -- Change the options according to your taste
 
 SEM GrAGItf
@@ -42,7 +42,7 @@ SEM GrModule
 
 
 
-%%[8
+%%[(8 codegen grin)
 
 {
 data Var = VarHs  HsName
@@ -70,7 +70,7 @@ showPt x = show x
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Attribute declarations: almost everything has a PP-representation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf GrModule  [ entryNm: {HsName} | |  ]
 
 ATTR GrAGItf GrModule GrBindL GrBind GrExpr GrAltL GrAlt GrVal GrTag GrPat GrGlobal GrGlobalL [ | | llcDoc USE {>-<} {empty} : {PP_Doc} ]
@@ -96,7 +96,7 @@ ATTR GrBindL GrBind [ | | fwdDoc USE {>-<} {empty} : {PP_Doc} ]
 %%% Find out whether a tailcall optimized call has been done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrExpr GrAlt GrAltL [ | | tailJumps USE {&&} {True} : {Bool} ]
 
@@ -111,7 +111,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 SEM GrValL
   | Nil lhs.llcDocs = []
@@ -315,7 +315,7 @@ showGrTag (GrTag_Any    ) = "GrTag:Any"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determining the target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllGrExpr [ targets : {[HsName]} | | ]
 ATTR GrPat GrTag [ | |  patternNames: {[HsName]} ]
@@ -342,7 +342,7 @@ SEM GrTag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  EHC specific constructions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 {
 moduleHeader :: HsName -> HsName -> PP_Doc
 moduleHeader baseNm entryNm
@@ -499,7 +499,7 @@ allocate (tag:_) n1 n2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary PrettyPrint functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 {
 ppUnless :: Bool -> PP_Doc -> PP_Doc
 ppUnless b p = if b then empty else p
@@ -526,7 +526,7 @@ commaSeparated = concat . intersperse ", "
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building a C program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 {
 
 macrodefinition :: PP_Doc -> PP_Doc -> PP_Doc

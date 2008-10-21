@@ -2,16 +2,16 @@ If the body of a function contains a case-expression with zero alternatives
 we know that the function can never be called.
 Replace the body of the function with an Empty expression in that situation.
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8
+%%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.EmptyAlts} export(emptyAlts)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.EmptyAlts} export(emptyAlts)
 emptyAlts :: GrModule -> GrModule
 emptyAlts grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                        (Inh_GrAGItf)
@@ -19,12 +19,12 @@ emptyAlts grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- An expression is valid if it doesn't contain Case expressions with empty or all-invalid list of alternatives
 
 ATTR GrExpr

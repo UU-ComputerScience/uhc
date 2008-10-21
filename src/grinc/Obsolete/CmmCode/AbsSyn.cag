@@ -14,7 +14,7 @@
 
 
 
-%%[8
+%%[(8 codegen grin)
 DATA CmmUnit
   | Unit          statements   : CmmToplevels
 
@@ -166,7 +166,7 @@ TYPE CmmRanges          = [CmmRange]
 TYPE CmmBody            = [CmmBodyElement]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SET AllFlow               = CmmFlowElement CmmFlow
 SET AllAlternatives       = CmmAlternative CmmAlternatives
 SET AllData               = CmmDatum CmmData

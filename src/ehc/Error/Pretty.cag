@@ -13,7 +13,7 @@
 %%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
 %%]
 
-%%[9 hs import({%{EH}Core},{%{EH}Core.Pretty})
+%%[(9 codegen) hs import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
 
 %%[1 ag import({Error/AbsSyn})

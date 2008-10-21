@@ -9,7 +9,7 @@
 
 Imports depend on the primitives used. See also: Primitives.cag
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrModule [ | | imports: {Maybe CmmToplevelBuilder} ]
 ATTR AllNT [ | | importedNames USE {++} {[]}: {CmmExternalNames} ]
 
@@ -28,7 +28,7 @@ SEM GrExpr
 
 exports are not availible yet. Only the startup function is exported.
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrModule [ | | exports: {Maybe CmmToplevelBuilder} ]
 
 SEM GrModule

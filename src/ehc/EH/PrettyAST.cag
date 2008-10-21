@@ -498,7 +498,9 @@ SEM Decl
 SEM Decl
   | FFI         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFI"] [pp (show @impEnt),ppNm @nm] [@tyExpr.ppAST] @info
                         .  info     =   []
+%%]
 
+%%[(8 codegen)
 SEM AGItf
   | AGItf       loc     .  info_8   :=  [ mkInfo1 "expr.cexpr" (pp @expr.cexpr)
                                         ]
@@ -529,15 +531,19 @@ SEM Decl
                                         , mkInfo1 "toProveDeclsCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveDeclsCnstrMp)
                                         , mkInfo1 "chrSolveDeclsDoneConstraints" (ppBracketsCommasV @chrSolveDeclsDoneConstraints)
                                         , mkInfo1 "chrSolveDeclsRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveDeclsRemCnstrMp)
+%%[[(9 codegen)
                                         , mkInfo1 "chrSolveDeclsEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveDeclsEvidBindMp)
                                         , mkInfo1 "chrSolveDeclsScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveDeclsScopeBindMp)
+%%]]
                                         , mkInfo1 "chrSolveDeclsTrace" (ppSolveTrace @chrSolveDeclsTrace)
                                         , mkInfo1 "chrSolveDeclsRedGraph" (pp $ show @chrSolveDeclsRedGraph)
                                         , mkInfo1 "toProveSuperCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveSuperCnstrMp)
                                         , mkInfo1 "chrSolveSuperDoneConstraints" (ppBracketsCommasV @chrSolveSuperDoneConstraints)
                                         , mkInfo1 "chrSolveSuperRemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolveSuperRemCnstrMp)
+%%[[(9 codegen)
                                         , mkInfo1 "chrSolveSuperEvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveSuperEvidBindMp)
                                         , mkInfo1 "chrSolveSuperScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolveSuperScopeBindMp)
+%%]]
                                         , mkInfo1 "chrSolveSuperTrace" (ppSolveTrace @chrSolveSuperTrace)
                                         , mkInfo1 "chrSolveSuperRedGraph" (pp $ show @chrSolveSuperRedGraph)
                                         , mkInfo1 "prTyFix" (ppTy @prTyFix)
@@ -556,8 +562,10 @@ SEM AGItf
 %%[9
 SEM Expr
   | Var         loc     .  info_9   :=  [ mkInfo1 "foGathCnstrMp @fo_" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ foGathCnstrMp @fo_)
+%%[[(9 codegen)
                                         , mkInfo1 "foLCoeL @fo_" (ppBracketsCommas (lrcoeLeftL  $ foLRCoe @fo_))
                                         , mkInfo1 "foRCoeL @fo_" (ppBracketsCommas (lrcoeRightL $ foLRCoe @fo_))
+%%]]
                                         , mkInfo1 "@fe" (pp @fe)
                                         ]
   | Let         loc     .  info_9   :=  [ mkInfo1 "decls.gathCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @decls.gathCnstrMp)
@@ -570,34 +578,42 @@ SEM Expr
                                         , mkInfo1 "chrSolve1DoneConstraints" (ppBracketsCommasV @chrSolve1DoneConstraints)
                                         , mkInfo1 "chrSolve1RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve1RemCnstrMp)
                                         , mkInfo1 "chrSolve1EvidMp" (ppAssocLV $ Map.toList @chrSolve1EvidMp)
+%%[[(9 codegen)
                                         , mkInfo1 "chrSolve1EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1EvidBindMp)
                                         , mkInfo1 "chrSolve1ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve1ScopeBindMp)
+%%]]
                                         , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)
+%%[[(9 codegen)
                                         , mkInfo1 "chrSolve1EvidCoreMp" (ppAssocLV $ assocLMapElt (\(c,s,sc) -> c >-< show s >-< sc) $ Map.toList @chrSolve1EvidCoreMp)
+                                        , mkInfo1 "coeArgIdMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @coeArgIdMp)
+%%]]
                                         , mkInfo1 "quantPrOccL (decl)" (ppBracketsCommasV @quantPrOccL)
                                         , mkInfo1 "quantCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @quantCnstrMp)
-                                        , mkInfo1 "coeArgIdMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @coeArgIdMp)
                                         , mkInfo1 "tqoGam" (ppGam @tqoGam)
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)
                                         , mkInfo1 "chrSolve2DoneConstraints" (ppBracketsCommasV @chrSolve2DoneConstraints)
                                         , mkInfo1 "chrSolve2RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve2RemCnstrMp)
+%%[[(9 codegen)
                                         , mkInfo1 "chrSolve2EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2EvidBindMp)
                                         , mkInfo1 "chrSolve2ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2ScopeBindMp)
-                                        , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)
                                         , mkInfo1 "cSubst" (ppAssocLV . Map.toList $ @cSubst)
+%%]]
+                                        , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)
                                         ]
   | Lam         loc     .  info_9   :=  [ mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imTy+subst" (pp (@body.tyVarMp |=> @imTy))
                                         , mkInfo1 "knImpls" (pp @knImpls)
                                         , mkInfo1 "knImplsTl" (ppImpls2 @lhs.finTyVarMp @knImplsTl)
                                         , mkInfo1 "knPrL" (ppBracketsCommas @knPrL)
+%%[[(9 codegen)
                                         , mkInfo1 "lamBodyCoeL" (ppBracketsCommas @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppBracketsCommas @lamArgCoeL)
+                                        , mkInfo1 "lhs.chrScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @lhs.chrScopeBindMp)
+%%]]
                                         , mkInfo1 "impls2KnHd" (ppImpls2 @lhs.finTyVarMp @impls2KnHd)
                                         , mkInfo1 "poiL" (ppBracketsCommas @poiL)
                                         , mkInfo1 "predScope" (pp @predScope)
-                                        , mkInfo1 "lhs.chrScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @lhs.chrScopeBindMp)
                                         ]
   | AppTop      loc     .  info_9   :=  [ mkInfo1 "resTy" (pp @resTy)
                                         , mkInfo1 "foVarMp @foKnRes" (pp (foVarMp @foKnRes))
@@ -642,8 +658,10 @@ SEM Expr
                                         , mkInfo1 "foTy @foPr" (pp (foTy @foPr))
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "knPrL" (ppBracketsCommas @knPrL)
+%%[[(12 codegen)
                                         , mkInfo1 "lamBodyCoeL" (ppBracketsCommas @lamBodyCoeL)
                                         , mkInfo1 "lamArgCoeL" (ppBracketsCommas @lamArgCoeL)
+%%]]
                                         ]
 %%]
 

@@ -1,19 +1,19 @@
 Check how Grin variables are used: as a pointer, or as a node, 
 and whether that is compatible with the way they are created
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
 %%]
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
-%%[8
+%%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 checkGrinInvariant :: GrModule -> [String]
 checkGrinInvariant code
@@ -23,7 +23,7 @@ checkGrinInvariant code
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 data Mode = ModeWord
           | ModeNode
@@ -50,7 +50,7 @@ unifyModes s (m:ms) = (m, concatMap (checkMd ("case alternatives have unbalanced
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrAGItf
      GrModule

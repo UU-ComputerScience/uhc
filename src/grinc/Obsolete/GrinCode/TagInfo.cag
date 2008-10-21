@@ -12,7 +12,7 @@ unique number. We need to know which tag layout should be used.
 
 Small layout for nodes which fit in 4 words
 
-%%[8 hs
+%%[(8 codegen grin) hs
 data TagLayout = SmallLayout | BigLayout
 	deriving (Ord,Eq,Show)
 data Bit          = Zero | One
@@ -36,7 +36,7 @@ bits2ints bs l  = int (bits2int bits) : bits2ints bs overflowBits
                             )
 %%]
 
-%%[8.tagConstants
+%%[(8 codegen grin).tagConstants
 ATTR AllBind AllGrExpr [ allTags: TagInfoMap | | ]
 SEM GrModule
 SEM GrModule
@@ -59,7 +59,7 @@ SEM GrModule
 
 Tag info is send down
 
-%%[8.tagInfoMap
+%%[(8 codegen grin).tagInfoMap
 %%]
 
 % vim:et:ts=4:ai:

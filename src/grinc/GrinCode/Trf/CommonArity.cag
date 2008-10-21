@@ -1,7 +1,7 @@
 Used in SplitFetch.cag
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 fromJust' s Nothing = error $ "fromJust':" ++ s
 fromJust' _ (Just v) = v
@@ -18,7 +18,7 @@ tagArity t                    _        = error ("CommonArity: tagArity " ++ show
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
 ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]

@@ -38,18 +38,18 @@ has lower arity than C1.
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 import({GrinCode/Trf/CommonArity})
+%%[(8 codegen grin) import({GrinCode/Trf/CommonArity})
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(splitFetch)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(splitFetch)
 
 splitFetch :: (GrModule,HptMap) -> (GrModule,HptMap)
 splitFetch (input,hptMap)
@@ -61,7 +61,7 @@ type HptItems       = [ (Int,AbstractValue) ]
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllNT     [ | | grTrf: SELF     ]
 ATTR GrAGItf   [ | | grTrf: GrModule ]
@@ -107,7 +107,7 @@ SEM GrBind
 Assumption: if the tag is not statically known, the fetchnode expression
 is followed by a case expression which scrutinizes the tag
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrPatLam GrVarL GrVar [ | | mbTag : {Maybe GrTag} ]
 
@@ -259,7 +259,7 @@ SEM GrAlt
          lhs   .  grTrf      =  GrAlt_Alt @ann @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
 %%]
 
-%%[8.lastFetch
+%%[(8 codegen grin).lastFetch
 
 
 ATTR AllGrExpr [ hasNext: {Bool} | | ]
@@ -297,7 +297,7 @@ SEM GrExpr
                                   else (@lhs.uniq, [], @loc.grTrf)
 %%]
 
-%%[8.applySubst
+%%[(8 codegen grin).applySubst
 SEM GrVal
   | Var        lhs . grTrf       = maybe @grTrf GrVal_Var (Map.lookup (getNr @nm) @lhs.renameMap)
 
@@ -311,7 +311,7 @@ SEM GrExpr
   | Throw      loc  . grTrf      = GrExpr_Throw @newName
 %%]
 
-%%[8 hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
 
 type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
 type RenMap = Map.Map Int HsName

@@ -2,22 +2,22 @@
 %%% Prettyprint Grin ByteCode program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},{%{GRIN}GrinByteCode})
+%%[(8 codegen grin) hs module {%{GRIN}GrinByteCode.ToC} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},{%{GRIN}GrinByteCode})
 %%]
 
-%%[8 hs import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
+%%[(8 codegen grin) hs import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Opts},qualified {%{GRIN}Config} as Cfg,{%{GRIN}GrinByteCode})
 %%]
 
-%%[8 hs import(Data.Maybe,Data.Char,Data.Bits,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(Data.Maybe,Data.Char,Data.Bits,qualified EH.Util.FastSeq as Seq,EH.Util.Utils,qualified Data.Map as Map)
 %%]
 
-%%[8 hs export(gbmod2C)
+%%[(8 codegen grin) hs export(gbmod2C)
 %%]
 
-%%[8 import({GrinByteCode/AbsSyn})
+%%[(8 codegen grin) import({GrinByteCode/AbsSyn})
 %%]
 
-%%[8.gbmod2C hs
+%%[(8 codegen grin).gbmod2C hs
 gbmod2C :: EHCOpts -> Module -> PP_Doc
 gbmod2C opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
@@ -26,7 +26,7 @@ gbmod2C opts m
     in  pp_Syn_AGItf t
 %%]
 
-%%[20 -8.gbmod2C hs
+%%[(20 codegen grin) -8.gbmod2C hs
 gbmod2C :: EHCOpts -> Module -> (PP_Doc,PP_Doc)
 gbmod2C opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
@@ -35,7 +35,7 @@ gbmod2C opts m
     in  (pp_Syn_AGItf t,ppMain_Syn_AGItf t)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 WRAPPER AGItf
 %%]
 
@@ -43,7 +43,7 @@ WRAPPER AGItf
 %%% General info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AGItf Module AllInstr [ opts: EHCOpts | | ]
 %%]
 
@@ -51,7 +51,7 @@ ATTR AGItf Module AllInstr [ opts: EHCOpts | | ]
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 ppCmtC :: PP a => EHCOpts -> a -> PP_Doc
 ppCmtC opts x | ehcOptGenCmt opts = "/*" >#< pp x >#< "*/"
               | otherwise         = empty
@@ -74,7 +74,7 @@ ppHex' split prec x
 %%% Code offset
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR Instr Instrs AllImm [ | cLoc: Int | ]
 
 SEM Module
@@ -123,18 +123,18 @@ SEM Instr
 %%% Labels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type LocRefLoc = (LocRef,Int)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInstr [ | | locRefs USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq LocRefLoc} ]
 
 SEM Instr
   | Label       lhs         .   locRefs     =   Seq.singleton (@locRef,@labelCLoc)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR Instr [ | | isEntry: Bool ]
 
 SEM Instr
@@ -142,25 +142,25 @@ SEM Instr
   | * - Label	lhs			.	isEntry		=	False
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type LabelMp = Map.Map LabelId Int
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInstr [ | | gathLabelMp USE {`Map.union`} {Map.empty}: LabelMp ]
 
 SEM Instr
   | Label       lhs         .   gathLabelMp =   if lrefIsLabel @locRef then Map.singleton (lrefId @locRef) @labelCLoc else Map.empty
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInstr [ labelMp: LabelMp | | ]
 
 SEM Module
   | Mod         loc         .   labelMp     =   @instrs.gathLabelMp
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM Instr
   | LabelRef    loc         .   refOff      =   (panicJust "Instr.{LabelRef}.refOff"
                                                  $ Map.lookup (lrefId @locRef) @lhs.labelMp) - @labelCLocAft
@@ -172,7 +172,7 @@ SEM Instr
 
 These must be in sorted order w.r.t. the @linkCLoc location
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInstr [ | | links USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (Link,Int)} ]
 
 SEM Instr
@@ -187,7 +187,7 @@ SEM Instr
 %%% CallInfo's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type CallInfoMp = Map.Map CallInfo Int
 
 ciMpAdd :: CallInfo -> CallInfoMp -> (CallInfoMp,Int)
@@ -198,7 +198,7 @@ ciMpAdd ci m
              where i = Map.size m
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInstr [ | callInfoMp: CallInfoMp | ]
 
 SEM Instr
@@ -213,7 +213,7 @@ SEM Module
 %%% PP as code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 nl :: PP_Doc
 nl = text " "
 
@@ -268,15 +268,15 @@ ppTbl' :: String -> PP_Doc -> [PP_Doc] -> [PP_Doc]
 ppTbl' tp nm tbl = [nl, "static" >#< tp >#< nm >|< "[] ="] ++ ppArr' tbl
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: PP_Doc ]
 %%]
 
-%%[20
+%%[(20 codegen grin)
 ATTR Module AGItf [ | | ppMain: PP_Doc ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM Module
   | Mod         loc         .   moduleNmPre             =   mkPre @moduleNm
                             .   ppNm                    =   \n -> @moduleNmPre >|< n
@@ -522,7 +522,7 @@ SEM Module
                                                                        (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 ppStringAsHex :: String -> PP_Doc
 ppStringAsHex s = ppCurlysCommasBlock [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
 
@@ -533,7 +533,7 @@ ppLink :: (Integral c) => Int -> c -> PP_Doc
 ppLink sz = ppHexL . ppHex' (Just 2) (sz * 2)
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM Instr
   | Ld St       lhs         .   pp          =   ppCommas [ppHex 2 @enc,@imm.pp]
   | AllocStore Fetch
@@ -556,7 +556,7 @@ SEM Instr
 %%]
   | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
 
-%%[8
+%%[(8 codegen grin)
 SEM Imm
   | Int         loc         .   (ppL,sz)    =   case @lhs.immSz of
                                                   InsOp_ImmSz_Bits08 -> (ppHex' (Just 2)  2 @int,1)
@@ -566,7 +566,7 @@ SEM Imm
                 lhs         .   pp          =   ppHexL @ppL
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR Instrs [ | | ppL : {[PP_Doc]} ]
 
 SEM Instrs
@@ -583,11 +583,11 @@ SEM Instrs
 %%% Symbolic bytecode table (for trace, debug)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type BCTrL = [(Int,Int,PP_Doc)]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR Instrs [ | | bcTrL: {[BCTrL]} ]
 
 SEM Instrs
@@ -604,7 +604,7 @@ SEM Instrs
 %%% Generates code?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR Instr [ | | hasCode: Bool ]
 
 SEM Instr
@@ -618,7 +618,7 @@ SEM Instr
 %%% Additional comment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 %%]
 ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: PP_Doc ]
 ATTR Instrs [ ppExtra: PP_Doc | | ]
@@ -639,11 +639,11 @@ SEM Module
 %%% Additional meta info to PP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type AnnL = [(AnnKind,PP_Doc)]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR Instr Meta [ | | gathAnnL USE {++} {[]}: AnnL ]
 ATTR Instrs Instr Meta [ annL: AnnL | | ]
 
@@ -669,11 +669,11 @@ SEM Module
 %%% PP as mnemonic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: PP_Doc ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM Instr
   | Ld          lhs         .   mn          =   "l"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | St          lhs         .   mn          =   "s"             >|< @ind.mn >|< @locDst.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
@@ -753,7 +753,7 @@ SEM InsOp_Deref
 %%% Encodings, must be similar to rts/src/grinbc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllInsOp Meta [ | | enc: Int ]
 
 SEM Instr
@@ -785,7 +785,7 @@ SEM Instr
             	loc         .   enc         =   0xFE
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM Instr
   | TailCall RetCall
                 loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
@@ -852,7 +852,7 @@ SEM InsOp_DerefB
 %%% How to pp, context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR Imm [ immSz: InsOp_ImmSz | | ]
 
 SEM Instr
@@ -873,7 +873,7 @@ SEM Instr
 %%% Replica's, SELF
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR InsOp_ImmSz [ | | self: SELF ]
 %%]
 

@@ -3,27 +3,27 @@
 %include afp.fmt
 %%]
 
-%%[8 import({Silly/AbsSyn})
+%%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER SilModule
 %%]
 
-%%[8 hs module {%{GRIN}Silly.Shortcut} export(shortcut)
+%%[(8 codegen grin) hs module {%{GRIN}Silly.Shortcut} export(shortcut)
 %%]
-%%[8 hs import({%{GRIN}Silly})
+%%[(8 codegen grin) hs import({%{GRIN}Silly})
 %%]
-%%[8 hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[8 hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[8 hs import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
-%%[8 hs import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 shortcut :: EHCOpts -> SilModule -> SilModule
 shortcut options input   
   = let t = wrap_SilModule (sem_SilModule input)
@@ -35,7 +35,7 @@ shortcut options input
     in trf_Syn_SilModule t
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 
@@ -200,7 +200,7 @@ SEM Value
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 isRP :: Variable -> Bool
 isRP (Variable_RP)          = True
 isRP (Variable_Subs var _)  = isRP var

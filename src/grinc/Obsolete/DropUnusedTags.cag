@@ -6,24 +6,24 @@ Note: run after inlining eval and apply.
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.DropUnusedTags} import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.DropUnusedTags} import(qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(dropUnusedTags)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(dropUnusedTags)
 dropUnusedTags :: GrModule -> GrModule
 dropUnusedTags grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                             (Inh_GrAGItf)
                                 in grTrf_Syn_GrAGItf t
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 
@@ -31,7 +31,7 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 TODO: which basic Tags should be available
 
-%%[8.retrieveUsedTags
+%%[(8 codegen grin).retrieveUsedTags
 ATTR AllBind AllGlobal AllExpr [ | usedTags: {Set.Set GrTag} | ]
 
 SEM GrModule
@@ -44,7 +44,7 @@ SEM GrTag
 %%]
 
 -- AD 20060526: avoid AGC error msg
-%%[10
+%%[(10 codegen grin)
 SEM GrAdapt
   | *    loc      .  usedTags  =  Set.empty
 
@@ -56,7 +56,7 @@ SEM GrSplit
 %%% Remove unused tags %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.remveUnusedTags
+%%[(8 codegen grin).remveUnusedTags
 SEM GrModule
   | Mod  lhs  .  grTrf        =  GrModule_Mod @moduleNm
                                               @globalL.grTrf

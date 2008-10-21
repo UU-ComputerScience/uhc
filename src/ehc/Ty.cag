@@ -1036,7 +1036,7 @@ tyDecomposeMk t
 %%% Canonical ordering of fields of record
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11 hs export(tyRowIsCanonOrdered)
+%%[10 hs export(tyRowIsCanonOrdered)
 tyRowIsCanonOrdered :: AssocL HsName a -> Bool
 tyRowIsCanonOrdered = isSortedByOn rowLabCmp fst
 %%]

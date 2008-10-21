@@ -8,20 +8,20 @@ For example, if f returns AbsBottom, remove cases F/f and P/f from scrutinizatio
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.DropDeadBindings}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.DropDeadBindings}
 %%]
 
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
 dropDeadBindings :: (GrModule,HptMap) -> GrModule
 dropDeadBindings (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
@@ -32,13 +32,13 @@ dropDeadBindings (input,hptMap)
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ hptMap: HptMap | | grTrf: GrModule ]
 ATTR AllNT [ hptMap: HptMap | | grTrf: SELF ]
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrBind [ | | functionName : HsName ]
 SEM GrBind
@@ -57,7 +57,7 @@ SEM GrBindL
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAlt GrPatAlt GrTag [ | | isDead: Bool ]
 
 SEM GrAlt

@@ -14,7 +14,7 @@ This file creates two inherited attributes in AllGrExpr:
  - maxReturnSize: Int               for padding return statements
  - returnSizeEnv: [(CmmName, Int)]  for padding recievers of function calls
 
-%%[8.returnSizeEnv
+%%[(8 codegen grin).returnSizeEnv
 ATTR AllBind AllGrExpr [ returnSizeEnv: {[(CmmName,Int)]} | | ]
 ATTR AllBind [ | | returnSizes USE {++} {[]}: {[(CmmName,Int)]} ]
 
@@ -29,7 +29,7 @@ SEM GrBind
                lhs  .  returnSizes    = map (\ (n, s) -> (n, @maxReturnSize)) @bindL.returnSizes
 %%]
 
-%%[8.recursiveGroups
+%%[(8 codegen grin).recursiveGroups
 ATTR GrBindL [ | | bindNames: {[HsName]} ]
 ATTR GrBind  [ | | bindName: HsName ]
 
@@ -51,7 +51,7 @@ SEM GrBind
   | Rec   loc  .  bindGroup        = Just @bindL.bindNames
 %%]
 
-%%[8.returnSize
+%%[(8 codegen grin).returnSize
 ATTR AllGrExpr [ maxReturnSize: {Int} currentBindings: {[HsName]} | | returnSize USE {`max`} {0}: {Int} ]
 SEM GrExpr
   | Unit       loc . returnSize = if @isLastExpr
@@ -76,7 +76,7 @@ SEM GrExpr
   | Update       loc  .  returnSize  =  0
 %%]
 
-%%[8.valueSize
+%%[(8 codegen grin).valueSize
 ATTR GrVal GrTag GrValL [ | | size USE {+} {1}: {Int} ]
 SEM GrTag
   | Unboxed    loc . size = 0
@@ -90,7 +90,7 @@ SEM GrVal
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 padWith :: (Int -> a) -> [a] -> Int -> [a]
 padWith padFunction real size = take size real ++ map padFunction [length real + 1..size]
 

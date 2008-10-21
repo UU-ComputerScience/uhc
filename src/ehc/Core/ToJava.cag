@@ -7,17 +7,17 @@
 %%% Haskell importable interface to Code's Java gen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.ToJava} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
+%%[(8 codegen java) hs module {%{EH}Core.ToJava} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe)
+%%[(8 codegen java) hs import(Data.Maybe)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
+%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen java) hs
 cmodJavaSrc :: CModule -> (String,PP_Doc)
 cmodJavaSrc cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
@@ -28,7 +28,7 @@ cmodJavaSrc cmod
 %%% Convenience functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen java) hs
 jvInd :: PP_Doc -> PP_Doc
 jvInd = indent 1
 
@@ -134,7 +134,7 @@ jvIns1Nm  = mkHNm "_ins1"
 %%% Generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR CodeAGItf AllCodeNT [ | | jvSrc USE {>-<} {empty} : PP_Doc ]
 ATTR CBind CBindL [ | | jvSrcInd USE {>-<} {empty} : PP_Doc  jvSrcSetInd USE {>-<} {empty} : PP_Doc  jvSrcStrict USE {>-<} {empty} : PP_Doc ]
 ATTR CodeAGItf CModule [ | | jvBasename: String ]
@@ -181,7 +181,7 @@ SEM CModule
                                                       >-< jvCall "IO.nrEvalNShowln" [@expr.jvSrc] >#< ";")
 %%]
 
-%%[(8 codegen)
+%%[(8 codegen java)
 SEM CExpr
   | Int         loc         .   jvSrc       =   "new Int" >|< ppParens (pp @int)
   | Char        loc         .   jvSrc       =   "new Char" >|< ppParens (pp (show @char))
@@ -263,7 +263,7 @@ SEM CPat
                                                 >-< @binds.jvSrc
 %%]
 
-%%[(9 codegen)
+%%[(9 codegen java)
 SEM CExpr
   | Hole        loc         .   jvSrc       =   jvNmPP (uidHNm @uid)
   | HoleLet     loc         .   jvSrc       =   @body.jvSrc
@@ -272,7 +272,7 @@ SEM CExpr
   | ImplsLam    loc         .   jvSrc       =   @body.jvSrc
 %%]
 
-%%[(97 codegen)
+%%[(97 codegen java)
 SEM CExpr
   | Integer     loc         .   jvSrc       =   "new Int" >|< ppParens (pp (show @integer))
 %%]
@@ -281,7 +281,7 @@ SEM CExpr
 %%% Builtin distr to outer let
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR CExpr [ jvBuiltin: PP_Doc | | ]
 
 SEM CExpr
@@ -301,7 +301,7 @@ SEM CAlt
 %%% Var name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR CExpr [ | | varNm: HsName ]
 
 SEM CExpr
@@ -313,7 +313,7 @@ SEM CExpr
 %%% Has tag?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR AllPatBind [ tagSz: Int | | ]
 ATTR CPatL CPat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
 
@@ -325,7 +325,7 @@ SEM CPat
 %%% As args ++ func
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR CExpr [ | | jvSrcL: {[PP_Doc]} ]
 
 SEM CExpr
@@ -337,7 +337,7 @@ SEM CExpr
 %%% As body + args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR CExpr [ | | jvArgL: {[HsName]}  jvBody: PP_Doc ]
 
 SEM CExpr
@@ -351,7 +351,7 @@ SEM CExpr
 %%% Mapping of 'prim' functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen java) hs
 primToJavaMp :: AssocL String HsName
 primToJavaMp
   =  [ ( "primAddInt", hsnFromString "uu.jazy.prelude.Int.add" )
@@ -366,7 +366,7 @@ primToJavaMp
 %%% Distribution of name of lambda, if any is available
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen java)
 ATTR CExpr [ mbLamNm: {Maybe HsName} | | ]
 
 SEM CExpr

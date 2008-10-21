@@ -9,19 +9,19 @@ When: After applying any transformation that breaks the invariant,
 apply the Flatten transformation to re-establish the invariant.
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.FlattenSeq} export(grFlattenSeq)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.FlattenSeq} export(grFlattenSeq)
 %%]
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import(qualified EH.Util.FastSeq as FastSeq)
+%%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as FastSeq)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 grFlattenSeq :: GrModule -> GrModule
 grFlattenSeq grmod
   = trf_Syn_GrAGItf t
@@ -30,7 +30,7 @@ grFlattenSeq grmod
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 -- synthesize a modified copy
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT   [ | | trf: SELF     ]

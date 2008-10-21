@@ -11,17 +11,17 @@ When: after ImpossibleCase has reduced the number of alternatives
 before LowerGrin, because we assume patterns are Nodes, not Tags.
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.SingleCase} export(singleCase)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.SingleCase} export(singleCase)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs 
+%%[(8 codegen grin) hs 
 singleCase :: GrModule -> GrModule
 singleCase grmod 
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -30,7 +30,7 @@ singleCase grmod
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 -- synthesize a modified copy
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]

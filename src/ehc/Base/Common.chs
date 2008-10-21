@@ -780,7 +780,7 @@ data CompilePoint
   | CompilePoint_Parse
   | CompilePoint_AnalHS
   | CompilePoint_AnalEH
-%%[[8
+%%[[(8 codegen)
   | CompilePoint_Core
 %%]]
   | CompilePoint_All

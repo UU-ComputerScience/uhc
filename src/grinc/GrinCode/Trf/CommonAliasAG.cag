@@ -1,4 +1,4 @@
-%%[8 import({GrinCode/Trf/CommonIntroName})
+%%[(8 codegen grin) import({GrinCode/Trf/CommonIntroName})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -11,7 +11,7 @@ Name info is stored in a NmAlias, a representation of what a name stands for.
 %%% Val/Pat just one name?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrPatAlt GrPatLam [ | | nmAlias: NmAlias ]
 
 SEM GrPatAlt
@@ -34,7 +34,7 @@ SEM GrPatLam
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrExpr GrVal [ | | nmAlias: NmAlias ]
 
 SEM GrVal
@@ -56,7 +56,7 @@ SEM GrExpr
                 lhs         .   nmAlias         =   NmAlias_None
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrValL [ | | nmAliasL: {[NmAlias]} ]
 
 SEM GrValL

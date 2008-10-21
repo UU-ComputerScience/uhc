@@ -10,17 +10,17 @@ Printing names depends on the printing context. ppGrNm factors this out, but for
 if .hi interface files ppGrExpr requires a parameterised variant which prints names as required for .hi files.
 20070310: this is now done via CfgPP
 
-%%[8 hs module {%{EH}GrinCode.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode})
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode})
 %%]
 
-%%[8 hs import({%{EH}Base.CfgPP})
+%%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
 %%]
 
-%%[8.WRAPPER ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
 
-%%[8 hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPatAlt,ppGrPatLam,ppGrTag)
+%%[(8 codegen grin) hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPatAlt,ppGrPatLam,ppGrTag)
 ppGrModule :: GrModule -> PP_Doc
 ppGrModule cmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf cmod))
@@ -65,7 +65,7 @@ ppGrPatAlt tg
 
 %%]
 
-%%[20 hs
+%%[(20 codegen grin) hs
 instance PP GrExpr where
   pp = ppGrExpr' CfgPP_Plain
 
@@ -77,7 +77,7 @@ instance PPForHI GrExpr where
 %%% Config how to print names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllExpr [ ppGrNm: PPGrNm | | ]
 
 SEM GrBind
@@ -91,7 +91,7 @@ SEM GrGlobal
 %%% Pretty printed code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type PPGrNm = HsName -> PP_Doc
 
 %%[[8
@@ -124,7 +124,7 @@ ppInt n = pp (show n)
 ppGrNm :: PPGrNm
 ppGrNm = cfgppHsName CfgPP_Grin
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf AllNT [ | | pp USE {>-<} {empty}: PP_Doc ]
 
 SEM GrModule
@@ -297,7 +297,7 @@ SEM GrTag
   | Any         lhs         .   pp          =   pp "#*"
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrGlobalL GrBindL GrAltL GrTagL GrValL GrVarL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrGlobalL
@@ -328,7 +328,7 @@ SEM GrVarL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 %%]
-%%[10
+%%[(10 codegen grin)
 ATTR GrAdaptL GrSplitL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrAdaptL

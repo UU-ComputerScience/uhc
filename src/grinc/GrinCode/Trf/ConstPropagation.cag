@@ -8,25 +8,25 @@
 
 Propagate constants.
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.ConstPropagation}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.ConstPropagation}
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
+%%[(8 codegen grin) hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
-%%[8 import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
+%%[(8 codegen grin) import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
 %%]
 
-%%[8 hs export(grConstPropagation)
+%%[(8 codegen grin) hs export(grConstPropagation)
 grConstPropagation :: GrModule -> GrModule
 grConstPropagation grmod
   = trf_Syn_GrAGItf t
@@ -38,11 +38,11 @@ grConstPropagation grmod
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8
+%%[(8 codegen grin)
 PRAGMA nocycle
 %%]
 
@@ -50,7 +50,7 @@ PRAGMA nocycle
 %%% Defaults for imported code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 SEM GrAGItf
   | AGItf		loc			.	mkNewNm			=	id
 %%]
@@ -59,7 +59,7 @@ SEM GrAGItf
 %%% Name introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 SEM GrExpr
   | Seq         body        .   nmAliasMp       =   @newNmAliasMp `Map.union` @lhs.nmAliasMp
 %%]
@@ -68,11 +68,11 @@ SEM GrExpr
 %%% Transformation: inline references to constants where possible
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM GrExpr
   | Seq         loc         .   (seqTrf,newNmAliasMp)
                                                 =   case (@expr.nmAlias,@pat.nmAlias,@body.nmAlias) of

@@ -20,23 +20,23 @@ Assumptions:
 - scrutinizer is a simple variable
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.ImpossibleCase} export(impossibleCase)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.ImpossibleCase} export(impossibleCase)
 %%]
 
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import({%{EH}Base.Common(HsName, CTagsMp)})
+%%[(8 codegen grin) hs import({%{EH}Base.Common(HsName, CTagsMp)})
 %%]
-%%[8 hs import({%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon(HptMap, getTags, getNr, getEnvVar)})
+%%[(8 codegen grin) hs import({%{GRIN}GRINCCommon(HptMap, getTags, getNr, getEnvVar)})
 %%]
-%%[8
+%%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 impossibleCase :: (GrModule,HptMap) -> GrModule
 impossibleCase (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
@@ -44,7 +44,7 @@ impossibleCase (input,hptMap)
     in  grTrf_Syn_GrAGItf syn
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- synthesize a modified copy
 ATTR GrAGItf   [ | | grTrf: GrModule ]
 ATTR AllNT     [ | | grTrf: SELF     ]
@@ -72,7 +72,7 @@ SEM GrAltL
                                    else             @tl.grTrf
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrPatAlt [ | | tag: GrTag ]
 ATTR GrVal    [ | | varId: Int ]
 

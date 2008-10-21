@@ -7,35 +7,35 @@
 }
 %%]
 
-%%[8 hs module {%{GRIN}Silly.ToLLVM}
+%%[(8 codegen grin) hs module {%{GRIN}Silly.ToLLVM}
 %%]
-%%[8 hs import({%{GRIN}LLVM})
+%%[(8 codegen grin) hs import({%{GRIN}LLVM})
 %%]
-%%[8 hs import({%{GRIN}Silly})
+%%[(8 codegen grin) hs import({%{GRIN}Silly})
 %%]
-%%[8 hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[8 hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[8 hs import({%{GRIN}ConfigDefines})
+%%[(8 codegen grin) hs import({%{GRIN}ConfigDefines})
 %%]
-%%[8 import({Silly/AbsSyn})
+%%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
-%%[8 hs import(qualified Data.Map)
+%%[(8 codegen grin) hs import(qualified Data.Map)
 %%]
-%%[8 hs import(qualified Data.List)
+%%[(8 codegen grin) hs import(qualified Data.List)
 %%]
-%%[8 hs import(Data.Char)
+%%[(8 codegen grin) hs import(Data.Char)
 %%]
-%%[8
+%%[(8 codegen grin)
 WRAPPER SilModule
 %%]
 
-%%[8
+%%[(8 codegen grin)
 PRAGMA nocycle
 %%]
 
-%%[8 hs export( silly2llvm )
+%%[(8 codegen grin) hs export( silly2llvm )
 {-|
   Transform a 'SilModule' to a 'LLVMModule'. In this module, we use cells which
   have the size @sizeof(intptr_t)@, so that we can store both integers and
@@ -61,7 +61,7 @@ silly2llvm opts silmod =
    in llvmCode_Syn_SilModule t
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR SilModule
      [ | | llvmCode : {LLVMModule} ]
 
@@ -377,7 +377,7 @@ SEM Constant
                                 in Constant value @lhs.intType                                                                 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Thread a UID through the program in a way that the numbering follow
 -- the flow of the code.
@@ -436,7 +436,7 @@ SEM Variable
                  
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Passing up the signatures of the functions declared and the functions 
 -- defined in this module. If we have the set of these functions, we can 
@@ -474,7 +474,7 @@ SEM Function
                               in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms
 %%]
   
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Passing up the string constants used in functions 
 --------------------------------------------------------------------------------
@@ -494,7 +494,7 @@ SEM Constant
                 lhs.constants = [ ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Passing down platform depended types.
 --------------------------------------------------------------------------------
@@ -503,7 +503,7 @@ ATTR AllNT
      [ intType, pointerType, globalType : {LLVMType} | | ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- We pass down a map, containing the alias name and the 
 -- corresponding Int value of constructor tags
@@ -520,7 +520,7 @@ SEM SilModule
   | SilModule   functions.constantMap = Data.Map.fromList @constants
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- TODO: Bubble up if a variable is a Local variable. This is needed, because
 -- those are implemented with an address on the stack.
@@ -534,7 +534,7 @@ SEM Variable
                 lhs.isLocal  = False                           
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Pass the max size of the closure that is stored in RP up
 -- so that we can initialize it at the start up.
@@ -559,7 +559,7 @@ SEM Variable
                 lhs.isRP   = False                           
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Pass function declarations that are defined extern
 --------------------------------------------------------------------------------
@@ -574,7 +574,7 @@ SEM Value
   | Call        lhs.externFuncs = [@loc.fnDecl]                  
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Functions for extraction of values from the (UID,[LLVMVar],LLVMStatements) 
@@ -601,7 +601,7 @@ getCode (_,_,x) = x
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Some 'LLVMLLVMFunctionDecl_LLVMFunctionDecltionDecl's for usage in calls and forward declarations.
@@ -677,7 +677,7 @@ gcPrintStatsFuncDecl =
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Cast functions
@@ -725,7 +725,7 @@ makeFitting nr what hole
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Variable loading functions.
@@ -752,7 +752,7 @@ load2value nr var
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Assign an 'LLVMExpression' to a 'LLVMVar'.
@@ -775,7 +775,7 @@ assign2var nr (expr,tp) =
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Often used constants.
@@ -791,7 +791,7 @@ defaultCase nr =
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Construct LLVM Data
@@ -810,7 +810,7 @@ mkMalloc manageType intType nr =
 }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 {
 -------------------------------------------------------------------------------
 -- Auxiliary functions
