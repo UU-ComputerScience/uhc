@@ -2,24 +2,24 @@
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
-%%[8 hs module {%{GRIN}GrinCode.PointsToAnalysis}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.PointsToAnalysis}
 %%]
-%%[8 hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose))
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose))
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon}, {%{GRIN}HeapPointsToFixpoint})
+%%[(8 codegen grin) hs import({%{GRIN}GRINCCommon}, {%{GRIN}HeapPointsToFixpoint})
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
 
-%%[8 hs export(heapPointsToAnalysis)
+%%[(8 codegen grin) hs export(heapPointsToAnalysis)
 
 {-
 Main module entry point:
@@ -50,7 +50,7 @@ heapPointsToAnalysis grmod
 %%%%%%%%%%%%%%%%%%%%%
 %% Main attributes %%
 %%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 {- 
 The overall goal is to collect equations that express
 what constraints variables and heaplocations satisfy.
@@ -113,7 +113,7 @@ SEM GrAGItf
                            ++  @module.equations
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllGrVal AllGrTag  [ | | self : SELF ]
 %%]
 
@@ -123,7 +123,7 @@ ATTR AllGrVal AllGrTag  [ | | self : SELF ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% value and pattern nodes  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8 hs
+%%[(8 codegen grin) hs
 -- A grin value is either a single variable or a complete node denotation (with known tag)
 data NodeInfo a 
   =  InVar   Variable 
@@ -138,7 +138,7 @@ fromInVar _          = error "HPT: Apply arguments should all be variables"
 
 %%]
 
-%%[8.valInfo
+%%[(8 codegen grin).valInfo
 
 ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe Variable) }  var   : { Maybe Variable } ]
 ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  vars  : {[Maybe Variable]} ]
@@ -224,7 +224,7 @@ SEM GrVar
 %% Target Information %%
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.targetInformation
+%%[(8 codegen grin).targetInformation
 {- 
 Target information is either:
 - the variable to which an expression is bound in a Sequence
@@ -252,7 +252,7 @@ ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
 %%%%%%%%%%
 %% Unit %%
 %%%%%%%%%%
-%%[8.unit
+%%[(8 codegen grin).unit
 {-
 There are seven cases, depending on the structure of target and source
 If the target is a variable, we generate a single equation for it
@@ -284,7 +284,7 @@ SEM GrExpr
 
                                                        
 %%]
-%%[8.unitaux hs
+%%[(8 codegen grin).unitaux hs
 
 buildSelectEquations :: Variable -> GrTag -> [Variable] -> Equations
 buildSelectEquations svar ttag tnms
@@ -308,7 +308,7 @@ buildUnifyEquations snms tnms
 %%%%%%%%%%%
 %% Store %%
 %%%%%%%%%%%
-%%[8.store
+%%[(8 codegen grin).store
 {-
 A unique heaplocation is allocated.
 A heap-equation is generated, which associates the heaplocation with the node to be stored.
@@ -341,7 +341,7 @@ SEM GrGlobal
 %%%%%%%%%%%%%%%%%%%%%%
 %% Case Alternative %%
 %%%%%%%%%%%%%%%%%%%%%%
-%%[8.alt
+%%[(8 codegen grin).alt
 
 ATTR AllAlt [ | | tags USE {++} {[]} : {[GrTag]} ]
 
@@ -387,7 +387,7 @@ SEM GrAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Fetch, Update, FetchUpdate %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8.fetch
+%%[(8 codegen grin).fetch
 SEM GrExpr
   | FetchNode    lhs . equations =  case @lhs.targetInfo of
                                       InVar tvar  -> [ IsEvaluation tvar (getNr @nm) tvar ]   -- TODO: third parameter is not sensible when exceptions are really used
@@ -405,7 +405,7 @@ SEM GrExpr
 %%%%%%%%%%
 %% Call %%
 %%%%%%%%%%
-%%[8.call
+%%[(8 codegen grin).call
 {-
 If the target is a single variable, it is required to have the same value as the function result.
 If the target is a node denotation, a select-equation is generated for each variable in the node.
@@ -424,7 +424,7 @@ SEM GrExpr
 %%%%%%%%%%
 %% FFI %%%
 %%%%%%%%%%
-%%[8.ffi
+%%[(8 codegen grin).ffi
 
 SEM GrExpr
   | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
@@ -441,7 +441,7 @@ SEM GrExpr
 %%%%%%%%%%
 %% Eval %%
 %%%%%%%%%%
-%%[8.eval
+%%[(8 codegen grin).eval
 {-
 A single equation is generated, associating the targetvariable with the evaluation result of the function
 -}
@@ -459,7 +459,7 @@ SEM GrExpr
 %%%%%%%%%%%
 %% Apply %%
 %%%%%%%%%%%
-%%[8.apply
+%%[(8 codegen grin).apply
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
                              InVar tvar -> [ IsApplication tvar (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
@@ -470,7 +470,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%
 %% Throw, Catch %%
 %%%%%%%%%%%%%%%%%%
-%%[8.throw
+%%[(8 codegen grin).throw
 SEM GrExpr
   | Throw  loc     .  exceptions =  getNr @nm : @lhs.exceptions
            lhs     .  equations  =  case @lhs.targetInfo of
@@ -502,7 +502,7 @@ SEM GrBind
 %% Actuals %%
 %%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 -- Collect all Fun, PApp and App nodes, and all Calls
 
 ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallList} ]

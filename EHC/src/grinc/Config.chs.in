@@ -1,14 +1,14 @@
-%%[8 module {%{GRIN}Config} export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
+%%[(8 codegen grin) module {%{GRIN}Config} export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
 %%]
 
-%%[8 import({%{GRIN}ConfigDefines}) export(module {%{GRIN}ConfigDefines})
+%%[(8 codegen grin) import({%{GRIN}ConfigDefines}) export(module {%{GRIN}ConfigDefines})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 -- assembler instruction(s) to correct the C stack when
 -- jumping out of a function instead of doing a tail call
 -- should be "leave" for x86 processor

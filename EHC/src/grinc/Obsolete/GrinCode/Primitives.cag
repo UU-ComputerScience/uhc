@@ -11,7 +11,7 @@ builtin primitives (like plus and compare on integers)
 
 Prepare the primitive information in a FFI
 
-%%[8.FFI
+%%[(8 codegen grin).FFI
 SEM GrExpr
   | FFI    loc  . isPrim                = isPrim @nm
                 . (primSize, primImports, primStmF)  = codeGenInfo @nm
@@ -54,7 +54,7 @@ FFI, if not return a default body.
 
 TODO: check if scrutinizer is same as target and the target is used nowhere else
 
-%%[8.conditionals_alternatives
+%%[(8 codegen grin).conditionals_alternatives
 
 ATTR GrExpr [ | trueBody: CmmBodyBuilder falseBody: CmmBodyBuilder | ]
 ATTR AllAlt [ trueBody: CmmBodyBuilder falseBody: CmmBodyBuilder | | ]
@@ -75,7 +75,7 @@ SEM GrExpr
               
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 getTrueFalseBuilder (CmmAlternative_Alt [ CmmRange_Single (CmmExpression_Var n) ] b) = (n, const b)
 getBodies (a:b:[]) = let (na, ba) = getTrueFalseBuilder a
                          (nb, bb) = getTrueFalseBuilder a

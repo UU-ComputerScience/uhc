@@ -14,7 +14,13 @@
 %%[20 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[20 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}GrinCode},{%{EH}GrinCode.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module},{%{EH}Base.CfgPP})
+%%[20 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module},{%{EH}Base.CfgPP})
+%%]
+
+%%[(20 codegen) hs import({%{EH}Core})
+%%]
+
+%%[(20 codegen grin) hs import({%{EH}GrinCode},{%{EH}GrinCode.Pretty})
 %%]
 
 %%[20 hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
@@ -63,8 +69,12 @@ ATTR
       dataGam           USE {`gamUnion`}        {emptyGam}          : DataGam					-- additional structural info for datatypes
       clGam             USE {`gamUnion`}        {emptyGam}          : {Pr.ClGam}    			-- classes
       chrStore          USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore			-- CHR
+%%[[(20 codegen)
       arityMp           USE {`Map.union`}       {Map.empty}         : CArityMp					-- arities of identifiers, used for GRIN
+%%]]
+%%[[(20 codegen grin)
       inlMp             USE {`Map.union`}       {Map.empty}         : GrInlMp					-- inline info, used by GrinByteCode
+%%]]
    ]
 
 SEM Binding
@@ -75,10 +85,6 @@ SEM Binding
                                               VisibleYes -> (@exports,Rel.empty)
     | Ids
         lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
-    | Arities
-        lhs             .   arityMp     =   Map.fromList @idArities
-    | GrInlines
-        lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g) | (n,(a,g)) <- @inlMp ]
     | Fixity
         lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
     | Val
@@ -104,6 +110,14 @@ SEM Binding
         lhs             .   clGam       =   gamSingleton @nm (Pr.ClGamInfo @prToEvidTy @ruleTy @nmEvid)
     | CHRStore
         lhs             .   chrStore    =   chrStoreFromElems @chrs
+%%[[(20 codegen)
+    | Arities
+        lhs             .   arityMp     =   Map.fromList @idArities
+%%]]
+%%[[(20 codegen grin)
+    | GrInlines
+        lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g) | (n,(a,g)) <- @inlMp ]
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

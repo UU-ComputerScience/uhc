@@ -8,25 +8,25 @@
 
 Rename names to other names.
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.AliasRename}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.AliasRename}
 %%]
 
-%%[8 hs import(qualified Data.Map as Map, Data.Maybe)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
+%%[(8 codegen grin) hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
-%%[8 import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
+%%[(8 codegen grin) import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
 %%]
 
-%%[8 hs export(grAliasRename)
+%%[(8 codegen grin) hs export(grAliasRename)
 grAliasRename :: Maybe (HsName -> HsName) -> NmAliasMp -> GrExpr -> GrExpr
 grAliasRename mbMkNewNm m e
   = trf_Syn_GrExpr t
@@ -41,7 +41,7 @@ grAliasRename mbMkNewNm m e
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrExpr
 %%]
 
@@ -49,7 +49,7 @@ WRAPPER GrExpr
 %%% Defaults for imported code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 SEM GrAGItf
   | AGItf		loc			.	mkNewNm			=	id
 %%]
@@ -58,7 +58,7 @@ SEM GrAGItf
 %%% Name introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 SEM GrExpr
   | Seq         loc         .   newAliasMp      =   @patAliasMp `Map.union` @lhs.nmAliasMp
                 pat         .   nmAliasMp       =   @newAliasMp

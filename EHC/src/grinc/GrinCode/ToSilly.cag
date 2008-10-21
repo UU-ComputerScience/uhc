@@ -3,28 +3,28 @@
 %include afp.fmt
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.ToSilly} export(grin2silly)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.ToSilly} export(grin2silly)
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[8 hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
-%%[8 hs import(EH.Util.Pretty, EH.Util.Utils)
+%%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon} hiding (Variable(..)), {%{GRIN}Config}, {%{GRIN}Silly})
+%%[(8 codegen grin) hs import({%{GRIN}GRINCCommon} hiding (Variable(..)), {%{GRIN}Config}, {%{GRIN}Silly})
 %%]
 
-%%[8
+%%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 grin2silly :: HptMap -> GrModule -> EHCOpts -> SilModule
 grin2silly hptmap gr opts
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
@@ -40,7 +40,7 @@ grin2silly hptmap gr opts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrAGItf GrModule GrGlobalL GrGlobal GrBindL GrBind GrExpr GrAlt GrAltL [ hptMap : {HptMap} | | ]
 
@@ -79,7 +79,7 @@ ATTR GrBind GrBindL GrExpr GrAlt GrAltL [  |  retNr : {Int} |  ]
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrExpr GrVal [ | | hasEmptyBody : {Bool} ]
 
@@ -406,7 +406,7 @@ SEM GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determining the target
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllGrExpr [ targets : {[HsName]} mbPtrTarget: {Maybe HsName} | | ]
 ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]}  ]
@@ -459,7 +459,7 @@ SEM GrVar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 
 ATTR GrAGItf
@@ -478,7 +478,7 @@ SEM GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Collect all tags
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set GrTag} ]
 
@@ -494,7 +494,7 @@ SEM GrTag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary Haskell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8 hs
+%%[(8 codegen grin) hs
 
 yielding what own values numberParameters
   =  let nMyRes  = length values

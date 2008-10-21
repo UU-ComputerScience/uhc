@@ -2,21 +2,21 @@
 %% TODO: Show the usage of this transformation
 %%
 
-%%[8_2 import({GrinCode/AbsSyn})
+%%[(8_2 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8_2 hs module {%{GRIN}GrinCode.Trf.PrettyVarNames}
+%%[(8_2 codegen grin) hs module {%{GRIN}GrinCode.Trf.PrettyVarNames}
 %%]
-%%[8_2 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8_2 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
-%%[8_2 hs import(qualified Data.Map as Map)
+%%[(8_2 codegen grin) hs import(qualified Data.Map as Map)
 %%]
-%%[8_2 hs import(qualified Data.Maybe as Maybe)
+%%[(8_2 codegen grin) hs import(qualified Data.Maybe as Maybe)
 %%]
-%%[8_2 hs import(qualified Data.List as List)
+%%[(8_2 codegen grin) hs import(qualified Data.List as List)
 %%]
 
-%%[8_2 hs export(grPrettyNames)
+%%[(8_2 codegen grin) hs export(grPrettyNames)
 grPrettyNames :: GrModule -> GrModule
 grPrettyNames grmod
   = trf_Syn_GrAGItf t
@@ -28,18 +28,18 @@ grPrettyNames grmod
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8_2
+%%[(8_2 codegen grin)
 WRAPPER GrAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Mapping of HsName to a HsName which indicates the type and is easier to read. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen grin)
 ATTR AllNT   [ | mapping : {Map.Map HsName HsName} | ] 
 %%]
 
-%%[8_2
+%%[(8_2 codegen grin)
 SEM GrAGItf
   | AGItf       module      .   mapping         = Map.empty
 %%]
@@ -47,11 +47,11 @@ SEM GrAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unique number for unique variable names 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen grin)
 ATTR AllNT   [ | uniqNr : {Int} | ] 
 %%]
 
-%%[8_2
+%%[(8_2 codegen grin)
 SEM GrAGItf
   | AGItf       module      .   uniqNr              = 0
 
@@ -64,12 +64,12 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Actual renaming 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT   [ | | trf: SELF     ]
 %%]
 
-%%[8_2
+%%[(8_2 codegen grin)
 SEM GrBindL
   | Cons        hd          .   uniqNr              = @lhs.uniqNr
                 tl          .   uniqNr              = @hd.uniqNr
@@ -108,7 +108,7 @@ SEM GrVal
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% A patternmatch on a store should be an pointer 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8_2
+%%[(8_2 codegen grin)
 ATTR GrExpr    [ | | isStore : {Bool} ]
 ATTR GrPatLam  [ matchesStore : {Bool} | | ]
 
@@ -122,7 +122,7 @@ SEM GrExpr
 %%]
 
 
-%%[8_2
+%%[(8_2 codegen grin)
 {
 getPrettyNames :: Map.Map HsName HsName -> [HsName] -> Int -> ([HsName], Map.Map HsName HsName, Int)
 getPrettyNames mapping origNames uniqNr =

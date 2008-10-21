@@ -2,7 +2,7 @@
 %%% Common stuff related to name introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllGrPat [ | | introNmL USE {++} {[]}: {[HsName]} ]
 
 SEM GrPatAlt
@@ -22,7 +22,7 @@ SEM GrVar
   | * - Var     lhs         .   introNmL        =   [ error "introNmL non-Var" ]
 %%]
 
-%%[10
+%%[(10 codegen grin)
 SEM GrSplit
   | Sel         lhs         .   introNmL        =   [@nm]
 %%]

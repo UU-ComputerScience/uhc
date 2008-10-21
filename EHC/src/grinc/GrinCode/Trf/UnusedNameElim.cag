@@ -8,25 +8,25 @@
 
 Creation of values that are not needed further downstream the code are eliminated.
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.UnusedNameElim}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.UnusedNameElim}
 %%]
 
-%%[8 hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 hs import(qualified {%{GRIN}Config} as Cfg)
+%%[(8 codegen grin) hs import(qualified {%{GRIN}Config} as Cfg)
 %%]
 
-%%[8 import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar})
+%%[(8 codegen grin) import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar})
 %%]
 
-%%[8 hs export(grUnusedNameElim)
+%%[(8 codegen grin) hs export(grUnusedNameElim)
 grUnusedNameElim :: GrModule -> GrModule
 grUnusedNameElim grmod
   = trf_Syn_GrAGItf t
@@ -38,7 +38,7 @@ grUnusedNameElim grmod
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
@@ -46,7 +46,7 @@ WRAPPER GrAGItf
 %%% Free var map
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 %%]
 ATTR GrExpr [ | | fviSeqBodyMp: FvInfoMp ]
 
@@ -57,12 +57,12 @@ SEM GrExpr
 %%% Transformation: remove 'unit n1 : \n2 -> ...' combi
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT [ | | trf: SELF ]
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 grExprIsElimable :: GrExpr -> Bool
 grExprIsElimable (GrExpr_Unit  _) = True
 grExprIsElimable (GrExpr_Store _) = True
@@ -70,7 +70,7 @@ grExprIsElimable (GrExpr_App _ _) = True
 grExprIsElimable _                = False
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM GrExpr
   | Seq         lhs         .   trf             =   case (@pat.nmAlias, @trf, @body.trf) of
                                                       (NmAlias_Nm n1,GrExpr_Seq e (GrPatLam_Var p) b,_) | grExprIsElimable e && not (p `Map.member` @body.gathFviMp)

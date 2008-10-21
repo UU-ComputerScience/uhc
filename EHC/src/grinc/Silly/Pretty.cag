@@ -7,16 +7,16 @@
 %%% Prettyprint Silly program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(pretty)
+%%[(8 codegen grin) hs module {%{GRIN}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(pretty)
 %%]
-%%[8 hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[8 hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[8 import({Silly/AbsSyn})
+%%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 pretty :: EHCOpts -> SilModule -> PP_Doc
 pretty opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod)
@@ -30,12 +30,12 @@ pretty opts silmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 WRAPPER SilModule
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR SilModule [ opts : {EHCOpts} | | ]
 
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
@@ -132,7 +132,7 @@ SEM Values
   | Cons           lhs.pretty = @hd.pretty >|< ", " >|< @tl.pretty
 
 %%]
-%%[8 hs
+%%[(8 codegen grin) hs
 comment :: [String] -> PP_Doc
 comment []  = text ""
 comment [s] = text ("// " ++ s)

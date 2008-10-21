@@ -7,25 +7,25 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module Main import(System.Environment, System.Console.GetOpt, Control.Monad.Error, Control.Monad.State)
+%%[(1 codegen grin) module Main import(System.Environment, System.Console.GetOpt, Control.Monad.Error, Control.Monad.State)
 %%]
 
-%%[8 import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 
-%%[8 import (EH.Util.FPath, {%{GRIN}GRINCCommon}, {%{GRIN}CompilerDriver}, {%{EH}Base.Opts})
+%%[(8 codegen grin) import (EH.Util.FPath, {%{GRIN}GRINCCommon}, {%{GRIN}CompilerDriver}, {%{EH}Base.Opts})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.main
+%%[(1 codegen grin).main
 main :: IO ()
 main = doCompileGrin
 %%]
 
-%%[8.main -1.main
+%%[(8 codegen grin).main -1.main
 main :: IO ()
 main
   =  do  {  args <- getArgs

@@ -60,7 +60,7 @@ SEM Expr
 %%% Passing back code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 codegen)
 ATTR AllNT [ cSubst: CSubst | | ]
 
 SEM AGItf
@@ -94,7 +94,7 @@ SEM Expr
   | LamImpl     loc         .   poiL                =   [@knPrUid]
 %%]
 
-%%[9
+%%[(9 codegen)
 SEM Expr
   | Lam AppTop
 %%[[12

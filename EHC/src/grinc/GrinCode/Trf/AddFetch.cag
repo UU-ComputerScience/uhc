@@ -19,17 +19,17 @@ wastes unique numbers, because unique is incremented even if the transformation 
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.AddFetch} import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.AddFetch} import(qualified Data.Map as Map)
 %%]
 
-%%[8 hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(addFetch)
+%%[(8 codegen grin) hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(addFetch)
 
 addFetch :: (GrModule,Int) -> (GrModule,Int)
 addFetch (code,unique)
@@ -39,7 +39,7 @@ addFetch (code,unique)
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]
 
@@ -55,7 +55,7 @@ ATTR GrAGItf GrModule AllBind AllGrExpr AllGrVal [ | unique: Int | ]
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 SEM GrBind
   | Bind   lhs.grTrf               = GrBind_Bind @nm @argNmL @expr.selfAsNode

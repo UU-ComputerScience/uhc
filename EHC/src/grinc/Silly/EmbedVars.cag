@@ -3,30 +3,30 @@
 %include afp.fmt
 %%]
 
-%%[8 import({Silly/AbsSyn})
+%%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER SilModule
 %%]
 
-%%[8 hs module {%{GRIN}Silly.EmbedVars} export(embedVars)
+%%[(8 codegen grin) hs module {%{GRIN}Silly.EmbedVars} export(embedVars)
 %%]
-%%[8 hs import({%{GRIN}Silly})
+%%[(8 codegen grin) hs import({%{GRIN}Silly})
 %%]
-%%[8 hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[8 hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[8 hs import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
-%%[8 hs import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 embedVars :: EHCOpts -> SilModule -> SilModule
 embedVars options input   
   = let t = wrap_SilModule (sem_SilModule input)
@@ -38,7 +38,7 @@ embedVars options input
     in trf_Syn_SilModule t
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
@@ -54,7 +54,7 @@ SEM SilModule
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM Statements
   | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
 
@@ -130,7 +130,7 @@ SEM Value
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Embedding of parameters and local variables on the stack
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8 hs
+%%[(8 codegen grin) hs
 
 type EmbedMap = Map.Map Int Variable
 type EmbedFunction = HsName->Variable
@@ -169,7 +169,7 @@ postPad n s = let w = length s
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% The Smart Assignation strategy (probably reinvented a topological sort algorithm here)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8 hs
+%%[(8 codegen grin) hs
 
 type EIV = Either Int Value
 data SmartTree = SmartTree EIV [(SmartTree,Maybe Int)]

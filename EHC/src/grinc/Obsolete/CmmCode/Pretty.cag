@@ -7,14 +7,14 @@
 %%% C-- pretty printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}CmmCode.Pretty} import(Data.Char,EH.Util.Pretty,{%{GRIN}GRINCCommon},{%{GRIN}CmmCode}) export(ppCmmUnit)
+%%[(8 codegen grin) hs module {%{GRIN}CmmCode.Pretty} import(Data.Char,EH.Util.Pretty,{%{GRIN}GRINCCommon},{%{GRIN}CmmCode}) export(ppCmmUnit)
 %%]
 
-%%[8.WRAPPER import({CmmCode/AbsSyn})
+%%[(8 codegen grin).WRAPPER import({CmmCode/AbsSyn})
 WRAPPER CmmUnit
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 ppCmmUnit :: CmmUnit -> PP_Doc
 ppCmmUnit cmmUnit
   =  let  t = wrap_CmmUnit (sem_CmmUnit cmmUnit) Inh_CmmUnit
@@ -24,7 +24,7 @@ instance PP CmmUnit where
   pp cu = ppCmmUnit cu
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR All [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM CmmToplevel
@@ -127,7 +127,7 @@ SEM CmmFlowElement
 %%]
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 ppListComma ::  (a -> PP_Doc) -> [a] -> PP_Doc
 ppListComma f = ppList (\e -> f e >|< ",")
 	where

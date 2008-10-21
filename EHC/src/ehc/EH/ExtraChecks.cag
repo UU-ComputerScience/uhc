@@ -158,7 +158,7 @@ SEM Expr
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[(95 codegen)
 SEM Decl
   | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
                                                             hasFlds = any (\t -> ctagArity t > 0)

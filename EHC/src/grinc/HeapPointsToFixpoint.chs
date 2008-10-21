@@ -3,29 +3,29 @@
 %include afp.fmt
 %%]
 
-%%[8 module {%{GRIN}HeapPointsToFixpoint}
+%%[(8 codegen grin) module {%{GRIN}HeapPointsToFixpoint}
 %%]
-%%[8 export(solveEquations)
+%%[(8 codegen grin) export(solveEquations)
 %%]
-%%[8 import(Data.Maybe, Data.Either, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad)
+%%[(8 codegen grin) import(Data.Maybe, Data.Either, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad)
 %%]
-%%[8 import(qualified Data.Set as Set, qualified Data.Map as Map)
+%%[(8 codegen grin) import(qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[8 import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[8 import({%{GRIN}GRINCCommon})
+%%[(8 codegen grin) import({%{GRIN}GRINCCommon})
 %%]
-%%[8 import(Debug.Trace)
+%%[(8 codegen grin) import(Debug.Trace)
 %%]
 
-%%[8.updateEnvHeap
+%%[(8 codegen grin).updateEnvHeap
 
 type AbstractEnv s  = STArray s Variable AbstractValue
 type AbstractHeap s = STArray s Location AbstractValue
 
 %%]
 
-%%[8.heapChange
+%%[(8 codegen grin).heapChange
 
 heapChange :: HeapEquation -> AbstractEnv s -> ST s (Location,AbstractValue)
 heapChange (WillStore locat tag args) env 
@@ -53,7 +53,7 @@ heapChange (WillEquate locat var) env
     
 %%]
 
-%%[8.envChanges
+%%[(8 codegen grin).envChanges
 
 envChanges :: Equation -> AbstractEnv s -> AbstractHeap s -> ST s [(Variable,AbstractValue)]
 envChanges equat env heap
@@ -161,7 +161,7 @@ envChanges equat env heap
                    }
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 fixpoint eqs1 eqs2 proc1 proc2 
   = countFixpoint 0

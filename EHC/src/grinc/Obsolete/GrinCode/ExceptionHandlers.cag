@@ -9,7 +9,7 @@
 
 names of labels used for handlers (shared with ToCmm.cag)
 
-%%[8.names
+%%[(8 codegen grin).names
 SEM GrExpr
   | Catch  loc  .  argName      =  cmmName' @arg
                 .  ehName       =  "@eh"
@@ -20,7 +20,7 @@ SEM GrExpr
                 .  handlerName  =  "@handler_" ++ @argName
 %%]
 
-%%[8.handler
+%%[(8 codegen grin).handler
 ATTR AllGrExpr [ | | handlers USE {~>} {emptyBuilder}: CmmBodyBuilder ]
 SEM GrExpr
   | Catch  loc  .  handlerCmm   =  @leaveTry ~> @handler.cmmBody ~> cmmGoto (cmmVar @afterLabel)
@@ -32,7 +32,7 @@ SEM GrExpr
 
 flow annotations of the continuations the C-- code can cut to (used by cut to and funcion call)
 
-%%[8.handlersInScope
+%%[(8 codegen grin).handlersInScope
 ATTR AllGrExpr [ handlerName: CmmName | | ]
 SEM GrBind
   | Bind   expr  .  handlerName  =  ""

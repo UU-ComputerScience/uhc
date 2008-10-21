@@ -371,7 +371,7 @@ SEM Line
 
 SEM Group
   | Group       loc         .   mbCDocbase  =   fmap (chWrap @chOptions.chWrap) @lines.mbCDoc
-                            .   isAllowed   =   variantOfferIsOffered @variantOffer @lhs.allowedVariants
+                            .   isAllowed   =   variantReqmMatchOffer (Just @lhs.allowedVariants) (optGenReqm @lhs.opts) @variantOffer
                 (loc.mbCDoc,loc.gathHideMp) =   case @chOptions.chDest of
                                                   _ | not @isAllowed
                                                          -> (Nothing,Map.empty)
@@ -504,7 +504,7 @@ selectChunks appMinus variantReqm allowedVariants agl
                                      in  ( v
                                          , vciSortBySeqNr
                                            $ vciVariantOfferFilter
-                                               (\offer -> variantReqmMatchOffer allowedVariants vreqm offer)
+                                               (\offer -> variantReqmMatchOffer Nothing vreqm offer)
                                                nonPre
                               )          )
                               [variantOfferFromRef r | r <- Map.keys allowedVariants]
@@ -820,8 +820,8 @@ buildHS1 opts wrap fileBase is
 
 linePragma opts filename n c 
   = if not (optLinePragmas opts) || cdIsEmpty c 
-     then c 
-     else CDoc_Ver (CDoc_Str ("{-# LINE "++show (n+1)++" \"" ++ filename ++ "\" #-}")) c
+    then c 
+    else CDoc_Ver (CDoc_Str ("{-# LINE "++show (n+1)++" \"" ++ filename ++ "\" #-}")) c
 
 agLinePragma opts filename n c
   = CDoc_Ver (CDoc_Str ("{- LINE "++show (n+1)++" \"" ++ filename ++ "\" -}")) c

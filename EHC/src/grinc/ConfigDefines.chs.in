@@ -2,21 +2,21 @@
 {-# OPTIONS_GHC -cpp #-}
 %%]
 
-%%[8 module {%{GRIN}ConfigDefines} import({%{EH}ConfigDefines}) export(module {%{EH}ConfigDefines})
+%%[(8 codegen grin) module {%{GRIN}ConfigDefines} import({%{EH}ConfigDefines}) export(module {%{EH}ConfigDefines})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(sizeofPointer)
+%%[(8 codegen grin) export(sizeofPointer)
 #undef SIZEOF_INTPTR_T
 
 sizeofPointer :: Int
 sizeofPointer = SIZEOF_INTPTR_T
 %%]
 
-%%[8 export(sizeofGrWord,sizeofGrWordAsInteger,use64Bits,use32Bits)
+%%[(8 codegen grin) export(sizeofGrWord,sizeofGrWordAsInteger,use64Bits,use32Bits)
 sizeofGrWord :: Int
 sizeofGrWord = sizeofWord
 
@@ -30,7 +30,7 @@ use64Bits, use32Bits :: Bool
     else (False,True)
 %%]
 
-%%[8 export(gbLabelOffsetSize)
+%%[(8 codegen grin) export(gbLabelOffsetSize)
 gbLabelOffsetSize :: Int
 gbLabelOffsetSize = sizeofGrWord
 %%]
@@ -39,7 +39,7 @@ gbLabelOffsetSize = sizeofGrWord
 %%% Endianness
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(machineIsBigEndian)
+%%[(8 codegen grin) export(machineIsBigEndian)
 #undef BIGENDIAN
 #undef LITTLEENDIAN
 
@@ -51,7 +51,7 @@ machineIsBigEndian = mkB BIGENDIAN
 %%% RTS related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(rtsGlobalVarPrefix, rtsUseGC)
+%%[(8 codegen grin) export(rtsGlobalVarPrefix, rtsUseGC)
 #undef RTS_GLOBAL_VAR_PREFIX
 #undef USE_BOEHM_GC
 

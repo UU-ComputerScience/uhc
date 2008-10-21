@@ -19,17 +19,17 @@ Examples:
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.BuildAppBindings} import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.BuildAppBindings} import(qualified Data.Set as Set)
 %%]
 
-%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
 
 buildAppBindings :: GrModule -> GrModule
 buildAppBindings code
@@ -39,12 +39,12 @@ buildAppBindings code
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllBind AllGrExpr [ | applyNodeSizes: {[(Int,Int)]} | ]
 
 SEM GrModule
@@ -75,7 +75,7 @@ SEM GrTag [ | | isGenApplyTag : Bool ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllGrExpr AllGrVal AllBind AllGlobal [ | atagId : Int | ]
 
@@ -83,7 +83,7 @@ ATTR AllGrExpr AllGrVal AllBind AllGlobal [ | atagId : Int | ]
 
 
 
-%%[8.replaceApplyTags
+%%[(8 codegen grin).replaceApplyTags
 SEM GrVal
   | Node      loc  . newTag      = if   @tag.isGenApplyTag 
                                    then applyFunctionTag @fldL.fieldCount (@lhs.atagId+1)
@@ -100,7 +100,7 @@ SEM GrModule
   
 %%]
 
-%%[10
+%%[(10 codegen grin)
 SEM GrSplit
   | Sel       off  . atagId     =  error "BuildAppBindings: GrpSplit.Sel.atagId"
 %%]
@@ -110,7 +110,7 @@ SEM GrSplit
 %% Building the appN bindings %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.buildAppBinding hs
+%%[(8 codegen grin).buildAppBinding hs
 
 applyFunctionName size specnr
   =  HNm $ "app" ++ show size ++ "_" ++ show specnr
@@ -130,7 +130,7 @@ buildAppBinding (size,specnr)
 
 %%]
 
-%%[8.addAppBindings
+%%[(8 codegen grin).addAppBindings
 SEM GrModule
   | Mod  lhs  . grTrf  = GrModule_Mod @moduleNm 
                                       @globalL.grTrf 

@@ -64,10 +64,13 @@
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
 %%]
 
-%%[8 import({%{EH}Core})
+%%[(8 codegen) import({%{EH}Core})
 %%]
 
-%%[9 import({%{EH}Base.Debug},{%{EH}Core.Subst},{%{EH}Ty.FitsInCommon}) export(gamElts)
+%%[9 import({%{EH}Base.Debug},{%{EH}Ty.FitsInCommon}) export(gamElts)
+%%]
+
+%%[(9 codegen) import({%{EH}Core.Subst})
 %%]
 
 %%[9 import({%{EH}Ty.Trf.MergePreds})

@@ -12,27 +12,27 @@ which may be thrown by the function.
 %include afp.fmt
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.NumberIdents}  export(numberIdents)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.NumberIdents}  export(numberIdents)
 %%]
 
-%%[8 hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
+%%[(8 codegen grin) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
 %%]
-%%[8 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[8 hs import({%{GRIN}GRINCCommon}, {%{GRIN}Config})
+%%[(8 codegen grin) hs import({%{GRIN}GRINCCommon}, {%{GRIN}Config})
 %%]
-%%[8 hs import(Debug.Trace)
-%%]
-
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
+%%]
 
-%%[8.wrapper
+
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 numberIdents :: GrModule -> GrModule
 numberIdents code
   = let inh = Inh_GrAGItf {}
@@ -44,7 +44,7 @@ numberIdents code
 
 Haskell datatype NameMapping and utility functions for it
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type NameMapping = Map.Map HsName HsName
 
 findNewVar fm e  = Map.findWithDefault (trace (show e ++ " not found in " ++ show fm) e) e fm
@@ -61,7 +61,7 @@ addList u xs = foldl addName (Map.empty, [], u) xs
                                               
 %%]
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule  ]
 ATTR AllNT   [ | | grTrf: SELF      ]
 ATTR AllNT   [ | unique: Int | ]
@@ -73,7 +73,7 @@ SEM GrAGItf
 
 
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllBind  [ 
               | 
@@ -103,7 +103,7 @@ SEM GrModule
 %%]
 
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 protectPrimitive :: HsName -> HsName
 %%[[8
@@ -134,7 +134,7 @@ builtinGlobalNamesUnqualifiedSet = Set.fromList builtinGlobalNamesUnqualifiedLis
 
 
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
 SEM GrVar
@@ -206,7 +206,7 @@ SEM GrBind
 
 replacing every identifier with a number
 
-%%[8
+%%[(8 codegen grin)
 SEM GrGlobal
   | Global      lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
 

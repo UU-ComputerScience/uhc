@@ -20,18 +20,18 @@ by
    UNIT (#C/c x y)
 
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
-%%[8 hs import (qualified Data.Map as Map, qualified Data.Set as Set)
+%%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[8 hs import ({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[8
+%%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
-%%[8 hs module {%{GRIN}GrinCode.Trf.EvalStored} export(evalStored)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.EvalStored} export(evalStored)
 
 evalStored :: GrModule -> GrModule
 evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
@@ -40,13 +40,13 @@ evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT [ | | grTrf: SELF ]
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 
 -- Environment passes information about stored values.
 -- * Global variables with final tag
@@ -106,7 +106,7 @@ SEM GrExpr
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 evaluateNode node@(GrVal_Node tag flds) 
   =  case tag of
@@ -120,7 +120,7 @@ evaluateNode node@(GrVal_Node tag flds)
 
 
 
-%%[8
+%%[(8 codegen grin)
 
 -- We collect bottom-up the use frequency of all free variables in an Expression, Value, and Tag.
 -- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
@@ -226,7 +226,7 @@ SEM GrVar
 
 %%]
 
-%%[10
+%%[(10 codegen grin)
 SEM GrSplit
   | Sel           lhs.defined   =  Set.singleton @nm
 %%]

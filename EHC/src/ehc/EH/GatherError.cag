@@ -238,7 +238,7 @@ SEM AGItf
 SEM Decl
   | Instance    loc         .   lErrSq      =   Seq.firstNotEmpty
                                                   [ Seq.unions [Seq.fromList @valNoSigErrs, @tyPrExpr.errSq]
-%%[[95
+%%[[(95 codegen)
                                                   , Seq.unions $ map Seq.fromList [@cxSplitErrs, @derivErrs]
 %%]]
                                                   , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolveSuperErrs, @chrSolveDeclsErrs]

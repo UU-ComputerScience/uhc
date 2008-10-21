@@ -7,7 +7,7 @@
 %%% Abstract syntax for Grin ByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 DATA AGItf
   | AGItf       module          : Module
 
@@ -17,7 +17,7 @@ DATA AGItf
 %%% Code structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 DATA Module
   | Mod         moduleNm        : {String}
 %%[[20
@@ -35,7 +35,7 @@ DATA Module
 SET AllModule = Module
 %%]
 
-%%[8
+%%[(8 codegen grin)
 DATA Instr
   | Ld          ind             : InsOp_Deref
   				locDst			: InsOp_LocB
@@ -114,7 +114,7 @@ SET AllInstr = Instr Instrs Meta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 /* Location variant: load source, store destination, extensive variant */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_LocE
   | SP
   | Reg
@@ -123,21 +123,21 @@ DATA InsOp_LocE
 %%]
 
 /* Location variant: load destination, store source, brief variant */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_LocB
   | TOS
   | Reg
 %%]
 
 /* Location variant: operator destination */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_LocODst
   | TOS
   | Reg
 %%]
 
 /* Location variant: operator source */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_LocOSrc
   | SP
   | Reg
@@ -146,7 +146,7 @@ DATA InsOp_LocOSrc
 %%]
 
 /* Operator kind/type */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_TyOp
   | Add
   | Sub
@@ -155,7 +155,7 @@ DATA InsOp_TyOp
 %%]
 
 /* Operator data kind/type */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_DataOp
   | IntWord
   | IntInf
@@ -163,7 +163,7 @@ DATA InsOp_DataOp
 %%]
 
 /* Immediate constant size */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_ImmSz
   | Bits08
   | Bits16
@@ -172,7 +172,7 @@ DATA InsOp_ImmSz
 %%]
 
 /* Indirection level, deref times */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_Deref
   | Zero
   | One
@@ -181,13 +181,13 @@ DATA InsOp_Deref
 %%]
 
 /* Indirection level, deref times, brief variant */
-%%[8
+%%[(8 codegen grin)
 DATA InsOp_DerefB
   | One
   | Two
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocODst InsOp_LocOSrc InsOp_TyOp InsOp_DataOp InsOp_ImmSz InsOp_Deref InsOp_DerefB
 %%]
 
@@ -195,7 +195,7 @@ SET AllInsOp = InsOp_LocE InsOp_LocB InsOp_LocODst InsOp_LocOSrc InsOp_TyOp InsO
 %%% Inlined immediate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 DATA Imm
   | Int			int				: Integer
 
@@ -206,7 +206,7 @@ SET AllImm = Imm
 %%% SETS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 SET AllNTNoModule = AllInstr AllImm AllInsOp
 SET AllNT = AllModule AllNTNoModule
 %%]

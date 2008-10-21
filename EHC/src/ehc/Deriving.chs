@@ -2,20 +2,23 @@
 %%% Deriving info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95 module {%{EH}Deriving} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Ty},{%{EH}Core},{%{EH}Core.Utils})
+%%[(95 codegen) module {%{EH}Deriving} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Gam},{%{EH}Ty})
 %%]
 
-%%[95 import(qualified Data.Map as Map,Data.List,EH.Util.Utils)
+%%[(95 codegen) import({%{EH}Core},{%{EH}Core.Utils})
 %%]
 
-%%[95 import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
+%%[(95 codegen) import(qualified Data.Map as Map,Data.List,EH.Util.Utils)
+%%]
+
+%%[(95 codegen) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Table for each derivable field of each derivable class: type as well as codegen info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95 export(DerivCls(..),DerivClsFld(..),DerivClsMp)
+%%[(95 codegen) export(DerivCls(..),DerivClsFld(..),DerivClsMp)
 data DerivClsExtraCtxt
   = DerivClsExtraCtxt_Fixed                                                     -- fixed predicate, independent of type over which is derived
       { dccClsClNm                  :: !HsName                                  -- class name
@@ -71,19 +74,19 @@ data DerivClsFld
 type DerivClsMp = Map.Map HsName DerivCls
 %%]
 
-%%[95 export(emptyDerivCls)
+%%[(95 codegen) export(emptyDerivCls)
 emptyDerivCls :: DerivCls
 emptyDerivCls = DerivCls hsnUnknown [] []
 %%]
 
-%%[95 export(dccMkTy)
+%%[(95 codegen) export(dccMkTy)
 dccMkTy :: DerivClsExtraCtxt -> Ty
 dccMkTy (DerivClsExtraCtxt_Fixed clNm tyNm) = mkConApp clNm [semCon tyNm]
 %%]
 
 The table is dependent on builtin names, stored in EHCOpts in FIEnv.
 
-%%[95 export(mkDerivClsMp)
+%%[(95 codegen) export(mkDerivClsMp)
 mkDerivClsMp :: FIEnv -> ValGam -> DataGam -> DerivClsMp
 mkDerivClsMp fe valGam dataGam
   = Map.unions

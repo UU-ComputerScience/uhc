@@ -34,25 +34,25 @@
 %% in one block are of the same GC-type, and currently this is the case.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 import({Silly/AbsSyn})
+%%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER SilModule
 %%]
 
-%%[8 hs module {%{GRIN}Silly.GroupAllocs} export(groupAllocs)
+%%[(8 codegen grin) hs module {%{GRIN}Silly.GroupAllocs} export(groupAllocs)
 %%]
-%%[8 hs import({%{GRIN}Silly})
+%%[(8 codegen grin) hs import({%{GRIN}Silly})
 %%]
-%%[8 hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[8 hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[8 hs import(Data.Maybe)
+%%[(8 codegen grin) hs import(Data.Maybe)
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 groupAllocs :: EHCOpts -> SilModule -> SilModule
 groupAllocs options input   
   = let t = wrap_SilModule (sem_SilModule input)
@@ -60,7 +60,7 @@ groupAllocs options input
     in trf_Syn_SilModule t
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- Result of the AG transformation.
 ATTR AllNT [ | | trf: SELF ]
 
@@ -75,7 +75,7 @@ SEM Value
                                              @lhs.allocWordCount
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- Counter for the total amount of allocations in a list of
 -- statements. We reset the count with Alternatives, because
 -- we do not know if we follow that path.
@@ -92,7 +92,7 @@ SEM Value
   | Alloc       lhs .allocWordCount = @lhs.allocWordCount + @size  
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- Pass down the total amount of words that must be allocated
 -- for this block.
 ATTR Statement Statements
@@ -105,7 +105,7 @@ SEM Alternative
   | Alternative body.allocSize      = @body.allocWordCount
 %%]
 
-%%[8
+%%[(8 codegen grin)
 -- Attribute to determine to which local variable holds the pointer
 -- that points to the start of the allocated block.
 ATTR Statement Statements

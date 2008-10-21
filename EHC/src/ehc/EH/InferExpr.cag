@@ -45,6 +45,10 @@ ATTR AllExpr [ | | ty: Ty ]
 ATTR AllExpr [ | tyVarMp: VarMp | ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -- generated from ruler rules into EHRulerRules, was 1.Const
 %%[9090.Const
 SEM Expr
@@ -76,6 +80,37 @@ SEM Expr
   | CConst      loc         .   imprTy              =   tyChar
   | IConst      loc         .   imprTy              =   tyInt
 %%]
+
+-- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(10 noHmTyRuler)
+SEM Expr
+  | IConst      loc         .   constTy             =   tyInt
+  | CConst      loc         .   constTy             =   tyChar
+%%[[10
+  | SConst      loc         .   constTy             =   tyString
+%%][11
+  | SConst      loc         .   constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
+%%]]
+%%[[97
+  | IIConst     loc         .   constTy             =   tyInteger
+%%]]
+%%]
+
+-- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(10 noHmTyRuler)
+SEM Expr
+  | IConst CConst SConst
+%%[[97
+    IIConst
+%%]]
+                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @constTy @lhs.knTy
+                            .   ty                  =   foTy @fo_
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Var, identifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Var
 %%[9090.Var
@@ -114,6 +149,10 @@ SEM Expr
   | Var         loc         .   imprTy              =   @lhs.imprTyVarMp |=> @gTy
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructor, identifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -- generated from ruler rules into EHRulerRules, was 1.Con
 %%[9090.Con
 SEM Expr
@@ -145,6 +184,24 @@ SEM Expr
 SEM Expr
   | Con         loc         .   imprTy              =   @lhs.imprTyVarMp |=> @gTy
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variable/Constructor, identifier
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[10
+SEM Expr
+  | Var Con     (lhs.gUniq,loc.uniq1)               =   mkNewLevUID @lhs.gUniq
+                (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
+                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+                            .   ty                  =   foTy @fo_
+                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Application
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.App
 %%[5.App
@@ -194,6 +251,40 @@ SEM Expr
                             .   tyVarMp             =   foVarMp @foPr |=> @func.tyVarMp
                 loc         .   ty                  =   @knResImpls `mkArrow` @ty_
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Application top
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 2.AppTop
+%%[5.AppTop
+SEM Expr
+  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
+%%]
+
+20080228, AD:
+An type at apptop may not introduce an implicits.
+This is to avoid a scope introduction (see implsIsEmpty).
+Consequences are yet unclear.
+- Does not work, that is enforcing empty predicates here: im = mkImplsNil
+  Likely caused by partiap apps yielding types taking more predicates (?)
+
+%%[9.AppTop
+SEM Expr
+  | AppTop      loc         .   (imTy,knTopTy,resTy)=   let  [i,r] = mkNewUIDL 2 @lUniq
+                                                             im = mkImplsVar i
+                                                             rt = mkTyVar r
+                                                        in   (im,rt,[im] `mkArrow` rt)
+                            .   foKnRes             =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @resTy @lhs.knTy
+                            .   knTy                :=  @knTopTy
+                            .   furtherTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
+                expr        .   tyVarMp             =   @furtherTyVarMp
+                loc         .   ty                  =   [@imTy] `mkArrow` @expr.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lambda abstraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Lam
 %%[5.Lam
@@ -261,31 +352,9 @@ SEM Expr
                 loc         .   ty                  =   [@knArgImpl] `mkArrow` @body.ty
 %%]
 
--- generated from ruler rules into EHRulerRules, was 2.AppTop
-%%[5.AppTop
-SEM Expr
-  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
-%%]
-
-20080228, AD:
-An type at apptop may not introduce an implicits.
-This is to avoid a scope introduction (see implsIsEmpty).
-Consequences are yet unclear.
-- Does not work, that is enforcing empty predicates here: im = mkImplsNil
-  Likely caused by partiap apps yielding types taking more predicates (?)
-
-%%[9.AppTop
-SEM Expr
-  | AppTop      loc         .   (imTy,knTopTy,resTy)=   let  [i,r] = mkNewUIDL 2 @lUniq
-                                                             im = mkImplsVar i
-                                                             rt = mkTyVar r
-                                                        in   (im,rt,[im] `mkArrow` rt)
-                            .   foKnRes             =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @resTy @lhs.knTy
-                            .   knTy                :=  @knTopTy
-                            .   furtherTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
-                expr        .   tyVarMp             =   @furtherTyVarMp
-                loc         .   ty                  =   [@imTy] `mkArrow` @expr.ty
-%%]
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Undefine, case fail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.Undefined
 SEM Expr
@@ -293,6 +362,10 @@ SEM Expr
                 loc         .   ty                  =   tyEnsureNonAny @lUniq @lhs.knTy
 %%]
                 loc         .   ty                  =   @lhs.tyVarMp |=> (tyEnsureNonAny @lUniq @lhs.knTy)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.TypeAs
 %%[5.TypeAs

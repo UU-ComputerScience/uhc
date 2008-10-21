@@ -10,7 +10,7 @@
 Globals are pointers to pre-build nodes. These nodes are pre-buildin the data
 segment. Globals can be F-nodes to CAF's and pre-build constant nodes.
 
-%%[8.global
+%%[(8 codegen grin).global
 ATTR AllGlobal [ | | globalDatum USE {.} {id}: {CmmSection -> CmmSection} ]
 
 SEM GrGlobal

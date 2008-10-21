@@ -7,7 +7,7 @@
 %% Trace function calls %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllNT GrAGItf [ doFunctionTrace: Bool | | ]
 ATTR AllBind [ | | traces USE {++} {[]}: {[(CmmName, String)]} ]
 

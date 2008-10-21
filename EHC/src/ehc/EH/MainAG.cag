@@ -49,16 +49,19 @@
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
-%%[8 hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 
-%%[9 hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
+%%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
 %%]
 
 %%[9 hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve},{%{EH}Pred.EvidenceToCore})
+%%[9 hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%]
+
+%%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
 %%]
 
 %%[16 hs import({%{EH}Ty.Trf.Subst})
@@ -67,10 +70,10 @@
 %%[50 hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
-%%[94 hs import({%{EH}Foreign.Pretty})
+%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
 %%]
 
-%%[95 hs import({%{EH}Deriving})
+%%[(95 codegen) hs import({%{EH}Deriving})
 %%]
 
 %%[98 hs import({%{EH}Ty.Utils})
@@ -86,8 +89,14 @@
 %%% Import of all separate aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 ag import({EH/AbsSyn},EHRulerRules,{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/Range})
+%%[1 ag import({EH/AbsSyn},{EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr},{EH/Range})
 WRAPPER AGItf
+%%]
+
+%%[1.EHRulerRules ag import(EHRulerRules)
+%%]
+
+%%[(10 noHmTyRuler) -1.EHRulerRules
 %%]
 
 %%[1.PrettyAST ag import({EH/PrettyAST})

@@ -2,28 +2,28 @@
 %%% Haskell importable interface to Grin ByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg,{%{EH}GrinCode.Pretty})
+%%[(8 codegen grin) hs module {%{GRIN}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{GRIN}Config} as Cfg,{%{EH}GrinCode.Pretty})
 %%]
 
-%%[8 hs import(EH.Util.Utils,EH.Util.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(EH.Util.Utils,EH.Util.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
-%%[8 hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
 %%]
 
-%%[8 hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
+%%[(8 codegen grin) hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
 %%]
 
-%%[8 hs export(InsOp_LocE(..), InsOp_LocB(..), InsOp_LocODst(..), InsOp_LocOSrc(..), InsOp_TyOp(..), InsOp_DataOp(..), InsOp_ImmSz(..), InsOp_Deref(..), InsOp_DerefB(..), Imm(..))
+%%[(8 codegen grin) hs export(InsOp_LocE(..), InsOp_LocB(..), InsOp_LocODst(..), InsOp_LocOSrc(..), InsOp_TyOp(..), InsOp_DataOp(..), InsOp_ImmSz(..), InsOp_Deref(..), InsOp_DerefB(..), Imm(..))
 %%]
 
-%%[8 import({GrinByteCode/AbsSyn})
+%%[(8 codegen grin) import({GrinByteCode/AbsSyn})
 %%]
 
-%%[20 hs import({%{EH}Core(HsName2OffsetMpMp)})
+%%[(20 codegen grin) hs import({%{EH}Core(HsName2OffsetMpMp)})
 %%]
 
-%%[99 hs import({%{EH}Base.ForceEval})
+%%[(99 codegen grin) hs import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -33,14 +33,14 @@
 Nr of words of basic values, both boxed and unboxed
 20070904: Not yet used consistently, will it change anyway?
 
-%%[8 hs export(nrValWords)
+%%[(8 codegen grin) hs export(nrValWords)
 nrValWords :: Int
 nrValWords = 1
 %%]
 
 Nr of words occupied by header in node
 
-%%[8 hs export(nrNodeHdrWords)
+%%[(8 codegen grin) hs export(nrNodeHdrWords)
 nrNodeHdrWords :: Int
 nrNodeHdrWords = 1
 %%]
@@ -48,7 +48,7 @@ nrNodeHdrWords = 1
 Nr of words required for call return info:
 return address + saved bp
 
-%%[8 hs export(nrCallRetWords)
+%%[(8 codegen grin) hs export(nrCallRetWords)
 nrCallRetWords :: Int
 nrCallRetWords = 2
 %%]
@@ -59,13 +59,13 @@ nrCallRetWords = 2
 
 Instruction sequence
 
-%%[8 hs export(InsSeq)
+%%[(8 codegen grin) hs export(InsSeq)
 type InsSeq = Seq.FastSeq Instr
 %%]
 
 Constants
 
-%%[8 hs export(Const(..))
+%%[(8 codegen grin) hs export(Const(..))
 data Const
   = Const_Str           { constInx    :: !Int    }
   | Const_CFunction     { constCFunNm :: !String }
@@ -79,7 +79,7 @@ data Const
 
 Link items, to be resolved at runtime initialization.
 
-%%[8 hs export(Link(..),LinkTbl(..))
+%%[(8 codegen grin) hs export(Link(..),LinkTbl(..))
 data LinkTbl
   = LinkTbl_Const
   | LinkTbl_CodeEntry
@@ -101,7 +101,7 @@ data Link
   deriving Show
 %%]
 
-%%[8 hs export(linkCode,linkConst,linkOffsets)
+%%[(8 codegen grin) hs export(linkCode,linkConst,linkOffsets)
 linkConst :: Int -> Link
 linkConst x = Link LinkTbl_Const x
 
@@ -112,14 +112,14 @@ linkOffsets :: Int -> Link
 linkOffsets x = Link LinkTbl_PatchOffsets x
 %%]
 
-%%[20 hs export(linkImpEntry)
+%%[(20 codegen grin) hs export(linkImpEntry)
 linkImpEntry :: Int -> Link
 linkImpEntry m = Link LinkTbl_ImpEntry m
 %%]
 
 Reference to defining location in code
 
-%%[8 hs export(LocRef(..),LabelId,newLabelId,lrefIsLabel)
+%%[(8 codegen grin) hs export(LocRef(..),LabelId,newLabelId,lrefIsLabel)
 type LabelId = Int
 
 newLabelId :: LabelId -> (LabelId,LabelId)
@@ -135,32 +135,32 @@ data LocRef
   deriving (Eq,Ord,Show)
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 instance PP LocRef where
   pp (LocRef_CodeEntry c) = ".cod" >#< c
   pp (LocRef_Label     l) = ".lbl" >#< l
 %%]
 
-%%[8 hs export(StackDepth)
+%%[(8 codegen grin) hs export(StackDepth)
 type StackDepth = Int
 %%]
 
 Call Info
 
-%%[8 hs
+%%[(8 codegen grin) hs
 data CallInfoExtra
   = CallInfoExtra_CCall [BasicTy]		-- type: (res : args)
   | CallInfoExtra_None
   deriving(Eq,Ord,Show)
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 instance PP CallInfoExtra where
   pp (CallInfoExtra_CCall t) = pp $ show $ map basicTyChar t
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
-%%[8 hs export(CallInfo(..),CallInfoKind(..))
+%%[(8 codegen grin) hs export(CallInfo(..),CallInfoKind(..))
 type MbStrInx = Maybe Int
 
 data CallInfo
@@ -186,7 +186,7 @@ data CallInfoKind
   deriving (Enum,Eq,Ord,Show)
 %%]
 
-%%[8 hs export(mkCICall)
+%%[(8 codegen grin) hs export(mkCICall)
 mkCIExtra :: CallInfoExtra -> CallInfoKind -> MbStrInx -> CallInfo
 mkCIExtra e k i = CallInfo k i e
 
@@ -201,7 +201,7 @@ mkCIApply   = mkCI                              CallInfoKind_Apply
 
 Entry point info
 
-%%[8 hs export(EntryInfo(..))
+%%[(8 codegen grin) hs export(EntryInfo(..))
 data EntryInfo
   = EntryInfo
       { eiNm			:: !HsName
@@ -216,7 +216,7 @@ data EntryInfo
 %%% Optimisation info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(OptimCtxt(..),defaultOptimCtxt)
+%%[(8 codegen grin) hs export(OptimCtxt(..),defaultOptimCtxt)
 data OptimCtxt
   = OptimCtxt
       { ocxOmitTOSLd        :: !Bool
@@ -226,7 +226,7 @@ defaultOptimCtxt :: OptimCtxt
 defaultOptimCtxt = OptimCtxt False
 %%]
 
-%%[8 hs export(OptimEffect(..),defaultOptimEffect)
+%%[(8 codegen grin) hs export(OptimEffect(..),defaultOptimEffect)
 data OptimEffect
   = OptimEffect
 {- -- moved to separate transformation to eliminate redundant eval's
@@ -242,7 +242,7 @@ defaultOptimEffect = OptimEffect {- False -}
 %%% Environmental info for name resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(ValAccess(..),ValAccessGam)
+%%[(8 codegen grin) hs export(ValAccess(..),ValAccessGam)
 data ValAccess
   = Val_Local           { vaStackDepth :: StackDepth, vaBasicAnnot :: BasicAnnot }		-- value on the stack
   | Val_NodeTagLocal    { vaStackDepth :: StackDepth }									-- tag of node on the stack
@@ -260,18 +260,18 @@ instance PP ValAccess where
 type ValAccessGam = Map.Map HsName ValAccess
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 vaHasAnnot :: ValAccess -> Bool
 vaHasAnnot (Val_Local        _ _) = True
 vaHasAnnot (Val_NodeFldLocal _ _) = True
 vaHasAnnot _                      = False
 %%]
 
-%%[20 hs export(ImpNmMp)
+%%[(20 codegen grin) hs export(ImpNmMp)
 type ImpNmMp = Map.Map HsName Int
 %%]
 
-%%[8 hs export(NmEnv(..))
+%%[(8 codegen grin) hs export(NmEnv(..))
 data NmEnv
   = NmEnv
       { neVAGam     :: ValAccessGam
@@ -281,12 +281,12 @@ data NmEnv
       }
 %%]
 
-%%[8.nmEnvLookup hs export(nmEnvLookup)
+%%[(8 codegen grin).nmEnvLookup hs export(nmEnvLookup)
 nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
 nmEnvLookup nm env = Map.lookup nm $ neVAGam env
 %%]
 
-%%[20 -8.nmEnvLookup hs export(nmEnvLookup)
+%%[(20 codegen grin) -8.nmEnvLookup hs export(nmEnvLookup)
 nmEnvLookup :: HsName -> NmEnv -> Maybe ValAccess
 nmEnvLookup nm env
   = case Map.lookup nm $ neVAGam env of
@@ -303,7 +303,7 @@ nmEnvLookup nm env
 %%% Load info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(LoadSrc(..))
+%%[(8 codegen grin) hs export(LoadSrc(..))
 data LoadSrc
   = LoadSrc_TOS         
   | LoadSrc_Imm         { ldsrcImm      :: !Integer                            }
@@ -330,12 +330,12 @@ ldsrc2ins :: LoadSrc -> (InsSeq,StackDepth)
 ldsrc2ins = ldsrc2ins' id
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 instance PP LoadSrc where
   pp = pp . show
 %%]
 
-%%[8 hs export(Load(..))
+%%[(8 codegen grin) hs export(Load(..))
 data Load
   = Load
       { ldPreIns        :: !InsSeq
@@ -364,7 +364,7 @@ loadFrom s = loadWithPreFrom [] 0 s
 %%% Named value access
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(nmLd')
+%%[(8 codegen grin) hs export(nmLd')
 nmLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> HsName -> (Maybe ValAccess,Load,BasicAnnot)
 nmLd' optim env modNmConstInx stkDepth nm
   = case nmEnvLookup nm env of
@@ -400,7 +400,7 @@ nmLd' optim env modNmConstInx stkDepth nm
   where offSrc off sz = if off == 0 then LoadSrc_TOS else LoadSrc_TOS_Rel off sz
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 vaAndLd2Ins :: OptimCtxt -> HsName -> (Maybe ValAccess,Load,BasicAnnot) -> (InsSeq,StackDepth)
 vaAndLd2Ins optim nm vald
   = case vald of
@@ -413,7 +413,7 @@ vaAndLd2Ins optim nm vald
           where (ins,dep) = ldsrc2ins' (instrann $ show ls) ls
 %%]
 
-%%[8 hs export(nmLd)
+%%[(8 codegen grin) hs export(nmLd)
 nmLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> HsName -> (InsSeq,StackDepth)
 nmLd optim env modNmConstInx stkDepth nm
   = vaAndLd2Ins optim nm $ nmLd' optim env modNmConstInx stkDepth nm
@@ -423,7 +423,7 @@ nmLd optim env modNmConstInx stkDepth nm
 %%% GrVal Value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(GrValIntro(..))
+%%[(8 codegen grin) hs export(GrValIntro(..))
 data GrValIntro
   = GrValIntro_Nm    !HsName
   | GrValIntro_Int   !Integer
@@ -434,13 +434,13 @@ data GrValIntro
   | GrValIntro_None
 %%]
 
-%%[8 hs export(GrValIntroAlt(..))
+%%[(8 codegen grin) hs export(GrValIntroAlt(..))
 data GrValIntroAlt
   = GrValIntroAlt_OnTOS     InsSeq StackDepth OptimEffect [BasicAnnot]
   | GrValIntroAlt_Delay     InsSeq StackDepth OptimEffect (Maybe ValAccess) Load BasicAnnot
 %%]
 
-%%[8 hs export(gviLd,gviLd',gviLdFold)
+%%[(8 codegen grin) hs export(gviLd,gviLd',gviLdFold)
 gviLdFold' :: GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
 gviLdFold' dflt optim env modNmConstInx stkDepth introL
   = foldl ld dflt $ reverse $ introL
@@ -513,7 +513,7 @@ gviLd optim env modNmConstInx stkDepth intro
       a -> a
 %%]
 
-%%[8 hs export(gvCall)
+%%[(8 codegen grin) hs export(gvCall)
 gvCall :: MbStrInx -> NmEnv -> Int -> InsSeq -> Int -> StackDepth -> HsName -> (InsSeq,StackDepth)
 gvCall i nmEnv modNmConstInx ins inc stkDepth nm
   = (ins Seq.:++: fins Seq.:++: Seq.fromList [call i InsOp_LocB_TOS], nrValWords)
@@ -524,7 +524,7 @@ gvCall i nmEnv modNmConstInx ins inc stkDepth nm
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 pow2 :: Int -> Integer
 pow2 x = 1 `shiftL` x
 
@@ -546,21 +546,21 @@ pow2' x
 (pow2_64,pow2_64neg,pow2_64sub1) = pow2' 64
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 mask2 :: Int -> Integer
 mask2 x = pow2 x - 1
 
 [mask2_8,mask2_16,mask2_32,mask2_64] = map mask2 [8,16,32,64]
 %%]
 
-%%[8 hs export(nrWord2Byte)
+%%[(8 codegen grin) hs export(nrWord2Byte)
 nrWord2Byte :: Integral c => c -> c
 nrWord2Byte sz
   = sz * wSz
   where wSz = fromInteger Cfg.sizeofGrWordAsInteger
 %%]
 
-%%[8 hs export(nrByte2Word)
+%%[(8 codegen grin) hs export(nrByte2Word)
 nrByte2Word :: Integral c => c -> c
 nrByte2Word sz
   = (sz-1) `div` wSz + 1
@@ -571,7 +571,7 @@ nrByte2Word sz
 %%% Unboxed values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(tagIsUnboxed)
+%%[(8 codegen grin) hs export(tagIsUnboxed)
 tagIsUnboxed :: GrTag -> Bool
 tagIsUnboxed gt
   = case gt of
@@ -582,7 +582,7 @@ tagIsUnboxed gt
       _ -> False
 %%]
 
-%%[8 hs export(tagAllowsUnboxedLife)
+%%[(8 codegen grin) hs export(tagAllowsUnboxedLife)
 tagAllowsUnboxedLife :: GrTag -> Unbox
 tagAllowsUnboxedLife gt
   = if tagIsUnboxed gt
@@ -597,7 +597,7 @@ tagAllowsUnboxedLife gt
 %%% Constructing: immediate operands
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 imm :: Integral c => c -> (InsOp_ImmSz,Imm)
 imm c
   = (s,Imm_Int i)
@@ -621,7 +621,7 @@ imm c
 %%% Constructing: loading
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(ldc,ldl,ldg,ldi,l1tr,l2ts,ldnt)
+%%[(8 codegen grin) hs export(ldc,ldl,ldg,ldi,l1tr,l2ts,ldnt)
 ld :: Integral c => InsOp_Deref -> InsOp_LocB -> InsOp_LocE -> c -> Instr
 ld ind locB locE c
   = Instr_Ld ind locB locE s i
@@ -661,7 +661,7 @@ ldnt = Instr_LdNodeTag
 %%% Constructing: link
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(link)
+%%[(8 codegen grin) hs export(link)
 link :: Link -> Instr
 link = Instr_Link
 %%]
@@ -672,7 +672,7 @@ link = Instr_Link
 
 -- not implemented yet
 
-%%[8 hs export()
+%%[(8 codegen grin) hs export()
 st :: Integral c => InsOp_DerefB -> InsOp_LocE -> InsOp_LocB -> c -> Instr
 st ind locE locB c
   = Instr_St ind locE locB s i
@@ -683,7 +683,7 @@ st ind locE locB c
 %%% Constructing: label
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(labelref,label)
+%%[(8 codegen grin) hs export(labelref,label)
 labelref :: LocRef -> Instr
 labelref l = Instr_LabelRef l
 
@@ -695,7 +695,7 @@ label l = Instr_Label l
 %%% Constructing: allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(allocstore,fetch,fetchupdate,ndStore)
+%%[(8 codegen grin) hs export(allocstore,fetch,fetchupdate,ndStore)
 allocstore :: InsOp_LocB -> Instr
 allocstore locB = Instr_AllocStore locB
 
@@ -713,7 +713,7 @@ ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),meta' AnnAllocStore sz,allocsto
 %%% Constructing: eval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(eval,apply,taileval)
+%%[(8 codegen grin) hs export(eval,apply,taileval)
 eval :: MbStrInx -> InsOp_LocB -> Instr
 eval i locB = Instr_Eval locB (mkCIEval i)
 
@@ -731,7 +731,7 @@ apply i locB = Instr_Apply locB (mkCIApply i)
 %%% Constructing: control, call, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(call,retcall,tailcall,casecall,retcase,callc)
+%%[(8 codegen grin) hs export(call,retcall,tailcall,casecall,retcase,callc)
 call :: MbStrInx -> InsOp_LocB -> Instr
 call i locB = Instr_Call locB (mkCICall i)
 
@@ -769,7 +769,7 @@ retcase nRes retOffSurr
 %%% Constructing: operators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(op)
+%%[(8 codegen grin) hs export(op)
 op :: Integral c => InsOp_TyOp -> InsOp_DataOp -> InsOp_LocODst -> InsOp_Deref -> InsOp_LocOSrc -> c -> Instr
 op opTy opndTy locDst ind locSrc c
   = Instr_Op opTy opndTy locDst ind locSrc s1 i1
@@ -780,7 +780,7 @@ op opTy opndTy locDst ind locSrc c
 %%% Constructing: conversion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(ci2w)
+%%[(8 codegen grin) hs export(ci2w)
 ci2w :: Instr
 ci2w = Instr_CvtInt2Word
 
@@ -792,7 +792,7 @@ cw2i = Instr_CvtWord2Int
 %%% Constructing: comment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(AnnKind(..))
+%%[(8 codegen grin) hs export(AnnKind(..))
 data AnnKind
   = AnnComment
   | AnnFunStart
@@ -815,7 +815,7 @@ instance PP AnnKind where
   pp AnnLabelRef     = pp "lblref"
 %%]
 
-%%[8 hs export(meta',meta)
+%%[(8 codegen grin) hs export(meta',meta)
 meta' :: PP a => AnnKind -> a -> Instr
 meta' k a = Instr_Meta $ Meta_CmtHeader k $ pp a
 
@@ -823,7 +823,7 @@ meta :: PP a => a -> Instr
 meta = meta' AnnComment
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 instrann' :: PP a => AnnKind -> a -> Instr -> Instr
 instrann' k a = Instr_Ann k $ showPP a
 
@@ -831,7 +831,7 @@ instrann :: PP a => a -> Instr -> Instr
 instrann = instrann' AnnComment
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 %%]
 metaprop' :: PP a => AnnKind -> String -> a -> Instr
 metaprop' k prop a = meta' k (prop >|< "=" >|< a)
@@ -845,7 +845,7 @@ metaprop = metaprop' AnnComment
 
 Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
 
-%%[8 hs
+%%[(8 codegen grin) hs
 [tgShSize,tgShCateg,tagShGC,tagShTag,tgShNdEv]
   = if Cfg.use32Bits then [16,14,12,2,0::Int] else [32,30,28,2,0]
 
@@ -859,7 +859,7 @@ tgNeedEval_BlH = 2
 
 load tag, yield stack increment and additional size to alloc
 
-%%[8 hs export(tag)
+%%[(8 codegen grin) hs export(tag)
 tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,StackDepth,Bool)
 tag env modNmConstInx stkDepth gt sz
   = case gt of
@@ -885,7 +885,7 @@ tag env modNmConstInx stkDepth gt sz
 %%% Constructing: misc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(halt)
+%%[(8 codegen grin) hs export(halt)
 halt :: Instr
 halt = Instr_Halt
 %%]
@@ -894,7 +894,7 @@ halt = Instr_Halt
 %%% ForceEval instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs
+%%[(99 codegen grin) hs
 instance ForceEval Const
 instance ForceEval Link
 instance ForceEval LocRef

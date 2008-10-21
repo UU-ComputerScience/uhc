@@ -4,19 +4,19 @@
 
 Remove the stuff required for full program analysis, but not for direct execution by GrinByteCode
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.UnusedMetaInfoElim}
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.UnusedMetaInfoElim}
 %%]
 
-%%[8 hs import(qualified EH.Util.FastSeq as Seq)
+%%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[8 hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode})
 %%]
 
-%%[8 hs export(grUnusedMetaInfoElim)
+%%[(8 codegen grin) hs export(grUnusedMetaInfoElim)
 grUnusedMetaInfoElim :: GrModule -> GrModule
 grUnusedMetaInfoElim grmod
   = trf_Syn_GrAGItf t
@@ -28,7 +28,7 @@ grUnusedMetaInfoElim grmod
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
@@ -36,12 +36,12 @@ WRAPPER GrAGItf
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT [ | | trf: SELF ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM GrModule
   | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf []
 

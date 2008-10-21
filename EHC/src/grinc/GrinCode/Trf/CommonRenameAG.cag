@@ -6,7 +6,7 @@
 %%% Name introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllExpr [ nmAliasMp: NmAliasMp | | ]
 
 SEM GrBind
@@ -27,7 +27,7 @@ SEM GrAlt
 %%% Name renaming for locally introduced names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllNT [ mkNewNm: {HsName -> HsName} | | ]
 %%]
 
@@ -35,11 +35,11 @@ ATTR AllNT [ mkNewNm: {HsName -> HsName} | | ]
 %%% Transformation: renaming
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllNT [ | | trf: SELF ]
 %%]
 
-%%[8
+%%[(8 codegen grin)
 SEM GrExpr
   | Call        lhs         .   trf             =   GrExpr_Call (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
   | App         lhs         .   trf             =   GrExpr_App (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
@@ -83,7 +83,7 @@ SEM GrVal
 %%]]
 %%]
 
-%%[10
+%%[(10 codegen grin)
 SEM GrSplit
   | Sel         lhs         .   trf             =   GrSplit_Sel (nmAliasRepl @lhs.nmAliasMp @nm) @off.trf
 %%]

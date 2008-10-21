@@ -22,13 +22,13 @@
 %%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
-%%[9 import({%{EH}Core.Coercion})
-%%]
-
 %%[9 import(qualified Data.Set as Set)
 %%]
 
-%%[9 import({%{EH}Core},{%{EH}Core.Subst},{%{EH}Pred.CommonCHR})
+%%[9 import({%{EH}Pred.CommonCHR})
+%%]
+
+%%[(9 codegen) import({%{EH}Core},{%{EH}Core.Coercion},{%{EH}Core.Subst})
 %%]
 
 For debug/trace:
@@ -74,12 +74,14 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
                         ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
+%%[[(9 codegen)
+                        ,  foCSubst          :: !CSubst              ,  foLRCoe           :: !LRCoe
+%%]]
 %%[[9
-                        ,  foCSubst          :: !CSubst              ,  foPredOccL        :: ![PredOcc]
-                        ,  foLRCoe           :: !LRCoe
+                        ,  foPredOccL        :: ![PredOcc]
                         ,  foGathCnstrMp     :: !CHRPredOccCnstrMp
 %%]]
-%%[[10
+%%[[(10 codegen)
                         ,  foRowCoeL         :: !(AssocL HsName Coe)
 %%]]
 %%[[50
@@ -98,12 +100,14 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
 emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []                  ,  foTrace           =   []
+%%[[(9 codegen)
+                        ,  foCSubst          =   emptyCSubst         ,  foLRCoe           =   emptyLRCoe
+%%]]
 %%[[9
-                        ,  foCSubst          =   emptyCSubst         ,  foPredOccL        =   []
-                        ,  foLRCoe           =   emptyLRCoe
+                        ,  foPredOccL        =   []
                         ,  foGathCnstrMp     =   emptyCnstrMp
 %%]]
-%%[[10
+%%[[(10 codegen)
                         ,  foRowCoeL         =   []
 %%]]
 %%[[50
@@ -154,13 +158,13 @@ data AppSpineVertebraeInfo
   =  AppSpineVertebraeInfo
        { asPolarity     :: Polarity
        , asFIO          :: FIOpts -> FIOpts
-%%[[9
+%%[[(9 codegen)
        , asMbFOUpdCoe   :: Maybe AppSpineFOUpdCoe
 %%]]
        }
 %%]
 
-%%[9 export(asFOUpdCoe)
+%%[(9 codegen) export(asFOUpdCoe)
 dfltFOUpdCoe :: AppSpineFOUpdCoe
 dfltFOUpdCoe _ x = last x
 
@@ -181,22 +185,36 @@ prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id
 
 %%[9.vertebraeInfoL -4.vertebraeInfoL
 unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-unknownAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polInvariant fioMkUnify Nothing
+unknownAppSpineVertebraeInfoL
+  = repeat
+    $ AppSpineVertebraeInfo polInvariant fioMkUnify
+%%[[(9 codegen)
+          Nothing
+%%]]
 
 arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 arrowAppSpineVertebraeInfoL
   = [ AppSpineVertebraeInfo polContravariant fioMkStrong
+%%[[(9 codegen)
           (Just dfltFOUpdCoe)
+%%]]
     , AppSpineVertebraeInfo polCovariant id
+%%[[(9 codegen)
           (Just (\opts [ffo,afo]
                   -> let (u',u1) = mkNewUID (foUniq afo)
                          c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
                      in  afo { foLRCoe = c, foUniq = u' }
           )     )
+%%]]
     ]
 
 prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id (Just dfltFOUpdCoe)
+prodAppSpineVertebraeInfoL
+  = repeat
+    $ AppSpineVertebraeInfo polCovariant id
+%%[[(9 codegen)
+          (Just dfltFOUpdCoe)
+%%]]
 %%]
 
 %%[17 export(asUpdateByPolarity)

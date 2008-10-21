@@ -93,7 +93,8 @@ Convention: most option names/fields start with 'ehcOpt'
 %%[1.EHCOpts
 data EHCOpts
   = EHCOpts
-      {  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
+      {  ehcOptAspects        ::  String            -- which aspects are included in this compiler
+      ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
       ,  ehcOptPriv           ::  Bool				-- privately used (in general during switch between 2 impls of 1 feature)
 %%[[1
@@ -108,7 +109,12 @@ data EHCOpts
 %%[[7_2
       ,  ehcOptUniqueness     ::  Bool
 %%]]
-%%[[8
+%%[[(8 codegen)
+      ,  ehcOptEmitCore       ::  Bool
+      ,  ehcOptOptimise       ::  Optimise			-- optimisation level
+      ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
+%%]]
+%%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
 
       ,  ehcOptGenCaseDefault ::  Bool
@@ -116,12 +122,7 @@ data EHCOpts
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
-      ,  ehcOptGenRTSInfo     ::  Int				-- flags to tell rts to dump internal info, currently: 1=on
 
-      ,  ehcOptEmitHS         ::  Bool
-      ,  ehcOptEmitEH         ::  Bool
-      ,  ehcOptEmitCore       ::  Bool
-      ,  ehcOptEmitJava       ::  Bool
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitC          ::  Bool
       ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
@@ -129,16 +130,22 @@ data EHCOpts
       ,  ehcOptEmitBytecode   ::  Bool
       ,  ehcOptEmitExecC      ::  Bool
       ,  ehcOptEmitExecBytecode:: Bool
+      ,  ehcOptGenRTSInfo     ::  Int				-- flags to tell rts to dump internal info, currently: 1=on
+      ,  ehcOptFullProgAnalysis ::  Bool				-- do full GRIN program analysis
+      ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
+      ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
+%%]]
+%%[[(8 codegen java)
+      ,  ehcOptEmitJava       ::  Bool
+%%]]
+%%[[8
+      ,  ehcOptEmitHS         ::  Bool
+      ,  ehcOptEmitEH         ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity			-- verbosity level
       ,  ehcOptTrf            ::  [TrfOpt]
-      ,  ehcOptOptimise       ::  Optimise			-- optimisation level
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
-      ,  ehcOptFullProgAnalysis ::  Bool				-- do full GRIN program analysis
-      ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
-      ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
-      ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
       ,  ehcOptUseInplace     ::  Bool              -- use inplace runtime libraries
       
 %%]]
@@ -152,11 +159,13 @@ data EHCOpts
       ,  ehcOptTyBetaRedCutOffAt					-- cut off for type lambda expansion
                               ::  Int
 %%]]
+%%[[(20 codegen)
+      ,  ehcDebugStopAtCoreError
+                              ::  Bool              -- stop when Core parse error occurs (otherwise errors are ignored, repaired .core is used)
+%%]]
 %%[[20
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
-      ,  ehcDebugStopAtCoreError
-                              ::  Bool              -- stop when Core parse error occurs (otherwise errors are ignored, repaired .core is used)
 %%]]
 %%[[99
       ,  ehcProgName          ::  FPath  			-- name of this program
@@ -176,7 +185,8 @@ data EHCOpts
 %%[1.defaultEHCOpts
 defaultEHCOpts
   = EHCOpts
-      {  ehcOptShowHS           =   False
+      {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
+      ,  ehcOptShowHS           =   False
       ,  ehcOptPriv             =   False
 %%[[1
       ,  ehcOptShowEH           =   True
@@ -195,7 +205,12 @@ defaultEHCOpts
 %%[[7_2
       ,  ehcOptUniqueness       =   True
 %%]]
-%%[[8
+%%[[(8 codegen)
+      ,  ehcOptEmitCore         =   True
+      ,  ehcOptDumpCoreStages   =   False
+      ,  ehcOptOptimise         =   OptimiseNormal
+%%]]
+%%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
 
       ,  ehcOptGenCaseDefault   =   False
@@ -204,33 +219,34 @@ defaultEHCOpts
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenRTSInfo       =   0
 
-      ,  ehcOptEmitHS           =   False
-      ,  ehcOptEmitEH           =   False
-      ,  ehcOptEmitCore         =   True
-      ,  ehcOptEmitJava         =   False
       ,  ehcOptEmitGrin         =   False
       ,  ehcOptEmitLLVM         =   False
       ,  ehcOptEmitExecLLVM     =   False
       ,  ehcOptEmitC            =   False
       ,  ehcOptEmitExecC        =   False
+      ,  ehcOptFullProgAnalysis =   False
+      ,  ehcOptDumpGrinStages   =   False
+%%]]
+%%[[(8 codegen java)
+      ,  ehcOptEmitJava         =   False
+%%]]
+%%[[8
+      ,  ehcOptEmitHS           =   False
+      ,  ehcOptEmitEH           =   False
       
       ,  ehcOptSearchPath       =   []
       ,  ehcOptVerbosity        =   VerboseNormal
-      ,  ehcOptOptimise         =   OptimiseNormal
       ,  ehcOptTrf              =   []
       ,  ehcOptBuiltinNames     =   mkEHBuiltinNames (const id)
-      ,  ehcOptFullProgAnalysis =   False
-      ,  ehcOptDumpCoreStages   =   False
-      ,  ehcOptDumpGrinStages   =   False
       ,  ehcOptUseInplace       =   True
       
 %%]]
-%%[[8
+%%[[(8 codegen grin)
       ,  ehcOptEmitBytecode     =   False
       ,  ehcOptEmitExecBytecode =   False
       ,  ehcOptErrAboutBytecode =   False
       ,  ehcOptGenCmt           =   True
-%%][99
+%%][(99 codegen grin)
       ,  ehcOptEmitBytecode     =   True
       ,  ehcOptEmitExecBytecode =   True
       ,  ehcOptErrAboutBytecode =   True
@@ -246,10 +262,12 @@ defaultEHCOpts
       ,  ehcOptTyBetaRedCutOffAt
                                 =   10
 %%]]
+%%[[(20 codegen)
+      ,  ehcDebugStopAtCoreError=   False
+%%]]
 %%[[20
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
-      ,  ehcDebugStopAtCoreError=   False
 %%]]
 %%[[99
       ,  ehcProgName            =   emptyFPath
@@ -281,22 +299,28 @@ ehcCmdLineOpts
 %%[[7_2
      ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
-%%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
-     ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate Core transformation stages (no)"
-     ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
+%%[[(8 codegen)
      ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
                                                                               "switch on/off core transformations"
-     ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
-     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
+     ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate Core transformation stages (no)"
+%%]]
+%%[[(8 codegen grin)
+     ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
      ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
+     ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
 
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option "g"  ["gen-own"]          (OptArg  oOwn "0|1|2|3|4")           "generate own 1=parameters/tailjumps, 2=locals, 3=calls, 4=stack (3)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
 %%]]
+%%[[(8 codegen java)
+%%]]
 %%[[8
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
+     ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
+%%]]
+%%[[(8 codegen grin)
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
      ,  Option ""   ["gen-rtsinfo"]      (ReqArg oRTSInfo "<nr>")             "flags for rts info dumping (default=0)"
 %%][100
@@ -304,12 +328,14 @@ ehcCmdLineOpts
 %%[[9
      -- ,  Option ""   ["chr-scoped"]       (ReqArg  oCHRScoped "0|1|2")         "scoped CHR gen: 0=inst, 1=super, 2=all (default=2)"
 %%]]
+%%[[(20 codegen)
+     ,  Option ""   ["debug-stopat-core-error"]
+                                         (boolArg oStopAtCoreError)           "debug: stop at .core parse error (default=off)"
+%%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
      ,  Option ""   ["debug-stopat-hi-error"]
                                          (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
-     ,  Option ""   ["debug-stopat-core-error"]
-                                         (boolArg oStopAtCoreError)           "debug: stop at .core parse error (default=off)"
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
@@ -360,7 +386,7 @@ ehcCmdLineOpts
                                       "1" -> CompilePoint_Parse
                                       "2" -> CompilePoint_AnalHS
                                       "3" -> CompilePoint_AnalEH
-%%[[8
+%%[[(8 codegen)
                                       "4" -> CompilePoint_Core
 %%]]
                                       _   -> CompilePoint_All
@@ -368,21 +394,22 @@ ehcCmdLineOpts
 %%[[7_2
          oUnique         o =  o { ehcOptUniqueness    = False   }
 %%]]
-%%[[8
+%%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
-
+%%]]
+%%[[8
          oCode       ms  o =  case ms of
-                                Just "-"     -> o { ehcOptEmitCore         = False  }
                                 Just "hs"    -> o { ehcOptEmitHS           = True   }
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
+%%[[(8 codegen)
+                                Just "-"     -> o { ehcOptEmitCore         = False  }
                                 Just "core"  -> o { ehcOptEmitCore         = True   }
-                                Just "java"  -> o { ehcOptEmitJava         = True   }
-                                Just "grin"  -> o { ehcOptEmitGrin         = True   }
-
-%%[[99
-                                Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
 %%]]
-
+%%[[(8 codegen java)
+                                Just "java"  -> o { ehcOptEmitJava         = True   }
+%%]]
+%%[[(8 codegen grin)
+                                Just "grin"  -> o { ehcOptEmitGrin         = True   }
                                 Just "bc"    -> o { ehcOptEmitBytecode     = True 
                                                   , ehcOptFullProgAnalysis = False
                                                   }
@@ -422,7 +449,10 @@ ehcCmdLineOpts
                                                   , ehcOptEmitBytecode     = False
                                                   , ehcOptErrAboutBytecode = False
                                                   }                   
-
+%%]]
+%%[[99
+                                Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
+%%]]
                                 _            -> o
 
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
@@ -436,6 +466,7 @@ ehcCmdLineOpts
                                                    ("+",_)    -> [TrfAllYes]
                                                    ("-",_)    -> [TrfAllNo]
                                                    _          -> []
+%%[[(8 codegen grin)
          oOwn        ms  o =  case ms of
                                 Just "0"    -> o { ehcOptOwn     = 0       }
                                 Just "1"    -> o { ehcOptOwn     = 1       }
@@ -446,6 +477,7 @@ ehcCmdLineOpts
                                 Nothing     -> o { ehcOptOwn     = 3       }
                                 _           -> o { ehcOptOwn     = 3       }
          oRTSInfo    s   o =  o { ehcOptGenRTSInfo     = read s       }
+%%]]
          oVerbose    ms  o =  case ms of
                                 Just "0"    -> o { ehcOptVerbosity     = VerboseQuiet       }
                                 Just "1"    -> o { ehcOptVerbosity     = VerboseNormal      }
@@ -453,12 +485,14 @@ ehcCmdLineOpts
                                 Just "3"    -> o { ehcOptVerbosity     = VerboseDebug       }
                                 Nothing     -> o { ehcOptVerbosity     = VerboseALot        }
                                 _           -> o
+%%[[(8 codegen grin)
          oOptimise   ms  o =  case ms of
                                 Just "0"    -> o { ehcOptOptimise      = OptimiseNone       }
                                 Just "1"    -> o { ehcOptOptimise      = OptimiseNormal     }
                                 Just "2"    -> o { ehcOptOptimise      = OptimiseALot       }
                                 Nothing     -> o { ehcOptOptimise      = OptimiseALot       }
                                 _           -> o
+%%]]
 %%]]
 %%[[9
 {-
@@ -533,19 +567,25 @@ boolArg tr = OptArg (optBoolean tr) boolArgStr
 oPriv                o b = o { ehcOptPriv           = b }
 %%]
 
-%%[8
+%%[(8 codegen)
+optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
+%%]
+
+%%[(8 codegen grin)
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
 optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
-optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b, ehcOptEmitGrin = b }
+%%]
+
+%%[(20 codegen)
+oStopAtCoreError     o b = o { ehcDebugStopAtCoreError     = b }
 %%]
 
 %%[20
 oStopAtHIError       o b = o { ehcDebugStopAtHIError       = b }
-oStopAtCoreError     o b = o { ehcDebugStopAtCoreError     = b }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -557,13 +597,14 @@ optsDiscrRecompileRepr :: EHCOpts -> String
 optsDiscrRecompileRepr opts
   = concat
     $ intersperse " "
-    $ [ o "grin"            (ehcOptEmitGrin         opts)
-      , o "grinbc"          (ehcOptEmitBytecode     opts)
-      , o "exec"            (ehcOptEmitExecC        opts)
-      , o "fullproggrin"    (ehcOptFullProgAnalysis opts)
-      , o "bexec"           (ehcOptEmitExecBytecode opts)
+    $ [ show (ehcOptAspects opts)
+%%[[(20 codegen)
       , o "clsrec"          (ehcCfgClassViaRec      opts)
+      , o "fullproggrin"    (ehcOptFullProgAnalysis opts)
+      , o "exec"            (ehcOptEmitExecC        opts)
+      , o "bexec"           (ehcOptEmitExecBytecode opts)
       , show (ehcOptOptimise opts)
+%%]]
       ]
   where o m v = if v then m else ""
 %%]

@@ -7,18 +7,18 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyC)
+%%[(8 codegen grin) hs module {%{GRIN}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{GRIN}GRINCCommon} hiding (Variable(..)),{%{GRIN}Silly}, {%{GRIN}BuiltinPrims}, {%{GRIN}Config}) export(prettyC)
 %%]
-%%[8 hs import(Data.Maybe)
+%%[(8 codegen grin) hs import(Data.Maybe)
 %%]
-%%[8 hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
-%%[8 hs import({%{EH}Base.Opts})
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[8 import({Silly/AbsSyn})
+%%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 prettyC :: EHCOpts -> SilModule -> PP_Doc
 prettyC opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod)
@@ -32,7 +32,7 @@ prettyC opts silmod
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8
+%%[(8 codegen grin)
 
 WRAPPER SilModule
 
@@ -56,7 +56,7 @@ optTraceAssign = False
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
          [ | | prettyC USE {>-<} {empty} : PP_Doc ]
 
@@ -246,7 +246,7 @@ SEM Variable
 %%% Building a C program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 
 label :: String -> PP_Doc
@@ -327,7 +327,7 @@ returnFromSillyFunction retdiff optOwn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantic functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%[8 hs
+%%[(8 codegen grin) hs
 
 preambule :: PP_Doc
 preambule

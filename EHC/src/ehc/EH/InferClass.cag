@@ -171,7 +171,7 @@ SEM Decl
 %%% Deriving info: which class and which field, with info for codegen. A bit hackerish...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[(95 codegen)
 SEM Decl
   | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
 %%]

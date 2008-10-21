@@ -3,17 +3,17 @@
 %include afp.fmt
 %%]
 
-%%[8 import({GrinCode/AbsSyn})
+%%[(8 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[8.wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
-%%[8 hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
 
-%%[8 hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
+%%[(8 codegen grin) hs module {%{GRIN}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{GRIN}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
 lowerGrin :: (GrModule,HptMap) -> (GrModule,HptMap)
 lowerGrin (input,hptMap)
@@ -23,7 +23,7 @@ lowerGrin (input,hptMap)
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 
 ATTR AllNT     [ | | grTrf: SELF     ]
 ATTR GrAGItf   [ | | grTrf: GrModule ]
@@ -54,7 +54,7 @@ SEM GrAGItf
 
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 
 fillgaps :: HptItems -> HptItems
 fillgaps [] = []
@@ -70,7 +70,7 @@ fillgaps (t1@(n1,v1):t2rest@((n2,v2):rest)) = t1 : [(n,AbsBottom) | n<-[n1+1..n2
 %% Vectorisation %%
 %%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type HptItems       = [ (Int,AbstractValue) ]
 
 maximum0 [] = 0
@@ -102,7 +102,7 @@ isSingleVar hptMap (HNmNr nr _)
 %%]
 
 
-%%[8
+%%[(8 codegen grin)
 ATTR AllNT     [ subst : {Map.Map HsName GrVal} | |  ]
 ATTR GrPatLam  [ | | subst : {Map.Map HsName GrVal}  ]
 
@@ -195,7 +195,7 @@ SEM GrExpr
 
 
 
-%%[8
+%%[(8 codegen grin)
 -- return the fields of pattern and value to the Alternative node
 ATTR GrPatAlt [ | | patFieldL: {[HsName]} patTag: GrTag ]
 

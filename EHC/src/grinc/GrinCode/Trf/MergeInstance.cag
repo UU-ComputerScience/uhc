@@ -1,17 +1,17 @@
-%%[9 import({GrinCode/AbsSyn})
+%%[(9 codegen grin) import({GrinCode/AbsSyn})
 %%]
 
-%%[9.wrapper
+%%[(9 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[9 hs module {%{GRIN}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map)
+%%[(9 codegen grin) hs module {%{GRIN}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map)
 %%]
-%%[9 hs import(Debug.Trace)
+%%[(9 codegen grin) hs import(Debug.Trace)
 %%]
 
 
-%%[9 hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(mergeInstance)
+%%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{GRIN}GRINCCommon}, {%{EH}GrinCode}) export(mergeInstance)
 
 mergeInstance :: GrModule -> GrModule
 mergeInstance code
@@ -21,13 +21,13 @@ mergeInstance code
 
 %%]
 
-%%[9
+%%[(9 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 
-%%[9 hs
+%%[(9 codegen grin) hs
 
 type ClassMap = Map.Map HsName [Maybe HsName]
 type ArityMap = Map.Map HsName (Int, [Int])
@@ -35,7 +35,7 @@ type ArityMap = Map.Map HsName (Int, [Int])
 %%]
 
 
-%%[9
+%%[(9 codegen grin)
 
 ATTR AllBind [ classMap :  {ClassMap}
                arityMap :  {ArityMap}
@@ -92,7 +92,7 @@ SEM GrBind
 
 %%]
 
-%%[9 hs
+%%[(9 codegen grin) hs
 
 mergeFields :: [GrVal] -> ArityMap -> HsName -> [Maybe HsName] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
 mergeFields fields am i =  zipWith3 (mergeField fields am i) [0..]

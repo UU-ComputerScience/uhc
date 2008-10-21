@@ -3,22 +3,22 @@
 %include afp.fmt
 %%]
 
-%%[8 hs module {%{GRIN}LLVM.Pretty}
+%%[(8 codegen grin) hs module {%{GRIN}LLVM.Pretty}
 %%]
-%%[8 hs import(qualified Data.List)
+%%[(8 codegen grin) hs import(qualified Data.List)
 %%]
-%%[8 hs import(EH.Util.Pretty)
+%%[(8 codegen grin) hs import(EH.Util.Pretty)
 %%]
-%%[8 hs import({%{GRIN}LLVM})
+%%[(8 codegen grin) hs import({%{GRIN}LLVM})
 %%]
-%%[8 import({LLVM/AbsSyn})
+%%[(8 codegen grin) import({LLVM/AbsSyn})
 %%]
 
-%%[8
+%%[(8 codegen grin)
 WRAPPER LLVMModule
 %%]
 
-%%[8 hs export( prettyLLVMModule )
+%%[(8 codegen grin) hs export( prettyLLVMModule )
 prettyLLVMModule :: LLVMModule -> PP_Doc
 prettyLLVMModule llvmmod
   = let t = wrap_LLVMModule (sem_LLVMModule llvmmod)
@@ -28,7 +28,7 @@ prettyLLVMModule llvmmod
 
 %%]
 
-%%[8
+%%[(8 codegen grin)
 --------------------------------------------------------------------------------
 -- Prettyprint a LLVM Module
 --------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ SEM LLVMExpression
                 lhs.pretty = error "Undefined LLVMExpression"                                        
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 --------------------------------------------------------------------------------
 -- Print functions
 --------------------------------------------------------------------------------
@@ -230,7 +230,7 @@ ppSwitch scrut dflt targets =
    in "switch" >#< show scrut >|< "," >#< show dflt >#< ppTargets targets        
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 --------------------------------------------------------------------------------
 -- Misc functions
 --------------------------------------------------------------------------------

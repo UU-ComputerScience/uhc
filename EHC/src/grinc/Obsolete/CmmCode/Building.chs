@@ -3,14 +3,14 @@
 %include afp.fmt
 %%]
 
-%%[8 module {%{GRIN}CmmCode.Building} import({%{EH}Base.Common}(HsName), Data.Char, Data.List(nubBy), {%{EH}GrinCode}, {%{GRIN}CmmCode}) export(module {%{GRIN}CmmCode})
+%%[(8 codegen grin) module {%{GRIN}CmmCode.Building} import({%{EH}Base.Common}(HsName), Data.Char, Data.List(nubBy), {%{EH}GrinCode}, {%{GRIN}CmmCode}) export(module {%{GRIN}CmmCode})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%
 %% helper functions %%
 %%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.lifting export(Toplevel(..),CmmToplevelBuilder,Section(..),CmmSectionBuilder,Body(..),CmmBodyBuilder)
+%%[(8 codegen grin).lifting export(Toplevel(..),CmmToplevelBuilder,Section(..),CmmSectionBuilder,Body(..),CmmBodyBuilder)
 -- toplevel
 class Toplevel a where
  toplevel :: a -> CmmToplevel
@@ -51,7 +51,7 @@ type CmmBodyBuilder = CmmBody -> CmmBody
 
 %%]
 
-%%[8.types export(bits, bits8, bits16, bits32, bits64, ptrType, valType, grWord)
+%%[(8 codegen grin).types export(bits, bits8, bits16, bits32, bits64, ptrType, valType, grWord)
 bits :: Int -> CmmType
 bits n = CmmBits n
 
@@ -68,7 +68,7 @@ valType = CmmName "@grWord" -- type for node elements
 
 %%]
 
-%%[8.expressions export(int,char,cmmVar,prim,memRef,fetch,"(<%>)","(<*>)","(</>)","(<+>)","(<->)")
+%%[(8 codegen grin).expressions export(int,char,cmmVar,prim,memRef,fetch,"(<%>)","(<*>)","(</>)","(<+>)","(<->)")
 -- simple expressions
 int   v = CmmExpression_Int v Nothing
 char  v = CmmExpression_Char v Nothing
@@ -93,7 +93,7 @@ a <-> b = prim "sub" [CmmActual_Actual "" a, CmmActual_Actual "" b]
 
 Is this so: I might want to lend the monadic notation by defining >> = ~> and return = |~
 
-%%[8.sequences export(lift,"(~>)",build,emptyBuilder)
+%%[(8 codegen grin).sequences export(lift,"(~>)",build,emptyBuilder)
 
 lift :: (a -> b) -> a -> [b] -> [b]
 lift f = (:) . f
@@ -107,7 +107,7 @@ emptyBuilder = id
 build a = a []
 %%]
 
-%%[8.statements export(cmmNop,cmmIfThenElse,cmmIfThen,cmmSwitch,cmmAssign,cmmCall,cmmTailcall,cmmReturn,cmmLabel,cmmGoto,ite,it)
+%%[(8 codegen grin).statements export(cmmNop,cmmIfThenElse,cmmIfThen,cmmSwitch,cmmAssign,cmmCall,cmmTailcall,cmmReturn,cmmLabel,cmmGoto,ite,it)
 
 -- statements
 cmmNop                = lift body $ CmmStatement_Nop
@@ -127,7 +127,7 @@ ite i t e = cmmIfThenElse i (build t) (build e)
 it  i t   = cmmIfThen     i (build t)
 %%]
 
-%%[8.declarations export(typedefs,imports,exports,constant,varDecl,globalVarDecl,target)
+%%[(8 codegen grin).declarations export(typedefs,imports,exports,constant,varDecl,globalVarDecl,target)
 -- declarations
 
 typedefs t n     = lift toplevel $ CmmDeclaration_Typedef t n
@@ -143,7 +143,7 @@ target   :: Int -> CmmByteOrder -> Int -> Int -> CmmToplevelBuilder
 target ms bo ps ws = lift toplevel (CmmDeclaration_Target $ TargetSpec ms bo ps ws)
 %%]
 
-%%[8.procedures export(procedure,formal,formal',ptrArg,fltArg,valArg,buildProcedure)
+%%[(8 codegen grin).procedures export(procedure,formal,formal',ptrArg,fltArg,valArg,buildProcedure)
 procedure :: String -> CmmName -> CmmFormals -> CmmBodyBuilder -> CmmToplevelBuilder
 procedure c n a b = lift toplevel $ CmmProcedure_Procedure c n a (build b)
 
@@ -175,7 +175,7 @@ buildProcedure name args bodyElems
 %     $ (dollar), @ (at) in a name with a @ <ascii code> @ 
 % Compiler introduced names start with an @
 
-%%[8.names export(cmmName, cmmName', cmmVar', varUpdate')
+%%[(8 codegen grin).names export(cmmName, cmmName', cmmVar', varUpdate')
 -- convert GRIN to C-- names
 cmmName' :: HsName -> CmmName
 cmmName' = cmmName . show
@@ -194,7 +194,7 @@ varUpdate' = varUpdate . cmmName'
 
 % NOTE: As a convention the tags of bindings are named after the their binding name with "@F" prepended
 
-%%[8.CAFs export(CAFEnv,arg,var,var',arg',cafNode4name)
+%%[(8 codegen grin).CAFs export(CAFEnv,arg,var,var',arg',cafNode4name)
 type CAFEnv = [(CmmName, Int)]
 
 arg :: CmmName -> CmmActual
@@ -217,7 +217,7 @@ All function calls must match the number of recievers with the number of return
 values. Note that we request CmmKindedNames to be exactly the number of return
 values in the called function.
 
-%%[8.calls export(call,call',apply,eval)
+%%[(8 codegen grin).calls export(call,call',apply,eval)
 call :: Maybe CmmFlow -> CmmName -> CmmActuals -> CmmKindedNames -> CmmBodyBuilder
 call flow name = fcall "" (cmmVar name)
     where
@@ -235,7 +235,7 @@ eval                 = "$eval"
 -- callEval      = call False eval [a]
 %%]
 
-%%[8.reservations export(reserve,many,one,noInit,strInit,ustrInit,listInit)
+%%[(8 codegen grin).reservations export(reserve,many,one,noInit,strInit,ustrInit,listInit)
 reserve s t i = CmmDatum_Reserve t size i
     where
     size = if s > 0
@@ -252,7 +252,7 @@ ustrInit      = CmmInitString_UnicodeString
 listInit      = CmmInitString_List
 %%]
 
-%%[8.assignments export(memUpdate,varUpdate,updates)
+%%[(8 codegen grin).assignments export(memUpdate,varUpdate,updates)
 -- value updates
 memUpdate t l i | i == 0    = CmmLValue_MemRef t l
                 | otherwise = CmmLValue_MemRef t (l <+> int i)
@@ -276,7 +276,7 @@ For each introduced identifier:
     already have a type.
 - the name of the identifier (duh)
 
-%%[8.nameRegister export(CmmNameRegisterElement,CmmNameRegister,nreg2knames,nreg2names,nreg2varDef,noDups,tagVar,elemVar)
+%%[(8 codegen grin).nameRegister export(CmmNameRegisterElement,CmmNameRegister,nreg2knames,nreg2names,nreg2varDef,noDups,tagVar,elemVar)
 type CmmNameRegisterElement = (CmmName, (CmmType, CmmKind))
 type CmmNameRegister = [CmmNameRegisterElement]
 
@@ -305,7 +305,7 @@ elemVar n = (n, (valType, ""))
 
 %% -----------------------------
 
-%%[8
+%%[(8 codegen grin)
 heapPointer = cmmVar "@hp"
 heapLimit = cmmVar "@heapLimit"
 

@@ -30,7 +30,7 @@
 %%[20 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
 %%]
 
-%%[20 import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
+%%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
 %%]
 
 %%[99 export(modImpPrelude)
@@ -422,7 +422,9 @@ data ModMpInfo
       { mmiInscps   		:: !ModEntRel
       , mmiExps     		:: !ModEntRel
       , mmiHiddenExps     	:: !ModEntRel
+%%[[(20 codegen)
       , mmiNmOffMp  		:: !HsName2OffsetMp
+%%]]
       }
 
 instance Show ModMpInfo where
@@ -442,7 +444,9 @@ mkModMpInfo i e he
       { mmiInscps   		= i
       , mmiExps     		= e
       , mmiHiddenExps     	= he
+%%[[(20 codegen)
       , mmiNmOffMp  		= expsNmOffMp $ e `Rel.union` he
+%%]]
       }
 
 type ModMp = Map.Map HsName ModMpInfo
@@ -453,7 +457,7 @@ ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 
 The exported names of the module
 
-%%[20
+%%[(20 codegen)
 expsNmOffMp :: ModEntRel -> HsName2OffsetMp
 expsNmOffMp exps
   = Map.fromList

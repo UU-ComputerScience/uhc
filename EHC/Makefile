@@ -149,7 +149,9 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(EHC_GMP_VARIANTS)
+	@echo $(ASPECTS)
+	@echo $(EHC_ASPECTS)
+	@echo $(EHC_ASPECTS_SUFFIX)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

@@ -6,16 +6,16 @@ The prims table describes alternate implementation, in particular how to inline.
 Module {%{Base}Builtin} describes similar information required in the frontend.
 Ideally, these tables should be merged.
 
-%%[8 module {%{GRIN}BuiltinPrims}
+%%[(8 codegen grin) module {%{GRIN}BuiltinPrims}
 %%]
 
-%%[8 import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{GRIN}GrinByteCode})
+%%[(8 codegen grin) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{GRIN}GrinByteCode})
 %%]
 
-%%[8 import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty)
+%%[(8 codegen grin) import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty)
 %%]
 
-%%[8 export(Backend(..), Primitive(..), lookupPrim)
+%%[(8 codegen grin) export(Backend(..), Primitive(..), lookupPrim)
 
 -- Interface
 

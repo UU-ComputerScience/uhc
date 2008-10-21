@@ -35,10 +35,6 @@ DATA Binding
         fixity                  : Fixity
     | Ids
         idOccs                  : {[(IdOcc,IdOcc)]}
-    | Arities
-        idArities               : {AssocL HsName Int}
-    | GrInlines
-        inlMp                   : {AssocL HsName ([HsName],GrExpr)}
     | Val
         nm                      : HsName
         ty                      : Ty
@@ -61,6 +57,14 @@ DATA Binding
         nmEvid                  : HsName
     | CHRStore
         chrs					: {[ScopedPredCHR]}
+%%[[(20 codegen)
+    | Arities
+        idArities               : {AssocL HsName Int}
+%%]]
+%%[[(20 codegen grin)
+    | GrInlines
+        inlMp                   : {AssocL HsName ([HsName],GrExpr)}
+%%]]
 %%]
 
 %%[20

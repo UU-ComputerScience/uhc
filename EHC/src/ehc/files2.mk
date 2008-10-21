@@ -1,9 +1,6 @@
 # ehc/uhc variant dispatch rules
 $(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(EHC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
 
-#$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) \
-#			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(RTS_ALL_SRC),)
-#	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-variant
 $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) $(RTS_ALL_SRC)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-variant
 
@@ -25,10 +22,14 @@ ehc-variant:
 	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
 	  ehc-variant-dflt
 
-ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) $(LIB_GRINC_INS_FLAG) \
-			$(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(GEN_ALL_DPDS) $(INSABS_LIB_RTS),)
+ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) \
+			$(if $(EHC_CFG_USE_GRIN) \
+				,$(LIB_GRINC_INS_FLAG) \
+				 $(if $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS)),$(GEN_ALL_DPDS) $(INSABS_LIB_RTS),),)
 	mkdir -p $(dir $(EHC_BLD_EXEC)) && \
-	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) -package $(LIB_GRINC_PKG_NAME) -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
+	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) \
+	       $(if $(EHC_CFG_USE_GRIN),-package $(LIB_GRINC_PKG_NAME),) \
+	       -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
 
 # rules for ehc haddock
 ehc-haddock-variant: 

@@ -7,22 +7,22 @@
 %%% Haskell importable interface to C--
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs module {%{GRIN}CmmCode} import ({%{GRIN}GRINCCommon})
+%%[(8 codegen grin) hs module {%{GRIN}CmmCode} import ({%{GRIN}GRINCCommon})
 %%]
 
-%%[8 hs export(CmmUnit(..), CmmToplevel(..), CmmSectionElement(..), CmmDatum(..), CmmSize(..), CmmInitString(..), CmmDeclaration(..), CmmProcedure(..), CmmBody, CmmBodyElement(..), CmmStatement(..), CmmExpression(..), CmmActual(..), CmmLValue(..), CmmAlternative(..), CmmRange(..), CmmFlowElement(..))
+%%[(8 codegen grin) hs export(CmmUnit(..), CmmToplevel(..), CmmSectionElement(..), CmmDatum(..), CmmSize(..), CmmInitString(..), CmmDeclaration(..), CmmProcedure(..), CmmBody, CmmBodyElement(..), CmmStatement(..), CmmExpression(..), CmmActual(..), CmmLValue(..), CmmAlternative(..), CmmRange(..), CmmFlowElement(..))
 %%]
-%%[8 hs export(CmmToplevels, CmmSection, CmmData, CmmExpressions,  CmmActuals, CmmAlternatives, CmmRanges, CmmLValues, CmmFlow)
-%%]
-
-%%[8 hs export(CmmName, CmmNames, CmmExternalName, CmmExternalNames, CmmHwName, CmmHwNames, CmmType(..), CmmOptionalType, CmmKind, CmmFormal, CmmFormals, CmmTargetSpec(..), CmmByteOrder(..), CmmCallConv, CmmKindedName, CmmKindedNames)
+%%[(8 codegen grin) hs export(CmmToplevels, CmmSection, CmmData, CmmExpressions,  CmmActuals, CmmAlternatives, CmmRanges, CmmLValues, CmmFlow)
 %%]
 
-%%[8 import({CmmCode/AbsSyn})
+%%[(8 codegen grin) hs export(CmmName, CmmNames, CmmExternalName, CmmExternalNames, CmmHwName, CmmHwNames, CmmType(..), CmmOptionalType, CmmKind, CmmFormal, CmmFormals, CmmTargetSpec(..), CmmByteOrder(..), CmmCallConv, CmmKindedName, CmmKindedNames)
+%%]
+
+%%[(8 codegen grin) import({CmmCode/AbsSyn})
 DERIVING * : Show, Eq
 %%]
 
-%%[8 hs
+%%[(8 codegen grin) hs
 type CmmName          = String
 type CmmNames         = [CmmName]
 type CmmExternalName  = (CmmName, Maybe String)

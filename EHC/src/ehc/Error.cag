@@ -16,7 +16,7 @@
 %%[1 ag import({Error/AbsSyn})
 %%]
 
-%%[9 hs import({%{EH}Core})
+%%[(9 codegen) hs import({%{EH}Core})
 %%]
 
 %%[99 hs import({%{EH}Base.ForceEval})
