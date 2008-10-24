@@ -6,33 +6,33 @@ Derived from work by Gerrit vd Geest.
 
 Conversion from Pred to CHR.
 
-%%[9 module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp})
+%%[(9 hmtyinfer) module {%{EH}Pred.ToCHR} import({%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}Error},{%{EH}VarMp})
 %%]
 
-%%[9 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(9 hmtyinfer) import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[9 import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Solve})
 %%]
 
-%%[9 import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
+%%[(9 hmtyinfer) import({%{EH}Pred.CHR},{%{EH}Pred.Heuristics},{%{EH}Pred.Evidence},{%{EH}Pred.RedGraph})
 %%]
 
-%%[9 import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
+%%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
 %%]
 
 -- debug
-%%[9 import(EH.Util.Pretty,EH.Util.Utils)
+%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[13 import({%{EH}Base.Builtin})
+%%[(13 hmtyinfer) import({%{EH}Base.Builtin})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rule store
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(ScopedPredStore,ScopedPredCHR)
+%%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR)
 type PredStore p g s info = CHRStore p info g s
 type ScopedPredStore = PredStore CHRPredOcc Guard VarMp RedHowAnnotation
 type ScopedPredCHR   = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard VarMp
@@ -42,7 +42,7 @@ type ScopedPredCHR   = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard VarMp
 %%% Intermediate structures for constructing CHR variants of class/instance decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHRClassDecl,CHRScopedInstanceDecl)
+%%[(9 hmtyinfer) export(CHRClassDecl,CHRScopedInstanceDecl)
 type CHRClassDecl           a info      = ([a], a, [info])
 type CHRInstanceDecl        a info      = ([a], a, info)
 type CHRScopedInstanceDecl  a info sc   = ([a], a, info, sc)
@@ -52,7 +52,7 @@ type CHRScopedInstanceDecl  a info sc   = ([a], a, info, sc)
 %%% Info to Evidence map for CHRPredOcc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHRPredOccEvidMp)
+%%[(9 hmtyinfer) export(CHRPredOccEvidMp)
 type CHRPredOccEvidMp = InfoToEvidenceMap CHRPredOcc RedHowAnnotation
 %%]
 
@@ -60,7 +60,7 @@ type CHRPredOccEvidMp = InfoToEvidenceMap CHRPredOcc RedHowAnnotation
 %%% Conversion/expansion into CHR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 type MkRes1 = (ScopedPredStore, ([CHRPredOcc],CHRPredOcc) )
 type MkResN = (ScopedPredStore,[([CHRPredOcc],CHRPredOcc)])
 %%]
@@ -69,7 +69,7 @@ Variables used in CHR's are implicitly universally quantified for each constrain
 they will match against a concrete constraint and then bound the info found therein.
 Hence we can safely use non-unique variables.
 
-%%[9
+%%[(9 hmtyinfer)
 ([sc1,sc2,sc3]
  ,[pr1,pr2,pr3]
 %%[[10
@@ -108,7 +108,7 @@ new proof obligations to the original ones.
 
 In terms of entailment: for a CHR rule H => B, B may not entail H.
 
-%%[9 export(initScopedPredStore)
+%%[(9 hmtyinfer) export(initScopedPredStore)
 initScopedPredStore :: ScopedPredStore
 initScopedPredStore
   = chrStoreFromElems $
@@ -196,7 +196,7 @@ initScopedPredStore
         -- inclSc       = ehcCfgCHRInclScope $ feEHCOpts $ fiEnv env
 %%]
 
-%%[9 export(mkScopedCHR2)
+%%[(9 hmtyinfer) export(mkScopedCHR2)
 mkScopedCHR2
   :: FIIn -> [CHRClassDecl Pred RedHowAnnotation] -> [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
        -> ScopedPredStore -> (ScopedPredStore,ScopedPredStore)
@@ -213,7 +213,7 @@ mkScopedCHR2 env clsDecls insts prevStore
                      where mkC = predCanonic env
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 mkClassSimplChrs :: FIIn -> ScopedPredStore -> CHRClassDecl Pred RedHowAnnotation -> ScopedPredStore
 mkClassSimplChrs env rules (context, head, infos)
   = simps
@@ -284,7 +284,7 @@ mkInstanceChr (context, hd, i, s)
 %%% with additional Constraints
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(SimplifyResult(..),emptySimplifyResult)
+%%[(9 hmtyinfer) export(SimplifyResult(..),emptySimplifyResult)
 data SimplifyResult p i g s
   = SimplifyResult
       { simpresSolveState		:: SolveState p i g s
@@ -295,7 +295,7 @@ emptySimplifyResult :: Ord p => SimplifyResult p i g s
 emptySimplifyResult = SimplifyResult emptySolveState emptyRedGraph
 %%]
 
-%%[9 export(simplifyResultResetForAdditionalWork)
+%%[(9 hmtyinfer) export(simplifyResultResetForAdditionalWork)
 simplifyResultResetForAdditionalWork :: Ord p => SimplifyResult p i g s -> SimplifyResult p i g s
 simplifyResultResetForAdditionalWork r = r {simpresRedGraph = emptyRedGraph}
 %%]
@@ -305,7 +305,7 @@ simplifyResultResetForAdditionalWork r = r {simpresSolveState = solveStateResetD
 %%% Evidence construction from Constraint reduction graph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 mkEvidence
   :: ( Ord p, Ord i
      , PP i, PP p -- for debugging
@@ -336,7 +336,7 @@ mkEvidence heur cnstrMp redGraph
 %%% Evidence construction from Constraint reduction graph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(patchUnresolvedWithAssumption)
+%%[(9 hmtyinfer) export(patchUnresolvedWithAssumption)
 patchUnresolvedWithAssumption :: FIIn -> CHRPredOccCnstrMp -> CHRPredOccEvidMp -> (CHRPredOccCnstrMp,CHRPredOccEvidMp,CHRPredOccCnstrMp)
 patchUnresolvedWithAssumption env unresCnstrMp evidMp
   = (cnstrMpFromList assumeCnstrs, evidMpSubst (\p -> Map.lookup p assumeSubstMp) evidMp, cannotResCnstrMp)
@@ -354,7 +354,7 @@ patchUnresolvedWithAssumption env unresCnstrMp evidMp
 Find assume's wich have a common scope prefix, then share these.
 Assumption: we will never share outer scopes because we only get passed inner scopes, because these will be abstracted over in bindings of a let expression.
 
-%%[9
+%%[(9 hmtyinfer)
 shareUnresolvedAssumptionsByScope :: [Constraint CHRPredOcc info] -> AssocL (Constraint CHRPredOcc info) PredScope
 shareUnresolvedAssumptionsByScope unres
   = [ ( c
@@ -370,7 +370,7 @@ shareUnresolvedAssumptionsByScope unres
 %%% construction of RedGraph, followed by evidence, using some (currently fixed) heuristic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(chrSimplifyToEvidence)
+%%[(9 hmtyinfer) export(chrSimplifyToEvidence)
 chrSimplifyToEvidence
   :: ( Ord p, Ord i
      , CHRMatchable FIIn p s, CHRCheckable FIIn g s

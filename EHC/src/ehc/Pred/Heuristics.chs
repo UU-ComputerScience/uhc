@@ -4,16 +4,16 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, {%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, {%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
-%%[9 import(Data.List(nub, maximumBy, partition),Data.Maybe)
+%%[(9 hmtyinfer) import(Data.List(nub, maximumBy, partition),Data.Maybe)
 %%]
 
-%%[9 import(EH.Util.Pretty,EH.Util.AGraph,EH.Util.Utils)
+%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.AGraph,EH.Util.Utils)
 %%]
 
-%%[9 export(Heuristic,SHeuristic)
+%%[(9 hmtyinfer) export(Heuristic,SHeuristic)
 type Heuristic p info = [info] -> HeurAlts p info -> [(info, Evidence p info)]
 
 type SHeuristic p info = HeurAlts p info -> Evidence p info
@@ -25,12 +25,12 @@ type SHeuristic p info = HeurAlts p info -> Evidence p info
 %%% tree is only evaluated when needed.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(HeurAlts(..),HeurRed(..))
+%%[(9 hmtyinfer) export(HeurAlts(..),HeurRed(..))
 data HeurAlts  p  info = HeurAlts  { redaltsPredicate  :: !p,       redaltsAlts  :: ![HeurRed p info]    }
 data HeurRed   p  info = HeurRed   { redInfo           :: !info,    redContext   :: ![HeurAlts p info]   }
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance Show (HeurAlts  p  info) where
   show _ = "HeurAlts"
 
@@ -38,7 +38,7 @@ instance Show (HeurRed  p  info) where
   show _ = "HeurRed"
 %%]
  
-%%[9
+%%[(9 hmtyinfer)
 instance (PP p, PP info) => PP (HeurAlts  p  info) where
   pp x = "HeurAlts" >#< redaltsPredicate x >#< ppBracketsCommasV (redaltsAlts x)
 
@@ -50,7 +50,7 @@ instance (PP p, PP info) => PP (HeurRed  p  info) where
 %%% Making a Heuristic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(toHeuristic)
+%%[(9 hmtyinfer) export(toHeuristic)
 toHeuristic :: SHeuristic p info -> Heuristic p info
 toHeuristic h infos alts
   = zip infos (repeat ev)
@@ -61,7 +61,7 @@ toHeuristic h infos alts
 %%% Try combinator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(heurTry)
+%%[(9 hmtyinfer) export(heurTry)
 heurTry :: Eq p => SHeuristic p info -> SHeuristic p info -> SHeuristic p info
 heurTry f g a  | null (evidUnresolved ev) = ev
                | otherwise                = g a
@@ -72,7 +72,7 @@ heurTry f g a  | null (evidUnresolved ev) = ev
 %%% Conversion to evidence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(toEvidence)
+%%[(9 hmtyinfer) export(toEvidence)
 toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
 toEvidence f a = rec (f a)
   where  rec (HeurAlts p [])                 =  Evid_Unresolved p
@@ -93,7 +93,7 @@ toEvidence f a = rec (f a)
 %%% Local / Binary choice
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(localChoice,binChoice)
+%%[(9 hmtyinfer) export(localChoice,binChoice)
 localChoice :: Eq info => (p -> [info] -> [info]) -> SHeuristic p info  
 localChoice choose (HeurAlts p reds) = 
   case filter ((`elem` redinfos) . redInfo) reds of
@@ -111,7 +111,7 @@ binChoice order = localChoice (const local)
                    where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 heurChoose :: (x -> x -> PartialOrdering) -> (x,[(x,x)]) -> x -> (x,[(x,x)])
 heurChoose cmp (x,eqPairs) y
   = case cmp x y of
@@ -128,7 +128,7 @@ heurMaximumBy cmp (x:xs)
 %%% Local / Binary choice with reduction context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 contextChoice :: (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p info
 contextChoice choose (HeurAlts p reds) = 
   case choose p reds of
@@ -155,7 +155,7 @@ contextBinChoice order = contextChoice (const local)
 %%% Determine whether ambiguous really is ambiguous
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 reallyAmbigEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
 reallyAmbigEvid p evs
   = case filter (not . null . snd) evs of
@@ -168,7 +168,7 @@ reallyAmbigEvid p evs
 %%% Heuristic that only selects solvable alternatives (using backtracking)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(solvable)
+%%[(9 hmtyinfer) export(solvable)
 solvable :: HeurAlts p info -> HeurAlts p info
 solvable (HeurAlts p rs) = HeurAlts p (catMaybes (map rec rs))
    where rec (HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
@@ -186,7 +186,7 @@ hasAlts _                = True
 
 This should not depend on emptyVarMp, but abstract away from it. Perhaps use chrEmptySubst
 
-%%[9
+%%[(9 hmtyinfer)
 cmpSpecificness :: FIIn -> Pred -> Pred -> PartialOrdering
 cmpSpecificness env p q = 
   case  chrMatchTo env emptyVarMp p q of 
@@ -200,7 +200,7 @@ cmpSpecificness env p q =
 %%% Haskell98 heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(heurHaskell98)
+%%[(9 hmtyinfer) export(heurHaskell98)
 anncmpHaskell98 :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpHaskell98 env ann1 ann2
   = case (ann1,ann2) of
@@ -226,7 +226,7 @@ heurHaskell98 env = toHeuristic $ binChoice (anncmpHaskell98 env)
 %%% GHC heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(heurGHC)
+%%[(9 hmtyinfer) export(heurGHC)
 anncmpGHCBinSolve :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpGHCBinSolve env ann1 ann2
   = case (ann1,ann2) of
@@ -263,7 +263,7 @@ heurGHC env
 %%% EHC heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(heurScopedEHC)
+%%[(9 hmtyinfer) export(heurScopedEHC)
 anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped env ann1 ann2
   = case (ann1,ann2) of
@@ -325,7 +325,7 @@ ifthenelseSHeuristic g t e alts
   | otherwise = e alts
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 btHeuristic :: Heuristic p RedHowAnnotation
 btHeuristic = toHeuristic $ toEvidence solvable
 %%]

@@ -7,7 +7,10 @@
 %%% Haskell importable interface to Error pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Char, Data.Maybe,EH.Util.Pretty, EH.Util.Utils,  {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Ty.Pretty}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
+%%[1 hs module {%{EH}Error.Pretty} import(Data.List, Data.Char, Data.Maybe,EH.Util.Pretty, EH.Util.Utils,  {%{EH}Base.Common}, {%{EH}Error}) export(ppErr, ppErrs,ppErrL)
+%%]
+
+%%[(1 hmtyinfer || hmtyast) hs import({%{EH}Ty}, {%{EH}Ty.Pretty})
 %%]
 
 %%[8 hs import(EH.Util.ParseErrPrettyPrint hiding (ppErr)) export(mkPPErr)
@@ -60,7 +63,7 @@ ppMsgErr :: PP msg => msg -> PP_Doc -> Range -> PP_Doc
 ppMsgErr msg err r = r  >|< ":" >-< indent 2 (msg >|< ":" >-< indent 2 err)
 %%]
 
-%%[1.ppUnifyErr hs
+%%[(1 hmtyinfer || hmtyast).ppUnifyErr hs
 ppUnifyErr :: PP msg => msg -> Ty -> Ty -> Ty -> Ty -> PP_Doc
 ppUnifyErr msg t1 t2 t1d t2d
   =  ppMsgErr msg    (    "failed to fit:"  >#< ppListSepFill "" "" " <= " [ppTy t1,ppTy t2]
@@ -68,7 +71,7 @@ ppUnifyErr msg t1 t2 t1d t2d
                      )
 %%]
 
-%%[4.ppUnifyErr -1.ppUnifyErr hs
+%%[(4 hmtyinfer || hmtyast).ppUnifyErr -1.ppUnifyErr hs
 %%[[4
 ppUnifyErr :: PP msg => msg -> Ty -> Ty -> FIMode -> Ty -> Ty -> FIMode -> PP_Doc
 ppUnifyErr msg t1 t2 fim t1d t2d fimd
@@ -127,13 +130,24 @@ strCapHeading kind title@(ht:tt)
 %%[1
 ATTR Err [ | | pp: PP_Doc ]
 ATTR ErrL [ | | ppL: {[PP_Doc]} ]
+%%]
 
+%%[(1 hmtyinfer || hmtyast)
 SEM Err
   | UnifyClash          lhs     .  pp   =   ppUnifyErr  "Type clash"
                                                         @ty1 @ty2 @ty1detail @ty2detail
 %%[[99
                                                         @range
 %%]]
+  | PatArity            lhs     .  pp   =   ppMsgErr    "Known type has wrong arity for pattern"
+                                                        ("type :" >#< ppTy @ty >-< "arity:" >#< @arity)
+%%[[99
+                                                        @range
+%%]]
+%%]
+
+%%[1
+SEM Err
   | NamesNotIntrod      lhs     .  pp   =   ppMsgErr    (strCapHeading @kind "Names not in scope")
                                                         (ppNmAndRange @nmL)
 %%[[99
@@ -142,11 +156,6 @@ SEM Err
   | NamesDupIntrod      lhs     .  pp   =   ppMsgErr    ("Name(s) for " ++ @kind ++ "(s) introduced more than once")
                                                         -- (strCapHeading @kind "Names introduced more than once")
                                                         (ppNmAndRange @nmL)
-%%[[99
-                                                        @range
-%%]]
-  | PatArity            lhs     .  pp   =   ppMsgErr    "Known type has wrong arity for pattern"
-                                                        ("type :" >#< ppTy @ty >-< "arity:" >#< @arity)
 %%[[99
                                                         @range
 %%]]
@@ -166,7 +175,7 @@ SEM ErrL
   | Cons                lhs     .  ppL  =   @hd.pp : @tl.ppL
 %%]
 
-%%[1.MissingSig
+%%[(1 hmtyinfer || hmtyast).MissingSig
 SEM Err
   | MissingSig          lhs     .  pp   =   ppMsgErr    "Missing sig for" (@wher)
 %%]%%[[99
@@ -182,7 +191,7 @@ SEM Err
 %%]]
 %%]
 
-%%[2 -1.MissingSig
+%%[(2 hmtyinfer || hmtyast) -1.MissingSig
 SEM Err
   | UnifyOccurs         lhs     .  pp   =   ppUnifyErr  "Infinite type"
                                                         @ty1 @ty2 (mkTyVar @tvar) @ty2detail
@@ -191,7 +200,7 @@ SEM Err
 %%]]
 %%]
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 SEM Err
   | UnifyClash          lhs     .  pp   :=  ppUnifyErr  "Type clash"
                                                         @ty1 @ty2 @fiMode @ty1detail @ty2detail @fiModeD
@@ -212,7 +221,7 @@ SEM Err
 %%]]
 %%]
 
-%%[4_2
+%%[(4_2 hmtyinfer || hmtyast)
 SEM Err
   | InconsistentAlts    lhs     .  pp   =   ppMsgErr    "Inconsistent type alternatives for type variable"
                                                         (    "in type :" >#< pp @ty
@@ -234,6 +243,20 @@ SEM Err
 %%]]
 %%]
 
+%%[(7 hmtyinfer || hmtyast)
+SEM Err
+  | MissingRowLabels    lhs     .  pp   =   ppMsgErr    ("Missing label(s) in row")
+                                                        ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
+%%[[99
+                                                        @range
+%%]]
+  | TooManyRowLabels    lhs     .  pp   =   ppMsgErr    "Too many label(s) to fit in row"
+                                                        ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
+%%[[99
+                                                        @range
+%%]]
+%%]
+
 %%[7
 SEM Err
   | MissingDataFields   lhs     .  pp   =   ppMsgErr    ("Missing field(s) in data construction")
@@ -248,16 +271,6 @@ SEM Err
 %%]]
   | DuplicateDataFields lhs     .  pp   =   ppMsgErr    ("Duplicate field(s) in data construction/update")
                                                         ("Field(s):" >#< ppCommas' @nmL)
-%%[[99
-                                                        @range
-%%]]
-  | MissingRowLabels    lhs     .  pp   =   ppMsgErr    ("Missing label(s) in row")
-                                                        ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
-%%[[99
-                                                        @range
-%%]]
-  | TooManyRowLabels    lhs     .  pp   =   ppMsgErr    "Too many label(s) to fit in row"
-                                                        ("Label(s):" >#< ppCommas' @nmL >-< "Row     :" >#< ppTy @ty)
 %%[[99
                                                         @range
 %%]]
@@ -287,7 +300,7 @@ SEM Err
   | PP                  lhs     .  pp   =   @pp
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Err
   | PrfCutOffReached    lhs     .  pp   =   ppMsgErr    "Proof cut off limit reached"
                                                         (    "limit:" >#< pp @depth
@@ -336,12 +349,6 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | MalformedPred       lhs     .  pp   =   ppMsgErr    ("Type cannot be parsed as context")
-                                                        (    "type:" >#< @pp
-                                                        )
-%%[[99
-                                                        @range
-%%]]
   | NoMostSpecificPred  lhs     .  pp   =   ppMsgErr    "No most specific predicate can be chosen between"
                                                         (    "preds:" >#< vlist [@pred1,@pred2]
                                                         )
@@ -363,7 +370,17 @@ SEM Err
 %%]]
 %%]
 
-%%[11
+%%[9
+SEM Err
+  | MalformedPred       lhs     .  pp   =   ppMsgErr    ("Type cannot be parsed as context")
+                                                        (    "type:" >#< @pp
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+%%]
+
+%%[(11 hmtyinfer || hmtyast)
 SEM Err
   | TyBetaRedLimit      lhs     .  pp   =   ppMsgErr    "Type synonym expansion limit reached"
                                                         (    "limit          :" >#< pp @limit
@@ -393,7 +410,7 @@ SEM Err
 %%]]
 %%]
 
-%%[95
+%%[(95 hmtyinfer || hmtyast)
 SEM Err
   | MalformedTy         lhs     .  pp   =   ppMsgErr    ("Malformed " ++ @kind ++ " for " ++ @purpose)
                                                         (    @kind >|< ":" >#< ppTy @ty

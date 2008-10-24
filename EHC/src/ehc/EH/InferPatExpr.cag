@@ -11,7 +11,7 @@
 %%% Arity of pattern app
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.arity
+%%[(1 hmtyinfer).arity
 ATTR PatExpr [ | | arity: Int ]
 
 SEM PatExpr
@@ -20,18 +20,18 @@ SEM PatExpr
                 lhs         .  arity                =   0
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM PatExpr
   | SConst      lhs         .  arity                =   0
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM PatExpr
   | Rec DataFields
                 lhs         .  arity                =   0
 %%]
 
-%%[97
+%%[(97 hmtyinfer)
 SEM PatExpr
   | Expr        lhs         .  arity                =   0
 %%]
@@ -40,12 +40,12 @@ SEM PatExpr
 %%% Destruction function, known ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.patFunTy
+%%[(2 hmtyinfer).patFunTy
 ATTR PatExpr [ | | patFunTy USE {`const`} {Ty_Any}: Ty ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.patFunTy
-%%[5.patFunTy
+%%[(5 hmtyinfer).patFunTy
 SEM PatExpr
   | Con         loc         .  patFunTy             =   let  prTy = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                         in   ([prTy] `mkArrow` prTy)
@@ -53,7 +53,7 @@ SEM PatExpr
   | AppTop      loc         .  patFunTy             =   @patExpr.patFunTy
 %%]
 
-%%[5.patFunTy
+%%[(5 hmtyinfer).patFunTy
 SEM PatExpr
   | Con         loc         .  (ty_g_,nmErrs)       =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .  (tvarv1_,tvarv2_)    =   let  [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
@@ -65,7 +65,7 @@ SEM PatExpr
 
 GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
       match with this additional information such that the equality constraints will be stripped off by the fitsIn function.
-%%[16.patFunTy
+%%[(16 hmtyinfer).patFunTy
 SEM PatExpr
   | Con
       loc.knTyShape := [@loc.tvarv1_] `mkArrow` (hsnRec `mkConApp` [@loc.tvarv2_])
@@ -75,13 +75,13 @@ SEM PatExpr
 %%% Distribution of known ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.knTy
+%%[(1 hmtyinfer).knTy
 ATTR AllPatExpr [ knTy: Ty | | ]
 ATTR PatExpr [ knTyL: TyL | | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.knTy.App
-%%[5.knTy.App
+%%[(5 hmtyinfer).knTy.App
 
 -- Note: knProdTy is later replaced by @loc.patFunTy which is based on the signature of the deconstructor
 
@@ -101,7 +101,7 @@ SEM PatExpr
                 arg         .  knTy                 =   @knArgTy
 %%]
 
-%%[1.knTy.Init
+%%[(1 hmtyinfer).knTy.Init
 SEM Decl
   | Val         patExpr     .  knTyL                =   []
 
@@ -110,18 +110,18 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.knTy
-%%[5.knTy
+%%[(5 hmtyinfer).knTy
 SEM PatExpr
   | AppTop      loc         .  (knPatTy,knProdTy)   :=  tyArrowArgRes @patFunTy
   | Con         loc         .  knPatTy              :=  @tvarv1_
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM CaseAlt
   | Pat         patExpr     .  knTyL                =   []
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM RecPatExpr
   | Ext Expr    patExpr     .  knTyL                =   []
 
@@ -129,7 +129,7 @@ SEM DataFieldPatExpr
   | Ext         patExpr     .  knTyL                =   []
 %%]
 
-%%[12
+%%[(12 hmtyinfer)
 SEM Expr
   | LamImpl     arg         .  knTyL                =   []
 %%]
@@ -138,12 +138,21 @@ SEM Expr
 %%% Temporary (20081021), reintroduction of previously ruler generated AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(10 noHmTyRuler)
+-- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 noHmTyRuler hmtyinfer)
 SEM PatExpr
-  | SConst      loc         .	fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @lhs.knTy (Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))
+%%[[8
+  | SConst      loc         .	constTy             =   tyString
+%%][11
+  | SConst      loc         .	constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
+%%]]
+%%]
+
+%%[(8 noHmTyRuler hmtyinfer)
+SEM PatExpr
+  | SConst      loc         .	fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @lhs.knTy @constTy
                 lhs         .  	patFunTy            =   Ty_Any
-                loc         .  	ty                  =   (Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))
+                loc         .  	ty                  =   @constTy
                 lhs         .  	tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
 %%]
 
@@ -152,7 +161,7 @@ SEM PatExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.xxx
-%%[5.xxx
+%%[(5 hmtyinfer).xxx
 SEM PatExpr
   | Var VarAs   loc         .   ty                  =   @lhs.knTy
                             .   varTy               =   @ty
@@ -164,12 +173,12 @@ SEM PatExpr
   | VarAs       lhs         .   valGam              =   @addToGam @patExpr.valGam
 %%]
 
-%%[2.tyNtyVarMp
+%%[(2 hmtyinfer).tyNtyVarMp
 ATTR AllPatExpr [ | tyVarMp: VarMp | ty: Ty ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Var
-%%[5.Var
+%%[(5 hmtyinfer).Var
 SEM PatExpr
   | Var VarAs   loc         .   ty                  :=  tyEnsureNonAny @lUniq @lhs.knTy
   | VarAs       patExpr     .   knTy                =   @ty
@@ -177,7 +186,7 @@ SEM PatExpr
 
 -- generated from ruler rules into EHRulerRules, was 4.Var
 -- 20080421 - AD, this does not match ruler rules anymore: ty sig from tySigGam is now also used for fitsIn
-%%[5.Var
+%%[(5 hmtyinfer).Var
 SEM PatExpr
   | Var VarAs   loc         .   (ty_g_,_)           =   valGamLookupTy @nm @lhs.tySigGam
                             .   ty_kn_              =   tyEnsureNonAny @lUniq @lhs.knTy
@@ -191,7 +200,7 @@ SEM PatExpr
                             .   ty_kn_              =   tyEnsureNonAny @lUniq @lhs.knTy
                             .   ty                  :=  tyInst1Exists @lUniq2 @ty_kn_
 
-%%[9.Var
+%%[(9 hmtyinfer).Var
 SEM PatExpr
   | Var         loc         .   ty_kn_              :=  tyEnsureNonAnyImpl @lUniq @lhs.knTy
 %%]
@@ -199,7 +208,7 @@ SEM PatExpr
 -- generated from ruler rules into EHRulerRules, was 4.TypeAs
 -- 20070205 - AD, this does not match ruler rules anymore: options to fit, type expr is passed further on, uninstantiated
 -- 20070620 - AD, matches ruler rules
-%%[5.TypeAs
+%%[(5 hmtyinfer).TypeAs
 SEM PatExpr
   | TypeAs      loc         .   ty_q_               =   @tyExpr.ty
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @lhs.tyVarMp @lhs.knTy @ty_q_
@@ -208,7 +217,7 @@ SEM PatExpr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Rest
-%%[5.Rest
+%%[(5 hmtyinfer).Rest
 SEM PatExpr
   | AppTop      loc         .   fo_fitR_            =   @lhs.knTy `fitsIn` @knPatTy
                             .   ty                  =   foTy @fo_fitR_
@@ -217,14 +226,14 @@ SEM PatExpr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Rest
-%%[5.Rest
+%%[(5 hmtyinfer).Rest
 SEM PatExpr
   | IConst      loc         .   ty                  =   tyInt
   | CConst      loc         .   ty                  =   tyChar
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Rest
-%%[5.Rest
+%%[(5 hmtyinfer).Rest
 SEM PatExpr
   | AppTop      loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @lhs.knTy @knPatTy
   | Con         loc         .   fo_fitR_            :=  fitsIn @lhs.fiOpts @fe @lUniq3 (@tyVarMp_p_ |=> @lhs.tyVarMp) @lhs.knTy @tvarv1_
@@ -233,7 +242,7 @@ SEM PatExpr
                 lhs         .   tyVarMp             =   foVarMp @fo_fitR_ |=> @tyVarMp_p_ |=> @lhs.tyVarMp
 %%]
 
-%%[97
+%%[(97 hmtyinfer)
 SEM PatExpr
   | Expr        loc         .   eqFldNm             =   ehbnClassEqFldEq $ ehcOptBuiltinNames @lhs.opts
                             .   (eqTy,nmErrs)       =   valGamLookupTy @eqFldNm @lhs.valGam
@@ -249,7 +258,7 @@ SEM PatExpr
 %%% Data based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 SEM DataFieldPatExpr
   | Ext         loc         .   (gTy,nmErrs)        =   valGamLookupTy @nm @lhs.valGam
                             .   knFldTy             =   mkNewTyVar @lUniq
@@ -268,7 +277,7 @@ SEM DataFieldPatExpr
 
 GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
       match with this additional information such that the equality constraints will be stripped off by the fitsIn function.
-%%[16
+%%[(16 hmtyinfer)
 SEM DataFieldPatExpr
   | Con
       loc.knTyShape := [@lhs.knTy] `mkArrow` (hsnRec `mkConApp` [@loc.tyvar])
@@ -278,7 +287,7 @@ SEM DataFieldPatExpr
 %%% Row based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 SEM RecPatExpr
   | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp @lhs.knTy tyRecEmpty
                             .   ty                  =   foTy @fo_

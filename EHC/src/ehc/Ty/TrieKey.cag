@@ -21,17 +21,17 @@ Int -> Int                          (->) Int Int                            [->,
 a -> (c -> d)                       (->) a ((->) c d)                       [->,a,->,c,d]
 (a -> b) -> c                       (->) ((->) a b) c                       [->,->,c,a,b]
 
-%%[9 hs module {%{EH}Ty.TrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
+%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
 %%]
 
-%%[9 hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
+%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
 %%]
 
-%%[9 ag import({Ty/AbsSyn},{Ty/CommonAG})
+%%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
 
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 tyTrieKeyParentChildren :: Ty -> ([TrieKey Key],[TrieKey Key])
 tyTrieKeyParentChildren ty
   =  let  t =  wrap_TyAGItf
@@ -59,17 +59,17 @@ instance Keyable CHRPredOcc where
 
 %%]
 
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 instance Keyable PredOccId where
   toKey (PredOccId     i) = [TK_One TKK_Normal  $ Key_UID i]
 %%]
   toKey (PredOccId_Var v) = [TK_One TKK_Partial $ Key_UID v]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 WRAPPER LabelAGItf
 %%]
 
-%%[10 hs
+%%[(10 hmtyinfer || hmtyast) hs
 labelTrieKey :: Label -> [TrieKey Key]
 labelTrieKey label
   =  let  t =  wrap_LabelAGItf
@@ -78,7 +78,7 @@ labelTrieKey label
      in   (toList $ trieKey_Syn_LabelAGItf t)
 %%]
 
-%%[10 hs
+%%[(10 hmtyinfer || hmtyast) hs
 instance Keyable LabelOffset where
   toKey (LabelOffset_Var v) = [TK_One TKK_Partial $ Key_UID v]
   toKey (LabelOffset_Off l) = [TK_One TKK_Normal  $ Key_Str $ show l]
@@ -91,7 +91,7 @@ instance Keyable Label where
 %%% TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 ATTR
   TyAGItf Ty Pred
 %%[[10
@@ -111,7 +111,7 @@ ATTR Ty [ | | trieKeyFun: {FastSeq (TrieKey Key)} ]
 ATTR Ty [ | | trieKeyArgs, trieKeyArgsNest: {FastSeq (TrieKey Key)} ]
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Ty
   | App             lhs     .   (trieKey,trieKeyNest)
                                                 =   if @isSpineRoot
@@ -157,7 +157,7 @@ SEM Pred
                             .   trieKeyNest     =   empty
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM Pred
   | Lacks           lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "\\") :++: @lab.trieKey
                             .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
@@ -165,13 +165,13 @@ SEM Pred
   | RowSplit        lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "|"
                             .   trieKeyNest     =   @ty.trieKey :++: @exts.trieKey
 
-%%[16
+%%[(16 hmtyinfer || hmtyast)
 SEM Pred
   | Eq              lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "=")
                             .   trieKeyNest     =   @tyL.trieKey :++: @tyR.trieKey :++: @tyL.trieKeyNest :++: @tyR.trieKeyNest
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Lab             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_HNm @nm
   | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @lv
@@ -181,7 +181,7 @@ SEM RowExts
   | Exts            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_Str "exts"
   | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @ev
 
-%%[13
+%%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Cons            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str ":"
                             .   trieKeyNest     =   @hd.trieKey :++: @tl.trieKey :++: @hd.trieKeyNest :++: @tl.trieKeyNest
@@ -201,7 +201,7 @@ SEM Pred
 %%% (Ext) record info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 ATTR Ty [ | | isFixed: Bool ]
 
 SEM Ty
@@ -214,7 +214,7 @@ SEM Ty
 %%% Test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 %%]
 (_,u1,u2,u3,u4) = mkNewLevUID4 uidStart
 v1 = mkTyVar u1

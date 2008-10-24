@@ -20,7 +20,7 @@ _ltImin :: Int
 The check in the HS pass is correct, here it would check EH input, which currently is not used much.
 The problem lies in that @decls.patValGam also contains the type signature, and a type for the value in the pattern is added without checking if it already is present.
 
-%%[1.dupErrs
+%%[(1 hmtyinfer).dupErrs
 SEM Expr
   | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
                                                         in   [] -- if null nms then [] else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
@@ -30,21 +30,21 @@ SEM Expr
 %%% Obligatory type signature
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.sigMissErrs
+%%[(1 hmtyinfer).sigMissErrs
 SEM Decl
   | Val         loc         .   sigMissErrs         =   @nmErrs
 %%]
 SEM Decl
   | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [rngLift @range Err_MissingSig @patExpr.pp]
 
-%%[2 -1.sigMissErrs
+%%[(2 hmtyinfer) -1.sigMissErrs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data type, field labels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 SEM Decl
   | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups @constrs.fldSelGam
                                                              wrong tl = foHasErrs fo
@@ -57,7 +57,7 @@ SEM DataConstr
                                                         in   if null nms then [] else [rngLift @range Err_NamesDupIntrod "data field" (zip nms (repeat Nothing))]
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM Expr
   | DataFields  loc         .   fldMissErrs         =   case @dataFieldExpr.mbDti of
                                                           Just dti | not (Set.null m)
@@ -73,17 +73,17 @@ SEM Expr
 %%% Occur cycles
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer)
 SEM Expr
   | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @decls.tyVarMp $ @cycTyVarMp_l `varmpUnion` @cycTyVarMp_g
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM Expr
   | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @lhs.tyVarMp @cycVarMp
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Expr
   | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l `varmpUnion` @cycTyKiVarMp_g
 %%]
@@ -92,26 +92,26 @@ SEM Expr
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9.checkClNms hs
+%%[(9 hmtyinfer).checkClNms hs
 checkClNms :: HsNameS -> [Err]
 checkClNms s = if Set.null s then [] else [mkErr_NamesNotIntrod "class" (Set.toList s)]
 %%]
-%%[99 -9.checkClNms hs
+%%[(99 hmtyinfer) -9.checkClNms hs
 checkClNms :: Range -> HsNameS -> [Err]
 checkClNms r s = if Set.null s then [] else [mkErr_NamesNotIntrod r "class" (Set.toList s)]
 %%]
 
-%%[9.mkPrvErr hs
+%%[(9 hmtyinfer).mkPrvErr hs
 mkPrvErr :: CHRPredOccCnstrMp -> [Err]
 mkPrvErr m = if Map.null m then [] else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys m]
 %%]
-%%[99 -9.mkPrvErr hs
+%%[(99 hmtyinfer) -9.mkPrvErr hs
 mkPrvErr :: RangeMp -> Range -> CHRPredOccCnstrMp -> [Err]
 -- mkPrvErr r m = if Map.null m then [] else [Err_NotProvenPreds r $ map (\c -> let o = cnstrPred c in (cpoPr o,cpoRange o)) $ Map.keys m]
 mkPrvErr rm r m = if Map.null m then [] else [Err_NotProvenPreds r [ (pr,Map.findWithDefault [] pr rm) | (c,_) <- Map.toList m, let pr = cpoPr (cnstrPred c) ]]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM AGItf
 %%[[9
   | AGItf       loc         .   predNotPrfErrs      =   mkPrvErr @cannotProveCnstrMp
@@ -148,7 +148,7 @@ SEM Expr
                                                             else [rngLift @range Err_AmbigPreds amb]
 %%]
 
-%%[12
+%%[(12 hmtyinfer)
 SEM Expr
   | AppImpl LamImpl
                 loc         .   nmErrs              =   []
@@ -158,7 +158,7 @@ SEM Expr
 %%% Predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(95 codegen)
+%%[(95 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
                                                             hasFlds = any (\t -> ctagArity t > 0)

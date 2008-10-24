@@ -10,31 +10,19 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
 %%]
 
-%%[4 import({%{EH}Ty},EH.Util.Pretty) export(FIOpts(..), strongFIOpts, unifyFIOpts, instFIOpts, instLRFIOpts, instLFIOpts, fioMkStrong, fioMkUnify)
+%%[4 import(EH.Util.Pretty)
 %%]
 
-%%[4 export(fioIsSubsume)
+%%[(4 hmtyinfer || hmtyast) import({%{EH}Ty})
 %%]
 
-%%[4_2 export(meetFIOpts,joinFIOpts,impredFIOpts)
-%%]
-
-%%[4_2 export(fioIsMeetJoin)
-%%]
-
-%%[5 export(weakFIOpts)
-%%]
-
-%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin}) export(cmdLineTrfs,trfOptOverrides)
+%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
 %%]
 
 %%[8 import(EH.Util.FPath)
 %%]
 
 %%[9 import(qualified Data.Set as Set)
-%%]
-
-%%[9 export(predFIOpts,implFIOpts)
 %%]
 
 %%[99 import(EH.Util.Utils)
@@ -47,7 +35,7 @@
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen) export(cmdLineTrfs)
 data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
 
 cmdLineTrfs :: AssocL String String
@@ -72,7 +60,7 @@ cmdLineTrfs
     ]
 %%]
 
-%%[8
+%%[(8 codegen) export(trfOptOverrides)
 trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool
 trfOptOverrides opts trf
   =  ovr opts
@@ -113,6 +101,7 @@ data EHCOpts
       ,  ehcOptEmitCore       ::  Bool
       ,  ehcOptOptimise       ::  Optimise			-- optimisation level
       ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
+      ,  ehcOptTrf            ::  [TrfOpt]
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
@@ -143,7 +132,6 @@ data EHCOpts
       ,  ehcOptEmitEH         ::  Bool
       ,  ehcOptSearchPath     ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity			-- verbosity level
-      ,  ehcOptTrf            ::  [TrfOpt]
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptUseInplace     ::  Bool              -- use inplace runtime libraries
@@ -167,17 +155,19 @@ data EHCOpts
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
 %%]]
+%%[[(99 hmtyinfer)
+      ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
+      ,  ehcOptEmitDerivTreePaperSize
+      						  ::  String            -- the paper size to be used
+      ,  ehcOptEmitDerivFitsIn
+      						  ::  Bool              -- show fitsIn derivation tree as well
+%%]]
 %%[[99
       ,  ehcProgName          ::  FPath  			-- name of this program
       ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
       ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
                               ::  Bool
-      ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
-      ,  ehcOptEmitDerivTreePaperSize
-      						  ::  String            -- the paper size to be used
-      ,  ehcOptEmitDerivFitsIn
-      						  ::  Bool              -- show fitsIn derivation tree as well
 %%]]
       }
 %%]
@@ -209,6 +199,7 @@ defaultEHCOpts
       ,  ehcOptEmitCore         =   True
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptOptimise         =   OptimiseNormal
+      ,  ehcOptTrf              =   []
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
@@ -236,7 +227,6 @@ defaultEHCOpts
       
       ,  ehcOptSearchPath       =   []
       ,  ehcOptVerbosity        =   VerboseNormal
-      ,  ehcOptTrf              =   []
       ,  ehcOptBuiltinNames     =   mkEHBuiltinNames (const id)
       ,  ehcOptUseInplace       =   True
       
@@ -269,15 +259,17 @@ defaultEHCOpts
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
 %%]]
+%%[[(99 hmtyinfer)
+      ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
+      ,  ehcOptEmitDerivTreePaperSize
+      						    =   "2"
+      ,  ehcOptEmitDerivFitsIn  =   False
+%%]]
 %%[[99
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
-      ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
-      ,  ehcOptEmitDerivTreePaperSize
-      						    =   "2"
-      ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
       }
 %%]
@@ -349,7 +341,7 @@ ehcCmdLineOpts
      
      ,  Option ""   ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
 %%]]
-%%[[99
+%%[[(99 hmtyinfer)
      ,  Option ""   ["deriv-tree"]       (OptArg oDerivTree ("f|i[,p=[{0,1,2,3,4,5}|<n>m]][,f=" ++ boolArgStr ++ "]"))
                                                                               "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...; <n>m=2^<n> meter), dflt=2; f=show subsumption"
 %%][100
@@ -450,11 +442,12 @@ ehcCmdLineOpts
                                                   , ehcOptErrAboutBytecode = False
                                                   }                   
 %%]]
-%%[[99
+%%[[(99 hmtyinfer)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
 %%]]
                                 _            -> o
 
+%%[[(8 codegen)
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []
                                   opt o  =  let  (pm,o2) = span (\c -> c == '+' || c == '-') o
@@ -466,6 +459,7 @@ ehcCmdLineOpts
                                                    ("+",_)    -> [TrfAllYes]
                                                    ("-",_)    -> [TrfAllNo]
                                                    _          -> []
+%%]]
 %%[[(8 codegen grin)
          oOwn        ms  o =  case ms of
                                 Just "0"    -> o { ehcOptOwn     = 0       }
@@ -517,7 +511,7 @@ ehcCmdLineOpts
          oLimitCtxtRed   o l = o { ehcOptPrfCutOffAt       = l }
          oUseInplace     o b = o { ehcOptUseInplace = b }
 %%]]
-%%[[99
+%%[[(99 hmtyinfer)
          oDerivTree  ms  o =  case ms of
                                 Just ('f':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Final  }
                                 Just ('i':a) -> opts a $ o { ehcOptEmitDerivTree    = DerivTreeWay_Infer  }
@@ -618,7 +612,7 @@ Difference strong/weak:
 strong: in a context where information is known (i.e. type signature)
 strong allows impredicative binding whereas weak will instantiate quantifiers
 
-%%[9 export(FIOBind(..),fioBindIsYes,fioBindNoSet)
+%%[(9 hmtyinfer) export(FIOBind(..),fioBindIsYes,fioBindNoSet)
 data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
 
 fioBindNoSet :: FIOBind -> TyVarIdS
@@ -629,89 +623,83 @@ fioBindIsYes FIOBindYes = True
 fioBindIsYes _          = False
 %%]
 
-%%[4.FIOpts.hd
+%%[(4 hmtyinfer).FIOpts.hd export(FIOpts(..))
 data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst           ::  Bool
                         ,  fioBindLFirst     ::  Bool                ,  fioBindLBeforeR         ::  Bool
                         ,  fioMode           ::  FIMode              ,  fioUniq                 ::  UID
-%%]
-%%[7.FIOpts
+%%[[7
                         ,  fioNoRLabElimFor  ::  [HsName]            ,  fioNoLLabElimFor        ::  [HsName]
-%%]
-%%[9.FIOpts
+%%]]
+%%[[9
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
                         ,  fioDontBind       ::  TyVarIdS
                         ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
-%%]
-%%[16.FIOpts
+%%]]
+%%[[16
                         ,  fioFitFailureToProveObl    :: Bool
                         ,  fioFitVarFailureToProveObl :: Bool
-%%]
-%%[50.FIOpts
+%%]]
+%%[[50
                         ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
-%%]
-%%[4.FIOpts.tl
+%%]]
                         }
 %%]
 
-%%[4.strongFIOpts.hd
+%%[(4 hmtyinfer).strongFIOpts.hd export(strongFIOpts)
 strongFIOpts :: FIOpts
 strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst           =   True
                         ,  fioBindLFirst     =   True                ,  fioBindLBeforeR         =   True
                         ,  fioMode           =   FitSubLR            ,  fioUniq                 =   uidStart
-%%]
-%%[7.strongFIOpts
+%%[[7
                         ,  fioNoRLabElimFor  =   []                  ,  fioNoLLabElimFor        =   []
-%%]
-%%[9.strongFIOpts
+%%]]
+%%[[9
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
                         ,  fioDontBind       =   Set.empty
                         ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
-%%]
-%%[16.FIOpts
+%%]]
+%%[[16
                         ,  fioFitFailureToProveObl    = False
                         ,  fioFitVarFailureToProveObl = False
-%%]
-%%[50.FIOpts
+%%]]
+%%[[50
                         ,  fioAllowEqOpen    =   False               ,  fioInstCoConst          =   instCoConst
-%%]
-%%[4.strongFIOpts.tl
+%%]]
                         }
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 instance Show FIOpts where
   show o =  "FIOpts"
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 instance PP FIOpts where
   pp   o =  "FIOpts{"
             >#< "leaveRInst=" >|< pp (fioLeaveRInst o)
             >#< "bindLFirst=" >|< pp (fioBindLFirst o)
             >#< "bindRFirst=" >|< pp (fioBindRFirst o)
-%%]
-%%[7
+%%[[7
             >#< "fioNoLLabElimFor=" >|< pp (show $ fioNoLLabElimFor o)
             >#< "fioNoRLabElimFor=" >|< pp (show $ fioNoRLabElimFor o)
-%%]
-%%[9
+%%]]
+%%[[9
             >#< "allowRPredElim=" >|< pp (fioAllowRPredElim o)
-%%]
-%%[4
+%%]]
             >#< "}"
 %%]
 
-%%[4.FIOpts.instLFIOpts
+%%[(4 hmtyinfer).FIOpts.instLFIOpts export(instLFIOpts)
 instLFIOpts :: FIOpts
 instLFIOpts = strongFIOpts {fioBindRFirst = False}
 %%]
 
-%%[4.FIOpts.instLRFIOpts
+%%[(4 hmtyinfer).FIOpts.instLRFIOpts export(instLRFIOpts)
 instLRFIOpts :: FIOpts
 instLRFIOpts = strongFIOpts {fioBindRFirst = False, fioBindLFirst = False}
 %%]
 
-%%[4.FIOpts.instFIOpts
+%%[(4 hmtyinfer).FIOpts.instFIOpts export(unifyFIOpts,instFIOpts)
 unifyFIOpts :: FIOpts
 unifyFIOpts = strongFIOpts {fioMode = FitUnify}
 
@@ -719,7 +707,7 @@ instFIOpts :: FIOpts
 instFIOpts = instLFIOpts {fioLeaveRInst = True, fioBindLFirst = False}
 %%]
 
-%%[4_2.FIOpts.defaults
+%%[(4_2 hmtyinfer).FIOpts.defaults export(meetFIOpts,joinFIOpts,impredFIOpts)
 meetFIOpts :: FIOpts
 meetFIOpts = unifyFIOpts {fioMode = FitMeet}
 
@@ -730,12 +718,12 @@ impredFIOpts :: FIOpts
 impredFIOpts = strongFIOpts {fioBindToTyAlts = True}
 %%]
 
-%%[5
+%%[(5 hmtyinfer) export(weakFIOpts)
 weakFIOpts :: FIOpts
 weakFIOpts = strongFIOpts {fioLeaveRInst = True, fioBindRFirst = False}
 %%]
 
-%%[9
+%%[(9 hmtyinfer) export(predFIOpts,implFIOpts)
 predFIOpts :: FIOpts
 predFIOpts = strongFIOpts {fioPredAsTy = True, fioLeaveRInst = True}
 
@@ -743,7 +731,7 @@ implFIOpts  :: FIOpts
 implFIOpts = strongFIOpts {fioAllowRPredElim = False}
 %%]
 
-%%[4 export(fioSwapPolarity, fioSwapOpts)
+%%[(4 hmtyinfer) export(fioSwapPolarity, fioSwapOpts)
 fioSwapOpts :: FIOpts -> FIOpts
 fioSwapOpts fio
   = fio
@@ -760,12 +748,12 @@ fioSwapPolarity :: Polarity -> FIOpts -> FIOpts
 fioSwapPolarity pol fio = fio {fioMode = fimSwapPol pol (fioMode fio)}
 %%]
 
-%%[4.fioMkStrong
+%%[(4 hmtyinfer).fioMkStrong export(fioMkStrong)
 fioMkStrong :: FIOpts -> FIOpts
 fioMkStrong fi = fi {fioLeaveRInst = False, fioBindRFirst = True, fioBindLFirst = True}
 %%]
 
-%%[4.fioMkUnify
+%%[(4 hmtyinfer).fioMkUnify export(fioMkUnify)
 fioMkUnify :: FIOpts -> FIOpts
 fioMkUnify fi = fi {fioMode = FitUnify}
 %%]
@@ -774,12 +762,12 @@ fioMkUnify fi = fi {fioMode = FitUnify}
 %%% FitsIn opts related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer) export(fioIsSubsume)
 fioIsSubsume :: FIOpts -> Bool
 fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
 %%]
 
-%%[4_2
+%%[(4_2 hmtyinfer) export(fioIsMeetJoin)
 fioIsMeetJoin :: FIOpts -> Bool
 fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
 %%]

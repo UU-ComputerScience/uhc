@@ -7,39 +7,39 @@
 %%% Haskell importable interface to Ty instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs module {%{EH}Ty.Trf.Instantiate}
+%%[(3 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Instantiate}
 %%]
 
-%%[3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyInst)
+%%[(3 hmtyinfer || hmtyast).tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyInst)
 %%]
 
-%%[4.tyInst -3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(4 hmtyinfer || hmtyast).tyInst -3.tyInst hs import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[4 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(4 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
-%%[4 hs import(Data.List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)
+%%[(4 hmtyinfer || hmtyast) hs import(Data.List) export(tyInst1Quants, tyInst1Exists, instCoConst, instContra,instCo)
 %%]
 
-%%[4_2 hs export(instPlain,instFixed,instMeet)
+%%[(4_2 hmtyinfer || hmtyast) hs export(instPlain,instFixed,instMeet)
 %%]
 
-%%[6_4 hs export(instCoExist)
+%%[(6_4 hmtyinfer || hmtyast) hs export(instCoExist)
 %%]
 
-%%[50 hs export(HowToInst,instCoFixed)
+%%[(50 hmtyinfer || hmtyast) hs export(HowToInst,instCoFixed)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% tyInst interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 ag import({Ty/AbsSyn})
+%%[(4 hmtyinfer || hmtyast) ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[3.tyInst hs
+%%[(3 hmtyinfer || hmtyast).tyInst hs
 tyInst' :: (TyVarId -> Ty) -> UID -> Ty -> Ty
 tyInst' mkFreshTy uniq ty
   = s |=> ty'
@@ -53,12 +53,12 @@ tyInst :: UID -> Ty -> Ty
 tyInst = tyInst' mkTyVar
 %%]
 
-%%[3.tyInstKnown hs export(tyInstKnown)
+%%[(3 hmtyinfer || hmtyast).tyInstKnown hs export(tyInstKnown)
 tyInstKnown :: UID -> Ty -> Ty
 tyInstKnown = tyInst' (\tv -> Ty_Var tv TyVarCateg_Fixed)
 %%]
 
-%%[4.tyInst -(3.tyInst 3.tyInstKnown) hs
+%%[(4 hmtyinfer || hmtyast).tyInst -(3.tyInst 3.tyInstKnown) hs
 tyInst :: UID -> Bool -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst uniq onlyExists howToInst ty
   = let  t  =  wrap_TyAGItf
@@ -70,12 +70,12 @@ tyInst1Quants :: UID -> HowToInst -> Ty -> (Ty,TyVarIdL)
 tyInst1Quants uniq howToInst ty = tyInst uniq False howToInst ty
 %%]
 
-%%[4.tyInst1Exists hs
+%%[(4 hmtyinfer || hmtyast).tyInst1Exists hs
 tyInst1Exists :: UID -> Ty -> Ty
 tyInst1Exists uniq ty = fst (tyInst uniq True instCoConst ty)
 %%]
 
-%%[6_4.tyInst1Exists -4.tyInst1Exists hs
+%%[(6_4 hmtyinfer || hmtyast).tyInst1Exists -4.tyInst1Exists hs
 tyInst1Exists :: UID -> Ty -> Ty
 tyInst1Exists uniq ty = fst (tyInst uniq True instCoExist ty)
 %%]
@@ -95,7 +95,7 @@ tyInst uniq onlyExists howToInst ty
 %%% How to instantiate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.HowToInst hs
+%%[(4 hmtyinfer || hmtyast).HowToInst hs
 type HowToInst = TyQu -> TyVarId -> Ty
 
 instCoConst, instContra, instCo :: HowToInst
@@ -106,19 +106,19 @@ instCo       q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var 
 instCoConst      = instCo
 instCoConst  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else mkTyCon ("C_" ++ show v)
 
-%%[4_2 hs
+%%[(4_2 hmtyinfer || hmtyast) hs
 instPlain, instFixed, instMeet :: HowToInst
 instPlain  _    = mkTyVar
 instFixed  _ v  = Ty_Var v TyVarCateg_Fixed
 instMeet   _ v  = Ty_Both v []
 %%]
 
-%%[6_4 hs
+%%[(6_4 hmtyinfer || hmtyast) hs
 instCoExist :: HowToInst
 instCoExist  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Exist
 %%]
 
-%%[50 hs
+%%[(50 hmtyinfer || hmtyast) hs
 instCoFixed :: HowToInst
 instCoFixed  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var v TyVarCateg_Fixed
 %%]
@@ -127,7 +127,7 @@ instCoFixed  q v = if tyquIsForall q then Ty_Var v TyVarCateg_Plain else Ty_Var 
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTy [ howToInst: HowToInst  onlyExists: Bool | | ]
 %%]
 
@@ -135,7 +135,7 @@ ATTR TyAGItf AllTy [ howToInst: HowToInst  onlyExists: Bool | | ]
 %%% Where to stop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR AllTy [ allow: Bool  mbQ: {Maybe TyQu} | | ]
 
 SEM TyAGItf
@@ -150,7 +150,7 @@ SEM Ty
   | * - Quant       loc         .   allow       =   False
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Ty
   | Quant           loc         .   allow       :   Bool
 %%]
@@ -159,7 +159,7 @@ SEM Ty
 %%% Unique
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR AllTy [ | gUniq: UID | ]
 ATTR TyAGItf [ gUniq: UID | | ]
 
@@ -171,7 +171,7 @@ SEM Ty
 %%% Substution to replace tvars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR AllTy [ replSubst: VarMp | gathSubst: VarMp | ]
 ATTR Ty TyAGItf [ | | replTvL USE {++} {[]}: TyVarIdL ]
 ATTR AllTyAndFlds [ | | repl: SELF ]
@@ -188,7 +188,7 @@ SEM Ty
                                                     else  (@lhs.gathSubst)
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Ty
   | Quant           loc         .   tvNew       :   UID
 %%]
@@ -197,7 +197,7 @@ SEM Ty
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Quant           lhs         .   (repl,replTvL)
                                                 =   if @allow
@@ -206,7 +206,7 @@ SEM Ty
   | Var             lhs         .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.replSubst)
 %%]
 
-%%[50
+%%[(50 hmtyinfer || hmtyast)
 SEM Ty
   | Equal           lhs         .   repl        =   maybe @repl (\t -> Ty_Equal (tyVar t) @ty.repl) (varmpTyLookup @tv @lhs.replSubst)
 %%]

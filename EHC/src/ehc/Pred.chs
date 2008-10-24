@@ -7,38 +7,38 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}Pred} import(Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty)
+%%[9 module {%{EH}Pred} import({%{EH}Base.Builtin},Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty,{%{EH}Gam},{%{EH}Base.Common})
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Trf.Quantify},{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(9 hmtyinfer) import({%{EH}Base.CfgPP},{%{EH}Base.Opts})
 %%]
 
-%%[(9 codegen) import({%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils})
+%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.Trf.Quantify},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[9 import({%{EH}Base.Debug})
+%%[(9 codegen hmtyinfer) import({%{EH}Core},{%{EH}Core.Pretty},{%{EH}Core.Subst},{%{EH}Core.Utils})
 %%]
 
-%%[9 import({%{EH}Error})
+%%[(9 hmtyinfer) import({%{EH}Base.Debug})
 %%]
 
-%%[9 export(ClGamInfo(..),ClGam,emptyCLGI)
+%%[(9 hmtyinfer) import({%{EH}Error})
 %%]
 
-%%[9 import({%{EH}Ty.Ftv})
+%%[(9 hmtyinfer) import({%{EH}Ty.Ftv})
 %%]
 
-%%[15 export(ClsFuncDep(..))
+%%[(15 hmtyinfer) export(ClsFuncDep(..))
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[15
+%%[(15 hmtyinfer)
 data ClsFuncDep = ClsFuncDep [Int] [Int] deriving Show
 
 instance PP ClsFuncDep where
@@ -49,19 +49,28 @@ instance PP ClsFuncDep where
 %%% Gamma for intro rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[9 export(ClGamInfo(..),ClGam,emptyCLGI)
 data ClGamInfo
   =  ClGamInfo
+%%[[(9 hmtyinfer)
        { clgiPrToEvidTy     :: !Ty
        , clgiRuleTy         :: !Ty
        , clgiDfltDictNm     :: !HsName
        -- , clgiSupClsFldNmL   :: ![HsName]
-       } deriving Show
+       }
+%%]]
+       deriving Show
 
 type ClGam     = Gam HsName ClGamInfo
 
-emptyCLGI = ClGamInfo Ty_Any Ty_Any hsnUnknown
+emptyCLGI
+  = ClGamInfo
+%%[[(9 hmtyinfer)
+      Ty_Any Ty_Any hsnUnknown
+%%]]
+%%]
 
+%%[(9 hmtyinfer)
 instance PP ClGamInfo where
   pp clgi = pp (clgiDfltDictNm clgi) >#< "::" >#< ppTy (clgiRuleTy clgi) >#< "::" >#< ppTy (clgiPrToEvidTy clgi)
 %%]
@@ -73,7 +82,7 @@ initClGam
       ]
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 instance ForceEval ClGamInfo where
   forceEval x@(ClGamInfo e r n) | forceEval e `seq` forceEval r `seq` forceEval n `seq` True = x
 %%[[102

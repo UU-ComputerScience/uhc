@@ -2,26 +2,26 @@
 %%% Constraint Handling Rules: Constraint language
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Constraint} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}CHR},{%{EH}CHR.Key},{%{EH}Base.Trie})
 %%]
 
-%%[9 import(EH.Util.Pretty)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty)
 %%]
 
-%%[9 import(qualified Data.Set as Set,qualified Data.Map as Map)
+%%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[20 import({%{EH}Base.CfgPP})
+%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constraint
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(Constraint(..))
+%%[(9 hmtyinfer || hmtyast) export(Constraint(..))
 data Constraint p info
   = Prove      		{ cnstrPred :: !p }														-- proof obligation
   | Assume     		{ cnstrPred :: !p }														-- assumed
@@ -29,14 +29,14 @@ data Constraint p info
   deriving (Eq, Ord, Show)
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 reducablePart :: Constraint p info -> Maybe (String,p,p->Constraint p info)
 reducablePart (Prove  p) = Just ("Prf",p,Prove)
 reducablePart (Assume p) = Just ("Ass",p,Assume)
 reducablePart _          = Nothing
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Keyable p => Keyable (Constraint p info) where
   toKey c = maybe [] (\(s,p,_) -> TK_One TKK_Normal (Key_Str s) : toKey p) $ reducablePart c
 
@@ -62,14 +62,14 @@ instance (CHRSubstitutable p v s,CHRSubstitutable info v s) => CHRSubstitutable 
 %%% Mapping: constraint -> info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(ConstraintToInfoMap,emptyCnstrMp)
+%%[(9 hmtyinfer || hmtyast) export(ConstraintToInfoMap,emptyCnstrMp)
 type ConstraintToInfoMap p info = Map.Map (Constraint p info) [info]
 
 emptyCnstrMp :: ConstraintToInfoMap p info
 emptyCnstrMp = Map.empty
 %%]
 
-%%[9 export(cnstrMpFromList,cnstrMpUnion,cnstrMpUnions)
+%%[(9 hmtyinfer || hmtyast) export(cnstrMpFromList,cnstrMpUnion,cnstrMpUnions)
 cnstrMpFromList :: (Ord p, Ord i) => [(Constraint p i,i)] -> ConstraintToInfoMap p i
 cnstrMpFromList l = Map.fromListWith (++) [ (c,[i]) | (c,i) <- l ]
 
@@ -84,7 +84,7 @@ cnstrMpUnions = Map.unionsWith (++)
 %%% Rule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHRRule)
+%%[(9 hmtyinfer || hmtyast) export(CHRRule)
 type CHRRule p g s info = CHR (Constraint p info) g s
 %%]
 
@@ -92,7 +92,7 @@ type CHRRule p g s info = CHR (Constraint p info) g s
 %%% Observations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(cnstrRequiresSolve)
+%%[(9 hmtyinfer || hmtyast) export(cnstrRequiresSolve)
 cnstrRequiresSolve :: Constraint p info -> Bool
 cnstrRequiresSolve (Reduction _ _ _) = False
 cnstrRequiresSolve _                 = True
@@ -102,14 +102,14 @@ cnstrRequiresSolve _                 = True
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance (PP p, PP info) => PP (Constraint p info) where
   pp (Prove     p     ) = "Prove"  >#< p
   pp (Assume    p     ) = "Assume" >#< p
   pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppBracketsCommas ps
 %%]
 
-%%[20
+%%[(20 hmtyinfer || hmtyast)
 instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
   ppForHI (Prove     p     ) = "Prove"     >#< ppCurlysCommasBlock [ppForHI p]
   ppForHI (Assume    p     ) = "Assume"    >#< ppCurlysCommasBlock [ppForHI p]
@@ -120,7 +120,7 @@ instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
   forceEval x@(Prove     p     ) | forceEval p `seq` True = x
   forceEval x@(Assume    p     ) | forceEval p `seq` True = x

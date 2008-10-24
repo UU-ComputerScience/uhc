@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Let
-%%[5.Let
+%%[(5 hmtyinfer).Let
 SEM Expr
   | Let         loc         .   gathTySigGam_l_     =   @decls.gathTySigGam
                 decls       .   patValGam           =   gamPushGam @gathTySigGam_l_ @lhs.valGam
@@ -19,7 +19,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Let
-%%[5.Let
+%%[(5 hmtyinfer).Let
 SEM Expr
   | Let         decls       .   patTyVarMp          =   @lhs.tyVarMp
                             .   tyVarMp             =   @decls.patTyVarMp
@@ -27,7 +27,7 @@ SEM Expr
 
 -- generated from ruler rules into EHRulerRules, was 3.Let
 -- 20080212, AD: incompatible because of addition of marked lines, for lexically scoped type variables
-%%[5.Let
+%%[(5 hmtyinfer).Let
 SEM Expr
   | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
                 (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @decls.tyVarMp |==> @valGam_g_
@@ -38,7 +38,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Let
-%%[5.Let
+%%[(5 hmtyinfer).Let
 SEM Expr
   | Let         loc         .   gathTySigGam_l_     :=  valGamInst1Exists @lUniq @decls.gathTySigGam
                 loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 $ valGamQuantify @gTyTvL $ @lSubsValGam_
@@ -46,7 +46,7 @@ SEM Expr
                 body        .   valGam              :=  gamPushGam @quValGam_ex_ @gSubsValGam_
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   (quValGam_ex_,tqoGam)
                                                     :=  let  (vg,tqog) = valGamQuantify @gTyTvL @quantPrOccL @lSubsValGam_
@@ -59,37 +59,37 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.tyInstKnown
-%%[5.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                =   @ty_sig_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyInstKnown
-%%[5.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
 SEM Decl
   | Val         expr        .   knTy                =   if @hasTySig then @knTy else @patExpr.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyInstKnown
-%%[5.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  tyInstKnown @lUniq @ty_sig_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tyInstKnown
-%%[5.tyInstKnown
+%%[(5 hmtyinfer).tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  @ty_sig_
 %%]
 
-%%[9.tyInstKnown
+%%[(9 hmtyinfer).tyInstKnown
 %%]
 
 SEM Decl
   | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
                                                                       else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
 
-%%[94
+%%[(94 hmtyinfer)
 SEM Decl
   | FFE         loc         .   knTy                =   @ty_sig_
 %%]
@@ -98,7 +98,7 @@ SEM Decl
 %%% Final type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.finValGam
+%%[(2 hmtyinfer).finValGam
 ATTR AllDecl [ finValGam: ValGam | | ]
 ATTR AllNT [ finTyVarMp: VarMp | | ]
 
@@ -114,17 +114,17 @@ SEM AGItf
   | AGItf       expr        .   finTyVarMp          =   @expr.tyVarMp
 %%]
 
-%%[3.finValGam
+%%[(3 hmtyinfer).finValGam
 SEM Expr
   | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_
 %%]
 
-%%[4.finValGam
+%%[(4 hmtyinfer).finValGam
 SEM Expr
   | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp
 %%]
@@ -133,14 +133,14 @@ SEM Expr
 %%% Final kind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7.finTyGam
+%%[(7 hmtyinfer).finTyGam
 ATTR AllNT [ finKiVarMp: VarMp | | ]
 
 SEM AGItf
   | AGItf       expr        .   finKiVarMp          =   @expr.kiVarMp
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllNT [ finTyKiGam: TyKiGam |  | ]
 
 SEM AGItf
@@ -155,7 +155,7 @@ SEM Expr
 %%% Known kind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Decl
   | Data
 %%[[11
@@ -168,7 +168,7 @@ SEM Decl
 %%% Type inferencing, decls, top level, abstraction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.valGam
+%%[(1 hmtyinfer).valGam
 ATTR
   AllDecl AllExpr
 %%[[5
@@ -178,43 +178,43 @@ ATTR
 ATTR AllPatExpr [ | valGam: ValGam | ]
 %%]
 
-%%[1.initValGam
+%%[(1 hmtyinfer).initValGam
 SEM AGItf   
   | AGItf       expr        .   valGam              =   emptyGam
 %%]
 
-%%[20 -1.initValGam
+%%[(20 hmtyinfer) -1.initValGam
 ATTR AGItf [ valGam: ValGam | | ]
 
 SEM AGItf
   | AGItf       loc         .   valGam              =   @lhs.valGam
 %%]
 
-%%[1.patValGam
+%%[(1 hmtyinfer).patValGam
 ATTR AllDecl [ | patValGam: ValGam | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.patValGam.Val
-%%[5.patValGam.Val
+%%[(5 hmtyinfer).patValGam.Val
 SEM Decl
   | Val         patExpr     .   valGam              =   @lhs.patValGam
                 lhs         .   patValGam           =   @patExpr.valGam
                 expr        .   valGam              =   @lhs.valGam
 %%]
 
-%%[2.tyVarMp
+%%[(2 hmtyinfer).tyVarMp
 ATTR AllDecl [ | tyVarMp: VarMp  patTyVarMp: VarMp | ]
 
 SEM AGItf
   | AGItf       expr        .   tyVarMp             =   emptyVarMp
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 ATTR AllCase [ | tyVarMp: VarMp | ]
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarMp.Val
-%%[5.tyVarMp.Val
+%%[(5 hmtyinfer).tyVarMp.Val
 SEM Decl
   | Val         patExpr     .   tyVarMp             =   @lhs.patTyVarMp
                 lhs         .   patTyVarMp          =   @patExpr.tyVarMp
@@ -227,30 +227,30 @@ SEM Decl
 
 Decl should merge with one in InferTyExpr
 
-%%[1.tyGam
+%%[(1 hmtyinfer).tyGam
 ATTR AllDecl AllExpr [ tyGam: TyGam | | ]
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 ATTR AllPatExpr [ | tyGam: TyGam | ]
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 ATTR AllDataConstr AllCase [ tyGam: TyGam | | ]
 ATTR AllDecl [ | patTyGam: TyGam | ]
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM Expr
   | Let         decls       .   patTyGam            =   gamPushNew @lhs.tyGam
                             .   tyGam               =   @decls.patTyGam
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataField [ | tyGam: TyGam | ]
 %%]
 
-%%[16
+%%[(16 hmtyinfer)
 ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 
 -- tyvarid of .tyVar already present in @lhs.tyGam
@@ -258,11 +258,11 @@ SEM DataConstrEq
   | Eq  tyExpr.tyGam = @lhs.tyGam
 %%]
 
-%%[50
+%%[(50 hmtyinfer)
 ATTR AllDataConstrEq [ | tyGam: TyGam | ]
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR AllDecl AllExpr AllDataConstr AllCase [ tyKiGam: TyKiGam | | ]
 ATTR
   AllPatExpr
@@ -275,16 +275,16 @@ ATTR
     [ | tyKiGam: TyKiGam | ]
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR AllDecl [ | patTyKiGam: TyKiGam | ]
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR AllExpr AllPatExpr AllData AllCase AllDecl [ | kiVarMp: VarMp | ]
 ATTR AllDecl [ | patKiVarMp: VarMp | ]
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Expr
   | Let         decls       .   patTyGam            :=  gamPushGam @decls.gathKiSigGam @lhs.tyGam
                             .   patTyKiGam          =   gamPushGam @decls.gathTyKiSigGam @lhs.tyKiGam
@@ -306,7 +306,7 @@ SEM Expr
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
@@ -314,7 +314,7 @@ SEM Decl
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
 %%]
 
-%%[11
+%%[(11 hmtyinfer)
 ATTR AllDecl [ | tyTyVarMp: VarMp | ]
 
 SEM Expr
@@ -326,7 +326,7 @@ SEM Expr
 %%% Gamma/Environment for fitting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[98
+%%[(98 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   fe                  =   emptyFE
                                                             { feEHCOpts = @lhs.opts
@@ -339,12 +339,12 @@ SEM AGItf
                                                             }
 %%]
 
-%%[4.Decl.fe
+%%[(4 hmtyinfer).Decl.fe
 SEM Decl
   | *           loc         .   fe                  =   emptyFE
 %%]
 
-%%[11 -4.Decl.fe
+%%[(11 hmtyinfer) -4.Decl.fe
 SEM Decl
   | *           loc         .   fe                  =   emptyFE
                                                             { feTyGam = @lhs.tyGam
@@ -357,7 +357,7 @@ SEM Decl
                                                             }
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Instance    loc         .   fe                  :=  emptyFE
                                                             { feEHCOpts = @lhs.opts
@@ -385,12 +385,12 @@ SEM Decl
 %%]]
 %%]
 
-%%[4.FIEnv
+%%[(4 hmtyinfer).FIEnv
 SEM Expr
   | *           loc         .   fe                  =   emptyFE
 %%]
 
-%%[7.FIEnv
+%%[(7 hmtyinfer).FIEnv
 SEM RecExpr
   | *           loc         .   fe                  =   emptyFE
 
@@ -398,7 +398,7 @@ SEM DataFieldExpr
   | *           loc         .   fe                  =   emptyFE
 %%]
 
-%%[9.FIEnv -(4.FIEnv 7.FIEnv)
+%%[(9 hmtyinfer).FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
   | Let         loc         .   fe                  =   emptyFE
                                                             { feEHCOpts = @lhs.opts
@@ -479,7 +479,7 @@ SEM DataFieldExpr
                                                             }
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 SEM PatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
@@ -498,7 +498,7 @@ SEM PatExpr
 %%]]
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM RecPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
@@ -517,7 +517,7 @@ SEM RecPatExpr
 %%]]
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM DataFieldPatExpr
   | *           loc         .   fe                  =   emptyFE
 %%[[9
@@ -536,12 +536,12 @@ SEM DataFieldPatExpr
 %%]]
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 SEM TyExpr
   | *           loc         .   fe                  =   emptyFE
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM PrExpr
   | *           loc         .   fe2                 =   emptyFE
 %%[[11
@@ -557,7 +557,7 @@ SEM PrExpr
 %%% Id of case
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 hmtyinfer)
 SEM Expr
   | Case        loc         .   caseIds     =   maybe (Set.singleton uidStart) id @mbCaseIds
 %%]
@@ -566,7 +566,7 @@ SEM Expr
 %%% RCEEnv (primarily for ToCore)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 hmtyinfer)
 SEM Expr
   | Lam Sel DataFields
 %%[[12
@@ -579,18 +579,18 @@ SEM Expr
                                                             }
 %%]
 
-%%[8
+%%[(8 hmtyinfer)
 SEM PatExpr
   | AppTop Rec DataFields
                 loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 
-%%[8
+%%[(8 hmtyinfer)
 SEM Decl
   | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 
-%%[95
+%%[(95 hmtyinfer)
 SEM Decl
   | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
@@ -599,11 +599,11 @@ SEM Decl
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 hmtyinfer)
 ATTR AGItf [ tyGam: TyGam | | ]
 %%]
 
-%%[1.initTyGam
+%%[(1 hmtyinfer).initTyGam
 SEM AGItf
 %%[[1
   | AGItf       loc         .   tyGam               =   initTyGam
@@ -614,7 +614,7 @@ SEM AGItf
 
 This is not maintained w.r.t. tyKiGam:
 
-%%[7_2.initTyGam -1.initTyGam
+%%[(7_2 hmtyinfer).initTyGam -1.initTyGam
 SEM AGItf
   | AGItf       loc         .   tyGam               :=  assocLToGam
                                                           [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
@@ -637,12 +637,12 @@ SEM AGItf
 
 This is incomplete for variant 7_2.
 
-%%[6.initTyKiGam
+%%[(6 hmtyinfer).initTyKiGam
 SEM AGItf
   | AGItf       loc         .   tyKiGam            	=   initTyKiGam
 %%]
 
-%%[20 -6.initTyKiGam
+%%[(20 hmtyinfer) -6.initTyKiGam
 ATTR AGItf [ tyKiGam: TyKiGam | | ]
 
 SEM AGItf
@@ -659,12 +659,12 @@ SEM AGItf
   
   In other words: the polGam changes on the way down!
 
-%%[17.initPolGam
+%%[(17 hmtyinfer).initPolGam
 SEM AGItf
   | AGItf       loc         .   polGam              =   initPolGam
 %%]
 
-%%[20 -17.initPolGam
+%%[(20 hmtyinfer) -17.initPolGam
 ATTR AGItf [ polGam: PolGam | | ]
 
 SEM AGItf
@@ -675,21 +675,21 @@ SEM AGItf
 %%% Sort, but no inferencing && etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   kiVarMp             =   emptyVarMp
 %%]
 
-%%[6.initKiGam
+%%[(6 hmtyinfer).initKiGam
 SEM AGItf
   | AGItf       loc         .   kiGam               =   initKiGam		-- fake dependency for uuagc --cycle
 %%]
 
-%%[20 -6.initKiGam
+%%[(20 hmtyinfer) -6.initKiGam
 ATTR AGItf [ kiGam: KiGam | | ]
 
 SEM AGItf
@@ -700,17 +700,17 @@ SEM AGItf
 %%% Type signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.gathTySigGam
+%%[(1 hmtyinfer).gathTySigGam
 ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 %%]
 
-%%[1
+%%[(1 hmtyinfer)
 SEM Decls
   | Cons		lhs			.	gathTySigGam		= 	@hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
-%%[5.gamSigTyGath
+%%[(5 hmtyinfer).gamSigTyGath
 SEM Decl
   | TySig       loc         .   gamSigTy            =   @tyExpr.ty
                             .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
@@ -718,11 +718,11 @@ SEM Decl
 SEM Expr
   | Let         decls       .   gathTySigGam        =   emptyGam
 
-%%[1.tySigGam
+%%[(1 hmtyinfer).tySigGam
 ATTR AllDecl AllPatExpr [ tySigGam: ValGam | | ]
 %%]
 
-%%[1
+%%[(1 hmtyinfer)
 SEM Expr
   | Lam
 %%[[12
@@ -731,19 +731,19 @@ SEM Expr
                 loc         .   tySigGam            =   emptyGam
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM CaseAlt
   | Pat         loc         .   tySigGam            =   emptyGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.TysigLet
-%%[5.tySigGam.TysigLet
+%%[(5 hmtyinfer).tySigGam.TysigLet
 SEM Expr
   | Let         decls       .   tySigGam            =   @decls.gathTySigGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.tySigGam.Val
-%%[5.tySigGam.Val
+%%[(5 hmtyinfer).tySigGam.Val
 SEM Decl
   | Val         loc         .   (ty_sig_,hasTySig)  =   case @patExpr.mbTopNm of
                                                           Nothing
@@ -755,19 +755,19 @@ SEM Decl
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.TySig
-%%[5.TySig
+%%[(5 hmtyinfer).TySig
 SEM Decl
   | TySig       loc         .   ty_sig_             =   tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
                             .   gamSigTy            :=  @ty_sig_
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Decl
   | TySig       loc         .   gTyTvL              =   ftv . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                             .   ty_sig_             :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
 %%]
 
-%%[8
+%%[(8 hmtyinfer)
 SEM Decl
   | FFI
 %%[[94
@@ -786,7 +786,7 @@ SEM Decl
 %%% Kind signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6.kiSigGam
+%%[(6 hmtyinfer).kiSigGam
 ATTR AllDecl [ kiSigGam: TyGam | gathKiSigGam: TyGam | ]
 
 SEM Expr
@@ -803,7 +803,7 @@ SEM Decl
 
 20070529: Not finished
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR AllDecl [ tyKiSigGam: TyKiGam | | gathTyKiSigGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
 
 SEM Decl
@@ -813,7 +813,7 @@ SEM Expr
   | Let         decls       .   tyKiSigGam          =   @decls.gathTyKiSigGam
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Decl
   | Data
 %%[[11
@@ -824,7 +824,7 @@ SEM Decl
                                                           Just i  -> (tkgiKi i,True)
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Decl
   | KiSig       loc         .   sigKi               =   kiQuantify (const False) @kiExpr.ki
 %%]
@@ -833,7 +833,7 @@ SEM Decl
 %%% Include binding for pattern var?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.inclVarBind
+%%[(1 hmtyinfer).inclVarBind
 ATTR PatExpr [ inclVarBind: Bool | | ]
 
 SEM PatExpr
@@ -846,17 +846,17 @@ SEM Expr
   | Lam         arg         .   inclVarBind         =   True
 %%]
 
-%%[2
+%%[(2 hmtyinfer)
 SEM Decl
   | Val         patExpr     .   inclVarBind         :=  not @hasTySig
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM CaseAlt
   | Pat         patExpr     .   inclVarBind         =   True
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM RecPatExpr
   | Ext Expr    patExpr     .   inclVarBind         =   True
 
@@ -864,96 +864,16 @@ SEM DataFieldPatExpr
   | Ext         patExpr     .   inclVarBind         =   True
 %%]
 
-%%[12
+%%[(12 hmtyinfer)
 SEM Expr
   | LamImpl     arg         .   inclVarBind         =   True
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Top name of pattern
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.mbTopNm
-ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
-
-SEM PatExpr
-  | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
-%%[[1
-  | * - Var VarAs
-                loc         .   mbTopNm             =   Nothing
-%%][8
-  | Irrefutable loc         .   mbTopNm             =   @patExpr.mbTopNm
-  | * - Var VarAs Irrefutable
-                loc         .   mbTopNm             =   Nothing
-%%]]
-%%]
-
-%%[7.topNm
-ATTR PatExpr [ | | topNm: HsName ]
-
-SEM PatExpr
-  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
-  | App         lhs         .   topNm               =   hsnUnknown
-  | AppTop Con Rec CConst IConst DataFields
-%%[[97
-    Expr
-%%]]
-                loc         .   topNm               =   uidHNm @lUniq
-  | SConst      loc         .   topNm               =   uidHNm @uniq1
-%%[[8
-  | Irrefutable loc         .   topNm               =   @patExpr.topNm
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Records, default (positional) name if absent
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-ATTR RecPatExpr RowTyExpr RecExpr [ | positionalFldNmL: {[HsName]} | ]
-ATTR RecPatExpr [ matchOnFld: Bool | | hasAFldRef: Bool ]
-
-SEM Expr
-  | Rec         recExpr     .   positionalFldNmL    =   positionalFldNames
-
-SEM TyExpr
-  | Row         rowTyExpr   .   positionalFldNmL    =   positionalFldNames
-
-SEM PatExpr
-  | Rec         recPatExpr  .   positionalFldNmL    =   positionalFldNames
-                            .   matchOnFld          =   @recPatExpr.hasAFldRef
-
-SEM RecPatExpr
-  | Ext         lhs         .   hasAFldRef          =   maybe @recPatExpr.hasAFldRef (const True) @mbNm
-                (loc.positionalNm,lhs.positionalFldNmL)
-                                                    =   hdAndTl @recPatExpr.positionalFldNmL
-                loc         .   nm                  =   case @mbNm of
-                                                          Just nm                     -> nm
-                                                          Nothing  | @lhs.matchOnFld  -> @patExpr.topNm
-                                                                   | otherwise        -> @positionalNm
-  | * - Ext     lhs         .   hasAFldRef          =   False
- 
-SEM RowTyExpr
-  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
-                                                    =   hdAndTl @rowTyExpr.positionalFldNmL
-                loc         .   nm                  =   maybe @positionalNm id @mbNm
-
-SEM RecExpr
-  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
-                                                    =   hdAndTl @recExpr.positionalFldNmL
-                loc         .   nm                  =   maybe @positionalNm id @mbNm
-%%]
-
-%%[10
-SEM PrExpr
-  | Lacks       rowTyExpr   .   positionalFldNmL    =   positionalFldNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% How to do subsumption
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.fiOpts.init
+%%[(4 hmtyinfer).fiOpts.init
 ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
 
 SEM AGItf
@@ -964,7 +884,7 @@ SEM AGItf
 %%]
 
 -- generated from ruler rules into EHRulerRules, was/from 4.fiOpts.init
-%%[5.fiOpts.init
+%%[(5 hmtyinfer).fiOpts.init
 SEM Expr
   | AppImpred   func        .  fiOpts               =   strongFIOpts
 %%[[16
@@ -981,7 +901,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
-%%[5.fiOpts.init
+%%[(5 hmtyinfer).fiOpts.init
 SEM Decl
   | Val
 %%[[94
@@ -998,7 +918,7 @@ SEM Decl
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
-%%[5.fiOpts.init
+%%[(5 hmtyinfer).fiOpts.init
 SEM Expr
   | Lam         loc         .  knFunFIOpts          =   (@lhs.fiOpts {fioBindRFirst=True }) 
 %%[[16
@@ -1021,7 +941,7 @@ SEM Expr
 %%]
 
 -- 20070205 - AD, should be generated from ruler rules, but not yet is
-%%[5
+%%[(5 hmtyinfer)
 SEM Expr
   | TypeAs      loc         .  asFiOpts             =   strongFIOpts
 %%[[16
@@ -1033,7 +953,7 @@ SEM Expr
 %%]]
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 ATTR AllCase [ fiOpts: FIOpts | | ]
 
 SEM Decl
@@ -1055,7 +975,7 @@ SEM Expr
 %%]]
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
 
 SEM RecExpr
@@ -1095,7 +1015,7 @@ SEM Expr
 %%]]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | App         func        .  fiOpts               :=  implFIOpts
 %%[[16
@@ -1110,7 +1030,7 @@ SEM Decl
 %%]]
 %%]
 
-%%[12
+%%[(12 hmtyinfer)
 SEM Expr
   | AppImpl     arg         .  fiOpts               =   strongFIOpts
 %%[[16
@@ -1118,7 +1038,7 @@ SEM Expr
 %%]]
 %%]
 
-%%[1010
+%%[(1010 hmtyinfer)
 SEM Decl
   | DynVal      expr        .  fiOpts               =   strongFIOpts
 %%[[16
@@ -1130,24 +1050,24 @@ SEM Decl
 %%% Predicate env, for intro of predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR AllDecl [ | patClGam1: ClGam  patClGam2: ClGam | ]
 ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ clGam: ClGam | | ]
 %%]
 
-%%[9.initClGam
+%%[(9 hmtyinfer).initClGam
 SEM AGItf
   | AGItf       loc         .   clGam              	=   initClGam
 %%]
 
-%%[20 -9.initClGam
+%%[(20 hmtyinfer) -9.initClGam
 ATTR AGItf [ clGam: ClGam | | ]
 
 SEM AGItf
   | AGItf       loc         .   clGam              	=   @lhs.clGam
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         decls       .   patClGam1           =   gamPushNew @lhs.clGam
                             .   patClGam2           =   @decls.patClGam1
@@ -1160,7 +1080,7 @@ SEM Expr
 %%% Is let a first let in a sequence of lets?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR Expr [ isFirstLet: Bool | | ]
 
 SEM CaseAlt
@@ -1187,127 +1107,9 @@ SEM Expr
   | Let         loc         .   isFirstLet          =   False
 %%]
 
-%%[97
+%%[(97 hmtyinfer)
 SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% The XX_App function name of a XX, if any
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1.Expr.ConNm
-ATTR Expr [ | | appFunNm: HsName ]
-
-SEM Expr
-  | Con         lhs     .   appFunNm    =   @nm
-  | App         lhs     .   appFunNm    =   @func.appFunNm
-  | * - Con App
-                lhs     .   appFunNm    =   hsnUnknown
-%%]
-
-%%[4
-SEM Expr
-  | AppImpred   lhs     .   appFunNm    :=  @func.appFunNm
-%%]
-
-%%[7
-ATTR RecExpr [ | | extNm: HsName ]
-
-SEM RecExpr
-  | Empty       lhs     .   extNm       =   hsnRowEmpty
-  | * - Empty Ext Upd
-                lhs     .   extNm       =   hsnUnknown
-
-SEM Expr
-  | Rec         loc     .   appFunNm    :=  @recExpr.extNm
-%%]
-
-%%[12
-SEM Expr
-  | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
-%%]
-
-%%[1
-ATTR TyExpr [ | | appFunNm: HsName ]
-
-SEM TyExpr
-  | Con         lhs     .   appFunNm    =   @nm
-  | App         lhs     .   appFunNm    =   @func.appFunNm
-  | * - App Con
-                lhs     .   appFunNm    =   hsnUnknown
-
-%%]
-
-%%[7
-ATTR RowTyExpr [ | | extNm: HsName ]
-
-SEM RowTyExpr
-  | Empty       lhs     .   extNm       =   hsnRowEmpty
-  | * - Empty Ext
-                lhs     .   extNm       =   hsnUnknown
-
-SEM TyExpr
-  | Row         lhs     .   appFunNm    :=  @rowTyExpr.extNm
-%%]
-
-%%[1.PatExpr
-ATTR PatExpr [ | | appFunNm: HsName ]
-
-SEM PatExpr
-  | Con         loc     .   appFunNm    =   @nm
-  | AppTop      loc     .   appFunNm    =   @patExpr.appFunNm
-  | App         lhs     .   appFunNm    =   @func.appFunNm
-  | * - App Con
-                lhs     .   appFunNm    =   hsnUnknown
-%%]
-
-%%[7
-ATTR RecPatExpr [ | | extNm: HsName ]
-
-SEM RecPatExpr
-  | Empty       lhs     .   extNm       =   hsnRowEmpty
-  | * - Empty Ext
-                lhs     .   extNm       =   hsnUnknown
-
-SEM PatExpr
-  | Rec         loc     .   appFunNm    :=  @recPatExpr.extNm
-%%]
-
-%%[6
-ATTR KiExpr [ | | appFunNm: HsName ]
-
-SEM KiExpr
-  | Con         lhs     .   appFunNm    =   @nm
-  | App         lhs     .   appFunNm    =   @func.appFunNm
-  | * - Con App
-                lhs     .   appFunNm    =   hsnUnknown
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Additional fake dependencies
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-SEM Decls
-  | Cons        hd          .   gUniq               =   @lhs.gUniq -- agFakeDependOn @hd.predSameScopeCounter @lhs.gUniq
-%%]
-
-%%[7
-%%]
-SEM CaseAlts
-  | Cons        hd          .   kiVarMp             =   agFakeDependOn @hd.gathDataGam @lhs.kiVarMp
-
-%%[9
-%%]
-SEM TyExprs
-  | Cons        hd          .   clGam               =   agFakeDependOn @hd.tyVarWildL @lhs.clGam
-
-%%[7
-%%]
-SEM DataFieldPatExpr
-  | Ext         dataFieldPatExpr
-                            .   kiVarMp             =   agFakeDependOn @dataFieldPatExpr.tyGam @lhs.kiVarMp
-
 

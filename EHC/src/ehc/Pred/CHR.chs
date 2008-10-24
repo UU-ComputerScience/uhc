@@ -4,41 +4,41 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.CHR} import({%{EH}CHR},{%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.CHR} import({%{EH}CHR},{%{EH}CHR.Constraint})
 %%]
 
-%%[9 import({%{EH}Pred.CommonCHR}) export(module {%{EH}Pred.CommonCHR})
+%%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR}) export(module {%{EH}Pred.CommonCHR})
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
+%%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
 %%]
 
-%%[9 import(EH.Util.Pretty,EH.Util.AGraph)
+%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.AGraph)
 %%]
 
-%%[9 import({%{EH}Base.Common})
+%%[(9 hmtyinfer) import({%{EH}Base.Common})
 %%]
 
-%%[9 import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
+%%[(9 hmtyinfer) import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn},{%{EH}Ty.TrieKey})
 %%]
 
-%%[10 import({%{EH}Base.Builtin})
+%%[(10 hmtyinfer) import({%{EH}Base.Builtin})
 %%]
 
-%%[16 import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, Debug.Trace)
+%%[(16 hmtyinfer) import({%{EH}Ty.Trf.MergePreds}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, Debug.Trace)
 %%]
 
-%%[20 import({%{EH}Base.CfgPP})
+%%[(20 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%[(99 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRMatchable FIIn Pred VarMp where
   chrMatchTo fi subst pr1 pr2
     = do { (_,subst') <- fitPredIntoPred (fi {fiVarMp = subst |=> fiVarMp fi}) pr1 pr2
@@ -46,7 +46,7 @@ instance CHRMatchable FIIn Pred VarMp where
          }
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRMatchable FIIn PredScope VarMp where
   chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
@@ -66,7 +66,7 @@ instance CHRMatchable FIIn PredScope VarMp where
   chrMatchTo _ subst (PredScope_Lev l1)     (PredScope_Lev l2) | l1 == l2  = Just emptyVarMp
   chrMatchTo _ subst _                  _                                  = Nothing
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRMatchable FIIn CHRPredOcc VarMp where
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
@@ -124,14 +124,14 @@ instance CHRSubstitutable Guard TyVarId VarMp where
 %%]]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRSubstitutable VarUIDHsName TyVarId VarMp where
   chrFtv          (VarUIDHs_Var i)  = Set.singleton i
   chrFtv          _                 = Set.empty
   chrAppSubst s a                   = maybe a id $ varmpAssNmLookupAssNmCyc a s
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
   chrFtv        (RedHow_Assumption   vun sc)  = Set.unions [chrFtv vun,chrFtv sc]
 %%[[10
@@ -149,7 +149,7 @@ instance CHRSubstitutable RedHowAnnotation TyVarId VarMp where
   chrAppSubst _ x                             = x
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 instance CHRSubstitutable Label TyVarId VarMp where
   chrFtv        x = ftvSet x
   chrAppSubst s x = s |=> x
@@ -159,7 +159,7 @@ instance CHRSubstitutable LabelOffset TyVarId VarMp where
   chrAppSubst s x = s |=> x
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 instance CHRMatchable FIIn Label VarMp where
   chrMatchTo _ subst (Label_Var v1) lb2@(Label_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (Label_Var v1) lb2                | isJust mbLb = chrMatchTo e subst (fromJust mbLb) lb2
@@ -178,7 +178,7 @@ instance CHRMatchable FIIn Label VarMp where
   chrMatchTo _ subst (Label_Lab l1)     (Label_Lab l2) | l1 == l2  = Just emptyVarMp
   chrMatchTo _ subst _              _                              = Nothing
 
-%%[10
+%%[(10 hmtyinfer)
 instance CHRMatchable FIIn LabelOffset VarMp where
   chrMatchTo _ subst (LabelOffset_Var v1) of2@(LabelOffset_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo s subst (LabelOffset_Var v1) of2                      | isJust mbOf = chrMatchTo s subst (fromJust mbOf) of2
@@ -204,7 +204,7 @@ instance CHRMatchable FIIn LabelOffset VarMp where
 
 This should be put in some library
 
-%%[9 export(PartialOrdering(..),toOrdering,toPartialOrdering)
+%%[(9 hmtyinfer) export(PartialOrdering(..),toOrdering,toPartialOrdering)
 data PartialOrdering
   = P_LT | P_EQ | P_GT | P_NE
   deriving (Eq,Show)
@@ -229,7 +229,7 @@ toOrdering o
 %%% Guard, CHRCheckable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(Guard(..))
+%%[(9 hmtyinfer) export(Guard(..))
 data Guard
   = HasStrictCommonScope    PredScope PredScope PredScope                   -- have strict/proper common scope?
   | IsVisibleInScope        PredScope PredScope                             -- is visible in 2nd scope?
@@ -247,7 +247,7 @@ data Guard
 %%]]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 ppGuard :: Guard -> PP_Doc
 ppGuard (HasStrictCommonScope   sc1 sc2 sc3) = ppParensCommas' [sc1 >#< "<" >#< sc2,sc1 >#< "<=" >#< sc3]
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (sc1 >#< "==" >#< sc2 >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
@@ -266,7 +266,7 @@ ppGuard (EqualModuloUnification t1 t2      ) = t1 >#< "==" >#< t2
 %%]
 ppGuard (IsStrictParentScope    sc1 sc2 sc3) = ppParens (ppParens (sc1 >#< "==" >#< sc2 >#< "\\/" >#< sc1 >#< "==" >#< sc3 ) >#< "/\\" >#< sc2 >#< "/=" >#< sc3)
 
-%%[9
+%%[(9 hmtyinfer)
 instance Show Guard where
   show _ = "CHR Guard"
 
@@ -274,7 +274,7 @@ instance PP Guard where
   pp = ppGuard
 %%]
 
-%%[20
+%%[(20 hmtyinfer)
 instance PPForHI Guard where
   ppForHI (HasStrictCommonScope   sc1 sc2 sc3) = "HasStrictCommonScope"  >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
   ppForHI (IsStrictParentScope    sc1 sc2 sc3) = "IsStrictParentScope"   >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
@@ -284,7 +284,7 @@ instance PPForHI Guard where
   ppForHI (NonEmptyRowLacksLabel  r o t l    ) = "NonEmptyRowLacksLabel" >#<  ppCurlysCommas [ppForHI r, ppForHI o, pp t, ppForHI l]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRCheckable FIIn Guard VarMp where
   chrCheck env subst x
     = chk x
@@ -391,7 +391,7 @@ instance CHRCheckable FIIn Guard VarMp where
 %%% Criterium for proving in a let expression
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(isLetProveCandidate,isLetProveFailure)
+%%[(9 hmtyinfer) export(isLetProveCandidate,isLetProveFailure)
 isLetProveCandidate :: (Ord v, CHRSubstitutable x v s) => Set.Set v -> x -> Bool
 isLetProveCandidate glob x
   = Set.null fv || Set.null (fv `Set.intersection` glob)
@@ -407,7 +407,7 @@ isLetProveFailure glob x
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 instance ForceEval Guard where
   forceEval x@(HasStrictCommonScope   sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
   forceEval x@(IsStrictParentScope    sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x

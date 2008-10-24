@@ -7,7 +7,7 @@
 %%% Pred gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[10
+%%[(10 hmtyinfer)
 SEM Expr
   | Sel         loc         .   prUid               =   mkPrIdCHR @lUniq2
                             .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @lbl)) @prUid @lhs.predScope]
@@ -26,7 +26,7 @@ SEM RecPatExpr
 %%% Impl prove occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | App AppImpred
                 loc         .   imPrvOcc            =   mkImplsProveOcc @lUniq3 @lhs.predScope
@@ -38,18 +38,18 @@ SEM Expr
 %%% Impl types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | AppTop      loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
   | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | AppTop Lam  loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
 %%]
 
-%%[12
+%%[(12 hmtyinfer)
 SEM Expr
   | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp |=>) $ @knArgImpl
                             .   knPrUid             =   mkPrIdCHR @lUniq
@@ -60,7 +60,7 @@ SEM Expr
 %%% Passing back code substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen)
+%%[(9 codegen hmtyinfer)
 ATTR AllNT [ cSubst: CSubst | | ]
 
 SEM AGItf
@@ -81,7 +81,7 @@ SEM Expr
 %%% Bindings for preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Lam AppTop  loc         .   impls2KnHd          =   tyImpls @imSubsTy
                             .   impls2KnTl          =   @lhs.finTyVarMp |=> @knImplsTl
@@ -89,12 +89,12 @@ SEM Expr
                             .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
 %%]
 
-%%[12
+%%[(12 hmtyinfer)
 SEM Expr
   | LamImpl     loc         .   poiL                =   [@knPrUid]
 %%]
 
-%%[(9 codegen)
+%%[(9 codegen hmtyinfer)
 SEM Expr
   | Lam AppTop
 %%[[12

@@ -151,21 +151,21 @@ SEM TyExpr
   | VarWild     loc     .   pp      =   "%" >|< pp @nm
 %%]
 
-%%[3
+%%[(3 hmtyinfer)
 SEM Decl
   | TySig       loc     .   tyPP    :=  if null @tyExpr.tyWildL
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
 %%]
 
-%%[5.Wild.pp
+%%[(5 hmtyinfer).Wild.pp
 SEM Decl
   | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
 %%]
 
-%%[100
+%%[(100 hmtyinfer)
 SEM Decl
   | TySig       loc     .   tyPP    :=  @tyExpr.pp
 %%]
@@ -439,10 +439,14 @@ SEM DataField
 
 SEM DataConstr
   | Constr      loc     .   pp      :=  pp @conNm
+%%[[(7 hmtyinfer)
                                         >#<  (if null $ catMaybes $ assocLKeys $ @fields.fldTyL
                                               then ppSpaced @fields.ppL
                                               else ppCurlysCommas' @fields.ppL
                                              )
+%%][7
+                                        >#<  ppCurlysCommas' @fields.ppL
+%%]]
                                         >|<  @extraPP
                         .   extraPP =   empty
 %%]
@@ -520,30 +524,35 @@ SEM KiExpr
 
 %%[1.ExprExtra
 SEM Expr
-  | Let         loc     .   extraPP     =   ppCmt (ppGam (gamTop @decls.patValGam))
+  | Let         loc     .   extraPP     =   empty
 %%]
 
-%%[2
+%%[(1 hmtyinfer).ExprExtra
+SEM Expr
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (gamTop @decls.patValGam))
+%%]
+
+%%[(2 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
 %%]
 
-%%[3
+%%[(3 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_))
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
@@ -566,7 +575,7 @@ SEM Expr
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  ppVarMpV @expr.tyVarMp
 
-%%[20
+%%[(20 hmtyinfer)
 SEM AGItf
   | AGItf       loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (ppGam @lhs.valGam)
@@ -640,14 +649,14 @@ SEM PatExpr
 %%% Show top type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.AGItf.topTyPP
+%%[(1 hmtyinfer).AGItf.topTyPP
 ATTR AGItf [ | | topTyPP: PP_Doc ]
 
 SEM AGItf
   | AGItf       lhs     .   topTyPP     =   ppTy @expr.ty
 %%]
 
-%%[3.AGItf.topTyPP
+%%[(3 hmtyinfer).AGItf.topTyPP
 SEM AGItf
   | AGItf       lhs     .   topTyPP     :=  ppTy (tyQuantifyClosed @expr.ty)
 %%]

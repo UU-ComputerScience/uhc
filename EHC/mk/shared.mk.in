@@ -30,7 +30,7 @@
 # 16: + GADT (TBD)
 # 17: + Polarity inference (co/contravariance)
 # 20: + module system
-# 94: + full FFI (foreign function interface)
+# 94: + full FFI (foreign function interface) (TBD)
 # 95: + deriving construct
 # 96: + exception handling
 # 97: + numbers: Integer, Float, Double
@@ -46,6 +46,7 @@
 # 8_2: + A bit prettier output for intermediate languages, in order to include
 #        in doc/llvm.pdf. This version is temporary until a framework to output
 #        shuffle post-processed intermediate output is available.
+
 ###########################################################################################
 # EHC variant partitioning into public/non-public (experimental, ...) + code/noncode variants
 ###########################################################################################

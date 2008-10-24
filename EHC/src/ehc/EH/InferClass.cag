@@ -7,7 +7,7 @@
 %%% Gamma's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[15
+%%[(15 hmtyinfer)
 ATTR AllFuncDep [ | tyGam: TyGam  tyKiGam: TyKiGam | ]
 %%]
 
@@ -15,7 +15,7 @@ ATTR AllFuncDep [ | tyGam: TyGam  tyKiGam: TyKiGam | ]
 %%% Kind inferencing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Class       decls           .   patTyKiGam      =   emptyGam
                                 .   patKiVarMp      =   emptyVarMp
@@ -25,7 +25,7 @@ SEM Decl
   | Class       tyPrExpr        .   tyKiGam         =   gamPushNew @lhs.patTyKiGam
                                 .   kiVarMp         =   @lhs.patKiVarMp
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Instance    decls           .   patTyKiGam      =   emptyGam
                                 .   patKiVarMp      =   emptyVarMp
@@ -37,12 +37,12 @@ SEM Decl
 %%% Class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 hmtyinfer) hs
 tyPrLToSupNmL :: TyL -> [HsName]
 tyPrLToSupNmL = zipWith (\i p -> hsnSuffix (tyPredNm p) (show i)) [1..]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Class       loc             .   clgi1           =   ClGamInfo Ty_Any Ty_Any (maybe (uidHNm @lUniq) id @mbDefaultInstNm) -- []
                                 .   clsNm           =   tyPredMatchNm @hdPrTy
@@ -80,7 +80,7 @@ SEM Decl
 %%% Functional dependency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[15
+%%[(15 hmtyinfer)
 ATTR AllFuncDep [ clsTyArgs: TyL | | funcDeps USE {++} {[]} : {[ClsFuncDep]} ]
 
 SEM FuncDep
@@ -95,7 +95,7 @@ SEM Decl
 %%% Instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Instance InstanceIntro
                 loc             .   instId          =   mkPrIdCHR @lUniq
@@ -171,7 +171,7 @@ SEM Decl
 %%% Deriving info: which class and which field, with info for codegen. A bit hackerish...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(95 codegen)
+%%[(95 codegen hmtyinfer)
 SEM Decl
   | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
 %%]
@@ -180,7 +180,7 @@ SEM Decl
 %%% Names, yes/no introduced, gamma entries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR AllTyExpr [ | | clNmS USE {`Set.union`} {Set.empty}: HsNameS  clMissNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 
 SEM PrExpr
@@ -197,7 +197,7 @@ SEM PrExpr
 %%% Evidence type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR TyExpr PrExpr [ | | evTy: Ty ]
 
 SEM PrExpr
@@ -212,7 +212,7 @@ SEM TyExpr
                 lhs             .   evTy            =   @ty
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 SEM PrExpr
   | Lacks       lhs             .   evTy            =   tyInt
 %%]

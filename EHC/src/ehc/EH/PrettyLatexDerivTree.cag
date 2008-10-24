@@ -11,7 +11,7 @@
 %%% Formatting context for 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllNT [ dtFmt: String | | ]
 
 SEM AGItf
@@ -40,7 +40,7 @@ SEM Decl
 %%% Is starting point for separate derivation tree
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllNT [ isTopOfDt: Bool | | ]
 
 SEM AGItf
@@ -58,7 +58,7 @@ SEM Expr
 %%% Numbering + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllNT [ dtGamNm: DtNm | dtNmNr: Int | ]
 
 SEM AGItf
@@ -90,7 +90,7 @@ SEM RecExpr
 %%% VarMp gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllExpr AllPatExpr [ | | dtVarMpL USE {++} {[]} : DtVarMpL ]
 
 SEM Expr
@@ -108,7 +108,7 @@ SEM RecExpr
 %%% Gamma gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllExpr [ | | dtGamL USE {++} {[]} : DtGamL ]
 
 SEM Expr
@@ -122,14 +122,14 @@ SEM Expr
 %%% Pretty printing for derivation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR RecExpr [ dtPPWrap: {PP_Doc -> PP_Doc} | | ]
 
 SEM Expr
   | Rec         loc     .   dtPPWrap    =   ppParens
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllNT [ | | dtPP USE {>#<} {empty} : PP_Doc ]
 
 SEM Expr
@@ -157,7 +157,7 @@ SEM RecExpr
   | Empty       loc     .   dtPP        =   @lhs.dtPPWrap empty
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllDecl [ | | dtPPL USE {++} {[]} : {[PP_Doc]} ]
 
 SEM Decl
@@ -168,7 +168,7 @@ SEM Decl
 %%% Derivation tree
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllNT AGItf [ | | dt USE {>-<} {empty} : PP_Doc ]
 ATTR AllNT [ | dtVarMp: VarMp |  ]
 
@@ -271,7 +271,7 @@ SEM Expr
                                                         (dtJdgExpr @lhs.opts (pp @lhs.dtGamNm) @dtKnTy @dtPP t1), m1)
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 SEM RecExpr
   | Ext         loc     .   rlNm        =   "re.ext"
   | Upd         loc     .   rlNm        =   "re.upd"
@@ -296,7 +296,7 @@ SEM RecExpr
                                                 )
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 SEM AGItf
   | AGItf       lhs     .   dt          =   let papersize = case ehcOptEmitDerivTreePaperSize @lhs.opts of
                                                               ('m':s) -> ["paperwidth=" ++ show sz ++ "cm","paperheight=" ++ show (sz `div` 5) ++ "cm"]
@@ -328,7 +328,7 @@ SEM AGItf
 %%% Groups of a derivation tree and environment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs
+%%[(99 hmtyinfer) hs
 type DtGrpElt
   = (PP_Doc     -- the derivation tree,
     ,DtGamL     -- its specific bindings
@@ -340,7 +340,7 @@ type DtGrp
     )
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllDecl [ | | dtL USE {++} {[]}: {[DtGrpElt]} ]
 
 SEM Decl
@@ -353,7 +353,7 @@ SEM Decl
                                                 )
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR AllExpr AllDecl [ | | dtGrpL USE {++} {[]}: {[DtGrp]} ]
 
 SEM Expr

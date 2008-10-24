@@ -5,29 +5,29 @@
 Derived from work by Gerrit vd Geest, but with searching structures for predicates
 to avoid explosion of search space during resolution.
 
-%%[9 module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR} import(qualified {%{EH}Base.Trie} as Trie,{%{EH}Base.Common},{%{EH}Substitutable},{%{EH}VarMp})
 %%]
 
-%%[9 import(Data.Monoid,qualified Data.Set as Set)
+%%[(9 hmtyinfer || hmtyast) import(Data.Monoid,qualified Data.Set as Set)
 %%]
 
-%%[9 import(EH.Util.Pretty)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty)
 %%]
 
-%%[9 import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}CHR.Key}) export(module {%{EH}CHR.Key})
 %%]
 
-%%[20 import({%{EH}Base.CfgPP})
+%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR, derived structures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHR(..))
+%%[(9 hmtyinfer || hmtyast) export(CHR(..))
 data CHR cnstr guard subst
   = CHR
       { chrHead     	:: ![cnstr]
@@ -40,12 +40,12 @@ emptyCHRGuard :: [a]
 emptyCHRGuard = []
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Show (CHR c g s) where
   show _ = "CHR"
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance (PP c,PP g) => PP (CHR c g s) where
   pp chr
     = case chr of
@@ -62,7 +62,7 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppChr l = vlist l -- ppCurlysBlock
 %%]
 
-%%[20
+%%[(20 hmtyinfer || hmtyast)
 instance (PPForHI c, PPForHI g) => PPForHI (CHR c g s) where
   ppForHI chr
     = ppCurlysSemisBlock
@@ -73,7 +73,7 @@ instance (PPForHI c, PPForHI g) => PPForHI (CHR c g s) where
         ]
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
   toKey chr = toKey $ head $ chrHead chr
 %%]
@@ -82,14 +82,14 @@ instance Keyable cnstr => Keyable (CHR cnstr guard subst) where
 %%% CHRSubstitutable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHRSubstitutable(..))
+%%[(9 hmtyinfer || hmtyast) export(CHRSubstitutable(..))
 class Ord var => CHRSubstitutable x var subst | x -> var, x -> subst where
   chrFtv       :: x -> Set.Set var
   chrAppSubst  :: subst -> x -> x
 --  chrCmbSubst  :: subst -> subst -> subst
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance (CHRSubstitutable c v s,CHRSubstitutable g v s) => CHRSubstitutable (CHR c g s) v s where
   chrFtv          (CHR {chrHead=h, chrGuard=g, chrBody=b})
     = Set.unions $ concat [map chrFtv h, map chrFtv g, map chrFtv b]
@@ -103,7 +103,7 @@ instance (CHRSubstitutable c v s,CHRSubstitutable g v s) => CHRSubstitutable (CH
 
 Capability to yield an empty substitution.
 
-%%[9 export(CHREmptySubstitution(..))
+%%[(9 hmtyinfer || hmtyast) export(CHREmptySubstitution(..))
 class CHREmptySubstitution subst where
   chrEmptySubst :: subst
 %%]
@@ -114,7 +114,7 @@ class CHREmptySubstitution subst where
 
 A Matchable participates in the reduction process as a reducable constraint.
 
-%%[9 export(CHRMatchable(..))
+%%[(9 hmtyinfer || hmtyast) export(CHRMatchable(..))
 class (Keyable x) => CHRMatchable env x subst | x -> subst env where
   chrMatchTo      :: env -> subst -> x -> x -> Maybe subst
 %%]
@@ -125,7 +125,7 @@ class (Keyable x) => CHRMatchable env x subst | x -> subst env where
 
 A Checkable participates in the reduction process as a guard, to be checked.
 
-%%[9 export(CHRCheckable(..))
+%%[(9 hmtyinfer || hmtyast) export(CHRCheckable(..))
 class CHRCheckable env x subst | x -> subst env where
   chrCheck      :: env -> subst -> x -> Maybe subst
 %%]
@@ -134,7 +134,7 @@ class CHRCheckable env x subst | x -> subst env where
 %%% Construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export((<==>), (==>), (|>))
+%%[(9 hmtyinfer || hmtyast) export((<==>), (==>), (|>))
 infix   1 <==>, ==>
 infixr  0 |>
 
@@ -150,7 +150,7 @@ chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
   forceEval x@(CHR h sz g b) | forceEval h `seq` forceEval g `seq` forceEval b `seq` True = x
 %%[[102

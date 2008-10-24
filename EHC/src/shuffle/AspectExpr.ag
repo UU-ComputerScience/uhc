@@ -1,0 +1,20 @@
+-------------------------------------------------------------------------
+-- AspectExpr AST interface to Haskell
+-------------------------------------------------------------------------
+
+imports
+{
+import IO
+import qualified Data.Set as Set
+}
+
+INCLUDE "AspectExprAbsSyn.ag"
+
+-------------------------------------------------------------------------
+-- Used defs
+-------------------------------------------------------------------------
+
+{
+type AspectRef  = String
+type AspectRefReqd = Set.Set AspectRef
+}

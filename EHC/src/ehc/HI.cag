@@ -7,7 +7,10 @@
 %%% Haskell importable interface to HI/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Gam},{%{EH}NameAspect},qualified {%{EH}Pred} as Pr)
+%%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Gam},{%{EH}NameAspect})
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Ty})
 %%]
 
 %%[(20 codegen) hs import({%{EH}Core})
@@ -16,7 +19,10 @@
 %%[(20 codegen grin) hs import({%{EH}GrinCode})
 %%]
 
-%%[20 hs import({%{EH}Module},{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
+%%[20 hs import({%{EH}Module})
+%%]
+
+%%[(20 hmtyinfer) hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve},qualified {%{EH}Pred} as Pr)
 %%]
 
 %%[20 hs import(qualified Data.Map as Map,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
@@ -67,6 +73,7 @@ data HIInfo
       , hiiHiddenExps       :: !ModEntRel
       , hiiFixityGam        :: !FixityGam
       , hiiIdDefOccGam      :: !IdDefOccGam
+%%[[(20 hmtyinfer)
       , hiiValGam           :: !ValGam
       , hiiTyGam            :: !TyGam
       , hiiTyKiGam          :: !TyKiGam
@@ -74,6 +81,7 @@ data HIInfo
       , hiiDataGam          :: !DataGam
       , hiiClGam            :: !Pr.ClGam
       , hiiCHRStore         :: !ScopedPredStore
+%%]]
 %%[[(20 codegen)
       , hiiCArityMp         :: !CArityMp
 %%]]
@@ -84,7 +92,10 @@ data HIInfo
 
 emptyHIInfo :: HIInfo
 emptyHIInfo 
-  = HIInfo Rel.empty Rel.empty emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
+  = HIInfo Rel.empty Rel.empty emptyGam emptyGam
+%%[[(20 hmtyinfer)
+           emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
+%%]]
 %%[[(20 codegen)
            Map.empty
 %%]]
@@ -123,6 +134,7 @@ hiFromHIInfo i
       (hiiHiddenExps    i)
       (hiiFixityGam     i)
       (hiiIdDefOccGam   i)
+%%[[(20 hmtyinfer)
       (hiiValGam        i)
       (hiiTyGam         i)
       (hiiTyKiGam       i)
@@ -130,6 +142,7 @@ hiFromHIInfo i
       (hiiDataGam       i)
       (hiiClGam         i)
       (hiiCHRStore      i)
+%%]]
 %%[[(20 codegen)
       (hiiCArityMp      i)
 %%]]
@@ -147,6 +160,7 @@ hiFromAllGams
      -> ModEntRel
      -> FixityGam
      -> IdDefOccGam
+%%[[(20 hmtyinfer)
      -> ValGam
      -> TyGam
      -> TyKiGam
@@ -154,6 +168,7 @@ hiFromAllGams
      -> DataGam
      -> Pr.ClGam
      -> ScopedPredStore
+%%]]
 %%[[(20 codegen)
      -> CArityMp
 %%]]
@@ -161,7 +176,10 @@ hiFromAllGams
      -> GrInlMp
 %%]]
      -> Seq.FastSeq Binding
-hiFromAllGams exps hiddenExps fg idg vg tg tkg pg dg ig chrStore
+hiFromAllGams exps hiddenExps fg idg
+%%[[(20 hmtyinfer)
+              vg tg tkg pg dg ig chrStore
+%%]]
 %%[[(20 codegen)
               arityMp
 %%]]
@@ -170,10 +188,11 @@ hiFromAllGams exps hiddenExps fg idg vg tg tkg pg dg ig chrStore
 %%]]
   =          Seq.fromList [Binding_Export VisibleYes exps]
     Seq.:++: Seq.fromList [Binding_Export VisibleNo hiddenExps]
+    Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
+%%[[(20 hmtyinfer)
     Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
     Seq.:++: Seq.fromList [Binding_TyPolarities [ (n,pgiPol i) | (n,i) <- gamToAssocL pg ]]
-    Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
     Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
@@ -181,6 +200,7 @@ hiFromAllGams exps hiddenExps fg idg vg tg tkg pg dg ig chrStore
                         ) dg
     Seq.:++: hiFromGam  (\n clgi -> Binding_Class n (Pr.clgiPrToEvidTy clgi) (Pr.clgiRuleTy clgi) (Pr.clgiDfltDictNm clgi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
+%%]]
 %%[[(20 codegen)
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
 %%]]
@@ -201,6 +221,7 @@ instance ForceEval HIInfo where
 				  , hiiHiddenExps       = he
 				  , hiiFixityGam        = fg
 				  , hiiIdDefOccGam      = idg
+%%[[(20 hmtyinfer)
 				  , hiiValGam           = vg
 				  , hiiTyGam            = tg
 				  , hiiTyKiGam          = tkg
@@ -208,6 +229,7 @@ instance ForceEval HIInfo where
 				  , hiiDataGam          = dg
 				  , hiiClGam            = cg
 				  , hiiCHRStore         = cs
+%%]]
 %%[[(99 codegen)
 				  , hiiCArityMp         = am
 %%]]
@@ -223,6 +245,7 @@ instance ForceEval HIInfo where
                 , hiiHiddenExps       = he
                 , hiiFixityGam        = fg
                 , hiiIdDefOccGam      = idg
+%%[[(20 hmtyinfer)
                 , hiiValGam           = vg
                 , hiiTyGam            = tg
                 , hiiTyKiGam          = tkg
@@ -230,6 +253,7 @@ instance ForceEval HIInfo where
                 , hiiDataGam          = dg
                 , hiiClGam            = cg
                 , hiiCHRStore         = cs
+%%]]
 %%[[(102 codegen)
                 , hiiCArityMp         = am
 %%]]
@@ -243,6 +267,7 @@ instance ForceEval HIInfo where
                        ,fevCount he
                        ,fevCount fg
                        ,fevCount idg
+%%[[(20 hmtyinfer)
                        ,fevCount vg
                        ,fevCount tg
                        ,fevCount tkg
@@ -250,6 +275,7 @@ instance ForceEval HIInfo where
                        ,fevCount dg
                        ,fevCount cg
                        ,fevCount cs
+%%]]
 %%[[(102 codegen)
                        ,fevCount am
 %%]]

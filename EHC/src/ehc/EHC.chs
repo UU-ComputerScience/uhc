@@ -86,7 +86,7 @@
 %%]
 
 
-%%[9 import({%{EH}Pred})
+%%[9 import(qualified {%{EH}Pred} as Pr)
 %%]
 
 
@@ -96,7 +96,7 @@
 %%]
 %%[20 import(qualified EH.Util.Rel as Rel)
 %%]
-%%[20 import({%{EH}Module}, qualified {%{EH}Pred} as Pr)
+%%[20 import({%{EH}Module})
 %%]
 -- Core parser
 %%[(20 codegen) import(qualified {%{EH}Core.Parser} as CorePrs)
@@ -107,19 +107,21 @@
 %%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 -- CHR solver
-%%[20 import({%{EH}Pred.ToCHR}, {%{EH}CHR.Solve})
+%%[(20 hmtyinfer) import({%{EH}Pred.ToCHR}, {%{EH}CHR.Solve})
 %%]
 
 
 -- Force evaluation for IO
-%%[99 import({%{EH}Base.ForceEval}, {%{EH}Ty.Trf.ForceEval})
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+%%[(99 hmtyinfer || hmtyast) import( {%{EH}Ty.Trf.ForceEval})
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
 %%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{GRIN}GrinByteCode.Trf.ForceEval})
 %%]
 -- CHR solver
-%%[99 import({%{EH}CHR}, {%{EH}CHR.Constraint}, {%{EH}Pred.CHR}, {%{EH}Pred.CommonCHR})
+%%[(99 hmtyinfer) import({%{EH}CHR}, {%{EH}CHR.Constraint}, {%{EH}Pred.CHR}, {%{EH}Pred.CommonCHR})
 %%]
 
 -- Misc
@@ -158,7 +160,9 @@ main
                                              ++ " [options] [file[.eh|.hs]]\n\noptions:"
                                              )
                                              ehcCmdLineOpts)
+%%[[(8 codegen)
                       ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
+%%]]
                       }
 %%]]
             else  if ehcOptVersion opts
@@ -911,7 +915,7 @@ cpFlowEHSem1 modNm
                  coreSem  = panicJust "cpFlowEHSem1.coreSem" $ ecuMbCoreSem ecu
                  coreInh  = crsiCoreInh crsi
 %%]]
-%%[[20
+%%[[(20 hmtyinfer)
                  dg       = prepFlow $! EHSem.gathDataGam_Syn_AGItf    ehSem
                  vg       = prepFlow $! EHSem.gathValGam_Syn_AGItf     ehSem
                  tg       = prepFlow $! EHSem.gathTyGam_Syn_AGItf      ehSem
@@ -924,6 +928,7 @@ cpFlowEHSem1 modNm
 %%[[20
                  hii      = ecuHIInfo ecu
                  ehInh'   = ehInh
+%%[[(20 hmtyinfer)
                               { EHSem.dataGam_Inh_AGItf    = dg  `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
                               , EHSem.valGam_Inh_AGItf     = vg  `gamUnionFlow`  EHSem.valGam_Inh_AGItf     ehInh
                               , EHSem.tyGam_Inh_AGItf      = tg  `gamUnionFlow`  EHSem.tyGam_Inh_AGItf      ehInh
@@ -933,7 +938,9 @@ cpFlowEHSem1 modNm
                               , EHSem.clGam_Inh_AGItf      = clg `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
                               , EHSem.chrStore_Inh_AGItf   = cs  `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                               }
+%%]]
                  hii'     = hii
+%%[[(20 hmtyinfer)
                               { HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
                               , HI.hiiTyKiGam     	= tkg
@@ -942,6 +949,7 @@ cpFlowEHSem1 modNm
                               , HI.hiiClGam         = clg
                               , HI.hiiCHRStore      = cs
                               }
+%%]]
 %%]]
 %%[[(8 codegen)
                  coreInh' = coreInh
@@ -990,7 +998,9 @@ cpFlowHISem modNm
          ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
                  hiSem  = panicJust "cpFlowHISem.hiSem" $ ecuMbPrevHISem ecu
                  ehInh  = crsiEHInh crsi
+%%[[20
                  ehInh' = ehInh
+%%[[(20 hmtyinfer)
                             { EHSem.valGam_Inh_AGItf     = (prepFlow $! HISem.valGam_Syn_AGItf     hiSem) `gamUnionFlow`  EHSem.valGam_Inh_AGItf     ehInh
                             , EHSem.tyGam_Inh_AGItf      = (prepFlow $! HISem.tyGam_Syn_AGItf      hiSem) `gamUnionFlow`  EHSem.tyGam_Inh_AGItf      ehInh
                             , EHSem.tyKiGam_Inh_AGItf    = (prepFlow $! HISem.tyKiGam_Syn_AGItf    hiSem) `gamUnionFlow`  EHSem.tyKiGam_Inh_AGItf    ehInh
@@ -999,6 +1009,8 @@ cpFlowHISem modNm
                             , EHSem.clGam_Inh_AGItf      = (prepFlow $! HISem.clGam_Syn_AGItf      hiSem) `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
                             , EHSem.chrStore_Inh_AGItf   = (prepFlow $! HISem.chrStore_Syn_AGItf   hiSem) `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
+%%]]
+%%]]
                  hsInh  = crsiHSInh crsi
                  hsInh' = hsInh
                             { HSSem.fixityGam_Inh_AGItf  = (prepFlow $! HISem.fixityGam_Syn_AGItf hiSem) `gamUnionFlow` HSSem.fixityGam_Inh_AGItf hsInh
@@ -1292,14 +1304,18 @@ cpTranslateHs2EH modNm
          }
 %%]
 
-%%[(8 codegen)
-cpTranslateEH2Core :: HsName -> EHCompilePhase ()
-cpTranslateEH2Core modNm
+%%[8
+cpTranslateEH2Output :: HsName -> EHCompilePhase ()
+cpTranslateEH2Output modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= ecuMbEHSem ecu
-                 ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
-                 core   = EHSem.cmodule_Syn_AGItf ehSem
+                 ehSem  = panicJust "cpTranslateEH2Output" mbEHSem
+%%[[(8 hmtyinfer)
+                 about  = "EH analyses: Type checking"
+%%][8
+                 about  = "EH analyses"
+%%]]
 %%[[8
                  errs   = Seq.toList $ EHSem.allErrSq_Syn_AGItf ehSem
 %%][102
@@ -1307,8 +1323,7 @@ cpTranslateEH2Core modNm
                  errs   = []
 %%]]
          ;  when (isJust mbEHSem)
-                 (do { cpUpdCU modNm (ecuStoreCore core)
-                     ; cpSetLimitErrsWhen 5 "Type checking" errs
+                 (do { cpSetLimitErrsWhen 5 about errs
 %%[[8
                      ; when (ehcOptEmitEH opts)
                             (lift $ putPPFile (fpathToStr (fpathSetSuff "eh2" fp)) (EHSem.pp_Syn_AGItf ehSem) 1000)
@@ -1322,10 +1337,32 @@ cpTranslateEH2Core modNm
 %%][99
                      ; when (ecuIsTopMod ecu && ehcOptShowAst opts)
                             (lift $ putPPLn (EHSem.ppAST_Syn_AGItf ehSem))
+%%][100
+%%]]
+%%[[(99 hmtyinfer)
                      ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
                             (lift $ putPPFile (fpathToStr (fpathSetSuff "lhs" fp)) (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]
+                     }
+                 )
+         }
+%%]
+
+%%[(8 codegen)
+cpTranslateEH2Core :: HsName -> EHCompilePhase ()
+cpTranslateEH2Core modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mbEHSem= ecuMbEHSem ecu
+                 ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
+                 core   = EHSem.cmodule_Syn_AGItf ehSem
+%%[[8
+%%][102
+                 -- core   = Core.CModule_Mod modNm (Core.CExpr_Int 1) []
+%%]]
+         ;  when (isJust mbEHSem)
+                 (do { cpUpdCU modNm (ecuStoreCore core)
                      }
                  )
          }
@@ -1720,6 +1757,7 @@ cpProcessEH modNm
           , cpCleanupFoldEH modNm
 %%]]
           , cpFlowEHSem1 modNm
+          , cpTranslateEH2Output modNm
 %%[[(8 codegen)
           , cpTranslateEH2Core modNm
 %%]]
@@ -2457,7 +2495,7 @@ doCompileRun fn opts
                                               , HSSem.idGam_Inh_AGItf           = HSSem.tyGam2IdDefOccGam initTyGam
                                                                                     `gamUnion` HSSem.kiGam2IdDefOccGam initKiGam
 %%[[9
-                                                                                    `gamUnion` HSSem.clGam2IdDefOccGam initClGam
+                                                                                    `gamUnion` HSSem.clGam2IdDefOccGam Pr.initClGam
 %%]]
                                               , HSSem.gUniq_Inh_AGItf           = uidStart
 %%[[20
@@ -2474,15 +2512,17 @@ doCompileRun fn opts
                                               , EHSem.opts_Inh_AGItf            = opts2
 %%[[20
                                               , EHSem.isTopMod_Inh_AGItf        = False
+                                              , EHSem.idQualGam_Inh_AGItf       = emptyGam
+%%]]
+%%[[(20 hmtyinfer)
                                               , EHSem.valGam_Inh_AGItf          = emptyGam
                                               , EHSem.dataGam_Inh_AGItf         = emptyGam
                                               , EHSem.tyGam_Inh_AGItf           = initTyGam
                                               , EHSem.tyKiGam_Inh_AGItf         = initTyKiGam
                                               , EHSem.polGam_Inh_AGItf          = initPolGam
                                               , EHSem.kiGam_Inh_AGItf           = initKiGam
-                                              , EHSem.clGam_Inh_AGItf           = initClGam
+                                              , EHSem.clGam_Inh_AGItf           = Pr.initClGam
                                               , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
-                                              , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]
                                               }
 %%[[(8 codegen)

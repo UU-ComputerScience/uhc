@@ -8,10 +8,10 @@
 %%[(9 codegen) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(9 codegen) import({%{EH}Base.Common},{%{EH}Ty})
+%%[(9 codegen) import({%{EH}Base.Common})
 %%]
 
-%%[(9 codegen) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Subst})
+%%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
 %%[(9 codegen) import(EH.Util.Pretty)

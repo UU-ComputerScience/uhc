@@ -1,0 +1,17 @@
+-------------------------------------------------------------------------
+-- Aspect expr AST
+-------------------------------------------------------------------------
+
+-- Outside itf
+DATA AGAspectExprItf
+  | AGItf               aexp            : AspectExpr
+
+DATA AspectExpr
+  | True
+  | Requires            asp             : {String}
+  | Or                  asp1            : AspectExpr
+                        asp2            : AspectExpr
+  | And                 asp1            : AspectExpr
+                        asp2            : AspectExpr
+
+DERIVING * : Show, Eq, Ord

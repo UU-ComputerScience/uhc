@@ -11,7 +11,7 @@
 %%[(95 codegen) import(qualified Data.Map as Map,Data.List,EH.Util.Utils)
 %%]
 
-%%[(95 codegen) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
+%%[(95 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}, {%{EH}Ty.Trf.Canonic})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

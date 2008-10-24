@@ -1,0 +1,48 @@
+-------------------------------------------------------------------------
+-- Evaluation of AspectExpr, given a set of AspectRef
+-------------------------------------------------------------------------
+
+{
+module AspectExprEval
+  ( aspexpIsAccepted
+  )
+  where
+
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import AspectExpr
+}
+
+INCLUDE "AspectExprAbsSyn.ag"
+
+WRAPPER AGAspectExprItf
+
+{
+wrapAGAspectExpr_T :: AspectRefReqd -> T_AGAspectExprItf -> Syn_AGAspectExprItf
+wrapAGAspectExpr_T givenRefs d
+  = wrap_AGAspectExprItf d
+      (Inh_AGAspectExprItf
+         { givenRefs_Inh_AGAspectExprItf = givenRefs
+         })
+
+wrapAspectExpr :: AspectRefReqd -> AspectExpr -> Syn_AGAspectExprItf
+wrapAspectExpr givenRefs d = wrapAGAspectExpr_T givenRefs (sem_AGAspectExprItf (AGAspectExprItf_AGItf d))
+
+aspexpIsAccepted :: AspectRefReqd -> AspectExpr -> Bool
+aspexpIsAccepted givenRefs d
+  = (isAccepted_Syn_AGAspectExprItf r)
+  where r = wrapAspectExpr givenRefs d
+}
+
+-------------------------------------------------------------------------
+-- CRef subst in AspectExpr
+-------------------------------------------------------------------------
+
+ATTR AspectExpr AGAspectExprItf [ givenRefs: AspectRefReqd | | isAccepted: Bool ]
+
+SEM AspectExpr
+  | True        lhs         .   isAccepted  =   True
+  | Requires    lhs         .   isAccepted  =   @asp `Set.member` @lhs.givenRefs
+  | Or          lhs         .   isAccepted  =   @asp1.isAccepted || @asp2.isAccepted
+  | And         lhs         .   isAccepted  =   @asp1.isAccepted && @asp2.isAccepted
+

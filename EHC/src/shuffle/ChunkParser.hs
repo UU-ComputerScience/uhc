@@ -49,7 +49,7 @@ shuffleScanOpts
   = Map.fromList
         [ ( ScLexMeta 0
           , ScanOpts
-              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=", "@" ])
+              { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=", "@", "||", "&&" ])
               , scoSpecChars        =   Set.fromList "(),%{}"
               , scoOpChars          =   Set.fromList "+-=*&^$#@!\\|><~`;:?/_."
               }
@@ -288,6 +288,19 @@ mkNmForP h t = nmFromL . concat . map (wordsBy (=='.')) $ (h : t)
 pAGItf :: ShPr T_AGItf
 pAGItf = sem_AGItf_AGItf <$> (pFoldr (sem_Lines_Cons,sem_Lines_Nil) (sem_Line_AsIs sem_Words_Nil <$ pNl)) <*> pChunks
 
+pAspectExprBase     ::  ShPr AspectExpr
+pAspectExprBase     =   AspectExpr_Requires <$> pVar
+                    <|> pParens pAspectExpr
+
+pAspectExprAnd      ::  ShPr AspectExpr
+pAspectExprAnd      =   pChainr (AspectExpr_And <$ pKey "&&") (foldr1 AspectExpr_And <$> pList1 pAspectExprBase)
+
+pAspectExprOr       ::  ShPr AspectExpr
+pAspectExprOr       =   pChainr (AspectExpr_Or <$ pKey "||") pAspectExprAnd
+
+pAspectExpr         ::  ShPr AspectExpr
+pAspectExpr         =   pAspectExprOr
+
 pVariantRef         ::  ShPr VariantRef
 pVariantRef         =   VarRef <$> pList1Sep (pKey "_") pInt'
 
@@ -296,13 +309,16 @@ pVariantOfferRef    =   variantOfferFromRef <$> pVariantRef
 
 pVariantOffer       ::  ShPr VariantOffer
 pVariantOffer       =   pVariantOfferRef
-                    <|> pParens (VOfferRef <$> pVariantRef <*> pAspectRefs)
+                    <|> pParens (VOfferRef <$> pVariantRef <*> pAspectRefsExpr)
 
 pVariantReqmRef     ::  ShPr VariantReqm
 pVariantReqmRef     =   variantReqmFromRef <$> pVariantRef
 
 pAspectRefs         ::  ShPr AspectRefs
 pAspectRefs         =   pMaybe AspectAll (AspectRefs . Set.fromList) (pList1 pVar)
+
+pAspectRefsExpr     ::  ShPr AspectRefs
+pAspectRefsExpr     =   pMaybe AspectAll AspectOfferExpr pAspectExpr
 
 pVariantReqm        ::  ShPr VariantReqm
 pVariantReqm        =   pVariantReqmRef

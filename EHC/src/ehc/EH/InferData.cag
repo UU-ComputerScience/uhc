@@ -7,14 +7,14 @@
 %%% Kind inferencing for data, placeholders, known ki use
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5.tyGam
+%%[(5 hmtyinfer).tyGam
 SEM Decl
   | Data        tyVars      .   tyGam               =   emptyGam
                 lhs         .   patTyGam            =   gamAdd @tyNm (TyGamInfo (Ty_Con @tyNm)) @lhs.patTyGam
                 constrs     .   tyGam               =   gamPushGam @tyVars.tyGam @lhs.tyGam
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm)
                             .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
@@ -34,7 +34,7 @@ SEM Decl
 %%% Kind inferencing for data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[(6 hmtyinfer)
 SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
@@ -46,7 +46,7 @@ SEM DataConstr
 %%% Data info gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7.dataGam
+%%[(7 hmtyinfer).dataGam
 ATTR
   AllDecl AllExpr AllCase
 %%[[97
@@ -59,12 +59,12 @@ SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
 %%]
 
-%%[7.initDataGam
+%%[(7 hmtyinfer).initDataGam
 SEM AGItf
   | AGItf       expr        .   dataGam             =   @expr.gathDataGam
 %%]
 
-%%[20 -7.initDataGam
+%%[(20 hmtyinfer) -7.initDataGam
 ATTR AGItf [ dataGam: DataGam | | ]
 %%]
 
@@ -72,7 +72,7 @@ ATTR AGItf [ dataGam: DataGam | | ]
 %%% Gathering tag info for data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM Decl
@@ -84,7 +84,7 @@ SEM Decl
 %%% Tying at toplevel
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 hmtyinfer)
 SEM AGItf
   | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
 %%]
@@ -93,7 +93,7 @@ SEM AGItf
 %%% Type of data constructors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5
+%%[(5 hmtyinfer)
 ATTR AllData [ dataTy: Ty | | ]
 ATTR AllDataConstr [ | patValGam: ValGam | ]
 
@@ -114,17 +114,17 @@ SEM DataConstr
                                                           ]
 %%]
 
-%%[5
+%%[(5 hmtyinfer)
 SEM Decl
   | Data        loc         .   dataTy              =   @tyNm `mkConApp` @tyVars.tyL
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 %%]
 SEM Decl
   | Data        loc         .   dataTy              :=  agFakeDependOn @dataAltTy $ @tyNm `mkConApp` @tyVars.tyL
 
-%%[7
+%%[(7 hmtyinfer)
 SEM Decl
   | Data        lhs         .   patValGam           =   gamUnions
                                                           [ gamNoDups @constrs.fldSelGam
@@ -134,7 +134,7 @@ SEM Decl
 %%]
 
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
@@ -152,14 +152,14 @@ SEM Decl
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
 %%]
 
-%%[7.dataConXTy
+%%[(7 hmtyinfer).dataConXTy
 SEM DataConstr
   | Constr
       loc.dataConTy1     = @loc.dataConTy2
       loc.dataConProdTy1 = @loc.dataConProdTy2
 %%]
 
-%%[16.dataConXTy -7.dataConXTy
+%%[(16 hmtyinfer).dataConXTy -7.dataConXTy
 SEM DataConstr
   | Constr
       (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarMp2_RhsOfEqOnly` @loc.dataConTy2
@@ -171,7 +171,7 @@ SEM DataConstr
                                          @loc.eqsVarMp @loc.cycVarMp
 %%]
 
-%%[16 hs
+%%[(16 hmtyinfer) hs
 -- assumption: Ty is a product
 -- this function is supposed to be applied to the RHS of the unquantified type of the deconstructor function, which
 -- is a product of the field types of the constructor. The equality constraints are encoded by adding them to the
@@ -183,7 +183,7 @@ appendEqPreds preds ty
      in mkProdApp (prodTyL ++ predsTyL)
 %%]
 
-%%[8
+%%[(8 hmtyinfer)
 ATTR AllDataConstr [ dataAltTy: Ty | | ]
 %%]
 
@@ -191,7 +191,7 @@ ATTR AllDataConstr [ dataAltTy: Ty | | ]
 %%% Ty name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataConstr [ tyNm: HsName | | ]
 
 SEM Decl
@@ -202,7 +202,7 @@ SEM Decl
 %%% Map for tag + arity + fld labels offsets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 SEM DataConstr
 %%[[7
   | Constr      loc         .   fldMp               =   let mk = emptyDataFldInfo
@@ -214,7 +214,7 @@ SEM DataConstr
                                                         in  Map.fromList $ mkfs $ @fields.fldTyL
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR
   AllDataConstr
     [ | | dataConstrTagMp USE {`Map.union`} {Map.empty}: DataConstrTagMp
@@ -246,7 +246,7 @@ SEM DataConstr
 %%% Maximum arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 hmtyinfer)
 ATTR AllDataConstr [ maxArity: Int | | gathMaxArity USE {`max`} {0}: Int ]
 
 SEM DataConstr
@@ -260,7 +260,7 @@ SEM Decl
 %%% Type+label of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataField [ | | fldTyL USE {++} {[]}: FldTyL ]
 
 SEM DataField
@@ -274,7 +274,7 @@ SEM DataField
 %%% Gam for selector functions of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataField AllDataConstr [ | | fldSelGam USE {`gamUnion`} {emptyGam}: ValGam ]
 
 SEM DataField
@@ -285,7 +285,7 @@ SEM DataField
 %%% Gam for update functions of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataField AllDataConstr [ | | fldUpdGam USE {`gamUnion`} {emptyGam}: ValGam ]
 
 SEM DataField
@@ -300,7 +300,7 @@ SEM DataField
 %%% Kind of data fields
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR AllDataField [ | | kiL USE {++} {[]}: TyL ]
 
 SEM DataField
@@ -311,14 +311,14 @@ SEM DataField
 %%% Additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 hmtyinfer)
 ATTR AllDataConstr [ isNewtype: Bool | | ]
 
 SEM Decl
   | Data        constrs     .   isNewtype           =   @isNewtype
 %%]
 
-%%[8
+%%[(8 hmtyinfer)
 ATTR Expr [ | | isNewtype: Bool ]
 
 SEM Expr
@@ -331,12 +331,12 @@ SEM Expr
 %%% DataFieldExpr: additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 %%]
 SEM DataFieldExpr
   | Con         loc         .   finConTy            =   @lhs.finTyVarMp |=> @ty
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ | | mbConNm: {Maybe HsName} ]
 
 SEM DataFieldExpr
@@ -344,7 +344,7 @@ SEM DataFieldExpr
   | * - Con Upd lhs         .   mbConNm             =   Nothing
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ | | mbDti: {Maybe DataTagInfo} ]
 
 SEM DataFieldExpr
@@ -353,7 +353,7 @@ SEM DataFieldExpr
   | * - Con Upd lhs         .   mbDti               =   Nothing
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ | | fldL: {[HsName]} ]
 
 SEM DataFieldExpr
@@ -365,7 +365,7 @@ SEM Expr
                             .   fldS                =   Set.fromList @fldL
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ dgi: DataGamInfo | | ]
 
 SEM Expr
@@ -389,7 +389,7 @@ SEM Expr
 
 Kind of LHS of the DataConstrEq should match the kind of the RHS.
 
-%%[16
+%%[(16 hmtyinfer)
 SEM DataConstrEq
   | Eq  loc.fo_ = fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
         lhs.kiVarMp = foVarMp @loc.fo_ |=> @tyExpr.kiVarMp
@@ -407,7 +407,7 @@ Construct a substitution from the additional equations. This subsitution is appl
 the actual type of the constructor, i.e. the additional equations do not show up in the type of a constructor. The equations are required
 to be non-cyclic, and in case one equation is multiply defined, the right hand sides have to be equal modulo unification.
 
-%%[16
+%%[(16 hmtyinfer)
 SEM AllDataConstrEq [ | eqVarMp : {VarMp} | ]
 
 SEM DataConstr
@@ -428,7 +428,7 @@ SEM DataConstrEq
 %%% Pattern: additional info for checks, codegen, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldPatExpr [ | | dti: DataTagInfo ]
 
 SEM DataFieldPatExpr
@@ -437,7 +437,7 @@ SEM DataFieldPatExpr
                             .   dti                 =   dgiDtiOfCon @nm @dgi
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldPatExpr [ | | fldL: {[HsName]} ]
 
 SEM DataFieldPatExpr
@@ -446,7 +446,7 @@ SEM DataFieldPatExpr
 %%]
 
 Check that LHS of equations is a tyvar in scope
-%%[16
+%%[(16 hmtyinfer)
 ATTR AllDataConstrEq TyVar [ | | tyvarNms USE {`Set.union`} {Set.empty} : {Set HsName} ]
 SEM TyVar
   | Var  lhs.tyvarNms = Set.singleton @nm
@@ -470,7 +470,7 @@ SEM DataConstr
 %%% Type signatures
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 %%]
 SEM DataConstr
   | Constr      loc         .   arity        		:   {Int}

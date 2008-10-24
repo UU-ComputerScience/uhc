@@ -33,14 +33,14 @@ in particular through the predicate proving machinery.
 All predicate occurrences are uniquely labeled, so this can be used to provide a mapping
 to the source location where such a predicate did arise.
 
-%%[99 hs
+%%[(99 hmtyinfer) hs
 type RangeMp = Map.Map Pred [Range]
 
 cnstrMpToRangeMp :: CHRPredOccCnstrMp -> RangeMp
 cnstrMpToRangeMp m = Map.unionsWith (++) [ Map.singleton (cpoPr p) [cpoRange p] | (Prove p) <- Map.keys m ]
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 ATTR NTPrf [ | | gathRangeMp USE {`Map.union`} {Map.empty}: RangeMp ]
 ATTR NTPrf [ rangeMp: RangeMp | | ]
 

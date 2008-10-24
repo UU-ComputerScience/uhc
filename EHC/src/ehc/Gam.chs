@@ -10,7 +10,10 @@
 %%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, assocLToGam, assocDupLToGam,gamKeys)
 %%]
 
-%%[1 import({%{EH}Ty},{%{EH}Error}) export(ValGam, ValGamInfo(..), valGamLookup,valGamLookupTy)
+%%[1 import({%{EH}Ty})
+%%]
+
+%%[1 import({%{EH}Error}) 
 %%]
 
 %%[1 export(TyGam, TyGamInfo(..), tyGamLookup, initTyGam)
@@ -19,7 +22,10 @@
 %%[1 export(FixityGam, FixityGamInfo(..), defaultFixityGamInfo)
 %%]
 
-%%[1 import(EH.Util.Pretty,{%{EH}Ty.Pretty}) export(ppGam,ppGamDup)
+%%[1 import(EH.Util.Pretty) export(ppGam,ppGamDup)
+%%]
+
+%%[(1 hmtyinfer || hmtyast) import({%{EH}Ty.Pretty})
 %%]
 
 %%[1 export(gamSingleton,gamInsert,gamUnion,gamUnions,gamFromAssocL)
@@ -28,19 +34,22 @@
 %%[1 export(IdDefOccGam,IdDefOccAsc)
 %%]
 
-%%[2 import({%{EH}VarMp},{%{EH}Substitutable})
+%%[(2 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[3 import({%{EH}Ty.Trf.Quantify}) export(valGamQuantify,gamMapElts,valGamMapTy)
+%%[(3 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.Quantify})
 %%]
 
 %%[3 export(gamPartition)
 %%]
 
-%%[4 import({%{EH}Base.Opts},{%{EH}Ty.Trf.Instantiate}) export(valGamInst1Exists)
+%%[4 import({%{EH}Base.Opts})
 %%]
 
-%%[4 import({%{EH}Ty.FitsInCommon})
+%%[(4 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.Instantiate})
+%%]
+
+%%[(4 hmtyinfer) import({%{EH}Ty.FitsInCommon})
 %%]
 
 %%[4 export(gamMapThr)
@@ -49,16 +58,10 @@
 %%[4_2 export(ErrGam)
 %%]
 
-%%[4_2 export(valGamQuantifyWithVarMp,valGamInst1ExistsWithVarMp)
+%%[4_2 export(valGamInst1ExistsWithVarMp)
 %%]
 
 %%[6 export(gamUnzip)
-%%]
-
-%%[6 export(KiGam, KiGamInfo(..),initKiGam)
-%%]
-
-%%[6 export(mkTGI,mkTGIData)
 %%]
 
 %%[7 import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map) export(gamNoDups)
@@ -67,13 +70,16 @@
 %%[(8 codegen) import({%{EH}Core})
 %%]
 
-%%[9 import({%{EH}Base.Debug},{%{EH}Ty.FitsInCommon}) export(gamElts)
+%%[(9 hmtyinfer) import({%{EH}Ty.FitsInCommon})
+%%]
+
+%%[9 import({%{EH}Base.Debug})
 %%]
 
 %%[(9 codegen) import({%{EH}Core.Subst})
 %%]
 
-%%[9 import({%{EH}Ty.Trf.MergePreds})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.MergePreds})
 %%]
 
 %%[9 export(idDefOccGamPartitionByKind)
@@ -82,7 +88,10 @@
 %%[20 export(idDefOccGamByKind)
 %%]
 
-%%[99 import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%[99 import({%{EH}Base.ForceEval})
+%%]
+
+%%[(99 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -200,7 +209,7 @@ gamMap :: (Ord k,Ord k') => ((k,v) -> (k',v')) -> Gam k v -> Gam k' v'
 gamMap f g = lgamMapEltWithKey (\k e -> let (k',v') = f (k,lgeVal e) in (k',e {lgeVal = v'})) g
 %%]
 
-%%[3.gamMapElts
+%%[3.gamMapElts export(gamMapElts)
 gamMapElts :: Ord k => (v -> v') -> Gam k v -> Gam k v'
 gamMapElts f = gamMap (\(n,v) -> (n,f v))
 %%]
@@ -243,7 +252,7 @@ gamKeys :: Ord k => Gam k v -> [k]
 gamKeys = assocLKeys . gamToAssocL
 %%]
 
-%%[9
+%%[9 export(gamElts)
 gamElts :: Ord k => Gam k v -> [v]
 gamElts = assocLElts . gamToAssocL
 %%]
@@ -432,20 +441,23 @@ fixityGamLookup nm fg = maybe defaultFixityGamInfo id $ gamLookup nm fg
 %%% "Type of value" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.ValGam.Base
+%%[1.ValGam.Base export(ValGamInfo(..),ValGam)
 data ValGamInfo
-  = ValGamInfo { vgiTy :: Ty }		-- strictness has negative mem usage effect. Why??
-  deriving Show
+  = ValGamInfo
+%%[[(1 hmtyinfer || hmtyast)
+      { vgiTy :: Ty }		-- strictness has negative mem usage effect. Why??
+%%]]
+      deriving Show
 
 type ValGam = Gam HsName ValGamInfo
 %%]
 
-%%[1.valGamLookup
+%%[1.valGamLookup export(valGamLookup)
 valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
 valGamLookup = gamLookup
 %%]
 
-%%[1.valGamLookupTy
+%%[(1 hmtyinfer || hmtyast).valGamLookupTy export(valGamLookupTy)
 valGamLookupTy :: HsName -> ValGam -> (Ty,ErrL)
 valGamLookupTy n g
   =  case valGamLookup n g of
@@ -453,32 +465,39 @@ valGamLookupTy n g
        Just vgi   ->  (vgiTy vgi,[])
 %%]
 
-%%[4.valGamLookup -1.valGamLookup
+%%[4.valGamLookup -1.valGamLookup export(valGamLookup)
 valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
 valGamLookup nm g
   =  case gamLookup nm g of
        Nothing
+%%[[(4 hmtyinfer || hmtyast)
          |  hsnIsProd nm
                  -> let pr = mkPr nm in mkRes (tyProdArgs pr `mkArrow` pr)
          |  hsnIsUn nm && hsnIsProd (hsnUnUn nm)
                  -> let pr = mkPr (hsnUnUn nm) in mkRes ([pr] `mkArrow` pr)
          where  mkPr nm  = mkTyFreshProd (hsnProdArity nm)
                 mkRes t  = Just (ValGamInfo (tyQuantifyClosed t))
+%%][4
+         |  hsnIsProd nm
+                 -> Just ValGamInfo
+         |  hsnIsUn nm && hsnIsProd (hsnUnUn nm)
+                 -> Just ValGamInfo
+%%]]
        Just vgi  -> Just vgi
        _         -> Nothing
 %%]
 
-%%[3.valGamMapTy
+%%[(3 hmtyinfer || hmtyast).valGamMapTy export(valGamMapTy)
 valGamMapTy :: (Ty -> Ty) -> ValGam -> ValGam
 valGamMapTy f = gamMapElts (\vgi -> vgi {vgiTy = f (vgiTy vgi)})
 %%]
 
-%%[3.valGamQuantify
+%%[(3 hmtyinfer || hmtyast).valGamQuantify export(valGamQuantify)
 valGamQuantify :: TyVarIdL -> ValGam -> ValGam
 valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
 %%]
 
-%%[4_2.valGamDoWithVarMp
+%%[(4_2 hmtyinfer || hmtyast).valGamDoWithVarMp
 valGamDoWithVarMp :: (Ty -> thr -> (Ty,thr)) -> VarMp -> thr -> ValGam -> (ValGam,VarMp)
 valGamDoWithVarMp f gamVarMp thr gam
   =  let  (g,(_,c))
@@ -495,7 +514,7 @@ valGamDoWithVarMp f gamVarMp thr gam
      in   (g,c)
 %%]
 
-%%[4_2.valGamQuantifyWithVarMp
+%%[(4_2 hmtyinfer || hmtyast).valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
 valGamQuantifyWithVarMp :: VarMp -> TyVarIdL -> ValGam -> (ValGam,VarMp)
 valGamQuantifyWithVarMp = valGamDoWithVarMp (\t globTvL -> (tyQuantify (`elem` globTvL) t,globTvL))
 %%]
@@ -512,7 +531,7 @@ gamUnzip :: Ord k => Gam k (v1,v2) -> (Gam k v1,Gam k v2)
 gamUnzip g = lgamUnzip g
 %%]
 
-%%[9.valGamQuantify -3.valGamQuantify
+%%[(9 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
 valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
 valGamQuantify globTvL prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
@@ -522,7 +541,7 @@ valGamQuantify globTvL prL g
      in   gamUnzip g'
 %%]
 
-%%[4.valGamInst1Exists
+%%[(4 hmtyinfer).valGamInst1Exists export(gamInst1Exists,valGamInst1Exists)
 gamInst1Exists :: Ord k => (v -> Ty,v -> Ty -> v) -> UID -> Gam k v -> Gam k v
 gamInst1Exists (extr,upd) u
   =  fst . gamMapThr (\(n,t) u -> let (u',ue) = mkNewLevUID u in ((n,upd t (tyInst1Exists ue (extr t))),u')) u
@@ -536,7 +555,7 @@ valGamCloseExists :: ValGam -> ValGam
 valGamCloseExists = valGamMapTy (\t -> tyQuantify (not . tvIsEx (tyFtvMp t)) t)
 %%]
 
-%%[4_2.valGamInst1ExistsWithVarMp
+%%[(4_2 hmtyinfer).valGamInst1ExistsWithVarMp
 valGamInst1ExistsWithVarMp :: VarMp -> UID -> ValGam -> (ValGam,VarMp)
 valGamInst1ExistsWithVarMp
   =  valGamDoWithVarMp
@@ -545,7 +564,7 @@ valGamInst1ExistsWithVarMp
         )
 %%]
 
-%%[7 export(valGamTyOfDataCon)
+%%[(7 hmtyinfer || hmtyast) export(valGamTyOfDataCon)
 valGamTyOfDataCon :: HsName -> ValGam -> (Ty,Ty,ErrL)
 valGamTyOfDataCon conNm g
   = (t,rt,e)
@@ -553,7 +572,7 @@ valGamTyOfDataCon conNm g
         (_,rt) = tyArrowArgsRes t
 %%]
 
-%%[7 export(valGamTyOfDataFld)
+%%[(7 hmtyinfer || hmtyast) export(valGamTyOfDataFld)
 valGamTyOfDataFld :: HsName -> ValGam -> (Ty,Ty,ErrL)
 valGamTyOfDataFld fldNm g
   | null e    = (t,rt,e)
@@ -567,22 +586,32 @@ valGamTyOfDataFld fldNm g
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.TyGamInfo
-data TyGamInfo = TyGamInfo { tgiTy :: !Ty } deriving Show
+data TyGamInfo
+  = TyGamInfo
+%%[[(1 hmtyinfer || hmtyast)
+      { tgiTy :: !Ty
+      }
+%%]]
+      deriving Show
 %%]
 
-%%[6.mkTGIData
+%%[(6 hmtyinfer || hmtyast).mkTGIData export(mkTGIData)
 mkTGIData :: Ty -> Ty -> TyGamInfo
 mkTGIData t _ = TyGamInfo t
 %%]
 
-%%[6
+%%[(6 hmtyinfer || hmtyast) export(mkTGI)
 mkTGI :: Ty -> TyGamInfo
 mkTGI t = mkTGIData t Ty_Any
 %%]
 
 %%[1.emtpyTGI export(emtpyTGI)
 emtpyTGI :: TyGamInfo
-emtpyTGI = TyGamInfo Ty_Any
+emtpyTGI
+  = TyGamInfo
+%%[[(1 hmtyinfer || hmtyast)
+      Ty_Any
+%%]]
 %%]
 
 %%[1.TyGam
@@ -593,9 +622,14 @@ type TyGam = Gam HsName TyGamInfo
 tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup nm g
   =  case gamLookup nm g of
-       Nothing | hsnIsProd nm   -> Just (TyGamInfo (Ty_Con nm))
-       Just tgi                 -> Just tgi
-       _                        -> Nothing
+       Nothing | hsnIsProd nm 
+%%[[(1 hmtyinfer || hmtyast) 
+                 -> Just (TyGamInfo (Ty_Con nm))
+%%][1
+                 -> Just emtpyTGI
+%%]]
+       Just tgi  -> Just tgi
+       _         -> Nothing
 %%]
 
 %%[1 export(tyGamLookupErr)
@@ -612,7 +646,11 @@ tyGamLookup nm g
   =  case gamLookup nm g of
        Nothing
          |  hsnIsProd nm
+%%[[(6 hmtyinfer || hmtyast) 
                  -> Just (TyGamInfo (Ty_Con nm))
+%%][6
+                 -> Just emtpyTGI
+%%]]
        Just tgi  -> Just tgi
        _         -> Nothing
 %%]
@@ -622,13 +660,13 @@ tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup = gamLookup
 %%]
 
-%%[6 export(tyKiGamQuantify)
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamQuantify)
 tyKiGamQuantify :: TyVarIdL -> TyKiGam -> TyKiGam
 tyKiGamQuantify globTvL
   = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`elem` globTvL) (tkgiKi k)}))
 %%]
 
-%%[6 export(tyKiGamInst1Exists)
+%%[(6 hmtyinfer) export(tyKiGamInst1Exists)
 tyKiGamInst1Exists :: UID -> TyKiGam -> TyKiGam
 tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
 %%]
@@ -638,50 +676,72 @@ tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[6 export(TyKiGamInfo(..),TyKiGam,emptyTKGI)
-data TyKiGamInfo = TyKiGamInfo { tkgiKi :: !Ty } deriving Show
+data TyKiGamInfo
+  = TyKiGamInfo
+%%[[(6 hmtyinfer || hmtyast)
+      { tkgiKi :: !Ty }
+%%]]
+      deriving Show
 
 emptyTKGI :: TyKiGamInfo
-emptyTKGI = TyKiGamInfo kiStar
+emptyTKGI
+  = TyKiGamInfo
+%%[[(6 hmtyinfer || hmtyast)
+      kiStar
+%%]]
 
 type TyKiGam = Gam TyKiKey TyKiGamInfo
 %%]
 
-%%[6 export(tyKiGamLookup,tyKiGamLookupByName)
+%%[6 export(tyKiGamLookupByName)
 tyKiGamLookupByName :: HsName -> TyKiGam -> Maybe TyKiGamInfo
 tyKiGamLookupByName n g
   = case gamLookup (TyKiKey_Name n) g of
       Nothing
         | hsnIsProd n
+%%[[(6 hmtyinfer || hmtyast)
             -> Just (TyKiGamInfo (replicate (hsnProdArity n) kiStar `mkArrow` kiStar))
+%%][6
+            -> Just TyKiGamInfo
+%%]]
       x     -> x
+%%]
 
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamLookup)
 tyKiGamLookup :: Ty -> TyKiGam -> Maybe TyKiGamInfo
 tyKiGamLookup t g
   = case tyMbVar t of
       Just v  -> gamLookup (TyKiKey_TyVar v) g
-      Nothing -> case tyMbCon t of
+      Nothing ->
+                 case tyMbCon t of
                    Just n -> tyKiGamLookupByName n g
                    _      -> Nothing
 %%]
 
-%%[6 export(tyKiGamLookupErr,tyKiGamLookupByNameErr)
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamLookupErr)
 tyKiGamLookupErr :: Ty -> TyKiGam -> (TyKiGamInfo,ErrL)
 tyKiGamLookupErr t g
   = case tyKiGamLookup t g of
       Nothing -> (emptyTKGI,[rngLift emptyRange mkErr_NamesNotIntrod "kind" [mkHNm $ show t]])
       Just i  -> (i,[])
+%%]
 
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamLookupByNameErr)
 tyKiGamLookupByNameErr :: HsName -> TyKiGam -> (TyKiGamInfo,ErrL)
 tyKiGamLookupByNameErr n g = tyKiGamLookupErr (semCon n) g
 %%]
 
-%%[6 export(tyKiGamNameSingleton,tyKiGamSingleton,tyKiGamVarSingleton)
-tyKiGamNameSingleton :: HsName -> TyKiGamInfo -> TyKiGam
-tyKiGamNameSingleton n k = gamSingleton (TyKiKey_Name n) k
-
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamVarSingleton)
 tyKiGamVarSingleton :: TyVarId -> TyKiGamInfo -> TyKiGam
 tyKiGamVarSingleton v k = gamSingleton (TyKiKey_TyVar v) k
+%%]
 
+%%[6 export(tyKiGamNameSingleton)
+tyKiGamNameSingleton :: HsName -> TyKiGamInfo -> TyKiGam
+tyKiGamNameSingleton n k = gamSingleton (TyKiKey_Name n) k
+%%]
+
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamSingleton)
 tyKiGamSingleton :: Ty -> TyKiGamInfo -> TyKiGam
 tyKiGamSingleton t k
   = case tyMbVar t of
@@ -695,7 +755,7 @@ tyKiGamSingleton t k
 %%% Data tag/etc info gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 export(DataFldMp,DataFldInfo(..),emptyDataFldInfo)
+%%[(7 hmtyinfer) export(DataFldMp,DataFldInfo(..),emptyDataFldInfo)
 data DataFldInfo
   = DataFldInfo
 %%[[8
@@ -713,7 +773,7 @@ emptyDataFldInfo
 %%]]
 %%]
 
-%%[7 export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
+%%[(7 hmtyinfer) export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
 data DataTagInfo
   = DataTagInfo
       { dtiFldMp    		:: !DataFldMp
@@ -739,12 +799,12 @@ emptyDataTagInfo
 %%]]
 %%]
 
-%%[8 export(dtiOffsetOfFld)
+%%[(8 hmtyinfer) export(dtiOffsetOfFld)
 dtiOffsetOfFld :: HsName -> DataTagInfo -> Int
 dtiOffsetOfFld fldNm dti = dfiOffset $ panicJust "dtiOffsetOfFld" $ Map.lookup fldNm $ dtiFldMp dti
 %%]
 
-%%[8 export(DataFldInConstr(..),DataFldInConstrMp)
+%%[(8 hmtyinfer) export(DataFldInConstr(..),DataFldInConstrMp)
 data DataFldInConstr
   = DataFldInConstr
       { dficInTagMp	:: !(Map.Map CTag Int)
@@ -753,7 +813,7 @@ data DataFldInConstr
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%]
 
-%%[7 export(DataGam,DataGamInfo(..),mkDGI)
+%%[(7 hmtyinfer) export(DataGam,DataGamInfo(..),mkDGI)
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName
@@ -777,7 +837,8 @@ instance Show DataGamInfo where
 mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
 mkDGI tyNm dty cNmL m nt
   = DataGamInfo
-      tyNm dty
+      tyNm
+      dty
 %%[[20
       cNmL
 %%]]
@@ -790,23 +851,23 @@ mkDGI tyNm dty cNmL m nt
 %%]]
 %%]
 
-%%[7 export(emptyDataGamInfo,emptyDGI)
+%%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)
 emptyDataGamInfo, emptyDGI :: DataGamInfo
 emptyDataGamInfo = mkDGI hsnUnknown Ty_Any [] Map.empty False
 emptyDGI = emptyDataGamInfo
 %%]
 
-%%[20 export(dgiConstrTagAssocL)
+%%[(20 hmtyinfer) export(dgiConstrTagAssocL)
 dgiConstrTagAssocL :: DataGamInfo -> AssocL HsName DataTagInfo
 dgiConstrTagAssocL dgi = [ (cn,panicJust "dgiConstrTagAssocL" $ Map.lookup cn $ dgiConstrTagMp dgi) | cn <- dgiConstrNmL dgi ]
 %%]
 
-%%[7 export(dgiDtiOfCon)
+%%[(7 hmtyinfer) export(dgiDtiOfCon)
 dgiDtiOfCon :: HsName -> DataGamInfo -> DataTagInfo
 dgiDtiOfCon conNm dgi = panicJust "dgiDtiOfCon" $ Map.lookup conNm $ dgiConstrTagMp dgi
 %%]
 
-%%[7 export(dataGamLookup,dataGamLookupErr)
+%%[(7 hmtyinfer) export(dataGamLookup,dataGamLookupErr)
 dataGamLookup :: HsName -> DataGam -> Maybe DataGamInfo
 dataGamLookup nm g
   =  case gamLookup nm g of
@@ -823,12 +884,12 @@ dataGamLookupErr n g
       Just tgi -> (tgi,[])
 %%]
 
-%%[7 export(dataGamDgiOfTy)
+%%[(7 hmtyinfer) export(dataGamDgiOfTy)
 dataGamDgiOfTy :: Ty -> DataGam -> Maybe DataGamInfo
 dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 %%]
 
-%%[8 export(dataGamDTIsOfTy)
+%%[(8 hmtyinfer) export(dataGamDTIsOfTy)
 dataGamDTIsOfTy :: Ty -> DataGam -> Maybe [DataTagInfo]
 dataGamDTIsOfTy t g
   = fmap
@@ -841,7 +902,7 @@ dataGamDTIsOfTy t g
     $ g
 %%]
 
-%%[8 export(dataGamTagsOfTy)
+%%[(8 hmtyinfer) export(dataGamTagsOfTy)
 dataGamTagsOfTy :: Ty -> DataGam -> Maybe [CTag]
 dataGamTagsOfTy t g
   = fmap (map dtiCTag) (dataGamDTIsOfTy t g)
@@ -861,7 +922,7 @@ valDataGamLookup nm vg dg
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.AppSpineGam export(AppSpineGam, asGamLookup)
+%%[(4 hmtyinfer).AppSpineGam export(AppSpineGam, asGamLookup)
 type AppSpineGam = Gam HsName AppSpineInfo
 
 asGamLookup :: HsName -> AppSpineGam -> Maybe AppSpineInfo
@@ -873,12 +934,12 @@ asGamLookup nm g
 
 %%]
 
-%%[4.appSpineGam export(appSpineGam)
+%%[(4 hmtyinfer).appSpineGam export(appSpineGam)
 appSpineGam :: AppSpineGam
 appSpineGam =  assocLToGam [(hsnArrow, emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})]
 %%]
 
-%%[7.appSpineGam -4.appSpineGam export(appSpineGam)
+%%[(7 hmtyinfer).appSpineGam -4.appSpineGam export(appSpineGam)
 appSpineGam :: AppSpineGam
 appSpineGam
   = assocLToGam
@@ -891,8 +952,13 @@ appSpineGam
 %%% "Sort of kind" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
-data KiGamInfo = KiGamInfo { kgiKi :: Ty } deriving Show
+%%[6 export(KiGam, KiGamInfo(..))
+data KiGamInfo
+  = KiGamInfo
+%%[[(6 hmtyinfer || hmtyast)
+      { kgiKi :: Ty }
+%%]]
+      deriving Show
 
 type KiGam = Gam HsName KiGamInfo
 %%]
@@ -948,7 +1014,7 @@ idQualGamReplacement g k n = maybe n id $ gamLookup (IdOcc n k) g
 %%% Instances for Substitutable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.Substitutable.Gam
+%%[(2 hmtyinfer || hmtyast).Substitutable.Gam
 instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k subst where
   s |=>  (Gam ll)    =   Gam (map (assocLMapElt (s |=>)) ll)
 %%[[4
@@ -958,7 +1024,7 @@ instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k su
   ftv    (Gam ll)    =   unions . map ftv . map snd . concat $ ll
 %%]
 
-%%[9.Substitutable.LGam -2.Substitutable.Gam
+%%[(9 hmtyinfer || hmtyast).Substitutable.LGam -2.Substitutable.Gam
 instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k subst where
   s |=>  g    =   gamMapElts (s |=>) g
 %%[[4
@@ -968,7 +1034,7 @@ instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k
   ftv    g    =   unions $ map ftv $ gamElts g
 %%]
 
-%%[2.Substitutable.inst.ValGamInfo
+%%[(2 hmtyinfer || hmtyast).Substitutable.inst.ValGamInfo
 instance Substitutable ValGamInfo TyVarId VarMp where
   s |=>  vgi         =   vgi { vgiTy = s |=> vgiTy vgi }
 %%[[4
@@ -977,7 +1043,7 @@ instance Substitutable ValGamInfo TyVarId VarMp where
   ftv    vgi         =   ftv (vgiTy vgi)
 %%]
 
-%%[2.Substitutable.inst.TyGamInfo
+%%[(2 hmtyinfer || hmtyast).Substitutable.inst.TyGamInfo
 instance Substitutable TyGamInfo TyVarId VarMp where
   s |=>  tgi         =   tgi { tgiTy = s |=> tgiTy tgi }
 %%[[4
@@ -986,7 +1052,7 @@ instance Substitutable TyGamInfo TyVarId VarMp where
   ftv    tgi         =   ftv (tgiTy tgi)
 %%]
 
-%%[6.Substitutable.inst.TyKiGamInfo
+%%[(6 hmtyinfer || hmtyast).Substitutable.inst.TyKiGamInfo
 instance Substitutable TyKiGamInfo TyVarId VarMp where
   s |=>  tkgi         =   tkgi { tkgiKi = s |=> tkgiKi tkgi }
 %%[[4
@@ -995,7 +1061,7 @@ instance Substitutable TyKiGamInfo TyVarId VarMp where
   ftv    tkgi         =   ftv (tkgiKi tkgi)
 %%]
 
-%%[17.Substitutable.inst.PolGamInfo
+%%[(17 hmtyinfer || hmtyast).Substitutable.inst.PolGamInfo
 instance Substitutable PolGamInfo TyVarId VarMp where
   s |=> pgi  = pgi { pgiPol = s |=> pgiPol pgi }
   s |==> pgi = substLift pgiPol (\i x -> i {pgiPol = x}) (|==>) s pgi
@@ -1026,22 +1092,22 @@ instance (PP k, PP v) => PP (LGam k v) where
   pp g = ppGam g
 %%]
 
-%%[1.PP.ValGamInfo
+%%[(1 hmtyinfer || hmtyast).PP.ValGamInfo
 instance PP ValGamInfo where
   pp vgi = ppTy (vgiTy vgi)
 %%]
 
-%%[1.PP.TyGamInfo
+%%[(1 hmtyinfer || hmtyast).PP.TyGamInfo
 instance PP TyGamInfo where
   pp tgi = ppTy (tgiTy tgi)
 %%]
 
-%%[6
+%%[(6 hmtyinfer || hmtyast)
 instance PP TyKiGamInfo where
   pp i = ppTy (tkgiKi i)
 %%]
 
-%%[17
+%%[(17 hmtyinfer || hmtyast)
 instance PP PolGamInfo where
   pp i = ppTy (pgiPol i)
 %%]
@@ -1064,7 +1130,39 @@ instance (ForceEval k, ForceEval v) => ForceEval (LGam k v) where
 %%]]
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
+instance ForceEval DataFldInfo
+%%[[102
+  where
+    fevCount (DataFldInfo x) = cm1 "DataFldInfo" `cmUnion` fevCount x
+%%]]
+
+instance ForceEval DataTagInfo where
+  forceEval x@(DataTagInfo m n t p) | forceEval m `seq` forceEval p `seq` True = x
+%%[[102
+  fevCount (DataTagInfo m n t p) = cmUnions [cm1 "DataTagInfo",fevCount m,fevCount n,fevCount t,fevCount p]
+%%]]
+
+instance ForceEval DataFldInConstr where
+  forceEval x@(DataFldInConstr m) | forceEval m `seq` True = x
+%%[[102
+  fevCount (DataFldInConstr x) = cm1 "DataFldInConstr" `cmUnion` fevCount x
+%%]]
+
+instance ForceEval DataGamInfo where
+  forceEval x@(DataGamInfo n t nl tm cm nt mx) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
+%%[[102
+  fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
+%%]]
+
+instance ForceEval PolGamInfo where
+  forceEval x@(PolGamInfo p) | forceEval p `seq` True = x
+%%[[102
+  fevCount (PolGamInfo p) = cmUnions [cm1 "PolGamInfo",fevCount p]
+%%]]
+%%]
+
+%%[(99 hmtyinfer || hmtyast)
 instance ForceEval ValGamInfo where
   forceEval x@(ValGamInfo t) | forceEval t `seq` True = x
 %%[[102
@@ -1096,36 +1194,9 @@ instance ForceEval TyGamInfo where
   fevCount (TyGamInfo x) = cm1 "TyGamInfo" `cmUnion` fevCount x
 %%]]
 
-instance ForceEval DataFldInfo
-%%[[102
-  where
-    fevCount (DataFldInfo x) = cm1 "DataFldInfo" `cmUnion` fevCount x
-%%]]
+%%]
 
-instance ForceEval DataTagInfo where
-  forceEval x@(DataTagInfo m n t p) | forceEval m `seq` forceEval p `seq` True = x
-%%[[102
-  fevCount (DataTagInfo m n t p) = cmUnions [cm1 "DataTagInfo",fevCount m,fevCount n,fevCount t,fevCount p]
-%%]]
-
-instance ForceEval DataFldInConstr where
-  forceEval x@(DataFldInConstr m) | forceEval m `seq` True = x
-%%[[102
-  fevCount (DataFldInConstr x) = cm1 "DataFldInConstr" `cmUnion` fevCount x
-%%]]
-
-instance ForceEval DataGamInfo where
-  forceEval x@(DataGamInfo n t nl tm cm nt mx) | forceEval nl `seq` forceEval tm `seq` forceEval cm `seq` True = x
-%%[[102
-  fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
-%%]]
-
-instance ForceEval PolGamInfo where
-  forceEval x@(PolGamInfo p) | forceEval p `seq` True = x
-%%[[102
-  fevCount (PolGamInfo p) = cmUnions [cm1 "PolGamInfo",fevCount p]
-%%]]
-
+%%[99
 instance ForceEval FixityGamInfo
 %%[[102
   where
@@ -1141,29 +1212,50 @@ instance ForceEval FixityGamInfo
 initTyGam :: TyGam
 initTyGam
   = assocLToGam
+%%[[(1 hmtyinfer || hmtyast)
       [ (hsnArrow,  TyGamInfo (Ty_Con hsnArrow))
       , (hsnInt,    TyGamInfo tyInt)
       , (hsnChar,   TyGamInfo tyChar)
       ]
+%%][1
+      [ (hsnArrow,  emtpyTGI)
+      , (hsnInt,    emtpyTGI)
+      , (hsnChar,   emtpyTGI)
+      ]
+%%]]
 %%]
 
 %%[6.initTyGam -1.initTyGam
 initTyGam :: TyGam
 initTyGam
   = assocLToGam
+%%[[(6 hmtyinfer || hmtyast)
       [ (hsnArrow,      mkTGI (Ty_Con hsnArrow))
       , (hsnInt,        mkTGI tyInt)
       , (hsnChar,       mkTGI tyChar)
-%%[[7
+%%][6
+      [ (hsnArrow,      emtpyTGI)
+      , (hsnInt,        emtpyTGI)
+      , (hsnChar,       emtpyTGI)
+%%]]
+%%[[(7 hmtyinfer || hmtyast)
       , (hsnRow,        mkTGI (Ty_Con hsnUnknown))
       , (hsnRec,        mkTGI (Ty_Con hsnRec))
       , (hsnSum,        mkTGI (Ty_Con hsnSum))
+%%][7
+      , (hsnRow,        emtpyTGI)
+      , (hsnRec,        emtpyTGI)
+      , (hsnSum,        emtpyTGI)
 %%]]
-%%[[9
+%%[[(9 hmtyinfer || hmtyast)
       , (hsnPrArrow,    mkTGI (Ty_Con hsnPrArrow))
+%%][9
+      , (hsnPrArrow,    emtpyTGI)
 %%]]
-%%[[97
+%%[[(97 hmtyinfer || hmtyast)
       , (hsnInteger,    mkTGI tyInteger)
+%%][97
+      , (hsnInteger,    emtpyTGI)
 %%]]
       ]
 %%]
@@ -1176,19 +1268,33 @@ initTyGam
 initTyKiGam :: TyKiGam
 initTyKiGam
   = gamUnions
+%%[[(6 hmtyinfer || hmtyast)
       [ (tyKiGamNameSingleton hsnArrow      (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
       , (tyKiGamNameSingleton hsnInt        (TyKiGamInfo kiStar))
       , (tyKiGamNameSingleton hsnChar       (TyKiGamInfo kiStar))
-%%[[7
+%%][6
+      [ (tyKiGamNameSingleton hsnArrow      TyKiGamInfo)
+      , (tyKiGamNameSingleton hsnInt        TyKiGamInfo)
+      , (tyKiGamNameSingleton hsnChar       TyKiGamInfo)
+%%]]
+%%[[(7 hmtyinfer || hmtyast)
       , (tyKiGamNameSingleton hsnRow        (TyKiGamInfo kiRow))
       , (tyKiGamNameSingleton hsnRec        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
       , (tyKiGamNameSingleton hsnSum        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
+%%][7
+      , (tyKiGamNameSingleton hsnRow        TyKiGamInfo)
+      , (tyKiGamNameSingleton hsnRec        TyKiGamInfo)
+      , (tyKiGamNameSingleton hsnSum        TyKiGamInfo)
 %%]]
-%%[[9
+%%[[(9 hmtyinfer || hmtyast)
       , (tyKiGamNameSingleton hsnPrArrow    (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
+%%][9
+      , (tyKiGamNameSingleton hsnPrArrow    TyKiGamInfo)
 %%]]
-%%[[97
+%%[[(97 hmtyinfer || hmtyast)
       , (tyKiGamNameSingleton hsnInteger    (TyKiGamInfo kiStar))
+%%][97
+      , (tyKiGamNameSingleton hsnInteger    TyKiGamInfo)
 %%]]
       ]
 %%]
@@ -1197,15 +1303,22 @@ initTyKiGam
 %%% Init of kiGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[6 export(initKiGam)
 initKiGam :: KiGam
 initKiGam
   = assocLToGam
+%%[[(6 hmtyinfer || hmtyast)
       [ (hsnArrow,  KiGamInfo (Ty_Con hsnArrow))
       , (hsnStar,   KiGamInfo kiStar)
-%%[[7
+%%][6
+      [ (hsnArrow,  KiGamInfo)
+      , (hsnStar,   KiGamInfo)
+%%]]
+%%[[(7 hmtyinfer || hmtyast)
       , (hsnRow,    KiGamInfo kiRow)
-%%]
+%%][7
+      , (hsnRow,    KiGamInfo)
+%%]]
       ]
 %%]
 
@@ -1213,7 +1326,7 @@ initKiGam
 %%% Polarity gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 export(PolGamInfo(..), PolGam, initPolGam, mapPolGam, quantifyPolGam,mkPGI)
+%%[(17 hmtyinfer || hmtyast) export(PolGamInfo(..), PolGam, initPolGam, mapPolGam, quantifyPolGam,mkPGI)
 data PolGamInfo = PolGamInfo { pgiPol :: Polarity } deriving Show
 
 mkPGI :: Ty -> PolGamInfo
@@ -1251,7 +1364,7 @@ quantifyPolGam gam
      in mapPolGam (tyQuantify notElemFtvs) gam
 %%]
 
-%%[17 export(polGamLookup,polGamLookupErr)
+%%[(17 hmtyinfer || hmtyast) export(polGamLookup,polGamLookupErr)
 polGamLookup :: HsName -> PolGam -> Maybe PolGamInfo
 polGamLookup = gamLookup
 

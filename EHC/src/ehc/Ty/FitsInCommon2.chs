@@ -10,27 +10,27 @@
 This should be in FitsInCommon, but to avoid cycles is placed in this additional file with common
 structures for fitsIn and related functions.
 
-%%[4 module {%{EH}Ty.FitsInCommon2} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Ty.Utils}, {%{EH}Substitutable})
+%%[(4 hmtyinfer) module {%{EH}Ty.FitsInCommon2} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Ty.Utils}, {%{EH}Substitutable})
 %%]
 
-%%[4 import({%{EH}Base.Opts}, {%{EH}VarMp})
+%%[(4 hmtyinfer) import({%{EH}Base.Opts}, {%{EH}VarMp})
 %%]
 
-%%[4 import(qualified Data.Set as Set)
+%%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[11 import({%{EH}Gam})
+%%[(11 hmtyinfer) import({%{EH}Gam})
 %%]
 
 For debug/trace:
-%%[4 import(EH.Util.Pretty)
+%%[(4 hmtyinfer) import(EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Trace/debug PP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(ppTyWithFI,ppTyWithFIFO)
+%%[(4 hmtyinfer) export(ppTyWithFI,ppTyWithFIFO)
 ppTyWithFI :: FIIn -> Ty -> PP_Doc
 ppTyWithFI fi t =  ppTyS (fiVarMpLoc fi |=> fiVarMp fi) t
 
@@ -42,7 +42,7 @@ ppTyWithFIFO fi fo t    =  ppTyS (foVarMp fo |=> fiVarMp fi) t
 %%% Interface to configuration/input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FIIn export(FIIn(..))
+%%[(4 hmtyinfer).FIIn export(FIIn(..))
 data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts				-- options to fitsIn
                         ,  fiUniq            ::  !UID					-- unique thread
                         ,  fiVarMp           ::  !VarMp					-- global (type) var bindings
@@ -58,7 +58,7 @@ data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts				-- options to fitsIn
                         }
 %%]
 
-%%[4.FIn.emptyFI export(emptyFI)
+%%[(4 hmtyinfer).FIn.emptyFI export(emptyFI)
 emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
                         ,  fiUniq            =   uidStart
                         ,  fiVarMp           =   emptyVarMp
@@ -74,7 +74,7 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
                         }
 %%]
 
-%%[4 export(fiLookupVar',fiLookupTyVarCyc)
+%%[(4 hmtyinfer) export(fiLookupVar',fiLookupTyVarCyc)
 fiLookupVar' :: (v -> VarMp -> Maybe x) -> v -> VarMp -> VarMp -> Maybe x
 fiLookupVar' lkup v m1 m2
   = case lkup v m1 of
@@ -92,7 +92,7 @@ fiLookupTyVarCyc  fi v | fiVarIsExpanded v fi =  Nothing
 %%% Rank
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(fiInitInstRank,fiRankEqInstRank,fiUpdRankByPolarity)
+%%[(4 hmtyinfer) export(fiInitInstRank,fiRankEqInstRank,fiUpdRankByPolarity)
 fiInitInstRank :: FIIn -> FIIn
 fiInitInstRank fi = maybe (fi {fiMbInstRank = Just (fiRank fi)}) (const fi) (fiMbInstRank fi)
 
@@ -107,7 +107,7 @@ fiUpdRankByPolarity pol fi = if polIsContravariant pol then fi {fiRank = fiRank 
 %%% Bind type var
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(fiPlusVarMp,fiSetVarMp,fiBindTyVar)
+%%[(4 hmtyinfer) export(fiPlusVarMp,fiSetVarMp,fiBindTyVar)
 fiPlusVarMp :: VarMp -> FIIn -> FIIn
 fiPlusVarMp c fi = fi {fiVarMpLoc = c |+> fiVarMpLoc fi}
 
@@ -122,7 +122,7 @@ fiBindTyVar v t = fiPlusVarMp (v `varmpTyUnit` t)
 %%% FitsIn Environment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FIEnv export(FIEnv(..))
+%%[(4 hmtyinfer).FIEnv export(FIEnv(..))
 data FIEnv
   =   FIEnv
 %%[[9
@@ -142,7 +142,7 @@ data FIEnv
 %%]]
 %%]
 
-%%[4 export(emptyFE)
+%%[(4 hmtyinfer) export(emptyFE)
 emptyFE
   =   FIEnv
 %%[[9
@@ -162,12 +162,12 @@ emptyFE
 %%]]
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 instance Show FIEnv where
   show _ = "FIEnv"
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance PP FIEnv where
   pp e = "FIEnv"
          >#< (empty

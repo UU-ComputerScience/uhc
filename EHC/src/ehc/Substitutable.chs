@@ -14,31 +14,31 @@
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}VarMp},{%{EH}Ty.Trf.Subst},{%{EH}Ty.Ftv}) export(Substitutable(..))
+%%[(2 hmtyinfer || hmtyast) module {%{EH}Substitutable} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}, {%{EH}VarMp},{%{EH}Ty.Trf.Subst},{%{EH}Ty.Ftv}) export(Substitutable(..))
 %%]
 
-%%[2 import(qualified Data.Set as Set,EH.Util.Pretty)
+%%[(2 hmtyinfer || hmtyast) import(qualified Data.Set as Set,EH.Util.Pretty)
 %%]
 
-%%[4 import({%{EH}Error})
+%%[(4 hmtyinfer || hmtyast) import({%{EH}Error})
 %%]
 
-%%[9 import(qualified Data.Map as Map)
+%%[(9 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.Substitutable
+%%[(2 hmtyinfer || hmtyast).Substitutable
 infixr 6 |=>
 %%]
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 infixr 6 |==>
 %%]
 
-%%[2.Substitutable
+%%[(2 hmtyinfer || hmtyast).Substitutable
 class Substitutable vv k subst | vv -> subst k where
   (|=>)         ::  subst -> vv -> vv
 %%[[4
@@ -51,19 +51,19 @@ class Substitutable vv k subst | vv -> subst k where
 %%]]
 %%]
 
-%%[4 export(substLift)
+%%[(4 hmtyinfer || hmtyast) export(substLift)
 substLift :: (v' -> v) -> (v' -> v -> v') -> (subst -> v -> (v,r)) -> subst -> v' -> (v',r)
 substLift toV updV app s v'
   = (updV v' x,r)
   where (x,r) = app s $ toV v'
 %%]
 
-%%[2 export(ftvSet)
+%%[(2 hmtyinfer || hmtyast) export(ftvSet)
 ftvSet :: (Ord k,Substitutable x k subst) => x -> Set.Set k
 ftvSet = Set.fromList . ftv
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 %%]
 ftvClosureSet :: (Substitutable x TyVarId VarMp) => VarMp -> x -> Set.Set TyVarId
 ftvClosureSet varmp x
@@ -75,7 +75,7 @@ ftvClosureSet varmp x
 %%% Substitutable like computations, partially implemented
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(varmpinfoFtvMp)
+%%[(99 hmtyinfer || hmtyast) export(varmpinfoFtvMp)
 varmpinfoFtvMp :: VarMpInfo Ty -> TvCatMp
 varmpinfoFtvMp i
   = case i of
@@ -88,7 +88,7 @@ varmpinfoFtvMp i
 %%% Substitutable instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.SubstitutableTy
+%%[(2 hmtyinfer || hmtyast).SubstitutableTy
 instance Substitutable Ty TyVarId VarMp where
   (|=>)     = tyAppVarMp
 %%[[4
@@ -97,7 +97,7 @@ instance Substitutable Ty TyVarId VarMp where
   ftv       = tyFtv
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 instance Substitutable Label TyVarId VarMp where
   s |=> lb          = maybe lb id $ varmpLabelLookupLabelCyc lb s
   ftv (Label_Var v) = [v]
@@ -114,7 +114,7 @@ instance Substitutable Label TyVarId VarMp where
   ftv (Label_Var v) = [v]
   ftv _             = []
 
-%%[2.SubstitutableList
+%%[(2 hmtyinfer || hmtyast).SubstitutableList
 instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
   s      |=>  l   =   map (s |=>) l
 %%[[4
@@ -124,7 +124,7 @@ instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
   ftv         l   =   unions $ map ftv l
 %%]
 
-%%[2.SubstitutableVarMp
+%%[(2 hmtyinfer || hmtyast).SubstitutableVarMp
 instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
     = VarMp (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
@@ -133,7 +133,7 @@ instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
     = ftv . map snd $ sl
 %%]
 
-%%[4.SubstitutableVarMp -2.SubstitutableVarMp
+%%[(4 hmtyinfer || hmtyast).SubstitutableVarMp -2.SubstitutableVarMp
 instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
     = s1 `varmpPlus` s2
@@ -141,19 +141,19 @@ instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
     = ftv $ map snd sl
 %%]
 
-%%[9.SubstitutableVarMp -4.SubstitutableVarMp
+%%[(9 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
 instance Substitutable (VarMp' TyVarId (VarMpInfo Ty)) TyVarId VarMp where
   s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` {- Map.map (s1 |=>) -} sl2)
   ftv                  (VarMp sl)      =   ftv $ Map.elems sl
 %%]
 
-%%[7
+%%[(7 hmtyinfer || hmtyast)
 instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where
   s |=>  (k,v) =  (k,s |=> v)
   ftv    (_,v) =  ftv v
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Substitutable Pred TyVarId VarMp where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
   ftv    p  =  ftv (Ty_Pred p)
@@ -189,7 +189,7 @@ instance Substitutable Impls TyVarId VarMp where
   s |=>  sc                   = sc
 
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Substitutable (VarMpInfo Ty) TyVarId VarMp where
   s |=> vmi =  case vmi of
                  VMITy       t  -> VMITy (s |=> t)
@@ -219,7 +219,7 @@ instance Substitutable (VarMpInfo Ty) TyVarId VarMp where
 
 This is still/regretfully duplicated in Ty/Subst.cag, Ty/Ftv.cag
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 %%]
 instance Substitutable RowExts TyVarId VarMp where
   s |=>  e@(RowExts_Var  v) = maybe e id $ varmpExtsLookup v s
@@ -229,7 +229,7 @@ instance Substitutable RowExts TyVarId VarMp where
 
 And this too...
 
-%%[13
+%%[(13 hmtyinfer || hmtyast)
 instance Substitutable PredSeq TyVarId VarMp where
   s |=>  a@(PredSeq_Var  v  ) = maybe a id $ varmpPredSeqLookup v s
   s |=>    (PredSeq_Cons h t) = PredSeq_Cons (s |=> h) (s |=> t)
@@ -243,7 +243,7 @@ instance Substitutable PredSeq TyVarId VarMp where
 %%% Fixating free type vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(tyFixTyVars)
+%%[(9 hmtyinfer || hmtyast) export(tyFixTyVars)
 fixTyVarsVarMp :: UID -> Ty -> (VarMp,VarMp)
 fixTyVarsVarMp uniq t
   = (mk TyVarCateg_Fixed fv rv,mk TyVarCateg_Plain rv fv)
@@ -261,7 +261,7 @@ tyFixTyVars uniq t
 %%% Pretty printing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs export(ppS)
+%%[(2 hmtyinfer || hmtyast) hs export(ppS)
 ppS :: Substitutable x TyVarId VarMp => (x -> PP_Doc) -> VarMp -> x -> PP_Doc
 ppS pp c x = (pp $ c |=> x) >#< ppParens (pp x)
 %%]
@@ -272,13 +272,13 @@ ppS pp c x = (pp $ c |=> x) >#< ppParens (pp x)
 
 This should be in module VarMp, but because of use of |=> cannot.
 
-%%[4.varmpOccurErr export(varmpOccurErr)
+%%[(4 hmtyinfer || hmtyast).varmpOccurErr export(varmpOccurErr)
 varmpOccurErr :: VarMp -> VarMp -> [Err]
 varmpOccurErr m mc = [ Err_OccurCycle v (varmpDel [v] m |=> t) | (v,t) <- varmpToAssocTyL mc ]
 %%]
 varmpOccurErr m = map (uncurry Err_OccurCycle) $ varmpToAssocTyL m
 
-%%[99 -4.varmpOccurErr export(varmpOccurErr)
+%%[(99 hmtyinfer || hmtyast) -4.varmpOccurErr export(varmpOccurErr)
 varmpOccurErr :: Range -> VarMp -> VarMp -> [Err]
 varmpOccurErr r m mc = [ Err_OccurCycle r v (varmpDel [v] m |=> t) | (v,t) <- varmpToAssocTyL mc ]
 %%]

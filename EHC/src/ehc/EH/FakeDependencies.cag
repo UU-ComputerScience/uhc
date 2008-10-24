@@ -5,19 +5,21 @@
 Dependencies are declared for the first variant where both dependencees are available.
 
 %%[1
-SEM Decls
-  | Cons        lhs         .   opts                <   lhs.gathTySigGam
-
 SEM Expr
   | Parens      lhs			.	opts				<	lhs.gUniq
 %%]
 
-%%[2
+%%[(1 hmtyinfer)
+SEM Decls
+  | Cons        lhs         .   opts                <   lhs.gathTySigGam
+%%]
+
+%%[(2 hmtyinfer)
 SEM AGItf
   | AGItf       expr        .   gUniq               <   loc.tyGam
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM AGItf
   | AGItf       expr        .   gUniq               <   loc.tyKiGam
                 expr        .   gUniq               <   loc.kiGam
@@ -26,12 +28,12 @@ SEM Expr
   | Case        alts        .   kiVarMp             <   alts.patTyVarMp
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 SEM DataConstr
   | Constr      lhs         .   dataTy              <   lhs.kiVarMp
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM CaseAlts
   | Cons        hd          .   gathDataGam         <   hd.kiVarMp
 
@@ -43,12 +45,12 @@ SEM Decl
   | Data        loc         .   dataAltTy           <   loc.dataTy
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM TyExprs
   | Cons        hd          .   tyVarWildL          <   hd.clGam
 %%]
 
-%%[17
+%%[(17 hmtyinfer)
 SEM DataConstr
   | Constr      lhs         .   polGam              <   loc.dataAltTyL
                 lhs         .   knPolCtx            <   loc.dataAltTyL
@@ -59,8 +61,8 @@ SEM TyExpr
 
 SEM AGItf
   | AGItf       expr        .   gathPolGam          <   expr.valGam
+  | AGItf       expr        .   gUniq               <   loc.polGam
                 expr        .   polVarMp            <   expr.tyVarMp
-                expr        .   gUniq               <   loc.polGam
                 expr        .   polVarMp            <   loc.clGam
 %%]
 

@@ -115,8 +115,8 @@ SEM Expr
   | Con         loc         .   cexprBase   :=  CExpr_Var @nm
                             .   cexpr       :=  foAppCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
 
--- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(10 codegen noHmTyRuler)
+-- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 codegen noHmTyRuler)
 SEM Expr
   | IConst      loc         .   cexprBase   =   CExpr_Int @int
   | CConst      loc         .   cexprBase   =   CExpr_Char @char
@@ -127,13 +127,17 @@ SEM Expr
   | Var Con     loc         .   cexprBase   =   CExpr_Var @nm
 %%]
 
-%%[(10 codegen noHmTyRuler)
+%%[(8 codegen noHmTyRuler)
 SEM Expr
   | IConst CConst SConst Var Con
 %%[[97
     IIConst
 %%]]
+%%[[8
+            	loc  		.  	cexpr    	=  	@cexprBase
+%%][9
             	loc  		.  	cexpr    	=  	foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+%%]]
 %%]
 
 %%[(9 codegen)
