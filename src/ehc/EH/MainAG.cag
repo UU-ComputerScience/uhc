@@ -120,10 +120,16 @@ WRAPPER AGItf
 %%[100 -(1.PrettyAST 99.PrettyLaTeX)
 %%]
 
-%%[1.GatherError ag import({EH/GatherError},{EH/ExtraChecks})
+%%[1.GatherError ag import({EH/GatherError})
 %%]
 
 %%[102 -1.GatherError
+%%]
+
+%%[(1 hmtyinfer).ExtraChecks ag import({EH/ExtraChecks})
+%%]
+
+%%[(102 hmtyinfer) -1.ExtraChecks
 %%]
 
 %%[1.Pretty ag import({EH/Pretty})

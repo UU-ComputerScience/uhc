@@ -3,13 +3,15 @@ EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmtyinfer codegen grin noH
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
 
-# config depending on EHC_ASPECTS
+# config depending on EHC_ASPECTS, EHC_VARIANT
 EHC_CFG_USE_GRIN						:= $(filter grin,$(EHC_ASPECTS))
+EHC_CFG_USE_CODEGEN						:= $(filter $(EHC_VARIANT),$(EHC_CODE_VARIANTS))
 
 # variant, EHC_VARIANT to be configured at top level
 EHC_VARIANT								:= X
 EHC_VARIANT_PREFIX						:= $(EHC_VARIANT)$(EHC_ASPECTS_SUFFIX)/
 EHC_BLD_VARIANT_PREFIX					:= $(BLD_PREFIX)$(EHC_VARIANT_PREFIX)
+EHC_BARE_VARIANT_PREFIX					:= $(BARE_PREFIX)$(EHC_VARIANT_PREFIX)
 EHC_BLD_LIBEHC_VARIANT_PREFIX			:= $(EHC_BLD_VARIANT_PREFIX)lib-ehc/
 EHC_BLD_LIBGRINC_VARIANT_PREFIX			:= $(EHC_BLD_VARIANT_PREFIX)lib-grinc/
 EHC_BLD_BIN_VARIANT_PREFIX				:= $(EHC_BLD_VARIANT_PREFIX)bin/

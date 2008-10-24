@@ -114,6 +114,9 @@ BLDABS_PREFIX		:= $(TOPABS_PREFIX)build/
 BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
 BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 
+# location for barebones
+BARE_PREFIX			:= $(TOP_PREFIX)bare/
+
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
 
@@ -139,7 +142,8 @@ AR					:= @AR_CMD@
 RANLIB				:= @RANLIB_CMD@
 OPEN_FOR_EDIT		:= bbedit
 STRIP				:= $(STRIP_CMD)
-FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
+SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
+SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
 
 # lhs2TeX
 LHS2TEX_ENV			:= $(LHS2TEX)
@@ -264,6 +268,26 @@ GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMai
 # $1: src
 # $2: exec
 GHC_CABAL			= $(GHC) -package Cabal -o $(2) $(1)  ; $(STRIP_CMD) $(2)
+
+###########################################################################################
+# Filter out empty files
+###########################################################################################
+
+# remove files with empty content from list of files
+# $1: file list
+FILTER_OUT_EMPTY_FILES		= $(if $(strip $(1)),$(shell echo $(1) | sed -e 's/\([^ ]*\)\s*/ls \1\* ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(SHELL_FILTER_NONEMP_FILES)),)
+
+# FILTER_OUT_EMPTY_FILES		= $(shell echo $(1) | sed -e 's/\([^ ]*\)\.hs\s*/ls \1\*\.hs ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(SHELL_FILTER_NONEMP_FILES) )
+
+###########################################################################################
+# Copy files
+###########################################################################################
+
+# copy files using tar
+# $1: src dir
+# $2: dest dir
+# $3: src files relative to src dir
+COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(2) && tar xf -))
 
 ###########################################################################################
 # Misc
