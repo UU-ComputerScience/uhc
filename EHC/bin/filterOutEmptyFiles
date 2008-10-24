@@ -1,4 +1,9 @@
 #!/bin/sh
+# Filter out files, based on a heuristic check on emptyness.
+# One of the following file types are assumed to be checked:
+#   Haskell
+#   AG
+#   C
 
 f=""
 
@@ -7,7 +12,16 @@ do
   if test -s "$i"
   then
     #if test `wc -c < $i` -gt 75
+    # check on Haskell
     if grep --quiet '^module' $i
+    then
+      f="$f $i"
+    # check on AG
+    elif grep --quiet 'ATTR\|DATA\|SEM' $i
+    then
+      f="$f $i"
+    # check on C
+    elif grep --quiet 'typedef\|include\|void\|endif' $i
     then
       f="$f $i"
     fi

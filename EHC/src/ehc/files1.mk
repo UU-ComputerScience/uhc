@@ -240,14 +240,19 @@ EHC_AG_ALL_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_HS) $(EHC_AG_S_MAIN_DRV_HS) $(
 
 EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_ALL_DPDS_SRC_CAG))
 
+# all files participating in .hs library construction, not generated from AG
+EHC_ALL_LIB_FROMHS_HS					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_SIG_DRV_HS)
+# all files participating in .hs library construction, generated from AG
+EHC_ALL_LIB_FROMAG_HS					:= $(EHC_AG_ALL_MAIN_DRV_HS)
+
 # lib installed ag
 INS_EHC_LIB_ALL_AG_NAMES				:= HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn
 INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 
 # all dependents for a variant to kick of building
-EHC_ALL_DPDS_NO_MAIN					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS) $(EHC_HS_UTIL_DRV_C)
-EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS)
+EHC_ALL_DPDS_NO_MAIN					:= $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) $(EHC_HS_UTIL_DRV_C)
+EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_ALL_LIB_FROMAG_HS) $(EHC_HS_SIG_DRV_HS)
 
 EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefines.hs, ,$(EHC_ALL_DPDS))
 
@@ -276,8 +281,8 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
 		, Part of EH$(EHC_VARIANT)$(EHC_ASPECTS_SUFFIX) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,\
-			$(shell echo $(EHC_HS_UTIL_DRV_HS) $(EHC_HS_UTILCPP_DRV_HS) $(EHC_AG_ALL_MAIN_DRV_HS) $(EHC_HS_SIG_DRV_HS) \
-				 | sed -e 's/\([^ ]*\)\.hs\s*/ls \1\*\.hs ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(FILTER_NONEMP_FILES) ))) \
+			$(shell echo $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) \
+				 | sed -e 's/\([^ ]*\)\.hs\s*/ls \1\*\.hs ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(SHELL_FILTER_NONEMP_FILES) ))) \
 		, $(patsubst $(EHC_BLD_LIBEHC_VARIANT_PREFIX)%,%,$(EHC_HS_UTIL_DRV_C)) \
 	) > $@
 

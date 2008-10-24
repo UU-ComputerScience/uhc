@@ -195,6 +195,11 @@ GRINC_AG_ALL_MAIN_DRV_HS				:= $(GRINC_AG_D_MAIN_DRV_HS) $(GRINC_AG_D_MAIN_DRV_H
 
 GRINC_AG_ALL_DPDS_DRV_AG				:= $(patsubst $(SRC_GRINC_PREFIX)%.cag,$(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(GRINC_AG_ALL_DPDS_SRC_CAG))
 
+# all files participating in .hs library construction, not generated from AG
+GRINC_ALL_LIB_FROMHS_HS					:= $(GRINC_HS_UTIL_DRV_HS) $(GRINC_HS_UTILCPP_DRV_HS)
+# all files participating in .hs library construction, generated from AG
+GRINC_ALL_LIB_FROMAG_HS					:= $(GRINC_AG_ALL_MAIN_DRV_HS)
+
 # all dependents for a variant to kick of building
 GRINC_ALL_DPDS							:= $(GRINC_HS_ALL_DRV_HS) $(GRINC_AG_ALL_MAIN_DRV_HS)
 GRINC_ALL_DPDS_NOPREPROC				:= $(subst $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefines.hs, ,$(GRINC_ALL_DPDS))
@@ -213,7 +218,7 @@ $(LIB_GRINC_CABAL_DRV): $(GRINC_ALL_DPDS) $(GRINC_MKF)
 		, mtl $(LIB_EH_UTIL_PKG_NAME) $(LIB_EHC_PKG_NAME) \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
 		, Part of GRINC$(EHC_VARIANT) compiler packaged as library \
-		, $(subst $(PATH_SEP),.,$(patsubst $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_GRINC_QUAL_PREFIX)%,$(shell $(FILTER_NONEMP_FILES) $(GRINC_HS_UTIL_DRV_HS) $(GRINC_HS_UTILCPP_DRV_HS) $(GRINC_AG_ALL_MAIN_DRV_HS)))) \
+		, $(subst $(PATH_SEP),.,$(patsubst $(GRINC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_GRINC_QUAL_PREFIX)%,$(shell $(SHELL_FILTER_NONEMP_FILES) $(GRINC_ALL_LIB_FROMHS_HS) $(GRINC_ALL_LIB_FROMAG_HS)))) \
 		, \
 	) > $@
 

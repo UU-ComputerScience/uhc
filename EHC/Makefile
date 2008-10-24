@@ -76,10 +76,12 @@ WWW_SRC_TGZ					:= www/current-ehc-src.tgz
 WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 explanation:
-	@echo "make <n>/ehc             : make compiler version <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
-	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) version <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
-	echo  "make <n>/grini           : make grin interpreter version <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
-	echo  "make <n>/hdoc            : make Haddock documentation for version <n> (in hdoc/)" ; \
+	@echo "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
+	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
+	echo  "make <n>/bare            : make bare source dir for variant <n> (in bare/)," ; \
+	echo  "                           then 'cd' to there and 'make'" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
 	echo  "make $(SHUFFLE_NAME)              : make shuffle tool" ; \
 	echo  "" ; \
