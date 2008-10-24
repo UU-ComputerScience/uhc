@@ -2,16 +2,19 @@
 %%% Constraint Handling Rules: Key to be used as part of TrieKey
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.Trie})
+%%[9 module {%{EH}CHR.Key} import({%{EH}Base.Common},{%{EH}Base.Trie})
 %%]
 
 %%[9 import(EH.Util.Pretty)
 %%]
 
-%%[9 import({%{EH}Ty.Pretty})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%[9 import({%{EH}Base.ForceEval})
+%%]
+
+%%[(99 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,8 +26,10 @@ data Key
   = Key_HNm     !HsName			-- type constant, its name
   | Key_UID     !UID			-- type variable, its id, used with TKK_Partial
   | Key_Str     !String			-- arbitrary string
+%%[[(9 hmtyinfer || hmtyast)
   | Key_TyQu    !TyQu			-- quantified type, used with TKK_Partial
   | Key_Ty      !Ty				-- catchall for the rest, used with TKK_Partial
+%%]]
   deriving (Eq,Ord)
 %%]
 
@@ -36,8 +41,10 @@ instance PP Key where
   pp (Key_HNm  n) = pp n
   pp (Key_UID  n) = pp n
   pp (Key_Str  n) = pp n
+%%[[(9 hmtyinfer || hmtyast)
   pp (Key_TyQu n) = pp $ show n
   pp (Key_Ty   n) = pp n
+%%]]
 %%]
 
 %%[9 export(Keyable(..))
@@ -63,17 +70,21 @@ instance Keyable x => TrieKeyable x Key where
 
 %%[99
 instance ForceEval Key where
+%%[[(99 hmtyinfer || hmtyast)
   forceEval x@(Key_Ty   y) | forceEval y `seq` True = x
+  -- forceEval x@(Key_TyQu y) | forceEval y `seq` True = x
+%%]]
   forceEval x@(Key_UID  y) | forceEval y `seq` True = x
   forceEval x@(Key_Str  y) | forceEval y `seq` True = x
-  -- forceEval x@(Key_TyQu y) | forceEval y `seq` True = x
   forceEval x@(Key_HNm  y) | forceEval y `seq` True = x
   forceEval x              = x
-%%[[102
+%%[[(102 hmtyinfer || hmtyast)
   fevCount (Key_Ty   y) = cm1 "Key_Ty"   `cmUnion` fevCount y
+  fevCount (Key_TyQu y) = cm1 "Key_TyQu" `cmUnion` fevCount y
+%%]]
+%%[[102
   fevCount (Key_UID  y) = cm1 "Key_UID"  `cmUnion` fevCount y
   fevCount (Key_Str  y) = cm1 "Key_Str"  `cmUnion` fevCount y
-  fevCount (Key_TyQu y) = cm1 "Key_TyQu" `cmUnion` fevCount y
   fevCount (Key_HNm  y) = cm1 "Key_HNm"  `cmUnion` fevCount y
 %%]]
 %%]

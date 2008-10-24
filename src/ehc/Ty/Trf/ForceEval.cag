@@ -7,16 +7,16 @@
 %%% Haskell importable interface to forceEval on Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs module {%{EH}Ty.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.ForceEval})
+%%[(99 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.ForceEval})
 %%]
 
-%%[99.WRAPPER ag import({Ty/AbsSyn})
+%%[(99 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
 WRAPPER Ty Label Pred
 
 %%]
 PRAGMA strictcase
 
-%%[99 hs
+%%[(99 hmtyinfer || hmtyast) hs
 instance ForceEval Ty where
   forceEval x | repl_Syn_Ty t `seq` True = x
               where t = wrap_Ty (sem_Ty x) (Inh_Ty)
@@ -77,7 +77,7 @@ instance ForceEval ImplsProveOcc where
 
 %%]
 
-%%[102 hs
+%%[(102 hmtyinfer || hmtyast) hs
 instance ForceEval TyQu where
   fevCount x | x `seq` True = cm1 "TyQu_*"
 %%]
@@ -86,7 +86,7 @@ instance ForceEval TyQu where
 %%% ForceEval over structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 ATTR AllTyAndFlds  [ | | repl USE {`seq`} {()}: {()}  ]
 
 SEM Ty
@@ -123,7 +123,7 @@ SEM RowExts
   | Exts			lhs		.	repl		=	forceEval' @exts
 
 
-%%[102
+%%[(102 hmtyinfer || hmtyast)
 ATTR AllTyAndFlds  [ | | cm USE {`cmUnion`} {(emptyCM)}: CountMp ]
 
 SEM Ty

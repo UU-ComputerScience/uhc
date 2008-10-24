@@ -7,21 +7,21 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[(20 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
-%%[20 export(pTy,pPred)
+%%[(20 hmtyinfer || hmtyast) export(pTy,pPred)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 hmtyinfer || hmtyast)
 type P p = PlainParser Token p
 %%]
 
-%%[20
+%%[(20 hmtyinfer || hmtyast)
 pPred :: P Pred
 pPred
   = pOIMPL

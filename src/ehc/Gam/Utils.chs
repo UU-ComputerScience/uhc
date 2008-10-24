@@ -7,20 +7,20 @@
 %%% Gamma utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 module {%{EH}Gam.Utils} import(Data.List,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn},{%{EH}Error},{%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(4 hmtyinfer) module {%{EH}Gam.Utils} import(Data.List,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn},{%{EH}Error},{%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[4_2 import({%{EH}Ty.Trf.ElimAlts}) export(valGamElimAlts)
+%%[(4_2 hmtyinfer) import({%{EH}Ty.Trf.ElimAlts}) export(valGamElimAlts)
 %%]
 
-%%[50 import({%{EH}Ty.Trf.ElimEqual}) export(valGamElimEqual)
+%%[(50 hmtyinfer) import({%{EH}Ty.Trf.ElimEqual}) export(valGamElimEqual)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alts elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4_2.valGamElimAlts
+%%[(4_2 hmtyinfer).valGamElimAlts
 valGamElimAlts :: FIOpts -> FIEnv -> TyVarIdL -> UID -> VarMp -> ValGam -> (ValGam,VarMp,ErrGam)
 valGamElimAlts opts env globTvL uniq gVarMp g
   =  let  (g',(c,eg,_))
@@ -39,7 +39,7 @@ valGamElimAlts opts env globTvL uniq gVarMp g
 %%% Equal elim
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[50.valGamElimEqual
+%%[(50 hmtyinfer).valGamElimEqual
 valGamElimEqual :: ValGam -> ValGam
 valGamElimEqual g
   =  let  (g',_)

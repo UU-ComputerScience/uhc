@@ -10,14 +10,14 @@
 Replace type variables with fresh ones.
 Module is currently not used.
 
-%%[4 hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyFreshVar)
+%%[(4 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyFreshVar)
 %%]
 
-%%[4.WRAPPER ag import({Ty/AbsSyn})
+%%[(4 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[4.tyFreshVar hs
+%%[(4 hmtyinfer || hmtyast).tyFreshVar hs
 tyFreshVar' :: (TyVarId -> Bool) -> UID -> VarMp -> Ty -> (Ty,VarMp)
 tyFreshVar' allowFresh uniq tvVarMp ty
   =  let  t =  wrap_TyAGItf
@@ -33,7 +33,7 @@ tyFreshVar allowFresh uniq ty =  fst $ tyFreshVar' allowFresh uniq emptyVarMp ty
 %%% Check if allowed
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTyAndFlds [ allowFresh: {TyVarId -> Bool} | | ]
 
 SEM Ty
@@ -42,7 +42,7 @@ SEM Ty
 
 Arbitrary:
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM LabelAGItf
   | AGItf           loc     .   allowFresh  =   const False
 %%]
@@ -51,7 +51,7 @@ SEM LabelAGItf
 %%% Uniq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR TyAGItf [ gUniq: UID | | ]
 ATTR AllTy [ | gUniq: UID | ]
 
@@ -63,12 +63,12 @@ SEM Ty
 %%% New tvar map as VarMp, replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR AllTyAndFlds [ | | repl: SELF  ]
 ATTR TyAGItf      [ | | repl: Ty    ]
 %%]
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR AllTy TyAGItf [ | tvVarMp: VarMp | ]
 
 SEM Ty

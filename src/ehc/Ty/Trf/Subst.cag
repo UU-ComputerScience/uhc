@@ -7,17 +7,17 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2 hs module {%{EH}Ty.Trf.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp})
+%%[(2 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp})
 %%]
 
-%%[3 hs import(qualified Data.Map as Map)
+%%[(3 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[2.WRAPPER ag import({Ty/AbsSyn})
+%%[(2 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
 WRAPPER TyAGItf
 %%]
 
-%%[2.tyAppVarMp hs export(tyAppVarMp)
+%%[(2 hmtyinfer || hmtyast).tyAppVarMp hs export(tyAppVarMp)
 tyAppVarMp :: VarMp -> Ty -> Ty
 tyAppVarMp varmp ty
   = repl_Syn_TyAGItf t
@@ -26,7 +26,7 @@ tyAppVarMp varmp ty
               (Inh_TyAGItf {varmp_Inh_TyAGItf = varmp})
 %%]
 
-%%[4 -2.tyAppVarMp hs export(tyAppVarMp,tyAppVarMp2)
+%%[(4 hmtyinfer || hmtyast) -2.tyAppVarMp hs export(tyAppVarMp,tyAppVarMp2)
 tyAppVarMp' :: SubstOpts -> VarMp -> TVUseMp -> Ty -> (Ty,VarMp)
 tyAppVarMp' opts varmp usemp ty
   = (repl_Syn_TyAGItf t,cycVarMp_Syn_TyAGItf t)
@@ -44,7 +44,7 @@ tyAppVarMp2 varmp ty
   = tyAppVarMp' defaultOpts varmp Map.empty ty
 %%]
 
-%%[4.substOpts hs
+%%[(4 hmtyinfer || hmtyast).substOpts hs
 data SubstOpts
   = SubstOpts
 
@@ -52,7 +52,7 @@ defaultOpts :: SubstOpts
 defaultOpts = SubstOpts
 %%]
 
-%%[16.substOpts -4.substOpts hs
+%%[(16 hmtyinfer || hmtyast).substOpts -4.substOpts hs
 data SubstOpts
   = SubstOpts { onlySubstRHSOfEq :: Bool }
 
@@ -60,13 +60,13 @@ defaultOpts :: SubstOpts
 defaultOpts = SubstOpts { onlySubstRHSOfEq = False }
 %%]
 
-%%[16 hs export (tyAppVarMp2_RhsOfEqOnly)
+%%[(16 hmtyinfer || hmtyast) hs export (tyAppVarMp2_RhsOfEqOnly)
 tyAppVarMp2_RhsOfEqOnly :: VarMp -> Ty -> (Ty, VarMp)
 tyAppVarMp2_RhsOfEqOnly varmp ty
   = tyAppVarMp' (SubstOpts { onlySubstRHSOfEq = True }) varmp Map.empty ty
 %%]
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 PRAGMA novisit
 %%]
 
@@ -74,7 +74,7 @@ PRAGMA novisit
 %%% TyVar usage kind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs
+%%[(3 hmtyinfer || hmtyast) hs
 data TVUse
   = TVFree      -- is still free
   | TVBound     -- is already bound
@@ -92,11 +92,11 @@ tvUse tv = maybe TVFree id . Map.lookup tv
 %%% Utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3 hs
+%%[(3 hmtyinfer || hmtyast) hs
 type IsBound = TyVarId -> Bool
 %%]
 
-%%[3.tvRepl hs
+%%[(3 hmtyinfer || hmtyast).tvRepl hs
 tvRepl :: TyVarId -> VarMp -> TVUseMp -> Ty -> Ty
 tvRepl tv vmp ump repl
   = case (varmpTyLookup tv vmp) of
@@ -104,7 +104,7 @@ tvRepl tv vmp ump repl
        _                                   -> repl
 %%]
 
-%%[4.tvRepl -3.tvRepl hs
+%%[(4 hmtyinfer || hmtyast).tvRepl -3.tvRepl hs
 tvRepl3 :: TyVarId -> TVUse -> (TyVarId -> x -> VarMp) -> x -> x -> x -> VarMp -> (x,VarMp)
 tvRepl3 tv tvuse mk repl replv replho cycmpho
   = case tvuse of
@@ -117,14 +117,14 @@ tvRepl3 tv tvuse mk repl replv replho cycmpho
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Var             inst    .   repl'       :   Ty
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ varmpTyLookup @tv @lhs.varmp
                     inst    .   repl'       =   @replv
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            inst    .   repl'       :   Impls
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ varmpImplsLookup @iv @lhs.varmp
@@ -136,14 +136,14 @@ SEM Pred
                     inst    .   repl'       =   @replv
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Var             inst    .   repl'       :   Label
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ varmpLabelLookup @lv @lhs.varmp
                     inst    .   repl'       =   @replv
 %%]
 
-%%[13
+%%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Var             inst    .   repl'       :   PredSeq
                     (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ varmpPredSeqLookup @av @lhs.varmp
@@ -154,7 +154,7 @@ SEM PredSeq
 %%% TyVar usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 ATTR
   AllTyAndFlds
 %%[[4
@@ -166,15 +166,15 @@ ATTR
     [ tvUseMp: TVUseMp | | ]
 %%]
 
-%%[3.AGItf.tvUseMp
+%%[(3 hmtyinfer || hmtyast).AGItf.tvUseMp
 SEM TyAGItf
   | AGItf           loc     .   tvUseMp     =   Map.empty
 %%]
 
-%%[4 -3.AGItf.tvUseMp
+%%[(4 hmtyinfer || hmtyast) -3.AGItf.tvUseMp
 %%]
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 SEM Ty
   | Quant
 %%[[11
@@ -183,13 +183,13 @@ SEM Ty
                     ty      .   tvUseMp     =   Map.insert @tv TVBound @lhs.tvUseMp
 %%]
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Var             repl'   .   tvUseMp     =   Map.insert @tv TVSubst @lhs.tvUseMp
                     loc     .   tvUse       =   tvUse @tv @lhs.tvUseMp
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Pred
   | Var             repl'   .   tvUseMp     =   Map.insert @pv TVSubst @lhs.tvUseMp
                     loc     .   tvUse       =   tvUse @pv @lhs.tvUseMp
@@ -199,13 +199,13 @@ SEM Impls
                     loc     .   tvUse       =   tvUse @iv @lhs.tvUseMp
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Var             repl'   .   tvUseMp     =   Map.insert @lv TVSubst @lhs.tvUseMp
                     loc     .   tvUse       =   tvUse @lv @lhs.tvUseMp
 %%]
 
-%%[13
+%%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Var             repl'   .   tvUseMp     =   Map.insert @av TVSubst @lhs.tvUseMp
                     loc     .   tvUse       =   tvUse @av @lhs.tvUseMp
@@ -215,7 +215,7 @@ SEM PredSeq
 %%% Cycle detection, delayed occur check
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTyAndFlds  [ | | cycVarMp USE {`varmpPlus`} {emptyVarMp}: VarMp ]
 %%]
 
@@ -223,32 +223,32 @@ ATTR TyAGItf AllTyAndFlds  [ | | cycVarMp USE {`varmpPlus`} {emptyVarMp}: VarMp 
 %%% Apply substitution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2.TySubst
+%%[(2 hmtyinfer || hmtyast).TySubst
 ATTR TyAGItf AllTy  [ varmp: VarMp  | |             ]
 ATTR AllTyAndFlds   [               | | repl: SELF  ]
 ATTR TyAGItf        [               | | repl: Ty    ]
 %%]
 
-%%[4 ag
+%%[(4 hmtyinfer || hmtyast) ag
 ATTR TyAGItf AllTy [ substOpts: SubstOpts | | ]
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 ATTR LabelAGItf Label  [ varmp: VarMp  | |             ]
 ATTR LabelAGItf        [               | | repl: Label    ]
 %%]
 
-%%[2
+%%[(2 hmtyinfer || hmtyast)
 SEM Ty
   | Var             lhs     .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.varmp)
 %%]
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 SEM Ty
   | Var             lhs     .   repl        :=  tvRepl @tv @lhs.varmp @lhs.tvUseMp @repl
 %%]
 
-%%[4
+%%[(4 hmtyinfer || hmtyast)
 SEM Ty
   | Var             lhs     .   (repl,cycVarMp)
                                             :=  if @isRepl
@@ -256,7 +256,7 @@ SEM Ty
                                                 else (@repl,emptyVarMp)
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            lhs     .   (repl,cycVarMp)
                                             :=  if @isRepl
@@ -270,7 +270,7 @@ SEM Pred
                                                 else (@repl,emptyVarMp)
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Var             lhs     .   (repl,cycVarMp)
                                             :=  if @isRepl
@@ -278,7 +278,7 @@ SEM Label
                                                 else (@repl,emptyVarMp)
 %%]
 
-%%[13
+%%[(13 hmtyinfer || hmtyast)
 SEM PredSeq
   | Var             lhs     .   (repl,cycVarMp)
                                             :=  if @isRepl
@@ -286,7 +286,7 @@ SEM PredSeq
                                                 else (@repl,emptyVarMp)
 %%]
 
-%%[16
+%%[(16 hmtyinfer || hmtyast)
 
 -- if "onlySubstRHSOfEq" is True, then tyL is either a Var or a Con and the orig attribute is used and defined.
 -- The orig attribute is not used if "onlySubstRHSOfEq" is False. This setting is almost always False.
@@ -310,7 +310,7 @@ SEM Pred
 
 20070622: not sorted out properly:
 
-%%[100100 -4.tyAppVarMp hs export(tyAppVarMp,tyAppVarMp2)
+%%[(100100 hmtyinfer || hmtyast) -4.tyAppVarMp hs export(tyAppVarMp,tyAppVarMp2)
 tyAppVarMp' :: VarMp -> TVUseMp -> Ty -> (Ty,VarMp,Bool)
 tyAppVarMp' varmp usemp ty
   = (repl_Syn_TyAGItf t,cycVarMp_Syn_TyAGItf t,isChanged_Syn_TyAGItf t)
@@ -329,7 +329,7 @@ tyAppVarMp2 varmp ty
   where (ty',m,isChanged) = tyAppVarMp' varmp Map.empty ty
 %%]
 
-%%[100100 -4.tvRepl hs
+%%[(100100 hmtyinfer || hmtyast) -4.tvRepl hs
 tvRepl :: TyVarId -> VarMp -> TVUseMp -> Maybe (Ty,VarMp)
 tvRepl tv vmp ump
   = case (varmpTyLookup tv vmp) of
@@ -342,17 +342,17 @@ repl :: x -> Maybe (x,VarMp) -> (x,VarMp,Bool)
 repl x = maybe (x,emptyVarMp,False) (\(x',cm) -> (x',cm,True))
 %%]
 
-%%[100100
+%%[(100100 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTyAndFlds [ | | isChanged USE {||} {False}: Bool ]
 %%]
 
-%%[100100
+%%[(100100 hmtyinfer || hmtyast)
 SEM Ty
   | Var             lhs     .   (repl,cycVarMp,isChanged)
                                             :=  repl @repl $ tvRepl @tv @lhs.varmp @lhs.tvUseMp
 %%]
 
-%%[100100
+%%[(100100 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            lhs     .   (repl,isChanged)
                                             :=  repl @repl $ varmpImplsLookup @iv @lhs.varmp
@@ -362,7 +362,7 @@ SEM Pred
                                             :=  repl @repl $ varmpPredLookup @pv @lhs.varmp
 %%]
 
-%%[100100
+%%[(100100 hmtyinfer || hmtyast)
 SEM Label
   | Var             lhs     .   (repl,isChanged)
                                             :=  repl @repl $ varmpLabelLookup @lv @lhs.varmp
@@ -376,7 +376,7 @@ SEM RowExts
   | Var             lhs     .   (repl,isChanged)
                                             :=  repl @repl $ varmpExtsLookup @ev @lhs.varmp
 
-%%[100100
+%%[(100100 hmtyinfer || hmtyast)
 SEM PredSeq
   | Var             lhs     .   (repl,isChanged)
                                             :=  repl @repl $ varmpPredSeqLookup @av @lhs.varmp

@@ -7,32 +7,32 @@
 %%% Haskell importable interface to Ty pretty print
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}Ty.Pretty} import(EH.Util.Utils,EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty}) 
+%%[(1 hmtyinfer || hmtyast) hs module {%{EH}Ty.Pretty} import(EH.Util.Utils,EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Ty}) 
 %%]
 
-%%[2 hs import (qualified Data.Set as Set)
+%%[(2 hmtyinfer || hmtyast) hs import (qualified Data.Set as Set)
 %%]
 
-%%[3 hs import(qualified Data.Map as Map)
+%%[(3 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[3 hs import(Char)
+%%[(3 hmtyinfer || hmtyast) hs import(Char)
 %%]
 
-%%[7_2 hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
+%%[(7_2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set, Data.Set(Set), qualified Data.Map as Map, Data.Map(Map))
 %%]
 
-%%[8 hs import({%{EH}Scanner.Common(hiScanOpts)},{%{EH}Base.CfgPP}) 
+%%[(8 hmtyinfer || hmtyast) hs import({%{EH}Scanner.Common(hiScanOpts)},{%{EH}Base.CfgPP}) 
 %%]
 
-%%[9 hs export(ppTyPr)
+%%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)
 %%]
 
-%%[1.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
+%%[(1 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
 
-%%[1.ppTy hs export(ppTy)
+%%[(1 hmtyinfer || hmtyast).ppTy hs export(ppTy)
 ppTy :: Ty -> PP_Doc
 ppTy ty
   =  let  t =  wrap_TyAGItf
@@ -44,7 +44,7 @@ instance PP Ty where
   pp t = ppTy t
 %%]
 
-%%[8.ppTy -1.ppTy hs export(ppTyWithCfg',ppTyWithCfg,ppTy)
+%%[(8 hmtyinfer || hmtyast).ppTy -1.ppTy hs export(ppTyWithCfg',ppTyWithCfg,ppTy)
 ppTyWithCfg' :: CfgPP x => x -> Ty -> PP_Doc
 ppTyWithCfg' x ty = pp_Syn_TyAGItf $ synTyWithCfg (cfgPPTy x) ty
 
@@ -61,33 +61,33 @@ ppTy :: Ty -> PP_Doc
 ppTy = ppTyWithCfg cfgPPTyDflt
 %%]
 
-%%[9 hs export(ppImplsWithCfg)
+%%[(9 hmtyinfer || hmtyast) hs export(ppImplsWithCfg)
 ppImplsWithCfg :: CfgPPTy -> Impls -> PP_Doc
 ppImplsWithCfg c i = ppTyWithCfg c (Ty_Impls i)
 %%]
 
-%%[99.ppTyDt hs export(ppTyDt)
+%%[(99 hmtyinfer || hmtyast).ppTyDt hs export(ppTyDt)
 ppTyDt :: Ty -> PP_Doc
 ppTyDt = ppTyWithCfg cfgPPTyDT
 %%]
 
-%%[8 hs
+%%[(8 hmtyinfer || hmtyast) hs
 instance PP Ty where
   pp t = ppTy t
 %%]
 
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 ppTyPr :: Ty -> PP_Doc
 ppTyPr = ppTyWithCfg cfgPPTyPred
 
 %%]
 
-%%[4 hs
+%%[(4 hmtyinfer || hmtyast) hs
 instance PP FIMode where
   pp m = pp (show m)
 %%]
 
-%%[4_2 hs
+%%[(4_2 hmtyinfer || hmtyast) hs
 instance PP TyHardness where
   pp = pp . show
 
@@ -95,29 +95,29 @@ instance PP TyNeed where
   pp = pp . show
 %%]
 
-%%[7_2.annotation hs
+%%[(7_2 hmtyinfer || hmtyast).annotation hs
 instance PP (Annotation a) where
   pp = (>|<) "d" . pp . annUID
 %%]
 
-%%[9 hs export(ppPredOccId')
+%%[(9 hmtyinfer || hmtyast) hs export(ppPredOccId')
 ppPredOccId' :: CfgPP x => x -> PredOccId -> PP_Doc
 ppPredOccId' x poi
   = ppi (poiId poi)
   where ppi = cfgppUID x
 %%]
 
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 ppPredOccId :: PredOccId -> PP_Doc
 ppPredOccId poi = "Poi" >|< ppPredOccId' CfgPP_Plain poi
 %%]
 
-%%[6 hs
+%%[(6 hmtyinfer || hmtyast) hs
 instance PP TyKiKey where
   pp = pp . show
 %%]
 
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 instance PP Pred where
   pp p = ppTyWithCfg cfgPPTyPred (Ty_Pred p)
 
@@ -146,19 +146,19 @@ instance PP ImplsProveOcc where
   pp o = ipoId o >|< "/" >|< ipoScope o
 %%]
 
-%%[16 hs
+%%[(16 hmtyinfer || hmtyast) hs
 instance PP PredSeq where
   pp (PredSeq_Cons hd tl) = pp hd >#< ":" >#< pp tl
   pp (PredSeq_Nil       ) = pp "[]"
   pp (PredSeq_Var u     ) = pp u
 %%]
 
-%%[10 hs
+%%[(10 hmtyinfer || hmtyast) hs
 instance PP LabelOffset where
   pp = pp . show
 %%]
 
-%%[20 hs
+%%[(20 hmtyinfer || hmtyast) hs
 instance PPForHI Ty where
   -- ppForHI = ppTyWithCfg' CfgPP_HI
   ppForHI = ppTyWithCfg (cfgPPTyExtraForHI $ cfgPPTy CfgPP_HI)
@@ -193,11 +193,11 @@ instance PPForHI Label where
 %%% Interface specifically for Label
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 WRAPPER LabelAGItf
 %%]
 
-%%[10 hs
+%%[(10 hmtyinfer || hmtyast) hs
 instance PP Label where
   pp l = pp_Syn_LabelAGItf t
        where t =  wrap_LabelAGItf
@@ -209,7 +209,7 @@ instance PP Label where
 %%% Configuration of PP of Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(CfgPPTy)
+%%[(8 hmtyinfer || hmtyast) hs export(CfgPPTy)
 data CfgPPTy
   = CfgPPTy
       { cfgPPTyPPHsn                :: HsName -> PP_Doc
@@ -230,7 +230,7 @@ data CfgPPTy
       }
 %%]
 
-%%[8 hs
+%%[(8 hmtyinfer || hmtyast) hs
 cfgPPTy' :: CfgPP x => x -> CfgPPTy -> CfgPPTy
 cfgPPTy' x c
   = c { cfgPPTyPPHsn        = cfgppHsName x
@@ -243,7 +243,7 @@ cfgPPTy :: CfgPP x => x -> CfgPPTy
 cfgPPTy x = cfgPPTy' x cfgPPTyDflt
 %%]
 
-%%[8 hs
+%%[(8 hmtyinfer || hmtyast) hs
 cfgPPTyDflt :: CfgPPTy
 cfgPPTyDflt
   = CfgPPTy
@@ -267,7 +267,7 @@ cfgPPTyDflt
 %%]
 
 For derivation trees
-%%[99.cfgPPTyDT hs export(cfgPPTyDT)
+%%[(99 hmtyinfer || hmtyast).cfgPPTyDT hs export(cfgPPTyDT)
 cfgPPTyDT :: CfgPPTy
 cfgPPTyDT
   = cfgPPTyDflt
@@ -285,7 +285,7 @@ cfgPPTyDT
 %%]
 
 For predicates
-%%[9 hs
+%%[(9 hmtyinfer || hmtyast) hs
 cfgPPTyPred :: CfgPPTy
 cfgPPTyPred
   = cfgPPTyDflt
@@ -294,14 +294,14 @@ cfgPPTyPred
 %%]
 
 For HI (Haskell Interface) files
-%%[20 hs
+%%[(20 hmtyinfer || hmtyast) hs
 cfgPPTyExtraForHI :: CfgPPTy -> CfgPPTy
 cfgPPTyExtraForHI c
   = c { cfgPPTyPPVarDflt    = \cfg pre tv -> cfgPPTyPPVar cfg cfg tv 0
       }
 %%]
 
-%%[8 hs
+%%[(8 hmtyinfer || hmtyast) hs
 cfgppAside :: (PP a, PP b) => CfgPPTy -> a -> b -> PP_Doc
 cfgppAside c a b = if cfgPPTyFollowAST c then a >-< b else a >#< b
 %%]
@@ -310,7 +310,7 @@ cfgppAside c a b = if cfgPPTyFollowAST c then a >-< b else a >#< b
 %%% Internal utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7.ppExts hs
+%%[(7 hmtyinfer || hmtyast).ppExts hs
 ppExts :: HsName -> PP_Doc -> [PP_Doc] -> PP_Doc
 ppExts appFunNm appFunPP appArgPPL
   = ppNice
@@ -318,7 +318,7 @@ ppExts appFunNm appFunPP appArgPPL
                           appArgPPL empty
 %%]
 
-%%[8 -7.ppExts hs
+%%[(8 hmtyinfer || hmtyast) -7.ppExts hs
 ppExts :: CfgPPTy -> HsName -> PP_Doc -> [PP_Doc] -> (PP_Doc,PP_Doc)
 ppExts cfg appFunNm appFunPP appArgPPL
   = (ppNice,ppCfg)
@@ -339,17 +339,17 @@ ppExts cfg appFunNm appFunPP appArgPPL
 %%% The context (of a config) of a type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTyAndFlds [ cfg: CfgPPTy | | ]
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Pred
   | Pred        loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Pred }
   | * - Pred    loc         .   cfg             =   @lhs.cfg { cfgPPTyCtxt = TyCtxt_Ty   }
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM LabelAGItf
   | AGItf       loc         .   cfg             =   cfgPPTyDflt
 %%]
@@ -358,22 +358,22 @@ SEM LabelAGItf
 %%% TyVar name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[3.TVarNameMap hs
+%%[(3 hmtyinfer || hmtyast).TVarNameMap hs
 type TVarNameMap
   = Map.Map TyVarId
             PP_Doc
 %%]
 
-%%[3.tnLookupPP hs
+%%[(3 hmtyinfer || hmtyast).tnLookupPP hs
 tnLookupPP :: TyVarId -> TVarNameMap -> Maybe PP_Doc
 tnLookupPP = Map.lookup
 %%]
 
-%%[3 hs
+%%[(3 hmtyinfer || hmtyast) hs
 tnMapInsert = Map.insert
 %%]
 
-%%[3 hs
+%%[(3 hmtyinfer || hmtyast) hs
 tnUniqRepr :: Int -> String
 tnUniqRepr
   = lrepr
@@ -384,27 +384,27 @@ tnUniqRepr
         repr        =  (chr . (97+))
 %%]
 
-%%[3.ppTnUniq hs
+%%[(3 hmtyinfer || hmtyast).ppTnUniq hs
 ppTnUniq :: Int -> PP_Doc
 ppTnUniq = pp . tnUniqRepr
 %%]
 
-%%[8 -3.ppTnUniq hs
+%%[(8 hmtyinfer || hmtyast) -3.ppTnUniq hs
 ppTnUniq :: CfgPPTy -> Int -> PP_Doc
 ppTnUniq c = cfgPPTyPPHsn c . mkHNm . tnUniqRepr
 %%]
 
-%%[3.mkDefaultTvNmPP hs
+%%[(3 hmtyinfer || hmtyast).mkDefaultTvNmPP hs
 mkDefaultTvNmPP :: String -> TyVarId -> PP_Doc
 mkDefaultTvNmPP pre tv = text (pre ++ "_" ++ show tv)
 %%]
 
-%%[8 -3.mkDefaultTvNmPP hs
+%%[(8 hmtyinfer || hmtyast) -3.mkDefaultTvNmPP hs
 mkDefaultTvNmPP :: CfgPPTy -> String -> TyVarId -> PP_Doc
 mkDefaultTvNmPP cfg pre tv = cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 %%]
 
-%%[3 hs
+%%[(3 hmtyinfer || hmtyast) hs
 tvCategPrefix :: TyVarCateg -> String
 tvCategPrefix TyVarCateg_Fixed = "c"
 tvCategPrefix TyVarCateg_Plain = "v"
@@ -413,23 +413,23 @@ tvCategPrefix TyVarCateg_Exist = "C"
 %%]
 %%]
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 ATTR AllTyAndFlds [ | tnUniq: {Int}  tnMap: TVarNameMap | ]
 %%]
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 SEM TyAGItf
   | AGItf           ty      .   tnUniq      =   0
                             .   tnMap       =   Map.empty
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM LabelAGItf
   | AGItf           loc     .   tnUniq      =   0
                             .   tnMap       =   Map.empty
 %%]
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 SEM Ty
   | Quant 
 %%[[11
@@ -441,7 +441,7 @@ SEM Ty
                     lhs     .   tnMap       =   Map.filterWithKey (\v _ -> v /= @tv) @ty.tnMap
 %%]
 
-%%[8
+%%[(8 hmtyinfer || hmtyast)
 SEM Ty
   | Quant
 %%[[11
@@ -454,7 +454,7 @@ SEM Ty
 %%% Pretty printed type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.pp
+%%[(1 hmtyinfer || hmtyast).pp
 ATTR
   TyAGItf AllTyAndFlds
 %%[[10
@@ -464,7 +464,7 @@ ATTR
     ]
 %%]
 
-%%[1
+%%[(1 hmtyinfer || hmtyast)
 SEM Ty
   | Con             loc     .   pp      =   ppCon @nm
   | App             loc     .   ppDflt  =   @func.pp >#< @arg.pp
@@ -474,7 +474,7 @@ SEM Ty
   | Any             loc     .   pp      =   pp hsnUnknown
 %%]
 
-%%[8
+%%[(8 hmtyinfer || hmtyast)
 SEM Ty
 %%[[8
   | Con             loc     .   pp      :=  cfgPPTyPPCon @lhs.cfg @lhs.cfg @nm
@@ -496,33 +496,33 @@ SEM Ty
                                             else @ppDflt
 %%]
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 SEM Ty
   | App             loc     .   ppAppTop:=  ppAppTop' (@appFunNm,@appFunPP) @appArgPPL @appArgIsEmptyImplsL @ppDflt
 %%]
 
-%%[2.Var
+%%[(2 hmtyinfer || hmtyast).Var
 SEM Ty
   | Var             loc     .   pp      =   pp ("v_" ++ show @tv)
 %%]
 
-%%[3.Var -2.Var
+%%[(3 hmtyinfer || hmtyast).Var -2.Var
 SEM Ty
   | Var             loc     .   pp      :=  maybe (mkDefaultTvNmPP (tvCategPrefix @categ.self) @tv) id (tnLookupPP @tv @lhs.tnMap)
 %%]
 
-%%[8.Var -3.Var
+%%[(8 hmtyinfer || hmtyast).Var -3.Var
 SEM Ty
   | Var             loc     .   pp      :=  maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg (tvCategPrefix @categ.self) @tv) id (tnLookupPP @tv @lhs.tnMap)
 %%]
 
-%%[3.Quant
+%%[(3 hmtyinfer || hmtyast).Quant
 SEM Ty
   | Quant           loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
                                                        ("forall" >#< @tnPP >#< "." >#< @ty.pp)
 %%]
 
-%%[4.Quant -3.Quant
+%%[(4 hmtyinfer || hmtyast).Quant -3.Quant
 SEM Ty
   | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
                                                        (@qu.pp >#< @tnPP >#< "." >#< @ty.pp)
@@ -531,13 +531,13 @@ SEM TyQu
   | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
 %%]
 
-%%[8
+%%[(8 hmtyinfer || hmtyast)
 SEM Ty
   | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
                                                        (cfgppAside @lhs.cfg (@qu.pp >#< @tnPP) ("." >#< @ty.pp))
 %%]
 
-%%[4_2
+%%[(4_2 hmtyinfer || hmtyast)
 SEM Ty
   | Alts            loc     .   o       =   "["
                     loc     .   c       =   "]"
@@ -558,19 +558,19 @@ SEM TyPlus
   | Ty              lhs     .   pp      =   @ty.pp >#< "::" >#<  pp @hardness >|< "/" >|< pp @offering
 %%]
 
-%%[6
+%%[(6 hmtyinfer || hmtyast)
 SEM TyQu
   | KiForall KiExists
                     lhs     .   pp      =   text (showTyQu @self)
 %%]
 
-%%[7
+%%[(7 hmtyinfer || hmtyast)
 SEM Ty
   | Ext             loc     .   ppNice  =   ppExts @appFunNm @appFunPP @appArgPPL
                             .   pp      =   @ppNice
 %%]
 
-%%[7_2.annotation
+%%[(7_2 hmtyinfer || hmtyast).annotation
 SEM Ty
   | Ann             loc     .   pp      =   @ann >|< ":" >|< @ty.pp
   | TruncTyCon      loc     .   pp      =   @ty.pp >|< ppListSep "<" ">" "," (Set.toList @anns)
@@ -592,14 +592,14 @@ SEM TyExpFields
   | Cons            lhs     .   ppL     =   @hd.pp : @tl.ppL
 %%]
 
-%%[8
+%%[(8 hmtyinfer || hmtyast)
 SEM Ty
   | Ext             loc     .   (ppNice,ppCfg)
                                         :=  ppExts @lhs.cfg @appFunNm @appFunPP @appArgPPL
                             .   pp      :=  if @isSpineRoot then @ppCfg else @ppNice
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Ty
   | Pred Impls      loc     .   wrapPP  =   if cfgPPTyCtxt @lhs.cfg == TyCtxt_Pred then id else (\pp -> hsnOImpl >#< pp >#< hsnCImpl)
   | Pred            loc     .   pp      =   cfgPPTyPPImplsAppWrap @lhs.cfg @wrapPP @pr.pp
@@ -621,12 +621,12 @@ SEM Pred
   | Var             lhs     .   pp      =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "p" @pv) id (tnLookupPP @pv @lhs.tnMap)
 %%]
 
-%%[9_1
+%%[(9_1 hmtyinfer || hmtyast)
 SEM TyPlus
   | Ty              lhs     .   pp      =   pp @plv >|< ";" >|< @ty.pp
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 SEM Label
   | Lab             lhs     .   pp      =   cfgPPTyPPHsn @lhs.cfg @nm
   | Var             lhs     .   pp      =   maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "l" @lv) id (tnLookupPP @lv @lhs.tnMap)
@@ -636,7 +636,7 @@ SEM Pred
 %%]
   | RowSplit        (_,lhs.pp)          =   ppExts @lhs.cfg @ty.appFunNm @ty.appFunPP @exts.appArgPPL
 
-%%[13
+%%[(13 hmtyinfer || hmtyast)
 ATTR PredSeq [ | | ppL: {[PP_Doc]} ]
 
 SEM PredSeq
@@ -649,18 +649,18 @@ SEM Pred
   | Preds           lhs     .   pp      =   ppParensCommas @seq.ppL
 %%]
 
-%%[11
+%%[(11 hmtyinfer || hmtyast)
 SEM Ty
   | Lam             loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
                                                        (cfgppAside @lhs.cfg ("\\" >|< @tnPP) ("->" >#< @ty.pp))
 %%]
 
-%%[16
+%%[(16 hmtyinfer || hmtyast)
 SEM Pred
   | Eq              lhs     .   pp      =   ppParNeed @parNeed @lhs.parNeed (@tyL.pp >#< "=" >#< @tyR.pp)
 %%]
 
-%%[50
+%%[(50 hmtyinfer || hmtyast)
 SEM Ty
   | Equal           loc     .   pp      =   ppParens (maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "e" @tv) id (tnLookupPP @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
 %%]
@@ -669,7 +669,7 @@ SEM Ty
 %%% Records, default (positional) name if absent
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer || hmtyast)
 ATTR Ty Ty->Ty [ | positionalFldNmL: {[HsName]} | ]
 
 SEM TyAGItf
@@ -682,7 +682,7 @@ SEM Ty
   | * - Ext         lhs     .   positionalFldNmL    =   @lhs.positionalFldNmL
 %%]
 
-%%[7_1
+%%[(7_1 hmtyinfer || hmtyast)
 SEM TyL
   | Cons            hd      .   positionalFldNmL    =   positionalFldNames
 
@@ -690,7 +690,7 @@ SEM TyPlus
   | Ty              ty      .   positionalFldNmL    =   positionalFldNames
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Pred
   | *               loc     .   positionalFldNmL    =   positionalFldNames
 %%]
@@ -699,7 +699,7 @@ SEM Pred
 %%% Record ext/upd separator
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer || hmtyast)
 SEM Ty
 %%[[7
   | App             loc     .  recSep       =   "|"
@@ -712,19 +712,19 @@ SEM Ty
 %%% Ty constr name of app + args, see also EHPretty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.appFunPP
+%%[(1 hmtyinfer || hmtyast).appFunPP
 ATTR
   Ty [ | | appFunPP: PP_Doc      appArgPPL: {[PP_Doc]}
      ]
 %%]
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 %%]
 ATTR
   RowExts
     [ | | appArgPPL: {[PP_Doc]}
     ]
 
-%%[1.appFunPP.Ty
+%%[(1 hmtyinfer || hmtyast).appFunPP.Ty
 SEM Ty
   | App             loc     .  appArgPPL    =   @func.appArgPPL ++ [@arg.pp]
                             .  appFunPP     =   @func.appFunPP
@@ -732,7 +732,7 @@ SEM Ty
                             .  appFunPP     =   @pp
 %%]
 
-%%[7 -1.appFunPP.Ty
+%%[(7 hmtyinfer || hmtyast) -1.appFunPP.Ty
 SEM Ty
   | App             loc     .  (appFunPP,appArgPPL)
                                             :=  mkExtAppPP' @recSep
@@ -745,7 +745,7 @@ SEM Ty
                             .  appFunPP     :=  @pp
 %%]
 
-%%[8
+%%[(8 hmtyinfer || hmtyast)
 SEM Ty
   | App             loc     .  (appFunPP,appArgPPL)
                                             :=  if cfgPPTyFollowAST @lhs.cfg
@@ -757,7 +757,7 @@ SEM Ty
                                                 in  ppFld "::" pn @nm (cfgPPTyPPHsn @lhs.cfg @nm) @extTy.pp
 %%]
 
-%%[10
+%%[(10 hmtyinfer || hmtyast)
 %%]
 SEM RowExts
   | Exts            loc     .   appArgPPL   =   [ ppFld "::" Nothing l (pp l) (ppTyWithCfg @lhs.cfg t) | (l,t) <- @exts ]
@@ -767,7 +767,7 @@ SEM RowExts
 %%% Need for parenthesis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.ParNeed
+%%[(1 hmtyinfer || hmtyast).ParNeed
 ATTR Ty Ty->Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
 
 SEM TyAGItf
@@ -783,12 +783,12 @@ SEM Ty
                                                 =   hdAndTl @argsParNeedL
 %%]
 
-%%[3
+%%[(3 hmtyinfer || hmtyast)
 SEM Ty
   | Quant       loc     .   parNeed             =   ParNotNeeded
 %%]
 
-%%[4_2
+%%[(4_2 hmtyinfer || hmtyast)
 SEM TyL
   | Cons        hd      .   parNeed             =   ParNotNeeded
                         .   parNeedL            =   []
@@ -801,14 +801,14 @@ SEM Ty
   | Alts Both   loc     .   parNeed             =   ParNotNeeded
 %%]
 
-%%[7
+%%[(7 hmtyinfer || hmtyast)
 SEM Ty
   | Ext         ty      .   parNeed             =   ParNotNeeded
                 extTy   .   parNeed             =   ParNotNeeded
                 loc     .   parNeed             =   ParNotNeeded
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 SEM Pred
   | Pred        loc     .   parNeed             =   ParNeeded
                         .   parNeedL            =   []
@@ -816,12 +816,12 @@ SEM Pred
                         .   parNeedL            =   []
 %%]
 
-%%[11
+%%[(11 hmtyinfer || hmtyast)
 SEM Ty
   | Lam         loc     .   parNeed             =   ParNotNeeded
 %%]
 
-%%[50
+%%[(50 hmtyinfer || hmtyast)
 SEM Ty
   | Equal       loc     .   parNeed             =   ParNotNeeded
 %%]
@@ -833,7 +833,7 @@ SEM Ty
 Gather parallel to appArgPPL whether it represents an empty sequence of Impls.
 In that case printing it can be avoided (if so desired, determined by configuration).
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 ATTR Ty Impls [ | | isEmptyImpls: Bool ]
 
 SEM Impls
@@ -844,7 +844,7 @@ SEM Ty
   | * - Impls       lhs     .   isEmptyImpls            =   False
 %%]
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 ATTR Ty [ | | appArgIsEmptyImplsL: {[Bool]} ]
 
 SEM Ty

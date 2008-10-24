@@ -11,7 +11,7 @@
 %%% Pattern type of Case Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5
+%%[(5 hmtyinfer)
 ATTR AllCase [ knPatTy: Ty | patTyVarMp: VarMp | patTy: Ty ]
 
 SEM Expr
@@ -31,7 +31,7 @@ SEM CaseAlts
   | Cons        tl          .   knPatTy             =   @lhs.knPatTy
 %%]
 
-%%[6
+%%[(6 hmtyinfer)
 %%]
 SEM Expr
   | Case        alts        .   patTyVarMp          :=  agFakeDependOn @alts.kiVarMp @expr.tyVarMp
@@ -40,7 +40,7 @@ SEM Expr
 %%% Type of Case Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5
+%%[(5 hmtyinfer)
 ATTR AllCase [ knTy: Ty | | ty: Ty ]
 
 SEM Expr

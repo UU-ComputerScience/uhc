@@ -8,13 +8,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[20 hs module {%{EH}HI.MainAG} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},qualified {%{EH}Pred} as Pr,{%{EH}HI})
+%%[20 hs module {%{EH}HI.MainAG} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam},{%{EH}HI})
 %%]
 
 %%[20 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[20 hs import({%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Config},{%{EH}NameAspect},{%{EH}Module},{%{EH}Base.CfgPP})
+%%[20 hs import({%{EH}Config},{%{EH}NameAspect},{%{EH}Module},{%{EH}Base.CfgPP})
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
 %%[(20 codegen) hs import({%{EH}Core})
@@ -23,7 +26,7 @@
 %%[(20 codegen grin) hs import({%{EH}GrinCode},{%{EH}GrinCode.Pretty})
 %%]
 
-%%[20 hs import({%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
+%%[(20 hmtyinfer) hs import(qualified {%{EH}Pred} as Pr,{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
 %%]
 
 -- debug
@@ -62,6 +65,7 @@ ATTR
       exportHideRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- implicit exports (instances)
       fixityGam         USE {`gamUnion`}        {emptyGam}          : FixityGam					-- fixity info for identifiers
       idGam             USE {`gamUnion`}        {emptyGam}          : IdDefOccGam				-- all identifiers which can be used, both explicit or implicit (including instances)
+%%[[(20 hmtyinfer)
       valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used (name -> type)
       tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with types (name -> type)
       tyKiGam           USE {`gamUnion`}        {emptyGam}          : TyKiGam					-- all types with kinds (type -> kind)
@@ -69,6 +73,7 @@ ATTR
       dataGam           USE {`gamUnion`}        {emptyGam}          : DataGam					-- additional structural info for datatypes
       clGam             USE {`gamUnion`}        {emptyGam}          : {Pr.ClGam}    			-- classes
       chrStore          USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore			-- CHR
+%%]]
 %%[[(20 codegen)
       arityMp           USE {`Map.union`}       {Map.empty}         : CArityMp					-- arities of identifiers, used for GRIN
 %%]]
@@ -87,6 +92,7 @@ SEM Binding
         lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
     | Fixity
         lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
+%%[[(20 hmtyinfer)
     | Val
         lhs             .   valGam      =   gamSingleton @nm (ValGamInfo @ty)
     | Ty
@@ -110,6 +116,7 @@ SEM Binding
         lhs             .   clGam       =   gamSingleton @nm (Pr.ClGamInfo @prToEvidTy @ruleTy @nmEvid)
     | CHRStore
         lhs             .   chrStore    =   chrStoreFromElems @chrs
+%%]]
 %%[[(20 codegen)
     | Arities
         lhs             .   arityMp     =   Map.fromList @idArities

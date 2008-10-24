@@ -13,7 +13,7 @@
 %%[20 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
 %%]
 
-%%[20 import(qualified {%{EH}Pred} as Pr)
+%%[(20 hmtyinfer) import(qualified {%{EH}Pred} as Pr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -7,7 +7,7 @@
 %%% Ki var gathering, as simplified version of sort inference
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR KiExpr [ | kiGam: KiGam | ]
 
 SEM KiExpr
@@ -25,7 +25,7 @@ SEM KiExpr
 %%% Kind of KiExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6
+%%[(6 hmtyinfer)
 ATTR KiExpr [ | | ki: Ty ]
 
 SEM KiExpr

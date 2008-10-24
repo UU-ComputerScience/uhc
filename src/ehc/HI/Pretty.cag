@@ -54,6 +54,7 @@ SEM Binding
         lhs         .   ppSq        =   hiNV "export" hsnUnknown [pp (show @visible),ppForHI @exports]
     | Ids
         lhs         .   ppSq        =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppForHI o,ppForHI d]) @idOccs)
+%%[[(20 hmtyinfer)
     | Val
         lhs         .   ppSq        =   hiNV "value" @nm [ppForHI @ty]
     | DataCon
@@ -76,6 +77,7 @@ SEM Binding
         lhs         .   ppSq        =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ruleTy,ppForHI @nmEvid]
     | CHRStore
         lhs         .   ppSq        =   hiNV' "chrstore" hsnUnknown $ ppCurlysSemisBlock $ map ppForHI @chrs
+%%]]
 %%[[(20 codegen)
     | Arities
         lhs         .   ppSq        =   hiNV "arity" hsnUnknown (map (\(n,a) -> ppCurlysSemisBlock [ppForHI n,pp a]) @idArities)

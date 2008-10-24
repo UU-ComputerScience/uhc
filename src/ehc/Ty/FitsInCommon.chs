@@ -7,39 +7,39 @@
 %%% Shared structures for fitsIn and related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Ty.FitsInCommon} import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Error}) export (FIOut(..), emptyFO, foHasErrs)
+%%[(1 hmtyinfer) module {%{EH}Ty.FitsInCommon} import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}Error}) export (FIOut(..), emptyFO, foHasErrs)
 %%]
 
-%%[1 import(qualified EH.Util.FastSeq as Seq)
+%%[(1 hmtyinfer) import(qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[2 import({%{EH}VarMp})
+%%[(2 hmtyinfer) import({%{EH}VarMp})
 %%]
 
-%%[4 import({%{EH}Base.Opts})
+%%[(4 hmtyinfer) import({%{EH}Base.Opts})
 %%]
 
-%%[4 import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
+%%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
-%%[9 import(qualified Data.Set as Set)
+%%[(9 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[9 import({%{EH}Pred.CommonCHR})
+%%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR})
 %%]
 
-%%[(9 codegen) import({%{EH}Core},{%{EH}Core.Coercion},{%{EH}Core.Subst})
+%%[(9 codegen hmtyinfer) import({%{EH}Core},{%{EH}Core.Coercion},{%{EH}Core.Subst})
 %%]
 
 For debug/trace:
-%%[4 import(EH.Util.Pretty)
+%%[(4 hmtyinfer) import(EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tracing info, specialized  for fitsIn and related functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(trfit,trfitIn,trfitOu)
+%%[(4 hmtyinfer) export(trfit,trfitIn,trfitOu)
 trfit :: String -> String -> PP_Doc -> PP_Doc
 trfit dir msg rest =  dir >|< "." >|< msg >|< ":" >#< rest
 
@@ -51,26 +51,26 @@ trfitOu = trfit "<"
 %%% Interface to result/output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.FIOut
+%%[(1 hmtyinfer).FIOut
 data FIOut  =   FIOut   { foTy     ::  Ty      ,  foErrL   ::  ErrL    }
 
 emptyFO     =   FIOut   { foTy     =   Ty_Any  ,  foErrL   =   []      }
 %%]
 
-%%[1 export(foErrSq)
+%%[(1 hmtyinfer) export(foErrSq)
 foErrSq :: FIOut -> ErrSq
 foErrSq = Seq.fromList . foErrL
 %%]
 
-%%[2.FIOut -1.FIOut
+%%[(2 hmtyinfer).FIOut -1.FIOut
 data FIOut  =  FIOut  {  foTy     ::  Ty      ,  foErrL   ::  ErrL  ,  foVarMp           ::  VarMp           }
 %%]
 
-%%[2.FIOut.empty
+%%[(2 hmtyinfer).FIOut.empty
 emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp           =   emptyVarMp      }
 %%]
 
-%%[4.FIOut -(2.FIOut 2.FIOut.empty)
+%%[(4 hmtyinfer).FIOut -(2.FIOut 2.FIOut.empty)
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
                         ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
@@ -96,7 +96,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
                         }
 %%]
 
-%%[4.emptyFO
+%%[(4 hmtyinfer).emptyFO
 emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []                  ,  foTrace           =   []
@@ -120,12 +120,12 @@ emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy    
                         }
 %%]
 
-%%[1.foHasErrs
+%%[(1 hmtyinfer).foHasErrs
 foHasErrs :: FIOut -> Bool
 foHasErrs = not . null . foErrL
 %%]
 
-%%[4 export(foAppSpineInfo)
+%%[(4 hmtyinfer) export(foAppSpineInfo)
 foAppSpineInfo :: FIOut -> AppSpineInfo
 foAppSpineInfo fo = maybe emptyAppSpineInfo id $ foMbAppSpineInfo fo
 %%]
@@ -134,7 +134,7 @@ foAppSpineInfo fo = maybe emptyAppSpineInfo id $ foMbAppSpineInfo fo
 %%% Bind type var
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4 export(foPlusVarMp,foSetVarMp,foBindTyVar)
+%%[(4 hmtyinfer) export(foPlusVarMp,foSetVarMp,foBindTyVar)
 foPlusVarMp :: VarMp -> FIOut -> FIOut
 foPlusVarMp c fo = fo {foVarMp = c |+> foVarMp fo}
 
@@ -149,11 +149,11 @@ foBindTyVar v t = foPlusVarMp (v `varmpTyUnit` t)
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(AppSpineFOUpdCoe)
+%%[(9 hmtyinfer) export(AppSpineFOUpdCoe)
 type AppSpineFOUpdCoe = EHCOpts -> [FIOut] -> FIOut
 %%]
 
-%%[4.AppSpine export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
+%%[(4 hmtyinfer).AppSpine export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
 data AppSpineVertebraeInfo
   =  AppSpineVertebraeInfo
        { asPolarity     :: Polarity
@@ -164,7 +164,7 @@ data AppSpineVertebraeInfo
        }
 %%]
 
-%%[(9 codegen) export(asFOUpdCoe)
+%%[(9 codegen hmtyinfer) export(asFOUpdCoe)
 dfltFOUpdCoe :: AppSpineFOUpdCoe
 dfltFOUpdCoe _ x = last x
 
@@ -172,7 +172,7 @@ asFOUpdCoe :: AppSpineVertebraeInfo -> AppSpineFOUpdCoe
 asFOUpdCoe = maybe dfltFOUpdCoe id . asMbFOUpdCoe
 %%]
 
-%%[4.vertebraeInfoL
+%%[(4 hmtyinfer).vertebraeInfoL
 unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 unknownAppSpineVertebraeInfoL = repeat (AppSpineVertebraeInfo polInvariant fioMkUnify)
 
@@ -183,7 +183,7 @@ prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id
 %%]
 
-%%[9.vertebraeInfoL -4.vertebraeInfoL
+%%[(9 hmtyinfer).vertebraeInfoL -4.vertebraeInfoL
 unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 unknownAppSpineVertebraeInfoL
   = repeat
@@ -217,7 +217,7 @@ prodAppSpineVertebraeInfoL
 %%]]
 %%]
 
-%%[17 export(asUpdateByPolarity)
+%%[(17 hmtyinfer) export(asUpdateByPolarity)
 asUpdateByPolarity :: Polarity -> AppSpineVertebraeInfo -> AppSpineVertebraeInfo
 asUpdateByPolarity pol as
   = as {asPolarity = pol, asFIO = mkfio}
@@ -226,7 +226,7 @@ asUpdateByPolarity pol as
               | otherwise              = fioMkUnify
 %%]
 
-%%[4.AppSpineGam export(AppSpineInfo(asgiVertebraeL), emptyAppSpineInfo, asgiShift1SpinePos, asgiSpine)
+%%[(4 hmtyinfer).AppSpineGam export(AppSpineInfo(asgiVertebraeL), emptyAppSpineInfo, asgiShift1SpinePos, asgiSpine)
 data AppSpineInfo
   = AppSpineInfo
       { asgiSpinePos   :: Int
@@ -247,12 +247,12 @@ asgiSpine i = drop (asgiSpinePos i) $ asgiVertebraeL i
 %%% wrapper around fitsIn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4.FitsIn
+%%[(4 hmtyinfer).FitsIn
 type FitsIn' = FIOpts -> UID -> VarMp -> Ty -> Ty -> FIOut
 type FitsIn = FIOpts -> UID -> VarMp -> Ty -> Ty -> (Ty,VarMp,ErrL)
 %%]
 
-%%[4.fitsInLWith
+%%[(4 hmtyinfer).fitsInLWith
 fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> VarMp -> TyL -> TyL -> (FIOut,[FIOut])
 fitsInLWith foCmb elemFits opts uniq varmp tyl1 tyl2
   = (fo,foL)

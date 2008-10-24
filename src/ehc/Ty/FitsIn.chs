@@ -26,69 +26,69 @@
 %%% Subsumption (fitting in) for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Ty.FitsIn} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Error}) export (fitsIn)
+%%[(1 hmtyinfer) module {%{EH}Ty.FitsIn} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Error}) export (fitsIn)
 %%]
 
-%%[2 import({%{EH}VarMp},{%{EH}Substitutable})
+%%[(2 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[4 import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
+%%[(4 hmtyinfer) import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Base.Opts}, {%{EH}Gam}, Data.Maybe,Data.List as List)
 %%]
 
-%%[4 import(qualified Data.Set as Set)
+%%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[9 import({%{EH}Ty.Trf.Canonic})
+%%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[9 import(EH.Util.Utils)
+%%[(9 hmtyinfer) import(EH.Util.Utils)
 %%]
 
-%%[9 import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Pred})
+%%[(9 hmtyinfer) import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Pred})
 %%]
 
-%%[(9 codegen) import({%{EH}Core.Pretty},{%{EH}Core},{%{EH}Core.Subst},{%{EH}Core.Coercion})
+%%[(9 codegen hmtyinfer) import({%{EH}Core.Pretty},{%{EH}Core},{%{EH}Core.Subst},{%{EH}Core.Coercion})
 %%]
 
-%%[9 import({%{EH}Pred.CommonCHR})
+%%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR})
 %%]
 
-%%[9 export(fitsIn')
+%%[(9 hmtyinfer) export(fitsIn')
 %%]
 
-%%[(10 codegen) import({%{EH}Core.Utils})
+%%[(10 codegen hmtyinfer) import({%{EH}Core.Utils})
 %%]
 
-%%[11 import({%{EH}Ty.Trf.BetaReduce})
+%%[(11 hmtyinfer) import({%{EH}Ty.Trf.BetaReduce})
 %%]
 
-%%[99.DerivationTree import({%{EH}DerivationTree})
+%%[(99 hmtyinfer hmtyinfer).DerivationTree import({%{EH}DerivationTree})
 %%]
 
-%%[100 -99.DerivationTree
+%%[(100 hmtyinfer hmtyinfer) -99.DerivationTree
 %%]
 
 For debug/trace:
-%%[4 import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils})
+%%[(4 hmtyinfer) import(EH.Util.Pretty,{%{EH}Ty.Pretty},{%{EH}Error.Pretty},{%{EH}Ty.Utils})
 %%]
 
-%%[4 import({%{EH}Base.Debug} as Debug)
+%%[(4 hmtyinfer) import({%{EH}Base.Debug} as Debug)
 %%]
 
-%%[16 import(Debug.Trace)
+%%[(16 hmtyinfer) import(Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) export(foAppLRCoe)
+%%[(9 codegen hmtyinfer) export(foAppLRCoe)
 foAppLRCoe :: EHCOpts -> FIOut -> VarMp -> CSubst -> CExpr -> CExpr
 foAppLRCoe opts fo c cs ce = foAppLRCoe' opts (foCSubst fo,foLRCoe fo) c cs ce
 %%]
 
 -- for use by Ruler
-%%[(9 codegen) export(foAppLRCoe')
+%%[(9 codegen hmtyinfer) export(foAppLRCoe')
 foAppLRCoe' :: EHCOpts -> (CSubst,LRCoe) -> VarMp -> CSubst -> CExpr -> CExpr
 foAppLRCoe' opts (fCS,fLRCoe) c cs ce
   =  let  s = cs `cSubstApp` fCS
@@ -99,12 +99,12 @@ foAppLRCoe' opts (fCS,fLRCoe) c cs ce
 %%% FitsIn Input
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer)
 fiAppVarMp :: FIIn -> Ty -> Ty
 fiAppVarMp fi x = fiVarMpLoc fi |=> fiVarMp fi |=> x
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance Show FIIn where
   show _ = "FIIn"
 
@@ -112,12 +112,12 @@ instance PP FIIn where
   pp fi = "FIIn:" >#< pp (fiEnv fi)
 %%]
 
-%%[4.fiUpdOpts
+%%[(4 hmtyinfer).fiUpdOpts
 fiUpdOpts :: (FIOpts -> FIOpts) -> FIIn -> FIIn
 fiUpdOpts upd fi = fi {fiFIOpts = upd (fiFIOpts fi)}
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 fiInhibitVarExpandL :: TyVarId -> FIIn -> FIIn
 fiInhibitVarExpandL v fi = fi {fiExpLTvS = v `Set.insert` fiExpLTvS fi}
 
@@ -131,7 +131,7 @@ fiVarIsExpandedR :: TyVarId -> FIIn -> Bool
 fiVarIsExpandedR v fi = v `Set.member` fiExpRTvS fi
 %%]
 
-%%[4
+%%[(4 hmtyinfer)
 fiSwapCoCo :: FIIn -> FIIn
 fiSwapCoCo fi = fi {fiExpLTvS = fiExpRTvS fi, fiExpRTvS = fiExpLTvS fi}
 %%]
@@ -140,7 +140,7 @@ fiSwapCoCo fi = fi {fiExpLTvS = fiExpRTvS fi, fiExpRTvS = fiExpLTvS fi}
 %%% Lookup of AppSpine + Polarity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer)
 fiAppSpineLookup :: FIIn -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 %%[[4
 fiAppSpineLookup fi n gappSpineGam = asGamLookup n appSpineGam
@@ -224,41 +224,41 @@ fitsIn ty1 ty2
             err e                                   = emptyFO {foErrL = e}
 %%]
 
-%%[1.fitsIn.Base
+%%[(1 hmtyinfer).fitsIn.Base
 %%@fitsInHead.1
 %%@fitsInBotCon.1
 %%]
 
-%%[1.fitsIn.AppRest
+%%[(1 hmtyinfer).fitsIn.AppRest
 %%@fitsInApp.1
 %%@fitsInRest.1
 %%@fitsInapp.1
 %%]
 
-%%[2.fitsIn.Base -(1.fitsIn.Base 1.fitsIn.AppRest)
+%%[(2 hmtyinfer).fitsIn.Base -(1.fitsIn.Base 1.fitsIn.AppRest)
 %%@fitsInHead.1
 %%]
 
-%%[2.fitsIn.Bind
+%%[(2 hmtyinfer).fitsIn.Bind
 %%@fitsInBind.2
 %%]
 
-%%[2.fitsIn.app
+%%[(2 hmtyinfer).fitsIn.app
 %%@fitsInapp.2
 %%]
 
-%%[2.fitsIn.BotCon
+%%[(2 hmtyinfer).fitsIn.BotCon
 %%@fitsInBotCon.1
 %%]
 
-%%[2.fitsIn.Var
+%%[(2 hmtyinfer).fitsIn.Var
             f  t1@(Ty_Var v1)       (Ty_Var v2)
                  | v1 == v2                         = res t1
             f  t1@(Ty_Var v1)       t2              = occurBind v1 t2
             f  t1                   t2@(Ty_Var v2)  = occurBind v2 t1
 %%]
 
-%%[2.fitsIn.AppRest
+%%[(2 hmtyinfer).fitsIn.AppRest
 %%@fitsInApp.1
 %%@fitsInRest.1
 %%]
@@ -272,7 +272,7 @@ fitsIn ty1 ty2
                  | f == TyVarCateg_Plain            = occurBind v2 t1
 %%]
 
-%%[3.fitsIn -(2.fitsIn.Base 2.fitsIn.Bind 2.fitsIn.app 2.fitsIn.BotCon 2.fitsIn.Var 2.fitsIn.AppRest)
+%%[(3 hmtyinfer).fitsIn -(2.fitsIn.Base 2.fitsIn.Bind 2.fitsIn.app 2.fitsIn.BotCon 2.fitsIn.Var 2.fitsIn.AppRest)
 %%@fitsInHead.1
 %%@fitsInBind.2
 %%@fitsInapp.2
@@ -282,7 +282,7 @@ fitsIn ty1 ty2
 %%@fitsInRest.1
 %%]
 
-%%[4.fitsIn.Prelim -3.fitsIn
+%%[(4 hmtyinfer).fitsIn.Prelim -3.fitsIn
 manyFO :: [FIOut] -> FIOut
 manyFO = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
 
@@ -296,7 +296,7 @@ fitsIn opts env uniq varmp
               )
 %%]
 
-%%[4.fitsInFI
+%%[(4 hmtyinfer).fitsInFI
 fitsInFI :: FIIn -> Ty -> Ty -> FIOut
 fitsInFI fi ty1 ty2
   =  foRes {foTrace = reverse $ foTrace foRes}
@@ -362,41 +362,41 @@ fitsInFI fi ty1 ty2
                 | v `elem` ftv t    =  err fi [rngLift range Err_UnifyOccurs (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
                 | otherwise         =  bind fi v t
 
-%%[4
+%%[(4 hmtyinfer)
             -- 20080309, AD: naming of function is not right, type info neither, error yes. Should indicate a double expansion of tyvar, indicating infinite type.
             errInfinite fi v t      =  err fi [rngLift range Err_UnifyOccurs (fiAppVarMp fi ty1) (fiAppVarMp fi ty2) (fioMode (fiFIOpts fi)) v t (fioMode (fiFIOpts fi))]
 %%]
 
-%%[9.fitsIn.lookupImplsVar
+%%[(9 hmtyinfer).fitsIn.lookupImplsVar
             lookupImplsVarCyc fi v  =  fiLookupVar' varmpImplsLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
-%%[10.fitsIn.lookupLabelVarCyc
+%%[(10 hmtyinfer).fitsIn.lookupLabelVarCyc
             lookupLabelCyc    fi v  =  fiLookupVar' varmpLabelLookupLabelCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
             tyVarIsBound tv fi      =  isJust $ lookupTyVar fi tv
 
-%%[4.fitsIn.bind
+%%[(4 hmtyinfer).fitsIn.bind
             bind fi tv t            =  dtfo "bind" fi tv' t [] (tv `varmpTyUnit` t)
                                        $ trfo "bind" ("tv:" >#< tv >-< "ty:" >#< t)
                                        $ (res' (fiBindTyVar tv t fi) tv' t)
                                     where tv' = mkTyVar tv
 %%]
 
-%%[4.fitsIn.allowBind
+%%[(4 hmtyinfer).fitsIn.allowBind
             allowBind fi (Ty_Var v f)   =  f == TyVarCateg_Plain
 %%[[9
                                            && not (v `Set.member` fioDontBind (fiFIOpts fi))
 %%]]
 %%]
 
-%%[4.fitsIn.allowImpredTVBind
+%%[(4 hmtyinfer).fitsIn.allowImpredTVBind
             allowImpredTVBindL fi t _
                 = fioBindLFirst (fiFIOpts fi) && allowBind fi t
             allowImpredTVBindR fi t _
                 = fioBindRFirst (fiFIOpts fi) && allowBind fi t
 %%]
 
-%%[4.fitsIn.unquant
+%%[(4 hmtyinfer).fitsIn.unquant
             -- removal of quantifier
             unquant fi t hide howToInst
                 =   (fi {fiUniq = u},uqt,back)
@@ -406,7 +406,7 @@ fitsInFI fi ty1 ty2
                                                  else  id
 %%]
 
-%%[16.fitsIn.eqProofAssume
+%%[(16 hmtyinfer).fitsIn.eqProofAssume
             eqAssume p fi t1 t2 isRec isSum
               = out { foGathCnstrMp = foGathCnstrMp out `Map.union` mp }
               where
@@ -418,7 +418,7 @@ fitsInFI fi ty1 ty2
                 out = fRow fi' t1 t2 isRec isSum
 %%]
 
-%%[16.fitsIn.eqProofObligation
+%%[(16 hmtyinfer).fitsIn.eqProofObligation
             eqProofObligation tRes fi tL tR
                 = (res fi tRes) { foGathCnstrMp = mp }
                 where
@@ -428,7 +428,7 @@ fitsInFI fi ty1 ty2
                   uid   = fiUniq fi
 %%]
 
-%%[16.fitsIn.isSkVar
+%%[(16 hmtyinfer).fitsIn.isSkVar
             -- is skolemnized tyvar?
             isSkVar = isSkVar' . show
             
@@ -436,23 +436,23 @@ fitsInFI fi ty1 ty2
             isSkVar' _           = False
 %%]
 
-%%[4.fitsIn.FOUtils
+%%[(4 hmtyinfer).fitsIn.FOUtils
             foUpdVarMp  c fo = fo {foVarMp = c |=> foVarMp fo}
             fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi, foTrace = fiTrace fi -- ++ foTrace fo
                                   }
             fofi       fo fi = fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo, fiTrace = foTrace fo -- ++ fiTrace fi
                                   }
 %%]
-%%[9
+%%[(9 hmtyinfer)
             fiInhibitBind v fi = fi {fiFIOpts = o {fioDontBind = v `Set.insert` fioDontBind o}}
                                where o  = fiFIOpts fi
 %%]
 
-%%[4.fitsIn.FOUtils
+%%[(4 hmtyinfer).fitsIn.FOUtils
             foUpdTy  t   fo  = fo {foTy = t}
 %%]
 
-%%[4.fitsIn.foCmb
+%%[(4 hmtyinfer).fitsIn.foCmb
             foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foTy ffo) (foTy afo)}
             foCmbVarMp   ffo afo  = afo -- {foVarMp = foVarMp afo |=> foVarMp ffo}
             foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
@@ -461,33 +461,33 @@ fitsInFI fi ty1 ty2
             foCmbVarMp   ffo afo  = afo {foVarMp = foVarMp afo |=> foVarMp ffo}
             foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 
-%%[9
+%%[(9 hmtyinfer)
             foCmbPrL     ffo afo  = afo {foPredOccL = foPredOccL afo ++ foPredOccL ffo, foGathCnstrMp = foGathCnstrMp afo `cnstrMpUnion` foGathCnstrMp ffo}
 %%]
-%%[(9 codegen)
+%%[(9 codegen hmtyinfer)
             foCmbCSubst  ffo afo  = afo {foCSubst = cSubstOptApp globOpts (foCSubst afo) (foCSubst ffo)}
 %%]
 
-%%[4.fitsIn.foCmbApp
+%%[(4 hmtyinfer).fitsIn.foCmbApp
             foCmbApp     ffo      = foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
 %%]
 
-%%[9.fitsIn.foCmbApp -4.fitsIn.foCmbApp
+%%[(9 hmtyinfer).fitsIn.foCmbApp -4.fitsIn.foCmbApp
             foCmbApp     ffo      = foCmbPrfRes ffo . foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
 %%]
 
-%%[7.fitsIn.foCmbPrfRes
+%%[(7 hmtyinfer).fitsIn.foCmbPrfRes
             foCmbPrfRes  ffo afo  = afo
 %%]
 
-%%[9.fitsIn.foCmbPrfRes -7.fitsIn.foCmbPrfRes
+%%[(9 hmtyinfer).fitsIn.foCmbPrfRes -7.fitsIn.foCmbPrfRes
             foCmbPrfRes  ffo      = foCmbPrL ffo
 %%[[(9 codegen)
                                     . foCmbCSubst ffo
 %%]]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
             fiAddPr n i prTy fi
                 =  let  e                   = fiEnv fi
                         (_,assumePredScope) = pscpEnter 0 $ fePredScope (fiEnv fi)
@@ -512,7 +512,7 @@ fitsInFI fi ty1 ty2
 
 A counterpart type to enforce deep quantifier instantiation.
 20080606, AD: Omitting the check on hsnPolNegation breaks polarity matching; this has to be sorted out.
-%%[4
+%%[(4 hmtyinfer)
             deepInstMatchTy fi t
               = case t of
                   _ | not (null as
@@ -527,7 +527,7 @@ A counterpart type to enforce deep quantifier instantiation.
                     fi' = fi {fiUniq = u}
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
             fPairWise fi tL1 tL2
               =  foldr  (\(t1,t2) (foL,fii)
                            -> let  fo = fVar ff fii t1 t2
@@ -537,12 +537,12 @@ A counterpart type to enforce deep quantifier instantiation.
 %%]
 
 GADT: when encountering a product with eq-constraints on the outset, remove them and bring them in scope as assume constraints
-%%[16.fitsIn.fRow.StripPreds
+%%[(16 hmtyinfer).fitsIn.fRow.StripPreds
             fRow fi (Ty_Ext t1 _ (Ty_Pred p)) t2 isRec isSum = eqAssume p fi t1 t2 isRec isSum
             fRow fi t1 (Ty_Ext t2 _ (Ty_Pred p)) isRec isSum = eqAssume p fi t1 t2 isRec isSum
 %%]
 
-%%[7.fitsIn.fRow.Base
+%%[(7 hmtyinfer).fitsIn.fRow.Base
             fRow fi tr1 tr2 isRec isSum
                 = foR
                 where  (r1,exts1) = tyRowExtsWithLkup (fiLookupTyVarCyc fi) tr1
@@ -606,12 +606,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                        $ foUpdTy (foTy fo `mkTyRow` eL) fo
 %%]
 
-%%[7.fitsIn.fRow.fRFinal
+%%[(7 hmtyinfer).fitsIn.fRow.fRFinal
                        fR fi r1 r2 [] [] []
                          = f fi r1 r2
 %%]
 
-%%[10.fitsIn.fRow.fRFinal -7.fitsIn.fRow.fRFinal
+%%[(10 hmtyinfer).fitsIn.fRow.fRFinal -7.fitsIn.fRow.fRFinal
                        fR fi r1@(Ty_Var _ f1) r2@(Ty_Con n2) [] [] []
                          | tvCatIsFixed f1 && n2 == hsnRowEmpty && isRec
                          = res fi r2
@@ -630,16 +630,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fR fi r1 r2 [] [] []
                          = (f fi r1 r2) {foLRCoe = emptyLRCoe}
 
-%%[7.fitsIn.fRow.Final1
+%%[(7 hmtyinfer).fitsIn.fRow.Final1
                        fR fi _ _ _ _ _
                          = errClash fi tr1 tr2
 %%]
 
-%%[7.fitsIn.fRow.foR
+%%[(7 hmtyinfer).fitsIn.fRow.foR
                        foR        = fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
 %%]
 
-%%[10.fitsIn.fRow.foR -7.fitsIn.fRow.foR
+%%[(10 hmtyinfer).fitsIn.fRow.foR -7.fitsIn.fRow.foR
                        fo         = fR fi2 r1 r2 extsIn1 extsIn12 extsIn2
                        foR        = (if isRec then foUpdRecCoe tr1 r1 r2 extsIn1 extsIn12 extsIn2 else id) fo 
                        foUpdRecCoe tr1 r1 r2 e1 e12 e2 fo
@@ -756,7 +756,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
 %%]
 
-%%[(10 codegen).fitsIn.fRow.Coe
+%%[(10 codegen hmtyinfer).fitsIn.fRow.Coe
                        foUpdRecFldsCoe eKeys foL tr1 foR
                          =  let cL =   [  (l,c)
                                        |  (l,fo) <- zip eKeys foL
@@ -766,11 +766,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             in  foR {foRowCoeL = cL}
 %%]
 
-%%[4.fitsIn.ff
+%%[(4 hmtyinfer).fitsIn.ff
             ff fi t1 t2
               = f fi t1 t2
 %%]
-%%[11 -4.fitsIn.ff
+%%[(11 hmtyinfer) -4.fitsIn.ff
             ff fi t1 t2
               = case filter (not . foHasErrs) tries of
                   (fo:_) -> fo
@@ -793,7 +793,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                                                  where fi' = fi
 %%]
 
-%%[4.fitsIn.fVar
+%%[(4 hmtyinfer).fitsIn.fVar
             fVar f fi t1@(Ty_Var v1 f1)     t2@(Ty_Var v2 f2)
                 | v1 == v2 && f1 == f2                        = res fi t1
             fVar f fi t1@(Ty_Var v1 f1)     t2
@@ -828,7 +828,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where fi2     = trfi "fVar" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
             fVarPred2 f fi tpr1                             (Ty_Impls (Impls_Tail iv2 _))
                 | isJust mbTl                                 = f fi tpr1 (Ty_Impls (fromJust mbTl))
                 where mbTl = lookupImplsVarCyc fi iv2
@@ -844,7 +844,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 = f fi tpr1
 %%]
 
-%%[4.fitsIn.Base
+%%[(4 hmtyinfer).fitsIn.Base
             f fi t1                     t2
                 | fioMode (fiFIOpts fi) == FitSubRL = f  fi' t2 t1
                 where  fi'       = fiSwapCoCo $ fi  {fiFIOpts = fioSwapOpts $ fioSwapPolarity polContravariant $ fiFIOpts fi}
@@ -860,14 +860,14 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where lBefR = fioBindLBeforeR (fiFIOpts fi)
 %%]
 
-%%[4.fitsIn.Var1
+%%[(4 hmtyinfer).fitsIn.Var1
             f fi t1@(Ty_Var v1 _)       t2
                 | allowImpredTVBindL fi t1 t2       = occurBind fi v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
                 | allowImpredTVBindR fi t2 t1       = occurBind fi v2 t1
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
             f fi t1@(Ty_Pred pr1) t2@(Ty_Pred pr2)
                 | fioPredAsTy (fiFIOpts fi) && isJust mbfp
                 = let (fo,pr) = fromJust mbfp in foUpdTy (Ty_Pred pr) fo
@@ -879,7 +879,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             = Just (fo,Pred_Pred (foTy fo))
                             where fo = fVar ff fi prt1 prt2
 %%]
-%%[10
+%%[(10 hmtyinfer)
                        fP (Pred_Lacks lt1 l1)       (Pred_Lacks lt2 l2)
                             | l1' == l2'
                             = Just (fo,Pred_Lacks (foTy fo) l1')
@@ -887,12 +887,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                   l1' = maybe l1 id $ lookupLabelCyc fi l1
                                   l2' = maybe l2 id $ lookupLabelCyc fi l2
 %%]
-%%[9
+%%[(9 hmtyinfer)
                        fP _                         _
                             = Nothing
 %%]
 
-%%[4.fitsIn.QLR
+%%[(4 hmtyinfer).fitsIn.QLR
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
                 | fioMode (fiFIOpts fi) == FitUnify && q1 == q2
                                                     = fVar ff fi2 uqt1 uqt2
@@ -900,7 +900,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        (fi2,uqt2,_) = unquant fi1  t2 False instCoConst
 %%]
 
-%%[4.fitsIn.QR
+%%[(4 hmtyinfer).fitsIn.QR
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
                                                     = back2 (fVar ff fi2 t1 uqt2)
@@ -911,13 +911,13 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where (fi2,uqt2,back2) = unquant fi t2 False instContra
 %%]
 
-%%[4.fitsIn.QL
+%%[(4 hmtyinfer).fitsIn.QL
             f fi t1@(Ty_Quant _ _ _)    t2
                 | fioIsSubsume (fiFIOpts fi)        = fVar ff fi1 uqt1 t2
                 where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
             f fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
                   t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
@@ -994,7 +994,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Nothing
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
             f fi  t1
                   t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
@@ -1052,7 +1052,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fP fi _ =  Nothing
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
             f fi  t1@(Ty_App (Ty_App (Ty_Con c1) tpr1) tr1)
                   t2
                     | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
@@ -1113,7 +1113,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just (foUpdVarMp (iv2 `varmpImplsUnit` Impls_Nil) $ foUpdTy ([Ty_Impls (Impls_Nil)] `mkArrow` foTy fo) $ fo)
                             where fo = fVar ff fi t1 tr2
 
-%%[7
+%%[(7 hmtyinfer)
             f fi  t1@(Ty_App (Ty_Con n1) tr1)
                   t2@(Ty_App (Ty_Con n2) tr2)
                 | n1 == n2 && (isRec || isSum)
@@ -1123,7 +1123,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fo = fRow fi tr1 tr2 isRec isSum
 %%]
 
-%%[4.fitsIn.Var2
+%%[(4 hmtyinfer).fitsIn.Var2
             f fi t1@(Ty_Var v1 _)       t2
                 | allowBind fi t1                   = case deepInstMatchTy fi t2 of
                                                         Just (t1',fi') | fiRankEqInstRank fi
@@ -1141,7 +1141,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             f fi t1                     t2@(Ty_Var v2 _)
                 | allowBind fi t2                   = occurBind fi v2 t1
 
-%%[4.fitsIn.App
+%%[(4 hmtyinfer).fitsIn.App
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
                 = manyFO [ ffo, afo
                          , dtfo "app" fi t1 t2 [(ffo,"l"),(afo,"r")] emptyVarMp
@@ -1167,7 +1167,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
 %%]
 
-%%[7.fitsIn.Ext
+%%[(7 hmtyinfer).fitsIn.Ext
             f fi t1@(Ty_Ext _ _ _)   t2@(Ty_Ext _ _ _)
                 =  fRow fi t1 t2 False False
 %%]
@@ -1175,7 +1175,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 FitsIn type clashes
 
 GADT: type clash between fixed type variable and some other type results in a equality proof constraint
-%%[16.fitsIn.EqProve
+%%[(16 hmtyinfer).fitsIn.EqProve
             f fi t1@(Ty_Var v1 TyVarCateg_Fixed) t2 | fioFitVarFailureToProveObl (fiFIOpts fi)  = eqProofObligation t2 fi t1 t2
             f fi t1 t2@(Ty_Var v2 TyVarCateg_Fixed) | fioFitVarFailureToProveObl (fiFIOpts fi)  = eqProofObligation t2 fi t2 t1
             f fi t1@(Ty_Con cstr) t2 | isSkVar cstr && fioFitVarFailureToProveObl (fiFIOpts fi) = eqProofObligation t2 fi t1 t2
@@ -1187,7 +1187,7 @@ GADT: type clash between fixed type variable and some other type results in a eq
               = eqProofObligation t1 fi t1 t2
 %%]
 
-%%[17.fitsIn.PolaritySubtyping
+%%[(17 hmtyinfer).fitsIn.PolaritySubtyping
             -- N.B. hsnInvariant is a unique name which cannot be written by a programmer. In other words,
             -- this pattern match cannot trigger during other type inferences.
             -- Weaken Co/Contravariant polarity to Invariant polarity
@@ -1195,21 +1195,21 @@ GADT: type clash between fixed type variable and some other type results in a eq
                 | s == hsnInvariant                 = res fi t
 %%]
 
-%%[4.fitsIn.DefaultCase
+%%[(4 hmtyinfer).fitsIn.DefaultCase
             f fi t1                     t2          = errClash fi t1 t2
 %%]
 
-%%[4.fitsIn.SetupAndResult
+%%[(4 hmtyinfer).fitsIn.SetupAndResult
             foRes  = fVar ff fi ty1 ty2
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 %%]
             f' msg fi t1 t2 = let fo = fVar f (trPP ("FIT" ++ "-" ++ msg ++ "-" ++ "fi") fi) (m "t1" t1) (m "t2" t2)
                                   m mm x = trPP ("FIT" ++ "-" ++ msg ++ "-" ++ mm) x
                               in  tr ("FIT" ++ "-" ++ msg) (pp (foTy fo)) fo
 
-%%[9
+%%[(9 hmtyinfer)
 fitsIn' :: String -> FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
 fitsIn' msg opts env uniq varmp ty1 ty2
   =  fitsIn opts (trPP (msg ++ "-env") env) (trPP (msg ++ "-uniq") uniq) varmp (trPP (msg ++ "-ty1") ty1) (trPP (msg ++ "-ty2") ty2)
@@ -1219,7 +1219,7 @@ fitsIn' msg opts env uniq varmp ty1 ty2
 %%% Subsumption for lists of types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6 export(fitsInL)
+%%[(6 hmtyinfer) export(fitsInL)
 fitsInL :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> TyL -> (TyL,FIOut)
 fitsInL opts env uniq varmp tyl1 tyl2
   = (map foTy foL,fo)
@@ -1232,7 +1232,7 @@ fitsInL opts env uniq varmp tyl1 tyl2
 %%% Iterative fitsIn, for now just a simple one (no constr prop, no new uniq, ...)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 export(fitsInFold)
+%%[(7 hmtyinfer) export(fitsInFold)
 fitsInFold :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> FIOut
 fitsInFold opts env uniq varmp tyl
   = foldl (\fo t -> if foHasErrs fo then fo else fitsIn opts env uniq varmp (foTy fo) t)
@@ -1243,7 +1243,7 @@ fitsInFold opts env uniq varmp tyl
 %%% Rule matching
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(fitPredIntoPred)
+%%[(9 hmtyinfer) export(fitPredIntoPred)
 fitPredIntoPred :: FIIn -> Pred -> Pred -> Maybe (Pred,VarMp)
 fitPredIntoPred fi pr1 pr2
   = f pr1 pr2
@@ -1329,7 +1329,7 @@ fitPredIntoPred fi pr1 pr2
 %%% Retrieving evidence type for predicate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(fitPredToEvid)
+%%[(9 hmtyinfer) export(fitPredToEvid)
 fitPredToEvid :: UID -> VarMp -> Ty -> ClGam -> FIOut
 fitPredToEvid u varmp prTy g
   =  case prTy of
@@ -1355,7 +1355,7 @@ fitPredToEvid u varmp prTy g
 %%% Wrapper for fitsIn (as a solution for module dependency cycle)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[4
+%%[(4 hmtyinfer)
 mkFitsInWrap' :: FIEnv -> FitsIn'
 mkFitsInWrap' env
   =  \opt u varmp t1 t2

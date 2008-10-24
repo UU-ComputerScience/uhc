@@ -1,5 +1,5 @@
 # aspects, EHC_ASPECTS to be configured at top level, for now here
-EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmty codegen grin noHmTyRuler)
+EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmtyinfer codegen grin noHmTyRuler)
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
 

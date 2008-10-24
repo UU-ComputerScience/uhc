@@ -2,7 +2,7 @@
 %%% Pred occurrence gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR NTPrf [ | | gathCnstrMp USE {`cnstrMpUnion`} {Map.empty}: CHRPredOccCnstrMp ]
 
 SEM Expr
@@ -24,7 +24,7 @@ SEM Expr
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp,@expr.gathCnstrMp]
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 SEM Expr
   | Sel         loc         .   hereCnstrMp         =   gathPredLToProveCnstrMp @prOccL
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @expr.gathCnstrMp]
@@ -40,7 +40,7 @@ SEM RecPatExpr
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @recPatExpr.gathCnstrMp, @patExpr.gathCnstrMp]
 %%]
 
-%%[16
+%%[(16 hmtyinfer)
 SEM PatExpr
   | Con         loc         .   hereCnstrMp         =   foGathCnstrMp @fo_fitP_
                 lhs         .   gathCnstrMp         =   @loc.hereCnstrMp
@@ -50,13 +50,13 @@ SEM DataFieldPatExpr
                 lhs         .   gathCnstrMp         =   @loc.hereCnstrMp
 %%]
 
-%%[97
+%%[(97 hmtyinfer)
 SEM PatExpr
   | Expr        loc         .   hereCnstrMp         =   foGathCnstrMp @fo_
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @expr.gathCnstrMp]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Instance    loc         .   (chrCtxtAssumeCnstrMp,chrSuperProveCnstrMp,chrInstAssumeCnstrMp,chrCtxtArgUIDL,chrCtxtArgNmL,chrSuperProveUIDL,chrSuperProveNmL,chrInstArgUID,chrInstNm)
                                                     =   let (u:us) = mkNewUIDL (lc + ls + 1) @lUniq6
@@ -115,7 +115,7 @@ SEM Decl
 %%% Proving (predicates) via CHR's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 hmtyinfer) hs
 simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
   = ( toProveHereCnstrMpCanon, chrSolveRemCnstrMp2
     , cannotResCnstrMp
@@ -157,7 +157,7 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
 %%]]
 %%]
 
-%%[9 hs
+%%[(9 hmtyinfer) hs
 fixedFtv mp = ftvSet $ map cnstrPred $ Map.keys mp
 
 debugInfo chrSimplifyResult
@@ -166,7 +166,7 @@ debugInfo chrSimplifyResult
         rg = simpresRedGraph chrSimplifyResult
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   chrProveFIIn		=	@chrFIIn {fiVarMp = @expr.tyVarMp}
                             .   toProveCnstrMp      =   @expr.tyVarMp `chrAppSubst` @expr.gathCnstrMp
@@ -182,7 +182,7 @@ SEM AGItf
                             .   cannotProveCnstrMp	=	@chrSolveMainRemCnstrMp
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   chrProveFIIn		=	@chrFIIn {fiVarMp = @decls.tyVarMp}
                             .   toProveCnstrMp      =   @decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
@@ -212,7 +212,7 @@ SEM Expr
                                                     =   debugInfo @chrSimplifyResult2
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Decl
   | Instance    loc         .   chrProveFIIn		=	@chrFIIn {fiVarMp = @decls.tyVarMp}
                             .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp, @toProveGathCnstrMp]
@@ -245,7 +245,7 @@ SEM Decl
 
 Interaction with existing impl:
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   quantPrOccL         =   [ rngLift @range mkPredOccRng (cpoPr o) (mkPrIdCHR $ vunmId i) sc
                                                         | (Assume o,[RedHow_Assumption i sc])
@@ -257,7 +257,7 @@ SEM Expr
 %%% Additional prove requirements + assume introductions yielded by generalization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   (quantCnstrMp, coeArgIdMp)
                                                     =   let mk u nm tmpo
@@ -285,7 +285,7 @@ SEM Expr
 %%% Propagation of bindings resulting from assumptions downwards
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen)
+%%[(9 codegen hmtyinfer)
 ATTR NTPrf [ chrEvidBindMp: EvidKeyToCBindMap   chrScopeBindMp: PredScopeToCBindMap | | ]
 
 SEM AGItf
@@ -306,7 +306,7 @@ SEM Expr
 %%% Bindings depending on scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs
+%%[(9 codegen hmtyinfer) hs
 mkScopeBindings :: Bool -> PredScope -> PredScopeToCBindMap -> ([CBind],PredScopeToCBindMap)
 mkScopeBindings alsoOuter sc mp
   = (concatMap f scs,foldr Map.delete mp scs)
@@ -314,7 +314,7 @@ mkScopeBindings alsoOuter sc mp
         scs  = [sc] ++ (if alsoOuter then pscpParents sc else [])
 %%]
 
-%%[(9 codegen)
+%%[(9 codegen hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   (chrScopeMainBindL,chrScopeBindMp)
   													=   mkScopeBindings True @predScope @chrSolveMainScopeBindMp
@@ -342,13 +342,13 @@ SEM Expr
 %%% Bindings for assumed preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs
+%%[(9 codegen hmtyinfer) hs
 mkAssumeBindings :: [UID] -> EvidKeyToCBindMap -> [CBind]
 mkAssumeBindings ids mp
   = concat [ maybe [] id $ Map.lookup i mp | i <- ids ]
 %%]
 
-%%[(9 codegen)
+%%[(9 codegen hmtyinfer)
 SEM Decl
   | Instance    loc         .   chrAssumeSuperBindL     =   mkAssumeBindings @chrCtxtArgUIDL @chrSolveSuperEvidBindMp
                             .   chrAssumeDeclsInstBindL =   mkAssumeBindings [@chrInstArgUID] @chrEvidBindMp

@@ -8,6 +8,7 @@ module Common
   , module EH.Util.Nm
   , module EH.Util.FPath
   , module EH.Util.Pretty
+  , module AspectExpr
   , Err(..), ErrM, ppErr, showUndef
   , openURI
   , Opts(..), defaultOpts, optsHasNoVariantRefOrder
@@ -46,6 +47,8 @@ import EH.Util.Pretty
 import EH.Util.FPath
 import EH.Util.Utils
 import EH.Util.Nm
+import AspectExpr
+import AspectExprEval
 
 -------------------------------------------------------------------------
 -- Errors
@@ -230,16 +233,17 @@ variantRefFromTop i = VarRef [i]
 -- Aspect reference
 -------------------------------------------------------------------------
 
-type AspectRef  = String
 data AspectRefs
   = AspectAll
-  | AspectRefs !(Set.Set AspectRef)
+  | AspectRefs          !AspectRefReqd
+  | AspectOfferExpr     !AspectExpr
   deriving (Show,Eq,Ord)
 
 aspectRefsMatch :: AspectRefs -> AspectRefs -> Bool
-aspectRefsMatch AspectAll       _               = True
-aspectRefsMatch _               AspectAll       = True
-aspectRefsMatch (AspectRefs r1) (AspectRefs r2) = Set.isSubsetOf r1 r2 -- not (Set.null (Set.intersection r1 r2))
+aspectRefsMatch AspectAll            _               = True
+aspectRefsMatch _                    AspectAll       = True
+aspectRefsMatch (AspectRefs      r1) (AspectRefs r2) = Set.isSubsetOf r1 r2 -- not (Set.null (Set.intersection r1 r2))
+aspectRefsMatch (AspectOfferExpr r1) (AspectRefs r2) = aspexpIsAccepted r2 r1
 
 -------------------------------------------------------------------------
 -- Variant offering, ordering

@@ -2,23 +2,23 @@
 %%% Beta reduction for type, only saturated applications are expanded
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11 module {%{EH}Ty.Trf.BetaReduce} import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty.FitsInCommon2}, {%{EH}Ty}, {%{EH}Gam}, {%{EH}Substitutable}, {%{EH}VarMp})
+%%[(11 hmtyinfer) module {%{EH}Ty.Trf.BetaReduce} import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty.FitsInCommon2}, {%{EH}Ty}, {%{EH}Gam}, {%{EH}Substitutable}, {%{EH}VarMp})
 %%]
 
-%%[11 import(Data.Maybe)
+%%[(11 hmtyinfer) import(Data.Maybe)
 %%]
 
 For debug/trace:
-%%[11 import(EH.Util.Pretty)
+%%[(11 hmtyinfer) import(EH.Util.Pretty)
 %%]
-%%[11 import({%{EH}Base.Debug})
+%%[(11 hmtyinfer) import({%{EH}Base.Debug})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Beta reduction for type, only saturated applications are expanded
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11 export(tyBetaRed1)
+%%[(11 hmtyinfer) export(tyBetaRed1)
 tyBetaRed1 :: FIIn -> Ty -> Maybe (Ty,[PP_Doc])
 tyBetaRed1 fi tp
   = eval fun args
@@ -57,7 +57,7 @@ tyBetaRed1 fi tp
         tyGam    = feTyGam $ fiEnv fi
 %%]
 
-%%[11 export(tyBetaRed)
+%%[(11 hmtyinfer) export(tyBetaRed)
 tyBetaRed :: FIIn -> Ty -> [(Ty,[PP_Doc])]
 tyBetaRed fi ty
   = case tyBetaRed1 fi ty of
@@ -69,7 +69,7 @@ Reduce fully (upto expansion limit) an outer layer of type synonyms,
 expanding the inner layer with redSub, only if the outer layer has been
 replaced.
 
-%%[11 export(tyBetaRedFullMb)
+%%[(11 hmtyinfer) export(tyBetaRedFullMb)
 tyBetaRedFullMb :: FIIn -> (Ty -> Maybe Ty) -> Ty -> Maybe Ty
 tyBetaRedFullMb fi redSub ty
   = fmap reda $ choose ty $ redl ty

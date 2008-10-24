@@ -29,7 +29,10 @@
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
 %%]
 
-%%[9 hs import({%{EH}Pred}) export(clGam2IdDefOccGam)
+%%[9 hs export(clGam2IdDefOccGam)
+%%]
+
+%%[9 hs import({%{EH}Pred})
 %%]
 
 %%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
@@ -39,9 +42,6 @@
 %%]
 
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
-%%]
-
-%%[98 hs import({%{EH}Ty.Utils})
 %%]
 
 %%[97 hs import({%{EH}Base.Debug} as Debug, Debug.Trace)

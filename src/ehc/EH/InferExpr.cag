@@ -11,7 +11,7 @@
 %%% Top level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[98
+%%[(98 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   (foMain,nmErrs)
                                             =   if @lhs.isTopMod
@@ -24,11 +24,11 @@ SEM AGItf
 %%% Known type distr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.knTy
+%%[(1 hmtyinfer).knTy
 ATTR AllExpr [ knTy: Ty | | ]
 %%]
 
-%%[1.knTy.AGItf
+%%[(1 hmtyinfer).knTy.AGItf
 SEM AGItf
   | AGItf       expr        .  knTy         =  Ty_Any
 %%]
@@ -37,11 +37,11 @@ SEM AGItf
 %%% Type of Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.ty
+%%[(1 hmtyinfer).ty
 ATTR AllExpr [ | | ty: Ty ]
 %%]
 
-%%[2.tyVarMp
+%%[(2 hmtyinfer).tyVarMp
 ATTR AllExpr [ | tyVarMp: VarMp | ]
 %%]
 
@@ -50,7 +50,7 @@ ATTR AllExpr [ | tyVarMp: VarMp | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Const
-%%[9090.Const
+%%[(9090 hmtyinfer).Const
 SEM Expr
   | CConst      loc         .   ty_                 =   tyChar
   | IConst      loc         .   ty_                 =   tyInt
@@ -60,7 +60,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Const
-%%[9090.Const
+%%[(9090 hmtyinfer).Const
 SEM Expr
   | IConst CConst
                 loc         .   fo_                 :=  @ty_ `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
@@ -68,25 +68,25 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Const
-%%[9090.Const
+%%[(9090 hmtyinfer).Const
 SEM Expr
   | IConst CConst
                 loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Const
-%%[9090
+%%[(9090 hmtyinfer)
 SEM Expr
   | CConst      loc         .   imprTy              =   tyChar
   | IConst      loc         .   imprTy              =   tyInt
 %%]
 
--- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(10 noHmTyRuler)
+-- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 noHmTyRuler hmtyinfer)
 SEM Expr
   | IConst      loc         .   constTy             =   tyInt
   | CConst      loc         .   constTy             =   tyChar
-%%[[10
+%%[[8
   | SConst      loc         .   constTy             =   tyString
 %%][11
   | SConst      loc         .   constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
@@ -96,8 +96,8 @@ SEM Expr
 %%]]
 %%]
 
--- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(10 noHmTyRuler)
+-- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 noHmTyRuler hmtyinfer)
 SEM Expr
   | IConst CConst SConst
 %%[[97
@@ -113,7 +113,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Var
-%%[9090.Var
+%%[(9090 hmtyinfer).Var
 SEM Expr
   | Var         loc         .   (gTy,nmErrs)
                                                     =   valGamLookupTy @nm @lhs.valGam
@@ -123,7 +123,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.Var
-%%[9090.Var
+%%[(9090 hmtyinfer).Var
 SEM Expr
   | Var         loc         .   ty_                 :=  @lhs.tyVarMp |=> @gTy
                             .   fo_                 :=  @ty_ `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
@@ -131,20 +131,20 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Var
-%%[9090.Var
+%%[(9090 hmtyinfer).Var
 SEM Expr
   | Var         loc         .   ty_                 :=  @lhs.tyVarMp |=> tyInst @lUniq @gTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Var
-%%[9090.Var
+%%[(9090 hmtyinfer).Var
 SEM Expr
   | Var         loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
                             .   ty_                 :=  @lhs.tyVarMp |=> @gTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Var
-%%[9090.Var
+%%[(9090 hmtyinfer).Var
 SEM Expr
   | Var         loc         .   imprTy              =   @lhs.imprTyVarMp |=> @gTy
 %%]
@@ -154,14 +154,14 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Con
-%%[9090.Con
+%%[(9090 hmtyinfer).Con
 SEM Expr
   | Con         loc         .   ty                  =   let  resTy = tyArrowRes @lhs.knTy
                                                         in   tyProdArgs resTy `mkArrow` resTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Con
-%%[9090.Con
+%%[(9090 hmtyinfer).Con
 SEM Expr
   | Con         loc         .   fo_                 =   let  gTy      = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                              foKnRes  = gTy `fitsIn` (@lhs.tyVarMp |=> tyArrowRes @lhs.knTy)
@@ -172,7 +172,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Con
-%%[9090.Con
+%%[(9090 hmtyinfer).Con
 SEM Expr
   | Con         loc         .   (gTy,nmErrs)        :=  valGamLookupTy @nm @lhs.valGam
                             .   ty_                 :=  @lhs.tyVarMp |=> @gTy
@@ -180,7 +180,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Con
-%%[9090.Con
+%%[(9090 hmtyinfer).Con
 SEM Expr
   | Con         loc         .   imprTy              =   @lhs.imprTyVarMp |=> @gTy
 %%]
@@ -189,11 +189,10 @@ SEM Expr
 %%% Variable/Constructor, identifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- between variant 10 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[10
+-- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 hmtyinfer)
 SEM Expr
-  | Var Con     (lhs.gUniq,loc.uniq1)               =   mkNewLevUID @lhs.gUniq
-                (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
+  | Var Con     (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
                 loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
                             .   ty                  =   foTy @fo_
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
@@ -204,7 +203,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.App
-%%[5.App
+%%[(5 hmtyinfer).App
 SEM Expr
   | App AppImpred
                 loc         .   argTy               =   Ty_Any
@@ -215,7 +214,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.App
-%%[5.App
+%%[(5 hmtyinfer).App
 SEM Expr
   | App AppImpred
                 loc         .   argTy               :=  mkNewTyVar @lUniq
@@ -224,7 +223,7 @@ SEM Expr
 %%]
                             .   ty                  :=  @arg.tyVarMp |=> @ty_
 
-%%[9.App
+%%[(9 hmtyinfer).App
 SEM Expr
   | App AppImpred
                 loc         .   (knFunTy,imTy,argTy):=  let  [i,a] = mkNewUIDL 2 @lUniq
@@ -237,7 +236,7 @@ SEM Expr
                 lhs			.	tyVarMp				=	@tyVarMpApp
 %%]
 
-%%[12.AppImpl
+%%[(12 hmtyinfer).AppImpl
 SEM Expr
   | AppImpl     loc         .   knFunTy             =   [@argPr.ty] `mkArrow` @lhs.knTy
                 func        .   knTy                =   @knFunTy
@@ -257,7 +256,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 2.AppTop
-%%[5.AppTop
+%%[(5 hmtyinfer).AppTop
 SEM Expr
   | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
 %%]
@@ -269,7 +268,7 @@ Consequences are yet unclear.
 - Does not work, that is enforcing empty predicates here: im = mkImplsNil
   Likely caused by partiap apps yielding types taking more predicates (?)
 
-%%[9.AppTop
+%%[(9 hmtyinfer).AppTop
 SEM Expr
   | AppTop      loc         .   (imTy,knTopTy,resTy)=   let  [i,r] = mkNewUIDL 2 @lUniq
                                                              im = mkImplsVar i
@@ -287,7 +286,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.Lam
-%%[5.Lam
+%%[(5 hmtyinfer).Lam
 SEM Expr
   | Lam         loc         .   funTy               =   [Ty_Any] `mkArrow` Ty_Any
                             .   fo_fitF_            =   @funTy `fitsIn` @lhs.knTy
@@ -297,7 +296,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Lam
-%%[5.Lam
+%%[(5 hmtyinfer).Lam
 SEM Expr
   | Lam         loc         .   (argTy,resTy,funTy)
                                                     :=  let  [a,r] = mkNewTyVarL 2 @lUniq
@@ -311,7 +310,7 @@ SEM Expr
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Lam
-%%[5.Lam
+%%[(5 hmtyinfer).Lam
 SEM Expr
   | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
                             .   fo_fitF_            :=  fitsIn @knFunFIOpts @fe @lUniq2 @lamKnTyVarMp @funTy @lhs.knTy
@@ -324,7 +323,7 @@ SEM Expr
                             .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @lamKnTyVarMp @funTy @knTySubs
                                                         in   fo {foTy = foVarMp fo |=> @funTy}
 
-%%[9.Lam
+%%[(9 hmtyinfer).Lam
 SEM Expr
   | Lam         loc         .   (imTy,argTy,resTy,funTy)
                                                     :=  let  [iv,av,rv] = mkNewUIDL 3 @lUniq
@@ -336,7 +335,7 @@ SEM Expr
                             .   ty                  :=  (@knImpls ++ [@arg.ty]) `mkArrow` @body.ty
 %%]
 
-%%[12.LamImpl
+%%[(12 hmtyinfer).LamImpl
 SEM Expr
   | LamImpl     loc         .   funTy               =   let  r = mkNewTyVar @lUniq
                                                         in   [@argPr.ty] `mkArrow` r
@@ -356,7 +355,7 @@ SEM Expr
 %%% Undefine, case fail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.Undefined
+%%[(8 hmtyinfer).Undefined
 SEM Expr
   | Undefined CaseAltFail
                 loc         .   ty                  =   tyEnsureNonAny @lUniq @lhs.knTy
@@ -368,21 +367,21 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -- generated from ruler rules into EHRulerRules, was 1.TypeAs
-%%[5.TypeAs
+%%[(5 hmtyinfer).TypeAs
 SEM Expr
   | TypeAs      loc         .   fo_                 =   @tyExpr.ty `fitsIn` @lhs.knTy
                 expr        .   knTy                =   @tyExpr.ty
 %%]
 
 -- not generated from ruler rules into EHRulerRules:
-%%[5.TypeAs
+%%[(5 hmtyinfer).TypeAs
 SEM Expr
   | TypeAs      loc         .   tyTy                =   @tyExpr.ty
                             .   ty_q_               =   @tyTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.TypeAs
-%%[5.TypeAs
+%%[(5 hmtyinfer).TypeAs
 SEM Expr
   | TypeAs      loc         .   fo_                 :=  @ty_q_ `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
                 expr        .   knTy                :=  foVarMp @fo_ |=> @ty_q_
@@ -392,7 +391,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 4.TypeAs
 -- 20070205 - AD, this does not match ruler rules anymore. Split up in check for context and inner expression,
 --   latter should have (e.g.) forall skolemized. Which it now does.
-%%[5.TypeAs
+%%[(5 hmtyinfer).TypeAs
 SEM Expr
   | TypeAs      loc         .   (gTyTvL,cycVarMp)   =   let  (vg,cycVarMp1) = @lhs.tyVarMp |==> @lhs.valGam
                                                              (tg,cycVarMp2) = @lhs.tyVarMp |==> @lhs.tyGam
@@ -407,7 +406,7 @@ SEM Expr
                             .   tyVarMp             :=  foVarMp @fo_fitDown |=> @ty_q_2_VarMp
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 SEM Expr
   | DynVar      loc         .   ty                  =   Ty_Any
 %%]
@@ -416,7 +415,7 @@ SEM Expr
 %%% Data based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7 hs
+%%[(7 hmtyinfer) hs
 dfCheck :: UID -> FIOpts -> FIEnv -> HsName -> ValGam -> VarMp -> Ty -> (Ty,Ty,FIOut,[Err])
 dfCheck uniq fiOpts fe fldNm valGam knTyVarMp knTy
   = (knDataTy,knFldTy,fo,nmErrs)
@@ -428,7 +427,7 @@ dfCheck uniq fiOpts fe fldNm valGam knTyVarMp knTy
         fo           = fitsIn fiOpts fe u2 knTyVarMp gTy knFldUpdTy
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM DataFieldExpr
   | Upd         (loc.knDataTy,expr.knTy,loc.fo_,loc.nmErrs)
                                                     =   dfCheck @lUniq @lhs.fiOpts @fe @nm @lhs.valGam @lhs.tyVarMp @lhs.knTy
@@ -446,7 +445,7 @@ SEM DataFieldExpr
   | Expr        loc         .   ty                  =   @lhs.tyVarMp |=> @lhs.knTy
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 ATTR DataFieldExpr [ | updExprTyVarMp: VarMp | updExprTy: Ty ]
 
 SEM Expr
@@ -462,7 +461,7 @@ SEM DataFieldExpr
   | Con         lhs         .   updExprTy           =   Ty_Any
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM Expr
   | DataFields  (dataFieldExpr.knTy,dataFieldExpr.tyVarMp,loc.dfErrs)
                                                     =   case @dataFieldExpr.mbConNm of
@@ -486,7 +485,7 @@ SEM Expr
 %%% Row based records
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[7
+%%[(7 hmtyinfer)
 SEM RecExpr
   | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp tyRecEmpty @lhs.knTy
                             .   ty                  =   foTy @fo_
@@ -505,7 +504,7 @@ SEM RecExpr
   | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
 %%]
 
-%%[7
+%%[(7 hmtyinfer)
 SEM Expr
   | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq
                                                         in  (r, (hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)])
@@ -519,7 +518,7 @@ SEM Expr
                 loc         .   ty                  =   foTy @fo_
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Expr
   | Sel         (loc.knRowTy,loc.knExprTy)          :=  let r = mkNewTyVar @lUniq
                                                         in  (r, [Ty_Impls Impls_Nil] `mkArrow` ((hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)]))

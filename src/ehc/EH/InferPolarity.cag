@@ -218,7 +218,7 @@ Encoding of polarities:
 %%% Polarity propagation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
 %%]
 
@@ -227,7 +227,7 @@ ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
   be the result-part of the polarity of the type constructor. For other type expressions in
   the AST, the context is covariant at the root of the type expression.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM Decl
   | Data Class  loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
   | Type        loc         .   (polCtxVar,polTypeVar)
@@ -238,7 +238,7 @@ SEM TyExprs
   | Cons        loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
 %%]
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM Decl
   | Data        constrs     .   knPolCtx            =   @polCtxVar
   | Type        tyExpr      .   knPolCtx            =   @polCtxVar
@@ -268,11 +268,11 @@ SEM TyExprs
   | Cons        hd          .   knPolCtx            =   @polCtxVar
 %%]
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllDecl [ mbKnPolCtx : {Maybe Polarity} | | ]
 %%]
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM Expr
   | Let         decls       .   mbKnPolCtx          =   Nothing
 
@@ -293,11 +293,11 @@ SEM Decl
   information about polarity variables becomes available and is stored in substitutions
   along the way.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR TyExpr [ | | pol : Polarity ]
 %%]
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM TyExpr
   | App     -- known polarity shape for the function part of the type application
                 loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
@@ -313,7 +313,7 @@ SEM TyExpr
   
   Name errors do not need to be reported. They are already reported by the kind inferencer.
 
-%%[17 hs
+%%[(17 hmtyinfer) hs
 polGamLookupOrAdd :: UID -> HsName -> PolGam -> PolGam -> (PolGamInfo,PolGam)
 polGamLookupOrAdd uniq nm polGamLkup polGam
   =  case polGamLookup nm polGamLkup of
@@ -323,7 +323,7 @@ polGamLookupOrAdd uniq nm polGamLkup polGam
        Just pgi   ->  (pgi,polGam)
 %%]
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM TyExpr
   | Con Var     loc         .   (pgi_,nmPolErrs)    =   polGamLookupErr @nm @lhs.polGam
 
@@ -331,7 +331,7 @@ SEM TyExpr
 SEM TyExpr
   | Var VarWild (loc.pgi_,lhs.polGam)               =   polGamLookupOrAdd @lUniq @nm @lhs.polGam @lhs.polGam
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM TyExpr
   | Con Var     loc         .   polFromEnv          =   pgiPol @pgi_
                             .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
@@ -342,7 +342,7 @@ SEM TyExpr
   A type level lambda binds polarity to its argument, propagating it via the environment.
   This is standard.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM TyExpr
   | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
                 tyExpr      .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
@@ -353,7 +353,7 @@ SEM TyExpr
   it. To bypass this analysis, we assume that wildcards have kind star. Wildcards of higher
   kind are not supported by the code below.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM TyExpr
   | Wild VarWild
                 lhs         .   pol                 =   @lhs.knPolCtx
@@ -365,7 +365,7 @@ SEM TyExpr
   The Row, Impls and Pred cases have a zero-order kind. Therefore, the resulting polarity
   is the same as the context it appears in.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM TyExpr
   | Row Impls NoImpls Pred
                 lhs         .   pol                 =   @lhs.knPolCtx
@@ -376,7 +376,7 @@ SEM TyExpr
   negation explicitly. Normally, it is the instantiation of the polarity signature of the
   arrow type constructor that causes the introduction of negations.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM PrExpr
   | Arrow       arg         .   knPolCtx            =   mkPolNegate @lhs.knPolCtx
                 res         .   knPolCtx            =   @lhs.knPolCtx
@@ -392,7 +392,7 @@ SEM PrExpr
   data type declarations, type declarations, and other constructs containing type
   expressions. The polarity variables are chosen uniquely enough to not cause conflicts.
   
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllDecl AllData AllTyExpr AllExpr AllPatExpr AllCase [ | polVarMp : VarMp | ]
 
 SEM AGItf
@@ -405,7 +405,7 @@ SEM AGItf
 
   For a declaration group: gather an environment with signatures for each type constructor.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllDecl [ | patPolGam : PolGam | ]
 
 -- signature
@@ -427,7 +427,7 @@ SEM Decl
 %%]
 
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllTyVar TyExprs [ | | polVarL USE {++} {[]} : {[Polarity]} ]
 ATTR TyExpr PrExpr [ | | polVarL: {[Polarity]} ]
 
@@ -446,7 +446,7 @@ SEM TyExpr
 
   For each data type: gather an environment for its type parameters.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllTyVar TyExprs TyExpr PrExpr [ | | gathTyVarPolGam USE {`gamUnion`} {emptyGam}: PolGam ]
 
 SEM TyVar
@@ -458,7 +458,7 @@ SEM TyExpr
 
   Distribute gathered environments.
 
-%%[17 ag
+%%[(17 hmtyinfer) ag
 ATTR AllDecl AllData AllExpr AllPatExpr AllCase [ polGam : PolGam | | ]
 ATTR AllTyExpr [ polGam : PolGam | | ]
 
@@ -477,7 +477,7 @@ SEM Decl
   Note that no new information will be available for type constructors from the inherited
   environment (a.k.a. the polGam), because data type declarations are not nested.
   
-%%[17 ag
+%%[(17 hmtyinfer) ag
 SEM Expr
   | Let         decls       .   patPolGam           =   gamPushNew @lhs.polGam
                             .   polGam              =   @decls.patPolGam

@@ -4,30 +4,30 @@
 
 Derived from work by Gerrit vd Geest.
 
-%%[9 module {%{EH}Pred.Evidence} import({%{EH}CHR},{%{EH}Pred.CHR})
+%%[(9 hmtyinfer) module {%{EH}Pred.Evidence} import({%{EH}CHR},{%{EH}Pred.CHR})
 %%]
 
-%%[9 import({%{EH}Base.Common})
+%%[(9 hmtyinfer) import({%{EH}Base.Common})
 %%]
 
-%%[9 import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
+%%[(9 hmtyinfer) import(Data.List,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[9 import(EH.Util.Pretty,EH.Util.Utils)
+%%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Representation of evidence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(Evidence(..))
+%%[(9 hmtyinfer) export(Evidence(..))
 data Evidence  p info
   =  Evid_Unresolved !p
   |  Evid_Proof      !p  !info  ![Evidence p info]
   |  Evid_Ambig      !p         ![(info,[Evidence p info])]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance (Show info, Show p) => Show (Evidence p info) where
   show _ = "Evidence"
 
@@ -43,7 +43,7 @@ instance Ord info => Ord (Evidence p info) where
   _                      `compare` Evid_Proof _ _  _      = GT
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance (PP info, PP p) => PP (Evidence p info) where
   pp (Evid_Proof _ info []) = "Ev:" >#< info
   pp (Evid_Proof _ info es) = "Ev:" >#< info >#< ppBracketsCommas' es
@@ -51,7 +51,7 @@ instance (PP info, PP p) => PP (Evidence p info) where
   pp (Evid_Unresolved p   ) = "Ev: unresolved:" >#< p
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
   chrFtv            (Evid_Unresolved  p     )    = chrFtv p
   chrFtv            (Evid_Proof       p _ es)    = Set.unions $ chrFtv p : map chrFtv es
@@ -65,14 +65,14 @@ instance CHRSubstitutable p v s => CHRSubstitutable (Evidence p info) v s where
 %%% Resolution
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(evidUnresolved)
+%%[(9 hmtyinfer) export(evidUnresolved)
 evidUnresolved :: Eq p => Evidence p info -> [p]
 evidUnresolved (Evid_Unresolved p)  = [p]
 evidUnresolved (Evid_Proof _ _ ps)  = nub $ concatMap evidUnresolved ps
 evidUnresolved (Evid_Ambig _  pss)  = nub $ concatMap (concatMap evidUnresolved . snd) pss
 %%]
 
-%%[9 export(evidUpdateUnresolved)
+%%[(9 hmtyinfer) export(evidUpdateUnresolved)
 evidUpdateUnresolved :: Eq p => Evidence p info -> Evidence p info -> Evidence p info
 evidUpdateUnresolved e                      (Evid_Unresolved _)  = e
 evidUpdateUnresolved (Evid_Proof p i qs)    e                    = Evid_Proof p i [evidUpdateUnresolved q e | q <- qs] 
@@ -81,7 +81,7 @@ evidUpdateUnresolved u@(Evid_Unresolved q)  e@(Evid_Proof p _ _)
                                                     | otherwise  = u
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 evidSubstUnresolved :: (p -> Maybe (Evidence p info)) -> Evidence p info -> Evidence p info
 evidSubstUnresolved lkup ev
   = s ev
@@ -98,7 +98,7 @@ evidSubstUnresolved lkup ev
 %%% Mapping: info -> evidence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(InfoToEvidenceMap,evidMpInsert,evidMpUnion,evidMpSubst)
+%%[(9 hmtyinfer) export(InfoToEvidenceMap,evidMpInsert,evidMpUnion,evidMpSubst)
 type InfoToEvidenceMap p info = Map.Map info (Evidence p info)
 
 evidMpInsert :: (Eq p, Ord info) => info -> Evidence p info -> InfoToEvidenceMap p info -> InfoToEvidenceMap p info

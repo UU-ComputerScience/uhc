@@ -8,35 +8,35 @@ Assumptions (to be documented further)
 - The key [Trie.TrieKey Key] used to lookup a constraint in a CHR should be distinguishing enough to be used for the prevention
   of the application of a propagation rule for a 2nd time.
 
-%%[9 module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key})
+%%[(9 hmtyinfer || hmtyast) module {%{EH}CHR.Solve} import({%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}CHR.Key})
 %%]
 
-%%[9 import({%{EH}Base.Common},{%{EH}Base.Trie} as Trie)
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Base.Common},{%{EH}Base.Trie} as Trie)
 %%]
 
-%%[9 import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
+%%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
-%%[9 import(EH.Util.Pretty as Pretty)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 -- For debug
-%%[9 import(EH.Util.Utils)
+%%[(9 hmtyinfer || hmtyast) import(EH.Util.Utils)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CHR store, with fast search
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 type CHRKey = [Trie.TrieKey Key]
 type UsedByKey = (CHRKey,Int)
 %%]
 
-%%[9 export(CHRStore,emptyCHRStore)
+%%[(9 hmtyinfer || hmtyast) export(CHRStore,emptyCHRStore)
 data StoredCHR p i g s
   = StoredCHR
       { storedChr       :: !(CHR (Constraint p i) g s)   	-- the CHR
@@ -59,14 +59,14 @@ emptyCHRStore :: CHRStore pred info guard subst
 emptyCHRStore = mkCHRStore Trie.empty
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 cmbStoredCHRs :: [StoredCHR p i g s] -> [StoredCHR p i g s] -> [StoredCHR p i g s]
 cmbStoredCHRs s1 s2
   = map (\s@(StoredCHR {storedIdent=(k,nr)}) -> s {storedIdent = (k,nr+l)}) s1 ++ s2
   where l = length s2
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Show (StoredCHR p i g s) where
   show _ = "StoredCHR"
 
@@ -85,7 +85,7 @@ instance (PP p, PP i, PP g) => PP (StoredCHR p i g s) where
   pp = ppStoredCHR
 %%]
 
-%%[9 export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
+%%[(9 hmtyinfer || hmtyast) export(chrStoreFromElems,chrStoreUnion,chrStoreUnions,chrStoreSingletonElem)
 chrStoreFromElems :: Keyable p => [CHR (Constraint p i) g s] -> CHRStore p i g s
 chrStoreFromElems chrs
   = mkCHRStore
@@ -112,7 +112,7 @@ chrStoreUnions [s] = s
 chrStoreUnions ss  = foldr1 chrStoreUnion ss
 %%]
 
-%%[9 export(chrStoreToList,chrStoreElems)
+%%[(9 hmtyinfer || hmtyast) export(chrStoreToList,chrStoreElems)
 chrStoreToList :: CHRStore p i g s -> [(CHRKey,[CHR (Constraint p i) g s])]
 chrStoreToList cs
   = [ (k,chrs)
@@ -125,7 +125,7 @@ chrStoreElems :: CHRStore p i g s -> [CHR (Constraint p i) g s]
 chrStoreElems = concatMap snd . chrStoreToList
 %%]
 
-%%[9 export(ppCHRStore,ppCHRStore')
+%%[(9 hmtyinfer || hmtyast) export(ppCHRStore,ppCHRStore')
 ppCHRStore :: (PP p,PP g,PP i) => CHRStore p i g s -> PP_Doc
 ppCHRStore = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":" >#< ppBracketsCommasV v)) . chrStoreToList
 
@@ -137,7 +137,7 @@ ppCHRStore' = ppCurlysCommasBlock . map (\(k,v) -> ppTrieKey k >-< indent 2 (":"
 %%% WorkTime, the time/history counter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 type WorkTime = Int
 
 initWorkTime :: WorkTime
@@ -148,7 +148,7 @@ initWorkTime = 0
 %%% Solver worklist
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 type WorkKey = CHRKey
 -- type WorkUsedInMap = Map.Map CHRKey (Set.Set UsedByKey)
 type WorkUsedInMap = Map.Map (Set.Set CHRKey) (Set.Set UsedByKey)
@@ -172,12 +172,12 @@ data WorkList p i
 emptyWorkList = WorkList Trie.empty Set.empty [] {- Set.empty -} [] Map.empty
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 wlUsedInUnion :: WorkUsedInMap -> WorkUsedInMap -> WorkUsedInMap
 wlUsedInUnion = Map.unionWith Set.union
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Show (Work p i) where
   show _ = "SolveWork"
 
@@ -188,7 +188,7 @@ ppUsedByKey :: UsedByKey -> PP_Doc
 ppUsedByKey (k,i) = ppTrieKey k >|< "/" >|< i
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 mkWorkList :: Keyable p => WorkTime -> [Constraint p i] -> WorkList p i
 mkWorkList wtm = flip (wlInsert wtm) emptyWorkList
 
@@ -220,7 +220,7 @@ wlInsert wtm = wlDeleteByKeyAndInsert wtm []
 %%% Solver trace
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(SolveStep(..),SolveTrace)
+%%[(9 hmtyinfer || hmtyast) export(SolveStep(..),SolveTrace)
 data SolveStep p i g s
   = SolveStep
       { stepChr     	:: CHR (Constraint p i) g s
@@ -238,7 +238,7 @@ data SolveStep p i g s
 type SolveTrace p i g s = [SolveStep p i g s]
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 instance Show (SolveStep p i g s) where
   show _ = "SolveStep"
 
@@ -248,7 +248,7 @@ instance (PP p, PP i, PP g) => PP (SolveStep p i g s) where
   pp (SolveDbg    p               ) = "DBG"  >#< p
 %%]
 
-%%[9 export(ppSolveTrace)
+%%[(9 hmtyinfer || hmtyast) export(ppSolveTrace)
 ppSolveTrace :: (PP s, PP p, PP i, PP g) => SolveTrace p i g s -> PP_Doc
 ppSolveTrace tr = ppBracketsCommasV [ pp st | st <- tr ]
 %%]
@@ -257,7 +257,7 @@ ppSolveTrace tr = ppBracketsCommasV [ pp st | st <- tr ]
 %%% Solver counting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 type SolveCount a b = Map.Map a (Map.Map b Int)
 
 scntUnion :: (Ord a,Ord b) => SolveCount a b -> SolveCount a b -> SolveCount a b
@@ -272,7 +272,7 @@ scntInc a b c1
 %%% Cache for maintaining which WorkKey has already had a match
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 -- type SolveMatchCache p i g s = Map.Map CHRKey [((StoredCHR p i g s,([WorkKey],[Work p i])),s)]
 type SolveMatchCache p i g s = Map.Map WorkKey [((StoredCHR p i g s,([WorkKey],[Work p i])),s)]
 %%]
@@ -281,7 +281,7 @@ type SolveMatchCache p i g s = Map.Map WorkKey [((StoredCHR p i g s,([WorkKey],[
 %%% WorkTime of last search
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 type LastQueryW = Map.Map WorkKey WorkTime
 type LastQuery = Map.Map CHRKey LastQueryW
 
@@ -289,7 +289,7 @@ emptyLastQuery :: LastQuery
 emptyLastQuery = Map.empty
 %%]
 
-%%[9
+%%[(9 hmtyinfer || hmtyast)
 lqSingleton :: CHRKey -> Set.Set WorkKey -> WorkTime -> LastQuery
 lqSingleton ck wks wtm = Map.singleton ck $ Map.fromList [ (w,wtm) | w <- Set.toList wks ]
 
@@ -317,7 +317,7 @@ lqLookup ck wk lq
 %%% Solve state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(SolveState,emptySolveState)
+%%[(9 hmtyinfer || hmtyast) export(SolveState,emptySolveState)
 data SolveState p i g s
   = SolveState
       { stWorkList      :: !(WorkList p i)
@@ -336,12 +336,12 @@ emptySolveState :: SolveState p i g s
 emptySolveState = SolveState emptyWorkList Set.empty [] Map.empty Map.empty initWorkTime emptyLastQuery
 %%]
 
-%%[9 export(solveStateResetDone)
+%%[(9 hmtyinfer || hmtyast) export(solveStateResetDone)
 solveStateResetDone :: SolveState p i g s -> SolveState p i g s
 solveStateResetDone s = s {stDoneCnstrSet = Set.empty}
 %%]
 
-%%[9 export(chrSolveStateDoneConstraints,chrSolveStateTrace)
+%%[(9 hmtyinfer || hmtyast) export(chrSolveStateDoneConstraints,chrSolveStateTrace)
 chrSolveStateDoneConstraints :: SolveState p i g s -> [Constraint p i]
 chrSolveStateDoneConstraints = stDoneCnstrs
 
@@ -353,7 +353,7 @@ chrSolveStateTrace = stTrace
 %%% Solver
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(chrSolve,chrSolve')
+%%[(9 hmtyinfer || hmtyast) export(chrSolve,chrSolve')
 chrSolve
   :: ( CHRMatchable env p s, CHRCheckable env g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
@@ -377,7 +377,7 @@ chrSolve' env chrStore cnstrs
   where finalState = chrSolve'' env chrStore cnstrs emptySolveState
 %%]
 
-%%[9 export(chrSolve'')
+%%[(9 hmtyinfer || hmtyast) export(chrSolve'')
 chrSolve''
   :: ( CHRMatchable env p s, CHRCheckable env g s
      , CHRSubstitutable s tvar s, CHRSubstitutable g tvar s, CHRSubstitutable i tvar s, CHRSubstitutable p tvar s
@@ -560,7 +560,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer || hmtyast)
 instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
   forceEval x@(StoredCHR c i ks id) | forceEval c `seq` forceEval ks `seq` forceEval id `seq` True = x
 %%[[102

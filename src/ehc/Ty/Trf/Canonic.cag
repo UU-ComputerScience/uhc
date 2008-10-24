@@ -20,23 +20,23 @@ Tricky point:
 After type synonym expansion, the replacement probably is structurally different and must be canonicalized as well!
 Hence the Maybe return signalling a replacement requiring recursive canonicalization of inner components.
 
-%%[9 hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsInCommon2})
+%%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsInCommon2})
 %%]
 
-%%[9 hs import(Data.Maybe,qualified Data.Set as Set)
+%%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
-%%[11 hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})
+%%[(11 hmtyinfer) hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})
 %%]
 
-%%[16 hs import({%{EH}Ty.Trf.MergePreds})
+%%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
 %%]
 
-%%[9.WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
+%%[(9 hmtyinfer).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
 
-%%[99
+%%[(99 hmtyinfer)
 PRAGMA strictcase
 %%]
 
@@ -44,7 +44,7 @@ PRAGMA strictcase
 %%% Haskell importable interface to making canonical type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs export(TyCanonicOpts(..),emptyTyCanonicOpts)
+%%[(9 hmtyinfer) hs export(TyCanonicOpts(..),emptyTyCanonicOpts)
 data TyCanonicOpts
   = TyCanonicOpts
 %%[[11
@@ -61,19 +61,19 @@ emptyTyCanonicOpts
 %%]]
 %%]
 
-%%[11 hs
+%%[(11 hmtyinfer) hs
 tcoTyBetaRedFull :: TyCanonicOpts -> Ty -> Ty
 tcoTyBetaRedFull tco ty = maybe ty id $ tcoTyBetaRedFullMb tco ty
 %%]
 
-%%[9.tyCanonicPrime hs export(tyCanonic')
+%%[(9 hmtyinfer).tyCanonicPrime hs export(tyCanonic')
 tyCanonic' :: TyCanonicOpts -> Ty -> Ty
 tyCanonic' opts ty
   =  let  t =  wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) Inh_TyAGItf
      in   repl_Syn_TyAGItf t
 %%]
 
-%%[11 -9.tyCanonicPrime hs export(tyCanonic')
+%%[(11 hmtyinfer) -9.tyCanonicPrime hs export(tyCanonic')
 tyCanonicMb' :: TyCanonicOpts -> Ty -> Maybe Ty
 tyCanonicMb' opts ty
   =  let  t =  wrap_TyAGItf
@@ -88,14 +88,14 @@ tyCanonic' :: TyCanonicOpts -> Ty -> Ty
 tyCanonic' opts ty = maybe ty id $ tyCanonicMb' opts ty
 %%]
 
-%%[9.predCanonicPrime hs export(predCanonic')
+%%[(9 hmtyinfer).predCanonicPrime hs export(predCanonic')
 predCanonic' :: TyCanonicOpts -> Pred -> Pred
 predCanonic' opts pr
   = case tyCanonic' opts $ Ty_Pred pr of
       Ty_Pred pr' -> pr'
 %%]
 
-%%[11 -9.predCanonicPrime hs export(predCanonic')
+%%[(11 hmtyinfer) -9.predCanonicPrime hs export(predCanonic')
 predCanonic' :: TyCanonicOpts -> Pred -> Pred
 %%[[16
 predCanonic' opts (Pred_Eq t1 t2)
@@ -110,7 +110,7 @@ predCanonic' opts pr
       _                  -> pr
 %%]
 
-%%[9 hs export(tyCanonic)
+%%[(9 hmtyinfer) hs export(tyCanonic)
 tyCanonic :: FIIn -> Ty -> Ty
 tyCanonic fi
   = tyCanonic' opts
@@ -120,7 +120,7 @@ tyCanonic fi
 %%]]
 %%]
 
-%%[9 hs export(predCanonic)
+%%[(9 hmtyinfer) hs export(predCanonic)
 predCanonic :: FIIn -> Pred -> Pred
 predCanonic fi
   = predCanonic' opts
@@ -134,7 +134,7 @@ predCanonic fi
 %%% Context info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[(11 hmtyinfer)
 ATTR TyAGItf AllTy [ opts: TyCanonicOpts | | ]
 %%]
 
@@ -142,7 +142,7 @@ ATTR TyAGItf AllTy [ opts: TyCanonicOpts | | ]
 %%% Possible preds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 hs
+%%[(9 hmtyinfer) hs
 type MbPredL = Maybe [Pred]
 
 mbPredLCmb :: MbPredL -> MbPredL -> MbPredL
@@ -150,7 +150,7 @@ mbPredLCmb Nothing Nothing = Nothing
 mbPredLCmb m1      m2      = Just $ concat $ maybeToList m1 ++ maybeToList m2
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR Ty Impls Pred [ | | mbPredL USE {`mbPredLCmb`} {Nothing}: MbPredL ]
 
 SEM Impls
@@ -164,7 +164,7 @@ SEM Pred
 %%% Has replaced
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[(11 hmtyinfer)
 ATTR TyAGItf AllTyAndFlds [ | | isReplaced USE {||} {False}: Bool ]
 
 SEM Ty
@@ -180,7 +180,7 @@ SEM Ty
 %%% Predicate removal replacement, preds are not supposed to be in the type. Has to be looked into later!!!!!!!!!!!!!!
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Ty
   | App             loc     .   mbReplNoImplNil =   case @func.mbPredL of
                                                       Nothing | @func.isPred
@@ -192,7 +192,7 @@ SEM Ty
 %%% Labeled extension fields reordering replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[10
+%%[(10 hmtyinfer)
 SEM Ty
   | Ext             loc     .   mbRepl          =   if @isSpineRoot
                                                     then let (row,exts) = tyRowExts @repl
@@ -206,7 +206,7 @@ SEM Ty
 %%% Type synonym replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[11
+%%[(11 hmtyinfer)
 SEM Ty
   | App             loc     .   mbRepl          =   if @isSpineRoot
                                                     then tcoTyBetaRedFullMb @lhs.opts @replNoImplNil
@@ -218,23 +218,23 @@ SEM Ty
 %%% Replacement
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[(9 hmtyinfer)
 ATTR AllTyAndFlds [ | | repl: SELF ]
 ATTR TyAGItf  [ | | repl: Ty ]
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 SEM Ty
   | App             loc     .   replNoImplNil   =   maybe @repl id @mbReplNoImplNil
                     lhs     .   repl            =   @replNoImplNil
 %%]
 
-%%[10
+%%[(10 hmtyinfer)
 SEM Ty
   | Ext             lhs     .   repl            =   maybe @repl id @mbRepl
 %%]
 
-%%[11
+%%[(11 hmtyinfer)
 SEM Ty
   | App             lhs     .   repl            :=  maybe @replNoImplNil id @mbRepl
   | Con             lhs     .   repl            =   maybe @repl id @mbRepl

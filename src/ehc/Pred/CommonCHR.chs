@@ -6,32 +6,32 @@ Derived from work by Gerrit vd Geest.
 
 This file exists to avoid module circularities.
 
-%%[9 module {%{EH}Pred.CommonCHR} import({%{EH}CHR},{%{EH}CHR.Constraint}) export(module {%{EH}CHR},module {%{EH}CHR.Constraint})
+%%[(9 hmtyinfer) module {%{EH}Pred.CommonCHR} import({%{EH}CHR},{%{EH}CHR.Constraint}) export(module {%{EH}CHR},module {%{EH}CHR.Constraint})
 %%]
 
-%%[9 import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(9 hmtyinfer) import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[9 import(EH.Util.Pretty)
+%%[(9 hmtyinfer) import(EH.Util.Pretty)
 %%]
 
-%%[9 import({%{EH}Base.Common})
+%%[(9 hmtyinfer) import({%{EH}Base.Common})
 %%]
 
-%%[9 import({%{EH}Ty})
+%%[(9 hmtyinfer) import({%{EH}Ty})
 %%]
 
-%%[9 import({%{EH}Base.CfgPP})
+%%[(9 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Reduction info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(RedHowAnnotation(..))
+%%[(9 hmtyinfer) export(RedHowAnnotation(..))
 data RedHowAnnotation
   =  RedHow_ByInstance    !HsName  !Pred  !PredScope		-- inst name, for pred, in scope
   |  RedHow_BySuperClass  !HsName  !Int   !CTag				-- field name, offset, tag info of dict
@@ -56,18 +56,18 @@ data RedHowAnnotation
   deriving (Eq, Ord)
 %%]
 
-%%[99 export(rhaMbId)
+%%[(99 hmtyinfer) export(rhaMbId)
 rhaMbId :: RedHowAnnotation -> Maybe UID
 rhaMbId (RedHow_ProveObl i _) = Just i
 rhaMbId _                     = Nothing
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance Show RedHowAnnotation where
   show = showPP . pp
 %%]
 
-%%[9
+%%[(9 hmtyinfer)
 instance PP RedHowAnnotation where
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< ppParensCommas [pp s, pp sc]
   pp (RedHow_BySuperClass s _ _ )  =    "super"  >#< s
@@ -92,7 +92,7 @@ instance PP RedHowAnnotation where
 %%]
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< s >|< sc >#< "::" >#< p
 
-%%[20
+%%[(20 hmtyinfer)
 instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_ByInstance   s p sc)  =    "redhowinst"   >#< ppCurlysCommasBlock [ppForHI s, ppForHI p, ppForHI sc]
   ppForHI (RedHow_BySuperClass s o tg)  =    "redhowsuper"  >#< ppCurlysCommasBlock [ppForHI s, pp o, ppForHI tg]
@@ -107,7 +107,7 @@ instance PPForHI RedHowAnnotation where
 %%% Constraint construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9.mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
+%%[(9 hmtyinfer).mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
 mkProveConstraint :: Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
 mkProveConstraint pr i sc =  (Prove (mkCHRPredOcc pr sc),RedHow_ProveObl i sc)
 
@@ -121,7 +121,7 @@ mkAssumeConstraint :: Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowA
 mkAssumeConstraint pr i sc =  mkAssumeConstraint'' pr (VarUIDHs_UID i) sc
 %%]
 
-%%[99 -9.mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
+%%[(99 hmtyinfer) -9.mkConstraintFuncs export(mkProveConstraint,mkAssumeConstraint,mkAssumeConstraint')
 mkProveConstraint :: Range -> Pred -> UID -> PredScope -> (Constraint CHRPredOcc RedHowAnnotation,RedHowAnnotation)
 mkProveConstraint r pr i sc =  (Prove (mkCHRPredOccRng r pr sc),RedHow_ProveObl i sc)
 
@@ -139,11 +139,11 @@ mkAssumeConstraint r pr i sc =  mkAssumeConstraint'' r pr (VarUIDHs_UID i) sc
 %%% Constraint to info map for CHRPredOcc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 export(CHRPredOccCnstrMp)
+%%[(9 hmtyinfer) export(CHRPredOccCnstrMp)
 type CHRPredOccCnstrMp = ConstraintToInfoMap CHRPredOcc RedHowAnnotation
 %%]
 
-%%[9 export(gathPredLToProveCnstrMp,gathPredLToAssumeCnstrMp)
+%%[(9 hmtyinfer) export(gathPredLToProveCnstrMp,gathPredLToAssumeCnstrMp)
 gathPredLToProveCnstrMp :: [PredOcc] -> CHRPredOccCnstrMp
 gathPredLToProveCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkProveConstraint (poPr po) (poId po) (poScope po) | po <- l ]
 
@@ -155,7 +155,7 @@ gathPredLToAssumeCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkAssumeCons
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[(99 hmtyinfer)
 instance ForceEval VarUIDHsName where
   forceEval x@(VarUIDHs_Name i n) | forceEval i `seq` forceEval n `seq` True = x
   forceEval x@(VarUIDHs_UID  i  ) | forceEval i `seq` True = x

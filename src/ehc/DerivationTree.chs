@@ -7,23 +7,23 @@
 %%% Utilities for pretty printing derivation tree
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs module {%{EH}DerivationTree} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty.FitsInCommon})
+%%[(99 hmtyinfer) hs module {%{EH}DerivationTree} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty.FitsInCommon})
 %%]
 
-%%[99 hs import({%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}VarMp},{%{EH}Base.LaTeX},{%{EH}Substitutable},{%{EH}Gam})
+%%[(99 hmtyinfer) hs import({%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}VarMp},{%{EH}Base.LaTeX},{%{EH}Substitutable},{%{EH}Gam})
 %%]
 
-%%[99 hs import(EH.Util.Pretty,{%{EH}Ty.Pretty})
+%%[(99 hmtyinfer) hs import(EH.Util.Pretty,{%{EH}Ty.Pretty})
 %%]
 
-%%[99 hs import(qualified Data.Map as Map)
+%%[(99 hmtyinfer) hs import(qualified Data.Map as Map)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Judgements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtJdg,dtJdgExpr,dtJdgExpr',dtJdgRecExpr)
+%%[(99 hmtyinfer) hs export(dtJdg,dtJdgExpr,dtJdgExpr',dtJdgRecExpr)
 dtJdg :: String -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
 dtJdg nm ctx e concl = l2tText (ctx >#< "^^ Sub(:-)(" >|< nm >|< ") ^^" >#< e >#< ":" >#< concl)
 
@@ -37,7 +37,7 @@ dtJdgExpr    = dtJdgExpr' "e"
 dtJdgRecExpr = dtJdgExpr' "re"
 %%]
 
-%%[99 hs export(dtJdgDecl,dtJdgGam,dtJdgMatch,dtJdgStack)
+%%[(99 hmtyinfer) hs export(dtJdgDecl,dtJdgGam,dtJdgMatch,dtJdgStack)
 dtJdgDecl :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
 dtJdgDecl gam e ty = dtJdg "d" gam e ty
 
@@ -63,7 +63,7 @@ dtJdgStack l
 %%% Rule
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtRule)
+%%[(99 hmtyinfer) hs export(dtRule)
 dtRule :: Bool -> String -> String -> [PP_Doc] -> PP_Doc -> PP_Doc
 dtRule isTop fmt nm pre post = ltxDtOver fmt isTop pre nm post
 %%]
@@ -72,7 +72,7 @@ dtRule isTop fmt nm pre post = ltxDtOver fmt isTop pre nm post
 %%% Name used in DT's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(DtNm,dtNmNext,dtMkNm)
+%%[(99 hmtyinfer) hs export(DtNm,dtNmNext,dtMkNm)
 type DtNm = String
 
 dtNmNext :: (Int -> DtNm) -> Int -> (Int,DtNm)
@@ -89,7 +89,7 @@ dtMkNm n i = n ++ "_" ++ show i
 %%% VarMp DtNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtVmNmBase,dtMkVmNm,dtVmNmNext)
+%%[(99 hmtyinfer) hs export(dtVmNmBase,dtMkVmNm,dtVmNmNext)
 dtVmNmBase :: DtNm
 dtVmNmBase = "VarMp"
 
@@ -104,7 +104,7 @@ dtVmNmNext = dtNmNext dtMkVmNm
 %%% Gam DtNm
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtGamNmBase,dtMkGamNm,dtGamNmNext)
+%%[(99 hmtyinfer) hs export(dtGamNmBase,dtMkGamNm,dtGamNmNext)
 dtGamNmBase :: DtNm
 dtGamNmBase = "Gamma"
 
@@ -119,7 +119,7 @@ dtGamNmNext = dtNmNext dtMkGamNm
 %%% Gathered Gam's, printed under a DT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(DtGamL,dtGamL)
+%%[(99 hmtyinfer) hs export(DtGamL,dtGamL)
 type DtGamL
   = AssocL DtNm
            (PP_Doc      -- the gam increment
@@ -141,7 +141,7 @@ dtGamL g
 %%% Gathered VarMp's, printed under a DT
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(DtVarMpL,dtVarMpL)
+%%[(99 hmtyinfer) hs export(DtVarMpL,dtVarMpL)
 type DtVarMpL
   = AssocL DtNm
            PP_Doc       -- the varmp
@@ -161,7 +161,7 @@ dtVarMpL vm
 %%% Elements used in judgements/rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtEltTy,dtEltTy')
+%%[(99 hmtyinfer) hs export(dtEltTy,dtEltTy')
 dtEltTy' :: (Substitutable x TyVarId VarMp) => (x -> TvCatMp) -> (x -> res) -> VarMp -> VarMp -> x -> (res,VarMp)
 dtEltTy' ftvmp mkres m dm t
   = (mkres (dm' |=> t'), dm')
@@ -172,7 +172,7 @@ dtEltTy :: VarMp -> VarMp -> Ty -> (PP_Doc,VarMp)
 dtEltTy = dtEltTy' tyFtvMp ppTyDt
 %%]
 
-%%[99 hs export(dtEltGam,dtEltFoVarMp,dtEltVarMp)
+%%[(99 hmtyinfer) hs export(dtEltGam,dtEltFoVarMp,dtEltVarMp)
 dtEltGam :: VarMp -> VarMp -> ValGam -> (PP_Doc,VarMp)
 dtEltGam m dm g
   = (ppAssocL' ppBracketsCommas' ":->" $ gamToAssocL g',dm')
@@ -195,7 +195,7 @@ dtEltVarMp m dm vm
 %%% Choose between final/infer variant
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtChooseDT)
+%%[(99 hmtyinfer) hs export(dtChooseDT)
 dtChooseDT :: EHCOpts -> x -> x -> x
 dtChooseDT opts finalVM inferVM = if ehcOptEmitDerivTree opts == DerivTreeWay_Final then finalVM else inferVM
 %%]
@@ -204,7 +204,7 @@ dtChooseDT opts finalVM inferVM = if ehcOptEmitDerivTree opts == DerivTreeWay_Fi
 %%% Extend mapping for pretty printing ty vars (and other vars)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs export(dtVmExtend)
+%%[(99 hmtyinfer) hs export(dtVmExtend)
 dtVmExtend :: TvCatMp -> VarMp -> VarMp
 dtVmExtend fvm dm
   = dmn |=> dm
