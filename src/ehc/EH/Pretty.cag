@@ -76,8 +76,8 @@ SEM Expr
 %%]]
                 loc     .   pp      =   if @lhs.isTopLam
                                         then let sep = case @lamArgPPL of
-                                        				 [_] -> (>#<)
-                                        				 _   -> (>###<)
+                                                         [_] -> (>#<)
+                                                         _   -> (>###<)
                                              in  ("\\" >|< ppSpaces @lamArgPPL) `sep` ("->" >#< @body.lamBodyPP)
                                         else "\\" >|< @argPP >#< "->" >#< @body.pp
 %%]

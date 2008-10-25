@@ -8,7 +8,10 @@ hence must be in a separate module.
 %%[8 module {%{EH}Base.Builtin2} import({%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Base.Opts})
 %%]
 
-%%[8 import({%{EH}Base.BasicAnnot},{%{EH}ConfigDefines})
+%%[8 import({%{EH}ConfigDefines})
+%%]
+
+%%[(8 codegen grin) import({%{EH}Base.BasicAnnot})
 %%]
 
 %%[8 import(qualified Data.Map as Map)
@@ -20,7 +23,7 @@ hence must be in a separate module.
 
 This should be in Builtin, but because of cyclic dependency with Opts it cannot.
 
-%%[8 hs export(builtinMayLiveUnboxedTyMp,builtinMayLiveUnboxedTyNmL)
+%%[(8 codegen grin) hs export(builtinMayLiveUnboxedTyMp,builtinMayLiveUnboxedTyNmL)
 builtinMayLiveUnboxedTyMp :: Map.Map HsName BasicAnnot
 builtinMayLiveUnboxedTyMp
   = Map.fromList
@@ -33,7 +36,7 @@ builtinMayLiveUnboxedTyNmL
   = Map.keys builtinMayLiveUnboxedTyMp
 %%]
 
-%%[8 hs export(builtinKnownBoxedTyMp,builtinKnownBoxedTyNmL)
+%%[(8 codegen grin) hs export(builtinKnownBoxedTyMp,builtinKnownBoxedTyNmL)
 builtinKnownBoxedTyMp :: EHCOpts -> Map.Map HsName BasicAnnot
 builtinKnownBoxedTyMp opts
   = builtinMayLiveUnboxedTyMp
@@ -58,12 +61,12 @@ builtinKnownBoxedTyNmL opts
 
 This will (have to) change when extensible records are properly supported in the backend.
 
-%%[8 hs export(builtinRecNm)
+%%[(8 codegen) hs export(builtinRecNm)
 builtinRecNm :: Int -> HsName
 builtinRecNm = hsnProd
 %%]
 
-%%[8 hs export(builtinKnownRecTyNmL)
+%%[(8 codegen) hs export(builtinKnownRecTyNmL)
 builtinKnownRecTyNmL :: [HsName]
 builtinKnownRecTyNmL
   = map builtinRecNm (0:[2..10])

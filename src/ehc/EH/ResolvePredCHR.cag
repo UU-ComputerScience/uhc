@@ -83,7 +83,7 @@ SEM Decl
                                                             )
                lhs          .   gathCnstrMp         =   Map.empty
 %%[[9
-               loc          .	toProveGathCnstrMp	=	@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
+               loc          .   toProveGathCnstrMp  =   @decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
 %%][(95 codegen)
                loc          .   (toProveGathCnstrMp,derivAltsPrOcc,derivExtraPrOcc,derivDCL)
                                                     =   case @instVariant of
@@ -108,6 +108,11 @@ SEM Decl
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy emptyVarMp dataTy @derivHdDataTy
                                                                   derivDCL = panicJust ("Decl.Instance.Deriving.derivMp: " ++ show @instClsNm) $ Map.lookup @instClsNm @derivMp
                                                           _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[],[],emptyDerivCls)
+                loc         .   lUniq6              :   UNIQUEREF gUniq
+                loc         .   lUniq_95_altsPrOcc  :   UNIQUEREF gUniq
+                loc         .   lUniq_95_extraPrOcc :   UNIQUEREF gUniq
+                loc         .   lUniq_95_fitsIn_dataTy
+                                                    :   UNIQUEREF gUniq
 %%]]
 %%]
 
@@ -168,7 +173,7 @@ debugInfo chrSimplifyResult
 
 %%[(9 hmtyinfer)
 SEM AGItf
-  | AGItf       loc         .   chrProveFIIn		=	@chrFIIn {fiVarMp = @expr.tyVarMp}
+  | AGItf       loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @expr.tyVarMp}
                             .   toProveCnstrMp      =   @expr.tyVarMp `chrAppSubst` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
                             .   (_,chrSolveMainRemCnstrMp,_,chrSolveMainErrs,chrSimplifyResult,_
@@ -179,12 +184,13 @@ SEM AGItf
                                                     =   simplify (@chrProveFIIn {fiUniq = @lUniq_9_simplify}) @chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveHereCnstrMp emptySimplifyResult
                             .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace)
                                                     =   debugInfo @chrSimplifyResult
-                            .   cannotProveCnstrMp	=	@chrSolveMainRemCnstrMp
+                            .   cannotProveCnstrMp  =   @chrSolveMainRemCnstrMp
+                loc         .   lUniq_9_simplify    :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   chrProveFIIn		=	@chrFIIn {fiVarMp = @decls.tyVarMp}
+  | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @decls.tyVarMp}
                             .   toProveCnstrMp      =   @decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
@@ -199,7 +205,7 @@ SEM Expr
 
                             .   (toAssumeNeverCnstrMp,_)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveFailure (Set.fromList @gTyTvL) $ cnstrPred k) @chrSolve1RemCnstrMp
-                            .   cannotProveCnstrMp	=	cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
+                            .   cannotProveCnstrMp  =   cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
                             .   (_,chrSolve2RemCnstrMp,_,chrSolve2Errs,chrSimplifyResult2,_
 %%[[(9 codegen)
@@ -210,11 +216,13 @@ SEM Expr
                                                         $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
                             .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace)
                                                     =   debugInfo @chrSimplifyResult2
+                loc         .   lUniq4              :   UNIQUEREF gUniq
+                loc         .   lUniq5              :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
 SEM Decl
-  | Instance    loc         .   chrProveFIIn		=	@chrFIIn {fiVarMp = @decls.tyVarMp}
+  | Instance    loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @decls.tyVarMp}
                             .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp, @toProveGathCnstrMp]
                             .   (_,chrSolveDeclsRemCnstrMp,cannotResDeclsCnstrMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_
 %%[[(9 codegen)
@@ -237,7 +245,9 @@ SEM Decl
 
                             .   toAssumeNeverCnstrMp
                                                     =   cnstrMpUnions [@chrSolveDeclsRemCnstrMp,@chrSolveSuperRemCnstrMp]
-                            .   cannotProveCnstrMp	=	cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotResDeclsCnstrMp,@cannotResSuperCnstrMp]
+                            .   cannotProveCnstrMp  =   cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotResDeclsCnstrMp,@cannotResSuperCnstrMp]
+                loc         .   lUniq5              :   UNIQUEREF gUniq
+                loc         .   lUniq7              :   UNIQUEREF gUniq
 %%]
                             .   (toAssumeNeverCnstrMp,_)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveFailure Set.empty $ cnstrPred k)
@@ -279,6 +289,7 @@ SEM Expr
                                                             )
                             .   prvArgCSubst        =   let mk a = (mkCExprHole @lhs.opts a,(CMeta_Dict Nothing))
                                                         in  uidImplsLToCSubst [ (occ, ([mkAppCoeWith $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
+                loc         .   lUniq6              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,25 +328,25 @@ mkScopeBindings alsoOuter sc mp
 %%[(9 codegen hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   (chrScopeMainBindL,chrScopeBindMp)
-  													=   mkScopeBindings True @predScope @chrSolveMainScopeBindMp
+                                                    =   mkScopeBindings True @predScope @chrSolveMainScopeBindMp
 
 SEM Decl
   | Instance    loc         .   (chrScopeSuperBindL,_)
-  													=   mkScopeBindings True @predScope @chrSolveSuperScopeBindMp
+                                                    =   mkScopeBindings True @predScope @chrSolveSuperScopeBindMp
                             .   (chrScopeDeclsBindL,_)
-  													=   mkScopeBindings True @predScope @chrSolveDeclsScopeBindMp
+                                                    =   mkScopeBindings True @predScope @chrSolveDeclsScopeBindMp
   | Val         loc         .   (chrScopeValBindL,chrScopeBindMp)
-  													=   mkScopeBindings False @predScope @lhs.chrScopeBindMp
+                                                    =   mkScopeBindings False @predScope @lhs.chrScopeBindMp
 
 SEM Expr
   | Let         loc         .   (chrScopeBindL,chrScopeBindMp)
-  													=   mkScopeBindings True @predScope @chrLetScopeBindMp
+                                                    =   mkScopeBindings True @predScope @chrLetScopeBindMp
   | Lam AppTop
 %%[[12
     LamImpl
 %%]]
                 loc         .   (chrScopeBindL,chrScopeBindMp)
-  													=   mkScopeBindings False @predScope @lhs.chrScopeBindMp
+                                                    =   mkScopeBindings False @predScope @lhs.chrScopeBindMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

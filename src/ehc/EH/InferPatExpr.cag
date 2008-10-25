@@ -47,20 +47,21 @@ ATTR PatExpr [ | | patFunTy USE {`const`} {Ty_Any}: Ty ]
 -- generated from ruler rules into EHRulerRules, was 2.patFunTy
 %%[(5 hmtyinfer).patFunTy
 SEM PatExpr
-  | Con         loc         .  patFunTy             =   let  prTy = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
+  | Con         loc         .   patFunTy            =   let  prTy = mkTyFreshProdFrom @lUniq (hsnProdArity @nm)
                                                         in   ([prTy] `mkArrow` prTy)
-  | App         lhs         .  patFunTy             =   @func.patFunTy
-  | AppTop      loc         .  patFunTy             =   @patExpr.patFunTy
+  | App         lhs         .   patFunTy            =   @func.patFunTy
+  | AppTop      loc         .   patFunTy            =   @patExpr.patFunTy
 %%]
 
 %%[(5 hmtyinfer).patFunTy
 SEM PatExpr
-  | Con         loc         .  (ty_g_,nmErrs)       =   valGamLookupTy (hsnUn @nm) @lhs.valGam
-                            .  (tvarv1_,tvarv2_)    =   let  [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
-                            .  knTyShape            =   [@loc.tvarv1_] `mkArrow` @loc.tvarv2_
-                            .  fo_fitP_             =   fitsIn instFIOpts @fe @lUniq2 emptyVarMp @ty_g_ @loc.knTyShape
-                            .  tyVarMp_p_           =   foVarMp @fo_fitP_
-                            .  patFunTy             :=  @tyVarMp_p_ |=> foTy @fo_fitP_
+  | Con         loc         .   (ty_g_,nmErrs)      =   valGamLookupTy (hsnUn @nm) @lhs.valGam
+                            .   (tvarv1_,tvarv2_)   =   let  [a,r] = mkNewTyVarL 2 @lUniq in (a,r)
+                            .   knTyShape           =   [@loc.tvarv1_] `mkArrow` @loc.tvarv2_
+                            .   fo_fitP_            =   fitsIn instFIOpts @fe @lUniq2 emptyVarMp @ty_g_ @loc.knTyShape
+                            .   tyVarMp_p_          =   foVarMp @fo_fitP_
+                            .   patFunTy            :=  @tyVarMp_p_ |=> foTy @fo_fitP_
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
@@ -142,18 +143,18 @@ SEM Expr
 %%[(8 noHmTyRuler hmtyinfer)
 SEM PatExpr
 %%[[8
-  | SConst      loc         .	constTy             =   tyString
+  | SConst      loc         .   constTy             =   tyString
 %%][11
-  | SConst      loc         .	constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
+  | SConst      loc         .   constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
 %%]]
 %%]
 
 %%[(8 noHmTyRuler hmtyinfer)
 SEM PatExpr
-  | SConst      loc         .	fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @lhs.knTy @constTy
-                lhs         .  	patFunTy            =   Ty_Any
-                loc         .  	ty                  =   @constTy
-                lhs         .  	tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+  | SConst      loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @lhs.knTy @constTy
+                lhs         .   patFunTy            =   Ty_Any
+                loc         .   ty                  =   @constTy
+                lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,6 +193,8 @@ SEM PatExpr
                             .   ty_kn_              =   tyEnsureNonAny @lUniq @lhs.knTy
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @lhs.tyVarMp @ty_kn_ @ty_g_
                             .   ty                  :=  tyInst1Exists @lUniq2 (foTy @fo_)
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq_4_fo          :   UNIQUEREF gUniq
   | Var         lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
   | VarAs       patExpr     .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
 %%]
@@ -212,6 +215,7 @@ SEM PatExpr
 SEM PatExpr
   | TypeAs      loc         .   ty_q_               =   @tyExpr.ty
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq_4_fo @lhs.tyVarMp @lhs.knTy @ty_q_
+                loc         .   lUniq_4_fo          :   UNIQUEREF gUniq
                 patExpr     .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                             .   knTy                =   foTy @fo_
 %%]
@@ -240,6 +244,7 @@ SEM PatExpr
                             .   ty_r_               =   foTy @fo_fitR_
                             .   ty                  :=  @ty_r_
                 lhs         .   tyVarMp             =   foVarMp @fo_fitR_ |=> @tyVarMp_p_ |=> @lhs.tyVarMp
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%[(97 hmtyinfer)
@@ -252,6 +257,7 @@ SEM PatExpr
                                                             ([@knExprTy,@lhs.knTy] `mkArrow` (semCon $ ehbnDataBool $ ehcOptBuiltinNames @lhs.opts))
                 expr        .   knTy                =   @knExprTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq_97_fitsIn_ty  :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -267,12 +273,16 @@ SEM DataFieldPatExpr
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 patExpr     .   knTy                =   @knFldTy
                 loc         .   ty                  =   @dataFieldPatExpr.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
   | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .   tyvar               =   mkTyVar @lUniq
                             .   knTyShape           =   [@lhs.knTy] `mkArrow` @loc.tyvar
                             .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @gTy @loc.knTyShape
                             .   ty                  =   @lhs.knTy
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 GADT: deconstructor signature will be a function with a product (with possibly equality constraints) as value.
@@ -292,6 +302,7 @@ SEM RecPatExpr
   | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp @lhs.knTy tyRecEmpty
                             .   ty                  =   foTy @fo_
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
   | Ext         loc         .   (extTy,recTy,rowTy,patTy)
                                                     =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                              ext = hsnRec `mkConApp` [r]
@@ -301,5 +312,7 @@ SEM RecPatExpr
                 recPatExpr  .   knTy                =   @extTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 patExpr     .   knTy                =   @patTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 

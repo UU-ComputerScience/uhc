@@ -546,6 +546,7 @@ SEM Expression
                                               (Nothing,Just r ) -> rngLift @range EH.Expr_Lam np (mkRngParApp @range [@operator.eh,ne,r])
                                               (Just l ,Nothing) -> mkRngParApp @range [@operator.eh,l]
                                               (Nothing,Nothing) -> @operator.eh
+		loc			.	lUniq_1_nm	:	UNIQUEREF gUniq
     | Lambda
         loc         .   eh          =   foldr (rngLift @range EH.Expr_Lam) @expression.eh @patterns.eh
     | Let
@@ -1033,6 +1034,7 @@ ATTR
 SEM Expression
     | Case
         loc         .   caseId      =   @lUniq
+		loc			.	lUniq		:	UNIQUEREF gUniq
 
 SEM FunctionBinding
     | FunctionBinding

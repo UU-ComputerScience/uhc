@@ -13,11 +13,11 @@
 
 %%[(98 hmtyinfer)
 SEM AGItf
-  | AGItf       loc         .   (foMain,nmErrs)
-                                            =   if @lhs.isTopMod
-                                                then let (t,e) = valGamLookupTy hsnMain @expr.gathValGam
-                                                     in  (fitsIn strongFIOpts @fe @lUniq_98_fitsIn_ty @expr.tyVarMp t (tyTopLevelMain @lhs.opts), e)
-                                                else (emptyFO,[])
+  | AGItf       loc         .   (foMain,nmErrs)     =   if @lhs.isTopMod
+                                                        then let (t,e) = valGamLookupTy hsnMain @expr.gathValGam
+                                                             in  (fitsIn strongFIOpts @fe @lUniq_98_fitsIn_ty @expr.tyVarMp t (tyTopLevelMain @lhs.opts), e)
+                                                        else (emptyFO,[])
+                loc         .   lUniq_98_fitsIn_ty  :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +30,7 @@ ATTR AllExpr [ knTy: Ty | | ]
 
 %%[(1 hmtyinfer).knTy.AGItf
 SEM AGItf
-  | AGItf       expr        .  knTy         =  Ty_Any
+  | AGItf       expr        .  knTy                 =  Ty_Any
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,6 +72,7 @@ SEM Expr
 SEM Expr
   | IConst CConst
                 loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Const
@@ -103,9 +104,10 @@ SEM Expr
 %%[[97
     IIConst
 %%]]
-                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @constTy @lhs.knTy
+                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @constTy @lhs.knTy
                             .   ty                  =   foTy @fo_
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,6 +136,7 @@ SEM Expr
 %%[(9090 hmtyinfer).Var
 SEM Expr
   | Var         loc         .   ty_                 :=  @lhs.tyVarMp |=> tyInst @lUniq @gTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Var
@@ -141,6 +144,7 @@ SEM Expr
 SEM Expr
   | Var         loc         .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
                             .   ty_                 :=  @lhs.tyVarMp |=> @gTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Var
@@ -169,6 +173,7 @@ SEM Expr
                                                                                 `mkArrow` (foTy foKnRes)}
                             .   ty                  :=  foTy @fo_
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Con
@@ -177,6 +182,7 @@ SEM Expr
   | Con         loc         .   (gTy,nmErrs)        :=  valGamLookupTy @nm @lhs.valGam
                             .   ty_                 :=  @lhs.tyVarMp |=> @gTy
                             .   fo_                 :=  fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @ty_ (@lhs.tyVarMp |=> @lhs.knTy)
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4_2.Con
@@ -193,9 +199,10 @@ SEM Expr
 %%[(8 hmtyinfer)
 SEM Expr
   | Var Con     (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
-                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @uniq1 @lhs.tyVarMp @ty_g_ @lhs.knTy
+                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_g_ @lhs.knTy
                             .   ty                  =   foTy @fo_
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,6 +227,7 @@ SEM Expr
                 loc         .   argTy               :=  mkNewTyVar @lUniq
                             .   ty                  :=  @lhs.knTy
                 arg         .   knTy                :=  @argTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
                             .   ty                  :=  @arg.tyVarMp |=> @ty_
 
@@ -232,8 +240,8 @@ SEM Expr
                                                         in   ([im,at] `mkArrow` @lhs.knTy,im,at)
                 loc         .   ty_                 :=  @lhs.knTy
                 loc         .   (prOccL,implsTl)    =   implsPredsTailWithLkup (varmpImplsLookupCyc2 @arg.tyVarMp) @lhs.predScope $ tyImplsWithLkup (varmpTyLookupCyc2 @arg.tyVarMp) @imTy
-                  			.	tyVarMpApp			=	@prvOccTlVarMp |=> @arg.tyVarMp
-                lhs			.	tyVarMp				=	@tyVarMpApp
+                            .   tyVarMpApp          =   @prvOccTlVarMp |=> @arg.tyVarMp
+                lhs         .   tyVarMp             =   @tyVarMpApp
 %%]
 
 %%[(12 hmtyinfer).AppImpl
@@ -249,6 +257,7 @@ SEM Expr
                 arg         .   knTy                =   foTy @foPr
                             .   tyVarMp             =   foVarMp @foPr |=> @func.tyVarMp
                 loc         .   ty                  =   @knResImpls `mkArrow` @ty_
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,6 +268,7 @@ SEM Expr
 %%[(5 hmtyinfer).AppTop
 SEM Expr
   | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 20080228, AD:
@@ -279,6 +289,7 @@ SEM Expr
                             .   furtherTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
                 expr        .   tyVarMp             =   @furtherTyVarMp
                 loc         .   ty                  =   [@imTy] `mkArrow` @expr.ty
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -307,6 +318,7 @@ SEM Expr
                 body        .   knTy                :=  @resTy
                 loc         .   bodyTyVarMp         =   @body.tyVarMp
                             .   ty                  :=  [@bodyTyVarMp |=> @arg.ty] `mkArrow` @body.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Lam
@@ -317,6 +329,7 @@ SEM Expr
                             .   furtherTyVarMp      =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
                 arg         .   tyVarMp             :=  @furtherTyVarMp
                 loc         .   ty                  :=  [@arg.ty] `mkArrow` @body.ty
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
   | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
                             .   knTySubs            =   @lamKnTyVarMp |=> @lhs.knTy
@@ -349,6 +362,9 @@ SEM Expr
                             .   tyVarMp             =   foVarMp @foPr |=> @knImplsVarMp
                 body        .   knTy                =   @knResImpls `mkArrow` @ty_
                 loc         .   ty                  =   [@knArgImpl] `mkArrow` @body.ty
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq4              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -359,6 +375,7 @@ SEM Expr
 SEM Expr
   | Undefined CaseAltFail
                 loc         .   ty                  =   tyEnsureNonAny @lUniq @lhs.knTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
                 loc         .   ty                  =   @lhs.tyVarMp |=> (tyEnsureNonAny @lUniq @lhs.knTy)
 
@@ -404,6 +421,9 @@ SEM Expr
                             .   fo_fitDown          =   fitsIn @downFIOpts @fe @lUniq2 @ty_q_2_VarMp @knTyDown @ty_q_
                 expr        .   knTy                :=  @knTyDown
                             .   tyVarMp             :=  foVarMp @fo_fitDown |=> @ty_q_2_VarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%[(10 hmtyinfer)
@@ -435,6 +455,7 @@ SEM DataFieldExpr
                             .   knTy                =   @knDataTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   ty                  =   @expr.tyVarMp |=> @knDataTy
+                loc         .   lUniq               :   UNIQUEREF gUniq
   | Con         loc         .   (gTy,nmErrs)        =   valGamLookupTy (hsnUn @nm) @lhs.valGam
                             .   fo_                 =   let [u] = mkNewTyVarL 1 @lUniq
                                                             t = @lhs.tyVarMp |=> @lhs.knTy
@@ -442,6 +463,8 @@ SEM DataFieldExpr
                                                         in  fo {foTy = foVarMp fo |=> t}
                             .   ty                  =   foTy @fo_
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
   | Expr        loc         .   ty                  =   @lhs.tyVarMp |=> @lhs.knTy
 %%]
 
@@ -458,6 +481,7 @@ SEM DataFieldExpr
                 lhs         .   updExprTyVarMp      =   @expr.tyVarMp
                             .   updExprTy           =   @expr.ty
                             .   tyVarMp             =   @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
   | Con         lhs         .   updExprTy           =   Ty_Any
 %%]
 
@@ -479,6 +503,7 @@ SEM Expr
                                                                             )
                                                                             (@lhs.knTy,@dataFieldExpr.updExprTy,@dataFieldExpr.updExprTyVarMp,[],@lUniq)
                                                                             (Set.toList $ Set.unions [ Map.keysSet (dtiFldMp i) | i <- @dtiL ] `Set.difference` @fldS)
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -490,6 +515,7 @@ SEM RecExpr
   | Empty       loc         .   fo_                 =   fitsIn (@lhs.fiOpts) @fe @lUniq @lhs.tyVarMp tyRecEmpty @lhs.knTy
                             .   ty                  =   foTy @fo_
                 lhs         .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
   | Ext Upd     loc         .   (knRowTy,knRecTy,knTailTy,knExprTy)
                                                     =   let  [r,e] = mkNewTyVarL 2 @lUniq
                                                              tl = hsnRec `mkConApp` [r]
@@ -500,22 +526,28 @@ SEM RecExpr
                                                     =   maybe (False,@knTailTy,@knExprTy) (\(r,e) -> (True,r,e)) $ tyRecExtrWithLkup (varmpTyLookupCyc2 @recTyVarMp) @nm $ foTy @foKnRec
                 recExpr     .   tyVarMp             =   @recTyVarMp
                 loc         .   ty                  =   foTy @foKnRec
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
   | Ext         recExpr     .   knTy                =   @recKnTlTy
   | Upd         recExpr     .   knTy                =   @recKnTlTy `mkTyRecExt` [(@nm,mkNewTyVar @lUniq3)]
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%[(7 hmtyinfer)
 SEM Expr
   | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq
                                                         in  (r, (hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)])
-                expr		.	knTy				=	@knExprTy
+                expr        .   knTy                =   @knExprTy
                 loc         .   (_,ty)              =   maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl @expr.ty)
+                loc         .   lUniq               :   UNIQUEREF gUniq
   | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq
                                                         in   hsnRec `mkConApp` [r]
                             .   fo_                 =   fitsIn @fiOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
                 recExpr     .   knTy                =   @knRecTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   ty                  =   foTy @fo_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)

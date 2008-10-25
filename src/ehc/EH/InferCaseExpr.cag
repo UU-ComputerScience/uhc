@@ -46,6 +46,7 @@ ATTR AllCase [ knTy: Ty | | ty: Ty ]
 SEM Expr
   | Case        expr        .   knTy                =   mkTyVar @lUniq2
                 alts        .   knTy                =   @lhs.knTy
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 
 SEM CaseAlt
   | Pat         expr        .   tyVarMp             =   @lhs.tyVarMp
