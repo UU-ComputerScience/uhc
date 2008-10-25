@@ -83,7 +83,7 @@ ehc-barebones-variant: $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG) $(EHC
 	$(call COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(EHC_BARE_VARIANT_PREFIX),$$ehc_mainag_d_files $$ehc_mainag_s_files $$ehc_other_files) ; \
 	$(if $(EHC_CFG_USE_GRIN),$(call COPY_FILES_BY_TAR,$(EHC_BLD_LIBGRINC_VARIANT_PREFIX),$(EHC_BARE_VARIANT_PREFIX),$$grinc_mainag_d_files $$grinc_mainag_s_files $$grinc_other_files);,) \
 	(cd $(EHC_BARE_VARIANT_PREFIX) && \
-	  (echo ehc: $$ehc_mainag_d_files $$ehc_mainag_s_files $$grinc_mainag_d_files $$grinc_mainag_s_files | sed -e 's+\.ag+.hs+g' ; \
+	  (echo $(EHC_EXEC_NAME)$(EXEC_SUFFIX): $$ehc_mainag_d_files $$ehc_mainag_s_files $$grinc_mainag_d_files $$grinc_mainag_s_files | sed -e 's+\.ag+.hs+g' ; \
 	   echo "	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -fallow-undecidable-instances -package $(LIB_EH_UTIL_PKG_NAME) -o $(EHC_EXEC_NAME)$(EXEC_SUFFIX) $(EHC_MAIN).hs" ; \
 	   echo ; \
 	   $(SHELL_AGDEPEND) --baseprefix=$(LIB_EHC_HS_PREFIX) \

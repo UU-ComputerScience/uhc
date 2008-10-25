@@ -107,7 +107,7 @@
 %%[(97 hmtyinfer || hmtyast) hs export(tyInteger) 
 %%]
 
-%%[1 ag import({Ty/AbsSyn})
+%%[4 ag import({Ty/AbsSyn})
 DERIVING *     : Show, Eq, Ord
 %%]
 

@@ -32,7 +32,7 @@ SEM Expr
   | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
                 (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @decls.tyVarMp |==> @valGam_g_
                 loc         .   gTyTvL              =   ftv @gSubsValGam_
-                                                        ++ ftv (@decls.tyVarMp |=> @lhs.tyGam)		-- 20080212 incompatibility with ruler version
+                                                        ++ ftv (@decls.tyVarMp |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
                             .   quValGam_           =   valGamQuantify @gTyTvL @lSubsValGam
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
@@ -44,6 +44,8 @@ SEM Expr
                 loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 $ valGamQuantify @gTyTvL $ @lSubsValGam_
                             .   quValGam_           :=  emptyGam
                 body        .   valGam              :=  gamPushGam @quValGam_ex_ @gSubsValGam_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
@@ -74,6 +76,7 @@ SEM Decl
 %%[(5 hmtyinfer).tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                :=  tyInstKnown @lUniq @ty_sig_
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tyInstKnown
@@ -291,19 +294,20 @@ SEM Expr
                             .   patKiVarMp          =   @lhs.kiVarMp
                 loc         .   (tyGam_l_,tyGam_g_) =   gamPop @decls.patTyGam
                             .   (tyKiGam_l_,tyKiGam_g_)
-                            						=   gamPop @decls.patTyKiGam
+                                                    =   gamPop @decls.patTyKiGam
                 decls       .   tyGam               :=  gamPushGam @tyGam_l_ @lhs.tyGam
                             .   tyKiGam             =   gamPushGam @tyKiGam_l_ @lhs.tyKiGam
                             .   kiVarMp             =   @decls.patKiVarMp
                 loc         .   (lSubsTyKiGam,cycTyKiVarMp_l)
-                									=   @decls.kiVarMp |==> @tyKiGam_l_
+                                                    =   @decls.kiVarMp |==> @tyKiGam_l_
                             .   (gSubsTyKiGam,cycTyKiVarMp_g)
-                									=   @decls.kiVarMp |==> @tyKiGam_g_
+                                                    =   @decls.kiVarMp |==> @tyKiGam_g_
                             .   gKiTvL              =   ftv @gSubsTyKiGam
                             .   lQuTyGam            =   {- @decls.tyVarMp |=> -} @tyGam_l_
-                            .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 . tyKiGamQuantify @gKiTvL $ @lSubsTyKiGam
+                            .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 $ tyKiGamQuantify @gKiTvL $ @lSubsTyKiGam
                 body        .   tyGam               =   gamAddGam @lQuTyGam @tyGam_g_
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%[(6 hmtyinfer)
@@ -312,6 +316,7 @@ SEM Decl
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
                 loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp @tyExpr.ki kiStar
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 %%[(11 hmtyinfer)
@@ -639,14 +644,14 @@ This is incomplete for variant 7_2.
 
 %%[(6 hmtyinfer).initTyKiGam
 SEM AGItf
-  | AGItf       loc         .   tyKiGam            	=   initTyKiGam
+  | AGItf       loc         .   tyKiGam             =   initTyKiGam
 %%]
 
 %%[(20 hmtyinfer) -6.initTyKiGam
 ATTR AGItf [ tyKiGam: TyKiGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   tyKiGam            	=   @lhs.tyKiGam
+  | AGItf       loc         .   tyKiGam             =   @lhs.tyKiGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -686,7 +691,7 @@ SEM AGItf
 
 %%[(6 hmtyinfer).initKiGam
 SEM AGItf
-  | AGItf       loc         .   kiGam               =   initKiGam		-- fake dependency for uuagc --cycle
+  | AGItf       loc         .   kiGam               =   initKiGam       -- fake dependency for uuagc --cycle
 %%]
 
 %%[(20 hmtyinfer) -6.initKiGam
@@ -706,7 +711,7 @@ ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 
 %%[(1 hmtyinfer)
 SEM Decls
-  | Cons		lhs			.	gathTySigGam		= 	@hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
+  | Cons        lhs         .   gathTySigGam        =   @hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
@@ -1057,14 +1062,14 @@ ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ clGam: ClGam | | ]
 
 %%[(9 hmtyinfer).initClGam
 SEM AGItf
-  | AGItf       loc         .   clGam              	=   initClGam
+  | AGItf       loc         .   clGam               =   initClGam
 %%]
 
 %%[(20 hmtyinfer) -9.initClGam
 ATTR AGItf [ clGam: ClGam | | ]
 
 SEM AGItf
-  | AGItf       loc         .   clGam              	=   @lhs.clGam
+  | AGItf       loc         .   clGam               =   @lhs.clGam
 %%]
 
 %%[(9 hmtyinfer)

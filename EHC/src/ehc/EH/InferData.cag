@@ -28,6 +28,9 @@ SEM Decl
                 lhs         .   patKiVarMp          =   foVarMp @fo_ |=> @lhs.patKiVarMp
                 constrs     .   tyKiGam             =   gamPushGam  (tyKiGamInst1Exists @lUniq3 (@lhs.kiVarMp |=> @tyVars.tyKiGam))
                                                                     @lhs.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,6 +43,7 @@ SEM DataConstr
                             .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
                                                                  @fields.kiL (repeat kiStar)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @fldsKiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -238,7 +242,7 @@ SEM DataConstr
                             .   tag                 =   tyRecOffset @conNm @lhs.dataAltTy
                             .   arity               =   length @fields.fldTyL
                             .   ctag                =   CTag @lhs.tyNm @conNm @tag @arity @lhs.maxArity
-     			loc			.	ctag				: 	CTag
+                loc         .   ctag                :   CTag
 %%]]
 %%]
 
@@ -267,7 +271,7 @@ SEM DataField
   | Field       loc         .   fldTyL              =   case @mbLabels of
                                                           Just ls -> zipWith (\l t -> (Just l,t)) ls (repeat @tyExpr.ty)
                                                           _       -> [(Nothing,@tyExpr.ty)]
-				loc			.	fldTyL				:	FldTyL
+                loc         .   fldTyL              :   FldTyL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -324,7 +328,7 @@ ATTR Expr [ | | isNewtype: Bool ]
 SEM Expr
   | Con         loc         .   (dgi,_)             =   dataGamLookupErr @nm @lhs.dataGam
                             .   isNewtype           =   dgiIsNewtype @dgi
-  | * - Con		lhs			.	isNewtype			=	False
+  | * - Con     lhs         .   isNewtype           =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -391,16 +395,18 @@ Kind of LHS of the DataConstrEq should match the kind of the RHS.
 
 %%[(16 hmtyinfer)
 SEM DataConstrEq
-  | Eq  loc.fo_ = fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
-        lhs.kiVarMp = foVarMp @loc.fo_ |=> @tyExpr.kiVarMp
+  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
+                lhs         .   kiVarMp             =   foVarMp @loc.fo_ |=> @tyExpr.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 
 ATTR AllDataConstrEq [ | | prOccL USE {++} {[]} : {[PredOcc]} ]
 
 SEM DataConstrEq
-  | Eq  loc.pr      = Pred_Eq @tyVar.ty @tyExpr.ty
-        loc.prOccId = mkPrIdCHR @loc.lUniq3
-        loc.prOcc   = rngLift @range mkPredOccRng @loc.pr @loc.prOccId @lhs.predScope
-        lhs.prOccL  = [@loc.prOcc]
+  | Eq          loc         .   pr                  =   Pred_Eq @tyVar.ty @tyExpr.ty
+                loc         .   prOccId             =   mkPrIdCHR @loc.lUniq3
+                loc         .   prOcc               =   rngLift @range mkPredOccRng @loc.pr @loc.prOccId @lhs.predScope
+                lhs         .   prOccL              =   [@loc.prOcc]
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 Construct a substitution from the additional equations. This subsitution is applied to the type of the constructor function to obtain
@@ -411,17 +417,16 @@ to be non-cyclic, and in case one equation is multiply defined, the right hand s
 SEM AllDataConstrEq [ | eqVarMp : {VarMp} | ]
 
 SEM DataConstr
-  | Constr
-      eqs.eqVarMp  = emptyVarMp
-      loc.eqsVarMp = @eqs.eqVarMp
+  | Constr      eqs.eqVarMp  = emptyVarMp
+                loc.eqsVarMp = @eqs.eqVarMp
 
 SEM DataConstrEq
-  | Eq
-      loc.tv        = tyVar @tyVar.ty
-      loc.knRhsTy   = maybe Ty_Any id $ varmpTyLookup @loc.tv @lhs.eqVarMp
-      loc.foRhsTy   = fitsIn strongFIOpts emptyFE @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
-      loc.unitVarMp = @loc.tv `varmpTyUnit` foTy @loc.foRhsTy
-      lhs.eqVarMp   = @loc.unitVarMp |=> foVarMp @loc.foRhsTy |=> @lhs.eqVarMp
+  | Eq          loc         .   tv                  =   tyVar @tyVar.ty
+                loc         .   knRhsTy             =   maybe Ty_Any id $ varmpTyLookup @loc.tv @lhs.eqVarMp
+                loc         .   foRhsTy             =   fitsIn strongFIOpts emptyFE @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
+                loc         .   unitVarMp           =   @loc.tv `varmpTyUnit` foTy @loc.foRhsTy
+                lhs         .   eqVarMp             =   @loc.unitVarMp |=> foVarMp @loc.foRhsTy |=> @lhs.eqVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -473,4 +478,4 @@ SEM DataConstr
 %%[(99 hmtyinfer)
 %%]
 SEM DataConstr
-  | Constr      loc         .   arity        		:   {Int}
+  | Constr      loc         .   arity               :   {Int}

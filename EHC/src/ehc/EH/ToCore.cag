@@ -134,9 +134,9 @@ SEM Expr
     IIConst
 %%]]
 %%[[8
-            	loc  		.  	cexpr    	=  	@cexprBase
+                loc         .   cexpr       =   @cexprBase
 %%][9
-            	loc  		.  	cexpr    	=  	foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+                loc         .   cexpr       =   foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
 %%]]
 %%]
 
@@ -187,6 +187,9 @@ SEM Expr
                                                           foldl mkCExprApp1 (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
                             .   cexpr           =   @rcexpr
+%%[[10
+                loc         .   lUniq3          :   UNIQUEREF gUniq
+%%]]
 %%]
 
 %%[(8 codegen)
@@ -1056,7 +1059,7 @@ SEM Expr
 ATTR Expr [ | | caseFailS USE {`Set.union`} {Set.empty}: UIDS ]
 
 SEM Expr
-  | Case		lhs			.	caseFailS	=	@caseFailS
+  | Case        lhs         .   caseFailS   =   @caseFailS
 %%]
-  | CaseAltFail	lhs			.	caseFailS	=	Set.singleton @caseId
+  | CaseAltFail lhs         .   caseFailS   =   Set.singleton @caseId
 

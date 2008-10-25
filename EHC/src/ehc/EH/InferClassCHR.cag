@@ -75,8 +75,8 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Lam  		loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
-  | AppTop   	loc         .   implsIsEmpty        =   True -- otherwise AG depends on @lhs.knTy, creating a cycle
+  | Lam         loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
+  | AppTop      loc         .   implsIsEmpty        =   True -- otherwise AG depends on @lhs.knTy, creating a cycle
 %%]
   | AppTop Lam  loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
   | AppTop Lam  loc         .   implsIsEmpty        =   not $ tyIsPredicated @imSubsTy
@@ -141,6 +141,7 @@ The env from the bottom of a let sequence is required because we need (e.g.) typ
 %%[(9 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   chrFIIn             =   @expr.chrFIIn {fiUniq = @lUniq}
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)

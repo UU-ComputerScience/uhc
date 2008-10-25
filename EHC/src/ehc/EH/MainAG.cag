@@ -138,9 +138,6 @@ WRAPPER AGItf
 %%[102 -1.Pretty
 %%]
 
-%%[2 ag import({EH/Uniq})
-%%]
-
 %%[(5 hmtyinfer) ag import({EH/InferCaseExpr},{EH/InferData})
 %%]
 
@@ -483,12 +480,37 @@ SEM PatExpr
     Expr
 %%]]
                 loc         .   topNm               =   uidHNm @lUniq
-  | SConst      loc         .   topNm               =   uidHNm @uniq1
+  | SConst      loc         .   topNm               =   uidHNm @lUniq
 %%[[8
   | Irrefutable loc         .   topNm               =   @patExpr.topNm
 %%]]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique id, required for AG's UNIQUEREF mechanism
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.gUniq
+ATTR AllNT [ | gUniq: UID | ]
+%%]
+
+%%[2.AGItf
+SEM AGItf
+  | AGItf           expr        .   gUniq                           =   uidStart
+%%]
+
+Must be chained for UNIQUEREF to work
+
+%%[8 -2.AGItf
+ATTR AGItf [ | gUniq: UID | ]
+%%]
+
+For patterns we need a unique value anyway, so declare it here globally
+
+%%[2
+SEM PatExpr
+  | *           loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
 
 
 

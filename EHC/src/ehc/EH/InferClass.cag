@@ -21,6 +21,7 @@ SEM Decl
                                 .   patKiVarMp      =   emptyVarMp
                 lhs             .   patTyKiGam      =   tyKiGamNameSingleton (hsnClass2Kind @clsNm) (TyKiGamInfo $ mkNewTyVar @lUniq) `gamUnion` @lhs.patTyKiGam
                                 .   patKiVarMp      =   @lhs.patKiVarMp
+                loc         	.   lUniq		  	:   UNIQUEREF gUniq
 %%]
   | Class       tyPrExpr        .   tyKiGam         =   gamPushNew @lhs.patTyKiGam
                                 .   kiVarMp         =   @lhs.patKiVarMp
@@ -99,6 +100,7 @@ SEM Decl
 SEM Decl
   | Instance InstanceIntro
                 loc             .   instId          =   mkPrIdCHR @lUniq
+                loc         	.   lUniq		  	:   UNIQUEREF gUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
                 loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp)
                                                     =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ @tyPrExpr.ty
@@ -158,6 +160,9 @@ SEM Decl
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   maybe emptyGam (\(n,_) -> n `gamSingleton` ValGamInfo (tyQuantifyClosed @tyPrExpr.evTy)) @mbNmElim
                                 .   patValGam       =   @lhs.patValGam
+                loc         	.   lUniq3		  	:   UNIQUEREF gUniq
+                loc         	.   lUniq4		  	:   UNIQUEREF gUniq
+                loc         	.   lUniq_9_prTyFix :   UNIQUEREF gUniq
   | InstanceIntro
                 loc             .   instClsNm       =   tyPredMatchNm @prExpr.ty
                                 .   dictNm          =   maybe (poiHNm @instId) id @mbNmElim
@@ -204,6 +209,8 @@ SEM PrExpr
   | Class       lhs             .   evTy            =   let  fo = fitsIn  (predFIOpts {fioDontBind = ftvSet @ty}) @fe2 @lUniq3 emptyVarMp
                                                                           (clgiPrToEvidTy @clgi) ([@ty] `mkArrow` mkNewTyVar @lUniq2)
                                                         in   snd $ tyArrowArgRes $ foVarMp fo |=> foTy fo
+                loc         	.   lUniq2	 		:   UNIQUEREF gUniq
+                loc         	.   lUniq3		  	:   UNIQUEREF gUniq
   | Arrow       lhs             .   evTy            =   [@arg.evTy] `mkArrow` @res.evTy
 
 SEM TyExpr

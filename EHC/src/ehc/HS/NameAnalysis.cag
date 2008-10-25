@@ -259,6 +259,7 @@ SEM FunctionBinding
 %%]]
                                                              @lUniq)
                                               @idOccDefs
+		loc				.	lUniq		:	UNIQUEREF gUniq
 %%]
 
 %%[1

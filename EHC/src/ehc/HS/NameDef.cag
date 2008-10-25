@@ -223,6 +223,7 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc (maybe (mkHNm @lUniq) id @pattern.mbTopRefname) IdOcc_Pat
                         .   idOccDefsPat=   [@idOccDef]
                         .   idOccDefs   =   @pattern.idOccDefs
+		loc				.	lUniq		:	UNIQUEREF gUniq
 %%]
 %%[5
     | Data Newtype
@@ -363,18 +364,23 @@ SEM Pattern
 SEM Declaration
     | Instance
         loc         .   instancename=   maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
-    | Class 
+    | Class
         loc         .   instancename=   hsnSuffix (mkHNm @lUniq) ("_class_"++ show @simpletype.name)
     | InstanceUseImplicitly
         loc         .   instancename=   mkHNm @lUniq
     | Default
         loc         .   defaultname =   mkHNm @lUniq
+
+SEM Declaration
+    | Instance Class InstanceUseImplicitly Default
+		loc			.	lUniq		:	UNIQUEREF gUniq
 %%]
 
 %%[95
 SEM Deriving
     | Deriving
         loc         .   instancename=   maybe (mkHNm @lUniq) id @maybeinstancename
+		loc			.	lUniq		:	UNIQUEREF gUniq
 %%]
 
 

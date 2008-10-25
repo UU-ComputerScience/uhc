@@ -22,12 +22,13 @@ SEM AGItf
 %%]
 
 %%[8 -1.AGItf
-SEM AGItf
-    | AGItf
-        loc             .   gUniq       =   @lhs.gUniq
 %%]
 
-%%[1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique generation, obsolete because replaced by UNIQUEREF mechanism of AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 obsolete)
 SEM Declaration
     | PatternBinding
         (pattern.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
@@ -38,21 +39,19 @@ SEM Expression
                                         =   mkNewLevUID @lhs.gUniq
 %%]
 
-%%[1
+%%[(1 obsolete)
 SEM FunctionBinding
     | FunctionBinding
         (lefthandside.gUniq,loc.lUniq)  =   mkNewLevUID @lhs.gUniq
 %%]
 
-%%[8
+%%[(8 obsolete)
 SEM Expression
   | Case
         (expression.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
 %%]
-  | Let
-        (declarations.gUniq,loc.lUniq)  =   mkNewLevUID @lhs.gUniq
 
-%%[9
+%%[(9 obsolete)
 SEM Declaration
     | Class Instance
         (context.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
@@ -62,7 +61,7 @@ SEM Declaration
         (types.gUniq,loc.lUniq)         =   mkNewLevUID @lhs.gUniq
 %%]
 
-%%[95
+%%[(95 obsolete)
 SEM Deriving
     | Deriving
         (lhs.gUniq,loc.lUniq)           =   mkNewLevUID @lhs.gUniq

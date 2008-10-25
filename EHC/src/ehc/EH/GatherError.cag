@@ -45,7 +45,14 @@ SEM AGItf
 
 %%[1
 SEM Expr
-  | Let         loc         .   letErrL     =   Seq.fromList @dupErrs
+  | Let         loc         .   letErrL     =   Seq.empty
+%%]
+
+%%[1
+SEM Expr
+%%[[(1 hmtyinfer)
+  | Let         loc         .   letErrL     :=  Seq.fromList @dupErrs
+%%]]
   | App         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@func.errSq, @arg.errSq]
 %%[[(1 hmtyinfer)
   | Lam         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]

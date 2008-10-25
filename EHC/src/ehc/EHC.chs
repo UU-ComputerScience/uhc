@@ -2438,8 +2438,10 @@ doCompileRun filename opts
                                  (putStrLn (disp (EHSem.pp_Syn_AGItf wrRes) 70 ""))
                           ; when (ehcOptShowAst opts)
                                  (putStrLn (disp (EHSem.ppAST_Syn_AGItf wrRes) 1000 ""))
+%%[[(1 hmtyinfer)
                           ; when (ehcOptShowTopTyPP opts)
                                  (putStr (disp (EHSem.topTyPP_Syn_AGItf wrRes) 1000 ""))
+%%]]
 %%[[7_2
                           ; when (not (null filename) && ehcOptUniqueness opts)
                                  (writeFile (filename ++ ".html") (EHSem.ppHTML_Syn_AGItf wrRes))

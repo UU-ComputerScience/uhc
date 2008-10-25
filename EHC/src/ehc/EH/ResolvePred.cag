@@ -11,15 +11,19 @@
 SEM Expr
   | Sel         loc         .   prUid               =   mkPrIdCHR @lUniq2
                             .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @lbl)) @prUid @lhs.predScope]
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 
 SEM RecExpr
   | Ext         loc         .   prUid               =   mkPrIdCHR @lUniq3
+                loc         .   lUniq3              :   UNIQUEREF gUniq
   | Upd         loc         .   prUid               =   mkPrIdCHR @lUniq4
+                loc         .   lUniq4              :   UNIQUEREF gUniq
   | Ext Upd     loc         .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @nm)) @prUid @lhs.predScope]
 
 SEM RecPatExpr
   | Ext         loc         .   prUid               =   mkPrIdCHR @lUniq3
                             .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @rowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,6 +36,7 @@ SEM Expr
                 loc         .   imPrvOcc            =   mkImplsProveOcc @lUniq3 @lhs.predScope
                             .   (implsPrvOccTl,prvOccTlVarMp)
                                                     =   varmpTailAddOcc @imPrvOcc @implsTl
+                loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

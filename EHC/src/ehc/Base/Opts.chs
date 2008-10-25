@@ -89,7 +89,9 @@ data EHCOpts
       ,  ehcOptShowAst        ::  Bool              -- show decorated EH AST on stdout
 %%][100
 %%]]
+%%[[(1 hmtyinfer)
       ,  ehcOptShowTopTyPP    ::  Bool              -- show EH type of expression
+%%]]
       ,  ehcOptHelp           ::  Bool              -- print help
       ,  ehcOptVersion        ::  Bool              -- print version info
       ,  ehcOptDebug          ::  Bool              -- debug info
@@ -187,7 +189,9 @@ defaultEHCOpts
       ,  ehcOptShowAst          =   False
 %%][100
 %%]]
+%%[[(1 hmtyinfer)
       ,  ehcOptShowTopTyPP      =   False
+%%]]
       ,  ehcOptHelp             =   False
       ,  ehcOptVersion          =   False
       ,  ehcOptDebug            =   False
@@ -279,7 +283,9 @@ ehcCmdLineOpts
   =  [  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
      ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
+%%[[(1 hmtyinfer)
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
+%%]]
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
      ,  Option ""   ["stopat"]
@@ -361,9 +367,11 @@ ehcCmdLineOpts
 %%][100
 %%]]
                                 _            -> o
+%%[[(1 hmtyinfer)
          oShowTopTy  ms  o =  case ms of
                                 Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
                                 _           -> o
+%%]]
          oHelp           o =  o { ehcOptHelp          = True    }
          oVersion        o =  o { ehcOptVersion       = True    }
          oDebug          o =  o { ehcOptDebug         = True

@@ -78,6 +78,7 @@ tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 SEM TyExpr
   | Wild        loc         .   tyVarId             =   @lUniq
                             .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(6 hmtyinfer)
@@ -95,6 +96,7 @@ SEM TyExpr
                                                                               tgi  =  TyGamInfo t
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(6 hmtyinfer)
@@ -110,6 +112,7 @@ SEM TyExpr
                                                         in   (@lUniq,TyGamInfo t)
                 tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(6 hmtyinfer)
@@ -130,6 +133,7 @@ SEM TyVar
                                                                          in   (tgi,gamAdd @nm tgi @lhs.tyGam)
                                                           Just tgi   ->  (tgi,@lhs.tyGam)
                 loc         .   tv                  =   tyVar $ tgiTy @tgi_
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(6 hmtyinfer)
@@ -147,12 +151,14 @@ SEM PrExpr
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @prExpr.tyGam
                 prExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
                 lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @prExpr.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
 SEM RowTyExpr
   | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
                 (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(11 hmtyinfer)
@@ -163,6 +169,7 @@ SEM TyExpr
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
                 tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
                 lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,6 +223,8 @@ SEM TyExpr
                             .   fKi                 =   foTy @fo_
                             .   ki                  =   @knResKi
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
                             .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
 
@@ -240,6 +249,7 @@ SEM RowTyExpr
   | Ext         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
                             .   ki                  =   foTy @fo_
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
@@ -248,6 +258,7 @@ SEM TyExpr
                             .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId []))
                             .   tkgi_               =   TyKiGamInfo kiStar
                             .   ki                  =   tkgiKi @tkgi_
+                loc         .   lUniq               :   UNIQUEREF gUniq
   | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil)
                             .   tkgi_               =   TyKiGamInfo kiStar
                             .   ki                  =   tkgiKi @tkgi_
@@ -256,6 +267,7 @@ SEM RowTyExpr
   | Var         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
                             .   ki                  =   foTy @fo_
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @lhs.kiVarMp
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
 %%[(11 hmtyinfer)
@@ -273,6 +285,7 @@ SEM PrExpr
                             .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExprs.kiVarMp
                                                           (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -417,12 +430,14 @@ Type
 
 %%[(11 hmtyinfer)
 SEM Decl
-  | Type        loc         .   typeVar				= 	mkTyVar @lUniq
+  | Type        loc         .   typeVar             =   mkTyVar @lUniq
                             .   typeTgi             =   mkTGI @typeVar
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
                 loc         .   foTy_               =   fitsIn  weakFIOpts emptyFE @lUniq2 @lhs.tyTyVarMp
                                                                 @tyExpr.ty (tgiTy @typeTgi)
                 lhs         .   tyTyVarMp           =   foVarMp @foTy_ |=> @lhs.tyTyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 %%[(11 hmtyinfer)
 %%]

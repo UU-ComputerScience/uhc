@@ -230,12 +230,15 @@ ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
 %%[(17 hmtyinfer) ag
 SEM Decl
   | Data Class  loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
   | Type        loc         .   (polCtxVar,polTypeVar)
                                                     =   let [v1,v2] = mkNewUIDL 2 @lUniq_17_seed_pol
                                                         in  (mkPolVar v1,mkPolVar v2)
+                loc         .   lUniq_17_seed_pol   :   UNIQUEREF gUniq
 
 SEM TyExprs
   | Cons        loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 %%]
 
 %%[(17 hmtyinfer) ag
@@ -252,6 +255,7 @@ SEM Decl
                 tyExpr      .   knPolCtx            =   polCovariant
   | Class       tyPrExpr    .   knPolCtx            =   @polCtxVar -- polCovariant
   | Instance    tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 
 SEM Expr PatExpr
   | TypeAs      tyExpr      .   knPolCtx            =   polCovariant
@@ -263,6 +267,7 @@ SEM Expr
 SEM Decl
   | InstanceIntro
                 prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 
 SEM TyExprs
   | Cons        hd          .   knPolCtx            =   @polCtxVar
@@ -306,6 +311,7 @@ SEM TyExpr
                 func        .   knPolCtx            =   @knFuncPol
                 arg         .   knPolCtx            =   @polArgVar
                 lhs         .   pol                 =   @lhs.knPolCtx
+                loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
 %%]
 
   Type variable or type constructor: perform a lookup in the environment and match with
@@ -337,6 +343,7 @@ SEM TyExpr
                             .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
                 lhs         .   pol                 =   foTy @foPol
                             .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
 %%]
 
   A type level lambda binds polarity to its argument, propagating it via the environment.
@@ -347,6 +354,7 @@ SEM TyExpr
   | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
                 tyExpr      .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
                 lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
+                loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
 %%]
   
   An analysis of the actual type expression of a wild card is needed to properly deal with
@@ -424,6 +432,7 @@ SEM Decl
 SEM Decl
   | Type        loc         .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @tyExpr.polVarMp @tyExpr.pol @polSig
                 lhs         .   polVarMp            =   foVarMp @foPol |=> @tyExpr.polVarMp
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
 %%]
 
 
@@ -434,6 +443,7 @@ ATTR TyExpr PrExpr [ | | polVarL: {[Polarity]} ]
 SEM TyVar
   | Var         loc         .   polVar              =   mkPolVar @lUniq_17_pol
                 lhs         .   polVarL             =   [@polVar]
+                loc         .   lUniq_17_pol        :   UNIQUEREF gUniq
 
 SEM PrExpr
   | Lacks       lhs         .   polVarL             =   []
