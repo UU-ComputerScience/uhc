@@ -139,17 +139,17 @@ SEM Expr
 %%% Temporary (20081021), reintroduction of previously ruler generated AG
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(8 noHmTyRuler hmtyinfer)
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(5 noHmTyRuler hmtyinfer)
 SEM PatExpr
-%%[[8
+%%[[5
   | SConst      loc         .   constTy             =   tyString
 %%][11
   | SConst      loc         .   constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
 %%]]
 %%]
 
-%%[(8 noHmTyRuler hmtyinfer)
+%%[(5 noHmTyRuler hmtyinfer)
 SEM PatExpr
   | SConst      loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @lhs.knTy @constTy
                 lhs         .   patFunTy            =   Ty_Any

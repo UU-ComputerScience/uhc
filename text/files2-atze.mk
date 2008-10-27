@@ -269,4 +269,10 @@ text-variant-padl09-subst-tr:
 	  TEXT_SHUFFLE_VARIANT=36 \
 	  text-variant-dflt-bib
 
+text-variant-ldta09-agidiom:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=entcs --set=blockstyle --set=shortStory --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=38 \
+	  text-variant-dflt-once
+
 

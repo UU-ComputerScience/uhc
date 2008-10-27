@@ -122,7 +122,7 @@ variantOfferAllLE_4 opts
         vm = Map.fromList $ zip (sortBy (cmpByVariantRefOrder vo) vs) [1..]
 
 variantRefOrderDefault :: VariantRefOrder
-variantRefOrderDefault = [take 1000 (map variantRefFromTop [1..])]
+variantRefOrderDefault = [take 1 (map variantRefFromTop [1..])]
 
 isAllowedCompilerVariant :: CompilerRestriction -> [Int] -> Bool
 isAllowedCompilerVariant (Restricted mLower mUpper) v
@@ -191,6 +191,7 @@ SEM Line
 
 SEM Groups
   | Cons        tl          . lineNr    = @hd.lineNr + 1
+  | Nil         lhs         . lineNr    = @lhs.lineNr - 1
 
 SEM Word
   | White Black loc         . wordColNr = @lhs.colNr
@@ -500,7 +501,7 @@ vciTakePre is
 selectChunks :: Bool -> VariantReqm -> VariantRefOrderMp -> [VariantChunkInfo] -> [(VariantOffer,[VariantChunkInfo])]
 selectChunks appMinus variantReqm allowedVariants agl
   = let (pre,nonPre)    = vciSplitPre agl
-        vAndVciL        = map (\v -> let vreqm = variantReqm {vreqmVariant = variantOfferRef v}
+        vAndVciL        = map (\v -> let vreqm = variantReqmUpdRef variantReqm (variantOfferRef v)
                                      in  ( v
                                          , vciSortBySeqNr
                                            $ vciVariantOfferFilter
@@ -632,6 +633,24 @@ haddockize d
 }
 
 -------------------------------------------------------------------------
+-- Wrap with line pragmas
+-------------------------------------------------------------------------
+
+{
+linePragma :: String -> Opts -> String -> Int -> CDoc -> CDoc
+linePragma pragcmt opts filename n c 
+  = if not (optLinePragmas opts) || cdIsEmpty c 
+    then c 
+    else CDoc_Ver (CDoc_Str ("{-" ++ pragcmt ++ " LINE "++show (n+1)++" \"" ++ filename ++ "\" " ++ pragcmt ++ "-}")) c
+
+hsLinePragma
+  = linePragma "#"
+
+agLinePragma
+  = linePragma ""
+}
+
+-------------------------------------------------------------------------
 -- Gen AG
 -------------------------------------------------------------------------
 
@@ -646,8 +665,8 @@ buildAG opts wrap fileBase is
         h p  = "{" .-. p .-. "}"
         mk i = case vciChKind i of
                  ChHaddock -> h (haddockize (vciCD i))
-                 ChHS      -> agLinePragma opts (fileBase++".cag") (vciLineNr i) (h (vciCD i))
-                 _         -> buildAGImps i .-. agLinePragma opts (fileBase++".cag") (vciLineNr i) (vciCD i)
+                 ChHS      -> agLinePragma opts (fpathToStr $ optBaseFPath opts) (vciLineNr i) (h (vciCD i))
+                 _         -> buildAGImps i .-. agLinePragma opts (fpathToStr $ optBaseFPath opts) (vciLineNr i) (vciCD i)
         ish  = filter vciIsHS noPre'
         buildImpExp = if optAGModHeader opts
                       then buildAGHSModImpExp fileBase ish
@@ -656,9 +675,9 @@ buildAG opts wrap fileBase is
                then wrap True buildImpExp
                else CDoc_Emp
         cds  =   map (\i -> let vnm = vciFullNm i
-                            in  linePragma opts (fileBase++".cag") (vciLineNr i) (wrap (not (vciIsPre i)) (mk i))
+                            in  (wrap (not (vciIsPre i)) (mk i))
                      )
-               . vciSortBySeqNr
+               $ vciSortBySeqNr
                $ noPre'
         d = (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
             .-. pph
@@ -786,8 +805,8 @@ buildHSModuleHead fileBase is
 buildHSModImpExp :: String -> [VariantChunkInfo] -> CDoc
 buildHSModImpExp fileBase is = buildHSModuleHead fileBase is .-. buildHSImps is
 
-buildHS1 :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
-buildHS1 opts wrap fileBase is
+buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
+buildHS opts wrap fileBase is
   = let mk i = case vciChKind i of
                  ChHaddock -> haddockize (vciCD i)
                  _         -> vciCD i
@@ -795,46 +814,13 @@ buildHS1 opts wrap fileBase is
         noPre' = vciMToL noPre
         ppMod = buildHSModImpExp fileBase (vciMToL is)
         ppNoPreL
-          =   map   (\is@(i:_)
-                        -> let (pbs)
-                                 =   map (\i -> let vnm = vciFullNm i
-                                                in  (wrap (vciHasCD i) (mk i)
-                                                    )
-                                         )
-                                   $ is
-                            in (cdVer pbs)
-                    )
-            . vciVariantOfferGroup . vciSortBySeqNr
-            $ noPre'
-        isEmpty = all (isNothing.vciMbCD) noPre'
-        ppNoPre = cdVer ppNoPreL
-        d = if isEmpty
-            then CDoc_Emp
-            else if optPlain opts
-            then ppNoPre
-            else (if optPreamble opts then cdVer (map (wrap False . vciCD) pre) else CDoc_Emp)
-                 .-. wrap True ppMod
-                 .-. ppNoPre
-     in d
-
-
-linePragma opts filename n c 
-  = if not (optLinePragmas opts) || cdIsEmpty c 
-    then c 
-    else CDoc_Ver (CDoc_Str ("{-# LINE "++show (n+1)++" \"" ++ filename ++ "\" #-}")) c
-
-agLinePragma opts filename n c
-  = CDoc_Ver (CDoc_Str ("{- LINE "++show (n+1)++" \"" ++ filename ++ "\" -}")) c
-
-
-buildHS :: Opts -> (Bool -> CDoc -> CDoc) -> String -> VariantChunkInfoM -> CDoc
-buildHS opts wrap fileBase is
-  = let (pre,noPre) = vciTakePre is
-        noPre' = vciMToL noPre
-        ppMod = buildHSModImpExp fileBase (vciMToL is)
-        ppNoPreL
-          =   map (cdVer . (map (\i -> linePragma opts (fileBase++".chs") (vciLineNr i) (wrap (vciHasCD i) (vciCD i)))))
-            . vciVariantOfferGroup . vciSortBySeqNr
+          =   map  ( cdVer
+                   . (map  (\i
+                             -> hsLinePragma opts (fpathToStr $ optBaseFPath opts) (vciLineNr i)
+                                             (wrap (vciHasCD i) (mk i))
+                   ) )     )
+            $ vciVariantOfferGroup
+            $ vciSortBySeqNr
             $ noPre'
         isEmpty = all (isNothing.vciMbCD) noPre'
         ppNoPre = cdVer ppNoPreL

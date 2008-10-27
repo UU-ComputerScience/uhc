@@ -562,7 +562,7 @@ SEM PrExpr
 %%% Id of case
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer)
+%%[(8 hmtyinfer codegen)
 SEM Expr
   | Case        loc         .   caseIds     =   maybe (Set.singleton uidStart) id @mbCaseIds
 %%]
@@ -571,7 +571,7 @@ SEM Expr
 %%% RCEEnv (primarily for ToCore)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer)
+%%[(8 hmtyinfer codegen)
 SEM Expr
   | Lam Sel DataFields
 %%[[12
@@ -584,18 +584,18 @@ SEM Expr
                                                             }
 %%]
 
-%%[(8 hmtyinfer)
+%%[(8 hmtyinfer codegen)
 SEM PatExpr
   | AppTop Rec DataFields
                 loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 
-%%[(8 hmtyinfer)
+%%[(8 hmtyinfer codegen)
 SEM Decl
   | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 
-%%[(95 hmtyinfer)
+%%[(95 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
@@ -710,9 +710,9 @@ ATTR AllDecl [ | | gathTySigGam USE {`gamAddGam`} {emptyGam}: ValGam ]
 %%]
 
 %%[(1 hmtyinfer)
+%%]
 SEM Decls
   | Cons        lhs         .   gathTySigGam        =   @hd.gathTySigGam `gamAddGam` @tl.gathTySigGam
-%%]
 
 -- generated from ruler rules into EHRulerRules, was 1.gamSigTyGath
 %%[(5 hmtyinfer).gamSigTyGath

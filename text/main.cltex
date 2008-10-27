@@ -88,7 +88,7 @@
 \documentclass[ignorenonframetext]{beamer}
 %%]
 
-%%[33
+%%[37
 %%@main.articleDocumentClass
 %%]
 
@@ -488,7 +488,7 @@
 \usepackage{txfonts}
 %%]
 
-%%[33
+%%[37
 \usepackage{amsmath}
 %%]
 
@@ -595,7 +595,7 @@
 \SetSectionsForArticle
 %%]
 
-%%[33
+%%[37
 \SetSectionsForArticle
 %%]
 
@@ -930,8 +930,6 @@ WWW home page:
 %%]
 
 %%[33
-
-
 %if acm
 \title{Abstract Interpretation of Functional Programs}
 \subtitle{A Complete Description based on Attribute Grammars}
@@ -952,9 +950,7 @@ WWW home page:
 \author{Jeroen Fokker and S.\ Doaitse Swierstra}
 %endif
 
-
 %%@TopicAbstrInt.extradefinitions
-
 %%]
 
 
@@ -1062,10 +1058,12 @@ WWW home page:
 \frontmatter
 %endif
 
+%%]
+
+%%[37
 %if entcs
 \begin{frontmatter}
 %endif
-
 %%]
 
 %%[20
@@ -1191,6 +1189,26 @@ WWW home page:
 
 %%[26
 \maketitle
+%%]
+
+%%[38
+%if entcs
+\title{Tree-Oriented Programming Patterns}
+\author{Atze Dijkstra},
+\author{Arie Middelkoop},
+\author{Jeroen Fokker}
+and
+\author{S.\ Doaitse Swierstra}
+\address{Dept.\ of Information and Computing Sciences,\\Utrecht University, The Netherlands}
+%else
+%if truu
+\TRtitlepage
+{Tree-Oriented Programming Patterns}
+{Atze Dijkstra \\[2ex] Arie Middelkoop \\[2ex] Jeroen Fokker \\[2ex] S.\ Doaitse Swierstra}
+{UU-CS-2008-XXX}
+%endif
+\maketitle
+%endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1389,6 +1407,12 @@ have been submitted to POPL2006 in a slighty extended form.
 \end{abstract}
 %%]
 
+%%[38
+\begin{abstract}
+%%@TopicAGIdiom.abstract
+\end{abstract}
+%%]
+
 %%[1
 
 %if storyAfpTRUU1
@@ -1399,15 +1423,11 @@ have been submitted to POPL2006 in a slighty extended form.
 %%]
 
 
-%%[1
-
+%%[37
 %if entcs
 \end{frontmatter}
 %endif
-
 %%]
-
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2034,6 +2054,57 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 %%]
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AG Idiom
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[38
+\section{Introduction}
+%%@TopicAGIdiom.introduction
+
+\section{AG tutorial}
+%%@TopicAGIdiom.agtut
+
+\section{Patterns}
+
+\subsection{Compose All}
+%%@TopicAGIdiom.agPatComposeAll
+
+\subsection{DeCompose}
+%%@TopicAGIdiom.agPatDeCompose
+
+\subsection{Distribute}
+%%@TopicAGIdiom.agPatDistribute
+
+\subsection{State, State Gather}
+%%@TopicAGIdiom.agPatState
+
+\subsection{Multipass}
+%%@TopicAGIdiom.agPatMultipass
+
+\subsection{Listlike Spine}
+%%@TopicAGIdiom.agPatListSpine
+
+\subsection{Compose Gather}
+%%@TopicAGIdiom.agPatComposeGather
+
+\subsection{Uniq}
+%%@TopicAGIdiom.agPatUniq
+
+\subsection{XX}
+%%@TopicAGIdiom.XX
+
+\subsection{XX}
+%%@TopicAGIdiom.XX
+
+\subsection{XX}
+%%@TopicAGIdiom.XX
+
+\section{Related work}
+
+\section{Conclusion}
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC ??
