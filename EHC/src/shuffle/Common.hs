@@ -19,6 +19,7 @@ module Common
   , AspectRefs(..)
   , variantReqmRef, mbVariantReqmRef
   , variantRefFromTop
+  , variantReqmUpdRef
   , VariantOffer(..), VariantReqm(..)
   , variantOfferFromRef, variantReqmFromRef
   , variantOfferFromTop
@@ -351,6 +352,10 @@ mbVariantReqmRef _              = Nothing
 
 variantReqmRef :: VariantReqm -> VariantRef
 variantReqmRef = maybe (error "variantReqmRef") id . mbVariantReqmRef
+
+variantReqmUpdRef :: VariantReqm -> VariantRef-> VariantReqm
+variantReqmUpdRef v@(VReqmRef _ _) r = v {vreqmVariant = r}
+variantReqmUpdRef v                _ = v
 
 variantReqmMatchOffer :: Maybe VariantRefOrderMp -> VariantReqm -> VariantOffer -> Bool
 variantReqmMatchOffer _        VReqmAll         _                 = True

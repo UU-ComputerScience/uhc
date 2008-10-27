@@ -8,5 +8,5 @@ TEXT_SUBS								+= \
 	llvm/LLVMChapterFutureWork llvm/LLVMChapterConclusion
 
 TEXT_SHUFFLE_ORDER			+= \
-	35
+	, 35
 

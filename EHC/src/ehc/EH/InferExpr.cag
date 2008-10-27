@@ -82,12 +82,12 @@ SEM Expr
   | IConst      loc         .   imprTy              =   tyInt
 %%]
 
--- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(8 noHmTyRuler hmtyinfer)
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(5 noHmTyRuler hmtyinfer)
 SEM Expr
   | IConst      loc         .   constTy             =   tyInt
   | CConst      loc         .   constTy             =   tyChar
-%%[[8
+%%[[5
   | SConst      loc         .   constTy             =   tyString
 %%][11
   | SConst      loc         .   constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
@@ -97,8 +97,8 @@ SEM Expr
 %%]]
 %%]
 
--- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(8 noHmTyRuler hmtyinfer)
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(5 noHmTyRuler hmtyinfer)
 SEM Expr
   | IConst CConst SConst
 %%[[97
@@ -195,8 +195,8 @@ SEM Expr
 %%% Variable/Constructor, identifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--- between variant 8 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
-%%[(8 hmtyinfer)
+-- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
+%%[(8 hmtyinfer noHmTyRuler)
 SEM Expr
   | Var Con     (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
                 loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_g_ @lhs.knTy
