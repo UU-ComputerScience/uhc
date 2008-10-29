@@ -127,6 +127,19 @@ AC_ARG_WITH(ehc-unixtool-prefix,
 [AC_HELP_STRING([--with-ehc-unixtool-prefix=<additional prefix for unixtools used by ehc>],
                 [Additional prefix for unixtools used by ehc.])],
 [ additionalEhcUnixtoolPrefix="$withval" ],)
+
+# when no unixtool prefix is specified && running cygwin, take cygwin's equivalent of /
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test "$additionalEhcUnixtoolPrefix" = ""
+        then
+          additionalEhcUnixtoolPrefix="`cygpath --mixed /`"
+        fi
+        ;;
+  *)
+        ;;
+esac             
+
 AC_SUBST(EHC_UNIXTOOL_PREFIX, "$additionalEhcUnixtoolPrefix")
 
 ### 'with' option for ghc
@@ -221,6 +234,19 @@ else
   gccExists="yes"
   gccVersion=`$gccCmd --version`
 fi
+
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$additionalEhcUnixtoolPrefix/$gccCmd"
+        then
+          gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
+
 AC_SUBST(GCC_CMD,$gccCmd)
 
 AC_RUN_IFELSE([AC_LANG_PROGRAM(
@@ -275,6 +301,22 @@ else
   cppExists="yes"
   cppVersion=`$cppCmd --version`
 fi
+
+# Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
+# whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
+# and has to be stripped of the /usr part.
+# For other tools like gcc we have to this too.
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$additionalEhcUnixtoolPrefix/$cppCmd"
+        then
+          cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
+
 AC_SUBST(CPP_CMD,$cppCmd)
 
 # LLVM Assembler 
