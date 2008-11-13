@@ -42,10 +42,10 @@ include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)gen/files.mk
-include $(SRC_PREFIX)grinc/variant.mk
+#include $(SRC_PREFIX)grinc/variant.mk
 include $(SRC_PREFIX)ehc/files1.mk
 include $(SRC_PREFIX)grini/files.mk
-include $(SRC_PREFIX)grinc/files.mk
+#include $(SRC_PREFIX)grinc/files.mk
 
 -include $(SRC_PREFIX)experiments/files.mk
 -include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
@@ -91,7 +91,6 @@ explanation:
 	echo  "" ; \
 	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
 	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
-	echo  "make grincs              : make all grin compiler ($(GRINC_EXEC_NAME)) versions" ; \
 	echo  "make top                 : make Typing Our Programs library" ; \
 	echo  "make lvm                 : make Lazy Virtual Machine library" ; \
 	echo  "make helium              : make Helium library" ; \
@@ -117,8 +116,6 @@ ehcs: $(EHC_ALL_PUB_EXECS)
 
 grinis: $(GRINI_ALL_PUB_EXECS)
 
-grincs: $(GRINC_ALL_PUB_EXECS)
-
 grinllvms: $(GRINLLVM_ALL_PUB_EXECS)
 
 docs: $(TEXT_DIST_DOC_FILES)
@@ -142,7 +139,7 @@ edit-t:
 
 edit-e:
 	$(OPEN_FOR_EDIT) \
-	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRIN_ALL_SRC) $(GRINI_ALL_SRC) \
+	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRINI_ALL_SRC) \
 	Makefile
 
 edit: edit-r edit-e edit-t edit-s

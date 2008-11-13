@@ -166,7 +166,7 @@ ghcVersion=`$ghcCmd --numeric-version`
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base haskell98 mtl fgl"
+cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
 cabal_extra_lib_depends=""
 optCabalAllowUndecidableInstances=UndecidableInstances
 optStandardGHCPackages=""
@@ -548,9 +548,9 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
-AC_CONFIG_FILES([src/grinc/Config.chs src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
+AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
 AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
-AC_CONFIG_HEADERS([src/grinc/ConfigDefines.chs src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch])
+AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch])
 AC_OUTPUT
 
 echo

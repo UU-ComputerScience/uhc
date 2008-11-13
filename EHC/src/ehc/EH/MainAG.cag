@@ -10,7 +10,10 @@
 %%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
 %%]
 
-%%[1 hs import({%{EH}Ty})
+%%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})
+%%]
+
+%%[4 -1.Ty hs import({%{EH}Ty})
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs import({%{EH}Ty.Pretty})

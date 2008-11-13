@@ -5,5 +5,8 @@ Ty
 Core
 Foreign
 GrinCode
+GrinByteCode
+LLVM
+Silly
 Error
 Ty/TyConPat

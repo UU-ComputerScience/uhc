@@ -552,7 +552,7 @@ SEM CBind
 %%[[8
                                                         $ zip @nmArgL
 %%][96
-                                                        $ zip3 @nmArgL (maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) (lookupPrim @impEnt))
+                                                        $ zip3 @nmArgL (maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) (lookupPrimNeedsEval @impEnt))
 %%]]
                                                         $ zipWith mkPat @argTyL
                                                         $ @nmArgPatL

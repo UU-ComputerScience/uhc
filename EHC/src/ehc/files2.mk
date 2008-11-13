@@ -6,11 +6,11 @@
 $(patsubst $(BIN_PREFIX)%$(EXEC_SUFFIX),%,$(EHC_ALL_EXECS)): %: $(BIN_PREFIX)%$(EXEC_SUFFIX)
 
 # for (e.g.) bin/99/ehc, ehc binaries
-$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF) $(RTS_ALL_SRC)
+$(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(EHC_MKF) $(RTS_ALL_SRC)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-variant
 
 # for haddock
-$(EHC_ALL_HADDOCKS): %: $(EHC_ALL_SRC) $(GRINC_ALL_SRC) $(EHC_MKF)
+$(EHC_ALL_HADDOCKS): %: $(EHC_ALL_SRC) $(EHC_MKF)
 	$(MAKE) EHC_VARIANT=$(notdir $(*D)) ehc-haddock-variant
 
 # for (e.g.) lib-eh-99, ehc libraries
@@ -42,10 +42,9 @@ ehc-variant:
 ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) \
 			$(if $(EHC_CFG_USE_GRIN) \
 				,$(LIB_GRINC_INS_FLAG) \
-				 $(if $(EHC_CFG_USE_CODEGEN),$(GEN_ALL_DPDS) $(INSABS_LIB_RTS),),)
+				 $(if $(EHC_CFG_USE_CODEGEN),$(INSABS_LIB_RTS),),)
 	mkdir -p $(dir $(EHC_BLD_EXEC)) && \
 	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) \
-	       $(if $(EHC_CFG_USE_GRIN),-package $(LIB_GRINC_PKG_NAME),) \
 	       -i$(EHC_BLD_VARIANT_PREFIX) $(EHC_BLD_VARIANT_PREFIX)$(EHC_MAIN).hs -o $(EHC_BLD_EXEC)
 
 ###########################################################################################
@@ -56,9 +55,9 @@ ehc-haddock-variant:
 	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
 	  ehc-haddock-variant-dflt
 
-ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(GRINC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV)
+ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV)
 	mkdir -p hdoc/$(EHC_VARIANT)
-	haddock --html --ignore-all-exports --odir=hdoc/$(EHC_VARIANT) $(EHC_ALL_DPDS_NOPREPROC) $(GRINC_ALL_DPDS_NOPREPROC) $(LIB_EH_UTIL_HS_DRV)
+	haddock --html --ignore-all-exports --odir=hdoc/$(EHC_VARIANT) $(EHC_ALL_DPDS_NOPREPROC) $(LIB_EH_UTIL_HS_DRV)
 
 
 
