@@ -27,6 +27,8 @@
 %%[1 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
+%%[8 import({%{EH}EHC.CompileUnit})
+%%]
 
 %%[8 import(qualified Debug.Trace)
 %%]
@@ -44,7 +46,7 @@
 -- Language syntax: Core, Grin, ...
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
-%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{GRIN}GrinByteCode} as Bytecode)
+%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
 -- Java output
 %%[(8 codegen java) import({%{EH}Core.ToJava})
@@ -66,23 +68,23 @@
 %%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
 %%]
 -- GRIN
-%%[(8 codegen grin) import(qualified {%{GRIN}GRINCCommon} as GRINCCommon)
+%%[(8 codegen grin) import(qualified {%{EH}GRINCCommon} as GRINCCommon)
 %%]
 -- Grin input and output
-%%[(8 codegen grin) import(qualified {%{EH}GrinCode.Parser} as GrinParser, {%{EH}GrinCode.Pretty}, {%{GRIN}GrinCode.ToGrinByteCode})
+%%[(8 codegen grin) import(qualified {%{EH}GrinCode.Parser} as GrinParser, {%{EH}GrinCode.Pretty}, {%{EH}GrinCode.ToGrinByteCode})
 %%]
 -- Grin transformations
-%%[(8 codegen grin) import({%{GRIN}GrinCode.Trf.UnusedMetaInfoElim}, {%{GRIN}GrinCode.Trf.UnusedNameElim}, {%{GRIN}GrinCode.Trf.AliasElim}, {%{GRIN}GrinCode.Trf.MayLiveUnboxed})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.UnusedMetaInfoElim}, {%{EH}GrinCode.Trf.UnusedNameElim}, {%{EH}GrinCode.Trf.AliasElim}, {%{EH}GrinCode.Trf.MayLiveUnboxed})
 %%]
-%%[(8 codegen grin) hs import({%{GRIN}GrinCode.Trf.ConstPropagation}, {%{GRIN}GrinCode.Trf.FlattenSeq}, {%{GRIN}GrinCode.Trf.EvalElim}, {%{GRIN}GrinCode.Trf.Inline})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.ConstPropagation}, {%{EH}GrinCode.Trf.FlattenSeq}, {%{EH}GrinCode.Trf.EvalElim}, {%{EH}GrinCode.Trf.Inline})
 %%]
-%%[(8_2 codegen grin) hs import({%{GRIN}GrinCode.Trf.PrettyVarNames})
+%%[(8_2 codegen grin) hs import({%{EH}GrinCode.Trf.PrettyVarNames})
 %%]
 -- Bytecode output
-%%[(8 codegen grin) import({%{GRIN}GrinByteCode.ToC})
+%%[(8 codegen grin) import({%{EH}GrinByteCode.ToC})
 %%]
 -- Alternative backends
-%%[(8 codegen grin) import(qualified {%{GRIN}CompilerDriver} as GRINC)
+%%[(8 codegen grin) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
 %%]
 
 
@@ -118,7 +120,7 @@
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
-%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{GRIN}GrinByteCode.Trf.ForceEval})
+%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
 %%]
 -- CHR solver
 %%[(99 hmtyinfer) import({%{EH}CHR}, {%{EH}CHR.Constraint}, {%{EH}Pred.CHR}, {%{EH}Pred.CommonCHR})
@@ -218,42 +220,6 @@ defaultOptim
 %%[[(20 grin)
       Map.empty
 %%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% State of compilation unit
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-data HSState
-  = HSStart
-%%[[99
-  | LHSStart
-  | LHSOnlyImports
-%%]]
-  | HSAllSem
-%%[[20
-  | HSAllSemHI
-  | HSOnlyImports
-%%]]
-  deriving (Show,Eq)
-%%]
-
-%%[8
-data EHState
-  = EHStart
-  | EHAllSem
-  deriving (Show,Eq)
-%%]
-
-%%[8
-data EHCompileUnitState
-  = ECUSUnknown
-  | ECUSHaskell !HSState
-  | ECUSEh      !EHState
-  | ECUSGrin
-  | ECUSFail
-  deriving (Show,Eq)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

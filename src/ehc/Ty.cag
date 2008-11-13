@@ -3,6 +3,11 @@
 %include afp.fmt
 %%]
 
+%%[1 haddock
+The module %%@{%{EH}%%}Ty contains the Haskell interface to the internal representation of types
+used by EHC. The AST is described in Ty/AbsSyn.
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell importable interface to Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,7 +101,6 @@
 
 %%[(10 hmtyinfer || hmtyast) hs export(Label(..),LabelAGItf(..))
 %%]
--- ,RowExts(..)
 
 %%[(11 hmtyinfer || hmtyast) hs export(tyLamArgsRes)
 %%]
@@ -107,7 +111,13 @@
 %%[(97 hmtyinfer || hmtyast) hs export(tyInteger) 
 %%]
 
-%%[1 ag import({Ty/AbsSyn})
+%%[(1 hmtyinfer || hmtyast).TyAST ag import({Ty/AbsSyn})
+%%]
+
+%%[4 -1.TyAST ag import({Ty/AbsSyn})
+%%]
+
+%%[1 ag
 DERIVING *     : Show, Eq, Ord
 %%]
 

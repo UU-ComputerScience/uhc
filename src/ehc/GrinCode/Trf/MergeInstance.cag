@@ -1,0 +1,115 @@
+%%[(9 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(9 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(9 codegen grin) hs module {%{EH}GrinCode.Trf.MergeInstance} import(qualified Data.Map as Map)
+%%]
+%%[(9 codegen grin) hs import(Debug.Trace)
+%%]
+
+
+%%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GRINCCommon}, {%{EH}GrinCode}) export(mergeInstance)
+
+mergeInstance :: GrModule -> GrModule
+mergeInstance code
+  = let inh = Inh_GrAGItf
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+%%]
+
+%%[(9 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
+%%]
+
+
+%%[(9 codegen grin) hs
+
+type ClassMap = Map.Map HsName [Maybe HsName]
+type ArityMap = Map.Map HsName (Int, [Int])
+
+%%]
+
+
+%%[(9 codegen grin)
+
+ATTR AllBind [ classMap :  {ClassMap}
+               arityMap :  {ArityMap}
+             | 
+             | collectClassMap USE {`Map.union`} {Map.empty} : {ClassMap} 
+               collectArityMap USE {`Map.union`} {Map.empty} : {ArityMap} 
+             ]
+
+ATTR AllBind  [
+              |
+              | newBinds   USE {++} {[]} : GrBindL
+                newGlobals USE {++} {[]} : GrGlobalL
+              ]
+
+SEM GrBind
+  | Bind    lhs.collectClassMap  =  case @annot of
+                                      GrBindAnnClass xs -> Map.singleton @nm xs
+                                      _                 -> Map.empty
+            lhs.collectArityMap  =  case @annot of
+                                      GrBindAnnOverloaded xs -> Map.singleton @nm (length @argNmL - length xs, xs )
+                                      GrBindAnnClass _       -> Map.empty
+                                      GrBindAnnInstance _    -> Map.empty
+                                      _                      -> Map.singleton @nm (length @argNmL            , [] )
+
+SEM GrModule
+  | Mod     bindL.classMap = @bindL.collectClassMap
+            bindL.arityMap = @bindL.collectArityMap
+  
+
+SEM GrModule
+  | Mod    lhs.grTrf  = GrModule_Mod @moduleNm
+                                     (@bindL.newGlobals ++ @globalL.grTrf)
+                                     @bindL.newBinds
+                                     @ctagsMp
+
+SEM GrBind
+  | Bind    (lhs.newBinds
+            ,lhs.newGlobals)  =  case @annot of
+                                   GrBindAnnInstance ( Just tagNm
+                                                     : Just classNm 
+                                                     : funDefs
+                                                     )    -> let dfltDefs = Map.findWithDefault (error "class not found") classNm @lhs.classMap
+                                                                 arity  = length funDefs
+                                                                 tagAnn = GrTagAnn arity arity
+                                                                 tag    = GrTag_Con tagAnn 0 tagNm
+                                                                 pairs  = mergeFields fields @lhs.arityMap @nm funDefs dfltDefs
+                                                                 fields = [ v | (v, _     ) <- pairs ]
+                                                                 globs  = [ g | (_, Just g) <- pairs ]
+                                                                 value  = GrVal_Node tag fields
+                                                                 glob   = GrGlobal_Global @nm value
+                                                             in  ([],globs++[glob])
+                                   _ -> ([@loc.grTrf], [])
+  | Rec     lhs.newBinds = [GrBind_Rec @bindL.newBinds]
+
+%%]
+
+%%[(9 codegen grin) hs
+
+mergeFields :: [GrVal] -> ArityMap -> HsName -> [Maybe HsName] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
+mergeFields fields am i =  zipWith3 (mergeField fields am i) [0..]
+
+mergeField :: [GrVal] -> ArityMap -> HsName -> Int -> Maybe HsName -> Maybe HsName -> (GrVal, Maybe GrGlobal)
+mergeField fields am nm k (Just v) _        = makeGlobal fields am nm k v
+mergeField fields am nm k _        (Just v) = makeGlobal fields am nm k v
+mergeField fields am nm k Nothing  Nothing  = (GrVal_Var hsnUndefined, Nothing)
+
+makeGlobal :: [GrVal] -> ArityMap -> HsName -> Int -> HsName -> (GrVal, Maybe GrGlobal)
+makeGlobal fields am nm k v = case Map.lookup v am of
+                        Nothing     -> (GrVal_Var v, Nothing)
+                        Just (a,ds) -> let tag  = GrTag_PApp a v
+                                           args = map f ds
+                                           f d =  if d>=0 then fields!!d else GrVal_Var nm
+                                           node = GrVal_Node tag args
+                                           name = hsnSuffix nm ('~':show k)
+                                       in  (GrVal_Var name, Just (GrGlobal_Global name node))
+
+%%]

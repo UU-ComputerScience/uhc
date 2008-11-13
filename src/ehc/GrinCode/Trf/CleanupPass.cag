@@ -1,0 +1,89 @@
+Clean up the Grin program:
+- instead of #P/0 tags, use #F tags
+- do not delay constructorfunctions: instead of #F, use #C
+- generate a global variable for each parameterless function
+
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode}) 
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+cleanupPass :: GrModule -> GrModule
+cleanupPass grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in grTrf_Syn_GrAGItf t
+%%]
+
+%%[(8 codegen grin)
+-- synthesize a modified copy
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF ]
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% translate #P/0/f to #F/f
+%%%%% translate #F/c   to #C/c
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+-- Pass down the ctagMap to all GrTag positions, because it is needed when generating #C tags.
+-- The map is taken from the module header and slightly tweaked before passing down.
+
+ATTR AllDef AllExpr [ ctagMap : {Map.Map HsName CTag} | | ]
+
+SEM GrModule
+  | Mod  loc.ctagMap  =  Map.fromList [ x | (_,xs) <- @ctagsMp, x <- xs ]
+
+-- do the translations
+SEM GrTag
+  | Fun  lhs . grTrf = dontDelayConstructors @lhs.ctagMap @nm
+  | PApp lhs . grTrf = if   @needs==0 
+                       then dontDelayConstructors @lhs.ctagMap @nm
+                       else @loc.grTrf
+%%]
+
+%%[(8 codegen grin) hs
+dontDelayConstructors :: Map.Map HsName CTag -> HsName -> GrTag
+dontDelayConstructors ctagMap nm
+  = maybe (GrTag_Fun nm)
+          (\t -> GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag t) nm)
+          (Map.lookup nm ctagMap)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Add Global variables %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Introduce global variables: each function without arguments (or Constant Applicative Form)
+must have a corresponding global variable.
+When the global variable is evaluated, the function is called,
+and the variable overwritten with the result, so that it needs never be called again.
+
+%%[(8 codegen grin)
+ATTR AllBind   [ | | newGlobals USE {++} {[]}: GrGlobalL ]
+
+-- create a new global for each parameterless function
+SEM GrBind
+  | Bind lhs.newGlobals   =  if   null @argNmL 
+                             then [GrGlobal_Global @nm (GrVal_Node (dontDelayConstructors @lhs.ctagMap @nm) [])]
+                             else []
+
+-- insert the new global variables in the module
+SEM GrModule
+  | Mod  lhs.grTrf  =  GrModule_Mod @moduleNm 
+                                    (@globalL.grTrf ++ @bindL.newGlobals)
+                                    @bindL.grTrf 
+                                    @ctagsMp
+
+%%]

@@ -10,7 +10,10 @@
 %%[1 module {%{EH}Gam} import(Data.List,EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}NameAspect}) export(Gam,emptyGam,gamMap,gamLookup,gamLookupDup, gamPushNew, gamPop, gamTop, gamAddGam, gamAdd, gamPushGam, gamToAssocL, gamToAssocDupL, assocLToGam, assocDupLToGam,gamKeys)
 %%]
 
-%%[1 import({%{EH}Ty})
+%%[(1 hmtyinfer || hmtyast).Ty import({%{EH}Ty})
+%%]
+
+%%[4 -1.Ty import({%{EH}Ty})
 %%]
 
 %%[1 import({%{EH}Error}) 

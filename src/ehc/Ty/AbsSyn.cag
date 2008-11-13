@@ -7,6 +7,7 @@
 %%% Abstract syntax for Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(9 hmtyinfer || hmtyast) haddock
 There are some conventions/restrictions on the structure of types that are not enforced
 by the abstract syntax:
 
@@ -24,6 +25,7 @@ Encoding of assume-constraints:
   
   In other words: the predicates are at the outset of a product, pred_n "more outermost"
   than pred_{n-1}.
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Top level
@@ -42,6 +44,18 @@ DATA LabelAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast) haddock
+The basic alternatives encode the following:
+- Con: data type constructors, including tuple constructors
+- App: application to 1 argument, for example 'a -> b' is encoded as (App (App -> a) b)
+- Any: representing Bot/Top depending on context: (1) unknown expected type, (2) error type
+%%[[2
+- Var: type variables
+%%][3
+- Var: type variables, including a category: plain tyvars, fixed tyvars (aka skolems)
+%%]]
+%%]
 
 %%[(1 hmtyinfer || hmtyast).Ty
 DATA Ty
@@ -77,6 +91,10 @@ DATA Ty
   | Quant       qu              : TyQu
                 tv              : {TyVarId}
                 ty              : Ty
+%%]
+
+%%[(4 hmtyinfer || hmtyast) haddock
+Quantifiers: forall & exists
 %%]
 
 %%[4
