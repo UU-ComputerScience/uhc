@@ -9,26 +9,17 @@ Ideally, these tables should be merged.
 %%[(8 codegen grin).moduleHeader module {%{EH}BuiltinPrims}
 %%]
 
-%%[96 -8.moduleHeader module {%{EH}BuiltinPrims}
-%%]
-
 %%[(8 codegen grin) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinByteCode})
 %%]
 
 %%[(8 codegen grin) import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty)
 %%]
 
-%%[96 import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.Builtin})
-%%]
-
-%%[96 import(qualified Data.Map as Map)
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[96 export(PrimitiveNeedsEval(..),lookupPrimNeedsEval)
+%%[(96 codegen grin) export(PrimitiveNeedsEval(..),lookupPrimNeedsEval)
 data PrimitiveNeedsEval
   = Prim    
       { primArgNeedEval     :: ![Bool]  		-- default: True
@@ -42,7 +33,7 @@ lookupPrimNeedsEval {- backend -} name =  Map.lookup name primsNeedsEval {- >>= 
 %%% Primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[96
+%%[(96 codegen grin)
 primsNeedsEval :: Map.Map String ({- Map.Map Backend -} PrimitiveNeedsEval)
 primsNeedsEval
   = Map.fromList

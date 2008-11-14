@@ -10,35 +10,45 @@
 %%[1 module Main
 %%]
 
-%%[1 import(System, IO, Control.Monad, System.Console.GetOpt)
+%%[1 import(System, System.Console.GetOpt)
 %%]
 %%[1 import(Data.Char, Data.List)
 %%]
-%%[1 import(UU.Parsing, UU.Parsing.Offside)
+%%[1 import(qualified EH.Util.FastSeq as Seq)
 %%]
-%%[1 import(EH.Util.Utils, EH.Util.Pretty, qualified EH.Util.FastSeq as Seq)
-%%]
-%%[1 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Base.Opts})
-%%]
-%%[1 import({%{EH}Error.Pretty}, {%{EH}Scanner.Common}, qualified {%{EH}Config} as Cfg)
-%%]
-%%[1 import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}HS.Parser} as HSPrs)
+%%[1 import(qualified {%{EH}Config} as Cfg)
 %%]
 %%[1 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 
-%%[8 import({%{EH}EHC.CompileUnit})
+-- parsing later put in {%{EH}EHC.CompilePhase.Parsers}
+%%[1.scannercommon import({%{EH}Scanner.Common})
+%%]
+%%[1.parsinglib import(UU.Parsing, UU.Parsing.Offside)
+%%]
+%%[1.parse.EHPrs.HSPrs import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}HS.Parser} as HSPrs)
 %%]
 
+-- compiler driver modules
+%%[1 import({%{EH}EHC.Common})
+%%]
+%%[8 import({%{EH}EHC.CompileUnit})
+%%]
+%%[8 import({%{EH}EHC.CompileGroup})
+%%]
+%%[8 import({%{EH}EHC.CompileRun})
+%%]
+%%[8 -(1.scannercommon 1.parsinglib 1.parse.EHPrs.HSPrs) import({%{EH}EHC.CompilePhase.Parsers})
+%%]
+%%[8 import({%{EH}EHC.CompilePhase.Output})
+%%]
+
+-- general imports
 %%[8 import(qualified Debug.Trace)
 %%]
-%%[8 import(Control.Monad.State)
+%%[8 import(qualified Data.Map as Map)
 %%]
-%%[8 import(qualified Data.Map as Map, Data.Maybe)
-%%]
-%%[8 import(EH.Util.CompileRun, EH.Util.FPath, EH.Util.ParseUtils, qualified EH.Util.ScanUtils as ScanUtils)
-%%]
-%%[8 import({%{EH}Error}, {%{EH}Gam})
+%%[8 import({%{EH}Gam})
 %%]
 -- Language syntax: HS, EH
 %%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}EH} as EH)
@@ -48,12 +58,7 @@
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
--- Java output
-%%[(8 codegen java) import({%{EH}Core.ToJava})
-%%]
 -- Core output
-%%[(8 codegen) import({%{EH}Core.Pretty})
-%%]
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 -- Core transformations
@@ -70,8 +75,8 @@
 -- GRIN
 %%[(8 codegen grin) import(qualified {%{EH}GRINCCommon} as GRINCCommon)
 %%]
--- Grin input and output
-%%[(8 codegen grin) import(qualified {%{EH}GrinCode.Parser} as GrinParser, {%{EH}GrinCode.Pretty}, {%{EH}GrinCode.ToGrinByteCode})
+-- Grin output
+%%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode})
 %%]
 -- Grin transformations
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.UnusedMetaInfoElim}, {%{EH}GrinCode.Trf.UnusedNameElim}, {%{EH}GrinCode.Trf.AliasElim}, {%{EH}GrinCode.Trf.MayLiveUnboxed})
@@ -92,19 +97,14 @@
 %%]
 
 
-%%[20 import(System.Time, System.Directory)
-%%]
 %%[20 import(qualified Data.Set as Set)
 %%]
 %%[20 import(qualified EH.Util.Rel as Rel)
 %%]
 %%[20 import({%{EH}Module})
 %%]
--- Core parser
-%%[(20 codegen) import(qualified {%{EH}Core.Parser} as CorePrs)
-%%]
--- HI Syntax, parser and semantics
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.Parser} as HIPrs, qualified {%{EH}HI.MainAG} as HISem)
+-- HI syntax and semantics
+%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
 %%]
 %%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
@@ -116,19 +116,11 @@
 -- Force evaluation for IO
 %%[99 import({%{EH}Base.ForceEval})
 %%]
-%%[(99 hmtyinfer || hmtyast) import( {%{EH}Ty.Trf.ForceEval})
-%%]
-%%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
-%%]
-%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
-%%]
 -- CHR solver
 %%[(99 hmtyinfer) import({%{EH}CHR}, {%{EH}CHR.Constraint}, {%{EH}Pred.CHR}, {%{EH}Pred.CommonCHR})
 %%]
 
 -- Misc
-%%[102 import({%{EH}Debug.HighWaterMark})
-%%]
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]
 
@@ -180,348 +172,6 @@ main
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compilation group
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-data EHCompileGroup
-  = EHCompileGroup
-      { ecgNm                :: HsName
-      , ecgModL              :: [HsName]
-      }
-
-emptyECG :: EHCompileGroup
-emptyECG
-  = EHCompileGroup
-      { ecgNm                = hsnUnknown
-      , ecgModL              = []
-      }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Inter module optimisation info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Intermodule optimisation info.
-Currently only for Grin meant to be compiled to GrinByteCode.
-Absence of this info should not prevent correct compilation.
-
-%%[20
-data Optim
-  = Optim
-%%[[(20 grin)
-      { optimGrInlMp          :: Grin.GrInlMp        -- inlining map, from name to GrExpr (grin expressions)
-      }
-%%]]
-
-defaultOptim :: Optim
-defaultOptim
-  = Optim
-%%[[(20 grin)
-      Map.empty
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compilation unit
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-data EHCompileUnit
-  = EHCompileUnit
-      { ecuFilePath          :: !FPath
-      , ecuGrpNm             :: !HsName
-      , ecuModNm             :: !HsName
-      , ecuImpNmL            :: ![HsName]
-      , ecuMbHS              :: !(Maybe HS.AGItf)
-      , ecuMbHSSem           :: !(Maybe HSSem.Syn_AGItf)
-      , ecuMbEH              :: !(Maybe EH.AGItf)
-      , ecuMbEHSem           :: !(Maybe EHSem.Syn_AGItf)
-%%[[(8 codegen)
-      , ecuMbCore            :: !(Maybe Core.CModule)
-      , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
-%%]]
-%%[[(8 grin)
-      , ecuMbGrin            :: !(Maybe Grin.GrModule)
-      , ecuMbBytecode        :: !(Maybe Bytecode.Module)
-      , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
-%%]]
-      , ecuState             :: !EHCompileUnitState
-%%[[20
-      , ecuIsTopMod          :: !Bool
-      , ecuMbHSTime          :: !(Maybe ClockTime)
-      , ecuMbHITime          :: !(Maybe ClockTime)
-%%[[(8 codegen)
-      , ecuMbCoreTime        :: !(Maybe ClockTime)
-%%]]
-      , ecuMbHSSemMod        :: !(Maybe HSSemMod.Syn_AGItf)
-      , ecuMod               :: !Mod
-      , ecuMbPrevHI          :: !(Maybe HI.AGItf)
-      , ecuMbPrevHISem       :: !(Maybe HISem.Syn_AGItf)
-      , ecuMbOptim           :: !(Maybe Optim)
-      , ecuHIInfo            :: !HI.HIInfo
-%%]]
-%%[[101
-      , ecuDirIsWritable     :: !Bool
-%%]]
-      }
-%%]
-      , ecuMbEHSem2          :: !(Maybe EHSem.Syn_AGItf)
-
-%%[8
-emptyECU :: EHCompileUnit
-emptyECU
-  = EHCompileUnit
-      { ecuFilePath          = emptyFPath
-      , ecuGrpNm             = hsnUnknown
-      , ecuModNm             = hsnUnknown
-      , ecuImpNmL            = []
-      , ecuMbHS              = Nothing
-      , ecuMbHSSem           = Nothing
-      , ecuMbEH              = Nothing
-      , ecuMbEHSem           = Nothing
-%%[[102
-%%]]
-%%[[(8 codegen)
-      , ecuMbCore            = Nothing
-      , ecuMbCoreSem         = Nothing
-%%]]
-%%[[(8 grin)
-      , ecuMbGrin            = Nothing
-      , ecuMbBytecode        = Nothing
-      , ecuMbBytecodeSem     = Nothing
-%%]]
-      , ecuState             = ECUSUnknown
-%%[[20
-      , ecuIsTopMod          = False
-      , ecuMbHSTime          = Nothing
-      , ecuMbHITime          = Nothing
-%%[[(8 codegen)
-      , ecuMbCoreTime        = Nothing
-%%]]
-      , ecuMbHSSemMod        = Nothing
-      , ecuMod               = emptyMod
-      , ecuMbPrevHI          = Nothing
-      , ecuMbPrevHISem       = Nothing
-      , ecuMbOptim           = Nothing
-      , ecuHIInfo            = HI.emptyHIInfo
-%%]]
-%%[[101
-      , ecuDirIsWritable     = False
-%%]]
-      }
-%%]
-      , ecuMbEHSem2          = Nothing
-
-%%[8
-instance CompileUnitState EHCompileUnitState where
-  cusDefault      = ECUSEh EHStart
-  cusUnk          = ECUSUnknown
-  cusIsUnk        = (==ECUSUnknown)
-%%]
-%%[8.cusIsImpKnown
-  cusIsImpKnown _ = True
-%%]
-%%[20 -8.cusIsImpKnown
-  cusIsImpKnown s = case s of
-                      ECUSHaskell HSOnlyImports  -> True
-%%[[99
-                      ECUSHaskell LHSOnlyImports -> True
-%%]]
-                      ECUSHaskell HSAllSem       -> True
-                      ECUSHaskell HSAllSemHI     -> True
-                      _                          -> False
-%%]
-
-%%[8
-instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
-  cuDefault         = emptyECU
-  cuFPath           = ecuFilePath
-  cuKey             = ecuModNm
-  cuState           = ecuState
-  cuUpdFPath        = ecuStoreFilePath
-  cuUpdState        = ecuStoreState
-  cuUpdKey   nm u   = u {ecuModNm = nm}
-  cuImports         = ecuImpNmL
-
-instance CompileRunError Err () where
-  crePPErrL                 = ppErrL
-  creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
-  creAreFatal               = errLIsFatal
-
-instance CompileModName HsName where
-  mkCMNm = hsnFromString
-
-instance Show EHCompileUnit where
-  show _ = "EHCompileUnit"
-
-instance PP EHCompileUnit where
-  pp ecu
-    = ecuModNm ecu >|<
-%%[[20
-      ":" >#< ppCommas (ecuImpNmL ecu) >|<
-%%]]
-      "," >#< show (ecuState ecu)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Storing into an EHCompileUnit
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-type EcuUpdater a = a -> EHCompileUnit -> EHCompileUnit
-
-ecuStoreFilePath :: EcuUpdater FPath
-ecuStoreFilePath x ecu = ecu { ecuFilePath = x }
-
-ecuStoreState :: EcuUpdater EHCompileUnitState
-ecuStoreState x ecu = ecu { ecuState = x }
-
-ecuStoreHS :: EcuUpdater HS.AGItf
-ecuStoreHS x ecu = ecu { ecuMbHS = Just x }
-
-ecuStoreEH :: EcuUpdater EH.AGItf
-ecuStoreEH x ecu = ecu { ecuMbEH = Just x }
-
-ecuStoreHSSem :: EcuUpdater HSSem.Syn_AGItf
-ecuStoreHSSem x ecu = ecu { ecuMbHSSem = Just x }
-
-ecuStoreEHSem :: EcuUpdater EHSem.Syn_AGItf
-ecuStoreEHSem x ecu = ecu { ecuMbEHSem = Just x }
-%%]
-
-%%[(8 codegen)
-ecuStoreCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
-ecuStoreCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
-
-ecuStoreCore :: EcuUpdater Core.CModule
-%%[[8
-ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
-%%][99
-ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
-%%]]
-%%]
-
-%%[(8 grin)
-ecuStoreGrin :: EcuUpdater Grin.GrModule
-%%[[8
-ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
-%%][99
-ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
-%%]]
-
-ecuStoreBytecode :: EcuUpdater Bytecode.Module
-%%[[8
-ecuStoreBytecode x ecu = ecu { ecuMbBytecode = Just x }
-%%][99
-ecuStoreBytecode x ecu | forceEval x `seq` True = ecu { ecuMbBytecode = Just x }
-%%]]
-
-ecuStoreBytecodeSem :: EcuUpdater PP_Doc
-ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
-%%]
-
-%%[20
-ecuStoreHSTime :: EcuUpdater ClockTime
-ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
-
-ecuStoreHITime :: EcuUpdater ClockTime
-ecuStoreHITime x ecu = ecu { ecuMbHITime = Just x }
-
-ecuStoreHSSemMod :: EcuUpdater HSSemMod.Syn_AGItf
-ecuStoreHSSemMod x ecu = ecu { ecuMbHSSemMod = Just x }
-
-ecuStoreImpL :: EcuUpdater [HsName]
-ecuStoreImpL x ecu = ecu { ecuImpNmL = x }
-
-ecuStoreMod :: EcuUpdater Mod
-ecuStoreMod x ecu = ecu { ecuMod = x }
-
-ecuSetIsTopMod :: EcuUpdater Bool
-ecuSetIsTopMod x ecu = ecu { ecuIsTopMod = x }
-
-{-
-ecuStorePrevCore :: EcuUpdater Core.CModule
-ecuStorePrevCore x ecu = ecu { ecuMbPrevCore = Just x }
--}
-
-ecuStorePrevHI :: EcuUpdater HI.AGItf
-ecuStorePrevHI x ecu = ecu { ecuMbPrevHI = Just x }
-
-ecuStorePrevHISem :: EcuUpdater HISem.Syn_AGItf
-ecuStorePrevHISem x ecu = ecu { ecuMbPrevHISem = Just x }
-
-ecuStoreOptim :: EcuUpdater Optim
-ecuStoreOptim x ecu = ecu { ecuMbOptim = Just x }
-
-ecuStoreHIInfo :: EcuUpdater HI.HIInfo
-%%[[8
-ecuStoreHIInfo x ecu = ecu { ecuHIInfo = x }
-%%][99
-ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
-%%]]
-%%]
-
-%%[(20 codegen)
-ecuStoreCoreTime :: EcuUpdater ClockTime
-ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
-%%]
-
-%%[101
-ecuStoreDirIsWritable :: EcuUpdater Bool
-ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile run combinators
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-data EHCompileRunStateInfo
-  = EHCompileRunStateInfo
-      { crsiOpts        :: !EHCOpts                             -- options
-      , crsiHSInh       :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
-      , crsiEHInh       :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
-%%[[(8 codegen)
-      , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
-%%]]
-      , crsiNextUID     :: !UID                                 -- unique id, the next one
-      , crsiHereUID     :: !UID                                 -- unique id, the current one
-%%[[20
-      , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
-      , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
-      , crsiModMp       :: !ModMp                               -- import/export info for modules
-      , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
-      , crsiOptim       :: !Optim                               -- inter module optimisation info
-%%]]
-%%[[(20 codegen)
-      , crsiModOffMp    :: !Core.HsName2OffsetMpMp              -- mapping of all modules + exp entries to offsets in module + exp tables
-%%]]
-      }
-%%]
-
-%%[(20 codegen)
-crsiExpNmOffMp :: HsName -> EHCompileRunStateInfo -> Core.HsName2OffsetMp
-crsiExpNmOffMp modNm crsi = mmiNmOffMp $ panicJust "crsiExpNmOffMp" $ Map.lookup modNm $ crsiModMp crsi
-%%]
-
-%%[20
-instance Show EHCompileRunStateInfo where
-  show _ = "EHCompileRunStateInfo"
-
-instance PP EHCompileRunStateInfo where
-  pp i = "CRSI:" >#< ppModMp (crsiModMp i)
-%%]
-
-%%[8
-instance CompileRunStateInfo EHCompileRunStateInfo HsName () where
-  crsiImportPosOfCUKey n i = ()
-
-type EHCompileRun     = CompileRun   HsName EHCompileUnit EHCompileRunStateInfo Err
-type EHCompilePhase a = CompilePhase HsName EHCompileUnit EHCompileRunStateInfo Err a
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Search path
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -549,153 +199,6 @@ fileSuffMpHs
 showSizeCore :: Core.CModule -> String
 showSizeCore x = fevShow "Core" x
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: message
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-cpMsg :: HsName -> Verbosity -> String -> EHCompilePhase ()
-cpMsg modNm v m
-  = do { cr <- get
-       ; let (_,_,_,fp) = crBaseInfo modNm cr
-       ; cpMsg' modNm v m Nothing fp
-       }
-
-cpMsg' :: HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhase ()
-cpMsg' modNm v m mbInfo fp
-  = do { cr <- get
-       ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; lift $ putCompileMsg v (ehcOptVerbosity opts) m mbInfo modNm fp
-       -- ; lift $ putStrLn "XX"
-       ; cpMemUsage
-       }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: parsing
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-cpParseOffside :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhase ()
-cpParseOffside parser scanOpts store description modNm
- = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
-      ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
-      ; let (res,msgs) = parseOffsideToResMsgs parser tokens
-            errs       = map (rngLift emptyRange mkPPErr) msgs
-      ; cpUpdCU modNm (store res)
-      ; cpSetLimitErrsWhen 5 description errs
-      }
-
-cpParsePlain' :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhase [Err]
-cpParsePlain' parser scanOpts store fp modNm
- = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath fp ReadMode
-      ; tokens  <- lift $ scanHandle scanOpts fn fh
-      ; let (res,msgs) = parseToResMsgs parser tokens
-            errs       = map (rngLift emptyRange mkPPErr) msgs
-      ; when (null errs)
-             (cpUpdCU modNm (store res))
-      ; return errs
-      }
-
-cpParsePlain :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> FPath -> HsName -> EHCompilePhase ()
-cpParsePlain parser scanOpts store description fp modNm
- = do { errs <- cpParsePlain' parser scanOpts store fp modNm
-      ; cpSetLimitErrsWhen 5 description errs
-      }
-
-cpParseEH :: HsName -> EHCompilePhase ()
-cpParseEH
-  = cpParseOffside EHPrs.pAGItf ehScanOpts ecuStoreEH "Parse (EH syntax) of module"
-%%]
-
-%%[(8 grin)
-cpParseGrin :: HsName -> EHCompilePhase ()
-cpParseGrin modNm
-  = do { cr <- get
-       ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
-       }
-%%]
-
-%%[8.cpParseHs
-cpParseHs :: HsName -> EHCompilePhase ()
-cpParseHs = cpParseOffside HSPrs.pAGItf hsScanOpts ecuStoreHS "Parse (Haskell syntax) of module"
-%%]
-
-%%[99 -8.cpParseHs
-cpParseHs :: Bool -> HsName -> EHCompilePhase ()
-cpParseHs litmode
-  = cpParseOffside HSPrs.pAGItf (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
-                   ("Parse (" ++ (if litmode then "Literate " else "") ++ "Haskell syntax) of module")
-%%]
-
-%%[20
-cpParseOffsideStopAtErr :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> HsName -> EHCompilePhase ()
-cpParseOffsideStopAtErr parser scanOpts store modNm
- = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
-      ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
-      ; let (res,_) = parseOffsideToResMsgsStopAtErr parser tokens
-      ; cpUpdCU modNm (store res)
-      }
-%%]
-
-%%[20.cpParseHsImport
-cpParseHsImport :: HsName -> EHCompilePhase ()
-cpParseHsImport = cpParseOffsideStopAtErr HSPrs.pAGItfImport hsScanOpts ecuStoreHS
-%%]
-
-%%[99 -20.cpParseHsImport
-cpParseHsImport :: Bool -> HsName -> EHCompilePhase ()
-cpParseHsImport litmode = cpParseOffsideStopAtErr HSPrs.pAGItfImport (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
-%%]
-
-%%[(20 codegen)
-cpParseCore :: HsName -> EHCompilePhase ()
-cpParseCore modNm
-  = do { cr <- get
-       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              fpC     = fpathSetSuff "core" fp
-       ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
-       ; errs <- cpParsePlain' CorePrs.pCModule coreScanOpts ecuStoreCore fpC modNm
-       ; when (ehcDebugStopAtCoreError opts) $ cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs
-       ; return ()
-       }
-%%]
-
-%%[20
-cpParsePrevHI :: HsName -> EHCompilePhase ()
-cpParsePrevHI modNm
-  = do { cr <- get
-       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              fpH     = fpathSetSuff "hi" fp
-       ; cpMsg' modNm VerboseALot "Parsing" Nothing fpH
-       ; errs <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI fpH modNm
-       ; when (ehcDebugStopAtHIError opts) $ cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
-       ; return ()
-       }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile Run base info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-crBaseInfo' :: EHCompileRun -> (EHCompileRunStateInfo,EHCOpts)
-crBaseInfo' cr
-  = (crsi,opts)
-  where crsi   = crStateInfo cr
-        opts   = crsiOpts  crsi
-
-crBaseInfo :: HsName -> EHCompileRun -> (EHCompileUnit,EHCompileRunStateInfo,EHCOpts,FPath)
-crBaseInfo modNm cr
-  = (ecu,crsi,opts,fp)
-  where ecu         = crCU modNm cr
-        (crsi,opts) = crBaseInfo' cr
-        fp          = ecuFilePath ecu
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1801,97 +1304,6 @@ cpProcessBytecode modNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: output
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-cpOutputCore :: String -> HsName -> EHCompilePhase ()
-cpOutputCore suff modNm
-  =  do  {  cr <- get
-         -- part 1: current .core
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbCore = ecuMbCore ecu
-                 cMod   = panicJust "cpOutputCore" mbCore
-                 fpC = fpathSetSuff suff fp                
-         ;  when (ehcOptEmitCore opts) 
-                 (do { cpMsg modNm VerboseALot "Emit Core"
-                     ; lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule opts cMod) 100
-                     })
-         }
-%%]
-
-%%[(8 codegen java)
-cpOutputJava :: String -> HsName -> EHCompilePhase ()
-cpOutputJava suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbCore = ecuMbCore ecu
-                 cMod   = panicJust "cpOutputJava" mbCore
-                 (jBase,jPP) = cmodJavaSrc cMod
-                 fpJ = fpathSetBase jBase fp                 
-         ;  when (ehcOptEmitJava opts)
-                 (do { cpMsg modNm VerboseALot "Emit Java"
-                     ; lift (putPPFile (fpathToStr (fpathSetSuff suff fpJ)) jPP 100)
-                     })
-         }
-%%]
-
-%%[(8 codegen grin)
-cpOutputGrin :: String -> HsName -> EHCompilePhase ()
-cpOutputGrin suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpOutputGrin" mbGrin
-                 grinPP = ppGrModule grin
-                 fpG    = fpathSetSuff "grin" (fpathSetBase (fpathBase fp ++ suff) fp)
-         ;  when (ehcOptEmitGrin opts)
-                 (do { cpMsg modNm VerboseALot "Emit Grin"
-                     ; lift $ putPPFile (fpathToStr fpG) grinPP 1000
-                     })
-         }
-%%]
-
-%%[(8 codegen grin)
-cpOutputByteCodeC :: String -> HsName -> EHCompilePhase ()
-cpOutputByteCodeC suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-                 mbPP     = ecuMbBytecodeSem ecu
-                 fpC      = fpathSetSuff suff fp
-         ;  when (ehcOptEmitBytecode opts && isJust mbPP)
-                 (do { cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC
-                     ; lift $ putPPFile (fpathToStr fpC) (fromJust mbPP) 150
-                     })
-         }
-%%]
-
-%%[20
-cpOutputHI :: String -> HsName -> EHCompilePhase ()
-cpOutputHI suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-                 binds  = Seq.toList $ HI.hiFromHIInfo
-                          $ ((ecuHIInfo ecu)
-                               { HI.hiiExps       = mmiExps       mmi
-                               , HI.hiiHiddenExps = mmiHiddenExps mmi
-                               })
-                 hi     = HISem.wrap_AGItf
-                            (HISem.sem_AGItf
-                              (HI.AGItf_AGItf $ HI.Module_Module modNm
-                                $ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvn Cfg.version) (optsDiscrRecompileRepr opts) 0
-                                  : binds))
-                            (crsiHIInh crsi)
-         ;  cpMsg modNm VerboseALot "Emit HI"
-         ;  lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (HISem.pp_Syn_AGItf hi) 120
-         ;  now <- lift $ getClockTime
-         ;  cpUpdCU modNm $ ecuStoreHITime now
-         }
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% XXX periments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -2032,25 +1444,6 @@ cpCleanupFlow modNm
                , ecuMbPrevHISem       = Nothing
                }
       )
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: debug info
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-cpMemUsage :: EHCompilePhase ()
-cpMemUsage
-%%[[8
-  = return ()
-%%][102
-  = do { cr <- get
-       ; let (crsi,opts) = crBaseInfo' cr
-       ; size <- lift $ megaBytesAllocated
-       ; when (ehcOptVerbosity opts >= VerboseDebug)
-              (lift $ putStrLn ("Mem: " ++ show size ++ "M"))
-       }
-%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
