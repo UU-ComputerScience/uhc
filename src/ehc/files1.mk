@@ -66,8 +66,10 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Ty/FitsInCommon Ty/FitsInCommon2 Ty/FitsIn Ty/Utils \
 													Ty/Trf/BetaReduce \
 													Core/Coercion Core/Utils \
-													EHC/Common EHC/CompileUnit EHC/CompileGroup EHC/CompileRun EHC/GrinCompilerDriver \
-													EHC/CompilePhase/Parsers EHC/CompilePhase/Output \
+													EHC/Common EHC/CompileUnit EHC/CompileGroup EHC/CompileRun EHC/GrinCompilerDriver EHC/InitialSetup \
+													EHC/CompilePhase/Parsers EHC/CompilePhase/Output EHC/CompilePhase/Translations EHC/CompilePhase/TransformCore \
+													EHC/CompilePhase/FlowBetweenPhase EHC/CompilePhase/CompileC EHC/CompilePhase/TransformGrin EHC/CompilePhase/Semantics \
+													EHC/CompilePhase/CompileLLVM EHC/CompilePhase/Cleanup EHC/CompilePhase/Module EHC/CompilePhase/TopLevelPhases \
 													Gam/Utils \
 													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
 													Base/HtmlCommon \

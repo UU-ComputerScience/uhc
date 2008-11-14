@@ -15,7 +15,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileGroup})
+%%[20 import({%{EH}EHC.CompileGroup})
 %%]
 -- Language syntax: Core
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
@@ -149,5 +149,89 @@ cpMsg' modNm v m mbInfo fp
        -- ; lift $ putStrLn "XX"
        ; cpMemUsage
        }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: step unique counter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(cpStepUID)
+cpStepUID :: EHCompilePhase ()
+cpStepUID
+  = do{ cr <- get
+      ; let (n,h) = mkNewLevUID (crsiNextUID crsi)
+            crsi = crStateInfo cr
+      ; put (cr {crStateInfo = crsi {crsiNextUID = n, crsiHereUID = h}})
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: shell/system/cmdline invocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(cpSystem)
+cpSystem :: String -> EHCompilePhase ()
+cpSystem cmd
+  = do { exitCode <- lift $ system cmd
+       ; case exitCode of
+           ExitSuccess -> return ()
+           _           -> cpSetFail
+       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: stop at phase
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(cpStopAt)
+cpStopAt :: CompilePoint -> EHCompilePhase ()
+cpStopAt atPhase
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; unless (atPhase < ehcStopAtPoint opts)
+                cpSetStopAllSeq
+       }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Partition imports into newer + older
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+crPartitionNewerOlderImports :: HsName -> EHCompileRun -> ([EHCompileUnit],[EHCompileUnit])
+crPartitionNewerOlderImports modNm cr
+  = partition isNewer $ map (flip crCU cr) $ ecuImpNmL ecu
+  where ecu = crCU modNm cr
+        t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHITime ecu
+        isNewer ecu'
+            = t' `diffClockTimes` t > noTimeDiff 
+            where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHITime ecu'
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module needs recompilation?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(crModNeedsCompile)
+crModNeedsCompile :: HsName -> EHCompileRun -> Bool
+crModNeedsCompile modNm cr
+  = ecuIsTopMod ecu
+    || (not $ ehcOptCheckRecompile $ crsiOpts $ crStateInfo cr)
+    || ecuIsHSNewerThanHI ecu
+    || not (ecuIsValidHI ecu)
+    || not (null newer)
+  where ecu = crCU modNm cr
+        (newer,_) = crPartitionNewerOlderImports modNm cr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compilation can actually be done?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[101 export(crModCanCompile)
+crModCanCompile :: HsName -> EHCompileRun -> Bool
+crModCanCompile modNm cr
+  = ecuDirIsWritable ecu
+  where ecu = crCU modNm cr
 %%]
 

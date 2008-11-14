@@ -323,4 +323,24 @@ ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates on EHCompileUnit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(ecuIsHSNewerThanHI)
+ecuIsHSNewerThanHI :: EHCompileUnit -> Bool
+ecuIsHSNewerThanHI ecu
+  = case ecuMbHITime ecu of
+      Just thi -> ths `diffClockTimes` thi > noTimeDiff 
+               where ths = panicJust "ecuIsHSNewerThanHI" $ ecuMbHSTime ecu
+      _        -> True
+%%]
+
+%%[20 export(ecuIsValidHI)
+ecuIsValidHI :: EHCompileUnit -> Bool
+ecuIsValidHI ecu
+  = case ecuMbPrevHISem ecu of
+      Just s -> HISem.isValidVersion_Syn_AGItf s
+      _      -> False
+%%]
 

@@ -142,5 +142,29 @@ cpParsePrevHI modNm
        }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: on top of parsing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(cpGetPrevHI)
+cpGetPrevHI :: HsName -> EHCompilePhase ()
+cpGetPrevHI modNm
+  = do { cr <- get
+       ; let  ecu        = crCU modNm cr
+       ; when (isJust (ecuMbHITime ecu))
+              (cpParsePrevHI modNm)
+       }
+%%]
+
+%%[(20 codegen) export(cpGetPrevCore)
+cpGetPrevCore :: HsName -> EHCompilePhase ()
+cpGetPrevCore modNm
+  = do { cr <- get
+       ; let  ecu    = crCU modNm cr
+       ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
+              (cpParseCore modNm)
+       }
+%%]
+
 
 
