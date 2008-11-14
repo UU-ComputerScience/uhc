@@ -10,11 +10,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- general imports
 %%[8 import(qualified Data.Map as Map)
 %%]
-%%[8 import(EH.Util.CompileRun, EH.Util.Pretty, EH.Util.FPath)
-%%]
-%%[8 import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Base.Opts})
-%%]
-%%[8 import({%{EH}Error})
+%%[8 import({%{EH}EHC.Common})
 %%]
 
 -- Language syntax: HS, EH
@@ -23,53 +19,34 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language syntax: Core, Grin, ...
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
 %%]
-%%[(8888 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
+%%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
+%%]
+-- Language semantics: HS, EH
+%%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
+%%]
+-- Language semantics: Core
+%%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
+%%]
+
+-- HI Syntax and semantics, HS module semantics
+%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
+%%]
+%%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%]
+-- module admin
+%%[20 import({%{EH}Module})
 %%]
 
 -- timestamps
-%%[2020 import(System.Time, System.Directory)
+%%[20 import(System.Time, System.Directory)
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% State of compilation unit
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-The state HS compilation can be in
-
-%%[8 export(HSState(..))
-data HSState
-  = HSStart
-%%[[99
-  | LHSStart
-  | LHSOnlyImports
-%%]]
-  | HSAllSem
-%%[[20
-  | HSAllSemHI
-  | HSOnlyImports
-%%]]
-  deriving (Show,Eq)
+-- Force evaluation for IO
+%%[99 import({%{EH}Base.ForceEval})
 %%]
-
-The state EH compilation can be in
-
-%%[8 export(EHState(..))
-data EHState
-  = EHStart
-  | EHAllSem
-  deriving (Show,Eq)
+%%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
-
-The state any compilation can be in
-
-%%[8 export(EHCompileUnitState(..))
-data EHCompileUnitState
-  = ECUSUnknown
-  | ECUSHaskell !HSState
-  | ECUSEh      !EHState
-  | ECUSGrin
-  | ECUSFail
-  deriving (Show,Eq)
+%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,7 +57,7 @@ Intermodule optimisation info.
 Currently only for Grin meant to be compiled to GrinByteCode.
 Absence of this info should not prevent correct compilation.
 
-%%[2020 export(Optim(..),defaultOptim)
+%%[20 export(Optim(..),defaultOptim)
 data Optim
   = Optim
 %%[[(20 grin)
@@ -100,7 +77,7 @@ defaultOptim
 %%% Compilation unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8888 export(EHCompileUnit(..))
+%%[8 export(EHCompileUnit(..))
 data EHCompileUnit
   = EHCompileUnit
       { ecuFilePath          :: !FPath
@@ -111,21 +88,21 @@ data EHCompileUnit
       , ecuMbHSSem           :: !(Maybe HSSem.Syn_AGItf)
       , ecuMbEH              :: !(Maybe EH.AGItf)
       , ecuMbEHSem           :: !(Maybe EHSem.Syn_AGItf)
-%%[[(8888 codegen)
+%%[[(8 codegen)
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
-%%[[(8888 grin)
+%%[[(8 grin)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
       , ecuState             :: !EHCompileUnitState
-%%[[2020
+%%[[20
       , ecuIsTopMod          :: !Bool
       , ecuMbHSTime          :: !(Maybe ClockTime)
       , ecuMbHITime          :: !(Maybe ClockTime)
-%%[[(8888 codegen)
+%%[[(8 codegen)
       , ecuMbCoreTime        :: !(Maybe ClockTime)
 %%]]
       , ecuMbHSSemMod        :: !(Maybe HSSemMod.Syn_AGItf)
@@ -142,7 +119,7 @@ data EHCompileUnit
 %%]
       , ecuMbEHSem2          :: !(Maybe EHSem.Syn_AGItf)
 
-%%[8888 export(emptyECU)
+%%[8 export(emptyECU)
 emptyECU :: EHCompileUnit
 emptyECU
   = EHCompileUnit
@@ -156,21 +133,21 @@ emptyECU
       , ecuMbEHSem           = Nothing
 %%[[102
 %%]]
-%%[[(8888 codegen)
+%%[[(8 codegen)
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
 %%]]
-%%[[(8888 grin)
+%%[[(8 grin)
       , ecuMbGrin            = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
 %%]]
       , ecuState             = ECUSUnknown
-%%[[2020
+%%[[20
       , ecuIsTopMod          = False
       , ecuMbHSTime          = Nothing
       , ecuMbHITime          = Nothing
-%%[[(8888 codegen)
+%%[[(8 codegen)
       , ecuMbCoreTime        = Nothing
 %%]]
       , ecuMbHSSemMod        = Nothing
@@ -187,19 +164,19 @@ emptyECU
 %%]
       , ecuMbEHSem2          = Nothing
 
-%%[8888
+%%[8
 instance CompileUnitState EHCompileUnitState where
   cusDefault      = ECUSEh EHStart
   cusUnk          = ECUSUnknown
   cusIsUnk        = (==ECUSUnknown)
 %%]
-%%[8888.cusIsImpKnown
+%%[8.cusIsImpKnown
   cusIsImpKnown _ = True
 %%]
-%%[2020 -8.cusIsImpKnown
+%%[20 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
                       ECUSHaskell HSOnlyImports  -> True
-%%[[9999
+%%[[99
                       ECUSHaskell LHSOnlyImports -> True
 %%]]
                       ECUSHaskell HSAllSem       -> True
@@ -207,7 +184,7 @@ instance CompileUnitState EHCompileUnitState where
                       _                          -> False
 %%]
 
-%%[8888
+%%[8
 instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
   cuDefault         = emptyECU
   cuFPath           = ecuFilePath
@@ -232,7 +209,7 @@ instance Show EHCompileUnit where
 instance PP EHCompileUnit where
   pp ecu
     = ecuModNm ecu >|<
-%%[[2020
+%%[[20
       ":" >#< ppCommas (ecuImpNmL ecu) >|<
 %%]]
       "," >#< show (ecuState ecu)
@@ -242,7 +219,7 @@ instance PP EHCompileUnit where
 %%% Storing into an EHCompileUnit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8888 export(EcuUpdater,ecuStoreFilePath,ecuStoreState,ecuStoreHS,ecuStoreEH,ecuStoreHSSem,ecuStoreEHSem)
+%%[8 export(EcuUpdater,ecuStoreFilePath,ecuStoreState,ecuStoreHS,ecuStoreEH,ecuStoreHSSem,ecuStoreEHSem)
 type EcuUpdater a = a -> EHCompileUnit -> EHCompileUnit
 
 ecuStoreFilePath :: EcuUpdater FPath
@@ -264,30 +241,30 @@ ecuStoreEHSem :: EcuUpdater EHSem.Syn_AGItf
 ecuStoreEHSem x ecu = ecu { ecuMbEHSem = Just x }
 %%]
 
-%%[(8888 codegen) export(ecuStoreCoreSem,ecuStoreCore)
+%%[(8 codegen) export(ecuStoreCoreSem,ecuStoreCore)
 ecuStoreCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
 ecuStoreCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
 
 ecuStoreCore :: EcuUpdater Core.CModule
-%%[[8888
+%%[[8
 ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
-%%][9999
+%%][99
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
 
-%%[(8888 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
+%%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
 ecuStoreGrin :: EcuUpdater Grin.GrModule
-%%[[8888
+%%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
-%%][9999
+%%][99
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
 
 ecuStoreBytecode :: EcuUpdater Bytecode.Module
-%%[[8888
+%%[[8
 ecuStoreBytecode x ecu = ecu { ecuMbBytecode = Just x }
-%%][9999
+%%][99
 ecuStoreBytecode x ecu | forceEval x `seq` True = ecu { ecuMbBytecode = Just x }
 %%]]
 
@@ -295,7 +272,7 @@ ecuStoreBytecodeSem :: EcuUpdater PP_Doc
 ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
 %%]
 
-%%[2020 export(ecuStoreHSTime,ecuStoreHITime,ecuStoreHSSemMod,ecuStoreImpL,ecuStoreMod,ecuSetIsTopMod,ecuStorePrevHI,ecuStorePrevHISem,ecuStoreOptim,ecuStoreHIInfo)
+%%[20 export(ecuStoreHSTime,ecuStoreHITime,ecuStoreHSSemMod,ecuStoreImpL,ecuStoreMod,ecuSetIsTopMod,ecuStorePrevHI,ecuStorePrevHISem,ecuStoreOptim,ecuStoreHIInfo)
 ecuStoreHSTime :: EcuUpdater ClockTime
 ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
 
@@ -329,14 +306,14 @@ ecuStoreOptim :: EcuUpdater Optim
 ecuStoreOptim x ecu = ecu { ecuMbOptim = Just x }
 
 ecuStoreHIInfo :: EcuUpdater HI.HIInfo
-%%[[8888
+%%[[8
 ecuStoreHIInfo x ecu = ecu { ecuHIInfo = x }
-%%][9999
+%%][99
 ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%]]
 %%]
 
-%%[(2020 codegen) export(ecuStoreCoreTime)
+%%[(20 codegen) export(ecuStoreCoreTime)
 ecuStoreCoreTime :: EcuUpdater ClockTime
 ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
 %%]
