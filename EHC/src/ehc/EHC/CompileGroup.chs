@@ -6,18 +6,18 @@ An EHC compile group maintains info for a group of simultaneously compiled units
 This is not yet finished!!!!!!!!!!!!!!!!!!!!
 Only a placeholder ...
 
-%%[8 module {%{EH}EHC.CompileGroup}
+%%[20 module {%{EH}EHC.CompileGroup}
 %%]
 
 -- general imports
-%%[8 import({%{EH}EHC.Common})
+%%[20 import({%{EH}EHC.Common})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation group
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(EHCompileGroup(..),emptyECG)
+%%[20 export(EHCompileGroup(..),emptyECG)
 data EHCompileGroup
   = EHCompileGroup
       { ecgNm                :: HsName
