@@ -50,6 +50,15 @@ data HSState
   deriving (Show,Eq)
 %%]
 
+%%[20 export(hsstateIsLiteral)
+hsstateIsLiteral :: HSState -> Bool
+%%[[99
+hsstateIsLiteral LHSStart       = True
+hsstateIsLiteral LHSOnlyImports = True
+%%]]
+hsstateIsLiteral _              = False
+%%]
+
 The state EH compilation can be in
 
 %%[8 export(EHState(..))

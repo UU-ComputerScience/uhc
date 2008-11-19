@@ -11,7 +11,7 @@
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
-%%[9 import({%{EH}Base.ForceEval})
+%%[99 import({%{EH}Base.ForceEval})
 %%]
 
 %%[(99 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})

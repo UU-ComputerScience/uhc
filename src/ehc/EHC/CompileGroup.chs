@@ -32,4 +32,15 @@ emptyECG
       }
 %%]
 
+%%[20
+%%]
+crCompileCG :: Maybe HSState -> [HsName] -> EHCompileRun -> IO EHCompileRun
+crCompileCG targHSState modNmL cr
+  = do { let grpNm = hsnFromString $ concat $ intersperse "-" $ map show $ modNmL
+             crsi  = crStateInfo cr
+             cr2   = cr {crStateInfo = crsi {crsiGrpMp = Map.insert grpNm (emptyECG {ecgNm = grpNm, ecgModL = modNmL}) (crsiGrpMp crsi)}}
+             crSetNm = crSeq $ map (\n -> crUpdCU n (\ecu -> return (ecu {ecuGrpNm = grpNm}))) modNmL
+       ; crSetNm cr2
+       }
+
 

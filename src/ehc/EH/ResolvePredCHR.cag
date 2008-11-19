@@ -108,12 +108,12 @@ SEM Decl
                                                                   foDt = fitsIn unifyFIOpts @fe @lUniq_95_fitsIn_dataTy emptyVarMp dataTy @derivHdDataTy
                                                                   derivDCL = panicJust ("Decl.Instance.Deriving.derivMp: " ++ show @instClsNm) $ Map.lookup @instClsNm @derivMp
                                                           _ -> (@decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp,[],[],emptyDerivCls)
-                loc         .   lUniq6              :   UNIQUEREF gUniq
                 loc         .   lUniq_95_altsPrOcc  :   UNIQUEREF gUniq
                 loc         .   lUniq_95_extraPrOcc :   UNIQUEREF gUniq
                 loc         .   lUniq_95_fitsIn_dataTy
                                                     :   UNIQUEREF gUniq
 %%]]
+                loc         .   lUniq6              :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

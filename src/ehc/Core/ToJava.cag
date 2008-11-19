@@ -39,12 +39,12 @@ jvNm hn
     else  concat . map (\c -> maybe [c] (\f -> surr (f c)) (lookup c jSymChs)) $ (if isDigit (head n) then "_" ++ n else n)
   where  n        =  show hn
          jKeyw    =  [ "const" ]
-         jSymChs  =  [ ((=='\''),const "squot")
-                     , ((=='-'),const "dash")
-                     , ((=='!'),const "bang")
-                     , ((=='$'),const "doll")
-                     , ((=='~'),const "tilde")
-                     , ((==':'),const "colon")
+         jSymChs  =  [ ((=='\''), const "squot")
+                     , ((=='-' ), const "dash" )
+                     , ((=='!' ), const "bang" )
+                     , ((=='$' ), const "doll" )
+                     , ((=='~' ), const "tilde")
+                     , ((==':' ), const "colon")
                      ]
          surr x   =  "_" ++ x ++ "_"
          lookup v [] = Nothing
