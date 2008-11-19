@@ -16,15 +16,17 @@
 %%]
 %%[1 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[1 import({%{EH}EHC.Common})
+%%]
 
 %%[8 -1.fastseq
 %%]
 
 -- HS semantics
-%%[1 import(qualified {%{EH}HS.MainAG} as HSSem)
+%%[1.HSSem import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
 -- EH semantics
-%%[1 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%[1.EHSem import(qualified {%{EH}EH.MainAG} as EHSem)
 %%]
 
 -- parsing later put in {%{EH}EHC.CompilePhase.Parsers}
@@ -35,37 +37,23 @@
 %%[1.parse.EHPrs.HSPrs import(qualified {%{EH}EH.Parser} as EHPrs, qualified {%{EH}HS.Parser} as HSPrs)
 %%]
 
+%%[8 -(1.scannercommon 1.parsinglib 1.parse.EHPrs.HSPrs 1.EHSem 1.HSSem)
+%%]
+
 -- compiler driver modules
-%%[1 import({%{EH}EHC.Common})
-%%]
-%%[8 import({%{EH}EHC.CompileUnit})
-%%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[8 import({%{EH}EHC.CompileUnit},{%{EH}EHC.CompileRun})
 %%]
 %%[8 import({%{EH}EHC.InitialSetup})
 %%]
-%%[8 -(1.scannercommon 1.parsinglib 1.parse.EHPrs.HSPrs) import({%{EH}EHC.CompilePhase.Parsers})
-%%]
-%%[8 import({%{EH}EHC.CompilePhase.Output}, {%{EH}EHC.CompilePhase.FlowBetweenPhase}, {%{EH}EHC.CompilePhase.Semantics})
-%%]
-%%[8 import({%{EH}EHC.CompilePhase.CompileLLVM}, {%{EH}EHC.CompilePhase.CompileC})
-%%]
 %%[8 import({%{EH}EHC.CompilePhase.TopLevelPhases})
 %%]
-%%[20 import({%{EH}EHC.CompileGroup})
-%%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
-%%]
-%%[99 import({%{EH}EHC.CompilePhase.Cleanup})
 %%]
 
 -- general imports
 %%[8 import(qualified Debug.Trace)
 %%]
 %%[8 import(qualified Data.Map as Map)
-%%]
--- Language syntax: Core
-%%[(20 codegen) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
 
 -- module
@@ -75,7 +63,6 @@
 -- Misc
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main, compiling
@@ -181,308 +168,6 @@ cpLift this next
 %%% Compile actions: compilation of module(s)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8.cpCompileCU.sig
-cpCompileCU :: HsName -> EHCompilePhase ()
-cpCompileCU modNm
-%%]
-%%[20 -8.cpCompileCU.sig
-cpCompileCU :: Maybe HSState -> HsName -> EHCompilePhase ()
-cpCompileCU targHSState modNm
-%%]
-%%[8
-  = do { cr <- get
-       ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
-%%[[8
-       ; case (ecuState ecu,undefined) of
-%%][20
-       ; case (ecuState ecu,targHSState) of
-%%]]
-%%]
-%%[20
-           (ECUSHaskell HSStart,Just HSOnlyImports)
-             -> do { cpMsg modNm VerboseNormal "Imports of Haskell"
-%%[[20
-                   ; cuImportHS modNm
-%%][99
-                   ; cuImportHS False modNm
-%%]]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSOnlyImports))
-                   }
-%%[[99
-           (ECUSHaskell LHSStart,Just HSOnlyImports)
-             -> do { cpMsg modNm VerboseNormal "Imports of Literate Haskell"
-                   ; cuImportHS True modNm
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell LHSOnlyImports))
-                   }
-%%]]
-           (ECUSHaskell HSOnlyImports,Just HSOnlyImports)
-             -> return ()
-%%[[99
-           (ECUSHaskell LHSOnlyImports,Just HSOnlyImports)
-             -> return ()
-%%]]
-           (ECUSHaskell HSOnlyImports,Just HSAllSem)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Compiling Haskell"
-%%[[20
-                      , cuCompileHSAfterImport (ecuIsTopMod ecu) opts modNm
-%%][99
-                      , cuCompileHSAfterImport (ecuIsTopMod ecu) opts False modNm
-%%]]
-                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                      ]
-           (ECUSHaskell st,Just HSAllSemHI)
-             |    st == HSOnlyImports
-%%[[99
-               || st == LHSOnlyImports
-%%]]
-             -> do { cpMsg modNm VerboseNormal "Reading HI"
-%%[[(20 codegen grin)
-                   ; cpUpdateModOffMp [modNm]
-%%]]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSemHI))
-                   }
-%%]]
-%%[[99
-           (ECUSHaskell LHSOnlyImports,Just HSAllSem)
-             -> do { cpMsg modNm VerboseNormal "Compiling Literate Haskell"
-                   ; cuCompileHSAfterImport (ecuIsTopMod ecu) opts True modNm
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                   }
-%%]]
-%%]
-%%[8
-           (ECUSHaskell HSStart,_)
-             -> do { cpMsg modNm VerboseNormal "Compiling Haskell"
-                   ; cpSeq [ cpPrepareModuleForCompilation modNm
-%%[[8
-                           , cpParseHs modNm
-%%][99
-                           , cpPreprocessWithCPP modNm
-                           , cpParseHs False modNm
-%%]]
-                           , cpStopAt CompilePoint_Parse
-                           , cpStepUID
-                           , cpProcessHs modNm
-                           , cpStopAt CompilePoint_AnalHS
-                           , cpStepUID
-                           , cpProcessEH modNm
-                           , cpStopAt CompilePoint_AnalEH
-                           , cpStepUID
-%%[[(8 codegen)
-                           , cpProcessCoreBasic modNm
-                           , cpProcessCoreRest modNm
-%%]]
-%%[[(8 codegen grin)
-                           , cpProcessGrin modNm
-                           , cpProcessBytecode modNm
-                           , cpCompileWithGCC GCC_CompileExec [] modNm
-                           , cpCompileWithLLVM modNm
-%%]]
-                           ]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                   }
-%%[[20
-           (_,Just HSOnlyImports)
-             -> return ()
-%%]]
-           (ECUSEh EHStart,_)
-             -> do { cpMsg modNm VerboseNormal "Compiling EH"
-                   ; cpSeq [ cpParseEH modNm
-                           , cpStopAt CompilePoint_Parse
-                           , cpStepUID
-                           , cpProcessEH modNm
-%%[[20
-                           , cpGetDummyCheckEhMod modNm
-%%]]
-                           , cpStopAt CompilePoint_AnalEH
-                           , cpStepUID
-%%[[(8 codegen)
-                           , cpProcessCoreBasic modNm
-                           , cpStopAt CompilePoint_Core
-                           , cpProcessCoreRest modNm
-%%]]
-%%[[(8 codegen grin)
-                           , cpProcessGrin modNm
-                           , cpProcessBytecode modNm
-                           , cpCompileWithGCC GCC_CompileExec [] modNm
-                           , cpCompileWithLLVM modNm
-%%]]
-                           ]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
-                   }
-%%[[(8 codegen grin)
-           (ECUSGrin,_)
-             -> do { cpMsg modNm VerboseNormal "Compiling Grin"
-                   ; cpSeq [ cpParseGrin modNm
-                           , cpProcessGrin modNm
-                           , cpProcessBytecode modNm 
-                           ]
-                   }
-%%]]
-           _ -> return ()
-       }
-%%]
-%%[20
-  where
-%%[[20
-        cuImportHS modNm
-%%][99
-        cuImportHS litmode modNm
-%%]]
-          = cpSeq [ cpPrepareModuleForCompilation modNm
-%%[[20
-                  , cpParseHsImport modNm
-%%][99
-                  , cpPreprocessWithCPP modNm
-                  , cpParseHsImport litmode modNm
-%%]]
-                  , cpStepUID
-                  , cpFoldHsMod modNm
-                  , cpGetHsImports modNm
-                  ]
-%%[[20
-        cuCompileHSAfterImport isTopMod opts modNm
-%%][99
-        cuCompileHSAfterImport isTopMod opts litmode modNm
-%%]]
-          = cpSeq [ p1 modNm, p2 modNm, p3 modNm, p4 modNm
-%%[[(20 codegen grin)
-                  , p5 modNm
-%%]]
-                  , cpOutputHI "hi" modNm
-%%[[99
-                  , cpCleanupCU modNm
-%%]]
-                  ]
-          where p1 modNm
-                  = cpSeq [
-%%[[20
-                            cpParseHs modNm
-%%][99
-                            cpParseHs litmode modNm
-%%]]
-                          , cpMsg modNm VerboseALot "Parsing done"
-                          , cpStopAt CompilePoint_Parse
-                          ]
-                p2 modNm
-                  = cpSeq [ cpStepUID, cpFoldHsMod modNm, cpGetHsMod modNm
-%%[[99
-                          , cpCleanupHSMod modNm
-%%]]
-                          , cpCheckMods [modNm]
-%%[[(20 codegen grin)
-                          , cpUpdateModOffMp [modNm]
-%%]]
-                          , cpProcessHs modNm
-                          , cpMsg modNm VerboseALot "Name+dependency analysis done"
-                          , cpStopAt CompilePoint_AnalHS
-                          ]
-                p3 modNm
-                  = cpSeq [ cpStepUID, cpProcessEH modNm
-                          , cpMsg modNm VerboseALot "Type analysis done"
-                          , cpStopAt CompilePoint_AnalEH
-                          ]
-                p4 modNm
-                  = cpSeq [ cpStepUID
-%%[[(20 codegen)
-                          , cpProcessCoreBasic modNm
-						  , cpMsg modNm VerboseALot "Core (basic) done"
-						  , cpStopAt CompilePoint_Core
-%%]]
-                          ]
-%%[[(20 codegen grin)
-                p5 modNm
-                  = cpSeq [ cpSeq (if not (ehcOptFullProgAnalysis opts)
-                                   then [ cpProcessCoreRest modNm
-                                        , cpProcessGrin modNm
-%%[[20
-                                        , cpFlowOptim modNm
-%%]]
-%%[[99
-                                        , cpCleanupGrin modNm
-%%]]
-                                        , cpProcessBytecode modNm
-                                        ]
-                                        ++ (if isTopMod then [] else [cpCompileWithGCC GCC_CompileOnly [] modNm])
-                                   else []
-                                  )
-                          , cpMsg modNm VerboseALot "Core+Grin done"
-                          ]
-%%]]
-%%]
-
-%%[8
-%%]
-crCompileCG :: Maybe HSState -> [HsName] -> EHCompileRun -> IO EHCompileRun
-crCompileCG targHSState modNmL cr
-  = do { let grpNm = hsnFromString $ concat $ intersperse "-" $ map show $ modNmL
-             crsi  = crStateInfo cr
-             cr2   = cr {crStateInfo = crsi {crsiGrpMp = Map.insert grpNm (emptyECG {ecgNm = grpNm, ecgModL = modNmL}) (crsiGrpMp crsi)}}
-             crSetNm = crSeq $ map (\n -> crUpdCU n (\ecu -> return (ecu {ecuGrpNm = grpNm}))) modNmL
-       ; crSetNm cr2
-       }
-
-%%[20
-cpCompileOrderedCUs :: EHCompilePhase ()
-cpCompileOrderedCUs
- = do { cr <- get
-      ; let modNmLL = crCompileOrder cr
-            modNmL = map head modNmLL
-            (_,opts) = crBaseInfo' cr
-            Just (mm@(mImpL,mMain)) = initlast modNmL
-      ; cpSeq [ anal modNmL
-%%[[(20 codegen grin)
-              , biggrin opts modNmL mm, gcc mm, llvm mm
-%%]]
-              ]
-      }
-  where anal ms
-          = cpSeq (merge (map comp ms) (map flow ms))
-        merge (c1:cs1) (c2:cs2) = c1 : c2 : merge cs1 cs2
-        merge []       cs       = cs
-        merge cs       []       = cs
-        comp m
-          = do { cr <- get
-               ; let targ = if crModNeedsCompile m cr
-%%[[101
-                               && crModCanCompile m cr
-%%]]
-                            then HSAllSem
-                            else HSAllSemHI
-               ; cpSeq [cpCompileCU (Just targ) m]
-               }
-        flow m
-          = do { cr <- get
-               ; case {- (\v -> trp "XX" (m >#< show v) v) $ -} ecuState $ crCU m cr of
-                   ECUSHaskell HSAllSem   -> return ()
-                   ECUSHaskell HSAllSemHI -> cpFlowHISem m
-                   _                      -> return ()
-%%[[99
-               ; cpCleanupFlow m
-%%]]
-               }
-%%[[(20 codegen grin)
-        core mL
-          = cpSeq [cpGetPrevCore m | m <- mL]
-        biggrin opts mL (mImpL,mMain)
-          = if ehcOptFullProgAnalysis opts
-            then cpSeq [ core mL
-                       , oneBigCore
-                       , cpProcessCoreRest mMain
-                       , cpProcessGrin mMain
-                       ]
-            else return ()
-          where oneBigCore
-                  = do { cr <- get
-                       ; cpUpdCU mMain (ecuStoreCore (Core.cModMerge [ panicJust "cpCompileOrderedCUs.oneBigCore" $ ecuMbCore $ crCU m cr | m <- mL ]))
-                       }
-        gcc (mImpL,mMain)
-          = cpSeq [cpCompileWithGCC GCC_CompileExec mImpL mMain]
-        llvm (_,mMain)
-          = cpSeq [cpCompileWithLLVM mMain]
-%%]]        
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler driver
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -570,7 +255,7 @@ doCompileRun fn opts
              comp mbFp nm
                = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
                     ; when (isJust mbFoundFp)
-                           (cpCompileCU nm)
+                           (cpEhcModuleCompile1 nm)
                     }
 %%][20
              imp mbFp nm
@@ -579,7 +264,7 @@ doCompileRun fn opts
                     ; when (isJust mbFp)
                            (cpUpdCU nm (ecuSetIsTopMod True))
                     ; when (isJust mbFoundFp)
-                           (cpCompileCU (Just HSOnlyImports) nm)
+                           (cpEhcModuleCompile1 (Just HSOnlyImports) nm)
                     }
 %%]]
        -- ; putStrLn $ show searchPath
@@ -590,7 +275,7 @@ doCompileRun fn opts
        ; _ <- runStateT (cpSeq [ imp (Just fp) topModNm
                                , cpImportGather (imp Nothing) topModNm
                                , cpCheckMods' [modBuiltin]
-                               , cpCompileOrderedCUs
+                               , cpEhcFullProgCompileAllModules
                                ]) initialState
 %%]]
        ; return ()
