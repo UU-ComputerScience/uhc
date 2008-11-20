@@ -1,12 +1,22 @@
+###########################################################################################
 # cfg in files1*.mk
 # rules in files2*.mk (top level only currently)
+###########################################################################################
 
+###########################################################################################
 # end products, binary, executable, etc
+###########################################################################################
+
 TEXT_BLD_PDF				:= $(DOC_PREFIX)$(TEXT_VARIANT).pdf
 TEXT_ALL_PUB_PDFS			:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PUB_VARIANTS))
-TEXT_ALL_PDFS				:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_VARIANTS))
+TEXT_ALL_PDFONLY_PDFS		:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PDFONLY_VARIANTS))
+TEXT_ALL_DOCLTX_PDFS		:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_DOCLTX_VARIANTS))
 
+###########################################################################################
 # files, source + derived
+###########################################################################################
+
+# for main, pdf generation only
 TEXT_MAIN_SRC_CLTEX			:= $(TEXT_SRC_PREFIX)$(TEXT_MAIN).cltex
 TEXT_MAIN_DRV_LTEX			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).ltex
 TEXT_MAIN_DRV_TEX			:= $(TEXT_MAIN_DRV_LTEX:.ltex=.tex)
@@ -14,6 +24,11 @@ TEXT_MAIN_SRC_CLSTY			:= $(TEXT_SRC_PREFIX)$(TEXT_MAIN)sty.clsty
 TEXT_MAIN_DRV_LSTY			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)sty.lsty
 TEXT_MAIN_DRV_STY			:= $(TEXT_MAIN_DRV_LSTY:.lsty=.sty)
 
+# for doc main, doc LateX
+TEXT_DOCMAIN_DRV_TEX		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).tex
+TEXT_DOCMAIN_DRV_STY		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN)sty.sty
+
+# 
 TEXT_SUBS_SRC_CLTEX			:= $(patsubst %,$(TEXT_SRC_PREFIX)%.cltex,$(TEXT_SUBS))
 TEXT_SUBS_ASIS_SRC			:= $(patsubst %,$(TEXT_SRC_PREFIX)%.tex,$(TEXT_SUBS_ASIS))
 
@@ -138,9 +153,11 @@ TEXT_EDIT_SRC				:= $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SRC_CLTEX) $(TEXT_MAIN_SR
 TEXT_ALL_SRC				:= $(TEXT_EDIT_SRC) $(TEXT_SUBS_ASIS_SRC) $(TEXT_BIB1_SRC) $(TEXT_BIB2_SRC) $(TEXT_BIB3_SRC) $(TEXT_BIB4_SRC) $(TEXT_MKF)
 
 # all deriveds (as counting for make dependencies)
-TEXT_ALL_DPD				:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) \
+TEXT_ALL_PDFONLY_DPD		:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_DRV_STY) $(TEXT_RULER2_DEMO_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULEX_ALL_DRV_TEX) $(TEXT_RULER2_DEMO_ALL_DRV_TEX) \
 								$(TEXT_SUBS_ASIS_DRV) $(FIGS_XFIG_DRV_TEX) $(FIGS_XFIG_DRV_PDF) $(FIGS_EPS_DRV_PDF) $(FIGS_DOT_DRV_PDF) $(TEXT_RULER2_DEMO_STUFF) $(FIGS_ASIS_DRV) $(TEXT_HIDE_DRV_TEX)  \
 								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX) $(TEXT_RULEUX_ALL_DRV_TEX) $(TEXT_RULEUX_ALL_DRV_TEX) $(TEXT_EXPERIMENTS_SUBST_ALL_DRV_TEX)
+
+TEXT_ALL_DOCLTX_DPD			:= $(TEXT_DOCMAIN_DRV_TEX) $(TEXT_DOCMAIN_DRV_STY)
 
 # all shuffle included material
 TEXT_SUBS_SHUFFLE1			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG) \
@@ -158,20 +175,28 @@ TEXT_SUBS_SHUFFLE_ALIAS		:= $(TEXT_SUBS_SHUFFLE1) \
 TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
 TEXT_DIST_FILES				:= $(TEXT_ALL_SRC)
 
-# variant dispatch rules
-$(TEXT_ALL_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(RULER2_DEMO_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) \
+###########################################################################################
+# variant dispatch rules for targets
+###########################################################################################
+
+$(TEXT_ALL_PDFONLY_PDFS) $(TEXT_ALL_DOCLTX_PDFS): $(DOC_PREFIX)%.pdf: $(TEXT_ALL_SRC) $(RULER2_DEMO_ALL_SRC) $(EHC_ALL_SRC) $(RULER2_DEMO_ALL_DRV_TEX) \
 										$(RULER2_RULES_SRC_RL2) $(TEXT_ALL_MK_FILES) $(FIGS_ALL_SRC) $(RULER2) $(EXPERIMENTS_SUBST_ALL_SRC)
 	$(MAKE) TEXT_VARIANT=$(*F) text-variant-$(*F)
 
-$(TEXT_VARIANTS) : % : $(DOC_PREFIX)%.pdf
+$(TEXT_PDFONLY_VARIANTS) $(TEXT_DOCLTX_VARIANTS) : % : $(DOC_PREFIX)%.pdf
 	open $<
 
-text-variant-dflt-once: $(TEXT_ALL_DPD)
+text-variant-dflt-once: $(TEXT_ALL_PDFONLY_DPD)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
-text-variant-dflt-bib: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
+text-variant-dflt-doc: $(TEXT_ALL_DOCLTX_DPD)
+	mkdir -p $(dir $(TEXT_BLD_PDF))
+	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_DOCMAIN) ; $(PDFLATEX) $(TEXT_DOCMAIN)
+	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).pdf $(TEXT_BLD_PDF)
+
+text-variant-dflt-bib: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
 	$(PDFLATEX) $(TEXT_MAIN)
@@ -181,7 +206,7 @@ text-variant-dflt-bib: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 	$(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
-text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
+text-variant-dflt-bib-inx: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
 	$(PDFLATEX) $(TEXT_MAIN)
@@ -193,9 +218,17 @@ text-variant-dflt-bib-inx: $(TEXT_ALL_DPD) $(TEXT_BIB_DRV)
 	$(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
+###########################################################################################
+# rules for individual files
+###########################################################################################
+
 $(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TXT) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) > $@
+
+$(TEXT_DOCMAIN_DRV_TEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT_MKF)
+	mkdir -p $(@D)
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) > $@
 
 $(TEXT_HIDE_DRV_TXT): $(TEXT_MAIN_DRV_LTEX)
 	touch $@
@@ -210,6 +243,10 @@ $(TEXT_SUBS_DRV_TEX) $(TEXT_HIDE_DRV_TEX) $(TEXT_INF2PS_ALL_DRV_TEX) $(TEXT_RULE
 	$(LHS2TEX_CMD) $(LHS2TEX_OPTS_TEXT_CONFIG) $(LHS2TEX_OPTS_VARIANT_CONFIG) $(LHS2TEX_OPTS_POLY) $< > $@
 
 $(TEXT_MAIN_DRV_LSTY) : $(TEXT_MAIN_SRC_CLSTY) $(SHUFFLE)
+	mkdir -p $(@D)
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< > $@
+
+$(TEXT_DOCMAIN_DRV_STY) : $(TEXT_MAIN_SRC_CLSTY) $(SHUFFLE)
 	mkdir -p $(@D)
 	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< > $@
 

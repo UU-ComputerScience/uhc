@@ -3,6 +3,10 @@
 %include afp.fmt
 %%]
 
+%%[39
+%include lhs2TeX.fmt
+%%]
+
 %%[1
 % list environments
 \def\@@ListSetupA{%
@@ -720,4 +724,11 @@ Anonymity, blinding things
 
 \lstdefinestyle{figureLstFootnote}
     {tabsize={2}, frame={single}, basicstyle={\footnotesize}}
+%%]
+
+%%[39
+% reference in url style:
+% #1: title
+% #2: label
+\newcommand{\uref}[2]{#2 (page~\pageref{#1})}
 %%]

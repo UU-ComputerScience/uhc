@@ -1,5 +1,6 @@
 # all variants
-TEXT_PUB_VARIANTS			+= ruler-doc shuffle-doc ehc-book ehc-doc
+TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -38,7 +39,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
-								uniqueness/Slides uniqueness/TopicImplementation
+								uniqueness/Slides uniqueness/TopicImplementation \
+								DocDoc
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -51,6 +53,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 30: book: base (share)
 # 32: llncs paper: base (share) - not yet available
 # 37: entcs paper: base (share)
+# 39: documentation using simplified latex/...: base (share)
 
 # ALL PRODUCTS
 # 2	: ehc book (previously phd)
@@ -61,7 +64,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 7	: scratch (book format)
 # 8	: slides afp
 # 10: future
-# 11: shuffle doc
+# 11: shuffle doc (old, will be obsolete)
 # 12: garbage
 # 13: poster
 # 14: slides ruler
@@ -83,6 +86,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 35: llvm thesis
 # 36: icfp08/padl09 paper on substitution/unification
 # 38: ldta09 paper on AG idiom
+# 40: shuffle doc
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -120,5 +124,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		30 < 7, \
 		30 < 29, \
 		37 < 33, \
-		37 < 38
+		37 < 38, \
+		39 < 40
 		

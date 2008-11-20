@@ -13,6 +13,10 @@ Levels:
 4: single module compilation
 5: full program phases
 6: full program compilation
+
+Naming convention for functions:
+level 1    : with prefix 'cpProcess'
+level 2..6 : with prefix 'cpEhc'
 %%]
 
 %%[8 module {%{EH}EHC.CompilePhase.TopLevelPhases}
@@ -57,7 +61,7 @@ Levels:
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Per full program compile actions: level 6 processing combinators
+%%% Per full program compile actions: level 6
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen grin) haddock
@@ -82,7 +86,7 @@ cpEhcFullProgCompileAllModules
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Per full program compile actions: level 5 processing combinators
+%%% Per full program compile actions: level 5
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen grin) haddock
@@ -162,7 +166,7 @@ cpEhcFullProgBetweenModuleFlow modNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Per module compile actions: level 4 processing combinators
+%%% Per module compile actions: level 4
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.cpEhcModuleCompile1.sig export(cpEhcModuleCompile1)
@@ -262,7 +266,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Per module compile actions: level 3 processing combinators
+%%% Per module compile actions: level 3
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 haddock
@@ -309,7 +313,7 @@ cpEhcHaskellModuleAfterImport isTopMod opts hsst modNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Per module compile actions: level 2 processing combinators
+%%% Per module compile actions: level 2
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 haddock
@@ -501,7 +505,7 @@ cpEhcExecutablePerModule how impModNmL modNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Per module compile actions: level 1 processing combinators
+%%% Per module compile actions: level 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8

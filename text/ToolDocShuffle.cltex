@@ -312,3 +312,539 @@ results in a makefile containing the required rules and the lists @RULER3_AG_D_M
 
 Note that @shuffle --dep@ takes only and all chunk-imports tagged with an @ag@-kind into consideration.
 %%]
+
+%%[docNew
+Tables / diagrams:
+
+   * \uref{GrammarChunk}{chunk definition grammar}
+   * \uref{GrammarChunkcontent}{syntax diagram for chunk content}
+   * \uref{CommandLine}{commandline invocation and arguments}
+
+
+\section{Introduction and tutorial}
+
+Shuffle takes files with chunks of text defined in shuffle notation, and filters these chunks according to a requested selection of variant and aspects. This allows for the following typical use:
+
+   * Transform a chunked source file to a compilation unit (for ghc, C, etc). One file then is transformed one-to-one to the corresponding output without inclusion of chunks from other files. All variants and aspects are defined in the same file. The convention is to let a chunked file producing a file with suffix .X have the suffix .cX
+   * Transform a set of chunked source files to a single file for further processing. This is typically done for LaTeX files where various topics are spread over multiple files. On the commandline the set of files is specified, the first file being the root, other chunks are referred to by a naming mechanism.
+
+\subsection{Basics}
+
+A minimal input to shuffle looks like the following:
+\begin{verbatim}
+%%%[1
+some text
+%%%]
+\end{verbatim}
+
+The two percent symbols \verb=%%= at the beginning of a line start shuffle commands. \verb=%%[1 .. %%]= delimits a chunk for variant 1. With this content placed in file \verb=doc-ex1=, the following invocation of shuffle produces the content of the chunk:
+
+\begin{verbatim}
+shuffle --gen-reqm=1 --variant-order=1 --plain --lhs2tex=no doc-ex1
+\end{verbatim}
+
+With \verb=--gen-reqm= the required variant is specified, where variants are ordered according to the ordering passed via \verb=--variant-order= (here just a single variant), \verb=--plain= means that no further interpretation of chunks should be done, and \verb+--lhs2tex=no+ that no chunk delimiting for lhs2tex should be done. Although shuffle is invoked by \verb=shuffle= in the above, shuffle is not installed globally as part of the ehc install. It can be found in \verb=EHC/bin=, where \verb=EHC= is the ehc directory. Text outside chunks is considered shuffle comment and not copied to output. If there are no lines between chunks then no lines are generated; if there are >= 1 lines between chunks one line of space is printed between generated individual chunks. The original order of chunks as it appears in the chunked source file is maintained. None of the commandline parameters currently can be omitted; in future versions of shuffle it is likely that default values will be assumed.
+
+A variant order allows for a hierarchical ordering of variants, where later variants build on top of earlier variants, possibly overriding earlier definitions:
+
+\begin{verbatim}
+%%%[1
+some text
+%%%]
+
+%%%[2
+more text
+%%%]
+\end{verbatim}
+
+With the following commandline we get both text fragments, where variant 2 builds on top of variant 1.
+
+\begin{verbatim}
+shuffle --gen-reqm=2 --variant-order="1 < 2" --plain --lhs2tex=no doc-ex1
+\end{verbatim}
+
+Variant 1 can still be extracted by \verb+--gen-reqm=1+.
+
+Chunks can be explicitly overridden, say a new variant 3 wants to replace the text for variant 1. We then have to give a name to the overridden chunk so we can refer to it when overriding the chunk:
+
+\begin{verbatim}
+%%%[1.sometext
+some text
+%%%]
+
+%%%[2
+more text
+%%%]
+
+%%%[3 -1.sometext
+other text
+%%%]
+\end{verbatim}
+
+With the following commandline:
+
+\begin{verbatim}
+shuffle --gen-reqm=3 --variant-order="1 < 2 < 3" --plain --lhs2tex=no doc-ex1
+\end{verbatim}
+
+this will give:
+
+\begin{verbatim}
+more text
+
+other text
+\end{verbatim}
+
+Again, previous variants can still be retrieved via the \verb=--gen-reqm= option.
+
+\subsection{Output specific configuration}
+
+The output of shuffle can be tailored to more specific targets, for example haskell source code. Chunks then contain haskell source text with optional meta information about name of the module, the imports, and the exports:
+
+\begin{verbatim}
+%%%[1 module Some import(SomeImport)
+%%%]
+
+%%%[1 export(someFunction)
+someFunction :: Int -> Int
+someFunction x = x
+%%%]
+\end{verbatim}
+
+On the commandline we then need to specify that we want Haskell source text to be generated; the \verb=--hs= option is used for that purpose:
+
+\begin{verbatim}
+shuffle --gen-reqm=1 --variant-order="1" --hs --lhs2tex=no doc-ex1
+\end{verbatim}
+
+The corresponding output then is:
+
+\begin{verbatim}
+module Some
+( someFunction )
+where
+import SomeImport
+
+someFunction :: Int -> Int
+someFunction x = x
+\end{verbatim}
+
+Similarly we can specifically can generate for the AG system. The input then looks like the following:
+
+\begin{verbatim}
+%%%[1 ag module Some import(SomeAGImport)
+%%%]
+
+%%%[1 hs import(SomeHaskellImport)
+%%%]
+
+%%%[1 ag
+DATA SomeData
+  | SomeAlt1
+
+ATTR SomeData [ | | someAttr: Int ]
+
+SEM SomeData
+  | SomeAlt1  lhs.someAttr = 1
+%%%]
+
+%%%[1 hs export(someFunction)
+someFunction :: Int -> Int
+someFunction x = x
+%%%]
+\end{verbatim}
+
+Because the AG system process both AG notation and escaped+copied Haskell code, it is necessary to tag each chunk with its source code type. It then ends up in the appropriate part.
+We now get wiith the following commandline:
+
+\begin{verbatim}
+shuffle --gen-reqm=1 --variant-order="1" --ag --lhs2tex=no doc-ex1
+\end{verbatim}
+
+
+we now get:
+
+\begin{verbatim}
+{
+module doc-ex1
+( someFunction )
+where
+import SomeHaskellImport
+
+}
+INCLUDE "SomeAGImport.ag"
+{
+}
+DATA SomeData
+  | SomeAlt1
+
+ATTR SomeData [ | | someAttr: Int ]
+
+SEM SomeData
+  | SomeAlt1  lhs.someAttr = 1
+
+{
+someFunction :: Int -> Int
+someFunction x = x
+}
+\end{verbatim}
+
+
+\subsection{Reusing and including chunks in other files}
+
+Chunks can be included at arbitrary places by referring to them by name. For example, given the content of the files \verb=doc1= and \verb=doc2=.
+In \verb=doc2= the content of the chunk is defined.
+
+\begin{verbatim}
+%%%[1.someText2
+some text2
+%%%]
+\end{verbatim}
+
+In \verb=doc1= we refer to the chunk in \verb=doc2= by \verb=%%%@doc2.1.someText2=:
+
+\begin{verbatim}
+%%%[1
+some text
+%%%@doc2.1.someText2
+%%%]
+\end{verbatim}
+
+The reference must start at the beginning of the line and follows the syntax \verb=file.variant.name=.
+The corresponding output then is:
+
+\begin{verbatim}
+some text
+some text2
+\end{verbatim}
+
+when shuffle is invoked with:
+
+\begin{verbatim}
+shuffle --gen-reqm=1 --variant-order=1 --plain --lhs2tex=no doc1 doc2
+\end{verbatim}
+
+The first file given to \verb=shuffle= acts as the root file. The remaining files (and the root file) act as a repository of chunks, for which output is only generated when included within the root file.
+
+
+\section{Variants and Aspects}
+
+A chunk contains content to be used for specific variants and aspects. A variant is denoted by a number, an aspect by an alphanumeric identifier. Variants and aspects are used and specified independently and represent the two dimensions over which variation can be specified. Variants and aspects though are used in a different way and with a different purpose. Variants are used to describe stepwise increments thus forming a hierarchy. Aspects are used to isolate such groups of variants. A variant is to be used for adding language features; an aspect is to be used for a global property valid for all language features. For example, in EHC, codegeneration and the type system are considered seperate aspects.
+
+Variants and aspects are offered by chunks. When shuffle is invoked a specific combination of variants and aspects is required/requested. For example, the following respectively specifies a general chunk, 2 chunks for 2 different aspects, and a chunk to be used when both aspects are requested for:
+
+\begin{verbatim}
+%%%[1
+some general text
+%%%]
+
+%%%[(2 asp1)
+some asp1 text
+%%%]
+
+%%%[(1 asp2)
+some asp2 text
+%%%]
+
+%%%[(1 asp1 asp2)
+some asp1 && asp2 text
+%%%]
+\end{verbatim}
+
+\subsection{Specifying required chunks}
+
+When we ask for all aspects with:
+
+\begin{verbatim}
+shuffle --gen-reqm="(2 asp1 asp2)" --variant-order="1 < 2" --plain --lhs2tex=no doc1
+\end{verbatim}
+
+we indeed get the content for all aspects:
+
+\begin{verbatim}
+some general text
+some asp1 text
+some asp2 text
+some asp1 && asp2 text
+\end{verbatim}
+
+Via option \verb+--gen-reqm="(2 asp1 asp2)"+ we specified the required variant and aspects. The syntax of the required variant and aspects is \verb=variant | '(' variant aspect* ')'=, where the absence of aspects means all aspects. Variant and aspects are defined independently and have the effect that only chunks offering both variant and all required aspects are generated on output. For example, the following shuffle invocation only produces the general text:
+
+\begin{verbatim}
+shuffle --gen-reqm="(1 asp1)" --variant-order="1 < 2" --plain --lhs2tex=no doc1
+\end{verbatim}
+
+The invocation
+
+\begin{verbatim}
+shuffle --gen-reqm="(2 asp2)" --variant-order="1 < 2" --plain --lhs2tex=no doc1
+\end{verbatim}
+
+produces both the general text and asp2 only text:
+
+\begin{verbatim}
+some general text
+some asp2 text
+\end{verbatim}
+
+\subsection{Specifying offered chunks}
+
+The specification of chunk offerings follows a richer language for specifying aspects, including conjunction \verb=&&= and disjunction \verb=||=. The specification \verb=(1 asp1 asp2)= of the example is a shorthand notation for \verb=(1 asp1 && asp2)=, which means that the chunk only is generated when both aspects are asked for simultaneously. When disjunction \verb=||= is used, as in \verb=(1 asp1 || asp2)=, only at least one of the aspects must be asked for. The syntax of such an 'offering' specification then is \verb=variant | '(' variant aspectexpr? ')'=, where the absence of the aspect expression means 'any aspect'. An aspect expression follows the usual notation and priority rules as used in (say) Haskell.
+
+
+\section{Chunks}
+
+\subsection{Overriding and alternatives}
+
+Chunks can be introduced, overridden completely or partially. Chunk introduction and overriding has been discussed, for example a chunk is introduced by:
+
+\begin{verbatim}
+%%%[1.sometext
+some text
+%%%]
+\end{verbatim}
+
+and is overridden completely in variant 2 by:
+
+\begin{verbatim}
+%%%[2 -1.sometext
+some text
+%%%]
+\end{verbatim}
+
+Completely overriding a chunk can be too much if only a part of a chunk has been modified. There are three ways to deal with this, using already introduced notation and notation for conditional nested chunks (for the third way). First, a large chunk can be split into smaller, so we have finer grain control for overriding:
+
+\begin{verbatim}
+%%%[1
+some part 1
+%%%]
+%%%[1.somepart2
+some part 2
+%%%]
+%%%[1
+some part 3
+%%%]
+\end{verbatim}
+
+If we want to override \verb=some part 2= we can now do this as usual:
+
+\begin{verbatim}
+%%%[2 -1.somepart2
+some part 2 new
+%%%]
+\end{verbatim}
+
+However, the partitioned chunk now has a lot of chunk related clutter. A second solution is to name all parts, include those in a new overall chunk and override the latter:
+
+\begin{verbatim}
+%%%[somepart1
+some part 1
+%%%]
+%%%[somepart2
+some part 2
+%%%]
+%%%[somepart3
+some part 3
+%%%]
+
+%%%[1.all
+%%%@somepart1
+%%%@somepart2
+%%%@somepart3
+%%%]
+\end{verbatim}
+
+Chunks without a variant number are never included automatically but only when referred to by name from another chunk which is included. We override by:
+
+\begin{verbatim}
+%%%[somepart2new
+some part 2 new
+%%%]
+
+%%%[2 -1.all
+%%%@somepart1
+%%%@somepart2new
+%%%@somepart3
+%%%]
+\end{verbatim}
+
+Again, a lot of clutter, so usually the best solution is to inline the choice using conditional nested groups of chunks. The original text structure and ordering is then maintained, although we still require shuffle notation:
+
+\begin{verbatim}
+%%%[1
+some part 1
+%%%[[1
+some part 2
+%%%][2
+some part 2 new
+%%%]]
+some part 3
+%%%]
+\end{verbatim}
+
+A nested chunk is denoted by <pre>%%[[ ... %%]]</pre> instead of \verb=%%[ ... %%]=. Conditional nested groups of chunks are denoted by <pre>%%[[ ... %%][ ... %%]]</pre>
+A nested chunk always is for a particular variant; a name without a variant is not allowed.
+
+We can also use this mechanism to specify defaults for aspects:
+
+\begin{verbatim}
+%%%[1
+some part 1
+%%%[[1
+some part 2
+%%%][(2 asp)
+some part 2 new asp
+%%%][2
+some part 2 new
+%%%]]
+some part 3
+%%%]
+\end{verbatim}
+
+If for variant 2 aspect \verb=asp= is requested the text \verb=some part 2 new asp= is generated, otherwise the default \verb=some part 2 new= for variant 2. If more than one nested chunk can be chosen from, \verb=shuffle= chooses arbitrarily.
+
+\subsection{Metadata: type, wrapping, module + import/export, ..}
+
+A chunk may have data associated other than textual content. The use of this information depends on the context it is used in. For example, when asking for AG output (option \verb=--ag=), the type of a chunk influences how its content ends up in the generated output:
+
+\begin{verbatim}
+%%%[1 hs
+haskell
+%%%]
+
+%%%[1 ag
+AG
+%%%]
+\end{verbatim}
+
+The type \verb=ag= specifies that the chunk content is AG text, \verb=hs= specifies it is Haskell. However, when asking for Haskell output (option \verb=--hs=) this difference is ignored. The metadata defined for a chunk textually starts right after the \verb=%%[= and ends at the end of the line. See the \uref{GrammarChunk}{syntax diagram for chunks} below for the exact placement and values of metadata:
+
+   * \verb=chunktype=, as discussed above. Additionally [[http://www.haskell.org/haddock/][haddock]] comment (wrapped in \verb={-| ... -}= can be included. However, when AG is generated its position in the output is not deterministic as the AG compiler also shuffles around with Haskell code.
+   * \verb=chunkref=, as discussed earlier, used to override a particular chunk or include it.
+   * \verb=chunkwrap=, additional wrapping of a chunk, currently only used for output latex. \verb=code= wraps as a [[http://people.cs.uu.nl/andres/lhs2tex/][lhs2tex]] code block, \verb=safecode= puts this in a parbox as well (used within [[http://latex-beamer.sourceforge.net/][beamer]]), \verb=verbatim= wraps inside a verbatim environment, normal size or small, \verb=tt= is similar to \verb=verbatim= but will become obsolete.
+   * \verb=module=, adds a Haskell for type \verb=hs= module definition when Haskell or AG is generated.
+   * \verb=import= and \verb=export=, take import/export lists and generate according to Haskell or AG and type \verb=hs= or \verb=ag=.
+
+Inside and entity or module name special syntax allows the use of key/value pairs. Key/value pairs are defined on the commandline by option \verb+--def=key:value+ and the value is used by referring to the key by \verb=%{key}=. In EHC this is used for externally specifying the toplevel module name of the library constructed for a particular variant. Overlapping Haskell namespaces are thus avoided and libraries for different variants can be used simultaneously. Also, grouping of name elements is done by \verb={ ... }=, guaranteeing whitespace free output generation for its content.
+
+\label{GrammarChunk}
+Syntax for chunk definitions:
+
+\begin{verbatim}
+<chunk>             ::= '%%[' (<chunkvariantdef> | <chunknameddef>) <chunkcontent> '%%]'
+<chunkvariantdef>   ::= <variantoffer>
+                        ('.' <nm>)?
+                        ('-' (<chunkref> | '(' <chunkref>* ')'))?
+                        <chunkoptions>
+                        <module>? <imports>? <exports>?
+<chunknameddef>     ::= <nm>
+<chunkcontent>      ::= <textline>*
+<variantoffer>      ::= <variantnr> | '(' <variantnr> <aspectexpr>? ')'
+<variantnr>         ::= <int>
+<aspectexpr>        ::= <aspectand1> ('||' <aspectand1>)*
+<aspectand1>        ::= <aspectand2> ('&&' <aspectand2>)*
+<aspectand2>        ::= <aspect>+
+<aspect>            ::= <ident>
+<chunkref>          ::= (<fileref> '.')? (<variantnr> '.')? <nm>
+<nm>                ::= <ident> ('.' <ident>)*
+<chunkoptions>      ::= (<chunkwrap> | <chunktype>)*
+<chunkwrap>         ::= 'wrap' '=' ( 'code' | 'safecode'
+                                   | 'tt' | 'tttiny'
+                                   | 'verbatim' | 'verbatimsmall'
+                                   | 'beamerblockcode' <str1>
+                                   | 'boxcode' ('{' <frac> '}')?
+                                   )
+<chunktype>         ::= 'hs' | 'ag' | 'haddock' | 'plain'
+<module>            ::= 'module' <str2>
+<imports>           ::= 'import' '(' <entities> ')'
+<exports>           ::= 'export' '(' <entities> ')'
+<entities>          ::= <entity> (',' <entity>)*
+<entity>            ::= <str2>
+<str2>              ::= <str1> | <ident> | <int> | '{' <str2>+ '}' | '%' '{' <ident> '}"
+<str1>              ::= '"' <non-">* '"'
+<frac>              ::= <int> ('.' <int>)?
+\end{verbatim}
+
+\subsection{Content}
+
+Content of a chunk consists of a mixture of plain text and shuffle interpreted parts. See the \uref{GrammarChunkcontent}{syntax diagram for chunk content} below. Each piece of content either is a line not starting with \verb=%%%@= or \verb=%%[[= or a reference to another chunk or a nested conditional group. A plain line consists of characters. The only escape to shuffle not starting at the beginning of a line consists of \verb=%%%@{ ... %%%}=, allowing the value of a key/value pairs to be substituted.
+
+\label{GrammarChunkcontent}
+Syntax for chunk content:
+
+\begin{verbatim}
+<chunkcontent>      ::= <content>*
+<content>           ::= (<char>* | '%%%@{' <str2> '%%%}')*
+                     |  '%%%@' <chunkref> ('@' <variantreqm>)? <chunkoptions>
+                     |  '%%[[' <variantoffer> <chunkoptions> <chunkcontent>
+                        ('%%][' <variantoffer> <chunkoptions> <chunkcontent>)*
+                        '%%]]'
+<variantreqm>       ::= <variantnr> | '(' <variantnr> <aspect>? ')'
+\end{verbatim}
+
+\subsection{References}
+
+\section{Output}
+
+\subsection{Haskell}
+
+\subsection{AG}
+
+\subsection{LaTeX / Lhs2TeX}
+
+\subsection{Plain}
+
+\section{Shuffle commandline invocation}
+
+\subsection{Commandline usage}
+
+\label{CommandLine}
+As printed by \verb=shuffle --help= (20081023):
+
+\begin{verbatim}
+Usage shuffle [options] [file ([alias=]file)*|-]
+
+options:
+  -a                            --ag                                                                     generate code for ag, default=no
+  -h                            --hs                                                                     generate code for haskell, default=no
+  -l                            --latex                                                                  generate code for latex, default=no
+                                --preamble[=yes|no]                                                      include preamble (marked by version=0), default=yes
+                                --line[=yes|no]                                                          insert #LINE pragmas, default=no
+  -p                            --plain                                                                  generate plain code, default=no
+                                --index                                                                  combined with latex, generate index entries, default=no
+                                --gen=all|<nr>|(<nr> <aspect>*) (to be obsolete, renamed to --gen-reqm)  generate for version, default=none
+  -g all|<nr>|(<nr> <aspect>*)  --gen-reqm=all|<nr>|(<nr> <aspect>*)                                     generate for version, default=none
+                                --compiler=<compiler version>                                            Version of the GHC compiler, i.e. 6.6
+                                --hidedest=here|appx=<file>                                              destination of text marked as 'hide', default=here
+                                --order=<order-spec> (to be obsolete, renamed to --variant-order)        variant order
+                                --variant-order=<order-spec>                                             variant order
+  -b <name>                     --base=<name>                                                            base name, default=derived from filename
+                                --xref-except=<filename>                                                 file with list of strings not to be cross ref'd
+                                --help                                                                   output this help
+                                --dep                                                                    output dependencies
+                                --depnameprefix[=<name>]                                                 Prefix of generated makefile vars.
+                                --depsrcvar[=<name>]                                                     Source base-directory
+                                --depdstvar[=<name>]                                                     Destination base-directory
+                                --depmainvar[=<name>]                                                    Varname for the list of main files
+                                --depdpdsvar[=<name>]                                                    Varname for the list of dependencies
+                                --deporigdpdsvar[=<name>]                                                Varname for the list of original dependencies
+                                --depbase[=<dir>]                                                        Root directory for the dependency generation
+                                --depign[=(<file> )*]                                                    Totally ignored dependencies
+                                --depterm[=(<file> => <dep>+ ,)*]                                        Dependency ignore list (or terminals)
+                                --lhs2tex[=yes|no]                                                       wrap chunks in lhs2tex's code environment, default=yes
+                                --agmodheader[=yes|no]                                                   generate AG MODULE headers instead of Haskell module headers
+                                --def=key:value                                                          define key/value pair, alternate form: key=value
+\end{verbatim}
+
+\subsection{Commandline options}
+
+   * \verb+--gen-reqm=variant | '(' variant aspect* ')'+
+   * \verb=--plain=
+   * \verb=--ag=
+   * \verb=--hs=
+   * \verb=--lhs2tex=no|yes=
+
+
+%%]
+
+
