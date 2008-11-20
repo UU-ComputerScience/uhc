@@ -2275,7 +2275,11 @@ case $ghcVersion in
   6.8*)
     cabal_base_lib_depends="$cabal_base_lib_depends containers array"
     ;;
+  6.10*)
+    cabal_base_lib_depends="$cabal_base_lib_depends containers array"
+    ;;
   *)
+    cabal_base_lib_depends="$cabal_base_lib_depends containers array"
     ;;
 esac
 

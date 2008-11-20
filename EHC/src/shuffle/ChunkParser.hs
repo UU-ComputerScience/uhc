@@ -196,7 +196,7 @@ scan scoMp st s
                                                     = Tok TkBegInline  "" "%%@[" p st : sc (ai 4 p) (ScInline l) s'
         sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'{':s')
                                                     = Tok TkBegExpand  "" "%%@{" p st : sc (ai 4 p) (ScLexMeta l) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'%':s)
+        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'%':s)
                                                     = Tok TkText       "" b'     p st : sc (ai (1 + length b') p) (ScChunk l) s'
                                                     where (b,s') = span isBlack s
                                                           b'     = "%%" ++ b
@@ -225,6 +225,7 @@ scan scoMp st s
         isKeyw st w                                 = opt st (\o -> w `Set.member` scoKeywordsTxt o)
         isInline  ('%':'%':'@':'[':_)               = True
         isInline  ('%':'%':'@':'{':_)               = True
+        isInline  ('%':'%':'%':    _)               = True
         isInline  _                                 = False
         span' p []       = ([],[])
         span' p xs@(x:xs')

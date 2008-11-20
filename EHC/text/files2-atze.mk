@@ -103,9 +103,9 @@ text-variant-scratch2:
 
 text-variant-shuffle-doc:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyShuffle --set=asArticle --set=useHyperref --set=refToPDF" \
-	  TEXT_SHUFFLE_VARIANT=11 \
-	  text-variant-dflt-once
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=storyShuffle --set=useHyperref --set=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=40 \
+	  text-variant-dflt-doc
 
 text-variant-ruler-doc:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
