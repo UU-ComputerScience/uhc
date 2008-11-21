@@ -20,6 +20,7 @@ DATA Chunk
                         lines       	: Lines
                         dumLines    	: Lines
   | Named               cref        	: {CRef}
+                        chKind          : {ChKind}
                         lines       	: Lines
                         dumLines    	: Lines
 

@@ -4,7 +4,12 @@
 %%]
 
 %%[39
-%include lhs2TeX.fmt
+\usepackage{fancyvrb}
+\usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
+
+\def\latexRef#1{\ref{#1}}
+\def\latexPageref#1{\pageref{#1}}
+\usepackage{hyperref} %% preferably the last package (according to the manual)
 %%]
 
 %%[1
@@ -727,8 +732,16 @@ Anonymity, blinding things
 %%]
 
 %%[39
-% reference in url style:
-% #1: title
-% #2: label
-\newcommand{\uref}[2]{#2 (page~\pageref{#1})}
+% blockstyle
+\setlength{\parindent}{0mm}
+\addtolength{\parskip}{0.25\baselineskip}
+
+% pre environment (a verbatim environment based upon the fancyvrb package)
+\DefineVerbatimEnvironment{pre}{Verbatim}
+  {xleftmargin=0.03\linewidth,fontsize=\small}
+
+% reference to label in url style:
+% #1: label
+% #2: title
+\newcommand{\lref}[2]{#2 (page~\latexPageref{#1})}
 %%]

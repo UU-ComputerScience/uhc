@@ -146,9 +146,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(ASPECTS)
-	@echo $(EHC_ASPECTS)
-	@echo $(EHC_ASPECTS_SUFFIX)
+	@echo $(WWW_DOC_FILES)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst
@@ -163,11 +161,13 @@ WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
 
 www-ex: $(WWW_EXAMPLES_HTML)
 
-www: $(WWW_SRC_TGZ) www-ex $(WWW_DOC_FILES)
+# www: $(WWW_SRC_TGZ) www-ex $(WWW_DOC_FILES)
+www: $(WWW_DOC_FILES)
 
-www/DoneSyncStamp: www-ex
-	(date; echo -n ", " ; svn up) > www/DoneSyncStamp ; \
-	rsync --progress -azv -e ssh www/* atze@modena.cs.uu.nl:/users/www/groups/ST/Projects/ehc
+# www/DoneSyncStamp: www-ex
+www/DoneSyncStamp: www
+	(date "+%G%m%d") > www/DoneSyncStamp ; \
+	rsync --progress -azv -e ssh www/* `whoami`@shell.cs.uu.nl:/users/www/groups/ST/Projects/ehc
 
 www-sync: www/DoneSyncStamp
 

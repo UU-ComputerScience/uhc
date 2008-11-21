@@ -198,7 +198,14 @@ instance Show CPos where
 -------------------------------------------------------------------------
 
 data ChKind
-  = ChAG | ChHS | ChPlain | ChHaddock
+  = ChAG
+  | ChHS
+  | ChPlain
+  | ChDocLaTeX		-- restricted LaTeX for documentation
+  -- | ChTexInfo
+  -- | ChHtml
+  -- | ChTwiki
+  | ChHaddock
   deriving (Show,Eq,Ord)
 
 data ChDest
