@@ -147,12 +147,6 @@
 %include forText.fmt
 %%]
 
-%%[39
-% $Id$
-
-%include lhs2TeX.fmt
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lhs2TeX + variant config, this is now partially obsolete as config is also mgt via Shuffle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -374,6 +368,7 @@
 %%]
 
 %%[39
+%\usepackage{fancyvrb}
 \usepackage{docmainsty}
 %%]
 
@@ -1304,7 +1299,9 @@ and
 %%]
 
 %%[39
+{\setlength{\parskip}{0cm}
 \tableofcontents
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1458,10 +1455,10 @@ have been submitted to POPL2006 in a slighty extended form.
 %%]
 
 %%[40
+%%]
 \begin{abstract}
 %%@ToolDocShuffle.abstract
 \end{abstract}
-%%]
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2713,7 +2710,19 @@ To be done ...
 %%]
 
 %%[40
-%%@ToolDocShuffle.docNew
+ %%@ToolDocShuffle.docNew
+
+%%@ToolDocShuffle.introduction
+
+%%@ToolDocShuffle.variantsAndAspects
+
+%%@ToolDocShuffle.chunks
+
+%%@ToolDocShuffle.output
+
+%%@ToolDocShuffle.makefileGeneration
+
+%%@ToolDocShuffle.commandline
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

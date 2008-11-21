@@ -175,6 +175,9 @@ TEXT_SUBS_SHUFFLE_ALIAS		:= $(TEXT_SUBS_SHUFFLE1) \
 TEXT_DIST_DOC_FILES			:= $(TEXT_ALL_PUB_PDFS)
 TEXT_DIST_FILES				:= $(TEXT_ALL_SRC)
 
+# www
+TEXT_WWW_DOC_PDFS			:= $(TEXT_ALL_DOCLTX_PDFS)
+
 ###########################################################################################
 # variant dispatch rules for targets
 ###########################################################################################

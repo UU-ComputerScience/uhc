@@ -30,7 +30,7 @@ data ScanOpts
 
 type ScanOptsMp = Map.Map ScState ScanOpts
 
-chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("haddock",ChHaddock) ]
+chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("doclatex",ChDocLaTeX), ("haddock",ChHaddock) ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
 chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) , ("verbatim",ChWrapVerbatim), ("verbatimsmall",ChWrapVerbatimSmall) ]
 
@@ -391,6 +391,7 @@ pChunk              =   pBegChunk
                                  <*> pImpExp "export"
                              <|> sem_Chunk_Named
                                  <$> pNm
+                                 <*> pMbChKind'
                              )
                              <*  pNl
                              <*> pLines
@@ -416,6 +417,9 @@ pChKind             =   pAnyFromMap pKey chKindMp
 
 pMbChKind           ::  ShPr ChKind
 pMbChKind           =   pMaybe ChAG id pChKind
+
+pMbChKind'          ::  ShPr ChKind
+pMbChKind'          =   pMaybe ChPlain id pChKind
 
 pChDest             ::  ShPr ChDest
 pChDest             =   pAnyFromMap pKey chDestMp

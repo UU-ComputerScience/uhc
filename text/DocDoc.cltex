@@ -12,10 +12,26 @@ Doc LaTeX commands:
 \verb
 
 \label{X}
-\uref{X}{Y}		-- in style file
+\lref{X}{Y}		-- in style file
+\href{X}{Y}		-- in style file
+
+\item
 
 Environments:
 
+pre
 verbatim
+itemize
+tabular
+
+Be able to ignore:
+
+\usepackage{X}
+
+Assumed/included packages:
+
+fancyvrb
+geometry
+hyperref
 
 %%]

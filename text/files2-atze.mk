@@ -103,7 +103,6 @@ text-variant-scratch2:
 
 text-variant-shuffle-doc:
 	$(MAKE) \
-	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=storyShuffle --set=useHyperref --set=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=40 \
 	  text-variant-dflt-doc
 
