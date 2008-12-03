@@ -1,0 +1,90 @@
+-------------------------------------------------------------------------
+-- Text AST interface
+-------------------------------------------------------------------------
+
+DATA AGItf
+  | AGItf               text    		: TextItems
+
+-------------------------------------------------------------------------
+-- Text AST
+-------------------------------------------------------------------------
+
+TYPE TextItems 			= [TextItem]
+
+DATA TextItem
+  -- plain text
+  | Space               white			: {String}
+  | NonSpace            black			: {String}
+  | Line            	str				: {String}
+  | LineFeed
+  
+  -- referencing
+  | RefTo               reftype			: RefType
+  						reftext			: TextItems
+  						text			: TextItems
+  | Label               reftext			: TextItems
+  
+  -- structure
+  | Header              level			: HeaderLevel
+  						text			: TextItems
+  | Group         		envtype			: GroupType
+  						text			: TextItems
+  | Itemize         	itemizestyle	: ItemizeStyle
+  						text			: TextItems
+  | ItemizeItem     	text			: TextItems
+
+  -- formatting
+  | Styled              style			: TextStyle
+  						text			: TextItems
+
+  -- meta info
+  | Title				text			: TextItems
+  | Author				text			: TextItems
+  | MakeTitle
+  | TOC
+
+  -- setup
+  | DocumentHeader		mboptions		: MbDocumentOptions
+  						text			: TextItems
+  | Import				text			: TextItems
+
+  -- internal
+  | T2T	         		texttype		: {TextType}
+  						text			: TextItems
+
+DATA HeaderLevel
+  | Level				level			: {Int}
+  | Paragraph
+
+DATA RefType
+  | Local
+  | Global
+
+DATA GroupType
+  | Verbatim
+  | Document
+
+DATA TextStyle
+  | Verbatim
+  | Bold
+
+DATA ItemizeStyle
+  | Bullet
+  | Number
+
+-------------------------------------------------------------------------
+-- Doc options
+-------------------------------------------------------------------------
+
+DATA DocumentOption
+  | A4Paper
+
+TYPE   DocumentOptions = [DocumentOption]
+TYPE MbDocumentOptions = MAYBE DocumentOptions
+
+-------------------------------------------------------------------------
+-- Aliases
+-------------------------------------------------------------------------
+
+SET AllText = TextItem TextItems
+SET AllNT = AllText GroupType TextStyle RefType ItemizeStyle HeaderLevel MbDocumentOptions DocumentOptions DocumentOption

@@ -98,7 +98,8 @@ union s1      FSeqNil = s1
 union s1      s2      = s1 :++: s2
 
 unions :: [FastSeq a] -> FastSeq a
-unions = L.foldl' (flip (:++:)) FSeqNil
+unions [s] =                           s
+unions  s  = L.foldr ( (:++:)) FSeqNil s
 
 -------------------------------------------------------------------------
 -- Misc

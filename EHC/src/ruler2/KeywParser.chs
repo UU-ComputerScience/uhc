@@ -20,7 +20,7 @@
 %%[1 hs export (pKeySPos, pNmStr, pNmStrSPos, pNmStrI, pNmStrISPos, pSymEscStr, pSymEscStrSPos, pSymStr, pSymStrSPos)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, EH.Util.ParseUtils, AttrProps, EH.Util.ScanUtils)
+%%[1 hs import (qualified Data.Map as Map, qualified Data.Set as Set, IO, UU.Parsing, UU.Parsing.Offside, Scanner, Config, EH.Util.ParseUtils, AttrProps, EH.Util.ScanUtils)
 %%]
 
 
@@ -80,10 +80,10 @@ keywordsOps
 rulerScanOpts :: ScanOpts
 rulerScanOpts
   = defaultScanOpts
-      { scoKeywordsTxt   = keywordsText
-      , scoKeywordsOps   = keywordsOps
-      , scoSpecChars     = specialChars
-      , scoOpChars       = opChars
+      { scoKeywordsTxt   = Set.fromList keywordsText
+      , scoKeywordsOps   = Set.fromList keywordsOps
+      , scoSpecChars     = Set.fromList specialChars
+      , scoOpChars       = Set.fromList opChars
       , scoOffsideTrigs  = keywordsOffsideTrigs
       , scoOffsideModule = ""
       , scoOffsideOpen   = ""

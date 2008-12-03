@@ -736,6 +736,10 @@ Anonymity, blinding things
 \setlength{\parindent}{0mm}
 \addtolength{\parskip}{0.25\baselineskip}
 
+% redef of toc to avoid blockstyle behavior
+\let\my@tableofcontents=\tableofcontents
+\def\tableofcontents{{\setlength{\parskip}{0cm}\my@tableofcontents}}
+
 % pre environment (a verbatim environment based upon the fancyvrb package)
 \DefineVerbatimEnvironment{pre}{Verbatim}
   {xleftmargin=0.03\linewidth,fontsize=\small}

@@ -12,6 +12,9 @@ Note: everything is exported.
 %%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
+%%[1 import(qualified Data.Set as Set)
+%%]
+
 %%[1 import(EH.Util.ScanUtils)
 %%]
 
@@ -38,75 +41,77 @@ ehScanOpts
 %%]
 %%[1
         {   scoKeywordsTxt      =
-                tokKeywStrsEH1
-                ++ offsideTrigs
+                Set.fromList $
+                       tokKeywStrsEH1
+                    ++ offsideTrigs
 %%]
 %%[4
-                ++ tokKeywStrsEH4
+                    ++ tokKeywStrsEH4
 %%]
 %%[5
-                ++ tokKeywStrsEH5
+                    ++ tokKeywStrsEH5
 %%]
 %%[6
-                ++ tokKeywStrsEH6
+                    ++ tokKeywStrsEH6
 %%]
 %%[8
-                ++ tokKeywStrsEH8
+                    ++ tokKeywStrsEH8
 %%]
 %%[9
-                ++ tokKeywStrsEH9
+                    ++ tokKeywStrsEH9
 %%]
 %%[11
-                ++ tokKeywStrsEH11
+                    ++ tokKeywStrsEH11
 %%]
 %%[20
-                ++ tokKeywStrsEH12
+                    ++ tokKeywStrsEH12
 %%]
 %%[94
-                ++ tokKeywStrsEH94
+                    ++ tokKeywStrsEH94
 %%]
 %%[95
-                ++ tokKeywStrsEH95
+                    ++ tokKeywStrsEH95
 %%]
 %%[1
         ,   scoKeywordsOps      =
-                tokOpStrsEH1
+                Set.fromList $
+                       tokOpStrsEH1
 %%]
 %%[2
-                ++ tokOpStrsEH2
+                    ++ tokOpStrsEH2
 %%]
 %%[3
-                ++ tokOpStrsEH3
+                    ++ tokOpStrsEH3
 %%]
 %%[4
-                ++ tokOpStrsEH4
+                    ++ tokOpStrsEH4
 %%]
 %%[5
-                ++ tokOpStrsEH5
+                    ++ tokOpStrsEH5
 %%]
 %%[6
-                ++ tokOpStrsEH6
+                    ++ tokOpStrsEH6
 %%]
 %%[7
-                ++ tokOpStrsEH7
+                    ++ tokOpStrsEH7
 %%]
 %%[9
-                ++ tokOpStrsEH9
+                    ++ tokOpStrsEH9
 %%]
 %%[10
-                ++ tokOpStrsEH10
+                    ++ tokOpStrsEH10
 %%]
 %%[11
-                ++ tokOpStrsEH11
+                    ++ tokOpStrsEH11
 %%]
 %%[1
-        ,   scoSpecChars        =
+        ,   scoSpecChars        = Set.fromList $
                 "();,[]{}`"
-        ,   scoOpChars          =
+        ,   scoOpChars          = Set.fromList $
                 "!#$%&*+/<=>?@\\^|-:.~"
 %%]
 %%[7
-        ,   scoSpecPairs        =
+        ,   scoSpecPairs        = Set.fromList $
                 [  show hsnORow, show hsnCRow
                 ,  show hsnOSum, show hsnCSum
 %%]
@@ -143,65 +148,70 @@ hsScanOpts
 %%]
 %%[1
         {   scoKeywordsTxt      =
-                scoKeywordsTxt ehScanOpts
-                ++ offsideTrigs
-                ++ tokKeywStrsHS1
-%%]
-%%[4
-                ++ tokKeywStrsHS4
-%%]
-%%[5
-                ++ tokKeywStrsHS5
-%%]
-%%[6
-                ++ tokKeywStrsHS6
-%%]
-%%[8
-                ++ tokKeywStrsHS8
-%%]
-%%[9
-                ++ tokKeywStrsHS9
-%%]
-%%[11
-                ++ tokKeywStrsHS11
-%%]
-%%[20
-                ++ tokKeywStrsHS12
-%%]
-%%[94
-                ++ tokKeywStrsHS94
+                scoKeywordsTxt ehScanOpts `Set.union`
+                (Set.fromList $
+                       offsideTrigs
+                    ++ tokKeywStrsHS1
+%%[[4
+                    ++ tokKeywStrsHS4
+%%]]
+%%[[5
+                    ++ tokKeywStrsHS5
+%%]]
+%%[[6
+                    ++ tokKeywStrsHS6
+%%]]
+%%[[8
+                    ++ tokKeywStrsHS8
+%%]]
+%%[[9
+                    ++ tokKeywStrsHS9
+%%]]
+%%[[11
+                    ++ tokKeywStrsHS11
+%%]]
+%%[[20
+                    ++ tokKeywStrsHS12
+%%]]
+%%[[94
+                    ++ tokKeywStrsHS94
+%%]]
+                )
 %%]
 %%[1
         ,   scoKeywordsOps      =
                 scoKeywordsOps ehScanOpts
-                ++ tokOpStrsHS1
-%%]
-%%[2
-                ++ tokOpStrsHS2
-%%]
-%%[3
-                ++ tokOpStrsHS3
-%%]
-%%[4
-                ++ tokOpStrsHS4
-%%]
-%%[5
-                ++ tokOpStrsHS5
-%%]
-%%[6
-                ++ tokOpStrsHS6
-%%]
-%%[7
-                ++ tokOpStrsHS7
-%%]
-%%[9
-                ++ tokOpStrsHS9
-%%]
-%%[10
-                ++ tokOpStrsHS10
-%%]
-%%[11
-                ++ tokOpStrsHS11
+                `Set.union`
+                (Set.fromList $ 
+                       tokOpStrsHS1
+%%[[2
+                    ++ tokOpStrsHS2
+%%]]
+%%[[3
+                    ++ tokOpStrsHS3
+%%]]
+%%[[4
+                    ++ tokOpStrsHS4
+%%]]
+%%[[5
+                    ++ tokOpStrsHS5
+%%]]
+%%[[6
+                    ++ tokOpStrsHS6
+%%]]
+%%[[7
+                    ++ tokOpStrsHS7
+%%]]
+%%[[9
+                    ++ tokOpStrsHS9
+%%]]
+%%[[10
+                    ++ tokOpStrsHS10
+%%]]
+%%[[11
+                    ++ tokOpStrsHS11
+%%]]
+                )
 %%]
 %%[1
         ,   scoOffsideTrigs     =
@@ -222,26 +232,27 @@ hsScanOpts
 coreScanOpts :: ScanOpts
 coreScanOpts
   =  grinScanOpts
-        {   scoKeywordsTxt      =   [ "let", "in", "case", "of", "rec", "foreign", "uniq"
-                                    , "Int", "Char", "String", "Tag", "Rec"
-                                    , "module", "default"
-                                    , "VAL"
+        {   scoKeywordsTxt      =   (Set.fromList $
+                                        [ "let", "in", "case", "of", "rec", "foreign", "uniq"
+                                        , "Int", "Char", "String", "Tag", "Rec"
+                                        , "module", "default"
+                                        , "VAL"
 %%[[9
-                                    , "DICT"
+                                        , "DICT"
 %%]]
 %%[[20
-                                    , "Integer" 
+                                        , "Integer" 
 %%]]
 %%[[94
-                                    , "foreignexport" 
+                                        , "foreignexport" 
 %%]]
-                                    ]
-                                    ++ scoKeywordsTxt tyScanOpts
-                                    ++ scoKeywordsTxt hsScanOpts
-        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts ++ scoKeywordsOps hsScanOpts
+                                        ])
+                                    `Set.union` scoKeywordsTxt tyScanOpts
+                                    `Set.union` scoKeywordsTxt hsScanOpts
+        ,   scoKeywordsOps      =   scoKeywordsOps grinScanOpts `Set.union` scoKeywordsOps hsScanOpts
         ,   scoDollarIdent      =   True
-        ,   scoOpChars          =   scoOpChars   grinScanOpts ++ scoOpChars   hsScanOpts
-        ,   scoSpecChars        =   "!=" ++ scoSpecChars grinScanOpts ++ scoSpecChars hsScanOpts
+        ,   scoOpChars          =   scoOpChars grinScanOpts `Set.union` scoOpChars hsScanOpts
+        ,   scoSpecChars        =   Set.fromList "!=" `Set.union` scoSpecChars grinScanOpts `Set.union` scoSpecChars hsScanOpts
         ,   scoSpecPairs        =   scoSpecPairs hsScanOpts
         }
 %%]
@@ -250,20 +261,21 @@ coreScanOpts
 grinScanOpts :: ScanOpts
 grinScanOpts
   =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ "eval", "apply"
-                                    , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "fetchupdate"
-                                    , "throw", "try", "catch", "ctags", "applymap", "evalmap"
-                                    , "C", "F", "P", "A", "R", "H", "U", "W"
-                                    , "basicnode", "enumnode", "opaquenode", "ptrnode", "basicannot", "enumannot", "opaqueannot", "ptrannot"
-                                    , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
-                                    , "word"
+        {   scoKeywordsTxt      =   Set.fromList $
+                                        [ "eval", "apply"
+                                        , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "fetchupdate"
+                                        , "throw", "try", "catch", "ctags", "applymap", "evalmap"
+                                        , "C", "F", "P", "A", "R", "H", "U", "W"
+                                        , "basicnode", "enumnode", "opaquenode", "ptrnode", "basicannot", "enumannot", "opaqueannot", "ptrannot"
+                                        , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
+                                        , "word"
 %%[[97
-                                    , "float", "double"
+                                        , "float", "double"
 %%]]
-                                    ]
-        ,   scoKeywordsOps      =   [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
-        ,   scoSpecChars        =   "();{}#/\\|,"
-        ,   scoOpChars          =   "<->:=+*"
+                                        ]
+        ,   scoKeywordsOps      =   Set.fromList [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
+        ,   scoSpecChars        =   Set.fromList "();{}#/\\|,"
+        ,   scoOpChars          =   Set.fromList "<->:=+*"
         ,   scoDollarIdent      =   True
         }
 %%]
@@ -272,43 +284,45 @@ grinScanOpts
 hiScanOpts :: ScanOpts
 hiScanOpts
   =  hsScanOpts
-        {   scoKeywordsTxt      =   [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
-                                    , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
-                                    , "True", "False"
-                                    , "tykind", "tykinm", "tykivar"
+        {   scoKeywordsTxt      =   (Set.fromList $
+                                        [ "value", "fixity", "stamp", "uid", "rule", "var", "ctxt", "sup", "iddef", "arity", "grInline"
+                                        , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
+                                        , "True", "False"
+                                        , "tykind", "tykinm", "tykivar"
 %%[[9
-                                    , "chr", "chrstore"
-                                    , "Assume", "Prove", "Reduction"
-                                    , "scope"
-                                    , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
-                                    , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym", "redhoweqtrans", "redhoweqcongr"
-                                    , "varuidnmname", "varuidnmuid", "varuidnmvar"
+                                        , "chr", "chrstore"
+                                        , "Assume", "Prove", "Reduction"
+                                        , "scope"
+                                        , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
+                                        , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym", "redhoweqtrans", "redhoweqcongr"
+                                        , "varuidnmname", "varuidnmuid", "varuidnmvar"
 %%]]
 %%[[10
-                                    , "label", "offset"
-                                    , "NonEmptyRowLacksLabel"
-                                    , "redhowlabel"
+                                        , "label", "offset"
+                                        , "NonEmptyRowLacksLabel"
+                                        , "redhowlabel"
 %%]]
 %%[[17
-                                    , "typolarity"
+                                        , "typolarity"
 %%]]
 %%[[13
-                                    , "redhowlambda"
+                                        , "redhowlambda"
 %%]]
 %%[[20
-                                    , "visibleno", "visibleyes"
+                                        , "visibleno", "visibleyes"
 %%]]
-                                    ]
+                                        ]
 %%[[20
-                                    ++ tokKeywStrsHI6
+                                        ++ tokKeywStrsHI6
 %%]]
-                                    ++ scoKeywordsTxt hsScanOpts
-                                    ++ scoKeywordsTxt tyScanOpts
-                                    ++ scoKeywordsTxt grinScanOpts
+                                    )
+                                    `Set.union` scoKeywordsTxt hsScanOpts
+                                    `Set.union` scoKeywordsTxt tyScanOpts
+                                    `Set.union` scoKeywordsTxt grinScanOpts
         ,   scoOpChars          =   scoOpChars coreScanOpts
         ,   scoDollarIdent      =   True
         ,   scoSpecChars        =   scoSpecChars coreScanOpts
-        ,   scoKeywordsOps      =   [ "??" ] ++ scoKeywordsOps coreScanOpts
+        ,   scoKeywordsOps      =   Set.fromList [ "??" ] `Set.union` scoKeywordsOps coreScanOpts
         }
 %%]
 
@@ -316,7 +330,7 @@ hiScanOpts
 tyScanOpts :: ScanOpts
 tyScanOpts
   =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ "uid" ]
+        {   scoKeywordsTxt      =   Set.fromList [ "uid" ]
         }
 %%]
 
@@ -324,11 +338,8 @@ tyScanOpts
 foreignEntScanOpts :: ScanOpts
 foreignEntScanOpts
   =  defaultScanOpts
-        {   scoKeywordsTxt      =   [ "dynamic", "wrapper", "h", "static"
-                                    ]
-        ,   scoKeywordsOps      =   [  ]
-        ,   scoSpecChars        =   ".&"
-        ,   scoOpChars          =   ""
+        {   scoKeywordsTxt      =   Set.fromList [ "dynamic", "wrapper", "h", "static" ]
+        ,   scoSpecChars        =   Set.fromList ".&"
         ,   scoDollarIdent      =   False
         }
 %%]
@@ -341,10 +352,10 @@ foreignEntScanOpts
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
   = do  {  txt <- hGetContents fh
-        ;  return $ scan (scoKeywordsTxt opts)
-                         (scoKeywordsOps opts)
-                         (scoSpecChars opts)
-                         (scoOpChars opts)
+        ;  return $ scan (Set.toList $ scoKeywordsTxt opts)
+                         (Set.toList $ scoKeywordsOps opts)
+                         (Set.toList $ scoSpecChars opts)
+                         (Set.toList $ scoOpChars opts)
                          (initPos fn) 
                   $ txt
         }

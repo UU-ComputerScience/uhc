@@ -49,13 +49,7 @@ main
 
 readShFile :: FPathWithAlias -> Opts -> IO (FPathWithAlias,T_AGItf)
 readShFile (a,fp) opts
-  = do { (fp,fh)
-             <- if fpathIsEmpty fp
-                then return (mkFPath "<stdin>",stdin)
-                else do { let fn = fpathToStr fp
-                        ; h <- openFile fn ReadMode
-                        ; return (fp,h)
-                        }
+  = do { (fp,fh) <- fpathOpenOrStdin fp
        ; txt <- hGetContents fh
        ; let toks = scan shuffleScanOpts ScSkip txt
        ; let (pres,perrs) = parseToResMsgs pAGItf toks

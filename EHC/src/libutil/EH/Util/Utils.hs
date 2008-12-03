@@ -88,6 +88,14 @@ listSaturateWith min max get missing l
   where mp = Map.fromList missing
         mk a = panicJust "listSaturateWith" $ Map.lookup a mp
 
+-- variant on span, predicate on full list
+spanOnRest :: ([a] -> Bool) -> [a] -> ([a],[a])
+spanOnRest p []       = ([],[])
+spanOnRest p xs@(x:xs')
+	 | p xs      = (x:ys, zs)
+	 | otherwise = ([],xs)
+					   where (ys,zs) = spanOnRest p xs'
+
 -------------------------------------------------------------------------
 -- String
 -------------------------------------------------------------------------
@@ -103,6 +111,9 @@ strCapitalize s
   = case s of
       (c:cs) -> toUpper c : cs
       _      -> s
+
+strToInt :: String -> Int
+strToInt = foldl (\i c -> i * 10 + ord c - ord '0') 0
 
 -------------------------------------------------------------------------
 -- Misc
