@@ -177,7 +177,7 @@ function run {
       if [ $RETVALUE -eq 0 ]; then
         diff $OUTPUT $EXPECTED 
         if [ $? -eq 0 ]; then
-          clean_up
+          # clean_up
           echo -e '\E[32m'"\033[1mSUCCES\033[0m"
         else
           echo -e '\E[31m'"\033[1mERROR:\033[0m Output ($OUTPUT) not equal to expected output ($EXPECTED)"
