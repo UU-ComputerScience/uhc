@@ -125,7 +125,7 @@
 %%[8
 hsnEscapeeChars :: ScanOpts -> Set.Set Char
 hsnEscapeeChars scanOpts
-  = Set.fromList ('$' : scoSpecChars scanOpts ++ scoOpChars scanOpts)
+  = Set.fromList "$" `Set.union` scoSpecChars scanOpts `Set.union` scoOpChars scanOpts
 
 ppHsnNonAlpha :: ScanOpts -> HsName -> PP_Doc
 ppHsnNonAlpha scanOpts

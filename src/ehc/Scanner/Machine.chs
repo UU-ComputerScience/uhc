@@ -3,7 +3,10 @@
 %include afp.fmt
 %%]
 
-%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Util.BinaryTrees,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Scanner.Token})
+%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Scanner.Token})
+%%]
+
+%%[5 import(qualified Data.Set as Set)
 %%]
 
 %%[5 export(scanHandle,scanFile)
@@ -40,13 +43,13 @@ scan opts pos input
 %%]]
 
  where
-   locatein :: Ord a => [a] -> a -> Bool
-   locatein es = isJust . btLocateIn compare (tab2tree (sort es))
-   iskw     = locatein (scoKeywordsTxt opts)
-   isop     = locatein (scoKeywordsOps opts)
-   isSymbol = locatein (scoSpecChars opts)
-   isOpsym  = locatein (scoOpChars opts)
-   isPairSym= locatein (scoSpecPairs opts)
+   -- locatein :: Ord a => [a] -> a -> Bool
+   -- locatein es = isJust . btLocateIn compare (tab2tree (sort es))
+   iskw     = (`Set.member` scoKeywordsTxt opts) -- locatein (scoKeywordsTxt opts)
+   isop     = (`Set.member` scoKeywordsOps opts) -- locatein (scoKeywordsOps opts)
+   isSymbol = (`Set.member` scoSpecChars opts) -- locatein (scoSpecChars opts)
+   isOpsym  = (`Set.member` scoOpChars opts) -- locatein (scoOpChars opts)
+   isPairSym= (`Set.member` scoSpecPairs opts) -- locatein (scoSpecPairs opts)
 
    isIdStart c = isLower    c || c == '_'
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_'

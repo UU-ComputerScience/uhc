@@ -1,0 +1,25 @@
+-------------------------------------------------------------------------
+-- Haskell interface to Text AST
+-------------------------------------------------------------------------
+
+{
+module Text
+  ( 
+  -- AST:
+    AGItf(..)
+  , TextItems, TextItem(..)
+  , GroupType(..)
+  , TextStyle(..)
+  , RefType(..)
+  , ItemizeStyle(..)
+  , HeaderLevel(..)
+  , DocumentOption(..), DocumentOptions, MbDocumentOptions
+  )
+where
+
+import Common
+
+}
+
+INCLUDE "Text/AbsSyn.ag"
+

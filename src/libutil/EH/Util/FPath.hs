@@ -11,6 +11,8 @@ module EH.Util.FPath
   
   , fpathDirSep, fpathDirSepChar
   
+  , fpathOpenOrStdin
+  
   , SearchPath, FileSuffixes
   , mkInitSearchPath
   , searchPathFromString
@@ -143,6 +145,19 @@ instance FPATH String where
     = FPath d b' s
     where (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
           (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
+
+-------------------------------------------------------------------------------------------
+-- Open path for read or return stdin
+-------------------------------------------------------------------------------------------
+
+fpathOpenOrStdin :: FPath -> IO (FPath,Handle)
+fpathOpenOrStdin fp
+  = if fpathIsEmpty fp
+    then return (mkFPath "<stdin>",stdin)
+    else do { let fn = fpathToStr fp
+            ; h <- openFile fn ReadMode
+            ; return (fp,h)
+            }
 
 -------------------------------------------------------------------------------------------
 -- Search path utils

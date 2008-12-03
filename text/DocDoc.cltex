@@ -8,6 +8,10 @@ Doc LaTeX commands:
 \subsection*{X}
 
 \tableofcontents
+\documentclass[X]{Y}
+\maketitle
+\title{X}
+\author{X}
 
 \verb
 
@@ -21,6 +25,7 @@ Environments:
 
 pre
 verbatim
+document
 itemize
 tabular
 

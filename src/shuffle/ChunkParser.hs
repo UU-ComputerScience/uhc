@@ -9,24 +9,21 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
 import IO
+
 import UU.Parsing
 -- import UU.Parsing.CharParser
 import UU.Scanner.Position( initPos, Pos )
+
+import EH.Util.ScanUtils
 import EH.Util.ParseUtils
+import EH.Util.Utils
+
 import Common
-import EH.Util.Utils (wordsBy)
 import MainAG
 
 -------------------------------------------------------------------------------------------
 -- Scanning
 -------------------------------------------------------------------------------------------
-
-data ScanOpts
-  =  ScanOpts
-        {   scoKeywordsTxt      ::  Set.Set String
-        ,   scoSpecChars        ::  Set.Set Char
-        ,   scoOpChars          ::  Set.Set Char
-        }
 
 type ScanOptsMp = Map.Map ScState ScanOpts
 
@@ -48,7 +45,7 @@ shuffleScanOpts :: ScanOptsMp
 shuffleScanOpts
   = Map.fromList
         [ ( ScLexMeta 0
-          , ScanOpts
+          , defaultScanOpts
               { scoKeywordsTxt      =   Set.fromList (kwTxtAsVarTooB ++ [ "_", "-", ".", "<", "=", "@", "||", "&&" ])
               , scoSpecChars        =   Set.fromList "(),%{}"
               , scoOpChars          =   Set.fromList "+-=*&^$#@!\\|><~`;:?/_."
@@ -75,19 +72,6 @@ instance Ord ScState where
   ScInline  _ < ScSkip      = True
   _           < _           = False
 
-data TokPos
-  = TokPos { tkpLine, tkpColumn :: Int }
-  deriving (Eq,Ord)
-
-instance Show TokPos where
-  show (TokPos l c) = if l < 0 || c < 0 then "" else "(" ++ show l ++ ":" ++ show c ++ ")"
-
-tkpStart :: TokPos
-tkpStart = TokPos 1 1
-
-tkpNone :: TokPos
-tkpNone = TokPos (-1) (-1)
-
 data TokKind
   = TkBegChunk  | TkEndChunk
   | TkBegInline | TkEndInline
@@ -100,7 +84,7 @@ data TokKind
   deriving (Show,Eq,Ord)
 
 data Tok
-  = Tok { tokKind :: TokKind, tokWhite :: String, tokBlack :: String, tokPos :: TokPos, tokState :: ScState }
+  = Tok { tokKind :: TokKind, tokWhite :: String, tokBlack :: String, tokPos :: InFilePos, tokState :: ScState }
 
 instance Eq Tok where
   (Tok k1 _ b1 _ _) == (Tok k2 _ b2 _ _) = k1 == k2 && (k1 /= TkReserved || b1 == b2)
@@ -120,38 +104,9 @@ instance Symbol Tok
 mbTokWhite :: Tok -> Maybe String
 mbTokWhite (Tok _ w _ _ _) = if null w then Nothing else Just w
 
-isVarStart :: Char -> Bool
-isVarStart c = c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
-
-isVarRest :: Char -> Bool
-isVarRest c = isVarStart c || isDigit c || c `elem` "'_"
-
-isWhite :: Char -> Bool
-isWhite = (`elem` " \t")
-
-{-
-isDig :: Char -> Bool
-isDig c = c >= '0' && c <= '9'
--}
-
-isLF :: Char -> Bool
-isLF = (`elem` "\n\r")
-
-isBlack :: Char -> Bool
-isBlack c = not (isWhite c || isLF c)
-
-isStrQuote :: Char -> Bool
-isStrQuote c = c == '"'
-
-isStr :: Char -> Bool
-isStr c = not (isStrQuote c || isLF c)
-
-str2int :: String -> Int
-str2int = foldl (\i c -> i * 10 + ord c - ord '0') 0
-
 scan :: ScanOptsMp -> ScState -> String -> [Tok]
 scan scoMp st s
-  = takeWhile ((/=TkEOF) . tokKind) (sc tkpStart st s)
+  = takeWhile ((/=TkEOF) . tokKind) (sc infpStart st s)
   where sc p st               ""                      = [Tok TkEOF "" "" p st]
         sc p st@(ScChunk _)   s@(c:_)
           | isWhite c                               = t {tokWhite = w} : ts
@@ -181,30 +136,30 @@ scan scoMp st s
                                                                  _                    -> s2
         sc p st@(ScLexMeta _) s@(c:_)
           | isOpch st c                             = scKw (isOpch st) p st s
-        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'[':'[':s')
+        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':'[':'[':s')
                                                     = Tok TkBegGroup   "" "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':'[':s')
+        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':']':'[':s')
                                                     = Tok TkElseGroup  "" "%%][" p st : sc (ai 4 p) (ScLexMeta (l)) s'
-        sc p@(TokPos _ 1) ScSkip            ('%':'%':'[':s')
+        sc p@(InFilePos _ 1) ScSkip            ('%':'%':'[':s')
                                                     = Tok TkBegChunk   "" "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':']':s')
+        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':']':']':s')
           | l >  0                                  = Tok TkEndChunk   "" "%%]]" p st : sc (ai 4 p) (ScChunk (l-1)) s'
-        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':']':s')
+        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':']':s')
           | l == 0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) ScSkip s'
           | l >  0                                  = Tok TkEndChunk   "" "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
-        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'[':s')
+        sc p@(InFilePos _ _) st@(ScChunk l)    ('%':'%':'@':'[':s')
                                                     = Tok TkBegInline  "" "%%@[" p st : sc (ai 4 p) (ScInline l) s'
-        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'@':'{':s')
+        sc p@(InFilePos _ _) st@(ScChunk l)    ('%':'%':'@':'{':s')
                                                     = Tok TkBegExpand  "" "%%@{" p st : sc (ai 4 p) (ScLexMeta l) s'
-        sc p@(TokPos _ _) st@(ScChunk l)    ('%':'%':'%':s)
+        sc p@(InFilePos _ _) st@(ScChunk l)    ('%':'%':'%':s)
                                                     = Tok TkText       "" b'     p st : sc (ai (1 + length b') p) (ScChunk l) s'
                                                     where (b,s') = span isBlack s
                                                           b'     = "%%" ++ b
-        sc p@(TokPos _ 1) st@(ScChunk l)    ('%':'%':'@':s')
+        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':'@':s')
                                                     = Tok TkNameRef    "" "%%@"  p st : sc (ai 3 p) (ScLexMeta l) s'
-        sc p@(TokPos _ _) st@(ScInline l)   ('%':'%':']':s')
+        sc p@(InFilePos _ _) st@(ScInline l)   ('%':'%':']':s')
                                                     = Tok TkEndInline  "" "%%]"  p st : sc (ai 3 p) (ScChunk l) s'
-        sc p@(TokPos _ _) st@(ScInline l)   s       = Tok TkText       "" il     p st : sc (a il p) (ScInline l) s'
+        sc p@(InFilePos _ _) st@(ScInline l)   s       = Tok TkText       "" il     p st : sc (a il p) (ScInline l) s'
                                                     where (il,s') = spanInline s
                                                           spanInline s@('%':'%':']':_) = ("",s)
                                                           spanInline ""                = ("","")
@@ -216,9 +171,9 @@ scan scoMp st s
         scKw f p st s                               = Tok tk           "" w      p st : sc (a w p) st s'
                                                     where (w,s') = span f s
                                                           tk = if isKeyw st w then TkReserved else TkText
-        a s                                         = ai (length s)
-        ai i p                                      = p {tkpColumn = i + tkpColumn p}
-        al   p                                      = p {tkpLine = 1 + tkpLine p, tkpColumn = 1}
+        a                                           = infpAdvStr
+        ai                                          = infpAdvCol
+        al                                          = infpAdvLine
         opt st p                                    = maybe False p $ Map.lookup st scoMp
         isSpec st c                                 = opt st (\o -> c `Set.member` scoSpecChars o)
         isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)
@@ -227,36 +182,36 @@ scan scoMp st s
         isInline  ('%':'%':'@':'{':_)               = True
         isInline  ('%':'%':'%':    _)               = True
         isInline  _                                 = False
-        span' p []       = ([],[])
-        span' p xs@(x:xs')
-             | p xs      = (x:ys, zs)
-             | otherwise = ([],xs)
-                               where (ys,zs) = span' p xs'
+        span'                                       = spanOnRest
+
+-------------------------------------------------------------------------
+-- Parsers directly related to scanning
+-------------------------------------------------------------------------
 
 pBegChunk, pEndChunk
  , pBegInline, pEndInline
  , pBegExpand, pEndExpand
  , pBegGroup, pElseGroup
  , pBegNameRef, pNl :: (IsParser p Tok) => p Tok
-pBegChunk   = pSym (Tok TkBegChunk  "" "%%["  tkpNone ScSkip)
-pEndChunk   = pSym (Tok TkEndChunk  "" "%%]"  tkpNone ScSkip)
-pBegInline  = pSym (Tok TkBegInline "" "%%@[" tkpNone ScSkip)
-pEndInline  = pSym (Tok TkEndInline "" "%%]"  tkpNone ScSkip)
-pBegExpand  = pSym (Tok TkBegExpand "" "%%@{" tkpNone ScSkip)
-pEndExpand  = pSym (Tok TkEndExpand "" "%%}"  tkpNone ScSkip)
-pBegGroup   = pSym (Tok TkBegGroup  "" "%%[[" tkpNone ScSkip)
-pElseGroup  = pSym (Tok TkElseGroup "" "%%][" tkpNone ScSkip)
-pBegNameRef = pSym (Tok TkNameRef   "" "%%@"  tkpNone ScSkip)
-pNl         = pSym (Tok TkNl        "" "LF"   tkpNone ScSkip)
+pBegChunk   = pSym (Tok TkBegChunk  "" "%%["  infpNone ScSkip)
+pEndChunk   = pSym (Tok TkEndChunk  "" "%%]"  infpNone ScSkip)
+pBegInline  = pSym (Tok TkBegInline "" "%%@[" infpNone ScSkip)
+pEndInline  = pSym (Tok TkEndInline "" "%%]"  infpNone ScSkip)
+pBegExpand  = pSym (Tok TkBegExpand "" "%%@{" infpNone ScSkip)
+pEndExpand  = pSym (Tok TkEndExpand "" "%%}"  infpNone ScSkip)
+pBegGroup   = pSym (Tok TkBegGroup  "" "%%[[" infpNone ScSkip)
+pElseGroup  = pSym (Tok TkElseGroup "" "%%][" infpNone ScSkip)
+pBegNameRef = pSym (Tok TkNameRef   "" "%%@"  infpNone ScSkip)
+pNl         = pSym (Tok TkNl        "" "LF"   infpNone ScSkip)
 
 pKey :: (IsParser p Tok) => String -> p String
-pKey k = tokBlack <$> pSym (Tok TkReserved "" k tkpNone ScSkip)
+pKey k = tokBlack <$> pSym (Tok TkReserved "" k infpNone ScSkip)
 
 pVar :: (IsParser p Tok) => p String
-pVar = tokBlack <$> pSym (Tok TkText "" "<ident>" tkpNone ScSkip)
+pVar = tokBlack <$> pSym (Tok TkText "" "<ident>" infpNone ScSkip)
 
 pInt :: (IsParser p Tok) => p String
-pInt = tokBlack <$> pSym (Tok TkInt "" "0" tkpNone ScSkip)
+pInt = tokBlack <$> pSym (Tok TkInt "" "0" infpNone ScSkip)
 
 pFrac :: (IsParser p Tok) => p String
 pFrac
@@ -264,19 +219,19 @@ pFrac
          <*> (pMaybe "" ("."++) (pKey "." *> pInt))
 
 pInt' :: (IsParser p Tok) => p Int
-pInt' = str2int <$> pInt
+pInt' = strToInt <$> pInt
 
 pStr :: (IsParser p Tok) => p String
-pStr = tokBlack <$> pSym (Tok TkStr "" "<string>" tkpNone ScSkip)
+pStr = tokBlack <$> pSym (Tok TkStr "" "<string>" infpNone ScSkip)
 
 pText :: (IsParser p Tok) => p Tok
-pText = pSym (Tok TkText "" "<text>" tkpNone ScSkip)
+pText = pSym (Tok TkText "" "<text>" infpNone ScSkip)
 
 pWhiteBlack :: (IsParser p Tok) => p (Maybe String,String)
 pWhiteBlack = (\t -> (mbTokWhite t,tokBlack t)) <$> pText
 
 -------------------------------------------------------------------------
--- New Parser
+-- Shuffle chunk parser
 -------------------------------------------------------------------------
 
 type ShPr  c = (IsParser p Tok) => p c

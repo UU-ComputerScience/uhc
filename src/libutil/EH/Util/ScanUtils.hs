@@ -1,13 +1,26 @@
 module EH.Util.ScanUtils
   ( ScanOpts(..), defaultScanOpts
+  
   , isNoPos, posIs1stColumn
+  
+  , InFilePos(..), infpStart, infpNone
+  , infpAdvCol, infpAdvLine, infpAdvStr
+  
   , genTokVal, genTokTp, genTokMap
+  
+  , isLF, isStr, isStrQuote
+  , isWhite, isBlack
+  , isVarStart, isVarRest
   )
   where
 
 import IO
+import Data.Char
 import Data.List
+import qualified Data.Set as Set
+
 import EH.Util.Pretty
+
 import UU.Parsing
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
@@ -39,6 +52,32 @@ posIs1stColumn :: Pos -> Bool
 posIs1stColumn p = column p == 1
 
 -------------------------------------------------------------------------
+-- InFilePos: Simplified Pos for inside a file only
+-------------------------------------------------------------------------
+
+data InFilePos
+  = InFilePos { infpLine, infpColumn :: Int }
+  deriving (Eq,Ord)
+
+instance Show InFilePos where
+  show (InFilePos l c) = if l < 0 || c < 0 then "" else "(" ++ show l ++ ":" ++ show c ++ ")"
+
+infpStart :: InFilePos
+infpStart = InFilePos 1 1
+
+infpNone :: InFilePos
+infpNone = InFilePos (-1) (-1)
+
+infpAdvCol :: Int -> InFilePos -> InFilePos
+infpAdvCol i p = p {infpColumn = i + infpColumn p}
+
+infpAdvStr :: String -> InFilePos -> InFilePos
+infpAdvStr s p = infpAdvCol (length s) p
+
+infpAdvLine :: InFilePos -> InFilePos
+infpAdvLine p = p {infpLine = 1 + infpLine p, infpColumn = 1}
+
+-------------------------------------------------------------------------
 -- PP of parse errors
 -------------------------------------------------------------------------
 
@@ -59,29 +98,36 @@ instance PP Pos where
 -- ScanOpts
 -------------------------------------------------------------------------
 
+{-
+ScanOpts encode all possible options we ever might want to pass to a scanner used inside the EHC project.
+Hence not all options are used by all scanners.
+-}
+
 data ScanOpts
   =  ScanOpts
-        {   scoKeywordsTxt      ::  ![String]
-        ,   scoKeywordsOps      ::  ![String]
-        ,   scoSpecChars        ::  !String
-        ,   scoOpChars          ::  !String
-        ,   scoSpecPairs        ::  ![String]
-        ,   scoDollarIdent      ::  !Bool
-        ,   scoOffsideTrigs     ::  ![String]
-        ,   scoOffsideModule    ::  !String
-        ,   scoOffsideOpen      ::  !String
-        ,   scoOffsideClose     ::  !String
-        ,   scoLitmode          ::  !Bool
+        {   scoKeywordsTxt      ::  !(Set.Set String)		-- identifiers which are keywords
+        ,   scoCommandsTxt      ::  !(Set.Set String)		-- identifiers which are commands
+        ,   scoKeywordsOps      ::  !(Set.Set String)		-- operators which are keywords
+        ,   scoSpecChars        ::  !(Set.Set Char)			-- 1 char keywords
+        ,   scoOpChars          ::  !(Set.Set Char)			-- chars used for operators
+        ,   scoSpecPairs        ::  !(Set.Set String)		-- pairs of chars which form keywords
+        ,   scoDollarIdent      ::  !Bool					-- allow $ encoded identifiers
+        ,   scoOffsideTrigs     ::  ![String]				-- offside triggers
+        ,   scoOffsideModule    ::  !String					-- offside start of module
+        ,   scoOffsideOpen      ::  !String					-- offside open symbol
+        ,   scoOffsideClose     ::  !String					-- offside close symbol
+        ,   scoLitmode          ::  !Bool					-- do literal scanning
         }
 
 defaultScanOpts :: ScanOpts
 defaultScanOpts
   =  ScanOpts
-        {   scoKeywordsTxt      =   []
-        ,   scoKeywordsOps      =   []
-        ,   scoSpecChars        =   ""
-        ,   scoOpChars          =   ""
-        ,   scoSpecPairs        =   []
+        {   scoKeywordsTxt      =   Set.empty
+        ,   scoCommandsTxt      =   Set.empty
+        ,   scoKeywordsOps      =   Set.empty
+        ,   scoSpecChars        =   Set.empty
+        ,   scoOpChars          =   Set.empty
+        ,   scoSpecPairs        =   Set.empty
         ,   scoDollarIdent      =   False
         ,   scoOffsideTrigs     =   []
         ,   scoOffsideModule    =   ""
@@ -89,4 +135,34 @@ defaultScanOpts
         ,   scoOffsideClose     =   ""
         ,   scoLitmode          =   False
         }
+
+-------------------------------------------------------------------------
+-- Char predicates
+-------------------------------------------------------------------------
+
+isLF :: Char -> Bool
+isLF = (`elem` "\n\r")
+
+isStrQuote :: Char -> Bool
+isStrQuote c = c == '"'
+
+isStr :: Char -> Bool
+isStr c = not (isStrQuote c || isLF c)
+
+isVarStart :: Char -> Bool
+isVarStart c = c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z'
+
+isVarRest :: Char -> Bool
+isVarRest c = isVarStart c || isDigit c || c `elem` "'_"
+
+isWhite :: Char -> Bool
+isWhite = (`elem` " \t")
+
+{-
+isDig :: Char -> Bool
+isDig c = c >= '0' && c <= '9'
+-}
+
+isBlack :: Char -> Bool
+isBlack c = not (isWhite c || isLF c)
 

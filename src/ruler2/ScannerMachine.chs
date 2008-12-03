@@ -10,7 +10,7 @@
 %%[1 hs import (List(sort), Maybe(isJust))
 %%]
 
-%%[1 hs import (UU.Util.BinaryTrees(tab2tree,btLocateIn))
+%%[1 hs import (qualified Data.Set as Set)
 %%]
 
 %%[1 hs import (UU.Scanner.Token(Token, EnumValToken(..), valueToken, reserved, errToken))
@@ -64,13 +64,13 @@ scan opts pos input
   = doScan pos input
 
  where
-   locatein :: Ord a => [a] -> a -> Bool
-   locatein es = isJust . btLocateIn compare (tab2tree (sort es))
+   -- locatein :: Ord a => [a] -> a -> Bool
+   -- locatein es = isJust . btLocateIn compare (tab2tree (sort es))
 
-   iskw     = locatein (scoKeywordsTxt opts)
-   isop     = locatein (scoKeywordsOps opts)
-   isSymbol = locatein (scoSpecChars opts)
-   isOpsym  = locatein (scoOpChars opts)
+   iskw     = (`Set.member` scoKeywordsTxt opts) -- locatein (scoKeywordsTxt opts)
+   isop     = (`Set.member` scoKeywordsOps opts) -- locatein (scoKeywordsOps opts)
+   isSymbol = (`Set.member` scoSpecChars opts) -- locatein (scoSpecChars opts)
+   isOpsym  = (`Set.member` scoOpChars opts) -- locatein (scoOpChars opts)
 
 
    isIdStart c = isLower c || c == '_'

@@ -38,6 +38,7 @@ include $(SRC_PREFIX)libutil/files.mk
 include $(SRC_PREFIX)top/files.mk
 include $(SRC_PREFIX)helium/files.mk
 include $(SRC_PREFIX)lvm/files.mk
+include $(SRC_PREFIX)text2text/files.mk
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
