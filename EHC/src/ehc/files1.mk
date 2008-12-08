@@ -74,7 +74,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
 													Base/HtmlCommon \
 													Debug/HighWaterMark \
-													GRINCCommon HeapPointsToFixpoint \
+													GRINCCommon GrinCode/SolveEqs \
 											)
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 

@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[(8 codegen grin) module {%{EH}HeapPointsToFixpoint}
+%%[(8 codegen grin) module {%{EH}GrinCode.SolveEqs}
 %%]
 %%[(8 codegen grin) export(solveEquations)
 %%]
