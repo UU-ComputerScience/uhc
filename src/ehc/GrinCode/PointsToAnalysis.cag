@@ -13,7 +13,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GRINCCommon}, {%{EH}HeapPointsToFixpoint})
+%%[(8 codegen grin) hs import({%{EH}GRINCCommon}, {%{EH}GrinCode.SolveEqs})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
