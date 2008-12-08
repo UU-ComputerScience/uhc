@@ -1,0 +1,193 @@
+-------------------------------------------------------------------------
+-- Convert Text to TWiki
+-------------------------------------------------------------------------
+
+{
+module Text.To.TWiki
+  ( textToOutDoc
+  )
+  where
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+-- import EH.Util.Pretty
+import qualified EH.Util.FastSeq as Seq
+import EH.Util.ScanUtils
+
+import Common
+import Text
+}
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+{
+textToOutDoc :: Opts -> AGItf -> OutDoc
+textToOutDoc opts txt
+  = out_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf txt)
+                       (Inh_AGItf { opts_Inh_AGItf = opts
+                                  })
+}
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+INCLUDE "Text/AbsSyn.ag"
+INCLUDE "Text/To/Common.ag"
+
+-------------------------------------------------------------------------
+-- Combinators
+-------------------------------------------------------------------------
+{
+dtwkLbl :: Out a => a -> OutDoc
+dtwkLbl a = "T2TLabel" +++ a
+
+dtwkCmd :: Out c => c -> OutDoc
+dtwkCmd c = "%" +++ c +++ "%"
+
+dtwkHdr :: Int -> OutDoc
+dtwkHdr l = "---+" +++ replicate l '+' +++ " "
+
+dhtmTag :: Out a => a -> OutDoc
+dhtmTag a = "<" +++ a +++ ">"
+
+dhtmCmt :: Out a => a -> OutDoc
+dhtmCmt a = dhtmTag ("!-- " +++ a +++ " --")
+
+dtwkRef :: (Out lbl,Out txt) => lbl -> txt -> OutDoc
+dtwkRef lbl txt = "[[" +++ lbl +++ "][" +++ txt +++ "]]"
+
+dhtmOpenClose :: (Out body, Out env) => env -> body -> OutDoc
+dhtmOpenClose env body = dhtmTag env +++ body +++ dhtmTag ("/" +++ env)
+}
+
+{
+dtwkArg :: Out a => a -> OutDoc
+dtwkArg a = "{" +++ a +++ "}"
+
+dtwkArgs :: [OutDoc] -> OutDoc
+dtwkArgs a = outList $ map dtwkArg a
+}
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ opts: Opts | | ]
+
+-------------------------------------------------------------------------
+-- Itemize level
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ itemizeLevel: Int | | ]
+
+SEM TextItem
+  | Itemize			loc			.	itemizeLevel=	@lhs.itemizeLevel + 1
+
+SEM AGItf
+  | AGItf			loc			.	itemizeLevel=	0
+
+-------------------------------------------------------------------------
+-- Itemize style
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ itemizePrefix: OutDoc | | ]
+
+SEM TextItem
+  | Itemize			loc			.	itemizePrefix
+  												=	replicate (3 * @lhs.itemizeLevel) ' ' +++ @itemizestyle.out
+
+SEM AGItf
+  | AGItf			loc			.	itemizePrefix
+  												=	emptyout
+
+-------------------------------------------------------------------------
+-- Replacement, as OutDoc
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
+
+SEM TextItem
+  | Space  			loc			.	out			=   out @str
+  | NonSpace  		loc			.	out			=   out @str
+  | CommentLF		loc			.	out			=   dhtmCmt @str +++ "\n"
+  | Line  			loc			.	out			=   @str +++ "\n"
+  | LineFeed		loc			.	out			=   out "\n"
+  | T2T  			loc			.	out			=   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"	-- for now
+  | RefTo	  		loc			.	out			=   dtwkRef (dtwkLbl @reftext.out) @text.out
+  | Styled	  		loc			.	out			=   @style.out +++ @text.out +++ @style.out
+  | VerbatimInline	loc			.	out			=   dhtmOpenClose "code" @str
+  | BreakLine		loc			.	out			=   dtwkCmd "BR"
+  | HorRuler		loc			.	out			=   out "\n------"
+  | Header  		loc			.	out			=   @level.out +++ @text.out
+  | Group			loc			.	out			=	dhtmOpenClose @envtype.out @text.out
+  | DocumentContent	loc			.	out			=	@text.out +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
+  | Table			loc			.	out			=	@extratext.out +++ @rows.out
+  | Itemize			loc			.	out			=	@text.out
+  | ItemizeItem		loc			.	out			=	@lhs.itemizePrefix +++ @text.out
+  | Title   		loc			.	out			=	emptyout
+  | Author   		loc			.	out			=	emptyout
+  | Import   		loc			.	out			=	emptyout
+  | Label   		loc			.	out			=	"\n#" +++ dtwkLbl @reftext.out
+  | MakeTitle		loc			.	out			=   emptyout
+  | DocumentHeader	loc			.	out			=   emptyout
+  | TOC				loc			.	out			=   dtwkCmd "TOC"
+  
+{-
+SEM RefType
+  | Local			loc			.	out			=	dtwkCmd "lref"
+  | Global			loc			.	out			=	dtwkCmd "href"
+
+SEM DocumentOption
+  | A4Paper			loc			.	out			=	out "a4paper"
+
+SEM MbDocumentOptions
+  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
+-}
+
+SEM TextStyle
+  -- | Verbatim		loc			.	out			=	dtwkCmd "verb"
+  | Bold			loc			.	out			=	out "*"
+
+SEM GroupType
+  | Verbatim		lhs			.	out			=	out "verbatim"
+  -- | Document		lhs			.	out			=	out "body"
+  -- | Tabular			lhs			.	out			=	out "tabular"
+
+SEM ItemizeStyle
+  | Bullet			lhs			.	out			=	out "\n   * "
+  | Number			lhs			.	out			=	out "\n   1 "
+
+SEM HeaderLevel
+  | Level			lhs			.	out			=	dtwkHdr @level
+  | Paragraph		lhs			.	out			=	out "\n"
+
+SEM TableColFormat
+  | JustifyLeft		loc			.	out			=	out "l"
+  | JustifyCenter	loc			.	out			=	out "c"
+  | JustifyRight	loc			.	out			=	out "r"
+  | SepbyLine		loc			.	out			=	out "|"
+
+SEM TableRow
+  | Row				lhs			.	out			=	outListSep "|" "|" "|" @cols.outL +++ @extrabrktext.out
+
+SEM TableField
+  | Fld				lhs			.	out			=	@extraseptext.out +++ @fld.out
+
+-------------------------------------------------------------------------
+-- Replacement, as [OutDoc]
+-------------------------------------------------------------------------
+
+ATTR
+  TableFields
+    [ | | outL USE {++} {[]}: {[OutDoc]} ]
+
+SEM TableFields
+  | Cons			lhs			.	outL		=	@hd.out : @tl.outL
+  | Nil				lhs			.	outL		=	[]

@@ -21,13 +21,17 @@ Doc LaTeX commands:
 
 \item
 
+\hline
+\\
+&
+
 Environments:
 
 pre
 verbatim
 document
 itemize
-tabular
+tabular, cell fmt: l r c |
 
 Be able to ignore:
 

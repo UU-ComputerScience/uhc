@@ -2,10 +2,29 @@
 -- Main
 -------------------------------------------------------------------------
 
+{-
+text2text converts a nested combination of typed text fragments to 1 typed output. A text fragment is delimited by '@@[type' and '@@]',
+Text is processed in the following steps:
+- parse/analyse the chunk structure to find out the types of chunks
+- parse individual chunks according to their type
+- this gives a representation in a common Text format
+- which is then output into the requested representation.
+
+The idea is to have the following formats supported, all in a restricted form appropriate for documentation and (relatively) easy mutual transformation
+- doclatex: documentation LaTeX
+- twiki:
+- texinfo: 
+- html: 
+Currently supported/implemented:
+- input : doclatex
+- output: doclatex, twiki
+-}
+
 module Main where
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Maybe
 import Data.Char
 import System
 import System.Console.GetOpt
@@ -17,12 +36,14 @@ import EH.Util.FPath
 import Common
 import Text
 import Text.Trf.UniformContent
-import Text.To.DocLaTeX
 import Text.Parser
 import Plugin
 
 -- for plugin
-import qualified Text.Parser.DocLaTeX as P_DocLaTeX
+import qualified Text.To.DocLaTeX       as O_DocLaTeX
+import qualified Text.To.TWiki          as O_TWiki
+
+import qualified Text.Parser.DocLaTeX   as P_DocLaTeX
 
 -------------------------------------------------------------------------
 -- main
@@ -45,7 +66,7 @@ readT2TFile :: FPath -> Opts -> IO AGItf
 readT2TFile fp opts
   = do { (fp',fh) <- fpathOpenOrStdin fp
        ; txt <- hGetContents fh
-       ; let toks = scan t2tScanOpts defaultScState [ScInput_Uninterpreted txt]
+       ; let toks = scan t2tScanOpts defaultScState infpStart [ScInput_Uninterpreted txt]
        -- ; putStrLn (show toks)
        ; let (pres,perrs) = parseToResMsgs pAGItf toks
        ; if null perrs
@@ -64,9 +85,15 @@ pluginMp
   = Map.fromList
       [ ( TextType_DocLaTeX
         , defaultPlugin
-            { plgParseTextItems 	= P_DocLaTeX.pItf
+            { plgParseTextItems 	= Just P_DocLaTeX.pItf
             , plgScanOptsMp 		= P_DocLaTeX.doclatexScanOptsMp
             , plgScanInitState		= defaultScState { scstateType = ScTpContent TextType_DocLaTeX }
+            , plgToOutDoc			= Just O_DocLaTeX.textToOutDoc
+            }
+        )
+      , ( TextType_TWiki
+        , defaultPlugin
+            { plgToOutDoc			= Just O_TWiki.textToOutDoc
             }
         )
       ]
@@ -203,6 +230,10 @@ doCompile f opts
   = do { pres <- readT2TFile f opts
        ; let (pres2,errs2) = textTrfUniformContent opts pluginMp pres
        ; mapM_ (hPutOutLn stderr . out) errs2
-       ; putOut (textToDocLaTeX opts pres2)
+       ; case Map.lookup (optGenFor opts) pluginMp of
+           Just plg | isJust mbToOut
+             -> putOut $ fromJust mbToOut opts pres2
+             where mbToOut = plgToOutDoc plg
+           _ -> hPutOutLn stderr ("no output generator for " +++ show (optGenFor opts))
        }
 

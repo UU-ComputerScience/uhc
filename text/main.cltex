@@ -1,4 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping for text2text
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[39
+@@[doclatex
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% LaTeX document class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,7 +104,7 @@
 \documentclass[a4paper]{book}
 %%]
 
-%%[39
+%%[39 doclatex
 \documentclass[a4paper]{article}
 %%]
 
@@ -367,7 +375,7 @@
 %%@LLVMPackages.packages
 %%]
 
-%%[39
+%%[39 doclatex
 %\usepackage{fancyvrb}
 \usepackage{docmainsty}
 %%]
@@ -612,7 +620,7 @@
 \SetSectionsForArticle
 %%]
 
-%%[39
+%%[39 doclatex
 %%]
 \SetSectionsForArticle
 
@@ -1091,7 +1099,7 @@ WWW home page:
 \begin{document}
 %%]
 
-%%[39
+%%[39 doclatex
 \begin{document}
 %%]
 
@@ -1232,7 +1240,7 @@ and
 %endif
 %%]
 
-%%[39
+%%[39 doclatex
 \maketitle
 %%]
 
@@ -1298,7 +1306,7 @@ and
 
 %%]
 
-%%[39
+%%[39 doclatex
 \tableofcontents
 %%]
 
@@ -2707,7 +2715,7 @@ To be done ...
 %%@ToolDocShuffle.doc
 %%]
 
-%%[40
+%%[40 doclatex
  %%@ToolDocShuffle.docNew
 
 %%@ToolDocShuffle.introduction
@@ -3684,6 +3692,14 @@ and the included documentation only describes |Shuffle|'s basic features.
 \end{document}
 %%]
 
-%%[39
+%%[39 doclatex
 \end{document}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping for text2text
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[39
+@@]
 %%]

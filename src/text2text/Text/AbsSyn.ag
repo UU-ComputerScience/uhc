@@ -1,3 +1,7 @@
+{-
+Text consists of text items, providing structure for basic text formatting.
+-}
+
 -------------------------------------------------------------------------
 -- Text AST interface
 -------------------------------------------------------------------------
@@ -13,8 +17,9 @@ TYPE TextItems 			= [TextItem]
 
 DATA TextItem
   -- plain text
-  | Space               white			: {String}
-  | NonSpace            black			: {String}
+  | Space               str				: {String}
+  | NonSpace            str				: {String}
+  | CommentLF			str				: {String}				-- comment terminated by LF
   | Line            	str				: {String}
   | LineFeed
   
@@ -29,13 +34,21 @@ DATA TextItem
   						text			: TextItems
   | Group         		envtype			: GroupType
   						text			: TextItems
+  | DocumentContent		text			: TextItems
   | Itemize         	itemizestyle	: ItemizeStyle
   						text			: TextItems
+  | Table	         	tablefmt		: TableFormat
+  						extratext		: TextItems
+  						rows			: TableRows
   | ItemizeItem     	text			: TextItems
 
   -- formatting
   | Styled              style			: TextStyle
   						text			: TextItems
+  | VerbatimInline      delim			: {String}
+  						str				: {String}
+  | BreakLine
+  | HorRuler
 
   -- meta info
   | Title				text			: TextItems
@@ -49,7 +62,8 @@ DATA TextItem
   | Import				text			: TextItems
 
   -- internal
-  | T2T	         		texttype		: {TextType}
+  | T2T	         		pos				: {InFilePos}
+  						texttype		: {TextType}
   						text			: TextItems
 
 DATA HeaderLevel
@@ -62,15 +76,36 @@ DATA RefType
 
 DATA GroupType
   | Verbatim
-  | Document
+  -- | Document
+  -- | Tabular
 
 DATA TextStyle
-  | Verbatim
+  -- | Verbatim
   | Bold
 
 DATA ItemizeStyle
   | Bullet
   | Number
+
+DATA TableColFormat
+  | JustifyLeft
+  | JustifyCenter
+  | JustifyRight
+  | SepbyLine
+
+TYPE TableFormat		= [TableColFormat] 
+
+TYPE TableRows			= [TableRow] 
+
+DATA TableRow 
+  | Row					cols			: TableFields
+  						extrabrktext	: TextItems
+
+TYPE TableFields		= [TableField]
+
+DATA TableField
+  | Fld					extraseptext	: TextItems
+  						fld				: TextItems
 
 -------------------------------------------------------------------------
 -- Doc options
@@ -86,5 +121,15 @@ TYPE MbDocumentOptions = MAYBE DocumentOptions
 -- Aliases
 -------------------------------------------------------------------------
 
-SET AllText = TextItem TextItems
-SET AllNT = AllText GroupType TextStyle RefType ItemizeStyle HeaderLevel MbDocumentOptions DocumentOptions DocumentOption
+SET AllText
+  = TextItem TextItems
+
+SET AllTable
+  = TableRow TableRows TableFields TableField
+
+SET AllNT
+  = AllText
+    AllTable
+    GroupType TextStyle RefType ItemizeStyle HeaderLevel
+    MbDocumentOptions DocumentOptions DocumentOption
+    TableFormat TableColFormat

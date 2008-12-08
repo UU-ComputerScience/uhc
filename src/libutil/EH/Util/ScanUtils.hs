@@ -105,18 +105,19 @@ Hence not all options are used by all scanners.
 
 data ScanOpts
   =  ScanOpts
-        {   scoKeywordsTxt      ::  !(Set.Set String)		-- identifiers which are keywords
-        ,   scoCommandsTxt      ::  !(Set.Set String)		-- identifiers which are commands
-        ,   scoKeywordsOps      ::  !(Set.Set String)		-- operators which are keywords
-        ,   scoSpecChars        ::  !(Set.Set Char)			-- 1 char keywords
-        ,   scoOpChars          ::  !(Set.Set Char)			-- chars used for operators
-        ,   scoSpecPairs        ::  !(Set.Set String)		-- pairs of chars which form keywords
-        ,   scoDollarIdent      ::  !Bool					-- allow $ encoded identifiers
-        ,   scoOffsideTrigs     ::  ![String]				-- offside triggers
-        ,   scoOffsideModule    ::  !String					-- offside start of module
-        ,   scoOffsideOpen      ::  !String					-- offside open symbol
-        ,   scoOffsideClose     ::  !String					-- offside close symbol
-        ,   scoLitmode          ::  !Bool					-- do literal scanning
+        {   scoKeywordsTxt      ::  !(Set.Set String)       -- identifiers which are keywords
+        ,   scoCommandsTxt      ::  !(Set.Set String)       -- identifiers which are commands
+        ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
+        ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
+        ,   scoOpChars          ::  !(Set.Set Char)         -- chars used for operators
+        ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
+        ,   scoDollarIdent      ::  !Bool                   -- allow $ encoded identifiers
+        ,   scoOffsideTrigs     ::  ![String]               -- offside triggers
+        ,   scoOffsideModule    ::  !String                 -- offside start of module
+        ,   scoOffsideOpen      ::  !String                 -- offside open symbol
+        ,   scoOffsideClose     ::  !String                 -- offside close symbol
+        ,   scoLitmode          ::  !Bool                   -- do literal scanning
+        ,   scoVerbOpenClose    ::  ![(String,String)]      -- open/close pairs used for verbatim text
         }
 
 defaultScanOpts :: ScanOpts
@@ -134,6 +135,7 @@ defaultScanOpts
         ,   scoOffsideOpen      =   ""
         ,   scoOffsideClose     =   ""
         ,   scoLitmode          =   False
+        ,   scoVerbOpenClose    =   []
         }
 
 -------------------------------------------------------------------------
