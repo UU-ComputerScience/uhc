@@ -14,10 +14,13 @@ module Text
   , ItemizeStyle(..)
   , HeaderLevel(..)
   , DocumentOption(..), DocumentOptions, MbDocumentOptions
+  , TableRow(..), TableRows, TableFormat, TableColFormat(..), TableFields, TableField(..)
   )
 where
 
 import Common
+
+import EH.Util.ScanUtils
 
 }
 

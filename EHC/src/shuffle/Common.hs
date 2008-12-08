@@ -9,12 +9,18 @@ module Common
   , module EH.Util.FPath
   , module EH.Util.Pretty
   , module AspectExpr
+
   , Err(..), ErrM, ppErr, showUndef
+
   , openURI
+
   , Opts(..), defaultOpts, optsHasNoVariantRefOrder
+
   , URef
   , CRef, CPos(..)
+
   , ChKind(..), ChDest(..), ChWrap(..)
+
   , VariantRef(..)
   , AspectRefs(..)
   , variantReqmRef, mbVariantReqmRef
@@ -25,12 +31,18 @@ module Common
   , variantOfferFromTop
   , variantOfferRef, variantOfferRefTop
   , VariantRefOrder
+
   , ChunkRef(..)
   , chunkRefFromOfferNm
+
   , variantReqmMatchOffer
   , VariantRefOrderMp, sortOnVariantRefOrderMp, sortOnVariantRefOrderMp'
+
   , KVMap
+
   , CompilerRestriction(..)
+  
+  , t2tChKinds
   )
   where
 
@@ -111,16 +123,17 @@ type KVMap = Map.Map String String
 
 data Opts 
   = Opts
-      { optAG           		:: Bool
-      , optHS           		:: Bool
-      , optPlain        		:: Bool
-      , optLaTeX        		:: Bool
-      , optPreamble     		:: Bool
-      , optLinePragmas  		:: Bool
+      { optAG           		:: Bool						-- generate AG
+      , optHS           		:: Bool						-- generate Haskell
+      , optPlain        		:: Bool						-- leave as is
+      , optLaTeX        		:: Bool						-- generate latex
+      , optPreamble     		:: Bool						-- include preamble
+      , optLinePragmas  		:: Bool						-- include line pragmas
       , optIndex        		:: Bool
       , optCompiler     		:: [Int]
       , optHelp         		:: Bool
       , optGenDeps      		:: Bool
+      , optGenText2Text   		:: Bool						-- include text2text text type annotation
       , optChDest       		:: (ChDest,String)
       , optGenReqm   			:: VariantReqm
       , optBaseName     		:: Maybe String
@@ -153,6 +166,7 @@ defaultOpts
       , optCompiler     		=  []
       , optHelp         		=  False
       , optGenDeps      		=  False
+      , optGenText2Text			=  False
       , optChDest       		=  (ChHere,"")
       , optGenReqm   			=  VReqmNone
       , optBaseName     		=  Nothing
@@ -221,7 +235,20 @@ data ChWrap
   | ChWrapVerbatim
   | ChWrapVerbatimSmall
   | ChWrapPlain
+  | ChWrapT2T				ChKind				-- wrap for text2text
+  | ChWrapComp				ChWrap ChWrap		-- compose
+  | ChWrapNone
   deriving (Show,Eq,Ord)
+
+-------------------------------------------------------------------------
+-- For which ChKind's are text2text annotation generated, if requested
+-------------------------------------------------------------------------
+
+t2tChKinds :: Map.Map ChKind String
+t2tChKinds
+  = Map.fromList
+      [ ( ChDocLaTeX, "doclatex" )
+      ]
 
 -------------------------------------------------------------------------
 -- Variant reference

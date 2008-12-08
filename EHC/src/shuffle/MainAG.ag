@@ -571,7 +571,7 @@ SEM Chunk
                                                     @chunkLineNr @lhs.seqNr
                                                     @variantOffer (chunkRefFromOfferNm @variantOffer @subNm) @minusL
                                                     @chOptions.chKind @chOptions.chDest @mbModNm.mbStr @imports.strL @exports.strL
-                                                    (fmap @addBlankLine @lines.mbCDoc)
+                                                    (fmap (@addBlankLine . chWrap (chWrapT2T @lhs.opts @chOptions.chKind)) @lines.mbCDoc)
                                                     @lines.mkCDoc
                                                     (Seq.toList @lines.xrefL)
                 loc         .   isAllowed   =   isAllowedCompilerVariant @compRestrict (optCompiler @lhs.opts)

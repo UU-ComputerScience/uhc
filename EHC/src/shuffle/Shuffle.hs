@@ -235,13 +235,15 @@ cmdLineOpts
           "insert #LINE pragmas, default=no"
      ,  Option "p"  ["plain"]           (NoArg oPlain)
           "generate plain code, default=no"
+     ,  Option ""   ["text2text"]       (NoArg oGenT2T)
+          "generate code for haskell, default=no"
      ,  Option ""   ["index"]           (NoArg oIndex)
           "combined with latex, generate index entries, default=no"
      ,  Option ""   ["gen"]             (ReqArg oGenReqm "all|<nr>|(<nr> <aspect>*) (to be obsolete, renamed to --gen-reqm)")
           "generate for version, default=none"
      ,  Option "g"  ["gen-reqm"]        (ReqArg oGenReqm "all|<nr>|(<nr> <aspect>*)")
           "generate for version, default=none"
-     ,  Option ""   ["compiler"]  (ReqArg oCompiler "<compiler version>")
+     ,  Option ""   ["compiler"]        (ReqArg oCompiler "<compiler version>")
           "Version of the GHC compiler, i.e. 6.6"
      ,  Option ""   ["hidedest"]        (ReqArg oHideDest "here|appx=<file>")
           "destination of text marked as 'hide', default=here"
@@ -288,6 +290,7 @@ cmdLineOpts
          oLinePragmas ms o =  yesno (\f o -> o {optLinePragmas = f}) ms o
          oLaTeX          o =  o {optLaTeX = True}
          oPlain          o =  o {optPlain = True}
+         oGenT2T         o =  o {optGenText2Text = True}
          oIndex          o =  o {optIndex = True}
          oCompiler    s  o =  o {optCompiler = map read (words (map (\c -> if c == '.' then ' ' else c) s))}
          oLhs2tex    ms  o =  yesno' ChWrapCode ChWrapPlain (\f o -> o {optWrapLhs2tex = f}) ms o

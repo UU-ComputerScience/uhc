@@ -25,7 +25,8 @@ TEXT_MAIN_DRV_LSTY			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)sty.lsty
 TEXT_MAIN_DRV_STY			:= $(TEXT_MAIN_DRV_LSTY:.lsty=.sty)
 
 # for doc main, doc LateX
-TEXT_DOCMAIN_DRV_TEX		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).tex
+TEXT_DOCMAIN_DRV_TTEX		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).ttex
+TEXT_DOCMAIN_DRV_TEX		:= $(TEXT_DOCMAIN_DRV_TTEX:.ttex=.tex)
 TEXT_DOCMAIN_DRV_STY		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN)sty.sty
 
 # 
@@ -225,18 +226,20 @@ text-variant-dflt-bib-inx: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 # rules for individual files
 ###########################################################################################
 
-$(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT_MKF)
+$(TEXT_DOCMAIN_DRV_TTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT2TEXT) $(TEXT_MKF)
 	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TXT) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) > $@
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --text2text --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) > $@
 
-$(TEXT_DOCMAIN_DRV_TEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT2TEXT) $(TEXT_MKF)
-	mkdir -p $(@D)
-	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) \
-	  | $(TEXT2TEXT) --doclatex \
+$(TEXT_DOCMAIN_DRV_TEX) : %.tex : %.ttex
+	$(TEXT2TEXT) --doclatex $< \
 	  > $@
 
 $(TEXT_HIDE_DRV_TXT): $(TEXT_MAIN_DRV_LTEX)
 	touch $@
+
+$(TEXT_MAIN_DRV_LTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE) $(TEXT_MKF)
+	mkdir -p $(@D)
+	$(SHUFFLE) --gen=$(TEXT_SHUFFLE_VARIANT) --plain --lhs2tex=no --hidedest=appx=$(TEXT_HIDE_DRV_TXT) --order="$(TEXT_SHUFFLE_ORDER)" $< $(TEXT_SUBS_SHUFFLE_ALIAS) > $@
 
 $(TEXT_MAIN_DRV_TEX) : %.tex : %.ltex
 	$(SUBST_EHC) $< \

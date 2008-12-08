@@ -2,6 +2,10 @@
 -- Text Parser
 -------------------------------------------------------------------------
 
+{-
+Text is parsed in 2 steps, the first step is done here by parsing only the meta data required to find out the types of the various chunks of text.
+-}
+
 module Text.Parser
   ( module Text.Parser.Common
   
@@ -55,7 +59,7 @@ pLineFeed			::	T2TPr TextItem
 pLineFeed			=	TextItem_LineFeed <$ pNl
 
 pT2T				::	T2TPr TextItem
-pT2T				=	TextItem_T2T <$ pBegContent <*> pTextType <*> pTextItems <* pEndContent
+pT2T				=	TextItem_T2T <$> (tokPos <$> pBegContent) <*> pTextType <*> pTextItems <* pEndContent
 
 pTextType			::	T2TPr TextType
 pTextType			=	pAnyFromMap pKey texttypeMp

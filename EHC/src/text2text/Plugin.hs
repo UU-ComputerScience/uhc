@@ -1,3 +1,7 @@
+{-
+A Plugin holds all info required for parsing from and formatting to a particular text format.
+-}
+
 -------------------------------------------------------------------------
 -- Plugin structure
 -------------------------------------------------------------------------
@@ -23,17 +27,19 @@ import Text.Parser.Common
 
 data Plugin
   = Plugin
-      { plgParseTextItems 	:: T2TPr (Seq.Seq TextItem)
-      , plgScanOptsMp 		:: ScanOptsMp
-      , plgScanInitState	:: ScState
+      { plgParseTextItems 	:: Maybe (T2TPr (Seq.Seq TextItem))		-- parse text items
+      , plgScanOptsMp 		:: ScanOptsMp							-- scanner configuration
+      , plgScanInitState	:: ScState								-- initial scanning state
+      , plgToOutDoc			:: Maybe (Opts -> AGItf -> OutDoc)		-- generate output for format
       }
 
 defaultPlugin :: Plugin
 defaultPlugin
   = Plugin
-      { plgParseTextItems 	= undefined
+      { plgParseTextItems 	= Nothing
       , plgScanOptsMp 		= Map.empty
       , plgScanInitState	= defaultScState
+      , plgToOutDoc			= Nothing
       }
 
 type PluginMp = Map.Map TextType Plugin

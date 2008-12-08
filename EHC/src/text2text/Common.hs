@@ -35,11 +35,13 @@ import qualified EH.Util.FastSeq as Seq
 data TextType
   = TextType_DocLaTeX
   | TextType_TWiki
+  | TextType_None
   deriving (Eq,Ord)
 
 instance Show TextType where
   show TextType_DocLaTeX = "doclatex"
   show TextType_TWiki    = "twiki"
+  show TextType_None     = "none"
 
 texttypeMp :: Map.Map String TextType
 texttypeMp = Map.fromList [ (show t, t) | t <- [TextType_DocLaTeX,TextType_TWiki] ]

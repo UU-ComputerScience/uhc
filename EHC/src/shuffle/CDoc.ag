@@ -6,6 +6,7 @@ imports
 {
 import Common
 import IO
+import qualified Data.Map as Map
 }
 
 INCLUDE "CDocAbsSyn.ag"
@@ -15,8 +16,8 @@ INCLUDE "CDocAbsSyn.ag"
 -------------------------------------------------------------------------
 
 {
-type FromVariantReqm a   	= VariantReqm -> a
-type MkCDoc      			= FromVariantReqm (Maybe CDoc)
+type FromVariantReqm a      = VariantReqm -> a
+type MkCDoc                 = FromVariantReqm (Maybe CDoc)
 
 instance Show MkCDoc where
   show _ = "MkCDoc"
@@ -139,16 +140,24 @@ cdDots = cdListSep "" "" "."
 chWrap :: ChWrap -> CDoc -> CDoc
 chWrap w d
   = case w of
-      ChWrapCode  			-> "\\begin{code}" .-. d .-. "\\end{code}"
-      ChWrapBoxCode mw		-> "\\parbox{" .|. maybe "" id mw .|. "\\linewidth}{%" .-. chWrap ChWrapCode d .-. "}"
+      ChWrapCode            -> "\\begin{code}" .-. d .-. "\\end{code}"
+      ChWrapBoxCode mw      -> "\\parbox{" .|. maybe "" id mw .|. "\\linewidth}{%" .-. chWrap ChWrapCode d .-. "}"
       ChWrapBeamerBlockCode title
-                        	-> "\\begin{block}{%" .-. title .-. "}" .-. chWrap (ChWrapBoxCode Nothing) d .-. "\\end{block}"
-      ChWrapVerbatim    	-> "\\begin{verbatim}" .-. d .-. "\\end{verbatim}"
-      ChWrapVerbatimSmall	-> "{\\small\n\\begin{verbatim}" .-. d .-. "\\end{verbatim}\n}"
-      ChWrapTT    			-> "\\begin{TT}" .-. d .-. "\\end{TT}"
-      ChWrapTTtiny  		-> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
-      _           			-> d
+                            -> "\\begin{block}{%" .-. title .-. "}" .-. chWrap (ChWrapBoxCode Nothing) d .-. "\\end{block}"
+      ChWrapVerbatim        -> "\\begin{verbatim}" .-. d .-. "\\end{verbatim}"
+      ChWrapVerbatimSmall   -> "{\\small\n\\begin{verbatim}" .-. d .-. "\\end{verbatim}\n}"
+      ChWrapTT              -> "\\begin{TT}" .-. d .-. "\\end{TT}"
+      ChWrapTTtiny          -> "\\begin{TTtiny}" .-. d .-. "\\end{TTtiny}"
+      ChWrapT2T chKind | isJust mbt2t
+                            -> "@@[" .|. t2t .-. d .-. "@@]"
+                            where mbt2t = Map.lookup chKind t2tChKinds
+                                  t2t = fromJust mbt2t
+      ChWrapComp w1 w2      -> chWrap w1 $ chWrap w2 d
+      _                     -> d
 
+chWrapT2T :: Opts -> ChKind -> ChWrap
+chWrapT2T opts chKind
+  = if optGenText2Text opts then ChWrapT2T chKind else ChWrapNone
 }
 
 -------------------------------------------------------------------------

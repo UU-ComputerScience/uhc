@@ -27,7 +27,9 @@ import MainAG
 
 type ScanOptsMp = Map.Map ScState ScanOpts
 
-chKindMp = Map.fromList [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("doclatex",ChDocLaTeX), ("haddock",ChHaddock) ]
+chKindMp = Map.fromList
+             [ ("hs",ChHS), ("ag",ChAG), ("plain",ChPlain), ("haddock",ChHaddock) ]
+           `Map.union` Map.fromList [ (v,k) | (k,v) <- Map.toList t2tChKinds ]
 chDestMp = Map.fromList [ ("here",ChHere), ("hide",ChHide) ]
 chWrapMp = Map.fromList [ ("code",ChWrapCode), ("safecode",ChWrapBoxCode Nothing), ("tt",ChWrapTT), ("tttiny",ChWrapTTtiny) , ("verbatim",ChWrapVerbatim), ("verbatimsmall",ChWrapVerbatimSmall) ]
 
