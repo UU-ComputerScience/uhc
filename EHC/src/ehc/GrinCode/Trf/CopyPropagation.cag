@@ -6,7 +6,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CopyPropagation} export(copyPropagation)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]

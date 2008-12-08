@@ -7,7 +7,7 @@
 
 %%[(8_2 codegen grin) hs module {%{EH}GrinCode.Trf.PrettyVarNames}
 %%]
-%%[(8_2 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode})
+%%[(8_2 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 %%[(8_2 codegen grin) hs import(qualified Data.Map as Map)
 %%]

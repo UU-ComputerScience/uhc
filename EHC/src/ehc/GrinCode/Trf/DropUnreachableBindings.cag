@@ -22,7 +22,7 @@ type UsageMap  = Map.Map Vertex IdentSet
 
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Base.Builtin(hsnMain)}, {%{EH}GRINCCommon}, {%{EH}GrinCode}) export(dropUnreachableBindings)
+%%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Base.Builtin(hsnMain)}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(dropUnreachableBindings)
 dropUnreachableBindings :: Bool -> GrModule -> GrModule
 dropUnreachableBindings numbered grmod 
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))

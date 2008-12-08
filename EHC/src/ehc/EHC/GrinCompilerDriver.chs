@@ -17,7 +17,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode}, {%{EH}GrinCode.Parser}, {%{EH}GrinCode.Pretty})
 %%]
-%%[(8 codegen grin) import({%{EH}GRINCCommon})
+%%[(8 codegen grin) import({%{EH}GrinCode.Common})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]

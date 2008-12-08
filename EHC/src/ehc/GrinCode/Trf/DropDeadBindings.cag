@@ -21,7 +21,7 @@ WRAPPER GrAGItf
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.DropDeadBindings}
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe) export(dropDeadBindings)
 dropDeadBindings :: (GrModule,HptMap) -> GrModule
 dropDeadBindings (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}

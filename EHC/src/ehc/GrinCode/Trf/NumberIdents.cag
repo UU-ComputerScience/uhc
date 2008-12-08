@@ -19,7 +19,7 @@ which may be thrown by the function.
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GRINCCommon}, {%{EH}Config})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]

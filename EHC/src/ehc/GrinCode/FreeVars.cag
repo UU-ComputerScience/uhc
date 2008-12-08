@@ -13,7 +13,7 @@ Free variables + plus additional info.
 %%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonIntroName}, {GrinCode/Trf/CommonFreeVar})

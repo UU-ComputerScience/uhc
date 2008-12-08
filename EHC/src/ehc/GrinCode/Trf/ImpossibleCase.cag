@@ -30,7 +30,7 @@ Assumptions:
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GRINCCommon(HptMap, getTags, getNr, getEnvVar)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getTags, getNr, getEnvVar)})
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf

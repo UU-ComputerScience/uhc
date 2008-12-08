@@ -35,7 +35,7 @@ to a loop.
 %%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as Seq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(20 codegen grin) hs import({%{EH}GrinCode.FreeVars})

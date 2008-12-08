@@ -13,7 +13,7 @@ WRAPPER GrAGItf
 %%]
 
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{EH}GRINCCommon}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
 lowerGrin :: (GrModule,HptMap) -> (GrModule,HptMap)
 lowerGrin (input,hptMap)

@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-%%[(8 codegen grin) hs module {%{EH}Silly} import ({%{EH}GRINCCommon} hiding (Variable(..)))
+%%[(8 codegen grin) hs module {%{EH}Silly} import ({%{EH}GrinCode.Common} hiding (Variable(..)))
 %%]
 %%[(8 codegen grin) hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Values )
 %%]

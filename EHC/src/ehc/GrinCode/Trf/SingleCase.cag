@@ -13,7 +13,7 @@ before LowerGrin, because we assume patterns are Nodes, not Tags.
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SingleCase} export(singleCase)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

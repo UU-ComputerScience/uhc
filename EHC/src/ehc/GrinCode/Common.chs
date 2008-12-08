@@ -2,7 +2,7 @@
 %include lhs2TeX.fmt
 %include afp.fmt
 %%]
-%%[(8 codegen grin) module {%{EH}GRINCCommon}
+%%[(8 codegen grin) module {%{EH}GrinCode.Common}
 %%]
 %%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
 %%]
