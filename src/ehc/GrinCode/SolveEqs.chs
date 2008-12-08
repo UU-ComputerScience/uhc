@@ -13,7 +13,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) import({%{EH}GRINCCommon})
+%%[(8 codegen grin) import({%{EH}GrinCode.Common})
 %%]
 %%[(8 codegen grin) import(Debug.Trace)
 %%]

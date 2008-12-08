@@ -17,7 +17,7 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GRINCCommon} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
 
 %%[(8 codegen grin)

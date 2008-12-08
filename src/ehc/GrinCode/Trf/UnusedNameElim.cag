@@ -17,7 +17,7 @@ Creation of values that are not needed further downstream the code are eliminate
 %%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)

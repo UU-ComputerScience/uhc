@@ -11,7 +11,7 @@ Used in LateInline and MergeCase.
 WRAPPER GrExpr
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SubstExpr} import(qualified Data.Map as Map, {%{EH}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substExpr)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SubstExpr} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substExpr)
 
 type Env = Map.Map HsName HsName
 

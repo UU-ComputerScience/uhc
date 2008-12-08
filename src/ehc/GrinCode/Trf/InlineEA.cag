@@ -33,7 +33,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GRINCCommon(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..))})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..))})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]

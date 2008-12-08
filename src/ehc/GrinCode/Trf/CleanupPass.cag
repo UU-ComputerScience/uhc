@@ -8,7 +8,7 @@ Clean up the Grin program:
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode}) 
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) 
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

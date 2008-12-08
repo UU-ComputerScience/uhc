@@ -15,7 +15,7 @@ PRAGMA nocycle
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LateInline} import(qualified Data.Map as Map, {%{EH}GRINCCommon}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(lateInline)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LateInline} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(lateInline)
 
 lateInline :: (GrModule,HptMap) -> (GrModule,HptMap)
 lateInline (grmod,hptMap) 

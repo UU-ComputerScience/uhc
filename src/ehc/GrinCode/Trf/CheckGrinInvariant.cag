@@ -7,7 +7,7 @@ and whether that is compatible with the way they are created
 %%]
 %%[(8 codegen grin) hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GRINCCommon}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf

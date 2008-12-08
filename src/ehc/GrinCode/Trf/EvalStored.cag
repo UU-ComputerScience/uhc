@@ -24,7 +24,7 @@ by
 %%]
 %%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
-%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]

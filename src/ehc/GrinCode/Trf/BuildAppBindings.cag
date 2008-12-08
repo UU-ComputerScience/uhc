@@ -29,7 +29,7 @@ WRAPPER GrAGItf
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BuildAppBindings} import(qualified Data.Set as Set)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GRINCCommon}, {%{EH}GrinCode}) export(buildAppBindings)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildAppBindings)
 
 buildAppBindings :: GrModule -> GrModule
 buildAppBindings code

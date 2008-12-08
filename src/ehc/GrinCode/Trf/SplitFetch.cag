@@ -49,7 +49,7 @@ has lower arity than C1.
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{EH}GRINCCommon}, {%{EH}GrinCode}) export(splitFetch)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(splitFetch)
 
 splitFetch :: (GrModule,HptMap) -> (GrModule,HptMap)
 splitFetch (input,hptMap)

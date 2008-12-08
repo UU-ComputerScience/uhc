@@ -7,7 +7,7 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}Silly.PrettyS} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GRINCCommon} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyS)
+%%[(8 codegen grin) hs module {%{EH}Silly.PrettyS} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyS)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
