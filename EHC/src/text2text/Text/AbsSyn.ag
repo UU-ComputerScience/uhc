@@ -76,12 +76,12 @@ DATA RefType
 
 DATA GroupType
   | Verbatim
-  -- | Document
-  -- | Tabular
 
 DATA TextStyle
-  -- | Verbatim
   | Bold
+  | Italic
+  | Teletype
+  | Emphasized
 
 DATA ItemizeStyle
   | Bullet

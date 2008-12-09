@@ -42,6 +42,9 @@ cmd1argMp
       , ("author"       , TextItem_Author                           )
       , ("label"        , TextItem_Label                            )
       , ("textbf"       , TextItem_Styled TextStyle_Bold            )
+      , ("textit"       , TextItem_Styled TextStyle_Italic          )
+      , ("texttt"       , TextItem_Styled TextStyle_Teletype        )
+      , ("emph"         , TextItem_Styled TextStyle_Emphasized      )
       , ("usepackage"   , TextItem_Import                           )
       , ("paragraph"    , TextItem_Header HeaderLevel_Paragraph     )
       ]
