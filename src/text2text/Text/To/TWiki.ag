@@ -152,8 +152,10 @@ SEM MbDocumentOptions
 -}
 
 SEM TextStyle
-  -- | Verbatim		loc			.	out			=	dtwkCmd "verb"
   | Bold			loc			.	out			=	out "*"
+  | Italic			loc			.	out			=	out "_"
+  | Teletype		loc			.	out			=	out "="
+  | Emphasized		loc			.	out			=	out "_"
 
 SEM GroupType
   | Verbatim		lhs			.	out			=	out "verbatim"

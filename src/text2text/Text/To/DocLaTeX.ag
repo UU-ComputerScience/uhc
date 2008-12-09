@@ -104,6 +104,9 @@ SEM RefType
 SEM TextStyle
   -- | Verbatim		loc			.	out			=	dltxCmd "verb"
   | Bold			loc			.	out			=	dltxCmd "textbf"
+  | Italic			loc			.	out			=	dltxCmd "textit"
+  | Teletype		loc			.	out			=	dltxCmd "texttt"
+  | Emphasized		loc			.	out			=	dltxCmd "emph"
 
 SEM GroupType
   | Verbatim		lhs			.	out			=	out "pre"

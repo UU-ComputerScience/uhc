@@ -33,6 +33,12 @@ document
 itemize
 tabular, cell fmt: l r c |
 
+styles:
+\textbf{X}
+\textit{X}
+\texttt{X}
+\emph{X}
+
 Be able to ignore:
 
 \usepackage{X}
