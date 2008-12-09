@@ -1,6 +1,6 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
-TEXT_DOC_VARIANTS			+= shuffle-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-user-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -27,6 +27,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler ToolDocEHC \
+								InternalDocEHC \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
@@ -87,6 +88,9 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 36: icfp08/padl09 paper on substitution/unification
 # 38: ldta09 paper on AG idiom
 # 40: shuffle doc
+# 41: how to write doc doc (to be done by Atze)
+# 42: ehc technical doc (to be started by Jeroen)
+# 43: ehc user doc (to be started by Atze)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -125,5 +129,8 @@ TEXT_SHUFFLE_ORDER	+= \
 		30 < 29, \
 		37 < 33, \
 		37 < 38, \
-		39 < 40
+		39 < 40, \
+		39 < 41, \
+		39 < 42, \
+		39 < 43
 		

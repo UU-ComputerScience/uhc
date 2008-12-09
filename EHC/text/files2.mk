@@ -8,9 +8,11 @@
 ###########################################################################################
 
 TEXT_BLD_PDF				:= $(DOC_PREFIX)$(TEXT_VARIANT).pdf
+TEXT_BLD_TWIKI				:= $(DOC_PREFIX)$(TEXT_VARIANT).twiki
 TEXT_ALL_PUB_PDFS			:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PUB_VARIANTS))
 TEXT_ALL_PDFONLY_PDFS		:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_PDFONLY_VARIANTS))
 TEXT_ALL_DOCLTX_PDFS		:= $(patsubst %,$(DOC_PREFIX)%.pdf,$(TEXT_DOCLTX_VARIANTS))
+TEXT_ALL_DOCLTX_TWIKIS		:= $(patsubst %,$(DOC_PREFIX)%.twiki,$(TEXT_DOCLTX_VARIANTS))
 
 ###########################################################################################
 # files, source + derived
@@ -24,9 +26,10 @@ TEXT_MAIN_SRC_CLSTY			:= $(TEXT_SRC_PREFIX)$(TEXT_MAIN)sty.clsty
 TEXT_MAIN_DRV_LSTY			:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN)sty.lsty
 TEXT_MAIN_DRV_STY			:= $(TEXT_MAIN_DRV_LSTY:.lsty=.sty)
 
-# for doc main, doc LateX
+# for doc main, doc LateX, TWiki
 TEXT_DOCMAIN_DRV_TTEX		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).ttex
 TEXT_DOCMAIN_DRV_TEX		:= $(TEXT_DOCMAIN_DRV_TTEX:.ttex=.tex)
+TEXT_DOCMAIN_DRV_TWIKI		:= $(TEXT_DOCMAIN_DRV_TTEX:.ttex=.twiki)
 TEXT_DOCMAIN_DRV_STY		:= $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN)sty.sty
 
 # 
@@ -159,6 +162,7 @@ TEXT_ALL_PDFONLY_DPD		:= $(TEXT_MAIN_DRV_TEX) $(TEXT_SUBS_DRV_TEX) $(TEXT_MAIN_D
 								$(TEXT_GEN_BY_RULER_TABLE_TEX) $(TEXT_INCL_LIST_TEX) $(TEXT_RULEUX_ALL_DRV_TEX) $(TEXT_RULEUX_ALL_DRV_TEX) $(TEXT_EXPERIMENTS_SUBST_ALL_DRV_TEX)
 
 TEXT_ALL_DOCLTX_DPD			:= $(TEXT_DOCMAIN_DRV_TEX) $(TEXT_DOCMAIN_DRV_STY)
+TEXT_ALL_TWIKI_DPD			:= $(TEXT_DOCMAIN_DRV_TWIKI)
 
 # all shuffle included material
 TEXT_SUBS_SHUFFLE1			:= $(TEXT_SUBS_SRC_CLTEX) $(TEXT_RULES_3_DRV_CAG) $(RULER2_ALL_CHUNK_SRC) $(AGPRIMER_ALL_CHUNK_SRC) $(TEXT_RULES_EXPLAIN_3_DRV_CAG) \
@@ -178,6 +182,7 @@ TEXT_DIST_FILES				:= $(TEXT_ALL_SRC)
 
 # www
 TEXT_WWW_DOC_PDFS			:= $(TEXT_ALL_DOCLTX_PDFS)
+TEXT_WWW_DOC_TWIKIS			:= $(TEXT_ALL_DOCLTX_TWIKIS)
 
 ###########################################################################################
 # variant dispatch rules for targets
@@ -195,10 +200,11 @@ text-variant-dflt-once: $(TEXT_ALL_PDFONLY_DPD)
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
-text-variant-dflt-doc: $(TEXT_ALL_DOCLTX_DPD)
-	mkdir -p $(dir $(TEXT_BLD_PDF))
+text-variant-dflt-doc: $(TEXT_ALL_DOCLTX_DPD) $(TEXT_ALL_TWIKI_DPD)
+	mkdir -p $(dir $(TEXT_BLD_PDF)) $(dir $(TEXT_BLD_TWIKI))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; $(PDFLATEX) $(TEXT_DOCMAIN) ; $(PDFLATEX) $(TEXT_DOCMAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).pdf $(TEXT_BLD_PDF)
+	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_DOCMAIN).twiki $(TEXT_BLD_TWIKI)
 
 text-variant-dflt-bib: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
@@ -232,6 +238,10 @@ $(TEXT_DOCMAIN_DRV_TTEX) : $(TEXT_MAIN_SRC_CLTEX) $(TEXT_SUBS_SHUFFLE) $(SHUFFLE
 
 $(TEXT_DOCMAIN_DRV_TEX) : %.tex : %.ttex
 	$(TEXT2TEXT) --doclatex $< \
+	  > $@
+
+$(TEXT_DOCMAIN_DRV_TWIKI) : %.twiki : %.ttex
+	$(TEXT2TEXT) --twiki $< \
 	  > $@
 
 $(TEXT_HIDE_DRV_TXT): $(TEXT_MAIN_DRV_LTEX)

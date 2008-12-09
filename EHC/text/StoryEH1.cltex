@@ -102,13 +102,13 @@ we will also come back to this.
 The following EH fragment (which is incorrect for this version of because type signatures are missing):
 
 %%[[wrap=code
-%%@[file:afp-eh/02.eh%%]
+%%@[file:text/afp-eh/02.eh%%]
 %%]
 
 is represented by the following piece of abstract syntax tree:
 
 \begin{TT}
-%%1astfile(afp-eh/02.eh%%)
+%%1astfile(text/afp-eh/02.eh%%)
 \end{TT}
 
 The example also demonstrates the use of patterns, which is the same as in Haskell,

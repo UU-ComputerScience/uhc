@@ -3,15 +3,15 @@ The third version of EH adds polymorphism, in particular so-called parametric po
 which allows functions to be used on arguments of differing types.
 For example
 %%[[wrap=code
-%%@[file:afp-eh/04.eh%%]
+%%@[file:text/afp-eh/04.eh%%]
 %%]
 %if False
-gives |v :: %%3file(afp-eh/04.eh%%)|
+gives |v :: %%3file(text/afp-eh/04.eh%%)|
 and |id :: %%3(let id = \x -> x in id%%)|.
 %endif
 gives:
 \begin{TT}
-%%3ppfile(afp-eh/04.eh%%)
+%%3ppfile(text/afp-eh/04.eh%%)
 \end{TT}
 
 The polymorphic identity function |id| accepts a value of any type |a|,
