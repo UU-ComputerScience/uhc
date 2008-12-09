@@ -104,12 +104,12 @@
 \begin{columns}[onlytextwidth,t]
  \begin{column}{.5\textwidth}
 %%[[wrap=safecode
-%%@[file:afp-eh/02.eh%%]
+%%@[file:text/afp-eh/02.eh%%]
 %%]
  \end{column}
  \begin{column}{.5\textwidth}
 \begin{TTtiny}
-%%1astfile(afp-eh/02.eh%%)
+%%1astfile(text/afp-eh/02.eh%%)
 \end{TTtiny}
  \end{column}
 \end{columns}
@@ -1482,7 +1482,7 @@ constraints |tyCnstr| and |patTyCnstr|
 \item Function may be applied to arguments of different types
 \item E.g.
 %%[[wrap=safecode
-%%@[file:afp-eh/04.eh%%]
+%%@[file:text/afp-eh/04.eh%%]
 %%]
 \item |a -> a| means |forall a . a -> a|
 \end{itemize}

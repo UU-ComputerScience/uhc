@@ -186,7 +186,7 @@ where many features are combined
 \begin{itemize}
 \item<+-> Example experiment: exploitation of type signatures
 %%[[wrap=safecode
-%%@[file:eh-frags/4-impred-demo1.eh%%]
+%%@[file:text/eh-frags/4-impred-demo1.eh%%]
 %%]
 \item<+-> Our desire: combine a large number of such features
 \begin{itemize}
