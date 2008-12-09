@@ -1,6 +1,6 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
-TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-user-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-user-doc text2text-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -26,7 +26,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure \
 								CodeFragsExplImpl \
-								ToolDocShuffle ToolDocRuler ToolDocEHC \
+								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
 								InternalDocEHC \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
@@ -91,6 +91,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 41: how to write doc doc (to be done by Atze)
 # 42: ehc technical doc (to be started by Jeroen)
 # 43: ehc user doc (to be started by Atze)
+# 44: text2text doc (to be done by Atze)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -132,5 +133,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 40, \
 		39 < 41, \
 		39 < 42, \
-		39 < 43
+		39 < 43, \
+		39 < 44
 		

@@ -73,6 +73,8 @@ DATA HeaderLevel
 DATA RefType
   | Local
   | Global
+  | EhcWeb
+  | EhcSrc
 
 DATA GroupType
   | Verbatim

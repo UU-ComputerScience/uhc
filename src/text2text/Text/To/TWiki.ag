@@ -8,6 +8,8 @@ module Text.To.TWiki
   )
   where
 
+import Data.Maybe
+import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -82,16 +84,47 @@ dtwkArgs a = outList $ map dtwkArg a
 ATTR AGItf AllNT [ opts: Opts | | ]
 
 -------------------------------------------------------------------------
+-- Header numbering
+-------------------------------------------------------------------------
+
+{
+type HeaderSeqNrMp = Map.Map Int Int
+}
+
+ATTR AllText AllTable [ | headerLevel: Int  headerSeqNrMp: HeaderSeqNrMp | ]
+ATTR HeaderLevel [ | headerLevel: Int | ]
+
+SEM AGItf
+  | AGItf           loc         .   headerLevel =   -1
+                                .   headerSeqNrMp
+                                                =   Map.empty
+
+SEM HeaderLevel
+  | Level           lhs         .   headerLevel =   @level
+
+SEM TextItem
+  | Header          (loc.headerTxt,lhs.headerSeqNrMp)
+                                                =   let mkTxt h m = concat $ intersperse "." [ show $ fromJust $ Map.lookup l m | l <- [0 .. h] ]
+                                                        seqNr h = fromJust $ Map.lookup h @lhs.headerSeqNrMp
+                                                    in  case @lhs.headerLevel `compare` @level.headerLevel of
+                                                          GT -> ( mkTxt @level.headerLevel m, m )
+                                                                where m = Map.insert @level.headerLevel (seqNr @level.headerLevel + 1) @lhs.headerSeqNrMp
+                                                          EQ -> ( mkTxt @lhs.headerLevel m, m )
+                                                                where m = Map.insert @lhs.headerLevel (seqNr @lhs.headerLevel + 1) @lhs.headerSeqNrMp
+                                                          LT -> ( mkTxt @level.headerLevel m, m )
+                                                                where m = Map.insert @level.headerLevel 1 @lhs.headerSeqNrMp
+
+-------------------------------------------------------------------------
 -- Itemize level
 -------------------------------------------------------------------------
 
 ATTR AllText AllTable [ itemizeLevel: Int | | ]
 
 SEM TextItem
-  | Itemize			loc			.	itemizeLevel=	@lhs.itemizeLevel + 1
+  | Itemize         loc         .   itemizeLevel=   @lhs.itemizeLevel + 1
 
 SEM AGItf
-  | AGItf			loc			.	itemizeLevel=	0
+  | AGItf           loc         .   itemizeLevel=   0
 
 -------------------------------------------------------------------------
 -- Itemize style
@@ -100,12 +133,24 @@ SEM AGItf
 ATTR AllText AllTable [ itemizePrefix: OutDoc | | ]
 
 SEM TextItem
-  | Itemize			loc			.	itemizePrefix
-  												=	replicate (3 * @lhs.itemizeLevel) ' ' +++ @itemizestyle.out
+  | Itemize         loc         .   itemizePrefix
+                                                =   replicate (3 * @lhs.itemizeLevel) ' ' +++ @itemizestyle.out
 
 SEM AGItf
-  | AGItf			loc			.	itemizePrefix
-  												=	emptyout
+  | AGItf           loc         .   itemizePrefix
+                                                =   emptyout
+
+-------------------------------------------------------------------------
+-- How to make a reference
+-------------------------------------------------------------------------
+
+ATTR RefType [ | | mkRefOut: {OutDoc -> OutDoc -> OutDoc} ]
+
+SEM RefType
+  | Local           loc         .   mkRefOut    =   dtwkRef
+  | Global          loc         .   mkRefOut    =   dtwkRef
+  | EhcWeb          loc         .   mkRefOut    =   dtwkRef
+  | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
 
 -------------------------------------------------------------------------
 -- Replacement, as OutDoc
@@ -114,73 +159,73 @@ SEM AGItf
 ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 
 SEM TextItem
-  | Space  			loc			.	out			=   out @str
-  | NonSpace  		loc			.	out			=   out @str
-  | CommentLF		loc			.	out			=   dhtmCmt @str +++ "\n"
-  | Line  			loc			.	out			=   @str +++ "\n"
-  | LineFeed		loc			.	out			=   out "\n"
-  | T2T  			loc			.	out			=   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"	-- for now
-  | RefTo	  		loc			.	out			=   dtwkRef (dtwkLbl @reftext.out) @text.out
-  | Styled	  		loc			.	out			=   @style.out +++ @text.out +++ @style.out
-  | VerbatimInline	loc			.	out			=   dhtmOpenClose "code" @str
-  | BreakLine		loc			.	out			=   dtwkCmd "BR"
-  | HorRuler		loc			.	out			=   out "\n------"
-  | Header  		loc			.	out			=   @level.out +++ @text.out
-  | Group			loc			.	out			=	dhtmOpenClose @envtype.out @text.out
-  | DocumentContent	loc			.	out			=	@text.out +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
-  | Table			loc			.	out			=	@extratext.out +++ @rows.out
-  | Itemize			loc			.	out			=	@text.out
-  | ItemizeItem		loc			.	out			=	@lhs.itemizePrefix +++ @text.out
-  | Title   		loc			.	out			=	emptyout
-  | Author   		loc			.	out			=	emptyout
-  | Import   		loc			.	out			=	emptyout
-  | Label   		loc			.	out			=	"\n#" +++ dtwkLbl @reftext.out
-  | MakeTitle		loc			.	out			=   emptyout
-  | DocumentHeader	loc			.	out			=   emptyout
-  | TOC				loc			.	out			=   dtwkCmd "TOC"
+  | Space           loc         .   out         =   out @str
+  | NonSpace        loc         .   out         =   out @str
+  | CommentLF       loc         .   out         =   dhtmCmt @str +++ "\n"
+  | Line            loc         .   out         =   @str +++ "\n"
+  | LineFeed        loc         .   out         =   out "\n"
+  | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
+  | RefTo           loc         .   out         =   @reftype.mkRefOut (@reftype.out +++ @reftext.out) @text.out
+  | Styled          loc         .   out         =   @style.out +++ @text.out +++ @style.out
+  | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" @str
+  | BreakLine       loc         .   out         =   dtwkCmd "BR"
+  | HorRuler        loc         .   out         =   out "\n------"
+  | Header          loc         .   out         =   @level.out +++ @headerTxt +++ " " +++ @text.out
+  | Group           loc         .   out         =   dhtmOpenClose @envtype.out @text.out
+  | DocumentContent loc         .   out         =   @text.out +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
+  | Table           loc         .   out         =   @extratext.out +++ @rows.out
+  | Itemize         loc         .   out         =   @text.out
+  | ItemizeItem     loc         .   out         =   @lhs.itemizePrefix +++ @text.out
+  | Title           loc         .   out         =   emptyout
+  | Author          loc         .   out         =   emptyout
+  | Import          loc         .   out         =   emptyout
+  | Label           loc         .   out         =   "\n#" +++ dtwkLbl @reftext.out
+  | MakeTitle       loc         .   out         =   emptyout
+  | DocumentHeader  loc         .   out         =   emptyout
+  | TOC             loc         .   out         =   dtwkCmd "TOC"
   
-{-
 SEM RefType
-  | Local			loc			.	out			=	dtwkCmd "lref"
-  | Global			loc			.	out			=	dtwkCmd "href"
+  | Local           loc         .   out         =   dtwkLbl ""
+  | Global          loc         .   out         =   emptyout
+  | EhcWeb          loc         .   out         =   out "Ehc."
+  | EhcSrc          loc         .   out         =   out "EHCHOME/"
 
+{-
 SEM DocumentOption
-  | A4Paper			loc			.	out			=	out "a4paper"
+  | A4Paper         loc         .   out         =   out "a4paper"
 
 SEM MbDocumentOptions
-  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
+  | Just            loc         .   out         =   outListSep "[" "]" "," @just.outL
 -}
 
 SEM TextStyle
-  | Bold			loc			.	out			=	out "*"
-  | Italic			loc			.	out			=	out "_"
-  | Teletype		loc			.	out			=	out "="
-  | Emphasized		loc			.	out			=	out "_"
+  | Bold            loc         .   out         =   out "*"
+  | Italic          loc         .   out         =   out "_"
+  | Teletype        loc         .   out         =   out "="
+  | Emphasized      loc         .   out         =   out "_"
 
 SEM GroupType
-  | Verbatim		lhs			.	out			=	out "verbatim"
-  -- | Document		lhs			.	out			=	out "body"
-  -- | Tabular			lhs			.	out			=	out "tabular"
+  | Verbatim        lhs         .   out         =   out "verbatim"
 
 SEM ItemizeStyle
-  | Bullet			lhs			.	out			=	out "\n   * "
-  | Number			lhs			.	out			=	out "\n   1 "
+  | Bullet          lhs         .   out         =   out "   * "
+  | Number          lhs         .   out         =   out "   1 "
 
 SEM HeaderLevel
-  | Level			lhs			.	out			=	dtwkHdr @level
-  | Paragraph		lhs			.	out			=	out "\n"
+  | Level           lhs         .   out         =   dtwkHdr @level
+  | Paragraph       lhs         .   out         =   out "\n"
 
 SEM TableColFormat
-  | JustifyLeft		loc			.	out			=	out "l"
-  | JustifyCenter	loc			.	out			=	out "c"
-  | JustifyRight	loc			.	out			=	out "r"
-  | SepbyLine		loc			.	out			=	out "|"
+  | JustifyLeft     loc         .   out         =   out "l"
+  | JustifyCenter   loc         .   out         =   out "c"
+  | JustifyRight    loc         .   out         =   out "r"
+  | SepbyLine       loc         .   out         =   out "|"
 
 SEM TableRow
-  | Row				lhs			.	out			=	outListSep "|" "|" "|" @cols.outL +++ @extrabrktext.out
+  | Row             lhs         .   out         =   outListSep "|" "|" "|" @cols.outL +++ @extrabrktext.out
 
 SEM TableField
-  | Fld				lhs			.	out			=	@extraseptext.out +++ @fld.out
+  | Fld             lhs         .   out         =   @extraseptext.out +++ @fld.out
 
 -------------------------------------------------------------------------
 -- Replacement, as [OutDoc]
@@ -191,5 +236,5 @@ ATTR
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
 
 SEM TableFields
-  | Cons			lhs			.	outL		=	@hd.out : @tl.outL
-  | Nil				lhs			.	outL		=	[]
+  | Cons            lhs         .   outL        =   @hd.out : @tl.outL
+  | Nil             lhs         .   outL        =   []

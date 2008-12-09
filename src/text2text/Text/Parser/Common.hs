@@ -122,7 +122,7 @@ instance Ord Tok where
   (Tok _  _  _ _) `compare` (TokAST _     ) = GT
 
 instance Show Tok where
-  show t@(Tok _ _ _ _) = show (tokPos t) ++ show (tokStr t) ++ show (tokKind t)
+  show t@(Tok _ _ _ _) = show (tokPos t) ++ show (tokStr t) -- ++ show (tokKind t)
   show t@(TokAST _   ) = "AST"
 
 instance Symbol Tok

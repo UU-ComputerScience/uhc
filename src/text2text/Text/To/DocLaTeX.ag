@@ -100,6 +100,8 @@ SEM TextItem
 SEM RefType
   | Local			loc			.	out			=	dltxCmd "lref"
   | Global			loc			.	out			=	dltxCmd "href"
+  | EhcWeb			loc			.	out			=	dltxCmd "eref"
+  | EhcSrc			loc			.	out			=	dltxCmd "sref"
 
 SEM TextStyle
   -- | Verbatim		loc			.	out			=	dltxCmd "verb"

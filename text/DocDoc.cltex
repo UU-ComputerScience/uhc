@@ -16,8 +16,10 @@ Doc LaTeX commands:
 \verb
 
 \label{X}
-\lref{X}{Y}		-- in style file
-\href{X}{Y}		-- in style file
+\lref{X}{Y}     -- in style file
+\href{X}{Y}     -- in style file
+\eref{X}{Y}     -- in style file
+\sref{X}{Y}     -- in style file
 
 \item
 
@@ -31,6 +33,7 @@ pre
 verbatim
 document
 itemize
+enumerate
 tabular, cell fmt: l r c |
 
 styles:
@@ -48,5 +51,81 @@ Assumed/included packages:
 fancyvrb
 geometry
 hyperref
+
+%%]
+
+%%[introduction doclatex
+This document describes how to create a new documentation document, in particular the steps required for adapting makefiles and where to put newly added text.
+Documentation differs from normal text used to produce (e.g.) papers in that output can be produced for various output formats.
+This gives a wider range of ways of reading, but comes at the price of a restrictive language for writing documentation.
+
+%%]
+
+%%[allocateVariant doclatex
+First a variant number must be allocated. All papers and documentation are constructed by \eref{Shuffle}{Shuffle} from a set of files holding \eref{Shuffle}{Shuffle}
+chunks.
+Of the various makefiles for producing text the \sref{text/files1-atze.mk}{makefile for text sources and variants} must include a definition for a new variant.
+A new variant is added by:
+
+\begin{enumerate}
+\item Finding an unused number, say 88, in the comment above variable \verb|TEXT_SHUFFLE_ORDER|, updating the comment with info about variant 88.
+\item Adding an order dependency on variant 39 (the base for documentation) in variable \verb|TEXT_SHUFFLE_ORDER|:
+\begin{verbatim}
+TEXT_SHUFFLE_ORDER  += \
+        ... \
+        39 < 88, \
+        ...
+\end{verbatim}
+\end{enumerate}
+
+The new documentation must be given a name which can be used for making and publishing the documentation:
+\begin{enumerate}
+\item Find an unused name, say \emph{my-doc}, and add it to the list in variable \verb|TEXT_DOC_VARIANTS|.
+\item Connect the name to the variant number by including a makefile target in the \sref{text/files2-atze.mk}{makefile for targets}.
+The target name must be of the form \verb|text-variant-<chosen-name>|:
+\begin{verbatim}
+text-variant-my-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=88 \
+	  text-variant-dflt-doc
+\end{verbatim}
+\end{enumerate}
+
+Additional parameters can be passed to the recursive call to make, for example:
+\begin{itemize}
+\item \verb|TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC|, for specifying that all sources of EHC must be used by shuffle for extracting chunks. For example, the technical documentation has
+the following makefile definition:
+\begin{verbatim}
+text-variant-ehc-technical-doc:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  TEXT_SHUFFLE_VARIANT=42 \
+	  text-variant-dflt-doc
+\end{verbatim}
+\end{itemize}
+
+
+%%]
+
+%%[mainDriver doclatex
+
+%%]
+
+%%[content doclatex
+
+%%]
+
+%%[generate doclatex
+
+%%]
+
+%%[install doclatex
+
+%%]
+
+%%[andFurther doclatex
+
+%%]
+
+%%[XX doclatex
 
 %%]
