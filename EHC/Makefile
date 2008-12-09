@@ -167,7 +167,7 @@ www: $(WWW_DOC_FILES)
 
 # www/DoneSyncStamp: www-ex
 www/DoneSyncStamp: www
-	(date "+%G%m%d") > www/DoneSyncStamp ; \
+	(date "+%G%m%d %H:%M") > www/DoneSyncStamp ; \
 	chmod 664 www/* ; \
 	rsync --progress -azv -e ssh www/* `whoami`@shell.cs.uu.nl:/users/www/groups/ST/Projects/ehc
 

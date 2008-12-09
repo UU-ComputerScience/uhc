@@ -995,6 +995,11 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[44
+\title{Text2Text: transforming between text formats}
+\author{Atze Dijkstra}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2751,7 +2756,29 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[41 doclatex
+\section{Introduction}
+%%@DocDoc.introduction
+
+\section{Steps}
+\subsection{Allocate a variant number}
+%%@DocDoc.allocateVariant
+
+\subsection{Adapt toplevel documentation}
+%%@DocDoc.mainDriver
+
+\subsection{Create content}
+%%@DocDoc.content
+
+\subsection{Generate documentation from content}
+%%@DocDoc.generate
+
+\subsection{Install documentation}
+%%@DocDoc.install
+
+\section{Further reading}
+%%@DocDoc.andFurther
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC technical doc
@@ -2766,6 +2793,16 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[43 doclatex
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Text2Text doc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[44 doclatex
+\section{Introduction}
+%%@ToolDocText2Text.introduction
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

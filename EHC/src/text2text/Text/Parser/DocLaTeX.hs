@@ -59,6 +59,8 @@ cmd2argMp
   = Map.fromList
       [ ("href"     , TextItem_RefTo RefType_Global     )
       , ("lref"     , TextItem_RefTo RefType_Local      )
+      , ("eref"     , TextItem_RefTo RefType_EhcWeb     )
+      , ("sref"     , TextItem_RefTo RefType_EhcSrc     )
       ]
 
 -------------------------------------------------------------------------

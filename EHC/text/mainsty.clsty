@@ -748,4 +748,14 @@ Anonymity, blinding things
 % #1: label
 % #2: title
 \newcommand{\lref}[2]{#2 (page~\latexPageref{#1})}
+
+% reference to label local to EH web:
+% #1: ref
+% #2: title
+\newcommand{\eref}[2]{\href{http://www.cs.uu.nl/wiki/Ehc/#1}{#2}}
+
+% reference to label local src/svn repository:
+% #1: ref
+% #2: title
+\newcommand{\sref}[2]{#2 (\texttt{EHCHOME/#1})}
 %%]
