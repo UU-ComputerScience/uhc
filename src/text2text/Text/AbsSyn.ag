@@ -22,6 +22,7 @@ DATA TextItem
   | CommentLF			str				: {String}				-- comment terminated by LF
   | Line            	str				: {String}
   | LineFeed
+  | ParBreak
   
   -- referencing
   | RefTo               reftype			: RefType

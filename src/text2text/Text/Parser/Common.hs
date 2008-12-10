@@ -143,7 +143,9 @@ scan scoMp st pos sci
         -- EOF
         sc p st              "" []                  = [] -- [Tok TkEOF "" p st]
         
-        -- text
+        -- text2text
+        sc p@(InFilePos _ 1) st@(ScState l ScTpMeta) ('@':s@('@':'@':s')) sci
+                                                    = sc (infpAdvCol 1 p) st s sci
         sc p@(InFilePos _ 1) st@(ScState l ScTpMeta) ('@':'@':'[':s') sci
                                                     = Tok TkBegContent   "@@["  p st  : sc (infpAdvCol 3 p) (ScState (l+1) ScTpMetaMeta) s' sci
         sc p@(InFilePos _ 1) st@(ScState l ScTpMeta) ('@':'@':']':s') sci
@@ -154,6 +156,9 @@ scan scoMp st pos sci
           | isLF c                                  = Tok TkNl [c] p st : sc (infpAdvLine p) st s' sci
         sc p st@(ScState l (ScTpCmtLF sctp)) (c:s') sci
           | isLF c                                  = sc (infpAdvLine p) (ScState l sctp) s' sci
+
+        -- any type
+        -- doclatex
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) ('\\':'v':'e':'r':'b':s@(c:s')) sci
           | not (isVarRest c) && not (null s'') && not (isLF $ head s'')
                                                     = Tok TkVerbInline (c:v) p st : sc (infpAdvStr v $ infpAdvCol 2 p) st (tail s'') sci
@@ -205,60 +210,19 @@ scan scoMp st pos sci
         sc p st@(ScState _ ScTpMetaMeta) s@(c:_) sci
           | isWhite c                               = sc (infpAdvStr w p) st s' sci
                                                     where (w,s') = span isWhite s
+
+        -- doclatex
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) s@(c:s') sci
           | isWhite c                               = Tok TkWhite w p st : sc (infpAdvStr w p) st s'' sci
                                                     where (w,s'') = span isWhite s
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) s@(c:s') sci
           | isBlack c                               = Tok TkText b p st : sc (infpAdvStr b p) st s'' sci
-                                                    where (b,s'') = break (\c -> isWhite c || isSpec sctp c || isLF c) s
-        sc p st             s@(c:s') sci            = Tok TkErr        [c] p st : sc (infpAdvCol 1 p) st s' sci
-{-
-        sc p st@(ScState _ ScTpMeta) s@(c:s')
-          | isLF c                                  = Tok TkNl         [c] p st : sc (infpAdvLine p) st s'
-          | otherwise                               = Tok TkText       b   p st : sc (infpAdvStr b p) st s''
-                                                    where (b,s'') = break isLF s
--}
-{-
-  where sc p st@(ScLexMeta l) ('%':'%':'}':s')      = Tok TkEndExpand  "%%}"  p st : sc (ai 3 p) (ScChunk l) s'
-        sc p st@(ScLexMeta _) s@(c:_)
-          | isWhite c                               = sc (a w p) st s'
-                                                    where (w,s') = span isWhite s
-        sc p st               s@(c:s')
-          | isLF c                                  = Tok TkNl         [c] p st : sc (al p) st' s'
-                                                    where st' = case st of
-                                                                  ScLexMeta l -> ScChunk l
-                                                                  _           -> st
-        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':'[':'[':s')
-                                                    = Tok TkBegGroup   "%%[[" p st : sc (ai 4 p) (ScLexMeta (l+1)) s'
-        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':']':'[':s')
-                                                    = Tok TkElseGroup  "%%][" p st : sc (ai 4 p) (ScLexMeta (l)) s'
-        sc p@(InFilePos _ 1) ScSkip            ('%':'%':'[':s')
-                                                    = Tok TkBegChunk   "%%["  p ScSkip  : sc (ai 3 p) (ScLexMeta 0) s'
-        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':']':']':s')
-          | l >  0                                  = Tok TkEndChunk   "%%]]" p st : sc (ai 4 p) (ScChunk (l-1)) s'
-        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':']':s')
-          | l == 0                                  = Tok TkEndChunk   "%%]"  p st : sc (ai 3 p) ScSkip s'
-          | l >  0                                  = Tok TkEndChunk   "%%]"  p st : sc (ai 3 p) (ScChunk (l-1)) s'
-        sc p@(InFilePos _ _) st@(ScChunk l)    ('%':'%':'@':'[':s')
-                                                    = Tok TkBegInline  "%%@[" p st : sc (ai 4 p) (ScInline l) s'
-        sc p@(InFilePos _ _) st@(ScChunk l)    ('%':'%':'@':'{':s')
-                                                    = Tok TkBegExpand  "%%@{" p st : sc (ai 4 p) (ScLexMeta l) s'
-        sc p@(InFilePos _ _) st@(ScChunk l)    ('%':'%':'%':s)
-                                                    = Tok TkText       b'     p st : sc (ai (1 + length b') p) (ScChunk l) s'
-                                                    where (b,s') = span isBlack s
-                                                          b'     = "%%" ++ b
-        sc p@(InFilePos _ 1) st@(ScChunk l)    ('%':'%':'@':s')
-                                                    = Tok TkNameRef    "%%@"  p st : sc (ai 3 p) (ScLexMeta l) s'
-        sc p@(InFilePos _ _) st@(ScInline l)   ('%':'%':']':s')
-                                                    = Tok TkEndInline  "%%]"  p st : sc (ai 3 p) (ScChunk l) s'
-        sc p@(InFilePos _ _) st@(ScInline l)   s       = Tok TkText       il     p st : sc (a il p) (ScInline l) s'
-                                                    where (il,s') = spanInline s
-                                                          spanInline s@('%':'%':']':_) = ("",s)
-                                                          spanInline ""                = ("","")
-                                                          spanInline (c:s)             = let (b,e) = spanInline s in (c:b,e)
-        sc p st             s@(c:s')                = sc (ai 1 p) st s'
--}
+                                                    where (b,s'') = break (\c -> isWhite c || isSpec sctp c || isLF c || c == '\\') s
 
+        -- error
+        sc p st             s@(c:s') sci            = Tok TkErr        [c] p st : sc (infpAdvCol 1 p) st s' sci
+
+        -- utils
         scKw f isKeyCmd keytok p st@(ScState _ sctp) s sci   = Tok tk w p st : sc (infpAdvStr w p) st s' sci
                                                     where (w,s') = span f s
                                                           tk = if isKeyCmd sctp w then keytok else TkText
