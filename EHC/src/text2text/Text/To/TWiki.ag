@@ -153,6 +153,35 @@ SEM RefType
   | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
 
 -------------------------------------------------------------------------
+-- Selectively linefeeding
+-------------------------------------------------------------------------
+
+{
+mkLF :: Bool -> OutDoc
+mkLF True = out "\n"
+mkLF _    = out " "
+}
+
+ATTR AllText [ allowLF: Bool | | ]
+
+SEM AGItf
+  | AGItf           loc         .   allowLF     =   True
+
+
+SEM TableField
+  | Fld             loc         .   allowLF     =   True
+
+SEM TableRow
+  | Row             loc         .   allowLF     =   True
+
+SEM TextItem
+  | Itemize         loc         .   allowLF     =   False
+
+SEM TextItem
+  | Line LineFeed
+                    loc         .   lf          =   mkLF @lhs.allowLF
+
+-------------------------------------------------------------------------
 -- Replacement, as OutDoc
 -------------------------------------------------------------------------
 
@@ -161,21 +190,22 @@ ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 SEM TextItem
   | Space           loc         .   out         =   out @str
   | NonSpace        loc         .   out         =   out @str
-  | CommentLF       loc         .   out         =   dhtmCmt @str +++ "\n"
-  | Line            loc         .   out         =   @str +++ "\n"
-  | LineFeed        loc         .   out         =   out "\n"
+  | CommentLF       loc         .   out         =   dhtmCmt @str +++ " "
+  | Line            loc         .   out         =   @str +++ @lf
+  | LineFeed        loc         .   out         =   @lf
+  | ParBreak        loc         .   out         =   out "\n\n"
   | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
   | RefTo           loc         .   out         =   @reftype.mkRefOut (@reftype.out +++ @reftext.out) @text.out
   | Styled          loc         .   out         =   @style.out +++ @text.out +++ @style.out
   | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" @str
   | BreakLine       loc         .   out         =   dtwkCmd "BR"
   | HorRuler        loc         .   out         =   out "\n------"
-  | Header          loc         .   out         =   @level.out +++ @headerTxt +++ " " +++ @text.out
+  | Header          loc         .   out         =   @level.out +++ @headerTxt +++ " " +++ @text.out +++ "\n"
   | Group           loc         .   out         =   dhtmOpenClose @envtype.out @text.out
   | DocumentContent loc         .   out         =   @text.out +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
   | Table           loc         .   out         =   @extratext.out +++ @rows.out
   | Itemize         loc         .   out         =   @text.out
-  | ItemizeItem     loc         .   out         =   @lhs.itemizePrefix +++ @text.out
+  | ItemizeItem     loc         .   out         =   "\n" +++ @lhs.itemizePrefix +++ @text.out
   | Title           loc         .   out         =   emptyout
   | Author          loc         .   out         =   emptyout
   | Import          loc         .   out         =   emptyout

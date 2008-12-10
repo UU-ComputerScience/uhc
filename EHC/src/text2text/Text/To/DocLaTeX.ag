@@ -77,6 +77,7 @@ SEM TextItem
   | CommentLF		loc			.	out			=   "%" +++ @str +++ "\n"
   | Line  			loc			.	out			=   @str +++ "\n"
   | LineFeed		loc			.	out			=   out "\n"
+  | ParBreak		loc			.	out			=   out "\n\n"
   | T2T  			loc			.	out			=   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"	-- for now
   | RefTo	  		loc			.	out			=   @reftype.out +++ dltxArgs [@reftext.out, @text.out]
   | Styled	  		loc			.	out			=   @style.out +++ dltxArg @text.out

@@ -242,6 +242,11 @@ pTextItemKeyws      =   pTextItemSpecs (Set.toList $ scoKeywordsTxt doclatexScan
 pTextItemItem       ::  T2TPr TextItem
 pTextItemItem       =   TextItem_ItemizeItem <$ pCmd "item" <*> pTextItemsAll
 
+{-
+pTextItemizeItems	::	T2TPr TextItems
+pTextItemizeItems	=	pCmd "item" <*> <*> pList pTextItemSpace
+-}
+
 pTextItemDoc        ::  T2TPr TextItem
 pTextItemDoc        =   TextItem_DocumentHeader <$ pCmd "documentclass" <*> pMb (pArgOpt (pList pDocumentOption)) <*> pArg pTextItemsArg
 
