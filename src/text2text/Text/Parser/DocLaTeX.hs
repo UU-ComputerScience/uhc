@@ -208,6 +208,7 @@ pTextItemSpace      ::  T2TPr TextItem
 pTextItemSpace      =   TextItem_Space     <$> pWhite
                     <|> TextItem_LineFeed  <$  pNl
                     <|> TextItem_CommentLF <$> pCmtLF
+                    <|> TextItem_ParBreak  <$  pPar
 
 pTextItemBase       ::  T2TPr TextItem
 pTextItemBase       =   TextItem_NonSpace <$> pText

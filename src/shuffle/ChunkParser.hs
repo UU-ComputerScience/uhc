@@ -175,7 +175,7 @@ scan scoMp st s
                                                           tk = if isKeyw st w then TkReserved else TkText
         a                                           = infpAdvStr
         ai                                          = infpAdvCol
-        al                                          = infpAdvLine
+        al                                          = infpAdv1Line
         opt st p                                    = maybe False p $ Map.lookup st scoMp
         isSpec st c                                 = opt st (\o -> c `Set.member` scoSpecChars o)
         isOpch st c                                 = opt st (\o -> c `Set.member` scoOpChars o)

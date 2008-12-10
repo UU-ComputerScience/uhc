@@ -11,7 +11,7 @@ module Text.Parser.Common
   
   , pBegContent, pEndContent
   , pKey, pCmd, pText, pVar
-  , pWhite, pNl, pCmtLF
+  , pWhite, pNl, pCmtLF, pPar
   , pVerbInline
   , pAST
   
@@ -97,7 +97,7 @@ type ScanOptsMp = Map.Map ScType ScanOpts
 data TokKind
   = TkBegContent  | TkEndContent
   | TkReserved | TkCmd
-  | TkNl   | TkEOF | TkCmtLF | TkErr
+  | TkNl   | TkPar | TkEOF | TkCmtLF | TkErr
   | TkText | TkInt | TkStr | TkWhite
   | TkVerbInline
   deriving (Show,Eq,Ord)
@@ -151,41 +151,64 @@ scan scoMp st pos sci
         sc p@(InFilePos _ 1) st@(ScState l ScTpMeta) ('@':'@':']':s') sci
                                                     = Tok TkEndContent   "@@]"  p st  : sc (infpAdvCol 3 p) (ScState (l-1) ScTpMetaMeta) s' sci
         sc p st@(ScState l ScTpMetaMeta) s@(c:s') sci
-          | isLF c                                  = sc (infpAdvLine p) (ScState l ScTpMeta) s' sci
-        sc p st@(ScState _ sctp@(ScTpContent _)) s@(c:s') sci
-          | isLF c                                  = Tok TkNl [c] p st : sc (infpAdvLine p) st s' sci
-        sc p st@(ScState l (ScTpCmtLF sctp)) (c:s') sci
-          | isLF c                                  = sc (infpAdvLine p) (ScState l sctp) s' sci
+          | isLF c                                  = sc (infpAdv1Line p) (ScState l ScTpMeta) s' sci
 
         -- any type
+        sc p st@(ScState _ sctp@(ScTpContent _)) s@(c:c2:s') sci
+          | isLF c && isLF c2                       = Tok TkPar v p st : sc (infpAdvLine (length v) p) st s'' sci
+                                                    where (v,s'') = span isLF s
+        sc p st@(ScState _ sctp@(ScTpContent _)) s@(c:s') sci
+          | isLF c                                  = Tok TkNl [c] p st : sc (infpAdv1Line p) st s' sci
+        sc p st@(ScState l (ScTpCmtLF sctp)) (c:s') sci
+          | isLF c                                  = sc (infpAdv1Line p) (ScState l sctp) s' sci
+
         -- doclatex
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) ('\\':'v':'e':'r':'b':s@(c:s')) sci
           | not (isVarRest c) && not (null s'') && not (isLF $ head s'')
                                                     = Tok TkVerbInline (c:v) p st : sc (infpAdvStr v $ infpAdvCol 2 p) st (tail s'') sci
                                                     where (v,s'') = break (\x -> x==c || isLF x) s'
+
+        -- any type
         sc p st@(ScState l sctp@(ScTpContent _)) s@(c:s') sci
           | isJust mbverb && not (null s'')         = sc p st b [] ++ sc (infpAdvStr b p) (ScState l (ScTpVerbatim e sctp)) s'' sci
                                                     where mbverb = mbVerb sctp s
                                                           (b,e) = fromJust mbverb
                                                           s'' = drop (length b) s
         sc p st@(ScState l (ScTpVerbatim e sctp)) s@(c:s') sci
-          | isLF c                                  = Tok TkNl [c] p st : sc (infpAdvLine p) st s' sci
+          | isLF c                                  = Tok TkNl [c] p st : sc (infpAdv1Line p) st s' sci
           | e `isPrefixOf` s                        = sc p (ScState l sctp) s sci
           | otherwise                               = Tok TkText w p st : sc (infpAdvStr w p) st s'' sci
                                                     where (w,s'') = spanOnRest chk s
                                                           chk s@(c:_) = not (isLF c || e `isPrefixOf` s )
                                                           chk _       = False
+
+        -- doclatex
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) ('\\':s@(c:s')) sci
           | isVarStart c                            = scKw isVarStart isCmd TkCmd (infpAdvCol 1 p) st s sci
           | c == '\\'                               = Tok TkCmd cmd p st : sc (infpAdvStr cmd p) st s' sci
                                                     where cmd = "\\\\"
         sc p st@(ScState l sctp@(ScTpContent TextType_DocLaTeX)) ('%':s') sci
-                                                    = Tok TkCmtLF cmt p st : sc (infpAdvLine p) (ScState l (ScTpCmtLF sctp)) s'' sci
+                                                    = Tok TkCmtLF cmt p st : sc (infpAdv1Line p) (ScState l (ScTpCmtLF sctp)) s'' sci
                                                     where (cmt,s'') = break isLF s'
+
+        -- any type
         sc p st@(ScState _ sctp) s@(c:s') sci
           | isSpec sctp c                           = Tok TkReserved   [c] p st : sc (infpAdvCol 1 p) st s' sci
+        
+        -- text2text
         sc p st@(ScState _ sctp@ScTpMetaMeta) s@(c:_) sci
           | isVarStart c                            = scKw isVarRest isKeyw TkReserved p st s sci
+        sc p st@(ScState _ ScTpMeta) s@(c:s') sci
+          | isLF c                                  = Tok TkText       ""  p st : sc (infpAdv1Line p) st s' sci
+          | otherwise                               = Tok TkText       b   p st : sc p' st s'' sci
+                                                    where (b,p',s'') = case break isLF s of
+                                                                         (b,(c:s)) | isLF c -> (b,infpAdv1Line p,s)
+                                                                         (b,s)              -> (b,infpAdvStr b p,s)
+        sc p st@(ScState _ ScTpMetaMeta) s@(c:_) sci
+          | isWhite c                               = sc (infpAdvStr w p) st s' sci
+                                                    where (w,s') = span isWhite s
+
+        -- any type
         sc p st@(ScState _ sctp@(ScTpContent _)) s@(c:_) sci
           | isVarStart c                            = scKw isVarRest isKeyw TkReserved p st s sci
 {-
@@ -201,15 +224,6 @@ scan scoMp st pos sci
         sc p st@(ScState _ sctp@ScTpMetaMeta) s@(c:_) sci
           | isOpch sctp c                           = scKw (isOpch sctp) p st s sci
 -}
-        sc p st@(ScState _ ScTpMeta) s@(c:s') sci
-          | isLF c                                  = Tok TkText       ""  p st : sc (infpAdvLine p) st s' sci
-          | otherwise                               = Tok TkText       b   p st : sc p' st s'' sci
-                                                    where (b,p',s'') = case break isLF s of
-                                                                         (b,(c:s)) | isLF c -> (b,infpAdvLine p,s)
-                                                                         (b,s)              -> (b,infpAdvStr b p,s)
-        sc p st@(ScState _ ScTpMetaMeta) s@(c:_) sci
-          | isWhite c                               = sc (infpAdvStr w p) st s' sci
-                                                    where (w,s') = span isWhite s
 
         -- doclatex
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) s@(c:s') sci
@@ -251,10 +265,11 @@ type T2TPr3' c1 c2 c3    = (IsParser p Tok) => p c1 -> p c2 -> p c3
 type T2TPr4' c1 c2 c3 c4 = (IsParser p Tok) => p c1 -> p c2 -> p c3 -> p c4
 
 pBegContent, pEndContent
-  , pNl :: T2TPr Tok
+  , pNl, pPar :: T2TPr Tok
 pBegContent   = pSym (Tok TkBegContent  "@@["  infpNone ScSkip)
 pEndContent   = pSym (Tok TkEndContent  "@@]"  infpNone ScSkip)
 pNl           = pSym (Tok TkNl          "LF"   infpNone ScSkip)
+pPar          = pSym (Tok TkPar         "Par"  infpNone ScSkip)
 
 pKey :: T2TPr' String
 pKey k = tokStr <$> pSym (Tok TkReserved k infpNone ScSkip)

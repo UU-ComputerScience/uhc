@@ -4,7 +4,7 @@ module EH.Util.ScanUtils
   , isNoPos, posIs1stColumn
   
   , InFilePos(..), infpStart, infpNone
-  , infpAdvCol, infpAdvLine, infpAdvStr
+  , infpAdvCol, infpAdvLine, infpAdv1Line, infpAdvStr
   
   , genTokVal, genTokTp, genTokMap
   
@@ -74,8 +74,11 @@ infpAdvCol i p = p {infpColumn = i + infpColumn p}
 infpAdvStr :: String -> InFilePos -> InFilePos
 infpAdvStr s p = infpAdvCol (length s) p
 
-infpAdvLine :: InFilePos -> InFilePos
-infpAdvLine p = p {infpLine = 1 + infpLine p, infpColumn = 1}
+infpAdvLine :: Int -> InFilePos -> InFilePos
+infpAdvLine i p = p {infpLine = i + infpLine p, infpColumn = 1}
+
+infpAdv1Line :: InFilePos -> InFilePos
+infpAdv1Line = infpAdvLine 1
 
 -------------------------------------------------------------------------
 -- PP of parse errors
