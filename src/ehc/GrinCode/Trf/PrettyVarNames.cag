@@ -1,3 +1,9 @@
+%%[doesWhat doclatex
+
+Prefix Grin variable names by `p', `n', `i' or `t', if they represent a pointer, node, integer or tag, respectively.
+
+%%]
+
 %%
 %% TODO: Show the usage of this transformation
 %%

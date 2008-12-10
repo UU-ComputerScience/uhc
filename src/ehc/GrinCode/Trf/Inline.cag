@@ -1,17 +1,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Transformation meant for GBM (bytecode machine) codegen
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Inlining replaces references to global values with their actual code, performing symbolic beta reduction.
+%%[doesWhat doclatex
+
+Replace references to global values with their actual code.
 Use of the following are inlined:
-- 1 time used functions and values, if not exported
-- wrappers for primitives (to allow their inline replacement with operators)
-- wrappers for constructors
-- small enough functions (not yet done)
+one-time used functions and values, if not exported;
+wrappers for primitives (to allow their inline replacement with operators);
+wrappers for constructors;
+small enough functions (not yet done).
+
+Requires FlattenSeq to be the next transformation.
+
+%%]
 
 Implementation:
 Free vars are gathered and passed topdown via 'fviMp', bound to a count

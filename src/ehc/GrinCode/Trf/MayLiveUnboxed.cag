@@ -1,6 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Unbox which are known to end up unboxed
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
 
 Values are all represented by nodes, boxed thus.
 This transformation removes the boxing for unboxable values,
@@ -8,6 +14,9 @@ allowing direct manipulation.
 
 Although designed with use by GrinByteCode in mind, the transformation is
 parameterised with a function telling whether a node represents an unboxed value.
+
+%%]
+
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

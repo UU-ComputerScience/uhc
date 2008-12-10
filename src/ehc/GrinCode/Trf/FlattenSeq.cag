@@ -1,9 +1,12 @@
-FlattenSeq
-What: Makes sure repeated applications of GrExpr_Seq associate to the right.
+%%[doesWhat doclatex
 
-Why: Most Grin transformations assume that this invariant holds.
+Makes sure repeated applications of \textit{SEQ} associate to the right.
+Most Grin transformations assume that this invariant holds.
 But some transformations break it (notably the ones that replace simple
 expressions by complicated ones, like Inlining).
+
+%%]
+
 
 When: After applying any transformation that breaks the invariant,
 apply the Flatten transformation to re-establish the invariant.

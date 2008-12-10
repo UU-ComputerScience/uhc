@@ -1,3 +1,18 @@
+%%[doesWhat doclatex
+
+Inline functions that are used only once.
+(To do: inline more functions, e.g. small ones. But than the body should be cloned, with introduced fresh variables etc).
+
+The inlined function is not completely dropped,
+because its arity is still needed in SplitFetch.
+So we keep a binding with a trivial body.
+
+Requires FlattenSeq to be the next transformation.
+Inspects the HPT table, and returns it unchanged. It does not (yet) update the HPT table because it doesn't yet clone function bodies.
+
+%%]
+
+
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

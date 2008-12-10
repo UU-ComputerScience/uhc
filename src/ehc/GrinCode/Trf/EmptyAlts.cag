@@ -1,6 +1,11 @@
+%%[doesWhat doclatex
+
 If the body of a function contains a case-expression with zero alternatives
 we know that the function can never be called.
 Replace the body of the function with an Empty expression in that situation.
+
+%%]
+
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

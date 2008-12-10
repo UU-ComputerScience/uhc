@@ -1,8 +1,11 @@
-Clean up the Grin program:
-- instead of #P/0 tags, use #F tags
-- do not delay constructorfunctions: instead of #F, use #C
-- generate a global variable for each parameterless function
+%%[doesWhat doclatex
 
+Clean up the Grin program in three ways:
+instead of P/0 tags, use F tags;
+do not delay constructorfunctions: instead of F/Con, use C/Con;
+generate a global variable for each parameterless function.
+
+%%]
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
 %%]

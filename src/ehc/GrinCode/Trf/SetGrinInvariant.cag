@@ -1,8 +1,10 @@
-Establish the "Grin Invariant": 
- - all variables in every GrValL always denotes a pointer, not an (evaluated) node
- - the name in Eval is always a pointer
+%%[doesWhat doclatex
 
+Establish the `Grin Invariant': 
+all variables in every GrValL always denotes a pointer, not an (evaluated) node;
+the name in Eval is always a pointer.
 
+%%]
 
 %%[0
 %include lhs2TeX.fmt

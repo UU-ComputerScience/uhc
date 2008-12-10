@@ -1,3 +1,10 @@
+%%[doesWhat doclatex
+
+Transforms a Grin program to a Silly program.
+
+%%]
+
+
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
