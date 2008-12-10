@@ -376,7 +376,6 @@
 %%]
 
 %%[39 doclatex
-%\usepackage{fancyvrb}
 \usepackage{docmainsty}
 %%]
 

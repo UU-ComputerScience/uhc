@@ -9,6 +9,7 @@ module Text.To.TWiki
   where
 
 import Data.Maybe
+import Data.Char
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -48,7 +49,7 @@ INCLUDE "Text/To/Common.ag"
 -------------------------------------------------------------------------
 {
 dtwkLbl :: Out a => a -> OutDoc
-dtwkLbl a = "T2TLabel" +++ a
+dtwkLbl a = "#T2TLabel" +++ a
 
 dtwkCmd :: Out c => c -> OutDoc
 dtwkCmd c = "%" +++ c +++ "%"
@@ -75,6 +76,21 @@ dtwkArg a = "{" +++ a +++ "}"
 
 dtwkArgs :: [OutDoc] -> OutDoc
 dtwkArgs a = outList $ map dtwkArg a
+}
+
+-------------------------------------------------------------------------
+-- Is text a twiki word?
+-------------------------------------------------------------------------
+
+{
+isTWikiWord :: String -> Bool
+isTWikiWord s
+  = is 0 s
+  where is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
+        is st (c:s') | isLower c &&  st == 1             = is (st+1) s'
+        is 3  _                                          = True
+        is st (_:s')                                     = is  st    s'
+        is _  _                                          = False
 }
 
 -------------------------------------------------------------------------
@@ -160,6 +176,10 @@ SEM RefType
 mkLF :: Bool -> OutDoc
 mkLF True = out "\n"
 mkLF _    = out " "
+
+mkPar :: Bool -> OutDoc
+mkPar True = out "\n\n"
+mkPar _    = dtwkCmd "BR"
 }
 
 ATTR AllText [ allowLF: Bool | | ]
@@ -178,8 +198,9 @@ SEM TextItem
   | Itemize         loc         .   allowLF     =   False
 
 SEM TextItem
-  | Line LineFeed
+  | Line LineFeed CommentLF
                     loc         .   lf          =   mkLF @lhs.allowLF
+  | ParBreak        loc         .   par         =   mkPar @lhs.allowLF
 
 -------------------------------------------------------------------------
 -- Replacement, as OutDoc
@@ -189,11 +210,11 @@ ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 
 SEM TextItem
   | Space           loc         .   out         =   out @str
-  | NonSpace        loc         .   out         =   out @str
-  | CommentLF       loc         .   out         =   dhtmCmt @str +++ " "
+  | NonSpace        loc         .   out         =   (if isTWikiWord @str then "!" else "") +++ @str
+  | CommentLF       loc         .   out         =   dhtmCmt @str +++ @lf
   | Line            loc         .   out         =   @str +++ @lf
   | LineFeed        loc         .   out         =   @lf
-  | ParBreak        loc         .   out         =   out "\n\n"
+  | ParBreak        loc         .   out         =   @par
   | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
   | RefTo           loc         .   out         =   @reftype.mkRefOut (@reftype.out +++ @reftext.out) @text.out
   | Styled          loc         .   out         =   @style.out +++ @text.out +++ @style.out
@@ -202,14 +223,14 @@ SEM TextItem
   | HorRuler        loc         .   out         =   out "\n------"
   | Header          loc         .   out         =   @level.out +++ @headerTxt +++ " " +++ @text.out +++ "\n"
   | Group           loc         .   out         =   dhtmOpenClose @envtype.out @text.out
-  | DocumentContent loc         .   out         =   @text.out +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
+  | DocumentContent loc         .   out         =   @text.out -- +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
   | Table           loc         .   out         =   @extratext.out +++ @rows.out
   | Itemize         loc         .   out         =   @text.out
   | ItemizeItem     loc         .   out         =   "\n" +++ @lhs.itemizePrefix +++ @text.out
   | Title           loc         .   out         =   emptyout
   | Author          loc         .   out         =   emptyout
   | Import          loc         .   out         =   emptyout
-  | Label           loc         .   out         =   "\n#" +++ dtwkLbl @reftext.out
+  | Label           loc         .   out         =   "\n" +++ dtwkLbl @reftext.out
   | MakeTitle       loc         .   out         =   emptyout
   | DocumentHeader  loc         .   out         =   emptyout
   | TOC             loc         .   out         =   dtwkCmd "TOC"
@@ -219,14 +240,6 @@ SEM RefType
   | Global          loc         .   out         =   emptyout
   | EhcWeb          loc         .   out         =   out "Ehc."
   | EhcSrc          loc         .   out         =   out "EHCHOME/"
-
-{-
-SEM DocumentOption
-  | A4Paper         loc         .   out         =   out "a4paper"
-
-SEM MbDocumentOptions
-  | Just            loc         .   out         =   outListSep "[" "]" "," @just.outL
--}
 
 SEM TextStyle
   | Bold            loc         .   out         =   out "*"
