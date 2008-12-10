@@ -1,3 +1,12 @@
+%%[doesWhat doclatex
+
+Merge two adjacent Case-expressions into one.
+The `identity' alternatives of the first are replaced by corresponding alternatives from the second.
+The `calling' alternatives of the first are kept, but now flagged as `reentrant' alternatives.
+
+%%]
+
+
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 

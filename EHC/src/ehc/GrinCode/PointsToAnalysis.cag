@@ -1,3 +1,12 @@
+%%[doesWhat doclatex
+
+Traverse a Grin-program it and collect constraint equations for variables and locations.
+Then solve the equations, and return the resulting abstract environment and heap: the \exprit{HptMap}.
+As an additional Int result, return the number of iterations that it took to solve the equations.
+
+This is not a transformation, but a phase that establishes the HPT table.
+%%]
+
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -23,11 +32,6 @@ WRAPPER GrAGItf
 
 {-
 Main module entry point:
-Given a Grin-program, traverse it and collect equations for variables and locations.
-Then solve the constraints, and return the resulting abstract environment&heap: the "HptMap".
-As an additional Int parameter, take the first number that is not the number of any variable.
-Also return it, possibly modified.
-As an additional Int result, return the number of iterations that it took to solve the equations.
 -}
 
 heapPointsToAnalysis :: GrModule -> (Int,HptMap)

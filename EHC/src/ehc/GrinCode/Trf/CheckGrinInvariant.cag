@@ -1,5 +1,11 @@
+%%[doesWhat doclatex
+
 Check how Grin variables are used: as a pointer, or as a node, 
-and whether that is compatible with the way they are created
+and whether that is compatible with the way they are created.
+
+This is not a transformation, just an extra check whether SetGrinInvariant worked properly.
+
+%%]
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
 %%]

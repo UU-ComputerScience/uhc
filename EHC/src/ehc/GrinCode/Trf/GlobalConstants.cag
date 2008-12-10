@@ -1,14 +1,18 @@
-GlbalConstants
-What: lift storing constants to the global level
+%%[doesWhat doclatex
+
+Lift storing constants to the global level:
+replace
+    \verb"SEQ (STORE (C/c n1 n2)) p body"
+by  \verb"body"
+and add
+    \verb"GLOBAL p = (C/c n1 n2)"
+when all n1, n2 etc are literals.
+
+%%]
+
 
 Why: saves out time for local allocations
 
-How: replace  SEQ (STORE (#C/c n1 n2)) p body
-     by       body
-     and add  GLOBAL p = (#C/c n1 n2)
-     when     all n_i are literals
-
-When: 
 
 Todo: merge equal constants to be stored only once
 Todo: apart form literals, also other global constants are permitted as n_i

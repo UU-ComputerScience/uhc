@@ -1,3 +1,12 @@
+%%[doesWhat doclatex
+
+Don't do \textit{EVAL} on pointers that bind the result of a previous \textit{STORE}.
+Instead, do a \textit{CALL} if the stored node has an F-tag or an A-tag,
+or do a \textit{UNIT} of the stored node for other tags.
+
+%%]
+
+
 Replace
    STORE (#F/f x y) ;\r ->
    ...

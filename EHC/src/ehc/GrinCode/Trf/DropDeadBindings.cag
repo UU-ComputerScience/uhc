@@ -1,7 +1,12 @@
+%%[doesWhat doclatex
+
 Drop bindings of which static analysis has revealed that they return AbsBottom.
 Also, remove corresponding alternatives from Case expressions.
 
 For example, if f returns AbsBottom, remove cases F/f and P/f from scrutinizations.
+Inspects the HPT table, but does not change it.
+
+%%]
 
 %%[0
 %include lhs2TeX.fmt

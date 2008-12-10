@@ -1,3 +1,12 @@
+%%[doesWhat doclatex
+
+Replace generic A/ tags by A/app1, A/app2, A/app3 etc.
+Also build new functions app1, app2, app3 etc.
+
+%%]
+
+
+
 The input contains nodes with an A/_ tags and a variable number of fields. 
 The first field always represents the function to be applied, the other fields are arguments for this function.
 This transformation replaces the tag with a tag that also encodes the number of arguments.

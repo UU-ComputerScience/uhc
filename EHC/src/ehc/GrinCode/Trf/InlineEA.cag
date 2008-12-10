@@ -1,5 +1,12 @@
-InlineEA
-Eliminate Grin "App" and "Eval" expressions by inlining equivalent code, based on full-program HPT analysis
+%%[doesWhat doclatex
+
+Eliminate Grin \textit{App} and \textit{Eval} expressions 
+by inlining equivalent code, based on full-program `PointsTo' analysis.
+
+Requires FlattenSeq to be the next transformation.
+Inspects the HPT table and updates it for introduced fresh variables.
+
+%%]
 
      EVAL locat
 ==>

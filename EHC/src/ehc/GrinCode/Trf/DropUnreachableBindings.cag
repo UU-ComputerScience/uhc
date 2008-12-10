@@ -1,5 +1,9 @@
-This transformation drops all functions not reachable from main,
+%%[doesWhat doclatex
+
+Drop all functions not reachable from main,
 either through direct calls, or through deferred (F) or partially applied (P) or apply (A) calls.
+
+%%]
 
 %%[0
 %include lhs2TeX.fmt

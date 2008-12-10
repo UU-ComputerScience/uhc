@@ -1,14 +1,19 @@
-Impossible case removal
-What: remove alternatives that, according to HPT, cannot happen.
+%%[doesWhat doclatex
 
-Why: the user program may distinguish more cases than necessary.
-Removal of impossible cases saves time distinguishing them.
+Remove alternatives that, according to HPT, cannot happen.
+
+The user program may distinguish more cases than necessary.
+Removal of impossible cases saves time.
 When only one alternative remains, a subsequent SingleCase transformation
-will remove the srutinization alltogether.
+will remove the scrutinization alltogether.
 This transformation is particularly effective after the LateInline transformation,
 as in a particular context more cases might be impossible.
 In that situation, also alternatives introduced by InlineEA might be
 removed in a particular context.
+
+Inspects the HPT table, but does not change it.
+
+%%]
 
 When:
 must be done after HPT-Analysis

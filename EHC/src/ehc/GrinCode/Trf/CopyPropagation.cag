@@ -1,8 +1,12 @@
- Try to shortcut two sorts of copying:
-  "Left unit law":  Transform   unit v ; \p -> e   into   e [v/p]
-  "Right unit law": Transform   e ; \p -> unit p   into   e
- Left transformation is not possible if v is a single variable and p is a node
+%%[doesWhat doclatex
 
+Try to shortcut two sorts of copying:
+`Left unit law':  Transform   \verb"unit v ; \p -> e"   into   \verb"e [v/p]" .
+`Right unit law': Transform   \verb"e ; \p -> unit p"   into   \verb"e" .
+Left transformation is not possible if v is a single variable and p is a node.
+Use the left law if both are applicable.
+
+%%]
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CopyPropagation} export(copyPropagation)
 %%]

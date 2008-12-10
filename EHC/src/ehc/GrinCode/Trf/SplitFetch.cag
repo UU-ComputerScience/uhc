@@ -1,18 +1,26 @@
-The basic idea of "Split fetch" is that
+%%[doesWhat doclatex
+
+The basic idea is that
+\begin{verbatim}
    fetchnode n; \(x y z) ->
+\end{verbatim}
 is replaced by
+\begin{verbatim}
    fetchfield n 0; \x ->
    fetchfield n 1; \y ->
    fetchfield n 2; \z ->
-
+\end{verbatim}
 This is done if the tag is statically known, because either
-1. x is a constant tag
-2. hpt analysis reveals that the list of possible tags for n is singleton
+x is a constant tag, or
+HPT analysis reveals that the list of possible tags for n is singleton.
 
-Otherwise, all but the first fetchfield operations are "floated" to the alternative of a case expression
-where the tag *is* known.
+Otherwise, all but the first fetchfield operations are `floated' to the alternative of a case expression
+where the tag \textit{is} known.
+If such a case expression does not follow, the transformation fails.
 
-If such a case expression does not follows, we return a node containing a black hole, as a panic result.
+Inspects the HPT table and updates it (but I forgot why).
+
+%%]
 
 
 Thus,

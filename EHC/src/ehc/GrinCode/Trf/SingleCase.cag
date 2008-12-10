@@ -1,5 +1,10 @@
-SingleCase
-What: if a Case-expression has only a single alternative, replace it by the body of that alternative.
+%%[doesWhat doclatex
+
+If a Case-expression has only a single alternative, replace it by the body of that alternative.
+
+Requires FlattenSeq to be the next transformation.
+
+%%]
 
 Why: saves out a test
 

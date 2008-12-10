@@ -6,21 +6,24 @@
 %%% Eliminate name aliases, to avoid unnecessary variable introductions, hence runtime loads
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[generalIntro doclatex
+%%[doesWhat doclatex
+
 Remove bindings of names to names.
 When directly executed absence of this transformation would lead to additional loads.
+
+%%]
+
 
 Tricky:
 for:
 
-\begin{pre}
 ..  ;  \p -> ... ; \p' -> unit p
-\end{pre}
 
 it is assumed no useful computation takes place in between p and p'.
 Useful here means an eval.
 Probably do it different????
-%%]
+
+
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

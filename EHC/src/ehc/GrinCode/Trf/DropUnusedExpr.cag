@@ -1,9 +1,12 @@
+%%[doesWhat doclatex
+
 If an expression is bound to a variable which is never used,
 it is removed (if the expression has no side effect).
 Variable bindings that are never used are replaced by wildcards.
 Global variables and functions thar are never used are removed.
 Alternatives with tags that involve functions that do no longer exist are removed.
 
+%%]
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]

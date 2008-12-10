@@ -1,3 +1,5 @@
+%%[doesWhat doclatex
+
 Each HsName in the program is numbered.
 This is done by replacing them with a HsName with constructor HNmNr.
 In a HNmNr, also the original name is retained, which can be useful later for prettyprinting.
@@ -5,7 +7,9 @@ In a HNmNr, also the original name is retained, which can be useful later for pr
 After numbering a toplevel function binding, the unique number is incremented by 2,
 to reserve a variable number which can be used for analysing the type of an Exception
 which may be thrown by the function.
+The parameters of a function are numbered consecutively after that.
 
+%%]
 
 %%[0
 %include lhs2TeX.fmt

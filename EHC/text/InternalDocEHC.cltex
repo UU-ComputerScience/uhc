@@ -1,6 +1,193 @@
-%%[grinCodeTrf
+%%[main doclatex
 
-%%@EHGrinCodeTrfAliasElim.generalIntro
+%%@GrinCode
+%%@Silly
+%%]
+
+
+
+%%[GrinCode
+
+\section{GrinCode}
+
+
+\subsection{Transformations per module}
+
+The following transformations are performed on each separate module:
+
+\begin{enumerate}
+
+\item (only when compiling to bytecode) UnusedMetaInfoElim:
+%%@EHGrinCodeTrfUnusedMetaInfoElim.doesWhat
+
+\item (only when compiling to bytecode) MayLiveUnboxed:
+%%@EHGrinCodeTrfMayLiveUnboxed.doesWhat
+
+\item (only when optimizing flag is on) FlattenSeq: (seems not useful here)
+
+\item (only when optimizing flag is on) AliasElim:
+%%@EHGrinCodeTrfAliasElim.doesWhat
+
+\item (only if specifically requested) PrettyVarNames:
+%%@EHGrinCodeTrfPrettyVarNames.doesWhat
+
+\item (only when optimizing flag is on) EvalElim:
+%%@EHGrinCodeTrfEvalElim.doesWhat
+
+\item (only when optimizing flag is on) AliasElim (again)
+
+\item (only when compiling to bytecode, and optimizing flag is on) Inline:
+%%@EHGrinCodeTrfInline.doesWhat
+
+\item (only when compiling to bytecode, and optimizing flag is on) FlattenSeq, AliasElim, EvalElim, AliasElim (again)
+
+\item (only when compiling to bytecode, and optimizing flag is on) ConstPropagation:
+%%@EHGrinCodeTrfConstPropagation.doesWhat
+
+\item (only when optimizing flag is on) UnusedNameElim:
+%%@EHGrinCodeTrfUnusedNameElim.doesWhat
+
+\end{enumerate}
+
+
+
+\subsection{Full program transformations}
+
+The following transformations are performed on the full program,
+when compiling to optimized code:
+
+\begin{enumerate}
+
+\item DropUnreachableBindings:
+%%@EHGrinCodeTrfDropUnreachableBindings.doesWhat
+
+\item CleanupPass:
+%%@EHGrinCodeTrfCleanupPass.doesWhat
+
+\item BuildAppBindings:
+%%@EHGrinCodeTrfBuildAppBindings.doesWhat
+
+\item GlobalConstants:
+%%@EHGrinCodeTrfGlobalConstants.doesWhat
+
+\item Inline:
+%%@EHGrinCodeTrfInline.doesWhat
+
+\item FlattenSeq:
+%%@EHGrinCodeTrfInline.doesWhat
+
+\item SetGrinInvariant:
+%%@EHGrinCodeTrfSetGrinInvariant.doesWhat
+
+\item CheckGrinInvariant:
+%%@EHGrinCodeTrfCheckGrinInvariant.doesWhat
+
+\item EvalStored:
+%%@EHGrinCodeTrfEvalStored.doesWhat
+
+\item DropUnusedExpr:
+%%@EHGrinCodeTrfDropUnusedExpr.doesWhat
+
+\item NumberIdents:
+%%@EHGrinCodeTrfNumberIdents.doesWhat
+
+\item PointsToAnalysis:
+%%@EHGrinCodePointsToAnalysis.doesWhat
+
+\item InlineEA:
+%%@EHGrinCodeTrfInlineEA.doesWhat
+
+\item FlattenSeq (again)
+
+\item DropDeadBindings:
+%%@EHGrinCodeTrfDropDeadBindings.doesWhat
+
+\item EmptyAlts:
+%%@EHGrinCodeTrfEmptyAlts.doesWhat
+
+\item DropUnreachableBindings (again)
+
+\item LateInline:
+%%@EHGrinCodeTrfLateInline.doesWhat
+
+\item FlattenSeq (again)
+
+\item ImpossibleCase:
+%%@EHGrinCodeTrfImpossibleCase.doesWhat
+
+\item SingleCase:
+%%@EHGrinCodeTrfSingleCase.doesWhat
+
+\item FlattenSeq (again)
+
+\item DropUnusedExpr (again)
+
+\item MergeCase:
+%%@EHGrinCodeTrfMergeCase.doesWhat
+
+\item LowerGrin:
+%%@EHGrinCodeTrfLowerGrin.doesWhat
+
+\item CopyPropagation (again)
+
+\item DropUnusedExpr (again)
+
+\item SplitFetch:
+%%@EHGrinCodeTrfSplitFetch.doesWhat
+
+\item DropUnusedExpr (again)
+
+\item CopyPropagation (again)
+
+\item ToSilly:
+%%@EHGrinCodeToSilly.doesWhat
+
+
+
+\end{enumerate}
+
+
+\subsection{Obsolete transformations}
+
+The following transformations seem to be obsolete:
+
+\begin{enumerate}
+
+\item AliasRename
+\item ForceEval
+\item NormForHPT
+\item MergeInstance
+
+\end{enumerate}
+
 
 
 %%]
+
+
+
+%%[Silly
+
+\section{Silly}
+
+\subsection{Full program transformations}
+
+The following transformations are performed on the Silly program:
+
+\begin{enumerate}
+
+\item Shortcut
+
+\item EmbedVars
+
+\item Shortcut (again)
+
+\item GroupAllocs
+
+\item PrettyC or ToLLVM
+
+\end{enumerate}
+
+%%]
+
+
