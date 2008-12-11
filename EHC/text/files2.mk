@@ -241,7 +241,7 @@ $(TEXT_DOCMAIN_DRV_TEX) : %.tex : %.ttex
 	  > $@
 
 $(TEXT_DOCMAIN_DRV_TWIKI) : %.twiki : %.ttex
-	$(TEXT2TEXT) --twiki $< \
+	$(TEXT2TEXT) --twiki --gen-header-numbering=yes $< \
 	  > $@
 
 $(TEXT_HIDE_DRV_TXT): $(TEXT_MAIN_DRV_LTEX)

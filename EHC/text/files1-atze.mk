@@ -1,6 +1,6 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
-TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-user-doc text2text-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-user-doc text2text-doc howtoexperiment-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -41,7 +41,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
 								uniqueness/Slides uniqueness/TopicImplementation \
-								DocDoc
+								HowToDoc HowToExperiment
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -87,11 +87,12 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 35: llvm thesis
 # 36: icfp08/padl09 paper on substitution/unification
 # 38: ldta09 paper on AG idiom
-# 40: shuffle doc
-# 41: how to write doc doc (to be done by Atze)
-# 42: ehc technical doc (to be started by Jeroen)
-# 43: ehc user doc (to be started by Atze)
-# 44: text2text doc (to be done by Atze)
+# 40: doc: shuffle
+# 41: doc: how to write doc
+# 42: doc: ehc technical (to be started by Jeroen)
+# 43: doc: ehc user (to be started by Atze)
+# 44: doc: text2text
+# 45: doc: how to experiment with ehc
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -134,5 +135,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 41, \
 		39 < 42, \
 		39 < 43, \
-		39 < 44
+		39 < 44, \
+		39 < 45
 		

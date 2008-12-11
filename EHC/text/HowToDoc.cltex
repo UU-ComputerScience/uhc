@@ -1,57 +1,25 @@
-%%[docLaTeX
-Doc LaTeX commands:
+%%[main doclatex
+\section{Introduction}
+%%@HowToDoc.introduction
 
-\section{X}
-\section*{X}
+\section{Steps}
+\subsection{Allocate a variant number}
+%%@HowToDoc.allocateVariant
 
-\subsection{X}
-\subsection*{X}
+\subsection{Adapt toplevel documentation}
+%%@HowToDoc.mainDriver
 
-\tableofcontents
-\documentclass[X]{Y}
-\maketitle
-\title{X}
-\author{X}
+\subsection{Create content}
+%%@HowToDoc.content
 
-\verb
+\subsection{Generate documentation from content}
+%%@HowToDoc.generate
 
-\label{X}
-\lref{X}{Y}     -- in style file
-\href{X}{Y}     -- in style file
-\eref{X}{Y}     -- in style file
-\sref{X}{Y}     -- in style file
+\subsection{Install documentation}
+%%@HowToDoc.install
 
-\item
-
-\hline
-\\
-&
-
-Environments:
-
-pre
-verbatim
-document
-itemize
-enumerate
-tabular, cell fmt: l r c |
-
-styles:
-\textbf{X}
-\textit{X}
-\texttt{X}
-\emph{X}
-
-Be able to ignore:
-
-\usepackage{X}
-
-Assumed/included packages:
-
-fancyvrb
-geometry
-hyperref
-
+\section{Further reading}
+%%@HowToDoc.andFurther
 %%]
 
 %%[introduction doclatex

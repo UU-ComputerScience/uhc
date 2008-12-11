@@ -1,3 +1,41 @@
+%%[main doclatex
+\section{Introduction}
+%%@ToolDocText2Text.introduction
+
+\section{Formatting commands}
+%%@ToolDocText2Text.formatting
+
+\subsection{Document setup and meta information}
+%%@ToolDocText2Text.documentsetup
+
+\subsection{Structure}
+%%@ToolDocText2Text.structure
+
+\subsection{Referencing}
+%%@ToolDocText2Text.referencing
+
+\subsection{Text style}
+%%@ToolDocText2Text.textstyle
+
+\subsection{Remaining commands}
+%%@ToolDocText2Text.various
+
+\section{Output specific behaviour}
+%%@ToolDocText2Text.outputgen
+
+\subsection{Document LaTeX - doclatex}
+%%@ToolDocText2Text.doclatexGen
+
+\subsection{TWiki - twiki}
+%%@ToolDocText2Text.twikiGen
+
+\section{Commandline invocation}
+%%@ToolDocText2Text.commandline
+
+\section{Further reading}
+%%@ToolDocText2Text.andFurther
+%%]
+
 %%[introduction doclatex
 Text2Text takes a text document with text type annotations for various formats and generates a representation in a particular requested format.
 Although currently only one input format (doclatex) can be used, the idea is to have a mixture of various mixed text fragments of possibly different types be parsed into a common representation and

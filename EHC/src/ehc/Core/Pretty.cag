@@ -153,7 +153,7 @@ SEM CExpr
 %%][8_2
                                                 >-< indent 2 (vlist (reverse @alts.ppL ++ [ppDef "default" @dflt.pp]))
 %%]]
-  | Tup         loc         .   pp          =   ppTag @tag
+  | Tup         loc         .   pp          =   "#Tag" >#< ppTag @tag
   | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
   | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
@@ -200,7 +200,7 @@ SEM CPat
   | Char        lhs         .   pp          =   ppCNm @pnm >#< ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCNm @pnm
 %%[[8
-  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< ppTag @tag)
+  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< "#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 %%][8_2
   | Con         lhs         .   pp          =   ppCTag'' CfgPP_Core @tag

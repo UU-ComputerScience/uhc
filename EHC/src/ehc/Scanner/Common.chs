@@ -238,7 +238,7 @@ coreScanOpts
                                         , "module", "default"
                                         , "VAL"
 %%[[9
-                                        , "DICT"
+                                        , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
 %%]]
 %%[[20
                                         , "Integer" 
