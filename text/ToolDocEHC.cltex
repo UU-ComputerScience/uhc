@@ -1,3 +1,29 @@
+%%[main doclatex
+\section{Introduction}
+%%@ToolDocEHC.introduction
+\subsection{System overview}
+\subsection{Compiling and running}
+\subsection{Installation}
+\subsection{Using EHC}
+
+\section{Language extensions}
+%%@ToolDocEHC.extensions
+\subsection{Higher ranked types}
+\subsection{Impredicativity}
+\subsection{Partial type signature}
+\subsection{Existential types}
+\subsection{Extensible records}
+
+\section{Language restrictions (relative to Haskell98)}
+%%@ToolDocEHC.restrictions
+
+\section{Commandline invocation}
+%%@ToolDocEHC.commandline
+
+\section{Further reading}
+%%@ToolDocEHC.andFurther
+%%]
+
 %%[preamble
 \newcommand\DocOpt[2]{\item #1 \\ \emph{#2}.\\}
 \newcommand\DocOptRef[1]{\texttt{#1}}
@@ -234,15 +260,32 @@ Show full version information (see also option \DocOptRef{--numeric-version}).
 %%[XX
 %%]
 
-%%[XX
+%%[introduction doclatex
 %%]
 
-%%[XX
+%%[extensions doclatex
 %%]
 
-%%[XX
+%%[restrictions doclatex
 %%]
 
-%%[XX
+%%[commandline doclatex
+\label{CommandLine}
+As printed by \verb=bin/100/ehc --help=:
+
+\begin{pre}
+%%@[exec:bin/100/ehc --help%%]
+\end{pre}
+
+%%]
+
+%%[andFurther doclatex
+See also
+\begin{itemize}
+\item \eref{HowToExperimentWithEHC}{How to experiment} with EHC.
+\item \eref{EhcTechnicalDocumentation}{Internal (technical) documention} of EHC.
+\item \eref{Shuffle}{Shuffle} for manipulating source chunks.
+\item \eref{Text2Text}{Text2Text} for documentation formatting.
+\end{itemize}
 %%]
 

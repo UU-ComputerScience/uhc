@@ -999,6 +999,11 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[45
+\title{How to experiment with EHC}
+\author{Atze Dijkstra}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2755,27 +2760,7 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[41 doclatex
-\section{Introduction}
-%%@DocDoc.introduction
-
-\section{Steps}
-\subsection{Allocate a variant number}
-%%@DocDoc.allocateVariant
-
-\subsection{Adapt toplevel documentation}
-%%@DocDoc.mainDriver
-
-\subsection{Create content}
-%%@DocDoc.content
-
-\subsection{Generate documentation from content}
-%%@DocDoc.generate
-
-\subsection{Install documentation}
-%%@DocDoc.install
-
-\section{Further reading}
-%%@DocDoc.andFurther
+%%@HowToDoc.main
 %%]
 
 
@@ -2792,6 +2777,7 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[43 doclatex
+%%@ToolDocEHC.main
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2799,41 +2785,15 @@ To be done ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[44 doclatex
-\section{Introduction}
-%%@ToolDocText2Text.introduction
+%%@ToolDocText2Text.main
+%%]
 
-\section{Formatting commands}
-%%@ToolDocText2Text.formatting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to experiment with EHC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Document setup and meta information}
-%%@ToolDocText2Text.documentsetup
-
-\subsection{Structure}
-%%@ToolDocText2Text.structure
-
-\subsection{Referencing}
-%%@ToolDocText2Text.referencing
-
-\subsection{Text style}
-%%@ToolDocText2Text.textstyle
-
-\subsection{Remaining commands}
-%%@ToolDocText2Text.various
-
-\section{Output specific behaviour}
-%%@ToolDocText2Text.outputgen
-
-\subsection{Document LaTeX - doclatex}
-%%@ToolDocText2Text.doclatexGen
-
-\subsection{TWiki - twiki}
-%%@ToolDocText2Text.twikiGen
-
-\section{Commandline invocation}
-%%@ToolDocText2Text.commandline
-
-\section{Further reading}
-%%@ToolDocText2Text.andFurther
+%%[45 doclatex
+%%@HowToExperiment.main
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -99,7 +99,7 @@ pCMetaOpt
 
 pCBind :: CParser CBind
 pCBind
-  = (pDollNm <* pEQUAL)
+  = (pDollNm <* pCMetaOpt <* pEQUAL)
     <**> (   (\m e n -> mkCBind1Meta n m e) <$> pCMetaOpt <*> pCExpr
          <|> (\c s i t n -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[94

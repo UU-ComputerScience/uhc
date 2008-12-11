@@ -54,12 +54,14 @@ data Opts
   = Opts
       { optGenFor           	::	TextType
       , optHelp					::	Bool
+      , optGenHeaderNumbering	::	Bool
       }
 
 defaultOpts 
   = Opts
       { optGenFor           	= 	TextType_DocLaTeX
       , optHelp					=	False
+      , optGenHeaderNumbering	=	False
       }
 
 -------------------------------------------------------------------------

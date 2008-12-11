@@ -106,8 +106,10 @@ cmdLineOpts
   =  [ Option "" [s] (NoArg (\o -> o {optGenFor = t})) ("generate " ++ s) | (s,t) <- Map.toList texttypeMp
      ]
      ++
-     [  Option ""   ["help"]            (NoArg oHelp)
+     [  Option ""   ["help"]            			(NoArg oHelp)
           "output this help"
+     ,  Option ""   ["gen-header-numbering"]        (OptArg oGenHdrNr "yes|no")
+          "generate header numbering, default=no"
 {-
      ,  Option "h"  ["hs"]              (NoArg oHS)
           "generate code for haskell, default=no"
@@ -167,6 +169,7 @@ cmdLineOpts
      ]
   where  oDocLaTeX       o =  o {optGenFor = TextType_DocLaTeX}
          oHelp           o =  o {optHelp = True}
+         oGenHdrNr   ms  o =  yesno (\f o -> o {optGenHeaderNumbering = f}) ms o
 {-
          oHS             o =  o {optHS = True}
          oPreamble   ms  o =  yesno (\f o -> o {optPreamble = f}) ms o
@@ -203,6 +206,7 @@ cmdLineOpts
          oDef         s  o =  case break (\c -> c == ':' || c == '=') s of
                                 (k,(_:v)) -> o {optDefs = Map.insert k v (optDefs o)}
                                 _         -> o
+-}
          yesno' y n updO  ms  o
                            =  case ms of
                                 Just "yes"  -> updO y o
@@ -210,6 +214,7 @@ cmdLineOpts
                                 _           -> o
          yesno             =  yesno' True False
 
+{-
          parseDeps "" = []
          parseDeps (',' : rest) = parseDeps rest
          parseDeps s

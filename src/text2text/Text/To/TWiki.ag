@@ -83,11 +83,15 @@ dtwkArgs a = outList $ map dtwkArg a
 -------------------------------------------------------------------------
 
 {
+isTWikiChar :: Char -> Bool
+isTWikiChar = isAlphaNum
+
 isTWikiWord :: String -> Bool
 isTWikiWord s
   = is 0 s
   where is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
         is st (c:s') | isLower c &&  st == 1             = is (st+1) s'
+        is st (c:_ ) | not (isTWikiChar c)               = False
         is 3  _                                          = True
         is st (_:s')                                     = is  st    s'
         is _  _                                          = False
@@ -169,6 +173,20 @@ SEM RefType
   | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
 
 -------------------------------------------------------------------------
+-- Selectively modifying wikiwords
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ allowWikiWord: Bool | | ]
+
+SEM AGItf
+  | AGItf           loc         .   allowWikiWord
+                                                =   False
+
+SEM TextItem
+  | Label           loc         .   allowWikiWord
+                                                =   True
+
+-------------------------------------------------------------------------
 -- Selectively linefeeding
 -------------------------------------------------------------------------
 
@@ -196,6 +214,8 @@ SEM TableRow
 
 SEM TextItem
   | Itemize         loc         .   allowLF     =   False
+  | Header Group DocumentContent Table
+                    loc         .   allowLF     =   True
 
 SEM TextItem
   | Line LineFeed CommentLF
@@ -210,7 +230,7 @@ ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 
 SEM TextItem
   | Space           loc         .   out         =   out @str
-  | NonSpace        loc         .   out         =   (if isTWikiWord @str then "!" else "") +++ @str
+  | NonSpace        loc         .   out         =   (if not @lhs.allowWikiWord && isTWikiWord @str then "!" else "") +++ @str
   | CommentLF       loc         .   out         =   dhtmCmt @str +++ @lf
   | Line            loc         .   out         =   @str +++ @lf
   | LineFeed        loc         .   out         =   @lf
@@ -221,7 +241,9 @@ SEM TextItem
   | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" @str
   | BreakLine       loc         .   out         =   dtwkCmd "BR"
   | HorRuler        loc         .   out         =   out "\n------"
-  | Header          loc         .   out         =   @level.out +++ @headerTxt +++ " " +++ @text.out +++ "\n"
+  | Header          loc         .   out         =   @level.out
+                                                    +++ (if optGenHeaderNumbering @lhs.opts then @headerTxt +++ " " else emptyout)
+                                                    +++ @text.out +++ "\n"
   | Group           loc         .   out         =   dhtmOpenClose @envtype.out @text.out
   | DocumentContent loc         .   out         =   @text.out -- +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
   | Table           loc         .   out         =   @extratext.out +++ @rows.out
