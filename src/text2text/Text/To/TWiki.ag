@@ -14,7 +14,7 @@ import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- import EH.Util.Pretty
+import EH.Util.FPath
 import qualified EH.Util.FastSeq as Seq
 import EH.Util.ScanUtils
 
@@ -60,6 +60,9 @@ dtwkHdr l = "---+" +++ replicate l '+' +++ " "
 dhtmTag :: Out a => a -> OutDoc
 dhtmTag a = "<" +++ a +++ ">"
 
+dhtmTag' :: Out a => a -> OutDoc
+dhtmTag' a = "<" +++ a +++ "/>"
+
 dhtmCmt :: Out a => a -> OutDoc
 dhtmCmt a = dhtmTag ("!-- " +++ a +++ " --")
 
@@ -68,6 +71,9 @@ dtwkRef lbl txt = "[[" +++ lbl +++ "][" +++ txt +++ "]]"
 
 dhtmOpenClose :: (Out body, Out env) => env -> body -> OutDoc
 dhtmOpenClose env body = dhtmTag env +++ body +++ dhtmTag ("/" +++ env)
+
+dhtmOne :: (Out body, Out env) => env -> body -> OutDoc
+dhtmOne env body = dhtmTag' (env +++ " " +++ body)
 }
 
 {
@@ -255,6 +261,8 @@ SEM TextItem
   | Label           loc         .   out         =   "\n" +++ dtwkLbl @reftext.out
   | MakeTitle       loc         .   out         =   emptyout
   | DocumentHeader  loc         .   out         =   emptyout
+  | GraphicsInline  loc         .   out         =   let f = fpathSetDir "http://www.cs.uu.nl/groups/ST/Projects/ehc" $ fpathSetSuff "gif" $ fpathFromStr $ outToString @text.out
+                                                    in  dhtmOne "img" ("src=\"" +++ fpathToStr f +++ "\"")
   | TOC             loc         .   out         =   dtwkCmd "TOC"
   
 SEM RefType

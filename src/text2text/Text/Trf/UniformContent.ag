@@ -138,6 +138,7 @@ SEM TextItem
   | Title			loc			.	trf			=   TextItem_Title (Seq.toList @text.trfTextItems)
   | Author			loc			.	trf			=   TextItem_Author (Seq.toList @text.trfTextItems)
   | DocumentHeader	loc			.	trf			=   TextItem_DocumentHeader @mboptions.trf (Seq.toList @text.trfTextItems)
+  | GraphicsInline	loc			.	trf			=   TextItem_GraphicsInline @mboptions.trf (Seq.toList @text.trfTextItems)
   | Import			loc			.	trf			=   TextItem_Import (Seq.toList @text.trfTextItems)
   | T2T			  	loc			.	trf			=   TextItem_T2T @pos @texttype []
 
@@ -146,4 +147,7 @@ SEM TableRow
 
 SEM TableField
   | Fld				lhs			.	trf			=	TableField_Fld (Seq.toList @extraseptext.trfTextItems) (Seq.toList @fld.trfTextItems)
+
+SEM GraphicsInlineOption
+  | Scale			lhs			.	trf			=	GraphicsInlineOption_Scale (Seq.toList @text.trfTextItems)
 

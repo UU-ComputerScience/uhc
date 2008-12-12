@@ -5,6 +5,7 @@
 
 %%[39
 \usepackage{fancyvrb}
+\usepackage{graphicx}
 \usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
 
 \def\latexRef#1{\ref{#1}}

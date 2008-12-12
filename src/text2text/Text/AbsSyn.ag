@@ -51,6 +51,10 @@ DATA TextItem
   | BreakLine
   | HorRuler
 
+  -- pictures
+  | GraphicsInline		mboptions		: MbGraphicsInlineOptions
+  						text			: TextItems
+
   -- meta info
   | Title				text			: TextItems
   | Author				text			: TextItems
@@ -111,7 +115,7 @@ DATA TableField
   						fld				: TextItems
 
 -------------------------------------------------------------------------
--- Doc options
+-- Options
 -------------------------------------------------------------------------
 
 DATA DocumentOption
@@ -120,12 +124,25 @@ DATA DocumentOption
 TYPE   DocumentOptions = [DocumentOption]
 TYPE MbDocumentOptions = MAYBE DocumentOptions
 
+SET AllDocumentOption
+  = MbDocumentOptions DocumentOptions DocumentOption
+
+DATA GraphicsInlineOption
+  | Scale				text			: TextItems
+
+TYPE   GraphicsInlineOptions = [GraphicsInlineOption]
+TYPE MbGraphicsInlineOptions = MAYBE GraphicsInlineOptions
+
+SET AllGraphicsInlineOption
+  = MbGraphicsInlineOptions GraphicsInlineOptions GraphicsInlineOption
+
 -------------------------------------------------------------------------
 -- Aliases
 -------------------------------------------------------------------------
 
 SET AllText
   = TextItem TextItems
+    AllGraphicsInlineOption
 
 SET AllTable
   = TableRow TableRows TableFields TableField
@@ -134,5 +151,5 @@ SET AllNT
   = AllText
     AllTable
     GroupType TextStyle RefType ItemizeStyle HeaderLevel
-    MbDocumentOptions DocumentOptions DocumentOption
+    AllDocumentOption
     TableFormat TableColFormat

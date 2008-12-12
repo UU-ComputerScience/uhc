@@ -252,12 +252,13 @@ Remaining allowed commands:
 %%]
 
 %%[doclatexGen doclatex
-Assumed/included styles:
+Assumed/included styles/packages:
 
 \begin{itemize}
 \item External styles: 
 fancyvrb,
 geometry,
+graphicx,
 hyperref.
 \item Internal styles: 
 \sref{text/mainsty.clsty}{mainsty}.

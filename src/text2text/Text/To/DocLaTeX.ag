@@ -96,6 +96,7 @@ SEM TextItem
   | Label   		loc			.	out			=	dltxCmd "label" +++ dltxArg @reftext.out
   | MakeTitle		loc			.	out			=   dltxCmd "maketitle"
   | DocumentHeader	loc			.	out			=   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
+  | GraphicsInline	loc			.	out			=   dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
   | TOC				loc			.	out			=   dltxCmd "tableofcontents"
   
 SEM RefType
@@ -130,6 +131,12 @@ SEM DocumentOption
 SEM MbDocumentOptions
   | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
 
+SEM GraphicsInlineOption
+  | Scale			loc			.	out			=	"scale=" +++ @text.out
+
+SEM MbGraphicsInlineOptions
+  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
+
 SEM TableColFormat
   | JustifyLeft		loc			.	out			=	out "l"
   | JustifyCenter	loc			.	out			=	out "c"
@@ -148,11 +155,12 @@ SEM TableField
 
 ATTR
   DocumentOptions DocumentOption
+  GraphicsInlineOptions GraphicsInlineOption
   TableFields
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
 
-SEM DocumentOption
-  | A4Paper			lhs			.	outL		=	[@out]
+SEM DocumentOption GraphicsInlineOption
+  | *				lhs			.	outL		=	[@out]
 
 SEM TableFields
   | Cons			lhs			.	outL		=	@hd.out : @tl.outL
