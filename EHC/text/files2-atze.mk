@@ -131,6 +131,11 @@ text-variant-howtoexperiment-doc:
 	  TEXT_SHUFFLE_VARIANT=45 \
 	  text-variant-dflt-doc
 
+text-variant-ehc-structure-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=46 \
+	  text-variant-dflt-doc
+
 text-variant-ruler-doc:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyRulerDoc --set=asArticle --set=useHyperref --set=asDraft --set=refToPDF --set=inclInx" \

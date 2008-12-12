@@ -3,6 +3,7 @@ module EH.Util.FPath
   , FPATH(..)
   , emptyFPath
   -- , mkFPath
+  , fpathFromStr
   , mkFPathFromDirsFile
   , fpathToStr, fpathIsEmpty
   , fpathSetBase, fpathSetSuff, fpathSetDir
@@ -50,6 +51,12 @@ fpathToStr fpath
   = let adds f = maybe f (\s -> f ++ "."         ++ s) (fpathMbSuff fpath)
         addd f = maybe f (\d -> d ++ fpathDirSep ++ f) (fpathMbDir fpath)
      in addd . adds . fpathBase $ fpath
+
+fpathFromStr :: String -> FPath
+fpathFromStr fn
+  = FPath d b' s
+  where (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
+        (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
 
 fpathSuff :: FPath -> String
 fpathSuff = maybe "" id . fpathMbSuff
@@ -111,12 +118,14 @@ mkFPathFromDirsFile :: Show s => [s] -> s -> FPath
 mkFPathFromDirsFile dirs f
   = fpathSetDir (concat $ intersperse fpathDirSep $ map show $ dirs) (mkFPath (show f))
 
+{-
 fpathSplit :: String -> (String,String)
 fpathSplit fn
   = let (d,b)  = maybe ("",fn) id (splitOnLast fpathDirSepChar fn)
         (b',s) = maybe (b,"") id (splitOnLast '.' b)
         b''    = if null d then b' else d ++ fpathDirSep ++ b'
      in (b'',s)
+-}
 
 mkTopLevelFPath :: String -> String -> FPath
 mkTopLevelFPath suff fn
