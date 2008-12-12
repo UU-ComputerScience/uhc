@@ -48,7 +48,7 @@ heapPointsToAnalysis grmod
         lenEnv      = maxVar_Syn_GrAGItf syn + 1
         
         -- now solve the equations
-    in  solveEquations (trace ("lenenv: " ++ show lenEnv) lenEnv) lenHeap equations heapEqs limitations
+    in  solveEquations lenEnv lenHeap equations heapEqs limitations
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%

@@ -102,6 +102,7 @@ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = if ehcOptFullProgAnalysis opts
     then cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
                , mergeIntoOneBigCore
+               , cpOutputCore "fullcore" mainModNm
                , cpEhcCorePerModulePart2 mainModNm
                ]
     else return ()
