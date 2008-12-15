@@ -4,7 +4,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to Code's Java gen
+%%% Core Pretty Printer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs module {%{EH}Core.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Ty.Pretty},{%{EH}Core},{%{EH}Scanner.Common(coreScanOpts)}) export(ppCModule)
@@ -153,7 +153,7 @@ SEM CExpr
 %%][8_2
                                                 >-< indent 2 (vlist (reverse @alts.ppL ++ [ppDef "default" @dflt.pp]))
 %%]]
-  | Tup         loc         .   pp          =   ppTag @tag
+  | Tup         loc         .   pp          =   "#Tag" >#< ppTag @tag
   | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm])
   | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppCNm @nm]) (ppParens @fldExpr.pp))
@@ -200,7 +200,7 @@ SEM CPat
   | Char        lhs         .   pp          =   ppCNm @pnm >#< ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCNm @pnm
 %%[[8
-  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< ppTag @tag)
+  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< "#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 %%][8_2
   | Con         lhs         .   pp          =   ppCTag'' CfgPP_Core @tag
@@ -231,7 +231,7 @@ ATTR CMeta [ | | optPP : PP_Doc ]
 SEM CMeta
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
-  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe "" (\n->"{"++show n++"}") @mbPos
+  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe "" (\n->"{ "++show n++"}") @mbPos
   | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
   | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppMbCNm @names
 %%]]
