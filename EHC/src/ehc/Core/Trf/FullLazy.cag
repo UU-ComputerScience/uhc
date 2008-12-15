@@ -7,6 +7,12 @@
 %%% Fully lazy code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+The full lazy transformation gives names to argument subexpressions of an application.
+The purpose is to end up with bindings which (later) directly correspond to a CAF or a closure.
+For that to work, all arguments of an application closure must themselves be bound to names, i.e. be closures themselves.
+%%]
+
 %%[(8 codegen) hs module {%{EH}Core.Trf.FullLazy} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFullLazy)
 %%]
 
@@ -58,11 +64,24 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-cmodTrfFullLazy :: UID -> CModule -> CModule
-cmodTrfFullLazy uniq cmod
+cmodTrfFullLazy :: HsName -> UID -> CModule -> CModule
+cmodTrfFullLazy modNm uniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
-                              (Inh_CodeAGItf {gUniq_Inh_CodeAGItf = uniq})
+                              (Inh_CodeAGItf
+                                 { gUniq_Inh_CodeAGItf = uniq
+%%[[20
+                                 , modNm_Inh_CodeAGItf = modNm
+%%]]
+                                 })
      in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name, required for unique global names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+ATTR AllCodeNT CodeAGItf [ modNm: HsName | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -235,6 +254,26 @@ SEM CAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of introduced binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | App Lam Case TupDel TupIns TupUpd Let
+                loc         .   trNm        =   
+%%[[20
+                                                hsnQualUniqify @lhs.modNm $
+%%]]
+                                                uidHNm @lUniq
+  | Lam         loc         .   trNm2       =   
+%%[[20
+                                                hsnQualUniqify @lhs.modNm $
+%%]]
+                                                uidHNm @lUniq2
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -262,11 +301,6 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CAlt
   | Alt         lhs         .   cTrf        =   CAlt_Alt @pat.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
-
-SEM CExpr
-  | App Lam Case TupDel TupIns TupUpd Let
-                loc         .   trNm        =   uidHNm @lUniq
-  | Lam         loc         .   trNm2       =   uidHNm @lUniq2
 
 SEM CExpr
   | TupIns TupUpd TupDel
