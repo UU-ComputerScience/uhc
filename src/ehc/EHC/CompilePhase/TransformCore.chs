@@ -56,7 +56,7 @@ cpCore1Trf modNm trfNm
 %%[[20
                                              (Map.keysSet $ crsiExpNmOffMp modNm crsi)
 %%]]
-                              "CFL"     -> cmodTrfFullLazy u1
+                              "CFL"     -> cmodTrfFullLazy modNm u1
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal

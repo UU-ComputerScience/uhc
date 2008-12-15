@@ -1,7 +1,55 @@
 %%[main doclatex
 
+%%@InternalDocEhcTechnical.Core
 %%@InternalDocEhcTechnical.GrinCode
 %%@InternalDocEhcTechnical.Silly
+%%]
+
+
+
+%%[Core
+\section{Core}
+
+The following transformations are performed on each separate module:
+
+\begin{enumerate}
+\item EtaRed:
+
+\item RenUniq:
+
+\item LetUnrec:
+
+\item InlineLetAlias:
+
+\item ElimTrivApp:
+
+\item ConstProp:
+
+\item InlineLetAlias (again):
+
+\item ElimTrivApp (again):
+
+\item FullLazy:
+%%@EHCoreTrfFullLazy.doesWhat
+
+\item LamGlobalAsArg:
+
+\item CAFGlobalAsArg:
+
+\item LetUnrec (again):
+
+\item FullLazy (again):
+
+\item FloatToGlobal:
+
+\end{enumerate}
+
+The following transformations are performed on the full program:
+
+\begin{enumerate}
+\item LiftDictFields:
+
+\end{enumerate}
 %%]
 
 
