@@ -17,10 +17,6 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Scanner
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -35,10 +31,9 @@ pCModule
 pCTagOnly :: CParser CTag
 pCTagOnly = pNUMBER *> pKeyTk "Tag" *> pCTag
 
-pCExprBase :: CParser CExpr
-pCExprBase
-  =   CExpr_Var <$> pDollNm
-  <|> pNUMBER
+pCNumber :: CParser CExpr
+pCNumber
+  =    pNUMBER
        *> (   (   (CExpr_Int     . read) <$ pKeyTk "Int"
               <|> (CExpr_Char    . head) <$ pKeyTk "Char"
               <|> (CExpr_String        ) <$ pKeyTk "String"
@@ -49,7 +44,18 @@ pCExprBase
               <*> (tokMkStr <$> pStringTk)
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
           )
+
+pCExprBase :: CParser CExpr
+pCExprBase
+  =   CExpr_Var <$> pDollNm
+  <|> pCNumber
   <|> pOPAREN *> pCExpr <* pCPAREN
+
+pCExprBaseMeta :: CParser (CExpr,CMeta)
+pCExprBaseMeta
+  =   (\v m -> (CExpr_Var v, m))<$> pDollNm <*> pCMetaOpt
+  <|> (\n   -> (n, CMeta_Val)  ) <$> pCNumber
+  <|> pOPAREN *> pCExpr P.<+> pCMetaOpt <* pCPAREN
 
 pCExprSelSuffix :: CParser (CExpr -> CExpr)
 pCExprSelSuffix
@@ -58,12 +64,19 @@ pCExprSelSuffix
   <|> (\(t,o,l) e' e -> CExpr_TupUpd e t l o e') <$ pKeyTk ":=" <*> pS <*> pCExprBase
   where pS = (,,) <$ pOCURLY <*> pCTagOnly <* pCOMMA <*> pCExpr <* pCOMMA <*> pDollNm <* pCCURLY
 
+pCExprSelSuffixMeta :: CParser ((CExpr,CMeta) -> (CExpr,CMeta))
+pCExprSelSuffixMeta
+  = (\f (e,m) -> (f e,m)) <$> pCExprSelSuffix
+
+pCExprSelMeta :: CParser (CExpr,CMeta)
+pCExprSelMeta = pCExprBaseMeta <??> pCExprSelSuffixMeta
+
 pCExprSel :: CParser CExpr
 pCExprSel = pCExprBase <??> pCExprSelSuffix
 
 pCExpr :: CParser CExpr
 pCExpr
-  =   mkCExprAppMeta <$> pCExprSel <*> pList (pCExprSel P.<+> pCMetaOpt)
+  =   mkCExprAppMeta <$> pCExprSel <*> pList pCExprSelMeta
   <|> mkCExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaOpt) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindPlain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
@@ -87,7 +100,7 @@ pMbDollNm
 pCMeta :: CParser CMeta
 pCMeta
   =   CMeta_Val          <$ pKeyTk "VAL"
-  <|> CMeta_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> pInt <* pCCURLY
+  <|> CMeta_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
                                                <|> pSucceed Nothing
                                                )
   <|> CMeta_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
@@ -99,11 +112,11 @@ pCMetaOpt
 
 pCBind :: CParser CBind
 pCBind
-  = (pDollNm <* pEQUAL)
-    <**> (   (\m e n -> mkCBind1Meta n m e) <$> pCMetaOpt <*> pCExpr
-         <|> (\c s i t n -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
+  = (  (pDollNm P.<+> pCMetaOpt) <* pEQUAL)
+    <**> (   (\e (n,m)        -> mkCBind1Meta n m e) <$> pCExpr
+         <|> (\c s i t (n,m)  -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[94
-         <|> (\c e en t n -> CBind_FFE n c (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\c e en t (n,m) -> CBind_FFE n c (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
          )
   where pS = tokMkStr <$> pStringTk
