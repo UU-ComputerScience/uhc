@@ -8,10 +8,10 @@ module Text.To.DocLaTeX
   )
   where
 
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- import EH.Util.Pretty
 import qualified EH.Util.FastSeq as Seq
 import EH.Util.ScanUtils
 
@@ -55,8 +55,11 @@ dltxArg a = "{" +++ a +++ "}"
 dltxArgs :: [OutDoc] -> OutDoc
 dltxArgs a = outList $ map dltxArg a
 
+dltxOptsBeginEnd :: (Out body, Out env, Out opt) => env -> opt -> body -> OutDoc
+dltxOptsBeginEnd env opt body = dltxCmd "begin" +++ dltxArg env +++ opt +++ body +++ dltxCmd "end" +++ dltxArg env
+
 dltxBeginEnd :: (Out body, Out env) => env -> body -> OutDoc
-dltxBeginEnd env body = dltxCmd "begin" +++ dltxArg env +++ body +++ dltxCmd "end" +++ dltxArg env
+dltxBeginEnd env body = dltxOptsBeginEnd env emptyout body
 }
 
 -------------------------------------------------------------------------
@@ -64,6 +67,24 @@ dltxBeginEnd env body = dltxCmd "begin" +++ dltxArg env +++ body +++ dltxCmd "en
 -------------------------------------------------------------------------
 
 ATTR AGItf AllNT [ opts: Opts | | ]
+
+-------------------------------------------------------------------------
+-- Graphics has caption?
+-------------------------------------------------------------------------
+
+ATTR AllGraphicsInlineOption [ | | mbCaption USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
+
+SEM GraphicsInlineOption
+  | Caption			lhs			.	mbCaption	=	Just @text.out
+
+-------------------------------------------------------------------------
+-- Graphics has label?
+-------------------------------------------------------------------------
+
+ATTR AllGraphicsInlineOption [ | | mbLabel USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
+
+SEM GraphicsInlineOption
+  | Label			lhs			.	mbLabel		=	Just @text.out
 
 -------------------------------------------------------------------------
 -- Replacement, as OutDoc
@@ -93,17 +114,23 @@ SEM TextItem
   | Title   		loc			.	out			=	dltxCmd "title" +++ dltxArg @text.out
   | Author   		loc			.	out			=	dltxCmd "author" +++ dltxArg @text.out
   | Import   		loc			.	out			=	dltxCmd "usepackage" +++ dltxArg @text.out
-  | Label   		loc			.	out			=	dltxCmd "label" +++ dltxArg @reftext.out
-  | MakeTitle		loc			.	out			=   dltxCmd "maketitle"
-  | DocumentHeader	loc			.	out			=   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
-  | GraphicsInline	loc			.	out			=   dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
-  | TOC				loc			.	out			=   dltxCmd "tableofcontents"
+  | Label   		loc			.	out         =   dltxCmd "label" +++ dltxArg @reftext.out
+  | MakeTitle       loc         .   out         =   dltxCmd "maketitle"
+  | DocumentHeader  loc         .   out         =   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
+  | GraphicsInline  loc         .   out         =   let mkFig = if isJust @mboptions.mbCaption || isJust @mboptions.mbLabel
+                                                                then \x -> dltxOptsBeginEnd "figure" "[h]" x
+                                                                else id
+                                                        mkLbl = maybe id (\l x -> x +++ dltxCmd "label" +++ dltxArg l) @mboptions.mbLabel
+                                                        mkCap = maybe id (\c x -> x +++ dltxCmd "caption" +++ dltxArg c) @mboptions.mbCaption
+                                                    in  mkFig $ mkCap $ mkLbl $ dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
+  | TOC             loc         .   out         =   dltxCmd "tableofcontents"
   
 SEM RefType
   | Local			loc			.	out			=	dltxCmd "lref"
   | Global			loc			.	out			=	dltxCmd "href"
   | EhcWeb			loc			.	out			=	dltxCmd "eref"
   | EhcSrc			loc			.	out			=	dltxCmd "sref"
+  | Cite			loc			.	out			=	dltxCmd "cref"
 
 SEM TextStyle
   -- | Verbatim		loc			.	out			=	dltxCmd "verb"
@@ -154,13 +181,17 @@ SEM TableField
 -------------------------------------------------------------------------
 
 ATTR
-  DocumentOptions DocumentOption
-  GraphicsInlineOptions GraphicsInlineOption
+  AllDocumentOption
+  AllGraphicsInlineOption
   TableFields
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
 
-SEM DocumentOption GraphicsInlineOption
+SEM DocumentOption
   | *				lhs			.	outL		=	[@out]
+
+SEM GraphicsInlineOption
+  | Scale			lhs			.	outL		=	[@out]
+  | * - Scale		lhs			.	outL		=	[]
 
 SEM TableFields
   | Cons			lhs			.	outL		=	@hd.out : @tl.outL

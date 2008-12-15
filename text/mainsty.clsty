@@ -557,6 +557,11 @@ Chapter~\myRef{#1}%
 }
 % \newcommand{\Cite}[1]{\cite{#1}\ifx#2\empty\else(#2)\fi\refPDF{papers/#1.pdf}}
 
+% reference to citations (compatibility with doclatex):
+% #1: citations
+% #2: title
+\newcommand{\cref}[2]{#2 \cite{#1}}
+
 % verbatim
 \DefineVerbatimEnvironment%
  {TT}{Verbatim}
@@ -759,4 +764,9 @@ Anonymity, blinding things
 % #1: ref
 % #2: title
 \newcommand{\sref}[2]{#2 (\texttt{EHCHOME/#1})}
+
+% reference to citations (compatible with plain LaTeX, currently citations not used):
+% #1: citations
+% #2: title
+\newcommand{\cref}[2]{#2}
 %%]
