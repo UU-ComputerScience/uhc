@@ -21,6 +21,7 @@ As major parts of EHC have been written in Haskell both its implementation and u
 %%]
 
 %%[introduction
+%%[[introduction1
 Haskell is a perfect example of a programming language which offers many features improving programming efficiency by
 offering a sophisticated type system.
 As such it is an answer for the programmer looking for a programming language which does as much as possible of the programmer's job,
@@ -28,16 +29,16 @@ while at the same time guaranteeing program properties like ``well-typed program
 However, the consequence is that a programming language implementation is burdened by these responsibilities,
 and consequently becomes quite complex.
 Haskell thus also is a perfect example of a programming language for which compilers are complex.
-Testimony to this observation is the Glasgow Haskell Compiler (GHC)
-\cite{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline},
+Testimony to this observation is the 
+\cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)},
 which simultaneously incorporates many novel features, is used as a reliable workhorse for many a
 functional programmer, and offers a research platform for language designers.
 As a result, modifying GHC requires much knowledge
 of GHC's internals.
 
-In \thispaper\ we show how we deal with the complexity of compiling Haskell
-in the Essential Haskell (EH) Compiler (EHC)
-\cite{dijkstra04ehc-web,dijkstra05phd}.
+In this writing we show how we deal with the complexity of compiling Haskell
+in the 
+\cref{dijkstra04ehc-web,dijkstra05phd}{Essential Haskell (EH) Compiler (EHC)}.
 EH intends
 \begin{itemize}
 \item to compile full Haskell (the H in EH)
@@ -46,12 +47,13 @@ EH intends
 \end{itemize}
 
 In particular the following areas require attention:
+%%]]
 
 \begin{itemize}
 \item \textbf{Implementation complexity} (\secRef{sec-ehcstruct-complexity-implementation})
   The amount of work a compiler has to do is a source of complexity.
-  We organise the work as a series of smaller transformation steps
-  \cite{peytonjones96hs-transf,peytonjones98trans-optim}
+  We organise the work as a series of smaller 
+  \cref{peytonjones96hs-transf,peytonjones98trans-optim}{transformation steps}
   between various internal representations.
 \item \textbf{Description complexity} (\secRef{sec-ehcstruct-complexity-description})
   The specification of parts of the implementation itself can become complex because low-level details
@@ -228,7 +230,7 @@ Source files can be chunked Haskell code, chunked AG code,
 but also chunked \LaTeX\ text and code in other
 languages we use.
 
-|Shuffle| behaves similar to literate programming tools \cite{knuth92litprog}
+|Shuffle| behaves similar to  \cref{knuth92litprog}{literate programming tools}
 in that it generates program source code.
 The key difference is that with the literate programming style program source code is generated out of a file containing
 program text plus documentation,
@@ -287,16 +289,16 @@ depicted in \figRef{fig-ehcstruct-toolchain}.
 We use the following preprocessing tools:
 \begin{itemize}
 \item \textbf{UUAGC} (Utrecht University Attribute Grammar Compiler),
-which enables us to specify abstract syntax trees and tree walks over them using an attribute grammar (AG) formalism
-\cite{baars04ag-www,dijkstra05phd,dijkstra04thag,swierstra99comb-lang}.
+which enables us to specify abstract syntax trees and tree walks over them using an 
+\cref{baars04ag-www,dijkstra05phd,dijkstra04thag,swierstra99comb-lang}{attribute grammar (AG) formalism}.
 \item \textbf{Shuffle}, 
 which deals with the compiler organisation and logistics of many different language features,
 and provides a form of literate programming.
 \item \textbf{Ruler},
 a translator for an even more specialized language than AG,
 which enables a high-level specification of type inferencing,
-generating both AG code and \LaTeX\ documentation
-\cite{dijkstra06ruler}.
+generating both AG code and \LaTeX\ 
+\cref{dijkstra06ruler}{documentation}.
 \end{itemize}
 \begin{CenterFigure}{}{Chain of tools used to build EHC}{fig-ehcstruct-toolchain}
 \hspace*{-5mm}\raisebox{-15mm}[70mm][0mm]{\FigScaledPDF{0.45}{toolchain2}}
@@ -349,7 +351,7 @@ the data structure), can also be used for other data types, and even for
 multiple mutually recursive data types.
 Functions that can be expressed in this way are called {\em catamorphisms}
 by Bird, and the collective extra parameters to |foldr|-like functions 
-{\em algebras} \cite{birdmoor96algebra,bird84circ-traverse}. 
+ \cref{birdmoor96algebra,bird84circ-traverse}{{\em algebras}}. 
 Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
 In fact, every algebra defines a {\em semantics} of the data structure.
 % When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
@@ -388,7 +390,7 @@ in Haskell is cumbersome and becomes prohibitively complex.
 Many compiler writers thus end up writing ad hoc recursive functions
 instead of defining the semantics by an algebra,
 or even resort to non-functional techniques.
-Others try to capture the pattern using monads \cite{meijerjeuring95merging-monads}.
+Others try to capture the  \cref{meijerjeuring95merging-monads}{pattern using monads}.
 Some succeed in giving a concise definition of a semantics,
 often using proof rules of some kind, but loose executability.
 For the implementation they still need conventional techniques,
@@ -396,7 +398,7 @@ and the issue arises whether the program soundly implements
 the specified semantics.
 
 To save the nice idea of using an algebra for defining a semantics,
-we use a preprocessor for Haskell \cite{swierstra99comb-lang} that overcomes the mentioned problems.
+we use a  \cref{swierstra99comb-lang}{preprocessor for Haskell} that overcomes the mentioned problems.
 It is not a separate language; we can still write auxiliary Haskell
 functions, and use all abstraction techniques and libraries.
 The preprocessor just allows a few additional constructs, which are translated
@@ -428,7 +430,7 @@ The preprocessor generates corresponding Haskell |data| declarations
 and more importantly, generates a custom |fold| function. This overcomes problem 1.
 
 For any desired value we wish to compute from a tree, we can declare a ``synthesized attribute''
-(the terminology goes back to Knuth \cite{knuth68ag}).
+(the terminology goes back to  \cref{knuth68ag}{Knuth}).
 Attributes can be defined for one or more data types.
 For example, we can define that for all three datatypes we wish to 
 synthesize a pretty-printed listing, and that expressions
@@ -522,8 +524,7 @@ are automatically copied. So, the attribute |env| that
 an |App| expression inherited from its parent, is automatically copied
 to the children which also inherit an |env|, and the tedious rules
 above can be omitted.
-This captures a pattern that is often addressed by introducing a |Reader|
-monad \cite{jones99thih}.
+This captures a pattern that is often addressed by introducing a  \cref{jones99thih}{|Reader| monad}.
 Similar automated copying is performed for synthesized attributes,
 so if they need to be passed unchanged up the tree, this does not
 need an explicit encoding, nor a |Writer| monad.
@@ -684,8 +685,8 @@ EHC is organised as a sequence of transformations between internal representatio
 of the program being compiled. 
 In order to keep the compiler understandable, we keep the transformations simple,
 and consequently, there are many.
-This approach is similar to the one taken in GHC 
-\cite{peytonjones96hs-transf,peytonjones92ghc-overview,peytonjones94trafo-ghc}.
+This approach is similar to the one taken in  
+\cref{peytonjones96hs-transf,peytonjones92ghc-overview,peytonjones94trafo-ghc}{GHC}.
 All our transformations are expressed as a full tree walk over the data structure, 
 using a tool for easily defining tree walks (see \secRef{sec-ehcstruct-explainUUAGC}).
 At each step in which the representation changes drastically
@@ -705,7 +706,7 @@ and the transformations between them:
   is a representation in an untyped |lambda|-calculus.
 \item \textbf{Grin}
   (Graph reduction intermediate notation)
-  is a representation proposed by Boquist \cite{boquist99phd-optim-lazy,boquist96grin-optim}
+  is a representation proposed by  \cref{boquist99phd-optim-lazy,boquist96grin-optim}{Boquist}
   in which local definitions have been made sequential
   and the need for evaluation has been made explicit.
 \item \textbf{Silly}
@@ -718,7 +719,7 @@ and the transformations between them:
 \item \textbf{LLVM}
   (Low level virtual machine)
   is an imperative language which, other than C, is {\em intended} to be a universal
-  back-end \cite{lattner07www-llvm}.
+   \cref{lattner07www-llvm}{back-end}.
   We have it under consideration as an alternative route to attain executable code.
 \end{itemize}
 
@@ -734,7 +735,7 @@ offering different modes of compilation:
 \item Grin code can be translated to C directly. 
       In this mode, the program is represented in a custom bytecode format, stored in arrays,
       and executed by an interpreter written in C.
-      Its speed is comparable to that of Hugs \cite{www03hugs}.
+      Its speed is comparable to that of  \cref{www03hugs}{Hugs}.
 \item Grin code can be translated to executable code via transformations which perform global program analysis,
       and generate optimized Silly code, which can be further processed through either the
       C or LLVM route.
@@ -812,7 +813,7 @@ We intend to use the first three language variants (\figRef{fig-ehcstruct-alllan
 in our basic course on compiler construction,
 thus providing students with a realistic integrated introduction to
 language design, compiler implementation, and software engineering.
-This approach is similar to that in Pierce's textbook \cite{typing:types-prog-lang:pierce},
+This approach is similar to that in  \cref{typing:types-prog-lang:pierce}{Pierce's textbook},
 however, in contrast we focus on a realistic implementation of full Haskell instead of small independent
 implementations of isolated type systems.
 
@@ -837,7 +838,7 @@ there is room for improvement:
   Such information flow patterns are not yet automated.
 \item \textbf{High level description and efficiency}
   Using a high level description usually also provides opportunities to optimise at a low level.
-  For attribute grammars a large body of optimisations are available \cite{saraiva99phd-funcimpl-ag},
+  For attribute grammars a large body of  \cref{saraiva99phd-funcimpl-ag}{optimisations} are available,
   some of which are finding their way into our AG system.
 \item \textbf{Stepwise approach vs.\ aspectwise approach}
   EH's stepwise approach imposes a fixed order in which language constructs are implemented on top of each other.
@@ -850,7 +851,7 @@ there is room for improvement:
 
 We are working towards a release of EHC as a Haskell compiler: variant 99 in the sequence.
 At the moment, we can compile a prelude and run programs with a bytecode interpreter.
-We intend to work on AG optimisations, on using LLVM \cite{lattner07www-llvm} as a backend,
+We intend to work on AG optimisations, on using  \cref{lattner07www-llvm}{LLVM} as a backend,
 and on GRIN global transformations.
 
 %%]
@@ -858,17 +859,17 @@ and on GRIN global transformations.
 %%[relatedWork
 \Paragraph{Compiler building environments}
 
-Various compiler construction environments exist
-\cite{www06catalog-comp-constr}, originally developed some time ago.
+Various compiler 
+\cref{www06catalog-comp-constr}{construction environments} exist, originally developed some time ago.
 We mention
-Cocktail \cite{www07cocktail,grosch91cocolab-toolbox},
-Eli \cite{www05eli,gray92eli} and
-Gentle \cite{www07gentle,schroer97gentle-comp-sys}.
+\cref{www07cocktail,grosch91cocolab-toolbox}{Cocktail},
+\cref{www05eli,gray92eli}{Eli} and
+\cref{www07gentle,schroer97gentle-comp-sys}{Gentle}.
 Of these environments Cocktail provides the most comprehensive
 and best maintained set of tools for lexical analysis, parsing, attribute grammars and tree transformations.
 With the exception of Cocktail these environments are focussed upon development in C;
 Cocktail allows codegeneration for various imperative languages.
-More specifically for Java, Polyglot \cite{www08polyglot,nystrom03polyglot-comp-framew} is an extensible compiler frontend,
+More specifically for Java,  \cref{www08polyglot,nystrom03polyglot-comp-framew}{Polyglot} is an extensible compiler frontend,
 with many experimental Java extensions.
 
 In contrast, our toolset is built upon Haskell, and wherever possible
@@ -883,15 +884,15 @@ which is benificial in our view because of the compact and descriptive nature of
 \Paragraph{Tree based systems and Attribute Grammar systems}
 
 Computations over abstract syntax trees and tree transformation form a major part of any compiler;
-Cocktail also incorporates an attribute grammar system, based on work by Kastens \cite{kastens80order-attrgam},
+Cocktail also incorporates an attribute grammar system, based on work by  \cref{kastens80order-attrgam}{Kastens},
 as well as tools for transforming trees.
-Stratego \cite{visser05stratego-www,visser01stratego-system05}
-(based on ASF/SDF \cite{www05asf-sdf}) is a specialized tool for tree transformations.
-JastAdd \cite{ekman07jastadd-system,www08jastadd,hedin03jastadd-aspects}
+ \cref{visser05stratego-www,visser01stratego-system05}{Stratego}
+(based on  \cref{www05asf-sdf}{ASF/SDF}) is a specialized tool for tree transformations.
+ \cref{ekman07jastadd-system,www08jastadd,hedin03jastadd-aspects}{JastAdd}
 is an attribute grammar and tree rewrite system built on top of Java,
-used to build a Java compiler \cite{ekman07jastadd-java}.
+used to build a  \cref{ekman07jastadd-java}{Java compiler}.
 
-%Elegant \cite{augusteijn90elegant,www08elegant}
+% \cref{augusteijn90elegant,www08elegant}{Elegant}
 
 In contrast, our attribute grammar system is also used for the many tree transformations present in EHC;
 support for making a modified replica of the tree being analysed makes this work suprisingly well.
@@ -900,16 +901,16 @@ but on the other hand we are not limited by the sometimes restricted computation
 
 \Paragraph{Declarative specification}
 
-Ruler intends to bridge the gap between formal specifications and their implementation, like Tinkertype \cite{levin99tinkertype}.
-Ott \cite{sewell07ott-tool-semantic} provides a typerule based frontend, not for an implementation but for various theorem proving systems.
-Twelf \cite{www05twelf} is a theorem proving system, amongst others used to ultimately specify ML formally in order to proof type safety.
+Ruler intends to bridge the gap between formal specifications and their implementation, like  \cref{levin99tinkertype}{Tinkertype}.
+\cref{sewell07ott-tool-semantic}{Ott} provides a typerule based frontend, not for an implementation but for various theorem proving systems.
+\cref{www05twelf}{Twelf} is a theorem proving system, amongst others used to ultimately specify ML formally in order to proof type safety.
 Ruler, on the other hand, is currently only used as an implementation tool and documentation tool.
 
 \Paragraph{Embedded solutions}
 
 All tools mentioned sofar are external tools, in the sense that they generate from a separate specification for a specific implementation language.
 Monads often have been used for Haskell embedded attribution, e.g. a reader monad corresponds directly to inherited attribution.
-A similar effect can be accomplished with boilerplate code avoiding approaches \cite{laemmel03boilerplate}.
+A similar effect can be accomplished with boilerplate code avoiding  \cref{laemmel03boilerplate}{approaches}.
 Both approaches work fine for relatively small examples but do not scale well when separate computations have to be merged into one,
 for example when such computations need each others (intermediate) results.
 

@@ -80,6 +80,7 @@ DATA RefType
   | Global
   | EhcWeb
   | EhcSrc
+  | Cite
 
 DATA GroupType
   | Verbatim
@@ -129,6 +130,8 @@ SET AllDocumentOption
 
 DATA GraphicsInlineOption
   | Scale				text			: TextItems
+  | Label				text			: TextItems
+  | Caption				text			: TextItems
 
 TYPE   GraphicsInlineOptions = [GraphicsInlineOption]
 TYPE MbGraphicsInlineOptions = MAYBE GraphicsInlineOptions

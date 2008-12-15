@@ -1,4 +1,83 @@
 %%[main doclatex
-\includegraphics[scale=0.65]{ehc-dataflow2.pdf}
+%%@TopicEHCStructure.abstractExpReport
+
+\section{Introduction}
+
+%%@TopicEHCStructure.introduction1
+%%@InternalDocEhcStructure.introduction2
+
+%%@InternalDocEhcStructure.test
+
+\section{Coping with implementation complexity: transform}
+\label{sec-ehcstruct-complexity-implementation}
+
+ %%@TopicEHCStructure.complexityImplementation
+
+\section{Coping with description complexity: use tools}
+\label{sec-ehcstruct-complexity-description}
+
+ %%@TopicEHCStructure.complexityDescription
+
+\subsection{UUAGC, a system for specifying tree walks}
+\label{sec-ehcstruct-explainUUAGC}
+ %%@TopicEHCStructure.explainUUAGC
+
+\subsection{Ruler, a system for specifying type rule implementations}
+\label{sec-ehcstruct-explainRuler}
+ %%@TopicEHCStructure.explainRuler
+
+\section{Coping with design complexity: grow stepwise}
+\label{sec-ehcstruct-complexity-design}
+
+ %%@TopicEHCStructure.complexityDesign
+
+\section{Coping with maintenance complexity: generate, generate and generate}
+\label{sec-ehcstruct-complexity-maintenance}
+
+ %%@TopicEHCStructure.complexityMaintenance
+
+\section{Related work}
+\label{sec-ehcstruct-relatedwork}
+
+ %%@TopicEHCStructure.relatedWork
+
+\section{Experiences}
+\label{sec-ehcstruct-experiences}
+
+ %%@TopicEHCStructure.experiences
+
+%%]
+
+%%[introduction2 doclatex
+\begin{itemize}
+\item  \lref{sec-ehcstruct-complexity-implementation}{\textbf{Implementation complexity}}
+  The amount of work a compiler has to do is a source of complexity.
+  We organise the work as a series of smaller 
+  \cref{peytonjones96hs-transf,peytonjones98trans-optim}{transformation steps}
+  between various internal representations.
+\item  \lref{sec-ehcstruct-complexity-description}{\textbf{Description complexity}}
+  The specification of parts of the implementation itself can become complex because low-level details
+  are visible.
+  We use domain specific languages which factor out such low-level details, so they are dealt with automatically.
+\item  \lref{sec-ehcstruct-complexity-design}{\textbf{Design complexity}}
+  Experiments with language features are usually done in isolation.
+  We describe their implementation in isolation, as a sequence of language variants, building on top
+  of each other.
+\item  \lref{sec-ehcstruct-complexity-maintenance}{\textbf{Maintenance complexity}}
+  Actual compiler source, its documentation, and its specification tend to become
+  inconsistent over time. We
+  fight such inconsistencies by avoiding their main cause: duplication.
+  Whenever two artefacts have to be consistent, we generate them from a common description.
+\end{itemize}
+
+In the next sections we explain how we deal with each of these complexities.
+%%]
+
+%%[test doclatex
+\includegraphics[scale=0.65,label=test,caption=EHC dataflow]{ehc-dataflow2.pdf}
+
+aap |Shuffle| noot || xx |@@| yy
+
+aap2 @|@ noot2 @@ xx @||@ yy
 %%]
 

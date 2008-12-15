@@ -45,11 +45,31 @@ INCLUDE "Text/AbsSyn.ag"
 INCLUDE "Text/To/Common.ag"
 
 -------------------------------------------------------------------------
+-- Is text a twiki word?
+-------------------------------------------------------------------------
+
+{
+isTWikiChar :: Char -> Bool
+isTWikiChar = isAlphaNum
+
+isTWikiWord :: String -> Bool
+isTWikiWord s
+  = is 0 s
+  where is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
+        is st (c:s') | isLower c &&  st == 1             = is (st+1) s'
+        is st (c:_ ) | not (isTWikiChar c)               = False
+        is 3  _                                          = True
+        is st (_:s')                                     = is  st    s'
+        is _  _                                          = False
+}
+
+-------------------------------------------------------------------------
 -- Combinators
 -------------------------------------------------------------------------
+
 {
 dtwkLbl :: Out a => a -> OutDoc
-dtwkLbl a = "#T2TLabel" +++ a
+dtwkLbl a = "#T2TLabel" +++ (filter isTWikiChar $ outToString $ out a)
 
 dtwkCmd :: Out c => c -> OutDoc
 dtwkCmd c = "%" +++ c +++ "%"
@@ -82,25 +102,6 @@ dtwkArg a = "{" +++ a +++ "}"
 
 dtwkArgs :: [OutDoc] -> OutDoc
 dtwkArgs a = outList $ map dtwkArg a
-}
-
--------------------------------------------------------------------------
--- Is text a twiki word?
--------------------------------------------------------------------------
-
-{
-isTWikiChar :: Char -> Bool
-isTWikiChar = isAlphaNum
-
-isTWikiWord :: String -> Bool
-isTWikiWord s
-  = is 0 s
-  where is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
-        is st (c:s') | isLower c &&  st == 1             = is (st+1) s'
-        is st (c:_ ) | not (isTWikiChar c)               = False
-        is 3  _                                          = True
-        is st (_:s')                                     = is  st    s'
-        is _  _                                          = False
 }
 
 -------------------------------------------------------------------------
@@ -177,6 +178,7 @@ SEM RefType
   | Global          loc         .   mkRefOut    =   dtwkRef
   | EhcWeb          loc         .   mkRefOut    =   dtwkRef
   | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
+  | Cite            loc         .   mkRefOut    =   \_ t -> t
 
 -------------------------------------------------------------------------
 -- Selectively modifying wikiwords
@@ -270,6 +272,7 @@ SEM RefType
   | Global          loc         .   out         =   emptyout
   | EhcWeb          loc         .   out         =   out "Ehc."
   | EhcSrc          loc         .   out         =   out "EHCHOME/"
+  | Cite            loc         .   out         =   emptyout
 
 SEM TextStyle
   | Bold            loc         .   out         =   out "*"

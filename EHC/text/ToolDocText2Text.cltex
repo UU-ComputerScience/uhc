@@ -14,8 +14,14 @@
 \subsection{Referencing}
 %%@ToolDocText2Text.referencing
 
+\subsection{Pictures}
+%%@ToolDocText2Text.graphics
+
 \subsection{Text style}
 %%@ToolDocText2Text.textstyle
+
+\subsection{Non LaTeX compatible commands}
+%%@ToolDocText2Text.nonlatex
 
 \subsection{Remaining commands}
 %%@ToolDocText2Text.various
@@ -188,7 +194,7 @@ Allowed formatting for \verb|FMT|: \verb=l r c |=
 %%]
 
 %%[referencing doclatex
-References can be to locally (to the document) defined labels, hyperlinks, to pages of the EHC twiki, and relative to the root of the EHC source tree.
+References can be to locally (to the document) defined labels, hyperlinks, to pages of the EHC twiki, relative to the root of the EHC source tree, and to citations.
 Allowed referencing commands:
 
 \begin{itemize}
@@ -200,6 +206,8 @@ Example: \verb|\href{http://www.cs.uu.nl/groups/ST/Projects/ehc/text2text-doc.pd
 Example: \verb|\eref{Text2Text}{this doc}| gives: \eref{Text2Text}{this doc}.
 \item \verb|\sref{X}{Y}|, refer to source file \verb|X|, displaying \verb|Y|.
 Example: \verb|\sref{text/ToolDocText2Text.cltex}{source of this doc}| gives: \sref{text/ToolDocText2Text.cltex}{source of this doc}.
+\item \verb|\cref{X}{Y}|, refer to citations \verb|X|, displaying \verb|Y|. Currently no actual reference to \verb|X| is generated, being a placeholder for later.
+Example: \verb|\cref{xxx}{Some Author}| gives: \cref{xxx}{Some Author}.
 \end{itemize}
 
 Allowed labeling commands:
@@ -208,6 +216,18 @@ Allowed labeling commands:
 \item \verb|\label{X}|
 \end{itemize}
 
+
+%%]
+
+%%[graphics doclatex
+Pictures created by external tools can be included by \verb|\includegraphics[options]{picture}|, where \verb|picture| refers to a document holding the picture. Currently only \verb|pdf| pictures with suffix \verb|.pdf| are allowed.
+The following options can be used:
+
+\begin{itemize}
+\item \verb|scale=fraction|, scale picture down/up by \verb|fraction|.
+\item \verb|label=text|, add label.
+\item \verb|caption=text|, add caption.
+\end{itemize}
 
 %%]
 
@@ -238,6 +258,19 @@ Example: \verb|\emph{Some text}| renders as: \emph{Some text}.
 
 %%]
 
+%%[nonlatex doclatex
+Non \href{http://www.latex-project.org/}{LaTeX}, borrowed from lhs2tex:
+
+\begin{itemize}
+\item Text between vertical bars @|@, like \verb=|Some text|= is a shorthand for \verb|\emph{Some text}|, displaying as |Some text|.
+\item Text between \verb|@|, like \verb=@Some text@= is a shorthand for \verb|\texttt{Some text}|, displaying as @Some text@.
+\end{itemize}
+
+No complex commands are allowed between these delimiters. Escaping can only be done by mutually delimiting @|@ and \verb|@| or using \verb|\verb|.
+This notation cannot be used inside options to commands.
+
+%%]
+
 %%[various doclatex
 Remaining allowed commands:
 
@@ -265,6 +298,11 @@ hyperref.
 This is the main style file used by all documentation and papers, it includes the external styles, and is processed/included as part of the building of documentation.
 \end{itemize}
 
+Other pecularities:
+
+\begin{itemize}
+\item When a label and/or caption is given for \verb|\includegraphics|, all is also wrapped inside \verb|\begin{figure}[h] ... \end{figure}|.
+\end{itemize}
 
 %%]
 
@@ -276,6 +314,7 @@ This is the main style file used by all documentation and papers, it includes th
 \item Spacing around \verb|\item| and its content is not yet ignored, so items are not properly rendered.
 \item Labels may only be defined globally (because anchors must start at the beginning of a line).
 \item Table formatting is not implemented (yet).
+\item \verb|\includegraphics| ignores all options.
 \end{itemize}
 %%]
 
