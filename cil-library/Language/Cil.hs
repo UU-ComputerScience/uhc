@@ -39,11 +39,18 @@ instance Cil Assembly where
 -- | A Type definition in CIL, either a class or a value type.
 data TypeDef =
     Class Visibility Name [MethodDef]
+  | ValueClass Visibility Name [FieldDef]
 
 instance Cil TypeDef where
   cil (Class v n ms) =
-      (".class " ++) . cil v . (" " ++) . cilName n . ("\n{\n" ++)
+      (".class " ++) . cil v . sp . cilName n . ("\n{\n" ++)
     . foldr (\m s -> cil m . s) id ms
+    . ("}\n" ++)
+  cil (ValueClass v n fs) =
+      (".class value " ++) . cil v . sp . cilName n
+    -- . (" extends [mscorlib]System.ValueType
+    . ("\n{\n" ++)
+    . foldr (\f s -> cil f . s) id fs
     . ("}\n" ++)
 
 data Visibility =
@@ -61,6 +68,13 @@ instance Cil Visibility where
   cil Private           = ("private" ++)
   cil Public            = ("public" ++)
 
+data FieldDef =
+    Field Visibility PrimitiveType Name
+
+instance Cil FieldDef where
+  cil (Field v t n) = 
+      ident . (".field " ++) .  cil v . sp . cil t . sp . cilName n . nl
+
 -- | A Method definition in CIL.
 -- Currently, only static methods are implemented.
 data MethodDef =
@@ -69,7 +83,7 @@ data MethodDef =
 instance Cil MethodDef where
   cil (StaticMethod v t n ps ds os) =
       ident . (".method " ++) . cil v
-    . (" hidebysig static " ++) . cil t . (" " ++) . cilName n . ("(" ++)
+    . (" hidebysig static " ++) . cil t . sp . cilName n . ("(" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
@@ -82,7 +96,7 @@ data Parameter =
     Param PrimitiveType Name
 
 instance Cil Parameter where
-  cil (Param t n) = cil t . (" " ++) . cilName n
+  cil (Param t n) = cil t . sp . cilName n
 
 -- | Directive meta data for method definitions.
 data Directive =
@@ -105,7 +119,7 @@ data Local =
     Local PrimitiveType Name
 
 instance Cil Local where
-  cil (Local t n) = cil t . (" " ++) . cilName n
+  cil (Local t n) = cil t . sp . cilName n
 
 -- | Represents a Label in CIL.
 type Label = String
@@ -132,7 +146,7 @@ data OpCode =
          , assemblyName :: Name            -- ^ Name of the assembly where the method lives.
          , className    :: Name            -- ^ Name of the class of which the method is a member.
          , methodName   :: Name            -- ^ Name of the method.
-         , paramsTypes  :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
+         , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
          } -- ^ Calls the indicated method.
   | Ceq                -- ^ Compares two values. If they are equal, the integer value 1 /(int32)/ is pushed onto the evaluation stack; otherwise 0 /(int32)/ is pushed onto the evaluation stack.
   | Dup                -- ^ Copies the current topmost value on the evaluation stack, and then pushes the copy onto the evaluation stack.
@@ -142,12 +156,19 @@ data OpCode =
   | Ldloca Int
   | Ldstr String
   | Neg
+  | Newobj { association  :: Association
+           , returnType   :: PrimitiveType
+           , assemblyName :: Name
+           , className    :: Name
+           , paramTypes   :: [PrimitiveType]
+           } -- ^ Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
   | Nop
   | Pop
   | Rem
   | Ret
   | Stloc Int
   | Sub
+  | Tail
 
 -- Note: this could be a lot more efficient. For example, there are specialized
 -- instructions for loading the constant integers 1 through 8, but for clearity
@@ -166,8 +187,8 @@ instance Cil OpCode where
   cil (Brfalse l)         = ident . ident . ("brfalse " ++) . (l ++) . nl
   cil (Brtrue l)          = ident . ident . ("brtrue " ++) . (l ++) . nl
   cil (Break)             = ident . ident . ("break" ++) . nl
-  cil (Call s t a c m ps) = ident . ident . ("call " ++) . cil s . (" " ++)
-                             . cil t . (" " ++) . cilCall a c m ps . nl
+  cil (Call s t a c m ps) = ident . ident . ("call " ++) . cil s . sp
+                             . cil t . sp . cilCall a c m ps . nl
   cil (Ceq)               = ident . ident . ("ceq" ++) . nl
   cil (Dup)               = ident . ident . ("dup" ++) . nl
   cil (Ldarg x)           = ident . ident . ("ldarg " ++) . shows x . nl
@@ -176,12 +197,25 @@ instance Cil OpCode where
   cil (Ldloca x)          = ident . ident . ("ldloca " ++) . shows x . nl
   cil (Ldstr s)           = ident . ident . ("ldstr " ++) . shows s . nl
   cil (Neg)               = ident . ident . ("neg" ++) . nl
+  cil (Newobj s t a c ps) = ident . ident . ("newobj " ++) . cil s . sp
+                             . cil t . sp . cilNewobj a c ps . nl
   cil (Nop)               = ident . ident . ("nop" ++) . nl
   cil (Pop)               = ident . ident . ("pop" ++) . nl
   cil (Rem)               = ident . ident . ("rem" ++) . nl
   cil (Ret)               = ident . ident . ("ret" ++) . nl
   cil (Stloc x)           = ident . ident . ("stloc " ++) . shows x . nl
   cil (Sub)               = ident . ident . ("sub" ++) . nl
+  cil (Tail)              = ident . ident . ("tail." ++) . nl
+
+cilNewobj :: Name -> Name -> [PrimitiveType] -> ShowS
+cilNewobj a c ps = 
+    cilAssembly a
+  . (if c /= ""
+     then cilName c . ("::" ++)
+     else id)
+  . (".ctor(" ++)
+  . foldr (.) id (intersperse (", " ++) (map cil ps))
+  . (")" ++)
 
 cilCall :: Name -> Name -> Name -> [PrimitiveType] -> ShowS
 cilCall a c m ps = 
@@ -232,5 +266,6 @@ instance Cil PrimitiveType where
 
 -- Helper functions, to pretty print
 ident = ("    " ++)
+sp    = (" " ++)
 nl    = ('\n' :)
 
