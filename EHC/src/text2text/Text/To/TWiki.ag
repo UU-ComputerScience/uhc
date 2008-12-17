@@ -55,7 +55,8 @@ isTWikiChar = isAlphaNum
 isTWikiWord :: String -> Bool
 isTWikiWord s
   = is 0 s
-  where is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
+  where is st (c:_ ) | isLower c &&  st == 0             = False
+        is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
         is st (c:s') | isLower c &&  st == 1             = is (st+1) s'
         is st (c:_ ) | not (isTWikiChar c)               = False
         is 3  _                                          = True
@@ -64,18 +65,27 @@ isTWikiWord s
 }
 
 -------------------------------------------------------------------------
+-- Ensure text is for a TWiki anchor
+-------------------------------------------------------------------------
+
+{
+ensureTWikiAnchor :: Out a => a -> OutDoc
+ensureTWikiAnchor x = out $ filter isTWikiChar $ outToString $ out x
+}
+
+-------------------------------------------------------------------------
 -- Combinators
 -------------------------------------------------------------------------
 
 {
 dtwkLbl :: Out a => a -> OutDoc
-dtwkLbl a = "#T2TLabel" +++ (filter isTWikiChar $ outToString $ out a)
+dtwkLbl a = "#LabeL" +++ ensureTWikiAnchor a
 
 dtwkCmd :: Out c => c -> OutDoc
 dtwkCmd c = "%" +++ c +++ "%"
 
 dtwkHdr :: Int -> OutDoc
-dtwkHdr l = "---+" +++ replicate l '+' +++ " "
+dtwkHdr l = "\n---+" +++ replicate l '+' +++ " "
 
 dhtmTag :: Out a => a -> OutDoc
 dhtmTag a = "<" +++ a +++ ">"
@@ -119,7 +129,7 @@ type HeaderSeqNrMp = Map.Map Int Int
 }
 
 ATTR AllText AllTable [ | headerLevel: Int  headerSeqNrMp: HeaderSeqNrMp | ]
-ATTR HeaderLevel [ | headerLevel: Int | ]
+ATTR HeaderLevel [ | headerLevel: Int | allowHeaderCounting: Bool ]
 
 SEM AGItf
   | AGItf           loc         .   headerLevel =   -1
@@ -129,17 +139,25 @@ SEM AGItf
 SEM HeaderLevel
   | Level           lhs         .   headerLevel =   @level
 
+SEM HeaderLevel
+  | Level           lhs         .   allowHeaderCounting
+  												=   True
+  | Paragraph       lhs         .   allowHeaderCounting
+  												=   False
+
 SEM TextItem
   | Header          (loc.headerTxt,lhs.headerSeqNrMp)
-                                                =   let mkTxt h m = concat $ intersperse "." [ show $ fromJust $ Map.lookup l m | l <- [0 .. h] ]
-                                                        seqNr h = fromJust $ Map.lookup h @lhs.headerSeqNrMp
-                                                    in  case @lhs.headerLevel `compare` @level.headerLevel of
-                                                          GT -> ( mkTxt @level.headerLevel m, m )
-                                                                where m = Map.insert @level.headerLevel (seqNr @level.headerLevel + 1) @lhs.headerSeqNrMp
-                                                          EQ -> ( mkTxt @lhs.headerLevel m, m )
-                                                                where m = Map.insert @lhs.headerLevel (seqNr @lhs.headerLevel + 1) @lhs.headerSeqNrMp
-                                                          LT -> ( mkTxt @level.headerLevel m, m )
-                                                                where m = Map.insert @level.headerLevel 1 @lhs.headerSeqNrMp
+                                                =   if @level.allowHeaderCounting
+                                                    then let mkTxt h m = concat $ intersperse "." [ show $ fromJust $ Map.lookup l m | l <- [0 .. h] ]
+                                                             seqNr h = fromJust $ Map.lookup h @lhs.headerSeqNrMp
+                                                         in  case @lhs.headerLevel `compare` @level.headerLevel of
+                                                               GT -> ( mkTxt @level.headerLevel m, m )
+                                                                     where m = Map.insert @level.headerLevel (seqNr @level.headerLevel + 1) @lhs.headerSeqNrMp
+                                                               EQ -> ( mkTxt @lhs.headerLevel m, m )
+                                                                     where m = Map.insert @lhs.headerLevel (seqNr @lhs.headerLevel + 1) @lhs.headerSeqNrMp
+                                                               LT -> ( mkTxt @level.headerLevel m, m )
+                                                                     where m = Map.insert @level.headerLevel 1 @lhs.headerSeqNrMp
+                                                    else ( "", @lhs.headerSeqNrMp )
 
 -------------------------------------------------------------------------
 -- Itemize level
@@ -171,14 +189,24 @@ SEM AGItf
 -- How to make a reference
 -------------------------------------------------------------------------
 
-ATTR RefType [ | | mkRefOut: {OutDoc -> OutDoc -> OutDoc} ]
+ATTR RefType [ | | mkRefOut: {OutDoc -> OutDoc -> OutDoc} ] -- \reftext text -> ...
 
 SEM RefType
-  | Local           loc         .   mkRefOut    =   dtwkRef
+  | Local           loc         .   mkRefOut    =   \r t -> dtwkRef (dtwkLbl $ ensureTWikiAnchor r) t
   | Global          loc         .   mkRefOut    =   dtwkRef
   | EhcWeb          loc         .   mkRefOut    =   dtwkRef
   | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
   | Cite            loc         .   mkRefOut    =   \_ t -> t
+
+-------------------------------------------------------------------------
+-- How to make a section header
+-------------------------------------------------------------------------
+
+ATTR HeaderLevel [ | | mkHdrOut: {OutDoc -> OutDoc -> OutDoc} ] -- \numberingprefix text -> ...
+
+SEM HeaderLevel
+  | Level           loc         .   mkHdrOut    =   \n t -> dtwkHdr @level +++ n +++ t +++ "\n"
+  | Paragraph       loc         .   mkHdrOut    =   \_ t -> "\n*" +++ t +++ "*"
 
 -------------------------------------------------------------------------
 -- Selectively modifying wikiwords
@@ -191,7 +219,7 @@ SEM AGItf
                                                 =   False
 
 SEM TextItem
-  | Label           loc         .   allowWikiWord
+  | Label Styled    loc         .   allowWikiWord
                                                 =   True
 
 -------------------------------------------------------------------------
@@ -215,10 +243,10 @@ SEM AGItf
 
 
 SEM TableField
-  | Fld             loc         .   allowLF     =   True
+  | Fld             loc         .   allowLF     =   False
 
 SEM TableRow
-  | Row             loc         .   allowLF     =   True
+  | Row             loc         .   allowLF     =   False
 
 SEM TextItem
   | Itemize         loc         .   allowLF     =   False
@@ -227,7 +255,7 @@ SEM TextItem
 
 SEM TextItem
   | Line LineFeed CommentLF
-                    loc         .   lf          =   mkLF @lhs.allowLF
+                    loc         .   lf          =   mkLF  @lhs.allowLF
   | ParBreak        loc         .   par         =   mkPar @lhs.allowLF
 
 -------------------------------------------------------------------------
@@ -249,12 +277,10 @@ SEM TextItem
   | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" @str
   | BreakLine       loc         .   out         =   dtwkCmd "BR"
   | HorRuler        loc         .   out         =   out "\n------"
-  | Header          loc         .   out         =   @level.out
-                                                    +++ (if optGenHeaderNumbering @lhs.opts then @headerTxt +++ " " else emptyout)
-                                                    +++ @text.out +++ "\n"
+  | Header          loc         .   out         =   @level.mkHdrOut (if optGenHeaderNumbering @lhs.opts then @headerTxt +++ " " else emptyout) @text.out
   | Group           loc         .   out         =   dhtmOpenClose @envtype.out @text.out
   | DocumentContent loc         .   out         =   @text.out -- +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
-  | Table           loc         .   out         =   @extratext.out +++ @rows.out
+  | Table           loc         .   out         =   {- @extratext.out +++ -} outListSep "\n" "" "\n" @rows.outL
   | Itemize         loc         .   out         =   @text.out
   | ItemizeItem     loc         .   out         =   "\n" +++ @lhs.itemizePrefix +++ @text.out
   | Title           loc         .   out         =   emptyout
@@ -268,7 +294,7 @@ SEM TextItem
   | TOC             loc         .   out         =   dtwkCmd "TOC"
   
 SEM RefType
-  | Local           loc         .   out         =   dtwkLbl ""
+  | Local           loc         .   out         =   emptyout
   | Global          loc         .   out         =   emptyout
   | EhcWeb          loc         .   out         =   out "Ehc."
   | EhcSrc          loc         .   out         =   out "EHCHOME/"
@@ -287,6 +313,7 @@ SEM ItemizeStyle
   | Bullet          lhs         .   out         =   out "   * "
   | Number          lhs         .   out         =   out "   1 "
 
+{-
 SEM HeaderLevel
   | Level           lhs         .   out         =   dtwkHdr @level
   | Paragraph       lhs         .   out         =   out "\n"
@@ -296,20 +323,25 @@ SEM TableColFormat
   | JustifyCenter   loc         .   out         =   out "c"
   | JustifyRight    loc         .   out         =   out "r"
   | SepbyLine       loc         .   out         =   out "|"
+-}
 
 SEM TableRow
-  | Row             lhs         .   out         =   outListSep "|" "|" "|" @cols.outL +++ @extrabrktext.out
+  | Row             lhs         .   out         =   outListSep "|" "|" "|" @cols.outL -- +++ @extrabrktext.out
 
 SEM TableField
-  | Fld             lhs         .   out         =   @extraseptext.out +++ @fld.out
+  | Fld             lhs         .   out         =   {- @extraseptext.out +++ -} @fld.out
 
 -------------------------------------------------------------------------
 -- Replacement, as [OutDoc]
 -------------------------------------------------------------------------
 
 ATTR
-  TableFields
+  TableFields TableRows
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
+
+SEM TableRows
+  | Cons            lhs         .   outL        =   @hd.out : @tl.outL
+  | Nil             lhs         .   outL        =   []
 
 SEM TableFields
   | Cons            lhs         .   outL        =   @hd.out : @tl.outL

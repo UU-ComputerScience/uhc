@@ -41,7 +41,7 @@ The suffix \verb|xxx| currently can be \verb|pdf| or \verb|twiki|.
 %%[allocateVariant doclatex
 First a variant number must be allocated. All papers and documentation are constructed by \eref{Shuffle}{Shuffle} from a set of files holding \eref{Shuffle}{Shuffle}
 chunks.
-Of the various makefiles for producing text the \sref{text/files1-atze.mk}{makefile for text sources and variants} must include a definition for a new variant.
+Of the various makefiles for producing text the \sref{text/files-variants.mk}{makefile for text sources and variants} must include a definition for a new variant.
 A new variant is added by:
 
 \begin{enumerate}
@@ -58,7 +58,7 @@ TEXT_SHUFFLE_ORDER  += \
 The new documentation must be given a name which can be used for making and publishing the documentation:
 \begin{enumerate}
 \item Find an unused name, say \emph{my-doc}, and add it to the list in variable \verb|TEXT_DOC_VARIANTS|.
-\item Connect the name to the variant number by including a makefile target in the \sref{text/files2-atze.mk}{makefile for targets}.
+\item Connect the name to the variant number by including a makefile target in the \sref{text/files-targets.mk}{makefile for targets}.
 The target name must be of the form \verb|text-variant-<chosen-name>|:
 \begin{verbatim}
 text-variant-my-doc:
@@ -124,7 +124,7 @@ General topics use prefix \verb|Topic|, slides use \verb|Slides|. This conventio
 The following must be done:
 \begin{enumerate}
 \item Create (and add it to the repository, if necessary) \sref{text/ToolDocMy.cltex}{the documentation source file} and add its base name \verb|ToolDocMy| to the makefile variable
-\verb|TEXT_SUBS| in \sref{text/files1-atze.mk}{the makefile for text sources and variants}.
+\verb|TEXT_SUBS| in \sref{text/files-variants.mk}{the makefile for text sources and variants}.
 It will now be automatically used when \eref{Shuffle}{Shuffle} is invoked.
 \item Add content in \sref{text/ToolDocMy.cltex}{the documentation source file}, for example by:
 \begin{verbatim}

@@ -10,6 +10,8 @@
 %%[Core
 \section{Core}
 
+\subsection{Transformations per module}
+
 The following transformations are performed on each separate module:
 
 \begin{enumerate}
@@ -43,6 +45,8 @@ The following transformations are performed on each separate module:
 \item FloatToGlobal:
 
 \end{enumerate}
+
+\subsection{Full program transformations}
 
 The following transformations are performed on the full program:
 

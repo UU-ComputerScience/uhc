@@ -104,7 +104,8 @@ SEM TextItem
   | Styled	  		loc			.	out			=   @style.out +++ dltxArg @text.out
   | VerbatimInline	loc			.	out			=   dltxCmd "verb" +++ @delim +++ @str +++ @delim
   | BreakLine		loc			.	out			=   dltxCmd "\\"
-  | HorRuler		loc			.	out			=   dltxCmd "hline"
+  | HorRuler TableHorRuler
+  					loc			.	out			=   dltxCmd "hline"
   | Header  		loc			.	out			=   @level.out +++ dltxArg @text.out
   | Group			loc			.	out			=	dltxBeginEnd @envtype.out @text.out
   | DocumentContent	loc			.	out			=	dltxBeginEnd "document" @text.out
@@ -118,11 +119,12 @@ SEM TextItem
   | MakeTitle       loc         .   out         =   dltxCmd "maketitle"
   | DocumentHeader  loc         .   out         =   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
   | GraphicsInline  loc         .   out         =   let mkFig = if isJust @mboptions.mbCaption || isJust @mboptions.mbLabel
-                                                                then \x -> dltxOptsBeginEnd "figure" "[h]" x
+                                                                then \x -> dltxOptsBeginEnd "figure" "[ht]" x
                                                                 else id
+                                                        mkCen = dltxBeginEnd "center"
                                                         mkLbl = maybe id (\l x -> x +++ dltxCmd "label" +++ dltxArg l) @mboptions.mbLabel
                                                         mkCap = maybe id (\c x -> x +++ dltxCmd "caption" +++ dltxArg c) @mboptions.mbCaption
-                                                    in  mkFig $ mkCap $ mkLbl $ dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
+                                                    in  mkFig $ mkCen $ mkCap $ mkLbl $ dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
   | TOC             loc         .   out         =   dltxCmd "tableofcontents"
   
 SEM RefType
