@@ -8,7 +8,7 @@ ass :: Assembly
 ass = Assembly "Example" [hello]
 
 hello :: TypeDef
-hello = Class Public "Haskell.Ehc.Hello"
+hello = Class Public "Haskell.Ehc.Hello" []
               [myMain, myEven, myOdd]
 
 myMain :: MethodDef
@@ -37,7 +37,8 @@ myEven = StaticMethod Public Bool "even" [Param Int32 "x"]
   , Sub
   , Tail
   , Call Static Bool "" "Haskell.Ehc.Hello" "odd" [Int32]
-  , Ret ]
+  , Ret
+  ]
 
 myOdd :: MethodDef
 myOdd = StaticMethod Public Bool "odd" [Param Int32 "x"]
@@ -53,5 +54,6 @@ myOdd = StaticMethod Public Bool "odd" [Param Int32 "x"]
   , Sub
   , Tail
   , Call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
-  , Ret ]
+  , Ret
+  ]
 

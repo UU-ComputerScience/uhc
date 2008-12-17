@@ -38,19 +38,14 @@ instance Cil Assembly where
 
 -- | A Type definition in CIL, either a class or a value type.
 data TypeDef =
-    Class Visibility Name [MethodDef]
-  | ValueClass Visibility Name [FieldDef]
+    Class Visibility Name [FieldDef] [MethodDef]
 
 instance Cil TypeDef where
-  cil (Class v n ms) =
+  cil (Class v n fs ms) =
       (".class " ++) . cil v . sp . cilName n . ("\n{\n" ++)
-    . foldr (\m s -> cil m . s) id ms
-    . ("}\n" ++)
-  cil (ValueClass v n fs) =
-      (".class value " ++) . cil v . sp . cilName n
-    -- . (" extends [mscorlib]System.ValueType
-    . ("\n{\n" ++)
     . foldr (\f s -> cil f . s) id fs
+    . nl
+    . foldr (\m s -> cil m . s) id ms
     . ("}\n" ++)
 
 data Visibility =
@@ -78,9 +73,20 @@ instance Cil FieldDef where
 -- | A Method definition in CIL.
 -- Currently, only static methods are implemented.
 data MethodDef =
-    StaticMethod Visibility PrimitiveType Name [Parameter] [Directive] [OpCode]
+    Constructor  Visibility [Parameter] [Directive] [OpCode]
+  | StaticMethod Visibility PrimitiveType Name [Parameter] [Directive] [OpCode]
+  -- InstanceMethod
 
 instance Cil MethodDef where
+  cil (Constructor v ps ds os) =
+      ident . (".method " ++) . cil v
+    . (" hidebysig instance void .ctor(" ++)
+    . foldr (.) id (intersperse (", " ++) (map cil ps))
+    . (") cil managed\n" ++)
+    . ident . ("{\n" ++)
+    . foldr (\d s -> cil d . s) id ds
+    . foldr (\o s -> cil o . s) id os
+    . ident . ("}\n" ++)
   cil (StaticMethod v t n ps ds os) =
       ident . (".method " ++) . cil v
     . (" hidebysig static " ++) . cil t . sp . cilName n . ("(" ++)
@@ -144,7 +150,7 @@ data OpCode =
   | Call { association  :: Association     -- ^ Method is associated with class or instance.
          , returnType   :: PrimitiveType   -- ^ Return type of the method.
          , assemblyName :: Name            -- ^ Name of the assembly where the method lives.
-         , className    :: Name            -- ^ Name of the class of which the method is a member.
+         , typeName     :: Name            -- ^ Name of the type of which the method is a member.
          , methodName   :: Name            -- ^ Name of the method.
          , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
          } -- ^ Calls the indicated method.
@@ -152,6 +158,11 @@ data OpCode =
   | Dup                -- ^ Copies the current topmost value on the evaluation stack, and then pushes the copy onto the evaluation stack.
   | Ldarg Int
   | Ldc_i4 Int
+  | Ldfld { fieldType    :: PrimitiveType
+          , assemblyName :: Name
+          , typeName     :: Name
+          , fieldName    :: Name
+          } -- ^ Finds the value of a field in the object whose reference is currently on the evaluation stack.
   | Ldloc Int
   | Ldloca Int
   | Ldstr String
@@ -159,16 +170,21 @@ data OpCode =
   | Newobj { association  :: Association
            , returnType   :: PrimitiveType
            , assemblyName :: Name
-           , className    :: Name
+           , typeName     :: Name
            , paramTypes   :: [PrimitiveType]
            } -- ^ Creates a new object or a new instance of a value type, pushing an object reference (type O) onto the evaluation stack.
   | Nop
   | Pop
   | Rem
   | Ret
-  | Stloc Int
-  | Sub
-  | Tail
+  | Stfld { fieldType    :: PrimitiveType
+          , assemblyName :: Name
+          , typeName     :: Name
+          , fieldName    :: Name
+          } -- ^ Replaces the value stored in the field of an object reference or pointer with a new value.
+  | Stloc Int          -- ^ Pops the current value from the top of the evaluation stack and stores it in a the local variable list at a specified index.
+  | Sub                -- ^ Subtracts one value from another and pushes the result onto the evaluation stack. 
+  | Tail               -- ^ Performs a postfixed method call instruction such that the current method's stack frame is removed before the actual call instruction is executed.
 
 -- Note: this could be a lot more efficient. For example, there are specialized
 -- instructions for loading the constant integers 1 through 8, but for clearity
@@ -193,6 +209,8 @@ instance Cil OpCode where
   cil (Dup)               = ident . ident . ("dup" ++) . nl
   cil (Ldarg x)           = ident . ident . ("ldarg " ++) . shows x . nl
   cil (Ldc_i4 x)          = ident . ident . ("ldc.i4 " ++) . shows x . nl 
+  cil (Ldfld t a c f)     = ident . ident . ("ldfld " ++) . cil t . sp
+                             . cilFld a c f . nl
   cil (Ldloc x)           = ident . ident . ("ldloc " ++) . shows x . nl
   cil (Ldloca x)          = ident . ident . ("ldloca " ++) . shows x . nl
   cil (Ldstr s)           = ident . ident . ("ldstr " ++) . shows s . nl
@@ -203,9 +221,19 @@ instance Cil OpCode where
   cil (Pop)               = ident . ident . ("pop" ++) . nl
   cil (Rem)               = ident . ident . ("rem" ++) . nl
   cil (Ret)               = ident . ident . ("ret" ++) . nl
+  cil (Stfld t a c f)     = ident . ident . ("stfld " ++) . cil t . sp
+                             . cilFld a c f . nl
   cil (Stloc x)           = ident . ident . ("stloc " ++) . shows x . nl
   cil (Sub)               = ident . ident . ("sub" ++) . nl
   cil (Tail)              = ident . ident . ("tail." ++) . nl
+
+cilFld :: Name -> Name -> Name -> ShowS
+cilFld a c f = 
+    cilAssembly a
+  . (if c /= ""
+     then cilName c . ("::" ++)
+     else id)
+  . cilName f
 
 cilNewobj :: Name -> Name -> [PrimitiveType] -> ShowS
 cilNewobj a c ps = 
@@ -252,6 +280,7 @@ data PrimitiveType =
   | String
   | Object
   | ValueType Name Name
+  | ReferenceType Name Name
 
 instance Cil PrimitiveType where
   cil Void            = ("void" ++) 
@@ -263,6 +292,7 @@ instance Cil PrimitiveType where
   cil String          = ("string" ++)
   cil Object          = ("object" ++)
   cil (ValueType a c) = ("valuetype " ++) . cilAssembly a . cilName c
+  cil (ReferenceType a c) = cilAssembly a . cilName c
 
 -- Helper functions, to pretty print
 ident = ("    " ++)

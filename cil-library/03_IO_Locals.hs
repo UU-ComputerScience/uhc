@@ -8,7 +8,7 @@ ass :: Assembly
 ass = Assembly "Example" [hello]
 
 hello :: TypeDef
-hello = Class Public "Haskell.Ehc.Hello"
+hello = Class Public "Haskell.Ehc.Hello" []
               [myMain, ioAge]
 
 myMain :: MethodDef
