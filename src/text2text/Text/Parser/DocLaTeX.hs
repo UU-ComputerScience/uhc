@@ -27,8 +27,18 @@ cmd0argMp
   = Map.fromList
       [ ("maketitle"        , TextItem_MakeTitle        )
       , ("tableofcontents"  , TextItem_TOC              )
-      , ("hline"            , TextItem_HorRuler         )
-      -- , ("\\"                , TextItem_BreakLine        )
+      ]
+
+cmdPlain0argMp :: Map.Map String TextItem
+cmdPlain0argMp
+  = Map.fromList
+      [ ("hline"            , TextItem_HorRuler         )
+      ]
+
+cmdTable0argMp :: Map.Map String TextItem
+cmdTable0argMp
+  = Map.fromList
+      [ ("hline"            , TextItem_TableHorRuler         )
       ]
 
 -------------------------------------------------------------------------
@@ -47,9 +57,12 @@ cmd1argMp
       , ("emph"                 , TextItem_Styled TextStyle_Emphasized      )
       , ("usepackage"           , TextItem_Import                           )
       , ("paragraph"            , TextItem_Header HeaderLevel_Paragraph     )
+      , ("secRef"     			, mkref1 "section"							)
+      , ("figRef"     			, mkref1 "figure"							)
       -- , ("includegraphics"      , TextItem_GraphicsInline Nothing           )
       ]
     `Map.union` Map.fromList [ (concat (replicate l "sub") ++ "section", TextItem_Header (HeaderLevel_Level l)) | l <- [0..2] ]
+  where mkref1 t l = TextItem_RefTo RefType_Local l [TextItem_NonSpace t]
 
 -------------------------------------------------------------------------
 -- 2 arg cmds
@@ -156,6 +169,8 @@ doclatexScanOpts
       , scoCommandsTxt      =   Set.fromList [ "begin", "end", "item", "documentclass", "includegraphics" ]
                                 -- `Set.union` Map.keysSet textstyleMp
                                 `Set.union` Map.keysSet cmd0argMp
+                                `Set.union` Map.keysSet cmdPlain0argMp
+                                `Set.union` Map.keysSet cmdTable0argMp
                                 `Set.union` Map.keysSet cmd1argMp
                                 `Set.union` Map.keysSet cmd2argMp
       , scoSpecChars        =   Set.fromList (specCharsOther ++ specCharsOpenClose ++ specCharsVBar ++ specCharsAt ++ specCharsAmpersand)
@@ -214,7 +229,7 @@ pTextItemsArg       ::  T2TPr TextItems
 pTextItemsArg       =   pTextItemsP pTextItemArg
 
 pTextItemsTbl       ::  T2TPr TextItems
-pTextItemsTbl       =   (:) <$> pTextItemTbl1 <*> pTextItemsP pTextItemTbl2
+pTextItemsTbl       =   (:) <$> pTextItemTbl1 <*> pTextItemsP pTextItemTbl2 `opt` []
 
 pTableItemsAftRowSep::  T2TPr TextItems
 pTableItemsAftRowSep=   pTextItemsP pTextItemSpace2
@@ -256,7 +271,7 @@ pTextItemBase3      =   pDelimBy "|" pTextItemSpecsAt (TextItem_Styled TextStyle
                     where pDelimBy delim extra sem
                             = pKey delim
                               *> (   TextItem_NonSpace <$> pKey delim
-                                 <|> sem <$> pList1 (pTextItemNonSpace <|> pTextItemSpace1 <|> extra) <* pKey delim
+                                 <|> sem <$> pList1 (pTextItemBase3Inside <|> extra) <* pKey delim
                                  )
 
 pTextItemSpecs      ::  (IsParser p Tok) => [String] -> p TextItem
@@ -288,7 +303,15 @@ pTextItemItem       =   TextItem_ItemizeItem <$ pCmd "item" <*> pTextItemsAll
 
 pTextItemOption     ::  T2TPr TextItem
 pTextItemOption     =   pTextItemBase1
+                    <|> pCmdPlain0Arg
                     <|> pTextItemSpace2
+
+pTextItemBase3Inside::  T2TPr TextItem
+pTextItemBase3Inside=   pTextItemNonSpace
+                    <|> pTextItemSpecsOther
+                    <|> pTextItemSpace1
+                    <|> pTextItemSpecsOC
+                    <|> pTextItemSpecsTbl2
 
 pTextItemArg        ::  T2TPr TextItem
 pTextItemArg        =   pTextItemOption
@@ -305,12 +328,12 @@ pTextItemAll        =   pTextItemArg
 
 pTextItemTbl1       ::  T2TPr TextItem
 pTextItemTbl1       =   pTextItemBase1
+                    <|> pCmdTable0Arg
                     <|> pTextItemBase2
                     <|> pTextItemBase3
                     <|> pTextItemSpecsOC
                     <|> pTextItemSpecsOther
                     <|> pTextItemKeyws
-                    <|> pTextItemSpecsVBar
 
 pTextItemTbl2       ::  T2TPr TextItem
 pTextItemTbl2       =   pTextItemTbl1
@@ -379,6 +402,12 @@ pGraphicsInlineOption
 -- cmds
 pCmd0Arg            ::  T2TPr TextItem
 pCmd0Arg            =   pAnyFromMap pCmd cmd0argMp
+
+pCmdPlain0Arg       ::  T2TPr TextItem
+pCmdPlain0Arg       =   pAnyFromMap pCmd cmdPlain0argMp
+
+pCmdTable0Arg       ::  T2TPr TextItem
+pCmdTable0Arg       =   pAnyFromMap pCmd cmdTable0argMp
 
 pCmd1Arg            ::  T2TPr (TextItems -> TextItem)
 pCmd1Arg            =   pAnyFromMap pCmd cmd1argMp

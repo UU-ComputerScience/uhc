@@ -50,6 +50,7 @@ DATA TextItem
   						str				: {String}
   | BreakLine
   | HorRuler
+  | TableHorRuler
 
   -- pictures
   | GraphicsInline		mboptions		: MbGraphicsInlineOptions

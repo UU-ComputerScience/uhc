@@ -210,6 +210,13 @@ Example: \verb|\sref{text/ToolDocText2Text.cltex}{source of this doc}| gives: \s
 Example: \verb|\cref{xxx}{Some Author}| gives: \cref{xxx}{Some Author}.
 \end{itemize}
 
+Abbreviations (syntactic sugar):
+
+\begin{itemize}
+\item \verb|\secRef{X}|, expands to \verb|\lref{X}{section}|.
+\item \verb|\figRef{X}|, expands to \verb|\lref{X}{figure}|.
+\end{itemize}
+
 Allowed labeling commands:
 
 \begin{itemize}

@@ -132,7 +132,7 @@ text-variant-howtoexperiment-doc:
 	  text-variant-dflt-doc
 
 text-variant-ehc-structure-doc:
-	$(MAKE) \
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
 	  TEXT_SHUFFLE_VARIANT=46 \
 	  text-variant-dflt-doc
 
