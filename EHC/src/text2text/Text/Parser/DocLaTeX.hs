@@ -50,7 +50,8 @@ cmd1argMp
   = Map.fromList
       [ ("title"                , TextItem_Title                            )
       , ("author"               , TextItem_Author                           )
-      , ("label"                , TextItem_Label                            )
+      , ("label"                , TextItem_Label LabelType_Local            )
+      , ("glabel"               , TextItem_Label LabelType_Global           )
       , ("textbf"               , TextItem_Styled TextStyle_Bold            )
       , ("textit"               , TextItem_Styled TextStyle_Italic          )
       , ("texttt"               , TextItem_Styled TextStyle_Teletype        )
@@ -71,9 +72,10 @@ cmd1argMp
 cmd2argMp :: Map.Map String (TextItems -> TextItems -> TextItem)
 cmd2argMp
   = Map.fromList
-      [ ("href"     , TextItem_RefTo RefType_Global     )
+      [ ("href"     , TextItem_RefTo RefType_URL        )
       , ("lref"     , TextItem_RefTo RefType_Local      )
       , ("eref"     , TextItem_RefTo RefType_EhcWeb     )
+      , ("tref"     , TextItem_RefTo RefType_STWiki     )
       , ("sref"     , TextItem_RefTo RefType_EhcSrc     )
       , ("cref"     , TextItem_RefTo RefType_Cite       )
       ]

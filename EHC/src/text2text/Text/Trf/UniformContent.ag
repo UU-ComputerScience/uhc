@@ -127,7 +127,7 @@ SEM AGItf
 
 SEM TextItem
   | RefTo	  		loc			.	trf			=   TextItem_RefTo @reftype.trf (Seq.toList @reftext.trfTextItems) (Seq.toList @text.trfTextItems)
-  | Label	  		loc			.	trf			=   TextItem_Label (Seq.toList @reftext.trfTextItems)
+  | Label	  		loc			.	trf			=   TextItem_Label @lbltype.trf (Seq.toList @reftext.trfTextItems)
   | Header  		loc			.	trf			=   TextItem_Header @level.trf (Seq.toList @text.trfTextItems)
   | Group  			loc			.	trf			=   TextItem_Group @envtype.trf (Seq.toList @text.trfTextItems)
   | Table  			loc			.	trf			=   TextItem_Table @tablefmt.trf (Seq.toList @extratext.trfTextItems) @rows.trf

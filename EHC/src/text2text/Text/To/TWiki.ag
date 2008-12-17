@@ -45,6 +45,20 @@ INCLUDE "Text/AbsSyn.ag"
 INCLUDE "Text/To/Common.ag"
 
 -------------------------------------------------------------------------
+-- Adapt html specific chars
+-------------------------------------------------------------------------
+
+{
+ensureHtmlCharsAreEscaped :: String -> String
+ensureHtmlCharsAreEscaped
+  = concatMap asis
+  where asis '<' = c "lt"
+        asis '>' = c "gt"
+        asis c   = [c]
+        c ch = "&" ++ ch ++ ";"
+}
+
+-------------------------------------------------------------------------
 -- Is text a twiki word?
 -------------------------------------------------------------------------
 
@@ -193,13 +207,23 @@ ATTR RefType [ | | mkRefOut: {OutDoc -> OutDoc -> OutDoc} ] -- \reftext text -> 
 
 SEM RefType
   | Local           loc         .   mkRefOut    =   \r t -> dtwkRef (dtwkLbl $ ensureTWikiAnchor r) t
-  | Global          loc         .   mkRefOut    =   dtwkRef
-  | EhcWeb          loc         .   mkRefOut    =   dtwkRef
+  | URL EhcWeb STWiki
+                    loc         .   mkRefOut    =   dtwkRef
   | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
   | Cite            loc         .   mkRefOut    =   \_ t -> t
 
 -------------------------------------------------------------------------
--- How to make a section header
+-- How to make a label
+-------------------------------------------------------------------------
+
+ATTR LabelType [ | | mkLblOut: {OutDoc -> OutDoc} ] -- \lbl -> ...
+  
+SEM LabelType
+  | Local           loc         .   mkLblOut    =   dtwkLbl
+  | Global          loc         .   mkLblOut    =   \x -> "#" +++ x
+
+-------------------------------------------------------------------------
+-- How to make a header
 -------------------------------------------------------------------------
 
 ATTR HeaderLevel [ | | mkHdrOut: {OutDoc -> OutDoc -> OutDoc} ] -- \numberingprefix text -> ...
@@ -207,6 +231,23 @@ ATTR HeaderLevel [ | | mkHdrOut: {OutDoc -> OutDoc -> OutDoc} ] -- \numberingpre
 SEM HeaderLevel
   | Level           loc         .   mkHdrOut    =   \n t -> dtwkHdr @level +++ n +++ t +++ "\n"
   | Paragraph       loc         .   mkHdrOut    =   \_ t -> "\n*" +++ t +++ "*"
+
+-------------------------------------------------------------------------
+-- Selectively modifying html text
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ allowHtmlAsIs: Bool | | ]
+ATTR GroupType [ | | allowHtmlAsIs: Bool ]
+
+SEM AGItf
+  | AGItf           loc         .   allowHtmlAsIs
+                                                =   False
+
+SEM GroupType
+  | Verbatim        loc         .   allowHtmlAsIs
+                                                =   True
+  | * - Verbatim    loc         .   allowHtmlAsIs
+                                                =   False
 
 -------------------------------------------------------------------------
 -- Selectively modifying wikiwords
@@ -219,7 +260,8 @@ SEM AGItf
                                                 =   False
 
 SEM TextItem
-  | Label Styled    loc         .   allowWikiWord
+  | Label Styled RefTo
+  					loc         .   allowWikiWord
                                                 =   True
 
 -------------------------------------------------------------------------
@@ -266,7 +308,11 @@ ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 
 SEM TextItem
   | Space           loc         .   out         =   out @str
-  | NonSpace        loc         .   out         =   (if not @lhs.allowWikiWord && isTWikiWord @str then "!" else "") +++ @str
+  | NonSpace        loc         .   out         =   if not @lhs.allowWikiWord && isTWikiWord @str
+                                                    then "!" +++ @str
+                                                    else if not @lhs.allowHtmlAsIs
+                                                    then out (ensureHtmlCharsAreEscaped @str)
+                                                    else out @str
   | CommentLF       loc         .   out         =   dhtmCmt @str +++ @lf
   | Line            loc         .   out         =   @str +++ @lf
   | LineFeed        loc         .   out         =   @lf
@@ -274,7 +320,7 @@ SEM TextItem
   | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
   | RefTo           loc         .   out         =   @reftype.mkRefOut (@reftype.out +++ @reftext.out) @text.out
   | Styled          loc         .   out         =   @style.out +++ @text.out +++ @style.out
-  | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" @str
+  | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" (ensureHtmlCharsAreEscaped @str)
   | BreakLine       loc         .   out         =   dtwkCmd "BR"
   | HorRuler        loc         .   out         =   out "\n------"
   | Header          loc         .   out         =   @level.mkHdrOut (if optGenHeaderNumbering @lhs.opts then @headerTxt +++ " " else emptyout) @text.out
@@ -286,7 +332,7 @@ SEM TextItem
   | Title           loc         .   out         =   emptyout
   | Author          loc         .   out         =   emptyout
   | Import          loc         .   out         =   emptyout
-  | Label           loc         .   out         =   "\n" +++ dtwkLbl @reftext.out
+  | Label           loc         .   out         =   "\n" +++ @lbltype.mkLblOut @reftext.out
   | MakeTitle       loc         .   out         =   emptyout
   | DocumentHeader  loc         .   out         =   emptyout
   | GraphicsInline  loc         .   out         =   let f = fpathSetDir "http://www.cs.uu.nl/groups/ST/Projects/ehc" $ fpathSetSuff "gif" $ fpathFromStr $ outToString @text.out
@@ -295,7 +341,8 @@ SEM TextItem
   
 SEM RefType
   | Local           loc         .   out         =   emptyout
-  | Global          loc         .   out         =   emptyout
+  | URL             loc         .   out         =   emptyout
+  | STWiki          loc         .   out         =   emptyout
   | EhcWeb          loc         .   out         =   out "Ehc."
   | EhcSrc          loc         .   out         =   out "EHCHOME/"
   | Cite            loc         .   out         =   emptyout

@@ -220,7 +220,8 @@ Abbreviations (syntactic sugar):
 Allowed labeling commands:
 
 \begin{itemize}
-\item \verb|\label{X}|
+\item \verb|\label{X}|, need only be usable local to file..
+\item \verb|\glabel{X}|, must be referrable from outside, if such a reference mechanism exists. Currently @twiki@ only; it must comply to \href{http://www.cs.uu.nl/wiki/TWiki/TextFormattingRules}{twiki anchor rules}.
 \end{itemize}
 
 
@@ -309,6 +310,7 @@ Other pecularities:
 
 \begin{itemize}
 \item When a label and/or caption is given for \verb|\includegraphics|, all is also wrapped inside \verb|\begin{figure}[h] ... \end{figure}|.
+\item \verb|\glabel| is equivalent to \verb|\label|.
 \end{itemize}
 
 %%]
