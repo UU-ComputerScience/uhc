@@ -755,6 +755,11 @@ Anonymity, blinding things
 % #2: title
 \newcommand{\lref}[2]{#2 (page~\latexPageref{#1})}
 
+% reference to label local to ST wiki:
+% #1: ref
+% #2: title
+\newcommand{\tref}[2]{\href{http://www.cs.uu.nl/wiki/#1}{#2}} % does not work, #1 contains '.'
+
 % reference to label local to EH web:
 % #1: ref
 % #2: title

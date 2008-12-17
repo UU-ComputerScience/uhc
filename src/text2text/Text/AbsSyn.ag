@@ -28,7 +28,8 @@ DATA TextItem
   | RefTo               reftype			: RefType
   						reftext			: TextItems
   						text			: TextItems
-  | Label               reftext			: TextItems
+  | Label               lbltype			: LabelType
+  						reftext			: TextItems
   
   -- structure
   | Header              level			: HeaderLevel
@@ -78,10 +79,15 @@ DATA HeaderLevel
 
 DATA RefType
   | Local
-  | Global
+  | URL
   | EhcWeb
+  | STWiki
   | EhcSrc
   | Cite
+
+DATA LabelType
+  | Local		-- need only be usable local to file
+  | Global		-- must be referrable from outside, if such a reference mechanism exists (twiki only)
 
 DATA GroupType
   | Verbatim
@@ -154,6 +160,6 @@ SET AllTable
 SET AllNT
   = AllText
     AllTable
-    GroupType TextStyle RefType ItemizeStyle HeaderLevel
+    GroupType TextStyle RefType ItemizeStyle HeaderLevel LabelType
     AllDocumentOption
     TableFormat TableColFormat

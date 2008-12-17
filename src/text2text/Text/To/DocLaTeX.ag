@@ -129,8 +129,9 @@ SEM TextItem
   
 SEM RefType
   | Local			loc			.	out			=	dltxCmd "lref"
-  | Global			loc			.	out			=	dltxCmd "href"
+  | URL  			loc			.	out			=	dltxCmd "href"
   | EhcWeb			loc			.	out			=	dltxCmd "eref"
+  | STWiki			loc			.	out			=	dltxCmd "tref"
   | EhcSrc			loc			.	out			=	dltxCmd "sref"
   | Cite			loc			.	out			=	dltxCmd "cref"
 
