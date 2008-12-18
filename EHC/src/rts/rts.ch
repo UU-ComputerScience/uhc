@@ -79,6 +79,9 @@ typedef int Bool ;
 %%[8
 #include "bits.h"
 #include "mm/mmitf.h"
+
+// extern GB_NodePtr gb_Unit ; // defined in grinbc/gbprim.h, but required here
+
 #include "grinbc/grinbc.h"
 #include "mm/mm.h"
 #include "utils.h"

@@ -230,8 +230,8 @@ scan scoMp st pos sci
           | isWhite c                               = Tok TkWhite w p st : sc (infpAdvStr w p) st s'' sci
                                                     where (w,s'') = span isWhite s
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) s@(c:s') sci
-          | isBlack c                               = Tok TkText b p st : sc (infpAdvStr b p) st s'' sci
-                                                    where (b,s'') = break (\c -> isWhite c || isSpec sctp c || isLF c || c == '\\') s
+          | isBlack c                               = Tok TkText (c:b) p st : sc (infpAdvStr b $ infpAdvCol 1 p) st s'' sci
+                                                    where (b,s'') = break (\c -> isWhite c || isSpec sctp c || isLF c || c == '\\') s'
 
         -- error
         sc p st             s@(c:s') sci            = Tok TkErr        [c] p st : sc (infpAdvCol 1 p) st s' sci
