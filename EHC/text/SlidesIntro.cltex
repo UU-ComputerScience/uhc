@@ -647,10 +647,11 @@ infers kind @Eq :: Forall a . a -> a -> *@
 
 %%[ehVariantsTableLong
 \begin{tabular}{lp{.4\linewidth}p{.42\linewidth}}
+%%[[ehVariantsTableLongContent
 \hline
  & \textbf{Haskell} & \textbf{extensions} \\
 \hline
-1 & |lambda|-calculus, type checking
+1 & |lambda| -calculus, type checking
   & 
   \\
 2 & type inferencing
@@ -684,10 +685,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
   & 
   \\
 12 & 
-  & explicit parameter passing
-  \\
-  & 
-  & ~~~for implicit parameters *
+  & explicit passing of implicit parameters *
   \\
 13 & 
   & higher order predicates *
@@ -713,6 +711,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 99 & the rest for full Haskell *
   & 
   \\
+%%]]
 \end{tabular}{}
 %%]
 

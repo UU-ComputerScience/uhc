@@ -76,12 +76,17 @@ cpEhcFullProgCompileAllModules
             modNmL = map head modNmLL
             (_,opts) = crBaseInfo' cr
             Just (mm@(impModNmL,mainModNm)) = initlast modNmL
-      ; cpSeq [ cpEhcFullProgModuleCompileN modNmL
+      ; cpSeq (   [cpEhcFullProgModuleCompileN modNmL]
 %%[[(20 codegen grin)
-              , cpEhcFullProgPostModulePhases opts modNmL mm
-              , cpEhcExecutablePerModule GCC_CompileExec impModNmL mainModNm
+               ++ (if ehcOptFullProgAnalysis opts
+                   then [ cpEhcFullProgPostModulePhases opts modNmL mm
+                        , cpEhcCorePerModulePart2 mainModNm
+                        ]
+                   else []
+                  )
+               ++ [cpEhcExecutablePerModule GCC_CompileExec impModNmL mainModNm]
 %%]]
-              ]
+              )
       }
 %%]
 
@@ -99,15 +104,13 @@ Post processing involves the following:
 %%[(20 codegen grin)
 cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
 cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-  = if ehcOptFullProgAnalysis opts
-    then cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
-               , mergeIntoOneBigCore
-               , cpEhcCorePerModulePart2 mainModNm
-               ]
-    else return ()
+  = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
+          , mergeIntoOneBigCore
+          , cpOutputCore "fullcore" mainModNm
+          ]
   where mergeIntoOneBigCore
           = do { cr <- get
-               ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgCompileAllModules.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
+               ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
                                                                  | m <- modNmL
                                                                  ]
                                    )             )
@@ -234,25 +237,29 @@ cpEhcModuleCompile1 targHSState modNm
 %%]
 %%[8
            (ECUSHaskell HSStart,_)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Compiling Haskell"
-                      , cpEhcHaskellModulePrepare modNm
-                      , cpEhcHaskellParse True False modNm
-                      , cpEhcHaskellModuleCommonPhases True opts modNm
-                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                      ]
+             -> cpSeq (  [ cpMsg modNm VerboseNormal "Compiling Haskell"
+                         , cpEhcHaskellModulePrepare modNm
+                         , cpEhcHaskellParse True False modNm
+                         , cpEhcHaskellModuleCommonPhases True True opts modNm
+                         ]
+                      ++ (if ehcOptFullProgAnalysis opts then [cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm] else [])
+                      ++ [ cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem)) ]
+                      )
 %%[[20
            (_,Just HSOnlyImports)
              -> return ()
 %%]]
            (ECUSEh EHStart,_)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Compiling EH"
-                      , cpEhcEhParse modNm
-%%[[20
-                      , cpGetDummyCheckEhMod modNm
-%%]]
-                      , cpEhcEhModuleCommonPhases True opts modNm
-                      , cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
-                      ]
+             -> cpSeq (  [ cpMsg modNm VerboseNormal "Compiling EH"
+                         , cpEhcEhParse modNm
+%%[[20   
+                         , cpGetDummyCheckEhMod modNm
+%%]]   
+                         , cpEhcEhModuleCommonPhases True True opts modNm
+                         ]
+                      ++ (if ehcOptFullProgAnalysis opts then [cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm] else [])
+                      ++ [ cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem)) ]
+                      )
 %%[[(8 codegen grin)
            (ECUSGrin,_)
              -> cpSeq [ cpMsg modNm VerboseNormal "Compiling Grin"
@@ -274,16 +281,20 @@ EH common phases: analysis + core + grin
 %%]
 
 %%[8
-cpEhcEhModuleCommonPhases :: Bool -> EHCOpts -> HsName -> EHCompilePhase ()
-cpEhcEhModuleCommonPhases isTopMod opts modNm
-  = cpSeq [ cpEhcEhAnalyseModuleDefs modNm
+cpEhcEhModuleCommonPhases :: Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhase ()
+cpEhcEhModuleCommonPhases isTopMod doMkExec opts modNm
+  = cpSeq ([ cpEhcEhAnalyseModuleDefs modNm
 %%[[(8 codegen)
-          , cpEhcCorePerModulePart1 modNm
+           , cpEhcCorePerModulePart1 modNm
 %%]]
+           ]
 %%[[(8 codegen grin)
-          , cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isTopMod modNm
+           ++ (if ehcOptFullProgAnalysis opts
+               then []
+               else [cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isTopMod doMkExec modNm]
+              )
 %%]]
-          ]
+          )
 %%]
 
 %%[8 haddock
@@ -291,10 +302,10 @@ HS common phases: HS analysis + EH common
 %%]
 
 %%[8
-cpEhcHaskellModuleCommonPhases :: Bool -> EHCOpts -> HsName -> EHCompilePhase ()
-cpEhcHaskellModuleCommonPhases isTopMod opts modNm
+cpEhcHaskellModuleCommonPhases :: Bool -> Bool -> EHCOpts -> HsName -> EHCompilePhase ()
+cpEhcHaskellModuleCommonPhases isTopMod doMkExec opts modNm
   = cpSeq [ cpEhcHaskellAnalyseModuleDefs modNm
-          , cpEhcEhModuleCommonPhases isTopMod opts modNm
+          , cpEhcEhModuleCommonPhases isTopMod doMkExec opts modNm
           ]       
 %%]
 
@@ -307,7 +318,7 @@ cpEhcHaskellModuleAfterImport :: Bool -> EHCOpts -> HSState -> HsName -> EHCompi
 cpEhcHaskellModuleAfterImport isTopMod opts hsst modNm
   = cpSeq [ cpEhcHaskellParse False (hsstateIsLiteral hsst) modNm
           , cpEhcHaskellAnalyseModuleItf modNm
-          , cpEhcHaskellModuleCommonPhases isTopMod opts modNm
+          , cpEhcHaskellModuleCommonPhases isTopMod False opts modNm
           , cpEhcHaskellModulePostlude modNm
           ]       
 %%]
@@ -354,11 +365,11 @@ cpEhcHaskellImport :: HSState -> HsName -> EHCompilePhase ()
 cpEhcHaskellImport hsst modNm
   = cpSeq (
 %%[[20
-			 [ cpParseHsImport modNm ]
+             [ cpParseHsImport modNm ]
 %%][99
-			 [ cpPreprocessWithCPP modNm
-			 , cpParseHsImport (hsstateIsLiteral hsst) modNm
-			 ]
+             [ cpPreprocessWithCPP modNm
+             , cpParseHsImport (hsstateIsLiteral hsst) modNm
+             ]
 %%]]
           ++ [ cpStepUID
              , cpFoldHsMod modNm
@@ -474,22 +485,37 @@ Core+grin processing, on a per module basis, may only be done when no full progr
 %%]
 
 %%[(8 codegen grin)
-cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCOpts -> Bool -> HsName -> EHCompilePhase ()
-cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isTopMod modNm
-  = if ehcOptFullProgAnalysis opts
-    then return ()
-    else cpSeq (  [ cpEhcCorePerModulePart2 modNm
+cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCOpts -> Bool -> Bool -> HsName -> EHCompilePhase ()
+cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isTopMod doMkExec modNm
+  = cpSeq (  [ cpEhcCorePerModulePart2 modNm
 %%[[20
-                  , cpFlowOptim modNm
+             , cpFlowOptim modNm
 %%]]
 %%[[99
-                  , cpCleanupGrin modNm
+             , cpCleanupGrin modNm
 %%]]
-                  , cpProcessBytecode modNm
-                  ]
-               ++ (if isTopMod then [] else [cpEhcExecutablePerModule GCC_CompileOnly [] modNm])
-               ++ [cpMsg modNm VerboseALot "Core+Grin done"]
-               )
+             , cpProcessBytecode modNm
+             ]
+          ++ (if not isTopMod || doMkExec
+              then [cpEhcExecutablePerModule (if doMkExec then GCC_CompileExec else GCC_CompileOnly) [] modNm]
+              else []
+             )
+          ++ [cpMsg modNm VerboseALot "Core+Grin done"]
+          )
+%%]
+
+%%[(8 codegen grin) haddock
+Core+grin processing, on a per module basis, may only be done when full program analysis is done
+%%]
+
+%%[(8 codegen grin)
+cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: HsName -> EHCompilePhase ()
+cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm
+  = cpSeq (  [ cpEhcCorePerModulePart2 modNm
+             , cpEhcExecutablePerModule GCC_CompileExec [] modNm
+             , cpMsg modNm VerboseALot "Full Program Analysis Core+Grin done"
+             ]
+          )
 %%]
 
 %%[(8 codegen grin) haddock
@@ -584,12 +610,16 @@ cpProcessCoreRest modNm
 %%[(8 codegen grin)
 cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
-  = cpSeq [ cpOutputGrin "-000-initial" modNm
-          , cpTransformGrin modNm
-          , cpOutputGrin "-099-final" modNm
-          , cpTranslateGrin2Bytecode modNm
-          , cpTranslateGrin modNm
-          ]
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq ([ cpOutputGrin "-000-initial" modNm
+                , cpTransformGrin modNm
+                , cpOutputGrin "-099-final" modNm
+                ]
+                ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
+                ++ (if ehcOptFullProgAnalysis opts then [cpTranslateGrin modNm] else [])
+               )
+       }
 %%]
 
 %%[(8 codegen grin)

@@ -163,7 +163,7 @@ cpTranslateGrin2Bytecode modNm
          -- ;  lift $ putStrLn (show (crsiModOffMp crsi))
 %%]]
 
-         ;  when (isJust mbGrin && (ehcOptEmitBytecode opts))
+         ;  when (isJust mbGrin)
                  (cpUpdCU modNm $! ecuStoreBytecode bc)
          ;  when (ehcOptErrAboutBytecode opts)
                  (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
@@ -177,7 +177,7 @@ cpTranslateGrin modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpTranslateGrin" mbGrin
-         ;  when (isJust mbGrin && (ehcOptFullProgAnalysis opts))
+         ;  when (isJust mbGrin)
                  (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
          }
 %%]

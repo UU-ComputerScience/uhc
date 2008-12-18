@@ -1,3 +1,36 @@
+%%[main doclatex
+\section{Introduction}
+%%@ToolDocEHC.introduction
+\subsection{System overview}
+\subsection{Download, build, compile and run}
+\glabel{DownloadBuildCompileRun}
+%%@ToolDocEHC.downloadBuildCompileRun
+
+\subsection{Installation}
+\subsection{Using EHC}
+
+\section{Language extensions}
+%%@ToolDocEHC.extensions
+\subsection{Higher ranked types}
+\subsection{Impredicativity}
+\subsection{Partial type signature}
+\subsection{Existential types}
+\subsection{Extensible records}
+
+\section{Language restrictions (relative to Haskell98)}
+%%@ToolDocEHC.restrictions
+
+\section{Commandline}
+\subsection{Commandline invocation}
+%%@ToolDocEHC.commandlineInvocation
+
+\subsection{Commandline options}
+%%@ToolDocEHC.commandlineOptions
+
+\section{Further reading}
+%%@ToolDocEHC.andFurther
+%%]
+
 %%[preamble
 \newcommand\DocOpt[2]{\item #1 \\ \emph{#2}.\\}
 \newcommand\DocOptRef[1]{\texttt{#1}}
@@ -234,15 +267,142 @@ Show full version information (see also option \DocOptRef{--numeric-version}).
 %%[XX
 %%]
 
-%%[XX
+%%[introduction doclatex
 %%]
 
-%%[XX
+%%[downloadBuildCompileRun doclatex
+A separate manual exists on \eref{InstallEhcUnderWindows}{how to install EHC on a Windows system}.
+A list of often occurring build problems is maintained \eref{BuildProblems}{here}.
+
+\subsubsection{Download}
+
+\begin{itemize}
+\item Prerequisites:
+\begin{itemize}
+ \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably >= 6.8, the installed libraries should include the @mtl@ and @fgl@ library.
+ \item \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{HUT library}: the most recent version. This includes uulib (parser combinators, pretty printing) and uuagc (Attribute Grammar compiler).
+\end{itemize}
+\item EHC/UHC download: currently no prebuilt distributions are available, but the most recent version of the whole series of compilers can be checked out from our svn archive:
+\begin{verbatim}
+% svn checkout https://svn.cs.uu.nl:12443/repos/EHC/trunk/EHC
+\end{verbatim}
+      or downloaded as a \href{https://svn.cs.uu.nl:12443/dist/EHC/EHC-trunk-EHC.tar.bz2}{tarball}.
+\end{itemize}
+
+\subsubsection{Build}
+
+\begin{itemize}
+\item Prerequisites: GHC and HUT must be installed.
+\begin{itemize}
+ \item Look \eref{InstallEhcUnderWindows}{here} for setting up a cygwin environment and additional info on installing EHC under cygwin.
+ \item See \tref{TS.EhcParticularities}{encountered problems} during this year's (2007) run of the seminar on \tref{TS.WebHome}{Type Systems}.
+\end{itemize}
+\item Building the last element of the EHC sequence, run the following commands from trunk/EHC:
+\begin{verbatim}
+% ./configure
+% make 100/ehc                     # variant 100 will ultimately become UHC
+\end{verbatim}
+      Currently there is no installation via 'make install'.
+\end{itemize}
+
+\subsubsection{Run}
+
+\begin{itemize}
+\item Run the last variant. A sample session:
+\begin{verbatim}
+% cat > hw.hs
+module HelloWorld where
+main = putStrLn "Hello World"
+% bin/100/ehc -Pbuild/100/ehclib/ehcbase hw.hs
+Imports of Haskell             hw                     (hw.hs)
+Imports of Haskell             Prelude                (build/100/ehclib/ehcbase/Prelude.hs)
+Imports of Haskell             EHC.Prelude            (build/100/ehclib/ehcbase/EHC/Prelude.hs)
+Reading HI                     EHC.Prelude            (build/100/ehclib/ehcbase/EHC/Prelude.hs)
+Reading HI                     Prelude                (build/100/ehclib/ehcbase/Prelude.hs)
+Compiling Haskell              hw                     (hw.hs)
+% ./hw
+Hello World
+% 
+\end{verbatim}
+      Note that the compiler is ran from the @bin/100@ directory and the path to the library must be passed explicitly.
+\end{itemize}
+
 %%]
 
-%%[XX
+%%[extensions doclatex
 %%]
 
-%%[XX
+%%[restrictions doclatex
+For now, see info on \eref{FirstRelease}{the upcoming first release} and \eref{LanguageFeatures}{language features}.
+%%]
+
+%%[commandlineInvocation doclatex
+\label{CommandLine}
+As printed by \verb=bin/100/ehc --help=:
+
+\begin{pre}
+%%@[exec:bin/100/ehc --help%%]
+\end{pre}
+
+%%]
+
+%%[commandlineOptions doclatex
+Only options for which the implementation is actively maintained are discussed.
+Other options can be used but are either for internal use of can be disabled sometime.
+Defaults for options are valid only for variant 100 of EHC.
+Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@0|1|no|yes|off|on|-|+@.
+
+\begin{itemize}
+\item \verb|-c[<format>]|, \verb|--code[=<format>]|. Generate code or other forms of output. Output \verb|<format>|s:
+ \begin{itemize}
+ \item \verb|bexe| (default): bytecode interpreter based executable.
+ \item \verb|exe|: full program analysis C code based executable.
+ \item \verb|lexe|: full program analysis LLVM code based executable. Not yet fully supported.
+ \end{itemize}
+ The remaining formats generate intermediate results and are intended for debugging purposes.
+\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.
+\item \verb|-d|, \verb|--debug|. Syntactic option sugar for \verb|--pretty=ast --verbose=2|.
+\item \verb|--dump-core-stages[=Bool]|. Dump all stages of internal Core transformations.
+\item \verb|--dump-grin-stages[=Bool]|. Dump all stages of internal Grin transformations.
+\item \verb|-h|, \verb|--help|. Print commandline help and quit.
+\item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
+\item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
+\item \verb|--numeric-version|. Print version and quit.
+\item \verb|-O[<level>]|, \verb|--optimise[=<level>]|. Optimisation level. Currently this makes little difference. Levels:
+ \begin{itemize}
+ \item \verb|0|: none.
+ \item \verb|1| (default): basic.
+ \item \verb|2|: much
+ \end{itemize}
+\item \verb|-p[<format>]|, \verb|--pretty[=<format>]|. Generate pretty printed version of program. Pretty printed output is not parseable by ehc; it is an approximation of the original programtext.
+ Output \verb|<format>|s:
+ \begin{itemize}
+ \item \verb|hs|: Haskell.
+ \item \verb|eh|: EH
+ \item \verb|ast|: dump EH abstract syntax tree, \verb|--verbose| adds additional computed information.
+ \item \verb|-|: no pretty printing.
+ \end{itemize}
+\item \verb|-Ppath|, \verb|--search-path=path|. Add @path@ to the search path for modules.
+\item \verb|-v[<level>]|, \verb|--verbose[=<level>]|. Verbosity level. Verbosity \verb|<level>|s are accumulative in their reported messages:
+ \begin{itemize}
+ \item \verb|0|: quiet.
+ \item \verb|1| (default): progress of main compile phases and modules.
+ \item \verb|2|: progress of internal processing.
+ \item \verb|3|: additional debugging info.
+ \end{itemize}
+\end{itemize}
+%%]
+
+%%[andFurther doclatex
+See also
+\begin{itemize}
+\item \eref{HowToExperimentWithEHC}{How to experiment} with EHC.
+\item \eref{EhcStructureDocumentation}{Structure} of EHC.
+\item \eref{EhcTechnicalDocumentation}{Internal (technical) documention} of EHC.
+\item \eref{Shuffle}{Shuffle} for manipulating source chunks.
+\item \eref{Text2TextDocumentation}{Text2Text} for documentation formatting.
+\item \href{http://haskell.org/ghc/}{GHC}.
+\item \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{HUT library}.
+\end{itemize}
 %%]
 

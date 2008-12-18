@@ -22,12 +22,14 @@ DATA TextItem
   | CommentLF			str				: {String}				-- comment terminated by LF
   | Line            	str				: {String}
   | LineFeed
+  | ParBreak
   
   -- referencing
   | RefTo               reftype			: RefType
   						reftext			: TextItems
   						text			: TextItems
-  | Label               reftext			: TextItems
+  | Label               lbltype			: LabelType
+  						reftext			: TextItems
   
   -- structure
   | Header              level			: HeaderLevel
@@ -49,6 +51,11 @@ DATA TextItem
   						str				: {String}
   | BreakLine
   | HorRuler
+  | TableHorRuler
+
+  -- pictures
+  | GraphicsInline		mboptions		: MbGraphicsInlineOptions
+  						text			: TextItems
 
   -- meta info
   | Title				text			: TextItems
@@ -72,16 +79,24 @@ DATA HeaderLevel
 
 DATA RefType
   | Local
-  | Global
+  | URL
+  | EhcWeb
+  | STWiki
+  | EhcSrc
+  | Cite
+
+DATA LabelType
+  | Local		-- need only be usable local to file
+  | Global		-- must be referrable from outside, if such a reference mechanism exists (twiki only)
 
 DATA GroupType
   | Verbatim
-  -- | Document
-  -- | Tabular
 
 DATA TextStyle
-  -- | Verbatim
   | Bold
+  | Italic
+  | Teletype
+  | Emphasized
 
 DATA ItemizeStyle
   | Bullet
@@ -108,7 +123,7 @@ DATA TableField
   						fld				: TextItems
 
 -------------------------------------------------------------------------
--- Doc options
+-- Options
 -------------------------------------------------------------------------
 
 DATA DocumentOption
@@ -117,12 +132,27 @@ DATA DocumentOption
 TYPE   DocumentOptions = [DocumentOption]
 TYPE MbDocumentOptions = MAYBE DocumentOptions
 
+SET AllDocumentOption
+  = MbDocumentOptions DocumentOptions DocumentOption
+
+DATA GraphicsInlineOption
+  | Scale				text			: TextItems
+  | Label				text			: TextItems
+  | Caption				text			: TextItems
+
+TYPE   GraphicsInlineOptions = [GraphicsInlineOption]
+TYPE MbGraphicsInlineOptions = MAYBE GraphicsInlineOptions
+
+SET AllGraphicsInlineOption
+  = MbGraphicsInlineOptions GraphicsInlineOptions GraphicsInlineOption
+
 -------------------------------------------------------------------------
 -- Aliases
 -------------------------------------------------------------------------
 
 SET AllText
   = TextItem TextItems
+    AllGraphicsInlineOption
 
 SET AllTable
   = TableRow TableRows TableFields TableField
@@ -130,6 +160,6 @@ SET AllTable
 SET AllNT
   = AllText
     AllTable
-    GroupType TextStyle RefType ItemizeStyle HeaderLevel
-    MbDocumentOptions DocumentOptions DocumentOption
+    GroupType TextStyle RefType ItemizeStyle HeaderLevel LabelType
+    AllDocumentOption
     TableFormat TableColFormat

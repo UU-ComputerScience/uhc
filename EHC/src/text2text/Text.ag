@@ -11,6 +11,7 @@ module Text
   , GroupType(..)
   , TextStyle(..)
   , RefType(..)
+  , LabelType(..)
   , ItemizeStyle(..)
   , HeaderLevel(..)
   , DocumentOption(..), DocumentOptions, MbDocumentOptions

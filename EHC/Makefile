@@ -58,8 +58,10 @@ include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/files.mk
 -include figs/files.mk
 -include text/files1.mk
+-include text/files-variants.mk
 -include $(wildcard text/files1-*.mk)
 -include text/files2.mk
+-include text/files-targets.mk
 -include $(wildcard text/files2-*.mk)
 -include www/files.mk
 include ehclib/files.mk

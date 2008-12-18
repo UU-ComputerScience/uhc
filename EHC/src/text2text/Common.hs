@@ -17,6 +17,8 @@ module Common
   
   , putOut, putOutLn
   , hPutOutLn
+  
+  , cmbMb
   )
   where
 
@@ -25,7 +27,6 @@ import Data.List
 import qualified Data.Map as Map
 
 import qualified EH.Util.FastSeq as Seq
--- import EH.Util.Pretty
 
 -------------------------------------------------------------------------
 -- Input/output types
@@ -76,6 +77,15 @@ instance Show Err where
 instance Out Err where
   out (Err_Out 			o) = o
   out (Err_NoPlugin 	t) = "no plugin for " +++ show t
+
+-------------------------------------------------------------------------
+-- Combine maybe's
+-------------------------------------------------------------------------
+
+cmbMb :: Maybe a -> Maybe a -> Maybe a
+cmbMb x@(Just _) _ = x
+cmbMb _ x@(Just _) = x
+cmbMb _ _          = Nothing
 
 -------------------------------------------------------------------------
 -- Output document

@@ -17,7 +17,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import EH.Util.Utils
--- import EH.Util.Pretty
 import qualified EH.Util.FastSeq as Seq
 
 import Common
@@ -112,7 +111,7 @@ SEM TextItem
                                                            Just plg | isJust mbParse
                                                              -> (res,Seq.fromList $ map (Err_Out . out . show) $ err)
                                                              where toks = scan (plgScanOptsMp plg) (plgScanInitState plg) (infpAdvLine @pos) (Seq.toList @text.scInput)
-                                                                   (res,err) = parseToResMsgs (fromJust mbParse) toks -- (tr "XX" (show toks) toks)
+                                                                   (res,err) = parseToResMsgs (fromJust mbParse) toks -- (tr "XX" (show $ take 100 toks) toks)
                                                                    mbParse = plgParseTextItems plg
                                                            _ -> (Seq.singleton (TextItem_NonSpace ("no uniformification for " ++ show @texttype)),Seq.singleton (Err_NoPlugin @texttype))
   | * - T2T         loc         .   trfTextItems=   Seq.singleton @trf
@@ -128,7 +127,7 @@ SEM AGItf
 
 SEM TextItem
   | RefTo	  		loc			.	trf			=   TextItem_RefTo @reftype.trf (Seq.toList @reftext.trfTextItems) (Seq.toList @text.trfTextItems)
-  | Label	  		loc			.	trf			=   TextItem_Label (Seq.toList @reftext.trfTextItems)
+  | Label	  		loc			.	trf			=   TextItem_Label @lbltype.trf (Seq.toList @reftext.trfTextItems)
   | Header  		loc			.	trf			=   TextItem_Header @level.trf (Seq.toList @text.trfTextItems)
   | Group  			loc			.	trf			=   TextItem_Group @envtype.trf (Seq.toList @text.trfTextItems)
   | Table  			loc			.	trf			=   TextItem_Table @tablefmt.trf (Seq.toList @extratext.trfTextItems) @rows.trf

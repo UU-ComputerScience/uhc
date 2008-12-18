@@ -8,10 +8,10 @@ module Text.To.DocLaTeX
   )
   where
 
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- import EH.Util.Pretty
 import qualified EH.Util.FastSeq as Seq
 import EH.Util.ScanUtils
 
@@ -55,8 +55,11 @@ dltxArg a = "{" +++ a +++ "}"
 dltxArgs :: [OutDoc] -> OutDoc
 dltxArgs a = outList $ map dltxArg a
 
+dltxOptsBeginEnd :: (Out body, Out env, Out opt) => env -> opt -> body -> OutDoc
+dltxOptsBeginEnd env opt body = dltxCmd "begin" +++ dltxArg env +++ opt +++ body +++ dltxCmd "end" +++ dltxArg env
+
 dltxBeginEnd :: (Out body, Out env) => env -> body -> OutDoc
-dltxBeginEnd env body = dltxCmd "begin" +++ dltxArg env +++ body +++ dltxCmd "end" +++ dltxArg env
+dltxBeginEnd env body = dltxOptsBeginEnd env emptyout body
 }
 
 -------------------------------------------------------------------------
@@ -64,6 +67,24 @@ dltxBeginEnd env body = dltxCmd "begin" +++ dltxArg env +++ body +++ dltxCmd "en
 -------------------------------------------------------------------------
 
 ATTR AGItf AllNT [ opts: Opts | | ]
+
+-------------------------------------------------------------------------
+-- Graphics has caption?
+-------------------------------------------------------------------------
+
+ATTR AllGraphicsInlineOption [ | | mbCaption USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
+
+SEM GraphicsInlineOption
+  | Caption			lhs			.	mbCaption	=	Just @text.out
+
+-------------------------------------------------------------------------
+-- Graphics has label?
+-------------------------------------------------------------------------
+
+ATTR AllGraphicsInlineOption [ | | mbLabel USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
+
+SEM GraphicsInlineOption
+  | Label			lhs			.	mbLabel		=	Just @text.out
 
 -------------------------------------------------------------------------
 -- Replacement, as OutDoc
@@ -77,12 +98,14 @@ SEM TextItem
   | CommentLF		loc			.	out			=   "%" +++ @str +++ "\n"
   | Line  			loc			.	out			=   @str +++ "\n"
   | LineFeed		loc			.	out			=   out "\n"
+  | ParBreak		loc			.	out			=   out "\n\n"
   | T2T  			loc			.	out			=   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"	-- for now
   | RefTo	  		loc			.	out			=   @reftype.out +++ dltxArgs [@reftext.out, @text.out]
   | Styled	  		loc			.	out			=   @style.out +++ dltxArg @text.out
   | VerbatimInline	loc			.	out			=   dltxCmd "verb" +++ @delim +++ @str +++ @delim
   | BreakLine		loc			.	out			=   dltxCmd "\\"
-  | HorRuler		loc			.	out			=   dltxCmd "hline"
+  | HorRuler TableHorRuler
+  					loc			.	out			=   dltxCmd "hline"
   | Header  		loc			.	out			=   @level.out +++ dltxArg @text.out
   | Group			loc			.	out			=	dltxBeginEnd @envtype.out @text.out
   | DocumentContent	loc			.	out			=	dltxBeginEnd "document" @text.out
@@ -92,18 +115,32 @@ SEM TextItem
   | Title   		loc			.	out			=	dltxCmd "title" +++ dltxArg @text.out
   | Author   		loc			.	out			=	dltxCmd "author" +++ dltxArg @text.out
   | Import   		loc			.	out			=	dltxCmd "usepackage" +++ dltxArg @text.out
-  | Label   		loc			.	out			=	dltxCmd "label" +++ dltxArg @reftext.out
-  | MakeTitle		loc			.	out			=   dltxCmd "maketitle"
-  | DocumentHeader	loc			.	out			=   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
-  | TOC				loc			.	out			=   dltxCmd "tableofcontents"
+  | Label   		loc			.	out         =   dltxCmd "label" +++ dltxArg @reftext.out
+  | MakeTitle       loc         .   out         =   dltxCmd "maketitle"
+  | DocumentHeader  loc         .   out         =   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
+  | GraphicsInline  loc         .   out         =   let mkFig = if isJust @mboptions.mbCaption || isJust @mboptions.mbLabel
+                                                                then \x -> dltxOptsBeginEnd "figure" "[ht]" x
+                                                                else id
+                                                        mkCen = dltxBeginEnd "center"
+                                                        mkLbl = maybe id (\l x -> x +++ dltxCmd "label" +++ dltxArg l) @mboptions.mbLabel
+                                                        mkCap = maybe id (\c x -> x +++ dltxCmd "caption" +++ dltxArg c) @mboptions.mbCaption
+                                                    in  mkFig $ mkCen $ mkCap $ mkLbl $ dltxCmd "includegraphics" +++ @mboptions.out +++ dltxArg @text.out
+  | TOC             loc         .   out         =   dltxCmd "tableofcontents"
   
 SEM RefType
   | Local			loc			.	out			=	dltxCmd "lref"
-  | Global			loc			.	out			=	dltxCmd "href"
+  | URL  			loc			.	out			=	dltxCmd "href"
+  | EhcWeb			loc			.	out			=	dltxCmd "eref"
+  | STWiki			loc			.	out			=	dltxCmd "tref"
+  | EhcSrc			loc			.	out			=	dltxCmd "sref"
+  | Cite			loc			.	out			=	dltxCmd "cref"
 
 SEM TextStyle
   -- | Verbatim		loc			.	out			=	dltxCmd "verb"
   | Bold			loc			.	out			=	dltxCmd "textbf"
+  | Italic			loc			.	out			=	dltxCmd "textit"
+  | Teletype		loc			.	out			=	dltxCmd "texttt"
+  | Emphasized		loc			.	out			=	dltxCmd "emph"
 
 SEM GroupType
   | Verbatim		lhs			.	out			=	out "pre"
@@ -124,6 +161,12 @@ SEM DocumentOption
 SEM MbDocumentOptions
   | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
 
+SEM GraphicsInlineOption
+  | Scale			loc			.	out			=	"scale=" +++ @text.out
+
+SEM MbGraphicsInlineOptions
+  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
+
 SEM TableColFormat
   | JustifyLeft		loc			.	out			=	out "l"
   | JustifyCenter	loc			.	out			=	out "c"
@@ -141,12 +184,17 @@ SEM TableField
 -------------------------------------------------------------------------
 
 ATTR
-  DocumentOptions DocumentOption
+  AllDocumentOption
+  AllGraphicsInlineOption
   TableFields
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
 
 SEM DocumentOption
-  | A4Paper			lhs			.	outL		=	[@out]
+  | *				lhs			.	outL		=	[@out]
+
+SEM GraphicsInlineOption
+  | Scale			lhs			.	outL		=	[@out]
+  | * - Scale		lhs			.	outL		=	[]
 
 SEM TableFields
   | Cons			lhs			.	outL		=	@hd.out : @tl.outL

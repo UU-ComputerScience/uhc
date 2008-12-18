@@ -15,7 +15,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-PRIM GB_NodePtr gb_Unit ;
+PRIM GB_NodePtr gb_Unit 
+	= NULL ;
 
 PRIM GB_Word gb_False
 	= GB_MkConEnumNodeAsTag( 0 ) ;

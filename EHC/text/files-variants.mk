@@ -1,6 +1,6 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
-TEXT_DOC_VARIANTS			+= shuffle-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-structure-doc ehc-user-doc text2text-doc howtoexperiment-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -26,7 +26,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicRuler TopicExplImpl TopicGRIN TopicRec TopicKinds TopicDataTy TopicImpred TopicHM TopicExtRec TopicGADT TopicReflection TopicPartialTySig \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure \
 								CodeFragsExplImpl \
-								ToolDocShuffle ToolDocRuler ToolDocEHC \
+								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
+								InternalDocEhcTechnical InternalDocEhcStructure \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
@@ -40,7 +41,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
 								uniqueness/Slides uniqueness/TopicImplementation \
-								DocDoc
+								HowToDoc HowToExperiment
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -86,7 +87,13 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 35: llvm thesis
 # 36: icfp08/padl09 paper on substitution/unification
 # 38: ldta09 paper on AG idiom
-# 40: shuffle doc
+# 40: doc: shuffle
+# 41: doc: how to write doc
+# 42: doc: ehc technical (to be started by Jeroen)
+# 43: doc: ehc user (to be started by Atze)
+# 44: doc: text2text
+# 45: doc: how to experiment with ehc
+# 46: doc: ehc structure
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -125,5 +132,11 @@ TEXT_SHUFFLE_ORDER	+= \
 		30 < 29, \
 		37 < 33, \
 		37 < 38, \
-		39 < 40
+		39 < 40, \
+		39 < 41, \
+		39 < 42, \
+		39 < 43, \
+		39 < 44, \
+		39 < 45, \
+		39 < 46
 		

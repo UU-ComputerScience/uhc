@@ -5,6 +5,7 @@
 
 %%[39
 \usepackage{fancyvrb}
+\usepackage{graphicx}
 \usepackage[left=2.75cm,right=2.75cm,top=3cm,bottom=3cm,nohead]{geometry}
 
 \def\latexRef#1{\ref{#1}}
@@ -556,6 +557,11 @@ Chapter~\myRef{#1}%
 }
 % \newcommand{\Cite}[1]{\cite{#1}\ifx#2\empty\else(#2)\fi\refPDF{papers/#1.pdf}}
 
+% reference to citations (compatibility with doclatex):
+% #1: citations
+% #2: title
+\newcommand{\cref}[2]{#2 \cite{#1}}
+
 % verbatim
 \DefineVerbatimEnvironment%
  {TT}{Verbatim}
@@ -748,4 +754,24 @@ Anonymity, blinding things
 % #1: label
 % #2: title
 \newcommand{\lref}[2]{#2 (page~\latexPageref{#1})}
+
+% reference to label local to ST wiki:
+% #1: ref
+% #2: title
+\newcommand{\tref}[2]{\href{http://www.cs.uu.nl/wiki/#1}{#2}} % does not work, #1 contains '.'
+
+% reference to label local to EH web:
+% #1: ref
+% #2: title
+\newcommand{\eref}[2]{\href{http://www.cs.uu.nl/wiki/Ehc/#1}{#2}}
+
+% reference to label local src/svn repository:
+% #1: ref
+% #2: title
+\newcommand{\sref}[2]{#2 (\texttt{EHCHOME/#1})}
+
+% reference to citations (compatible with plain LaTeX, currently citations not used):
+% #1: citations
+% #2: title
+\newcommand{\cref}[2]{#2}
 %%]

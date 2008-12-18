@@ -27,8 +27,18 @@ cmd0argMp
   = Map.fromList
       [ ("maketitle"        , TextItem_MakeTitle        )
       , ("tableofcontents"  , TextItem_TOC              )
-      , ("hline"            , TextItem_HorRuler         )
-      -- , ("\\"                , TextItem_BreakLine        )
+      ]
+
+cmdPlain0argMp :: Map.Map String TextItem
+cmdPlain0argMp
+  = Map.fromList
+      [ ("hline"            , TextItem_HorRuler         )
+      ]
+
+cmdTable0argMp :: Map.Map String TextItem
+cmdTable0argMp
+  = Map.fromList
+      [ ("hline"            , TextItem_TableHorRuler         )
       ]
 
 -------------------------------------------------------------------------
@@ -38,14 +48,22 @@ cmd0argMp
 cmd1argMp :: Map.Map String (TextItems -> TextItem)
 cmd1argMp
   = Map.fromList
-      [ ("title"        , TextItem_Title                            )
-      , ("author"       , TextItem_Author                           )
-      , ("label"        , TextItem_Label                            )
-      , ("textbf"       , TextItem_Styled TextStyle_Bold            )
-      , ("usepackage"   , TextItem_Import                           )
-      , ("paragraph"    , TextItem_Header HeaderLevel_Paragraph     )
+      [ ("title"                , TextItem_Title                            )
+      , ("author"               , TextItem_Author                           )
+      , ("label"                , TextItem_Label LabelType_Local            )
+      , ("glabel"               , TextItem_Label LabelType_Global           )
+      , ("textbf"               , TextItem_Styled TextStyle_Bold            )
+      , ("textit"               , TextItem_Styled TextStyle_Italic          )
+      , ("texttt"               , TextItem_Styled TextStyle_Teletype        )
+      , ("emph"                 , TextItem_Styled TextStyle_Emphasized      )
+      , ("usepackage"           , TextItem_Import                           )
+      , ("paragraph"            , TextItem_Header HeaderLevel_Paragraph     )
+      , ("secRef"     			, mkref1 "section"							)
+      , ("figRef"     			, mkref1 "figure"							)
+      -- , ("includegraphics"      , TextItem_GraphicsInline Nothing           )
       ]
     `Map.union` Map.fromList [ (concat (replicate l "sub") ++ "section", TextItem_Header (HeaderLevel_Level l)) | l <- [0..2] ]
+  where mkref1 t l = TextItem_RefTo RefType_Local l [TextItem_NonSpace t]
 
 -------------------------------------------------------------------------
 -- 2 arg cmds
@@ -54,8 +72,12 @@ cmd1argMp
 cmd2argMp :: Map.Map String (TextItems -> TextItems -> TextItem)
 cmd2argMp
   = Map.fromList
-      [ ("href"     , TextItem_RefTo RefType_Global     )
+      [ ("href"     , TextItem_RefTo RefType_URL        )
       , ("lref"     , TextItem_RefTo RefType_Local      )
+      , ("eref"     , TextItem_RefTo RefType_EhcWeb     )
+      , ("tref"     , TextItem_RefTo RefType_STWiki     )
+      , ("sref"     , TextItem_RefTo RefType_EhcSrc     )
+      , ("cref"     , TextItem_RefTo RefType_Cite       )
       ]
 
 -------------------------------------------------------------------------
@@ -117,12 +139,26 @@ docoptionMp
       ]
 
 -------------------------------------------------------------------------
+-- Allowed graphics options
+-------------------------------------------------------------------------
+
+graphicsinlineoptionMp :: Map.Map String (TextItems -> GraphicsInlineOption)
+graphicsinlineoptionMp
+  = Map.fromList
+      [ ("scale"        , GraphicsInlineOption_Scale        )
+      , ("label"        , GraphicsInlineOption_Label        )
+      , ("caption"      , GraphicsInlineOption_Caption      )
+      ]
+
+-------------------------------------------------------------------------
 -- Scanner setup
 -------------------------------------------------------------------------
 
 specCharsOpenClose          =   "{}[]"
-specCharsTable1             =   "|"
-specCharsTable2             =   "&"
+specCharsVBar               =   "|"
+specCharsAt                 =   "@"
+specCharsAmpersand          =   "&"
+specCharsOther              =   "=,"
 
 doclatexScanOpts :: ScanOpts
 doclatexScanOpts
@@ -130,13 +166,16 @@ doclatexScanOpts
       { scoKeywordsTxt      =   Map.keysSet grouptypeMp
                                 `Set.union` Map.keysSet itemizestyleMp
                                 `Set.union` Map.keysSet docoptionMp
+                                `Set.union` Map.keysSet graphicsinlineoptionMp
                                 `Set.union` Set.fromList [ "tabular", "document" ]
-      , scoCommandsTxt      =   Set.fromList [ "begin", "end", "item", "documentclass" ]
+      , scoCommandsTxt      =   Set.fromList [ "begin", "end", "item", "documentclass", "includegraphics" ]
                                 -- `Set.union` Map.keysSet textstyleMp
                                 `Set.union` Map.keysSet cmd0argMp
+                                `Set.union` Map.keysSet cmdPlain0argMp
+                                `Set.union` Map.keysSet cmdTable0argMp
                                 `Set.union` Map.keysSet cmd1argMp
                                 `Set.union` Map.keysSet cmd2argMp
-      , scoSpecChars        =   Set.fromList (specCharsOpenClose ++ specCharsTable1 ++ specCharsTable2)
+      , scoSpecChars        =   Set.fromList (specCharsOther ++ specCharsOpenClose ++ specCharsVBar ++ specCharsAt ++ specCharsAmpersand)
       , scoOpChars          =   Set.fromList ""
       , scoVerbOpenClose    =   [ ("\\begin{pre}","\\end{pre}")
                                 , ("\\begin{verbatim}","\\end{verbatim}")
@@ -157,7 +196,10 @@ doclatexScanOptsMp
 
 -- itf to outside
 pItf                ::  T2TPr (Seq.Seq TextItem)
-pItf                =   pTextItemsP' (pTextItemAll <|> pTextItemDoc)
+pItf                =   pTextItemsP'
+                          (   pTextItemAll
+                          <|> pCmdOpts1Arg "documentclass" TextItem_DocumentHeader pDocumentOption pTextItemsArg
+                          )
 
 
 -- items
@@ -169,8 +211,8 @@ pText2ItemsP' p1 p2 =   (\i1 i2 -> Seq.unions (Seq.fromList i1 : map Seq.fromLis
 
 pText3ItemsP'       ::  T2TPr4' TextItem TextItem TextItem (Seq.Seq TextItem)
 pText3ItemsP' p1 p2 p3
-					=   (\i1 i2 i3 -> Seq.unions (Seq.fromList i1 : Seq.singleton i2 : map Seq.fromList i3))
-					    <$> pList p1 <*> p2 <*> pList ((:[]) <$> p3 <|> pAST)
+                    =   (\i1 i2 i3 -> Seq.unions (Seq.fromList i1 : Seq.singleton i2 : map Seq.fromList i3))
+                        <$> pList p1 <*> p2 <*> pList ((:[]) <$> p3 <|> pAST)
 
 pTextItemsP         ::  T2TPr2' TextItem TextItems
 pTextItemsP pItm    =   Seq.toList <$> pTextItemsP' pItm
@@ -180,7 +222,7 @@ pText2ItemsP p1 p2  =   Seq.toList <$> pText2ItemsP' p1 p2
 
 pText3ItemsP        ::  T2TPr4' TextItem TextItem TextItem TextItems
 pText3ItemsP p1 p2 p3
-					=   Seq.toList <$> pText3ItemsP' p1 p2 p3
+                    =   Seq.toList <$> pText3ItemsP' p1 p2 p3
 
 pTextItemsAll       ::  T2TPr TextItems
 pTextItemsAll       =   pTextItemsP pTextItemAll
@@ -189,32 +231,50 @@ pTextItemsArg       ::  T2TPr TextItems
 pTextItemsArg       =   pTextItemsP pTextItemArg
 
 pTextItemsTbl       ::  T2TPr TextItems
-pTextItemsTbl       =   (:) <$> pTextItemTbl1 <*> pTextItemsP pTextItemTbl2
+pTextItemsTbl       =   (:) <$> pTextItemTbl1 <*> pTextItemsP pTextItemTbl2 `opt` []
 
 pTableItemsAftRowSep::  T2TPr TextItems
-pTableItemsAftRowSep=   pTextItemsP pTextItemSpace
+pTableItemsAftRowSep=   pTextItemsP pTextItemSpace2
 
 pTableItemsAftFldSep::  T2TPr TextItems
-pTableItemsAftFldSep=   pTextItemsP pTextItemSpace
+pTableItemsAftFldSep=   pTextItemsP pTextItemSpace2
 
 
 -- item
-pTextItemSpace      ::  T2TPr TextItem
-pTextItemSpace      =   TextItem_Space     <$> pWhite
+pTextItemSpace1     ::  T2TPr TextItem
+pTextItemSpace1     =   TextItem_Space     <$> pWhite
+
+pTextItemSpace2     ::  T2TPr TextItem
+pTextItemSpace2     =   pTextItemSpace1
                     <|> TextItem_LineFeed  <$  pNl
                     <|> TextItem_CommentLF <$> pCmtLF
+                    <|> TextItem_ParBreak  <$  pPar
 
-pTextItemBase       ::  T2TPr TextItem
-pTextItemBase       =   TextItem_NonSpace <$> pText
+pTextItemNonSpace   ::  T2TPr TextItem
+pTextItemNonSpace   =   TextItem_NonSpace <$> pText
+
+pTextItemBase1      ::  T2TPr TextItem
+pTextItemBase1      =   pTextItemNonSpace
                     <|> (\(c:v) -> TextItem_VerbatimInline [c] v) <$> pVerbInline
-                    <|> uncurry TextItem_Group <$> pBeginEnd pGroupType pTextItemsAll
-                    <|> (\(_,t) -> TextItem_DocumentContent t) <$> pBeginEnd (pKey "document") pTextItemsAll
-                    <|> (\(_,(fmt,(extra,rows))) -> TextItem_Table fmt extra rows)
-                        <$> pBeginEndArg (pKey "tabular") pTableFormat (pTableItemsAftRowSep <+> pTableRows)
-                    <|> uncurry TextItem_Itemize <$> pBeginEnd pItemizeStyle (pText2ItemsP pTextItemSpace pTextItemItem)
                     <|> pCmd2Arg <*> pArg pTextItemsArg <*> pArg pTextItemsArg
                     <|> pCmd1Arg <*> pArg pTextItemsArg
                     <|> pCmd0Arg
+
+pTextItemBase2      ::  T2TPr TextItem
+pTextItemBase2      =   uncurry TextItem_Group <$> pBeginEnd pGroupType pTextItemsAll
+                    <|> (\(_,t) -> TextItem_DocumentContent t) <$> pBeginEnd (pKey "document") pTextItemsAll
+                    <|> (\(_,(fmt,(extra,rows))) -> TextItem_Table fmt extra rows)
+                        <$> pBeginEndArg (pKey "tabular") pTableFormat (pTableItemsAftRowSep <+> pTableRows)
+                    <|> uncurry TextItem_Itemize <$> pBeginEnd pItemizeStyle (pText2ItemsP pTextItemSpace2 pTextItemItem)
+                    <|> pCmdOpts1Arg "includegraphics" TextItem_GraphicsInline pGraphicsInlineOption pTextItemsArg
+
+pTextItemBase3      ::  T2TPr TextItem
+pTextItemBase3      =   pDelimBy "|" pTextItemSpecsAt (TextItem_Styled TextStyle_Emphasized) <|> pDelimBy "@" pTextItemSpecsVBar (TextItem_Styled TextStyle_Teletype)
+                    where pDelimBy delim extra sem
+                            = pKey delim
+                              *> (   TextItem_NonSpace <$> pKey delim
+                                 <|> sem <$> pList1 (pTextItemBase3Inside <|> extra) <* pKey delim
+                                 )
 
 pTextItemSpecs      ::  (IsParser p Tok) => [String] -> p TextItem
 pTextItemSpecs s    =   pAnyKey (\x -> TextItem_NonSpace <$> pKey x) s
@@ -225,11 +285,17 @@ pTextItemSpecs2 s   =   pTextItemSpecs (map (:[]) s)
 pTextItemSpecsOC    ::  T2TPr TextItem
 pTextItemSpecsOC    =   pTextItemSpecs2 specCharsOpenClose
 
-pTextItemSpecsTbl1  ::  T2TPr TextItem
-pTextItemSpecsTbl1  =   pTextItemSpecs2 specCharsTable1
+pTextItemSpecsVBar  ::  T2TPr TextItem
+pTextItemSpecsVBar  =   pTextItemSpecs2 specCharsVBar
 
 pTextItemSpecsTbl2  ::  T2TPr TextItem
-pTextItemSpecsTbl2  =   pTextItemSpecs2 specCharsTable2
+pTextItemSpecsTbl2  =   pTextItemSpecs2 specCharsAmpersand
+
+pTextItemSpecsAt    ::  T2TPr TextItem
+pTextItemSpecsAt    =   pTextItemSpecs2 specCharsAt
+
+pTextItemSpecsOther ::  T2TPr TextItem
+pTextItemSpecsOther =   pTextItemSpecs2 specCharsOther
 
 pTextItemKeyws      ::  T2TPr TextItem
 pTextItemKeyws      =   pTextItemSpecs (Set.toList $ scoKeywordsTxt doclatexScanOpts)
@@ -237,30 +303,43 @@ pTextItemKeyws      =   pTextItemSpecs (Set.toList $ scoKeywordsTxt doclatexScan
 pTextItemItem       ::  T2TPr TextItem
 pTextItemItem       =   TextItem_ItemizeItem <$ pCmd "item" <*> pTextItemsAll
 
-pTextItemDoc        ::  T2TPr TextItem
-pTextItemDoc        =   TextItem_DocumentHeader <$ pCmd "documentclass" <*> pMb (pArgOpt (pList pDocumentOption)) <*> pArg pTextItemsArg
+pTextItemOption     ::  T2TPr TextItem
+pTextItemOption     =   pTextItemBase1
+                    <|> pCmdPlain0Arg
+                    <|> pTextItemSpace2
+
+pTextItemBase3Inside::  T2TPr TextItem
+pTextItemBase3Inside=   pTextItemNonSpace
+                    <|> pTextItemSpecsOther
+                    <|> pTextItemSpace1
+                    <|> pTextItemSpecsOC
+                    <|> pTextItemSpecsTbl2
 
 pTextItemArg        ::  T2TPr TextItem
-pTextItemArg        =   pTextItemBase
-                    <|> pTextItemSpace
+pTextItemArg        =   pTextItemOption
+                    <|> pTextItemBase2
+                    <|> pTextItemBase3
                     <|> pCmdBreakLine
+                    <|> pTextItemSpecsOther
 
 pTextItemAll        ::  T2TPr TextItem
 pTextItemAll        =   pTextItemArg
                     <|> pTextItemSpecsOC
-                    <|> pTextItemSpecsTbl1
                     <|> pTextItemSpecsTbl2
                     <|> pTextItemKeyws
 
 pTextItemTbl1       ::  T2TPr TextItem
-pTextItemTbl1       =   pTextItemBase
+pTextItemTbl1       =   pTextItemBase1
+                    <|> pCmdTable0Arg
+                    <|> pTextItemBase2
+                    <|> pTextItemBase3
                     <|> pTextItemSpecsOC
+                    <|> pTextItemSpecsOther
                     <|> pTextItemKeyws
-                    <|> pTextItemSpecsTbl1
 
 pTextItemTbl2       ::  T2TPr TextItem
 pTextItemTbl2       =   pTextItemTbl1
-                    <|> pTextItemSpace
+                    <|> pTextItemSpace2
 
 
 -- begin/end
@@ -316,16 +395,31 @@ pItemizeStyle       =   pAnyFromMap pKey itemizestyleMp
 pDocumentOption     ::  T2TPr DocumentOption
 pDocumentOption     =   pAnyFromMap pKey docoptionMp
 
+pGraphicsInlineOption
+                    ::  T2TPr GraphicsInlineOption
+pGraphicsInlineOption
+                    =   pAnyFromMap pKey graphicsinlineoptionMp <* pKey "=" <*> pTextItemsP pTextItemOption
+
 
 -- cmds
 pCmd0Arg            ::  T2TPr TextItem
 pCmd0Arg            =   pAnyFromMap pCmd cmd0argMp
+
+pCmdPlain0Arg       ::  T2TPr TextItem
+pCmdPlain0Arg       =   pAnyFromMap pCmd cmdPlain0argMp
+
+pCmdTable0Arg       ::  T2TPr TextItem
+pCmdTable0Arg       =   pAnyFromMap pCmd cmdTable0argMp
 
 pCmd1Arg            ::  T2TPr (TextItems -> TextItem)
 pCmd1Arg            =   pAnyFromMap pCmd cmd1argMp
 
 pCmd2Arg            ::  T2TPr (TextItems -> TextItems -> TextItem)
 pCmd2Arg            =   pAnyFromMap pCmd cmd2argMp
+
+pCmdOpts1Arg        ::  (IsParser p Tok) => String -> (Maybe [opt] -> arg -> its) -> p opt -> p arg -> p its
+pCmdOpts1Arg key mk pOpt pArgIts
+                    =   mk <$ pCmd key <*> pMb (pArgOpt (pListSep (pKey ",") pOpt)) <*> pArg pArgIts
 
 pCmdBreakLine       ::  T2TPr TextItem
 pCmdBreakLine       =   TextItem_BreakLine <$ pCmd "\\\\"

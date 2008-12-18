@@ -8,10 +8,13 @@ module Text.To.TWiki
   )
   where
 
+import Data.Maybe
+import Data.Char
+import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
--- import EH.Util.Pretty
+import EH.Util.FPath
 import qualified EH.Util.FastSeq as Seq
 import EH.Util.ScanUtils
 
@@ -42,20 +45,67 @@ INCLUDE "Text/AbsSyn.ag"
 INCLUDE "Text/To/Common.ag"
 
 -------------------------------------------------------------------------
+-- Adapt html specific chars
+-------------------------------------------------------------------------
+
+{
+ensureHtmlCharsAreEscaped :: String -> String
+ensureHtmlCharsAreEscaped
+  = concatMap asis
+  where asis '<' = c "lt"
+        asis '>' = c "gt"
+        asis c   = [c]
+        c ch = "&" ++ ch ++ ";"
+}
+
+-------------------------------------------------------------------------
+-- Is text a twiki word?
+-------------------------------------------------------------------------
+
+{
+isTWikiChar :: Char -> Bool
+isTWikiChar = isAlphaNum
+
+isTWikiWord :: String -> Bool
+isTWikiWord s
+  = is 0 s
+  where is st (c:_ ) | isLower c &&  st == 0             = False
+        is st (c:s') | isUpper c && (st == 0 || st == 2) = is (st+1) s'
+        is st (c:s') | isLower c &&  st == 1             = is (st+1) s'
+        is st (c:_ ) | not (isTWikiChar c)               = False
+        is 3  _                                          = True
+        is st (_:s')                                     = is  st    s'
+        is _  _                                          = False
+}
+
+-------------------------------------------------------------------------
+-- Ensure text is for a TWiki anchor
+-------------------------------------------------------------------------
+
+{
+ensureTWikiAnchor :: Out a => a -> OutDoc
+ensureTWikiAnchor x = out $ filter isTWikiChar $ outToString $ out x
+}
+
+-------------------------------------------------------------------------
 -- Combinators
 -------------------------------------------------------------------------
+
 {
 dtwkLbl :: Out a => a -> OutDoc
-dtwkLbl a = "T2TLabel" +++ a
+dtwkLbl a = "#LabeL" +++ ensureTWikiAnchor a
 
 dtwkCmd :: Out c => c -> OutDoc
 dtwkCmd c = "%" +++ c +++ "%"
 
 dtwkHdr :: Int -> OutDoc
-dtwkHdr l = "---+" +++ replicate l '+' +++ " "
+dtwkHdr l = "\n---+" +++ replicate l '+' +++ " "
 
 dhtmTag :: Out a => a -> OutDoc
 dhtmTag a = "<" +++ a +++ ">"
+
+dhtmTag' :: Out a => a -> OutDoc
+dhtmTag' a = "<" +++ a +++ "/>"
 
 dhtmCmt :: Out a => a -> OutDoc
 dhtmCmt a = dhtmTag ("!-- " +++ a +++ " --")
@@ -65,6 +115,9 @@ dtwkRef lbl txt = "[[" +++ lbl +++ "][" +++ txt +++ "]]"
 
 dhtmOpenClose :: (Out body, Out env) => env -> body -> OutDoc
 dhtmOpenClose env body = dhtmTag env +++ body +++ dhtmTag ("/" +++ env)
+
+dhtmOne :: (Out body, Out env) => env -> body -> OutDoc
+dhtmOne env body = dhtmTag' (env +++ " " +++ body)
 }
 
 {
@@ -82,16 +135,55 @@ dtwkArgs a = outList $ map dtwkArg a
 ATTR AGItf AllNT [ opts: Opts | | ]
 
 -------------------------------------------------------------------------
+-- Header numbering
+-------------------------------------------------------------------------
+
+{
+type HeaderSeqNrMp = Map.Map Int Int
+}
+
+ATTR AllText AllTable [ | headerLevel: Int  headerSeqNrMp: HeaderSeqNrMp | ]
+ATTR HeaderLevel [ | headerLevel: Int | allowHeaderCounting: Bool ]
+
+SEM AGItf
+  | AGItf           loc         .   headerLevel =   -1
+                                .   headerSeqNrMp
+                                                =   Map.empty
+
+SEM HeaderLevel
+  | Level           lhs         .   headerLevel =   @level
+
+SEM HeaderLevel
+  | Level           lhs         .   allowHeaderCounting
+  												=   True
+  | Paragraph       lhs         .   allowHeaderCounting
+  												=   False
+
+SEM TextItem
+  | Header          (loc.headerTxt,lhs.headerSeqNrMp)
+                                                =   if @level.allowHeaderCounting
+                                                    then let mkTxt h m = concat $ intersperse "." [ show $ fromJust $ Map.lookup l m | l <- [0 .. h] ]
+                                                             seqNr h = fromJust $ Map.lookup h @lhs.headerSeqNrMp
+                                                         in  case @lhs.headerLevel `compare` @level.headerLevel of
+                                                               GT -> ( mkTxt @level.headerLevel m, m )
+                                                                     where m = Map.insert @level.headerLevel (seqNr @level.headerLevel + 1) @lhs.headerSeqNrMp
+                                                               EQ -> ( mkTxt @lhs.headerLevel m, m )
+                                                                     where m = Map.insert @lhs.headerLevel (seqNr @lhs.headerLevel + 1) @lhs.headerSeqNrMp
+                                                               LT -> ( mkTxt @level.headerLevel m, m )
+                                                                     where m = Map.insert @level.headerLevel 1 @lhs.headerSeqNrMp
+                                                    else ( "", @lhs.headerSeqNrMp )
+
+-------------------------------------------------------------------------
 -- Itemize level
 -------------------------------------------------------------------------
 
 ATTR AllText AllTable [ itemizeLevel: Int | | ]
 
 SEM TextItem
-  | Itemize			loc			.	itemizeLevel=	@lhs.itemizeLevel + 1
+  | Itemize         loc         .   itemizeLevel=   @lhs.itemizeLevel + 1
 
 SEM AGItf
-  | AGItf			loc			.	itemizeLevel=	0
+  | AGItf           loc         .   itemizeLevel=   0
 
 -------------------------------------------------------------------------
 -- Itemize style
@@ -100,12 +192,113 @@ SEM AGItf
 ATTR AllText AllTable [ itemizePrefix: OutDoc | | ]
 
 SEM TextItem
-  | Itemize			loc			.	itemizePrefix
-  												=	replicate (3 * @lhs.itemizeLevel) ' ' +++ @itemizestyle.out
+  | Itemize         loc         .   itemizePrefix
+                                                =   replicate (3 * @lhs.itemizeLevel) ' ' +++ @itemizestyle.out
 
 SEM AGItf
-  | AGItf			loc			.	itemizePrefix
-  												=	emptyout
+  | AGItf           loc         .   itemizePrefix
+                                                =   emptyout
+
+-------------------------------------------------------------------------
+-- How to make a reference
+-------------------------------------------------------------------------
+
+ATTR RefType [ | | mkRefOut: {OutDoc -> OutDoc -> OutDoc} ] -- \reftext text -> ...
+
+SEM RefType
+  | Local           loc         .   mkRefOut    =   \r t -> dtwkRef (dtwkLbl $ ensureTWikiAnchor r) t
+  | URL EhcWeb STWiki
+                    loc         .   mkRefOut    =   dtwkRef
+  | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
+  | Cite            loc         .   mkRefOut    =   \_ t -> t
+
+-------------------------------------------------------------------------
+-- How to make a label
+-------------------------------------------------------------------------
+
+ATTR LabelType [ | | mkLblOut: {OutDoc -> OutDoc} ] -- \lbl -> ...
+  
+SEM LabelType
+  | Local           loc         .   mkLblOut    =   dtwkLbl
+  | Global          loc         .   mkLblOut    =   \x -> "#" +++ x
+
+-------------------------------------------------------------------------
+-- How to make a header
+-------------------------------------------------------------------------
+
+ATTR HeaderLevel [ | | mkHdrOut: {OutDoc -> OutDoc -> OutDoc} ] -- \numberingprefix text -> ...
+
+SEM HeaderLevel
+  | Level           loc         .   mkHdrOut    =   \n t -> dtwkHdr @level +++ n +++ t +++ "\n"
+  | Paragraph       loc         .   mkHdrOut    =   \_ t -> "\n*" +++ t +++ "*"
+
+-------------------------------------------------------------------------
+-- Selectively modifying html text
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ allowHtmlAsIs: Bool | | ]
+ATTR GroupType [ | | allowHtmlAsIs: Bool ]
+
+SEM AGItf
+  | AGItf           loc         .   allowHtmlAsIs
+                                                =   False
+
+SEM GroupType
+  | Verbatim        loc         .   allowHtmlAsIs
+                                                =   True
+  | * - Verbatim    loc         .   allowHtmlAsIs
+                                                =   False
+
+-------------------------------------------------------------------------
+-- Selectively modifying wikiwords
+-------------------------------------------------------------------------
+
+ATTR AllText AllTable [ allowWikiWord: Bool | | ]
+
+SEM AGItf
+  | AGItf           loc         .   allowWikiWord
+                                                =   False
+
+SEM TextItem
+  | Label Styled RefTo
+  					loc         .   allowWikiWord
+                                                =   True
+
+-------------------------------------------------------------------------
+-- Selectively linefeeding
+-------------------------------------------------------------------------
+
+{
+mkLF :: Bool -> OutDoc
+mkLF True = out "\n"
+mkLF _    = out " "
+
+mkPar :: Bool -> OutDoc
+mkPar True = out "\n\n"
+mkPar _    = dtwkCmd "BR"
+}
+
+ATTR AllText [ allowLF: Bool | | ]
+
+SEM AGItf
+  | AGItf           loc         .   allowLF     =   True
+
+
+SEM TableField
+  | Fld             loc         .   allowLF     =   False
+
+SEM TableRow
+  | Row             loc         .   allowLF     =   False
+
+SEM TextItem
+  | Itemize         loc         .   allowLF     =   False
+  | Header Group DocumentContent Table
+                    loc         .   allowLF     =   True
+
+SEM TextItem
+  | Line LineFeed CommentLF
+                    loc         .   lf          =   mkLF  @lhs.allowLF
+  | ParBreak        loc         .   par         =   mkPar @lhs.allowLF
 
 -------------------------------------------------------------------------
 -- Replacement, as OutDoc
@@ -114,80 +307,89 @@ SEM AGItf
 ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 
 SEM TextItem
-  | Space  			loc			.	out			=   out @str
-  | NonSpace  		loc			.	out			=   out @str
-  | CommentLF		loc			.	out			=   dhtmCmt @str +++ "\n"
-  | Line  			loc			.	out			=   @str +++ "\n"
-  | LineFeed		loc			.	out			=   out "\n"
-  | T2T  			loc			.	out			=   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"	-- for now
-  | RefTo	  		loc			.	out			=   dtwkRef (dtwkLbl @reftext.out) @text.out
-  | Styled	  		loc			.	out			=   @style.out +++ @text.out +++ @style.out
-  | VerbatimInline	loc			.	out			=   dhtmOpenClose "code" @str
-  | BreakLine		loc			.	out			=   dtwkCmd "BR"
-  | HorRuler		loc			.	out			=   out "\n------"
-  | Header  		loc			.	out			=   @level.out +++ @text.out
-  | Group			loc			.	out			=	dhtmOpenClose @envtype.out @text.out
-  | DocumentContent	loc			.	out			=	@text.out +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
-  | Table			loc			.	out			=	@extratext.out +++ @rows.out
-  | Itemize			loc			.	out			=	@text.out
-  | ItemizeItem		loc			.	out			=	@lhs.itemizePrefix +++ @text.out
-  | Title   		loc			.	out			=	emptyout
-  | Author   		loc			.	out			=	emptyout
-  | Import   		loc			.	out			=	emptyout
-  | Label   		loc			.	out			=	"\n#" +++ dtwkLbl @reftext.out
-  | MakeTitle		loc			.	out			=   emptyout
-  | DocumentHeader	loc			.	out			=   emptyout
-  | TOC				loc			.	out			=   dtwkCmd "TOC"
+  | Space           loc         .   out         =   out @str
+  | NonSpace        loc         .   out         =   if not @lhs.allowWikiWord && isTWikiWord @str
+                                                    then "!" +++ @str
+                                                    else if not @lhs.allowHtmlAsIs
+                                                    then out (ensureHtmlCharsAreEscaped @str)
+                                                    else out @str
+  | CommentLF       loc         .   out         =   dhtmCmt @str +++ @lf
+  | Line            loc         .   out         =   @str +++ @lf
+  | LineFeed        loc         .   out         =   @lf
+  | ParBreak        loc         .   out         =   @par
+  | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
+  | RefTo           loc         .   out         =   @reftype.mkRefOut (@reftype.out +++ @reftext.out) @text.out
+  | Styled          loc         .   out         =   @style.out +++ @text.out +++ @style.out
+  | VerbatimInline  loc         .   out         =   dhtmOpenClose "code" (ensureHtmlCharsAreEscaped @str)
+  | BreakLine       loc         .   out         =   dtwkCmd "BR"
+  | HorRuler        loc         .   out         =   out "\n------"
+  | Header          loc         .   out         =   @level.mkHdrOut (if optGenHeaderNumbering @lhs.opts then @headerTxt +++ " " else emptyout) @text.out
+  | Group           loc         .   out         =   dhtmOpenClose @envtype.out @text.out
+  | DocumentContent loc         .   out         =   @text.out -- +++ "\n" +++ dtwkCmd "REVINFO{\"$date\"}"
+  | Table           loc         .   out         =   {- @extratext.out +++ -} outListSep "\n" "" "\n" @rows.outL
+  | Itemize         loc         .   out         =   @text.out
+  | ItemizeItem     loc         .   out         =   "\n" +++ @lhs.itemizePrefix +++ @text.out
+  | Title           loc         .   out         =   emptyout
+  | Author          loc         .   out         =   emptyout
+  | Import          loc         .   out         =   emptyout
+  | Label           loc         .   out         =   "\n" +++ @lbltype.mkLblOut @reftext.out
+  | MakeTitle       loc         .   out         =   emptyout
+  | DocumentHeader  loc         .   out         =   emptyout
+  | GraphicsInline  loc         .   out         =   let f = fpathSetDir "http://www.cs.uu.nl/groups/ST/Projects/ehc" $ fpathSetSuff "gif" $ fpathFromStr $ outToString @text.out
+                                                    in  dhtmOne "img" ("src=\"" +++ fpathToStr f +++ "\"")
+  | TOC             loc         .   out         =   dtwkCmd "TOC"
   
-{-
 SEM RefType
-  | Local			loc			.	out			=	dtwkCmd "lref"
-  | Global			loc			.	out			=	dtwkCmd "href"
-
-SEM DocumentOption
-  | A4Paper			loc			.	out			=	out "a4paper"
-
-SEM MbDocumentOptions
-  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
--}
+  | Local           loc         .   out         =   emptyout
+  | URL             loc         .   out         =   emptyout
+  | STWiki          loc         .   out         =   emptyout
+  | EhcWeb          loc         .   out         =   out "Ehc."
+  | EhcSrc          loc         .   out         =   out "EHCHOME/"
+  | Cite            loc         .   out         =   emptyout
 
 SEM TextStyle
-  -- | Verbatim		loc			.	out			=	dtwkCmd "verb"
-  | Bold			loc			.	out			=	out "*"
+  | Bold            loc         .   out         =   out "*"
+  | Italic          loc         .   out         =   out "_"
+  | Teletype        loc         .   out         =   out "="
+  | Emphasized      loc         .   out         =   out "_"
 
 SEM GroupType
-  | Verbatim		lhs			.	out			=	out "verbatim"
-  -- | Document		lhs			.	out			=	out "body"
-  -- | Tabular			lhs			.	out			=	out "tabular"
+  | Verbatim        lhs         .   out         =   out "verbatim"
 
 SEM ItemizeStyle
-  | Bullet			lhs			.	out			=	out "\n   * "
-  | Number			lhs			.	out			=	out "\n   1 "
+  | Bullet          lhs         .   out         =   out "   * "
+  | Number          lhs         .   out         =   out "   1 "
 
+{-
 SEM HeaderLevel
-  | Level			lhs			.	out			=	dtwkHdr @level
-  | Paragraph		lhs			.	out			=	out "\n"
+  | Level           lhs         .   out         =   dtwkHdr @level
+  | Paragraph       lhs         .   out         =   out "\n"
 
 SEM TableColFormat
-  | JustifyLeft		loc			.	out			=	out "l"
-  | JustifyCenter	loc			.	out			=	out "c"
-  | JustifyRight	loc			.	out			=	out "r"
-  | SepbyLine		loc			.	out			=	out "|"
+  | JustifyLeft     loc         .   out         =   out "l"
+  | JustifyCenter   loc         .   out         =   out "c"
+  | JustifyRight    loc         .   out         =   out "r"
+  | SepbyLine       loc         .   out         =   out "|"
+-}
 
 SEM TableRow
-  | Row				lhs			.	out			=	outListSep "|" "|" "|" @cols.outL +++ @extrabrktext.out
+  | Row             lhs         .   out         =   outListSep "|" "|" "|" @cols.outL -- +++ @extrabrktext.out
 
 SEM TableField
-  | Fld				lhs			.	out			=	@extraseptext.out +++ @fld.out
+  | Fld             lhs         .   out         =   {- @extraseptext.out +++ -} @fld.out
 
 -------------------------------------------------------------------------
 -- Replacement, as [OutDoc]
 -------------------------------------------------------------------------
 
 ATTR
-  TableFields
+  TableFields TableRows
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
 
+SEM TableRows
+  | Cons            lhs         .   outL        =   @hd.out : @tl.outL
+  | Nil             lhs         .   outL        =   []
+
 SEM TableFields
-  | Cons			lhs			.	outL		=	@hd.out : @tl.outL
-  | Nil				lhs			.	outL		=	[]
+  | Cons            lhs         .   outL        =   @hd.out : @tl.outL
+  | Nil             lhs         .   outL        =   []

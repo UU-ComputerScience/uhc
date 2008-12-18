@@ -31,7 +31,6 @@ import System.Console.GetOpt
 import IO
 
 import EH.Util.FPath
--- import EH.Util.Pretty
 
 import Common
 import Text
