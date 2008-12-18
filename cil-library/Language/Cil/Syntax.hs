@@ -7,6 +7,7 @@ module Language.Cil.Syntax (
     Name
   , Assembly      (..)
   , TypeDef       (..)
+  , GenParam      (..)
   , Visibility    (..)
   , FieldDef      (..)
   , MethodDef     (..)
@@ -32,6 +33,7 @@ data Assembly =
 -- | A Type definition in CIL, either a class or a value type.
 data TypeDef =
     Class Visibility Name [FieldDef] [MethodDef]
+  | GenericClass Visibility Name [GenParam] [FieldDef] [MethodDef]
 
 data Visibility =
     AssemblyVisible
@@ -40,6 +42,13 @@ data Visibility =
   | FamilyOrAssembly
   | Private
   | Public
+
+-- | A parameter to a generic class.
+-- Not fully implemented yet, constraints aren't supported.
+data GenParam =
+    GenParam -- constraintFlags :: [ConstraintFlag]
+             -- constraints     :: [Name]
+             {- paramName       -} Name
 
 data FieldDef =
     Field Visibility PrimitiveType Name
@@ -139,4 +148,5 @@ data PrimitiveType =
   | Object
   | ValueType Name Name
   | ReferenceType Name Name
+  | GenericType Int
 

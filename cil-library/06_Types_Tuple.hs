@@ -2,7 +2,7 @@ module Example where
 
 import Language.Cil
 
-main = putStrLn $ cil ass ""
+main = print ass
 
 ass :: Assembly
 ass = Assembly "Example" [hello, tuple2]

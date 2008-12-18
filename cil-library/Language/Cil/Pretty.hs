@@ -11,6 +11,9 @@ import Data.List (intersperse)
 import Language.Cil.Syntax
 
 
+instance Show Assembly where
+  show a = cil a ""
+
 class Cil a where
   -- | Serializes a Cil data structure to a String.
   cil :: a -> ShowS
@@ -34,6 +37,18 @@ instance Cil TypeDef where
     . nl
     . foldr (\m s -> cil m . s) id ms
     . ("}\n" ++)
+  cil (GenericClass v n ps fs ms) =
+      (".class " ++) . cil v . sp . cilName n
+    . ("`" ++) . shows (length ps) . ("<" ++)
+    . foldr (.) id (intersperse (", " ++) (map cil ps))
+    . (">\n{\n" ++)
+    . foldr (\f s -> cil f . s) id fs
+    . nl
+    . foldr (\m s -> cil m . s) id ms
+    . ("}\n" ++)
+
+instance Cil GenParam where
+  cil (GenParam n) = cilName n
 
 instance Cil Visibility where
   cil AssemblyVisible   = ("assembly" ++)
@@ -44,7 +59,7 @@ instance Cil Visibility where
 
 instance Cil FieldDef where
   cil (Field v t n) = 
-      ident . (".field " ++) .  cil v . sp . cil t . sp . cilName n . nl
+      ident . (".field " ++) . cil v . sp . cil t . sp . cilName n . nl
 
 instance Cil MethodDef where
   cil (Constructor v ps ds os) =
@@ -163,16 +178,17 @@ instance Cil Association where
   cil Instance = ("instance" ++)
 
 instance Cil PrimitiveType where
-  cil Void            = ("void" ++) 
-  cil Bool            = ("bool" ++)
-  cil Char            = ("char" ++)
-  cil Byte            = ("unsigned int8" ++)
-  cil Int32           = ("int32" ++)
-  cil Int64           = ("int64" ++)
-  cil String          = ("string" ++)
-  cil Object          = ("object" ++)
-  cil (ValueType a c) = ("valuetype " ++) . cilAssembly a . cilName c
+  cil Void                = ("void" ++) 
+  cil Bool                = ("bool" ++)
+  cil Char                = ("char" ++)
+  cil Byte                = ("unsigned int8" ++)
+  cil Int32               = ("int32" ++)
+  cil Int64               = ("int64" ++)
+  cil String              = ("string" ++)
+  cil Object              = ("object" ++)
+  cil (ValueType a c)     = ("valuetype " ++) . cilAssembly a . cilName c
   cil (ReferenceType a c) = cilAssembly a . cilName c
+  cil (GenericType x)     = ("!" ++) . shows x
 
 -- Helper functions, to pretty print
 ident = ("    " ++)
