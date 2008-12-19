@@ -85,7 +85,11 @@
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
 %%]
+%%[(8 codegen grin) hs import(Language.Cil (Assembly (..), cil))
+%%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
+%%]
+%%[(8 codegen grin) import({%{EH}Silly.ToCil(silly2cil)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -160,6 +164,11 @@ doCompileGrin input opts
 --              ; caWriteSilly "" "s" prettyS ehcOptEmitC
                 }
            )
+         ; when (ehcOptEmitCil options)
+           ( do { caSilly2Cil
+                ; caWriteCil
+                }
+           )
          }
       
 initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
@@ -169,6 +178,7 @@ initState opts
   = GRINCompileState { gcsGrin       = undefined
                      , gcsSilly      = undefined
                      , gcsLLVM       = undefined
+                     , gcsCil        = undefined
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
@@ -230,6 +240,14 @@ caSilly2LLVM = do
     ; let llvm = silly2llvm opts code
     ; modify (gcsUpdateLLVM llvm)
     }
+
+caSilly2Cil :: CompileAction ()
+caSilly2Cil = do
+    { code <- gets gcsSilly
+    ; opts <- gets gcsOpts
+    ; let cilAst = silly2cil opts code
+    ; modify (gcsUpdateCil cilAst)
+    }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -252,6 +270,12 @@ caWriteLLVM  :: CompileAction()
 caWriteLLVM  =
   do { llvm <- gets gcsLLVM
      ; caWriteFile "" "ll" (const prettyLLVMModule) llvm
+     } 
+
+caWriteCil  :: CompileAction()
+caWriteCil  =
+  do { cilAst <- gets gcsCil
+     ; caWriteFile "" "il" (const (\c -> text (show c))) cilAst
      } 
 
 caWriteGrin :: String -> CompileAction ()
@@ -300,6 +324,7 @@ data GRINCompileState = GRINCompileState
     { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
     , gcsLLVM      :: LLVMModule
+    , gcsCil       :: Assembly
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
@@ -308,6 +333,7 @@ data GRINCompileState = GRINCompileState
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
+gcsUpdateCil    x s = s { gcsCil    = x }
 gcsUpdateHptMap x s = s { gcsHptMap = x }
 
 gcsGetCodeHpt

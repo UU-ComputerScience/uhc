@@ -5,6 +5,7 @@
 module Language.Cil.Build (
     defaultCtor
   , extendsCtor
+  , simpleAssembly
   ) where
 
 import Language.Cil.Syntax
@@ -19,5 +20,14 @@ extendsCtor a c ps = Constructor Public ps []
   ++
   [ Call Instance Void a c ".ctor" (map (\(Param t _) -> t) ps)
   , Ret
+  ]
+
+simpleAssembly :: [OpCode] -> Assembly
+simpleAssembly ocs = Assembly "DefaultAssemblyName"
+  [ Class Public "DefaultClassName" []
+    [ StaticMethod Public Void "DefaultMethodName" []
+      [ EntryPoint]
+      ocs
+    ]
   ]
 

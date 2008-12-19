@@ -118,6 +118,7 @@ data EHCOpts
       ,  ehcOptEmitC          ::  Bool
       ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
       ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
+      ,  ehcOptEmitCil        ::  Bool              -- Emit a .il in Common Intermediate Language
       ,  ehcOptEmitBytecode   ::  Bool
       ,  ehcOptEmitExecC      ::  Bool
       ,  ehcOptEmitExecBytecode:: Bool
@@ -217,6 +218,7 @@ defaultEHCOpts
       ,  ehcOptEmitGrin         =   False
       ,  ehcOptEmitLLVM         =   False
       ,  ehcOptEmitExecLLVM     =   False
+      ,  ehcOptEmitCil          =   False
       ,  ehcOptEmitC            =   False
       ,  ehcOptEmitExecC        =   False
       ,  ehcOptFullProgAnalysis =   False
@@ -304,7 +306,7 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen grin)
      ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
-     ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
+     ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1" -- Is 1 really the default? In the code it seems 2 is default
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
 
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
@@ -315,7 +317,7 @@ ehcCmdLineOpts
 %%[[(8 codegen java)
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|cil|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
 %%]]
 %%[[(8 codegen grin)
@@ -448,7 +450,16 @@ ehcCmdLineOpts
                                                   , ehcOptEmitExecBytecode = False
                                                   , ehcOptEmitBytecode     = False
                                                   , ehcOptErrAboutBytecode = False
-                                                  }                   
+                                                  }
+                                Just "cil"   -> o { ehcOptEmitGrin         = False
+                                                  , ehcOptEmitC            = False
+                                                  , ehcOptEmitLLVM         = False
+                                                  , ehcOptEmitExecLLVM     = False
+                                                  , ehcOptEmitCil          = True
+                                                  , ehcOptEmitBytecode     = False
+                                                  , ehcOptEmitExecC        = False
+                                                  , ehcOptEmitExecBytecode = False
+                                                  }
 %%]]
 %%[[(99 hmtyinfer)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
