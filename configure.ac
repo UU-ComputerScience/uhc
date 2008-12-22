@@ -166,7 +166,7 @@ ghcVersion=`$ghcCmd --numeric-version`
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
-cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
+cabal_base_lib_depends="base haskell98 mtl fgl directory old-time hsjava"
 cabal_extra_lib_depends=""
 optCabalAllowUndecidableInstances=UndecidableInstances
 optStandardGHCPackages=""

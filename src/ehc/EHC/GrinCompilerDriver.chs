@@ -81,13 +81,15 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.PrettyS(prettyS)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.ToJVM(silly2jvm, prettyJVMModule)})
+%%[(8 codegen grin) import({%{EH}Silly.ToJVM(silly2jvm)})
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
+%%]
+%%[(8 codegen grin) hs import(Brianweb.Java (Class, writeClass))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -277,10 +279,21 @@ caWriteFile extra suffix ppFun struct =
           }
      }
 
+-- TODO: this should probably be in ToJVM
+caWriteClassFile :: String -> Class -> CompileAction()
+caWriteClassFile suffix struct =
+  do { input <- gets gcsPath
+     ; do { let fileName  = fpathBase input
+                output    = fpathSetSuff suffix (fpathSetBase fileName input)
+          ; putMsg VerboseALot ("Writing " ++ fpathToStr output) Nothing
+          ; liftIO $ writeClass struct (fpathToStr output)
+          }
+     }
+
 caWriteJVM  :: CompileAction()
 caWriteJVM  =
   do { jvm <- gets gcsJVM
-     ; caWriteFile "" "class" (const prettyJVMModule) jvm
+     ; caWriteClassFile "class" jvm
      } 
 
 caWriteLLVM  :: CompileAction()
@@ -335,7 +348,7 @@ data GRINCompileState = GRINCompileState
     { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
     , gcsLLVM      :: LLVMModule
-    , gcsJVM       :: String
+    , gcsJVM       :: Class
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts

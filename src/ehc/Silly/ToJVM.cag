@@ -19,6 +19,8 @@
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty)
 %%]
+%%[(8 codegen grin) hs import(Brianweb.Java hiding (Constant))
+%%]
 %%[(8 codegen grin)
 WRAPPER SilModule
 %%]
@@ -27,14 +29,65 @@ WRAPPER SilModule
 PRAGMA nocycle
 %%]
 
-%%[(8 codegen grin) hs export( silly2jvm, prettyJVMModule )
+%%[(8 codegen grin) hs export( silly2jvm )
 {-|
 -} 
-silly2jvm :: EHCOpts -> SilModule -> String
-silly2jvm opts silmod = "yeah!"
+silly2jvm :: EHCOpts -> SilModule -> Class
+silly2jvm opts silmod = test
 
-prettyJVMModule :: String -> PP_Doc
-prettyJVMModule s = text ("Pretty printed: " ++ s)
+test = Class {c_major = 49
+             ,c_minor = 0
+             ,c_flags = [Super]
+             ,c_this = "hello"
+             ,c_super = Just "java.lang.Object"
+             ,c_interfaces = []
+             ,c_fields = []
+             ,c_methods = [
+                Method {m_flags = []
+                 ,m_name = "<init>"
+                 ,m_ret = Nothing
+                 ,m_args = []
+                 ,m_code = Just (Code {c_max_stack = Nothing
+                                      ,c_max_locals = Nothing
+                                      ,c_instructions = [ Note (LineNumber 1)
+                                                        , Load (TClass {unClass = "java.lang.Object"}) 0
+                                                        , Invoke ISpecial (MethodRef {mr_class = "java.lang.Object"
+                                                                                     ,mr_name = "<init>"
+                                                                                     ,mr_args = []
+                                                                                     ,mr_ret = Nothing}
+                                                                          )
+                                                        , Return Nothing
+                                                        ]
+                                       })
+                 ,m_exceptions = []
+                 ,m_signature = Nothing
+                 ,m_deprecated = False},
+               Method {m_flags = [Public,Static]
+               ,m_name = "main"
+               ,m_ret = Nothing
+               ,m_args = [TArray {unArray = TClass {unClass = "java.lang.String"}}]
+               ,m_code = Just (Code {c_max_stack = Nothing
+                                    ,c_max_locals = Nothing
+                                    ,c_instructions = [Note (LineNumber 5),
+                                                       Get True (FieldRef {
+                                                          fr_class = "java.lang.System"
+                                                         ,fr_name = "out"
+                                                         ,fr_type = TClass {unClass = "java.io.PrintStream"}}
+                                                         )
+                                                       , Const (CString "hello, oops")
+                                                       , Invoke IVirtual (MethodRef {mr_class = "java.io.PrintStream" ,mr_name = "println" ,mr_args = [TClass {unClass = "java.lang.String"}] ,mr_ret = Nothing})
+                                                       , Note (LineNumber 6),Return Nothing]
+                                                      })
+                              ,m_exceptions = []
+                              ,m_signature = Nothing
+                              ,m_deprecated = False}
+              ]
+              ,c_sourcefile = Just "hello.java"
+              ,c_innerclasses = []
+              ,c_enclosing_method = Nothing
+              ,c_signature = Nothing
+              ,c_deprecated = False
+              ,c_userdata = []
+           }
 
 %%]
-
