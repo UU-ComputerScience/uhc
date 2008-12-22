@@ -317,7 +317,7 @@ ehcCmdLineOpts
 %%[[(8 codegen java)
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|jvm|llvm|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
 %%]]
 %%[[(8 codegen grin)
@@ -443,6 +443,7 @@ ehcCmdLineOpts
                                                   , ehcOptEmitBytecode     = False
                                                   , ehcOptErrAboutBytecode = False
                                                   }
+
                                 Just "llvm"  -> o { ehcOptEmitLLVM         = True
                                                   , ehcOptFullProgAnalysis = True
                                                   , ehcOptEmitExecBytecode = False
