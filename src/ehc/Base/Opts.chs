@@ -116,6 +116,7 @@ data EHCOpts
 
       ,  ehcOptEmitGrin       ::  Bool
       ,  ehcOptEmitC          ::  Bool
+      ,  ehcOptEmitJVM        ::  Bool              -- Emit a .class file for JVM processing
       ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
       ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
       ,  ehcOptEmitBytecode   ::  Bool
@@ -215,6 +216,7 @@ defaultEHCOpts
       ,  ehcOptGenRTSInfo       =   0
 
       ,  ehcOptEmitGrin         =   False
+      ,  ehcOptEmitJVM          =   False
       ,  ehcOptEmitLLVM         =   False
       ,  ehcOptEmitExecLLVM     =   False
       ,  ehcOptEmitC            =   False
@@ -435,6 +437,12 @@ ehcCmdLineOpts
                                                   , ehcOptErrAboutBytecode = False
                                                   }
 
+                                Just "jvm"   -> o { ehcOptEmitJVM          = True
+                                                  , ehcOptFullProgAnalysis = True
+                                                  , ehcOptEmitExecBytecode = False
+                                                  , ehcOptEmitBytecode     = False
+                                                  , ehcOptErrAboutBytecode = False
+                                                  }
                                 Just "llvm"  -> o { ehcOptEmitLLVM         = True
                                                   , ehcOptFullProgAnalysis = True
                                                   , ehcOptEmitExecBytecode = False

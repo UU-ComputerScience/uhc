@@ -1,0 +1,40 @@
+%%[0 hs
+{
+{-| JAVA!!!
+-}
+}
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}Silly.ToJVM}
+%%]
+%%[(8 codegen grin) hs import({%{EH}Silly})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) hs import({%{EH}ConfigDefines})
+%%]
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Pretty)
+%%]
+%%[(8 codegen grin)
+WRAPPER SilModule
+%%]
+
+%%[(8 codegen grin)
+PRAGMA nocycle
+%%]
+
+%%[(8 codegen grin) hs export( silly2jvm, prettyJVMModule )
+{-|
+-} 
+silly2jvm :: EHCOpts -> SilModule -> String
+silly2jvm opts silmod = "yeah!"
+
+prettyJVMModule :: String -> PP_Doc
+prettyJVMModule s = text ("Pretty printed: " ++ s)
+
+%%]
+

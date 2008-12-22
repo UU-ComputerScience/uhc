@@ -81,13 +81,13 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.PrettyS(prettyS)})
 %%]
+%%[(8 codegen grin) import({%{EH}Silly.ToJVM(silly2jvm, prettyJVMModule)})
+%%]
 %%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
-%%]
-%%[(8 codegen grin) import({%{EH}JVM(JVMModule)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,6 +162,23 @@ doCompileGrin input opts
 --              ; caWriteSilly "" "s" prettyS ehcOptEmitC
                 }
            )
+
+         ; when (ehcOptEmitJVM options || ehcOptEmitC options)
+           ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
+                ; when (ehcOptEmitJVM options) 
+                  (do { caSilly2JVM
+                      ; caWriteJVM
+                      }
+                   )
+                ; caWriteSilly "" "c" prettyC ehcOptEmitC
+--              ; caWriteSilly "" "s" prettyS ehcOptEmitC
+                }
+           )
+
          }
       
 initialState opts (Left fn)          = (initState opts) {gcsPath=mkTopLevelFPath "grin" fn}
@@ -226,9 +243,18 @@ caGrin2Silly = do
     ; modify (gcsUpdateSilly silly)
     }
 
+caSilly2JVM :: CompileAction ()
+caSilly2JVM = do
+    { code <- gets gcsSilly
+    ; opts    <- gets gcsOpts
+    ; let jvm = silly2jvm opts code
+    ; modify (gcsUpdateJVM jvm)
+    }
+
 caSilly2LLVM :: CompileAction ()
 caSilly2LLVM = do
-    { code <- gets gcsSilly
+    { putMsg VerboseALot "Compiling to JVM" Nothing
+    ; code <- gets gcsSilly
     ; opts    <- gets gcsOpts
     ; let llvm = silly2llvm opts code
     ; modify (gcsUpdateLLVM llvm)
@@ -250,6 +276,12 @@ caWriteFile extra suffix ppFun struct =
           ; liftIO $ writePP (ppFun opts) struct output
           }
      }
+
+caWriteJVM  :: CompileAction()
+caWriteJVM  =
+  do { jvm <- gets gcsJVM
+     ; caWriteFile "" "class" (const prettyJVMModule) jvm
+     } 
 
 caWriteLLVM  :: CompileAction()
 caWriteLLVM  =
@@ -303,7 +335,7 @@ data GRINCompileState = GRINCompileState
     { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
     , gcsLLVM      :: LLVMModule
-    , gcsJVM       :: JVMModule
+    , gcsJVM       :: String
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
@@ -312,6 +344,7 @@ data GRINCompileState = GRINCompileState
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
+gcsUpdateJVM    x s = s { gcsJVM    = x }
 gcsUpdateHptMap x s = s { gcsHptMap = x }
 
 gcsGetCodeHpt
