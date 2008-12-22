@@ -14,46 +14,46 @@ hello = Class Public "Haskell.Ehc.Hello" []
 myMain :: MethodDef
 myMain = StaticMethod Public Void "main" []
   [ EntryPoint ]
-  [ Nop
+  [ nop
 
-  , Ldc_i4 1000000
-  , Call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [Bool]
+  , ldc_i4 1000000
+  , call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [Bool]
 
-  , Ret
+  , ret
   ]
 
 myEven :: MethodDef
 myEven = StaticMethod Public Bool "even" [Param Int32 "x"]
   []
-  [ Nop
-  , Ldarg 0
-  , Brtrue "else"
-  , Ldc_i4 1
-  , Ret
-  , Label "else"
-  $ Ldarg 0
-  , Ldc_i4 1
-  , Sub
-  , Tail
-  , Call Static Bool "" "Haskell.Ehc.Hello" "odd" [Int32]
-  , Ret
+  [ nop
+  , ldarg 0
+  , brtrue "else"
+  , ldc_i4 1
+  , ret
+  , label "else"
+  $ ldarg 0
+  , ldc_i4 1
+  , sub
+  , tailcall
+  $ call Static Bool "" "Haskell.Ehc.Hello" "odd" [Int32]
+  , ret
   ]
 
 myOdd :: MethodDef
 myOdd = StaticMethod Public Bool "odd" [Param Int32 "x"]
   []
-  [ Nop
-  , Ldarg 0
-  , Brtrue "else"
-  , Ldc_i4 0
-  , Ret
-  , Label "else"
-  $ Ldarg 0
-  , Ldc_i4 1
-  , Sub
-  , Tail
-  , Call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
-  , Ret
+  [ nop
+  , ldarg 0
+  , brtrue "else"
+  , ldc_i4 0
+  , ret
+  , label "else"
+  $ ldarg 0
+  , ldc_i4 1
+  , sub
+  , tailcall
+  $ call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
+  , ret
   ]
 

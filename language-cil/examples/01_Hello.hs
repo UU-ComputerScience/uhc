@@ -14,18 +14,18 @@ hello = Class Public "Haskell.Ehc.Hello" []
 myMain :: MethodDef
 myMain = StaticMethod Public Void "main" []
   [ EntryPoint ]
-  [ Nop
+  [ nop
 
-  , Ldstr "Hello, World!"
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , ldstr "Hello, World!"
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
 
-  , Call Static Void "" "Haskell.Ehc.Hello" "doNothing" []
+  , call Static Void "" "Haskell.Ehc.Hello" "doNothing" []
 
-  , Ret
+  , ret
   ]
 
 doNothing :: MethodDef
 doNothing = StaticMethod Public Void "doNothing" []
   []
-  [ Ret ]
+  [ ret ]
 

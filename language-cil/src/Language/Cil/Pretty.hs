@@ -69,7 +69,7 @@ instance Cil MethodDef where
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
     . foldr (\d s -> cil d . s) id ds
-    . foldr (\o s -> cil o . s) id os
+    . foldr (\o s -> cilLabelledOpCode o . s) id os
     . ident . ("}\n" ++)
   cil (StaticMethod v t n ps ds os) =
       ident . (".method " ++) . cil v
@@ -78,7 +78,7 @@ instance Cil MethodDef where
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
     . foldr (\d s -> cil d . s) id ds
-    . foldr (\o s -> cil o . s) id os
+    . foldr (\o s -> cilLabelledOpCode o . s) id os
     . ident . ("}\n" ++)
 
 instance Cil Parameter where
@@ -92,51 +92,75 @@ instance Cil Directive where
       ident . ident . (".locals init (\n" ++)
     . foldr (.) id (intersperse (",\n" ++) (map (\l -> bigident . cil l) ls))
     . (")\n" ++)
-  cil (MaxStack x)    = ident . ident . (".maxstack " ++) . (shows x) . nl
+  cil (MaxStack x)    = ident . ident . (".maxstack " ++) . shows x . nl
 
 instance Cil Local where
   cil (Local t n) = cil t . sp . cilName n
+
+cilLabelledOpCode :: (Label, OpCode) -> ShowS
+cilLabelledOpCode ("", oc) = ident . ident . cil oc . nl
+cilLabelledOpCode (l,  oc) = ident . (l ++) . (":" ++) . nl
+                              . ident . ident . cil oc . nl
 
 -- Note: this could be a lot more efficient. For example, there are specialized
 -- instructions for loading the constant integers 1 through 8, but for clearity
 -- these aren't used.
 instance Cil OpCode where
-  cil (Label l oc)        = ident . (l ++) . (":" ++) . nl . cil oc
-  cil (Add)               = ident . ident . ("add" ++) . nl
-  cil (And)               = ident . ident . ("and" ++) . nl
-  cil (Beq l)             = ident . ident . ("beq " ++) . (l ++) . nl
-  cil (Bge l)             = ident . ident . ("bge " ++) . (l ++) . nl
-  cil (Bgt l)             = ident . ident . ("bgt " ++) . (l ++) . nl
-  cil (Ble l)             = ident . ident . ("ble " ++) . (l ++) . nl
-  cil (Blt l)             = ident . ident . ("blt " ++) . (l ++) . nl
-  cil (Box t)             = ident . ident . ("box " ++) . cil t . nl
-  cil (Br l)              = ident . ident . ("br " ++) . (l ++) . nl
-  cil (Brfalse l)         = ident . ident . ("brfalse " ++) . (l ++) . nl
-  cil (Brtrue l)          = ident . ident . ("brtrue " ++) . (l ++) . nl
-  cil (Break)             = ident . ident . ("break" ++) . nl
-  cil (Call s t a c m ps) = ident . ident . ("call " ++) . cil s . sp
-                             . cil t . sp . cilCall a c m ps . nl
-  cil (Ceq)               = ident . ident . ("ceq" ++) . nl
-  cil (Dup)               = ident . ident . ("dup" ++) . nl
-  cil (Ldarg x)           = ident . ident . ("ldarg " ++) . shows x . nl
-  cil (Ldc_i4 x)          = ident . ident . ("ldc.i4 " ++) . shows x . nl 
-  cil (Ldfld t a c f)     = ident . ident . ("ldfld " ++) . cil t . sp
-                             . cilFld a c f . nl
-  cil (Ldloc x)           = ident . ident . ("ldloc " ++) . shows x . nl
-  cil (Ldloca x)          = ident . ident . ("ldloca " ++) . shows x . nl
-  cil (Ldstr s)           = ident . ident . ("ldstr " ++) . shows s . nl
-  cil (Neg)               = ident . ident . ("neg" ++) . nl
-  cil (Newobj s t a c ps) = ident . ident . ("newobj " ++) . cil s . sp
-                             . cil t . sp . cilNewobj a c ps . nl
-  cil (Nop)               = ident . ident . ("nop" ++) . nl
-  cil (Pop)               = ident . ident . ("pop" ++) . nl
-  cil (Rem)               = ident . ident . ("rem" ++) . nl
-  cil (Ret)               = ident . ident . ("ret" ++) . nl
-  cil (Stfld t a c f)     = ident . ident . ("stfld " ++) . cil t . sp
-                             . cilFld a c f . nl
-  cil (Stloc x)           = ident . ident . ("stloc " ++) . shows x . nl
-  cil (Sub)               = ident . ident . ("sub" ++) . nl
-  cil (Tail)              = ident . ident . ("tail." ++) . nl
+  cil (Add)               = ("add" ++)
+  cil (And)               = ("and" ++)
+  cil (Beq l)             = ("beq " ++) . (l ++)
+  cil (Bge l)             = ("bge " ++) . (l ++)
+  cil (Bgt l)             = ("bgt " ++) . (l ++)
+  cil (Ble l)             = ("ble " ++) . (l ++)
+  cil (Blt l)             = ("blt " ++) . (l ++)
+  cil (Box t)             = ("box " ++) . cil t
+  cil (Br l)              = ("br " ++) . (l ++)
+  cil (Brfalse l)         = ("brfalse " ++) . (l ++)
+  cil (Brtrue l)          = ("brtrue " ++) . (l ++)
+  cil (Call s t a c m ps) = ("call " ++) . cilsp s . cil t . sp
+                             . cilCall a c m ps
+  cil (Ceq)               = ("ceq" ++)
+  cil (Dup)               = ("dup" ++)
+  cil (Ldarg x)           = ("ldarg " ++) . shows x
+  cil (Ldarg_0)           = ("ldarg.0 " ++)
+  cil (Ldarg_1)           = ("ldarg.1 " ++)
+  cil (Ldarg_2)           = ("ldarg.2 " ++)
+  cil (Ldarg_3)           = ("ldarg.3 " ++)
+  cil (Ldc_i4 x)          = ("ldc.i4 " ++) . shows x
+  cil (Ldc_i4_0)          = ("ldc.i4.0 " ++) 
+  cil (Ldc_i4_1)          = ("ldc.i4.1 " ++) 
+  cil (Ldc_i4_2)          = ("ldc.i4.2 " ++) 
+  cil (Ldc_i4_3)          = ("ldc.i4.3 " ++) 
+  cil (Ldc_i4_4)          = ("ldc.i4.4 " ++) 
+  cil (Ldc_i4_5)          = ("ldc.i4.5 " ++) 
+  cil (Ldc_i4_6)          = ("ldc.i4.6 " ++) 
+  cil (Ldc_i4_7)          = ("ldc.i4.7 " ++) 
+  cil (Ldc_i4_8)          = ("ldc.i4.8 " ++) 
+  cil (Ldc_i4_m1)         = ("ldc.i4.m1 " ++) 
+  cil (Ldfld t a c f)     = ("ldfld " ++) . cil t . sp . cilFld a c f
+  cil (Ldloc x)           = ("ldloc " ++) . shows x
+  cil (Ldloc_0)           = ("ldloc.0 " ++)
+  cil (Ldloc_1)           = ("ldloc.1 " ++)
+  cil (Ldloc_2)           = ("ldloc.2 " ++)
+  cil (Ldloc_3)           = ("ldloc.3 " ++)
+  cil (Ldloca x)          = ("ldloca " ++) . shows x
+  cil (Ldstr s)           = ("ldstr " ++) . shows s
+  cil (Neg)               = ("neg" ++)
+  cil (Newobj t a c ps)   = ("newobj instance " ++) . cil t . sp
+                             . cilNewobj a c ps
+  cil (Nop)               = ("nop" ++)
+  cil (Pop)               = ("pop" ++)
+  cil (Rem)               = ("rem" ++)
+  cil (Ret)               = ("ret" ++)
+  cil (Stfld t a c f)     = ("stfld " ++) . cil t . sp . cilFld a c f
+  cil (Stloc x)           = ("stloc " ++) . shows x
+  cil (Stloc_0)           = ("stloc.0 " ++)
+  cil (Stloc_1)           = ("stloc.1 " ++)
+  cil (Stloc_2)           = ("stloc.2 " ++)
+  cil (Stloc_3)           = ("stloc.3 " ++)
+  cil (Sub)               = ("sub" ++)
+  cil (Tail)              = ("tail." ++)
+  cil (Tailcall opcode)       = ("tail. " ++) . cil opcode
 
 cilFld :: Name -> Name -> Name -> ShowS
 cilFld a c f = 
@@ -191,6 +215,10 @@ instance Cil PrimitiveType where
   cil (GenericType x)     = ("!" ++) . shows x
 
 -- Helper functions, to pretty print
+cilsp :: (Cil a) => a -> ShowS
+cilsp x = let s = cil x ""
+          in if s == "" then id else cil x . sp
+
 ident = ("    " ++)
 sp    = (" " ++)
 nl    = ('\n' :)

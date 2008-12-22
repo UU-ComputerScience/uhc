@@ -14,11 +14,11 @@ hello = Class Public "Haskell.Ehc.Hello" []
 myMain :: MethodDef
 myMain = StaticMethod Public Void "main" []
   [ EntryPoint ]
-  [ Nop
+  [ nop
 
-  , Call Static Void "" "Haskell.Ehc.Hello" "ioAge" []
+  , call Static Void "" "Haskell.Ehc.Hello" "ioAge" []
 
-  , Ret
+  , ret
   ]
 
 ioAge :: MethodDef
@@ -30,23 +30,23 @@ ioAge = StaticMethod Public Void "ioAge" []
       , Local (ValueType "mscorlib" "System.DateTime") "d2"
       ]
   ]
-  [ Ldstr "What year were you born?"
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String]
-  , Call Static String "mscorlib" "System.Console" "ReadLine" []
-  , Call Static Int32 "" "int32" "Parse" [String]
-  , Stloc 0
-  , Call Static (ValueType "mscorlib" "System.DateTime") "mscorlib" "System.DateTime" "get_Now" []
-  , Stloc 1
-  , Ldloca 1
-  , Ldloc 0
-  , Neg
-  , Call Instance (ValueType "mscorlib" "System.DateTime") "mscorlib" "System.DateTime" "AddYears" [Int32]
-  , Stloc 2
-  , Ldstr "This year, you turn {0}."
-  , Ldloca 2
-  , Call Instance Int32 "mscorlib" "System.DateTime" "get_Year" []
-  , Box Int32
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String, Object]
-  , Ret
+  [ ldstr "What year were you born?"
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , call Static String "mscorlib" "System.Console" "ReadLine" []
+  , call Static Int32 "" "int32" "Parse" [String]
+  , stloc 0
+  , call Static (ValueType "mscorlib" "System.DateTime") "mscorlib" "System.DateTime" "get_Now" []
+  , stloc 1
+  , ldloca 1
+  , ldloc 0
+  , neg
+  , call Instance (ValueType "mscorlib" "System.DateTime") "mscorlib" "System.DateTime" "AddYears" [Int32]
+  , stloc 2
+  , ldstr "This year, you turn {0}."
+  , ldloca 2
+  , call Instance Int32 "mscorlib" "System.DateTime" "get_Year" []
+  , box Int32
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String, Object]
+  , ret
   ]
 

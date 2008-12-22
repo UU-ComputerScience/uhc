@@ -14,21 +14,21 @@ hello = Class Public "Haskell.Ehc.Hello" []
 myMain :: MethodDef
 myMain = StaticMethod Public Void "main" []
   [ EntryPoint ]
-  [ Nop
+  [ nop
 
-  , Ldc_i4 4
-  , Call Static Void "" "Haskell.Ehc.Hello" "hellos" [Int32]
+  , ldc_i4 4
+  , call Static Void "" "Haskell.Ehc.Hello" "hellos" [Int32]
 
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" []
+  , call Static Void "mscorlib" "System.Console" "WriteLine" []
 
-  , Ldc_i4 (-4)
-  , Call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
-  , Ldc_i4 0
-  , Call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
-  , Ldc_i4 4
-  , Call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
+  , ldc_i4 (-4)
+  , call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
+  , ldc_i4 0
+  , call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
+  , ldc_i4 4
+  , call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
 
-  , Ret
+  , ret
   ]
 
 hellos :: MethodDef
@@ -38,45 +38,45 @@ hellos = StaticMethod Public Void "hellos" [Param Int32 "x"]
       [ Local Int32 "i"
       ]
   ]
-  [ Ldarg 0
-  , Stloc 0
-  , Br "Test"
-  , Label "Loop"
-  $ Ldstr "Hello!"
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String]
-  , Ldloc 0
-  , Ldc_i4 1
-  , Sub
-  , Stloc 0
-  , Label "Test"
-  $ Ldloc 0
-  , Ldc_i4 0
-  , Bgt "Loop"
-  , Ret
+  [ ldarg 0
+  , stloc 0
+  , br "Test"
+  , label "Loop"
+  $ ldstr "Hello!"
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , ldloc 0
+  , ldc_i4 1
+  , sub
+  , stloc 0
+  , label "Test"
+  $ ldloc 0
+  , ldc_i4 0
+  , bgt "Loop"
+  , ret
   ]
 
 sign :: MethodDef
 sign = StaticMethod Public Void "sign" [Param Int32 "x"]
   [ MaxStack 4
   ]
-  [ Ldarg 0
-  , Ldc_i4 0
-  , Bge "TestPositive"
-  , Ldstr "input is negative!"
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String]
-  , Br "End"
+  [ ldarg 0
+  , ldc_i4 0
+  , bge "TestPositive"
+  , ldstr "input is negative!"
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , br "End"
 
-  , Label "TestPositive"
-  $ Ldarg 0
-  , Brtrue "Positive"
-  , Ldstr "input is zero!"
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String]
-  , Br "End"
+  , label "TestPositive"
+  $ ldarg 0
+  , brtrue "Positive"
+  , ldstr "input is zero!"
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , br "End"
 
-  , Label "Positive"
-  $ Ldstr "input is positive!"
-  , Call Static Void "mscorlib" "System.Console" "WriteLine" [String]
-  , Label "End"
-  $ Ret
+  , label "Positive"
+  $ ldstr "input is positive!"
+  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , label "End"
+  $ ret
   ]
 

@@ -165,7 +165,8 @@ doCompileGrin input opts
                 }
            )
          ; when (ehcOptEmitCil options)
-           ( do { caSilly2Cil
+           ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
+                ; caSilly2Cil
                 ; caWriteCil
                 }
            )
@@ -236,8 +237,8 @@ caGrin2Silly = do
 caSilly2LLVM :: CompileAction ()
 caSilly2LLVM = do
     { code <- gets gcsSilly
-    ; opts    <- gets gcsOpts
-    ; let llvm = silly2llvm opts code
+    ; opts <- gets gcsOpts
+    ; let llvm = trace "now" $ trace (show (silly2cil opts code)) $ silly2llvm opts code
     ; modify (gcsUpdateLLVM llvm)
     }
 
@@ -245,7 +246,7 @@ caSilly2Cil :: CompileAction ()
 caSilly2Cil = do
     { code <- gets gcsSilly
     ; opts <- gets gcsOpts
-    ; let cilAst = silly2cil opts code
+    ; let cilAst = trace "now" $ trace (show code) $ silly2cil opts code
     ; modify (gcsUpdateCil cilAst)
     }
 %%]
