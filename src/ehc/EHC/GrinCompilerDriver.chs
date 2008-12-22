@@ -87,6 +87,8 @@
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
+%%[(8 codegen grin) import({%{EH}JVM(JVMModule)})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver entry point
@@ -169,6 +171,7 @@ initState opts
   = GRINCompileState { gcsGrin       = undefined
                      , gcsSilly      = undefined
                      , gcsLLVM       = undefined
+                     , gcsJVM        = undefined
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
@@ -300,6 +303,7 @@ data GRINCompileState = GRINCompileState
     { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
     , gcsLLVM      :: LLVMModule
+    , gcsJVM       :: JVMModule
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
