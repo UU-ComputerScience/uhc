@@ -9,26 +9,14 @@
 
 %%[(8 codegen grin) hs module {%{EH}Silly.ToCil}
 %%]
-%%%%[(8 codegen grin) hs import({%{EH}LLVM})
-%%%%]
 %%[(8 codegen grin) hs import({%{EH}Silly})
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
-%%[(8 codegen grin) hs import({Debug.Trace})
-%%]
-%%%%[(8 codegen grin) hs import({%{EH}ConfigDefines})
-%%%%]
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
-%%%%[(8 codegen grin) hs import(qualified Data.Map)
-%%%%]
-%%%%[(8 codegen grin) hs import(qualified Data.List)
-%%%%]
-%%%%[(8 codegen grin) hs import(Data.Char)
-%%%%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
 %%[(8 codegen grin)
@@ -46,7 +34,7 @@ PRAGMA nocycle
 silly2cil :: EHCOpts -> SilModule -> Assembly
 silly2cil opts silmod =
    let t = wrap_SilModule (sem_SilModule silmod) (Inh_SilModule)
-   in trace "herex" $ trace (show silmod) $ cilCode_Syn_SilModule t
+   in cilCode_Syn_SilModule t
 %%]
 
 %%[(8 codegen grin)
@@ -57,7 +45,11 @@ ATTR Functions
      [ | | cilCode USE {:} {[]} : {[MethodDef]} ]
 
 ATTR Function
-     [ | | cilCode : {MethodDef} ] 
+     [ | | cilCode : {MethodDef} ]
+
+ATTR AllNT
+     [ | | copy : SELF ]
+
 
 SEM SilModule
   | SilModule
@@ -72,7 +64,9 @@ SEM SilModule
   
 SEM Function
   | Function
-                lhs.cilCode = StaticMethod AssemblyVisible Void (show @name) [] [] []
+                lhs.cilCode = StaticMethod AssemblyVisible Void (show @name) @loc.params [] @loc.body
+                loc.params  = map (\h -> Param Bool (show h)) @parameters
+                loc.body    = map (br . show) @body.copy
 
 %%]
 

@@ -16,6 +16,9 @@
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Ty})
 %%]
 
+%%[8 import(Debug.Trace)
+%%]
+
 %%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
 %%]
 
@@ -173,6 +176,30 @@ data EHCOpts
                               ::  Bool
 %%]]
       }
+
+instance Show EHCOpts where
+  show eo = f ""
+    where
+      f :: ShowS
+      f = ("EHCOpts" ++) . nl
+        . ("  { ehcOptAspects = " ++) . (shows $ ehcOptAspects eo) . nl
+%%[[(8 codegen)
+        . ("  , ehcOptEmitCore = " ++) . (shows $ ehcOptEmitCore eo) . nl
+        . ("  , ehcOptOptimise = " ++) . (shows $ ehcOptOptimise eo) . nl
+        . ("  , ehcOptDumpCoreStages = " ++) . (shows $ ehcOptDumpCoreStages eo) . nl
+        . ("  , ehcOptTrf = " ++) . (shows $ map (const "?") (ehcOptTrf eo)) . nl
+%%]]
+%%[[(8 codegen grin)
+        . ("  , ehcOptEmitGrin = " ++) . (shows $ ehcOptEmitGrin eo) . nl
+        . ("  , ehcOptEmitC = " ++) . (shows $ ehcOptEmitC eo) . nl
+        . ("  , ehcOptEmitLLVM = " ++) . (shows $ ehcOptEmitLLVM eo) . nl
+        . ("  , ehcOptEmitExecLLVM = " ++) . (shows $ ehcOptEmitExecLLVM eo) . nl
+        . ("  , ehcOptEmitCil = " ++) . (shows $ ehcOptEmitCil eo) . nl
+%%]]
+
+        . ("  }" ++)
+      nl :: ShowS
+      nl = ("\n" ++)
 %%]
 
 %%[1.defaultEHCOpts
@@ -306,7 +333,7 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen grin)
      ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
-     ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1" -- Is 1 really the default? In the code it seems 2 is default
+     ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
 
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
@@ -459,6 +486,7 @@ ehcCmdLineOpts
                                                   , ehcOptEmitBytecode     = False
                                                   , ehcOptEmitExecC        = False
                                                   , ehcOptEmitExecBytecode = False
+                                                  , ehcOptFullProgAnalysis = True
                                                   }
 %%]]
 %%[[(99 hmtyinfer)
