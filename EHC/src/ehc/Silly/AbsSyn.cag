@@ -19,6 +19,7 @@ DATA SilModule
   |  SilModule   constants  : {[(String,Int)]}
                  variables  : {[HsName]}
                  functions  : Functions
+                 ctagsMp    : {CTagsMp}
 
 DATA Function
   |  Function    name       : {HsName}
