@@ -54,7 +54,7 @@ ATTR AllNT
 SEM SilModule
   | SilModule
                 lhs.cilCode  = Assembly "EhcGenerated" [@loc.classDef]
-                loc.classDef = Class AssemblyVisible "Haskell.Ehc.Generated" [] (@loc.main : @functions.cilCode)
+                loc.classDef = Class Public "Haskell.Ehc.Generated" [] (@loc.main : @functions.cilCode)
                 loc.main     = StaticMethod AssemblyVisible Void "AssemblyMain" []
                                  [ EntryPoint ]
                                  [ ldc_i4 42
@@ -64,8 +64,8 @@ SEM SilModule
   
 SEM Function
   | Function
-                lhs.cilCode = StaticMethod AssemblyVisible Void (show @name) @loc.params [] @loc.body
-                loc.params  = map (\h -> Param Bool (show h)) @parameters
+                lhs.cilCode = StaticMethod AssemblyVisible Object (hsnShowAlphanumeric @name) @loc.params [] @loc.body
+                loc.params  = map (Param Object . show) @parameters
                 loc.body    = map (comment . show) @body.copy
 
 %%]
