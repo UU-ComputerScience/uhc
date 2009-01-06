@@ -29,12 +29,8 @@ WRAPPER GrAGItf
 %%[(8 codegen grin) hs
 grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
 grin2cil hptmap gr opts
---  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
---                         (Inh_GrAGItf { opts_Inh_GrAGItf = opts
---                                      , hptMap_Inh_GrAGItf = hptmap
---                                      }
---                         )
-   = simpleAssembly [] -- silModule_Syn_GrAGItf t 
+  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf)
+   in cilAssembly_Syn_GrAGItf t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,6 +38,17 @@ grin2cil hptmap gr opts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin)
 
+ATTR GrAGItf GrModule [ | | cilAssembly : {Assembly} ]
+
+ATTR GrGlobal  [ | | cilField : {FieldDef} ]
+ATTR GrGlobalL [ | | cilFields USE {++} {[]} : {[FieldDef]} ]
+
+SEM GrModule
+  | Mod lhs.cilAssembly = Assembly @loc.name [ Class Public @loc.name @globalL.cilFields [] ]
+        loc.name        = hsnShowAlphanumeric @moduleNm
+
+SEM GrGlobal
+  | Global lhs.cilField = Field AssemblyVisible Object (hsnShowAlphanumeric @nm)
 
 %%]
 
