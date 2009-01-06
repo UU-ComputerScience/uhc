@@ -1,0 +1,47 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.ToCil} export(grin2cil)
+%%]
+%%[(8 codegen grin) hs import(Language.Cil)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
+grin2cil hptmap gr opts
+--  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
+--                         (Inh_GrAGItf { opts_Inh_GrAGItf = opts
+--                                      , hptMap_Inh_GrAGItf = hptmap
+--                                      }
+--                         )
+   = simpleAssembly [] -- silModule_Syn_GrAGItf t 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+
+%%]
+
