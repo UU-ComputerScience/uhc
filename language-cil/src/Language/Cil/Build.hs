@@ -34,6 +34,8 @@ module Language.Cil.Build (
   , tailcall
   , tailcall'
 
+  , comment
+
   -- * Convenient AST functions
   , label
   , defaultCtor
@@ -165,6 +167,9 @@ tailcall (l, _)                    =
 tailcall' :: (Label, OpCode)
 tailcall' = lbl $ Tail
 
+
+comment :: String -> (Label, OpCode)
+comment s = lbl $ Comment s
 
 -- Convenient AST functions
 

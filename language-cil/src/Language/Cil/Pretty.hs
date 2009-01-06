@@ -106,6 +106,7 @@ cilLabelledOpCode (l,  oc) = ident . (l ++) . (":" ++) . nl
 -- instructions for loading the constant integers 1 through 8, but for clearity
 -- these aren't used.
 instance Cil OpCode where
+  cil (Comment s)         = ("// " ++) . (s ++)
   cil (Add)               = ("add" ++)
   cil (And)               = ("and" ++)
   cil (Beq l)             = ("beq " ++) . (l ++)

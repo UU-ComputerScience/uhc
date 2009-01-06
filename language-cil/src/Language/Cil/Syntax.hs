@@ -85,7 +85,8 @@ type Label = String
 -- See <http://msdn.microsoft.com/en-us/library/system.reflection.emit.opcodes_members.aspx>
 -- for a more complete list with documentation.
 data OpCode =
-    Add                -- ^ Pops 2 values, adds the values, pushes result.
+    Comment String -- This instruction is temporary, while working on revised language-cil lib.
+  | Add                -- ^ Pops 2 values, adds the values, pushes result.
   | And                -- ^ Pops 2 values, do bitwise AND between the values, pushes result.
   | Beq Label          -- ^ Pops 2 values, if first value is equal to second value, jump to specified label.
   | Bge Label          -- ^ Pops 2 values, if first value is greater or equal to second value, jump to specified label.

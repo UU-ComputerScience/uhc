@@ -66,7 +66,7 @@ SEM Function
   | Function
                 lhs.cilCode = StaticMethod AssemblyVisible Void (show @name) @loc.params [] @loc.body
                 loc.params  = map (\h -> Param Bool (show h)) @parameters
-                loc.body    = map (br . show) @body.copy
+                loc.body    = map (comment . show) @body.copy
 
 %%]
 
