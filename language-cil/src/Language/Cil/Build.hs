@@ -21,6 +21,7 @@ module Language.Cil.Build (
   , ldc_i4
   , ldfld
   , ldloc
+  , ldlocName
   , ldloca
   , ldstr
   , neg
@@ -30,6 +31,7 @@ module Language.Cil.Build (
   , ret
   , stfld
   , stloc
+  , stlocName
   , sub
   , tailcall
   , tailcall'
@@ -119,6 +121,9 @@ ldloc 2 = lbl $ Ldloc_2
 ldloc 3 = lbl $ Ldloc_3
 ldloc x = lbl $ Ldloc x
 
+ldlocName :: Name -> (Label, OpCode)
+ldlocName = lbl . Ldloc_Name
+
 ldloca :: Offset -> (Label, OpCode)
 ldloca = lbl . Ldloca
 
@@ -137,6 +142,9 @@ newobj a t ps = lbl $ Newobj Void a t ps
 nop :: (Label, OpCode)
 nop = lbl $ Nop
 
+pop :: (Label, OpCode)
+pop = lbl $ Pop
+
 rem :: (Label, OpCode)
 rem = lbl $ Rem
 
@@ -152,6 +160,9 @@ stloc 1 = lbl $ Stloc_1
 stloc 2 = lbl $ Stloc_2
 stloc 3 = lbl $ Stloc_3
 stloc x = lbl $ Stloc x
+
+stlocName :: Name -> (Label, OpCode)
+stlocName = lbl . Stloc_Name
 
 sub :: (Label, OpCode)
 sub = lbl $ Sub

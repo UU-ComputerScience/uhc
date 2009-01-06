@@ -89,7 +89,8 @@ instance Cil Directive where
   cil (LocalsInit ls) =
     let bigident = ident . ident . ident . ident
     in
-      ident . ident . (".locals init (\n" ++)
+      ident . ident . (".locals init (" ++)
+    . (if null ls then id else nl)
     . foldr (.) id (intersperse (",\n" ++) (map (\l -> bigident . cil l) ls))
     . (")\n" ++)
   cil (MaxStack x)    = ident . ident . (".maxstack " ++) . shows x . nl
@@ -144,6 +145,7 @@ instance Cil OpCode where
   cil (Ldloc_1)           = ("ldloc.1 " ++)
   cil (Ldloc_2)           = ("ldloc.2 " ++)
   cil (Ldloc_3)           = ("ldloc.3 " ++)
+  cil (Ldloc_Name n)      = ("ldloc " ++) . (n ++)
   cil (Ldloca x)          = ("ldloca " ++) . shows x
   cil (Ldstr s)           = ("ldstr " ++) . shows s
   cil (Neg)               = ("neg" ++)
@@ -159,6 +161,7 @@ instance Cil OpCode where
   cil (Stloc_1)           = ("stloc.1 " ++)
   cil (Stloc_2)           = ("stloc.2 " ++)
   cil (Stloc_3)           = ("stloc.3 " ++)
+  cil (Stloc_Name n)      = ("stloc " ++) . (n ++)
   cil (Sub)               = ("sub" ++)
   cil (Tail)              = ("tail." ++)
   cil (Tailcall opcode)       = ("tail. " ++) . cil opcode

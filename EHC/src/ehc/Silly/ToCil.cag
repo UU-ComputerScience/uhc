@@ -35,6 +35,11 @@ silly2cil :: EHCOpts -> SilModule -> Assembly
 silly2cil opts silmod =
    let t = wrap_SilModule (sem_SilModule silmod) (Inh_SilModule)
    in cilCode_Syn_SilModule t
+
+className :: String
+className = "Haskell.Ehc.Generated"
+
+type MethodDecl = [(Label, OpCode)]
 %%]
 
 %%[(8 codegen grin)
@@ -47,6 +52,26 @@ ATTR Functions
 ATTR Function
      [ | | cilCode : {MethodDef} ]
 
+ATTR Statements
+     [ | | cilCode USE {++} {[]} : {MethodDecl} ]
+
+ATTR Statement
+     [ | | cilCode : {MethodDecl} ]
+
+ATTR Variable
+     [ | | isLocal : {Bool}
+           name    : {HsName} ]
+
+ATTR Value
+     [ | | cilCode : {MethodDecl}
+           isCon   : {Bool} ]
+
+ATTR Values
+     [ | | cilCode USE {++} {[]} : {MethodDecl} ]
+
+ATTR Constant
+     [ | | intValue : {Int} ]
+
 ATTR AllNT
      [ | | copy : SELF ]
 
@@ -54,19 +79,54 @@ ATTR AllNT
 SEM SilModule
   | SilModule
                 lhs.cilCode  = Assembly "EhcGenerated" [@loc.classDef]
-                loc.classDef = Class Public "Haskell.Ehc.Generated" [] (@loc.main : @functions.cilCode)
+                loc.classDef = Class Public className [] (@loc.main : @functions.cilCode)
                 loc.main     = StaticMethod AssemblyVisible Void "AssemblyMain" []
                                  [ EntryPoint ]
-                                 [ ldc_i4 42
-                                 , call Static Void "mscorlib" "System.Console" "WriteLine" [Int32]
+                                 [ call Static Object "" className "initialize" []
+                                 , ("", Pop) -- pop
+                                 , call Static Object "" className "fun_main" []
+                                 , call Static Void "mscorlib" "System.Console" "WriteLine" [Object]
                                  , ret
                                  ]
   
 SEM Function
   | Function
-                lhs.cilCode = StaticMethod AssemblyVisible Object (hsnShowAlphanumeric @name) @loc.params [] @loc.body
+                lhs.cilCode = StaticMethod AssemblyVisible Object (hsnShowAlphanumeric @name)
+                                @loc.params @loc.locals' @loc.body
                 loc.params  = map (Param Object . show) @parameters
-                loc.body    = map (comment . show) @body.copy
+                loc.locals' = [ MaxStack @loc.maxStk
+                              , LocalsInit (map (Local Int32 . hsnShowAlphanumeric) @locals)
+                              ]
+                loc.maxStk  = 4 -- This should be calculated, but I don't know how, yet
+                loc.body    = @body.cilCode
+                                ++ (if (hsnShowAlphanumeric @name) == "fun_main"
+                                   then [ ldloc 0 ]
+                                   else [ ldc_i4 6 ])
+                                ++ [ box Int32, ret ]
+
+SEM Statement
+  | * - Assignment lhs.cilCode = [ comment (show @copy) ]
+  | Assignment     lhs.cilCode = if @dest.isLocal
+                                 then @source.cilCode
+                                        ++ [ stlocName (hsnShowAlphanumeric @dest.name) ]
+                                 else [ comment (show @copy) ]
+
+SEM Variable
+  | * - Local   lhs.isLocal = False
+  | Local       lhs.isLocal = True
+                lhs.name    = @name
+
+SEM Value
+  | * - Con     lhs.isCon = False
+  | * - Con Call lhs.cilCode = [ comment (show @copy) ]
+  | Con         lhs.isCon = True
+                lhs.cilCode = [ ldc_i4 @con.intValue ]
+  | Call        lhs.cilCode = if @name == "primAddInt"
+                              then @args.cilCode ++ [ add ]
+                              else [ comment (show @copy) ]
+
+SEM Constant
+  | LiteralInt  lhs.intValue = @value
 
 %%]
 

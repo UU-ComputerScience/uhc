@@ -132,6 +132,7 @@ data OpCode =
   | Ldloc_1            -- ^ Pushes 1th local variable to the stack.
   | Ldloc_2            -- ^ Pushes 2th local variable to the stack.
   | Ldloc_3            -- ^ Pushes 3th local variable to the stack.
+  | Ldloc_Name Name    -- ^ Pushes value of local variable, specified by name, to the stack.
   | Ldloca Offset      -- ^ Pushes address of local variable, specified by index, to the stack.
   | Ldstr String       -- ^ Pushes an object reference to the specified string constant.
   | Neg                -- ^ Pops 1 value, negates the value, pushes the value.
@@ -154,6 +155,7 @@ data OpCode =
   | Stloc_1            -- ^ Pops 1 value, stores it in the 1th local variable.
   | Stloc_2            -- ^ Pops 1 value, stores it in the 2th local variable.
   | Stloc_3            -- ^ Pops 1 value, stores it in the 3th local variable.
+  | Stloc_Name Name    -- ^ Pops 1 value, stores it in the local variable specified by name.
   | Sub                -- ^ Pops 2 values, substracts second value from the first value, pushes result.
   | Tail               -- ^ Performs subsequent call as a tail call, by replacing current stack frame with callee stack frame.
   | Tailcall OpCode    -- ^ Performs provided call as a tail call, by replacing current stack frame with callee stack frame.
