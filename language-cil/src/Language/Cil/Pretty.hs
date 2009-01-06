@@ -10,41 +10,41 @@ module Language.Cil.Pretty (
 import Data.List (intersperse)
 import Language.Cil.Syntax
 
-
+{- Added `deriving Show' to Syntax
 instance Show Assembly where
   show a = cil a ""
+-}
 
 class Cil a where
   -- | Serializes a Cil data structure to a String.
   cil :: a -> ShowS
 
--- | Serializes a Name, escaping some weird names (such as \'add\').
-cilName :: Name -> ShowS
+-- | Serializes a DottedName, escaping some weird names (such as \'add\').
+cilName :: DottedName -> ShowS
 cilName "add" = ("'add'" ++)
 cilName "pop" = ("'pop'" ++)
 cilName n     = (n ++)
 
 instance Cil Assembly where
-  cil (Assembly n ms) =
-      (".assembly extern mscorlib {}\n" ++)
+  cil (Assembly as n ts) =
+      foldr (\a s -> cil a . s) id as
     . (".assembly " ++) . cilName n . (" {}\n" ++)
-    . foldr (\m s -> cil m . s) id ms
+    . foldr (\t s -> cil t . s) id ts
+
+instance Cil AssemblyRef where
+  cil (AssemblyRef n) = (".assembly extern " ++) . (n ++) . (" {}\n" ++)
 
 instance Cil TypeDef where
-  cil (Class v n fs ms) =
+  cil (Class v n ds) =
       (".class " ++) . cil v . sp . cilName n . ("\n{\n" ++)
-    . foldr (\f s -> cil f . s) id fs
-    . nl
-    . foldr (\m s -> cil m . s) id ms
+    . foldr (\d s -> cil d . s) id ds
     . ("}\n" ++)
-  cil (GenericClass v n ps fs ms) =
+  cil (GenericClass v n ps ds) =
       (".class " ++) . cil v . sp . cilName n
     . ("`" ++) . shows (length ps) . ("<" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (">\n{\n" ++)
-    . foldr (\f s -> cil f . s) id fs
-    . nl
-    . foldr (\m s -> cil m . s) id ms
+    . foldr (\d s -> cil d . s) id ds
     . ("}\n" ++)
 
 instance Cil GenParam where
@@ -57,32 +57,45 @@ instance Cil Visibility where
   cil Private           = ("private" ++)
   cil Public            = ("public" ++)
 
+instance Cil ClassDecl where
+  cil (FieldDef fd)  = cil fd
+  cil (MethodDef md) = cil md
+  cil (TypeDef td)   = cil td
+
 instance Cil FieldDef where
-  cil (Field v t n) = 
-      ident . (".field " ++) . cil v . sp . cil t . sp . cilName n . nl
+  cil (Field a v t n) = 
+      ident . (".field " ++) . cilsp a . cil v . sp . cil t . sp . cilName n . nl
 
 instance Cil MethodDef where
-  cil (Constructor v ps ds os) =
+  cil (Constructor v ps ms) =
       ident . (".method " ++) . cil v
     . (" hidebysig instance void .ctor(" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
-    . foldr (\d s -> cil d . s) id ds
-    . foldr (\o s -> cilLabelledOpCode o . s) id os
+    . foldr (\m s -> cil m . s) id ms
     . ident . ("}\n" ++)
-  cil (StaticMethod v t n ps ds os) =
-      ident . (".method " ++) . cil v
-    . (" hidebysig static " ++) . cil t . sp . cilName n . ("(" ++)
+  cil (Method a v t n ps ms) =
+      ident . (".method " ++) . cilsp a . cil v
+    . (" hidebysig " ++) . cil t . sp . cilName n . ("(" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
-    . foldr (\d s -> cil d . s) id ds
-    . foldr (\o s -> cilLabelledOpCode o . s) id os
+    . foldr (\m s -> cil m . s) id ms
     . ident . ("}\n" ++)
 
 instance Cil Parameter where
   cil (Param t n) = cil t . sp . cilName n
+
+instance Cil MethodDecl where
+  cil (Directive d) = cil d
+  cil (Instr i)     = cil i
+  cil (Comment s)   = ident . ident . ("// " ++) . (s ++) . nl
+
+instance Cil Instr where
+  cil (OpCode oc)      = ident . ident . cil oc . nl
+  cil (LabOpCode l oc) = ident . (l ++) . (":" ++) . nl
+                               . ident . ident . cil oc . nl
 
 instance Cil Directive where
   cil (EntryPoint)    = ident . ident . (".entrypoint" ++) . nl
@@ -90,7 +103,7 @@ instance Cil Directive where
     let bigident = ident . ident . ident . ident
     in
       ident . ident . (".locals init (" ++)
-    . (if null ls then id else nl)
+    . (if null ls then nl else id)
     . foldr (.) id (intersperse (",\n" ++) (map (\l -> bigident . cil l) ls))
     . (")\n" ++)
   cil (MaxStack x)    = ident . ident . (".maxstack " ++) . shows x . nl
@@ -98,16 +111,10 @@ instance Cil Directive where
 instance Cil Local where
   cil (Local t n) = cil t . sp . cilName n
 
-cilLabelledOpCode :: (Label, OpCode) -> ShowS
-cilLabelledOpCode ("", oc) = ident . ident . cil oc . nl
-cilLabelledOpCode (l,  oc) = ident . (l ++) . (":" ++) . nl
-                              . ident . ident . cil oc . nl
-
 -- Note: this could be a lot more efficient. For example, there are specialized
 -- instructions for loading the constant integers 1 through 8, but for clearity
 -- these aren't used.
 instance Cil OpCode where
-  cil (Comment s)         = ("// " ++) . (s ++)
   cil (Add)               = ("add" ++)
   cil (And)               = ("and" ++)
   cil (Beq l)             = ("beq " ++) . (l ++)
@@ -145,7 +152,6 @@ instance Cil OpCode where
   cil (Ldloc_1)           = ("ldloc.1 " ++)
   cil (Ldloc_2)           = ("ldloc.2 " ++)
   cil (Ldloc_3)           = ("ldloc.3 " ++)
-  cil (Ldloc_Name n)      = ("ldloc " ++) . (n ++)
   cil (Ldloca x)          = ("ldloca " ++) . shows x
   cil (Ldstr s)           = ("ldstr " ++) . shows s
   cil (Neg)               = ("neg" ++)
@@ -161,12 +167,11 @@ instance Cil OpCode where
   cil (Stloc_1)           = ("stloc.1 " ++)
   cil (Stloc_2)           = ("stloc.2 " ++)
   cil (Stloc_3)           = ("stloc.3 " ++)
-  cil (Stloc_Name n)      = ("stloc " ++) . (n ++)
   cil (Sub)               = ("sub" ++)
   cil (Tail)              = ("tail." ++)
-  cil (Tailcall opcode)       = ("tail. " ++) . cil opcode
+  cil (Tailcall opcode)   = ("tail. " ++) . cil opcode
 
-cilFld :: Name -> Name -> Name -> ShowS
+cilFld :: DottedName -> DottedName -> DottedName -> ShowS
 cilFld a c f = 
     cilAssembly a
   . (if c /= ""
@@ -174,7 +179,7 @@ cilFld a c f =
      else id)
   . cilName f
 
-cilNewobj :: Name -> Name -> [PrimitiveType] -> ShowS
+cilNewobj :: DottedName -> DottedName -> [PrimitiveType] -> ShowS
 cilNewobj a c ps = 
     cilAssembly a
   . (if c /= ""
@@ -184,7 +189,7 @@ cilNewobj a c ps =
   . foldr (.) id (intersperse (", " ++) (map cil ps))
   . (")" ++)
 
-cilCall :: Name -> Name -> Name -> [PrimitiveType] -> ShowS
+cilCall :: DottedName -> DottedName -> DottedName -> [PrimitiveType] -> ShowS
 cilCall a c m ps = 
     cilAssembly a
   . (if c /= ""
@@ -195,21 +200,22 @@ cilCall a c m ps =
   . foldr (.) id (intersperse (", " ++) (map cil ps))
   . (")" ++)
 
-cilAssembly :: Name -> ShowS
+cilAssembly :: DottedName -> ShowS
 cilAssembly a =
     (if a /= ""
      then ("[" ++) . cilName a . ("]" ++)
      else id)
 
 instance Cil Association where
-  cil Static   = id
+  cil Static   = ("static" ++)
   cil Instance = ("instance" ++)
+  cil StaticCallConv = id
 
 instance Cil PrimitiveType where
   cil Void                = ("void" ++) 
   cil Bool                = ("bool" ++)
   cil Char                = ("char" ++)
-  cil Byte                = ("unsigned int8" ++)
+  cil Byte                = ("uint8" ++)
   cil Int32               = ("int32" ++)
   cil Int64               = ("int64" ++)
   cil String              = ("string" ++)

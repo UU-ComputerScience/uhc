@@ -2,65 +2,57 @@ module Example where
 
 import Language.Cil
 
-main = print ass
+main = putStr (cil ass "")
 
 ass :: Assembly
-ass = Assembly "Example" [hello, tuple2]
+ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = Class Public "Haskell.Ehc.Hello" []
-              [myMain, pair]
+hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, pair] [tuple2]
 
 myMain :: MethodDef
-myMain = StaticMethod Public Void "main" []
-  [ EntryPoint ]
-  [ nop
+myMain = Method Static Public Void "main" []
+  [ entryPoint
 
   , ldc_i4 3
   , ldc_i4 2
-  , newobj "" "Haskell.Ehc.Tuple" [Int32, Int32]
-  , call Static Int32 "" "Haskell.Ehc.Hello" "pairadd" [ReferenceType "" "Haskell.Ehc.Tuple"]
+  , newobj "" "Haskell.Ehc.Hello/Tuple" [Int32, Int32]
+  , call StaticCallConv Int32 "" "Haskell.Ehc.Hello" "pairadd" [ReferenceType "" "Haskell.Ehc.Hello/Tuple"]
 
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [Int32]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
 
   , ret
   ]
 
 pair :: MethodDef
-pair = StaticMethod Public Int32 "pairadd" [Param (ReferenceType "" "Haskell.Ehc.Tuple") "t"]
-  []
-  [ nop
+pair = Method Static Public Int32 "pairadd" [Param (ReferenceType "" "Haskell.Ehc.Hello/Tuple") "t"]
+  [ ldarg 0
+  , ldfld Int32 "" "Tuple" "Fst"
   , ldarg 0
-  , ldfld Int32 "" "Haskell.Ehc.Tuple" "Fst"
-  , ldarg 0
-  , ldfld Int32 "" "Haskell.Ehc.Tuple" "Snd"
+  , ldfld Int32 "" "Tuple" "Snd"
   , add
   , ret
   ]
 
 tuple2 :: TypeDef
-tuple2 = Class Public "Haskell.Ehc.Tuple"
-               [myFst, mySnd]
-               [tupleCtor]
+tuple2 = classDef Private "Tuple"  [myFst, mySnd] [tupleCtor] []
 
 myFst :: FieldDef
-myFst = Field Public Int32 "Fst"
+myFst = Field Static Public Int32 "Fst"
 
 mySnd :: FieldDef
-mySnd = Field Public Int32 "Snd"
+mySnd = Field Static Public Int32 "Snd"
 
 tupleCtor :: MethodDef
 tupleCtor = Constructor Public [Param Int32 "fst", Param Int32 "snd"]
-  []
-  [ nop
-  , ldarg 0
+  [ ldarg 0
   , call Instance Void "" "object" ".ctor" []
   , ldarg 0
   , ldarg 1
-  , stfld Int32 "" "Haskell.Ehc.Tuple" "Fst"
+  , stfld Int32 "" "Haskell.Ehc.Hello/Tuple" "Fst"
   , ldarg 0
   , ldarg 2
-  , stfld Int32 "" "Haskell.Ehc.Tuple" "Snd"
+  , stfld Int32 "" "Haskell.Ehc.Hello/Tuple" "Snd"
   , ret
   ]
 

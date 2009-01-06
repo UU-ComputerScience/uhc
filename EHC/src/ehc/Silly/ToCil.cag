@@ -38,8 +38,6 @@ silly2cil opts silmod =
 
 className :: String
 className = "Haskell.Ehc.Generated"
-
-type MethodDecl = [(Label, OpCode)]
 %%]
 
 %%[(8 codegen grin)
@@ -53,21 +51,21 @@ ATTR Function
      [ | | cilCode : {MethodDef} ]
 
 ATTR Statements
-     [ | | cilCode USE {++} {[]} : {MethodDecl} ]
+     [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
 
 ATTR Statement
-     [ | | cilCode : {MethodDecl} ]
+     [ | | cilCode : {[MethodDecl]} ]
 
 ATTR Variable
      [ | | isLocal : {Bool}
-           name    : {HsName} ]
+           pos     : {Int} ]
 
 ATTR Value
-     [ | | cilCode : {MethodDecl}
+     [ | | cilCode : {[MethodDecl]}
            isCon   : {Bool} ]
 
 ATTR Values
-     [ | | cilCode USE {++} {[]} : {MethodDecl} ]
+     [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
 
 ATTR Constant
      [ | | intValue : {Int} ]
@@ -78,24 +76,25 @@ ATTR AllNT
 
 SEM SilModule
   | SilModule
-                lhs.cilCode  = Assembly "EhcGenerated" [@loc.classDef]
-                loc.classDef = Class Public className [] (@loc.main : @functions.cilCode)
-                loc.main     = StaticMethod AssemblyVisible Void "AssemblyMain" []
-                                 [ EntryPoint ]
-                                 [ call Static Object "" className "initialize" []
-                                 , ("", Pop) -- pop
-                                 , call Static Object "" className "fun_main" []
-                                 , call Static Void "mscorlib" "System.Console" "WriteLine" [Object]
+                lhs.cilCode  = Assembly [mscorlibRef] "EhcGenerated" (@loc.classDef : @loc.ctags)
+                loc.classDef = classDef Public className [] (@loc.main : @functions.cilCode) []
+                loc.main     = Method Static AssemblyVisible Void "AssemblyMain" []
+                                 [ entryPoint
+                                 , call StaticCallConv Object "" className "initialize" []
+                                 , pop
+                                 , call StaticCallConv Object "" className "fun_main" []
+                                 , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Object]
                                  , ret
                                  ]
+                loc.ctags    = map ctagTypeDef @ctagsMp
   
 SEM Function
   | Function
-                lhs.cilCode = StaticMethod AssemblyVisible Object (hsnShowAlphanumeric @name)
-                                @loc.params @loc.locals' @loc.body
+                lhs.cilCode = Method Static AssemblyVisible Object (hsnShowAlphanumeric @name)
+                                @loc.params (@loc.locals' ++ @loc.body)
                 loc.params  = map (Param Object . show) @parameters
-                loc.locals' = [ MaxStack @loc.maxStk
-                              , LocalsInit (map (Local Int32 . hsnShowAlphanumeric) @locals)
+                loc.locals' = [ maxStack @loc.maxStk
+                              , localsInit (map (Local Int32 . hsnShowAlphanumeric) @locals)
                               ]
                 loc.maxStk  = 4 -- This should be calculated, but I don't know how, yet
                 loc.body    = @body.cilCode
@@ -108,13 +107,13 @@ SEM Statement
   | * - Assignment lhs.cilCode = [ comment (show @copy) ]
   | Assignment     lhs.cilCode = if @dest.isLocal
                                  then @source.cilCode
-                                        ++ [ stlocName (hsnShowAlphanumeric @dest.name) ]
+                                        ++ [ stloc @dest.pos ]
                                  else [ comment (show @copy) ]
 
 SEM Variable
   | * - Local   lhs.isLocal = False
   | Local       lhs.isLocal = True
-                lhs.name    = @name
+                lhs.pos     = @pos
 
 SEM Value
   | * - Con     lhs.isCon = False
@@ -128,5 +127,19 @@ SEM Value
 SEM Constant
   | LiteralInt  lhs.intValue = @value
 
+%%]
+
+%%[(8 codegen grin) hs
+ctagTypeDef :: (HsName, [(HsName, CTag)]) -> TypeDef
+ctagTypeDef (anm, hcx) = classDef Public (hsnShowAlphanumeric anm) [] [] (map f hcx)
+  where
+    f (snm, ct) = classDef Public (hsnShowAlphanumeric snm) [] [] []
+
+fieldNames :: Int -> [DottedName]
+fieldNames 1 = [ "Value" ]
+fieldNames n | n < 11    = [ "First", "Second", "Third", "Fourth", "Fifth"
+                           , "Sixth", "Seventh", "Eighth", "Ninth", "Tenth" ]
+                           ++ drop 7 (fieldNames 99)
+             | otherwise = map (\n -> "Field" ++ show n) [1..]
 %%]
 

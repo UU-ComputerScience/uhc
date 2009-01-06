@@ -294,7 +294,7 @@ caWriteLLVM  =
 caWriteCil  :: String -> CompileAction()
 caWriteCil extra =
   do { cilAst <- gets gcsCil
-     ; caWriteFile extra "il" (const (\c -> text (show c))) cilAst
+     ; caWriteFile extra "il" (const (\c -> text (cil c ""))) cilAst
      } 
 
 caWriteGrin :: String -> CompileAction ()

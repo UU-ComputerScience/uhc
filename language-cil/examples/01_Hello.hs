@@ -2,30 +2,27 @@ module Example where
 
 import Language.Cil
 
-main = print ass
+main = putStr (cil ass "")
 
 ass :: Assembly
-ass = Assembly "Example" [hello]
+ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = Class Public "Haskell.Ehc.Hello" []
-              [myMain, doNothing]
+hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, doNothing] []
 
 myMain :: MethodDef
-myMain = StaticMethod Public Void "main" []
-  [ EntryPoint ]
-  [ nop
+myMain = Method Static Public Void "main" []
+  [ entryPoint
 
   , ldstr "Hello, World!"
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [String]
 
-  , call Static Void "" "Haskell.Ehc.Hello" "doNothing" []
+  , call StaticCallConv Void "" "Haskell.Ehc.Hello" "doNothing" []
 
   , ret
   ]
 
 doNothing :: MethodDef
-doNothing = StaticMethod Public Void "doNothing" []
-  []
+doNothing = Method Static Public Void "doNothing" []
   [ ret ]
 

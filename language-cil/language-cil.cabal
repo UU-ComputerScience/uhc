@@ -1,5 +1,5 @@
 name:                language-cil
-version:             0.0.1
+version:             0.0.2
 synopsis:            Manipulating Common Intermediate Language AST
 description:
   Language-Cil is a Haskell library for manipulating CIL abstract syntax and generating .il files.
@@ -19,8 +19,11 @@ build-type:          Simple
 cabal-version:       >= 1.2
 hs-source-dirs:      src
 exposed-modules:     Language.Cil
+                     Language.Cil.Analysis
                      Language.Cil.Build
+                     Language.Cil.Parser
                      Language.Cil.Pretty
                      Language.Cil.Syntax
-build-depends:       base
+other-modules:       Language.Cil.Scanner
+build-depends:       base, uulib
 

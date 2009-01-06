@@ -2,48 +2,46 @@ module Example where
 
 import Language.Cil
 
-main = print ass
+main = putStr (cil ass "")
 
 ass :: Assembly
-ass = Assembly "Example" [hello]
+ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = Class Public "Haskell.Ehc.Hello" []
-              [myMain, hellos, sign]
+hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, hellos, sign] []
 
 myMain :: MethodDef
-myMain = StaticMethod Public Void "main" []
-  [ EntryPoint ]
-  [ nop
+myMain = Method Static Public Void "main" []
+  [ entryPoint
 
   , ldc_i4 4
-  , call Static Void "" "Haskell.Ehc.Hello" "hellos" [Int32]
+  , call StaticCallConv Void "" "Haskell.Ehc.Hello" "hellos" [Int32]
 
-  , call Static Void "mscorlib" "System.Console" "WriteLine" []
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" []
 
   , ldc_i4 (-4)
-  , call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
+  , call StaticCallConv Void "" "Haskell.Ehc.Hello" "sign" [Int32]
   , ldc_i4 0
-  , call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
+  , call StaticCallConv Void "" "Haskell.Ehc.Hello" "sign" [Int32]
   , ldc_i4 4
-  , call Static Void "" "Haskell.Ehc.Hello" "sign" [Int32]
+  , call StaticCallConv Void "" "Haskell.Ehc.Hello" "sign" [Int32]
 
   , ret
   ]
 
 hellos :: MethodDef
-hellos = StaticMethod Public Void "hellos" [Param Int32 "x"]
-  [ MaxStack 4
-  , LocalsInit
+hellos = Method Static Public Void "hellos" [Param Int32 "x"]
+  [ maxStack 4
+  , localsInit
       [ Local Int32 "i"
       ]
-  ]
-  [ ldarg 0
+
+  , ldarg 0
   , stloc 0
   , br "Test"
   , label "Loop"
   $ ldstr "Hello!"
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [String]
   , ldloc 0
   , ldc_i4 1
   , sub
@@ -56,26 +54,26 @@ hellos = StaticMethod Public Void "hellos" [Param Int32 "x"]
   ]
 
 sign :: MethodDef
-sign = StaticMethod Public Void "sign" [Param Int32 "x"]
-  [ MaxStack 4
-  ]
-  [ ldarg 0
+sign = Method Static Public Void "sign" [Param Int32 "x"]
+  [ maxStack 4
+
+  , ldarg 0
   , ldc_i4 0
   , bge "TestPositive"
   , ldstr "input is negative!"
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [String]
   , br "End"
 
   , label "TestPositive"
   $ ldarg 0
   , brtrue "Positive"
   , ldstr "input is zero!"
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [String]
   , br "End"
 
   , label "Positive"
   $ ldstr "input is positive!"
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [String]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [String]
   , label "End"
   $ ret
   ]

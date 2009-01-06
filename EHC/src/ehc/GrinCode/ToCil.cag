@@ -44,11 +44,12 @@ ATTR GrGlobal  [ | | cilField : {FieldDef} ]
 ATTR GrGlobalL [ | | cilFields USE {++} {[]} : {[FieldDef]} ]
 
 SEM GrModule
-  | Mod lhs.cilAssembly = Assembly @loc.name [ Class Public @loc.name @globalL.cilFields [] ]
-        loc.name        = hsnShowAlphanumeric @moduleNm
+  | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" [ @loc.classDef ]
+        loc.classDef    = classDef Public @loc.name @globalL.cilFields [] []
+        loc.name        = "Haskell.Ehc." ++ hsnShowAlphanumeric @moduleNm
 
 SEM GrGlobal
-  | Global lhs.cilField = Field AssemblyVisible Object (hsnShowAlphanumeric @nm)
+  | Global lhs.cilField = Field Static AssemblyVisible Object (hsnShowAlphanumeric @nm)
 
 %%]
 

@@ -1,33 +1,31 @@
 module Example where
 
+import Prelude hiding (tail)
+
 import Language.Cil
 
-main = print ass
+main = putStr (cil ass "")
 
 ass :: Assembly
-ass = Assembly "Example" [hello]
+ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = Class Public "Haskell.Ehc.Hello" []
-              [myMain, myEven, myOdd]
+hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, myEven, myOdd] []
 
 myMain :: MethodDef
-myMain = StaticMethod Public Void "main" []
-  [ EntryPoint ]
-  [ nop
+myMain = Method Static Public Void "main" []
+  [ entryPoint
 
   , ldc_i4 1000000
-  , call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
-  , call Static Void "mscorlib" "System.Console" "WriteLine" [Bool]
+  , call StaticCallConv Bool "" "Haskell.Ehc.Hello" "even" [Int32]
+  , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Bool]
 
   , ret
   ]
 
 myEven :: MethodDef
-myEven = StaticMethod Public Bool "even" [Param Int32 "x"]
-  []
-  [ nop
-  , ldarg 0
+myEven = Method Static Public Bool "even" [Param Int32 "x"]
+  [ ldarg 0
   , brtrue "else"
   , ldc_i4 1
   , ret
@@ -36,15 +34,13 @@ myEven = StaticMethod Public Bool "even" [Param Int32 "x"]
   , ldc_i4 1
   , sub
   , tailcall
-  $ call Static Bool "" "Haskell.Ehc.Hello" "odd" [Int32]
+  $ call StaticCallConv Bool "" "Haskell.Ehc.Hello" "odd" [Int32]
   , ret
   ]
 
 myOdd :: MethodDef
-myOdd = StaticMethod Public Bool "odd" [Param Int32 "x"]
-  []
-  [ nop
-  , ldarg 0
+myOdd = Method Static Public Bool "odd" [Param Int32 "x"]
+  [ ldarg 0
   , brtrue "else"
   , ldc_i4 0
   , ret
@@ -53,7 +49,7 @@ myOdd = StaticMethod Public Bool "odd" [Param Int32 "x"]
   , ldc_i4 1
   , sub
   , tailcall
-  $ call Static Bool "" "Haskell.Ehc.Hello" "even" [Int32]
+  $ call StaticCallConv Bool "" "Haskell.Ehc.Hello" "even" [Int32]
   , ret
   ]
 
