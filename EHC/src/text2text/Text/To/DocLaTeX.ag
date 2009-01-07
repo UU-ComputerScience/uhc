@@ -75,7 +75,7 @@ ATTR AGItf AllNT [ opts: Opts | | ]
 ATTR AllGraphicsInlineOption [ | | mbCaption USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
 
 SEM GraphicsInlineOption
-  | Caption			lhs			.	mbCaption	=	Just @text.out
+  | Caption         lhs         .   mbCaption   =   Just @text.out
 
 -------------------------------------------------------------------------
 -- Graphics has label?
@@ -84,7 +84,7 @@ SEM GraphicsInlineOption
 ATTR AllGraphicsInlineOption [ | | mbLabel USE {`cmbMb`} {Nothing}: {Maybe OutDoc} ]
 
 SEM GraphicsInlineOption
-  | Label			lhs			.	mbLabel		=	Just @text.out
+  | Label           lhs         .   mbLabel     =   Just @text.out
 
 -------------------------------------------------------------------------
 -- Replacement, as OutDoc
@@ -93,29 +93,31 @@ SEM GraphicsInlineOption
 ATTR AGItf AllNT [ | | out USE {+++} {emptyout}: OutDoc ]
 
 SEM TextItem
-  | Space  			loc			.	out			=   out @str
-  | NonSpace  		loc			.	out			=   out @str
-  | CommentLF		loc			.	out			=   "%" +++ @str +++ "\n"
-  | Line  			loc			.	out			=   @str +++ "\n"
-  | LineFeed		loc			.	out			=   out "\n"
-  | ParBreak		loc			.	out			=   out "\n\n"
-  | T2T  			loc			.	out			=   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"	-- for now
-  | RefTo	  		loc			.	out			=   @reftype.out +++ dltxArgs [@reftext.out, @text.out]
-  | Styled	  		loc			.	out			=   @style.out +++ dltxArg @text.out
-  | VerbatimInline	loc			.	out			=   dltxCmd "verb" +++ @delim +++ @str +++ @delim
-  | BreakLine		loc			.	out			=   dltxCmd "\\"
+  | Space           loc         .   out         =   out @str
+  | NonSpace        loc         .   out         =   out @str
+  | CommentLF       loc         .   out         =   "%" +++ @str +++ "\n"
+  | Line            loc         .   out         =   @str +++ "\n"
+  | LineFeed        loc         .   out         =   out "\n"
+  | ParBreak        loc         .   out         =   out "\n\n"
+  | T2T             loc         .   out         =   ("@@[" +++ show @texttype) +++ "should not happen!!" +++ "@@]"  -- for now
+  | RefTo           loc         .   out         =   @reftype.out +++ dltxArgs [@reftext.out, @text.out]
+  | Styled          loc         .   out         =   @style.out +++ dltxArg @text.out
+  | VerbatimInline  loc         .   out         =   dltxCmd "verb" +++ @delim +++ @str +++ @delim
+  | BreakLine       loc         .   out         =   dltxCmd "\\"
   | HorRuler TableHorRuler
-  					loc			.	out			=   dltxCmd "hline"
-  | Header  		loc			.	out			=   @level.out +++ dltxArg @text.out
-  | Group			loc			.	out			=	dltxBeginEnd @envtype.out @text.out
-  | DocumentContent	loc			.	out			=	dltxBeginEnd "document" @text.out
-  | Table			loc			.	out			=	dltxBeginEnd "tabular" (dltxArg @tablefmt.out +++ @extratext.out +++ @rows.out)
-  | Itemize			loc			.	out			=	dltxBeginEnd @itemizestyle.out @text.out
-  | ItemizeItem		loc			.	out			=	dltxCmd "item" +++ @text.out
-  | Title   		loc			.	out			=	dltxCmd "title" +++ dltxArg @text.out
-  | Author   		loc			.	out			=	dltxCmd "author" +++ dltxArg @text.out
-  | Import   		loc			.	out			=	dltxCmd "usepackage" +++ dltxArg @text.out
-  | Label   		loc			.	out         =   dltxCmd "label" +++ dltxArg @reftext.out
+                    loc         .   out         =   dltxCmd "hline"
+  | Header          loc         .   out         =   @level.out +++ dltxArg @text.out
+  | Group           loc         .   out         =   dltxBeginEnd @envtype.out @text.out
+  | DocumentContent loc         .   out         =   dltxBeginEnd "document" @text.out
+  | Table           loc         .   out         =   dltxBeginEnd "center"
+                                                    $ dltxBeginEnd "tabular"
+                                                    $ dltxArg @tablefmt.out +++ @extratext.out +++ @rows.out
+  | Itemize         loc         .   out         =   dltxBeginEnd @itemizestyle.out @text.out
+  | ItemizeItem     loc         .   out         =   dltxCmd "item" +++ @text.out
+  | Title           loc         .   out         =   dltxCmd "title" +++ dltxArg @text.out
+  | Author          loc         .   out         =   dltxCmd "author" +++ dltxArg @text.out
+  | Import          loc         .   out         =   dltxCmd "usepackage" +++ dltxArg @text.out
+  | Label           loc         .   out         =   dltxCmd "label" +++ dltxArg @reftext.out
   | MakeTitle       loc         .   out         =   dltxCmd "maketitle"
   | DocumentHeader  loc         .   out         =   dltxCmd "documentclass" +++ @mboptions.out +++ dltxArg @text.out
   | GraphicsInline  loc         .   out         =   let mkFig = if isJust @mboptions.mbCaption || isJust @mboptions.mbLabel
@@ -128,56 +130,56 @@ SEM TextItem
   | TOC             loc         .   out         =   dltxCmd "tableofcontents"
   
 SEM RefType
-  | Local			loc			.	out			=	dltxCmd "lref"
-  | URL  			loc			.	out			=	dltxCmd "href"
-  | EhcWeb			loc			.	out			=	dltxCmd "eref"
-  | STWiki			loc			.	out			=	dltxCmd "tref"
-  | EhcSrc			loc			.	out			=	dltxCmd "sref"
-  | Cite			loc			.	out			=	dltxCmd "cref"
+  | Local           loc         .   out         =   dltxCmd "lref"
+  | URL             loc         .   out         =   dltxCmd "href"
+  | EhcWeb          loc         .   out         =   dltxCmd "eref"
+  | STWiki          loc         .   out         =   dltxCmd "tref"
+  | EhcSrc          loc         .   out         =   dltxCmd "sref"
+  | Cite            loc         .   out         =   dltxCmd "cref"
 
 SEM TextStyle
-  -- | Verbatim		loc			.	out			=	dltxCmd "verb"
-  | Bold			loc			.	out			=	dltxCmd "textbf"
-  | Italic			loc			.	out			=	dltxCmd "textit"
-  | Teletype		loc			.	out			=	dltxCmd "texttt"
-  | Emphasized		loc			.	out			=	dltxCmd "emph"
+  -- | Verbatim     loc         .   out         =   dltxCmd "verb"
+  | Bold            loc         .   out         =   dltxCmd "textbf"
+  | Italic          loc         .   out         =   dltxCmd "textit"
+  | Teletype        loc         .   out         =   dltxCmd "texttt"
+  | Emphasized      loc         .   out         =   dltxCmd "emph"
 
 SEM GroupType
-  | Verbatim		lhs			.	out			=	out "pre"
-  -- | Document		lhs			.	out			=	out "document"
-  -- | Tabular			lhs			.	out			=	out "tabular"
+  | Verbatim        lhs         .   out         =   out "pre"
+  -- | Document     lhs         .   out         =   out "document"
+  -- | Tabular          lhs         .   out         =   out "tabular"
 
 SEM ItemizeStyle
-  | Bullet			lhs			.	out			=	out "itemize"
-  | Number			lhs			.	out			=	out "enumerate"
+  | Bullet          lhs         .   out         =   out "itemize"
+  | Number          lhs         .   out         =   out "enumerate"
 
 SEM HeaderLevel
-  | Level			lhs			.	out			=	dltxCmd (outList (replicate @level "sub") +++ "section")
-  | Paragraph		lhs			.	out			=	dltxCmd "paragraph"
+  | Level           lhs         .   out         =   dltxCmd (outList (replicate @level "sub") +++ "section")
+  | Paragraph       lhs         .   out         =   dltxCmd "paragraph"
 
 SEM DocumentOption
-  | A4Paper			loc			.	out			=	out "a4paper"
+  | A4Paper         loc         .   out         =   out "a4paper"
 
 SEM MbDocumentOptions
-  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
+  | Just            loc         .   out         =   outListSep "[" "]" "," @just.outL
 
 SEM GraphicsInlineOption
-  | Scale			loc			.	out			=	"scale=" +++ @text.out
+  | Scale           loc         .   out         =   "scale=" +++ @text.out
 
 SEM MbGraphicsInlineOptions
-  | Just			loc			.	out			=	outListSep "[" "]" "," @just.outL
+  | Just            loc         .   out         =   outListSep "[" "]" "," @just.outL
 
 SEM TableColFormat
-  | JustifyLeft		loc			.	out			=	out "l"
-  | JustifyCenter	loc			.	out			=	out "c"
-  | JustifyRight	loc			.	out			=	out "r"
-  | SepbyLine		loc			.	out			=	out "|"
+  | JustifyLeft     loc         .   out         =   out "l"
+  | JustifyCenter   loc         .   out         =   out "c"
+  | JustifyRight    loc         .   out         =   out "r"
+  | SepbyLine       loc         .   out         =   out "|"
 
 SEM TableRow
-  | Row				lhs			.	out			=	outListSep "" "" "&" @cols.outL +++ "\\\\" +++ @extrabrktext.out
+  | Row             lhs         .   out         =   outListSep "" "" "&" @cols.outL +++ "\\\\" +++ @extrabrktext.out
 
 SEM TableField
-  | Fld				lhs			.	out			=	@extraseptext.out +++ @fld.out
+  | Fld             lhs         .   out         =   @extraseptext.out +++ @fld.out
 
 -------------------------------------------------------------------------
 -- Replacement, as [OutDoc]
@@ -190,12 +192,12 @@ ATTR
     [ | | outL USE {++} {[]}: {[OutDoc]} ]
 
 SEM DocumentOption
-  | *				lhs			.	outL		=	[@out]
+  | *               lhs         .   outL        =   [@out]
 
 SEM GraphicsInlineOption
-  | Scale			lhs			.	outL		=	[@out]
-  | * - Scale		lhs			.	outL		=	[]
+  | Scale           lhs         .   outL        =   [@out]
+  | * - Scale       lhs         .   outL        =   []
 
 SEM TableFields
-  | Cons			lhs			.	outL		=	@hd.out : @tl.outL
-  | Nil				lhs			.	outL		=	[]
+  | Cons            lhs         .   outL        =   @hd.out : @tl.outL
+  | Nil             lhs         .   outL        =   []

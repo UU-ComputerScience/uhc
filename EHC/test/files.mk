@@ -54,7 +54,7 @@ test-expect test-regress: test-lists
 	  else \
 	    ehc=$(TEST_BIN_PREFIX)$${v}/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
 	    gri=$(TEST_BIN_PREFIX)$${v}/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
-	    optPreludePath="--search-path=$(TEST_TOP_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)" ; \
+	    optPreludePath="--search-path=$(BLDABS_PREFIX)$${v}/$(EHCLIB_EHCLIB_EHCBASE_PREFIX)" ; \
 	  fi ; \
 	  echo "== version $${v} ==" ; \
 	  if test -x $${ehc} ; \

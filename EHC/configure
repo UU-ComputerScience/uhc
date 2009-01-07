@@ -681,6 +681,9 @@ EHC_UNIXTOOL_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
+haddockCmd
+HADDOCK_CMD
+HADDOCK_VERSION
 OPT_GHC_STANDARD_PACKAGES
 CABAL_BASE_LIB_DEPENDS
 CABAL_EXTRA_LIB_DEPENDS
@@ -1346,6 +1349,9 @@ Optional Packages:
   --with-ghc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
                           GHC.
+  --with-haddock=<haddock>
+                          Use a command different from 'haddock' to generate
+                          doc.
   --with-uuagc=<uu ag compiler>
                           Use a command different from 'uuagc' to compile with
                           UUAGC.
@@ -2255,6 +2261,73 @@ GHC_CMD=$ghcCmd
 
 ghcVersion=`$ghcCmd --numeric-version`
 GHC_VERSION=$ghcVersion
+
+
+### 'with' option for haddock
+
+# Check whether --with-haddock was given.
+if test "${with_haddock+set}" = set; then
+  withval=$with_haddock;  haddockCmd="$withval"
+else
+
+  if test "$HADDOCK" = ""; then
+    # Extract the first word of "haddock", so it can be a program name with args.
+set dummy haddock; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_haddockCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $haddockCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_haddockCmd="$haddockCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_haddockCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+haddockCmd=$ac_cv_path_haddockCmd
+if test -n "$haddockCmd"; then
+  { echo "$as_me:$LINENO: result: $haddockCmd" >&5
+echo "${ECHO_T}$haddockCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  else
+    haddockCmd=$HADDOCK
+  fi
+
+
+fi
+
+if test "$haddockCmd" = "no"; then
+  haddockCmd=""
+  haddockExists="no"
+else
+  haddockExists="yes"
+fi
+HADDOCK_CMD=$haddockCmd
+
+haddockVersion=`$haddockCmd --version | head -n 1`
+HADDOCK_VERSION=$haddockVersion
 
 
 # GHC version dependencies: packages passed as option, cabal packages
@@ -7106,6 +7179,9 @@ EHC_UNIXTOOL_PREFIX!$EHC_UNIXTOOL_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
+haddockCmd!$haddockCmd$ac_delim
+HADDOCK_CMD!$HADDOCK_CMD$ac_delim
+HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
 OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
 CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
@@ -7134,9 +7210,6 @@ CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
-GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7178,6 +7251,9 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
+MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
+GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
 SUFFIX_LIB!$SUFFIX_LIB$ac_delim
@@ -7204,7 +7280,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 24; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 27; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -7635,10 +7711,11 @@ fi
 
 
 echo
-echo "Installation/build summary:"
+echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 
+echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
 if test "x$uuagcExists" = "xyes" ;then
 echo "    version                     : $uuagcVersion"
@@ -7649,7 +7726,13 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
-#echo "    library install dir for ghc : $ghcLibDir"
+fi
+
+echo "Optional:"
+echo "  haddock is available?         : $haddockExists"
+if test "x$haddockExists" = "xyes" ;then
+echo "    version                     : $haddockVersion"
+echo "    command for haddock         : $haddockCmd"
 fi
 
 #echo

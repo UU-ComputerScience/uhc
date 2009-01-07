@@ -1,3 +1,5 @@
+{-# LANGUAGE ImplicitPrelude #-}	-- required for haddock
+
 -- 20080423, AD: A provisional implementation of getArgs + getProgName
 
 module System.Environment

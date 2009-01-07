@@ -1,3 +1,9 @@
+%%[99
+-- {-# CPP, LANGUAGE NoImplicitPrelude #-}	-- required for haddock
+%%]
+
+%%[99
+
 module EHC.Prelude   -- adapted from thye Hugs prelude
 (
 -- Classes
@@ -2383,3 +2389,4 @@ ehcRunMain m =
 #endif
 
 main = return () -- dummy
+%%]

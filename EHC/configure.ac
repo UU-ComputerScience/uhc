@@ -165,6 +165,29 @@ AC_SUBST(GHC_CMD,$ghcCmd)
 ghcVersion=`$ghcCmd --numeric-version`
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
+### 'with' option for haddock
+AC_ARG_WITH(haddock,
+[AC_HELP_STRING([--with-haddock=<haddock>],
+                [Use a command different from 'haddock' to generate doc.])],
+[ haddockCmd="$withval" ],
+[ 
+  if test "$HADDOCK" = ""; then
+    AC_PATH_PROG(haddockCmd,haddock)
+  else
+    haddockCmd=$HADDOCK
+  fi
+]
+)
+if test "$haddockCmd" = "no"; then
+  haddockCmd=""
+  haddockExists="no"
+else
+  haddockExists="yes"
+fi
+AC_SUBST(HADDOCK_CMD,$haddockCmd)
+haddockVersion=`$haddockCmd --version | head -n 1`
+AC_SUBST(HADDOCK_VERSION, $haddockVersion)
+
 # GHC version dependencies: packages passed as option, cabal packages
 cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
 cabal_extra_lib_depends=""
@@ -558,10 +581,11 @@ AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config
 AC_OUTPUT
 
 echo
-echo "Installation/build summary:"
+echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
 
+echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
 if test "x$uuagcExists" = "xyes" ;then 
 echo "    version                     : $uuagcVersion"
@@ -572,7 +596,13 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
-#echo "    library install dir for ghc : $ghcLibDir"
+fi
+
+echo "Optional:"
+echo "  haddock is available?         : $haddockExists"
+if test "x$haddockExists" = "xyes" ;then 
+echo "    version                     : $haddockVersion"
+echo "    command for haddock         : $haddockCmd"
 fi
 
 #echo

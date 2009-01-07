@@ -96,7 +96,7 @@ cpPreprocessWithCPP modNm
               (do { let preCPP
                           = concat $ intersperse " "
                             $ (  [ Cfg.shellCmdCpp ]
-                              ++ [ "-traditional-cpp", "-fno-show-column", "-P", "-D__EHC__" ]
+                              ++ [ "-traditional-cpp", "-fno-show-column", "-P", "-D__EHC__", "-D__HUGS__" ]
 %%[[(99 codegen grin)
                               ++ (if ehcOptFullProgAnalysis opts then ["-D__FULL_PROGRAM_ANALYSIS__"] else [])
 %%]]
