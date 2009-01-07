@@ -316,6 +316,8 @@ Other pecularities:
 %%]
 
 %%[twikiGen doclatex
+Pecularities:
+
 \begin{itemize}
 \item \verb|\documentclass[X]{Y}| is ignored.
 \item \verb|\usepackage{X}| is ignored.
@@ -323,7 +325,7 @@ Other pecularities:
 \item Spacing around \verb|\item| and its content is not yet ignored, so items are not properly rendered.
 \item Labels may only be defined globally (because anchors must start at the beginning of a line).
 \item Table formatting is not implemented (yet).
-\item \verb|\includegraphics| ignores all options.
+\item \verb|\includegraphics| ignores all options. The included picture is assumed to have suffix @.gif@ instead of @.pdf@.
 \end{itemize}
 %%]
 

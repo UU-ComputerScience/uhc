@@ -9,23 +9,61 @@
 \subsection{Installation}
 \subsection{Using EHC}
 
-\section{Language extensions}
-%%@ToolDocEHC.extensions
-\subsection{Higher ranked types}
-\subsection{Impredicativity}
-\subsection{Partial type signature}
-\subsection{Existential types}
-\subsection{Extensible records}
-
-\section{Language restrictions (relative to Haskell98)}
-%%@ToolDocEHC.restrictions
-
 \section{Commandline}
 \subsection{Commandline invocation}
 %%@ToolDocEHC.commandlineInvocation
 
 \subsection{Commandline options}
 %%@ToolDocEHC.commandlineOptions
+
+\section{Language extensions}
+%%@ToolDocEHC.extensions
+\subsection{Higher ranked types and impredicativity}
+\label{higher-ranked-types-and-impredicativity}
+
+\subsection{Partial type signature}
+\label{partial-type-signatures}
+
+\subsection{Existential types}
+\label{existential-types}
+
+\subsection{Kind inference}
+\label{kind-inference}
+
+\subsection{Lexically scoped type variables}
+\label{lexically-scoped-type-variables}
+
+\subsection{Extensible records}
+\label{extensible-records}
+
+\section{Language implementation status}
+\glabel{LanguageImplementationStatus}
+%%@ToolDocEHC.languageStatus
+
+\subsection{Available in Haskell98 but not or partially in EHC}
+%%@ToolDocEHC.inHaskell98NotInEhc
+
+\subsection{Proposed in Haskell prime but not or partially in EHC}
+%%@ToolDocEHC.inHaskellPrimeNotInEhc
+
+\subsection{Available in EHC but not in Haskell98 or Haskell prime}
+%%@ToolDocEHC.inEhcNotIn98Prime
+
+\subsection{Library modules}
+\subsubsection{@Prelude@}
+\subsubsection{Others}
+
+\subsection{Library + runtime}
+\subsubsection{Threads}
+\subsubsection{Garbage collection}
+
+\subsection{Backends}
+\subsubsection{GRIN based interpreter}
+\subsubsection{GRIN based C, with full program analysis}
+\subsubsection{GRIN based LLVM, with full program analysis}
+
+\subsection{XX}
+\subsection{XX}
 
 \section{Further reading}
 %%@ToolDocEHC.andFurther
@@ -332,8 +370,66 @@ Hello World
 %%[extensions doclatex
 %%]
 
-%%[restrictions doclatex
+%%[languageStatus doclatex
 For now, see info on \eref{FirstRelease}{the upcoming first release} and \eref{LanguageFeatures}{language features}.
+
+Encoding of availability:
+
+\begin{tabular}{ll}
+\textbf{Encoding} & \textbf{Meaning} \\ \hline
+Y & is available \\
+YN & is partially available \\
+N & is not yet available \\
+NN & is not and will never be available \\
+\end{tabular}
+
+%%]
+
+%%[inHaskell98NotInEhc doclatex
+Availability of features for Haskell, with file suffix @.hs@:
+
+\begin{tabular}{ll}
+\textbf{Feature} & \textbf{Available?} \\ \hline
+n+k patterns & NN \\
+@deriving@ construct & YN, for @Show@, @Read@, @Eq@, @Ord@, @Enum@, @Bounded@ \\ 
+@default@ construct & N \\ 
+@Prelude@: predefined instances & YN, not for tuples \\ 
+Irrefutable patterns & YN, nested patterns too lazy \\
+Strictness annotation in data types & YN, ignored \\
+Literate Haskell source format & YN, only \verb@\begin{code}@ .. \verb@\end{code}@ \\
+Operator infixity determines parsing & YN, some subtle report examples are not treated as defined \\
+Foreign function interface & YN, enough to make @Prelude@ work \\
+Exceptions & YN, depending on backend \\
+\end{tabular}
+
+Additionally, availability of features for EH (Essential Haskell), with file suffix @.eh@:
+
+\begin{tabular}{ll}
+\textbf{Feature} & \textbf{Available?} \\ \hline
+Modules & NN \\
+Automatic binding groups detection  & NN, one let binding means binding group \\
+Literate source format & NN \\
+@newtype@ declarations & N \\
+\end{tabular}
+
+%%]
+
+%%[inHaskellPrimeNotInEhc doclatex
+%%]
+
+%%[inEhcNotIn98Prime doclatex
+\begin{tabular}{ll}
+\textbf{Feature} & \textbf{Available?} \\ \hline
+\lref{lexically-scoped-type-variables}{Lexically scoped type variables} & Y \\
+\lref{existential-types}{Existential quantification} & Y \\
+\lref{partial-type-signatures}{Partial type signatures} & Y \\
+Multiparameter type classes & Y \\
+Functional dependencies & N \\
+\lref{kind-inference}{Explicit kinding} & Y \\
+\lref{kind-inference}{Polymorphic kind inference} & Y \\
+Extensible records & YN \\
+\end{tabular}
+
 %%]
 
 %%[commandlineInvocation doclatex

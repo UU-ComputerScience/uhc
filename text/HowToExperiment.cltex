@@ -142,7 +142,10 @@ At the time of this writing (20081025) note the following:
 %%]
 
 %%[regressionTesting doclatex
-Full variants, that is variants including the default set of aspects, can be regress tested. Regression testing requires a set of outputs against which can be compared. These expected outputs must be generated when in a stable development state, for example before making any modifications. The following example generates the expected outputs for variant 3:
+Full variants, that is variants including the default set of aspects, can be regress tested. Regression testing requires a set of outputs against which can be compared.
+These expected outputs must be generated when in a stable development state, for example before making any modifications.
+The @make@ targets which generate both the expected test output and do the regression testing, the appropriate compiler variant \sref{bin/VARIANT/ehc}{ehc} and \sref{bin/VARIANT/ehclib}{library} (if required) must be present.
+The following example generates the expected outputs for variant 3:
 
 \begin{verbatim}
 make test-expect TEST_VARIANTS=3
@@ -164,6 +167,15 @@ Multiple variants and test files may be tested by passing multiple arguments to 
 
 \begin{verbatim}
 make test-regress TEST_VARIANTS="3 4" TEST_FILES="2/all-ok.eh 3/all-ok.eh"
+\end{verbatim}
+
+Finally, to do full regression testing on the full Haskell compiler, assuming the presence of the expected output,
+additionally ensuring the presence of both compiler and library, use the following:
+
+\begin{verbatim}
+make 100/ehc
+make 100/ehclib
+make test-regress TEST_VARIANTS=100
 \end{verbatim}
 %%]
 
