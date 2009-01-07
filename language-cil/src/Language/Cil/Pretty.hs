@@ -147,6 +147,7 @@ instance Cil OpCode where
   cil (Ldc_i4_8)          = ("ldc.i4.8 " ++) 
   cil (Ldc_i4_m1)         = ("ldc.i4.m1 " ++) 
   cil (Ldfld t a c f)     = ("ldfld " ++) . cil t . sp . cilFld a c f
+  cil (LdlocN nm)         = (("ldloc " ++ nm) ++)
   cil (Ldloc x)           = ("ldloc " ++) . shows x
   cil (Ldloc_0)           = ("ldloc.0 " ++)
   cil (Ldloc_1)           = ("ldloc.1 " ++)
@@ -162,6 +163,7 @@ instance Cil OpCode where
   cil (Rem)               = ("rem" ++)
   cil (Ret)               = ("ret" ++)
   cil (Stfld t a c f)     = ("stfld " ++) . cil t . sp . cilFld a c f
+  cil (StlocN nm)         = (("stloc " ++ nm) ++)
   cil (Stloc x)           = ("stloc " ++) . shows x
   cil (Stloc_0)           = ("stloc.0 " ++)
   cil (Stloc_1)           = ("stloc.1 " ++)
@@ -170,6 +172,7 @@ instance Cil OpCode where
   cil (Sub)               = ("sub" ++)
   cil (Tail)              = ("tail." ++)
   cil (Tailcall opcode)   = ("tail. " ++) . cil opcode
+  cil (IsInst tp)         = ("isinst " ++) . cil tp
 
 cilFld :: DottedName -> DottedName -> DottedName -> ShowS
 cilFld a c f = 

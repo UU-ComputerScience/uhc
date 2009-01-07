@@ -21,6 +21,9 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
+%%% TODO gedeeltelijk spul uitsplitsen in losse module
+%%[(8 codegen grin) hs import({%{EH}Silly.ToCil} (ctagTypeDef))
+%%]
 
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -31,6 +34,7 @@ grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
 grin2cil hptmap gr opts
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf)
    in cilAssembly_Syn_GrAGItf t
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,16 +44,58 @@ grin2cil hptmap gr opts
 
 ATTR GrAGItf GrModule [ | | cilAssembly : {Assembly} ]
 
-ATTR GrGlobal  [ | | cilField : {FieldDef} ]
-ATTR GrGlobalL [ | | cilFields USE {++} {[]} : {[FieldDef]} ]
+ATTR GrGlobal GrGlobalL [ | | cilFields USE {++} {[]} : {[FieldDef]} ]
+
+ATTR GrBind GrBindL [ | | cilMethods USE {++} {[]} : {[MethodDef]} ]
+
+ATTR GrExpr GrPatLam GrVal [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
 
 SEM GrModule
-  | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" [ @loc.classDef ]
-        loc.classDef    = classDef Public @loc.name @globalL.cilFields [] []
+  | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" (@loc.classDef : @loc.tagDefs)
+        loc.classDef    = classDef Public @loc.name @globalL.cilFields (@loc.mainDef : @bindL.cilMethods) []
+        loc.mainDef     = Method Static AssemblyVisible Void "AssemblyMain" []
+                            [ entryPoint
+                            , call StaticCallConv Object "" @loc.name "fun_main" []
+                            , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Object]
+                            , ret
+                            ]
         loc.name        = "Haskell.Ehc." ++ hsnShowAlphanumeric @moduleNm
+        loc.tagDefs     = map ctagTypeDef @ctagsMp
 
 SEM GrGlobal
-  | Global lhs.cilField = Field Static AssemblyVisible Object (hsnShowAlphanumeric @nm)
+  | Global lhs.cilFields = [Field Static AssemblyVisible Object (hsnShowAlphanumeric @nm)]
+
+SEM GrBind
+  | Bind lhs.cilMethods = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params [Comment $ show @expr]] -- @expr.cilCode]
+         loc.params    = map (Param Object . hsnShowAlphanumeric) @argNmL
+  | Rec  lhs.cilMethods = error "Geen idee."
+
+SEM GrExpr
+  | Seq  lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
+  | Unit lhs.cilCode = @val.cilCode
+  | UpdateUnit lhs.cilCode = [Comment "UpdateUnit"]
+  | Case lhs.cilCode = [Comment "Case"]
+  -- ...
+
+SEM GrPatLam
+  | Empty lhs.cilCode = []
+  | Var   lhs.cilCode = [op $ StlocN $ hsnShowAlphanumeric @nm]
+  -- ...
 
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Helper functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+op = Instr . OpCode
+
+ctags2classes :: CTagsMp -> [TypeDef]
+ctags2classes = map (uncurry ctag2class)
+
+ctag2class :: HsName -> AssocL HsName CTag -> TypeDef
+ctag2class name instances = undefined
+
+%%]

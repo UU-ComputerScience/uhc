@@ -27,7 +27,7 @@ WRAPPER SilModule
 PRAGMA nocycle
 %%]
 
-%%[(8 codegen grin) hs export( silly2cil )
+%%[(8 codegen grin) hs export( silly2cil, ctagTypeDef )
 {-|
   Transform a 'SilModule' to a Cil 'Assembly'.
 -} 

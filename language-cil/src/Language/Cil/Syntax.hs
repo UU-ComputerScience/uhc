@@ -183,6 +183,7 @@ data OpCode =
           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
           , fieldName    :: DottedName     -- ^ Name of the field.
           } -- ^ Pops object reference, find value of specified field on object, pushes value to the stack.
+  | LdlocN String      -- ^ Pushes value of local variable, specified by name, to the stack.
   | Ldloc Offset       -- ^ Pushes value of local variable, specified by index, to the stack.
   | Ldloc_0            -- ^ Pushes 0th local variable to the stack.
   | Ldloc_1            -- ^ Pushes 1th local variable to the stack.
@@ -205,6 +206,7 @@ data OpCode =
           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
           , fieldName    :: DottedName     -- ^ Name of the field.
           } -- ^ Replaces the value stored in the field of an object reference or pointer with a new value.
+  | StlocN String      -- ^ Pops 1 value, stores it in the local variable specified by name.
   | Stloc Offset       -- ^ Pops 1 value, stores it in the local variable specified by index.
   | Stloc_0            -- ^ Pops 1 value, stores it in the 0th local variable.
   | Stloc_1            -- ^ Pops 1 value, stores it in the 1th local variable.
@@ -213,5 +215,6 @@ data OpCode =
   | Sub                -- ^ Pops 2 values, substracts second value from the first value, pushes result.
   | Tail               -- ^ Performs subsequent call as a tail call, by replacing current stack frame with callee stack frame.
   | Tailcall OpCode    -- ^ Performs provided call as a tail call, by replacing current stack frame with callee stack frame.
+  | IsInst PrimitiveType -- ^ Tests if an object reference is an instance of class, returning either a null reference or an instance of that class or interface. (TODO not sure about parameter(s))
   deriving Show
 
