@@ -79,7 +79,7 @@ SEM GrExpr
 
 SEM GrPatLam
   | Empty lhs.cilCode = []
-  | Var   lhs.cilCode = [op $ StlocN $ hsnShowAlphanumeric @nm]
+  | Var   lhs.cilCode = [stlocN $ hsnShowAlphanumeric @nm]
   -- ...
 
 %%]
@@ -89,8 +89,6 @@ SEM GrPatLam
 %%% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
-
-op = Instr . OpCode
 
 ctags2classes :: CTagsMp -> [TypeDef]
 ctags2classes = map (uncurry ctag2class)

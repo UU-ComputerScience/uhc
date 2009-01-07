@@ -27,9 +27,9 @@ myMain = Method Static Public Void "main" []
 pair :: MethodDef
 pair = Method Static Public Int32 "pairadd" [Param (ReferenceType "" "Haskell.Ehc.Hello/Tuple") "t"]
   [ ldarg 0
-  , ldfld Int32 "" "Tuple" "Fst"
+  , ldfld Int32 "" "Haskell.Ehc.Hello/Tuple" "Fst"
   , ldarg 0
-  , ldfld Int32 "" "Tuple" "Snd"
+  , ldfld Int32 "" "Haskell.Ehc.Hello/Tuple" "Snd"
   , add
   , ret
   ]

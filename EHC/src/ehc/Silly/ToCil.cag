@@ -9,6 +9,8 @@
 
 %%[(8 codegen grin) hs module {%{EH}Silly.ToCil}
 %%]
+%%[(8 codegen grin) export (silly2cil, ctagDottedName, ctagTypeDef)
+%%]
 %%[(8 codegen grin) hs import({%{EH}Silly})
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
@@ -18,6 +20,8 @@
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
+%%]
+%%[(8 codegen grin) hs import(Data.Char (toLower))
 %%]
 %%[(8 codegen grin)
 WRAPPER SilModule
@@ -130,10 +134,34 @@ SEM Constant
 %%]
 
 %%[(8 codegen grin) hs
+ctagDottedName :: CTag -> DottedName
+ctagDottedName (CTag tyNm taNm _ _ _) = hsnShowAlphanumeric tyNm ++ "/"
+                                          ++ hsnShowAlphanumeric taNm
+
 ctagTypeDef :: (HsName, [(HsName, CTag)]) -> TypeDef
-ctagTypeDef (anm, hcx) = classDef Public (hsnShowAlphanumeric anm) [] [] (map f hcx)
+ctagTypeDef (anm, hcx) = classDef Public tyNm [] [] (map subTys hcx)
   where
-    f (snm, ct) = classDef Public (hsnShowAlphanumeric snm) [] [] []
+    tyNm = hsnShowAlphanumeric anm
+    pNm ""     = ""
+    pNm (c:cs) = toLower c : cs
+    subTys (snm, (CTag _ _ t a ma)) =
+      classDef Public subTyNm
+        fields
+        [ctor]
+        []
+      where
+        subTyNm = hsnShowAlphanumeric snm 
+        fields  = map (Field Static Public Object) (take a $ fieldNames ma)
+        ctor    = Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) fields)
+                  $
+                  [ ldarg 0
+                  , call Instance Void "" tyNm ".ctor" []
+                  ]
+                  ++
+                  concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" subTyNm n]) (zip fields [1..])
+                  ++
+                  [ ret ]
+                 
 
 fieldNames :: Int -> [DottedName]
 fieldNames 1 = [ "Value" ]

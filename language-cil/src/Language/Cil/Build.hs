@@ -22,10 +22,13 @@ module Language.Cil.Build (
   , brtrue
   , call
   , ceq
+  , dup
+  , isinst
   , ldarg
   , ldc_i4
   , ldfld
   , ldloc
+  , ldlocN
   , ldloca
   , ldstr
   , neg
@@ -36,6 +39,7 @@ module Language.Cil.Build (
   , ret
   , stfld
   , stloc
+  , stlocN
   , sub
   , tail
   , tailcall
@@ -108,6 +112,12 @@ call a p l t m ps = mdecl $ Call a p l t m ps
 ceq :: MethodDecl
 ceq = mdecl $ Ceq
 
+dup :: MethodDecl
+dup = mdecl $ Dup
+
+isinst :: a -> MethodDecl
+isinst = error "Language.Cil.Build.isinst: not implemented"
+
 ldarg :: Offset -> MethodDecl
 ldarg 0 = mdecl $ Ldarg_0
 ldarg 1 = mdecl $ Ldarg_1
@@ -137,6 +147,9 @@ ldloc 1 = mdecl $ Ldloc_1
 ldloc 2 = mdecl $ Ldloc_2
 ldloc 3 = mdecl $ Ldloc_3
 ldloc x = mdecl $ Ldloc x
+
+ldlocN :: DottedName -> MethodDecl
+ldlocN nm = mdecl $ LdlocN nm
 
 ldloca :: Offset -> MethodDecl
 ldloca = mdecl . Ldloca
@@ -174,6 +187,9 @@ stloc 1 = mdecl $ Stloc_1
 stloc 2 = mdecl $ Stloc_2
 stloc 3 = mdecl $ Stloc_3
 stloc x = mdecl $ Stloc x
+
+stlocN :: DottedName -> MethodDecl
+stlocN nm = mdecl $ StlocN nm
 
 sub :: MethodDecl
 sub = mdecl $ Sub

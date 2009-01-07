@@ -162,6 +162,7 @@ data OpCode =
          } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
   | Ceq                -- ^ Pops 2 values, if they are equal, pushes 1 to stack; otherwise, pushes 0.
   | Dup                -- ^ Pops 1 value, copies it, pushes the same value twise.
+  | Isinst PrimitiveType -- ^ Tests if an object reference is an instance of class, returning either a null reference or an instance of that class or interface. (TODO not sure about parameter(s))
   | Ldarg Offset       -- ^ Loads /n/-th argument to current method onto stack.
   | Ldarg_0            -- ^ Loads 0th argument to current method onto stack.
   | Ldarg_1            -- ^ Loads 1th argument to current method onto stack.
@@ -183,12 +184,12 @@ data OpCode =
           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
           , fieldName    :: DottedName     -- ^ Name of the field.
           } -- ^ Pops object reference, find value of specified field on object, pushes value to the stack.
-  | LdlocN String      -- ^ Pushes value of local variable, specified by name, to the stack.
   | Ldloc Offset       -- ^ Pushes value of local variable, specified by index, to the stack.
   | Ldloc_0            -- ^ Pushes 0th local variable to the stack.
   | Ldloc_1            -- ^ Pushes 1th local variable to the stack.
   | Ldloc_2            -- ^ Pushes 2th local variable to the stack.
   | Ldloc_3            -- ^ Pushes 3th local variable to the stack.
+  | LdlocN DottedName  -- ^ Pushes value of local variable, specified by name, to the stack.
   | Ldloca Offset      -- ^ Pushes address of local variable, specified by index, to the stack.
   | Ldstr String       -- ^ Pushes an object reference to the specified string constant.
   | Neg                -- ^ Pops 1 value, negates the value, pushes the value.
@@ -206,15 +207,14 @@ data OpCode =
           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
           , fieldName    :: DottedName     -- ^ Name of the field.
           } -- ^ Replaces the value stored in the field of an object reference or pointer with a new value.
-  | StlocN String      -- ^ Pops 1 value, stores it in the local variable specified by name.
   | Stloc Offset       -- ^ Pops 1 value, stores it in the local variable specified by index.
   | Stloc_0            -- ^ Pops 1 value, stores it in the 0th local variable.
   | Stloc_1            -- ^ Pops 1 value, stores it in the 1th local variable.
   | Stloc_2            -- ^ Pops 1 value, stores it in the 2th local variable.
   | Stloc_3            -- ^ Pops 1 value, stores it in the 3th local variable.
+  | StlocN DottedName  -- ^ Pops 1 value, stores it in the local variable specified by name.
   | Sub                -- ^ Pops 2 values, substracts second value from the first value, pushes result.
   | Tail               -- ^ Performs subsequent call as a tail call, by replacing current stack frame with callee stack frame.
   | Tailcall OpCode    -- ^ Performs provided call as a tail call, by replacing current stack frame with callee stack frame.
-  | IsInst PrimitiveType -- ^ Tests if an object reference is an instance of class, returning either a null reference or an instance of that class or interface. (TODO not sure about parameter(s))
   deriving Show
 

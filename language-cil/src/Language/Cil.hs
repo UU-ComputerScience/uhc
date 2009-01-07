@@ -3,7 +3,7 @@
 -- MSIL - Microsoft Intermediate Language).
 -- Note that this library specific to the EHC .NET backend and isn't very
 -- reusable (yet).
--- It only exposes a small subset of CIL.
+-- Currently, it only exposes a small subset of CIL.
 --
 
 module Language.Cil (
