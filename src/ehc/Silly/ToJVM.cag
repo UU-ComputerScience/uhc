@@ -19,7 +19,7 @@
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty)
 %%]
-%%[(8 codegen grin) hs import(Brianweb.Java hiding (Constant))
+%%[(8 codegen grin) hs import(Brianweb.Java)
 %%]
 %%[(8 codegen grin)
 WRAPPER SilModule
@@ -32,6 +32,9 @@ PRAGMA nocycle
 %%[(8 codegen grin) hs export( silly2jvm )
 {-|
 -} 
+
+type JConstant = J.Constant
+
 silly2jvm :: EHCOpts -> SilModule -> Class
 silly2jvm opts silmod = 
   jvmCode_Syn_SilModule
@@ -45,8 +48,9 @@ testSilModule = SilModule_SilModule
     []
     []
     [
---       Statement_Assignment (Variable_Local 0 (HNm "aaa")) (Value_Con (Constant_LiteralInt 20))
-      Statement_Return 0
+      Statement_Call (HNm "putStrLn") False
+        [Value_Con (Constant_LiteralStr "aapjes!")]
+    , Statement_Return 0
     ]
   ]
 
@@ -114,23 +118,17 @@ ATTR Function
      [ | | jvmCode : {Method} ] 
 
 ATTR Statements Statement Alternative
-     Values Value Variable
+     Values Value Variable 
      [ | | jvmCode : {Code} ]
+
+ATTR Constant
+     [ | | jvmVal  : {JConstant} ]  
 
 ATTR Alternatives
      [ | | jvmCode : {[Code]} ]  
 
--- ATTR Values
---      [ | | jvmVar : {[JVMVar]} ]
 
--- ATTR Value Variable Constant
---      [ | | jvmVar : {JVMVar} ]   
 
--- ATTR Alternatives
---      [ | | jumpTargets : {[(JVMVar,JVMVar)]} ]
-
--- ATTR Alternative
---      [ | | jumpTarget : {(JVMVar,JVMVar)} ]  
 
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
@@ -162,7 +160,9 @@ SEM Statement
 
   | Assignment2 lhs.jvmCode = error "JVM: not implemented yet."
 
-  | Call        lhs.jvmCode = error "JVM: not implemented yet."
+  | Call        lhs.jvmCode = @args.jvmCode `mergeCode`
+                              maybe (error "JVM: no real call yet") id
+                              (lookup @name primitiveFunctions)
 
   | Comment     lhs.jvmCode = error "JVM: not implemented yet."
 
@@ -193,19 +193,20 @@ SEM Values
   | Nil         lhs.jvmCode = emptyCode
 
 SEM Value
-  | Alloc       lhs.jvmVar  = error "JVM: not implemented yet."
-  | Call        lhs.jvmVar  = error "JVM: not implemented yet."
-  | Con         lhs.jvmVar  = error "JVM: not implemented yet."
-  | Var         lhs.jvmVar  = error "JVM: not implemented yet."
-  | CompareGT   lhs.jvmVar  = error "JVM: not implemented yet."
-  | Offset      lhs.jvmVar  = error "JVM: not implemented yet."
+  | Alloc       lhs.jvmCode = error "JVM: not implemented yet."
+  | Call        lhs.jvmCode = error "JVM: not implemented yet."
+  | Con         lhs.jvmCode = Const @con.jvmVal
+  | Var         lhs.jvmCode = error "JVM: not implemented yet."
+  | CompareGT   lhs.jvmCode = error "JVM: not implemented yet."
+  | Offset      lhs.jvmCode = error "JVM: not implemented yet."
+  | Label       lhs.jvmCode = error "JVM: not implemented yet."
 
 SEM Variable
-  | Global      lhs.jvmVar  = error "JVM: not implemented yet."
-  | Local       lhs.jvmVar  = error "JVM: not implemented yet."
-  | Param       lhs.jvmVar  = error "JVM: not implemented yet."
-  | RP          lhs.jvmVar  = error "JVM: not implemented yet."
-  | Subs        lhs.jvmVar  = error "JVM: not implemented yet."
+  | Global      lhs.jvmCode = error "JVM: not implemented yet."
+  | Local       lhs.jvmCode = error "JVM: not implemented yet."
+  | Param       lhs.jvmCode = error "JVM: not implemented yet."
+  | RP          lhs.jvmCode = error "JVM: not implemented yet."
+  | Subs        lhs.jvmCode = error "JVM: not implemented yet."
   | * -
     Global
     Local
@@ -214,9 +215,9 @@ SEM Variable
     Subs        lhs.jvmCode = error "JVM: not implemented yet."
 
 SEM Constant
-  | LiteralInt  lhs.jvmVar  = error "JVM: not implemented yet."
-  | LiteralStr  lhs.jvmVar  = error "JVM: not implemented yet."
-  | Alias       lhs.jvmVar  = error "JVM: not implemented yet."
+  | LiteralInt  lhs.jvmVal  = CInt (fromIntegral @value)
+  | LiteralStr  lhs.jvmVal  = CString @value
+  | Alias       lhs.jvmVal  = error "JVM: not implemented yet."
 
 %%]
 
