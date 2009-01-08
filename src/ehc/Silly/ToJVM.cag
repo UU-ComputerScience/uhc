@@ -59,6 +59,9 @@ emptyCode = Code Nothing Nothing []
 singleCode :: Instruction -> Code
 singleCode = Code Nothing Nothing . return
 
+code :: [Instruction] -> Code
+code = Code Nothing Nothing
+
 type JVMVar = String
 
 primitiveFunctions :: [(HsName, Code)]
@@ -143,7 +146,7 @@ SEM Function
   | Function    lhs.jvmCode = Method {
                                 m_flags = [Public,Static]
                               , m_name       = show @name
-                              , m_ret        = Nothing -- Return type.
+                              , m_ret        = Just TInt -- Return type.
                               , m_args       = replicate (length @parameters) (TClass cObject)
                               , m_exceptions = []
                               , m_signature  = Nothing
@@ -171,7 +174,7 @@ SEM Statement
 
   | Label       lhs.jvmCode = error "JVM: not implemented yet."
 
-  | Return      lhs.jvmCode = singleCode (Return Nothing)
+  | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
 
   | Smart       lhs.jvmCode = error "JVM: not implemented yet."
 
