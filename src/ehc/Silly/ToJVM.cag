@@ -156,9 +156,6 @@ ATTR Constant
 ATTR Alternatives
      [ | | jvmCode : {[Code]} ]  
 
-
-
-
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
                                 c_methods = methodMain : @functions.jvmCode
@@ -167,7 +164,6 @@ SEM SilModule
 
 SEM Functions
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
-
   | Nil         lhs.jvmCode = []
 
 SEM Function
@@ -183,17 +179,13 @@ SEM Function
                               }
 SEM Statements
   | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
-
   | Nil         lhs.jvmCode = emptyCode
 
 SEM Statement
   | Assignment  lhs.jvmCode = error "JVM: not implemented yet."
-
   | Assignment2 lhs.jvmCode = error "JVM: not implemented yet."
-
   | Call        lhs.jvmCode = maybe (error "JVM: no real call yet") ($ @args.jvmCode)
                               (lookup @name primitiveFunctions)
-
   | Comment     lhs.jvmCode = error "JVM: not implemented yet."
 
   {-
@@ -210,23 +202,16 @@ SEM Statement
                               `mergeCode` singleCode (Note (Label @loc.labelElse))
                               `mergeCode` @elsepart.jvmCode
                               `mergeCode` singleCode (Note (Label @loc.labelEndIf))
-
   | Switch      lhs.jvmCode = error "JVM: not implemented yet."
-
   | Jump        lhs.jvmCode = error "JVM: not implemented yet."
-
   | Label       lhs.jvmCode = error "JVM: not implemented yet."
-
   | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
-
   | Smart       lhs.jvmCode = error "JVM: not implemented yet."
-
   | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
                 lhs.jvmCode = error "JVM: not implemented yet."
 
 SEM Alternatives
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
-
   | Nil         lhs.jvmCode = []
 
 SEM Alternative
@@ -234,46 +219,32 @@ SEM Alternative
 
 SEM Values
   | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
-
   | Nil         lhs.jvmCode = emptyCode
 
 SEM Value
   | Alloc       lhs.jvmCode = singleCode $ NewArray TInt (fromIntegral @size) -- todo: always managed?
-
   | Call        lhs.jvmCode = maybe (error "JVM: no such foreign call") ($ @args.jvmCode)
                               (lookup (HNm @name) primitiveFunctions)
-
   | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
-
   | Var         lhs.jvmCode = error "JVM: no support for Var Values."
-
   | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) `mergeCode` @val.jvmCode
-
   | Offset      lhs.jvmCode = @var.jvmCode
                               `mergeCode` singleCode (Const (CInt (fromIntegral @off)))
                               `mergeCode` singleCode (Arith Add TInt)
-
   | Label       lhs.jvmCode = error "JVM: no support for Var Labels."
 
 SEM Variable
   | Global      lhs.jvmCode = error "JVM: not implemented yet."
-
-  | Local       lhs.jvmCode = error "JVM: not implemented yet."
-
+  | Local       lhs.jvmCode = singleCode (Load TInt (fromIntegral (@pos + 1)))
   | Param       lhs.jvmCode = error "JVM: not implemented yet."
-
   | RP          lhs.jvmCode = error "JVM: not implemented yet."
-
   | Subs        lhs.jvmCode = error "JVM: not implemented yet."
-
   | * - Global Local Param RP Subs
-                lhs.jvmCode = error "JVM: not implemented yet."
+                lhs.jvmCode = error "JVM: this Variable kind not supported."
 
 SEM Constant
   | LiteralInt  lhs.jvmVal  = CInt (fromIntegral @value)
-
   | LiteralStr  lhs.jvmVal  = CString @value
-
   | Alias       lhs.jvmVal  = error "JVM: not implemented yet."
 
 %%]
