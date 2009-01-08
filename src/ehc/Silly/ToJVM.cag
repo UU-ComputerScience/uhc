@@ -35,6 +35,12 @@ PRAGMA nocycle
 silly2jvm :: EHCOpts -> SilModule -> Class
 silly2jvm opts silmod = test
 
+testSilModule = SilModule_SilModule
+  [] [] [
+    Function_Function (HNm "MyName") False [HNm "fst", HNm "snd"] [HNm "aaa", HNm "bbb"]
+      [Statement_Assignment (Variable_Local 0 (HNm "aaa")) (Value_Con (Constant_LiteralInt 20))]
+  ]
+
 test = Class {c_major = 49
              ,c_minor = 0
              ,c_flags = [Super]
