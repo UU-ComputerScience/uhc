@@ -43,6 +43,7 @@ module Language.Cil.Build (
   , sub
   , tail
   , tailcall
+  , unbox
 
   -- * Convenient AST functions
   , label
@@ -95,6 +96,9 @@ blt = mdecl . Blt
 
 box :: PrimitiveType -> MethodDecl
 box = mdecl . Box
+
+unbox :: PrimitiveType -> MethodDecl
+unbox = mdecl . Unbox
 
 br :: Label -> MethodDecl
 br = mdecl . Br

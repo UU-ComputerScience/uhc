@@ -175,6 +175,7 @@ instance Cil OpCode where
   cil (Sub)               = ("sub" ++)
   cil (Tail)              = ("tail." ++)
   cil (Tailcall opcode)   = ("tail. " ++) . cil opcode
+  cil (Unbox t)           = ("unbox " ++) . cil t
 
 cilFld :: DottedName -> DottedName -> DottedName -> ShowS
 cilFld a c f = 
