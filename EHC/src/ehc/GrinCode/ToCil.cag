@@ -69,51 +69,51 @@ SEM GrGlobal
 
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @code]
-          loc.code        = Comment ("complete expr: " ++ show @expr.self) : Comment "" : @expr.cilCode
+          loc.code        = comment ("complete expr: " ++ show @expr.self) : comment "" : @expr.cilCode
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
   | Rec   lhs.cilMethods  = error "Geen idee."
 
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = @val.cilCode
-  | UpdateUnit  lhs.cilCode = [Comment $ show @self]
-  | Case        lhs.cilCode = [Comment $ show @self]
-  | FetchNode   lhs.cilCode = [Comment $ show @self]
-  | FetchUpdate lhs.cilCode = [Comment $ show @self]
-  | FetchField  lhs.cilCode = [Comment $ show @self]
-  | Store       lhs.cilCode = [Comment $ show @self]
-  | Call        lhs.cilCode = [Comment $ show @self]
-  | FFI         lhs.cilCode = [Comment $ show @self]
-  | Eval        lhs.cilCode = [Comment $ show @self]
-  | App         lhs.cilCode = [Comment $ show @self]
-  | Throw       lhs.cilCode = [Comment $ show @self]
-  | Catch       lhs.cilCode = [Comment $ show @self]
+  | UpdateUnit  lhs.cilCode = [comment $ show @self]
+  | Case        lhs.cilCode = [comment $ show @self]
+  | FetchNode   lhs.cilCode = [comment $ show @self]
+  | FetchUpdate lhs.cilCode = [comment $ show @self]
+  | FetchField  lhs.cilCode = [comment $ show @self]
+  | Store       lhs.cilCode = [comment $ show @self]
+  | Call        lhs.cilCode = [comment $ show @self]
+  | FFI         lhs.cilCode = [comment $ show @self]
+  | Eval        lhs.cilCode = [comment $ show @self]
+  | App         lhs.cilCode = [comment $ show @self]
+  | Throw       lhs.cilCode = [comment $ show @self]
+  | Catch       lhs.cilCode = [comment $ show @self]
 
 SEM GrVal
-  | Empty       lhs.cilCode = [Comment $ show @self]
-  | LitInt      lhs.cilCode = [Comment $ show @self]
-  | Tag         lhs.cilCode = [Comment $ show @self]
-  | Var         lhs.cilCode = [Comment $ show @self]
-  | Node        lhs.cilCode = [Comment $ show @self]
-  | VarNode     lhs.cilCode = [Comment $ show @self]
-  | BasicNode   lhs.cilCode = [Comment $ show @self]
-  | EnumNode    lhs.cilCode = [Comment $ show @self]
-  | OpaqueNode  lhs.cilCode = [Comment $ show @self]
-  | PtrNode     lhs.cilCode = [Comment $ show @self]
+  | Empty       lhs.cilCode = [comment $ show @self]
+  | LitInt      lhs.cilCode = [comment $ show @self]
+  | Tag         lhs.cilCode = [comment $ show @self]
+  | Var         lhs.cilCode = [comment $ show @self]
+  | Node        lhs.cilCode = [comment $ show @self]
+  | VarNode     lhs.cilCode = [comment $ show @self]
+  | BasicNode   lhs.cilCode = [comment $ show @self]
+  | EnumNode    lhs.cilCode = [comment $ show @self]
+  | OpaqueNode  lhs.cilCode = [comment $ show @self]
+  | PtrNode     lhs.cilCode = [comment $ show @self]
   -- TODO NodeAdapt in variant 10
 
 SEM GrPatLam
-  | Empty       lhs.cilCode = [Comment $ show @self]
+  | Empty       lhs.cilCode = [comment $ show @self]
   | Var         lhs.cilCode = [stlocN $ hsnShowAlphanumeric @nm]
-  | VarNode     lhs.cilCode = [Comment $ show @self]
-  | BasicNode   lhs.cilCode = [Comment $ show @self]
-  | EnumNode    lhs.cilCode = [Comment $ show @self]
-  | PtrNode     lhs.cilCode = [Comment $ show @self]
-  | OpaqueNode  lhs.cilCode = [Comment $ show @self]
-  | BasicAnnot  lhs.cilCode = [Comment $ show @self]
-  | EnumAnnot   lhs.cilCode = [Comment $ show @self]
-  | PtrAnnot    lhs.cilCode = [Comment $ show @self]
-  | OpaqueAnnot lhs.cilCode = [Comment $ show @self]
+  | VarNode     lhs.cilCode = [comment $ show @self]
+  | BasicNode   lhs.cilCode = [comment $ show @self]
+  | EnumNode    lhs.cilCode = [comment $ show @self]
+  | PtrNode     lhs.cilCode = [comment $ show @self]
+  | OpaqueNode  lhs.cilCode = [comment $ show @self]
+  | BasicAnnot  lhs.cilCode = [comment $ show @self]
+  | EnumAnnot   lhs.cilCode = [comment $ show @self]
+  | PtrAnnot    lhs.cilCode = [comment $ show @self]
+  | OpaqueAnnot lhs.cilCode = [comment $ show @self]
 
 %%]
 
