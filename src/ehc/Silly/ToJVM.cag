@@ -50,7 +50,27 @@ testSilModule = SilModule_SilModule
     ]
   ]
 
+mergeCode :: Code -> Code -> Code
+mergeCode (Code _ _ a) (Code _ _ b) = Code Nothing Nothing (a ++ b)
+
+emptyCode :: Code
+emptyCode = Code Nothing Nothing []
+
+singleCode :: Instruction -> Code
+singleCode = Code Nothing Nothing . return
+
 type JVMVar = String
+
+primitiveFunctions :: [(HsName, Code)]
+primitiveFunctions = [
+  (HNm "putStrLn", singleCode $
+    Invoke IVirtual (MethodRef {
+      mr_class = "java.io.PrintStream"
+    , mr_name = "println"
+    , mr_args = [TClass {unClass = "java.lang.String"}]
+    , mr_ret = Nothing
+    }))
+  ]
 
 methodMain = 
   Method {
@@ -89,72 +109,58 @@ ATTR Functions
 
 ATTR Function
      [ | | jvmCode : {Method} ] 
-   
+
 ATTR Statements Statement Alternative
      Values Value Variable
      [ | | jvmCode : {Code} ]
-  
+
 ATTR Alternatives
      [ | | jvmCode : {[Code]} ]  
-     
-ATTR Values
-     [ | | jvmVar : {[JVMVar]} ]
 
-ATTR Value Variable Constant
-     [ | | jvmVar : {JVMVar} ]   
- 
-ATTR Alternatives
-     [ | | jumpTargets : {[(JVMVar,JVMVar)]} ]
-     
-ATTR Alternative
-     [ | | jumpTarget : {(JVMVar,JVMVar)} ]  
-     
+-- ATTR Values
+--      [ | | jvmVar : {[JVMVar]} ]
+
+-- ATTR Value Variable Constant
+--      [ | | jvmVar : {JVMVar} ]   
+
+-- ATTR Alternatives
+--      [ | | jumpTargets : {[(JVMVar,JVMVar)]} ]
+
+-- ATTR Alternative
+--      [ | | jumpTarget : {(JVMVar,JVMVar)} ]  
+
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
                                 c_methods = methodMain : @functions.jvmCode
-                              , c_this    = "Hello"
+                              , c_this    = "hello"
                               }
-                                 
+
 SEM Functions
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
   | Nil         lhs.jvmCode = []
 
 SEM Function
-  | Function    lhs.jvmCode = Method {m_flags = [Public,Static]
-                                 ,m_name       = show @name
-                                 ,m_ret        = Nothing -- Return type.
-                                 ,m_args       = replicate (length @parameters) (TClass cObject)
-                                 ,m_exceptions = []
-                                 ,m_signature  = Nothing
-                                 ,m_deprecated = False
-                                 ,m_code       = Just (Code {c_max_stack = Nothing
-                                    ,c_max_locals = Nothing
-                                    ,c_instructions = [Note (LineNumber 5),
-                                      Get True (FieldRef {
-                                      fr_class = "java.lang.System"
-                                        ,fr_name = "out"
-                                        ,fr_type = TClass {unClass = "java.io.PrintStream"}}
-                                           )
-                                         , Const (CString "we are so cool")
-                                       , Invoke IVirtual (
-                                            MethodRef {mr_class = "java.io.PrintStream" ,
-                                            mr_name = "println" ,
-                                            mr_args = [TClass {unClass = "java.lang.String"}] ,
-                                            mr_ret = Nothing})
-                                       , Note (LineNumber 6),Return Nothing]
-                                       })
-                                 }
+  | Function    lhs.jvmCode = Method {
+                                m_flags = [Public,Static]
+                              , m_name       = show @name
+                              , m_ret        = Nothing -- Return type.
+                              , m_args       = replicate (length @parameters) (TClass cObject)
+                              , m_exceptions = []
+                              , m_signature  = Nothing
+                              , m_deprecated = False
+                              , m_code       = Just @body.jvmCode
+                              }
 SEM Statements
-  | Cons        lhs.jvmCode = error "JVM: not implemented yet."
-  | Nil         lhs.jvmCode = error "JVM: not implemented yet."
-  
+  | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
+  | Nil         lhs.jvmCode = emptyCode
+
 SEM Statement
   | Assignment  lhs.jvmCode = error "JVM: not implemented yet."
 
   | Assignment2 lhs.jvmCode = error "JVM: not implemented yet."
 
   | Call        lhs.jvmCode = error "JVM: not implemented yet."
-               
+
   | Comment     lhs.jvmCode = error "JVM: not implemented yet."
 
   | IfThenElse  lhs.jvmCode = error "JVM: not implemented yet."
@@ -162,79 +168,54 @@ SEM Statement
   | Switch      lhs.jvmCode = error "JVM: not implemented yet."
 
   | Jump        lhs.jvmCode = error "JVM: not implemented yet."
-  
+
   | Label       lhs.jvmCode = error "JVM: not implemented yet."
-  
-  | Return      lhs.jvmCode = error "JVM: not implemented yet."
-                                    
+
+  | Return      lhs.jvmCode = singleCode (Return Nothing)
+
   | Smart       lhs.jvmCode = error "JVM: not implemented yet."
-                                    
+
   | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
                 lhs.jvmCode = error "JVM: not implemented yet."
 
 SEM Alternatives
-  | Cons        lhs.jvmCode    = error "JVM: not implemented yet."
-  | Nil         lhs.jvmCode    = error "JVM: not implemented yet."
-                
+  | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
+  | Nil         lhs.jvmCode = []
+
 SEM Alternative
   | Alternative lhs.jvmCode = error "JVM: not implemented yet."
 
 SEM Values
-  | Cons        lhs.jvmVar  = error "JVM: not implemented yet."
-  | Nil         lhs.jvmVar  = error "JVM: not implemented yet."
-       
+  | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
+  | Nil         lhs.jvmCode = emptyCode
+
 SEM Value
   | Alloc       lhs.jvmVar  = error "JVM: not implemented yet."
-
   | Call        lhs.jvmVar  = error "JVM: not implemented yet."
-
   | Con         lhs.jvmVar  = error "JVM: not implemented yet."
-  
   | Var         lhs.jvmVar  = error "JVM: not implemented yet."
-
   | CompareGT   lhs.jvmVar  = error "JVM: not implemented yet."
-                                                            
   | Offset      lhs.jvmVar  = error "JVM: not implemented yet."
- 
+
 SEM Variable
   | Global      lhs.jvmVar  = error "JVM: not implemented yet."
-                
   | Local       lhs.jvmVar  = error "JVM: not implemented yet."
-  
   | Param       lhs.jvmVar  = error "JVM: not implemented yet."
-                                               
   | RP          lhs.jvmVar  = error "JVM: not implemented yet."
-                
   | Subs        lhs.jvmVar  = error "JVM: not implemented yet."
- 
-   | * - Global Local Param RP Subs
-                lhs.jvmVar  = error "JVM: not implemented yet."
-                lhs.jvmCode  = error "JVM: not implemented yet."
-                
+  | * -
+    Global
+    Local
+    Param
+    RP
+    Subs        lhs.jvmCode = error "JVM: not implemented yet."
+
 SEM Constant
   | LiteralInt  lhs.jvmVar  = error "JVM: not implemented yet."
   | LiteralStr  lhs.jvmVar  = error "JVM: not implemented yet."
   | Alias       lhs.jvmVar  = error "JVM: not implemented yet."
 
 %%]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 {-test = Class {c_major = 49
