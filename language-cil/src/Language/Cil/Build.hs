@@ -48,6 +48,8 @@ module Language.Cil.Build (
   -- * Convenient AST functions
   , label
   , comment
+  , extends
+  , noExtends
   , classDef
   , defaultCtor
   , extendsCtor
@@ -221,9 +223,15 @@ label _ _                        = error $ "Language.Cil.Build.label: "
 comment :: String -> MethodDecl
 comment s = Comment s
 
-classDef :: Visibility -> DottedName -> [FieldDef] -> [MethodDef] -> [TypeDef]
-              -> TypeDef
-classDef v n fs ms ts = Class v n (map FieldDef fs ++ map MethodDef ms
+extends :: DottedName -> Maybe TypeSpec
+extends nm = Just (TypeSpec nm)
+
+noExtends :: Maybe TypeSpec
+noExtends = Nothing
+
+classDef :: Visibility -> DottedName -> Maybe TypeSpec -> [TypeSpec]
+              -> [FieldDef] -> [MethodDef]-> [TypeDef] -> TypeDef
+classDef v n et its fs ms ts = Class v n et its (map FieldDef fs ++ map MethodDef ms
                                      ++ map TypeDef ts)
 
 defaultCtor :: [Parameter] -> MethodDef
@@ -241,7 +249,7 @@ extendsCtor a c ps = Constructor Public ps
 -- | Create a simple Assembly with one method containing the provided MethodDecls.
 simpleAssembly :: [MethodDecl] -> Assembly
 simpleAssembly ocs = Assembly [mscorlibRef] "DefaultAssemblyName"
-  [ Class Public "DefaultClassName"
+  [ Class Public "DefaultClassName" Nothing []
     [ MethodDef
       $ Method Static Public Void "DefaultMethodName" [] (entryPoint : ocs)
     ]

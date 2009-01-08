@@ -8,7 +8,7 @@ ass :: Assembly
 ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, hellos, sign] []
+hello = classDef Public "Haskell.Ehc.Hello" noExtends [] [] [myMain, hellos, sign] []
 
 myMain :: MethodDef
 myMain = Method Static Public Void "main" []

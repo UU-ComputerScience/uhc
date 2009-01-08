@@ -46,7 +46,7 @@ pAssRef = AssemblyRef
             <*  pOCurly <* pCCurly
 
 pTypeDef :: TParser TypeDef
-pTypeDef = Class
+pTypeDef = (\v n ds -> Class v n Nothing [] ds)
              <$  pPeriod <* pKey "class" <*> pVisibility <*> pDottedName
              <*> pCurly (pList pClassDecl)
 

@@ -37,8 +37,12 @@ instance Cil AssemblyRef where
   cil (AssemblyRef n) = (".assembly extern " ++) . (n ++) . (" {}\n" ++)
 
 instance Cil TypeDef where
-  cil (Class v n ds) =
-      (".class " ++) . cil v . sp . cilName n . ("\n{\n" ++)
+  cil (Class v n et its ds) =
+      (".class " ++) . cil v . sp . cilName n
+    . maybe id (\e -> sp . ("extends " ++) . cil e) et
+    . foldBool id (sp . ("implements " ++)
+                    . foldr (.) id (map cil its)) (null its)
+    . ("\n{\n" ++)
     . foldr (\d s -> cil d . s) id ds
     . ("}\n" ++)
   cil (GenericClass v n ps ds) =
@@ -63,6 +67,9 @@ instance Cil ClassDecl where
   cil (FieldDef fd)  = cil fd
   cil (MethodDef md) = cil md
   cil (TypeDef td)   = cil td
+
+instance Cil TypeSpec where
+  cil (TypeSpec nm) = cilName nm
 
 instance Cil FieldDef where
   cil (Field a v t n) = 
@@ -105,7 +112,7 @@ instance Cil Directive where
     let bigident = ident . ident . ident . ident
     in
       ident . ident . (".locals init (" ++)
-    . (if null ls then nl else id)
+    . foldBool id nl (null ls)
     . foldr (.) id (intersperse (",\n" ++) (map (\l -> bigident . cil l) ls))
     . (")\n" ++)
   cil (MaxStack x)    = ident . ident . (".maxstack " ++) . shows x . nl
@@ -198,24 +205,20 @@ cilNewobj a c ps =
 cilCall :: DottedName -> DottedName -> DottedName -> [PrimitiveType] -> ShowS
 cilCall a c m ps = 
     cilAssembly a
-  . (if c /= ""
-     then cilName c . ("::" ++)
-     else id)
+  . foldBool id (cilName c . ("::" ++)) (c == "")
   . cilName m
   . ("(" ++)
   . foldr (.) id (intersperse (", " ++) (map cil ps))
   . (")" ++)
 
 cilAssembly :: DottedName -> ShowS
-cilAssembly a =
-    (if a /= ""
-     then ("[" ++) . cilName a . ("]" ++)
-     else id)
+cilAssembly a = foldBool id (("[" ++) . cilName a . ("]" ++)) (a == "")
 
 instance Cil Association where
   cil Static   = ("static" ++)
   cil Instance = ("instance" ++)
   cil StaticCallConv = id
+  cil Instance2 = id
 
 instance Cil PrimitiveType where
   cil Void                = ("void" ++) 
@@ -233,9 +236,13 @@ instance Cil PrimitiveType where
 -- Helper functions, to pretty print
 cilsp :: (Cil a) => a -> ShowS
 cilsp x = let s = cil x ""
-          in if s == "" then id else cil x . sp
+          in foldBool id (cil x . sp) (s == "")
 
 ident = ("    " ++)
 sp    = (" " ++)
 nl    = ('\n' :)
+
+foldBool :: a -> a -> Bool -> a
+foldBool x y True  = x
+foldBool x y False = y
 

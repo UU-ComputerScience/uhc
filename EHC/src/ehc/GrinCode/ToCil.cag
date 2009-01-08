@@ -21,8 +21,7 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
-%%% TODO gedeeltelijk spul uitsplitsen in losse module
-%%[(8 codegen grin) hs import({%{EH}Silly.ToCil} (ctagTypeDef, ctagDottedName))
+%%[(8 codegen grin) hs import({%{EH}Cil.Common} (ctag2ConstrDottedName, hsn2TypeDottedName, ctag2ParamTypes, ctagTypeDef))
 %%]
 
 %%[(8 codegen grin)
@@ -57,16 +56,16 @@ ATTR AllNTNoMod [ className : {DottedName} | | ]
 ATTR AllNTNoMod [ ctags : {AssocL HsName CTag} | | ]
 
 SEM GrModule
-  | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" (@loc.classDef : @loc.tagDefs)
-        loc.classDef    = classDef Public @loc.className @globalL.cilFields (@loc.mainDef : @bindL.cilMethods) []
+  | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
+        loc.classDef    = classDef Public @loc.className noExtends [] @globalL.cilFields (@loc.mainDef : @bindL.cilMethods) []
         loc.mainDef     = Method Static AssemblyVisible Void "AssemblyMain" []
                             [ entryPoint
                             , call StaticCallConv Object "" @loc.className "fun_main" []
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Object]
                             , ret
                             ]
-        loc.tagDefs     = map ctagTypeDef @ctagsMp
-        loc.className   = "Haskell.Ehc." ++ hsnShowAlphanumeric @moduleNm
+        loc.typeDefs     = map ctagTypeDef @ctagsMp
+        loc.className   = hsn2TypeDottedName @moduleNm
         globalL.className = @loc.className
         bindL.className   = @loc.className
         -- pass ctag mapping without type names
@@ -101,7 +100,7 @@ SEM GrExpr
 
 SEM GrVal
   | Empty       lhs.cilCode = [no @self]
-  | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int, box Int32]
+  | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
   | Var         lhs.cilCode = [no @self]
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilCode
@@ -128,7 +127,8 @@ SEM GrPatLam
   | OpaqueAnnot lhs.cilCode = [no @self]
 
 SEM GrTag
-  | Con         lhs.cilCode = debugComment @self [newobj "" (ctagDottedName $ lookupTag @nm @lhs.ctags) (replicate (gtannArity @grtgAnn) Object)]
+  | Con         lhs.cilCode = debugComment @self [newobj "" (ctag2ConstrDottedName $ @loc.ctag) (ctag2ParamTypes @loc.ctag)]
+                loc.ctag    = lookupTag @nm @lhs.ctags
   | Fun         lhs.cilCode = [no @self]
   | PApp        lhs.cilCode = [no @self]
   | App         lhs.cilCode = [no @self]
@@ -161,6 +161,7 @@ fakeComment = flip const
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
 
+lookupTag :: HsName -> AssocL HsName CTag -> CTag
 lookupTag n ts = case lookup n ts of
   Nothing -> error $ "Use of an undefined tag " ++ show n ++ "."
   Just t  -> t

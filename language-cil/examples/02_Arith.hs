@@ -10,7 +10,7 @@ ass :: Assembly
 ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, myAdd, myEven] []
+hello = classDef Public "Haskell.Ehc.Hello" noExtends [] [] [myMain, myAdd, myEven] []
 
 myMain :: MethodDef
 myMain = Method Static Public Void "main" []

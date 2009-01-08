@@ -8,7 +8,7 @@ ass :: Assembly
 ass = Assembly [mscorlibRef] "Example" [hello]
 
 hello :: TypeDef
-hello = classDef Public "Haskell.Ehc.Hello" [] [myMain, pair] [tuple2]
+hello = classDef Public "Haskell.Ehc.Hello" noExtends [] [] [myMain, pair] [tuple2]
 
 myMain :: MethodDef
 myMain = Method Static Public Void "main" []
@@ -35,7 +35,7 @@ pair = Method Static Public Int32 "pairadd" [Param (ReferenceType "" "Haskell.Eh
   ]
 
 tuple2 :: TypeDef
-tuple2 = classDef Private "Tuple"  [myFst, mySnd] [tupleCtor] []
+tuple2 = classDef Private "Tuple" noExtends [] [myFst, mySnd] [tupleCtor] []
 
 myFst :: FieldDef
 myFst = Field Static Public Int32 "Fst"

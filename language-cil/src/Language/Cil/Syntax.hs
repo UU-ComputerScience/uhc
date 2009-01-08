@@ -13,6 +13,7 @@ module Language.Cil.Syntax (
   , GenParam      (..)
   , Visibility    (..)
   , ClassDecl     (..)
+  , TypeSpec      (..)
   , FieldDef      (..)
   , MethodDef     (..)
   , Parameter     (..)
@@ -49,7 +50,7 @@ data AssemblyRef =
 
 -- | A Type definition in CIL, either a class or a value type.
 data TypeDef =
-    Class Visibility DottedName [ClassDecl]
+    Class Visibility DottedName (Maybe TypeSpec) [TypeSpec] [ClassDecl]
   | GenericClass Visibility DottedName [GenParam] [ClassDecl]
   deriving Show
 
@@ -76,6 +77,10 @@ data ClassDecl =
   | TypeDef   TypeDef
   deriving Show
 
+data TypeSpec =
+    TypeSpec DottedName
+  deriving Show
+
 data FieldDef =
     Field Association Visibility PrimitiveType DottedName
   deriving Show
@@ -84,6 +89,7 @@ data Association =
     Static
   | Instance
   | StaticCallConv
+  | Instance2
   deriving Show
 
 data PrimitiveType =
