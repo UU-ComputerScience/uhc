@@ -215,14 +215,14 @@ defaultEHCOpts
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenRTSInfo       =   0
 
-      ,  ehcOptEmitGrin         =   False
+      ,  ehcOptEmitGrin         =   True
       ,  ehcOptEmitJVM          =   False
       ,  ehcOptEmitLLVM         =   False
       ,  ehcOptEmitExecLLVM     =   False
       ,  ehcOptEmitC            =   False
       ,  ehcOptEmitExecC        =   False
       ,  ehcOptFullProgAnalysis =   False
-      ,  ehcOptDumpGrinStages   =   False
+      ,  ehcOptDumpGrinStages   =   True
 %%]]
 %%[[(8 codegen java)
       ,  ehcOptEmitJava         =   False
