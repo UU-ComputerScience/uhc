@@ -9,7 +9,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}Silly.ToCil}
 %%]
-%%[(8 codegen grin) export (silly2cil, ctagDottedName, ctagTypeDef)
+%%[(8 codegen grin) hs export (silly2cil, ctagTypeDef, ctagDottedName)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Silly})
 %%]
@@ -31,7 +31,7 @@ WRAPPER SilModule
 PRAGMA nocycle
 %%]
 
-%%[(8 codegen grin) hs export( silly2cil, ctagTypeDef )
+%%[(8 codegen grin) hs
 {-|
   Transform a 'SilModule' to a Cil 'Assembly'.
 -} 
