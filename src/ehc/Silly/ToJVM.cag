@@ -33,15 +33,211 @@ PRAGMA nocycle
 {-|
 -} 
 silly2jvm :: EHCOpts -> SilModule -> Class
-silly2jvm opts silmod = test
+silly2jvm opts silmod = 
+  jvmCode_Syn_SilModule
+     $ wrap_SilModule
+        (sem_SilModule testSilModule)
+        (Inh_SilModule)
 
 testSilModule = SilModule_SilModule
   [] [] [
-    Function_Function (HNm "MyName") False [HNm "fst", HNm "snd"] [HNm "aaa", HNm "bbb"]
-      [Statement_Assignment (Variable_Local 0 (HNm "aaa")) (Value_Con (Constant_LiteralInt 20))]
+    Function_Function  (HNm "cool") False
+    []
+    []
+    [
+--       Statement_Assignment (Variable_Local 0 (HNm "aaa")) (Value_Con (Constant_LiteralInt 20))
+      Statement_Return 0
+    ]
   ]
 
-test = Class {c_major = 49
+type JVMVar = String
+
+methodMain = 
+  Method {
+    m_flags = [Public,Static]
+  , m_name = "main"
+  , m_ret = Nothing
+  , m_args = [TArray {unArray = TClass {unClass = "java.lang.String"}}]
+  , m_code = Just (Code {c_max_stack = Nothing
+  , c_max_locals = Nothing
+  , c_instructions = [Note (LineNumber 5),
+    Get True (FieldRef {
+      fr_class = "java.lang.System"
+      , fr_name = "out"
+      , fr_type = TClass {unClass = "java.io.PrintStream"}}
+      )
+    , Const (CString "hello, oops")
+    , Invoke IVirtual (MethodRef {mr_class = "java.io.PrintStream" ,mr_name =
+      "println" ,mr_args = [TClass {unClass = "java.lang.String"}] ,mr_ret =
+        Nothing})
+      , Note (LineNumber 6),Return Nothing]
+      }
+    )
+  , m_exceptions = []
+  , m_signature = Nothing
+  , m_deprecated = False
+  }
+
+%%]
+
+%%[(8 codegen grin)
+ATTR SilModule
+     [ | | jvmCode : {Class} ]
+
+ATTR Functions
+     [ | | jvmCode : {[Method]} ]
+
+ATTR Function
+     [ | | jvmCode : {Method} ] 
+   
+ATTR Statements Statement Alternative
+     Values Value Variable
+     [ | | jvmCode : {Code} ]
+  
+ATTR Alternatives
+     [ | | jvmCode : {[Code]} ]  
+     
+ATTR Values
+     [ | | jvmVar : {[JVMVar]} ]
+
+ATTR Value Variable Constant
+     [ | | jvmVar : {JVMVar} ]   
+ 
+ATTR Alternatives
+     [ | | jumpTargets : {[(JVMVar,JVMVar)]} ]
+     
+ATTR Alternative
+     [ | | jumpTarget : {(JVMVar,JVMVar)} ]  
+     
+SEM SilModule
+  | SilModule   lhs.jvmCode = defaultClass {
+                                c_methods = methodMain : @functions.jvmCode
+                              , c_this    = "Hello"
+                              }
+                                 
+SEM Functions
+  | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
+  | Nil         lhs.jvmCode = []
+
+SEM Function
+  | Function    lhs.jvmCode = Method {m_flags = [Public,Static]
+                                 ,m_name       = show @name
+                                 ,m_ret        = Nothing -- Return type.
+                                 ,m_args       = replicate (length @parameters) (TClass cObject)
+                                 ,m_exceptions = []
+                                 ,m_signature  = Nothing
+                                 ,m_deprecated = False
+                                 ,m_code       = Just (Code {c_max_stack = Nothing
+                                    ,c_max_locals = Nothing
+                                    ,c_instructions = [Note (LineNumber 5),
+                                      Get True (FieldRef {
+                                      fr_class = "java.lang.System"
+                                        ,fr_name = "out"
+                                        ,fr_type = TClass {unClass = "java.io.PrintStream"}}
+                                           )
+                                         , Const (CString "we are so cool")
+                                       , Invoke IVirtual (
+                                            MethodRef {mr_class = "java.io.PrintStream" ,
+                                            mr_name = "println" ,
+                                            mr_args = [TClass {unClass = "java.lang.String"}] ,
+                                            mr_ret = Nothing})
+                                       , Note (LineNumber 6),Return Nothing]
+                                       })
+                                 }
+SEM Statements
+  | Cons        lhs.jvmCode = error "JVM: not implemented yet."
+  | Nil         lhs.jvmCode = error "JVM: not implemented yet."
+  
+SEM Statement
+  | Assignment  lhs.jvmCode = error "JVM: not implemented yet."
+
+  | Assignment2 lhs.jvmCode = error "JVM: not implemented yet."
+
+  | Call        lhs.jvmCode = error "JVM: not implemented yet."
+               
+  | Comment     lhs.jvmCode = error "JVM: not implemented yet."
+
+  | IfThenElse  lhs.jvmCode = error "JVM: not implemented yet."
+
+  | Switch      lhs.jvmCode = error "JVM: not implemented yet."
+
+  | Jump        lhs.jvmCode = error "JVM: not implemented yet."
+  
+  | Label       lhs.jvmCode = error "JVM: not implemented yet."
+  
+  | Return      lhs.jvmCode = error "JVM: not implemented yet."
+                                    
+  | Smart       lhs.jvmCode = error "JVM: not implemented yet."
+                                    
+  | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
+                lhs.jvmCode = error "JVM: not implemented yet."
+
+SEM Alternatives
+  | Cons        lhs.jvmCode    = error "JVM: not implemented yet."
+  | Nil         lhs.jvmCode    = error "JVM: not implemented yet."
+                
+SEM Alternative
+  | Alternative lhs.jvmCode = error "JVM: not implemented yet."
+
+SEM Values
+  | Cons        lhs.jvmVar  = error "JVM: not implemented yet."
+  | Nil         lhs.jvmVar  = error "JVM: not implemented yet."
+       
+SEM Value
+  | Alloc       lhs.jvmVar  = error "JVM: not implemented yet."
+
+  | Call        lhs.jvmVar  = error "JVM: not implemented yet."
+
+  | Con         lhs.jvmVar  = error "JVM: not implemented yet."
+  
+  | Var         lhs.jvmVar  = error "JVM: not implemented yet."
+
+  | CompareGT   lhs.jvmVar  = error "JVM: not implemented yet."
+                                                            
+  | Offset      lhs.jvmVar  = error "JVM: not implemented yet."
+ 
+SEM Variable
+  | Global      lhs.jvmVar  = error "JVM: not implemented yet."
+                
+  | Local       lhs.jvmVar  = error "JVM: not implemented yet."
+  
+  | Param       lhs.jvmVar  = error "JVM: not implemented yet."
+                                               
+  | RP          lhs.jvmVar  = error "JVM: not implemented yet."
+                
+  | Subs        lhs.jvmVar  = error "JVM: not implemented yet."
+ 
+   | * - Global Local Param RP Subs
+                lhs.jvmVar  = error "JVM: not implemented yet."
+                lhs.jvmCode  = error "JVM: not implemented yet."
+                
+SEM Constant
+  | LiteralInt  lhs.jvmVar  = error "JVM: not implemented yet."
+  | LiteralStr  lhs.jvmVar  = error "JVM: not implemented yet."
+  | Alias       lhs.jvmVar  = error "JVM: not implemented yet."
+
+%%]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-test = Class {c_major = 49
              ,c_minor = 0
              ,c_flags = [Super]
              ,c_this = "hello"
@@ -94,6 +290,5 @@ test = Class {c_major = 49
               ,c_signature = Nothing
               ,c_deprecated = False
               ,c_userdata = []
-           }
+           }-}
 
-%%]
