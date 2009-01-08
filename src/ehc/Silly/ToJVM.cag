@@ -19,7 +19,9 @@
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty)
 %%]
-%%[(8 codegen grin) hs import(Brianweb.Java)
+%%[(8 codegen grin) hs import(Brianweb.Java hiding (Constant))
+%%]
+%%[(8 codegen grin) hs import(qualified Brianweb.Java as J)
 %%]
 %%[(8 codegen grin)
 WRAPPER SilModule
@@ -32,8 +34,6 @@ PRAGMA nocycle
 %%[(8 codegen grin) hs export( silly2jvm )
 {-|
 -} 
-
-type JConstant = J.Constant
 
 silly2jvm :: EHCOpts -> SilModule -> Class
 silly2jvm opts silmod = 
@@ -122,7 +122,7 @@ ATTR Statements Statement Alternative
      [ | | jvmCode : {Code} ]
 
 ATTR Constant
-     [ | | jvmVal  : {JConstant} ]  
+     [ | | jvmVal  : {J.Constant} ]  
 
 ATTR Alternatives
      [ | | jvmCode : {[Code]} ]  
@@ -195,7 +195,7 @@ SEM Values
 SEM Value
   | Alloc       lhs.jvmCode = error "JVM: not implemented yet."
   | Call        lhs.jvmCode = error "JVM: not implemented yet."
-  | Con         lhs.jvmCode = Const @con.jvmVal
+  | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
   | Var         lhs.jvmCode = error "JVM: not implemented yet."
   | CompareGT   lhs.jvmCode = error "JVM: not implemented yet."
   | Offset      lhs.jvmCode = error "JVM: not implemented yet."
