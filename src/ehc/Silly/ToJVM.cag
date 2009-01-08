@@ -67,8 +67,8 @@ testSilModule = SilModule_SilModule
     [
       Statement_IfThenElse
         (Value_CompareGT
-          (Value_Con (Constant_LiteralInt 4))
-          (Constant_LiteralInt 8)
+          (Value_Con (Constant_LiteralInt 8))
+          (Constant_LiteralInt 4)
         )
         ([Statement_Call (HNm "putStrLn") False
           [Value_Con (Constant_LiteralStr "aapjes!")]])
@@ -247,7 +247,7 @@ SEM Value
 
   | Var         lhs.jvmCode = error "JVM: no support for Var Values."
 
-  | CompareGT   lhs.jvmCode = @val.jvmCode `mergeCode` singleCode (Const @con.jvmVal)
+  | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) `mergeCode` @val.jvmCode
 
   | Offset      lhs.jvmCode = @var.jvmCode
                               `mergeCode` singleCode (Const (CInt (fromIntegral @off)))
