@@ -45,7 +45,12 @@ grin2cil hptmap gr opts
 
 ATTR GrAGItf GrModule [ | | cilAssembly : {Assembly} ]
 
-ATTR GrGlobal GrGlobalL [ | | cilFields USE {++} {[]} : {[FieldDef]} ]
+ATTR GrGlobal GrGlobalL
+  [
+  |
+  | cilFields USE {++} {[]} : {[FieldDef]}
+    cilValues USE {++} {[]} : {[MethodDecl]}
+  ]
 
 ATTR GrBind GrBindL [ | | cilMethods USE {++} {[]} : {[MethodDef]} ]
 
@@ -55,24 +60,31 @@ ATTR GrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
 
 ATTR AllNT [ | | self : SELF ]
 
-ATTR AllNTNoMod [ className : {DottedName} | | ]
-ATTR AllNTNoMod [ grintags : {AssocL HsName GrinTag} | | ]
+ATTR AllNTNoMod
+ [ className : {DottedName}
+   grintags : {AssocL HsName GrinTag}
+ |
+ | thunks USE {++} {[]} : GrTagL
+ ]
 
 
 SEM GrModule
   | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
-        loc.classDef    = classDef Public @loc.className noExtends [] @globalL.cilFields (@loc.mainDef : @bindL.cilMethods) []
-        loc.mainDef     = Method Static AssemblyVisible Void "AssemblyMain" []
+        loc.classDef    = classDef Public @loc.className noExtends [] @globalL.cilFields (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
+        loc.mainDef     = Method Static AssemblyVisible Void "AssemblyMain" [] $
                             [ entryPoint
+                            , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
                             , isinst (str2DottedName "Int")
                             , ldfld Int32 "" (str2DottedName "Int") "Value"
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
                             ]
+                            ++ map (comment . show) @globalL.thunks
+        loc.initialize   = Method Static Private Void "initialize" [] (@globalL.cilValues ++ [ret])
         loc.grintagsMp    = map (second (map (second ctag2grintag))) @ctagsMp
-        loc.typeDefs      = map grintagTypeDef @grintagsMp
-        loc.className     = hsn2TypeDottedName @moduleNm
+        loc.typeDefs     = map grintagTypeDef @grintagsMp
+        loc.className    = hsn2TypeDottedName @moduleNm
         globalL.className = @loc.className
         bindL.className   = @loc.className
         -- pass ctag mapping without type names
@@ -82,7 +94,10 @@ SEM GrModule
 
 
 SEM GrGlobal
-  | Global lhs.cilFields = [Field Static AssemblyVisible Object (hsnShowAlphanumeric @nm)]
+  | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
+           lhs.cilValues = @val.cilCode ++
+                           [ stfld Object "" @lhs.className @loc.name ]
+           loc.name      = hsnShowAlphanumeric @nm
 
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
@@ -151,6 +166,7 @@ SEM GrTag
   | Rec         lhs.cilCode = [no @self]
   | World       lhs.cilCode = [no @self]
   | Any         lhs.cilCode = [no @self]
+  | *           lhs.thunks  = [ @self ]
 %%]
 
 
