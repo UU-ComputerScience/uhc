@@ -9,7 +9,7 @@
 
 %%[1 module {%{EH}Cil.Common} import({%{EH}Base.Common})
 %%]
-%%[8 hs export(namespace, ctag2TypeDottedName, ctag2ConstrDottedName, hsn2TypeDottedName, hsn2ConstrDottedName, ctag2ParamTypes, ctagTypeDef)
+%%[8 hs export(namespace, ctag2TypeDottedName, ctag2ConstrDottedName, hsn2TypeDottedName, hsn2ConstrDottedName, str2TypeDottedName, str2ConstrDottedName, str2DottedName, ctag2ParamTypes, ctagTypeDef)
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
@@ -35,6 +35,18 @@ hsn2TypeDottedName hsn =
 hsn2ConstrDottedName :: HsName -> HsName -> DottedName
 hsn2ConstrDottedName hsn1 hsn2 =
   namespace ++ "." ++ fancyName hsn1 ++ "/" ++ fancyName hsn2
+
+str2TypeDottedName :: String -> DottedName
+str2TypeDottedName str =
+  namespace ++ "." ++ fancyName (HNm str)
+
+str2ConstrDottedName :: String -> String -> DottedName
+str2ConstrDottedName str1 str2 =
+  namespace ++ "." ++ fancyName (HNm str1) ++ "/" ++ fancyName (HNm str2)
+
+-- Special case
+str2DottedName :: String -> DottedName
+str2DottedName s = str2ConstrDottedName s s
 
 fancyName :: HsName -> DottedName
 fancyName hsn =

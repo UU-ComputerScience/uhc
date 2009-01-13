@@ -21,7 +21,7 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Cil.Common} (ctag2ConstrDottedName, hsn2TypeDottedName, ctag2ParamTypes, ctagTypeDef, namespace))
+%%[(8 codegen grin) hs import({%{EH}Cil.Common} (ctag2ConstrDottedName, hsn2TypeDottedName, str2DottedName, ctag2ParamTypes, ctagTypeDef, namespace))
 %%]
 
 %%[(8 codegen grin)
@@ -63,8 +63,8 @@ SEM GrModule
         loc.mainDef     = Method Static AssemblyVisible Void "AssemblyMain" []
                             [ entryPoint
                             , call StaticCallConv Object "" @loc.className "fun_main" []
-                            , isinst (namespace ++ ".Int/Int")
-                            , ldfld Int32 "" (namespace ++ ".Int/Int") "Value"
+                            , isinst (str2DottedName "Int")
+                            , ldfld Int32 "" (str2DottedName "Int") "Value"
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
                             ]
@@ -119,7 +119,7 @@ SEM GrPatLam
   | Empty       lhs.cilCode = [no @self]
   | Var         lhs.cilCode = debugComment @self [stlocN $ hsnShowAlphanumeric @nm]
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (namespace ++ ".Int/Int") "Value", stlocN @varName]
+  | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (str2DottedName "Int") "Value", stlocN @varName]
                 lhs.locals  = [Local Int32 @varName]
                 loc.varName = hsnShowAlphanumeric @nm
   | EnumNode    lhs.cilCode = [no @self]
