@@ -9,7 +9,9 @@
 
 %%[1 module {%{EH}Cil.Common} import({%{EH}Base.Common})
 %%]
-%%[8 hs export(namespace, ctag2TypeDottedName, ctag2ConstrDottedName, hsn2TypeDottedName, hsn2ConstrDottedName, str2TypeDottedName, str2ConstrDottedName, str2DottedName, ctag2ParamTypes, ctagTypeDef)
+%%[8 hs export(GrinTag(..))
+%%]
+%%[8 hs export(namespace, ctag2grintag, grintag2TypeDottedName, grintag2ConstrDottedName, hsn2TypeDottedName, hsn2ConstrDottedName, str2TypeDottedName, str2ConstrDottedName, str2DottedName, grintag2ParamTypes, grintagTypeDef)
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
@@ -20,12 +22,34 @@
 namespace :: DottedName
 namespace = "Haskell.Ehc"
 
-ctag2TypeDottedName :: CTag -> DottedName
-ctag2TypeDottedName (CTag tyNm _ _ _ _) =
+data GrinTag
+  = TCon
+    { tTypeName :: !HsName
+    , tTagName  :: !HsName
+    , tTagNum   :: !Int
+    , tTagArity :: !Int
+    , tTagMaxArity :: !Int
+    }
+  | TFun
+    { tFunName :: !HsName
+    }
+  | TPApp
+    { tFunName :: !HsName
+    , tNeeds   :: !Int
+    }
+  | TApp
+    { tFunName :: !HsName
+    }
+
+ctag2grintag :: CTag -> GrinTag
+ctag2grintag (CTag t nm n a m) = TCon t nm n a m
+
+grintag2TypeDottedName :: GrinTag -> DottedName
+grintag2TypeDottedName (TCon tyNm _ _ _ _) =
   namespace ++ "." ++ fancyName tyNm
 
-ctag2ConstrDottedName :: CTag -> DottedName
-ctag2ConstrDottedName (CTag tyNm cnNm _ _ _) =
+grintag2ConstrDottedName :: GrinTag -> DottedName
+grintag2ConstrDottedName (TCon tyNm cnNm _ _ _) =
   namespace ++ "." ++ fancyName tyNm ++ "/" ++ fancyName cnNm
 
 hsn2TypeDottedName :: HsName -> DottedName
@@ -63,16 +87,16 @@ fancyName hsn =
     "comma10" -> "Tuple`10"
     name      -> name
 
-ctag2ParamTypes :: CTag -> [PrimitiveType]
-ctag2ParamTypes (CTag hsn _ _ x _) =
+grintag2ParamTypes :: GrinTag -> [PrimitiveType]
+grintag2ParamTypes (TCon hsn _ _ x _) =
   case (hsnShowAlphanumeric hsn) of
     "Int"          -> [Int32]
     "Char"         -> [Char]
     "PackedString" -> [String]
     _              -> replicate x Object
 
-ctagTypeDef :: (HsName, [(HsName, CTag)]) -> TypeDef
-ctagTypeDef (anm, hcx) =
+grintagTypeDef :: (HsName, [(HsName, GrinTag)]) -> TypeDef
+grintagTypeDef (anm, hcx) =
   case (hsnShowAlphanumeric anm) of
      "Char"         -> charTypeDef
      "Int"          -> intTypeDef
@@ -93,7 +117,7 @@ ctagTypeDef (anm, hcx) =
     tyNm = namespace ++ "." ++ hsnShowAlphanumeric anm
     pNm ""     = ""
     pNm (c:cs) = toLower c : cs
-    subTys (snm, (CTag _ _ t a ma)) =
+    subTys (snm, (TCon _ _ t a ma)) =
       classDef Public subTyNm (extends tyNm) []
         fields
         [ctor]
@@ -113,12 +137,12 @@ ctagTypeDef (anm, hcx) =
                       [ ret ]
 
 unitTypeDef :: TypeDef
-unitTypeDef = ctagTypeDef (hsn, [(hsn, CTag hsn hsn 0 0 0)])
+unitTypeDef = grintagTypeDef (hsn, [(hsn, TCon hsn hsn 0 0 0)])
   where
     hsn = hsnFromString "Unit"
 
 tupleTypeDef :: Int -> TypeDef
-tupleTypeDef x = ctagTypeDef (hsn, [(hsn, CTag hsn hsn 0 x x)])
+tupleTypeDef x = grintagTypeDef (hsn, [(hsn, TCon hsn hsn 0 x x)])
   where
     hsn = hsnFromString ("Tuple`" ++ show x)
 

@@ -89,8 +89,6 @@
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.ToCil(silly2cil)})
-%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.ToCil(grin2cil)})
 %%]
 
@@ -241,14 +239,6 @@ caSilly2LLVM = do
     ; opts <- gets gcsOpts
     ; let llvm = silly2llvm opts code
     ; modify (gcsUpdateLLVM llvm)
-    }
-
-caSilly2Cil :: CompileAction ()
-caSilly2Cil = do
-    { code <- gets gcsSilly
-    ; opts <- gets gcsOpts
-    ; let cilAst = silly2cil opts code
-    ; modify (gcsUpdateCil cilAst)
     }
 
 caGrin2Cil :: CompileAction ()

@@ -15,13 +15,15 @@
 %%]
 %%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
+%%[(8 codegen grin) hs import(Control.Arrow(first, second))
+%%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Cil.Common} (ctag2ConstrDottedName, hsn2TypeDottedName, str2DottedName, ctag2ParamTypes, ctagTypeDef, namespace))
+%%[(8 codegen grin) hs import({%{EH}Cil.Common})
 %%]
 
 %%[(8 codegen grin)
@@ -48,14 +50,14 @@ ATTR GrGlobal GrGlobalL [ | | cilFields USE {++} {[]} : {[FieldDef]} ]
 ATTR GrBind GrBindL [ | | cilMethods USE {++} {[]} : {[MethodDef]} ]
 
 ATTR GrExpr GrPatLam GrVal GrValL GrTag [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
--- ATTR GrExpr GrPatLam GrVal GrValL GrTag [ | | localVars USE {++} {[]} : {[HsName]} ]
 
 ATTR GrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
 
 ATTR AllNT [ | | self : SELF ]
 
 ATTR AllNTNoMod [ className : {DottedName} | | ]
-ATTR AllNTNoMod [ ctags : {AssocL HsName CTag} | | ]
+ATTR AllNTNoMod [ grintags : {AssocL HsName GrinTag} | | ]
+
 
 SEM GrModule
   | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
@@ -68,14 +70,15 @@ SEM GrModule
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
                             ]
-        loc.typeDefs     = map ctagTypeDef @ctagsMp
-        loc.className   = hsn2TypeDottedName @moduleNm
+        loc.grintagsMp    = map (second (map (second ctag2grintag))) @ctagsMp
+        loc.typeDefs      = map grintagTypeDef @grintagsMp
+        loc.className     = hsn2TypeDottedName @moduleNm
         globalL.className = @loc.className
         bindL.className   = @loc.className
         -- pass ctag mapping without type names
-        loc.ctags         = concatMap snd @ctagsMp
-        globalL.ctags     = @loc.ctags
-        bindL.ctags       = @loc.ctags
+        loc.grintags      = concatMap snd @grintagsMp
+        globalL.grintag   = @loc.grintags
+        bindL.grintags    = @loc.grintags
 
 
 SEM GrGlobal
@@ -85,6 +88,7 @@ SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @expr.locals : @expr.cilCode ++ [ret]
+
 
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
@@ -102,8 +106,9 @@ SEM GrExpr
   | Throw       lhs.cilCode = [no @self]
   | Catch       lhs.cilCode = [no @self]
 
+
 SEM GrVal
-  | Empty       lhs.cilCode = [no @self]
+  | Empty       lhs.cilCode = debugComment @self [newobj "" (str2DottedName "comma0") []]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
   | Var         lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm]
@@ -115,26 +120,29 @@ SEM GrVal
   | PtrNode     lhs.cilCode = [no @self]
   -- TODO NodeAdapt in variant 10
 
+
 SEM GrPatLam
-  | Empty       lhs.cilCode = [no @self]
-  | Var         lhs.cilCode = debugComment @self [stlocN $ hsnShowAlphanumeric @nm]
+  | Empty       lhs.cilCode = debugComment @self []
+  | Var         lhs.cilCode = debugComment @self [stlocN @varName]
+                lhs.locals  = [Local Object @varName]
   | VarNode     lhs.cilCode = [no @self]
   | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (str2DottedName "Int") "Value", stlocN @varName]
                 lhs.locals  = [Local Int32 @varName]
-                loc.varName = hsnShowAlphanumeric @nm
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | BasicAnnot  lhs.cilCode = debugComment @self [stlocN @varName]
-                loc.varName = hsnShowAlphanumeric @nm
                 loc.locals  = [Local Int32 @varName]
   | EnumAnnot   lhs.cilCode = [no @self]
   | PtrAnnot    lhs.cilCode = [no @self]
   | OpaqueAnnot lhs.cilCode = [no @self]
+  | * - VarNode Empty
+                loc.varName = hsnShowAlphanumeric @nm
+
 
 SEM GrTag
-  | Con         lhs.cilCode = debugComment @self [newobj "" (ctag2ConstrDottedName $ @loc.ctag) (ctag2ParamTypes @loc.ctag)]
-                loc.ctag    = lookupTag @nm @lhs.ctags
+  | Con         lhs.cilCode = debugComment @self [newobj "" (grintag2ConstrDottedName $ @loc.grintag) (grintag2ParamTypes @loc.grintag)]
+                loc.grintag = lookupTag @nm @lhs.grintags
   | Fun         lhs.cilCode = [no @self]
   | PApp        lhs.cilCode = [no @self]
   | App         lhs.cilCode = [no @self]
@@ -167,7 +175,8 @@ fakeComment = flip const
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
 
-lookupTag :: HsName -> AssocL HsName CTag -> CTag
+-- TODO this function should already exists somewhere else. Use that one.
+lookupTag :: HsName -> AssocL HsName GrinTag -> GrinTag
 lookupTag n ts = case lookup n ts of
   Nothing -> error $ "Use of an undefined tag " ++ show n ++ "."
   Just t  -> t
