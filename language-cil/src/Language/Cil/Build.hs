@@ -126,8 +126,8 @@ ceq = mdecl $ Ceq
 dup :: MethodDecl
 dup = mdecl $ Dup
 
-isinst :: a -> MethodDecl
-isinst = error "Language.Cil.Build.isinst: not implemented"
+isinst :: DottedName -> MethodDecl
+isinst = mdecl . Isinst
 
 ldarg :: Offset -> MethodDecl
 ldarg 0 = mdecl $ Ldarg_0

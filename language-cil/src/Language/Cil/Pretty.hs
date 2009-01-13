@@ -139,7 +139,7 @@ instance Cil OpCode where
                              . cilCall a c m ps
   cil (Ceq)               = ("ceq" ++)
   cil (Dup)               = ("dup" ++)
-  cil (Isinst tp)         = ("isinst " ++) . cil tp
+  cil (Isinst tp)         = ("isinst " ++) . cilName tp
   cil (Ldarg x)           = ("ldarg " ++) . shows x
   cil (Ldarg_0)           = ("ldarg.0 " ++)
   cil (Ldarg_1)           = ("ldarg.1 " ++)

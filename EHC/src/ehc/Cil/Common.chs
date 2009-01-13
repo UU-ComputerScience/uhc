@@ -75,7 +75,7 @@ ctagTypeDef (anm, hcx) =
      "comma8"       -> tupleTypeDef 8
      "comma9"       -> tupleTypeDef 9
      "comma10"      -> tupleTypeDef 10
-     _              -> classDef Public tyNm noExtends noImplements []
+     _              -> classDef Public tyNm noExtends [] []
                          [ defaultCtor [] ] (map subTys hcx)
   where
     tyNm = namespace ++ "." ++ hsnShowAlphanumeric anm
