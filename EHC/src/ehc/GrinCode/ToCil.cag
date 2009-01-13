@@ -23,7 +23,7 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Cil.Common})
+%%[(8 codegen grin) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
 %%]
 
 %%[(8 codegen grin)
@@ -62,7 +62,7 @@ ATTR AllNT [ | | self : SELF ]
 
 ATTR AllNTNoMod
  [ className : {DottedName}
-   grintags : {AssocL HsName GrinTag}
+   grintags : {AssocL HsName TyTag}
  |
  | thunks USE {++} {[]} : GrTagL
  ]
@@ -75,15 +75,15 @@ SEM GrModule
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
-                            , isinst (str2DottedName "Int")
-                            , ldfld Int32 "" (str2DottedName "Int") "Value"
+                            , isinst (toConDottedName intTyTag)
+                            , ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0)
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
                             ]
                             ++ map (comment . show) @globalL.thunks
         loc.initialize   = Method Static Private Void "initialize" [] (@globalL.cilValues ++ [ret])
-        loc.grintagsMp    = map (second (map (second ctag2grintag))) @ctagsMp
-        loc.typeDefs     = map grintagTypeDef @grintagsMp
+        loc.grintagsMp    = map (second (map (second fromCTag))) @ctagsMp
+        loc.typeDefs     = map toTypeDef @grintagsMp
         loc.className    = hsn2TypeDottedName @moduleNm
         globalL.className = @loc.className
         bindL.className   = @loc.className
@@ -123,7 +123,7 @@ SEM GrExpr
 
 
 SEM GrVal
-  | Empty       lhs.cilCode = debugComment @self [newobj "" (str2DottedName "comma0") []]
+  | Empty       lhs.cilCode = debugComment @self [newobj "" (toConDottedName unitTyTag) []]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
   | Var         lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm]
@@ -141,7 +141,7 @@ SEM GrPatLam
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
                 lhs.locals  = [Local Object @varName]
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (str2DottedName "Int") "Value", stlocN @varName]
+  | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
                 lhs.locals  = [Local Int32 @varName]
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
@@ -156,7 +156,7 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilCode = debugComment @self [newobj "" (grintag2ConstrDottedName $ @loc.grintag) (grintag2ParamTypes @loc.grintag)]
+  | Con         lhs.cilCode = debugComment @self [newobj "" (toConDottedName $ @loc.grintag) (toParamTypes @loc.grintag)]
                 loc.grintag = lookupTag @nm @lhs.grintags
   | Fun         lhs.cilCode = [no @self]
   | PApp        lhs.cilCode = [no @self]
@@ -192,7 +192,7 @@ ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
 
 -- TODO this function should already exists somewhere else. Use that one.
-lookupTag :: HsName -> AssocL HsName GrinTag -> GrinTag
+lookupTag :: HsName -> AssocL HsName TyTag -> TyTag
 lookupTag n ts = case lookup n ts of
   Nothing -> error $ "Use of an undefined tag " ++ show n ++ "."
   Just t  -> t
