@@ -16,10 +16,6 @@
 %%[(8 codegen grin) hs import(Data.Char (toLower))
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Printing of names with non-alpha numeric constants
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%[8
 namespace :: DottedName
 namespace = "Haskell.Ehc"
@@ -79,7 +75,7 @@ ctagTypeDef (anm, hcx) =
      "comma8"       -> tupleTypeDef 8
      "comma9"       -> tupleTypeDef 9
      "comma10"      -> tupleTypeDef 10
-     _              -> classDef Public tyNm noExtends [] []
+     _              -> classDef Public tyNm noExtends noImplements []
                          [ defaultCtor [] ] (map subTys hcx)
   where
     tyNm = namespace ++ "." ++ hsnShowAlphanumeric anm
@@ -135,6 +131,7 @@ simpleTypeDef ty tyNm =
            , ldarg 0
            , ldarg 1
            , stfld ty "" (fullName ++ "/" ++ tyNm) "Value"
+           , ret
            ]
        ]
        []
