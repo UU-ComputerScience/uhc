@@ -50,6 +50,8 @@ ATTR GrBind GrBindL [ | | cilMethods USE {++} {[]} : {[MethodDef]} ]
 ATTR GrExpr GrPatLam GrVal GrValL GrTag [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
 -- ATTR GrExpr GrPatLam GrVal GrValL GrTag [ | | localVars USE {++} {[]} : {[HsName]} ]
 
+ATTR GrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
+
 ATTR AllNT [ | | self : SELF ]
 
 ATTR AllNTNoMod [ className : {DottedName} | | ]
@@ -78,9 +80,9 @@ SEM GrGlobal
   | Global lhs.cilFields = [Field Static AssemblyVisible Object (hsnShowAlphanumeric @nm)]
 
 SEM GrBind
-  | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @expr.cilCode]
+  | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
-  | Rec   lhs.cilMethods  = error "Geen idee."
+          loc.cilCode     = localsInit @expr.locals : @expr.cilCode ++ [ret]
 
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
@@ -102,7 +104,7 @@ SEM GrVal
   | Empty       lhs.cilCode = [no @self]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
-  | Var         lhs.cilCode = [no @self]
+  | Var         lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm]
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilCode
   | VarNode     lhs.cilCode = [no @self]
   | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.cilCode
@@ -115,13 +117,15 @@ SEM GrPatLam
   | Empty       lhs.cilCode = [no @self]
   | Var         lhs.cilCode = debugComment @self [stlocN $ hsnShowAlphanumeric @nm]
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self [localsInit [Local Object @varName], stlocN @varName]
+  | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" "Haskell.EHC.Int/Int" "Value", stlocN @varName]
+                lhs.locals  = [Local Int32 @varName]
                 loc.varName = hsnShowAlphanumeric @nm
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
-  | BasicAnnot  lhs.cilCode = debugComment @self [localsInit [Local Object @varName], stlocN @varName]
+  | BasicAnnot  lhs.cilCode = debugComment @self [stlocN @varName]
                 loc.varName = hsnShowAlphanumeric @nm
+                loc.locals  = [Local Int32 @varName]
   | EnumAnnot   lhs.cilCode = [no @self]
   | PtrAnnot    lhs.cilCode = [no @self]
   | OpaqueAnnot lhs.cilCode = [no @self]
