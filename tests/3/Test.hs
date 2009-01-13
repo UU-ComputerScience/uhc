@@ -10,14 +10,11 @@ data List =
   | Cons Int List
 
 length :: List -> Int
-length = f 0
-  where
-    f x Nil         = x
-    f x (Cons y ys) = f (inc x) ys
+length Nil         = 0
+length (Cons x xs) = inc (length xs)
 
 five :: List
 five = Cons 1 (Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil))))
 
 main = length five
-
 
