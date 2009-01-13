@@ -1,16 +1,20 @@
 module Main where
 
-data MyData =
-    One   Int
-  | Two   Int Int
-  | Three Int Int Int
-  | Four  Int Int Int Int
+foreign import ccall primAddInt :: Int -> Int -> Int
 
-first :: MyData -> Int
-first (One i) = i
-first (Two i _) = i
-first (Three i _ _) = i
-first (Four i _ _ _) = i
+inc :: Int -> Int
+inc x = primAddInt x 1
 
-main = first (One 7)
+data List =
+    Nil
+  | Cons Int List
+
+length :: List -> Int
+length Nil         = 0
+length (Cons x xs) = inc (length xs)
+
+five :: List
+five = Cons 1 (Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil))))
+
+main = length five
 

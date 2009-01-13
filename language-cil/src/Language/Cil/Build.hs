@@ -54,6 +54,7 @@ module Language.Cil.Build (
   , comment
   , extends
   , noExtends
+  , noImplements
   , classDef
   , defaultCtor
   , extendsCtor
@@ -250,6 +251,9 @@ extends nm = Just (TypeSpec nm)
 
 noExtends :: Maybe TypeSpec
 noExtends = Nothing
+
+noImplements :: [TypeSpec]
+noImplements = []
 
 classDef :: Visibility -> DottedName -> Maybe TypeSpec -> [TypeSpec]
               -> [FieldDef] -> [MethodDef]-> [TypeDef] -> TypeDef

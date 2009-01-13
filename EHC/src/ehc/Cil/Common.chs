@@ -121,7 +121,7 @@ packedStringTypeDef = simpleTypeDef String "PackedString"
 
 simpleTypeDef :: PrimitiveType -> DottedName -> TypeDef
 simpleTypeDef ty tyNm =
-  classDef Public fullName noExtends [] []
+  classDef Public fullName noExtends noImplements []
     [ defaultCtor []]
     [ classDef Private tyNm (extends fullName) []
        [ Field Instance2 Public ty "Value"]
