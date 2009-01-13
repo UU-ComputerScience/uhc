@@ -9,6 +9,7 @@ module Language.Cil.Analysis (
 import Language.Cil.Syntax
 
 class Ast a where
+  -- A concatenated list of all instructions.
   instructions :: a -> [Instr]
 
 instance Ast Assembly where

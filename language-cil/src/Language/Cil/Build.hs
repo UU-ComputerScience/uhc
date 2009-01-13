@@ -26,7 +26,10 @@ module Language.Cil.Build (
   , isinst
   , ldarg
   , ldc_i4
+  , ldchar
   , ldfld
+  , ldflda
+  , ldind_ref
   , ldloc
   , ldlocN
   , ldloca
@@ -38,6 +41,7 @@ module Language.Cil.Build (
   , rem
   , ret
   , stfld
+  , stind_ref
   , stloc
   , stlocN
   , sub
@@ -60,6 +64,7 @@ module Language.Cil.Build (
 -- If someone uses the `rem' or `tail' opcode, they can deal with the ambiguous
 -- occurence themselves!
 import Prelude hiding (rem, tail)
+import Data.Char (ord)
 
 import Language.Cil.Syntax
 
@@ -142,10 +147,21 @@ ldc_i4 5    = mdecl $ Ldc_i4_5
 ldc_i4 6    = mdecl $ Ldc_i4_6
 ldc_i4 7    = mdecl $ Ldc_i4_7
 ldc_i4 8    = mdecl $ Ldc_i4_8
-ldc_i4 x    = mdecl $ Ldc_i4 x
+ldc_i4 x    = mdecl $ if -127 <= x && x <= 128
+                      then Ldc_i4_s x
+                      else Ldc_i4 x
+
+ldchar :: Char -> MethodDecl
+ldchar c = ldc_i4 (ord c)
 
 ldfld :: PrimitiveType -> DottedName -> DottedName -> DottedName -> MethodDecl
 ldfld p a t f = mdecl $ Ldfld p a t f
+
+ldflda :: PrimitiveType -> DottedName -> DottedName -> DottedName -> MethodDecl
+ldflda p a t f = mdecl $ Ldflda p a t f
+
+ldind_ref :: MethodDecl
+ldind_ref = mdecl $ Ldind_ref
 
 ldloc :: Offset -> MethodDecl
 ldloc 0 = mdecl $ Ldloc_0
@@ -159,6 +175,9 @@ ldlocN nm = mdecl $ LdlocN nm
 
 ldloca :: Offset -> MethodDecl
 ldloca = mdecl . Ldloca
+
+ldlocaN :: DottedName -> MethodDecl
+ldlocaN nm = mdecl $ LdlocaN nm
 
 ldstr :: String -> MethodDecl
 ldstr = mdecl . Ldstr
@@ -186,6 +205,9 @@ ret = mdecl $ Ret
 
 stfld :: PrimitiveType -> DottedName -> DottedName -> DottedName -> MethodDecl
 stfld p a t f = mdecl $ Stfld p a t f
+
+stind_ref :: MethodDecl
+stind_ref = mdecl $ Stind_ref
 
 stloc :: Offset -> MethodDecl
 stloc 0 = mdecl $ Stloc_0

@@ -156,7 +156,10 @@ instance Cil OpCode where
   cil (Ldc_i4_7)          = ("ldc.i4.7 " ++) 
   cil (Ldc_i4_8)          = ("ldc.i4.8 " ++) 
   cil (Ldc_i4_m1)         = ("ldc.i4.m1 " ++) 
+  cil (Ldc_i4_s x)        = ("ldc.i4.s " ++)  . shows x
   cil (Ldfld t a c f)     = ("ldfld " ++) . cil t . sp . cilFld a c f
+  cil (Ldflda t a c f)    = ("ldflda " ++) . cil t . sp . cilFld a c f
+  cil (Ldind_ref)         = ("ldind.ref " ++)
   cil (Ldloc x)           = ("ldloc " ++) . shows x
   cil (Ldloc_0)           = ("ldloc.0 " ++)
   cil (Ldloc_1)           = ("ldloc.1 " ++)
@@ -164,6 +167,7 @@ instance Cil OpCode where
   cil (Ldloc_3)           = ("ldloc.3 " ++)
   cil (LdlocN nm)         = ("ldloc " ++) . (nm ++)
   cil (Ldloca x)          = ("ldloca " ++) . shows x
+  cil (LdlocaN nm)        = ("ldloca " ++) . (nm ++)
   cil (Ldstr s)           = ("ldstr " ++) . shows s
   cil (Neg)               = ("neg" ++)
   cil (Newobj t a c ps)   = ("newobj instance " ++) . cil t . sp
@@ -173,6 +177,7 @@ instance Cil OpCode where
   cil (Rem)               = ("rem" ++)
   cil (Ret)               = ("ret" ++)
   cil (Stfld t a c f)     = ("stfld " ++) . cil t . sp . cilFld a c f
+  cil (Stind_ref)         = ("stind.ref " ++)
   cil (Stloc x)           = ("stloc " ++) . shows x
   cil (Stloc_0)           = ("stloc.0 " ++)
   cil (Stloc_1)           = ("stloc.1 " ++)
@@ -232,6 +237,7 @@ instance Cil PrimitiveType where
   cil (ValueType a c)     = ("valuetype " ++) . cilAssembly a . cilName c
   cil (ReferenceType a c) = cilAssembly a . cilName c
   cil (GenericType x)     = ("!" ++) . shows x
+  cil (ByRef pt)          = cil pt . ("&" ++)
 
 -- Helper functions, to pretty print
 cilsp :: (Cil a) => a -> ShowS

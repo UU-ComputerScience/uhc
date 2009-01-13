@@ -32,5 +32,5 @@ scanAssembly path = do
   return $ scan path src
 
 parseAssembly :: FilePath -> IO Assembly
-parseAssembly path = liftM (parse pAss) (scanAssembly path)
+parseAssembly = liftM (parse pAss) . scanAssembly
 

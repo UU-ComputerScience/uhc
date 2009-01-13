@@ -103,6 +103,7 @@ data PrimitiveType =
   | Object
   | ValueType DottedName DottedName
   | ReferenceType DottedName DottedName
+  | ByRef PrimitiveType
   | GenericType Offset
   deriving Show
 
@@ -185,11 +186,18 @@ data OpCode =
   | Ldc_i4_7           -- ^ Loads the value 7 onto the stack.
   | Ldc_i4_8           -- ^ Loads the value 8 onto the stack.
   | Ldc_i4_m1          -- ^ Loads the value -1 onto the stack.
+  | Ldc_i4_s Int       -- ^ Loads the supplied 8-bit integer onto the stack as 32-bit integer (short form).
   | Ldfld { fieldType    :: PrimitiveType  -- ^ Type of the field.
           , assemblyName :: DottedName     -- ^ Name of the assembly where the field resides.
           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
           , fieldName    :: DottedName     -- ^ Name of the field.
           } -- ^ Pops object reference, find value of specified field on object, pushes value to the stack.
+  | Ldflda { fieldType    :: PrimitiveType  -- ^ Type of the field.
+           , assemblyName :: DottedName     -- ^ Name of the assembly where the field resides.
+           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
+           , fieldName    :: DottedName     -- ^ Name of the field.
+           } -- ^ Pops object reference, find address of specified field on object, pushes address to the stack.
+  | Ldind_ref          -- ^ Pops an address, pushes the object reference specified at the address.
   | Ldloc Offset       -- ^ Pushes value of local variable, specified by index, to the stack.
   | Ldloc_0            -- ^ Pushes 0th local variable to the stack.
   | Ldloc_1            -- ^ Pushes 1th local variable to the stack.
@@ -197,6 +205,7 @@ data OpCode =
   | Ldloc_3            -- ^ Pushes 3th local variable to the stack.
   | LdlocN DottedName  -- ^ Pushes value of local variable, specified by name, to the stack.
   | Ldloca Offset      -- ^ Pushes address of local variable, specified by index, to the stack.
+  | LdlocaN DottedName -- ^ Pushes address of local variable, specified by name, to the stack.
   | Ldstr String       -- ^ Pushes an object reference to the specified string constant.
   | Neg                -- ^ Pops 1 value, negates the value, pushes the value.
   | Newobj { returnType   :: PrimitiveType    -- ^ Return type of the constructor (almost alway Void).
@@ -213,6 +222,7 @@ data OpCode =
           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
           , fieldName    :: DottedName     -- ^ Name of the field.
           } -- ^ Replaces the value stored in the field of an object reference or pointer with a new value.
+  | Stind_ref          -- ^ Pops an address and an object reference, stores the object reference at the address.
   | Stloc Offset       -- ^ Pops 1 value, stores it in the local variable specified by index.
   | Stloc_0            -- ^ Pops 1 value, stores it in the 0th local variable.
   | Stloc_1            -- ^ Pops 1 value, stores it in the 1th local variable.
@@ -222,6 +232,6 @@ data OpCode =
   | Sub                -- ^ Pops 2 values, substracts second value from the first value, pushes result.
   | Tail               -- ^ Performs subsequent call as a tail call, by replacing current stack frame with callee stack frame.
   | Tailcall OpCode    -- ^ Performs provided call as a tail call, by replacing current stack frame with callee stack frame.
-  | Unbox PrimitiveType
+  | Unbox PrimitiveType  -- ^ Pops 1 value, unboxes object reference, pushes value type.
   deriving Show
 
