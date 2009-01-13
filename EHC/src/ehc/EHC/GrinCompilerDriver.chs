@@ -168,13 +168,6 @@ doCompileGrin input opts
            )
          ; when (ehcOptEmitCil options)
            ( do { caGrin2Cil
-                ; caWriteCil "-grin"
-                ; caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
-                ; caSilly2Cil
                 ; caWriteCil ""
                 }
            )
