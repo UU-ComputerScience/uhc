@@ -54,11 +54,13 @@ ATTR GrGlobal GrGlobalL
 
 ATTR GrBind GrBindL [ | | cilMethods USE {++} {[]} : {[MethodDef]} ]
 
-ATTR GrExpr GrPatLam GrVal GrValL GrTag [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
+ATTR GrExpr GrPatLam GrVal GrValL GrTag GrAlt GrAltL GrPatAlt [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
 
-ATTR GrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
+ATTR AllGrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
 
-ATTR AllNT [ | | self : SELF ]
+ATTR GrTag [ | | tyTag : {TyTag} ]
+
+ATTR AllNT [ | labels : {[Label]} | self : SELF ]
 
 ATTR AllNTNoMod
  [ className : {DottedName}
@@ -68,10 +70,14 @@ ATTR AllNTNoMod
  ]
 
 
+SEM GrAGItf
+  | AGItf  module.labels = map (('L':) . show) (iterate (+1) 0)
+
+
 SEM GrModule
-  | Mod lhs.cilAssembly = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
-        loc.classDef    = classDef Public @loc.className noExtends [] @globalL.cilFields (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
-        loc.mainDef     = Method Static AssemblyVisible Void "AssemblyMain" [] $
+  | Mod lhs.cilAssembly   = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
+        loc.classDef      = classDef Public @loc.className noExtends [] @globalL.cilFields (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
+        loc.mainDef       = Method Static AssemblyVisible Void "AssemblyMain" [] $
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
@@ -81,15 +87,15 @@ SEM GrModule
                             , ret
                             ]
                             ++ map (comment . show) @globalL.thunks
-        loc.initialize   = Method Static Private Void "initialize" [] (@globalL.cilValues ++ [ret])
+        loc.initialize    = Method Static Private Void "initialize" [] (@globalL.cilValues ++ [ret])
         loc.grintagsMp    = map (second (map (second fromCTag))) @ctagsMp
-        loc.typeDefs     = map toTypeDef @grintagsMp
-        loc.className    = hsn2TypeDottedName @moduleNm
+        loc.typeDefs      = map toTypeDef @grintagsMp
+        loc.className     = hsn2TypeDottedName @moduleNm
         globalL.className = @loc.className
         bindL.className   = @loc.className
         -- pass ctag mapping without type names
         loc.grintags      = concatMap snd @grintagsMp
-        globalL.grintag   = @loc.grintags
+        globalL.grintags  = @loc.grintags
         bindL.grintags    = @loc.grintags
 
 
@@ -109,10 +115,14 @@ SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
   | UpdateUnit  lhs.cilCode = [no @self]
-  | Case        lhs.cilCode = [no @self]
+  | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $ @val.cilCode ++ @altL.cilCode
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
-  | FetchField  lhs.cilCode = [no @self]
+  | FetchField  lhs.cilCode = debugComment @self
+                              [ldfld Object "" @lhs.className @loc.varName] ++ @doField
+                loc.doField = case @offset of
+                              0 -> [] 
+                              o -> [no $ "fetch field #" ++ show o]
   | Store       lhs.cilCode = [no @self]
   | Call        lhs.cilCode = [no @self]
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
@@ -120,6 +130,22 @@ SEM GrExpr
   | App         lhs.cilCode = [no @self]
   | Throw       lhs.cilCode = [no @self]
   | Catch       lhs.cilCode = [no @self]
+  | UpdateUnit FetchNode FetchField Call Eval App Throw
+                loc.varName = hsnShowAlphanumeric @nm
+
+SEM GrAlt
+  | Alt         lhs.cilCode = debugComment @self $ case @ann of -- see GrinCode.cag
+                              _ -> @pat.cilCode -- should return a boolean-like
+                                   ++ [brfalse @loc.label]
+                                   ++ @expr.cilCode
+                                   ++ [label @loc.label nop]
+                loc.label   = head @lhs.labels
+                lhs.labels  = Prelude.tail @lhs.labels
+
+
+SEM GrPatAlt
+  | Tag         lhs.cilCode = debugComment @self [isinst $ toConDottedName @tag.tyTag]
+  | * - Tag     lhs.cilCode = [no @self]
 
 
 SEM GrVal
@@ -156,17 +182,23 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilCode = debugComment @self [newobj "" (toConDottedName $ @loc.grintag) (toParamTypes @loc.grintag)]
-                loc.grintag = lookupTag @nm @lhs.grintags
+  | Con         lhs.cilCode = debugComment @self [newobj "" (toConDottedName $ @loc.tyTag) (toParamTypes @loc.tyTag)]
+                loc.tyTag = lookupTag @nm @lhs.grintags
+                lhs.tyTag = @loc.tyTag
   | Fun         lhs.cilCode = [no @self]
+                lhs.tyTag   = TyCon @nm @nm 0 0 0 -- this is incorrect
   | PApp        lhs.cilCode = [no @self]
+                lhs.tyTag   = TyCon @nm @nm 0 0 0 -- this is incorrect
   | App         lhs.cilCode = [no @self]
+                lhs.tyTag   = TyCon @nm @nm 0 0 0 -- this is incorrect
   | Unboxed     lhs.cilCode = [no @self]
   | Hole        lhs.cilCode = [no @self]
   | Rec         lhs.cilCode = [no @self]
   | World       lhs.cilCode = [no @self]
   | Any         lhs.cilCode = [no @self]
   | *           lhs.thunks  = [ @self ]
+  | Unboxed Hole Rec World Any
+                lhs.tyTag   = error $ show @self ++ " not implemented"
 %%]
 
 
