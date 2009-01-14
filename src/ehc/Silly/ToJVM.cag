@@ -21,6 +21,10 @@
 %%]
 %%[(8 codegen grin) hs import(Brianweb.Java hiding (Constant))
 %%]
+%%[(8 codegen grin) hs import(Brianweb.Java.Words (JInt))
+%%]
+%%[(8 codegen grin) hs import(Data.List (elemIndex))
+%%]
 %%[(8 codegen grin) hs import(qualified Brianweb.Java as J)
 %%]
 %%[(8 codegen grin)
@@ -67,6 +71,8 @@ fPayload   = "payload"
 fIntVal    = "intVal"
 fRP        = "RP"
 fCRP       = "CRP"
+fGlobals   = "Globals"
+fCGlobals  = "CGlobals"
 
 {-
 testSilModule = SilModule_SilModule
@@ -126,8 +132,8 @@ methodMain =
         , fr_name = "out"
         , fr_type = TClass {unClass = "java.io.PrintStream"}
         })
-      , Invoke IStatic  (MethodRef {mr_class = "fib",                 mr_name = "fun_x_1_main",  mr_args = [], mr_ret = Just TInt})
-      , Invoke IVirtual (MethodRef {mr_class = "java.io.PrintStream", mr_name = "println", mr_args = [TInt], mr_ret = Nothing})
+      , Invoke IStatic (MethodRef {mr_class = "fib",     mr_name = "fun_x_1_main",  mr_args = [], mr_ret = Just TInt})
+      , Invoke IStatic (MethodRef {mr_class = "Runtime", mr_name = "finish",        mr_args = [], mr_ret = Nothing})
       , Load TInt 1
       , Pop TInt
       , Return Nothing
@@ -171,15 +177,24 @@ ATTR Functions
 ATTR Function
      [ | | jvmCode : {Method} ] 
 
-ATTR Statements Statement Alternative
+ATTR Statements Statement 
      Values Value Variable 
      [ | | jvmCode : {Code} ]
+
+ATTR Alternatives
+     [ | | jvmCode : {[(JInt, Label, Code)]} ]  
+
+ATTR Alternative
+     [ | | jvmCode : {(JInt, Label, Code)} ]
 
 ATTR AllNT
      [ | counter : Int | ]
 
 ATTR AllNT - SilModule
      [ jvmCons : {[(String, Int)]} | | ]
+
+ATTR AllNT - SilModule
+     [ jvmGlobs : {[HsName]} | | ]
 
 ATTR AllNT [ | | jvmIsTag USE {||} {False} : Bool ]
 
@@ -188,15 +203,13 @@ ATTR AllNT [ | | jvmIsInt USE {||} {False} : Bool ]
 ATTR Constant
      [ | | jvmVal  : {J.Constant} ]  
 
-ATTR Alternatives
-     [ | | jvmCode : {[Code]} ]  
-
 SEM SilModule
-  | SilModule   lhs.jvmCode = defaultClass {
-                                c_methods = methodMain : @functions.jvmCode
-                              , c_this    = "fib"
-                              }
-          functions.jvmCons = @constants
+  | SilModule   lhs.jvmCode  = defaultClass {
+                                 c_methods = methodMain : @functions.jvmCode
+                               , c_this    = "fib"
+                               }
+          functions.jvmCons  = @constants
+          functions.jvmGlobs = @variables
 
 SEM Functions
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
@@ -247,7 +260,17 @@ SEM Statement
                               `mergeCode` singleCode (Note (Label @loc.labelElse))
                               `mergeCode` @elsepart.jvmCode
                               `mergeCode` singleCode (Note (Label @loc.labelEndIf))
-  | Switch      lhs.jvmCode = error "JVM: not implemented yet (switch)."
+  | Switch      loc.labelSwitchEnd : UNIQUEREF counter
+                lhs.jvmCode = let 
+                                alts   = @body.jvmCode
+                                end    = @loc.labelSwitchEnd
+                                arms   = map (\(_, _, code)   -> code `mergeCode` singleCode (Goto end))
+                                labels = map (\(when, lbl, _) -> (when, lbl))
+                              in
+                              @scrutinee.jvmCode
+                              `mergeCode` singleCode (Switch Lookup 0 (labels alts))
+                              `mergeCode` foldl mergeCode emptyCode (arms alts)
+                              `mergeCode` singleCode (Note (Label end))
   | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
   | Label       lhs.jvmCode = error "JVM: no labels supported."
   | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
@@ -260,7 +283,11 @@ SEM Alternatives
   | Nil         lhs.jvmCode = []
 
 SEM Alternative
-  | Alternative lhs.jvmCode = error "JVM: not implemented yet (alternative)."
+  | Alternative lhs.jvmCode = let l = @loc.label in
+                              case @when.jvmVal of
+                                CInt i -> (i, l, singleCode (Note $ Label l) `mergeCode` @body.jvmCode)
+                                _      -> error "JVM: non-integer case scrutinee"
+                loc.label   : UNIQUEREF counter
 
 SEM Values
   | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
@@ -279,7 +306,7 @@ SEM Value
   | Call        lhs.jvmCode = maybe (error "JVM: no such foreign call") ($ @args.jvmCode)
                               (lookup (HNm @name) primitiveFunctions)
   | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
-  | Var         lhs.jvmCode = error "JVM: no support for Var Values."
+  | Var         lhs.jvmCode = @var.jvmCode
   | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) `mergeCode` @val.jvmCode
   | Offset      lhs.jvmCode = @var.jvmCode
                               `mergeCode` singleCode (Const (CInt (fromIntegral @off)))
@@ -287,7 +314,11 @@ SEM Value
   | Label       lhs.jvmCode = error "JVM: no support for Var Labels."
 
 SEM Variable
-  | Global      lhs.jvmCode = error "JVM: not implemented yet (global)."
+  | Global      lhs.jvmCode = code [  -- todo: do not use indirection (container) here.
+                                  Get True $ FieldRef cRuntime fCGlobals $ tContainer
+                                , Get False (FieldRef cContainer fPayload (TArray tObject))
+                                , Const (CInt $ fromIntegral $ maybe (error "JVM: global lookup failed") id $ @name `elemIndex` @lhs.jvmGlobs)
+                                ]
   | Local       lhs.jvmCode = singleCode $ Load TInt $ fromIntegral (@pos + 1)
   | Param       lhs.jvmCode = error "JVM: not implemented yet (param)."
   | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ tContainer
