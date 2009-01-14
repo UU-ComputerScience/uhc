@@ -39,7 +39,7 @@ silly2jvm :: EHCOpts -> SilModule -> Class
 silly2jvm opts silmod = 
   jvmCode_Syn_SilModule
      $ wrap_SilModule
-        (sem_SilModule testSilModule)
+        (sem_SilModule silmod)
         (Inh_SilModule 42)
 
 nextUnique :: Int -> (Int, Int)
@@ -62,11 +62,13 @@ type JVMVar = String
 cRuntime   = "Runtime"
 cContainer = "Runtime$Container"
 tContainer = TClass cContainer
-fPayload   = "payload"
 fTag       = "tag"
+fPayload   = "payload"
+fIntVal    = "intVal"
 fRP        = "RP"
 fCRP       = "CRP"
 
+{-
 testSilModule = SilModule_SilModule
   [] [] [
     Function_Function  (HNm "hsmain") False
@@ -86,6 +88,7 @@ testSilModule = SilModule_SilModule
     ]
   ]
   undefined
+-}
 
 primitiveFunctions :: [(HsName, Code -> Code)]
 primitiveFunctions = [
@@ -123,7 +126,7 @@ methodMain =
         , fr_name = "out"
         , fr_type = TClass {unClass = "java.io.PrintStream"}
         })
-      , Invoke IStatic  (MethodRef {mr_class = "hello",               mr_name = "hsmain",  mr_args = [], mr_ret = Just TInt})
+      , Invoke IStatic  (MethodRef {mr_class = "fib",                 mr_name = "fun_x_1_main",  mr_args = [], mr_ret = Just TInt})
       , Invoke IVirtual (MethodRef {mr_class = "java.io.PrintStream", mr_name = "println", mr_args = [TInt], mr_ret = Nothing})
       , Load TInt 1
       , Pop TInt
@@ -172,20 +175,15 @@ ATTR Statements Statement Alternative
      Values Value Variable 
      [ | | jvmCode : {Code} ]
 
-ATTR SilModule
-     Function Functions
-     Statement Statements
-     Value Values
-     Alternative Alternatives
-     Variable Variable
+ATTR AllNT
      [ | counter : Int | ]
 
-ATTR Function Functions
-     Statement Statements
-     Value Values
-     Alternative Alternatives
-     Variable Variable
+ATTR AllNT - SilModule
      [ jvmCons : {[(String, Int)]} | | ]
+
+ATTR AllNT [ | | jvmIsTag USE {||} {False} : Bool ]
+
+ATTR AllNT [ | | jvmIsInt USE {||} {False} : Bool ]
 
 ATTR Constant
      [ | | jvmVal  : {J.Constant} ]  
@@ -196,7 +194,7 @@ ATTR Alternatives
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
                                 c_methods = methodMain : @functions.jvmCode
-                              , c_this    = "hello"
+                              , c_this    = "fib"
                               }
           functions.jvmCons = @constants
 
@@ -222,11 +220,18 @@ SEM Statements
 
 SEM Statement
   -- Watch out that indices 1 upto N are in the array not in the box itself.
-  | Assignment  lhs.jvmCode = error "JVM: not implemented yet."
-  | Assignment2 lhs.jvmCode = error "JVM: not implemented yet."
+  | Assignment  lhs.jvmCode = @dest.jvmCode
+                              `mergeCode` @source.jvmCode
+                              `mergeCode` singleCode
+                                (if @dest.jvmIsTag
+                                then Put False (FieldRef cContainer fTag TInt)
+                                else if True -- @dest.jvmIsInt
+                                     then Put False (FieldRef cContainer fIntVal TInt)
+                                     else AStore tObject)
+  | Assignment2 lhs.jvmCode = error "JVM: not implemented yet (assignment2)."
   | Call        lhs.jvmCode = maybe (error "JVM: no real call yet") ($ @args.jvmCode)
                               (lookup @name primitiveFunctions)
-  | Comment     lhs.jvmCode = error "JVM: not implemented yet."
+  | Comment     lhs.jvmCode = emptyCode
 
   {-
   INVARIANT: This generic IfThenElse compiles to the specific
@@ -242,11 +247,11 @@ SEM Statement
                               `mergeCode` singleCode (Note (Label @loc.labelElse))
                               `mergeCode` @elsepart.jvmCode
                               `mergeCode` singleCode (Note (Label @loc.labelEndIf))
-  | Switch      lhs.jvmCode = error "JVM: not implemented yet."
+  | Switch      lhs.jvmCode = error "JVM: not implemented yet (switch)."
   | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
   | Label       lhs.jvmCode = error "JVM: no labels supported."
   | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
-  | Smart       lhs.jvmCode = error "JVM: not implemented yet."
+  | Smart       lhs.jvmCode = error "JVM: not implemented yet (smart)."
   | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
                 lhs.jvmCode = error "JVM: not supported."
 
@@ -255,7 +260,7 @@ SEM Alternatives
   | Nil         lhs.jvmCode = []
 
 SEM Alternative
-  | Alternative lhs.jvmCode = error "JVM: not implemented yet."
+  | Alternative lhs.jvmCode = error "JVM: not implemented yet (alternative)."
 
 SEM Values
   | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
@@ -282,24 +287,32 @@ SEM Value
   | Label       lhs.jvmCode = error "JVM: no support for Var Labels."
 
 SEM Variable
-  | Global      lhs.jvmCode = error "JVM: not implemented yet."
+  | Global      lhs.jvmCode = error "JVM: not implemented yet (global)."
   | Local       lhs.jvmCode = singleCode $ Load TInt $ fromIntegral (@pos + 1)
-  | Param       lhs.jvmCode = error "JVM: not implemented yet."
-  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ TArray tObject
-  | Subs        lhs.jvmCode = if @index == 0
-                              then singleCode (Get False (FieldRef cContainer fTag TInt))
-                              else code [
-                                  Get False (FieldRef cContainer fPayload tContainer)
-                                , Const (CInt (fromIntegral @index - 1))
-                                , ALoad tObject
-                                ]
+  | Param       lhs.jvmCode = error "JVM: not implemented yet (param)."
+  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ tContainer
+  | Subs        lhs.jvmCode = @array.jvmCode `mergeCode`
+                              if @index == 0
+                              then emptyCode -- singleCode (Get False (FieldRef cContainer fTag TInt)) -- wrong!
+                              else if True -- @array.jvmIsInt
+                                   then emptyCode
+                                   else code [
+                                       Get False (FieldRef cContainer fPayload (TArray tObject))
+                                     , Const (CInt (fromIntegral @index - 1))
+                                     ]
+               lhs.jvmIsTag = @index == 0
+
   | * - Global Local Param RP Subs
                 lhs.jvmCode = error "JVM: this Variable kind not supported."
 
 SEM Constant
-  | LiteralInt  lhs.jvmVal  = CInt (fromIntegral @value)
-  | LiteralStr  lhs.jvmVal  = CString @value
-  | Alias       lhs.jvmVal  = error "JVM: aliases not supported."
+  | LiteralInt  lhs.jvmVal   = CInt (fromIntegral @value)
+                lhs.jvmIsInt = True
+  | LiteralStr  lhs.jvmVal   = CString @value
+  | Alias       lhs.jvmVal   = case @name `lookup` @lhs.jvmCons of
+                                 Nothing -> error ("JVM: no such constant alias: " ++ @name)
+                                 Just  a -> CInt (fromIntegral a)
+
 
 %%]
 
