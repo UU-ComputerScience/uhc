@@ -62,7 +62,7 @@ ATTR GrTag [ | | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct t
 
 ATTR AllGrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
 
-ATTR GrTag [ | | tyTag : {TyTag} ]
+ATTR GrAlt GrAltL [ caseLabel : {String} | | ]
 
 ATTR AllNT [ | labels : {[Label]} | self : SELF ]
 
@@ -119,7 +119,13 @@ SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
   | UpdateUnit  lhs.cilCode = [no @self]
-  | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $ @val.cilCode ++ @altL.cilCode
+  | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $
+                              @val.cilCode
+                              ++ @altL.cilCode
+                              ++ [label @loc.caseLabel nop]
+                loc.caseLabel   = head @lhs.labels
+                altL.caseLabel  = @loc.caseLabel
+                altL.labels = Prelude.tail @lhs.labels
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self
@@ -138,13 +144,18 @@ SEM GrExpr
                 loc.varName = hsnShowAlphanumeric @nm
 
 SEM GrAlt
-  | Alt         lhs.cilCode = debugComment @self $ case @ann of -- see GrinCode.cag
-                              _ -> @pat.cilCode -- should return a boolean-like
-                                   ++ [brfalse @loc.label]
-                                   ++ @expr.cilCode
-                                   ++ [label @loc.label nop]
-                loc.label   = head @lhs.labels
-                lhs.labels  = Prelude.tail @lhs.labels
+  | Alt         lhs.cilCode   = debugComment @self $ 
+                                  @pat.cilCode -- should return a boolean-like
+                                  ++ [brfalse @loc.label]
+                                  ++ @loc.exprCode
+                                  ++ [br @lhs.caseLabel]
+                                  ++ [label @loc.label nop]
+                loc.exprCode  = case @ann of
+                                  GrAltAnnIdent   -> []
+                                  GrAltAnnReenter -> [no "Reenter Alt"]
+                                  _               -> @expr.cilCode
+                loc.label     = head @lhs.labels
+                lhs.labels    = Prelude.tail @lhs.labels
 
 
 SEM GrPatAlt
@@ -198,7 +209,7 @@ SEM GrTag
                 lhs.matchCode = [no @self]
   | *           lhs.thunks    = [ @self ]
   | Unboxed Hole Rec World Any
-                lhs.bindCode  = [no @self]
+                lhs.constCode = [no @self]
                 lhs.matchCode = [no @self]
 %%]
 
