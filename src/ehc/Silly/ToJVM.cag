@@ -199,9 +199,9 @@ ATTR AllNT - SilModule
 ATTR AllNT [ | | jvmIsTag USE {||} {False} : Bool ]
 
 ATTR AllNT [ | | jvmIsInt USE {||} {False} : Bool ]
+ATTR Variable [ jvmAssignInt : Bool | | ]
 
-ATTR Constant
-     [ | | jvmVal  : {J.Constant} ]  
+ATTR Constant [ | | jvmVal : {J.Constant} ]  
 
 SEM SilModule
   | SilModule   lhs.jvmCode  = defaultClass {
@@ -219,7 +219,7 @@ SEM Function
   | Function    lhs.jvmCode = Method {
                                 m_flags = [Public,Static]
                               , m_name       = show @name
-                              , m_ret        = Just TInt -- Return type.
+                              , m_ret        = Just TInt
                               , m_args       = replicate (length @parameters) (TClass cObject)
                               , m_exceptions = []
                               , m_signature  = Nothing
@@ -231,17 +231,47 @@ SEM Statements
   | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
   | Nil         lhs.jvmCode = emptyCode
 
+{
+jvmAssignment dest source isTag isInt =
+  dest
+  `mergeCode` source
+  `mergeCode` singleCode
+  (if isTag
+  then Put False (FieldRef cContainer fTag TInt)
+  else if isInt
+       then Put False (FieldRef cContainer fIntVal TInt)
+       else AStore tObject)
+
+-- Muchos pain! Because we might/probably compute source twice.
+jvmAssignment2 dest1 dest2 source isTag isInt =
+
+  dest1
+  `mergeCode` source
+  `mergeCode` singleCode
+  (if isTag
+  then Put False (FieldRef cContainer fTag TInt)
+  else if isInt
+       then Put False (FieldRef cContainer fIntVal TInt)
+       else AStore tObject)
+
+  `mergeCode` dest2
+  `mergeCode` source
+  `mergeCode` singleCode
+  (if isTag
+  then Put False (FieldRef cContainer fTag TInt)
+  else if isInt
+       then Put False (FieldRef cContainer fIntVal TInt)
+       else AStore tObject)
+
+}
+
 SEM Statement
   -- Watch out that indices 1 upto N are in the array not in the box itself.
-  | Assignment  lhs.jvmCode = @dest.jvmCode
-                              `mergeCode` @source.jvmCode
-                              `mergeCode` singleCode
-                                (if @dest.jvmIsTag
-                                then Put False (FieldRef cContainer fTag TInt)
-                                else if True -- @dest.jvmIsInt
-                                     then Put False (FieldRef cContainer fIntVal TInt)
-                                     else AStore tObject)
-  | Assignment2 lhs.jvmCode = error "JVM: not implemented yet (assignment2)."
+  | Assignment  lhs.jvmCode = jvmAssignment @dest.jvmCode @source.jvmCode @dest.jvmIsTag @source.jvmIsInt
+                dest.jvmAssignInt = @source.jvmIsInt
+  | Assignment2 lhs.jvmCode = jvmAssignment2 @dest1.jvmCode @dest2.jvmCode @source.jvmCode @dest1.jvmIsTag @source.jvmIsInt
+                dest1.jvmAssignInt = @source.jvmIsInt
+                dest2.jvmAssignInt = @source.jvmIsInt
   | Call        lhs.jvmCode = maybe (error "JVM: no real call yet") ($ @args.jvmCode)
                               (lookup @name primitiveFunctions)
   | Comment     lhs.jvmCode = emptyCode
@@ -307,10 +337,12 @@ SEM Value
                               (lookup (HNm @name) primitiveFunctions)
   | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
   | Var         lhs.jvmCode = @var.jvmCode
+                var.jvmAssignInt = False
   | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) `mergeCode` @val.jvmCode
   | Offset      lhs.jvmCode = @var.jvmCode
                               `mergeCode` singleCode (Const (CInt (fromIntegral @off)))
                               `mergeCode` singleCode (Arith Add TInt)
+                var.jvmAssignInt = False
   | Label       lhs.jvmCode = error "JVM: no support for Var Labels."
 
 SEM Variable
@@ -323,14 +355,12 @@ SEM Variable
   | Param       lhs.jvmCode = error "JVM: not implemented yet (param)."
   | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ tContainer
   | Subs        lhs.jvmCode = @array.jvmCode `mergeCode`
-                              if @index == 0
-                              then emptyCode -- singleCode (Get False (FieldRef cContainer fTag TInt)) -- wrong!
-                              else if True -- @array.jvmIsInt
-                                   then emptyCode
-                                   else code [
-                                       Get False (FieldRef cContainer fPayload (TArray tObject))
-                                     , Const (CInt (fromIntegral @index - 1))
-                                     ]
+                              (if @index == 0 || @lhs.jvmAssignInt
+                              then emptyCode
+                              else code [
+                                  Get False (FieldRef cContainer fPayload (TArray tObject))
+                                , Const (CInt (fromIntegral @index - 1))
+                                ])
                lhs.jvmIsTag = @index == 0
 
   | * - Global Local Param RP Subs
