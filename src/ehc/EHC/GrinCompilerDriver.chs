@@ -250,6 +250,7 @@ caSilly2JVM = do
     { code <- gets gcsSilly
     ; opts    <- gets gcsOpts
     ; let jvm = silly2jvm opts code
+--     ; liftIO $ print jvm
     ; modify (gcsUpdateJVM jvm)
     }
 

@@ -298,7 +298,7 @@ SEM Statement
                                 labels = map (\(when, lbl, _) -> (when, lbl))
                               in
                               @scrutinee.jvmCode
-                              `mergeCode` singleCode (Switch Lookup 0 (labels alts))
+                              `mergeCode` singleCode (Switch Lookup end (labels alts))
                               `mergeCode` foldl mergeCode emptyCode (arms alts)
                               `mergeCode` singleCode (Note (Label end))
   | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
