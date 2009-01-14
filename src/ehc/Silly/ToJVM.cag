@@ -59,6 +59,10 @@ code = Code Nothing Nothing
 
 type JVMVar = String
 
+cContainer = "Container"
+tContainer = TClass cContainer
+fPayload   = "payload"
+
 testSilModule = SilModule_SilModule
   [] [] [
     Function_Function  (HNm "hsmain") False
@@ -77,6 +81,7 @@ testSilModule = SilModule_SilModule
     , Statement_Return 1
     ]
   ]
+  undefined
 
 primitiveFunctions :: [(HsName, Code -> Code)]
 primitiveFunctions = [
@@ -84,14 +89,14 @@ primitiveFunctions = [
     singleCode (Get True (FieldRef {
       fr_class = "java.lang.System"
       , fr_name = "out"
-      , fr_type = TClass {unClass = "java.io.PrintStream"}}
+      , fr_type = TClass "java.io.PrintStream"}
       ))
     `mergeCode` c `mergeCode`
     singleCode (
       Invoke IVirtual (MethodRef {
         mr_class = "java.io.PrintStream"
       , mr_name = "println"
-      , mr_args = [TClass {unClass = "java.lang.String"}]
+      , mr_args = [TClass "java.lang.String"]
       , mr_ret = Nothing
       }))
     )
@@ -104,7 +109,7 @@ methodMain =
   , m_ret = Nothing
   , m_args = [TArray {unArray = TClass {unClass = "java.lang.String"}}]
   , m_code = Just (Code {
-      c_max_stack = Nothing
+      c_max_stack  = Nothing
     , c_max_locals = Nothing
     , c_instructions = [
         Const (CInt 42)
@@ -150,6 +155,13 @@ ATTR SilModule
      Variable Variable
      [ | counter : Int | ]
 
+ATTR Function Functions
+     Statement Statements
+     Value Values
+     Alternative Alternatives
+     Variable Variable
+     [ jvmCons : {[(String, Int)]} | | ]
+
 ATTR Constant
      [ | | jvmVal  : {J.Constant} ]  
 
@@ -161,6 +173,7 @@ SEM SilModule
                                 c_methods = methodMain : @functions.jvmCode
                               , c_this    = "hello"
                               }
+          functions.jvmCons = @constants
 
 SEM Functions
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
@@ -177,11 +190,13 @@ SEM Function
                               , m_deprecated = False
                               , m_code       = Just @body.jvmCode
                               }
+
 SEM Statements
   | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
   | Nil         lhs.jvmCode = emptyCode
 
 SEM Statement
+  -- Watch out that indices 1 upto N are in the array not in the box itself.
   | Assignment  lhs.jvmCode = error "JVM: not implemented yet."
   | Assignment2 lhs.jvmCode = error "JVM: not implemented yet."
   | Call        lhs.jvmCode = maybe (error "JVM: no real call yet") ($ @args.jvmCode)
@@ -203,12 +218,12 @@ SEM Statement
                               `mergeCode` @elsepart.jvmCode
                               `mergeCode` singleCode (Note (Label @loc.labelEndIf))
   | Switch      lhs.jvmCode = error "JVM: not implemented yet."
-  | Jump        lhs.jvmCode = error "JVM: not implemented yet."
-  | Label       lhs.jvmCode = error "JVM: not implemented yet."
+  | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
+  | Label       lhs.jvmCode = error "JVM: no labels supported."
   | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
   | Smart       lhs.jvmCode = error "JVM: not implemented yet."
   | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
-                lhs.jvmCode = error "JVM: not implemented yet."
+                lhs.jvmCode = error "JVM: not supported."
 
 SEM Alternatives
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
@@ -222,7 +237,15 @@ SEM Values
   | Nil         lhs.jvmCode = emptyCode
 
 SEM Value
-  | Alloc       lhs.jvmCode = singleCode $ NewArray TInt (fromIntegral @size) -- todo: always managed?
+  | Alloc       lhs.jvmCode = code [
+                                  New cContainer
+                                , Dup TInt
+                                , Dup TInt
+                                , Invoke ISpecial (MethodRef cContainer "<init>" [] Nothing)
+                                , Const (CInt (fromIntegral @size - 1))
+                                , NewArray tObject 1
+                                , Put False (FieldRef cContainer fPayload (TArray tObject))
+                                ]
   | Call        lhs.jvmCode = maybe (error "JVM: no such foreign call") ($ @args.jvmCode)
                               (lookup (HNm @name) primitiveFunctions)
   | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
@@ -245,7 +268,7 @@ SEM Variable
 SEM Constant
   | LiteralInt  lhs.jvmVal  = CInt (fromIntegral @value)
   | LiteralStr  lhs.jvmVal  = CString @value
-  | Alias       lhs.jvmVal  = error "JVM: not implemented yet."
+  | Alias       lhs.jvmVal  = error "JVM: aliases not supported."
 
 %%]
 

@@ -9,6 +9,8 @@
 
 %%[(8 codegen grin) hs module {%{EH}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(pretty)
 %%]
+%%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
+%%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Opts})
@@ -24,6 +26,9 @@ pretty opts silmod
                                           }
                            )
      in  pretty_Syn_SilModule t
+
+ppCurlysSemisV :: [PP_Doc] -> PP_Doc
+ppCurlysSemisV pL = ppBlock "{ " "} " "; " pL
 
 %%]
 
@@ -45,6 +50,17 @@ ATTR SilModule Functions Function Statements Statement Alternatives Alternative 
 
 SEM SilModule
   | SilModule  lhs.pretty = @functions.pretty
+                              >-< "ctags"
+                              >-< ppCurlysSemisV
+                                       (map  (\(tn,ts)
+                                                  ->  cfgppHsName CfgPP_Grin tn >#< "="
+                                                      >#< ( ppListSep "" "" " | "
+                                                          . map  (\(n,CTag _ _ t a ma) -> cfgppHsName CfgPP_Grin n >#< t >#< a >#< ma)
+                                                          $ ts
+                                                          )
+                                                      >-< ""    
+                                             )
+                                             @ctagsMp)
   
   
 %%[[8

@@ -141,6 +141,7 @@ SEM GrModule
                                                     )
                                 : @bindL.functions            -- functions
                                 )
+                                @ctagsMp
 
         loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
         bindL . retNr   = 3
