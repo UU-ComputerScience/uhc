@@ -65,6 +65,7 @@ tContainer = TClass cContainer
 fPayload   = "payload"
 fTag       = "tag"
 fRP        = "RP"
+fCRP       = "CRP"
 
 testSilModule = SilModule_SilModule
   [] [] [
@@ -284,7 +285,7 @@ SEM Variable
   | Global      lhs.jvmCode = error "JVM: not implemented yet."
   | Local       lhs.jvmCode = singleCode $ Load TInt $ fromIntegral (@pos + 1)
   | Param       lhs.jvmCode = error "JVM: not implemented yet."
-  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fRP $ TArray tObject
+  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ TArray tObject
   | Subs        lhs.jvmCode = if @index == 0
                               then singleCode (Get False (FieldRef cContainer fTag TInt))
                               else code [
