@@ -476,9 +476,9 @@ Core+grin processing, on a per module basis, may only be done when no full progr
 %%[(8 codegen grin)
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCOpts -> Bool -> HsName -> EHCompilePhase ()
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isTopMod modNm
-  = if ehcOptFullProgAnalysis opts
+  = {- if ehcOptFullProgAnalysis opts
     then return ()
-    else cpSeq (  [ cpEhcCorePerModulePart2 modNm
+    else -} cpSeq (  [ cpEhcCorePerModulePart2 modNm
 %%[[20
                   , cpFlowOptim modNm
 %%]]
