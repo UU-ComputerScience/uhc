@@ -54,7 +54,11 @@ ATTR GrGlobal GrGlobalL
 
 ATTR GrBind GrBindL [ | | cilMethods USE {++} {[]} : {[MethodDef]} ]
 
-ATTR GrExpr GrPatLam GrVal GrValL GrTag GrAlt GrAltL GrPatAlt [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
+ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
+
+ATTR GrTag [ | | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
+                 matchCode USE {++} {[]} : {[MethodDecl]} -- code to match this tag
+           ]
 
 ATTR AllGrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
 
@@ -144,7 +148,7 @@ SEM GrAlt
 
 
 SEM GrPatAlt
-  | Tag         lhs.cilCode = debugComment @self [isinst $ toConDottedName @tag.tyTag]
+  | Tag         lhs.cilCode = debugComment @self @tag.matchCode
   | * - Tag     lhs.cilCode = [no @self]
 
 
@@ -153,9 +157,9 @@ SEM GrVal
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
   | Var         lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm]
-  | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilCode
+  | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.constCode
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.cilCode
+  | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.constCode
   | EnumNode    lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
@@ -182,23 +186,20 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilCode = debugComment @self [newobj "" (toConDottedName $ @loc.tyTag) (toParamTypes @loc.tyTag)]
-                loc.tyTag = lookupTag @nm @lhs.grintags
-                lhs.tyTag = @loc.tyTag
-  | Fun         lhs.cilCode = [no @self]
-                lhs.tyTag   = TyCon @nm @nm 0 0 0 -- this is incorrect
-  | PApp        lhs.cilCode = [no @self]
-                lhs.tyTag   = TyCon @nm @nm 0 0 0 -- this is incorrect
-  | App         lhs.cilCode = [no @self]
-                lhs.tyTag   = TyCon @nm @nm 0 0 0 -- this is incorrect
-  | Unboxed     lhs.cilCode = [no @self]
-  | Hole        lhs.cilCode = [no @self]
-  | Rec         lhs.cilCode = [no @self]
-  | World       lhs.cilCode = [no @self]
-  | Any         lhs.cilCode = [no @self]
-  | *           lhs.thunks  = [ @self ]
+  | Con         lhs.constCode = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toParamTypes @loc.tyTag)]
+                lhs.matchCode = debugComment @self [isinst @loc.tyName]
+                loc.tyTag     = lookupTag @nm @lhs.grintags
+                loc.tyName    = toConDottedName @loc.tyTag
+  | Fun         lhs.constCode = [no @self]
+                lhs.matchCode = [no @self]
+  | PApp        lhs.constCode = [no @self]
+                lhs.matchCode = [no @self]
+  | App         lhs.constCode = [no @self]
+                lhs.matchCode = [no @self]
+  | *           lhs.thunks    = [ @self ]
   | Unboxed Hole Rec World Any
-                lhs.tyTag   = error $ show @self ++ " not implemented"
+                lhs.bindCode  = [no @self]
+                lhs.matchCode = [no @self]
 %%]
 
 
