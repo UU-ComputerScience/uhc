@@ -14,8 +14,16 @@ class Runtime
     }
   }
 
-  public static Object[]   RP = new Object[256];
-  public static Container CRP = new Container(0, Runtime.RP);
+  // Todo: parametrize these from haskell.
+  public static Object[]        RP = new Object[256];
+  public static Container      CRP = new Container(0, Runtime.RP);
+  public static Object[]   Globals = new Object[256];
+  public static Container CGlobals = new Container(0, Runtime.Globals);
+
+  public static void finish ()
+  {
+    System.out.println(Runtime.CRP.intVal);
+  }
 
   static void test (int size)
   {
