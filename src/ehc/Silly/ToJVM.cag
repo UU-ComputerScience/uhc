@@ -59,9 +59,12 @@ code = Code Nothing Nothing
 
 type JVMVar = String
 
-cContainer = "Container"
+cRuntime   = "Runtime"
+cContainer = "Runtime$Container"
 tContainer = TClass cContainer
 fPayload   = "payload"
+fTag       = "tag"
+fRP        = "RP"
 
 testSilModule = SilModule_SilModule
   [] [] [
@@ -132,6 +135,27 @@ methodMain =
   }
 
 %%]
+
+{-
+Possible optimizations
+
+  1) Probably, not sure yet, the ALLOC size in silly is the maximum of all
+     possible constructors for a data-type. This is safe but sometimes wastes
+     some space. Maybe we can detect what the real value of this ALLOC should
+     be for our payload array.
+  2) Inline the payload into the container by statically creating a bunch of
+     Java classes for every length a value can be. These classes can be called
+     something like `Value<n>'. When we perform this the optimization (1) will
+     bot be possible anymore, but we skip one indirection.
+  3) Do not use a separate Int bucket for the case that the tag is CInt, but
+     use some bit magic to store this integer in the tag itself.
+  4) Do not use an indirect RP bucket to make our life easier in the Subs case
+     but use a direct RP array. This is somewhat more involved because we then
+     need to know that we are Subs'ing the RP which needs some aspect. This
+     optimization is quite essential because you save an indirection on `every'
+     return.
+  n) ...
+-}
 
 %%[(8 codegen grin)
 ATTR SilModule
@@ -258,10 +282,16 @@ SEM Value
 
 SEM Variable
   | Global      lhs.jvmCode = error "JVM: not implemented yet."
-  | Local       lhs.jvmCode = singleCode (Load TInt (fromIntegral (@pos + 1)))
+  | Local       lhs.jvmCode = singleCode $ Load TInt $ fromIntegral (@pos + 1)
   | Param       lhs.jvmCode = error "JVM: not implemented yet."
-  | RP          lhs.jvmCode = error "JVM: not implemented yet."
-  | Subs        lhs.jvmCode = error "JVM: not implemented yet."
+  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fRP $ TArray tObject
+  | Subs        lhs.jvmCode = if @index == 0
+                              then singleCode (Get False (FieldRef cContainer fTag TInt))
+                              else code [
+                                  Get False (FieldRef cContainer fPayload tContainer)
+                                , Const (CInt (fromIntegral @index - 1))
+                                , ALoad tObject
+                                ]
   | * - Global Local Param RP Subs
                 lhs.jvmCode = error "JVM: this Variable kind not supported."
 
@@ -271,60 +301,4 @@ SEM Constant
   | Alias       lhs.jvmVal  = error "JVM: aliases not supported."
 
 %%]
-
-
-{-test = Class {c_major = 49
-             ,c_minor = 0
-             ,c_flags = [Super]
-             ,c_this = "hello"
-             ,c_super = Just "java.lang.Object"
-             ,c_interfaces = []
-             ,c_fields = []
-             ,c_methods = [
-                Method {m_flags = []
-                 ,m_name = "<init>"
-                 ,m_ret = Nothing
-                 ,m_args = []
-                 ,m_code = Just (Code {c_max_stack = Nothing
-                                      ,c_max_locals = Nothing
-                                      ,c_instructions = [ Note (LineNumber 1)
-                                                        , Load (TClass {unClass = "java.lang.Object"}) 0
-                                                        , Invoke ISpecial (MethodRef {mr_class = "java.lang.Object"
-                                                                                     ,mr_name = "<init>"
-                                                                                     ,mr_args = []
-                                                                                     ,mr_ret = Nothing}
-                                                                          )
-                                                        , Return Nothing
-                                                        ]
-                                       })
-                 ,m_exceptions = []
-                 ,m_signature = Nothing
-                 ,m_deprecated = False},
-               Method {m_flags = [Public,Static]
-               ,m_name = "main"
-               ,m_ret = Nothing
-               ,m_args = [TArray {unArray = TClass {unClass = "java.lang.String"}}]
-               ,m_code = Just (Code {c_max_stack = Nothing
-                                    ,c_max_locals = Nothing
-                                    ,c_instructions = [Note (LineNumber 5),
-                                                       Get True (FieldRef {
-                                                          fr_class = "java.lang.System"
-                                                         ,fr_name = "out"
-                                                         ,fr_type = TClass {unClass = "java.io.PrintStream"}}
-                                                         )
-                                                       , Const (CString "hello, oops")
-                                                       , Invoke IVirtual (MethodRef {mr_class = "java.io.PrintStream" ,mr_name = "println" ,mr_args = [TClass {unClass = "java.lang.String"}] ,mr_ret = Nothing})
-                                                       , Note (LineNumber 6),Return Nothing]
-                                                      })
-                              ,m_exceptions = []
-                              ,m_signature = Nothing
-                              ,m_deprecated = False}
-              ]
-              ,c_sourcefile = Just "hello.java"
-              ,c_innerclasses = []
-              ,c_enclosing_method = Nothing
-              ,c_signature = Nothing
-              ,c_deprecated = False
-              ,c_userdata = []
-           }-}
 
